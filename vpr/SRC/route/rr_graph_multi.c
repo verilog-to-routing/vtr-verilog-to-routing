@@ -18,28 +18,56 @@
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 
-//#define DUMP_DEBUG_FILES
-#define USE_NODE_DUPLICATION_METHODOLOGY
+
+/* ---------------------------------------------------------------------------
+ * Control Behavior of of the code by using the following variables/macros
+ * ---------------------------------------------------------------------------*/
+#define DUMP_CUTTING_PATTERN
+#define DUMP_DEBUG_FILES
+#define USE_INTERPOSER_NODE_ADDITION_METHODOLOGY
 //#define USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY
 
-/* This set will contain IDs of the routing wires we will cut */
-static std::set<int> cut_node_set;
+static CutPatternType s_pattern_type = UNIFORM_CUT_WITH_ROTATION;
+
+// if you want the rr_node ID to appear in the dump file, change this variable to true
+// the rr_node ID is not guaranteed to be the same between different runs so,
+// not including the rr_node ID will allow you to compare sorted versions of the rr_graph between different runs
+static bool include_rr_node_IDs_in_rr_graph_dump = false;
+
+
+
+
+
+/* ---------------------------------------------------------------------------
+ * 				Helper data structures
+ * ---------------------------------------------------------------------------*/
+
+static std::set<int> cut_node_set; /* This set will contain IDs of the routing wires we will cut */
 static int* y_cuts = 0;
 static int*** interposer_node_loc; 
 static int* interposer_nodes; 
 
-void find_all_CHANY_wires_that_cross_the_interposer(int nodes_per_chan, int** rr_nodes_that_cross, int* num_rr_nodes_that_cross);
-void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int nodes_per_chan);
-void delete_rr_connection(int src_node, int dst_node);
-void create_rr_connection(int src_node, int dst_node, int connection_switch_index);
+/*
+ * reverse_map is a data structure that keeps tracks of fanins of all rr_nodes.
+ * if rr_node with index 'i' has 'k' fanins (i.e. rr_node[i].fan_in is equal to 'k'),
+ * then, reverse_map[i][0..k-1] is the rr_node indeces of its fanins
+ */
+int **reverse_map = 0;
+
 
 /* ---------------------------------------------------------------------------
  * 				Functions begin 
  * ---------------------------------------------------------------------------*/
 
-// reverse_map[inode] will be an array of routing nodes that drive inode.
-int **reverse_map = 0;
-
+/*
+ * Description: 
+ * Allocates and populates the "reverse_map"
+ * reverse_map is a data structure that keeps tracks of fanins of all rr_nodes.
+ * if rr_node with index 'i' has 'k' fanins (i.e. rr_node[i].fan_in is equal to 'k'),
+ * then, reverse_map[i][0..k-1] is the rr_node indeces of its fanins
+ *
+ * Returns: none.
+ */
 void alloc_and_build_reverse_map(int num_all_rr_nodes)
 {
 	reverse_map = (int **) my_malloc(num_all_rr_nodes * sizeof(int*));
@@ -90,6 +118,11 @@ void alloc_and_build_reverse_map(int num_all_rr_nodes)
 	}
 }
 
+/*
+ * Description: Frees reverse_map data structure
+ * 
+ * Returns: none.
+ */
 void free_reverse_map(int num_all_rr_nodes)
 {
 	int i;
@@ -100,7 +133,11 @@ void free_reverse_map(int num_all_rr_nodes)
 	free(reverse_map);
 }
 
-
+/*
+ * Description: Helper function for debugging. Prints out fanins and fanouts of a specific rr_node
+ * 
+ * Returns: none.
+ */
 void print_fanins_and_fanouts_of_rr_node(int inode)
 {
 	printf("Fanouts of Node %d: ", inode);
@@ -126,11 +163,9 @@ void print_fanins_and_fanouts_of_rr_node(int inode)
  */
 void dump_rr_graph_connections(FILE* fp)
 {
-
 	// dump the whole rr_graph
 	int iedge, inode, dst_node;
 	char* type[7] = {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE"};
-
 
 	for(inode=0; inode<num_rr_nodes;++inode)
 	{
@@ -140,309 +175,32 @@ void dump_rr_graph_connections(FILE* fp)
 			const char* inode_dir = (rr_node[inode].direction == INC_DIRECTION) ? "INC" : "DEC";
 			const char* dst_node_dir = (rr_node[dst_node].direction == INC_DIRECTION) ? "INC" : "DEC";
 
-			fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[inode].type], inode, rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh, inode_dir );
-			fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[dst_node].type], dst_node, rr_node[dst_node].xlow, rr_node[dst_node].xhigh, rr_node[dst_node].ylow, rr_node[dst_node].yhigh, dst_node_dir );
-//			fprintf(fp, "(%s,%d,%d,%d,%d,%s) \t ", type[rr_node[inode].type], rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh, inode_dir );
-//			fprintf(fp, "(%s,%d,%d,%d,%d,%s) \t ", type[rr_node[dst_node].type], rr_node[dst_node].xlow, rr_node[dst_node].xhigh, rr_node[dst_node].ylow, rr_node[dst_node].yhigh, dst_node_dir );
-
+			if(include_rr_node_IDs_in_rr_graph_dump)
+			{
+				fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[inode].type], inode, rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh, inode_dir );
+				fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[dst_node].type], dst_node, rr_node[dst_node].xlow, rr_node[dst_node].xhigh, rr_node[dst_node].ylow, rr_node[dst_node].yhigh, dst_node_dir );
+			}
+			else
+			{
+				fprintf(fp, "(%s,%d,%d,%d,%d,%s) \t ", type[rr_node[inode].type], rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh, inode_dir );
+				fprintf(fp, "(%s,%d,%d,%d,%d,%s) \t ", type[rr_node[dst_node].type], rr_node[dst_node].xlow, rr_node[dst_node].xhigh, rr_node[dst_node].ylow, rr_node[dst_node].yhigh, dst_node_dir );
+			}
 			int switch_index = rr_node[inode].switches[iedge];
 			fprintf(fp, "switch_delay[%d]=%g\n",switch_index, switch_inf[switch_index].Tdel);
 		}
 	}
-
-/*	
-	// just to show that the bug#4 does exist
-	alloc_and_build_reverse_map(num_rr_nodes);
-	int cuts[] = {6,12,18};
-	int i=0;
-	bool found_driver_below_cut=false, found_driver_above_cut=false;
-	int driver_above_cut=-1, driver_below_cut=-1;
-
-	for(i=0; i<3; i++)
-	{
-		for(inode=0; inode<num_rr_nodes;++inode)
-		{
-			if(rr_node[inode].type==CHANY && rr_node[inode].ylow <= cuts[i] && rr_node[inode].yhigh > cuts[i])
-			{
-				for(iedge = 0; iedge < rr_node[inode].fan_in; iedge++)
-				{
-					int node_before = reverse_map[inode][iedge];
-					if(node_before==-1)
-						continue;
-
-					if(rr_node[node_before].type!=CHANY && rr_node[node_before].ylow <= cuts[i])
-					{
-						found_driver_below_cut = true;
-						driver_below_cut = node_before;
-					}
-					else if(rr_node[node_before].type!=CHANY && rr_node[node_before].ylow > cuts[i])
-					{
-						found_driver_above_cut = true;
-						driver_above_cut = node_before;
-					}
-
-					if(found_driver_above_cut && found_driver_below_cut)
-					{
-						fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[driver_below_cut].type], driver_below_cut, rr_node[driver_below_cut].xlow, rr_node[driver_below_cut].xhigh, rr_node[driver_below_cut].ylow, rr_node[driver_below_cut].yhigh, (rr_node[driver_below_cut].direction == INC_DIRECTION) ? "INC" : "DEC" );
-						fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[inode].type], inode, rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh, (rr_node[inode].direction == INC_DIRECTION) ? "INC" : "DEC" );
-						fprintf(fp, "\nAND\n");
-						fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[driver_above_cut].type], driver_above_cut, rr_node[driver_above_cut].xlow, rr_node[driver_above_cut].xhigh, rr_node[driver_above_cut].ylow, rr_node[driver_above_cut].yhigh, (rr_node[driver_above_cut].direction == INC_DIRECTION) ? "INC" : "DEC" );
-						fprintf(fp, "(%s,%d,%d,%d,%d,%d,%s) \t ", type[rr_node[inode].type], inode, rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh, (rr_node[inode].direction == INC_DIRECTION) ? "INC" : "DEC" );
-						fprintf(fp, "\n\n\n");
-						break;
-					}
-				}
-			}
-			found_driver_above_cut=false;
-			found_driver_below_cut=false;
-		}
-	}
-	free_reverse_map(num_rr_nodes);
-*/
 }
-
-
-/*
- * Description: This function checks whether or not a specific connection crosses the interposer.
- * 
- * Returns: True if connection crosses the interposer. False otherwise.
- */
-bool rr_edge_crosses_interposer(int src, int dst, int cut_location )
-{
-	// SRC node is always a vertical wire.
-	// DST node can be either a horizontal or vertical wire.
-	// 
-	// SRC: Y_INC, Y_DEC,
-	// DST: Y_INC, Y_DEC, X
-
-	// here's trick to make my life easier.
-	float cut = cut_location + 0.5;
-
-	// start and end coordinates of src and dst dones
-	// for horizontal nodes, ylow and yhigh are equal
-	int src_ylow  = rr_node[src].ylow;
-	int src_yhigh = rr_node[src].yhigh;
-	int dst_ylow  = rr_node[dst].ylow;
-	int dst_yhigh = rr_node[dst].yhigh;
-
-	bool crosses_the_interposer = false;
-
-	if( (rr_node[src].type==CHANY) &&
-		(rr_node[dst].type==CHANX || rr_node[dst].type==CHANY))
-	{
-		// Case 1: SRC NODE IS VERTICAL AND INCREASING
-		if(rr_node[src].direction==INC_DIRECTION)
-		{
-			if(rr_node[dst].type==CHANY && rr_node[dst].direction==INC_DIRECTION)
-			{
-				if(	(src_ylow < cut && cut < src_yhigh) ||
-					(src_yhigh< cut && cut < dst_ylow))
-				{
-					crosses_the_interposer=true;
-				}
-			}
-			else if(rr_node[dst].type==CHANY && rr_node[dst].direction==DEC_DIRECTION)
-			{
-				// this should never happen! (U-turn in vertical direction!
-				vpr_printf_info("SRC= Y INC && DST= Y DEC\n");
-				assert(false);
-			}
-			else if(rr_node[dst].type==CHANX)
-			{
-				assert(dst_ylow==dst_yhigh);
-				assert(dst_ylow>=src_ylow);
-				if( (src_ylow < cut && cut < src_yhigh && cut < dst_ylow) ||
-					(src_yhigh < cut && cut < dst_ylow))
-				{
-					crosses_the_interposer=true;
-				}
-			}
-		}
-		// Case 2: SRC NODE IS VERTICAL AND DECREASING
-		else if(rr_node[src].direction==DEC_DIRECTION)
-		{
-			if(rr_node[dst].type==CHANY && rr_node[dst].direction==INC_DIRECTION)
-			{
-				// this should never happen! (U-turn in vertical direction!
-				vpr_printf_info("SRC= Y DEC && DST= Y INC\n");
-				assert(false);
-			}
-			else if(rr_node[dst].type==CHANY && rr_node[dst].direction==DEC_DIRECTION)
-			{
-				if(	(src_ylow < cut && cut < src_yhigh) ||
-					(dst_yhigh< cut && cut < src_ylow))
-				{
-					crosses_the_interposer=true;
-				}
-			}
-			else if(rr_node[dst].type==CHANX)
-			{
-				assert(dst_ylow==dst_yhigh);
-				assert(dst_ylow<=src_yhigh);
-				if( (src_ylow < cut && cut < src_yhigh && dst_ylow < cut) ||
-					(dst_yhigh < cut && cut < src_ylow))
-				{
-					crosses_the_interposer=true;
-				}
-			}
-		}
-	}
-
-	if( (rr_node[src].type==CHANY) &&
-		(rr_node[dst].type==IPIN || rr_node[dst].type==OPIN))
-	{
-		// OK, so sometimes we have a pin that looks like this
-		// (IPIN,xlow=22,xhigh=22,ylow=13,yhigh=16,DEC)
-		
-		// Case 1: SRC NODE IS VERTICAL AND INCREASING
-		if(rr_node[src].direction==INC_DIRECTION)
-		{
-			if( (src_ylow < cut && cut < src_yhigh && cut < dst_ylow) ||
-				(src_yhigh < cut && cut < dst_ylow))
-			{
-				crosses_the_interposer=true;
-			}			
-		}
-		// Case 2: SRC NODE IS VERTICAL AND DECREASING
-		else if(rr_node[src].direction==DEC_DIRECTION)
-		{
-			if( (src_ylow < cut && cut < src_yhigh && dst_yhigh < cut) ||
-				(dst_yhigh < cut && cut < src_ylow))
-			{
-				crosses_the_interposer=true;
-			}
-		}
-	}
-
-	return crosses_the_interposer;
-}
-
-
-/*
- * Description: This function cuts the edges which cross the cut for a given wire in the CHANY
- * 
- * Returns: None.
- */
-void cut_rr_yedges(INP int cut_location, INP int inode)
-{
-	
-	if(cut_node_set.find(inode)==cut_node_set.end())
-	{
-		cut_node_set.insert(inode);
-	}
-
-	int iedge, d_node, num_removed;
-	int tmp;
-
-	num_removed = 0;
-
-	/* mark and remove the edges */
-	for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
-	{
-		d_node = rr_node[inode].edges[iedge];
-		if(d_node == -1)
-		{
-			continue;
-		}
-
-		/* crosses the cut line, cut this edge */
-		if(rr_edge_crosses_interposer(inode,d_node,cut_location))
-		{
-			rr_node[d_node].fan_in--;
-			num_removed++;
-			for(tmp = iedge; tmp+1 < rr_node[inode].num_edges; tmp++)
-			{
-				rr_node[inode].edges[tmp] = rr_node[inode].edges[tmp+1];
-				rr_node[inode].switches[tmp] = rr_node[inode].switches[tmp+1];
-			}
-			rr_node[inode].edges[tmp] = -1; /* tmp = num_edges-1 */
-			rr_node[inode].switches[tmp] = -1;
-
-			iedge--; /* need to check the value just pulled into current pos */
-		}
-		else
-		{
-			/*printf(">>>> Did not cut this edge because it does not cross the boundary <<<<\n");*/
-		}
-	}
-
-	/* fill the rest of the array with -1 for safety */
-	for(iedge = rr_node[inode].num_edges - num_removed; iedge < rr_node[inode].num_edges; iedge++)
-	{
-		rr_node[inode].edges[iedge] = -1;
-		rr_node[inode].switches[iedge] = -1;
-	}
-	rr_node[inode].num_edges -= num_removed;
-	/* finished removing the edges */
-}
-
-
-/*
- * Description: This function cuts the edges which cross the cut for a given wire in the CHANX
- *
- * Returns: None.
- */
-void cut_rr_xedges(int cut_location, int inode)
-{
-	
-	int iedge, d_node, num_removed;
-	int tmp;
-
-	num_removed = 0;
-
-	/* mark and remove the edges */
-	for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
-	{
-		d_node = rr_node[inode].edges[iedge];
-		if(d_node == -1)
-		{
-			continue;
-		}
-
-		/* crosses the cut line, cut this edge, CHANX is always supposed to be
-		 * below the cutline */
-		if(	rr_node[d_node].ylow > cut_location && rr_node[d_node].type == CHANY)
-		{
-			rr_node[d_node].fan_in--;
-			num_removed++;
-			for(tmp = iedge; tmp+1 < rr_node[inode].num_edges; tmp++)
-			{
-				rr_node[inode].edges[tmp] = rr_node[inode].edges[tmp+1];
-				rr_node[inode].switches[tmp] = rr_node[inode].switches[tmp+1];
-			}
-			rr_node[inode].edges[tmp] = -1; /* tmp = num_edges-1 */
-			rr_node[inode].switches[tmp] = -1;
-
-			iedge--; /* need to check the value just pulled into current pos */
-		}
-		else
-		{
-			/*printf(">>>> Did not cut this edge because it does not cross the boundary <<<<\n");*/
-		}
-	}
-
-	/* fill the rest of the array with -1 for safety */
-	for(iedge = rr_node[inode].num_edges - num_removed; iedge < rr_node[inode].num_edges; iedge++)
-	{
-		rr_node[inode].edges[iedge] = -1;
-		rr_node[inode].switches[iedge] = -1;
-	}
-	rr_node[inode].num_edges -= num_removed;
-	/* finished removing the edges */
-}
-
 
 /*
  * Description: This is where cutting happens!
  * Some vertical (CHANY to CHANY) connections are cut based on cutting pattern
- * Some horizontal (CHANY to CHANX) connections will also be cut
  *
- * The cutting pattern implemented here is called "uniform cut with rotation"
+ * One of the cutting patterns implemented here is called "uniform cut with rotation"
  *
  * Uniform means that we spread the track# that we want to cut over the width of the channel
  * For instance: if channel width is 10, and %wires_cut=60% ( | = 1 track wire, x = cut )
  * 
-	x x     x x     x x
+ *  x x     x x     x x
  *  | | | | | | | | | |
  * 
  * Also note that we cut wires in pairs because of the alternating INC DEC pattern of the wires
@@ -453,79 +211,26 @@ void cut_rr_xedges(int cut_location, int inode)
  * For instance, at X=0, we may start cutting at track 0, and at x=1, we may start cutting at track 4
  *
  *
+ * The other cutting pattern implemented is called "chunk cut"
+ * As the name suggests, this method cuts a chunk of the wires until %wires_cut is reached.
+ * For instance: if channel width is 10, and %wires_cut=60% ( | = 1 track wire, x = cut )
+ * 
+ *  x x x x x x
+ *  | | | | | | | | | |
+ * 
  * Returns: None.
  */
-void cut_connections_from_CHANY_wires
-(
-	int nodes_per_chan,
-	int num_wires_cut,
-	int cut_pos, 
-	int i
-)
-{
-	int itrack, inode, step, num_wires_cut_so_far, offset, num_chunks;
 
-	if(num_wires_cut == 0)
-	{	// nothing to do :)
-		return;
-	}
 
-	offset = (i * nodes_per_chan) / nx;
-	if(offset % 2) 
-	{
-		offset++;
-	}
-	offset = offset%nodes_per_chan; // to keep offset between 0 and nodes_per_chan-1
-
-	if(num_wires_cut > 0)
-	{
-		// Example: if the step is 1.66, make the step 2.
-		step = ceil (float(nodes_per_chan) / float(num_wires_cut));
-	}
-	else
-	{
-		step = 900900;
-	}
-
-	// cutting chunks of wires. each chunk has 2 wires (a pair)
-	num_chunks = num_wires_cut/2;
-	step = nodes_per_chan/num_chunks;
-
-	if(step<=2)
-	{
-		// it can be proven that if %wires_cut>66%, then step=2.
-		// step=2 means that there will be no gap between pairs of wires that will be cut
-		// therefore, the cut pattern becomes a 'chunk cut'.
-		// to avoid that, we will cap the number of chunks.
-		// we require step to be greater than or equal to 3.
-		step = 3;
-		num_chunks = nodes_per_chan / 3;
-	}
-
-	int ichunk = 0;
-	for(itrack=offset, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; itrack=(itrack+1)%nodes_per_chan)
-	{
-		for(ichunk=0; ichunk<num_chunks && num_wires_cut_so_far<num_wires_cut; ichunk++)
-		{
-			//printf("i=%d, j=%d, track=%d \n", i, cut_pos, itrack+(step*ichunk));
-			inode = get_rr_node_index(i, cut_pos, CHANY, (itrack+(step*ichunk))%nodes_per_chan, rr_node_indices);
-			cut_rr_yedges(cut_pos, inode);
-			num_wires_cut_so_far++;
-		}
-	}
-	
-	// To make sure that we haven't cut the same wire twice
-	assert(cut_node_set.size()==(size_t)num_wires_cut);
-	cut_node_set.clear();
-}
-
-void cut_connections_from_CHANY_wires_2
-(
-	int nodes_per_chan
-)
+/*
+ * Description: implements uniform cut without rotation (see cut pattern descriptions above)
+ * 
+ * Returns: none.
+ */
+void cut_rr_graph_edges_uniform_cut_with_rotation(int nodes_per_chan)
 {
 
-#ifdef DUMP_DEBUG_FILES
+#ifdef DUMP_CUTTING_PATTERN
 	FILE* fp = my_fopen("cutting_pattern.echo", "w", 0);
 #endif
 
@@ -588,7 +293,7 @@ void cut_connections_from_CHANY_wires_2
 				{
 					int track_to_cut = (itrack+(step*ichunk))%nodes_per_chan;
 
-					#ifdef DUMP_DEBUG_FILES
+					#ifdef DUMP_CUTTING_PATTERN
 					fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
 					#endif
 
@@ -620,55 +325,31 @@ void cut_connections_from_CHANY_wires_2
 
 	assert(num_wires_cut_so_far==num_wires_cut);
 
-#ifdef DUMP_DEBUG_FILES
+#ifdef DUMP_CUTTING_PATTERN
 	fclose(fp);
 #endif
 
 }
 
 /*
- * Description: This is where cutting happens!
- * CHANX to CHANY connections will be cut if CHANX wire is below the cut and the CHANY wire is above the interposer
- *
- * Returns: None.
+ * Description: implements uniform cut without rotation (see cut pattern descriptions above)
+ * 
+ * Returns: none.
  */
-void cut_connections_from_CHANX_wires(int i, int cut_pos, int nodes_per_chan)
+void cut_rr_graph_edges_uniform_cut_without_rotation(int nodes_per_chan)
 {
-	int itrack, inode;
 
-	if(cut_pos + 1 >= ny)
-	{
-		return;
-	}
+#ifdef DUMP_CUTTING_PATTERN
+	FILE* fp = my_fopen("cutting_pattern.echo", "w", 0);
+#endif
 
-	// From CHANX to CHANY, cut only the edges at the switches
-	if(0 < i && i < nx)
-	{
-		for(itrack = 0; itrack < nodes_per_chan; itrack++)
-		{
-			inode = get_rr_node_index(i, cut_pos, CHANX, itrack, rr_node_indices);
-
-			// printf("Going to cut Horizontal (X) edges from: i=%d, j=%d, track=%d \n", i, cut_pos, itrack);
-			cut_rr_xedges(cut_pos, inode);
-		}
-	}
-}
-
-
-/*
- * Description: Takes care of cutting horizontal and vertical connections at the cut
- *
- * Returns: None.
- */
-void cut_rr_graph_edges_at_cut_locations(int nodes_per_chan)
-{
-	int cut_step; // The interval at which the cuts should be made
-	int counter;  // Number of cuts already made
-	int i, j;     // horizontal and vertical coordinate numbers
-	int num_wires_cut;
+	int i, itrack, ifanout, step, num_chunks, cut_counter, ifanin;
+	int num_wires_cut_so_far = 0;
+	int interposer_node_index;
+	t_rr_node* interposer_node;
 
 	// Find the number of wires that should be cut at each horizontal cut
-	num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
+	int num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
 	assert(percent_wires_cut==0 || num_wires_cut <= nodes_per_chan);
 
 	// num_wires_cut should be an even number
@@ -677,69 +358,252 @@ void cut_rr_graph_edges_at_cut_locations(int nodes_per_chan)
 			num_wires_cut++;
 	}
 
-	printf("Info: cutting %d wires when channel width is %d\n", num_wires_cut, nodes_per_chan);
-
-	counter = 0;
-	cut_step = ny / (num_cuts + 1);
-	for(j=cut_step; j<ny && counter<num_cuts; j+=cut_step, counter++)
-	{
-		for(i = 0; i <= nx; i++)
-		{
-			// 1. cut num_wires_cut wires at (x,y)=(i,j).
-			cut_connections_from_CHANY_wires(nodes_per_chan, num_wires_cut, j, i);
-
-			// 2. cut all CHANX wires connecting to CHANY wires on the other side of the interposer
-			cut_connections_from_CHANX_wires(i, j, nodes_per_chan);
-		}
+	if(num_wires_cut == 0)
+	{	// nothing to do :)
+		return;
 	}
-	assert(counter == num_cuts);
-}
 
+	assert(num_wires_cut > 0);
 
-/*
- * Description: This function traverses the whole rr_graph
- * For every connection that crosses the interposer, it increases the switch delay
- *
- * Returns: None.
- */
-void increase_delay_rr_edges()
-{
-	int iedge, inode, dst_node, cut_counter, cut_step;
-	int cut_pos;
-
-	cut_step = ny / (num_cuts+1);
-
-	for(inode=0; inode<num_rr_nodes;++inode)
+	for(i=0; i<=nx; ++i)
 	{
-		// we only increase the delay of connections from CHANY nodes to other nodes.
-		if(rr_node[inode].type==CHANY)
+		// Example: if the step is 1.66, make the step 2.
+		step = ceil (float(nodes_per_chan) / float(num_wires_cut));
+
+		// cutting chunks of wires. each chunk has 2 wires (a pair)
+		num_chunks = num_wires_cut/2;
+		step = nodes_per_chan/num_chunks;
+
+		if(step<=2)
 		{
-			for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
+			// it can be proven that if %wires_cut>66%, then step=2.
+			// step=2 means that there will be no gap between pairs of wires that will be cut
+			// therefore, the cut pattern becomes a 'chunk cut'.
+			// to avoid that, we will cap the number of chunks.
+			// we require step to be greater than or equal to 3.
+			step = 3;
+			num_chunks = nodes_per_chan / 3;
+		}
+
+		for(cut_counter=0; cut_counter < num_cuts; ++cut_counter)
+		{
+			int ichunk = 0;
+			for(itrack=0, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; itrack=(itrack+1)%nodes_per_chan)
 			{
-				dst_node = rr_node[inode].edges[iedge];
-
-				if(dst_node==-1)
-				{	// if it's a connection that's already cut, you don't need to increase its delay
-					continue;
-				}
-
-				// see if the connection crosses any of the cuts
-				cut_counter = 0;
-				for(cut_pos = cut_step; cut_pos < ny && cut_counter < num_cuts; cut_counter++, cut_pos+=cut_step)
+				for(ichunk=0; ichunk<num_chunks && num_wires_cut_so_far<num_wires_cut; ichunk++)
 				{
-					if(rr_edge_crosses_interposer(inode,dst_node,cut_pos))
+					int track_to_cut = (itrack+(step*ichunk))%nodes_per_chan;
+
+					#ifdef DUMP_CUTTING_PATTERN
+					fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+					#endif
+
+					interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
+					interposer_node = &rr_node[interposer_node_index];
+
+					// cut all fanout connections of the interposer node
+					for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
 					{
-						rr_node[inode].switches[iedge] = increased_delay_edge_map[rr_node[inode].switches[iedge]];
-						break;
+						delete_rr_connection(interposer_node_index, interposer_node->edges[ifanout]);
+						--ifanout;
 					}
+					assert(rr_node[interposer_node_index].num_edges==0);
+
+					// cut all fanin connections of the interposer node
+					for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+					{
+						int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+						delete_rr_connection(fanin_node_index, interposer_node_index);
+						--ifanin;
+					}
+					assert(rr_node[interposer_node_index].fan_in==0);
+
+					num_wires_cut_so_far++;
 				}
 			}
 		}
 	}
 
+	assert(num_wires_cut_so_far==num_wires_cut);
+
+#ifdef DUMP_CUTTING_PATTERN
+	fclose(fp);
+#endif
+
 }
 
-void increase_delay_rr_edges_2(int nodes_per_chan)
+/*
+ * Description: implements chunk cut with rotation (see cut pattern descriptions above)
+ * 
+ * Returns: none.
+ */
+void cut_rr_graph_edges_chunk_cut_with_rotation(int nodes_per_chan)
+{
+
+#ifdef DUMP_CUTTING_PATTERN
+	FILE* fp = my_fopen("cutting_pattern.echo", "w", 0);
+#endif
+
+	int i, itrack, ifanout, offset, cut_counter, ifanin;
+	int num_wires_cut_so_far = 0;
+	int interposer_node_index;
+	t_rr_node* interposer_node;
+
+	// Find the number of wires that should be cut at each horizontal cut
+	int num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
+	assert(percent_wires_cut==0 || num_wires_cut <= nodes_per_chan);
+
+	// num_wires_cut should be an even number
+	if(num_wires_cut % 2)
+	{
+			num_wires_cut++;
+	}
+
+	if(num_wires_cut == 0)
+	{	// nothing to do :)
+		return;
+	}
+
+	assert(num_wires_cut > 0);
+
+	for(i=0; i<=nx; ++i)
+	{
+		offset = (i * nodes_per_chan) / nx;
+		if(offset % 2) 
+		{
+			offset++;
+		}
+		offset = offset%nodes_per_chan; // to keep offset between 0 and nodes_per_chan-1
+
+		for(cut_counter=0; cut_counter < num_cuts; ++cut_counter)
+		{
+			for(itrack=offset, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; itrack=(itrack+1)%nodes_per_chan)
+			{
+				int track_to_cut = (itrack)%nodes_per_chan;
+
+				#ifdef DUMP_CUTTING_PATTERN
+				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+				#endif
+
+				interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
+				interposer_node = &rr_node[interposer_node_index];
+
+				// cut all fanout connections of the interposer node
+				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+				{
+					delete_rr_connection(interposer_node_index, interposer_node->edges[ifanout]);
+					--ifanout;
+				}
+				assert(rr_node[interposer_node_index].num_edges==0);
+
+				// cut all fanin connections of the interposer node
+				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+				{
+					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					delete_rr_connection(fanin_node_index, interposer_node_index);
+					--ifanin;
+				}
+				assert(rr_node[interposer_node_index].fan_in==0);
+
+				num_wires_cut_so_far++;
+			}
+		}
+	}
+
+	assert(num_wires_cut_so_far==num_wires_cut);
+
+#ifdef DUMP_CUTTING_PATTERN
+	fclose(fp);
+#endif
+
+}
+
+/*
+ * Description: implements chunk cut without rotation (see cut pattern descriptions above)
+ * 
+ * Returns: none.
+ */
+void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
+{
+
+#ifdef DUMP_CUTTING_PATTERN
+	FILE* fp = my_fopen("cutting_pattern.echo", "w", 0);
+#endif
+
+	int i, itrack, ifanout, cut_counter, ifanin;
+	int num_wires_cut_so_far = 0;
+	int interposer_node_index;
+	t_rr_node* interposer_node;
+
+	// Find the number of wires that should be cut at each horizontal cut
+	int num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
+	assert(percent_wires_cut==0 || num_wires_cut <= nodes_per_chan);
+
+	// num_wires_cut should be an even number
+	if(num_wires_cut % 2)
+	{
+			num_wires_cut++;
+	}
+
+	if(num_wires_cut == 0)
+	{	// nothing to do :)
+		return;
+	}
+
+	assert(num_wires_cut > 0);
+
+	for(i=0; i<=nx; ++i)
+	{
+		for(cut_counter=0; cut_counter < num_cuts; ++cut_counter)
+		{
+			for(itrack=0, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; itrack=(itrack+1)%nodes_per_chan)
+			{
+				int track_to_cut = (itrack)%nodes_per_chan;
+
+				#ifdef DUMP_CUTTING_PATTERN
+				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+				#endif
+
+				interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
+				interposer_node = &rr_node[interposer_node_index];
+
+				// cut all fanout connections of the interposer node
+				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+				{
+					delete_rr_connection(interposer_node_index, interposer_node->edges[ifanout]);
+					--ifanout;
+				}
+				assert(rr_node[interposer_node_index].num_edges==0);
+
+				// cut all fanin connections of the interposer node
+				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+				{
+					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					delete_rr_connection(fanin_node_index, interposer_node_index);
+					--ifanin;
+				}
+				assert(rr_node[interposer_node_index].fan_in==0);
+
+				num_wires_cut_so_far++;
+			}
+		}
+	}
+
+	assert(num_wires_cut_so_far==num_wires_cut);
+
+#ifdef DUMP_CUTTING_PATTERN
+	fclose(fp);
+#endif
+
+}
+
+/*
+ * Description: 
+ * This function increases the switch delay for interposer nodes.
+ * The switch driving the interposer node will have added delays
+ * Returns: none.
+ */
+void increase_rr_graph_edge_delays(int nodes_per_chan)
 {
 	int inode, i, j;
 	int old_switch, new_switch;
@@ -747,14 +611,6 @@ void increase_delay_rr_edges_2(int nodes_per_chan)
 	for(i=0; i<num_interposer_nodes; ++i)
 	{
 		inode = interposer_nodes[i];
-
-		/*
-		for(j=0; j < rr_node[inode].num_edges; ++j)
-		{
-			old_switch = rr_node[inode].switches[j]
-			rr_node[inode].switches[j] = increased_delay_edge_map[current_switch];			
-		}
-		*/
 
 		for(j=0; j < rr_node[inode].fan_in; ++j)
 		{
@@ -770,11 +626,41 @@ void increase_delay_rr_edges_2(int nodes_per_chan)
 	}
 }
 
-/* 
- * Function that does num_cuts horizontal cuts to the chip,
- * percent_wires_cut% of the wires crossing these cuts are removed
- * (the edges which cross the cut are removed) and the remaining
- * wires on this section have their delay increased by delay_increase (ns)
+/*
+ * Description: This function is used for experimentation. Decided which cutting pattern to use based on s_pattern_type
+ *
+ * Returns: none.
+ */
+void cut_rr_connections(int nodes_per_chan)
+{
+	switch(s_pattern_type)
+	{
+	case UNIFORM_CUT_WITH_ROTATION:
+		cut_rr_graph_edges_uniform_cut_with_rotation(nodes_per_chan);
+		break;
+	case UNIFORM_CUT_WITHOUT_ROTATION:
+		cut_rr_graph_edges_uniform_cut_without_rotation(nodes_per_chan);
+		break;
+	case CHUNK_CUT_WITH_ROTATION:
+		cut_rr_graph_edges_chunk_cut_with_rotation(nodes_per_chan);
+		break;
+	case CHUNK_CUT_WITHOUT_ROTATION:
+		cut_rr_graph_edges_chunk_cut_without_rotation(nodes_per_chan);
+		break;
+	default:
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Unknown cutting pattern!\n");
+		break;
+	}
+}
+
+/*
+ * Description: This is the MAIN entry point for rr_graph modifications for interposer based architectures
+ *           
+ *  Note: either USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY or 
+ *               USE_INTERPOSER_NODE_ADDITION_METHODOLOGY
+ *        must be defined
+ *                    
+ * Returns: none.
  */
 void modify_rr_graph_for_interposer_based_arch
 (
@@ -783,21 +669,117 @@ void modify_rr_graph_for_interposer_based_arch
 )
 {
 
+#ifdef USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY
+	modify_rr_graph_using_switch_modification_methodology(nodes_per_chan, directionality);
+#endif
+
+#ifdef USE_INTERPOSER_NODE_ADDITION_METHODOLOGY
+	modify_rr_graph_using_interposer_node_addition_methodology(nodes_per_chan, directionality);
+#endif
+}
+
+
+/*
+ * Description: This is the main entry point to rr_graph modifications for interposer based architectures
+ *
+ * FIRST 
+ *
+ * Find all rr_nodes that cross the interposer.
+ * for every wire that crosses a cut, we break it into two nodes.
+ * for instance, if a cut is at y=8 and we have an INC CHANY ylow=6-->yhigh=10,
+ * then we create an extra rr_node for that wire: 
+ * the "original node" will be changed to: INC CHANY ylow=6-->yhigh=8
+ * the "new node" will be:                 INC CHANY ylow=9-->yhigh=10
+ * The fan-ins and fan-outs of the original node may have to be moved.
+ * Fanins on the same side of the cut as the original node will continue to drive the original node.
+ * Fanins on the other side of the cut will now be feeding the new node.
+ * Similar thing goes for fanouts
+ *
+ *  So, we are basically turning this:
+ *
+ *    O   O    O
+ *    |   |    |
+ *    \   |   /
+ *      \ | /
+ *        O                   <---- this is the node that's crossing the interposer (inode)
+ *       / \
+ *      /   \
+ *     O     O
+ *
+ * into this:
+ *
+ *
+ *    O   O    
+ *    |   |    
+ *     \  |   
+ *      \ | 
+ *       \|
+ *        O                   <---- this is the new node (new_node)
+ *        |
+ *        |
+ *        |
+ *        | O
+ *        |/
+ *        O                   <---- this is the original node (inode)
+ *       / \
+ *      /   \
+ *     O     O
+ *
+ * in this example, one of the fanouts of the original node remained on the same side of the cut.
+ * the other two fanouts were transferred to be fanouts of the new node
+ * by the end of this step, there should be *no* wire that crosses a cut
+ *
+ * SECOND
+ *
+ * insert an "interposer node" between any two nodes that are connected on two different sides of a cut
+ *
+ *    O   O    
+ *    |   |    
+ *     \  |   
+ *      \ | 
+ *       \|
+ *        O                   <---- this is the new node (new_node)
+ *        |
+ *        O                   <---- This is the interposer_node
+ *        |
+ *        | O
+ *        |/
+ *        O                   <---- this is the original node (inode)
+ *       / \
+ *      /   \
+ *     O     O
+ *
+ * Interposer nodes in the rr_graph have the type of CHANY.
+ * Interposer nodes in the rr_graph have ylow=yhigh=y_coordinate_of_cut
+ * 
+ * Connections to interposer nodes have larger switch delay (e.g 1.058ns)
+ * Connections from interposer nodes to wires on the other side have 0 delay
+ * in every channel, num_interposer_nodes = chan_width
+ * in every channel, (%wires_cut*num_interposer_nodes) are selected and all their fanins and fanouts are cut
+ * 
+ * 
+ * Returns: None.
+ */
+void modify_rr_graph_using_interposer_node_addition_methodology
+(
+	int nodes_per_chan,
+	enum e_directionality directionality
+)
+{
 	if(directionality == BI_DIRECTIONAL) /* Ignored for now TODO */
 		return;
 
 	if(num_cuts <=0)
 		return;
+
 #ifdef	DUMP_DEBUG_FILES
-	// Before doing anything, let's dump the vertical track connections in the rr_graph
+	// Before doing anything, let's dump the connections in the rr_graph
 	FILE* fp = my_fopen("before_cutting.txt", "w", 0);
 	dump_rr_graph_connections(fp);
 	fclose(fp);
 #endif
 
-#ifdef USE_NODE_DUPLICATION_METHODOLOGY
-
-	// 0. Populate the y-coordinate of cut locations
+	// 0. allocate and populate the y-coordinate of cut locations
 	y_cuts = (int*) my_malloc(num_cuts * sizeof(int));
 	int cut_step = ny / (num_cuts+1);
 	int cut_counter = 0;
@@ -806,9 +788,8 @@ void modify_rr_graph_for_interposer_based_arch
 		y_cuts[cut_counter] = (cut_counter+1)*cut_step;
 	}
 
-
 	int *rr_nodes_that_cross = 0;
-	int num_rr_nodes_that_cross;
+	int num_rr_nodes_that_cross = 0;
 	
 	// 1. find all CHANY wires that cross the interposer
 	find_all_CHANY_wires_that_cross_the_interposer(nodes_per_chan, &rr_nodes_that_cross, &num_rr_nodes_that_cross);
@@ -817,41 +798,20 @@ void modify_rr_graph_for_interposer_based_arch
 	expand_rr_graph(rr_nodes_that_cross, num_rr_nodes_that_cross, nodes_per_chan); 
 
 	// 3. cut some of the wires
-	cut_connections_from_CHANY_wires_2(nodes_per_chan);
+	cut_rr_connections(nodes_per_chan);
 
 	// 4. increase the delay of interposer nodes that were not cut
-	increase_delay_rr_edges_2(nodes_per_chan);
-
-#endif
-
-#ifdef USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY
-	// 1. Cut as many wires as we need to.
-	//    This will cut %wires_cut of vertical connections at the interposer. 
-	//    It will also cut connections from CHANX wires below the interposer to CHANY wires above the interposer
-	cut_rr_graph_edges_at_cut_locations(nodes_per_chan);
-
-	// 2. Increase the delay of all the remaining tracks that pass the interposer
-	//    by increasing the switch delays
-	increase_delay_rr_edges();
-#endif
+	increase_rr_graph_edge_delays(nodes_per_chan);
 
 
-#ifdef	DUMP_DEBUG_FILES
-	// dump after all rr_Graph modifications are done
-	FILE* fp2 = my_fopen("after_cutting.txt", "w", 0);
-	dump_rr_graph_connections(fp2);
-	fclose(fp2);
-#endif
-
-#ifdef USE_NODE_DUPLICATION_METHODOLOGY
-	// free stuff
+	// 5.1 free helper data-structures that are not needed anymore
 	free(y_cuts);
 
-	// free stuff
+	// 5.2 free helper data-structures that are not needed anymore
 	free_reverse_map(num_rr_nodes);
 	free(interposer_nodes);
 
-	// free stuff
+	// 5.3 free helper data-structures that are not needed anymore
 	int i,j;
 	for(i=0; i<nx+1; ++i)
 	{
@@ -865,49 +825,25 @@ void modify_rr_graph_for_interposer_based_arch
 		free(interposer_node_loc[i]);
 	}
 	free(interposer_node_loc);
-#endif 
+
+#ifdef	DUMP_DEBUG_FILES
+	// dump after all rr_Graph modifications are done
+	FILE* fp2 = my_fopen("after_cutting.txt", "w", 0);
+	dump_rr_graph_connections(fp2);
+	fclose(fp2);
+#endif
 }
 
-
-
-//####################################
-// Here's where i attempt to modify the rr_graph in a whole different way:
-// First, find all rr_nodes that cross the interposer.
-// Second, for each one create an extra node (so now we have two nodes)
-// Third, change the original node to be on one side of the interposer, and the new node to be on the other side
-// Fourth, connect the original node and the new node with an edge.
-// There's probably so much more that needs to be done in order to keep all the indeces in correct place.
-// I don't know what they are yet, but there's no way to find out until I start coding it up.
-
-//  So, turn this:
-//
-//    O   O    O
-//    |   |    |
-//    \   |   /
-//      \ | /
-//        O                   <---- this is the node that's crossing the interposer (inode)
-//       / \
-//      /   \
-//     O     O
-//
-// into this:
-//
-//
-//    O   O    
-//    |   |    
-//    \   |   
-//      \ | 
-//        |
-//     O  O                   <---- this is the new node (new_node)
-//      \ |
-//        O                   <---- this is the original node (inode)
-//       / \
-//      /   \
-//     O     O
-
+/*
+ * Description: finds out which wires cross an interposer cut.
+ *
+ * Returns: the rr_node IDs of the wires that cross an interposer cut (returned by param ref)
+ *          the number of rr_nodes       that cross an interposer cut (returned by param ref)
+ */
 void find_all_CHANY_wires_that_cross_the_interposer(int nodes_per_chan, int** rr_nodes_that_cross, int* num_rr_nodes_that_cross)
 {
 	int inode, cut_pos, cut_counter;
+	int total_chany_wires = 0;
 	*num_rr_nodes_that_cross = 0;
 
 	// at the very most (if all vertical wires in the channel cross the interposer)
@@ -923,6 +859,7 @@ void find_all_CHANY_wires_that_cross_the_interposer(int nodes_per_chan, int** rr
 	{
 		if(rr_node[inode].type==CHANY)
 		{
+			total_chany_wires++;
 			for(cut_counter=0; cut_counter < num_cuts; cut_counter++)
 			{
 				cut_pos = y_cuts[cut_counter];
@@ -946,13 +883,38 @@ void find_all_CHANY_wires_that_cross_the_interposer(int nodes_per_chan, int** rr
 		printf("Node: %d,%d,%d,%d,%d\n", inode, rr_node[inode].xlow, rr_node[inode].xhigh, rr_node[inode].ylow, rr_node[inode].yhigh);
 	}
 	*/
-	
 }
 
-
-// this function deletes the connection between src node and dst node
-// it will take care of updating all necessary data-structures
-// if no connection exists between src and dst, it will return without doing anything
+/*
+ * Description: this function deletes the connection between src node and dst node
+ *              it will take care of updating all necessary data-structures
+ *              (e.g. fanins and fanouts of src and dst, switches, num edges, etc).
+ *              if no connection exists between src and dst, it will return without doing anything
+ *
+ *      Note: This function will modify the fanin and fanout list of the src and dst,
+ *      hence, the caller should not assume that rr_node[src_node].edges[i] is the same node
+ *      before and after a call to this function.
+ *      For instance, the following code (which is attempting to delete all fanouts of inode) has a bug:
+ *
+ *      for(int i=0; i<rr_node[inode].num_edges; ++i)
+ *      {
+ *          delete_rr_connection(inode, rr_node[inode].edges[i];
+ *      }
+ *                    
+ *      In the first iteration of the loop, the first fanout of inode is deleted,
+ *      hence, rr_node[inode].edges[1] be moved to rr_node[inodes].edges[0] after the first delete is called
+ *
+ *      The following code correctly deletes all fanouts of inode
+ *      
+ *      for(int i=0; i<rr_node[inode].num_edges; ++i)
+ *      {
+ *          delete_rr_connection(inode, rr_node[inode].edges[i];
+ *          i--;
+ *      }
+ *
+ * Returns: Nothing
+ * 
+ */
 void delete_rr_connection(int src_node, int dst_node)
 {
 	// Debug
@@ -1036,10 +998,14 @@ void delete_rr_connection(int src_node, int dst_node)
 	*/
 }
 
-// this function creates a new connection from SRC to DST node
-// it will take care of updating all necessary data-structures
-// the connection will use a switch with ID of connection_switch_index
-// if connection from src to dst already exists, it returns without doing anything
+/*
+ * Description: this function creates a new connection from SRC to DST node
+ *              it will take care of updating all necessary data-structures
+ *              the connection will use a switch with ID of connection_switch_index
+ *              if connection from src to dst already exists, it returns without doing anything
+ *
+ * Returns: Nothing.
+ */
 void create_rr_connection(int src_node, int dst_node, int connection_switch_index)
 {
 	// Debug
@@ -1088,6 +1054,16 @@ void create_rr_connection(int src_node, int dst_node, int connection_switch_inde
 	*/
 }
 
+
+/*
+ * Description: this function breaks wires that cross the interposer into 2 rr_nodes
+ *              it will also add 1 interpoer node between every connection whose src and dst
+ *              are on 2 sides of a cutline.
+ *              most of the heavy lifting is inside this function.
+ *              several legality checks are built into the function to ensure correctness of assumptions.
+ *
+ * Returns: Nothing.
+ */
 void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int nodes_per_chan)
 {
 	// note to self: also see: 
@@ -1147,7 +1123,6 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 	}
 
 	alloc_and_build_reverse_map(num_rr_nodes+num_rr_nodes_that_cross+num_interposer_nodes);
-	//alloc_and_build_reverse_map(num_rr_nodes+num_rr_nodes_that_cross);
 
 	// for any wire that crosses the interposer, cut into 2 wires
 	// 1 wire below the cut, and 1 wire above the cut
@@ -1417,10 +1392,12 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 					for(i=0; i<node->num_edges; ++i)
 					{
 						int ifanout = node->edges[i];
+						int iswitch = node->switches[i];
 
 						if(rr_node[ifanout].ylow > cut_pos)
 						{
 							// transfer the fanout
+							//create_rr_connection(interposer_node_id,ifanout, iswitch);
 							create_rr_connection(interposer_node_id,ifanout, zero_delay_switch_index);
 							delete_rr_connection(inode, ifanout);
 							--i;
@@ -1706,7 +1683,6 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 		}
 	}
 	//############# END:   LEGALITY CHECK     ##########################################################
-
 }
 
 
@@ -1718,224 +1694,470 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 
 
 
+//#######################################################################################################
+//#######################################################################################################
+//
+// Below is all the code related to dealing with interposer architectures by modifying switch delays
+//
+// Authors: Andre Hahn Pereira 
+// + some bug fixes by: Ehsan Nasiri
+//
+//#######################################################################################################
+//#######################################################################################################
 
+#ifdef USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY
 
+/*
+ * Description: This function checks whether or not a specific connection crosses the interposer.
+ * 
+ * Returns: True if connection crosses the interposer. False otherwise.
+ */
+bool rr_edge_crosses_interposer(int src, int dst, int cut_location )
+{
+	// SRC node is always a vertical wire.
+	// DST node can be either a horizontal or vertical wire.
+	// 
+	// SRC: Y_INC, Y_DEC,
+	// DST: Y_INC, Y_DEC, X
 
+	// here's trick to make my life easier.
+	float cut = cut_location + 0.5;
 
+	// start and end coordinates of src and dst dones
+	// for horizontal nodes, ylow and yhigh are equal
+	int src_ylow  = rr_node[src].ylow;
+	int src_yhigh = rr_node[src].yhigh;
+	int dst_ylow  = rr_node[dst].ylow;
+	int dst_yhigh = rr_node[dst].yhigh;
 
+	bool crosses_the_interposer = false;
 
+	if( (rr_node[src].type==CHANY) &&
+		(rr_node[dst].type==CHANX || rr_node[dst].type==CHANY))
+	{
+		// Case 1: SRC NODE IS VERTICAL AND INCREASING
+		if(rr_node[src].direction==INC_DIRECTION)
+		{
+			if(rr_node[dst].type==CHANY && rr_node[dst].direction==INC_DIRECTION)
+			{
+				if(	(src_ylow < cut && cut < src_yhigh) ||
+					(src_yhigh< cut && cut < dst_ylow))
+				{
+					crosses_the_interposer=true;
+				}
+			}
+			else if(rr_node[dst].type==CHANY && rr_node[dst].direction==DEC_DIRECTION)
+			{
+				// this should never happen! (U-turn in vertical direction!
+				vpr_printf_info("SRC= Y INC && DST= Y DEC\n");
+				assert(false);
+			}
+			else if(rr_node[dst].type==CHANX)
+			{
+				assert(dst_ylow==dst_yhigh);
+				assert(dst_ylow>=src_ylow);
+				if( (src_ylow < cut && cut < src_yhigh && cut < dst_ylow) ||
+					(src_yhigh < cut && cut < dst_ylow))
+				{
+					crosses_the_interposer=true;
+				}
+			}
+		}
+		// Case 2: SRC NODE IS VERTICAL AND DECREASING
+		else if(rr_node[src].direction==DEC_DIRECTION)
+		{
+			if(rr_node[dst].type==CHANY && rr_node[dst].direction==INC_DIRECTION)
+			{
+				// this should never happen! (U-turn in vertical direction!
+				vpr_printf_info("SRC= Y DEC && DST= Y INC\n");
+				assert(false);
+			}
+			else if(rr_node[dst].type==CHANY && rr_node[dst].direction==DEC_DIRECTION)
+			{
+				if(	(src_ylow < cut && cut < src_yhigh) ||
+					(dst_yhigh< cut && cut < src_ylow))
+				{
+					crosses_the_interposer=true;
+				}
+			}
+			else if(rr_node[dst].type==CHANX)
+			{
+				assert(dst_ylow==dst_yhigh);
+				assert(dst_ylow<=src_yhigh);
+				if( (src_ylow < cut && cut < src_yhigh && dst_ylow < cut) ||
+					(dst_yhigh < cut && cut < src_ylow))
+				{
+					crosses_the_interposer=true;
+				}
+			}
+		}
+	}
 
+	if( (rr_node[src].type==CHANY) &&
+		(rr_node[dst].type==IPIN || rr_node[dst].type==OPIN))
+	{
+		// OK, so sometimes we have a pin that looks like this
+		// (IPIN,xlow=22,xhigh=22,ylow=13,yhigh=16,DEC)
+		
+		// Case 1: SRC NODE IS VERTICAL AND INCREASING
+		if(rr_node[src].direction==INC_DIRECTION)
+		{
+			if( (src_ylow < cut && cut < src_yhigh && cut < dst_ylow) ||
+				(src_yhigh < cut && cut < dst_ylow))
+			{
+				crosses_the_interposer=true;
+			}			
+		}
+		// Case 2: SRC NODE IS VERTICAL AND DECREASING
+		else if(rr_node[src].direction==DEC_DIRECTION)
+		{
+			if( (src_ylow < cut && cut < src_yhigh && dst_yhigh < cut) ||
+				(dst_yhigh < cut && cut < src_ylow))
+			{
+				crosses_the_interposer=true;
+			}
+		}
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return crosses_the_interposer;
+}
 
 
 /*
+ * Description: This function cuts the edges which cross the cut for a given wire in the CHANY
+ * 
+ * Returns: None.
+ */
+void cut_rr_yedges(INP int cut_location, INP int inode)
+{
+	
+	if(cut_node_set.find(inode)==cut_node_set.end())
+	{
+		cut_node_set.insert(inode);
+	}
 
-		// ######## Begin: move around Fanouts of original_node and new_node ################
-		// first, let's find the size of the new fanout arrays
-		int num_edges_of_original_node_after_transformations = 0;
-		int num_edges_of_new_node_after_transformations = 0;
-		for(cnt=0; cnt<original_node->num_edges; ++cnt)
+	int iedge, d_node, num_removed;
+	int tmp;
+
+	num_removed = 0;
+
+	/* mark and remove the edges */
+	for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
+	{
+		d_node = rr_node[inode].edges[iedge];
+		if(d_node == -1)
 		{
-			int dnode = original_node->edges[cnt];
-
-			if(original_node->direction==INC_DIRECTION)
-			{
-				if(rr_node[dnode].ylow <= cut_pos)
-				{
-					// keep it as a fanout of original_node
-					num_edges_of_original_node_after_transformations++;
-				}
-				else
-				{
-					// this should be removed from fanout set of original_node 
-					// and should be added to fanouts of the new_node
-					num_edges_of_new_node_after_transformations++;
-				}
-			}
-			else if(original_node->direction==DEC_DIRECTION)
-			{
-				if(rr_node[dnode].ylow > cut_pos)
-				{
-					// keep it as a fanout of original_node
-					num_edges_of_original_node_after_transformations++;
-				}
-				else
-				{
-					// this should be removed from fanout set of original_node 
-					// and should be added to fanouts of the new_node
-					num_edges_of_new_node_after_transformations++;
-				}
-			}
-		}
-		
-		// have to do +1 for original node, because in addition to keeping some of its old fanouts,
-		// it also has 1 extra fanout which is the new_node
-		num_edges_of_original_node_after_transformations += 1;
-
-		int *temp_org_node_edges = (int*) malloc(num_edges_of_original_node_after_transformations * sizeof(int));
-		int *temp_new_node_edges = (int*) malloc(num_edges_of_new_node_after_transformations * sizeof(int));
-		short *temp_org_node_switches = (short*) malloc(num_edges_of_original_node_after_transformations * sizeof(short));
-		short *temp_new_node_switches = (short*) malloc(num_edges_of_new_node_after_transformations * sizeof(short));
-		int temp_edges_index_org =0;
-		int temp_edges_index_new =0;
-		for(cnt=0; cnt<original_node->num_edges; ++cnt)
-		{
-			int dnode = original_node->edges[cnt];
-			short iswitch = original_node->switches[cnt];
-
-			if(original_node->direction==INC_DIRECTION)
-			{
-				if(rr_node[dnode].ylow <= cut_pos)
-				{
-					// keep it as a fanout of original_node
-					temp_org_node_edges[temp_edges_index_org] = dnode;
-					temp_org_node_switches[temp_edges_index_org] = iswitch;
-					temp_edges_index_org++;
-				}
-				else
-				{
-					// this should be removed from fanout set of original_node 
-					// and should be added to fanouts of the new_node
-					temp_new_node_edges[temp_edges_index_new] = dnode;
-					temp_new_node_switches[temp_edges_index_new] = iswitch;
-					temp_edges_index_new++;
-				}
-			}
-			else if(original_node->direction==DEC_DIRECTION)
-			{
-				if(rr_node[dnode].ylow > cut_pos)
-				{
-					// keep it as a fanout of original_node
-					temp_org_node_edges[temp_edges_index_org] = dnode;
-					temp_org_node_switches[temp_edges_index_org] = iswitch;
-					temp_edges_index_org++;
-				}
-				else
-				{
-					// this should be removed from fanout set of original_node 
-					// and should be added to fanouts of the new_node
-					temp_new_node_edges[temp_edges_index_new] = dnode;
-					temp_new_node_switches[temp_edges_index_new] = iswitch;
-					temp_edges_index_new++;
-				}
-			}
+			continue;
 		}
 
+		/* crosses the cut line, cut this edge */
+		if(rr_edge_crosses_interposer(inode,d_node,cut_location))
 		{
-			// also manually add the last fanout of the original_node (edge to new_node)
-			temp_org_node_edges[temp_edges_index_org] = new_node_index;
-			temp_org_node_switches[temp_edges_index_org] = correct_index_of_CHANY_to_CHANY_switch;
-			temp_edges_index_org++;
-		}
-		
-		assert(temp_edges_index_org == num_edges_of_original_node_after_transformations);
-		assert(temp_edges_index_new == num_edges_of_new_node_after_transformations);
-		assert( (num_edges_of_original_node_after_transformations + num_edges_of_new_node_after_transformations) == 
-				(original_node->num_edges + 1)
-			);
-		
-		free(original_node->edges);
-		free(original_node->switches);
-		
-		original_node->edges = temp_org_node_edges;
-		original_node->switches = temp_org_node_switches;
-		original_node->num_edges = num_edges_of_original_node_after_transformations;
-
-		new_node->edges = temp_new_node_edges;
-		new_node->switches = temp_new_node_switches;
-		new_node->num_edges = num_edges_of_new_node_after_transformations;
-		
-		// ######## End: move around Fanouts of original_node and new_node ################
-
-		// ######## Begin: move around Fan-Ins of original_node and new_node ################
-		
-		// so far, only 1 fanin has been added for new_node (connection from original_node to new_node)
-		new_node->fan_in = 1;
-
-		int num_fanins_removed_from_original_node = 0;
-		for(cnt=0; cnt < original_node->fan_in; ++cnt)
-		{
-			// for every fan-in of the current original_node
-
-			int fanin_node_index = reverse_map[original_node_index][cnt];
-			t_rr_node* fanin_node = &rr_node[fanin_node_index];
-
-			if(	(original_node->direction==INC_DIRECTION && fanin_node->yhigh <= cut_pos) ||
-				(original_node->direction==DEC_DIRECTION && fanin_node->ylow  > cut_pos ))
-			{	
-				// the fanin is feeding the original_node on the same side of the cut.
-				// this fanin should remain untouched.
-			}
-			else
+			rr_node[d_node].fan_in--;
+			num_removed++;
+			for(tmp = iedge; tmp+1 < rr_node[inode].num_edges; tmp++)
 			{
-				// fanin_node should be removed from original_node fanin set
-				// and should now feed the new_node instead of the original_node
-				num_fanins_removed_from_original_node++;
-				new_node->fan_in++;
+				rr_node[inode].edges[tmp] = rr_node[inode].edges[tmp+1];
+				rr_node[inode].switches[tmp] = rr_node[inode].switches[tmp+1];
+			}
+			rr_node[inode].edges[tmp] = -1; /* tmp = num_edges-1 */
+			rr_node[inode].switches[tmp] = -1;
 
-				int itemp;
-				for(itemp=0; itemp<fanin_node->num_edges; ++itemp)
+			iedge--; /* need to check the value just pulled into current pos */
+		}
+		else
+		{
+			/*printf(">>>> Did not cut this edge because it does not cross the boundary <<<<\n");*/
+		}
+	}
+
+	/* fill the rest of the array with -1 for safety */
+	for(iedge = rr_node[inode].num_edges - num_removed; iedge < rr_node[inode].num_edges; iedge++)
+	{
+		rr_node[inode].edges[iedge] = -1;
+		rr_node[inode].switches[iedge] = -1;
+	}
+	rr_node[inode].num_edges -= num_removed;
+	/* finished removing the edges */
+}
+
+
+/*
+ * Description: This function cuts the edges which cross the cut for a given wire in the CHANX
+ *
+ * Returns: None.
+ */
+void cut_rr_xedges(int cut_location, int inode)
+{
+	
+	int iedge, d_node, num_removed;
+	int tmp;
+
+	num_removed = 0;
+
+	/* mark and remove the edges */
+	for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
+	{
+		d_node = rr_node[inode].edges[iedge];
+		if(d_node == -1)
+		{
+			continue;
+		}
+
+		/* crosses the cut line, cut this edge, CHANX is always supposed to be
+		 * below the cutline */
+		if(	rr_node[d_node].ylow > cut_location && rr_node[d_node].type == CHANY)
+		{
+			rr_node[d_node].fan_in--;
+			num_removed++;
+			for(tmp = iedge; tmp+1 < rr_node[inode].num_edges; tmp++)
+			{
+				rr_node[inode].edges[tmp] = rr_node[inode].edges[tmp+1];
+				rr_node[inode].switches[tmp] = rr_node[inode].switches[tmp+1];
+			}
+			rr_node[inode].edges[tmp] = -1; /* tmp = num_edges-1 */
+			rr_node[inode].switches[tmp] = -1;
+
+			iedge--; /* need to check the value just pulled into current pos */
+		}
+		else
+		{
+			/*printf(">>>> Did not cut this edge because it does not cross the boundary <<<<\n");*/
+		}
+	}
+
+	/* fill the rest of the array with -1 for safety */
+	for(iedge = rr_node[inode].num_edges - num_removed; iedge < rr_node[inode].num_edges; iedge++)
+	{
+		rr_node[inode].edges[iedge] = -1;
+		rr_node[inode].switches[iedge] = -1;
+	}
+	rr_node[inode].num_edges -= num_removed;
+	/* finished removing the edges */
+}
+
+
+void cut_connections_from_CHANY_wires
+(
+	int nodes_per_chan,
+	int num_wires_cut,
+	int cut_pos, 
+	int i
+)
+{
+	int itrack, inode, step, num_wires_cut_so_far, offset, num_chunks;
+
+	if(num_wires_cut == 0)
+	{	// nothing to do :)
+		return;
+	}
+
+	offset = (i * nodes_per_chan) / nx;
+	if(offset % 2) 
+	{
+		offset++;
+	}
+	offset = offset%nodes_per_chan; // to keep offset between 0 and nodes_per_chan-1
+
+	if(num_wires_cut > 0)
+	{
+		// Example: if the step is 1.66, make the step 2.
+		step = ceil (float(nodes_per_chan) / float(num_wires_cut));
+	}
+	else
+	{
+		step = 900900;
+	}
+
+	// cutting chunks of wires. each chunk has 2 wires (a pair)
+	num_chunks = num_wires_cut/2;
+	step = nodes_per_chan/num_chunks;
+
+	if(step<=2)
+	{
+		// it can be proven that if %wires_cut>66%, then step=2.
+		// step=2 means that there will be no gap between pairs of wires that will be cut
+		// therefore, the cut pattern becomes a 'chunk cut'.
+		// to avoid that, we will cap the number of chunks.
+		// we require step to be greater than or equal to 3.
+		step = 3;
+		num_chunks = nodes_per_chan / 3;
+	}
+
+	int ichunk = 0;
+	for(itrack=offset, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; itrack=(itrack+1)%nodes_per_chan)
+	{
+		for(ichunk=0; ichunk<num_chunks && num_wires_cut_so_far<num_wires_cut; ichunk++)
+		{
+			//printf("i=%d, j=%d, track=%d \n", i, cut_pos, itrack+(step*ichunk));
+			inode = get_rr_node_index(i, cut_pos, CHANY, (itrack+(step*ichunk))%nodes_per_chan, rr_node_indices);
+			cut_rr_yedges(cut_pos, inode);
+			num_wires_cut_so_far++;
+		}
+	}
+	
+	// To make sure that we haven't cut the same wire twice
+	assert(cut_node_set.size()==(size_t)num_wires_cut);
+	cut_node_set.clear();
+}
+
+/*
+ * Description: This is where cutting happens!
+ * CHANX to CHANY connections will be cut if CHANX wire is below the cut and the CHANY wire is above the interposer
+ *
+ * Returns: None.
+ */
+void cut_connections_from_CHANX_wires(int i, int cut_pos, int nodes_per_chan)
+{
+	int itrack, inode;
+
+	if(cut_pos + 1 >= ny)
+	{
+		return;
+	}
+
+	// From CHANX to CHANY, cut only the edges at the switches
+	if(0 < i && i < nx)
+	{
+		for(itrack = 0; itrack < nodes_per_chan; itrack++)
+		{
+			inode = get_rr_node_index(i, cut_pos, CHANX, itrack, rr_node_indices);
+
+			// printf("Going to cut Horizontal (X) edges from: i=%d, j=%d, track=%d \n", i, cut_pos, itrack);
+			cut_rr_xedges(cut_pos, inode);
+		}
+	}
+}
+
+
+/*
+ * Description: Takes care of cutting horizontal and vertical connections at the cut
+ *
+ * Returns: None.
+ */
+void cut_rr_graph_edges_at_cut_locations(int nodes_per_chan)
+{
+	int cut_step; // The interval at which the cuts should be made
+	int counter;  // Number of cuts already made
+	int i, j;     // horizontal and vertical coordinate numbers
+	int num_wires_cut;
+
+	// Find the number of wires that should be cut at each horizontal cut
+	num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
+	assert(percent_wires_cut==0 || num_wires_cut <= nodes_per_chan);
+
+	// num_wires_cut should be an even number
+	if(num_wires_cut % 2)
+	{
+			num_wires_cut++;
+	}
+
+	printf("Info: cutting %d wires when channel width is %d\n", num_wires_cut, nodes_per_chan);
+
+	counter = 0;
+	cut_step = ny / (num_cuts + 1);
+	for(j=cut_step; j<ny && counter<num_cuts; j+=cut_step, counter++)
+	{
+		for(i = 0; i <= nx; i++)
+		{
+			// 1. cut num_wires_cut wires at (x,y)=(i,j).
+			cut_connections_from_CHANY_wires(nodes_per_chan, num_wires_cut, j, i);
+
+			// 2. cut all CHANX wires connecting to CHANY wires on the other side of the interposer
+			cut_connections_from_CHANX_wires(i, j, nodes_per_chan);
+		}
+	}
+	assert(counter == num_cuts);
+}
+
+
+/*
+ * Description: This function traverses the whole rr_graph
+ * For every connection that crosses the interposer, it increases the switch delay
+ *
+ * Returns: None.
+ */
+void increase_delay_rr_edges()
+{
+	int iedge, inode, dst_node, cut_counter, cut_step;
+	int cut_pos;
+
+	cut_step = ny / (num_cuts+1);
+
+	for(inode=0; inode<num_rr_nodes;++inode)
+	{
+		// we only increase the delay of connections from CHANY nodes to other nodes.
+		if(rr_node[inode].type==CHANY)
+		{
+			for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
+			{
+				dst_node = rr_node[inode].edges[iedge];
+
+				if(dst_node==-1)
+				{	// if it's a connection that's already cut, you don't need to increase its delay
+					continue;
+				}
+
+				// see if the connection crosses any of the cuts
+				cut_counter = 0;
+				for(cut_pos = cut_step; cut_pos < ny && cut_counter < num_cuts; cut_counter++, cut_pos+=cut_step)
 				{
-					if(fanin_node->edges[itemp] == original_node_index)
+					if(rr_edge_crosses_interposer(inode,dst_node,cut_pos))
 					{
-						fanin_node->edges[itemp] = new_node_index;
-						// not going to change the switch type
+						rr_node[inode].switches[iedge] = increased_delay_edge_map[rr_node[inode].switches[iedge]];
+						break;
 					}
 				}
-
-				// also fix the reverse_map: put a tombstone for now
-				reverse_map[original_node_index][cnt] = -1;
 			}
 		}
-		
-		if(num_fanins_removed_from_original_node > 0)
-		{
-			// fix the reverse_map for original_node
-			// the reverse_map does not include the new_nodes that are added.
-			int*    original_node_fanins_after_transformations = (int*) my_malloc((original_node->fan_in - num_fanins_removed_from_original_node) * sizeof(int));
-			int num_original_node_fanins_after_transformations = 0;
+	}
+}
 
-			for(cnt=0; cnt<original_node->fan_in; ++cnt)
-			{
-				int fanin_node_id = reverse_map[original_node_index][cnt];
-				if(fanin_node_id != -1)
-				{
-					original_node_fanins_after_transformations[num_original_node_fanins_after_transformations]=fanin_node_id;
-					num_original_node_fanins_after_transformations++;
-				}
-			}
-			free(reverse_map[original_node_index]);
-			reverse_map[original_node_index] = original_node_fanins_after_transformations;
+/*
+ * Description: This is the main entry point for performing rr_graph modifications using Andre's methodology
+ *
+ * Returns: None.
+ */
+void modify_rr_graph_using_switch_modification_methodology
+(
+	int nodes_per_chan,
+	enum e_directionality directionality
+)
+{
+	if(directionality == BI_DIRECTIONAL) /* Ignored for now TODO */
+		return;
 
-			assert(num_original_node_fanins_after_transformations == (original_node->fan_in - num_fanins_removed_from_original_node));
+	if(num_cuts <=0)
+		return;
 
-			// LASTLY, update the fanin count of the original_node
-			original_node->fan_in -= num_fanins_removed_from_original_node;
-		}
-
-		*/
-
-
-
+#ifdef	DUMP_DEBUG_FILES
+	// Before doing anything, let's dump the connections in the rr_graph
+	FILE* fp = my_fopen("before_cutting.txt", "w", 0);
+	dump_rr_graph_connections(fp);
+	fclose(fp);
 #endif
+
+	// 1. Cut as many wires as we need to.
+	//    This will cut %wires_cut of vertical connections at the interposer. 
+	//    It will also cut connections from CHANX wires below the interposer to CHANY wires above the interposer
+	cut_rr_graph_edges_at_cut_locations(nodes_per_chan);
+
+	// 2. Increase the delay of all the remaining tracks that pass the interposer
+	//    by increasing the switch delays
+	increase_delay_rr_edges();
+
+#ifdef	DUMP_DEBUG_FILES
+	// dump after all rr_Graph modifications are done
+	FILE* fp2 = my_fopen("after_cutting.txt", "w", 0);
+	dump_rr_graph_connections(fp2);
+	fclose(fp2);
+#endif
+}
+
+#endif  // USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY
+
+
+#endif //INTERPOSER_BASED_ARCHITECTURE
+
+
+
