@@ -85,7 +85,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\libcommon_c\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\draw;SRC\base;..\libcommon_c++\SRC\TFH_FabricHandlers;..\libcommon_c++\SRC\TCH_CircuitHandlers;..\libcommon_c++\SRC\TNO_NetObjects;..\libcommon_c++\SRC\TPO_PhysicalObjects;..\libcommon_c++\SRC\TLO_LogicalObjects;..\libcommon_c++\SRC\TGS_GeometricShapes;..\libcommon_c++\SRC\TGO_GeometricObjects;..\libcommon_c++\SRC\TIO_InputOutputHandlers;..\libcommon_c++\SRC\TC_Common;..\libcommon_c\pcre\SRC</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\libcommon_c\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\draw;SRC\base;..\libcommon_c++\SRC\TFH_FabricHandlers;..\libcommon_c++\SRC\TCH_CircuitHandlers;..\libcommon_c++\SRC\TNO_NetObjects;..\libcommon_c++\SRC\TPO_PhysicalObjects;..\libcommon_c++\SRC\TLO_LogicalObjects;..\libcommon_c++\SRC\TGS_GeometricShapes;..\libcommon_c++\SRC\TGO_GeometricObjects;..\libcommon_c++\SRC\TIO_InputOutputHandlers;..\libcommon_c++\SRC\TC_Common;..\libcommon_c\pcre\SRC;..\libsdc_parse\src;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
@@ -341,6 +341,9 @@
     </ProjectReference>
     <ProjectReference Include="..\libcommon_c\pcre\libpcre.vcxproj">
       <Project>{e69f5499-a0d1-d11d-7766-3677d8fa2507}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libsdc_parse\libsdc_parse.vcxproj">
+      <Project>{b782457a-c660-49b2-b606-28f5f43bd12a}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

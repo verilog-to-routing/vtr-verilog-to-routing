@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio Express 2013 for Windows Desktop
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VPR", "VPR.vcxproj", "{F9E45E14-1249-4E95-86DD-5676DB5C87FD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E69F5499-A0D1-D11D-7766-3677D8FA2507} = {E69F5499-A0D1-D11D-7766-3677D8FA2507}
@@ -16,6 +18,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcommon_c++", "..\libcommon_c++\printhandler.vcxproj", "{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpcre", "..\libcommon_c\pcre\libpcre.vcxproj", "{E69F5499-A0D1-D11D-7766-3677D8FA2507}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{137F66F5-26C2-45EC-A9E6-1C0D026C01BD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsdc_parse", "..\libsdc_parse\libsdc_parse.vcxproj", "{B782457A-C660-49B2-B606-28F5F43BD12A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +45,10 @@ Global
 		{E69F5499-A0D1-D11D-7766-3677D8FA2507}.Debug|Win32.Build.0 = Debug|Win32
 		{E69F5499-A0D1-D11D-7766-3677D8FA2507}.Release|Win32.ActiveCfg = Release|Win32
 		{E69F5499-A0D1-D11D-7766-3677D8FA2507}.Release|Win32.Build.0 = Release|Win32
+		{B782457A-C660-49B2-B606-28F5F43BD12A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B782457A-C660-49B2-B606-28F5F43BD12A}.Debug|Win32.Build.0 = Debug|Win32
+		{B782457A-C660-49B2-B606-28F5F43BD12A}.Release|Win32.ActiveCfg = Release|Win32
+		{B782457A-C660-49B2-B606-28F5F43BD12A}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

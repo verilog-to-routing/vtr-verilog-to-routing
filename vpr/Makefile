@@ -39,7 +39,8 @@ OTHER_DIR := $(OTHER_DIR) \
 	-I../libcommon_c++/SRC/TGO_GeometricObjects \
 	-I../libcommon_c++/SRC/TIO_InputOutputHandlers \
 	-I../libcommon_c++/SRC/TC_Common \
-	-I../libcommon_c/pcre/SRC
+	-I../libcommon_c/pcre/SRC \
+	-I../libsdc_parse/src
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
@@ -99,10 +100,17 @@ packages:
 libarchfpga:
 	@ cd ../libarchfpga && make
 
+libsdc_parse:
+	@ cd ../libsdc_parse && make VERBOSITY=0
 
-libvpr.a: $(OBJ) Makefile libarchfpga
+libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse
 	@ cp ../libarchfpga/libarchfpga.a $@
-	@ ar rcs $@ $(OBJ)
+	@ cp ../libsdc_parse/libsdc_parse.a .
+	@#Ugly. Extract libsdc_parse.a into OBJ/libsdc_parse
+	@#and then have ar archive results
+	@ mkdir -p  OBJ/libsdc_parse/
+	@ cd OBJ/libsdc_parse && ar x ../../libsdc_parse.a 
+	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o
 	@ ar d $@ main.o
 
 # Enable a second round of expansion so that we may include
@@ -125,6 +133,7 @@ $(OBJ_DIRS):
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
 	cd ../libarchfpga && make clean
+	cd ../libsdc_parse && make clean
 
 clean_coverage: clean
 	rm -rf ./usr
