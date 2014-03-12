@@ -1704,10 +1704,11 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	compute actual slacks instead of relaxed ones. We "relax" slacks by setting the required time to 
 	the maximum arrival time for tight constraints so that no slacks are negative (which confuses 
 	the optimizers). This is called "T_req-relaxed" slack.  However, human designers want to see 
-	actual slack values, so we report those in the final analysis.  The alternative way of making 
-	slacks positive is shifting them upwards by the value of the largest negative slack, after 
+	actual slack values, so we report those in the final analysis.  The alternative ways of making 
+	slacks positive are shifting them upwards by the value of the largest negative slack, after 
 	all traversals are complete ("shifted slacks"), which can be enabled by changing SLACK_DEFINITION 
-	from 'R' to 'S' in path_delay.h.
+	from 'R' to 'I' in path_delay.h; or using either 'R' or 'I' with a criticality denominator which 
+	is the same for every traversal (respectively called 'G' and 'S").
 
 	To do: flip-flop to flip-flop and flip-flop to clock domain constraints (set_false_path, set_max_delay,
 	and especially set_multicycle_path). All the info for these constraints is contained in g_sdc->fc_constraints and 
@@ -1717,7 +1718,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 	int i, j, source_clock_domain, sink_clock_domain, inode, inet, ipin;
 
-#if defined PATH_COUNTING || SLACK_DEFINITION == 'S'
+#if defined PATH_COUNTING || SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'G'
 	int iedge, num_edges;
 #endif
 
@@ -1738,16 +1739,18 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 	vector<t_vnet> & tnets = *timing_nets; 
 
-#if SLACK_DEFINITION == 'S'
-	update_slack = TRUE;
-	/* Update slack values because we need the updated slack values to compute timing criticalities
-	for this slack definition. */
-
+#if SLACK_DEFINITION == 'S' 
 	float smallest_slack_in_design = HUGE_POSITIVE_FLOAT;
 	/* Shift all slacks upwards by this number if it is negative. */
+#endif
+
+#if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'G'
+	update_slack = TRUE;
+	/* Update slack values because we need the updated slack values to compute timing criticalities
+	for these slack definitions. */
 
 	float criticality_denom_global = HUGE_NEGATIVE_FLOAT;
-	/* Denominator of criticality for shifted - max of all arrival times and all constraints. */
+	/* Denominator of criticality for shifted & global treq-relaxed - max of all arrival times and all constraints. */
 #endif
 
 	/* Reset LUT input rebalancing. */
@@ -1852,7 +1855,7 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 				}
 #endif
 
-#if SLACK_DEFINITION == 'S'
+#if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'G'
 				/* Set criticality_denom_global to the max of criticality_denom over all traversals. */
 				criticality_denom_global = max(criticality_denom_global, criticality_denom);
 #endif
@@ -1880,9 +1883,10 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 
 #endif
 
-#if SLACK_DEFINITION == 'S'
+#if SLACK_DEFINITION == 'S' || SLACK_DEFINITION == 'G'
 	if (!is_final_analysis) {
 
+#if SLACK_DEFINITION == 'S' 
 		/* Find the smallest slack in the design. */
 		for (i = 0; i < g_sdc->num_constrained_clocks; i++) {
 			for (j = 0; j < g_sdc->num_constrained_clocks; j++) {
@@ -1907,16 +1911,19 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		timing_criticality < 0 when calculated later. Do this shift to keep timing_criticality non-negative.
 		*/
 		}
-	}
+#endif
 
-	/* We can now calculate criticalities, only after we normalize slacks. */
-	for (inet = 0; inet < num_timing_nets; inet++) {
-		num_edges = tnets[inet].num_sinks();
-		for (iedge = 0; iedge < num_edges; iedge++) {
-			if (slacks->slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) { /* if the slack is valid */
-				slacks->timing_criticality[inet][iedge + 1] = 1 - slacks->slack[inet][iedge + 1]/criticality_denom_global; 
+		/* We can now calculate criticalities (for 'S', this must be done after we normalize slacks). */
+		for (inet = 0; inet < num_timing_nets; inet++) {
+			num_edges = tnets[inet].num_sinks();
+			for (iedge = 0; iedge < num_edges; iedge++) {
+				if (slacks->slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) { /* if the slack is valid */
+					slacks->timing_criticality[inet][iedge + 1] = 1 - slacks->slack[inet][iedge + 1]/criticality_denom_global; 
+					// assert(slacks->timing_criticality[inet][iedge + 1] > -0.01);
+					// assert(slacks->timing_criticality[inet][iedge + 1] <  1.01);
+				}
+				/* otherwise, criticality remains 0, as it was initialized */
 			}
-			/* otherwise, criticality remains 0, as it was initialized */
 		}
 	}		
 #endif
@@ -2105,7 +2112,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	int inode, num_at_level, i, total, ilevel, num_edges, iedge, to_node;
 	float constraint, Tdel, T_req; 
 	
-#if SLACK_DEFINITION == 'R' || SLACK_DEFINITION == 'N'
+#if SLACK_DEFINITION == 'R' || SLACK_DEFINITION == 'N' || SLACK_DEFINITION == 'G'
 	float max_Tarr = HUGE_NEGATIVE_FLOAT; /* Max of all arrival times for this constraint - 
 											 used to relax required times. */
 #endif
@@ -2213,7 +2220,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				rebalancing also occurs at this step. */
 				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, FALSE);	
 
-#if SLACK_DEFINITION == 'R'
+#if SLACK_DEFINITION == 'R' || SLACK_DEFINITION == 'G'
 				/* Since we updated the destination node (to_node), change the max arrival  
 				time for the forward traversal if to_node's arrival time is greater than 
 				the existing maximum. */
@@ -2310,7 +2317,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 				/* Now we know we should analyse this tnode. */
 	
-#if SLACK_DEFINITION == 'R'
+#if SLACK_DEFINITION == 'R' || SLACK_DEFINITION == 'G'
 				/* Assign the required time T_req for this leaf node, taking into account clock skew. T_req is the 
 				time all inputs to a tnode must arrive by before it would degrade this constraint's critical path delay. 
 
@@ -2562,7 +2569,10 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 
 	int inet, iedge, inode, to_node, num_edges;
 	t_tedge *tedge;
-	float T_arr, Tdel, T_req, slack, timing_criticality;
+	float T_arr, Tdel, T_req, slack;
+#if SLACK_DEFINITION != 'S' && SLACK_DEFINITION != 'G'
+	float timing_criticality;
+#endif
 
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		inode = f_net_to_driver_tnode[inet];
@@ -2585,27 +2595,25 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 			Tdel = tedge[iedge].Tdel;
 			T_req = tnode[to_node].T_req;
 
-#if SLACK_DEFINITION == 'I'
-				if (!is_final_analysis)
-					/* Shift slack UPWARDS by subtracting the smallest slack in the 
-					design (which is negative or zero). */
-					slack = T_req - T_arr - Tdel - smallest_slack_in_design;
-				else
-#else
-				slack = T_req - T_arr - Tdel;
-#endif
+			slack = T_req - T_arr - Tdel;
 
-#if SLACK_DEFINITION == 'C' 
-			/* Clip all negative slacks to 0. */
-			if (!is_final_analysis && slack < 0) slack = 0;
+			if (!is_final_analysis) {
+#if SLACK_DEFINITION == 'I'
+				/* Shift slack UPWARDS by subtracting the smallest slack in the 
+				design (which is negative or zero). */
+				slack -= smallest_slack_in_design;
+#elif SLACK_DEFINITION == 'C'
+				/* Clip all negative slacks to 0. */
+				if (slack < 0) slack = 0;
 #endif
+			}
 			
 			if (update_slack) {
 				/* Update the slack for this edge if slk is the new minimum value */		
 				slacks->slack[inet][iedge + 1] = min(slack, slacks->slack[inet][iedge + 1]);
 			}
 
-#if SLACK_DEFINITION != 'S'
+#if SLACK_DEFINITION != 'S' && SLACK_DEFINITION != 'G'
 
 			if (!is_final_analysis) { // Criticality is not meaningful using non-normalized slacks.
 
@@ -2620,16 +2628,16 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 				timing_criticality = criticality_denom ? 1 - slack / criticality_denom : 1;
 
 #else
-				/* For relaxed, improved shifted and none, criticality_denom is normalized 
-				(see path_delay.h comment), so it should never be 0. */
 				// assert(criticality_denom);
 				timing_criticality = 1 - slack / criticality_denom;		
 
 #endif
 
-				// Criticality must be normalized to between 0 and 1
-				// assert(timing_criticality >= 0 - 1e-6);
-				// assert(timing_criticality <= 1 + 1e-6);
+				// Criticality must be normalized to between 0 and 1 
+				// Note: floating-point error may be ~1e-5 since we are dividing by a small
+				// criticality_denom (~1e-9).
+				// assert(timing_criticality > -0.01);
+				// assert(timing_criticality <  1.01);
 
 				slacks->timing_criticality[inet][iedge + 1] = 
 					max(timing_criticality, slacks->timing_criticality[inet][iedge + 1]);

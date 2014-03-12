@@ -14,6 +14,8 @@
 	   largest negative slack, if it exists. More computationally demanding. Equivalent to 'R' for a single clock. 
    'S' (Shifted): Same as improved shifted, but criticalities are only computed after all traversals.  Equivalent to 'R'
 	   for a single clock.
+   'G' (Global T_req-relaxed): Same as T_req-relaxed, but criticalities are only computed after all traversals.  
+	   Equivalent to 'R' for a single clock.  Note: G is a global version of R, just like S is a global version of I.
    'C' (Clipped): All negative slacks are clipped to 0. 
    'N' (None): Negative slacks are not normalized. 
 
@@ -27,12 +29,13 @@
 
    'R': Denominator is already taken care of because the maximum required time now depends on the constraint. No further
 		normalization is necessary.
-   'I': Denominator is also increased by the magnitude of the largest negative slack.
+   'I': Denominator is increased by the magnitude of the largest negative slack.
    'S': Denominator is the maximum of the 'I' denominator over all constraints.
+   'G': Denominator is the maximum of the 'R' denominator over all constraints.
    'C': Denominator is unchanged.  However, if Treq_max is 0, there is division by 0.  To avoid this, note that in this
 		case, all of the slacks will be clipped to zero anyways, so we can just set the criticality to 1. 
    'N': Denominator is set to max(max_Treq, max_Tarr), so that the magnitude of criticality will at least be bounded to 
-		2.  This is the same value as 'R's denominator but it is formulated differently.
+		2.  This is the same denominator as 'R', though calculated differently.
 */
 
 #ifdef PATH_COUNTING /* Path counting options: */
