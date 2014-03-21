@@ -61,16 +61,16 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 	char *str_ptr;
 
 	if (inet == OPEN) {
-		str_ptr = new char [5];
+		str_ptr = new char [6];
 		sprintf(str_ptr, "open");
 	}
 	else {
-		str_ptr = new char[strlen(g_atoms_nlist.net[inet].name) + 6];
+		str_ptr = new char[strlen(g_atoms_nlist.net[inet].name) + 7];
 		sprintf(str_ptr, "__|e%s", g_atoms_nlist.net[inet].name);
 	}
 
 	print_string(str_ptr, column, fpout);
-	delete str_ptr;
+	delete [] str_ptr;
 }
 
 /* Print netlist atom in blif format */
