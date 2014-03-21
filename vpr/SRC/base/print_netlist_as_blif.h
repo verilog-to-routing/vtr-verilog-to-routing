@@ -8,7 +8,7 @@ Date: Oct 14, 2013
 #ifndef PRINT_NELIST_AS_BLIF_H
 #define PRINT_NELIST_AS_BLIF_H
 
-void print_preplace_netlist(char *filename);
+void print_preplace_netlist(INP const t_arch *Arch, INP const char *filename);
 
 #endif
 

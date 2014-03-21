@@ -613,7 +613,7 @@ static float get_cost_of_pb_edge(t_pb_graph_edge *edge) {
 	if(edge->delay_max < 0) {
 		return 1;
 	}
-	return 1 + sqrt(edge->delay_max) * 10000; /* jedit I need to better normalize delays, this has fidelity but poor normalization */
+	return 1 + edge->delay_max * 1e12; /* TODO: This has poor normalization as I just take the delay in ps +1ps to be the cost of an edge */
 }
 
 /* Print logic block type routing resource graph */

@@ -25,6 +25,8 @@ using namespace std;
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
 
+#define OUTPUT_BLIF /* Dump blif representation of logic block for debugging using formal verification */ /* jedit TODO: This will get replaced by print netlist as blif */
+
 /****************** Static variables local to this module ************************/
 
 static t_pb_graph_pin ***pb_graph_pin_lookup_from_index_by_type = NULL; /* [0..num_types-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */
@@ -957,10 +959,10 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 
 	fclose(fpout);
 
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_PACK_NETLIST)) {
+#ifdef OUTPUT_BLIF
 		output_blif (arch, clb, num_clusters, global_clocks, is_clock,
 			getEchoFileName(E_ECHO_POST_PACK_NETLIST), FALSE);
-	}
+#endif
 
 	if(!intra_lb_routing.empty()) {
 		for(int icluster = 0; icluster < num_clusters; icluster++) {

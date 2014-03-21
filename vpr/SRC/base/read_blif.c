@@ -1130,6 +1130,8 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 		fprintf(fp, "\tclock net: %d\n", logical_block[i].clock_net);
 	}
 	fclose(fp);
+
+	free(lut_distribution);
 }
 
 /* load default vpack models (inpad, outpad, logic) */

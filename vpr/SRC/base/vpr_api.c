@@ -269,7 +269,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)my_malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
-			print_preplace_netlist(name);
+			print_preplace_netlist(&Arch, name);
 			free(name);
 		}
 	}

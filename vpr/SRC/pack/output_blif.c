@@ -172,7 +172,74 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		}
 		fprintf(fpout, "\n");
 	} else {
-		/* This is a user defined custom block, print based on model */
+		t_model *cur = logical_block[ilogical_block].model;
+		fprintf(fpout, ".subckt %s \\\n", cur->name);
+
+		/* Print input ports */
+		t_model_ports *port = cur->inputs;
+		
+		while (port != NULL) {
+			for (int i = 0; i < port->size; i++) {
+				const char *pin_name;
+				if (port->is_clock == TRUE) {
+					assert(port->index == 0);
+					assert(port->size == 1);
+					int net_index = logical_block[ilogical_block].clock_net;
+					if (net_index == OPEN) {
+						pin_name = "unconn";
+					}
+					else {
+						pin_name = g_atoms_nlist.net[net_index].name;
+					}
+				}
+				else{
+					int net_index = logical_block[ilogical_block].input_nets[port->index][i];
+					if (net_index == OPEN) {
+						pin_name = "unconn";
+					}
+					else {
+						pin_name = g_atoms_nlist.net[net_index].name;
+					}
+				}
+
+				fprintf(fpout, "%s[%d]=%s ", port->name, i, pin_name);
+				if (i % 4 == 3) {
+					if (i + 1 < port->size) {
+						fprintf(fpout, "\\\n");
+					}
+				}
+			}
+			port = port->next;
+			fprintf(fpout, "\\\n");
+		}
+		/* Print input ports */
+		port = cur->outputs;
+
+		while (port != NULL) {
+			for (int i = 0; i < port->size; i++) {
+				const char *pin_name;
+				int net_index = logical_block[ilogical_block].output_nets[port->index][i];
+				if (net_index == OPEN) {
+					pin_name = "unconn";
+				}
+				else {
+					pin_name = g_atoms_nlist.net[net_index].name;
+				}
+
+				fprintf(fpout, "%s[%d]=%s ", port->name, i, pin_name);
+				if (i % 4 == 3) {
+					if (i + 1 < port->size) {
+						fprintf(fpout, "\\\n");
+					}
+				}
+			}
+			port = port->next;
+			if (port != NULL) {
+				fprintf(fpout, "\\\n");
+			}
+		}
+		fprintf(fpout, "\n");	
+		fprintf(fpout, "\n");
 	}
 }
 
@@ -220,7 +287,70 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 	free_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup);
 }
 	
+/* Print list of models to file */
 void print_models(FILE *fpout, t_model *user_models) {
+
+	t_model *cur;
+	cur = user_models;
+
+	while (cur != NULL) {
+		fprintf(fpout, "\n");
+		fprintf(fpout, ".model %s\n", cur->name);
+		
+		/* Print input ports */
+		t_model_ports *port = cur->inputs;
+		if (port == NULL) {
+			fprintf(fpout, ".inputs \n");
+		}
+		else {
+			fprintf(fpout, ".inputs \\\n");
+		}
+		while (port != NULL) {
+			for (int i = 0; i < port->size; i++) {
+				fprintf(fpout, "%s[%d] ", port->name, i);
+				if (i % 8 == 4) {
+					if (i + 1 < port->size) {
+						fprintf(fpout, "\\\n");
+					}
+				}
+			}
+			port = port->next;
+			if (port != NULL) {
+				fprintf(fpout, "\\\n");
+			}
+			else {
+				fprintf(fpout, "\n");
+			}
+		}
+		/* Print input ports */
+		port = cur->outputs;
+		if (port == NULL) {
+			fprintf(fpout, ".outputs \n");
+		}
+		else {
+			fprintf(fpout, ".outputs \\\n");
+		}
+		while (port != NULL) {
+			for (int i = 0; i < port->size; i++) {
+				fprintf(fpout, "%s[%d] ", port->name, i);
+				if (i % 8 == 4) {
+					if (i + 1 < port->size) {
+						fprintf(fpout, "\\\n");
+					}
+				}
+			}
+			port = port->next;
+			if (port != NULL) {
+				fprintf(fpout, "\\\n");
+			}
+			else {
+				fprintf(fpout, "\n");
+			}
+		}
+		fprintf(fpout, ".blackbox\n");
+		fprintf(fpout, ".end\n");
+		cur = cur->next;
+	}
 }
 
 void output_blif (const t_arch *arch, t_block *clb, int num_clusters, boolean global_clocks,
