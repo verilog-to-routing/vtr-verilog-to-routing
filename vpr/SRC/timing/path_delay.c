@@ -1568,6 +1568,8 @@ static void process_constraints(void) {
 						tedge = tnode[inode].out_edges;	
 						for (iedge = 0; iedge < num_edges; iedge++) {
 							to_node = tedge[iedge].to_node;
+							if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 							tnode[to_node].T_arr = 0.;
 						}
 					}
@@ -1966,7 +1968,8 @@ static void do_lut_rebalancing() {
 
 			for (iedge = 0; iedge < num_edges; iedge++) {	/* Now go through each edge coming out from this tnode */
 				to_node = tedge[iedge].to_node;				/* Get the index of the destination tnode of this edge. */
-				
+				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 				/* The arrival time T_arr at the destination node is set to the maximum of all the 
 				possible arrival times from all edges fanning in to the node. 
 				The arrival time represents the latest time that all inputs must arrive at a node. 
@@ -2022,6 +2025,8 @@ static float find_least_slack(boolean is_prepacked) {
 
 						for (int iedge = 0; iedge < num_edges; iedge++) {
 							int to_node = tedge[iedge].to_node;	
+							if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 							set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, FALSE);	
 						}
 					}
@@ -2070,7 +2075,9 @@ static float find_least_slack(boolean is_prepacked) {
 							t_tedge *tedge = tnode[inode].out_edges;
 							for (int iedge = 0; iedge < num_edges && !found; iedge++) { 
 								int to_node = tedge[iedge].to_node;
-								if (tnode[to_node].T_req < HUGE_POSITIVE_FLOAT) {
+								if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
+								if(tnode[to_node].T_req < HUGE_POSITIVE_FLOAT) {
 									found = TRUE;
 								}
 							}
@@ -2080,6 +2087,8 @@ static float find_least_slack(boolean is_prepacked) {
 
 							for (int iedge = 0; iedge < num_edges; iedge++) {
 								int to_node = tedge[iedge].to_node;
+								if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 								if (tnode[to_node].num_edges == 0 && 
 										tnode[to_node].clock_domain == sink_clock_domain) { // one away from a register on this sink domain
 									float Tdel = tedge[iedge].Tdel;
@@ -2193,6 +2202,8 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 			if (is_prepacked) {
 				for (iedge = 0; iedge < num_edges; iedge++) {		
 					to_node = tedge[iedge].to_node;
+					if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 					if (fabs(tnode[to_node].T_arr - (tnode[inode].T_arr + tedge[iedge].Tdel)) < EPSILON) {
 						/* If the "local forward slack" (T_arr(to_node) - T_arr(inode) - T_del) for this edge 
 						is 0 (i.e. the path from inode to to_node is locally as critical as any other path to
@@ -2213,6 +2224,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 #endif			
 			for (iedge = 0; iedge < num_edges; iedge++) {	/* Now go through each edge coming out from this tnode */
 				to_node = tedge[iedge].to_node;				/* Get the index of the destination tnode of this edge. */
+				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 				
 				/* The arrival time T_arr at the destination node is set to the maximum of all 
 				the possible arrival times from all edges fanning in to the node. The arrival 
@@ -2242,9 +2254,13 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 			num_edges = tnode[inode].num_edges;
 	
 			if (ilevel == 0) {
-				if (!(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
+				if (!(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE) &&
+					! tnode[inode].is_comb_loop_breakpoint) {
+					//We suppress node type errors if they have the is_comb_loop_breakpoint flag set.
+					//The flag denotes that an input edge to this node was disconnected to break a combinational
+					//loop, and hence we don't consider this an error.
 					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-							"Timing graph started on unexpected node %s.%s[%d].\n"
+							"Timing graph started on unexpected node %d %s.%s[%d]. "
 							"This is a VPR internal error, contact VPR development team.\n",
 							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
 							tnode[inode].pb_graph_pin->port->name, 
@@ -2386,8 +2402,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				tedge = tnode[inode].out_edges;
 				for (iedge = 0; iedge < num_edges && !found; iedge++) { 
 					to_node = tedge[iedge].to_node;
+					if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+					
 					if (tnode[to_node].T_req < HUGE_POSITIVE_FLOAT) {
-						found = TRUE;
+					    found = TRUE;
 					}
 				}
 				if (!found) {
@@ -2401,18 +2419,20 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				required times of all edges fanning OUT from this node. */
 				for (iedge = 0; iedge < num_edges; iedge++) {
 					to_node = tedge[iedge].to_node;
+					if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+					
 					Tdel = tedge[iedge].Tdel;
 					T_req = tnode[to_node].T_req;
 					tnode[inode].T_req = min(tnode[inode].T_req, T_req - Tdel);
-					
+
 					/* Update least slack per constraint. This is NOT the same as the minimum slack we will
 					calculate on this traversal for post-packed netlists, which only count inter-cluster 
 					slacks. We only look at edges adjacent to sink nodes on the sink clock domain since
 					all paths go through one of these edges. */
 					if (tnode[to_node].num_edges == 0 && tnode[to_node].clock_domain == sink_clock_domain) {
-						f_timing_stats->least_slack[source_clock_domain][sink_clock_domain] = 
-							min(f_timing_stats->least_slack[source_clock_domain][sink_clock_domain],
-							   (T_req - Tdel - tnode[inode].T_arr)); 
+					    f_timing_stats->least_slack[source_clock_domain][sink_clock_domain] = 
+					        min(f_timing_stats->least_slack[source_clock_domain][sink_clock_domain],
+					           (T_req - Tdel - tnode[inode].T_arr)); 
 					}
 				}
 #ifndef PATH_COUNTING
@@ -2425,16 +2445,18 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				if (is_prepacked) {
 					for (iedge = 0; iedge < num_edges; iedge++) { 
 						to_node = tedge[iedge].to_node;
+						if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+						
 						/* If the "local backward slack" (T_arr(to_node) - T_arr(inode) - T_del) for this edge 
 						is 0 (i.e. the path from inode to to_node is locally as critical as any other path to
 						to_node), add to_node's num critical output paths to inode's number. */
 						if (fabs(tnode[to_node].T_req - (tnode[inode].T_req + tedge[iedge].Tdel)) < EPSILON) {
-							tnode[inode].prepacked_data->num_critical_output_paths += tnode[to_node].prepacked_data->num_critical_output_paths;
+						    tnode[inode].prepacked_data->num_critical_output_paths += tnode[to_node].prepacked_data->num_critical_output_paths;
 						}
 						/* Set max_critical_output_paths to the maximum number of critical 
 						output paths for all tnodes analysed on this traversal. */
 						if (tnode[to_node].prepacked_data->num_critical_output_paths > max_critical_output_paths) {
-							max_critical_output_paths = tnode[to_node].prepacked_data->num_critical_output_paths;
+						    max_critical_output_paths = tnode[to_node].prepacked_data->num_critical_output_paths;
 						}
 					}
 				}
@@ -2506,8 +2528,10 @@ static void do_path_counting(float criticality_denom) {
 			num_edges = tnode[inode].num_edges;
 			for (iedge = 0; iedge < num_edges; iedge++) {
 				to_node = tedge[iedge].to_node;
+				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+				
 				if (!(has_valid_T_arr(to_node) && has_valid_T_req(to_node))) {
-					continue;	
+				    continue;	
 				}
 				forward_local_slack = tnode[to_node].T_arr - tnode[inode].T_arr - tedge[iedge].Tdel;
 				discount = pow((float) DISCOUNT_FUNCTION_BASE, -1 * forward_local_slack / criticality_denom);
@@ -2533,8 +2557,9 @@ static void do_path_counting(float criticality_denom) {
 				tedge = tnode[inode].out_edges;
 				for (iedge = 0; iedge < num_edges; iedge++) {
 					to_node = tedge[iedge].to_node;
+					if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 					if (!(has_valid_T_arr(to_node) && has_valid_T_req(to_node))) {
-						continue;	
+					    continue;	
 					}
 					backward_local_slack = tnode[to_node].T_req - tnode[inode].T_req - tedge[iedge].Tdel;
 					discount = pow((float) DISCOUNT_FUNCTION_BASE, -1 * backward_local_slack / criticality_denom);
@@ -2588,6 +2613,8 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
 			to_node = tedge[iedge].to_node;
+			if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 			if (!(has_valid_T_arr(to_node) && has_valid_T_req(to_node))) {
 				continue; /* Only update this edge on this traversal if this 
 						  particular sink node has been updated on this traversal. */
@@ -2835,6 +2862,8 @@ t_linked_int * allocate_and_load_critical_path(void) {
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
 			to_node = tedge[iedge].to_node;
+			if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 			if (has_valid_T_arr(to_node) && has_valid_T_req(to_node)) { /* Valid arrival and required times */
 				slack = tnode[to_node].T_req - tnode[to_node].T_arr;
 				if (slack < min_slack) {
@@ -3169,6 +3198,8 @@ static void propagate_clock_domain_and_skew(int inode) {
 
 	for (iedge = 0; iedge < tnode[inode].num_edges; iedge++) {	/* Go through each edge coming out from this tnode */
 		to_node = tedge[iedge].to_node;
+		if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 		/* Propagate clock skew forward along this clock net, adding the delay of the wires (edges) of the clock network. */ 
 		tnode[to_node].clock_delay = tnode[inode].clock_delay + tedge[iedge].Tdel; 
 		/* Propagate clock domain forward unchanged */

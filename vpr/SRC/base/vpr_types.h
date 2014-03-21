@@ -338,6 +338,9 @@ typedef struct s_tnode {
 
 	/* Used in pre-packing timing graph only: */
 	t_prepacked_tnode_data * prepacked_data;
+
+	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely 
+                                                 disconnected to break a combinational loop */
 } t_tnode;
 
 /* Other structures storing timing information */

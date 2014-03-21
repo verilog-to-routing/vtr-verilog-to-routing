@@ -38,6 +38,8 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
 void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean* tnode_instack, 
                    std::stack<int>& tnode_stack, std::vector<std::vector<int> >& tnode_sccs,
                    size_t min_size, int inode);
+
+void print_comb_loop(std::vector<int>& loop_tnodes);
 /************************** Subroutine definitions ***************************/
 
 static int *
@@ -62,6 +64,8 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 			tedge = tnode[inode].out_edges;
 			for (iedge = 0; iedge < num_edges; iedge++) {
 				to_node = tedge[iedge].to_node;
+				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 				if (to_node < 0 || to_node >= num_tnodes) {
 					vpr_printf_error(__FILE__, __LINE__, 
 							"in alloc_and_load_tnode_fanin_and_check_edges:\n");
@@ -156,6 +160,8 @@ int alloc_and_load_timing_graph_levels(void) {
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
 				to_node = tedge[iedge].to_node;
+				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
+
 				tnode_fanin_left[to_node]--;
 
 				if (tnode_fanin_left[to_node] == 0) {
@@ -298,10 +304,10 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 //
 // The idea behind the implementation of is to identify Strongly
 // Connected Components (SCCs) in the timing graph which, by definition,
-// must contain cycles if the include more than one element. This is done using
+// must contain cycles if they include more than one element. This is done using
 // Tarjan's algorithm in O(V + E) time.  
 //
-// Once the SCCs are identified an arbitrary edge in the timing graph is 
+// Once the SCCs are identified, an arbitrary edge in the timing graph is 
 // disconnected to break the cycle. Since it may be possible for smaller sub-SCCs
 // to result, this is done iteratively until no SCCs with more than one element
 // are found.
@@ -316,8 +322,11 @@ void detect_and_fix_timing_graph_combinational_loops() {
     //Repeat until all loops broken
     while(tnode_comb_loops.size() > 0) {
         comb_cycle_iter_count++;
-        vpr_printf_warning(__FILE__, __LINE__, "Found %d Combinational Loops in the timing graph on iteration %d.\n", tnode_comb_loops.size(), comb_cycle_iter_count);
-        vpr_printf_warning(__FILE__, __LINE__, "Combinational Loops can not be analyzed properly and will be arbitrarily disconnected.\n");
+        vpr_printf_info("Found %d Combinational Loops in the timing graph on iteration %d.\n", 
+                        tnode_comb_loops.size(), comb_cycle_iter_count);
+        vpr_printf_warning(__FILE__, __LINE__, 
+                            "Combinational Loops can not be analyzed properly and will be "
+                            "arbitrarily disconnected.\n");
 
         break_timing_graph_combinational_loops(tnode_comb_loops);
 
@@ -325,7 +334,8 @@ void detect_and_fix_timing_graph_combinational_loops() {
 
         tnode_comb_loops = detect_timing_graph_combinational_loops();
     }
-    vpr_printf_info("Removed %d combinational cycles from timing graph after %d iteration(s)\n", comb_cycle_count, comb_cycle_iter_count);
+    vpr_printf_info("Removed %d combinational cycles from timing graph after %d iteration(s)\n", 
+                    comb_cycle_count, comb_cycle_iter_count);
 }
 
 /*
@@ -371,17 +381,19 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
         if(std::find(loop_tnodes.begin(), loop_tnodes.end(), i_to_tnode) != loop_tnodes.end()) {
             //This edge does fanout into the loop_tnodes set
             // so cut it
-            vpr_printf_warning(__FILE__, __LINE__, "Removing timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
+            vpr_printf_warning(__FILE__, __LINE__, "Disconnecting timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
 
-            //Swap this edge with the last one in the tnodes out_edges
-            //and then decrement the number of edges
-            tnode[i_first_tnode].out_edges[i_edge] = tnode[i_first_tnode].out_edges[tnode[i_first_tnode].num_edges - 1];
-            tnode[i_first_tnode].num_edges--;
+            //Mark the original target node as a combinational loop breakpoint
+            tnode[i_to_tnode].is_comb_loop_breakpoint = TRUE; 
+
+            //Mark the edge as invalid
+            tnode[i_first_tnode].out_edges[i_edge].to_node = DO_NOT_ANALYSE;
 
             return;
         }
     }
-    assert(0); //Should never get here
+    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
+            "Could not find edge to break combinational loop in timing graph.\n");
 }
 
 /*
@@ -454,6 +466,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean*
     //Fanout of inode
     for(iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
         to_node_index = tnode[inode].out_edges[iedge].to_node;
+        if(to_node_index == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
         if(tnode_indexes[to_node_index] == -1) {
             //Haven't visited successor of inode (to_node) yet, recurse
@@ -494,6 +507,21 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean*
         // the minimum size requirement
         if(scc.size() >= min_size) {
             tnode_sccs.push_back(scc);
+        }
+    }
+}
+
+void print_comb_loop(std::vector<int>& loop_tnodes) {
+    printf("Comb Loop:\n");
+    for(std::vector<int>::iterator it = loop_tnodes.begin(); it != loop_tnodes.end(); it++) {
+        int i_tnode = *it;
+        if(tnode[i_tnode].pb_graph_pin != NULL) {
+            printf("\ttnode: %d %s.%s[%d]\n", i_tnode,
+                            tnode[i_tnode].pb_graph_pin->parent_node->pb_type->name, 
+                            tnode[i_tnode].pb_graph_pin->port->name, 
+                            tnode[i_tnode].pb_graph_pin->pin_number);
+        } else {
+            printf("\ttnode: %d\n", i_tnode);
         }
     }
 }
