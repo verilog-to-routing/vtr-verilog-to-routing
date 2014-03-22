@@ -148,6 +148,13 @@ extern int delay_increase;
 extern float placer_cost_constant;
 extern int constant_type;
 extern int *increased_delay_edge_map;
+extern bool allow_chanx_interposer_connections;
+extern bool transfer_interposer_fanins;
+extern bool allow_additional_interposer_fanins;
+extern int  pct_of_interposer_nodes_each_chany_can_drive;
+extern bool transfer_interposer_fanouts;
+extern bool allow_additional_interposer_fanouts;
+extern int  pct_of_chany_wires_an_interposer_node_can_drive;
 #endif
 
 #endif

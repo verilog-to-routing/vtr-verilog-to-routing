@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <set>
+#include <vector>
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -22,20 +23,17 @@
 /* ---------------------------------------------------------------------------
  * Control Behavior of of the code by using the following variables/macros
  * ---------------------------------------------------------------------------*/
-#define DUMP_CUTTING_PATTERN
-#define DUMP_DEBUG_FILES
+//#define DUMP_CUTTING_PATTERN
+//#define DUMP_DEBUG_FILES
 #define USE_INTERPOSER_NODE_ADDITION_METHODOLOGY
 //#define USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY
 
-static CutPatternType s_pattern_type = UNIFORM_CUT_WITH_ROTATION;
+static CutPatternType s_pattern_type = CHUNK_CUT_WITHOUT_ROTATION;
 
 // if you want the rr_node ID to appear in the dump file, change this variable to true
 // the rr_node ID is not guaranteed to be the same between different runs so,
 // not including the rr_node ID will allow you to compare sorted versions of the rr_graph between different runs
-static bool include_rr_node_IDs_in_rr_graph_dump = false;
-
-
-
+bool include_rr_node_IDs_in_rr_graph_dump = true;
 
 
 /* ---------------------------------------------------------------------------
@@ -45,7 +43,8 @@ static bool include_rr_node_IDs_in_rr_graph_dump = false;
 static std::set<int> cut_node_set; /* This set will contain IDs of the routing wires we will cut */
 static int* y_cuts = 0;
 static int*** interposer_node_loc; 
-static int* interposer_nodes; 
+static int* interposer_nodes;
+static int s_num_interposer_nodes = 0;
 
 /*
  * reverse_map is a data structure that keeps tracks of fanins of all rr_nodes.
@@ -521,6 +520,14 @@ void cut_rr_graph_edges_chunk_cut_with_rotation(int nodes_per_chan)
 /*
  * Description: implements chunk cut without rotation (see cut pattern descriptions above)
  * 
+ * if pct_of_interposer_nodes_each_chany_can_drive==100, we connect each CHANY wire to ALL interposer nodes (maximum connectivity)
+ * if pct_of_interposer_nodes_each_chany_can_drive==20, and channel width is 50 (i.e. 25 interposer wires in each direction), then:
+ * each CHANY wire will connect to 5 interposer wires (20% * 25 = 5)
+ *
+ * if pct_of_chany_wires_an_interposer_node_can_drive==100, we connect each interposer node to ALL vertical wires on the other side of the cut (maximum connectivity)
+ * if pct_of_chany_wires_an_interposer_node_can_drive==20, and channel width is 50 (i.e. 25 wires in each direction), then:
+ * each interposer wire will drive 5 chany wires on the other side of the cut (20% * 25 = 5)
+ *
  * Returns: none.
  */
 void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
@@ -530,11 +537,12 @@ void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
 	FILE* fp = my_fopen("cutting_pattern.echo", "w", 0);
 #endif
 
-	int i, itrack, ifanout, cut_counter, ifanin;
+	int i, track_to_cut, ifanout, cut_counter, ifanin;
 	int num_wires_cut_so_far = 0;
 	int interposer_node_index;
-	t_rr_node* interposer_node;
+	int num_wires_going_through = 0;
 
+	t_rr_node* interposer_node;
 	// Find the number of wires that should be cut at each horizontal cut
 	int num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
 	assert(percent_wires_cut==0 || num_wires_cut <= nodes_per_chan);
@@ -550,16 +558,133 @@ void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
 		return;
 	}
 
+	num_wires_going_through = nodes_per_chan - num_wires_cut;
+
 	assert(num_wires_cut > 0);
+	assert(num_wires_cut%2==0);
+	assert(num_wires_going_through > 0);
+	assert(num_wires_going_through%2==0);
+
+	// since wires are either INC or DEC, each wire can at most drive half of the interposer nodes that are going through
+	// for example: if chan_width=100 and %wires_cut=60% (therefore 40 wires are going through).
+	// out of the 40 wires going through, 20 are INC and 20 are DEC.
+	// if pct_of_interposer_nodes_each_chany_can_drive=50%, then, we should connect each CHANY wire to 10 interposer nodes (50% * 20 = 10)
+	int num_available_interposer_nodes_in_each_direction_after_cutting = num_wires_going_through / 2;
+
+	int num_interposer_nodes_to_connect_to = (int)ceil( (float)pct_of_interposer_nodes_each_chany_can_drive * 
+														(float)num_available_interposer_nodes_in_each_direction_after_cutting / 
+														100.0);
+
+	int num_interposer_wires_to_be_driven_by = (int)ceil((float)pct_of_chany_wires_an_interposer_node_can_drive * 
+														 (float)num_available_interposer_nodes_in_each_direction_after_cutting / 
+														 100.0);
+
+	// some info messages would be nice
+	if(transfer_interposer_fanins)
+	{
+		printf("Info: For every interposer wire that is cut, all of its fanins are being connected to another available interposer wire.\n");
+	}
+	if(transfer_interposer_fanouts)
+	{
+		printf("Info: For every interposer wire that is cut, all of its fanouts are being connected to another available interposer wire.\n");
+	}
+	if(	transfer_interposer_fanins &&
+		allow_additional_interposer_fanins && 
+		num_interposer_nodes_to_connect_to > 1)
+	{
+		printf("Info: Creating additional connections such that every wire at the cutline connects to %d interposer wires.\n", num_interposer_nodes_to_connect_to);
+	}
+	if(	transfer_interposer_fanouts &&
+		allow_additional_interposer_fanouts && 
+		num_interposer_wires_to_be_driven_by > 1)
+	{
+		printf("Info: Creating additional connections such that every wire on the other side of a cut is driven by %d interposer wires\n", num_interposer_wires_to_be_driven_by);
+	}
+
+#ifdef DUMP_DEBUG_FILES
+	// DEBUGGING
+	FILE* fp_0 = my_fopen("interposer_nodes_before.echo", "w", 0);
+	int initial_total_num_interposer_fanins = 0, initial_total_num_interposer_fanouts = 0;
+	for(i=0; i<=0; ++i)
+	{
+		for(cut_counter=0; cut_counter < 1; ++cut_counter)
+		{
+			for(int itrack=0; itrack < nodes_per_chan; itrack=itrack+2)
+			{
+				interposer_node_index = interposer_node_loc[i][cut_counter][itrack];
+				interposer_node = &rr_node[interposer_node_index];
+				int num_chanx_fanouts = 0, num_chany_fanouts = 0;
+				int num_chanx_fanins = 0, num_chany_fanins = 0;
+				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+				{
+					initial_total_num_interposer_fanouts++;
+					if(rr_node[interposer_node->edges[ifanout]].type==CHANX)
+						num_chanx_fanouts++;
+					else if(rr_node[interposer_node->edges[ifanout]].type==CHANY)
+						num_chany_fanouts++;
+				}
+				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+				{
+					initial_total_num_interposer_fanins++;
+					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					if(rr_node[fanin_node_index].type==CHANX)
+						num_chanx_fanins++;
+					else if(rr_node[fanin_node_index].type==CHANY)
+						num_chany_fanins++;
+				}
+				fprintf(fp_0, "interposer_node_id:%d, dir:%s, fanins:%d, fanouts:%d, x_fanins:%d, y_fanins:%d, x_fanouts:%d, y_fanouts:%d\n", 
+							interposer_node_index, 
+							(interposer_node->direction==INC_DIRECTION)?"INC":"DEC", 
+							interposer_node->fan_in, 
+							interposer_node->num_edges,
+							num_chanx_fanins,
+							num_chany_fanins,
+							num_chanx_fanouts,
+							num_chany_fanouts);
+			}
+			for(int itrack=1; itrack < nodes_per_chan; itrack=itrack+2)
+			{
+				interposer_node_index = interposer_node_loc[i][cut_counter][itrack];
+				interposer_node = &rr_node[interposer_node_index];
+				int num_chanx_fanouts = 0, num_chany_fanouts = 0;
+				int num_chanx_fanins = 0, num_chany_fanins = 0;
+				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+				{
+					if(rr_node[interposer_node->edges[ifanout]].type==CHANX)
+						num_chanx_fanouts++;
+					else if(rr_node[interposer_node->edges[ifanout]].type==CHANY)
+						num_chany_fanouts++;
+				}
+				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+				{
+					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					if(rr_node[fanin_node_index].type==CHANX)
+						num_chanx_fanins++;
+					else if(rr_node[fanin_node_index].type==CHANY)
+						num_chany_fanins++;
+				}
+				fprintf(fp_0, "interposer_node_id:%d, dir:%s, fanins:%d, fanouts:%d, x_fanins:%d, y_fanins:%d, x_fanouts:%d, y_fanouts:%d\n", 
+							interposer_node_index, 
+							(interposer_node->direction==INC_DIRECTION)?"INC":"DEC", 
+							interposer_node->fan_in, 
+							interposer_node->num_edges,
+							num_chanx_fanins,
+							num_chany_fanins,
+							num_chanx_fanouts,
+							num_chany_fanouts);
+			}
+		}
+	}
+	fprintf(fp_0, "total_fanins:%d, total_fanouts:%d\n", initial_total_num_interposer_fanins, initial_total_num_interposer_fanouts);
+	fclose(fp_0);
+#endif 
 
 	for(i=0; i<=nx; ++i)
 	{
 		for(cut_counter=0; cut_counter < num_cuts; ++cut_counter)
 		{
-			for(itrack=0, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; itrack=(itrack+1)%nodes_per_chan)
+			for(track_to_cut=0, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; track_to_cut=(track_to_cut+1)%nodes_per_chan)
 			{
-				int track_to_cut = (itrack)%nodes_per_chan;
-
 				#ifdef DUMP_CUTTING_PATTERN
 				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
 				#endif
@@ -570,8 +695,31 @@ void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
 				// cut all fanout connections of the interposer node
 				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
 				{
-					delete_rr_connection(interposer_node_index, interposer_node->edges[ifanout]);
+					int fanout_node_index = interposer_node->edges[ifanout];
+					int iswitch = get_connection_switch_index(interposer_node_index, fanout_node_index);
+					int offset = ifanout;
+
+					// delete the connection
+					delete_rr_connection(interposer_node_index, fanout_node_index);
 					--ifanout;
+
+					// transfer the connection to another interposer node if needed.
+					if(transfer_interposer_fanouts)
+					{
+						int track_number_of_next_avialable_interposer_node = ( (track_to_cut+2*offset) % num_wires_going_through ) + num_wires_cut;
+
+						assert( 0 <= track_number_of_next_avialable_interposer_node &&
+									 track_number_of_next_avialable_interposer_node < nodes_per_chan);
+						assert( num_wires_cut <= track_number_of_next_avialable_interposer_node);
+
+						int next_available_interposer_node_index = interposer_node_loc[i][cut_counter][track_number_of_next_avialable_interposer_node];
+						assert(rr_node[next_available_interposer_node_index].direction == rr_node[interposer_node_index].direction);
+
+						if(rr_node[fanout_node_index].type==CHANX)
+							assert(rr_node[next_available_interposer_node_index].direction==DEC_DIRECTION);
+
+						create_rr_connection(next_available_interposer_node_index, fanout_node_index, iswitch);
+					}
 				}
 				assert(rr_node[interposer_node_index].num_edges==0);
 
@@ -579,17 +727,278 @@ void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
 				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
 				{
 					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					int iswitch = get_connection_switch_index(fanin_node_index, interposer_node_index);
+					int offset = ifanin;
+
+					// delete the connection
 					delete_rr_connection(fanin_node_index, interposer_node_index);
 					--ifanin;
+
+					// transfer the connection to another interposer node if needed.
+					if(transfer_interposer_fanins)
+					{
+						int track_number_of_next_avialable_interposer_node = ( (track_to_cut+2*offset) % num_wires_going_through ) + num_wires_cut;
+
+						assert( 0 <= track_number_of_next_avialable_interposer_node &&
+									 track_number_of_next_avialable_interposer_node < nodes_per_chan);
+						assert( num_wires_cut <= track_number_of_next_avialable_interposer_node);
+
+						int next_available_interposer_node_index = interposer_node_loc[i][cut_counter][track_number_of_next_avialable_interposer_node];
+						assert(rr_node[next_available_interposer_node_index].direction == rr_node[interposer_node_index].direction);
+
+						if(rr_node[fanin_node_index].type==CHANX)
+							assert( rr_node[next_available_interposer_node_index].direction==INC_DIRECTION);
+
+						create_rr_connection(fanin_node_index, next_available_interposer_node_index, iswitch);
+					}
 				}
 				assert(rr_node[interposer_node_index].fan_in==0);
 
 				num_wires_cut_so_far++;
 			}
+			assert(num_wires_cut_so_far==num_wires_cut);
+
+			if( transfer_interposer_fanins &&
+				allow_additional_interposer_fanins &&
+				num_interposer_nodes_to_connect_to > 1)
+			{
+				// by this point, we know that every CHANY wire connects to at least 1 interposer node
+				// (even if its interposer node was deleted, it was connected to the next available interposer node
+				//  because transfer_interposer_fanins = true)
+				// now we want to add additional connections.
+				// for interposer nodes that are cut, don't do anything.
+				// for other interposer nodes, go over their fanins, and connect each fanin to additional interposer nodes
+
+				// 1. get a list of all wires that drive interposer nodes at this (x,y) location
+				std::set< std::pair<int,int> > fanin_wires_at_cutline;
+				for(int itrack=0; itrack<nodes_per_chan; ++itrack)
+				{
+					interposer_node_index = interposer_node_loc[i][cut_counter][itrack];
+					for(ifanin=0; ifanin < rr_node[interposer_node_index].fan_in; ++ifanin)
+					{
+						// according to chunk cut, the first 0..num_wires_cut-1 are supposed to be cut
+						// so if we are here, it means this interposer node had some fanins... sanity check
+						assert(itrack >= num_wires_cut);
+
+						int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+						int iswitch = get_connection_switch_index(fanin_node_index, interposer_node_index);
+						std::pair <int,int> connection (fanin_node_index, iswitch);
+						fanin_wires_at_cutline.insert(connection);
+
+						if( rr_node[fanin_node_index].type==CHANX )
+							assert(rr_node[interposer_node_index].direction==INC_DIRECTION);
+					}
+				}
+
+				// 2. for each one of the wires, connect them to more interposer wires if needed.
+				std::set< std::pair<int,int> >::iterator fanin_iter = fanin_wires_at_cutline.begin();
+				std::set< std::pair<int,int> >::iterator fanin_iter_end = fanin_wires_at_cutline.end();
+				for( ; fanin_iter!=fanin_iter_end; ++fanin_iter)
+				{
+					int fanin_node_index = (*fanin_iter).first;
+					int iswitch = (*fanin_iter).second;
+					int num_interposer_nodes_currently_driven_by_fanin_node = get_num_interposer_loads(fanin_node_index, nodes_per_chan);
+					int num_new_connections_to_make = num_interposer_nodes_to_connect_to - num_interposer_nodes_currently_driven_by_fanin_node;
+					if(num_new_connections_to_make > 0)
+					{
+						int counter = 1;
+						int offset = 1;
+						while(counter <= num_new_connections_to_make)
+						{
+							int track_number = rr_node[fanin_node_index].ptc_num;
+							int track_number_of_next_avialable_interposer_node = ((track_number+2*offset)%num_wires_going_through)+num_wires_cut;
+
+							assert( num_wires_cut <= track_number_of_next_avialable_interposer_node);
+							assert( 0<= track_number_of_next_avialable_interposer_node &&
+										track_number_of_next_avialable_interposer_node < nodes_per_chan);								
+
+							int next_available_interposer_node_index = interposer_node_loc[i][cut_counter][track_number_of_next_avialable_interposer_node];
+							assert(rr_node[next_available_interposer_node_index].direction == rr_node[fanin_node_index].direction);
+
+							// at the cut location, the CHANX wires, can physically only drive the interposer wires in INC direction
+							// the interposer wires in the DEC direction can drive CHANX wires at the cut.
+							// So, CHANX wires at the cutline in DEC direction need to be connected to the right interposer node in the INC direction
+							if(rr_node[fanin_node_index].type==CHANX && rr_node[fanin_node_index].direction==DEC_DIRECTION)
+							{
+								// give it a nudge
+								track_number_of_next_avialable_interposer_node = ((track_number_of_next_avialable_interposer_node+1)%num_wires_going_through)+num_wires_cut;
+								next_available_interposer_node_index = interposer_node_loc[i][cut_counter][track_number_of_next_avialable_interposer_node];
+							}
+
+							if(rr_node[fanin_node_index].type==CHANX)
+							{
+								assert(rr_node[next_available_interposer_node_index].direction==INC_DIRECTION);
+							}
+
+							// create the connection
+							bool new_connection_made =  create_rr_connection(fanin_node_index, next_available_interposer_node_index, iswitch);
+							if(new_connection_made)
+							{
+								counter++;
+							}
+
+							offset++;
+						}
+
+						// sanity check: any wire at the boundary should be feeding 'num_interposer_nodes_to_connect_to' interposer nodes in total
+						assert(get_num_interposer_loads(fanin_node_index, nodes_per_chan)==num_interposer_nodes_to_connect_to);
+					}
+				}
+			}
+
+			if( transfer_interposer_fanouts &&
+				allow_additional_interposer_fanouts &&
+				num_interposer_wires_to_be_driven_by > 1)
+			{
+				// 1. temporary storage for all the vertical wires at the cutline driven by interposer wires
+				std::set< std::pair<int,int> > fanout_wires_at_cutline;
+				for(int itrack=0; itrack<nodes_per_chan; ++itrack)
+				{
+					interposer_node_index = interposer_node_loc[i][cut_counter][itrack];
+					interposer_node = &rr_node[interposer_node_index];
+					for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+					{
+						int fanout_node_index = interposer_node->edges[ifanout];
+						int iswitch = get_connection_switch_index(interposer_node_index, fanout_node_index);
+						std::pair <int,int> connection (fanout_node_index, iswitch);
+						fanout_wires_at_cutline.insert(connection);
+					}
+				}
+
+				// 2. for each one of the interposer wires, connect them to more fanout wires if needed.
+				std::set< std::pair<int,int> >::iterator fanout_iter = fanout_wires_at_cutline.begin();
+				std::set< std::pair<int,int> >::iterator fanout_iter_end = fanout_wires_at_cutline.end();
+				for( ; fanout_iter!=fanout_iter_end; ++fanout_iter)
+				{
+					int fanout_node_index = (*fanout_iter).first;
+					int iswitch = (*fanout_iter).second;
+					int num_interposer_nodes_currently_driving_this_fanout_node = get_num_interposer_drivers(fanout_node_index, nodes_per_chan);
+					int num_new_connections_to_make = num_interposer_wires_to_be_driven_by - num_interposer_nodes_currently_driving_this_fanout_node;
+					if(num_new_connections_to_make > 0)
+					{
+						int counter = 1;
+						int offset = 1;
+						while(counter <= num_new_connections_to_make)
+						{
+							int track_number = rr_node[fanout_node_index].ptc_num;
+							int track_number_of_next_avialable_interposer_node = ((track_number+2*offset)%num_wires_going_through)+num_wires_cut;
+
+							assert( num_wires_cut <= track_number_of_next_avialable_interposer_node);
+							assert( 0<= track_number_of_next_avialable_interposer_node &&
+										track_number_of_next_avialable_interposer_node < nodes_per_chan);								
+
+							int next_available_interposer_node_index = interposer_node_loc[i][cut_counter][track_number_of_next_avialable_interposer_node];
+							assert(rr_node[next_available_interposer_node_index].direction == rr_node[fanout_node_index].direction);
+
+							// at the cut location, only the interposer wires in the DEC direction can drive the CHANX wires below the cut.
+							// So, both INC and DEC CHANX wires need to be fed driven by DEC interposer wires
+							if(rr_node[fanout_node_index].type==CHANX && rr_node[fanout_node_index].direction==INC_DIRECTION)
+							{
+								// give it a nudge
+								track_number_of_next_avialable_interposer_node = ((track_number_of_next_avialable_interposer_node+1)%num_wires_going_through)+num_wires_cut;
+								next_available_interposer_node_index = interposer_node_loc[i][cut_counter][track_number_of_next_avialable_interposer_node];
+							}
+
+							if(rr_node[fanout_node_index].type==CHANX)
+							{
+								assert(rr_node[next_available_interposer_node_index].direction==DEC_DIRECTION);
+							}
+
+							// create the connection
+							bool new_connection_made =  create_rr_connection(next_available_interposer_node_index, fanout_node_index, iswitch);
+							if(new_connection_made)
+							{
+								counter++;
+							}
+
+							offset++;
+						}
+
+						// sanity check: any wire at the boundary should be driven by 'num_interposer_wires_to_be_driven_by' interposer wires
+						assert(get_num_interposer_drivers(fanout_node_index, nodes_per_chan)==num_interposer_wires_to_be_driven_by);
+					}
+				}
+			}
 		}
 	}
 
-	assert(num_wires_cut_so_far==num_wires_cut);
+#ifdef DUMP_DEBUG_FILES
+	// DEBUGGING
+	FILE* fp_1 = my_fopen("interposer_nodes_after.echo", "w", 0);
+	int final_total_num_interposer_fanins = 0, final_total_num_interposer_fanouts = 0;
+	for(i=0; i<=0; ++i)
+	{
+		for(cut_counter=0; cut_counter < 1; ++cut_counter)
+		{
+			for(int itrack=0; itrack < nodes_per_chan; itrack=itrack+2)
+			{
+				interposer_node_index = interposer_node_loc[i][cut_counter][itrack];
+				interposer_node = &rr_node[interposer_node_index];
+				int num_chanx_fanouts = 0, num_chany_fanouts = 0;
+				int num_chanx_fanins = 0, num_chany_fanins = 0;
+				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+				{
+					final_total_num_interposer_fanouts++;
+					if(rr_node[interposer_node->edges[ifanout]].type==CHANX)
+						num_chanx_fanouts++;
+					else if(rr_node[interposer_node->edges[ifanout]].type==CHANY)
+						num_chany_fanouts++;
+				}
+				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+				{
+					final_total_num_interposer_fanins++;
+					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					if(rr_node[fanin_node_index].type==CHANX)
+						num_chanx_fanins++;
+					else if(rr_node[fanin_node_index].type==CHANY)
+						num_chany_fanins++;
+				}
+				fprintf(fp_1, "interposer_node_id:%d, dir:%s, fanins:%d, fanouts:%d, x_fanins:%d, y_fanins:%d, x_fanouts:%d, y_fanouts:%d\n", 
+							interposer_node_index, 
+							(interposer_node->direction==INC_DIRECTION)?"INC":"DEC", 
+							interposer_node->fan_in, 
+							interposer_node->num_edges,
+							num_chanx_fanins,
+							num_chany_fanins,
+							num_chanx_fanouts,
+							num_chany_fanouts);
+			}
+			for(int itrack=1; itrack < nodes_per_chan; itrack=itrack+2)
+			{
+				interposer_node_index = interposer_node_loc[i][cut_counter][itrack];
+				interposer_node = &rr_node[interposer_node_index];
+				int num_chanx_fanouts = 0, num_chany_fanouts = 0;
+				int num_chanx_fanins = 0, num_chany_fanins = 0;
+				for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+				{
+					if(rr_node[interposer_node->edges[ifanout]].type==CHANX)
+						num_chanx_fanouts++;
+					else if(rr_node[interposer_node->edges[ifanout]].type==CHANY)
+						num_chany_fanouts++;
+				}
+				for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+				{
+					int fanin_node_index = reverse_map[interposer_node_index][ifanin];
+					if(rr_node[fanin_node_index].type==CHANX)
+						num_chanx_fanins++;
+					else if(rr_node[fanin_node_index].type==CHANY)
+						num_chany_fanins++;
+				}
+				fprintf(fp_1, "interposer_node_id:%d, dir:%s, fanins:%d, fanouts:%d, x_fanins:%d, y_fanins:%d, x_fanouts:%d, y_fanouts:%d\n", 
+							interposer_node_index, 
+							(interposer_node->direction==INC_DIRECTION)?"INC":"DEC", 
+							interposer_node->fan_in, 
+							interposer_node->num_edges,
+							num_chanx_fanins,
+							num_chany_fanins,
+							num_chanx_fanouts,
+							num_chany_fanouts);
+			}
+		}
+	}
+	fprintf(fp_1, "total_fanins:%d, total_fanouts:%d\n", final_total_num_interposer_fanins, final_total_num_interposer_fanouts); 
+	fclose(fp_1);
+#endif 
 
 #ifdef DUMP_CUTTING_PATTERN
 	fclose(fp);
@@ -607,8 +1016,7 @@ void increase_rr_graph_edge_delays(int nodes_per_chan)
 {
 	int inode, i, j;
 	int old_switch, new_switch;
-	int num_interposer_nodes = (nx+1)*(num_cuts)*(nodes_per_chan);
-	for(i=0; i<num_interposer_nodes; ++i)
+	for(i=0; i<s_num_interposer_nodes; ++i)
 	{
 		inode = interposer_nodes[i];
 
@@ -650,6 +1058,45 @@ void cut_rr_connections(int nodes_per_chan)
 	default:
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Unknown cutting pattern!\n");
 		break;
+	}
+}
+
+/*
+ * Purpose: To measure the effect of allowing chanx_to_interpoer_node connections.
+ * Description: This function cuts all chanx connections to interposer_nodes.
+ *
+ * Returns: none.
+ */
+void cut_chanx_interposer_node_connections(int nodes_per_chan)
+{
+	int i, ifanout, ifanin;
+	for(i=0; i<s_num_interposer_nodes; ++i)
+	{
+		int interposer_node_id = interposer_nodes[i];
+		t_rr_node* interposer_node = &rr_node[interposer_node_id];
+		assert(interposer_node->type==CHANY);
+
+		// cut all fanout connections driving a CHANX
+		for(ifanout=0; ifanout < interposer_node->num_edges; ++ifanout)
+		{
+			int fanout_node_id = interposer_node->edges[ifanout];
+			if(rr_node[fanout_node_id].type==CHANX)
+			{
+				delete_rr_connection(interposer_node_id, fanout_node_id);
+				--ifanout;
+			}
+		}
+
+		// cut all fanin connections driven by a CHANX
+		for(ifanin=0; ifanin < interposer_node->fan_in; ++ifanin)
+		{
+			int fanin_node_id = reverse_map[interposer_node_id][ifanin];
+			if(rr_node[fanin_node_id].type==CHANX)
+			{
+				delete_rr_connection(fanin_node_id, interposer_node_id);
+				--ifanin;
+			}
+		}
 	}
 }
 
@@ -788,6 +1235,8 @@ void modify_rr_graph_using_interposer_node_addition_methodology
 		y_cuts[cut_counter] = (cut_counter+1)*cut_step;
 	}
 
+	s_num_interposer_nodes = (nx+1)*(num_cuts)*(nodes_per_chan);
+
 	int *rr_nodes_that_cross = 0;
 	int num_rr_nodes_that_cross = 0;
 	
@@ -803,6 +1252,11 @@ void modify_rr_graph_using_interposer_node_addition_methodology
 	// 4. increase the delay of interposer nodes that were not cut
 	increase_rr_graph_edge_delays(nodes_per_chan);
 
+	/// DO additional graph ops here for experimentation
+	if(!allow_chanx_interposer_connections)
+	{
+		cut_chanx_interposer_node_connections(nodes_per_chan);
+	}
 
 	// 5.1 free helper data-structures that are not needed anymore
 	free(y_cuts);
@@ -1004,9 +1458,10 @@ void delete_rr_connection(int src_node, int dst_node)
  *              the connection will use a switch with ID of connection_switch_index
  *              if connection from src to dst already exists, it returns without doing anything
  *
- * Returns: Nothing.
+ * Returns: True  if a new connection is created. 
+ *          False if the connection already exsited, and hence a new connection was not created.
  */
-void create_rr_connection(int src_node, int dst_node, int connection_switch_index)
+bool create_rr_connection(int src_node, int dst_node, int connection_switch_index)
 {
 	// Debug
 	/*
@@ -1027,7 +1482,7 @@ void create_rr_connection(int src_node, int dst_node, int connection_switch_inde
 	}
 	if(already_connected)
 	{
-		return;
+		return false;
 	}
 
 	// 1. take care of the source node side
@@ -1052,8 +1507,75 @@ void create_rr_connection(int src_node, int dst_node, int connection_switch_inde
 	print_fanins_and_fanouts_of_rr_node(src_node);
 	print_fanins_and_fanouts_of_rr_node(dst_node);
 	*/
+
+	return true;
 }
 
+/*
+ * Description: For a given src and dst node that are connected, it will return the switch index of the connection
+ *              If connection does not exist, it returns -1
+ *
+ * Returns: Nothing.
+ */
+int get_connection_switch_index(int src, int dst)
+{
+	int iswitch = -1;
+	int cnt = 0;
+	for(cnt=0; cnt<rr_node[src].num_edges && rr_node[src].edges[cnt]!=dst; ++cnt);
+
+	if(cnt < rr_node[src].num_edges)
+	{
+		iswitch = rr_node[src].switches[cnt];
+	}
+
+	return iswitch;
+}
+
+/*
+ * Description: For a given rr_node, it tells you how many interposer wires it drives
+ * 
+ * Note: This function relies on the fact that interposer wires' ptc_num >= nodes_per_chan
+ *
+ * Returns: Nothing.
+ */
+int get_num_interposer_loads(int inode, int nodes_per_chan)
+{
+	int i, idst, num_interposer_loads = 0;
+	
+	for(i=0; i<rr_node[inode].num_edges; ++i)
+	{
+		idst = rr_node[inode].edges[i];
+		if(rr_node[idst].ptc_num >= nodes_per_chan)
+		{
+			num_interposer_loads++;
+		}
+	}
+
+	return num_interposer_loads;
+}
+
+/*
+ * Description: returns the number of interposer wires that can drive this inode
+ * 
+ * Note: This function relies on the fact that interposer wires' ptc_num >= nodes_per_chan
+ *
+ * Returns: Nothing.
+ */
+int get_num_interposer_drivers(int inode, int nodes_per_chan)
+{
+	int i, isrc, num_drivers = 0;
+	
+	for(i=0; i<rr_node[inode].fan_in; ++i)
+	{
+		isrc = reverse_map[inode][i];
+		if(rr_node[isrc].ptc_num >= nodes_per_chan)
+		{
+			num_drivers++;
+		}
+	}
+
+	return num_drivers;
+}
 
 /*
  * Description: this function breaks wires that cross the interposer into 2 rr_nodes
@@ -1392,7 +1914,7 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 					for(i=0; i<node->num_edges; ++i)
 					{
 						int ifanout = node->edges[i];
-						int iswitch = node->switches[i];
+						//int iswitch = node->switches[i];
 
 						if(rr_node[ifanout].ylow > cut_pos)
 						{

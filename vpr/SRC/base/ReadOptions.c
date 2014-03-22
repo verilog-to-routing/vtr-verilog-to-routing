@@ -487,6 +487,22 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadFloat(Args, &Options->placer_cost_constant);
 	case OT_CONSTANT_TYPE:
 		return ReadInt(Args, &Options->constant_type);
+		
+	/* used for interposer-based architecture experiments */
+	case OT_ALLOW_CHANX_CONN:
+		return ReadOnOff(Args, &Options->allow_chanx_interposer_connections);
+	case OT_ALLOW_FANIN_TRANSFER:
+		return ReadOnOff(Args, &Options->transfer_interposer_fanins);
+	case OT_ALLOW_ADDITIONAL_FANIN:
+		return ReadOnOff(Args, &Options->allow_additional_interposer_fanins);
+	case OT_ALLOW_FANOUT_TRANSFER:
+		return ReadOnOff(Args, &Options->transfer_interposer_fanouts);
+	case OT_ALLOW_ADDITIONAL_FANOUT:
+		return ReadOnOff(Args, &Options->allow_additional_interposer_fanouts);
+	case OT_PCT_INTERP_TO_DRIVE:
+		return ReadInt(Args, &Options->pct_of_interposer_nodes_each_chany_can_drive);
+	case OT_PCT_INTERP_TO_BE_DRIVEN_BY:
+		return ReadInt(Args, &Options->pct_of_chany_wires_an_interposer_node_can_drive);
 #endif
 
 		/* Power options */

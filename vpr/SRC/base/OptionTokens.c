@@ -85,6 +85,13 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "delay_increase", OT_DELAY_INCREASE },
 		{ "placer_cost_constant", OT_PLACER_COST_CONSTANT },
 		{ "constant_type", OT_CONSTANT_TYPE },
+		{ "allow_chanx_conn", OT_ALLOW_CHANX_CONN },
+		{ "allow_fanin_transfer", OT_ALLOW_FANIN_TRANSFER },
+		{ "allow_additional_fanin", OT_ALLOW_ADDITIONAL_FANIN },
+		{ "allow_fanout_transfer", OT_ALLOW_FANOUT_TRANSFER },
+		{ "allow_additional_fanout", OT_ALLOW_ADDITIONAL_FANOUT },
+		{ "pct_interp_to_drive", OT_PCT_INTERP_TO_DRIVE },
+		{ "pct_interp_to_be_driven_by", OT_PCT_INTERP_TO_BE_DRIVEN_BY },
 #endif
 
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */

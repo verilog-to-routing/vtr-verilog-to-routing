@@ -87,6 +87,14 @@ struct s_options {
 	int delay_increase;
 	float placer_cost_constant;
 	int constant_type;
+	/* architecture experiments */
+	boolean allow_chanx_interposer_connections;
+	boolean transfer_interposer_fanins;
+	boolean allow_additional_interposer_fanins;
+	int  pct_of_interposer_nodes_each_chany_can_drive;
+	boolean transfer_interposer_fanouts;
+	boolean allow_additional_interposer_fanouts;
+	int  pct_of_chany_wires_an_interposer_node_can_drive;
 #endif
 
 	/* Timing-driven router options only */
