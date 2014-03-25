@@ -278,7 +278,7 @@ void sdc_error(const int line_number, const char* near_text, const char* fmt, ..
     va_list args;
     va_start(args, fmt);
 
-    vpr_throw(VPR_ERROR_SDC, get_sdc_file_name(), line_number, fmt, args);
+    vvpr_throw(VPR_ERROR_SDC, get_sdc_file_name(), line_number, fmt, args);
 
     va_end(args);
 }

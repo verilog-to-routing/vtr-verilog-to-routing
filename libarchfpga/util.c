@@ -809,20 +809,38 @@ void vpr_throw(enum e_vpr_error type,
 		const char* psz_message,
 		...) {
 
-	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
-              line_num, const_cast<char*>(psz_file_name));
-
 	// Make a variable argument list
 	va_list va_args;
 
 	// Initialize variable argument list
 	va_start( va_args, psz_message );
 
-	// Extract and format based on variable argument list
-	vsprintf(vpr_error->message, psz_message, va_args );
+	// Generate the actual error object and throw it
+	vvpr_throw(type, psz_file_name, line_num, psz_message, va_args);
 
 	// Reset variable argument list
 	va_end( va_args );
+
+}
+
+/*
+ * Version of vpr_throw that takes an explicit va_list.
+ *
+ *  This allows functions that have variable numbers of
+ *  inputs to throw t_vpr_error objects. 
+ */
+void vvpr_throw(enum e_vpr_error type,
+		const char* psz_file_name,
+		unsigned int line_num,
+		const char* psz_message,
+		va_list va_args) {
+
+	// Allocate the error struct
+	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
+              line_num, const_cast<char*>(psz_file_name));
+
+	// Extract and format message based on variable argument list
+	vsprintf(vpr_error->message, psz_message, va_args );
 
 	throw vpr_error;
 }
