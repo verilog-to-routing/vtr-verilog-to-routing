@@ -180,29 +180,28 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		
 		while (port != NULL) {
 			for (int i = 0; i < port->size; i++) {
-				const char *pin_name;
 				if (port->is_clock == TRUE) {
 					assert(port->index == 0);
 					assert(port->size == 1);
 					int net_index = logical_block[ilogical_block].clock_net;
 					if (net_index == OPEN) {
-						pin_name = "unconn";
+						fprintf(fpout, "%s[%d]=unconn ", port->name, i);
 					}
 					else {
-						pin_name = g_atoms_nlist.net[net_index].name;
+						t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, i, pb_graph_node);
+						fprintf(fpout, "%s[%d]=clb_%d_rr_node_%d ", port->name, i, clb_index, pb_graph_pin->pin_count_in_cluster);
 					}
 				}
 				else{
 					int net_index = logical_block[ilogical_block].input_nets[port->index][i];
 					if (net_index == OPEN) {
-						pin_name = "unconn";
+						fprintf(fpout, "%s[%d]=unconn ", port->name, i);
 					}
 					else {
-						pin_name = g_atoms_nlist.net[net_index].name;
+						t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, i, pb_graph_node);
+						fprintf(fpout, "%s[%d]=clb_%d_rr_node_%d ", port->name, i, clb_index, pb_graph_pin->pin_count_in_cluster);
 					}
 				}
-
-				fprintf(fpout, "%s[%d]=%s ", port->name, i, pin_name);
 				if (i % 4 == 3) {
 					if (i + 1 < port->size) {
 						fprintf(fpout, "\\\n");
@@ -217,16 +216,8 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 
 		while (port != NULL) {
 			for (int i = 0; i < port->size; i++) {
-				const char *pin_name;
-				int net_index = logical_block[ilogical_block].output_nets[port->index][i];
-				if (net_index == OPEN) {
-					pin_name = "unconn";
-				}
-				else {
-					pin_name = g_atoms_nlist.net[net_index].name;
-				}
-
-				fprintf(fpout, "%s[%d]=%s ", port->name, i, pin_name);
+				fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].output_pin_names[port->index][i]);
+				
 				if (i % 4 == 3) {
 					if (i + 1 < port->size) {
 						fprintf(fpout, "\\\n");
@@ -240,6 +231,23 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		}
 		fprintf(fpout, "\n");	
 		fprintf(fpout, "\n");
+
+		if (logical_block[ilogical_block].output_pin_names != NULL) {
+			port = cur->outputs;
+			while (port != NULL) {
+				if (logical_block[ilogical_block].output_pin_names[port->index] != NULL)	{
+					for (int ipin = 0; ipin < port->size; ipin++) {
+						int net_index = logical_block[ilogical_block].output_nets[port->index][ipin];
+						if (net_index != OPEN && logical_block[ilogical_block].output_pin_names[port->index][ipin] != NULL) {
+							t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, ipin, pb_graph_node);
+							fprintf(fpout, ".names %s clb_%d_rr_node_%d\n", logical_block[ilogical_block].output_pin_names[port->index][ipin], clb_index, pb_graph_pin->pin_count_in_cluster);
+							fprintf(fpout, "1 1\n\n");
+						}
+					}
+				}
+				port = port->next;
+			}
+		}
 	}
 }
 
@@ -399,6 +407,8 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, boolean gl
 	column = 0;
 
 	fprintf(fpout, "\n\n");
+	fprintf(fpout, ".names unconn\n");
+	fprintf(fpout, " 0\n\n");
 
 	/* print out all circuit elements */
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {

@@ -1440,6 +1440,14 @@ void free_logical_blocks(void) {
 				if (logical_block[iblk].output_net_tnodes[i])
 					free(logical_block[iblk].output_net_tnodes[i]);
 			}
+			if (logical_block[iblk].output_pin_names != NULL && logical_block[iblk].output_pin_names[i] != NULL) {
+				for (int j = 0; j < port->size; j++) {
+					if (logical_block[iblk].output_pin_names[i][j] != NULL) {
+						free(logical_block[iblk].output_pin_names[i][j]);
+					}
+				}
+				free(logical_block[iblk].output_pin_names[i]);
+			}
 			i++;
 			port = port->next;
 		}
@@ -1455,6 +1463,9 @@ void free_logical_blocks(void) {
 			next = tvptr->next;
 			free(tvptr);
 			tvptr = next;
+		}
+		if (logical_block[iblk].output_pin_names != NULL) {
+			free(logical_block[iblk].output_pin_names);
 		}
 	}
 	free(logical_block);

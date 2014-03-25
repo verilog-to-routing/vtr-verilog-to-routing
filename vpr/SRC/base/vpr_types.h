@@ -159,15 +159,14 @@ typedef struct s_pb {
 	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 	struct s_pb_stats *pb_stats; /* statistics for current pb */
 
-	struct s_net *local_nets; /* Records post-packing connections, valid only for top-level */
-	int num_local_nets; /* Records post-packing connections, valid only for top-level */
+	struct s_net *local_nets; /*Records post-packing connections, valid only for top-level */ /* jedit TODO: Delete this because it is unused */ 
+	int num_local_nets; /* Records post-packing connections, valid only for top-level */ /* jedit TODO: Delete this because it is unused */ 
 
 	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
 	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
 	 LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
-	 so this optimization is crucial for handling LUT based FPGAs.
-	 */
+	 so this optimization is crucial for handling LUT based FPGAs.	 */ /* jedit TODO: Delete this because it is no longer used by anyone */ 
 } t_pb;
 
 /* Representation of intra-logic block routing */
@@ -205,7 +204,9 @@ typedef struct s_logical_block {
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
 
-	TGO_RegionList_t placement_region_list; // Optional placement regions (defined by Toro front-end)
+	TGO_RegionList_t placement_region_list; // Optional placement regions (defined by Toro front-end)  /* jedit TODO: Delte this because it is unused */ 
+
+	char ***output_pin_names; /* [0..num_ports-1][0..num_pins-1] save the output name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
 
 } t_logical_block;
 

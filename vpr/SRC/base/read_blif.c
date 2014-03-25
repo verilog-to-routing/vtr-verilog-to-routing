@@ -669,11 +669,14 @@ static void add_subckt(int doall, t_model *user_models) {
 		logical_block[num_logical_blocks - 1].output_nets = (int**) my_malloc(
 				output_port_count * sizeof(int *));
 
+		logical_block[num_logical_blocks - 1].output_pin_names = (char***)my_calloc(output_port_count, sizeof(char **));
+
 		port = cur_model->outputs;
 		while (port) {
 			assert(port->size >= 0);
 			logical_block[num_logical_blocks - 1].output_nets[port->index] =
 					(int*) my_malloc(port->size * sizeof(int));
+			logical_block[num_logical_blocks - 1].output_pin_names[port->index] = (char**)my_calloc(port->size, sizeof(char *));
 			for (j = 0; j < port->size; j++) {
 				logical_block[num_logical_blocks - 1].output_nets[port->index][j] =
 						OPEN;
@@ -756,6 +759,9 @@ static void add_subckt(int doall, t_model *user_models) {
 							&& circuit_signal_name[i] != NULL) {
 						subckt_logical_block_name = circuit_signal_name[i];
 					}
+
+					logical_block[num_logical_blocks - 1].output_pin_names[port->index][my_atoi(
+						pin_number)] = my_strdup(circuit_signal_name[i]);
 					output_net_count++;
 				}
 				port = port->next;
