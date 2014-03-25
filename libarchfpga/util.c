@@ -833,14 +833,14 @@ void vvpr_throw(enum e_vpr_error type,
 		const char* psz_file_name,
 		unsigned int line_num,
 		const char* psz_message,
-		va_list va_args) {
+		va_list args) {
 
 	// Allocate the error struct
 	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
               line_num, const_cast<char*>(psz_file_name));
 
 	// Extract and format message based on variable argument list
-	vsprintf(vpr_error->message, psz_message, va_args );
+	vsprintf(vpr_error->message, psz_message, args );
 
 	throw vpr_error;
 }
