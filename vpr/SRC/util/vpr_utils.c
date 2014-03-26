@@ -628,20 +628,26 @@ void free_cb(t_pb *pb) {
 	const t_pb_type * pb_type;
 	int i, total_nodes;
 
+	if (pb == NULL) {
+		return;
+	}
+
 	pb_type = pb->pb_graph_node->pb_type;
 
 	total_nodes = pb->pb_graph_node->total_pb_pins + pb_type->num_input_pins
 			+ pb_type->num_output_pins + pb_type->num_clock_pins;
 
-	for (i = 0; i < total_nodes; i++) {
-		if (pb->rr_graph[i].edges != NULL) {
-			free(pb->rr_graph[i].edges);
+	if (pb->rr_graph != NULL) {
+		for (i = 0; i < total_nodes; i++) {
+			if (pb->rr_graph[i].edges != NULL) {
+				free(pb->rr_graph[i].edges);
+			}
+			if (pb->rr_graph[i].switches != NULL) {
+				free(pb->rr_graph[i].switches);
+			}
 		}
-		if (pb->rr_graph[i].switches != NULL) {
-			free(pb->rr_graph[i].switches);
-		}
-	}
-	free(pb->rr_graph);
+		free(pb->rr_graph);
+	}	
 	free_pb(pb);
 }
 

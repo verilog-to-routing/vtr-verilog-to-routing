@@ -328,7 +328,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	boolean is_routed = FALSE;
 	boolean is_impossible = FALSE;
 	t_expansion_node exp_node;
-	
+
 	/* Stores state info during route */
 	reservable_pq <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;
 	reset_explored_node_tb(router_data);
@@ -413,10 +413,15 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
 	}
 
+#if 0
 	if(!is_routed) {
 		print_route("jedit_failed_route.echo", router_data);
 		printf(WARNTAG "jedit route FAIL\n");
 	} else {
+		save_and_reset_lb_route(router_data);
+	}
+#endif
+	if (is_routed) {
 		save_and_reset_lb_route(router_data);
 	}
 	return is_routed;

@@ -31,7 +31,7 @@ using namespace std;
 #include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
-/*#define JEDIT_INTRA_LB_ROUTE*/
+#define JEDIT_INTRA_LB_ROUTE
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
@@ -113,10 +113,6 @@ static int *critindexarray = NULL;
 /* Score different seeds for blocks */
 static float *seed_blend_gain = NULL;
 static int *seed_blend_index_array = NULL;
-
-/* Runtime accounting */
-static clock_t new_route_t = 0;
-static clock_t old_route_t = 0;
 	
 
 /*****************************************/
@@ -296,8 +292,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	vector < vector <t_intra_lb_net> * > intra_lb_routing;
 
-	new_route_t = old_route_t = 0;
-	
 #ifdef PATH_COUNTING
 	unsigned int inet;
 	int ipin;
@@ -686,6 +680,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	block = clb;
 
 	output_clustering(arch, clb, num_clb, intra_lb_routing, global_clocks, is_clock, out_fname, FALSE);
+	
+	block = NULL;
 	#ifdef JEDIT_INTRA_LB_ROUTE
 		for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 			free_intra_lb_nets(intra_lb_routing[irt]);
@@ -1335,7 +1331,7 @@ static enum e_block_pack_status try_pack_molecule(
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/							
 #ifdef JEDIT_INTRA_LB_ROUTE
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data)) {
+				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data) == FALSE) {
 					/* Cannot pack */
 					block_pack_status = BLK_FAILED_ROUTE;
 				}
