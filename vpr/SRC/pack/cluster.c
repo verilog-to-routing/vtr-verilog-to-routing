@@ -31,7 +31,7 @@ using namespace std;
 #include "cluster_router.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
-#define JEDIT_INTRA_LB_ROUTE 
+/* #define JEDIT_INTRA_LB_ROUTE */
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */

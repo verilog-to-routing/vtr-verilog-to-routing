@@ -3,6 +3,10 @@
  Print blif representation of circuit
  Assumptions: Assumes first valid rr input to node is the correct rr input
  Assumes clocks are routed globally
+
+ Limitations: [jluu] Due to ABC requiring that all blackbox inputs be named exactly the same in the netlist to be checked as in the input netlist,
+ I am forced to skip all internal connectivity checking for inputs going into subckts.  If in the future, ABC no longer treats
+ blackboxes as primariy I/Os, then we should revisit this and make it so that we can do formal equivalence on a more representative netlist.
  */
 
 #include <cstdio>
@@ -95,8 +99,12 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 	}
 	else if (logical_block[ilogical_block].type == VPACK_OUTPAD) {
 		int node_index = pb_graph_node->input_pins[0][0].pin_count_in_cluster;
-		fprintf(fpout, ".names clb_%d_rr_node_%d %s\n", clb_index, node_index, logical_block[ilogical_block].name + 4);
-		fprintf(fpout, "1 1\n\n");
+
+		if (strcmp(g_atoms_nlist.net[logical_block[ilogical_block].input_nets[0][0]].name,
+			logical_block[ilogical_block].name + 4) != 0) {
+			fprintf(fpout, ".names clb_%d_rr_node_%d %s\n", clb_index, node_index, logical_block[ilogical_block].name + 4);
+			fprintf(fpout, "1 1\n\n");
+		}
 	}
 	else if(strcmp(logical_block[ilogical_block].model->name, "names") == 0) {
 		/* Print a LUT, a LUT has K input pins and one output pin */
@@ -136,13 +144,24 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				assert(pb_type->ports[i].num_pins == 1);
 				assert(logical_block[ilogical_block].output_nets[0][0] == pb_pin_route_stats[node_index].atom_net_idx);
-				fprintf(fpout, "clb_%d_rr_node_%d\n", clb_index, node_index);
+				fprintf(fpout, "%s\n", logical_block[ilogical_block].name);
 			}
 		}
 		struct s_linked_vptr *truth_table = logical_block[ilogical_block].truth_table;
 		while (truth_table) {
 			fprintf(fpout, "%s\n", (char *) truth_table->data_vptr);
 			truth_table = truth_table->next;
+		}
+
+
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == OUT_PORT) {
+				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
+				assert(pb_type->ports[i].num_pins == 1);
+				assert(logical_block[ilogical_block].output_nets[0][0] == pb_pin_route_stats[node_index].atom_net_idx);
+				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", logical_block[ilogical_block].name, clb_index, node_index);
+				fprintf(fpout, "1 1\n");
+			}
 		}
 	} else if (strcmp(logical_block[ilogical_block].model->name, "latch") == 0) {
 		/* Print a flip-flop.  A flip-flop has a D input, a Q output, and a clock input */
@@ -158,8 +177,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,	pb_pin_route_stats[node_index].prev_pb_pin_id);
 			} else if (pb_type->ports[i].type == OUT_PORT) {
 				assert(pb_type->ports[i].num_pins == 1);
-				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
-				fprintf(fpout, "clb_%d_rr_node_%d re ", clb_index, node_index);
+				fprintf(fpout, "%s re ", g_atoms_nlist.net[logical_block[ilogical_block].output_nets[0][0]].name);
 			} else if (pb_type->ports[i].type == IN_PORT
 					&& pb_type->ports[i].is_clock == TRUE) {
 				assert(pb_type->ports[i].num_pins == 1);
@@ -171,6 +189,15 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 			}
 		}
 		fprintf(fpout, "\n");
+		for (int i = 0; i < pb_type->num_ports; i++) {
+			if (pb_type->ports[i].type == OUT_PORT) {
+				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
+				assert(pb_type->ports[i].num_pins == 1);
+				assert(logical_block[ilogical_block].output_nets[0][0] == pb_pin_route_stats[node_index].atom_net_idx);
+				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", g_atoms_nlist.net[logical_block[ilogical_block].output_nets[0][0]].name, clb_index, node_index);
+				fprintf(fpout, "1 1\n");
+			}
+		}
 	} else {
 		t_model *cur = logical_block[ilogical_block].model;
 		fprintf(fpout, ".subckt %s \\\n", cur->name);
@@ -183,10 +210,20 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				if (port->is_clock == TRUE) {
 					assert(port->index == 0);
 					assert(port->size == 1);
-					fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].clock_pin_name);
+					if (logical_block[ilogical_block].clock_pin_name != NULL) {
+						fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].clock_pin_name);
+					}
+					else {
+						fprintf(fpout, "%s[%d]=unconn ", port->name, i);
+					}
 				}
 				else{
-					fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].input_pin_names[port->index][i]);
+					if (logical_block[ilogical_block].input_pin_names != NULL && logical_block[ilogical_block].input_pin_names[port->index] != NULL && logical_block[ilogical_block].input_pin_names[port->index][i] != NULL) {
+						fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].input_pin_names[port->index][i]);
+					}
+					else {
+						fprintf(fpout, "%s[%d]=unconn ", port->name, i);
+					}
 				}
 				if (i % 4 == 3) {
 					if (i + 1 < port->size) {
@@ -217,33 +254,6 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		}
 		fprintf(fpout, "\n");	
 		fprintf(fpout, "\n");
-
-		if (logical_block[ilogical_block].input_pin_names != NULL) {
-			port = cur->inputs;
-			while (port != NULL) {
-				if (port->is_clock) {
-					if (logical_block[ilogical_block].input_pin_names[port->index] != NULL)	{
-						for (int ipin = 0; ipin < port->size; ipin++) {
-							int net_index = logical_block[ilogical_block].input_nets[port->index][ipin];
-							if (net_index != OPEN && logical_block[ilogical_block].input_pin_names[port->index][ipin] != NULL) {
-								t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, ipin, pb_graph_node);
-								fprintf(fpout, ".names clb_%d_rr_node_%d %s\n", clb_index, pb_graph_pin->pin_count_in_cluster, logical_block[ilogical_block].input_pin_names[port->index][ipin]);
-								fprintf(fpout, "1 1\n\n");
-							}
-						}
-					}
-				}
-				else {
-					int net_index = logical_block[ilogical_block].clock_net;
-					if (net_index != OPEN && logical_block[ilogical_block].clock_pin_name != NULL) {
-						t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, 0, pb_graph_node);
-						fprintf(fpout, ".names clb_%d_rr_node_%d %s\n", clb_index, pb_graph_pin->pin_count_in_cluster, logical_block[ilogical_block].clock_pin_name);
-						fprintf(fpout, "1 1\n\n");
-					}
-				}
-				port = port->next;
-			}
-		}
 
 
 		if (logical_block[ilogical_block].output_pin_names != NULL) {
