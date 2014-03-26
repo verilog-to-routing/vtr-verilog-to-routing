@@ -89,7 +89,9 @@ static void load_trace_to_pb_pin_route_stats(INOUTP t_pb_pin_route_stats *pb_pin
 /*****************************************************************************************
 * Debug functions declarations
 ******************************************************************************************/
+#ifdef PRINT_INTRA_LB_ROUTE
 static void print_route(char *filename, t_lb_router_data *router_data);
+#endif
 static void print_trace(FILE *fp, t_lb_trace *trace);
 
 /*****************************************************************************************
@@ -413,7 +415,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
 	}
 
-#if 0
+#ifdef PRINT_INTRA_LB_ROUTE
 	if(!is_routed) {
 		print_route("jedit_failed_route.echo", router_data);
 		printf(WARNTAG "jedit route FAIL\n");
@@ -923,6 +925,7 @@ static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index) {
 	return NULL;
 }
 
+#ifdef PRINT_INTRA_LB_ROUTE
 /* Debug routine, print out current intra logic block route */
 static void print_route(char *filename, t_lb_router_data *router_data) {
 	FILE *fp;
@@ -946,6 +949,7 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 	}
 	fclose(fp);
 }
+#endif
 
 /* Debug routine, print out trace of net */
 static void print_trace(FILE *fp, t_lb_trace *trace) {
