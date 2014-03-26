@@ -825,14 +825,32 @@ static void print_stats(t_block *clb, int num_clusters) {
 
 	for (icluster = 0; icluster < num_clusters; icluster++) {
 		for (ipin = 0; ipin < clb[icluster].type->num_pins; ipin++) {
-			if (clb[icluster].nets[ipin] != OPEN) {
-				nets_absorbed[clb[icluster].nets[ipin]] = FALSE;
-				if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
+			if (clb[icluster].pb_pin_route_stats == NULL) {
+				if (clb[icluster].nets[ipin] != OPEN) {
+					nets_absorbed[clb[icluster].nets[ipin]] = FALSE;
+					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
 						== RECEIVER) {
-					num_clb_inputs_used[clb[icluster].type->index]++;
-				} else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
+						num_clb_inputs_used[clb[icluster].type->index]++;
+					}
+					else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
 						== DRIVER) {
-					num_clb_outputs_used[clb[icluster].type->index]++;
+						num_clb_outputs_used[clb[icluster].type->index]++;
+					}
+				}
+			}
+			else {
+				int pb_graph_pin_id = get_pb_graph_node_pin_from_block_pin(icluster, ipin)->pin_count_in_cluster;
+				int atom_net_idx = clb[icluster].pb_pin_route_stats[pb_graph_pin_id].atom_net_idx;
+				if (atom_net_idx != OPEN) {
+					nets_absorbed[atom_net_idx] = FALSE;
+					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
+						== RECEIVER) {
+						num_clb_inputs_used[clb[icluster].type->index]++;
+					}
+					else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
+						== DRIVER) {
+						num_clb_outputs_used[clb[icluster].type->index]++;
+					}
 				}
 			}
 		}
@@ -964,15 +982,13 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 			getEchoFileName(E_ECHO_POST_PACK_NETLIST), FALSE);
 #endif
 
+	print_stats(clb, num_clusters);
 	if(!intra_lb_routing.empty()) {
 		for(int icluster = 0; icluster < num_clusters; icluster++) {
 			free_pb_pin_route_stats(clb[icluster].pb_pin_route_stats);
 			clb[icluster].pb_pin_route_stats = NULL;
 		}
 	}
-
-
-	print_stats(clb, num_clusters);
 
 	for(int itype = 0; itype < num_types; itype++) {
 		free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type[itype]);
