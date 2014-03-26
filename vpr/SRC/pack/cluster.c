@@ -508,7 +508,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		is_cluster_legal = FALSE;
 		savedseedindex = seedindex;
 		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
+#ifndef JEDIT_INTRA_LB_ROUTE
 			reset_legalizer_for_cluster(&clb[num_clb]);
+#endif
 
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list, arch,
@@ -603,16 +605,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 			vpr_printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
-				clock_t begin_t, end_t; 
-				begin_t = clock();
-				is_cluster_legal = try_breadth_first_route_cluster();
-				end_t = clock();
-				old_route_t += (end_t - begin_t);
 #ifdef JEDIT_INTRA_LB_ROUTE
-				begin_t = clock();
-				try_intra_lb_route(router_data);
-				end_t = clock();
-				new_route_t += (end_t - begin_t);
+				is_cluster_legal = try_intra_lb_route(router_data);
+#else
+				is_cluster_legal = try_breadth_first_route_cluster();
 #endif
 				if (is_cluster_legal == TRUE) {
 					vpr_printf_info("Passed route at end.\n");
@@ -623,11 +619,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				is_cluster_legal = TRUE;
 			}
 			if (is_cluster_legal == TRUE) {
-				save_cluster_solution();
 				#ifdef JEDIT_INTRA_LB_ROUTE
 					intra_lb_routing.push_back(router_data->saved_lb_nets);
 					assert((int)intra_lb_routing.size() == num_clb);
 					router_data->saved_lb_nets = NULL;
+				#else
+					save_cluster_solution();
 				#endif
 				if (timing_driven) {
 					if (num_blocks_hill_added > 0 && !early_exit) {
@@ -678,8 +675,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/****************************************************************
 	* Free Data Structures 
 	*****************************************************************/
-
+#ifndef JEDIT_INTRA_LB_ROUTE
 	free_cluster_legality_checker();
+#endif
 
 	alloc_and_load_cluster_info(num_clb, clb);
 
@@ -736,17 +734,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	   free(clb_inter_blk_nets);
 	   clb_inter_blk_nets = NULL;
 	}
- 	#ifdef CLOCKS_PER_SEC
-		vpr_printf_info("Old intra lb router took %g seconds.\n", 
-				(float)(old_route_t) / CLOCKS_PER_SEC);
-		vpr_printf_info("New intra lb router took %g seconds.\n", 
-				(float)(new_route_t) / CLOCKS_PER_SEC);
-	#else
-		vpr_printf_info("Old intra lb router took %g seconds.\n", 
-				(float)(old_route_t) / CLK_PER_SEC);
-		vpr_printf_info("New intra lb router took %g seconds.\n", 
-				(float)(new_route_t) / CLK_PER_SEC);		
-	#endif
 }
 
 /*****************************************/
@@ -863,8 +850,9 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 	t_pack_molecule **molecule_array;
 	int max_molecule_size;
 
+#ifndef JEDIT_INTRA_LB_ROUTE
 	alloc_and_load_cluster_legality_checker();
-	/**cluster_placement_stats = alloc_and_load_cluster_placement_stats();*/
+#endif
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		logical_block[i].clb_index = NO_CLUSTER;
@@ -1306,7 +1294,9 @@ static enum e_block_pack_status try_pack_molecule(
 	failed_location = 0;
 
 	while (block_pack_status != BLK_PASSED) {
+#ifndef JEDIT_INTRA_LB_ROUTE
 		save_and_reset_routing_cluster(); /* save current routing information because speculative packing will change routing*/
+#endif
 		if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
 				primitives_list, clb_index)) {
 			block_pack_status = BLK_PASSED;
@@ -1341,24 +1331,20 @@ static enum e_block_pack_status try_pack_molecule(
 			if (block_pack_status == BLK_PASSED) {
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
-				*/
-				clock_t begin_t, end_t;
-				begin_t = clock();
-				setup_intracluster_routing_for_molecule(molecule, primitives_list);
-				end_t = clock();
-				old_route_t += (end_t - begin_t);
+				*/							
 #ifdef JEDIT_INTRA_LB_ROUTE
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM) {
-					begin_t = clock();
-					try_intra_lb_route(router_data);
-					end_t = clock();
-					new_route_t += (end_t - begin_t);
+				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data)) {
+					/* Cannot pack */
+					block_pack_status = BLK_FAILED_ROUTE;
 				}
-#endif
+#else
+				setup_intracluster_routing_for_molecule(molecule, primitives_list);
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_breadth_first_route_cluster() == FALSE) {
 					/* Cannot pack */
 					block_pack_status = BLK_FAILED_ROUTE;
-				} else {
+				}
+#endif
+				else{
 					/* Pack successful, commit 
 					 TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
 					 */
@@ -1404,11 +1390,15 @@ static enum e_block_pack_status try_pack_molecule(
 								max_models, router_data);
 					}
 				}
+#ifndef JEDIT_INTRA_LB_ROUTE
 				restore_routing_cluster();
+#endif
 			}
 		} else {
 			block_pack_status = BLK_FAILED_FEASIBLE;
+#ifndef JEDIT_INTRA_LB_ROUTE
 			restore_routing_cluster();
+#endif
 			break; /* no more candidate primitives available, this molecule will not pack, return fail */
 		}
 	}
@@ -1457,9 +1447,12 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
+#ifdef JEDIT_INTRA_LB_ROUTE
 		set_reset_pb_modes(router_data, parent_pb, TRUE);
+#else
 		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* TODO: default mode is to use mode 0, document this! */
 		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
+#endif
 		parent_pb->child_pbs =
 				(t_pb **) my_calloc(
 						parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,
@@ -1565,9 +1558,12 @@ static void revert_place_logical_block(INP int iblock, INP int max_models, INOUT
 			
 			if (pb->child_pbs != NULL && pb->pb_stats != NULL
 					&& pb->pb_stats->num_child_blocks_in_pb == 0) {
+#ifdef JEDIT_INTRA_LB_ROUTE
 				set_reset_pb_modes(router_data, pb, FALSE);
+#else
 				set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
 				set_pb_graph_mode(pb->pb_graph_node, 0, 1);
+#endif
 				if (next != NULL) {
 					/* If the code gets here, then that means that placing the initial seed molecule failed, don't free the actual complex block itself as the seed needs to find another placement */
 					free_pb(pb);
@@ -2061,9 +2057,11 @@ static void start_new_cluster(
 				alloc_and_load_pb_stats(new_cluster->pb, num_models, max_nets_in_pb_type);
 				new_cluster->pb->parent_pb = NULL;
 
-				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
+#ifdef JEDIT_INTRA_LB_ROUTE
 				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &type_descriptors[i]);
-				
+#else
+				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
+#endif				
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
@@ -2078,8 +2076,11 @@ static void start_new_cluster(
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					break;
 				} else {
+#ifdef JEDIT_INTRA_LB_ROUTE
 					free_router_data(*router_data);
+#else
 					free_legalizer_for_cluster(new_cluster, TRUE);
+#endif
 					free_pb_stats(new_cluster->pb);
 					free(new_cluster->pb);
 					*router_data = NULL;
