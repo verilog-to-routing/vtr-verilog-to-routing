@@ -640,6 +640,7 @@ static void add_subckt(int doall, t_model *user_models) {
 		}
 		logical_block[num_logical_blocks - 1].input_nets = (int**) my_malloc(
 				input_port_count * sizeof(int *));
+		logical_block[num_logical_blocks - 1].input_pin_names = (char***)my_calloc(input_port_count, sizeof(char **));
 
 		port = cur_model->inputs;
 		while (port) {
@@ -651,6 +652,8 @@ static void add_subckt(int doall, t_model *user_models) {
 			assert(port->size >= 0);
 			logical_block[num_logical_blocks - 1].input_nets[port->index] =
 					(int*) my_malloc(port->size * sizeof(int));
+			logical_block[num_logical_blocks - 1].input_pin_names[port->index] = (char**)my_calloc(port->size, sizeof(char *));
+
 			for (j = 0; j < port->size; j++) {
 				logical_block[num_logical_blocks - 1].input_nets[port->index][j] =
 						OPEN;
@@ -730,12 +733,16 @@ static void add_subckt(int doall, t_model *user_models) {
 								add_vpack_net(circuit_signal_name[i], RECEIVER,
 										num_logical_blocks - 1, port->index,
 										my_atoi(pin_number), TRUE, doall);
+						assert(logical_block[num_logical_blocks - 1].clock_pin_name == NULL);
+						logical_block[num_logical_blocks - 1].clock_pin_name = my_strdup(circuit_signal_name[i]);
 					} else {
 						logical_block[num_logical_blocks - 1].input_nets[port->index][my_atoi(
 								pin_number)] = add_vpack_net(
 								circuit_signal_name[i], RECEIVER,
 								num_logical_blocks - 1, port->index,
 								my_atoi(pin_number), FALSE, doall);
+						logical_block[num_logical_blocks - 1].input_pin_names[port->index][my_atoi(
+							pin_number)] = my_strdup(circuit_signal_name[i]);
 						input_net_count++;
 					}
 				}

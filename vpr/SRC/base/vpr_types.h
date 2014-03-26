@@ -206,7 +206,9 @@ typedef struct s_logical_block {
 
 	TGO_RegionList_t placement_region_list; // Optional placement regions (defined by Toro front-end)  /* jedit TODO: Delte this because it is unused */ 
 
+	char ***input_pin_names; /* [0..num_ports-1][0..num_pins-1] save the input name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
 	char ***output_pin_names; /* [0..num_ports-1][0..num_pins-1] save the output name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
+	char *clock_pin_name; /* save the clock name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
 
 } t_logical_block;
 
@@ -340,8 +342,8 @@ typedef struct s_tnode {
 	/* Used in pre-packing timing graph only: */
 	t_prepacked_tnode_data * prepacked_data;
 
-	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely 
-                                                 disconnected to break a combinational loop */
+	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely
+											  disconnected to break a combinational loop */
 } t_tnode;
 
 /* Other structures storing timing information */

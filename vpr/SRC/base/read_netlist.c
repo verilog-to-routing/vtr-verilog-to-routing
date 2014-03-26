@@ -1417,12 +1417,26 @@ void free_logical_blocks(void) {
 					if (logical_block[iblk].input_net_tnodes[i])
 						free(logical_block[iblk].input_net_tnodes[i]);
 				}
+				if (logical_block[iblk].input_pin_names != NULL && logical_block[iblk].input_pin_names[i] != NULL) {
+					for (int j = 0; j < port->size; j++) {
+						if (logical_block[iblk].input_pin_names[i][j] != NULL) {
+							free(logical_block[iblk].input_pin_names[i][j]);
+						}
+					}
+					free(logical_block[iblk].input_pin_names[i]);
+				}
 				i++;
 			}
 			port = port->next;
 		}
 		if (logical_block[iblk].input_net_tnodes)
 			free(logical_block[iblk].input_net_tnodes);
+		if (logical_block[iblk].input_pin_names != NULL) {
+			free(logical_block[iblk].input_pin_names);
+		}
+		if (logical_block[iblk].clock_pin_name != NULL) {
+			free(logical_block[iblk].clock_pin_name);
+		}
 
 		tvptr = logical_block[iblk].packed_molecules;
 		while (tvptr != NULL) {
