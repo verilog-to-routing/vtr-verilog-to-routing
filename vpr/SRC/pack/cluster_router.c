@@ -31,6 +31,8 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 #include "cluster_router.h"
 
+/* #define PRINT_INTRA_LB_ROUTE */
+
 /*****************************************************************************************
 * Internal data structures
 ******************************************************************************************/
@@ -415,16 +417,18 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
 	}
 
-#ifdef PRINT_INTRA_LB_ROUTE
-	if(!is_routed) {
-		print_route("jedit_failed_route.echo", router_data);
-		printf(WARNTAG "jedit route FAIL\n");
-	} else {
-		save_and_reset_lb_route(router_data);
-	}
-#endif
 	if (is_routed) {
 		save_and_reset_lb_route(router_data);
+	}
+	else {
+		for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
+			free_lb_net_rt(lb_nets[inet].rt_tree);
+			lb_nets[inet].rt_tree = NULL;
+		}
+#ifdef PRINT_INTRA_LB_ROUTE
+		print_route("jedit_failed_route.echo", router_data);
+		printf(WARNTAG "jedit route FAIL\n");
+#endif
 	}
 	return is_routed;
 }
@@ -987,6 +991,7 @@ static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data) {
 	/* Free old saved lb nets if exist */
 	if(router_data->saved_lb_nets != NULL) {		
 		free_intra_lb_nets(router_data->saved_lb_nets);
+		router_data->saved_lb_nets = NULL;
 	}
 
 	/* Save current routed solution */
