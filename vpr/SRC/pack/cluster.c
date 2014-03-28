@@ -2331,7 +2331,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	return best_molecule;
 }
 
-#ifndef
+#ifndef JEDIT_INTRA_LB_ROUTE
 /*****************************************/
 static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 
