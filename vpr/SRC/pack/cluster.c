@@ -224,7 +224,9 @@ static t_pack_molecule* get_molecule_for_cluster(
 		INP t_lb_net_stats *clb_inter_blk_nets,
 		INP int cluster_index);
 
+#ifndef JEDIT_INTRA_LB_ROUTE
 static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb);
+#endif
 
 static void check_clustering(int num_clb, t_block *clb, boolean *is_clock);
 
@@ -2329,6 +2331,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 	return best_molecule;
 }
 
+#ifndef
 /*****************************************/
 static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 
@@ -2388,6 +2391,7 @@ static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
 		}
 	}
 }
+#endif
 
 /* TODO: Add more error checking, too light */
 /*****************************************/
