@@ -362,9 +362,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 
 			/* Route each sink of net */
 			for(unsigned int itarget = 1; itarget < lb_nets[inet].terminals.size() && is_impossible == FALSE; itarget++) {
-				int predicted_pq_size = lb_nets.size() * 10;
 				pq.clear();
-				pq.reserve(predicted_pq_size);
 				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
 				expand_rt(router_data, inet, pq, inet);
 				do {
@@ -852,7 +850,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 			incr_cost *= (usage + 1);
 			incr_cost *= router_data->pres_con_fac;
 		}		
-		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;		
+		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;	
 		enode.cost = cur_cost + incr_cost;
 
 		/* Add to queue if cost is lower than lowest cost path to this enode */

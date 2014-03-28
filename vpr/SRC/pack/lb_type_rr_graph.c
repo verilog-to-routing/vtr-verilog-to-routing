@@ -263,14 +263,14 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	for(int iport = 0; iport < pb_graph_head->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_head->num_input_pins[iport]; ipin++) {
 			lb_type_rr_node_graph[ext_rr_index].outedges[0][ioutedges].node_index = pb_graph_head->input_pins[iport][ipin].pin_count_in_cluster;
-			lb_type_rr_node_graph[ext_rr_index].outedges[0][ioutedges].intrinsic_cost = 10; /* set cost high to avoid using external interconnect unless necessary */
+			lb_type_rr_node_graph[ext_rr_index].outedges[0][ioutedges].intrinsic_cost = 1000; /* set cost high to avoid using external interconnect unless necessary */
 			ioutedges++;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_head->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_head->num_clock_pins[iport]; ipin++) {
 			lb_type_rr_node_graph[ext_rr_index].outedges[0][ioutedges].node_index = pb_graph_head->clock_pins[iport][ipin].pin_count_in_cluster;
-			lb_type_rr_node_graph[ext_rr_index].outedges[0][ioutedges].intrinsic_cost = 10; /* set cost high to avoid using external interconnect unless necessary */
+			lb_type_rr_node_graph[ext_rr_index].outedges[0][ioutedges].intrinsic_cost = 1000; /* set cost high to avoid using external interconnect unless necessary */
 			ioutedges++;
 		}
 	}	
@@ -613,7 +613,7 @@ static float get_cost_of_pb_edge(t_pb_graph_edge *edge) {
 	if(edge->delay_max < 0) {
 		return 1;
 	}
-	return 1 + edge->delay_max * 1e12; /* TODO: This has poor normalization as I just take the delay in ps +1ps to be the cost of an edge */
+	return 1 + edge->delay_max * 1e10; /* TODO: This has poor normalization as I just take the delay in ns*10 + 1ns to be the cost of an edge */
 }
 
 /* Print logic block type routing resource graph */

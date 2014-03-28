@@ -259,8 +259,8 @@ struct t_lb_router_data {
 
 		params.max_iterations = 10;
 		params.pres_fac = 1;
-		params.pres_fac_mult = 1.2;
-		params.hist_fac = 0.1;
+		params.pres_fac_mult = 3;
+		params.hist_fac = 1;
 
 		pres_con_fac = 1;
 	}
