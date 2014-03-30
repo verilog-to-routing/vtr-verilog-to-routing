@@ -293,22 +293,21 @@ class ClusterJob(object):
             print "\tAction %s: %s" % (cnt, action.get_name())
             print "\t\tMemory: %sMB" % action.get_peak_memory()
 
+    def get_margined_walltime():
+        #Use a margin on walltime
+        margined_walltime = int(floor(self.walltime_margin * self.get_used_walltime()))
+        # min avoid margin going over the MAX_WALLTIME limit,
+        # -60 puts us ahead (in the queue) of everyone using integer times
+        walltime = min(MAX_WALLTIME, margined_walltime) - 60 
+        return walltime
+
     def format_walltime(self):
         #Constants
         seconds_per_minute = 60
         minutes_per_hour = 60
         seconds_per_hour = seconds_per_minute * minutes_per_hour
 
-        #Use a margin on walltime
-        margined_walltime = int(floor(self.walltime_margin * self.get_used_walltime()))
-
-        #Minimum job time of 24 hours
-        #if margined_walltime < 24*seconds_per_hour:
-            #margined_walltime = 24*seconds_per_hour
-
-        # min avoid margin going over the MAX_WALLTIME limit,
-        # -1 puts us ahead (in the queue) of everyone using integer times
-        walltime = min(MAX_WALLTIME, margined_walltime) - 1
+        walltime = self.get_margined_walltime()
 
         walltime_hrs = 0
         walltime_min = 0
@@ -382,6 +381,7 @@ class ClusterJob(object):
             print >>f, resource_request
             print >>f, job_queue
             print >>f, "#PBS -N %s" % self.name
+            print >>f, "#PBS -j oe" #Join regular and error output
             print >>f, ""
             print >>f, "#Job parameters:"
             print >>f, "JOBNAME=%s" % self.name
@@ -393,32 +393,67 @@ export OUTPUT_SUBDIR=output  # sub-directory to contain of output files
 export OUTPUT_TAR=output_${JOBNAME}.tar
 export RAMDISK=/dev/shm/$USER #Ram disk location
 
-#Move to the submission directory
-cd $PBS_O_WORKDIR
+#Checkpointing Parameters
+"""
+            print >>f, "#Scheduled Walltime of this job"
+            print >>f, "export WALLTIME_SEC=\"%s\"" % self.get_margined_walltime()
+            print >>f, "#How long before the walltime limit we want to start checkpointing"
+            print >>f, "export CHECKPOINT_BUFFER_TIME=\"%s\"" % (30*60) #30 minutes
+            print >>f, "#Name of the intermidiate BLCR checkpoint file"
+            print >>f, "export CHECKPOINT_FILE=\"${PBS_O_WORKDIR}/${JOBNAME}.blcr_checkpoint\""
+            print >>f, "#Which login node to we want to resubmit from"
+            print >>f, "export LOGIN_NODE=\"gpc04\""
 
-#Track how long everything takes.
-echo -n "Starting Job at "
-date
+            print >>f, """
+mkdir -p $RAMDISK/$OUTPUT_SUBDIR
 
 function log_top {
-    echo "Begining to log top in background"
-    mkdir -p $RAMDISK/$OUTPUT_SUBDIR
-    #Columns 512 ensures the full command line arguments are captured in the log file
-    # The sed command removes any extra whitespace, if the full 512 columns aren't used
-    COLUMNS=512 top -b -M -c -d 10 -u $USER | sed 's/  *$//' > $RAMDISK/$OUTPUT_SUBDIR/top.log &
+    top_log_file = $RAMDISK/$OUTPUT_SUBDIR/top.log
+    if [ -e $top_log_file]
+    then
+        echo "Found existing top log, continuing to log top in background"
+        #Columns 512 ensures the full command line arguments are captured in the log file
+        # The sed command removes any extra whitespace, if the full 512 columns aren't used
+        # Note '>>' to append
+        COLUMNS=512 top -b -M -c -d 10 -u $USER | sed 's/  *$//' >> $RAMDISK/$OUTPUT_SUBDIR/top.log &
+
+    else
+        echo "Found no existing top log, begining to log top in background"
+        #Columns 512 ensures the full command line arguments are captured in the log file
+        # The sed command removes any extra whitespace, if the full 512 columns aren't used
+        # Note '>' to start new file
+        COLUMNS=512 top -b -M -c -d 10 -u $USER | sed 's/  *$//' > $RAMDISK/$OUTPUT_SUBDIR/top.log &
+    fi
 }
 
-function save_results {    
+function stage_in {    
+    #Copy to ramdisk
+    echo "Stage-in: copying files to ramdisk directory $RAMDISK"
+    mkdir -p $RAMDISK/$INPUT_SUBDIR
+    mkdir -p $RAMDISK/$OUTPUT_SUBDIR
+    #Copy input tar files
+    #cp -rf $PBS_O_WORKDIR/input $RAMDISK
+    cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
+}
+
+function stage_out {    
     echo -n "Copying from directory $RAMDISK/$OUTPUT_SUBDIR to file $PBS_O_WORKDIR/$OUTPUT_TAR on "
     date
     orig_pwd=`pwd`
     cd $RAMDISK
-    cp $RAMDISK/$OUTPUT_SUBDIR/top.log $PBS_O_WORKDIR/top_${JOBNAME}.log
     tar -cf $PBS_O_WORKDIR/$OUTPUT_TAR $OUTPUT_SUBDIR/*
     #cp $OUTPUT_TAR $PBS_O_WORKDIR
     echo -n "Copying of output complete on "
     date
     cd $orig_pwd
+}
+
+function checkpoint_ramdisk {
+
+}
+
+function restore_ramdisk_checkpoint {
+
 }
 
 function cleanup_ramdisk {
@@ -429,21 +464,39 @@ function cleanup_ramdisk {
     date
 }
 
+function checkpoint_job() {
+    echo -n "Job Timeout, starting Checkpoint on "; date
+    time cr_checkpoint --term ${PID} -f ${CHECKPOINT_FILE}
+
+    if [ ! "$?" == "0" ]
+    then
+        echo "Failed to checkpoint"
+        clean_ramdisk
+        exit 2
+    fi
+
+    checkpoint_ramdisk
+    clean_ramdisk
+
+    echo "Queueing Next Job"
+    chmod 644 ${CHECKPOINT_FILE}
+    ssh ${LOGIN_NODE} "cd ${PBS_O_WORKDIR}; qsub -t ${JOB_ITER_NUM} $BASH_SOURCE"
+
+    exit 0
+}
+
+
 function trap_term {
     echo    "######################################################################"
     echo -n "# Trapped term (soft kill) signal on "; date;
     echo    "######################################################################"
-    save_results
-    cleanup_ramdisk
+    #save_results
+    #cleanup_ramdisk
     exit
 }
 
-#Tracks memory/cpu usage
-log_top
-
-#Trap the termination signal (sent by scheduler 30sec before job is killed)
-# Call the trap_term function to save results and cleanup ram disk
-trap "trap_term" TERM
+#Move to the submission directory
+cd $PBS_O_WORKDIR
 
 #Compiler pre-reqs for python
 module load intel gcc python
@@ -452,49 +505,98 @@ module load gnu-parallel
 
 module load use.own quartus
 
+#For checkpointing
+module load use.experimental blcr
+
 #Setup port forwarding for quartus license
 ~/altera/eecg_quartus_license.sh
 
 
-#Copy to ramdisk
-echo "Stage-in: copying files to ramdisk directory $RAMDISK"
-mkdir -p $RAMDISK/$INPUT_SUBDIR
-mkdir -p $RAMDISK/$OUTPUT_SUBDIR
-#Copy input tar files
-#cp -rf $PBS_O_WORKDIR/input $RAMDISK
-cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
+
+#Check if this is the first time, or a restart
+if [ "${PBS_ARRAYID}" = "" ]
+then
+
+    #Track how long everything takes.
+    echo -n "Starting Job at "
+    date
+
+    #Tracks memory/cpu usage
+    log_top
+
+    #Trap the termination signal (sent by scheduler 30sec before job is killed)
+    # Call the trap_term function to save results and cleanup ram disk
+    trap "trap_term" TERM
+
+    stage_in
 
                   """
-
-            print >>f, ""
-            print >>f, """
-############################
-# Execute Parallel commands
-############################
-"""
-            print >>f, 'echo    "######################################################################"'
-            print >>f, 'echo -n "# Started parallel jobs on "; date'
-            print >>f, 'echo    "######################################################################"'
-            print >>f, ""
-            print >>f, "parallel -u -j %d <<EOF" % int(args.num_processors)
+            print >>f, '    ############################'
+            print >>f, '    # Execute Parallel commands'
+            print >>f, '    ############################'
+            print >>f, '    echo    "######################################################################"'
+            print >>f, '    echo -n "# Started parallel jobs on "; date'
+            print >>f, '    echo    "######################################################################"'
+            print >>f, "    "
+            print >>f, "    parallel -u -j %d <<EOF" % args.num_processors
             for action_num, action_list in enumerate(self.action_lists, start=1):
                 script_name = action_list.gen_script(file_name, self.job_num, action_num, args)
                 print >>f, "./" + script_name
 
             print >>f, ""
-            print >>f, "EOF"
+            print >>f, "    EOF &"
 
-            print >>f, ""
-            print >>f, 'echo    "######################################################################"'
-            print >>f, 'echo -n "# Ended   parallel jobs on "; date'
-            print >>f, 'echo    "######################################################################"'
-            print >>f, ""
+            print >>f, "    export PID = $!"
+            print >>f, "    export JOB_ITER_NUM=1"
+            print >>f, '    #echo    "######################################################################"'
+            print >>f, '    #echo -n "# Ended   parallel jobs on "; date'
+            print >>f, '    #echo    "######################################################################"'
+            print >>f, "    "
+            print >>f, "    #save_results"
+            print >>f, "    #clean_ramdisk"
             print >>f, """
+else
+    echo "Restarting ${JOBNAME} #${PBS_ARRAYID}"
 
-save_results
-cleanup_ramdisk
-"""        
-            
+    #Re-load the ramdisk to the state at the end of the last job
+    restore_ramdisk_checkpoint
+
+    #Restart anything that was running with gnu-parrallel on the last iteration
+    cr_restart --no-restore-pid ${CHECKPOINT_FILE}
+
+    #Increment the iteration number
+    export JOB_ITER_NUM=$(($PBS_ARRAYID+1))
+
+fi
+
+#Wait until we approach the wall-clock limit
+sleep_till_checkpoint
+
+#Create a checkpoint
+checkpoint_job
+
+echo "Waiting no ${PID}"
+wait ${PID}
+RET=$?
+
+#Check to see if job checkpointed
+if [ "${RET}" = "143" ] #Job terminated due to cr_checkpoint
+then
+      echo "Job seems to have been checkpointed, waiting for checkpoint to complete."
+      wait ${timeout}
+      qstat -f ${PBS_JOBID}
+      exit 0
+fi
+ 
+## JOB completed
+ 
+#Kill timeout timer
+kill ${timeout}
+ 
+echo "Job completed with exit status ${RET}"
+exit 254
+
+"""
             return file_name
 
 def make_executable():
