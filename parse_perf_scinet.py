@@ -11,13 +11,31 @@ import fnmatch
 from collections import OrderedDict
 from run_benchmarks_scinet import BenchmarkInfo
 
-#actions = ['quartus_synthesis', 'vpr_pack', 'vpr_place', 'vpr_route300', 'vpr_route500']
-actions = ['quartus_synthesis', 'quartus_fit']
-#actions = ['vpr_route']
+actions = {'VPR': ['quartus_synthesis', 'vpr_pack', 'vpr_place', 'vpr_route300', 'vpr_route500'],
+           'Q2':  ['quartus_synthesis', 'quartus_fit'] }
+
+fieldnames = {}
+fieldnames['VPR'] = ('Name', 'Total Blocks', 'Status', 'Comment', 'Info', 
+                     'Q2Synth Success',      'Q2Synth Time (s)',      'Q2Synth Memory (MB)', 
+                     'VPR Pack Success',     'VPR Pack Time (s)',     'VPR Pack Memory (MB)', 
+                     'VPR Place Success',    'VPR Place Time (s)',    'VPR Place Memory (MB)', 
+                     'VPR Route300 Success', 'VPR Route300 Time (s)', 'VPR Route300 Memory (MB)', 
+                     'VPR Route500 Success', 'VPR Route500 Time (s)', 'VPR Route500 Memory (MB)',
+                     'VPR Misc Time (s)',    'Total Time [VPR] (s)',  'Peak Memory [VPR] (MB)')
+fieldnames['Q2'] = ('Name', 'Total Blocks', 'Status', 'Comment', 'Info', 
+                    'Q2Synth Success',     'Q2Synth Time (s)',     'Q2Synth Memory (MB)', 
+                    'Q2 Pack Success',     'Q2 Pack Time (s)',     'Q2 Pack Memory (MB)', 
+                    'Q2 Place Success',    'Q2 Place Time (s)',    'Q2 Place Memory (MB)', 
+                    'Q2 Route300 Success', 'Q2 Route300 Time (s)', 'Q2 Route300 Memory (MB)', 
+                    'Q2 Route500 Success', 'Q2 Route500 Time (s)', 'Q2 Route500 Memory (MB)',
+                    'Q2 Misc Time (s)',    'Total Time [Q2] (s)',  'Peak Memory [Q2] (MB)')
+
+
 
 class BenchmarkResults(object):
-    def __init__(self):
+    def __init__(self, fieldnames):
         self.benchmarks = {}
+        self.fieldnames = fieldnames
 
     def add_benchmark(self, benchmark_result):
         self.benchmarks[benchmark_result.name] = benchmark_result
@@ -25,22 +43,16 @@ class BenchmarkResults(object):
     def write_csv(self, benchmark_info):
         sorted_benchmark_sizes = benchmark_info.get_names_by_size()
         with open('results_perf.csv', 'w') as f:
-            fieldnames = ('Name', 'Total Blocks', 'Status', 'Comment', 'Info', 
-                          'Q2Synth Success', 'Q2Synth Time (s)', 'Q2Synth Memory (MB)', 
-                          'Pack Success', 'Pack Time (s)', 'Pack Memory (MB)', 
-                          'Place Success', 'Place Time (s)', 'Place Memory (MB)', 
-                          'Route300 Success', 'Route300 Time (s)', 'Route300 Memory (MB)', 
-                          'Route500 Success', 'Route500 Time (s)', 'Route500 Memory (MB)',
-                          'Misc Time (s)', 'Total Time [VPR] (s)', 'Peak Memory [VPR] (MB)')
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            headers = dict( (n,n) for n in fieldnames)
+            writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+            headers = dict( (n,n) for n in self.fieldnames)
             writer.writerow(headers)
             for benchmark_name, benchmark_size in sorted_benchmark_sizes.iteritems():
                 try:
                     self.benchmarks[benchmark_name].write_csv_row(writer, fieldnames, benchmark_size)
                 except KeyError:
                     #No results for this benchmark, add a place holder
-                    writer.writerow({'Name': benchmark_name})
+                    pass
+                    #writer.writerow({'Name': benchmark_name})
 
     def print_summary(self):
         print "#### SUMARY ####"
@@ -74,6 +86,7 @@ class ActionResult(object):
         self.name = name
         self.time = None
         self.memory = None
+        self.other_info = {}
         self.status = 'Failed' #default
 
     def add_time(self, time):
@@ -85,36 +98,49 @@ class ActionResult(object):
     def add_status(self, status):
         self.status = status
 
+    def add_other(self, key, value):
+        self.other_info[key] = value
+
+    def get_other(self, key):
+        return self.other_info[key]
+
     def add_csv_results(self, results_dict):
         if self.name == 'quartus_synthesis':
             results_dict['Q2Synth Success'] = self.status
             if self.status == 'Success':
                 results_dict['Q2Synth Time (s)'] = self.time
                 results_dict['Q2Synth Memory (MB)'] = self.memory
+        
+        elif self.name == 'quartus_fit':
+            #results_dict['Q2Synth Fit'] = self.status
+            #if self.status == 'Success':
+            results_dict['Total Time [Q2] (s)'] = self.time
+            results_dict['Peak Memory [Q2] (MB)'] = self.memory
+            results_dict.update(self.other_info)
 
         elif self.name == 'vpr_pack':
-            results_dict['Pack Success'] = self.status
+            results_dict['VPR Pack Success'] = self.status
             if self.status == 'Success':
-                results_dict['Pack Time (s)'] = self.time
-                results_dict['Pack Memory (MB)'] = self.memory
+                results_dict['VPR Pack Time (s)'] = self.time
+                results_dict['VPR Pack Memory (MB)'] = self.memory
 
         elif self.name == 'vpr_place':
-            results_dict['Place Success'] = self.status
+            results_dict['VPR Place Success'] = self.status
             if self.status == 'Success':
-                results_dict['Place Time (s)'] = self.time
-                results_dict['Place Memory (MB)'] = self.memory
+                results_dict['VPR Place Time (s)'] = self.time
+                results_dict['VPR Place Memory (MB)'] = self.memory
 
         elif self.name == 'vpr_route300':
-            results_dict['Route300 Success'] = self.status
+            results_dict['VPR Route300 Success'] = self.status
             if self.status == 'Success':
-                results_dict['Route300 Time (s)'] = self.time
-                results_dict['Route300 Memory (MB)'] = self.memory
+                results_dict['VPR Route300 Time (s)'] = self.time
+                results_dict['VPR Route300 Memory (MB)'] = self.memory
 
         elif self.name == 'vpr_route500':
-            results_dict['Route500 Success'] = self.status
+            results_dict['VPR Route500 Success'] = self.status
             if self.status == 'Success':
-                results_dict['Route500 Time (s)'] = self.time
-                results_dict['Route500 Memory (MB)'] = self.memory
+                results_dict['VPR Route500 Time (s)'] = self.time
+                results_dict['VPR Route500 Memory (MB)'] = self.memory
 
         else:
             print "Error: unrecognized action '%s' while writing csv" % self.name
@@ -135,7 +161,14 @@ class ActionResult(object):
 
 
 
-def main():
+def main(arg):
+    tool = ''
+    if arg.lower() == 'q2' or arg.lower() == 'quartus':
+        tool = 'Q2'
+        print "Parsing Q2 results"
+    else:
+        tool = 'VPR'
+        print "Parsing VPR results"
 
     benchmark_info = BenchmarkInfo('/home/v/vaughn/kmurray/dev/trees/vqm_to_blif/benchmark_info.json')
 
@@ -149,7 +182,11 @@ def main():
             else:
                 benchmarks.append((job_dir, file_name))
 
-    all_results = BenchmarkResults()
+    all_resulst = None;
+    if tool == 'VPR':
+        all_results = BenchmarkResults(fieldnames['VPR'])
+    else:
+        all_results = BenchmarkResults(fieldnames['Q2'])
 
     for job_dir, benchmark in benchmarks:
         #print
@@ -159,7 +196,7 @@ def main():
         
         benchmark_result = BenchmarkResult(benchmark, job_dir)
 
-        for action in actions:
+        for action in actions[tool]:
             time = 0
             mem = 0
             action_completed_successfully = False
@@ -220,14 +257,27 @@ def parse_quartus_synthesis(log_file):
 
     return results
 
+def time_to_seconds(hours, minutes, seconds):
+    return hours*60*60 + minutes*60 + seconds
+
 def parse_quartus_fit(log_file):
     print "Parsing file ", log_file
     peak_memory = 0
     total_time = 0
+    pack_time = 0
+    place_time = 0
+    route_time = 0
     success = False
+    pack_success = False
+    place_success = False
+    route_success = False
     memory_usage_regex = re.compile(r"^\s*Info: Peak virtual memory:\s+(?P<memory_MB>\S+)\s+megabytes")
     total_time_regex = re.compile(r"^\s*Info: Total CPU time \(on all processors\):\s+(?P<time_hrs>\d+):(?P<time_min>\d+):(?P<time_sec>\d+)")
+    total_time_days_regex = re.compile(r"^\s*Info: Total CPU time \(on all processors\):\s+(?P<time_days>\d+):(?P<time_hrs>\d+):(?P<time_min>\d+):(?P<time_sec>\d+)")
     success_regex = re.compile(r"^\s*INFO: Fitting \(quartus_fit\) was successful.")
+    pack_time_regex = re.compile(r"^Info.*Fitter placement preparation operations ending: elapsed time is (?P<time_hrs>\d+):(?P<time_min>\d+):(?P<time_sec>\d+)")
+    place_time_regex = re.compile(r"^Info.*Fitter placement operations ending: elapsed time is (?P<time_hrs>\d+):(?P<time_min>\d+):(?P<time_sec>\d+)")
+    route_time_regex = re.compile(r"^Info.*Fitter routing operations ending: elapsed time is (?P<time_hrs>\d+):(?P<time_min>\d+):(?P<time_sec>\d+)")
     
     with open(log_file, 'r') as f:
         for line in f:
@@ -237,18 +287,60 @@ def parse_quartus_fit(log_file):
                 continue
             result = total_time_regex.match(line)
             if result:
-                temp_time_sec = int(result.group('time_hrs'))*60*60 + int(result.group('time_min'))*60 + int(result.group('time_sec'))
+                temp_time_sec = time_to_seconds(int(result.group('time_hrs')), int(result.group('time_min')), int(result.group('time_sec')))
                 total_time = max(total_time, int(round(float(temp_time_sec))))
+
+                #Check if there is a day value in this time
+                result = total_time_days_regex.match(line)
+                if result:
+                    temp_time_sec = int(result.group('time_days'))*24*60*60 + time_to_seconds(int(result.group('time_hrs')), int(result.group('time_min')), int(result.group('time_sec')))
+                    total_time = max(total_time, int(round(float(temp_time_sec))))
+                    continue
+
+            result = pack_time_regex.match(line)
+            if result:
+                pack_time = time_to_seconds(int(result.group('time_hrs')), int(result.group('time_min')), int(result.group('time_sec')))
+                pack_success = True
+                print "Found Pack Time"
+                continue
+            result = place_time_regex.match(line)
+            if result:
+                place_time += time_to_seconds(int(result.group('time_hrs')), int(result.group('time_min')), int(result.group('time_sec')))
+                place_success = True
+                print "Found Place Time"
+                continue
+            result = route_time_regex.match(line)
+            if result:
+                route_time = time_to_seconds(int(result.group('time_hrs')), int(result.group('time_min')), int(result.group('time_sec')))
+                route_success = True
+                print "Found Route Time"
                 continue
             result = success_regex.match(line)
             if result:
                 success = True
+                continue
 
     result = ActionResult('quartus_fit')
     result.add_time(total_time)
     result.add_memory(peak_memory)
+    result.add_other('Q2 Pack Time (s)', pack_time)
+    result.add_other('Q2 Place Time (s)', place_time)
+    result.add_other('Q2 Route300 Time (s)', route_time)
+
+    if pack_success:
+        result.add_other('Q2 Pack Success', 'Success')
+    else:
+        result.add_other('Q2 Pack Success', 'Failed')
+    if place_success:
+        result.add_other('Q2 Place Success', 'Success')
+    else:
+        result.add_other('Q2 Place Success', 'Failed')
+    if route_success:
+        result.add_other('Q2 Route300 Success', 'Success')
+    else:
+        result.add_other('Q2 Route300 Success', 'Failed')
     if success:
-        result.add_status('Successful')
+        result.add_status('Success')
     else:
         result.add_status('Failed')
 
@@ -369,4 +461,4 @@ def check_vpr_success(job_dir, benchmark, action):
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1])

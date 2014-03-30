@@ -69,7 +69,7 @@ def parse_args():
                         help='The architecture file to use (default: <family>_arch.simple.xml')
 
     vqm2blif_options.add_argument('--vqm2blif_opts', dest='vqm2blif_extra_opts', action='store',
-                        default='-luts vqm', #Outputs blackbox primitives only (no blif .names)
+                        default='-luts vqm -fixglobals', #Outputs blackbox primitives only (no blif .names)
                         help='Provide additional options to vqm2blif as a string (default: "%(default)s")')
 
 

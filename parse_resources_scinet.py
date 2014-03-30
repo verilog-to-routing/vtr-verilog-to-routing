@@ -13,7 +13,7 @@ from run_benchmarks_scinet import BenchmarkInfo
 
 fieldnames =('Name', 'Total Blocks', 
              '# Input Pins', '# Output Pins', '# Bidir Pins',
-             '# PLLs', '# LEs', '# ALUTs', '# REGs', '# DSP Elements', '# RAM Segments', '# RAM Bits', 
+             '# Clocks', '# LEs', '# ALUTs', '# REGs', '# DSP Elements', '# RAM Segments', '# RAM Bits', 
              '# BLIF blocks')
 
 
@@ -75,7 +75,7 @@ def main():
 
     benchmarks = []
     pwd = os.getcwd()
-    for job_dir in os.listdir(pwd):
+    for job_dir in fnmatch.filter(os.listdir(pwd), 'output*'):
         if job_dir == 'results.csv':
             continue
 
@@ -111,8 +111,9 @@ def gather_resource_stats(benchmark_result, job_dir):
     merge_rpt_dict = parse_merge_rpt(job_dir)
     merge_summary_dict = parse_merge_summary(job_dir)
     synth_log_dict = parse_synth_log(job_dir, benchmark_result.get_name())
+    fit_log_dict = parse_fit_log(job_dir, benchmark_result.get_name())
 
-    merged_dict = dict(map_rpt_dict.items() + merge_rpt_dict.items() + synth_log_dict.items() + merge_summary_dict.items())
+    merged_dict = dict(map_rpt_dict.items() + merge_rpt_dict.items() + synth_log_dict.items() + merge_summary_dict.items() + fit_log_dict.items())
 
     for key, value in merged_dict.iteritems():
         benchmark_result.add_value(key, value)
@@ -186,6 +187,7 @@ def parse_merge_rpt(job_dir):
     input_pins_regex = re.compile(r"^.*Implemented (?P<input_pins>\d+) input pins.*$")
     output_pins_regex = re.compile(r"^.*Implemented (?P<output_pins>\d+) output pins.*$")
     bidir_pins_regex = re.compile(r"^.*-- Bidir Ports\s+; (?P<bidir_pins>\d+)\s+;.*$")
+    virtual_pins_regex = re.compile(r"^.*Total virtual pins\s+;\s+(?P<virtual_pins>\d+)\s+;.*$")
     plls_regex = re.compile(r"^;\s+Total PLLs\s+; (?P<plls>\d+)\s+;.*$")
     regs_regex = re.compile(r"^.*Dedicated logic registers\s+; (?P<REGs>\d+)\s+;.*$")
     dsp_elems_regex = re.compile(r"^.*Implemented (?P<DSPs>\d+) DSP elements.*$")
@@ -226,10 +228,10 @@ def parse_merge_rpt(job_dir):
                 continue
 
             #PLLs
-            result = plls_regex.match(line)
-            if result:
-                results['# PLLs'] = int(result.group('plls'))
-                continue
+            #result = plls_regex.match(line)
+            #if result:
+                #results['# PLLs'] = int(result.group('plls'))
+                #continue
 
 
             #REGs
@@ -293,30 +295,25 @@ def parse_synth_log(job_dir, benchmark_name):
     return {'# BLIF blocks': blackbox_count}
 
 
+def parse_fit_log(job_dir, benchmark_name):
+    num_clocks_regex = re.compile(r"^Info .*: Found (?P<num_clocks>\d+) clocks")
 
-def parse_quartus_synthesis(log_file):
-    peak_memory = 0
-    total_time = 0
+    log_file = os.path.join(job_dir, "%s-quartus_fit.log" % benchmark_name)
 
-    memory_usage_regex = re.compile(r"\s*Info: Peak virtual memory:\s+(?P<memory_MB>\S+)\s+megabytes")
-    total_time_regex = re.compile(r"\s*INFO: Ended\s+'vqm2blif_flow.py script' after\s+(?P<walltime_sec>\S+)\s+sec")
+    num_clocks = 0
 
-    with open(log_file, 'r') as f:
-        for line in f:
-            result = memory_usage_regex.match(line)
-            if result:
-                peak_memory = max(peak_memory, int(float(result.group('memory_MB'))))
-                continue
-            result = total_time_regex.match(line)
-            if result:
-                total_time = int(round(float(result.group('walltime_sec'))))
-                continue
+    try: 
+        with open(log_file, 'r') as f:
+            for line in f:
+                result = num_clocks_regex.match(line)
+                if result:
+                    num_clocks = int(result.group('num_clocks'))
+    except IOError:
+        print "Error could not open %s" % log_file
+        return {}
 
-    results = ActionResult('quartus_synthesis')
-    results.add_time(total_time)
-    results.add_memory(peak_memory)
 
-    return results
+    return {'# Clocks': num_clocks}
 
 if __name__ == '__main__':
     main()

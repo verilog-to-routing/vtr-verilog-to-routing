@@ -1,5 +1,5 @@
+#!/usr/bin/env python
 #!/scinet/gpc/tools/Python/Python272-shared/bin/python
-#!/usr/bin/python
 __version__ = """$Revison$
                  Last Change: $Author: kmurray $ $Date: 2012-08-30 22:54:17 -0400 (Thu, 30 Aug 2012) $
                  Orig Author: kmurray
@@ -11,12 +11,14 @@ import argparse
 import sys
 import os
 import json
+import fnmatch
 from math import floor, ceil
 from collections import OrderedDict
 
 MAX_WALLTIME = 48*60*60 #48 hrs
 RESERVED_MEMORY = 3*1024 #3GB
 
+q2_flow_tcl="/scratch/v/vaughn/kmurray/trees/titan/scripts/q2_flow.tcl"
 def parse_args():
     description="""\
     Runs the VQM2BLIF flow on the specified Quartus 2 Project to generate a BLIF file,
@@ -54,7 +56,24 @@ def parse_args():
     parser.add_argument('--num_procs', '-n', dest='num_processors', action='store',
                         default=8,
                         help='Default number of processors used per node [defaults to %(default)s]')
-
+    parser.add_argument('--max_benchmarks_per_node', dest='max_benchmarks_per_node', action='store',
+                        type=int, default=8,
+                        help='Default benchmarks to run per job/node [defaults to %(default)s]')
+    parser.add_argument('--q2_dense_pack', dest='q2_dense_pack', action='store_true',
+                        default=False,
+                        help='Tells Q2 to pack for density during fit [defaults to %(default)s')
+    parser.add_argument('--no_q2_placement_finalization', dest='no_q2_placement_finalization', action='store_true',
+                        default=False,
+                        help='Tells Q2 to not perform placement finalization (i.e. cluster unpacking) during fit [defaults to %(default)s')
+    parser.add_argument('--disable_timing_opt', dest='disable_timing_opt', action='store_true',
+                        default=False,
+                        help='Tells Q2 to not perform placement finalization (i.e. cluster unpacking) during fit [defaults to %(default)s')
+    parser.add_argument('--vpr_exec', dest='vpr_exec', action='store',
+                        required=False, default="vpr",
+                        help='Override the default executable for VPR [defaults to %(default)s from path]')
+    parser.add_argument('--job_prefix', dest='job_prefix', action='store',
+                        required=False, default="",
+                        help='Add a prefix name to each job for identification of parallel runs [defaults to %(default)s]')
     parser.add_argument('--version', action='version', version=__version__,
                         help='Version information')
 
@@ -82,6 +101,7 @@ def process_args(args):
 
 def main(args):
 
+
     #Get memory and CPU time information about the benchmarks
     benchmark_info = BenchmarkInfo(args.benchmark_info_file)
 
@@ -91,6 +111,8 @@ def main(args):
 
     #Partition the benchmarks into jobs
     partition_benchmarks(benchmark_action_lists, benchmark_info, args)
+
+    make_executable()
 
 def generate_benchmark_actions(args, benchmark_info):
     benchmark_action_dict = {}
@@ -114,8 +136,10 @@ def generate_benchmark_actions(args, benchmark_info):
 def partition_benchmarks(action_dict, benchmark_info, args):
     #Simple benchmark packer, based on estimated memory/walltime usage
 
-    memory_capacity = {'16GB': 16*1024 - RESERVED_MEMORY,
+    memory_capacity = {
+                       '16GB': 16*1024 - RESERVED_MEMORY,
                        '32GB': 32*1024 - RESERVED_MEMORY,
+                       '64GB': 64*1024 - RESERVED_MEMORY,
                        '128GB': 128*1024 - RESERVED_MEMORY}
 
 
@@ -123,8 +147,11 @@ def partition_benchmarks(action_dict, benchmark_info, args):
     job_lists = OrderedDict()
     job_lists['16GB'] = []
     job_lists['32GB'] = []
+    job_lists['64GB'] = []
     job_lists['128GB'] = []
     cnt = 0
+
+    print "Max benchmarks per node: %d" % (args.max_benchmarks_per_node)
     for benchmark, action_list in action_dict.iteritems():
         benchmark_memory = action_list.get_peak_memory()
         benchmark_walltime = action_list.get_total_walltime()
@@ -139,7 +166,7 @@ def partition_benchmarks(action_dict, benchmark_info, args):
             else:
                 #Fits in this machine
                 for job in job_list:
-                    if job.get_available_memory() > benchmark_memory and job.get_available_walltime() > benchmark_walltime:
+                    if job.get_available_memory() > benchmark_memory and job.get_number_of_benchmarks() < args.max_benchmarks_per_node:# and job.get_available_walltime() > benchmark_walltime:
                         #It fits so add the benchmark
                         job.add_actionlist(action_list)
                         benchmark_added = True  
@@ -150,7 +177,7 @@ def partition_benchmarks(action_dict, benchmark_info, args):
                 if not benchmark_added:
                     #Increment Job Counter
                     cnt += 1
-                    new_job = ClusterJob(total_memory=memory_capacity[machine_type], total_walltime=MAX_WALLTIME, machine_type=machine_type, job_num=cnt)
+                    new_job = ClusterJob(total_memory=memory_capacity[machine_type], total_walltime=MAX_WALLTIME, machine_type=machine_type, job_num=cnt, job_prefix=args.job_prefix)
                     new_job.add_actionlist(action_list)
                     job_list.append(new_job)
                     benchmark_added = True
@@ -163,7 +190,7 @@ def partition_benchmarks(action_dict, benchmark_info, args):
         if not benchmark_added:
             #Could not fit in any jobs
             print "Error: benchmakr {benchmark_name} {memory_usage}MB, {walltime} sec, could not fit in any machine types ({machine_types})".format (\
-                    benchmark_name=benchmakr, memory_usage=benchmark_memory, walltime=benchmark_walltime, machine_types=job_lists.keys())
+                    benchmark_name=benchmark, memory_usage=benchmark_memory, walltime=benchmark_walltime, machine_types=job_lists.keys())
 
     job_files = []
     for machine_type, job_list in job_lists.iteritems():
@@ -209,10 +236,11 @@ done
 
 class ClusterJob(object):
 
-    def __init__(self, total_memory, total_walltime, machine_type, job_num, walltime_margin=1.2, memory_margin=1.0):
+    def __init__(self, total_memory, total_walltime, machine_type, job_num, job_prefix, walltime_margin=1.2, memory_margin=1.0):
         self.job_num = job_num
+        self.job_prefix = job_prefix
         self.machine_type = machine_type
-        self.name = "job_%03d_%s" % (self.job_num, self.machine_type)
+        self.name = "%sjob_%03d_%s" % (self.job_prefix, self.job_num, self.machine_type)
 
         self.total_memory = total_memory
         self.used_memory = 0
@@ -223,6 +251,9 @@ class ClusterJob(object):
         self.walltime_margin = walltime_margin
 
         self.action_lists = []
+
+    def get_number_of_benchmarks(self):
+        return len(self.action_lists)
 
     def get_available_memory(self):
         return (self.total_memory - self.used_memory)
@@ -246,11 +277,11 @@ class ClusterJob(object):
         else:
             self.used_memory += action_list_mem
 
-        if action_list_time > self.get_available_walltime():
-            print "Error: too much walltime required to add", action_list.get_name(), "(", action_list_time - self.get_available_walltime(), "sec)"
-            sys.exit(1)
-        else:
-            self.used_walltime = max(self.used_walltime, action_list_time)
+        #if action_list_time > self.get_available_walltime():
+            #print "Error: too much walltime required to add", action_list.get_name(), "(", action_list_time - self.get_available_walltime(), "sec over)"
+            #sys.exit(1)
+        #else:
+        self.used_walltime = max(self.used_walltime, action_list_time)
 
         self.action_lists.append(action_list)
 
@@ -270,6 +301,11 @@ class ClusterJob(object):
 
         #Use a margin on walltime
         margined_walltime = int(floor(self.walltime_margin * self.get_used_walltime()))
+
+        #Minimum job time of 24 hours
+        #if margined_walltime < 24*seconds_per_hour:
+            #margined_walltime = 24*seconds_per_hour
+
         # min avoid margin going over the MAX_WALLTIME limit,
         # -1 puts us ahead (in the queue) of everyone using integer times
         walltime = min(MAX_WALLTIME, margined_walltime) - 1
@@ -320,21 +356,27 @@ class ClusterJob(object):
 
             #Machine type specific configurations
             if self.machine_type == '16GB':
-                resource_request += ''
+                resource_request += 'ppn=8,'
                 job_queue += 'batch'
 
             elif self.machine_type == '32GB':
                 #Special resource for 32GB machines
-                resource_request += 'm32g:'
+                resource_request += 'm32g:ppn=8,'
                 job_queue += 'batch'
+
+            elif self.machine_type == '64GB':
+                #Special resource for 64GB machines
+                resource_request += 'ppn=16,'
+                job_queue += 'sandy'
 
             elif self.machine_type == '128GB':
                 #Special queue for 128GB machines
+                resource_request += 'ppn=8,'
                 job_queue += 'largemem'
             else:
                 print "Error: unrecognized machine type %s" % self.machine_type
 
-            resource_request += "ppn=8,walltime=%s" % self.format_walltime()
+            resource_request += "walltime=%s" % self.format_walltime()
 
 
             print >>f, resource_request
@@ -371,6 +413,7 @@ function save_results {
     date
     orig_pwd=`pwd`
     cd $RAMDISK
+    cp $RAMDISK/$OUTPUT_SUBDIR/top.log $PBS_O_WORKDIR/top_${JOBNAME}.log
     tar -cf $PBS_O_WORKDIR/$OUTPUT_TAR $OUTPUT_SUBDIR/*
     #cp $OUTPUT_TAR $PBS_O_WORKDIR
     echo -n "Copying of output complete on "
@@ -433,7 +476,7 @@ cp $ARCH_FILE $RAMDISK/$INPUT_SUBDIR/.
             print >>f, 'echo -n "# Started parallel jobs on "; date'
             print >>f, 'echo    "######################################################################"'
             print >>f, ""
-            print >>f, "parallel -u -j %d <<EOF" % args.num_processors
+            print >>f, "parallel -u -j %d <<EOF" % int(args.num_processors)
             for action_num, action_list in enumerate(self.action_lists, start=1):
                 script_name = action_list.gen_script(file_name, self.job_num, action_num, args)
                 print >>f, "./" + script_name
@@ -454,6 +497,8 @@ cleanup_ramdisk
             
             return file_name
 
+def make_executable():
+    os.system("chmod +x *sh")
 
 
 
@@ -496,6 +541,7 @@ class BenchmarkActionList(object):
 
             print >>f, 'mkdir -p $JOB_INPUT_DIR'
             print >>f, 'cp -rf $BENCHMARK_SRC_DIR/{benchmark_name}/quartus2_proj $JOB_INPUT_DIR/quartus2_proj'.format(benchmark_name=self.get_name())
+            print >>f, 'cp -rf $BENCHMARK_SRC_DIR/{benchmark_name}/sdc $JOB_INPUT_DIR/sdc'.format(benchmark_name=self.get_name())
 
             print >>f, ''
             print >>f, 'mkdir -p $JOB_OUTPUT_DIR'
@@ -544,7 +590,7 @@ class BenchmarkAction(object):
         elif self.walltime_sec == 'will_not_fit':
             return 0
         elif self.walltime_sec != '':
-            return int(self.walltime_sec)
+            return max(self.default_time, int(self.walltime_sec))
         else:
             return 0
 
@@ -555,34 +601,81 @@ class BenchmarkAction(object):
 
         arch_file = '$RAMDISK/$INPUT_SUBDIR/' + os.path.basename(args.arch_file)
         blif_file = '$RAMDISK/$OUTPUT_SUBDIR/{short_name}/*_stratixiv.blif'.format(short_name=short_name)
+        vpr_sdc_file = '$JOB_INPUT_DIR/sdc/vpr.sdc'
 
-        vpr_opts = {'pack' : ['--pack' , '--timing_analysis off', '--nodisp'], 
-                    'place': ['--place', '--fast', '--timing_analysis off', '--nodisp'], 
-                    'route300': ['--route', '--route_chan_width 300', '--timing_analysis off', '--nodisp'],
-                    'route500': ['--route', '--route_chan_width 500', '--timing_analysis off', '--nodisp']}
+        q2_flow_disable_timing = ''
+
+        vpr_opts = {'pack' :    ['--pack' , '--nodisp', '--sdc_file {sdc_file}'.format(sdc_file=vpr_sdc_file)], 
+                    'place':    ['--place', '--nodisp', '--sdc_file {sdc_file}'.format(sdc_file=vpr_sdc_file),
+                                 '--route_chan_width 300'], #Need to provide a resonable channel width to VPR placement or it will pick a ridiculously large number which will kill us for peak memory use
+                    'route300': ['--route', '--nodisp', '--sdc_file {sdc_file}'.format(sdc_file=vpr_sdc_file), 
+                                 '--route_chan_width 300', '--max_router_iterations 400'],
+                    'route500': ['--route', '--nodisp', '--sdc_file {sdc_file}'.format(sdc_file=vpr_sdc_file),
+                                 '--route_chan_width 500', '--max_router_iterations 400'],
+                    'routemin': ['--route', '--nodisp', '--sdc_file {sdc_file}'.format(sdc_file=vpr_sdc_file)]}
+
+        if args.disable_timing_opt:
+            for key in vpr_opts.keys():
+                vpr_opts[key].append("--timing_analysis off")
+
+            q2_flow_disable_timing = '-disable_timing'
+
+
 
         if self.get_name() == "quartus_synthesis":
-            cmd += ['vqm2blif_flow.py -q {qpf_file} -a {arch_file} &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
+            cmd += ['python /scratch/v/vaughn/kmurray/trees/titan/scripts/titan_flow.py -q {qpf_file} -a {arch_file} --vqm2blif_dir /scratch/v/vaughn/kmurray/trees/vqm_to_blif &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
                    arch_file=arch_file, short_name=short_name, action_name=self.get_name())]
 
         elif self.get_name() == "quartus_fit":
-            cmd += ['quartus_sh -t {q2_flow_tcl} -project {qpf_file} -family {family} -fit -fit_ini_vars "fit_report_lab_usage_stats=on" -fit_assignment_vars "FITTER_EFFORT=Standard Fit" &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
-                   q2_flow_tcl='~/dev/trees/vqm_to_blif/REG_TEST/SCRIPTS/q2_flow.tcl', family=os.path.basename(arch_file).split('_')[0], short_name=short_name, action_name=self.get_name())]
+
+            #INI Vars
+            fit_ini_vars = "fit_report_lab_usage_stats=on"
+            if args.q2_dense_pack:
+                q2_dense_ini_var = "fit_pack_for_density=on"
+                fit_ini_vars = '; '.join([fit_ini_vars, q2_dense_ini_var])
+
+            
+            #Assignment vars
+            fit_assignment_vars = "FITTER_EFFORT=Standard Fit"
+            if args.no_q2_placement_finalization:
+                no_placement_finalization_var = "FINAL_PLACEMENT_OPTIMIZATION=Never"
+                fit_assignment_vars = "; ".join([fit_assignment_vars, no_placement_finalization_var])
+
+
+
+
+
+            cmd += ['quartus_sh -t {q2_flow_tcl} -project {qpf_file} -family {family} -fit -fit_ini_vars "{fit_ini_vars}" -fit_assignment_vars "{fit_assignment_vars}" {disable_timing} &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
+                   q2_flow_tcl=q2_flow_tcl, family=os.path.basename(arch_file).split('_')[0], short_name=short_name, action_name=self.get_name(), fit_ini_vars=fit_ini_vars, fit_assignment_vars=fit_assignment_vars, disable_timing=q2_flow_disable_timing)]
+
+        elif self.get_name() == "quartus_stamap":
+
+            cmd += ['quartus_sh -t {q2_flow_tcl} -project {qpf_file} -family {family} -sta_map -sdc_file {sdc_file} -sta_report_script {sta_report_script} &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
+                   q2_flow_tcl=q2_flow_tcl, family=os.path.basename(arch_file).split('_')[0], short_name=short_name, action_name=self.get_name(), sdc_file="/home/v/vaughn/kmurray/q2_reg_to_reg_no_uncertainty.sdc",
+                   sta_report_script="/scratch/v/vaughn/kmurray/trees/titan/scripts/q2_sta_report.tcl", disable_timing=q2_flow_disable_timing)]
+
+        elif self.get_name() == "quartus_sta":
+
+            cmd += ['quartus_sh -t {q2_flow_tcl} -project {qpf_file} -family {family} -sta_fit -sta_report_script {sta_report_script} &> {short_name}-{action_name}.log'.format(qpf_file=qpf_file, \
+                   q2_flow_tcl=q2_flow_tcl, family=os.path.basename(arch_file).split('_')[0], short_name=short_name, action_name=self.get_name(), sta_report_script="/scratch/v/vaughn/kmurray/trees/titan/scripts/q2_sta_report.tcl", disable_timing=q2_flow_disable_timing)]
 
         elif self.get_name() == "vpr_pack":
-            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['pack']), short_name=short_name, action_name=self.get_name())]
+            cmd += ['{vpr_exec} {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['pack']), short_name=short_name, action_name=self.get_name(), vpr_exec=args.vpr_exec)]
 
         elif self.get_name() == "vpr_place":
-            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['place']), short_name=short_name, action_name=self.get_name())]
+            cmd += ['{vpr_exec} {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['place']), short_name=short_name, action_name=self.get_name(), vpr_exec=args.vpr_exec)]
 
         elif self.get_name() == "vpr_route300":
-            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route300']), short_name=short_name, action_name=self.get_name())]
+            cmd += ['{vpr_exec} {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route300']), short_name=short_name, action_name=self.get_name(), vpr_exec=args.vpr_exec)]
         elif self.get_name() == "vpr_route500":
-            cmd += ['vpr {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
-                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route500']), short_name=short_name, action_name=self.get_name())]
+            cmd += ['{vpr_exec} {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['route500']), short_name=short_name, action_name=self.get_name(), vpr_exec=args.vpr_exec)]
+        elif self.get_name() == "vpr_routemin":
+            cmd += ['{vpr_exec} {arch_file} {blif_file} {vpr_opts} &> {short_name}-{action_name}.log'.format(arch_file=arch_file, \
+                   blif_file=blif_file, vpr_opts=' '.join(vpr_opts['routemin']), short_name=short_name, action_name=self.get_name(), vpr_exec=args.vpr_exec)]
 
         else:
             print "ERROR: Unknown action %s" % self.get_name()
@@ -608,6 +701,10 @@ class BenchmarkInfo(object):
         data = ''
 
         tool, action_name = action.split('_')
+
+        #Hack
+        if action == 'vpr_routemin':
+            action_name = 'route300'
 
         try: 
             data = self.info[benchmark][tool][action_name][mem_or_cpu]
@@ -640,6 +737,9 @@ class BenchmarkInfo(object):
 
 
 if __name__ == '__main__':
+    with open("run_benchmarks_scinet.cmd", "w") as f:
+        print >>f, ' '.join(sys.argv)
+
     args = parse_args()
 
     main(args)
