@@ -257,7 +257,7 @@ struct t_lb_router_data {
 		explored_node_tb = NULL;
 		explore_id_index = 1;
 
-		params.max_iterations = 10;
+		params.max_iterations = 20;
 		params.pres_fac = 1;
 		params.pres_fac_mult = 3;
 		params.hist_fac = 1;
