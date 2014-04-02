@@ -855,12 +855,11 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		/* Adjust cost so that higher fanout nets prefer higher fanout routing nodes while lower fanout nets prefer lower fanout routing nodes */
 		float fanout_factor = 1.0;
 		if (lb_type_graph[enode.node_index].num_fanout[mode] > 1) {
-			fanout_factor = 0.95 + (0.1 / net_fanout);
+			fanout_factor = 0.85 + (0.25 / net_fanout);
 		}
 		else {
-			fanout_factor = 1.05 - (0.1 / net_fanout);
+			fanout_factor = 1.15 - (0.25 / net_fanout);
 		}
-		
 		incr_cost *= fanout_factor;
 		enode.cost = cur_cost + incr_cost;
 
