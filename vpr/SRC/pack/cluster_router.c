@@ -87,7 +87,6 @@ static void reset_explored_node_tb(t_lb_router_data *router_data);
 static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data);
 static void load_trace_to_pb_pin_route_stats(INOUTP t_pb_pin_route_stats *pb_pin_route_stats, INP int total_pins, INP int atom_net, INP int prev_pin_id, INP const t_lb_trace *trace);
 
-
 /*****************************************************************************************
 * Debug functions declarations
 ******************************************************************************************/
@@ -335,6 +334,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 
 	/* Stores state info during route */
 	reservable_pq <t_expansion_node, vector <t_expansion_node>, compare_expansion_node> pq;
+
 	reset_explored_node_tb(router_data);
 
 	/* Reset current routing */
@@ -347,7 +347,6 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		router_data->lb_rr_node_stats[inode].occ = 0;
 	}
 
-	
 	/*	Iteratively remove congestion until a successful route is found.  
 		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
 	router_data->pres_con_fac = router_data->params.pres_fac;
@@ -355,16 +354,17 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		unsigned int inet;
 		/* Iterate across all nets internal to logic block */
 		for(inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
-			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, router_data->explored_node_tb, RT_REMOVE);
-			free_lb_net_rt(lb_nets[inet].rt_tree);
-			lb_nets[inet].rt_tree = NULL;
-			add_source_to_rt(router_data, inet);
+			int idx = inet;
+			commit_remove_rt(lb_nets[idx].rt_tree, router_data->lb_rr_node_stats, router_data->explored_node_tb, RT_REMOVE);
+			free_lb_net_rt(lb_nets[idx].rt_tree);
+			lb_nets[idx].rt_tree = NULL;
+			add_source_to_rt(router_data, idx);
 
 			/* Route each sink of net */
-			for(unsigned int itarget = 1; itarget < lb_nets[inet].terminals.size() && is_impossible == FALSE; itarget++) {
+			for(unsigned int itarget = 1; itarget < lb_nets[idx].terminals.size() && is_impossible == FALSE; itarget++) {
 				pq.clear();
 				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
-				expand_rt(router_data, inet, pq, inet);
+				expand_rt(router_data, idx, pq, idx);
 				do {
 					if(pq.empty()) {
 						/* No connection possible */
@@ -380,16 +380,16 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 							*/
 							router_data->explored_node_tb[exp_node.node_index].explored_id = router_data->explore_id_index;
 							router_data->explored_node_tb[exp_node.node_index].prev_index = exp_node.prev_index;
-							if(exp_node.node_index != lb_nets[inet].terminals[itarget]) {								
-								expand_node(router_data, exp_node, pq, lb_nets[inet].terminals.size() - 1);
+							if(exp_node.node_index != lb_nets[idx].terminals[itarget]) {								
+								expand_node(router_data, exp_node, pq, lb_nets[idx].terminals.size() - 1);
 							}
 						}
 					}
-				} while(exp_node.node_index != lb_nets[inet].terminals[itarget] && is_impossible == FALSE);
+				} while(exp_node.node_index != lb_nets[idx].terminals[itarget] && is_impossible == FALSE);
 
-				if(exp_node.node_index == lb_nets[inet].terminals[itarget]) {
+				if(exp_node.node_index == lb_nets[idx].terminals[itarget]) {
 					/* Net terminal is routed, add this to the route tree, clear data structures, and keep going */
-					add_to_rt(lb_nets[inet].rt_tree, exp_node.node_index, router_data->explored_node_tb, inet);					
+					add_to_rt(lb_nets[idx].rt_tree, exp_node.node_index, router_data->explored_node_tb, idx);					
 				}
 
 				router_data->explore_id_index++;
@@ -403,7 +403,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 				}								
 			}
 			
-			commit_remove_rt(lb_nets[inet].rt_tree, router_data->lb_rr_node_stats, router_data->explored_node_tb, RT_COMMIT);
+			commit_remove_rt(lb_nets[idx].rt_tree, router_data->lb_rr_node_stats, router_data->explored_node_tb, RT_COMMIT);
 		}
 		if(is_impossible == FALSE) {
 			is_routed = is_route_success(router_data);

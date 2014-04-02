@@ -610,10 +610,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 /* Determine intrinsic cost of an edge that joins two pb_graph_pins */
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge) {
-	if(edge->delay_max < 0) {
-		return 1;
-	}
-	return 1 + edge->delay_max * 1e10; /* TODO: This has poor normalization as I just take the delay in ns*10 + 1ns to be the cost of an edge */
+	return 1;
 }
 
 /* Print logic block type routing resource graph */
