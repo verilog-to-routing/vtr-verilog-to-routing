@@ -73,7 +73,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iatom, int iport, int ipin, t_model_ports *model_port);
 
 
-static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stats, t_explored_node_tb *explored_node_tb, e_commit_remove op);
+static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op);
+static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
 static void expand_rt(t_lb_router_data *router_data, int inet, reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
 static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *explored_node_tb, 
@@ -355,7 +356,10 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 		/* Iterate across all nets internal to logic block */
 		for(inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
 			int idx = inet;
-			commit_remove_rt(lb_nets[idx].rt_tree, router_data->lb_rr_node_stats, router_data->explored_node_tb, RT_REMOVE);
+			if (is_skip_route_net(lb_nets[idx].rt_tree, router_data) == TRUE) {
+				continue;
+			}
+			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_REMOVE);
 			free_lb_net_rt(lb_nets[idx].rt_tree);
 			lb_nets[idx].rt_tree = NULL;
 			add_source_to_rt(router_data, idx);
@@ -403,7 +407,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 				}								
 			}
 			
-			commit_remove_rt(lb_nets[idx].rt_tree, router_data->lb_rr_node_stats, router_data->explored_node_tb, RT_COMMIT);
+			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT);
 		}
 		if(is_impossible == FALSE) {
 			is_routed = is_route_success(router_data);
@@ -748,9 +752,15 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 }
 
 /* Commit or remove route tree from currently routed solution */
-static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stats, t_explored_node_tb *explored_node_tb, e_commit_remove op) {
+static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op) {
+	t_lb_rr_node_stats *lb_rr_node_stats;
+	t_explored_node_tb *explored_node_tb;
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	int inode;
 	int incr;
+
+	lb_rr_node_stats = router_data->lb_rr_node_stats;
+	explored_node_tb = router_data->explored_node_tb;
 
 	if(rt == NULL) {
 		return;
@@ -761,7 +771,9 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stat
 	/* Determine if node is being used or removed */
 	if (op == RT_COMMIT) {
 		incr = 1;
-		lb_rr_node_stats[inode].historical_usage++;
+		if (lb_rr_node_stats[inode].occ >= lb_type_graph[inode].capacity) {
+			lb_rr_node_stats[inode].historical_usage += (lb_rr_node_stats[inode].occ - lb_type_graph[inode].capacity + 1); /* store historical overuse */
+		}		
 	} else {
 		incr = -1;
 		explored_node_tb[inode].inet = OPEN;
@@ -772,9 +784,43 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_rr_node_stats *lb_rr_node_stat
 
 	/* Recursively update route tree */
 	for(unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-		commit_remove_rt(&rt->next_nodes[i], lb_rr_node_stats, explored_node_tb, op);
+		commit_remove_rt(&rt->next_nodes[i], router_data, op);
 	}
 }
+
+/* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
+static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) {
+	t_lb_rr_node_stats *lb_rr_node_stats;
+	t_explored_node_tb *explored_node_tb;
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
+	int inode;
+	
+	lb_rr_node_stats = router_data->lb_rr_node_stats;
+	explored_node_tb = router_data->explored_node_tb;
+
+	if (rt == NULL) {
+		return FALSE; /* Net is not routed, therefore must route net */
+	}
+
+	inode = rt->current_node;
+
+	/* Determine if node is overused */
+	if (lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
+		/* Conflict between this net and another net at this node, reroute net */
+		return FALSE;
+	}
+
+	/* Recursively check that rest of route tree does not have a conflict */
+	for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
+		if (is_skip_route_net(&rt->next_nodes[i], router_data) == FALSE) {
+			return FALSE;
+		}
+	}
+
+	/* No conflict, this net's current route is legal, skip routing this net */
+	return TRUE;
+}
+
 
 /* At source mode as starting point to existing route tree */
 static void add_source_to_rt(t_lb_router_data *router_data, int inet) {
@@ -846,12 +892,11 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
 		incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
 		incr_cost += lb_type_graph[cur_node].outedges[mode][iedge].intrinsic_cost;
+		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;
 		if(usage > 0) {
-			incr_cost *= (usage + 1);
-			incr_cost *= router_data->pres_con_fac;
+			incr_cost *= (usage * router_data->pres_con_fac);
 		}		
-		incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;	
-		
+				
 		/* Adjust cost so that higher fanout nets prefer higher fanout routing nodes while lower fanout nets prefer lower fanout routing nodes */
 		float fanout_factor = 1.0;
 		if (lb_type_graph[enode.node_index].num_fanout[mode] > 1) {
