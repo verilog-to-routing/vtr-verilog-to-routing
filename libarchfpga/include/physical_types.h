@@ -806,6 +806,11 @@ struct s_arch {
 	t_model *model_library;
 	t_power_arch * power;
 	t_clock_arch * clocks;
+	
+	#ifdef INTERPOSER_BASED_ARCHITECTURE
+	// this is used to make sure a cutline does not go through a physical block
+	int lcm_of_block_heights;
+	#endif
 };
 
 #endif
