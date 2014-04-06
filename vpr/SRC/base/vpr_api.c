@@ -391,6 +391,101 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 	}
 }
 
+#ifdef INTERPOSER_BASED_ARCHITECTURE
+/* This function determines locations where cuts should happen for an
+ * interposer-based architecture. 
+ * Notice that a cut cannot go through a block.
+ *
+ * For instance: here we have DSP blocks of height 4, and RAM blocks of height 6.
+ * A cut at y=4 would split two DSP blocks nicely, but it would cut through a RAM block.
+ * Similarly, a cut at y=6 would split 2 RAM blocks nicely, but it would cut through a DSP block.
+ * The first possible place to have a cut without cutting through a block is the Least Common Multiple of
+ * Block Heights of the blocks in the architecture
+ *
+ *  
+ * _______    ______ ______________________> y = 12 OK. = LCM (4,6)
+ * |     |    |    |
+ * | DSP |    | RAM|
+ * |     |    |    |
+ * |_____|    |    | ______________________> y = 8 Not OK.
+ * |     |    |    | 
+ * | DSP |    |____| ______________________> y = 6 Not OK.
+ * |     |    |    |
+ * |_____|    |    | ______________________> y = 4 Not OK.
+ * |     |    |    |  
+ * | DSP |    | RAM|
+ * |     |    |    |
+ * |     |    |    |
+ * -------    ------ ----------------------> y = 0
+ *
+ * Suppose ny = 98. LCM = 4 (e.g. both DSP and RAM are height 4). num_cuts = 2 ==> num_slices = 3.
+ * 98 / 4 = 24, so at most you can make 23 cuts (24 slices without cutting through a block).
+ * You want each slice to be as tall as possible.
+ * 24 / 3 = 8. So, you can have at most 8 of the tallest block in each slice.
+ * So, 
+ * Slice #1 = y=0  --> y= 8*4= 32     (heigh of slice#1 = 32)
+ * Slice #2 = y=32 --> y= 8*4*2 = 64  (heigh of slice#2 = 32)
+ * Slice #3 = y=64 --> y=98           (heigh of slice#3 = 34)
+ */
+void vpr_setup_interposer_cut_locations(t_arch Arch)
+{
+	if(Arch.lcm_of_block_heights >= ny)
+	{
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+		"Given the specifications of block heights in the architecture, it is not possible to "
+		"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
+	}
+
+
+	int num_slices = num_cuts + 1;
+		
+	// see explanation above for slice_height
+	int slice_height = ((int)(((int)(ny / Arch.lcm_of_block_heights)) / num_slices )) * Arch.lcm_of_block_heights;
+
+	if(slice_height == 0)
+	{
+		// there's still hope
+		slice_height = Arch.lcm_of_block_heights;
+	}
+
+	arch_cut_locations = (int*) my_malloc(num_cuts * sizeof(int));
+	for(int cut_counter=0; cut_counter<num_cuts; ++cut_counter)
+	{
+		arch_cut_locations[cut_counter] = (cut_counter+1)*slice_height;
+		if( arch_cut_locations[cut_counter] >= ny)
+		{
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+			"Given the specifications of block heights in the architecture, it is not possible to "
+			"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
+		}
+		assert(arch_cut_locations[cut_counter]%Arch.lcm_of_block_heights==0);
+	}
+
+	vpr_printf_info("Info: Interposer cuts are located at the following coordinates:\n");
+	for(int cut_counter=0; cut_counter<num_cuts; ++cut_counter)
+	{
+		vpr_printf_info("\tInfo: Cut#%d: y=%d\n", cut_counter+1, arch_cut_locations[cut_counter]);
+	}
+
+	vpr_printf_info("Info: Height of each SLR (Super Logic Region) is:\n");
+	for(int cut_counter=0; cut_counter<=num_cuts; ++cut_counter)
+	{
+		if(cut_counter==0)
+		{
+			vpr_printf_info("\tInfo: Region#%d height: %d\n", cut_counter+1, arch_cut_locations[cut_counter]);
+		}
+		else if(cut_counter==num_cuts)
+		{
+			vpr_printf_info("\tInfo: Region#%d height: %d\n", cut_counter+1, ny-arch_cut_locations[cut_counter-1]);
+		}
+		else
+		{
+			vpr_printf_info("\tInfo: Region#%d height: %d\n", cut_counter+1, arch_cut_locations[cut_counter]-arch_cut_locations[cut_counter-1]);
+		}
+	}
+}
+#endif
+
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 
 	clock_t begin = clock();

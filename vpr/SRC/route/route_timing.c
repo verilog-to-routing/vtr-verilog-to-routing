@@ -826,12 +826,10 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 	*/
 	int y_start; /* start point y-coordinate. (y-coordinate at the *end* of wire 'i') */
 	int y_end;   /* destination (target) y-coordinate */
-	int cut_i, cut_step, y_cut_location, num_expected_hops;
+	int cut_i, y_cut_location, num_expected_hops;
 	t_rr_type rr_type;
 
 	num_expected_hops = 0;
-	cut_step = ny / (num_cuts + 1);
-
 	y_end   = rr_node[target_node].ylow; 
 	rr_type = rr_node[inode].type;
 
@@ -860,9 +858,9 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 	}
 
 	/* for every cut, is it between 'i' and 'target'? */
-	for(cut_i=1 ; cut_i<=num_cuts; ++cut_i) 
+	for(cut_i=0 ; cut_i<num_cuts; ++cut_i) 
 	{
-		y_cut_location = cut_i*cut_step;
+		y_cut_location = arch_cut_locations[cut_i];
 		if( (y_start < y_cut_location &&  y_cut_location < y_end) ||
 			(y_end   < y_cut_location &&  y_cut_location < y_start)) 
 		{
@@ -876,9 +874,9 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 	if(rr_type == CHANY)
 	{	
 		/* for every cut, does it cut wire 'i'? */
-		for(cut_i=1 ; cut_i<=num_cuts; ++cut_i) 
+		for(cut_i=0 ; cut_i<num_cuts; ++cut_i) 
 		{
-			y_cut_location = cut_i*cut_step;
+			y_cut_location = arch_cut_locations[cut_i];
 			if(rr_node[inode].ylow < y_cut_location && y_cut_location < rr_node[inode].yhigh)
 			{
 				++num_expected_hops;

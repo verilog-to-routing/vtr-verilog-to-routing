@@ -41,7 +41,6 @@ bool include_rr_node_IDs_in_rr_graph_dump = true;
  * ---------------------------------------------------------------------------*/
 
 static std::set<int> cut_node_set; /* This set will contain IDs of the routing wires we will cut */
-static int* y_cuts = 0;
 static int*** interposer_node_loc; 
 static int* interposer_nodes;
 static int s_num_interposer_nodes = 0;
@@ -293,7 +292,7 @@ void cut_rr_graph_edges_uniform_cut_with_rotation(int nodes_per_chan)
 					int track_to_cut = (itrack+(step*ichunk))%nodes_per_chan;
 
 					#ifdef DUMP_CUTTING_PATTERN
-					fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+					fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, arch_cut_locations[cut_counter], track_to_cut);
 					#endif
 
 					interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
@@ -394,7 +393,7 @@ void cut_rr_graph_edges_uniform_cut_without_rotation(int nodes_per_chan)
 					int track_to_cut = (itrack+(step*ichunk))%nodes_per_chan;
 
 					#ifdef DUMP_CUTTING_PATTERN
-					fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+					fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, arch_cut_locations[cut_counter], track_to_cut);
 					#endif
 
 					interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
@@ -481,7 +480,7 @@ void cut_rr_graph_edges_chunk_cut_with_rotation(int nodes_per_chan)
 				int track_to_cut = (itrack)%nodes_per_chan;
 
 				#ifdef DUMP_CUTTING_PATTERN
-				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, arch_cut_locations[cut_counter], track_to_cut);
 				#endif
 
 				interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
@@ -686,7 +685,7 @@ void cut_rr_graph_edges_chunk_cut_without_rotation(int nodes_per_chan)
 			for(track_to_cut=0, num_wires_cut_so_far=0 ; num_wires_cut_so_far<num_wires_cut; track_to_cut=(track_to_cut+1)%nodes_per_chan)
 			{
 				#ifdef DUMP_CUTTING_PATTERN
-				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, y_cuts[cut_counter], track_to_cut);
+				fprintf(fp, "Cutting interposer node at i=%d, j=%d, track=%d \n", i, arch_cut_locations[cut_counter], track_to_cut);
 				#endif
 
 				interposer_node_index = interposer_node_loc[i][cut_counter][track_to_cut];
@@ -1226,15 +1225,6 @@ void modify_rr_graph_using_interposer_node_addition_methodology
 	fclose(fp);
 #endif
 
-	// 0. allocate and populate the y-coordinate of cut locations
-	y_cuts = (int*) my_malloc(num_cuts * sizeof(int));
-	int cut_step = ny / (num_cuts+1);
-	int cut_counter = 0;
-	for(cut_counter = 0; cut_counter < num_cuts; ++cut_counter)
-	{
-		y_cuts[cut_counter] = (cut_counter+1)*cut_step;
-	}
-
 	s_num_interposer_nodes = (nx+1)*(num_cuts)*(nodes_per_chan);
 
 	int *rr_nodes_that_cross = 0;
@@ -1259,13 +1249,10 @@ void modify_rr_graph_using_interposer_node_addition_methodology
 	}
 
 	// 5.1 free helper data-structures that are not needed anymore
-	free(y_cuts);
-
-	// 5.2 free helper data-structures that are not needed anymore
 	free_reverse_map(num_rr_nodes);
 	free(interposer_nodes);
 
-	// 5.3 free helper data-structures that are not needed anymore
+	// 5.2 free helper data-structures that are not needed anymore
 	int i,j;
 	for(i=0; i<nx+1; ++i)
 	{
@@ -1316,7 +1303,7 @@ void find_all_CHANY_wires_that_cross_the_interposer(int nodes_per_chan, int** rr
 			total_chany_wires++;
 			for(cut_counter=0; cut_counter < num_cuts; cut_counter++)
 			{
-				cut_pos = y_cuts[cut_counter];
+				cut_pos = arch_cut_locations[cut_counter];
 				if(rr_node[inode].ylow <= cut_pos && rr_node[inode].yhigh > cut_pos)
 				{
 					(*rr_nodes_that_cross)[*num_rr_nodes_that_cross] = inode;
@@ -1660,7 +1647,7 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 		int cut_counter = 0, cut_pos = 0;
 		for(cut_counter = 0; cut_counter < num_cuts; cut_counter++)
 		{
-			cut_pos = y_cuts[cut_counter];
+			cut_pos = arch_cut_locations[cut_counter];
 			if( original_node->ylow <= cut_pos && cut_pos < original_node->yhigh )
 			{
 				break;
@@ -1795,7 +1782,7 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 			int cut_counter, cut_pos;
 			for(cut_counter=0; cut_counter < num_cuts; cut_counter++)
 			{
-				cut_pos = y_cuts[cut_counter];
+				cut_pos = arch_cut_locations[cut_counter];
 				if(rr_node[inode].ylow <= cut_pos && rr_node[inode].yhigh > cut_pos)
 				{
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -1866,7 +1853,7 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 		int cut_counter = 0;
 		for(cut_counter = 0; cut_counter < num_cuts; cut_counter++)
 		{
-			int cut_pos = y_cuts[cut_counter];
+			int cut_pos = arch_cut_locations[cut_counter];
 
 			if(node->type==CHANY && (node->ylow==cut_pos || node->yhigh==cut_pos))
 			{
@@ -2004,7 +1991,7 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 		int cut_counter = 0;
 		for(cut_counter = 0; cut_counter < num_cuts; cut_counter++)
 		{
-			int cut_pos = y_cuts[cut_counter];
+			int cut_pos = arch_cut_locations[cut_counter];
 			if(node->type==CHANX && node->ylow==cut_pos)
 			{
 				assert(node->ylow==node->yhigh);  // because it's CHANX
@@ -2097,7 +2084,7 @@ void expand_rr_graph(int* rr_nodes_that_cross, int num_rr_nodes_that_cross, int 
 			fanout_node = &rr_node[node->edges[ifanout]];
 			for(cut_counter=0; cut_counter<num_cuts; ++cut_counter)
 			{
-				cut_pos = y_cuts[cut_counter];
+				cut_pos = arch_cut_locations[cut_counter];
 				node_to_check = -1;
 				crossing_using_interposer_node = false;
 

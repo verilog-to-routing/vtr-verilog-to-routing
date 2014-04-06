@@ -155,6 +155,7 @@ extern int  pct_of_interposer_nodes_each_chany_can_drive;
 extern bool transfer_interposer_fanouts;
 extern bool allow_additional_interposer_fanouts;
 extern int  pct_of_chany_wires_an_interposer_node_can_drive;
+extern int* arch_cut_locations;
 #endif
 
 #endif

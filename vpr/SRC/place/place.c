@@ -1779,17 +1779,16 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 		float f_delay_increase = (float)delay_increase * 1e-12;
 		int y1 = std::min(block[source_block].y, block[sink_block].y);
 		int y2 = std::max(block[source_block].y, block[sink_block].y);
-		int cut_step = ny / (num_cuts + 1);
 		int times_crossed = 0;
 		int counter = 0;
 		int y = 0;
-		for(y = cut_step; y < ny && counter < num_cuts; y+=cut_step)
+		for(counter = 0; counter < num_cuts; ++counter)
 		{
+			y = arch_cut_locations[counter];
 			if(y1 <= y && y2 > y)
 			{
 				times_crossed++;
 			}
-			counter++;
 		}
 
 		delay_source_to_sink += (float)times_crossed * f_delay_increase;
@@ -2359,7 +2358,7 @@ static float get_net_cost(int inet, struct s_bb *bbptr) {
 	if(num_cuts > 0)
 	{
 		float C1, C2;
-		int times_crossed, cut_step, counter;
+		int times_crossed, counter;
 		int const_type = constant_type;
 
 		/* Ideas of different costs:
@@ -2371,20 +2370,18 @@ static float get_net_cost(int inet, struct s_bb *bbptr) {
 		 * 5 penalty = C * height
 		 */
 		int closest = 11000;
-		cut_step = ny / (num_cuts + 1);
 		times_crossed = 0;
 		C1 = placer_cost_constant;
 		C2 = (float)(percent_wires_cut / 100.0);
-
-		counter = 0;
-		for(int j = cut_step; j < ny && counter < num_cuts; j+=cut_step)
+		
+		for(counter = 0; counter < num_cuts; ++counter)
 		{
+			int j = arch_cut_locations[counter];
 			if(bbptr->ymin <= j && bbptr->ymax > j)
 			{
 				times_crossed++;
 				closest = std::min(closest, std::min(j-bbptr->ymin+1, bbptr->ymax-j));
 			}
-			counter++;
 		}
 
 		if(const_type == 0)
