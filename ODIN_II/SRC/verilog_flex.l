@@ -107,8 +107,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>"~&"			{ MP; return voNAND;}
 <INITIAL>"~|"			{ MP; return voNOR;}
 
-<INITIAL>[a-zA-Z][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
-<INITIAL>`[a-zA-Z][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
+<INITIAL>[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
+<INITIAL>`[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
 <INITIAL>[0-9]+'[bhod][a-zA-Z0-9]*			{ MP; yylval.num_value = strdup(yytext); return vNUMBER_ID; }
 <INITIAL>[0-9]+						{ MP; yylval.num_value = strdup(yytext); return vNUMBER_ID; }
 <INITIAL>#[0-9]+					{ MP; yylval.num_value = strdup(yytext+1); return vDELAY_ID; }
@@ -117,14 +117,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>[}{;:\[\],()#=.@&!?<>%|^~+*/-]		{ MP; return yytext[0]; }
 
 	/* general stuff */
-<INITIAL>[\f\r\t\b ]+           		{ /* ignore spaces */ continue; }
+<INITIAL>[\f\r\t\b ]+				{ /* ignore spaces */ continue; }
 <INITIAL,COMMENT>"\n"				{/* catch lines */ yylineno++; continue; }
+
+<INITIAL>`timescale.*$                         { MP; continue;}
 
 	/* Get the comments */
 <INITIAL>"/*"					{ /* catch comments */ MP; BEGIN COMMENT; continue; /* means to go into a state where we eat everything for comments*/ }
-<COMMENT>.					{ continue; }
+<COMMENT>.						{ continue; }
 <COMMENT>"*/"					{ BEGIN 0; continue; }
 <INITIAL>"//"[^\n]*				{ MP; continue; }  
-
-<*>.|\n     					{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext); }
+<*>.|\n							{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
 %%    
