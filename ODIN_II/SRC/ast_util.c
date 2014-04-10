@@ -414,7 +414,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 
 			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
 			{
-				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s (in make_concat_into_list_of_strings)\n", temp_string);
 			}
 			free(temp_string);
 
@@ -565,7 +565,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) == -1)
 		{
 			pin_index = 0;
-			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
+			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s (in get_name_of_pin_at_bit)\n", var_node->types.identifier);
 		}
 
 		if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
@@ -627,7 +627,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	{
 		return_string = NULL;
 
-		error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unsupported variable type.\n");
+		error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unsupported variable type. var_node->type = %d\n",var_node->type);
 		oassert(FALSE);
 	}
 	
@@ -718,7 +718,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 
 			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
 			{
-				error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
+				error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s (in get_name_of_pins) \n", temp_string);
 			}
 			free(temp_string);
 

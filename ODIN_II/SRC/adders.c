@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */ 
 
 #include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
@@ -1092,6 +1093,7 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 							mark2 = strcmp(component_s[1], component_o[1]);
 						else
 						{
+                            assert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
 							mark1 = strcmp(component_s[0], component_o[1]);
 							mark2 = strcmp(component_s[1], component_o[0]);
 						}
