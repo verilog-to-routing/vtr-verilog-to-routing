@@ -29,6 +29,7 @@ using namespace std;
 #include "cluster_placement.h"
 #include "ReadOptions.h"
 #include "cluster_router.h"
+#include "lb_type_rr_graph.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 #define JEDIT_INTRA_LB_ROUTE

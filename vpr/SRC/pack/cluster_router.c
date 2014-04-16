@@ -880,9 +880,11 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 	cur_cost = exp_node.cost;
 	mode = lb_rr_node_stats[cur_node].mode;
 	t_lb_router_params params = router_data->params;
-	
+
 
 	for(int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+		int next_mode;
+
 		/* Init new expansion node */
 		enode.prev_index = cur_node;
 		enode.node_index = lb_type_graph[cur_node].outedges[mode][iedge].node_index;
@@ -899,7 +901,8 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 				
 		/* Adjust cost so that higher fanout nets prefer higher fanout routing nodes while lower fanout nets prefer lower fanout routing nodes */
 		float fanout_factor = 1.0;
-		if (lb_type_graph[enode.node_index].num_fanout[mode] > 1) {
+		next_mode = lb_rr_node_stats[enode.node_index].mode;
+		if (lb_type_graph[enode.node_index].num_fanout[next_mode] > 1) {
 			fanout_factor = 0.85 + (0.25 / net_fanout);
 		}
 		else {
