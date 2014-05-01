@@ -19,6 +19,11 @@
 #include "vqm_parser.tab.h"
 #include "vqm_common.h"
 
+//Some versions of bison (e.g. v2.5) to do not prototype yyparse()
+//in the parser.tab.h, while others do (e.g. v3.0.2)
+extern int yyparse (t_parse_info* parse_info);
+
+
 /*Bool APIENTRY DllMain( HANDLE hModule, 
                        DWORD  ul_reason_for_call, 
                        LPVOID lpReserved
