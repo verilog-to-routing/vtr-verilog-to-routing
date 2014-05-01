@@ -27,17 +27,7 @@
 #include "vqm_dll.h"
 #include "vqm_common.h"
 
-extern "C"
-{
-	int yyparse(t_parse_info* parse_info);
-	int yylex(void);  
-	int yywrap()
-		{
-	          return 1;
-		}
-
-}
-
+extern int yylex(void);
 %}
 
 /********************************************************/
@@ -743,7 +733,6 @@ PinType:	TOKEN_INPUT	{ $$ = $1; }
 int yyerror(t_parse_info* parse_info, char *s)
 {
 	sprintf(most_recent_error, "%s occured at line %i: %s\r\n", s, yylineno, yytext);
-	printf(most_recent_error);
 	return 0;
 }
 

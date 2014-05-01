@@ -14,10 +14,11 @@ void print_usage (t_boolean terminate){
 	cout << "\t-clean [none | buffers | all*]\n" ;
 	cout << "\t-buffouts\n" ;
 	cout << "\t-luts [vqm* | blif]\n" ;
-    cout << "\t-fixglobals\n";
-    cout << "\t-split_multiclock_blocks\n";
-    cout << "\t-single_clock_primitives\n";
-    cout << "\t-split_carry_chain_logic\n";
+    cout << "\t-multiclock_primitives\n";
+    //Hide experimental options by default
+    //cout << "\t-split_multiclock_blocks\n";
+    //cout << "\t-split_carry_chain_logic\n";
+    //cout << "\t-fixglobals\n";
 	cout << "\t-debug\n" ;
 	cout << "\t-verbose\n" ;
 	cout << "\nNote: Default values indicated with * . All flags are order-independant. For more information, see README.txt\n\n";
@@ -283,12 +284,12 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models,
         }
 
         //Check if we are approximating the registered scanouta port
-        //if(verbose_mode) {
-            //if(scanouta_output_reg) {
+        if(verbose_mode) {
+            if(scanouta_output_reg) {
                 //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
                 //cout << " Approximating as combinational." << endl; 
-            //}
-        //}
+            }
+        }
     }
 }
 
@@ -394,12 +395,12 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, 
         }
 
         //Print a warning if second stage adder reg was not used
-        //if(verbose_mode) {
-            //if(!second_adder_reg) {
+        if(verbose_mode) {
+            if(!second_adder_reg) {
                 //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
                 //cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
-            //}
-        //}
+            }
+        }
     }
 
 }

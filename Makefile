@@ -1,6 +1,10 @@
 CC = g++
 VQM2BLIF_DIR = EXE
 
+export BUILD_TYPE = release
+export OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O2
+
+
 #ensure coherence with /EXE/Makefile
 EXE = vqm2blif.exe
 

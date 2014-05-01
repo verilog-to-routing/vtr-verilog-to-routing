@@ -9,12 +9,6 @@
  */
 
 %{
-    extern "C"
-    {
-        int yylex(void);
-    }
-
-
 /*********************************************************************/
 /**** PUT INCLUDE FILES HERE *****************************************/
 /*********************************************************************/
@@ -23,8 +17,8 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vqm_parser.tab.h"
 #include "vqm_dll.h"
+#include "vqm_parser.tab.h"
 #include "vqm_common.h"
 
 %}
@@ -35,6 +29,7 @@
 
 %option noyywrap
 %option yylineno
+%option nounput
 
 /*********************************************************************/
 /**** PUT SYMBOL DEFINITIONS HERE ************************************/

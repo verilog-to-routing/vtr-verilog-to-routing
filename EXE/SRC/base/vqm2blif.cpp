@@ -446,7 +446,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	buffd_outs = T_FALSE;
     fix_global_nets = T_FALSE;
     split_multiclock_blocks = T_FALSE;
-    single_clock_primitives = T_FALSE;
+    single_clock_primitives = T_TRUE;
     split_carry_chain_logic = T_FALSE;
 
 	//Now read the command line to configure input variables.
@@ -548,14 +548,14 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 					}
 					i++;
 					break;
+                case OT_MULTICLOCK_PRIMITIVES:
+                    single_clock_primitives = T_FALSE;
+                    break;
                 case OT_FIXGLOBALS:
                     fix_global_nets = T_TRUE;
                     break;
                 case OT_SPLIT_MULTICLOCK_BLOCKS:
                     split_multiclock_blocks = T_TRUE;
-                    break;
-                case OT_SINGLE_CLOCK_PRIMITIVES:
-                    single_clock_primitives = T_TRUE;
                     break;
                 case OT_SPLIT_CARRY_CHAIN_LOGIC:
                     split_carry_chain_logic = T_TRUE;
@@ -605,9 +605,9 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-luts", OT_LUTS));
 	tokens->insert(tokpair("-clean", OT_CLEAN));
 	tokens->insert(tokpair("-buffouts", OT_BUFFOUTS));
+	tokens->insert(tokpair("-multiclock_primitives", OT_MULTICLOCK_PRIMITIVES));
 	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
 	tokens->insert(tokpair("-split_multiclock_blocks", OT_SPLIT_MULTICLOCK_BLOCKS));
-	tokens->insert(tokpair("-single_clock_primitives", OT_SINGLE_CLOCK_PRIMITIVES));
 	tokens->insert(tokpair("-split_carry_chain_logic", OT_SPLIT_CARRY_CHAIN_LOGIC));
 }
 

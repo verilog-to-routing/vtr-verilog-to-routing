@@ -320,8 +320,7 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
 /* Create a new pin definition. This can be a wire or an IO port of the module.
  */
 {
-	t_pin_def *pin, *test_pin;
-	size_t index;
+	t_pin_def *pin;
 
 	/* Create new pin */
 	pin = (t_pin_def *) malloc(sizeof(t_pin_def));
@@ -376,7 +375,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
  * of pins to find corresponding t_pin_def references to create assignment statement.
  */
 {
-	int source_max, source_min, target_max, target_min, tri_min, tri_max;
+	int source_max = -1, source_min = -1, target_max = -1, target_min = -1, tri_min = -1, tri_max = -1;
 	t_assign *assignment = NULL;
 
 	/* Check for validity of assignments */
@@ -472,7 +471,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 	{
 		/* Now, if this is a bus assignment then break it up into wire-to-wire
 		 * assignments for easier processing later on. */
-		int wire_index, source_index;
+		int wire_index, source_index = -1;
 
 		if (source != NULL)
 		{
@@ -491,7 +490,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 			if (source != NULL)
 			{
 				assignment->source_index = source_index;
-				source_index ++;
+				source_index++;
 			}
 			assignment->target = target;
 			assignment->target_index = wire_index;

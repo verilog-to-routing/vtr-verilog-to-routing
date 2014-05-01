@@ -15,11 +15,8 @@
 #include <string.h>
 
 
-extern "C" 
-{
-	#include "vqm_parser.tab.h"
-}
 #include "vqm_dll.h"
+#include "vqm_parser.tab.h"
 #include "vqm_common.h"
 
 /*Bool APIENTRY DllMain( HANDLE hModule, 

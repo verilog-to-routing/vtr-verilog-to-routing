@@ -10,6 +10,7 @@ LARCHFPGA_DIR = $(INC_DIR)/libarchfpga
 LPCRE_DIR = $(INC_DIR)/pcre
 LPRINTHANDLER_DIR = $(INC_DIR)/printhandler
 
+
 #LIB_DIR = -L$(LARCHFPGA_DIR) -L$(LVQM_DIR)
 LIB_DIR = -L$(LARCHFPGA_DIR) -L$(LVQM_DIR) -L$(LPCRE_DIR) -L$(LPRINTHANDLER_DIR)
 #LIB = -lm -lvqm -larchfpga
@@ -18,11 +19,17 @@ LIB = -lm -lvqm -larchfpga -lpcre -lprinthandler
 WARN_FLAGS = -Wall 
 
 DEBUG_FLAGS = -g
-OPT_FLAGS = -O2
+OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -Iinclude -ISRC/include/printhandler/SRC/TIO_InputOutputHandlers
 LIB_FLAGS = rcs
 
-FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(INC_FLAGS)
+FLAGS = $(WARN_FLAGS) $(INC_FLAGS)
+
+ifneq (,$(findstring release, $(BUILD_TYPE)))
+  FLAGS := $(FLAGS) $(OPT_FLAGS)
+else                              # DEBUG build
+  FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+endif
 
 EXE = vqm2blif.exe
 

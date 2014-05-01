@@ -236,14 +236,12 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 			   are repeated in the BLIF. A downstream logic synthesis tool (e.g. ABC) can remove 
 			   this and absorb invertors into the soft logic. 
 
-   -split_multiclock_blocks
-        If provided, the tool attempts to identify primitive blocks with multiple clocks, and then
-        split them apart.  Currently only supported for stratixiv_ram_block primitives.  This will
-        split a dual clock ram block into two instances, with each connected to one clock, and with
-        the ports related to that clock connected to it.
+   -multiclock_primitives
+        By default the tool will attempt to identify netlist primitives with multiple clocks, and then
+        drop the extra clocks from the primtive.  This is a work-around for VPR, since VPR currently 
+        does not support multiple clocks per primitive.
 
-        This is a work-around for VPR, since VPR currently does not support multiple clocks per
-        primitive.
+        If this option is provided, the tool will keep (i.e. not drop) extra clocks from netlist primitives.
 
 	-debug
 		Intermediate *.echo files are created with descriptions of the data parsed from the VQM and

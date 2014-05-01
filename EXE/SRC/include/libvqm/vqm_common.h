@@ -88,10 +88,7 @@ extern char			most_recent_error[ERROR_LENGTH];
 extern char*		yytext;
 extern int			yylineno;
 extern FILE			*yyin;
-extern "C"
-{
-	int			yyerror(t_parse_info* parse_info, char *s);
-	int			yyparse(t_parse_info* parse_info);
-}
+
+int			yyerror(t_parse_info* parse_info, char *s);
 extern void 			yyrestart(FILE *input_file);
 #endif
