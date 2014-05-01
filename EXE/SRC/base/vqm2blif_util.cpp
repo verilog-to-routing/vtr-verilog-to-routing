@@ -17,6 +17,7 @@ void print_usage (t_boolean terminate){
     cout << "\t-fixglobals\n";
     cout << "\t-split_multiclock_blocks\n";
     cout << "\t-single_clock_primitives\n";
+    cout << "\t-split_carry_chain_logic\n";
 	cout << "\t-debug\n" ;
 	cout << "\t-verbose\n" ;
 	cout << "\nNote: Default values indicated with * . All flags are order-independant. For more information, see README.txt\n\n";

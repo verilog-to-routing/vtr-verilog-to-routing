@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
-#include <utility> //for pair<>
 #include <map>
 #include <assert.h>
 #include <math.h>
@@ -15,7 +14,6 @@ using std::pair;
 using std::vector;
 using std::map;
 
-pair<bool,bool> is_carry_chain_lut(t_node* node);
 bool node_is_lut(t_node* node);
 map<t_node*, size_t> carry_chain_lengths(t_module* module, vector<t_node*> start_nodes);
 size_t chain_length(t_node* node, map<t_pin_def*,t_node*>& net_to_node_map);
