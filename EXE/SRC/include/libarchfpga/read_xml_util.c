@@ -5,6 +5,7 @@
 #include "util.h"
 #include "ezxml.h"
 #include "read_xml_util.h"
+#include "read_xml_arch_file.h"
 
 /* Finds child element with given name and returns it. Errors out if
  * more than one instance exists. */
@@ -17,20 +18,16 @@ ezxml_t FindElement(INP ezxml_t Parent, INP const char *Name,
 
 	/* Error out if node isn't found but they required it */
 	if (Required) {
-		if (NULL == Cur) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[LINE %d] Element '%s' not found within element '%s'.\n",
-					Parent->line, Name, Parent->name);
-			exit(1);
+		if (NULL == Cur) {			
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
+				"Element '%s' not found within element '%s'.\n", Name, Parent->name);
 		}
 	}
 
 	/* Look at next tag with same name and error out if exists */
 	if (Cur != NULL && Cur->next) {
-		vpr_printf(
-				TIO_MESSAGE_ERROR, "[LINE %d] Element '%s' found twice within element '%s'.\n",
-				Parent->line, Name, Parent->name);
-		exit(1);
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line , 
+			"Element '%s' found twice within element '%s'.\n", Name, Parent->name);
 	}
 	return Cur;
 }
@@ -44,11 +41,9 @@ ezxml_t FindFirstElement(INP ezxml_t Parent, INP const char *Name,
 
 	/* Error out if node isn't found but they required it */
 	if (Required) {
-		if (NULL == Cur) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[LINE %d] Element '%s' not found within element '%s'.\n",
-					Parent->line, Name, Parent->name);
-			exit(1);
+		if (NULL == Cur) {			
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
+				"Element '%s' not found within element '%s'.\n", Name, Parent->name);
 		}
 	}
 
@@ -58,12 +53,10 @@ ezxml_t FindFirstElement(INP ezxml_t Parent, INP const char *Name,
 /* Checks the node is an element with name equal to one given */
 void CheckElement(INP ezxml_t Node, INP const char *Name) {
 	assert(Node != NULL && Name != NULL);
-	if (0 != strcmp(Node->name, Name)) {
-		vpr_printf(TIO_MESSAGE_ERROR,
-		"[LINE %d] Element '%s' within element '%s' does match expected "
-		"element type of '%s'\n", Node->line, Node->name, Node->parent->name,
-				Name);
-		exit(1);
+	if (0 != strcmp(Node->name, Name)) {		
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
+			"Element '%s' within element '%s' does match expected element type of '%s'\n", Node->name, 
+			(Node->parent ? (Node->parent->name ? Node->parent->name : Node->name) : "ROOT_TAG") ,Name);
 	}
 }
 
@@ -75,30 +68,26 @@ void FreeNode(INOUTP ezxml_t Node) {
 	char *Txt;
 
 	/* Shouldn't have unprocessed properties */
-	if (Node->attr[0]) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Node '%s' has invalid property %s=\"%s\".\n",
-				Node->line, Node->name, Node->attr[0], Node->attr[1]);
-		exit(1);
+	if (Node->attr[0]) {		
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
+			"Node '%s' has invalid property %s=\"%s\".\n", Node->name, Node->attr[0], Node->attr[1]);
 	}
 
 	/* Shouldn't have non-whitespace text */
 	Txt = Node->txt;
 	while (*Txt) {
-		if (!IsWhitespace(*Txt)) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[LINE %d] Node '%s' has unexpected text '%s' within it.\n",
-					Node->line, Node->name, Node->txt);
-			exit(1);
+		if (!IsWhitespace(*Txt)) {			
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
+				"Node '%s' has unexpected text '%s' within it.\n", Node->name, Node->txt);
 		}
 		++Txt;
 	}
 
 	/* We shouldn't have child items left */
 	Cur = Node->child;
-	if (Cur) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] Node '%s' has invalid child node '%s'.\n",
-				Node->line, Node->name, Cur->name);
-		exit(1);
+	if (Cur) {		
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
+			"Node '%s' has invalid child node '%s'.\n", Node->name, Cur->name);
 	}
 
 	/* Now actually unlink and free the node */
@@ -124,11 +113,9 @@ FindProperty(INP ezxml_t Parent, INP const char *Name, INP boolean Required) {
 
 	Res = ezxml_attr(Parent, Name);
 	if (Required) {
-		if (NULL == Res) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"[Line %d] Required property '%s' not found for element '%s'.\n",
-					Parent->line, Name, Parent->name);
-			exit(1);
+		if (NULL == Res) {			
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
+				"Required property '%s' not found for element '%s'.\n", Name, Parent->name);
 		}
 	}
 	return Res;
@@ -326,11 +313,9 @@ extern boolean GetBooleanProperty(INP ezxml_t Parent, INP char *Name,
 		} else if ((strcmp(Prop, "true") == 0) || (strcmp(Prop, "TRUE") == 0)
 				|| (strcmp(Prop, "True") == 0)) {
 			property_value = TRUE;
-		} else {
-			vpr_printf(
-					TIO_MESSAGE_ERROR, "[LINE %d] Unknown value %s for boolean attribute %s in %s",
-					Parent->line, Prop, Name, Parent->name);
-			exit(1);
+		} else {			
+			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
+				"Unknown value %s for boolean attribute %s in %s", Prop, Name, Parent->name);
 		}
 		ezxml_set_attr(Parent, Name, NULL);
 	}
@@ -366,10 +351,9 @@ extern int CountChildren(INP ezxml_t Node, INP const char *Name,
 		}
 	}
 	/* Error if no occurances found */
-	if (Count < min_count) {
-		vpr_printf(TIO_MESSAGE_ERROR, "[Line %d] Expected node '%s' to have %d "
-		"child elements, but none found.\n", Node->line, Node->name, min_count);
-		exit(1);
+	if (Count < min_count) {		
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
+			"Expected node '%s' to have %d child elements, but none found.\n", Node->name, min_count);
 	}
 	return Count;
 }

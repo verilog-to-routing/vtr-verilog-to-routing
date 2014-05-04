@@ -1,0 +1,279 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_Net.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedBlock.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedHandler.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_PreRoutedHandler.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RegionPlaceHandler.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeBlock.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeMacro.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeMove.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativeNode.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RelativePlaceHandler.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskKey.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskValue.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RouteNode.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_RoutePath.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_StringUtils.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_VPR_Data.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphNode.cxx" />
+    <ClCompile Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphToRoute.cxx" />
+    <ClCompile Include="SRC\TC_Common\RegExp.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_Bit.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_Index.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_IndexCount.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_MapTable.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_MemoryUtils.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_MinGrid.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_Name.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_NameFile.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_NameIndex.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_NameLength.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_NameType.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_RegExp.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_SideIndex.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_SideName.cxx" />
+    <ClCompile Include="SRC\TC_Common\TC_StringUtils.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_ConnectionBlock.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_ConnectionMap.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricBlockHandler.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricChannelHandler.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricConnectionBlockHandler.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricGridHandler.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_FabricSwitchBoxHandler.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_GridBlock.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_StringUtils.cxx" />
+    <ClCompile Include="SRC\TFH_FabricHandlers\TFH_SwitchBox.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Box.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Line.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Point.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Polygon.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Region.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_StringUtils.cxx" />
+    <ClCompile Include="SRC\TGO_GeometricObjects\TGO_Transform.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_ArrayGrid.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_ArrayGridIter.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Box.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Line.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Path.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Point.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Rect.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_Region.cxx" />
+    <ClCompile Include="SRC\TGS_GeometricShapes\TGS_StringUtils.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_CustomOutput.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_FileHandler.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_FileOutput.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandler.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.cxx" />
+    <ClCompile Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.cxx" />
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_Cell.cxx" />
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_Port.cxx" />
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_Power.cxx" />
+    <ClCompile Include="SRC\TLO_LogicalObjects\TLO_StringUtils.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_InstPin.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_Net.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_NetList.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_Node.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_Segment.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_StringUtils.cxx" />
+    <ClCompile Include="SRC\TNO_NetObjects\TNO_SwitchBox.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_HierInstMap.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_Inst.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_InstHierMap.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_PinMap.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_PlaceRegions.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_PlaceRelative.cxx" />
+    <ClCompile Include="SRC\TPO_PhysicalObjects\TPO_StringUtils.cxx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_Net.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedBlock.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_PrePlacedHandler.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_PreRoutedHandler.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RegionPlaceHandler.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeBlock.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeMacro.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeMove.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativeNode.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RelativePlaceHandler.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskKey.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RotateMaskValue.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RouteNode.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_RoutePath.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_StringUtils.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_Typedefs.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_VPR_Data.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphNode.h" />
+    <ClInclude Include="SRC\TCH_CircuitHandlers\TCH_VPR_GraphToRoute.h" />
+    <ClInclude Include="SRC\TC_Common\RegExp.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_BSearch.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Dims.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_DynamicVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Generic.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Hash.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_NameList.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedQueue.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_OrderedVector2D.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_QSort.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Range.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_RangeOrderedVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_RegExpIter.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_SortedNameDynamicVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_SortedVector.h" />
+    <ClInclude Include="SRC\TC_Common\TCT_Stack.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Bit.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Index.h" />
+    <ClInclude Include="SRC\TC_Common\TC_IndexCount.h" />
+    <ClInclude Include="SRC\TC_Common\TC_MapTable.h" />
+    <ClInclude Include="SRC\TC_Common\TC_MemoryUtils.h" />
+    <ClInclude Include="SRC\TC_Common\TC_MinGrid.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Name.h" />
+    <ClInclude Include="SRC\TC_Common\TC_NameFile.h" />
+    <ClInclude Include="SRC\TC_Common\TC_NameIndex.h" />
+    <ClInclude Include="SRC\TC_Common\TC_NameLength.h" />
+    <ClInclude Include="SRC\TC_Common\TC_NameType.h" />
+    <ClInclude Include="SRC\TC_Common\TC_RegExp.h" />
+    <ClInclude Include="SRC\TC_Common\TC_SideIndex.h" />
+    <ClInclude Include="SRC\TC_Common\TC_SideName.h" />
+    <ClInclude Include="SRC\TC_Common\TC_StringUtils.h" />
+    <ClInclude Include="SRC\TC_Common\TC_Typedefs.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_ConnectionBlock.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_ConnectionMap.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricBlockHandler.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricChannelHandler.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricConnectionBlockHandler.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricGridHandler.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_FabricSwitchBoxHandler.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_GridBlock.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_StringUtils.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_SwitchBox.h" />
+    <ClInclude Include="SRC\TFH_FabricHandlers\TFH_Typedefs.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Box.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Line.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Point.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Polygon.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Region.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_StringUtils.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Transform.h" />
+    <ClInclude Include="SRC\TGO_GeometricObjects\TGO_Typedefs.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_ArrayGrid.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_ArrayGridIter.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Box.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Line.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Path.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Point.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Rect.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Region.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_StringUtils.h" />
+    <ClInclude Include="SRC\TGS_GeometricShapes\TGS_Typedefs.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_CustomOutput.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_FileHandler.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_FileOutput.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandler.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_PrintHandlerExtern.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_SkinHandler.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StdioOutput.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_StringText.h" />
+    <ClInclude Include="SRC\TIO_InputOutputHandlers\TIO_Typedefs.h" />
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Cell.h" />
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Port.h" />
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Power.h" />
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_StringUtils.h" />
+    <ClInclude Include="SRC\TLO_LogicalObjects\TLO_Typedefs.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_InstPin.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Net.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_NetList.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Node.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Segment.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_StringUtils.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_SwitchBox.h" />
+    <ClInclude Include="SRC\TNO_NetObjects\TNO_Typedefs.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_HierInstMap.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_Inst.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_InstHierMap.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_PinMap.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_PlaceRegions.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_PlaceRelative.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_StringUtils.h" />
+    <ClInclude Include="SRC\TPO_PhysicalObjects\TPO_Typedefs.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A5092A9C-6DFD-4DEC-9951-51606F5EAF3B}</ProjectGuid>
+    <RootNamespace>printhandler</RootNamespace>
+    <ProjectName>libcommon_c++</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;..\vpr\SRC\util;..\vpr\SRC\place;..\vpr\SRC\base;SRC\TFH_FabricHandlers;SRC\TCH_CircuitHandlers;SRC\TNO_NetObjects;SRC\TPO_PhysicalObjects;SRC\TLO_LogicalObjects;SRC\TGS_GeometricShapes;SRC\TGO_GeometricObjects;SRC\TIO_InputOutputHandlers;SRC\TC_Common;..\libcommon_c\pcre\SRC</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_MBCS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;..\vpr\SRC\util;..\vpr\SRC\place;..\vpr\SRC\base;SRC\TFH_FabricHandlers;SRC\TCH_CircuitHandlers;SRC\TNO_NetObjects;SRC\TPO_PhysicalObjects;SRC\TLO_LogicalObjects;SRC\TGS_GeometricShapes;SRC\TGO_GeometricObjects;SRC\TIO_InputOutputHandlers;SRC\TC_Common;..\libcommon_c\pcre\SRC</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

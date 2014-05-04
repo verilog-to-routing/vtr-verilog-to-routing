@@ -13,7 +13,7 @@
 void print_help();
 
 int main(int argc, char **argv) {
-	struct s_arch arch;
+	t_arch* arch = (t_arch *)my_calloc(1,sizeof(t_arch));
 	t_type_descriptor *types;
 	int numTypes;
 	;
@@ -39,13 +39,14 @@ int main(int argc, char **argv) {
 	printf("Reading in architecture\n");
 
 	/* function declarations */
-	XmlReadArch(argv[1], (boolean) atoi(argv[2]), &arch, &types, &numTypes);
+	XmlReadArch(argv[1], (boolean) atoi(argv[2]), arch, &types, &numTypes);
 
 	printf("Printing Results\n");
 
-	EchoArch(argv[3], types, numTypes, &arch);
+	EchoArch(argv[3], types, numTypes, arch);
 
 	printf("Done\n");
+	free(arch);
 
 	return 0;
 }

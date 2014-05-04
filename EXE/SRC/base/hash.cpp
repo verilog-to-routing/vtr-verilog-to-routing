@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm> //For std::max
 #include "../include/hash.h"
 
 extern "C" {
@@ -182,7 +183,7 @@ hash_value(char *name)
     int val = 0, mult = 1;
 
 	i = strlen(name);
-    k = max(i - 8, 0);
+    k = std::max(i - 8, 0);
     for(i = strlen(name) - 1; i >= k; i--)
 	{
 	    val += mult * ((int)name[i]);

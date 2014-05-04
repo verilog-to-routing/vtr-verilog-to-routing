@@ -29,6 +29,19 @@
 #include "logic_types.h"
 #include "util.h"
 
+typedef struct s_clock_arch t_clock_arch;
+typedef struct s_clock_network t_clock_network;
+typedef struct s_power_arch t_power_arch;
+typedef struct s_interconnect_pins t_interconnect_pins;
+typedef struct s_power_usage t_power_usage;
+typedef struct s_pb_type_power t_pb_type_power;
+typedef struct s_mode_power t_mode_power;
+typedef struct s_interconnect_power t_interconnect_power;
+typedef struct s_port_power t_port_power;
+typedef struct s_pb_graph_pin_power t_pb_graph_pin_power;
+typedef struct s_mode t_mode;
+typedef struct s_pb_graph_node_power t_pb_graph_node_power;
+
 /*************************************************************************************************/
 /* FPGA basic definitions                                                                        */
 /*************************************************************************************************/
@@ -83,6 +96,19 @@ enum e_pin_to_pin_pack_pattern_annotations {
 	E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME = 0
 };
 
+/* Power Estimation type for a PB */
+enum e_power_estimation_method_ {
+	POWER_METHOD_UNDEFINED = 0, POWER_METHOD_IGNORE, /* Ignore power of this PB, and all children PB */
+	POWER_METHOD_SUM_OF_CHILDREN, /* Ignore power of this PB, but consider children */
+	POWER_METHOD_AUTO_SIZES, /* Transistor-level, auto-sized buffers/wires */
+	POWER_METHOD_SPECIFY_SIZES, /* Transistor-level, user-specified buffers/wires */
+	POWER_METHOD_TOGGLE_PINS, /* Dynamic: Energy per pin toggle, Static: Absolute */
+	POWER_METHOD_C_INTERNAL, /* Dynamic: Equiv. Internal capacitance, Static: Absolute */
+	POWER_METHOD_ABSOLUTE /* Dynamic: Aboslute, Static: Absolute */
+};
+typedef enum e_power_estimation_method_ e_power_estimation_method;
+typedef enum e_power_estimation_method_ t_power_estimation_method;
+
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
 /*************************************************************************************************/
@@ -113,6 +139,43 @@ struct s_clb_grid {
 	float Aspect;
 	int W;
 	int H;
+};
+
+/************************* POWER ***********************************/
+
+/* Global clock architecture */
+struct s_clock_arch {
+	int num_global_clocks;
+	t_clock_network *clock_inf; /* Details about each clock */
+};
+
+/* Architecture information for a single clock */
+struct s_clock_network {
+	boolean autosize_buffer; /* autosize clock buffers */
+	float buffer_size; /* if not autosized, the clock buffer size */
+	float C_wire; /* Wire capacitance (per meter) */
+
+	float prob; /* Static probability of net assigned to this clock */
+	float dens; /* Switching density of net assigned to this clock */
+	float period; /* Period of clock */
+};
+
+/* Power-related architecture information */
+struct s_power_arch {
+	float C_wire_local; /* Capacitance of local interconnect (per meter) */
+	//int seg_buffer_split; /* Split segment for distributed buffer (no split=1) */
+	float logical_effort_factor;
+	float local_interc_factor;
+	float transistors_per_SRAM_bit;
+	float mux_transistor_size;
+	float FF_size;
+	float LUT_transistor_size;
+};
+
+/* Power usage for an entity */
+struct s_power_usage {
+	float dynamic;
+	float leakage;
 };
 
 /*************************************************************************************************/
@@ -157,7 +220,7 @@ struct s_pb_type;
  * port_class: port belongs to recognized set of ports in class library
  * index: port index by index in array of parent pb_type
  * port_index_by_type index of port by type (index by input, output, or clock)
- * equivalence: 
+ * equivalence: Applies to logic block I/Os and to primitive inputs only
  */
 struct s_port {
 	char* name;
@@ -173,6 +236,8 @@ struct s_port {
 	int index;
 	int port_index_by_type;
 	char *chain_name;
+
+	t_port_power * port_power;
 };
 typedef struct s_port t_port;
 
@@ -229,8 +294,34 @@ struct s_interconnect {
 	int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
 	int parent_mode_index;
+
+	/* Power related members */
+	t_mode * parent_mode;
+
+	t_interconnect_power * interconnect_power;
 };
 typedef struct s_interconnect t_interconnect;
+
+struct s_interconnect_power {
+
+	t_power_usage power_usage;
+
+	/* These are not necessarily power-related; however, at the moment
+	 * only power estimation uses them
+	 */
+	boolean port_info_initialized;
+	int num_input_ports;
+	int num_output_ports;
+	int num_pins_per_port;
+	float transistor_cnt;
+};
+
+struct s_interconnect_pins {
+	t_interconnect * interconnect;
+
+	struct s_pb_graph_pin *** input_pins; // [0..num_input_ports-1][0..num_pins_per_port-1]
+	struct s_pb_graph_pin *** output_pins; // [0..num_output_ports-1][0..num_pins_per_port-1]
+};
 
 /** Describes mode
  * name: name of the mode
@@ -248,8 +339,14 @@ struct s_mode {
 	int num_interconnect;
 	struct s_pb_type *parent_pb_type;
 	int index;
+
+	/* Power releated members */
+	t_mode_power * mode_power;
 };
-typedef struct s_mode t_mode;
+
+struct s_mode_power {
+	t_power_usage power_usage; /* Power usage of this mode */
+};
 
 /* Identify pb pin type for timing purposes */
 enum e_pb_graph_pin_type {
@@ -299,16 +396,68 @@ struct s_pb_graph_pin {
 	/* Applies to output pins of primitives only */
 	struct s_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primtive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
 	int *num_connectable_primtive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+
+	boolean is_forced_connection; /* This output pin connects to one and only one input pin */
+
+	t_pb_graph_pin_power * pin_power;
 };
 typedef struct s_pb_graph_pin t_pb_graph_pin;
+
+struct s_pb_graph_pin_power {
+	/* Transistor-level Power Properties */
+	float C_wire;
+	float buffer_size;
+
+	/* Pin-Toggle Power Properties */
+	t_pb_graph_pin * scaled_by_pin;
+};
+
+typedef enum {
+	POWER_WIRE_TYPE_UNDEFINED = 0,
+	POWER_WIRE_TYPE_IGNORED,
+	POWER_WIRE_TYPE_C,
+	POWER_WIRE_TYPE_ABSOLUTE_LENGTH,
+	POWER_WIRE_TYPE_RELATIVE_LENGTH,
+	POWER_WIRE_TYPE_AUTO
+} e_power_wire_type;
+
+typedef enum {
+	POWER_BUFFER_TYPE_UNDEFINED = 0,
+	POWER_BUFFER_TYPE_NONE,
+	POWER_BUFFER_TYPE_AUTO,
+	POWER_BUFFER_TYPE_ABSOLUTE_SIZE
+} e_power_buffer_type;
+
+struct s_port_power {
+	/* Transistor-Level Power Properties */
+
+	// Wire
+	e_power_wire_type wire_type;
+	union {
+		float C;
+		float absolute_length;
+		float relative_length;
+	} wire;
+
+	// Buffer
+	e_power_buffer_type buffer_type;
+	float buffer_size;
+
+	/* Pin-Toggle Power Properties */
+	boolean pin_toggle_initialized;
+	float energy_per_toggle;
+	t_port * scaled_by_port;
+	int scaled_by_port_pin_idx;
+	boolean reverse_scaled; /* Scale by (1-prob) */
+};
 
 struct s_pb_graph_node;
 
 /** Describes a pb graph edge, this is a "fat" edge which means it supports bused based connections
  * input_pins: array of pb_type graph input pins ptrs entering this edge
  * num_input_pins: Number of input pins entering this edge
- * output_pins: array of pb_type graph output pins ptrs entering this edge
- * num_output_pins: Number of output pins entering this edge
+ * output_pins: array of pb_type graph output pins ptrs exiting this edge
+ * num_output_pins: Number of output pins exiting this edge
  */
 struct s_pb_graph_edge {
 	t_pb_graph_pin **input_pins;
@@ -344,8 +493,9 @@ struct s_cluster_placement_primitive;
  * child_pb_graph_nodes: array of children pb graph nodes organized into modes
  * parent_pb_graph_node: parent pb graph node
  */
+typedef struct s_pb_graph_node t_pb_graph_node;
 struct s_pb_graph_node {
-	const struct s_pb_type *pb_type;
+	struct s_pb_type *pb_type;
 
 	int placement_index;
 
@@ -373,8 +523,19 @@ struct s_pb_graph_node {
 	int num_input_pin_class; /* number of pin classes that this input pb_graph_node has */
 	int *output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
 	int num_output_pin_class; /* number of output pin classes that this pb_graph_node has */
+
+	/* Interconnect instances for this pb
+	 * Only used for power
+	 */
+	t_pb_graph_node_power * pb_node_power;
+	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 };
-typedef struct s_pb_graph_node t_pb_graph_node;
+
+struct s_pb_graph_node_power {
+	float transistor_cnt_pb_children; /* Total transistor size of this pb */
+	float transistor_cnt_interc; /* Total transistor size of the interconnect in this pb */
+	float transistor_cnt_buffers;
+};
 
 /** Describes a physical block type
  * name: name of the physical block type
@@ -411,14 +572,31 @@ struct s_pb_type {
 	float max_internal_delay;
 	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
 	int num_annotations;
+
+	/* Power related members */
+	t_pb_type_power * pb_type_power;
 };
 typedef struct s_pb_type t_pb_type;
+
+struct s_pb_type_power {
+	/* Type of power estimation for this pb */
+	e_power_estimation_method estimation_method;
+
+	t_power_usage absolute_power_per_instance; /* User-provided absolute power per block */
+
+	float C_internal; /*Internal capacitance of the pb */
+	int leakage_default_mode; /* Default mode for leakage analysis, if block has no set mode */
+
+	t_power_usage power_usage; /* Total power usage of this pb type */
+	t_power_usage power_usage_bufs_wires; /* Power dissipated in local buffers and wire switching (Subset of total power) */
+};
 
 /* Describes the type for a physical logic block
  name: unique identifier for type  
  num_pins: Number of pins for the block
  capacity: Number of blocks of this type that can occupy one grid tile.
  This is primarily used for IO pads.
+ width: Width of large block in grid tiles
  height: Height of large block in grid tiles
  pinloc: Is set to 1 if a given pin exists on a certain position of a block.
  num_class: Number of logically-equivalent pin classes
@@ -442,12 +620,14 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int num_pins;
 	int capacity;
 
+	int width;
 	int height;
 
-	int ***pinloc; /* [0..height-1][0..3][0..num_pins-1] */
+	int ****pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+	int *pin_width; /* [0..num_pins-1] */
 	int *pin_height; /* [0..num_pins-1] */
-	int **num_pin_loc_assignments; /* [0..height-1][0..3] */
-	char ****pin_loc_assignments; /* [0..height-1][0..3][0..num_tokens-1][0..string_name] */
+	int ***num_pin_loc_assignments; /* [0..width-1][0..height-1][0..3] */
+	char *****pin_loc_assignments; /* [0..width-1][0..height-1][0..3][0..num_tokens-1][0..string_name] */
 	enum e_pin_location_distr pin_location_distribution;
 
 	int num_class;
@@ -549,6 +729,7 @@ typedef struct s_segment_inf {
 	int cb_len;
 	boolean *sb;
 	int sb_len;
+	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 } t_segment_inf;
 
 /* Lists all the important information about a switch type.                  *
@@ -572,17 +753,22 @@ typedef struct s_switch_inf {
 	float mux_trans_size;
 	float buf_size;
 	char *name;
+	e_power_buffer_type power_buffer_type;
+	float power_buffer_size;
 } t_switch_inf;
 
 /* Lists all the important information about a direct chain connection.     *
  * [0 .. det_routing_arch.num_direct]                                       *
  * name:  Name of this direct chain connection                              *
  * from_pin:  The type of the pin that drives this chain connection         *
-              In the format of <block_name>.<pin_name>                      *
+ In the format of <block_name>.<pin_name>                      *
  * to_pin:  The type of pin that is driven by this chain connection         *
-            In the format of <block_name>.<pin_name>                        *
+ In the format of <block_name>.<pin_name>                        *
  * x_offset:  The x offset from the source to the sink of this connection   *
  * y_offset:  The y offset from the source to the sink of this connection   *
+ * z_offset:  The z offset from the source to the sink of this connection   *
+ * switch_type: The index into the switch list for the switch used by this  *
+ *              direct                                                      *
  * line: The line number in the .arch file that specifies this              *
  *       particular placement macro.                                        *
  */
@@ -593,42 +779,9 @@ typedef struct s_direct_inf {
 	int x_offset;
 	int y_offset;
 	int z_offset;
+	int switch_type;
 	int line;
 } t_direct_inf;
-
-/* Record for storing the technology parameters for NMOS and
- PMOS type of transistors
-
- min_length: minimum channel width of the transistor (in m)
- min_width:  minimum width of the transistor (in m)
- Vth:        threshold voltage (in volt)
- CJ:         junction capacitance (F/m^2)
- CJSW:       side-wall junction capacitance (F/m)
- CJSWG:      gate-edge side-wall bulk junction capacitance (F/m)
- CGDO:       gate-drain overlap capacitance (F/m)
- COX:        gate-oxide cpacitance per unit area
- EC:         contant for leakage current calculation
- */
-struct transistor_record {
-	float min_length;
-	float min_width;
-	float Vth;
-	float CJ;
-	float CJSW;
-	float CJSWG;
-	float CGDO;
-	float COX;
-	float EC;
-};
-
-/* Record for Poly Data
- Cpoly: poly capacitance
- poly_extention: poly extention
- */
-struct poly_record {
-	float Cpoly;
-	float poly_extension;
-};
 
 /*   Detailed routing architecture */
 typedef struct s_arch t_arch;
@@ -651,29 +804,13 @@ struct s_arch {
 	int num_directs;
 	t_model *models;
 	t_model *model_library;
-};
-
-typedef struct s_power t_power;
-struct s_power {
-	int num_temperature_records; /*Number of different temperatures in .a
-	 rch file */
-	struct temperature_record *NFS_records;
-
-	float clb_Cwire;
-	struct transistor_record NMOS_tx_record;
-	struct transistor_record PMOS_tx_record;
-	struct poly_record poly_inf;
-	float supply_voltage;
-	float swing_voltage;
-	float Vgs_for_leakage;
-	float SRAM_leakage;
-	float short_circuit_power_percentage;
-};
-
-typedef struct s_clocks t_clocks;
-struct s_clocks {
-	int num_global_clock;
-	struct clock_details *clock_inf; /* Details about the clock network */
+	t_power_arch * power;
+	t_clock_arch * clocks;
+	
+	#ifdef INTERPOSER_BASED_ARCHITECTURE
+	// this is used to make sure a cutline does not go through a physical block
+	int lcm_of_block_heights;
+	#endif
 };
 
 #endif

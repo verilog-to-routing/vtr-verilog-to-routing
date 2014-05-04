@@ -12,11 +12,14 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
-
 int file_line_number; /* file in line number being parsed */
 char *out_file_prefix = NULL;
-messagelogger vpr_printf = PrintHandlerMessage;
-
+vpr_PrintHandlerMessage vpr_printf = PrintHandlerMessage;
+vpr_PrintHandlerInfo vpr_printf_info = PrintHandlerInfo;
+vpr_PrintHandlerWarning vpr_printf_warning = PrintHandlerWarning;
+vpr_PrintHandlerError vpr_printf_error = PrintHandlerError;
+vpr_PrintHandlerTrace vpr_printf_trace = PrintHandlerTrace;
+vpr_PrintHandlerDirect vpr_printf_direct = PrintHandlerDirect;
 
 static int cont; /* line continued? */
 
@@ -24,8 +27,8 @@ static int cont; /* line continued? */
  * is emitted. */
 int limit_value(int cur, int max, const char *name) {
 	if (cur > max) {
-		vpr_printf(TIO_MESSAGE_WARNING, "%s is being limited from [%d] to [%d]\n", name, cur,
-				max);
+		vpr_printf_warning(__FILE__, __LINE__,
+				"%s is being limited from [%d] to [%d]\n", name, cur, max);
 		return max;
 	}
 	return cur;
@@ -33,8 +36,7 @@ int limit_value(int cur, int max, const char *name) {
 
 /* An alternate for strncpy since strncpy doesn't work as most
  * people would expect. This ensures null termination */
-char *
-my_strncpy(char *dest, const char *src, size_t size) {
+char *my_strncpy(char *dest, const char *src, size_t size) {
 	/* Find string's length */
 	size_t len = strlen(src);
 
@@ -52,10 +54,9 @@ my_strncpy(char *dest, const char *src, size_t size) {
 }
 
 /* Uses global var 'out_file_prefix' */
-FILE *
-my_fopen(const char *fname, const char *flag, int prompt) {
+FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 	FILE *fp;
-	int Len;
+	size_t Len;
 	char *new_fname = NULL;
 	char prompt_filename[256];
 
@@ -78,7 +79,7 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 			;
 
 		while (check_num_of_entered_values != 1) {
-			vpr_printf(TIO_MESSAGE_ERROR, 
+			vpr_printf_error(__FILE__, __LINE__,
 					"Was expecting one file name to be entered, with no spaces. You have entered %d parameters. Please try again: \n",
 					check_num_of_entered_values);
 			check_num_of_entered_values = scanf("%s", prompt_filename);
@@ -87,8 +88,8 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	}
 
 	if (NULL == (fp = fopen(fname, flag))) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno));
-		exit(1);
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno));		
 	}
 
 	if (new_fname)
@@ -97,13 +98,12 @@ my_fopen(const char *fname, const char *flag, int prompt) {
 	return (fp);
 }
 
-char *
-my_strdup(const char *str) {
-	int Len;
+char *my_strdup(const char *str) {
+	size_t Len;
 	char *Dst;
 
-	if (str == NULL) {
-		return NULL;
+	if (str == NULL ) {
+		return NULL ;
 	}
 
 	Len = 1 + strlen(str);
@@ -120,66 +120,63 @@ int my_atoi(const char *str) {
 
 	if (str[0] < '0' || str[0] > '9') {
 		if (!(str[0] == '-' && str[1] >= '0' && str[1] <= '9')) {
-			vpr_printf(TIO_MESSAGE_ERROR, "expected number instead of '%s'.\n", str);
-			exit(1);
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"expected number instead of '%s'.\n", str);			
 		}
 	}
 	return (atoi(str));
 }
 
-void *
-my_calloc(size_t nelem, size_t size) {
+void *my_calloc(size_t nelem, size_t size) {
 	void *ret;
 	if (nelem == 0) {
-		return NULL;
+		return NULL ;
 	}
 
-	if ((ret = calloc(nelem, size)) == NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error:  Unable to calloc memory.  Aborting.\n");
-		exit(1);
+	if ((ret = calloc(nelem, size)) == NULL ) {
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"Error:  Unable to calloc memory.  Aborting.\n");			
 	}
 	return (ret);
 }
 
-void *
-my_malloc(size_t size) {
+void *my_malloc(size_t size) {
 	void *ret;
 	if (size == 0) {
-		return NULL;
+		return NULL ;
 	}
 
-	if ((ret = malloc(size)) == NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Error:  Unable to malloc memory.  Aborting.\n");
-		abort();
-		exit(1);
+	if ((ret = malloc(size)) == NULL ) {
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Error:  Unable to malloc memory.  Aborting.\n");		
 	}
 	return (ret);
 }
 
-void *
-my_realloc(void *ptr, size_t size) {
+void *my_realloc(void *ptr, size_t size) {
 	void *ret;
 
 	if (size <= 0) {
-		vpr_printf(TIO_MESSAGE_WARNING, "reallocating of size <= 0.\n");
+		vpr_printf_warning(__FILE__, __LINE__,
+				"reallocating of size <= 0.\n");
 	}
 
 	ret = realloc(ptr, size);
 	if (NULL == ret) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Unable to realloc memory. Aborting. "
-		"ptr=%p, Size=%d.\n", ptr, (int) size);
-		if (ptr == NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR, "my_realloc: ptr == NULL. Aborting.\n");
+		vpr_printf_error(__FILE__, __LINE__,
+				"Unable to realloc memory. Aborting. "
+				"ptr=%p, Size=%d.\n", ptr, (int) size);
+		if (ptr == NULL ) {
+			vpr_printf_error(__FILE__, __LINE__,
+					"my_realloc: ptr == NULL. Aborting.\n");
 		}
-		exit(1);
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+					"Unable to realloc memory. Aborting. ptr=%p, Size=%d.\n", ptr, (int) size);				
 	}
 	return (ret);
 }
 
-
-
-void *
-my_chunk_malloc(size_t size, t_chunk *chunk_info) {
+void *my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 	/* This routine should be used for allocating fairly small data             *
 	 * structures where memory-efficiency is crucial.  This routine allocates   *
@@ -218,22 +215,22 @@ my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			/*#ifdef DEBUG
-			vpr_printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
-			size);
-			vpr_printf("You should consider using my_malloc for such big requests.\n");
-			#endif */
+			 vpr_printf("NB: my_chunk_malloc got a request for %d bytes.\n", size);
+			 vpr_printf("You should consider using my_malloc for such big requests.\n");
+			 #endif */
 
-			assert (chunk_info != NULL);
-			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
+			assert(chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(
+					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
 		}
 
 		if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
 			chunk_info->next_mem_loc_ptr = (char *) my_malloc(CHUNK_SIZE);
 			chunk_info->mem_avail = CHUNK_SIZE;
-			assert (chunk_info != NULL);
-			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head,
-				chunk_info->next_mem_loc_ptr);
+			assert(chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(
+					chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
 		}
 
 		/* Execute else clause only when the chunk we want is pretty big,  *
@@ -242,8 +239,9 @@ my_chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 		else {
 			tmp_ptr = (char *) my_malloc(size);
-			assert (chunk_info != NULL);
-			chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
+			assert(chunk_info != NULL);
+			chunk_info->chunk_ptr_head = insert_in_vptr_list(
+					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
 		}
 	}
@@ -271,7 +269,7 @@ void free_chunk_memory(t_chunk *chunk_info) {
 
 	curr_ptr = chunk_info->chunk_ptr_head;
 
-	while (curr_ptr != NULL) {
+	while (curr_ptr != NULL ) {
 		free(curr_ptr->data_vptr); /* Free memory "chunk". */
 		prev_ptr = curr_ptr;
 		curr_ptr = curr_ptr->next;
@@ -282,8 +280,7 @@ void free_chunk_memory(t_chunk *chunk_info) {
 	chunk_info->next_mem_loc_ptr = NULL;
 }
 
-struct s_linked_vptr *
-insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
+struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
 
 	/* Inserts a new element at the head of a linked list of void pointers. *
 	 * Returns the new head of the list.                                    */
@@ -300,19 +297,17 @@ insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
 
 /* Deletes the element at the head of a linked list of void pointers. *
  * Returns the new head of the list.                                    */
-struct s_linked_vptr *
-delete_in_vptr_list(struct s_linked_vptr *head) {
+struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head) {
 	struct s_linked_vptr *linked_vptr;
 
-	if (head == NULL)
-		return NULL;
+	if (head == NULL )
+		return NULL ;
 	linked_vptr = head->next;
 	free(head);
 	return linked_vptr; /* New head of the list */
 }
 
-t_linked_int *
-insert_in_int_list(t_linked_int * head, int data,
+t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 		t_linked_int ** free_list_head_ptr) {
 
 	/* Inserts a new element at the head of a linked list of integers.  Returns  *
@@ -322,7 +317,7 @@ insert_in_int_list(t_linked_int * head, int data,
 
 	t_linked_int *linked_int;
 
-	if (*free_list_head_ptr != NULL) {
+	if (*free_list_head_ptr != NULL ) {
 		linked_int = *free_list_head_ptr;
 		*free_list_head_ptr = linked_int->next;
 	} else {
@@ -343,7 +338,7 @@ void free_int_list(t_linked_int ** int_list_head_ptr) {
 
 	linked_int = *int_list_head_ptr;
 
-	while (linked_int != NULL) {
+	while (linked_int != NULL ) {
 		next_linked_int = linked_int->next;
 		free(linked_int);
 		linked_int = next_linked_int;
@@ -369,11 +364,11 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		ivec->nelem = 0;
 		ivec->list = NULL;
 
-		if (list_head != NULL) {
-			vpr_printf(TIO_MESSAGE_ERROR,
-			"alloc_ivector_and_copy_int_list: Copied %d elements, "
-			"but list at %p contains more.\n", num_items, (void *) list_head);
-			exit(1);
+		if (list_head != NULL ) {
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"alloc_ivector_and_copy_int_list: Copied %d elements, "
+						"but list at %p contains more.\n", num_items,
+				(void *) list_head);			
 		}
 		return;
 	}
@@ -390,12 +385,11 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 
 	list[num_items - 1] = linked_int->data;
 
-	if (linked_int->next != NULL) {
-		vpr_printf(TIO_MESSAGE_ERROR, 
-				"Error in alloc_ivector_and_copy_int_list:\n Copied %d elements, "
-						"but list at %p contains more.\n", num_items,
-				(void *) list_head);
-		exit(1);
+	if (linked_int->next != NULL ) {
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Error in alloc_ivector_and_copy_int_list:\n Copied %d elements, "
+			"but list at %p contains more.\n", num_items,
+				(void *) list_head);		
 	}
 
 	linked_int->next = *free_list_head_ptr;
@@ -403,8 +397,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 	*list_head_ptr = NULL;
 }
 
-char *
-my_fgets(char *buf, int max_size, FILE * fp) {
+char *my_fgets(char *buf, int max_size, FILE * fp) {
 	/* Get an input line, update the line number and cut off *
 	 * any comment part.  A \ at the end of a line with no   *
 	 * comment part (#) means continue. my_fgets should give * 
@@ -414,17 +407,17 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 
 	char ch;
 	int i;
-	
+
 	cont = 0; /* line continued? */
 	file_line_number++; /* global variable */
 
 	for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
-		
+
 		ch = fgetc(fp);
 
 		if (feof(fp)) { /* end of file */
 			if (i == 0) {
-				return NULL; /* required so we can write while (my_fgets(...) != NULL) */
+				return NULL ; /* required so we can write while (my_fgets(...) != NULL) */
 			} else { /* no newline before end of file - last line must be returned */
 				buf[i] = '\0';
 				return buf;
@@ -433,19 +426,19 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 
 		if (ch == '#') { /* comment */
 			buf[i] = '\0';
-			while ((ch = fgetc(fp)) != '\n' && !feof(fp)) 
+			while ((ch = fgetc(fp)) != '\n' && !feof(fp))
 				; /* skip the rest of the line */
 			return buf;
 		}
 
 		if (ch == '\r' || ch == '\n') { /* newline (cross-platform) */
-			if (i != 0 && buf[i-1] == '\\') { /* if \ at end of line, line continued */
-				cont = 1; 
-				buf[i-1] = '\n'; /* May need this for tokens */
+			if (i != 0 && buf[i - 1] == '\\') { /* if \ at end of line, line continued */
+				cont = 1;
+				buf[i - 1] = '\n'; /* May need this for tokens */
 				buf[i] = '\0';
 			} else {
 				buf[i] = '\n';
-				buf[i+1] = '\0';
+				buf[i + 1] = '\0';
 			}
 			return buf;
 		}
@@ -455,15 +448,14 @@ my_fgets(char *buf, int max_size, FILE * fp) {
 	}
 
 	/* Buffer is full but line has not terminated, so error */
-	vpr_printf(TIO_MESSAGE_ERROR, "Error on line %d -- line is too long for input buffer.\n",
-			file_line_number);
-	vpr_printf(TIO_MESSAGE_ERROR, "All lines must be at most %d characters long.\n",
-			BUFSIZE - 2);
-	exit(1);
+	vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+		"Error on line %d -- line is too long for input buffer.\n"
+		"All lines must be at most %d characters long.\n",
+			file_line_number, BUFSIZE - 2);	
+	return NULL;
 }
 
-char *
-my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
+char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 
 	/* Get next token, and wrap to next line if \ at end of line.    *
 	 * There is a bit of a "gotcha" in strtok.  It does not make a   *
@@ -482,8 +474,8 @@ my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 			return (val);
 
 		/* return unless we have a null value and a continuation line */
-		if (my_fgets(buf, BUFSIZE, fp) == NULL)
-			return (NULL);
+		if (my_fgets(buf, BUFSIZE, fp) == NULL )
+			return (NULL );
 
 		val = strtok(buf, tokens);
 	}
@@ -541,8 +533,7 @@ void free_ivec_matrix3(struct s_ivec ***ivec_matrix3, int nrmin, int nrmax,
 			sizeof(struct s_ivec));
 }
 
-void **
-alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax, size_t elsize) {
+void **alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax, size_t elsize) {
 
 	/* allocates an generic matrix with nrmax-nrmin + 1 rows and ncmax - *
 	 * ncmin + 1 columns, with each element of size elsize. i.e.         *
@@ -561,22 +552,7 @@ alloc_matrix(int nrmin, int nrmax, int ncmin, int ncmax, size_t elsize) {
 	return ((void **) cptr);
 }
 
-/* NB:  need to make the pointer type void * instead of void ** to allow   *
- * any pointer to be passed in without a cast.                             */
-
-void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin, size_t elsize) {
-	int i;
-	char **cptr;
-
-	cptr = (char **) vptr;
-
-	for (i = nrmin; i <= nrmax; i++)
-		free(cptr[i] + ncmin * elsize / sizeof(char));
-	free(cptr + nrmin);
-}
-
-void ***
-alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
+void ***alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 		size_t elsize) {
 
 	/* allocates a 3D generic matrix with nrmax-nrmin + 1 rows, ncmax -  *
@@ -601,8 +577,7 @@ alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 	return ((void ***) cptr);
 }
 
-void ****
-alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
+void ****alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 		int nemin, int nemax, size_t elsize) {
 
 	/* allocates a 3D generic matrix with nrmax-nrmin + 1 rows, ncmax -  *
@@ -611,26 +586,29 @@ alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
 	 * [nrmin..nrmax][ncmin..ncmax][ndmin..ndmax].  Simply cast the      *
 	 *  returned array pointer to the proper type.                       */
 
-	int i, j, k;
+	int i;
 	char ****cptr;
 
 	cptr = (char ****) my_malloc((nrmax - nrmin + 1) * sizeof(char ***));
 	cptr -= nrmin;
 	for (i = nrmin; i <= nrmax; i++) {
-		cptr[i] = (char ***) my_malloc((ncmax - ncmin + 1) * sizeof(char **));
-		cptr[i] -= ncmin;
-		for (j = ncmin; j <= ncmax; j++) {
-			cptr[i][j] = (char **) my_malloc(
-					(ndmax - ndmin + 1) * sizeof(char *));
-			cptr[i][j] -= ndmin;
-			for (k = ndmin; k <= ndmax; k++) {
-				cptr[i][j][k] = (char *) my_malloc(
-						(nemax - nemin + 1) * elsize);
-				cptr[i][j][k] -= nemin * elsize / sizeof(char); /* sizeof(char) = 1) */
-			}
-		}
+		cptr[i] = (char ***) alloc_matrix3 (ncmin, ncmax, ndmin, ndmax, nemin, nemax, elsize);
 	}
 	return ((void ****) cptr);
+}
+
+void *****alloc_matrix5(int nrmin, int nrmax, int ncmin, int ncmax, int ndmin, int ndmax,
+		int nemin, int nemax, int nfmin, int nfmax, size_t elsize) {
+
+	int i;
+	char *****cptr;
+
+	cptr = (char *****) my_malloc((nrmax - nrmin + 1) * sizeof(char ***));
+	cptr -= nrmin;
+	for (i = nrmin; i <= nrmax; i++) {
+		cptr[i] = (char ****) alloc_matrix4 (ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin, nfmax, elsize);
+	}
+	return ((void *****) cptr);
 }
 
 void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin, int ncmax,
@@ -654,6 +632,20 @@ void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 	fclose(outfile);
 }
 
+/* NB:  need to make the pointer type void * instead of void ** to allow   *
+ * any pointer to be passed in without a cast.                             */
+
+void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin, size_t elsize) {
+	int i;
+	char **cptr;
+
+	cptr = (char **) vptr;
+
+	for (i = nrmin; i <= nrmax; i++)
+		free(cptr[i] + ncmin * elsize / sizeof(char));
+	free(cptr + nrmin);
+}
+
 void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, size_t elsize) {
 	int i, j;
@@ -671,18 +663,26 @@ void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 
 void free_matrix4(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, size_t elsize) {
-	int i, j, k;
+	int i;
 	char ****cptr;
 
 	cptr = (char ****) vptr;
 
 	for (i = nrmin; i <= nrmax; i++) {
-		for (j = ncmin; j <= ncmax; j++) {
-			for (k = ndmin; k <= ndmax; k++)
-				free(cptr[i][j][k] + nemin * elsize / sizeof(char));
-			free(cptr[i][j] + ndmin * elsize / sizeof(char));
-		}
-		free(cptr[i] + ncmin);
+		free_matrix3 (cptr[i], ncmin, ncmax, ndmin, ndmax, nemin, elsize);
+	}
+	free(cptr + nrmin);
+}
+
+void free_matrix5(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
+		int ndmin, int ndmax, int nemin, int nemax, int nfmin, size_t elsize) {
+	int i;
+	char ****cptr;
+
+	cptr = (char ****) vptr;
+
+	for (i = nrmin; i <= nrmax; i++) {
+		free_matrix4 (cptr[i], ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin, elsize);
 	}
 	free(cptr + nrmin);
 }
@@ -718,8 +718,8 @@ int my_irand(int imax) {
 			/* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
 			ival = imax;
 		} else {
-			vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);
-			exit(1);
+			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+				"Bad value in my_irand, imax = %d  ival = %d\n", imax, ival);			
 		}
 	}
 #endif
@@ -740,12 +740,132 @@ float my_frand(void) {
 
 #ifdef CHECK_RAND
 	if ((fval < 0) || (fval > 1.)) {
-		vpr_printf(TIO_MESSAGE_ERROR, "Bad value in my_frand, fval = %g\n", fval);
-		exit(1);
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"Bad value in my_frand, fval = %g\n", fval);		
 	}
 #endif
 
 	return (fval);
 }
 
+boolean file_exists(const char * filename) {
+	FILE * file;
 
+	if (filename == NULL ) {
+		return FALSE;
+	}
+
+	file = fopen(filename, "r");
+	if (file) {
+		fclose(file);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int ipow(int base, int exp) {
+	int result = 1;
+
+	assert(exp >= 0);
+
+	while (exp) {
+		if (exp & 1)
+			result *= base;
+		exp >>= 1;
+		base *= base;
+	}
+	return result;
+}
+
+/* Author: Daniel Chen */
+/* Allocate and load partial data into t_vpr_error structure */
+/* Note: can also set breakpoint in this function to view callstack prior *
+ * to VPR failure														  */
+t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, char* file_name){
+	t_vpr_error* vpr_error;
+
+	vpr_error = (t_vpr_error*)my_calloc(1, sizeof(t_vpr_error));
+	vpr_error->file_name = (char*)my_calloc(strlen(file_name) + 1, sizeof(char));
+	vpr_error->message = (char*)my_calloc(1000, sizeof(char));
+
+	sprintf(vpr_error->file_name, file_name);
+	vpr_error->line_num = line;
+	vpr_error->type = type;
+
+	return vpr_error;
+}
+
+/* Date:June 15th, 2013								
+ * Author: Daniel Chen								
+ * Purpose: Used to throw any internal VPR error or architecture
+ *			file error and output the appropriate file name,
+ *			line number, and the error message. Does not return
+ *			anything but throw an exception which will be caught
+ *			main.c.
+ */
+void vpr_throw(enum e_vpr_error type,
+		const char* psz_file_name,
+		unsigned int line_num,
+		const char* psz_message,
+		...) {
+
+	// Make a variable argument list
+	va_list va_args;
+
+	// Initialize variable argument list
+	va_start( va_args, psz_message );
+
+	// Generate the actual error object and throw it
+	vvpr_throw(type, psz_file_name, line_num, psz_message, va_args);
+
+	// Reset variable argument list
+	va_end( va_args );
+
+}
+
+/*
+ * Version of vpr_throw that takes an explicit va_list.
+ *
+ *  This allows functions that have variable numbers of
+ *  inputs to throw t_vpr_error objects. 
+ */
+void vvpr_throw(enum e_vpr_error type,
+		const char* psz_file_name,
+		unsigned int line_num,
+		const char* psz_message,
+		va_list args) {
+
+	// Allocate the error struct
+	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
+              line_num, const_cast<char*>(psz_file_name));
+
+	// Extract and format message based on variable argument list
+	vsprintf(vpr_error->message, psz_message, args );
+
+	throw vpr_error;
+}
+
+/* Date:July 17th, 2013								
+ * Author: Daniel Chen								
+ * Purpose: Checks the file extension of an file to ensure 
+ *			correct file format. Returns TRUE if format is 
+ *			correct, and FALSE otherwise.
+ * Note:	This is probably a fragile check, but at least 
+ *			should prevent common problems such as swapping
+ *			architecture file and blif file on the VPR 
+ *			command line. 
+ */
+
+boolean check_file_name_extension(INP const char* file_name, 
+								INP const char* file_extension){
+	const char* str;
+	int len_extension;
+
+	len_extension = strlen(file_extension);
+	str = strstr(file_name, file_extension);
+	if(str == NULL || (*(str + len_extension) != '\0')){
+		return FALSE;
+	}
+
+	return TRUE;
+}

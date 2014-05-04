@@ -3,9 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <math.h>
 
-#include <TIO_PrintHandlerExtern.h>
+#include "TIO_PrintHandlerExtern.h"
 
 #ifndef TRUE                    /* Some compilers predefine TRUE, FALSE */
 typedef enum {
@@ -20,16 +21,27 @@ typedef int boolean;
 #define OUTP
 #define INOUTP
 
-#define BUFSIZE 4096 /* Maximum line length for various parsing proc. */
-#ifndef max
-#define max(a,b) (((a) > (b))? (a) : (b))
-#define min(a,b) ((a) > (b)? (b) : (a))
-#endif
+#define BUFSIZE 8192 /* Maximum line length for various parsing proc. */
 #define nint(a) ((int) floor (a + 0.5))
 
 #define ERRTAG "ERROR:\t"
 #define WARNTAG "WARNING:\t"
 
+
+enum e_vpr_error {
+	VPR_ERROR_UNKNOWN = 0, 
+	VPR_ERROR_ARCH,
+	VPR_ERROR_PACK,
+	VPR_ERROR_PLACE,
+	VPR_ERROR_ROUTE,
+	VPR_ERROR_TIMING,
+	VPR_ERROR_SDC,
+	VPR_ERROR_NET_F,
+	VPR_ERROR_PLACE_F,
+	VPR_ERROR_BLIF_F,
+	VPR_ERROR_OTHER
+};
+typedef enum e_vpr_error t_vpr_error_type;
 
 int limit_value(int cur, int max, const char *name);
 
@@ -68,6 +80,16 @@ typedef struct s_chunk {
 				* byte in the current chunk		*/
 } t_chunk;
 
+/* This structure is thrown back to highest level of VPR flow if an *
+ * internal VPR or user input error occurs. */
+
+typedef struct s_vpr_error {
+	char* message;
+	char* file_name;
+	int line_num;
+	enum e_vpr_error type;
+} t_vpr_error;
+
 #ifdef __cplusplus 
 extern "C" {
 #endif
@@ -97,6 +119,8 @@ void ***alloc_matrix3(int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, size_t elsize);
 void ****alloc_matrix4(int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, int nemax, size_t elsize);
+void *****alloc_matrix5(int nrmin, int nrmax, int ncmin, int ncmax,
+		int ndmin, int ndmax, int nemin, int nemax, int nfmin, int nfmax, size_t elsize);
 
 void free_matrix(void *vptr, int nrmin, int nrmax, int ncmin,
 		size_t elsize);
@@ -104,6 +128,8 @@ void free_matrix3(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, size_t elsize);
 void free_matrix4(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		int ndmin, int ndmax, int nemin, size_t elsize);
+void free_matrix5(void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
+		int ndmin, int ndmax, int nemin, int nemax, int nfmin, size_t elsize);
 
 void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin,
 		int ncmax, int ndmin, int ndmax, char *file);
@@ -127,20 +153,50 @@ char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
 
 FILE* my_fopen(const char *fname, const char *flag, int prompt);
 char *my_fgets(char *buf, int max_size, FILE * fp);
+boolean file_exists(const char * filename);
+
+boolean check_file_name_extension(INP const char* file_name, 
+								INP const char* file_extension);
 
 /*********************** Portable random number generators *******************/
 void my_srandom(int seed);
 int my_irand(int imax);
 float my_frand(void);
 
-typedef unsigned char (*messagelogger)( TIO_MessageMode_t messageMode,
-                                   char* pszMessage,
-                                   ... );
-extern messagelogger vpr_printf;
+typedef unsigned char (*vpr_PrintHandlerMessage)( 
+		TIO_MessageMode_t messageMode,
+		const char* pszMessage, ... );
+typedef void (*vpr_PrintHandlerInfo)( 
+		const char* pszMessage, ... );
+typedef unsigned char (*vpr_PrintHandlerWarning)( 
+		const char* pszFileName, unsigned int lineNum,
+		const char* pszMessage,	... );
+typedef unsigned char (*vpr_PrintHandlerError)( 
+		const char* pszFileName, unsigned int lineNum,
+		const char* pszMessage,	... );
+typedef void (*vpr_PrintHandlerTrace)( 
+		const char* pszMessage,	... );
+typedef void (*vpr_PrintHandlerDirect)( 
+		const char* pszMessage,	... );
+
+extern vpr_PrintHandlerMessage vpr_printf_xxx;
+extern vpr_PrintHandlerInfo vpr_printf_info;
+extern vpr_PrintHandlerWarning vpr_printf_warning;
+extern vpr_PrintHandlerError vpr_printf_error;
+extern vpr_PrintHandlerTrace vpr_printf_trace;
+extern vpr_PrintHandlerDirect vpr_printf_direct;
 
 #ifdef __cplusplus 
 }
 #endif
 
-#endif
+/*********************** Math operations *************************************/
+int ipow(int base, int exp);
 
+/*********************** Error-related ***************************************/
+void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename);
+t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, char* file_name);
+void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
+void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
+
+#endif
