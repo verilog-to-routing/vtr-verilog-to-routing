@@ -1860,11 +1860,15 @@ void read_and_process_blif(char *blif_file,
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_BLIF_INPUT)) {
 		echo_input(blif_file, getEchoFileName(E_ECHO_BLIF_INPUT),
 				library_models);
-	} else
-		;
+	}
 
 	absorb_buffer_luts();
 	compress_netlist(); /* remove unused inputs */
+
+	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPRESSED_NETLIST)) {
+		echo_input(blif_file, getEchoFileName(E_ECHO_COMPRESSED_NETLIST),
+				library_models);
+	}
 
 	//Added August 2013, Daniel Chen for loading flattened netlist into new data structures
 	load_global_net_from_array(vpack_net, num_logical_nets, &g_atoms_nlist);

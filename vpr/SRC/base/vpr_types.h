@@ -296,6 +296,8 @@ typedef enum {
 	TN_FF_SINK, /* sink (D) pin of flip-flop */
 	TN_FF_SOURCE, /* source (Q) pin of flip-flop */
 	TN_FF_CLOCK, /* clock pin of flip-flop */
+    TN_CLOCK_SOURCE, /* An on-chip clock generator such as a pll */
+    TN_CLOCK_OPIN, /* Output pin from an on-chip clock source - comes from TN_CLOCK_SOURCE */
 	TN_CONSTANT_GEN_SOURCE /* source of a constant logic 1 or 0 */
 } e_tnode_type;
 

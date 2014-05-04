@@ -152,6 +152,7 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH, "post_flow_timing_graph.blif");
 	setEchoFileName(E_ECHO_POST_PACK_NETLIST, "post_pack_netlist.blif");
 	setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
+	setEchoFileName(E_ECHO_COMPRESSED_NETLIST, "compressed_netlist.echo");
 	setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
 	setEchoFileName(E_ECHO_TIMING_GRAPH, "timing_graph.echo");
 	setEchoFileName(E_ECHO_LUT_REMAPPING, "lut_remapping.echo");

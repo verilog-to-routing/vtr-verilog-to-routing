@@ -217,7 +217,6 @@ static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
 		if (pb_type->ports[i].type == IN_PORT && !pb_type->ports[i].is_clock) {
 			pb_graph_node->num_input_ports++;
 		} else if (pb_type->ports[i].type == OUT_PORT) {
-			assert(!pb_type->ports[i].is_clock);
 			pb_graph_node->num_output_ports++;
 		} else {
 			assert(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);

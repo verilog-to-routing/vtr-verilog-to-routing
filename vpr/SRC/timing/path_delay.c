@@ -815,6 +815,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case TN_INTERMEDIATE_NODE:
 		case TN_PRIMITIVE_OPIN:
 		case TN_FF_OPIN:
+		case TN_CLOCK_OPIN:
 		case TN_CB_IPIN:
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
@@ -993,6 +994,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case TN_FF_SOURCE:
 		case TN_FF_IPIN:
 		case TN_FF_CLOCK:
+		case TN_CLOCK_SOURCE:
 			break;
 		default:
 			vpr_printf_error(__FILE__, __LINE__, 
@@ -1073,8 +1075,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				j++;
 				model_port = model_port->next;
 			}
-			logical_block[i].output_net_tnodes = (t_tnode ***)my_calloc(j,
-					sizeof(t_tnode**));
+			logical_block[i].output_net_tnodes = (t_tnode ***)my_calloc(j, sizeof(t_tnode**));
 		}
 	}
 	tnode = (t_tnode *)my_calloc(num_tnodes, sizeof(t_tnode));
@@ -1135,45 +1136,83 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			j = 0;
 			model_port = model->outputs;
 			while (model_port) {
-				logical_block[i].output_net_tnodes[j] = (t_tnode **)my_calloc(
-						model_port->size, sizeof(t_tnode*));
-				for (k = 0; k < model_port->size; k++) {
-					if (logical_block[i].output_nets[j][k] != OPEN) {
-						tnode[inode].prepacked_data->model_pin = k;
-						tnode[inode].prepacked_data->model_port = j;
-						tnode[inode].prepacked_data->model_port_ptr = model_port;
-						tnode[inode].block = i;
-						f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] =
-								inode;
-						logical_block[i].output_net_tnodes[j][k] =
-								&tnode[inode];
+                logical_block[i].output_net_tnodes[j] = (t_tnode **)my_calloc( model_port->size, sizeof(t_tnode*));
+				if (model_port->is_clock == FALSE) {
+                    for (k = 0; k < model_port->size; k++) {
+                        if (logical_block[i].output_nets[j][k] != OPEN) {
+                            tnode[inode].prepacked_data->model_pin = k;
+                            tnode[inode].prepacked_data->model_port = j;
+                            tnode[inode].prepacked_data->model_port_ptr = model_port;
+                            tnode[inode].block = i;
+                            f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] =
+                                    inode;
+                            logical_block[i].output_net_tnodes[j][k] =
+                                    &tnode[inode];
 
-						tnode[inode].num_edges =
-								g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
-						tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
-								tnode[inode].num_edges * sizeof(t_tedge),
-								&tedge_ch);
+                            tnode[inode].num_edges =
+                                    g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
+                            tnode[inode].out_edges = (t_tedge *) my_chunk_malloc(
+                                    tnode[inode].num_edges * sizeof(t_tedge),
+                                    &tedge_ch);
 
-						if (logical_block[i].clock_net == OPEN) {
-							tnode[inode].type = TN_PRIMITIVE_OPIN;
-							inode++;
-						} else {
-							/* load delays from predicted clock-to-Q time */
-							from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
-							tnode[inode].type = TN_FF_OPIN;
-							tnode[inode + 1].num_edges = 1;
-							tnode[inode + 1].out_edges =
-									(t_tedge *) my_chunk_malloc(
-											1 * sizeof(t_tedge),
-											&tedge_ch);
-							tnode[inode + 1].out_edges->to_node = inode;
-							tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
-							tnode[inode + 1].type = TN_FF_SOURCE;
-							tnode[inode + 1].block = i;
-							inode += 2;
-						}
-					}
-				}
+                            if (logical_block[i].clock_net == OPEN) {
+                                tnode[inode].type = TN_PRIMITIVE_OPIN;
+                                inode++;
+                            } else {
+                                /* load delays from predicted clock-to-Q time */
+                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
+                                tnode[inode].type = TN_FF_OPIN;
+                                tnode[inode + 1].num_edges = 1;
+                                tnode[inode + 1].out_edges =
+                                        (t_tedge *) my_chunk_malloc(
+                                                1 * sizeof(t_tedge),
+                                                &tedge_ch);
+                                tnode[inode + 1].out_edges->to_node = inode;
+                                tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
+                                tnode[inode + 1].type = TN_FF_SOURCE;
+                                tnode[inode + 1].block = i;
+                                inode += 2;
+                            }
+                        }
+                    }
+                } else {
+                    //An output clock port, that is a clock source (e.g. PLL output)
+
+                    //For every non-empty pin on the clock port create a clock pin and clock source tnode
+                    for (k = 0; k < model_port->size; k++) {
+                        if (logical_block[i].output_nets[j][k] != OPEN) {
+
+                            //Clock output pin
+                            tnode[inode].type = TN_CLOCK_OPIN;
+
+                            tnode[inode].prepacked_data->model_pin = k;
+                            tnode[inode].prepacked_data->model_port = j;
+                            tnode[inode].prepacked_data->model_port_ptr = model_port;
+                            tnode[inode].block = i;
+
+                            //Save this as the driver tnode
+                            f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] = inode;
+                            logical_block[i].output_net_tnodes[j][k] = &tnode[inode];
+
+                            //Allocate space for the output edges
+                            tnode[inode].num_edges = g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
+                            tnode[inode].out_edges = (t_tedge *) my_chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
+
+                            //Create the clock source
+                            from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
+                            tnode[inode + 1].type = TN_CLOCK_SOURCE;
+                            tnode[inode + 1].num_edges = 1;
+                            tnode[inode + 1].out_edges = (t_tedge *) my_chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
+                            tnode[inode + 1].out_edges->to_node = inode;
+                            tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
+                            tnode[inode + 1].prepacked_data->model_pin = k;
+                            tnode[inode + 1].prepacked_data->model_port = j;
+                            tnode[inode + 1].prepacked_data->model_port_ptr = model_port;
+                            tnode[inode + 1].block = i;
+                            inode += 2;
+                        }
+                    }
+                }
 				j++;
 				model_port = model_port->next;
 			}
@@ -1265,6 +1304,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		case TN_INPAD_OPIN:
 		case TN_PRIMITIVE_OPIN:
 		case TN_FF_OPIN:
+		case TN_CLOCK_OPIN:
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
 			inet =
@@ -1300,6 +1340,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		case TN_FF_SOURCE:
 		case TN_FF_IPIN:
 		case TN_FF_CLOCK:
+		case TN_CLOCK_SOURCE:
 			break;
 		default:
 			vpr_printf_error(__FILE__, __LINE__, 
@@ -1376,15 +1417,32 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 				tnode[i + 1].out_edges = NULL;
 			} else {
 				assert(tnode[i].pb_graph_pin->port->type == OUT_PORT);
-				tnode[i].type = TN_FF_OPIN;
-				tnode[i + 1].num_edges = 1;
-				tnode[i + 1].out_edges = (t_tedge *) my_chunk_malloc(
-						1 * sizeof(t_tedge), &tedge_ch);
-				tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
-				tnode[i + 1].out_edges->to_node = i;
-				tnode[i + 1].pb_graph_pin = pb_graph_pin;
-				tnode[i + 1].type = TN_FF_SOURCE;
-				tnode[i + 1].block = iblock;
+                //Determine whether we are a standard clocked output pin (TN_FF_OPIN with TN_FF_SOURCE)
+                //or a clock source (TN_CLOCK_OPIN with TN_CLOCK_SOURCE)
+                t_model_ports* model_port = tnode[i].pb_graph_pin->port->model_port;
+                if(!model_port->is_clock) {
+                    //Standard sequential output
+                    tnode[i].type = TN_FF_OPIN;
+                    tnode[i + 1].num_edges = 1;
+                    tnode[i + 1].out_edges = (t_tedge *) my_chunk_malloc(
+                            1 * sizeof(t_tedge), &tedge_ch);
+                    tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
+                    tnode[i + 1].out_edges->to_node = i;
+                    tnode[i + 1].pb_graph_pin = pb_graph_pin;
+                    tnode[i + 1].type = TN_FF_SOURCE;
+                    tnode[i + 1].block = iblock;
+                } else {
+                    //Clock source
+                    tnode[i].type = TN_CLOCK_OPIN;
+                    tnode[i + 1].num_edges = 1;
+                    tnode[i + 1].out_edges = (t_tedge *) my_chunk_malloc(
+                            1 * sizeof(t_tedge), &tedge_ch);
+                    tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
+                    tnode[i + 1].out_edges->to_node = i;
+                    tnode[i + 1].pb_graph_pin = pb_graph_pin;
+                    tnode[i + 1].type = TN_CLOCK_SOURCE;
+                    tnode[i + 1].block = iblock;
+                }
 			}
 			(*inode)++;
 		} else if (tnode[i].pb_graph_pin->type == PB_PIN_CLOCK) {
@@ -1416,7 +1474,7 @@ void print_timing_graph(const char *fname) {
 	const char *tnode_type_names[] = {  "TN_INPAD_SOURCE", "TN_INPAD_OPIN", "TN_OUTPAD_IPIN",
 			"TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN", "TN_INTERMEDIATE_NODE",
 			"TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN", "TN_FF_OPIN", "TN_FF_SINK",
-			"TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
+			"TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CLOCK_SOURCE", "TN_CLOCK_OPIN", "TN_CONSTANT_GEN_SOURCE" };
 
 	fp = my_fopen(fname, "w", 0);
 
@@ -1440,7 +1498,7 @@ void print_timing_graph(const char *fname) {
 
 		if (itype == TN_FF_CLOCK || itype == TN_FF_SOURCE || itype == TN_FF_SINK) {
 			fprintf(fp, "%d\t%.3e\t\t", tnode[inode].clock_domain, tnode[inode].clock_delay);
-		} else if (itype == TN_INPAD_SOURCE) {
+		} else if (itype == TN_INPAD_SOURCE || itype ==TN_CLOCK_SOURCE) {
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges ? tnode[inode].out_edges[0].Tdel : -1);
 		} else if (itype == TN_OUTPAD_SINK) {
 			assert(tnode[inode-1].type == TN_OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
@@ -1582,6 +1640,12 @@ static void process_constraints(void) {
 
 		for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
 			if (!constraint_used[sink_clock_domain]) {
+                if(g_sdc->domain_constraint[source_clock_domain][sink_clock_domain] != DO_NOT_ANALYSE) {
+                    vpr_printf_warning(__FILE__, __LINE__, "Timing constraint from clock %d to %d of value %f will be disabled"
+                                                           " since it is not activated by any path in the timing graph.\n",
+                                                           source_clock_domain, sink_clock_domain,
+                                                           g_sdc->domain_constraint[source_clock_domain][sink_clock_domain]);
+                }
 				g_sdc->domain_constraint[source_clock_domain][sink_clock_domain] = DO_NOT_ANALYSE;
 			}
 		}
@@ -2254,8 +2318,8 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 			num_edges = tnode[inode].num_edges;
 	
 			if (ilevel == 0) {
-				if (!(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE) &&
-					! tnode[inode].is_comb_loop_breakpoint) {
+				if (!(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE ||
+                      tnode[inode].type == TN_CLOCK_SOURCE) && !tnode[inode].is_comb_loop_breakpoint) {
 					//We suppress node type errors if they have the is_comb_loop_breakpoint flag set.
 					//The flag denotes that an input edge to this node was disconnected to break a combinational
 					//loop, and hence we don't consider this an error.
@@ -3081,11 +3145,12 @@ static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel,
 static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked) {
 /* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
 The clock domain of each clock is its index in g_sdc->constrained_clocks.
-We do this by matching each clock input pad to a constrained clock name, then
-propagating forward its domain index to all flip-flops fed by it (TN_FF_CLOCK
-tnodes), then later looking up the TN_FF_CLOCK tnode corresponding to every 
-TN_FF_SOURCE and TN_FF_SINK tnode. We also add up the delays along the clock net
-to each TN_FF_CLOCK tnode to give it (and the SOURCE/SINK nodes) a clock delay.
+We do this by matching each clock input pad (TN_INPAD_SOURCE), or internal clock 
+source (TN_CLOCK_SOURCE) to a constrained clock name, then propagating forward its 
+domain index to all flip-flops fed by it (TN_FF_CLOCK tnodes), then later looking 
+up the TN_FF_CLOCK tnode corresponding to every TN_FF_SOURCE and TN_FF_SINK tnode. 
+We also add up the delays along the clock net to each TN_FF_CLOCK tnode to give it 
+(and the SOURCE/SINK nodes) a clock delay.
 
 Also loads input delay/output delay (from set_input_delay or set_output_delay SDC 
 constraints) onto the tedges between TN_INPAD_SOURCE/OPIN and TN_OUTPAD_IPIN/SINK 
@@ -3101,13 +3166,14 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 		g_sdc->constrained_clocks[iclock].fanout = 0;
 	}
 
-	/* First, visit all TN_INPAD_SOURCE tnodes */
-	num_at_level = tnodes_at_level[0].nelem;	/* There are num_at_level top-level tnodes. */
-	for (i = 0; i < num_at_level; i++) {		
-		inode = tnodes_at_level[0].list[i];		/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
-		if (tnode[inode].type == TN_INPAD_SOURCE) {	/* See if this node is the start of an I/O pad (as oppposed to a flip-flop source). */			
+	/* First, visit all TN_INPAD_SOURCE and TN_CLOCK_SOURCE tnodes 
+     * We only need to check the first level of the timing graph, since all SOURCEs should appear there*/
+    num_at_level = tnodes_at_level[0].nelem; /* There are num_at_level top-level tnodes. */
+    for(i = 0; i < num_at_level; i++) {
+        inode = tnodes_at_level[0].list[i];	/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
+		if (tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_CLOCK_SOURCE) {	/* See if this node is the start of an I/O pad, or a clock source. */			
 			net_name = find_tnode_net_name(inode, is_prepacked);
-			if ((clock_index = find_clock(net_name)) != -1) { /* We have a clock inpad. */
+			if ((clock_index = find_clock(net_name)) != -1) { /* We have a clock inpad or clock source. */
 				/* Set clock skew to 0 at the source and propagate skew 
 				recursively to all connected nodes, adding delay as we go. 
 				Set the clock domain to the index of the clock in the
@@ -3119,9 +3185,9 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 				/* Set the clock domain of this clock inpad to -1, so that we do not analyse it.  
 				If we did not do this, the clock net would be analysed on the same iteration of 
 				the timing analyzer as the flip-flops it drives! */
-				tnode[inode].clock_domain = -1;
+				tnode[inode].clock_domain = DO_NOT_ANALYSE;
 
-			} else if ((input_index = find_input(net_name)) != -1) {
+			} else if (tnode[inode].type == TN_INPAD_SOURCE && (input_index = find_input(net_name)) != -1) {
 				/* We have a constrained non-clock inpad - find the clock it's constrained on. */
 				clock_index = find_clock(g_sdc->constrained_inputs[input_index].clock_name);
 				assert(clock_index != -1);
@@ -3132,12 +3198,12 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 				/* Mark input delay specified in SDC file on the timing graph edge leading out from the TN_INPAD_SOURCE node. */
 				tnode[inode].out_edges[0].Tdel = g_sdc->constrained_inputs[input_index].delay * 1e-9; /* normalize to be in seconds not ns */
 			} else { /* We have an unconstrained input - mark with dummy clock domain and do not analyze. */
-				tnode[inode].clock_domain = -1;
+				tnode[inode].clock_domain = DO_NOT_ANALYSE;
 			}
 		}
 	}	
 
-	/* Second, visit all TN_OUTPAD_SINK tnodes. Unlike for TN_INPAD_SOURCE tnodes,
+    /* Second, visit all TN_OUTPAD_SINK tnodes. Unlike for TN_INPAD_SOURCE tnodes,
 	we have to search the entire tnode array since these are all on different levels. */
 	for (inode = 0; inode < num_tnodes; inode++) {
 		if (tnode[inode].type == TN_OUTPAD_SINK) {
@@ -3179,10 +3245,9 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 static void propagate_clock_domain_and_skew(int inode) {
 /* Given a tnode indexed by inode (which is part of a clock net), 
  * propagate forward the clock domain (unchanged) and skew (adding the delay of edges) to all nodes in its fanout. 
- * We then call recursively on all children in a depth-first search.  If num_edges is 0, we should be at an TN_FF_CLOCK tnode; we then set the 
- * TN_FF_SOURCE and TN_FF_SINK nodes to have the same clock domain and skew as the TN_FF_CLOCK node.  We implicitly rely on a tnode not being 
- * part of two separate clock nets, since undefined behaviour would result if one DFS overwrote the results of another.  This may
- * be problematic in cases of multiplexed or locally-generated clocks. */
+ * We then call recursively on all children in a depth-first search.  If num_edges is 0, we should be at an TN_FF_CLOCK tnode;
+ * We implicitly rely on a tnode not being part of two separate clock nets, since undefined behaviour would result if one DFS 
+ * overwrote the results of another.  This may be problematic in cases of multiplexed or locally-generated clocks. */
 
 	int iedge, to_node;
 	t_tedge * tedge;
@@ -3213,19 +3278,61 @@ static char * find_tnode_net_name(int inode, boolean is_prepacked) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
 	int logic_block; /* Name chosen not to conflict with the array logical_block */
-	char * net_name;
 	t_pb * physical_block;
 	t_pb_graph_pin * pb_graph_pin;
 
 	logic_block = tnode[inode].block;
 	if (is_prepacked) {
-		net_name = logical_block[logic_block].name;
+        if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_INPAD_OPIN ||
+           tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_OUTPAD_IPIN) {
+            //For input/input pads the net name is the same as the block name
+            return logical_block[logic_block].name;
+        } else {
+            //Otherwise we need to look it up via the extra prepacked data
+            assert(tnode[inode].prepacked_data);
+
+            int iport = tnode[inode].prepacked_data->model_port;
+            int ipin = tnode[inode].prepacked_data->model_pin;
+            int inet;
+
+            if(tnode[inode].prepacked_data->model_port_ptr->dir == IN_PORT) {
+                inet = logical_block[logic_block].input_nets[iport][ipin];
+            } else {
+                assert(tnode[inode].prepacked_data->model_port_ptr->dir == OUT_PORT);
+                inet = logical_block[logic_block].output_nets[iport][ipin];
+            }
+
+            return g_atoms_nlist.net[inet].name;
+        }
 	} else {
-		physical_block = block[logic_block].pb;
-		pb_graph_pin = tnode[inode].pb_graph_pin;
-		net_name = physical_block->rr_node_to_pb_mapping[pb_graph_pin->pin_count_in_cluster]->name;
+        if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_INPAD_OPIN ||
+           tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_OUTPAD_IPIN) {
+            //For input/input pads the net name is the same as the block name
+            physical_block = block[logic_block].pb;
+            pb_graph_pin = tnode[inode].pb_graph_pin;
+            return physical_block->rr_node_to_pb_mapping[pb_graph_pin->pin_count_in_cluster]->name;
+        } else {
+            //We need to find the TN_CB_OPIN/TN_CB_IPIN that this node drives, so that we can look up
+            //the net name in the global clb netlist
+            int inode_search = inode;
+            while(tnode[inode_search].type != TN_CB_IPIN && tnode[inode_search].type != TN_CB_OPIN ) { 
+                //Assume we don't have any internal fanout inside the block
+                //  Should be true for most source-types
+                assert(tnode[inode_search].num_edges == 1);
+                inode_search = tnode[inode_search].out_edges[0].to_node;
+            }
+            assert(tnode[inode_search].type == TN_CB_IPIN || tnode[inode_search].type == TN_CB_OPIN);
+
+            //Now that we have a complex block pin, we can look-up its connected net in the CLB netlist
+            pb_graph_pin = tnode[inode_search].pb_graph_pin;
+            int ipin = pb_graph_pin->pin_count_in_cluster; //Pin into the CLB
+            int inet = block[tnode[inode_search].block].nets[ipin]; //Net index into the clb netlist
+            assert(inet != OPEN);
+
+            return g_clbs_nlist.net[inet].name;
+        }
 	}
-	return net_name;
+    assert(0); //Should never get here
 }
 
 static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked) {

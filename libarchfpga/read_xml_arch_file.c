@@ -1000,7 +1000,6 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 				&& pb_type->ports[i].is_clock == FALSE) {
 			pb_type->num_input_pins += pb_type->ports[i].num_pins;
 		} else if (pb_type->ports[i].type == OUT_PORT) {
-			assert(pb_type->ports[i].is_clock == FALSE);
 			pb_type->num_output_pins += pb_type->ports[i].num_pins;
 		} else {
 			assert(
@@ -1938,6 +1937,15 @@ static void ProcessModels(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->outputs;
 				tp->dir = OUT_PORT;
+				Prop = FindProperty(p, "is_clock", FALSE);
+				if (Prop && my_atoi(Prop) != 0) {
+					tp->is_clock = TRUE;
+				}
+				ezxml_set_attr(p, "is_clock", NULL);
+				if (tp->is_clock == TRUE && tp->is_non_clock_global == TRUE) {
+					vpr_throw(VPR_ERROR_ARCH, arch_file_name, p->line,
+							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
+				}
 
 				/* Try insert new output port, check if already exist at the same time */
 				ret_map_port = model_port_map.insert(
