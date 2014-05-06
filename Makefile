@@ -2,7 +2,7 @@ CC = g++
 VQM2BLIF_DIR = EXE
 
 export BUILD_TYPE = release
-export OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O2
+export OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 
 
 #ensure coherence with /EXE/Makefile

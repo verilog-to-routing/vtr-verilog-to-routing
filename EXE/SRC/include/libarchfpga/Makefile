@@ -15,7 +15,7 @@ AR = ar
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 DEBUG_FLAGS = -g
-OPT_FLAGS = -O3
+OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -Iinclude -I../libcommon_c++/SRC/TIO_InputOutputHandlers
 LIB_FLAGS = rcs
 
