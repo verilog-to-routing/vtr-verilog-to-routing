@@ -20,6 +20,18 @@
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #
 #   -temp_dir <dir>: Directory used for all temporary files
+#
+#   -percent_wires_cut <int>
+#   
+#   -cuts <int>: num_cuts
+#
+#   -delay <int>: delay_increase
+#
+#   -ub_factor <int>: amount of unbalancedness in partitions (%)
+#
+#   -graph_model <string>: either "star" or "clique"
+#
+#   -graph_edge_weight <string>: one of "1/f", "1/f2", "1"
 ###################################################################################
 
 use strict;
@@ -55,6 +67,15 @@ sub xml_find_mem_size;
 
 my $temp_dir = "./temp";
 
+my $percent_wires_cut = 0;
+my $num_cuts = 0;
+my $delay_increase = 0;
+my $placer_cost_constant = 0.0;
+my $constant_type = 0;
+my $ub_factor = 30;
+my $graph_model = "clique";
+my $graph_edge_weight = "1/f";
+
 my $stage_idx_odin   = 1;
 my $stage_idx_abc    = 2;
 my $stage_idx_ace    = 3;
@@ -69,7 +90,7 @@ my $token;
 my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
-my $keep_intermediate_files = 0;
+my $keep_intermediate_files = 1;
 my $has_memory              = 1;
 my $timing_driven           = "on";
 my $min_chan_width          = -1; 
@@ -81,7 +102,7 @@ my $do_power                = 0;
 my $check_equivalent		= "off";
 my $gen_postsynthesis_netlist 	= "off";
 my $seed					= 1;
-my $min_hard_mult_size		= 3;
+my $min_hard_mult_size         = 3;
 my $min_hard_adder_size		= 1;
 
 while ( $token = shift(@ARGV) ) {
@@ -109,9 +130,9 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
 	}
-	elsif ( $token eq "-routing_failure_predictor" ) {
-		$routing_failure_predictor = shift(@ARGV);
-	}
+        elsif ( $token eq "-routing_failure_predictor" ) {
+            $routing_failure_predictor = shift(@ARGV);
+        }
 	elsif ( $token eq "-vpr_cluster_seed_type" ) {
 		$vpr_cluster_seed_type = shift(@ARGV);
 	}
@@ -133,11 +154,36 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-seed" ) {
 		$seed = shift(@ARGV);
 	}
-	elsif ( $token eq "-min_hard_mult_size" ) {
-		$min_hard_mult_size = shift(@ARGV);
-	}
+        elsif ( $token eq "-min_hard_mult_size" ) {
+            $min_hard_mult_size = shift(@ARGV);
+        }
 	elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
+	}
+	elsif ( $token eq "-percent_wires_cut" ){
+		$percent_wires_cut = int (shift(@ARGV) );
+	}
+	elsif ( $token eq "-cuts" ){
+		$num_cuts = int (shift(@ARGV) );
+	}
+	elsif ( $token eq "-placer_cost_constant" ){
+		$placer_cost_constant = shift(@ARGV);
+		$placer_cost_constant = $placer_cost_constant * 1.0;
+	}
+	elsif ( $token eq "-delay" ){
+		$delay_increase = int (shift(@ARGV) );
+	}
+	elsif ( $token eq "-constant_type" ){
+		$constant_type = int (shift(@ARGV));
+	}
+	elsif ( $token eq "-ub_factor" ){
+		$ub_factor = int (shift(@ARGV));
+	}
+	elsif ( $token eq "-graph_model" ){
+		$graph_model = shift(@ARGV);
+	}
+	elsif ( $token eq "-graph_edge_weight" ){
+		$graph_edge_weight = shift(@ARGV);
 	}
 	else {
 		die "Error: Invalid argument ($token)\n";
@@ -179,7 +225,7 @@ if ( !( $temp_dir =~ /.*\/$/ ) ) {
 	$temp_dir = $temp_dir . "/";
 }
 
-my $timeout      = 14 * 24 * 60 * 60;         # 14 day execution timeout
+my $timeout      = 10 * 24 * 60 * 60;         # 10 day execution timeout
 my $results_path = "${temp_dir}output.txt";
 
 my $error;
@@ -203,7 +249,8 @@ if ( !-e $sdc_file_path ) {
 
 my $vpr_path;
 if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
-	$vpr_path = "$vtr_flow_path/../vpr/vpr";
+	#$vpr_path = "$vtr_flow_path/../vpr/vpr";
+	$vpr_path = "$vtr_flow_path/../vpr/vpr_jvds.py";
 	( -r $vpr_path or -r "${vpr_path}.exe" )
 	  or die "Cannot find vpr exectuable ($vpr_path)";
 }
@@ -466,7 +513,16 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--routing_failure_predictor", "$routing_failure_predictor",
 			"--sdc_file", 				  "$sdc_file_path",
 			"--seed",			 		  "$seed",
-			"--nodisp"
+			"--nodisp",
+			"--verify_binary_search",
+			"--percent_wires_cut",		"$percent_wires_cut",
+			"--num_cuts",			"$num_cuts",
+			"--delay_increase",		"$delay_increase", # Doing binary search without increased delay
+			"--placer_cost_constant",	"$placer_cost_constant",
+			"--constant_type", 		"$constant_type",
+			"--ub-factor=$ub_factor",
+			"--graph-model=$graph_model",
+			"--graph-edge-weight=$graph_edge_weight"
 		);
 		if ( $timing_driven eq "on" ) {
 			# Critical path delay is nonsensical at minimum channel width because congestion constraints completely dominate the cost function.
@@ -510,7 +566,15 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--max_router_iterations", "100",
 					"--nodisp",              @vpr_power_args,
 					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
-					"--sdc_file",			 "$sdc_file_path"
+					"--sdc_file",			 "$sdc_file_path",
+					"--percent_wires_cut",		"$percent_wires_cut",
+					"--num_cuts",			"$num_cuts",
+					"--delay_increase",		"$delay_increase",
+					"--placer_cost_constant",	"$placer_cost_constant",
+					"--constant_type",		"$constant_type",
+			"--ub-factor=$ub_factor",
+			"--graph-model=$graph_model",
+			"--graph-edge-weight=$graph_edge_weight"
 				);
 			}
 		}
@@ -527,7 +591,15 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--nodisp",                   "--cluster_seed_type",
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
-			"--sdc_file",				  "$sdc_file_path"
+			"--sdc_file",				  "$sdc_file_path",
+			"--percent_wires_cut",		"$percent_wires_cut",
+			"--num_cuts",			"$num_cuts",
+			"--delay_increase",		"$delay_increase",
+			"--placer_cost_constant",	"$placer_cost_constant",
+			"--constant_type",		"$constant_type",
+			"--ub-factor=$ub_factor",
+			"--graph-model=$graph_model",
+			"--graph-edge-weight=$graph_edge_weight"
 		);
 	}
 	  					
@@ -560,7 +632,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		}
 	}
 	else {
-		print("failed: vpr");
+		print("failed: vpr $q");
 		$error_code = 1;
 	}
 }

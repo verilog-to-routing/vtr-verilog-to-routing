@@ -30,6 +30,7 @@ using namespace std;
 #include "ReadOptions.h"
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
+#include "placement_regions.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 #define JEDIT_INTRA_LB_ROUTE
@@ -245,7 +246,7 @@ static void print_block_criticalities(const char * fname);
 static void load_transitive_fanout_candidates(int cluster_index,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets);
-
+static bool check_molecule_satisfies_placement_constraints(INOUTP t_pb *pb, INP t_pack_molecule *molecule);
 /*****************************************/
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
@@ -1103,6 +1104,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 	while (ptr != NULL) {
 		/* TODO: Get better candidate logical block in future, eg. return most timing critical or some other smarter metric */
 		if (ptr->moleculeptr->valid) {
+                  if (check_molecule_satisfies_placement_constraints(cur_pb, ptr->moleculeptr)) {
 			success = TRUE;
 			for (i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
 				if (ptr->moleculeptr->logical_block_ptrs[i] != NULL) {
@@ -1119,6 +1121,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 				return ptr->moleculeptr;
 			}
 			prev_ptr = ptr;
+                  }
 		}
 
 		else if (remove_flag == REMOVE_CLUSTERED) {
@@ -2037,7 +2040,8 @@ static void start_new_cluster(
 	new_cluster->x = UNDEFINED;
 	new_cluster->y = UNDEFINED;
 	new_cluster->z = UNDEFINED;
-	new_cluster->placement_region_list = molecule->logical_block_ptrs[molecule->root]->placement_region_list;
+        // JVDS: FIX THIS
+	/*new_cluster->placement_region_list = molecule->logical_block_ptrs[molecule->root]->placement_region_list;*/
 
 	if ((nx > 1) && (ny > 1)) {
 		alloc_and_load_grid(num_instances_type);
@@ -2127,6 +2131,58 @@ static void start_new_cluster(
 	num_used_instances_type[new_cluster->type->index]++;
 }
 
+s_placement_region pb_compute_placement_region_recursive(INP t_pb *pb) {
+  const t_pb_type *pb_type;
+  pb_type = pb->pb_graph_node->pb_type;
+
+  s_placement_region p;
+  placement_region_init_universe(&p);
+
+  if (pb->pb_graph_node->pb_type->num_modes == 0) {
+    // primitive
+    if (pb->logical_block != OPEN) {
+      return logical_block[pb->logical_block].placement_region;
+    }
+  } else {
+     // has children
+    for (int i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
+      for (int j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
+        if (pb->child_pbs[i] != NULL) {
+          if (pb->child_pbs[i][j].name != NULL) {
+            s_placement_region p_child = pb_compute_placement_region_recursive(&pb->child_pbs[i][j]);
+            p = placement_region_intersection(&p, &p_child);
+          }
+        }
+      }
+    }
+  }
+
+  return p;
+}
+
+static bool check_molecule_satisfies_placement_constraints(INOUTP t_pb *pb, INP t_pack_molecule *molecule) {
+  struct s_placement_region p;
+  placement_region_init_universe(&p);
+
+  //vpr_printf_info("JVDS start checking\n");
+  // first intersect all the LB placement regions in the molecule
+  for (int i = 0; i < (molecule->type == MOLECULE_SINGLE_ATOM ? 1 : molecule->pack_pattern->num_blocks); ++i) {
+    if (molecule->logical_block_ptrs[i] == NULL) {
+      continue;
+    }
+    //vpr_printf_info("JVDS checking %s\n", molecule->logical_block_ptrs[i]->name);
+    p = placement_region_intersection(&p, &molecule->logical_block_ptrs[i]->placement_region);
+  }
+  //vpr_printf_info("JVDS molecule region %d %d %d %d\n", p.xlow, p.xhigh, p.ylow, p.yhigh);
+
+  // now in the pb
+  struct s_placement_region p_pb_tree = pb_compute_placement_region_recursive(pb);
+  p = placement_region_intersection(&p, &p_pb_tree);
+  bool result = !placement_region_is_empty(&p);
+  //vpr_printf_info("JVDS check result %d\n", result);
+  return result;
+}
+
 /*
 Get candidate molecule to pack into currently open cluster
 Molecule selection priority:
@@ -2169,6 +2225,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 				while (cur != NULL) {
 					molecule = (t_pack_molecule *) cur->data_vptr;
 					if (molecule->valid) {
+                                          // check if this molecule agrees with the existing ones in the block
 						success = TRUE;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->logical_block_ptrs[j] != NULL) {
@@ -2282,8 +2339,12 @@ static t_pack_molecule *get_highest_gain_molecule(
 			cur_pb->pb_stats->num_feasible_blocks--;
 			index = cur_pb->pb_stats->num_feasible_blocks;
 			molecule = cur_pb->pb_stats->feasible_blocks[index];
-			assert(molecule->valid == TRUE);
-			return molecule;
+                        if (check_molecule_satisfies_placement_constraints(cur_pb, molecule)) {
+                          assert(molecule->valid == TRUE);
+                          return molecule;
+                        } else {
+                          molecule = NULL;
+                        }
 		}
 	}
 

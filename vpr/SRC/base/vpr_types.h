@@ -131,6 +131,10 @@ enum e_block_pack_status {
 	BLK_PASSED, BLK_FAILED_FEASIBLE, BLK_FAILED_ROUTE, BLK_STATUS_UNDEFINED
 };
 
+struct s_placement_region {
+  int xlow; int xhigh; int ylow; int yhigh;
+};
+
 struct s_rr_node;
 /* defined later, but need to declare here because it is used */
 struct s_pack_molecule;
@@ -167,6 +171,8 @@ typedef struct s_pb {
 	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
 	 LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
 	 so this optimization is crucial for handling LUT based FPGAs.	 */ /* jedit TODO: Delete this because it is no longer used by anyone */ 
+
+  struct s_placement_region placement_region;
 } t_pb;
 
 /* Representation of intra-logic block routing */
@@ -204,7 +210,7 @@ typedef struct s_logical_block {
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
 
-	TGO_RegionList_t placement_region_list; // Optional placement regions (defined by Toro front-end)  /* jedit TODO: Delte this because it is unused */ 
+  struct s_placement_region placement_region; /* used for placement constraints */
 
 	char ***input_pin_names; /* [0..num_ports-1][0..num_pins-1] save the input name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
 	char ***output_pin_names; /* [0..num_ports-1][0..num_pins-1] save the output name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */

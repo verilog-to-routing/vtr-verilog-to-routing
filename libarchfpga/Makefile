@@ -21,7 +21,7 @@ LIB_FLAGS = rcs
 
 EXE = read_arch
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP -DINTERPOSER_BASED_ARCHITECTURE
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)

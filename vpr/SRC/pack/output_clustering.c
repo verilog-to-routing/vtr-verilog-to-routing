@@ -21,10 +21,11 @@ using namespace std;
 #include "ReadOptions.h"
 #include "vpr_utils.h"
 #include "output_blif.h"
+#include "placement_regions.h"
 
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
-
+s_placement_region pb_compute_placement_region_recursive(INP t_pb *pb);
 //#define OUTPUT_BLIF /* Dump blif representation of logic block for debugging using formal verification */ /* jedit TODO: This will get replaced by print netlist as blif */
 
 /****************** Static variables local to this module ************************/
@@ -520,6 +521,14 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 					pb->name, pb_type->name, pb_index, mode->name);
 		}
 
+                if (pb_type->depth == 0) {
+                  s_placement_region placement_region = pb_compute_placement_region_recursive(pb);
+                  if (!placement_region_is_universe(&placement_region)) {
+                    print_tabs(fpout, tab_depth);
+                    fprintf(fpout, "\t<regions><region x1=\"%d\" x2=\"%d\" y1=\"%d\" y2=\"%d\"/></regions>\n", placement_region.xlow, placement_region.xhigh, placement_region.ylow, placement_region.yhigh);
+                  }
+                }
+
 		print_tabs(fpout, tab_depth);
 		fprintf(fpout, "\t<inputs>\n");
 		port_index = 0;
@@ -643,6 +652,13 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 			fprintf(fpout, "<block name=\"%s\" instance=\"%s[%d]\" mode=\"%s\">\n",
 					pb->name, pb_type->name, pb_index, mode->name);
 		}
+                if (pb_type->depth == 0) {
+                  s_placement_region placement_region = pb_compute_placement_region_recursive(pb);
+                  if (!placement_region_is_universe(&placement_region)) {
+                    print_tabs(fpout, tab_depth);
+                    fprintf(fpout, "\t<regions><region x1=\"%d\" x2=\"%d\" y1=\"%d\" y2=\"%d\"/></regions>\n", placement_region.xlow, placement_region.xhigh, placement_region.ylow, placement_region.yhigh);
+                  }
+                }
 
 		print_tabs(fpout, tab_depth);
 		fprintf(fpout, "\t<inputs>\n");

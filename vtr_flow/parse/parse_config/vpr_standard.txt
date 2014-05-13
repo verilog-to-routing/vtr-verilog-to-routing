@@ -1,6 +1,7 @@
 vpr_status;output.txt;vpr_status=(.*)
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+constant;vpr.out;Placer cost constant: (.*)
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
 min_chan_width_route_time;vpr.out;Routing took (.*) seconds
@@ -14,3 +15,8 @@ num_outputs;vpr.out;Netlist output pins:\s*(\d+)
 num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
 num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
 error;output.txt;error=(.*)
+percent_wires_cut;vpr.out;Percent wires cut: (\d+)
+num_cuts;vpr.out;Number of cuts: (\d+)
+delay_increase;vpr.crit_path.out;Delay increase: (\d+)
+hyperedge_cut;hyperedge_cut.txt;(.*)
+placement_compliance;placement_compliance.txt;(.*)

@@ -10,7 +10,7 @@
 ENABLE_GRAPHICS = true
 # can be true or false
 
-BUILD_TYPE = release
+BUILD_TYPE = debug
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
@@ -48,7 +48,7 @@ DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE 
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -DINTERPOSER_BASED_ARCHITECTURE
 
 UNAME := $(shell uname)
 # determine build env

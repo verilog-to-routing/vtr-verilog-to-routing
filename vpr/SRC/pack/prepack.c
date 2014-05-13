@@ -12,7 +12,8 @@
 
 #include <cstdio>
 #include <cstring>
-using namespace std;
+//using namespace std;
+#include <algorithm>
 
 #include <assert.h>
 
@@ -24,6 +25,7 @@ using namespace std;
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "ReadOptions.h"
+#include "placement_regions.h"
 
 /*****************************************/
 /*Local Function Declaration			 */
@@ -869,6 +871,20 @@ static void free_pack_pattern(INOUTP t_pack_pattern_block *pattern_block, INOUTP
 	}
 }
 
+static bool check_placement_constraints(INP t_pack_molecule *molecule) {
+  struct s_placement_region cur_pr;
+  placement_region_init_universe(&cur_pr);
+
+  for (int i = 0; i < molecule->pack_pattern->num_blocks; ++i) {
+    if (molecule->logical_block_ptrs[i] == NULL) {
+      continue;
+    }
+    cur_pr = placement_region_intersection(&cur_pr, &molecule->logical_block_ptrs[i]->placement_region);
+  }
+
+  return !placement_region_is_empty(&cur_pr);
+}
+
 /**
  * Given a pattern and a logical block to serve as the root block, determine if the candidate logical block serving as the root node matches the pattern
  * If yes, return the molecule with this logical block as the root, if not, return NULL
@@ -901,7 +917,7 @@ static t_pack_molecule *try_create_molecule(
 	}
 
 	if (block_index != OPEN && try_expand_molecule(molecule, block_index,
-			molecule->pack_pattern->root_block) == TRUE) {
+			molecule->pack_pattern->root_block) == TRUE && check_placement_constraints(molecule) == TRUE) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
 			if(molecule->logical_block_ptrs[i] == NULL) {

@@ -39,7 +39,7 @@
 
  For the general purpose logic block, we assume that the area and delays of the Stratix IV 
   crossbar is close enough to the crossbar modelled here.  We use 40 inputs and 20 feedback lines in 
-  the cluster and a full crossbar, leading to 60:1 multiplexers in front of each BLE input.
+  the cluster and a full crossbar, leading to 53:1 multiplexers in front of each BLE input.
   Stratix IV uses 52 inputs and 20 feedback lines, but only a half-populated crossbar, leading to 
   36:1 multiplexers.  We require 60 such multiplexers, while Stratix IV requires 88 for its more
   complex fracturable BLEs + the extra control signals. We justify this rough approximation as follows: 
@@ -148,10 +148,15 @@
     <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="1.222260"/>
     <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247000e-11"/>
 
-    <!-- The grid_logic_tile_area below will be used for all blocks that do not explicitly set their own (non-routing)
-     	  area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
-	  -->
-		<area grid_logic_tile_area="0"/>
+    <!-- Total Stratix IV tile area is about 8100 um^2, minimum width transistor area is 60 L^2 yields a tile area of 84375 MWTAs,
+	   Routing at W=300 is 30481 MWTAs, leaving us with a total of 53000 MWTAs for logic block area 
+	   This means that only 37% of our area is in the general routing, and 63% is inside the logic
+	   block. Note that the crossbar / local interconnect is considered part of the logic block
+	   area in this analysis. That is a lower proportion of of routing area than most academics
+	   assume, but note that the total routing area really includes the crossbar, which would push
+	   routing area up significantly, we estimate into the ~70% range.
+	   -->
+    <area grid_logic_tile_area="53894"/>
     <chan_width_distr>
       <io width="1.000000"/>
       <x distr="uniform" peak="1.000000"/>
@@ -174,6 +179,11 @@
 	       Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
 	       This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
     <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+
+    <!-- Ok, I'm not going to implement this through the architecture file 
+    <switch type="mux" name="1" R="551" Cin=".77e-15" Cout="4e-15" Tdel="1058e-12" mux_trans_size="2.630740" buf_size="27.645901"/> --> <!-- Switch box switch with increased delay-->
+    <!-- Gonna do this in a different way
+    <switch type="mux" name="2" R="0" Cin="1.47e-15" Cout="0" Tdel="1072.47000e-12" mux_trans_size="0" buf_size="27.645901"/> --> <!-- Connection box switch with increased delay-->
   </switchlist>
   <segmentlist>
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
@@ -190,8 +200,7 @@
 
     <!-- Define I/O pads begin -->
     <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
-	  <!-- Not sure of the area of an I/O (varies widely), and it's not relevant to the design of the FPGA core, so we're setting it to 0. -->
-    <pb_type name="io" capacity="8" area="0">
+    <pb_type name="io" capacity="8">
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
       <clock name="clock" num_pins="1"/>
@@ -247,16 +256,7 @@
     <!-- Define I/O pads ends -->
 
     <!-- Define general purpose logic block (CLB) begin -->
-	  <!--- Area calculation: Total Stratix IV tile area is about 8100 um^2, and a minimum width transistor 
-	   area is 60 L^2 yields a tile area of 84375 MWTAs.
-	   Routing at W=300 is 30481 MWTAs, leaving us with a total of 53000 MWTAs for logic block area 
-	   This means that only 37% of our area is in the general routing, and 63% is inside the logic
-	   block. Note that the crossbar / local interconnect is considered part of the logic block
-	   area in this analysis. That is a lower proportion of of routing area than most academics
-	   assume, but note that the total routing area really includes the crossbar, which would push
-	   routing area up significantly, we estimate into the ~70% range. 
-	   -->
-    <pb_type name="clb" area="53894">
+    <pb_type name="clb">
       <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="20" equivalent="false"/>
       <clock name="clk" num_pins="1"/>
@@ -432,8 +432,12 @@
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
-      <pinlocations pattern="spread"/>
-
+      <!-- pinlocations pattern="spread" -->
+      <pinlocations pattern="custom">
+        <loc side="top">clb.I clb.O clb.clk</loc>
+        <loc side="right">clb.I clb.O clb.clk</loc>
+      </pinlocations>
+	  
       <!-- Place this general purpose logic block in any unspecified column -->
       <gridlocations>
         <loc type="fill" priority="1"/>
@@ -452,20 +456,8 @@
 	   9x9 outputs, 18x18 or 36x36) so those are very close between the two architectures. 
 	   We take the conservative (slightly pessimistic)
            approach modelling the input as the same as the Stratix IV input delay and the output delay the same as the Stratix IV DSP out delay.
-	   
-     We estimate block area by using the published Stratix III data (which is architecturally identical to Stratix IV)
-	     (H. Wong, V. Betz and J. Rose, "Comparing FPGA vs. Custom CMOS and the Impact on Processor Microarchitecture", FPGA 2011) of 0.2623 
-		 mm^2 and scaling from 65 to 40 nm to obtain 0.0993 mm^2. That area is for a DSP block with approximately 2x the functionality of 
-		 the block we use (can implement two 36x36 multiplies instead of our 1, eight 18x18 multiplies instead of our 4, etc.). Hence we 
-		 divide the area by 2 to obtain 0.0497 mm^2. One minimum-width transistor units = 60 L^2 (where L = 40 nm), so is 518,000 MWTUS. 
-		 That area includes routing and the connection block input muxes.  Our DSP block is four 
-		 rows high, and hence includes four horizontal routing channel segments and four vertical ones, which is 4x the routing of a logic 
-		 block (single tile). It also includes 3.6x the outputs of a logic block, and 1.8x the inputs. Hence a slight overestimate of the routing
-		 area associated with our DSP block is four times that of a logic tile, where the routing area of a logic tile was calculated above (at W = 300)
-		 as 30481 MWTAs. Hence the (core, non-routing) area our DSP block is approximately 518,000 - 4 * 30,481 = 396,000 MWTUs.
       -->
-    <pb_type name="mult_36" height="4" area="396000">
-
+    <pb_type name="mult_36" height="4">
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
       <output name="out" num_pins="72"/>
@@ -622,7 +614,19 @@
       </mode>
 
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      
+	  <!-- pinlocations pattern="spread" -->
+      <pinlocations pattern="custom">
+        <loc side="top" offset="3">mult_36.a mult_36.b mult_36.out</loc>
+		<loc side="right">mult_36.a mult_36.b mult_36.out</loc>
+		
+        <!-- loc side="right" offset="3">mult_36.a[35:27] mult_36.b[35:27] mult_36.out[71:54]</loc>
+        <loc side="right" offset="2">mult_36.a[26:18] mult_36.b[26:18] mult_36.out[53:36]</loc>
+        <loc side="right" offset="1">mult_36.a[17:9] mult_36.b[17:9] mult_36.out[35:18]</loc>
+        <loc side="right" offset="0">mult_36.a[8:0] mult_36.b[8:0] mult_36.out[17:0]</loc>
+		-->
+      </pinlocations>
+
 
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
       <gridlocations>
@@ -637,22 +641,8 @@
            Area and delay based off Stratix IV 9K and 144K memories (delay from linear interpolation, Tsu(483 ps, 636 ps) Tco(1084ps, 1969ps)).  
            Input delay = 204ps (from Stratix IV LAB line) - 72ps (this architecture does not lump connection box delay in internal delay)
            Output delay = M4K buffer 50ps
-
-           Area is obtained by appropriately scaling and adjusting the published Stratix III (which is architecturally identical to Stratix IV)
-           data from H. Wong, V. Betz and J. Rose, "Comparing FPGA vs. Custom CMOS and the Impact on Processor Microarchitecture", FPGA 2011.
-           Linearly interpolating (by bit count) between the M9k and M144k areas to obtain an M32k (our RAM size) point yields a 65 nm area of
-           of 0.153 mm^2. Interpolating based on port count between the RAMs would instead yield an area of 0.209 mm^2 for our 32 kB RAM; since 
-           bit count accounts for more area than ports for a RAM this size we choose the bit count interpolation; however, since the port interpolation
-           is not radically different this also gives us confidence that interpolating based on bits is OK, but slightly underpredicts area.
-           Scaling to 40 nm^2 yields .0579 mm^2, and converting to MWTUs at 60 L^2 / MWTU yields 604,000 MWTUs. This includes routing. A Stratix IV
-           M9K RAM is one row high and hence has one routing tile (one horizonal and one vertical routing segment area). An M144k RAM has 8 such tiles.
-           Linearly interpolating on
-           bits to 32 kb yields 2.2 routing tiles incorporated in the area number above. The inter-block routing represents 30% of the area of a logic 
-           tile according to D. Lewis et al, "Architectural Enhancements in Stratix V," FPGA 2013. Hence we should subtract 0.3 * 2.2 * 84,375 MWTUs to
-           obtain a RAM core area (not including inter-block routing) of 548,000 MWTU areas for our 32 kb RAM in a 40 nm process.
-    -->
-    <pb_type name="memory" height="6" area="548000">
-
+      -->
+    <pb_type name="memory" height="4">
       <input name="addr1" num_pins="15"/>
       <input name="addr2" num_pins="15"/>
       <input name="data" num_pins="64"/>
@@ -1226,7 +1216,13 @@
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      
+	  <!-- pinlocations pattern="spread" -->
+      <pinlocations pattern="custom">
+        <loc side="top" offset="3">memory.addr1 memory.addr2 memory.data memory.we1 memory.we2 memory.out memory.clk</loc>
+        <loc side="right">memory.addr1 memory.addr2 memory.data memory.we1 memory.we2 memory.out memory.clk</loc>
+      </pinlocations>	  
+	  
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->
       <gridlocations>
@@ -1241,9 +1237,6 @@
   </complexblocklist>
   <power>
     <local_interconnect C_wire="2.5e-10"/>
-    <mux_transistor_size mux_transistor_size="3"/>
-    <FF_size FF_size="4"/>
-    <LUT_transistor_size LUT_transistor_size="4"/> 
   </power>
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10"/>

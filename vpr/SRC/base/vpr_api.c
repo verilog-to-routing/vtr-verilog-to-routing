@@ -349,6 +349,8 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				nx = current;
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
+                        nx = nx * 1.1;
+                        ny = ny * 1.1;
 			alloc_and_load_grid(num_instances_type);
 			vpr_printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
 		} else {
@@ -436,6 +438,7 @@ void vpr_setup_interposer_cut_locations(t_arch Arch)
 		"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
 	}
 
+        assert(Arch.lcm_of_block_heights > 0);
 
 	int num_slices = num_cuts + 1;
 		

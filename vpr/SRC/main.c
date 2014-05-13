@@ -17,6 +17,53 @@ using namespace std;
 
 #include "vpr_api.h"
 
+// operates on logical blocks, which are in the BLIF input to VPR
+static void print_hmetis_logical_graph() {
+  FILE *hypergraph;
+  hypergraph = fopen("logical_hypergraph.txt", "w");
+  fprintf(hypergraph, "%d %d\n", num_logical_nets, num_logical_blocks);
+  for (int i = 0; i < num_logical_nets; i++) {
+    for(int j = 0; j <= vpack_net[i].num_sinks; j++) {
+      fprintf(hypergraph, "%d ", vpack_net[i].node_block[j]+1);
+    }
+    fprintf(hypergraph, "//%s", vpack_net[i].name);
+    fprintf(hypergraph, "\n");
+  }
+  fclose(hypergraph);
+
+  FILE* blocks_file = fopen("blocks.txt", "w");
+  for(int i = 0; i < num_logical_blocks; i++){
+    fprintf(blocks_file, "%s %s\n", logical_block[i].name, logical_block[i].model->name);
+  }
+  fclose(blocks_file);
+
+}
+
+// operates on CLBs, which are the complex blocks that are placed during placement
+static void print_hmetis_clb_graph() {
+			/* ANDRE: printing the hypergraph */
+			FILE *hypergraph;
+			hypergraph = fopen("hypergraph.txt", "w");
+
+			fprintf(hypergraph, "%d %d\n", num_nets, num_blocks); // first line of file: numnets, numblocks, format (weighted edges and nodes)
+			for(int i = 0; i < num_nets; i++){
+			  //fprintf(hypergraph, "%d", 1 - clb_net[i].is_global); //weight of the edge, 0 if it is global
+			  for(int j = 0; j <= clb_net[i].num_sinks; j++)
+			    fprintf(hypergraph, "%d ", clb_net[i].node_block[j]+1);
+			  fprintf(hypergraph, "//%s", clb_net[i].name);
+			  fprintf(hypergraph, "\n");
+			}
+			fclose(hypergraph);
+
+			FILE* blocks_file = fopen("blocks.txt", "w");
+			for(int i = 0; i < num_blocks; i++){
+			  fprintf(blocks_file, "%s %s\n", block[i].name, block[i].pb->pb_graph_node->pb_type->name);
+			}
+			fclose(blocks_file);
+
+
+}
+
 /**
  * VPR program
  * Generate FPGA architecture given architecture description
@@ -43,10 +90,13 @@ int main(int argc, char **argv) {
 		/* If the user requests packing, do packing */
 		if (vpr_setup.PackerOpts.doPacking) {
 			vpr_pack(vpr_setup, Arch);
-		}
+			vpr_init_pre_place_and_route(vpr_setup, Arch);
+         	        print_hmetis_logical_graph();
+		} else {
+			vpr_init_pre_place_and_route(vpr_setup, Arch);
+                }
 
 		if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
-			vpr_init_pre_place_and_route(vpr_setup, Arch);
 			
 			#ifdef INTERPOSER_BASED_ARCHITECTURE
 			vpr_setup_interposer_cut_locations(Arch);

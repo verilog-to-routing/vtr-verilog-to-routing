@@ -1,6 +1,9 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 using namespace std;
 
 #include <assert.h>
@@ -12,6 +15,7 @@ using namespace std;
 #include "arch_types.h"
 #include "ReadOptions.h"
 #include "hash.h"
+#include "placement_regions.h"
 
 /* PRINT_PIN_NETS */
 
@@ -156,6 +160,32 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 		read_activity(activity_file);
 	}
 	free_parse();
+}
+
+static void read_placement_constraints(const char* filename) {
+  vpr_printf_info("Reading placement constraints from %s...\n", filename);
+  int logical_block_index = 0;
+
+  std::ifstream file_stream(filename);
+  if (!file_stream.good()) {
+    for (logical_block_index = 0; logical_block_index < num_logical_blocks; ++logical_block_index) {
+      placement_region_init_universe(&logical_block[logical_block_index].placement_region);
+    }
+    return;
+  }
+  std::string line;
+
+  while (std::getline(file_stream, line)) {
+    std::istringstream line_stream(line);
+    line_stream >> logical_block[logical_block_index].placement_region.xlow
+                >> logical_block[logical_block_index].placement_region.xhigh
+                >> logical_block[logical_block_index].placement_region.ylow
+                >> logical_block[logical_block_index].placement_region.yhigh;
+    ++logical_block_index;
+  }
+  vpr_printf_info("Reading placement constraints %d/%d.\n", logical_block_index, num_logical_blocks);
+  assert(logical_block_index == num_logical_blocks);
+  vpr_printf_info("Reading placement constraints was successful.\n");
 }
 
 static void init_parse(int doall, boolean init_vpack_net_power) {
@@ -1846,6 +1876,8 @@ void read_and_process_blif(char *blif_file,
 	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
 
+
+
 	/* TODO: Do check blif here 
 	 eg. 
 	 for (i = 0; i < num_logical_blocks; i++) {
@@ -1869,6 +1901,8 @@ void read_and_process_blif(char *blif_file,
 		echo_input(blif_file, getEchoFileName(E_ECHO_COMPRESSED_NETLIST),
 				library_models);
 	}
+
+        read_placement_constraints("placement_regions.txt");
 
 	//Added August 2013, Daniel Chen for loading flattened netlist into new data structures
 	load_global_net_from_array(vpack_net, num_logical_nets, &g_atoms_nlist);

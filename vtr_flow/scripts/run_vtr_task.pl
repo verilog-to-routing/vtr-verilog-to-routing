@@ -16,6 +16,19 @@
 #							name should be on a separate line.
 #
 #	-hide_runtime: Do not show runtime estimates
+#	
+#	-percent_wires_cut <int>: the percentage of wires that go through interchip cuts that
+#	should be cut
+#
+#	-num_cuts <int>: the number of cuts to be done to the chip
+#
+#	-delay_increase <int>: the increased delay to be added to wires which cross the cuts (ps)
+#
+#   -ub_factor <int>: amount of unbalancedness in partitions (%)
+#
+#   -graph_model <string>: either "star" or "clique"
+#
+#   -graph_edge_weight <string>: one of "1/f", "1/f2", "1"
 #
 # Note: At least one task must be specified, either directly as a parameter or
 #		through the -l option.
@@ -53,6 +66,14 @@ my $processors             = 1;
 my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
 my $system_type            = "local";
+my $percent_wires_cut		   = 0;
+my $num_cuts		   = 0;
+my $delay_increase		   = 0;
+my $placer_cost_constant   = 0.0;
+my $constant_type 	   = 0;
+my $ub_factor = 30;
+my $graph_model = "clique";
+my $graph_edge_weight = "1/f";
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -65,6 +86,36 @@ while ( $token = shift(@ARGV) ) {
 	# Check for -p N
 	elsif ( $token eq "-p" ) {
 		$processors = int( shift(@ARGV) );
+	}
+
+	elsif ( $token eq "-percent_wires_cut" ){
+		$percent_wires_cut = int( shift(@ARGV) );
+	}
+
+	elsif ( $token eq "-num_cuts" ){
+		$num_cuts = int( shift(@ARGV) );
+	}
+	
+	elsif ( $token eq "-delay_increase" ){
+		$delay_increase = int( shift(@ARGV) );
+	}
+
+	elsif ( $token eq "-placer_cost_constant" ){
+		$placer_cost_constant = shift(@ARGV);
+		$placer_cost_constant = $placer_cost_constant * 1.0;
+	}
+
+	elsif ( $token eq "-constant_type" ){
+		$constant_type = int( shift(@ARGV) );
+	}
+	elsif ( $token eq "-ub_factor" ){
+		$ub_factor = int (shift(@ARGV));
+	}
+	elsif ( $token eq "-graph_model" ){
+		$graph_model = shift(@ARGV);
+	}
+	elsif ( $token eq "-graph_edge_weight" ){
+		$graph_edge_weight = shift(@ARGV);
 	}
 
 	elsif ( $token eq "-system" ) {
@@ -121,13 +172,16 @@ my %hash = map { $_, 1 } @tasks;
 
 if ( $#tasks == -1 ) {
 	die "\n"
-	  . "Incorect usage.  You must specify at least one task to execute\n"
+	  . "Incorrect usage.  You must specify at least one task to execute\n"
 	  . "\n"
 	  . "USAGE:\n"
 	  . "run_vtr_task.pl <TASK1> <TASK2> ... \n" . "\n"
 	  . "OPTIONS:\n"
 	  . "-l <path_to_task_list.txt> - Provides a text file with a list of tasks\n"
-	  . "-p <N> - Execution is performed in parallel using N threads (Default: 1)\n";
+	  . "-p <N> - Execution is performed in parallel using N threads (Default: 1)\n"
+	  . "-percent_wires_cut <int>: the percentage of wires that go through the interposer that should be cut (Default: 0)\n"
+	  . "-num_cuts <int>: the number of cuts to be done to the chip (Default: 0)\n"
+	  . "-delay_increase <int>: the increased delay to be added to wires which go through the interposer (ps) (Default: 0)\n";
 }
 
 ##############################################################
@@ -355,7 +409,7 @@ sub run_single_task {
 					# SDC file defaults to circuit_name.sdc
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 					system(
-						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params\n"
+						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params -percent_wires_cut $percent_wires_cut -cuts $num_cuts -delay $delay_increase -placer_cost_constant $placer_cost_constant -constant_type $constant_type -ub_factor $ub_factor -graph_model $graph_model -graph_edge_weight $graph_edge_weight\n"
 					);
 				}
 			}
@@ -376,7 +430,7 @@ sub run_single_task {
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 
 					my $command =
-					  "$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params";
+					  "$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params -percent_wires_cut $percent_wires_cut -cuts $num_cuts -delay $delay_increase -placer_cost_constant $placer_cost_constant -constant_type $constant_type -ub_factor $ub_factor -graph_model $graph_model -graph_edge_weight $graph_edge_weight";
 					$thread_work->enqueue("$dir||||$command");
 				}
 			}

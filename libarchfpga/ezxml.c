@@ -1152,10 +1152,14 @@ ezxml_t ezxml_add_child(ezxml_t xml, char *name, size_t off) {
 ezxml_t ezxml_set_txt(ezxml_t xml, char *txt) {
 	if (!xml)
 		return NULL;
-	if (xml->flags & EZXML_TXTM)
+	if (xml->flags & EZXML_TXTM) {
 		free(xml->txt); /* existing txt was malloced */
+		xml->txt = NULL;
+	}
 	xml->flags &= ~EZXML_TXTM;
-	strcpy(xml->txt, txt);
+	if (xml->txt) {
+	  strcpy(xml->txt, txt);
+	}
 	xml->txt = txt;
 	return xml;
 }
