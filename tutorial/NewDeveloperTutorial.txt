@@ -96,7 +96,8 @@ Task #6 - Submitting Changes and Regression Testing
   1.  Read README.txt in the base directory of VTR.  Code changes rapidly so please help keep
   this up to date if you see something that is out of date.
 
-  2.  Make your first commit to svn by modifying README.txt and committing it.  If you have
+  2.  Make your first commit to svn by modifying README.txt and committing it.  I recommend 
+  adding your name to the list of contributors.  If you have
   nothing to modify, just add/remove a line of whitespace at the bottom of the file.
 
 
