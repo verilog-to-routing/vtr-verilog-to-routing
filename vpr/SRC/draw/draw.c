@@ -2241,7 +2241,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 
 		if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
 			if (draw_state->block_color[bnum] == GREEN) {
-				/* If block already highlighted, de-highlight the fanout. */
+				/* If block already highlighted, de-highlight the fanout. (the deselect case)*/
 				draw_state->net_color[netnum] = BLACK;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
 					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
@@ -2259,16 +2259,16 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 		} 
 		else { /* This net is fanin to the block. */
 			if (draw_state->block_color[bnum] == GREEN) {
-				/* If block already highlighted, de-highlight the fanin. */
+				/* If block already highlighted, de-highlight the fanin. (the deselect case)*/
 				draw_state->net_color[netnum] = BLACK;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
 				draw_reset_blk_color(fanblk);
 			}
 			else {
 				/* Highlight the fanin */
-				draw_state->net_color[netnum] = BLUE;
+				draw_state->net_color[netnum] = LIGHTMEDIUMBLUE;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
-				draw_state->block_color[fanblk] = BLUE;
+				draw_state->block_color[fanblk] = LIGHTMEDIUMBLUE;
 			}
 		}
 	}

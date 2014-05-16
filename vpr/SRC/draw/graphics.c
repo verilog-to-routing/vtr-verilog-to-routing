@@ -509,11 +509,12 @@ static t_transform_coordinates trans_coord;
 // Initialize panning_enabled to false, so panning is not activated
 static t_panning_state pan_state = {0, 0, false};
 
-// Color references 
+// Color references, also used in postscript generation
 static const char *ps_cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75",
 		"blue", "green", "yellow", "cyan", "red", "pink", "lightpink", "darkgreen", 
 		"magenta", "bisque", "lightskyblue", "thistle", "plum", "khaki", "coral",
-		"turquoise", "mediumpurple", "darkslateblue", "darkkhaki"};
+		"turquoise", "mediumpurple", "darkslateblue", "darkkhaki", "lightmediumblue",
+		"saddlebrown", "firebrick", "limegreen"};
 
 #ifdef X11
 
@@ -541,7 +542,8 @@ RGB(0, 0, 0), RGB(128, 128, 128), RGB(192, 192, 192), RGB(0, 0, 255),
 RGB(0, 255, 0), RGB(255, 255, 0), RGB(0, 255, 255), RGB(255, 0, 0), RGB(255, 192, 203), 
 RGB(255, 182, 193), RGB(0, 128, 0), RGB(255, 0, 255), RGB(255, 228, 196), RGB(135, 206, 250), 
 RGB(216, 191, 216), RGB(221, 160, 221), RGB(240, 230, 140), RGB(255, 127, 80), 
-RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139), RGB(189, 183, 107)};
+RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139), RGB(189, 183, 107),
+RGB(0x44, 0x44, 0xFF), RGB(0x8B, 0x45, 0x13), RGB(0xB2, 0x22, 0x22), RGB(0x32, 0xCD, 0x32)};
 
 /* Name of each window */
 static TCHAR szAppName[256], szGraphicsName[] = TEXT("VPR Graphics"), 
@@ -2568,6 +2570,11 @@ int init_postscript (const char *fname)
 	fprintf(gl_state.ps,"/mediumpurple { 0.58 0.44 0.86 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/darkslateblue { 0.28 0.24 0.55 setrgbcolor } def\n");
 	fprintf(gl_state.ps,"/darkkhaki { 0.74 0.72 0.42 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/lightmediumblue { 0.33 0.33 1.00 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/saddlebrown { 0.55 0.27 0.07 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/firebrick { 0.70 0.13 0.13 setrgbcolor } def\n");
+	fprintf(gl_state.ps,"/limegreen { 0.20 0.80 0.20 setrgbcolor } def\n");
+
 	
 	fprintf(gl_state.ps,"\n%%Solid and dashed line definitions:\n");
 	fprintf(gl_state.ps,"/linesolid {[] 0 setdash} def\n");
@@ -2947,7 +2954,8 @@ static void x11_init_graphics (const char *window_name, int cindex)
    const char *cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75", "blue", 
    	"green", "yellow", "cyan", "red", "pink", "lightpink", "RGBi:0.0/0.39/0.0", 
 	"magenta", "bisque", "lightskyblue", "thistle", "plum", "khaki", "coral",
-	"turquoise", "mediumpurple", "darkslateblue", "darkkhaki" };
+	"turquoise", "mediumpurple", "darkslateblue", "darkkhaki" , "RGB:44/44/FF",
+	"saddlebrown", "firebrick", "limegreen"};
 	
    XColor exact_def;
    Colormap cmap;
