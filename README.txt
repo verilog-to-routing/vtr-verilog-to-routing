@@ -31,7 +31,7 @@ Graduate Students: Jason Luu, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville,
 Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu, Charles Chiasson
 
 Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg,
-Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu, Long Yu Wang
+Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu, Long Yu Wang, Matthew J.P. Walker
 
 Companies: Altera Corporation, Texas Instruments
 

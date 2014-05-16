@@ -944,12 +944,14 @@ static void alloc_and_load_direct_interc_edges(
 
 	/* Allocate memory for edges */
 	if (!(num_input_sets == 1 && num_output_sets == 1)) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
-			"Direct interconnect allows connections from one set of pins to one other set\n");
+		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
+			"Direct interconnect only allows connections from one set of pins to one other set. "
+			"There are %d input sets and %d output sets.", num_input_sets, num_output_sets);
 	}
 	if (!(num_input_ptrs[0] == num_output_ptrs[0])) {
 		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num, 
-			"Direct interconnect must use an equal number of pins\n");
+			"Direct interconnect must have an equal number of input and otput pins. "
+			"There are %d input and %d output pins\n", num_input_ptrs[0], num_output_ptrs[0]);
 	}
 
 	edges = (t_pb_graph_edge*) my_calloc(num_input_ptrs[0],
