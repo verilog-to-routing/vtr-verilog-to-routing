@@ -411,7 +411,7 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 			if (num_nets_seen < nets_to_highlight) { /* First nets. */
 				draw_state->net_color[inet] = DARKGREEN;
 			} else if (num_nets_seen == nets_to_highlight) {
-				draw_state->net_color[inet] = CYAN; /* Last (new) net. */
+				draw_state->net_color[inet] = TURQUOISE; /* Last (new) net. */
 			}
 		}
 
@@ -1926,8 +1926,8 @@ static bool draw_if_net_highlighted (int inet) {
 	bool highlighted = false;
 
 	if (draw_state->net_color[inet] == MAGENTA || draw_state->net_color[inet] == RED 
-		|| draw_state->net_color[inet] == BLUE || draw_state->net_color[inet] == DARKGREEN 
-		|| draw_state->net_color[inet] == CYAN)
+		|| draw_state->net_color[inet] == LIGHTMEDIUMBLUE || draw_state->net_color[inet] == DARKGREEN 
+		|| draw_state->net_color[inet] == TURQUOISE)
 		highlighted = true;
 
 	return highlighted;

@@ -47,6 +47,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 							 float end_x, float end_y);
 static bool is_top_lvl_block_highlighted(int blk_id);
 
+static float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -169,7 +170,8 @@ void draw_internal_draw_subblk() {
 				if (block[bnum].pb == NULL)
 					continue;
 
-				if ((j < 1) || (j > ny)) {	
+				if ((j < 1) || (j > ny)) {
+					// draw blocks on the left and right edges sideways (ie. the i/o blocks there)
 					start_x = draw_coords->tile_x[i] + (k * sub_tile_offset);
 					start_y = draw_coords->tile_y[j];
 					end_x = start_x + sub_tile_offset;
@@ -274,41 +276,49 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 {
 	t_draw_coords *draw_coords;
 	int node_id;
-	float drawing_width, drawing_height;
+	float parent_drawing_width, parent_drawing_height;
 	float sub_tile_x, sub_tile_y;
-	float width, height;
+	float child_width, child_height;
 	float start_x, start_y, end_x, end_y;
+
+	const float FRACTION_PARENT_HEIGHT = 0.9;
+
+	const float FRACTION_PARENT_PADDING_X = 0.01;
+	const float FRACTION_PARENT_PADDING_BOTTOM = 0.02;
+
+	const float FRACTION_CHILD_MARGIN_X = 0.025;
+	const float FRACTION_CHILD_MARGIN_Y = 0.01;
 
 	/* Call accessor function to retrieve global variables. */
 	draw_coords = get_draw_coords_vars();
 
-	/* Draw all child-level blocks in 90% of the space inside their parent block. */
-	drawing_width = parent_width * 0.9;
-	drawing_height = parent_height * 0.9;
+	/* Draw all child-level blocks in just most of the space inside their parent block. */
+	parent_drawing_width = parent_width * (1 - FRACTION_PARENT_PADDING_X*2);
+	parent_drawing_height = parent_height * FRACTION_PARENT_HEIGHT;
 
 	/* The left and bottom corner (inside the parent block) of the space to draw 
 	 * child blocks. 
 	 */
-	sub_tile_x = parent_width * 0.05;
-	sub_tile_y = parent_height * 0.05;
+	sub_tile_x = parent_width * FRACTION_PARENT_PADDING_X;
+	sub_tile_y = parent_height * FRACTION_PARENT_PADDING_BOTTOM;
 
-	/* Divide drawing_width by the number of child types. */
-	width = drawing_width/num_pb_types;
-	/* Divide drawing_height by the number of instances of the pb_type. */
-	height = drawing_height/num_pb;
+	/* Divide parent_drawing_width by the number of child types. */
+	child_width = parent_drawing_width/num_pb_types;
+	/* Divide parent_drawing_height by the number of instances of the pb_type. */
+	child_height = parent_drawing_height/num_pb;
 
 	/* The starting point to draw the physical block. */
-	start_x = width * type_index + sub_tile_x;
-	start_y = height * pb_index + sub_tile_y;
+	start_x = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
+	start_y = child_height * pb_index  + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_width;
 
 	/* Leave some space between different pb_types. */
-	width *= 0.9;
+	child_width *= 1 - FRACTION_CHILD_MARGIN_X*2;
 	/* Leave some space between different instances of the same type. */
-	height *= 0.95;
+	child_height *= FRACTION_PARENT_HEIGHT;
 
 	/* Endpoint for drawing the pb_type */
-	end_x = start_x + width;
-	end_y = start_y + height;
+	end_x = start_x + child_width;
+	end_y = start_y + child_height;
 
 	/* Get unique id for the pb_node */
 	node_id = get_unique_pb_graph_node_id(pb_graph_node);
@@ -319,8 +329,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).ybottom = start_y;
 	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).ytop = end_y;
 	
-	*blk_width = width;
-	*blk_height = height;
+	*blk_width = child_width;
+	*blk_height = child_height;
 
 	return;
 }
@@ -368,9 +378,12 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 		drawrect(start_x, start_y, end_x, end_y);
 	}
 
-	/* Draw text for block pb_type */
+	/* Draw text for block pb_type (the text at the top, eg. "clb" ) */
+	setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
 	drawtext((start_x + end_x) / 2.0, end_y - (end_y - start_y) / 20.0,
-			 pb_type->name, min((end_x - start_x), (end_y - start_y)));
+			// here, I am tricking the function into using a slightly different weighting because
+			// the text is closer to the top of the block.
+	         pb_type->name, calc_text_xbound(start_x, start_y / 5.0f, end_x, end_y / 5.0f, pb_type->name));
 
 	/* Get the mode of operation */
 	mode = pb_type->modes[pb->mode];
@@ -435,12 +448,13 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				type_len = strlen(pb_child_type->name);
 				name_len = strlen(pb->child_pbs[i][j].name);
 				tot_len = type_len + name_len;
-				blk_tag = (char *)my_malloc((tot_len + 5) * sizeof(char));
+				blk_tag = (char *)my_malloc((tot_len + 8) * sizeof(char));
 
 				sprintf (blk_tag, "%s(%s)", pb_child_type->name, pb->child_pbs[i][j].name);
 
 				drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0,
-					 blk_tag, min((x2 - x1)/2, (y2 - y1)));
+					 blk_tag, calc_text_xbound(x1, y1, x2, y2, blk_tag));
+				// min((x2 - x1) * 0.9f , (y2 - y1) * strlen(blk_tag) * 0.45f)
 
 				free(blk_tag);
 			}
@@ -448,7 +462,8 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				/* If child block is not used, label it only by its pb_type
 				 */
 				drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0,
-					 pb_child_type->name, min((x2 - x1)/2, (y2 - y1)));
+					 pb_child_type->name, calc_text_xbound(x1, y1, x2, y2, pb_child_type->name));
+				// min((x2 - x1) * 0.9f, (y2 - y1) * strlen(pb_child_type->name) * 0.45f)
 			}
 
 			/* If no more child physical blocks to draw, return */
@@ -486,4 +501,12 @@ static bool is_top_lvl_block_highlighted(int blk_id) {
 	}
 
 	return true;
+}
+
+float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text) {
+	// limit the text display length to just outside of the bonding box,
+	// and limit it by the the height of the bounding box, with an adjustment
+	// for the length of the text, so effectively by the height of the text.
+	// note that this is calibrated for a 16pt font
+	return min((end_x - start_x) * 1.1f, (end_y - start_y) * strlen(text) * 0.5f);
 }
