@@ -96,11 +96,6 @@ typedef size_t bitfield;
 #define EMPTY -1
 #define INVALID -2
 
-/* Andre Pereira: Constants used at the routing failure predictor */
-#define EXCEEDED_OVERUSED_COUNT_LIMIT 4 /* The number of times the overused ratio has to exceed the threshold before the routing is aborted */
-#define ROUTING_PREDICTOR_SAFE 0.015
-#define ROUTING_PREDICTOR_AGGRESSIVE 0.010
-#define ROUTING_PREDICTOR_OFF 1.100 /* Values can never get past 1.0, so 1.1 is unachievable */
 #define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 4 /* Base number of previous iterations used to compute reduction in congestion */
 
 /*******************************************************************************
