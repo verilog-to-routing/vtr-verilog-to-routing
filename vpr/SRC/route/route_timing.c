@@ -131,7 +131,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			int inet = net_index[i];
-			//if (should_route_net(inet) == TRUE) {
+			if (should_route_net(inet) == TRUE) {
 				boolean is_routable = try_timing_driven_route_net(inet, itry, pres_fac,
 					router_opts, pin_criticality, sink_order,
 					rt_node_of_sink, net_delay, slacks);
@@ -141,7 +141,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 					free(historical_overuse_ratio);
 					return (FALSE);
 				}
-		//	}
+			}
 		}
 
 		clock_t end = clock();
