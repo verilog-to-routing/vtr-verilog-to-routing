@@ -1408,14 +1408,14 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 
 	float x1, x2, y1, y2;
 	t_draw_bbox from_chan, to_chan;
-	int from_ylow, to_ylow, from_yhigh, to_yhigh, from_x, to_x;
+	int from_ylow, to_ylow, from_yhigh, to_yhigh;//, from_x, to_x;
 
 	// Get the coordinates of the channel wires.
 	from_chan = draw_get_rr_chan_bbox(from_node);
 	to_chan = draw_get_rr_chan_bbox(to_node);
 
-	from_x = rr_node[from_node].xlow;
-	to_x = rr_node[to_node].xlow;
+	// from_x = rr_node[from_node].xlow;
+	// to_x = rr_node[to_node].xlow;
 	from_ylow = rr_node[from_node].ylow;
 	from_yhigh = rr_node[from_node].yhigh;
 	to_ylow = rr_node[to_node].ylow;
@@ -2217,12 +2217,21 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	}
 	bnum = grid[i][j].blocks[k];
 
-	/* Highlight block and fan-in/fan-outs. */
-	draw_highlight_blocks_color(type, bnum);
+	// note: this is equivalent to clearing the selected sub-block if show_blk_internal is 0
+	highlight_sub_block(bnum, x - draw_coords->tile_x[i], y - draw_coords->tile_y[j]);
+	t_pb* selected_subblock = get_selected_sub_block();
+	
+	if (selected_subblock == NULL) {
+		/* Highlight block and fan-in/fan-outs. */
+		draw_highlight_blocks_color(type, bnum);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", bnum, block[bnum].name, i, j);
+	} else {
+		sprintf(msg, "sub-block %s (a \"%s\") selected", 
+			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
+	}
 
-	sprintf(msg, "Block %d (%s) at (%d, %d) selected.", bnum, block[bnum].name,
-			i, j);
 	update_message(msg);
+
 	drawscreen(); /* Need to erase screen. */
 }
 
@@ -2285,7 +2294,8 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 
 
 static void deselect_all(void) {
-	/* Sets the color of all clbs, nets and rr_nodes to the default.  */
+	// Sets the color of all clbs, nets and rr_nodes to the default.
+	// as well as clearing the highlighed sub-block
 
 	int i;
 
@@ -2301,6 +2311,9 @@ static void deselect_all(void) {
 		draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
 		draw_state->draw_rr_node[i].node_highlighted = false;
 	}
+
+	clear_highlighted_sub_block();
+
 }
 
 

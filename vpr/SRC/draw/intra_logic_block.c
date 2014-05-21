@@ -11,8 +11,11 @@
  * new blocks need to be drawn, and this function is responsible for drawing sub-blocks 
  * from the pre-computed bounding box values.
  * 
- * Author: Long Yu (Mike) Wang 
- * Date: August 2013
+ * Author: Long Yu (Mike) Wang
+ * Date: August 2013, May 2014
+ *
+ * Author: Matthew J.P. Walker
+ * Date: May 2014
  */
 
 #include <cstdio>
@@ -33,6 +36,9 @@ using namespace std;
 /* The maximum number of sub-block levels among all physical block types in the FPGA. 
  * Used as a flag to toggle internal drawing off. */
 int max_sub_blk_lvl = 0;
+
+// used to keep track of the selected sub-block.
+t_pb* selected_subblock = NULL;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -370,7 +376,8 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	 */
 	if (pb_type->depth == 0 && is_top_lvl_block_highlighted(blk_id)) 
 		;
-	else {
+	else if (selected_subblock != pb) {
+
 		setcolor(WHITE);
 		fillrect(start_x, start_y, end_x, end_y); 
 		setcolor(BLACK);
@@ -382,7 +389,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
 	drawtext((start_x + end_x) / 2.0, end_y - (end_y - start_y) / 20.0,
 			// here, I am tricking the function into using a slightly different weighting because
-			// the text is closer to the top of the block.
+			// the text is very close to the top of the block.
 	         pb_type->name, calc_text_xbound(start_x, start_y / 5.0f, end_x, end_y / 5.0f, pb_type->name));
 
 	/* Get the mode of operation */
@@ -417,7 +424,9 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				setlinestyle(SOLID);
 				
 				/* Set default background color based on the top-level physical block type */
-				if (type_index < 3) {
+				if (selected_subblock == &pb->child_pbs[i][j]) {
+					setcolor(GREEN);
+				} else if (type_index < 3) {
 					setcolor(LIGHTGREY);
 				} else if (type_index < 3 + MAX_BLOCK_COLOURS) {
 					setcolor(BISQUE + MAX_BLOCK_COLOURS + type_index - 3);
@@ -503,8 +512,104 @@ static bool is_top_lvl_block_highlighted(int blk_id) {
 	return true;
 }
 
+t_pb* highlight_sub_block_helper(
+	t_draw_pb_type_info* blk_info, t_pb* pb, float rel_x, float rel_y, int max_depth);
+
+int highlight_sub_block(int blocknum, float rel_x, float rel_y) {
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords *draw_coords = get_draw_coords_vars();
+
+	int max_depth = draw_state->show_blk_internal;
+
+	int type_index = block[blocknum].type->index;
+	t_draw_pb_type_info* blk_info = &draw_coords->blk_info.at(type_index);
+	
+	selected_subblock = highlight_sub_block_helper(blk_info, block[blocknum].pb, rel_x, rel_y, max_depth);
+	if (selected_subblock != NULL) {
+		return 0;
+	}
+	return 1;
+}
+
+t_pb* highlight_sub_block_helper(
+	t_draw_pb_type_info* blk_info, t_pb* pb, float rel_x, float rel_y, int max_depth)
+{
+	
+	t_pb* child_pb;
+	t_pb_graph_node *pb_graph_node, *pb_child_node;
+	t_pb_type *pb_type;// *pb_child_type;
+	t_mode mode;
+	int i, j, num_children, num_pb;
+	int node_id;
+
+	pb_graph_node = pb->pb_graph_node;
+	pb_type = pb_graph_node->pb_type;
+
+	// check to see if we are past the displayed level,
+	// if pb has children,
+	// and if pb is dud
+	if (pb_type->depth + 1 > max_depth
+	 || pb->child_pbs == NULL
+	 || pb_type->num_modes == 0) {
+		return NULL;
+	}
+
+	// Get the mode of operation
+	mode = pb_type->modes[pb->mode];
+	num_children = mode.num_pb_type_children;
+
+	// Iterate through each type of child pb, and each pb of that type.
+	for (i = 0; i < num_children; ++i) {
+		num_pb = mode.pb_type_children[i].num_pb;
+
+		for (j = 0; j < num_pb; ++j) {
+
+			if (pb->child_pbs[i] == NULL) {
+				continue;
+			}
+
+			child_pb = &pb->child_pbs[i][j];
+			pb_child_node = child_pb->pb_graph_node;
+			// pb_child_type = pb_child_node->pb_type;
+
+			// get unique ID for child block.
+			node_id = get_unique_pb_graph_node_id(pb_child_node);
+
+			t_draw_bbox* bbox = &blk_info->subblk_array.at(node_id);
+
+			// If child block is being used, check if it intersects
+			if (child_pb->name != NULL &&
+				bbox->xleft < rel_x && rel_x < bbox->xright &&
+				bbox->ybottom < rel_y && rel_y < bbox->ytop) {
+
+				// check farther down the graph, see if we can find
+				// something more specific.
+				t_pb* subtree_result =
+					highlight_sub_block_helper(
+						blk_info, child_pb, rel_x - bbox->xleft, rel_y - bbox->ybottom, max_depth);
+				if (subtree_result != NULL) {
+					// we found something more specific.
+					return subtree_result;
+				} else {
+					// couldn't find something more specific, return parent
+					return child_pb;
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
+void clear_highlighted_sub_block() {
+	selected_subblock = NULL;
+}
+
+t_pb* get_selected_sub_block() {
+	return selected_subblock;
+}
+
 float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text) {
-	// limit the text display length to just outside of the bonding box,
+	// limit the text display length to just outside of the bounding box,
 	// and limit it by the the height of the bounding box, with an adjustment
 	// for the length of the text, so effectively by the height of the text.
 	// note that this is calibrated for a 16pt font

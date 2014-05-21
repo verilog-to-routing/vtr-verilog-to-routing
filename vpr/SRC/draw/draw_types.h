@@ -129,6 +129,9 @@ struct t_draw_pb_type_info {
  *			   Set when init_draw_coords is called.
  * pin_size: The half-width or half-height of a pin.
  *			 Set when init_draw_coords is called.
+ * blk_info: a list of drawing information for each type of
+ *           block, one for each type. Access it with
+ *           block[block_id].type->index
  */
 struct t_draw_coords {
 	float *tile_x, *tile_y;
