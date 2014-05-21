@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <chrono>
 using namespace std;
 
 #include <assert.h>
@@ -487,8 +488,8 @@ void vpr_setup_interposer_cut_locations(t_arch Arch)
 #endif
 
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
-
-	clock_t begin = clock();
+	std::chrono::high_resolution_clock::time_point end, begin;
+	begin = std::chrono::high_resolution_clock::now();
 	vpr_printf_info("Initialize packing.\n");
 
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
@@ -533,13 +534,9 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
 			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay, vpr_setup.PackerRRGraph);
 
-	clock_t end = clock();
-#ifdef CLOCKS_PER_SEC
-	vpr_printf_info("Packing took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
-	vpr_printf_info("Packing completed.\n");
-#else
-	vpr_printf_info("Packing took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
-#endif
+	end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
+	printf("Packing took %g seconds\n", time_span.count());
 	fflush(stdout);
 }
 
