@@ -26,4 +26,4 @@ arch_list_add=k6_frac_N10_mem32K_40nm.xml
 parse_file=vpr_power.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt -routing_failure_predictor safe
+pass_requirements_file=pass_requirements.txt
