@@ -96,7 +96,7 @@ typedef size_t bitfield;
 #define EMPTY -1
 #define INVALID -2
 
-#define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 4 /* Base number of previous iterations used to compute reduction in congestion */
+#define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 5 /* Base number of previous iterations used to compute reduction in congestion */
 
 /*******************************************************************************
  * Packing specific data types and constants

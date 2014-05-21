@@ -131,16 +131,14 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			int inet = net_index[i];
-			if (should_route_net(inet) == TRUE) {
-				boolean is_routable = try_timing_driven_route_net(inet, itry, pres_fac,
-					router_opts, pin_criticality, sink_order,
-					rt_node_of_sink, net_delay, slacks);
-				if (!is_routable) {
-					free(net_index);
-					free(sinks);
-					free(historical_overuse_ratio);
-					return (FALSE);
-				}
+			boolean is_routable = try_timing_driven_route_net(inet, itry, pres_fac,
+				router_opts, pin_criticality, sink_order,
+				rt_node_of_sink, net_delay, slacks);
+			if (!is_routable) {
+				free(net_index);
+				free(sinks);
+				free(historical_overuse_ratio);
+				return (FALSE);
 			}
 		}
 
@@ -220,15 +218,22 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if (itry > routing_predictor_running_average && router_opts.routing_failure_predictor != OFF) {
 				/* linear extrapolation to predict what routing iteration will succeed */
 				int expected_successful_route_iter;
+				int ref_iter;
 				double removal_average = 0;
-				for(int iavg = 0; iavg < routing_predictor_running_average; iavg++) {
-					double first = historical_overuse_ratio[itry - routing_predictor_running_average + iavg];
-					double second = historical_overuse_ratio[itry - routing_predictor_running_average + iavg + 1];
-					removal_average += ((first - second) / routing_predictor_running_average);
+
+				ref_iter = itry - routing_predictor_running_average;
+				removal_average = (historical_overuse_ratio[ref_iter] -
+								  historical_overuse_ratio[itry]) / routing_predictor_running_average;
+				if (removal_average <= 0) {
+					/* Negative removal sometimes happens from noise when circuit is very close to routing, therefore sample a larger space */
+					ref_iter = min(1, itry - routing_predictor_running_average - 5);
+					removal_average = (historical_overuse_ratio[ref_iter] -
+						historical_overuse_ratio[itry]) / routing_predictor_running_average;
 				}
+
 				expected_successful_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
 				if (expected_successful_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
-					vpr_printf_info("Routing aborted, the predicted iteration for a successful route is too high.\n");
+					vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_successful_route_iter);
 					free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 					free(net_index);
 					free(sinks);
@@ -328,14 +333,12 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 	boolean is_routed = FALSE;
 
 	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
-
 		is_routed = TRUE;
-
 	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
-
 		is_routed = TRUE;
-
-	} else {
+	} else if (should_route_net(inet) == FALSE) {
+		is_routed = TRUE;
+	} else{
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
