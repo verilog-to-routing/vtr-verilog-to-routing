@@ -27,5 +27,5 @@ qor_parse_file=qor_multiclock.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_multiclock.txt
 
-script_params=-starting_stage vpr
+script_params=-starting_stage vpr -routing_failure_predictor safe
 
