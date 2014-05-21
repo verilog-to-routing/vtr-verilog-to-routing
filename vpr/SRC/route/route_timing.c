@@ -254,7 +254,8 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			vpr_printf_info("Successfully routed after %d routing iterations.\n", itry);
 			free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 #ifdef DEBUG
-			timing_driven_check_net_delays(net_delay);
+			if (timing_analysis_enabled)
+				timing_driven_check_net_delays(net_delay);
 #endif
 			free(net_index);
 			free(sinks);
