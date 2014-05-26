@@ -19,6 +19,8 @@ using namespace std;
  * block:		net.pins[0..pins.size()-1].block. 
  *				Block to which the nodes of this pin connect. The source 
  *				block is net.pins[0].block and the sink blocks are the remaining pins.
+ *				When this is in the g_clb_netlist, it is an index into block[]
+ *				When this is is nte g_atoms_netlist, it is an index into logical_block[]
  * block_port:  net.pins[0..pins.size()-1].block_port.
  *				Port index (on a block) to which each net terminal connects. 
  * block_pin:   net.pins[0..pins.size()-1].block_pin. 

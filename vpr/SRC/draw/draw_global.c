@@ -17,7 +17,7 @@
 
 /* Global structure that stores state variables that control drawing and 
  * highlighting. (Initializing some state variables for safety.) */
-static t_draw_state draw_state = {NO_PICTURE, FALSE, DRAW_NO_CONGEST, DRAW_NO_RR, 0};
+static t_draw_state draw_state = {NO_PICTURE, DRAW_NO_NETS, DRAW_NO_CONGEST, DRAW_NO_RR, 0};
 
 /* Global variable for storing coordinates and dimensions of grid tiles 
  * and logic blocks in the FPGA.

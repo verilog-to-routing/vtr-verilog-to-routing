@@ -938,7 +938,7 @@ typedef struct s_trace {
  * to store algorithm-specific data should be stored in one of the           *
  * parallel rr_node_? structures.                                            *
  *                                                                           *
- * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
+ * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route_common.c for    *
  *       coordinate system) of the ends of this routing resource.            *
  *       xlow = xhigh and ylow = yhigh for pins or for segments of           *
  *       length 1.  These values are used to decide whether or not this      *

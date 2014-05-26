@@ -29,6 +29,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "draw_global.h"
 #include "graphics.h"
+#include "draw.h"
 
 
 /****************************** File scope variables *************************************/
@@ -36,9 +37,6 @@ using namespace std;
 /* The maximum number of sub-block levels among all physical block types in the FPGA. 
  * Used as a flag to toggle internal drawing off. */
 int max_sub_blk_lvl = 0;
-
-// used to keep track of the selected sub-block.
-t_pb* selected_subblock = NULL;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -376,7 +374,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	 */
 	if (pb_type->depth == 0 && is_top_lvl_block_highlighted(blk_id)) 
 		;
-	else if (selected_subblock != pb) {
+	else if (!get_selected_sub_block_info().is_selected(pb)) {
 
 		setcolor(WHITE);
 		fillrect(start_x, start_y, end_x, end_y); 
@@ -424,7 +422,9 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				setlinestyle(SOLID);
 				
 				/* Set default background color based on the top-level physical block type */
-				if (selected_subblock == &pb->child_pbs[i][j]) {
+				if (get_selected_sub_block_info().is_selected(&pb->child_pbs[i][j])) {
+					// draw_subblock_connections(&pb->child_pbs[i][j]);
+					draw_all_logical_connections();
 					setcolor(GREEN);
 				} else if (type_index < 3) {
 					setcolor(LIGHTGREY);
@@ -447,6 +447,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 			drawrect(x1, y1, x2, y2);
 
 			/* Display names for sub_blocks */
+			setfontsize(16);
 			if (pb->child_pbs[i][j].name != NULL) {
 				/* If child block is used, label it by its pb_type, followed
 				 * by its name in brackets.
@@ -487,6 +488,31 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	
 }
 
+void draw_all_logical_connections() {
+	// t_draw_state* draw_state = get_draw_state_vars();
+	// t_draw_coords *draw_coords = get_draw_coords_vars();
+
+	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
+
+		int logical_block_id = net->pins.at(0).block;
+		t_logical_block* src_lblk = &logical_block[logical_block_id];
+		t_pb* src_pb = src_lblk->pb;
+
+		setcolor(RED);
+		const t_draw_bbox& src_bbox = t_draw_bbox::get_absolute_bbox(src_lblk->clb_index, src_pb);
+
+		for (std::vector<t_net_pin>::iterator pin = net->pins.begin() + 1;
+			pin != net->pins.end(); ++pin) {
+
+			t_logical_block* sink_lblk = &logical_block[pin->block];
+
+			const t_draw_bbox& sink_bbox = t_draw_bbox::get_absolute_bbox(sink_lblk->clb_index, sink_lblk->pb);
+
+			drawline(src_bbox.get_xcenter(), src_bbox.get_ycenter(),
+				sink_bbox.get_xcenter(), sink_bbox.get_ycenter());
+		}
+	}
+}
 
 /* This function checks whether a top-level clb has been highlighted. It does 
  * so by checking whether the color in this block is default color.
@@ -524,11 +550,15 @@ int highlight_sub_block(int blocknum, float rel_x, float rel_y) {
 	int type_index = block[blocknum].type->index;
 	t_draw_pb_type_info* blk_info = &draw_coords->blk_info.at(type_index);
 	
-	selected_subblock = highlight_sub_block_helper(blk_info, block[blocknum].pb, rel_x, rel_y, max_depth);
-	if (selected_subblock != NULL) {
+	t_pb* new_selected_sub_block = 
+		highlight_sub_block_helper(blk_info, block[blocknum].pb, rel_x, rel_y, max_depth);
+	if (new_selected_sub_block == NULL) {
+		get_selected_sub_block_info().clear();
+		return 1;
+	} else {
+		get_selected_sub_block_info().set(new_selected_sub_block, &block[blocknum]);
 		return 0;
 	}
-	return 1;
 }
 
 t_pb* highlight_sub_block_helper(
@@ -600,18 +630,42 @@ t_pb* highlight_sub_block_helper(
 	return NULL;
 }
 
-void clear_highlighted_sub_block() {
-	selected_subblock = NULL;
-}
-
-t_pb* get_selected_sub_block() {
-	return selected_subblock;
-}
-
 float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text) {
 	// limit the text display length to just outside of the bounding box,
 	// and limit it by the the height of the bounding box, with an adjustment
 	// for the length of the text, so effectively by the height of the text.
 	// note that this is calibrated for a 16pt font
 	return min((end_x - start_x) * 1.1f, (end_y - start_y) * strlen(text) * 0.5f);
+}
+
+/*
+ * Begin definition of t_selected_sub_block_info functions.
+ */
+
+void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* containing_block) {
+	selected_subblock = new_selected_sub_block;
+	block = containing_block;
+}
+
+void t_selected_sub_block_info::clear() {
+	set(NULL, NULL);
+}
+
+t_pb* t_selected_sub_block_info::get_selected_sub_block() const { return selected_subblock; }
+
+t_block* t_selected_sub_block_info::get_containing_block() const { return block; }
+
+bool t_selected_sub_block_info::has_selection() const {
+	return get_selected_sub_block() != NULL && get_containing_block() != NULL; 
+}
+
+bool t_selected_sub_block_info::is_selected(t_pb* test) const {
+	return get_selected_sub_block() == test;
+}
+
+t_selected_sub_block_info& get_selected_sub_block_info() {
+	// used to keep track of the selected sub-block.
+	static t_selected_sub_block_info selected_sub_block_info;
+
+	return selected_sub_block_info;
 }

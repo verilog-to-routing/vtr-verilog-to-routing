@@ -22,6 +22,12 @@
 #include "vpr_types.h"
 using namespace std;
 
+enum e_draw_nets {
+	DRAW_NO_NETS = 0,
+	DRAW_NETS,
+	DRAW_LOGICAL_CONNECTIONS
+};
+
 /* Draw rr_graph from less detailed to more detailed
  * in order to speed up drawing when toggle_rr is clicked
  * on for the first time.
@@ -89,7 +95,7 @@ typedef struct {
  */
 struct t_draw_state {
 	pic_type pic_on_screen;
-	boolean show_nets;
+	e_draw_nets show_nets;
 	e_draw_congestion show_congestion;
 	e_draw_rr_toggle draw_rr_toggle;
 	int show_blk_internal;
@@ -99,6 +105,8 @@ struct t_draw_state {
 	char default_message[BUFSIZE];
 	color_types *net_color, *block_color;
 	t_draw_rr_node *draw_rr_node;
+
+	void reset_nets_congestion_and_rr();
 };
 
 /* Stores the minimum and maximum coordinates for a drawing 
@@ -109,6 +117,16 @@ struct t_draw_bbox {
 	float xright;
 	float ybottom;
 	float ytop;
+
+	float get_xcenter() const;
+	float get_ycenter() const;
+
+	/**
+	 * Calculate and return a bounding box for the given pb in the given
+	 * clb with absolute coordinates, that can be directtly drawn.
+	 */
+	static t_draw_bbox get_absolute_bbox(const t_block& clb, t_pb* pb);
+	static t_draw_bbox get_absolute_bbox(int clb_index, t_pb* pb);
 };
 
 /* For each cluster type, this structure stores drawing 
@@ -137,6 +155,13 @@ struct t_draw_coords {
 	float *tile_x, *tile_y;
 	float tile_width, pin_size;
 	vector<t_draw_pb_type_info> blk_info;
+
+	/**
+	 * Retrieve the bounding box for the given pb in the given
+	 * clb, from this data structure
+	 */
+	t_draw_bbox& get_pb_bbox(int clb_index, const t_pb& pb);
+	t_draw_bbox& get_pb_bbox(const t_block& clb, const t_pb& pb);
 };
 
 #endif

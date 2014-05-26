@@ -86,8 +86,6 @@ static void draw_rr_pin(int inode, enum color_types color);
 static void draw_rr_chanx(int inode, int itrack, enum color_types color);
 static void draw_rr_chany(int inode, int itrack, enum color_types color);
 static t_draw_bbox draw_get_rr_chan_bbox(int inode);
-static void draw_get_rr_pin_coords(int inode, int iside, int width_offset, 
-								   int height_offset, float *xcen, float *ycen);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
 static void draw_pin_to_pin(int opin, int ipin);
@@ -284,26 +282,41 @@ static void redraw_screen() {
 	 * to avoid a screen "flash".                                      */
 
 	setfontsize(14); 
+
+	drawplace();
+
+	if (draw_state->show_blk_internal) {
+		draw_internal_draw_subblk();
+	}
+
 	if (draw_state->pic_on_screen == PLACEMENT) {
-		drawplace();
-		if (draw_state->show_nets) {
-			drawnets();
-		}
-		
-		if (draw_state->show_blk_internal) {
-			draw_internal_draw_subblk();
+		switch (draw_state->show_nets) {
+			case DRAW_NETS:
+				drawnets();
+			break;
+			case DRAW_LOGICAL_CONNECTIONS:
+				if (draw_state->show_blk_internal) {
+					draw_all_logical_connections();
+				}
+			break;
+			default:
+			break;
 		}
 	} else { /* ROUTING on screen */
-		drawplace();
 
-		if (draw_state->show_nets) {
-			drawroute(ALL_NETS);
-		} else {
-			draw_rr();
-		}
-
-		if (draw_state->show_blk_internal) {
-			draw_internal_draw_subblk();
+		switch (draw_state->show_nets) {
+			case DRAW_NETS:
+				drawroute(ALL_NETS);
+			break;
+			case DRAW_LOGICAL_CONNECTIONS:
+				if (draw_state->show_blk_internal) {
+					draw_all_logical_connections();
+					break;
+				}
+			// fall through
+			default:
+				draw_rr();
+			break;
 		}
 
 		if (draw_state->show_congestion != DRAW_NO_CONGEST) {
@@ -318,9 +331,31 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 	 * Also disables drawing of routing resources.  See graphics.c for details *
 	 * of how buttons work.                                                    */
 
-	draw_state->show_nets = (draw_state->show_nets == FALSE) ? TRUE : FALSE;
-	draw_state->draw_rr_toggle = DRAW_NO_RR;
-	draw_state->show_congestion = DRAW_NO_CONGEST;
+	enum e_draw_nets new_state;
+
+	switch (draw_state->show_nets) {
+		case DRAW_NO_NETS:
+			new_state = DRAW_NETS;
+		break;
+		case DRAW_NETS:
+			if (draw_state->show_blk_internal) {
+				new_state = DRAW_LOGICAL_CONNECTIONS;
+			} else {
+				new_state = DRAW_NO_NETS;
+			}
+		break;
+		default:
+		case DRAW_LOGICAL_CONNECTIONS:
+			if (draw_state->show_blk_internal) {
+				new_state = DRAW_NO_NETS;
+			} else {
+				new_state = DRAW_NETS;
+			}
+		break;
+	}
+
+	draw_state->reset_nets_congestion_and_rr();
+	draw_state->show_nets = new_state;
 
 	update_message(draw_state->default_message);
 	drawscreen_ptr();
@@ -335,10 +370,10 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 	 * through the options:  DRAW_NO_RR, DRAW_ALL_RR, DRAW_ALL_BUT_BUFFERS_RR,  *
 	 * DRAW_NODES_AND_SBOX_RR, and DRAW_NODES_RR.                               */
 
-	draw_state->draw_rr_toggle = (enum e_draw_rr_toggle) (((int)draw_state->draw_rr_toggle + 1) 
+	enum e_draw_rr_toggle new_state = (enum e_draw_rr_toggle) (((int)draw_state->draw_rr_toggle + 1) 
 														  % ((int)DRAW_RR_TOGGLE_MAX));
-	draw_state->show_nets = FALSE;
-	draw_state->show_congestion = DRAW_NO_CONGEST;
+	draw_state->reset_nets_congestion_and_rr();
+	draw_state->draw_rr_toggle = new_state;
 
 	update_message(draw_state->default_message);
 	drawscreen_ptr();
@@ -350,10 +385,10 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	char msg[BUFSIZE];
 	int inode, num_congested;
 
-	draw_state->show_nets = FALSE;
-	draw_state->draw_rr_toggle = DRAW_NO_RR;
-	draw_state->show_congestion = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
+	e_draw_congestion new_state = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
 														  % ((int)DRAW_CONGEST_MAX));
+	draw_state->reset_nets_congestion_and_rr();
+	draw_state->show_congestion = new_state;
 
 	if (draw_state->show_congestion == DRAW_NO_CONGEST) {
 		update_message(draw_state->default_message);
@@ -1038,7 +1073,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 static void draw_rr_edges(int inode) {
 
 	/* Draws all the edges that the user wants shown between inode and what it *
-	 * connects to.  inode is assumed to be a CHANX, CHANY, or OPIN.           */
+	 * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
 
 	t_rr_type from_type, to_type;
 	int iedge, to_node, from_ptc_num, to_ptc_num;
@@ -1650,25 +1685,30 @@ static void draw_rr_pin(int inode, enum color_types color) {
 	}
 }
 
-static void draw_get_rr_pin_coords(int inode, int iside, 
+/* Returns the coordinates at which the center of this pin should be drawn. *
+ * inode gives the node number, and iside gives the side of the clb or pad  *
+ * the physical pin is on.                                                  */
+void draw_get_rr_pin_coords(int inode, int iside, 
 		int width_offset, int height_offset, 
 		float *xcen, float *ycen) {
+	draw_get_rr_pin_coords(&rr_node[inode], iside, width_offset, height_offset, xcen, ycen);
+}
 
-	/* Returns the coordinates at which the center of this pin should be drawn. *
-	 * inode gives the node number, and iside gives the side of the clb or pad  *
-	 * the physical pin is on.                                                  */
+void draw_get_rr_pin_coords(t_rr_node* node, int iside, 
+		int width_offset, int height_offset, 
+		float *xcen, float *ycen) {
 
 	int i, j, k, ipin, pins_per_sub_tile;
 	float offset, xc, yc, step;
 	t_type_ptr type;
 
-	i = rr_node[inode].xlow + width_offset;
-	j = rr_node[inode].ylow + height_offset;
+	i = node->xlow + width_offset;
+	j = node->ylow + height_offset;
 
 	xc = draw_coords->tile_x[i];
 	yc = draw_coords->tile_y[j];
 
-	ipin = rr_node[inode].ptc_num;
+	ipin = node->ptc_num;
 	type = grid[i][j].type;
 	pins_per_sub_tile = grid[i][j].type->num_pins / grid[i][j].type->capacity;
 	k = ipin / pins_per_sub_tile;
@@ -2219,15 +2259,15 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 
 	// note: this is equivalent to clearing the selected sub-block if show_blk_internal is 0
 	highlight_sub_block(bnum, x - draw_coords->tile_x[i], y - draw_coords->tile_y[j]);
-	t_pb* selected_subblock = get_selected_sub_block();
 	
-	if (selected_subblock == NULL) {
+	if (get_selected_sub_block_info().has_selection()) {
+		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_sub_block();
+		sprintf(msg, "sub-block %s (a \"%s\") selected", 
+			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
+	} else {
 		/* Highlight block and fan-in/fan-outs. */
 		draw_highlight_blocks_color(type, bnum);
 		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", bnum, block[bnum].name, i, j);
-	} else {
-		sprintf(msg, "sub-block %s (a \"%s\") selected", 
-			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	}
 
 	update_message(msg);
@@ -2312,7 +2352,7 @@ static void deselect_all(void) {
 		draw_state->draw_rr_node[i].node_highlighted = false;
 	}
 
-	clear_highlighted_sub_block();
+	get_selected_sub_block_info().clear();
 
 }
 

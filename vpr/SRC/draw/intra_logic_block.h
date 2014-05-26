@@ -7,6 +7,23 @@
 
 #include "vpr_types.h"
 
+struct t_selected_sub_block_info {
+private:
+	t_pb* selected_subblock = NULL;
+	t_block* block = NULL;
+public:
+
+	void set(t_pb* new_selected_sub_block, t_block* containing_block);
+
+	t_pb* get_selected_sub_block() const;
+	t_block* get_containing_block() const;
+
+	bool has_selection() const;
+	void clear();
+	bool is_selected(t_pb* test) const;
+
+};
+
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the
  * "Blk Internal" button. With each consecutive click of the button, a lower level in the 
  * pb_graph will be shown for every clb. When the number of clicks on the button exceeds 
@@ -37,11 +54,11 @@ void draw_internal_draw_subblk();
 int highlight_sub_block(int blocknum, float rel_x, float rel_y);
 
 /*
- * Deselects the subblock
+ * returns the struct with information about the sub-block selection
  */
-void clear_highlighted_sub_block();
+t_selected_sub_block_info& get_selected_sub_block_info();
 
-/* 
- * returns the currently selected sub-block, NULL if none.
+/*
+ * Draws lines from every logical source, to every logical sink
  */
-t_pb* get_selected_sub_block();
+void draw_all_logical_connections();
