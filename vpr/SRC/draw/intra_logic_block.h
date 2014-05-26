@@ -9,9 +9,11 @@
 
 struct t_selected_sub_block_info {
 private:
-	t_pb* selected_subblock = NULL;
-	t_block* block = NULL;
+	t_pb* selected_subblock;
+	t_block* block;
 public:
+
+	t_selected_sub_block_info();
 
 	void set(t_pb* new_selected_sub_block, t_block* containing_block);
 

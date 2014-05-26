@@ -647,6 +647,10 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* conta
 	block = containing_block;
 }
 
+t_selected_sub_block_info::t_selected_sub_block_info() {
+	clear();
+}
+
 void t_selected_sub_block_info::clear() {
 	set(NULL, NULL);
 }
