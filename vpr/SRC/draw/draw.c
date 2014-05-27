@@ -88,8 +88,6 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, 
 									 int chany_track, enum e_edge_dir edge_dir,
 									 short switch_type);
-static void draw_triangle_along_line(float xend, float yend, float x1, float x2,
-									 float y1, float y2);
 static int get_track_num(int inode, int **chanx_track, int **chany_track);
 static bool draw_if_net_highlighted (int inet);
 static void draw_highlight_fan_in_fan_out(int hit_node);
@@ -2437,8 +2435,37 @@ static void draw_reset_blk_color(int i) {
 	}
 }
 
+/**
+ * Draws a small triange, like draw_triangle_along_line(6 x float), but at a distance from the
+ * point (x1, y1) if greater than zero, or a distance from (x2, y2) if less than or equal to
+ * zero. Note that pasinging zero results in a typical pointing arrow.
+ */
+void draw_triangle_along_line(float distance_from_end, float x1, float x2, float y1, float y2) {
+	float xdelta = x2 - x1;
+	float ydelta = y2 - y1;
+	float magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
+	float xunit = xdelta / magnitude;
+	float yunit = ydelta / magnitude;	
 
-static void draw_triangle_along_line(float xend, float yend, float x1, float x2,
+	float xbase, ybase;
+	if (distance_from_end > 0) {
+		xbase = x1;
+		ybase = y1;
+	} else {
+		xbase = x2;
+		ybase = y2;
+	}
+
+	draw_triangle_along_line(
+		xbase + xunit * distance_from_end, ybase + yunit * distance_from_end, x1, x2, y1, y2);
+}
+
+/**
+ * Draws a small trangle with the center of it's base at (xend, yend),
+ * rotated such that it points in the direction of the directed line segment
+ * (x1, y1) -> (x2, y2). Note that the parameters are in a strange order
+ */
+void draw_triangle_along_line(float xend, float yend, float x1, float x2,
 		float y1, float y2) {
 	float switch_rad = 0.15;
 	float xdelta, ydelta;

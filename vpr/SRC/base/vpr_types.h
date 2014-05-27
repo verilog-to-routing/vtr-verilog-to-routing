@@ -162,6 +162,13 @@ typedef struct s_pb {
 	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
 	 LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
 	 so this optimization is crucial for handling LUT based FPGAs.	 */ /* jedit TODO: Delete this because it is no longer used by anyone */ 
+
+	int get_num_child_types() const {
+		return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
+	}
+	int get_num_children_of_type(int type_index) const {
+		return pb_graph_node->pb_type->modes[mode].pb_type_children[type_index].num_pb;
+	}
 } t_pb;
 
 /* Representation of intra-logic block routing */

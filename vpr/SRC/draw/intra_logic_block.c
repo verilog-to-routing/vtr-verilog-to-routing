@@ -46,7 +46,7 @@ static bool is_top_lvl_block_highlighted(int blk_id);
 
 static float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text);
 
-static void draw_logical_connections(const t_pb& pblock, const t_block& clb);
+void draw_logical_connections(const t_pb* pblock, const t_block* clb);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -80,14 +80,14 @@ void draw_internal_alloc_blk() {
 
 
 void draw_internal_init_blk() {
+	/* Call accessor function to retrieve global variables. */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 	t_draw_state* draw_state = get_draw_state_vars();
+
 	int i, type_descriptor_index;
 	t_pb_graph_node *pb_graph_head_node;
 	float blk_width, blk_height;
 	int num_sub_tiles;
-
-	/* Call accessor function to retrieve global variables. */
 
 	for (i = 0; i < num_types; ++i) {
 		/* Empty block has no sub_blocks */
@@ -171,6 +171,11 @@ void draw_internal_draw_subblk() {
 				}
 			}
 		}
+	}
+
+	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+	if (sel_sub_info.has_selection()) {
+		draw_logical_connections(sel_sub_info.get_selected_sub_block(), sel_sub_info.get_containing_block());
 	}
 }
 
@@ -323,20 +328,10 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y, 
 							 float end_x, float end_y) 
 {
-	t_draw_coords *draw_coords;
-	t_draw_state *draw_state;
-	t_pb_graph_node *pb_graph_node;
-	t_pb_type *pb_type, *pb_child_type;
-	t_mode mode;
-	int i, j, num_children, num_pb;
-	float x1, x2, y1, y2;
+	t_draw_coords *draw_coords = get_draw_coords_vars();
+	t_draw_state *draw_state = get_draw_state_vars();
 
-	/* Call accessor function to retrieve global variables. */
-	draw_coords = get_draw_coords_vars();
-	draw_state = get_draw_state_vars();
-
-	pb_graph_node = pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;
+	t_pb_type *pb_type = pb->pb_graph_node->pb_type;
 
 	/* If the sub-block level (depth) is equal or greater than the number 
 	 * of sub-block levels to be shown, don't draw.
@@ -366,27 +361,25 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 			// the text is very close to the top of the block.
 	         pb_type->name, calc_text_xbound(start_x, start_y / 5.0f, end_x, end_y / 5.0f, pb_type->name));
 
-	/* Get the mode of operation */
-	mode = pb_type->modes[pb->mode];
-	num_children = mode.num_pb_type_children;
 
-	for (i = 0; i < num_children; ++i) {
-		num_pb = mode.pb_type_children[i].num_pb;
+	int num_child_types = pb->get_num_child_types();
+	for (int i = 0; i < num_child_types; ++i) {
 			
-		for (j = 0; j < num_pb; ++j) {	
+		int num_pb = pb->get_num_children_of_type(i);
+		for (int j = 0; j < num_pb; ++j) {	
 			/* Iterate through each child_pb */
 			t_pb* child_pb = &pb->child_pbs[i][j];
 
 			/* Point to child block */
-			pb_child_type = child_pb->pb_graph_node->pb_type;
+			t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 			
 			t_draw_bbox& child_bbox = draw_coords->get_pb_bbox(blk_id, *child_pb);
 			
 			/* Set coordinates to draw sub_block */
-			x1 = start_x + child_bbox.xleft;
-			x2 = start_x + child_bbox.xright;
-			y1 = start_y + child_bbox.ybottom;
-			y2 = start_y + child_bbox.ytop;
+			float x1 = start_x + child_bbox.xleft;
+			float x2 = start_x + child_bbox.xright;
+			float y1 = start_y + child_bbox.ybottom;
+			float y2 = start_y + child_bbox.ytop;
 			
 			if (child_pb->name != NULL) {
 				/* If child block is used, draw it in default background and
@@ -459,51 +452,33 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 			draw_internal_pb(blk_id, child_pb, x1, y1, x2, y2);
 		}
 	}
-
-	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
-	if (sel_sub_info.has_selection()) {
-		draw_logical_connections(*sel_sub_info.get_selected_sub_block(), *sel_sub_info.get_containing_block());
-	}
 }
 
 void draw_all_logical_connections() {
-	// t_draw_state* draw_state = get_draw_state_vars();
-	// t_draw_coords *draw_coords = get_draw_coords_vars();
-
-	// iterate over all the atom nets
-	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
-
-		int logical_block_id = net->pins.at(0).block;
-		t_logical_block* src_lblk = &logical_block[logical_block_id];
-		t_pb* src_pb = src_lblk->pb;
-
-		setcolor(RED);
-		// get the abs bbox of of the driver pb
-		const t_draw_bbox& src_bbox = t_draw_bbox::get_absolute_bbox(src_lblk->clb_index, src_pb);
-
-		// iterate over the sinks
-		for (std::vector<t_net_pin>::iterator pin = net->pins.begin() + 1;
-			pin != net->pins.end(); ++pin) {
-
-			t_logical_block* sink_lblk = &logical_block[pin->block];
-
-			// get the abs. bbox of the sink pb
-			const t_draw_bbox& sink_bbox = t_draw_bbox::get_absolute_bbox(sink_lblk->clb_index, sink_lblk->pb);
-
-			// draw a link connecting the center of the pbs.
-			drawline(src_bbox.get_xcenter(), src_bbox.get_ycenter(),
-				sink_bbox.get_xcenter(), sink_bbox.get_ycenter());
-		}
-	}
+	draw_logical_connections(NULL,NULL);
 }
 
-static void draw_logical_connections(const t_pb& pb, const t_block& clb) {
+void draw_logical_connections(const t_pb* pb, const t_block* clb) {
 	// const t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 	// if (!sel_sub_info.has_selection()) {return;}
 
 	// t_draw_state* draw_state = get_draw_state_vars();
 	// t_draw_coords *draw_coords = get_draw_coords_vars();
 
+	if (pb && clb && pb->child_pbs != 0) {
+		int num_child_types = pb->get_num_child_types();
+		for (int i = 0; i < num_child_types; ++i) {
+				
+			int num_pb = pb->get_num_children_of_type(i);
+			for (int j = 0; j < num_pb; ++j) {	
+
+				draw_logical_connections(&pb->child_pbs[i][j], clb);
+
+			}
+		}
+		return;
+	}
+
 	// iterate over all the atom nets
 	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
 
@@ -511,7 +486,7 @@ static void draw_logical_connections(const t_pb& pb, const t_block& clb) {
 		t_logical_block* src_lblk = &logical_block[logical_block_id];
 		t_pb* src_pb = src_lblk->pb;
 
-		if (src_pb->pb_graph_node != pb.pb_graph_node || &clb != &block[src_lblk->clb_index]) {
+		if (pb && clb && (src_pb->pb_graph_node != pb->pb_graph_node || clb != &block[src_lblk->clb_index])) {
 			continue;
 		}
 
@@ -531,6 +506,30 @@ static void draw_logical_connections(const t_pb& pb, const t_block& clb) {
 			// draw a link connecting the center of the pbs.
 			drawline(src_bbox.get_xcenter(), src_bbox.get_ycenter(),
 				sink_bbox.get_xcenter(), sink_bbox.get_ycenter());
+
+			if (sink_lblk->clb_index == src_lblk->clb_index) {
+				// if they are in the same clb, put one arrow in the center
+				float center_x = (src_bbox.get_xcenter() + sink_bbox.get_xcenter()) / 2;
+				float center_y = (src_bbox.get_ycenter() + sink_bbox.get_ycenter()) / 2;
+
+				draw_triangle_along_line(
+					center_x, center_y,
+					src_bbox.get_xcenter(), sink_bbox.get_xcenter(),
+					src_bbox.get_ycenter(), sink_bbox.get_ycenter()
+				);
+			} else {
+				// if they are not, put 2 near each end
+				draw_triangle_along_line(
+					3,
+					src_bbox.get_xcenter(), sink_bbox.get_xcenter(),
+					src_bbox.get_ycenter(), sink_bbox.get_ycenter()
+				);
+				draw_triangle_along_line(
+					-3,
+					src_bbox.get_xcenter(), sink_bbox.get_xcenter(),
+					src_bbox.get_ycenter(), sink_bbox.get_ycenter()
+				);
+			}
 		}
 	}
 }
