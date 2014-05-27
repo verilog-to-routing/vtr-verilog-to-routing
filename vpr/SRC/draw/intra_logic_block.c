@@ -46,7 +46,7 @@ static bool is_top_lvl_block_highlighted(int blk_id);
 
 static float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text);
 
-
+static void draw_logical_connections(const t_pb& pblock, const t_block& clb);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -399,8 +399,6 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 
 				/* Set default background color based on the top-level physical block type */
 				if (get_selected_sub_block_info().is_selected(child_pb)) {
-					// draw_subblock_connections(child_pb);
-					draw_all_logical_connections();
 					setcolor(GREEN);
 				} else if (type_index < 3) {
 					setcolor(LIGHTGREY);
@@ -461,7 +459,11 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 			draw_internal_pb(blk_id, child_pb, x1, y1, x2, y2);
 		}
 	}
-	
+
+	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+	if (sel_sub_info.has_selection()) {
+		draw_logical_connections(*sel_sub_info.get_selected_sub_block(), *sel_sub_info.get_containing_block());
+	}
 }
 
 void draw_all_logical_connections() {
@@ -474,6 +476,44 @@ void draw_all_logical_connections() {
 		int logical_block_id = net->pins.at(0).block;
 		t_logical_block* src_lblk = &logical_block[logical_block_id];
 		t_pb* src_pb = src_lblk->pb;
+
+		setcolor(RED);
+		// get the abs bbox of of the driver pb
+		const t_draw_bbox& src_bbox = t_draw_bbox::get_absolute_bbox(src_lblk->clb_index, src_pb);
+
+		// iterate over the sinks
+		for (std::vector<t_net_pin>::iterator pin = net->pins.begin() + 1;
+			pin != net->pins.end(); ++pin) {
+
+			t_logical_block* sink_lblk = &logical_block[pin->block];
+
+			// get the abs. bbox of the sink pb
+			const t_draw_bbox& sink_bbox = t_draw_bbox::get_absolute_bbox(sink_lblk->clb_index, sink_lblk->pb);
+
+			// draw a link connecting the center of the pbs.
+			drawline(src_bbox.get_xcenter(), src_bbox.get_ycenter(),
+				sink_bbox.get_xcenter(), sink_bbox.get_ycenter());
+		}
+	}
+}
+
+static void draw_logical_connections(const t_pb& pb, const t_block& clb) {
+	// const t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+	// if (!sel_sub_info.has_selection()) {return;}
+
+	// t_draw_state* draw_state = get_draw_state_vars();
+	// t_draw_coords *draw_coords = get_draw_coords_vars();
+
+	// iterate over all the atom nets
+	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
+
+		int logical_block_id = net->pins.at(0).block;
+		t_logical_block* src_lblk = &logical_block[logical_block_id];
+		t_pb* src_pb = src_lblk->pb;
+
+		if (src_pb->pb_graph_node != pb.pb_graph_node || &clb != &block[src_lblk->clb_index]) {
+			continue;
+		}
 
 		setcolor(RED);
 		// get the abs bbox of of the driver pb

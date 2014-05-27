@@ -100,7 +100,7 @@ struct t_draw_state {
 	e_draw_nets show_nets;
 	e_draw_congestion show_congestion;
 	e_draw_rr_toggle draw_rr_toggle;
-	int max_sub_blk_lvl = 0;
+	int max_sub_blk_lvl;
 	int show_blk_internal;
 	boolean show_graphics;
 	int gr_automode;
