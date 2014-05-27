@@ -31,13 +31,6 @@ using namespace std;
 #include "graphics.h"
 #include "draw.h"
 
-
-/****************************** File scope variables *************************************/
-
-/* The maximum number of sub-block levels among all physical block types in the FPGA. 
- * Used as a flag to toggle internal drawing off. */
-int max_sub_blk_lvl = 0;
-
 /************************* Subroutines local to this file. *******************************/
 
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
@@ -53,25 +46,9 @@ static bool is_top_lvl_block_highlighted(int blk_id);
 
 static float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text);
 
+
+
 /************************* Subroutine definitions begin *********************************/
-
-void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
-	t_draw_state *draw_state;
-
-	/* Call accessor function to retrieve global variables. */
-	draw_state = get_draw_state_vars();
-
-	/* Increment the depth of sub-blocks to be shown */
-	draw_state->show_blk_internal++;
-	/* If depth exceeds maximum sub-block level in pb_graph, then
-	 * disable internals drawing
-	 */
-	if (draw_state->show_blk_internal > max_sub_blk_lvl)
-		draw_state->show_blk_internal = 0;
-	
-	drawscreen_ptr();
-}
-
 
 void draw_internal_alloc_blk() {
 	t_draw_coords *draw_coords;
@@ -103,14 +80,14 @@ void draw_internal_alloc_blk() {
 
 
 void draw_internal_init_blk() {
-	t_draw_coords *draw_coords;
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+	t_draw_state* draw_state = get_draw_state_vars();
 	int i, type_descriptor_index;
 	t_pb_graph_node *pb_graph_head_node;
 	float blk_width, blk_height;
 	int num_sub_tiles;
 
 	/* Call accessor function to retrieve global variables. */
-	draw_coords = get_draw_coords_vars();
 
 	for (i = 0; i < num_types; ++i) {
 		/* Empty block has no sub_blocks */
@@ -133,10 +110,11 @@ void draw_internal_init_blk() {
 								  blk_width, blk_height);
 
 		/* Determine the max number of sub_block levels in the FPGA */
-		max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_descriptors[i].pb_type),
-							   max_sub_blk_lvl);
+		draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_descriptors[i].pb_type),
+							   draw_state->max_sub_blk_lvl);
 	}
 }
+
 
 
 void draw_internal_draw_subblk() {
@@ -279,19 +257,18 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 						  OUTP float *blk_width, OUTP float *blk_height) 
 {
 	t_draw_coords *draw_coords;
-	int node_id;
 	float parent_drawing_width, parent_drawing_height;
 	float sub_tile_x, sub_tile_y;
 	float child_width, child_height;
 	float start_x, start_y, end_x, end_y;
 
-	const float FRACTION_PARENT_HEIGHT = 0.9;
-
 	const float FRACTION_PARENT_PADDING_X = 0.01;
-	const float FRACTION_PARENT_PADDING_BOTTOM = 0.02;
+
+	const float FRACTION_PARENT_HEIGHT = 0.90;
+	const float FRACTION_PARENT_PADDING_BOTTOM = 0.01;
 
 	const float FRACTION_CHILD_MARGIN_X = 0.025;
-	const float FRACTION_CHILD_MARGIN_Y = 0.01;
+	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
 	/* Call accessor function to retrieve global variables. */
 	draw_coords = get_draw_coords_vars();
@@ -313,25 +290,25 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 
 	/* The starting point to draw the physical block. */
 	start_x = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
-	start_y = child_height * pb_index  + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_width;
+	start_y = child_height * pb_index  + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
 
 	/* Leave some space between different pb_types. */
 	child_width *= 1 - FRACTION_CHILD_MARGIN_X*2;
 	/* Leave some space between different instances of the same type. */
-	child_height *= FRACTION_PARENT_HEIGHT;
+	child_height *= 1 - FRACTION_CHILD_MARGIN_Y*2;
 
 	/* Endpoint for drawing the pb_type */
 	end_x = start_x + child_width;
 	end_y = start_y + child_height;
 
-	/* Get unique id for the pb_node */
-	node_id = get_unique_pb_graph_node_id(pb_graph_node);
+	// get the bbox for this pb type
+	t_draw_bbox& pb_bbox = draw_coords->blk_info.at(type_descrip_index).get_pb_bbox(*pb_graph_node);
 
-	/* Load coordinates into globally declared structure */
-	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).xleft = start_x;
-	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).xright = end_x;
-	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).ybottom = start_y;
-	draw_coords->blk_info.at(type_descrip_index).subblk_array.at(node_id).ytop = end_y;
+	// set the calculated corrinates.
+	pb_bbox.xleft = start_x;
+	pb_bbox.xright = end_x;
+	pb_bbox.ybottom = start_y;
+	pb_bbox.ytop = end_y;
 	
 	*blk_width = child_width;
 	*blk_height = child_height;
@@ -348,11 +325,10 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 {
 	t_draw_coords *draw_coords;
 	t_draw_state *draw_state;
-	t_pb_graph_node *pb_graph_node, *pb_child_node;
+	t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type, *pb_child_type;
 	t_mode mode;
 	int i, j, num_children, num_pb;
-	int type_index, node_id;
 	float x1, x2, y1, y2;
 
 	/* Call accessor function to retrieve global variables. */
@@ -385,7 +361,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 
 	/* Draw text for block pb_type (the text at the top, eg. "clb" ) */
 	setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
-	drawtext((start_x + end_x) / 2.0, end_y - (end_y - start_y) / 20.0,
+	drawtext((start_x + end_x) / 2.0, end_y - (end_y - start_y) / 15.0,
 			// here, I am tricking the function into using a slightly different weighting because
 			// the text is very close to the top of the block.
 	         pb_type->name, calc_text_xbound(start_x, start_y / 5.0f, end_x, end_y / 5.0f, pb_type->name));
@@ -398,32 +374,32 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 		num_pb = mode.pb_type_children[i].num_pb;
 			
 		for (j = 0; j < num_pb; ++j) {	
-			/* Iterate through each child_pb. */
+			/* Iterate through each child_pb */
+			t_pb* child_pb = &pb->child_pbs[i][j];
 
 			/* Point to child block */
-			pb_child_node = pb->child_pbs[i][j].pb_graph_node;
-			pb_child_type = pb_child_node->pb_type;
-
-			/* type_index indicates what type of block. */
-			type_index = block[blk_id].type->index;
-			/* get unique ID for child block. */
-			node_id = get_unique_pb_graph_node_id(pb_child_node);
+			pb_child_type = child_pb->pb_graph_node->pb_type;
+			
+			t_draw_bbox& child_bbox = draw_coords->get_pb_bbox(blk_id, *child_pb);
 			
 			/* Set coordinates to draw sub_block */
-			x1 = start_x + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).xleft;
-			x2 = start_x + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).xright;
-			y1 = start_y + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).ybottom;
-			y2 = start_y + draw_coords->blk_info.at(type_index).subblk_array.at(node_id).ytop;
+			x1 = start_x + child_bbox.xleft;
+			x2 = start_x + child_bbox.xright;
+			y1 = start_y + child_bbox.ybottom;
+			y2 = start_y + child_bbox.ytop;
 			
-			if (pb->child_pbs[i][j].name != NULL) {
+			if (child_pb->name != NULL) {
 				/* If child block is used, draw it in default background and
 				 * solid border.
 				 */
 				setlinestyle(SOLID);
 				
+				/* type_index indicates what type of block. */
+				int type_index = block[blk_id].type->index;
+
 				/* Set default background color based on the top-level physical block type */
-				if (get_selected_sub_block_info().is_selected(&pb->child_pbs[i][j])) {
-					// draw_subblock_connections(&pb->child_pbs[i][j]);
+				if (get_selected_sub_block_info().is_selected(child_pb)) {
+					// draw_subblock_connections(child_pb);
 					draw_all_logical_connections();
 					setcolor(GREEN);
 				} else if (type_index < 3) {
@@ -448,7 +424,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 
 			/* Display names for sub_blocks */
 			setfontsize(16);
-			if (pb->child_pbs[i][j].name != NULL) {
+			if (child_pb->name != NULL) {
 				/* If child block is used, label it by its pb_type, followed
 				 * by its name in brackets.
 				 */
@@ -456,11 +432,11 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				char *blk_tag;
 
 				type_len = strlen(pb_child_type->name);
-				name_len = strlen(pb->child_pbs[i][j].name);
+				name_len = strlen(child_pb->name);
 				tot_len = type_len + name_len;
 				blk_tag = (char *)my_malloc((tot_len + 8) * sizeof(char));
 
-				sprintf (blk_tag, "%s(%s)", pb_child_type->name, pb->child_pbs[i][j].name);
+				sprintf (blk_tag, "%s(%s)", pb_child_type->name, child_pb->name);
 
 				drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0,
 					 blk_tag, calc_text_xbound(x1, y1, x2, y2, blk_tag));
@@ -478,11 +454,11 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 
 			/* If no more child physical blocks to draw, return */
 			if (pb_child_type->num_modes == 0 || pb->child_pbs == NULL 
-				|| pb->child_pbs[i] == NULL || pb->child_pbs[i][j].name == NULL)
+				|| pb->child_pbs[i] == NULL || child_pb->name == NULL)
 				continue;
 
 			/* Traverse to next-level in pb_graph */
-			draw_internal_pb(blk_id, &pb->child_pbs[i][j], x1, y1, x2, y2);
+			draw_internal_pb(blk_id, child_pb, x1, y1, x2, y2);
 		}
 	}
 	
@@ -492,6 +468,7 @@ void draw_all_logical_connections() {
 	// t_draw_state* draw_state = get_draw_state_vars();
 	// t_draw_coords *draw_coords = get_draw_coords_vars();
 
+	// iterate over all the atom nets
 	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
 
 		int logical_block_id = net->pins.at(0).block;
@@ -499,15 +476,19 @@ void draw_all_logical_connections() {
 		t_pb* src_pb = src_lblk->pb;
 
 		setcolor(RED);
+		// get the abs bbox of of the driver pb
 		const t_draw_bbox& src_bbox = t_draw_bbox::get_absolute_bbox(src_lblk->clb_index, src_pb);
 
+		// iterate over the sinks
 		for (std::vector<t_net_pin>::iterator pin = net->pins.begin() + 1;
 			pin != net->pins.end(); ++pin) {
 
 			t_logical_block* sink_lblk = &logical_block[pin->block];
 
+			// get the abs. bbox of the sink pb
 			const t_draw_bbox& sink_bbox = t_draw_bbox::get_absolute_bbox(sink_lblk->clb_index, sink_lblk->pb);
 
+			// draw a link connecting the center of the pbs.
 			drawline(src_bbox.get_xcenter(), src_bbox.get_ycenter(),
 				sink_bbox.get_xcenter(), sink_bbox.get_ycenter());
 		}
@@ -567,10 +548,9 @@ t_pb* highlight_sub_block_helper(
 	
 	t_pb* child_pb;
 	t_pb_graph_node *pb_graph_node, *pb_child_node;
-	t_pb_type *pb_type;// *pb_child_type;
+	t_pb_type *pb_type;
 	t_mode mode;
 	int i, j, num_children, num_pb;
-	int node_id;
 
 	pb_graph_node = pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
@@ -600,12 +580,9 @@ t_pb* highlight_sub_block_helper(
 
 			child_pb = &pb->child_pbs[i][j];
 			pb_child_node = child_pb->pb_graph_node;
-			// pb_child_type = pb_child_node->pb_type;
 
-			// get unique ID for child block.
-			node_id = get_unique_pb_graph_node_id(pb_child_node);
-
-			t_draw_bbox* bbox = &blk_info->subblk_array.at(node_id);
+			// get the bbox for this child
+			t_draw_bbox* bbox = &blk_info->get_pb_bbox(*pb_child_node);
 
 			// If child block is being used, check if it intersects
 			if (child_pb->name != NULL &&

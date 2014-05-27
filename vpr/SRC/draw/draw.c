@@ -52,16 +52,6 @@ using namespace std;
 
 /************************** File Scope Variables ****************************/
 
-/* Draw_state is globally accessible through global accesssor function 
- * get_draw_state_vars().
- */
-t_draw_state *draw_state;
-
-/* Call global accessor function get_draw_coords_vars() to retrieve 
- * global variables for coordinates information. 
- */
-t_draw_coords *draw_coords;
-
 /********************** Subroutines local to this module ********************/
 
 static void toggle_nets(void (*drawscreen)(void));
@@ -140,7 +130,7 @@ void draw_shifted_line(int inode)
 	if(is_inode_an_interposer_wire(inode))
 	{
 		setcolor(RED);
-		bottom_shift_y = draw_coords->tile_width + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
+		bottom_shift_y = get_draw_coords_vars()->tile_width + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
 		top_shift_y = chan_width.y_list[ix]   + chan_width.y_list[ix] - 0.25*chan_width.y_list[ix];
 	}
 	drawline(bound_box.xleft, bound_box.ybottom+bottom_shift_y, bound_box.xright, bound_box.ytop+top_shift_y);
@@ -151,7 +141,7 @@ void init_graphics_state(boolean show_graphics_val, int gr_automode_val,
 		enum e_route_type route_type) 
 {	
 	/* Call accessor functions to retrieve global variables. */
-	draw_state = get_draw_state_vars();
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Sets the static show_graphics and gr_automode variables to the    *
 	 * desired values.  They control if graphics are enabled and, if so, *
@@ -168,6 +158,8 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 	/* Updates the screen if the user has requested graphics.  The priority  *
 	 * value controls whether or not the Proceed button must be clicked to   *
 	 * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
+
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	if (!draw_state->show_graphics) /* Graphics turned off */
 		return;
@@ -281,6 +273,8 @@ static void redraw_screen() {
 	 * you know you don't need to erase the current graphics, and want *
 	 * to avoid a screen "flash".                                      */
 
+	t_draw_state* draw_state = get_draw_state_vars();
+
 	setfontsize(14); 
 
 	drawplace();
@@ -330,6 +324,7 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 	/* Enables/disables drawing of nets when a the user clicks on a button.    *
 	 * Also disables drawing of routing resources.  See graphics.c for details *
 	 * of how buttons work.                                                    */
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	enum e_draw_nets new_state;
 
@@ -370,6 +365,8 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 	 * through the options:  DRAW_NO_RR, DRAW_ALL_RR, DRAW_ALL_BUT_BUFFERS_RR,  *
 	 * DRAW_NODES_AND_SBOX_RR, and DRAW_NODES_RR.                               */
 
+	t_draw_state* draw_state = get_draw_state_vars();
+
 	enum e_draw_rr_toggle new_state = (enum e_draw_rr_toggle) (((int)draw_state->draw_rr_toggle + 1) 
 														  % ((int)DRAW_RR_TOGGLE_MAX));
 	draw_state->reset_nets_congestion_and_rr();
@@ -382,6 +379,8 @@ static void toggle_rr(void (*drawscreen_ptr)(void)) {
 static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 
 	/* Turns the congestion display on and off.   */
+	t_draw_state* draw_state = get_draw_state_vars();
+
 	char msg[BUFSIZE];
 	int inode, num_congested;
 
@@ -407,9 +406,27 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
+void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
+	t_draw_state *draw_state;
+
+	/* Call accessor function to retrieve global variables. */
+	draw_state = get_draw_state_vars();
+
+	/* Increment the depth of sub-blocks to be shown */
+	draw_state->show_blk_internal++;
+	/* If depth exceeds maximum sub-block level in pb_graph, then
+	 * disable internals drawing
+	 */
+	if (draw_state->show_blk_internal > draw_state->max_sub_blk_lvl)
+		draw_state->show_blk_internal = 0;
+
+	drawscreen_ptr();
+}
+
 static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 
 	/* Highlights all the blocks and nets on the critical path. */
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	t_linked_int *critical_path_head, *critical_path_node;
 	int inode, iblk, inet, num_nets_seen;
@@ -472,7 +489,8 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 
 void alloc_draw_structs(void) {
 	/* Call accessor functions to retrieve global variables. */
-	draw_coords = get_draw_coords_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
@@ -504,6 +522,8 @@ void free_draw_structs(void) {
 	 *
 	 * For safety, set all the array pointers to NULL in case any data
 	 * structure gets freed twice.													 */
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	if(draw_coords != NULL) {
 		free(draw_coords->tile_x);  
@@ -528,6 +548,8 @@ void init_draw_coords(float width_val) {
 	/* Load the arrays containing the left and bottom coordinates of the clbs   *
 	 * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
 	 * clb.                                                                     */
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	int i;
 	int j;
@@ -588,6 +610,8 @@ static void drawplace(void) {
 
 	/* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
 	 * while empty ones are lighter colours and have a dashed border.      */
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	float sub_tile_step;
 	float x1, y1, x2, y2;
@@ -699,7 +723,7 @@ static void drawnets(void) {
 		if (g_clbs_nlist.net[inet].is_global)
 			continue; /* Don't draw global nets. */
 
-		setcolor(draw_state->net_color[inet]);
+		setcolor(get_draw_state_vars()->net_color[inet]);
 		b1 = g_clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
 		get_block_center(b1, &x1, &y1);
 
@@ -719,6 +743,7 @@ static void get_block_center(int bnum, float *x, float *y) {
 
 	/* This routine finds the center of block bnum in the current placement, *
 	 * and returns it in *x and *y.  This is used in routine shownets.       */
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	int i, j, k;
 	float sub_tile_step;
@@ -752,6 +777,7 @@ static void get_block_center(int bnum, float *x, float *y) {
 static void draw_congestion(void) {
 
 	/* Draws all the overused routing resources (i.e. congestion) in RED.   */
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	int inode, itrack;
 
@@ -813,6 +839,7 @@ void draw_rr(void) {
 
 	/* Draws the routing resources that exist in the FPGA, if the user wants *
 	 * them drawn.                                                           */
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	int inode, itrack;
 
@@ -886,6 +913,7 @@ void draw_rr(void) {
 static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 
 	/* Draws an x-directed channel segment.                       */
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	enum {
 		BUFFSIZE = 80
@@ -969,6 +997,8 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 
 	/* Draws a y-directed channel segment.                       */
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
 	enum {
 		BUFFSIZE = 80
 	};
@@ -1074,6 +1104,7 @@ static void draw_rr_edges(int inode) {
 
 	/* Draws all the edges that the user wants shown between inode and what it *
 	 * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	t_rr_type from_type, to_type;
 	int iedge, to_node, from_ptc_num, to_ptc_num;
@@ -1263,6 +1294,9 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		int chany_node, int chany_track, enum e_edge_dir edge_dir,
 		short switch_type) {
 
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
 	/* Draws an edge (SBOX connection) between an x-directed channel and a    *
 	 * y-directed channel.                                                    */
 
@@ -1352,6 +1386,9 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 	 * numbers allows this routine to be used for both rr_graph and routing     *
 	 * drawing.                                                                 */
 
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
 	float x1, x2, y1, y2;
 	t_draw_bbox from_chan, to_chan;
 	int from_xlow, to_xlow, from_xhigh, to_xhigh;
@@ -1437,6 +1474,9 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 		int to_track, short switch_type) {
 
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+	
 	/* Draws a connection between two y-channel segments.  Passing in the track *
 	 * numbers allows this routine to be used for both rr_graph and routing     *
 	 * drawing.                                                                 */
@@ -1581,6 +1621,8 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 static t_draw_bbox draw_get_rr_chan_bbox (int inode) {
 	t_draw_bbox bound_box;
 
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
 	switch (rr_node[inode].type) {
 		case CHANX:
 			bound_box.xleft = draw_coords->tile_x[rr_node[inode].xlow];
@@ -1657,6 +1699,8 @@ static void draw_rr_pin(int inode, enum color_types color) {
 	 * than one side of a clb.  Also note that this routine can change the     *
 	 * current color to BLACK.                                                 */
 
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+
 	int ipin, i, j, iside;
 	float xcen, ycen;
 	char str[BUFSIZE];
@@ -1697,6 +1741,8 @@ void draw_get_rr_pin_coords(int inode, int iside,
 void draw_get_rr_pin_coords(t_rr_node* node, int iside, 
 		int width_offset, int height_offset, 
 		float *xcen, float *ycen) {
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	int i, j, k, ipin, pins_per_sub_tile;
 	float offset, xc, yc, step;
@@ -1755,6 +1801,8 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	/* Draws the nets in the positions fixed by the router.  If draw_net_type is *
 	 * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
 	 * that are not coloured black (useful for drawing over the rr_graph).       */
+
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Next free track in each channel segment if routing is GLOBAL */
 
@@ -1935,7 +1983,7 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 	int i, j;
 	t_rr_type rr_type;
 
-	if (draw_state->draw_route_type == DETAILED)
+	if (get_draw_state_vars()->draw_route_type == DETAILED)
 		return (rr_node[inode].ptc_num);
 
 	/* GLOBAL route stuff below. */
@@ -1965,6 +2013,8 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 static bool draw_if_net_highlighted (int inet) {
 	bool highlighted = false;
 
+	t_draw_state* draw_state = get_draw_state_vars();
+
 	if (draw_state->net_color[inet] == MAGENTA || draw_state->net_color[inet] == RED 
 		|| draw_state->net_color[inet] == LIGHTMEDIUMBLUE || draw_state->net_color[inet] == DARKGREEN 
 		|| draw_state->net_color[inet] == TURQUOISE)
@@ -1981,6 +2031,8 @@ static void highlight_nets(char *message, int hit_node) {
 	unsigned int inet;
 	struct s_trace *tptr;
 
+	t_draw_state* draw_state = get_draw_state_vars();
+	
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		for (tptr = trace_head[inet]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
@@ -2008,6 +2060,8 @@ static void highlight_nets(char *message, int hit_node) {
  */
 static void draw_highlight_fan_in_fan_out(int hit_node) {
 	int iedge, inode;
+
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Highlight the fanout nodes in red. */
 	for (iedge = 0; iedge < rr_node[hit_node].num_edges; iedge++) {
@@ -2054,6 +2108,8 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 	int inode;
 	int hit_node = OPEN;
 	t_draw_bbox bound_box;
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		switch (rr_node[inode].type) {
@@ -2118,6 +2174,8 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
  * clicked upon, we highlight it in Magenta, and its fanout in red. 
  */
 static void highlight_rr_nodes(float x, float y) {
+
+	t_draw_state* draw_state = get_draw_state_vars();
 
 	int hit_node = OPEN;  // i.e. -1, no node selected.
 	char message[250] = "";
@@ -2193,6 +2251,9 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	 * removed.  Note that even though global nets are not drawn, their  *
 	 * fanins and fanouts are highlighted when you click on a block      *
 	 * attached to them.                                                 */
+
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	int i, j, k, hit, bnum;
 	float io_step;
@@ -2280,6 +2341,8 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 	int k, netnum, fanblk, iclass;
 	unsigned ipin;
 
+	t_draw_state* draw_state = get_draw_state_vars();
+
 	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
 		netnum = block[bnum].nets[k];
 
@@ -2337,6 +2400,8 @@ static void deselect_all(void) {
 	// Sets the color of all clbs, nets and rr_nodes to the default.
 	// as well as clearing the highlighed sub-block
 
+
+	t_draw_state* draw_state = get_draw_state_vars();
 	int i;
 
 	/* Create some colour highlighting */
@@ -2358,6 +2423,9 @@ static void deselect_all(void) {
 
 
 static void draw_reset_blk_color(int i) {
+
+	t_draw_state* draw_state = get_draw_state_vars();
+
 	if (block[i].type->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
 	} else if (block[i].type->index < 3 + MAX_BLOCK_COLOURS) {
@@ -2406,6 +2474,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	 * (useful for drawing  the rr graph)                                        */
 
 	/* TODO: Fix this for global routing, currently for detailed only */
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	t_rr_type chan_type;
 	int grid_x, grid_y, pin_num, chan_xlow, chan_ylow;

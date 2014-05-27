@@ -79,6 +79,8 @@ typedef struct {
  *				   if pic_on_screen is ROUTING.
  * show_blk_internal: If 0, no internal drawing is shown. Otherwise,
  *					  indicates how many levels of sub-pbs to be drawn
+ * max_sub_blk_lvl: The maximum number of sub-block levels among all 
+ *                  physical block types in the FPGA.
  * show_graphics: Whether graphics is enabled.
  * gr_automode: How often is user input required. (0: each t, 
  *				1: each place, 2: never)
@@ -98,6 +100,7 @@ struct t_draw_state {
 	e_draw_nets show_nets;
 	e_draw_congestion show_congestion;
 	e_draw_rr_toggle draw_rr_toggle;
+	int max_sub_blk_lvl = 0;
 	int show_blk_internal;
 	boolean show_graphics;
 	int gr_automode;
@@ -105,6 +108,8 @@ struct t_draw_state {
 	char default_message[BUFSIZE];
 	color_types *net_color, *block_color;
 	t_draw_rr_node *draw_rr_node;
+
+	t_draw_state();
 
 	void reset_nets_congestion_and_rr();
 };
@@ -134,6 +139,9 @@ struct t_draw_bbox {
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
 	vector<t_draw_bbox> subblk_array;
+
+	t_draw_bbox& get_pb_bbox(const t_pb& pb);
+	t_draw_bbox& get_pb_bbox(const t_pb_graph_node& pb_graph_node);
 };
 
 /* Structure used to store coordinates and dimensions for 
@@ -154,6 +162,7 @@ struct t_draw_pb_type_info {
 struct t_draw_coords {
 	float *tile_x, *tile_y;
 	float tile_width, pin_size;
+
 	vector<t_draw_pb_type_info> blk_info;
 
 	/**

@@ -183,7 +183,7 @@ boolean is_opin(int ipin, t_type_ptr type) {
  * pin for a given pb_graph_node, and use this index value as unique identifier 
  * for the node.
  */
-int get_unique_pb_graph_node_id(t_pb_graph_node *pb_graph_node) {
+int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 	t_pb_graph_pin first_input_pin;
 	t_pb_graph_pin first_output_pin;
 	int node_id;
