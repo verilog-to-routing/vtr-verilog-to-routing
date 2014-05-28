@@ -46,7 +46,10 @@ static bool is_top_lvl_block_highlighted(int blk_id);
 
 static float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text);
 
-void draw_logical_connections(const t_pb* pblock, const t_block* clb);
+static void draw_logical_connections_of(t_pb* pb, t_block* clb);
+
+static void draw_one_logical_connection(const t_logical_block& src_lblk,  const t_draw_bbox& src_abs_bbox,
+                                 const t_logical_block& sink_lblk, const t_draw_bbox& sink_abs_bbox);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -171,11 +174,6 @@ void draw_internal_draw_subblk() {
 				}
 			}
 		}
-	}
-
-	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
-	if (sel_sub_info.has_selection()) {
-		draw_logical_connections(sel_sub_info.get_selected_sub_block(), sel_sub_info.get_containing_block());
 	}
 }
 
@@ -390,9 +388,11 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				/* type_index indicates what type of block. */
 				int type_index = block[blk_id].type->index;
 
+				t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+
 				/* Set default background color based on the top-level physical block type */
-				if (get_selected_sub_block_info().is_selected(child_pb)) {
-					setcolor(GREEN);
+				if (sel_sub_info.is_selected(child_pb)) {
+					setcolor(SELECTED_COLOR);
 				} else if (type_index < 3) {
 					setcolor(LIGHTGREY);
 				} else if (type_index < 3 + MAX_BLOCK_COLOURS) {
@@ -454,17 +454,26 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	}
 }
 
-void draw_all_logical_connections() {
-	draw_logical_connections(NULL,NULL);
-}
-
-void draw_logical_connections(const t_pb* pb, const t_block* clb) {
-	// const t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
-	// if (!sel_sub_info.has_selection()) {return;}
-
-	// t_draw_state* draw_state = get_draw_state_vars();
+void draw_logical_connections() {
+	const t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+	t_draw_state* draw_state = get_draw_state_vars();
 	// t_draw_coords *draw_coords = get_draw_coords_vars();
 
+	if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS) {
+		draw_logical_connections_of(NULL,NULL);
+	}
+
+	if (sel_sub_info.has_selection()) {
+
+		t_pb* pb = sel_sub_info.get_selected_sub_block();
+		t_block* clb = sel_sub_info.get_containing_block();
+
+		draw_logical_connections_of(pb,clb);
+	}
+}
+
+static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
+	
 	if (pb && clb && pb->child_pbs != 0) {
 		int num_child_types = pb->get_num_child_types();
 		for (int i = 0; i < num_child_types; ++i) {
@@ -472,7 +481,7 @@ void draw_logical_connections(const t_pb* pb, const t_block* clb) {
 			int num_pb = pb->get_num_children_of_type(i);
 			for (int j = 0; j < num_pb; ++j) {	
 
-				draw_logical_connections(&pb->child_pbs[i][j], clb);
+				draw_logical_connections_of(&pb->child_pbs[i][j], clb);
 
 			}
 		}
@@ -486,11 +495,7 @@ void draw_logical_connections(const t_pb* pb, const t_block* clb) {
 		t_logical_block* src_lblk = &logical_block[logical_block_id];
 		t_pb* src_pb = src_lblk->pb;
 
-		if (pb && clb && (src_pb->pb_graph_node != pb->pb_graph_node || clb != &block[src_lblk->clb_index])) {
-			continue;
-		}
 
-		setcolor(RED);
 		// get the abs bbox of of the driver pb
 		const t_draw_bbox& src_bbox = t_draw_bbox::get_absolute_bbox(src_lblk->clb_index, src_pb);
 
@@ -499,39 +504,63 @@ void draw_logical_connections(const t_pb* pb, const t_block* clb) {
 			pin != net->pins.end(); ++pin) {
 
 			t_logical_block* sink_lblk = &logical_block[pin->block];
+			t_pb* sink_pb = sink_lblk->pb;
+
+			if (pb == NULL || clb == NULL) {
+				setcolor(BLACK);
+			} else {
+				if (src_pb->pb_graph_node == pb->pb_graph_node && clb == &block[src_lblk->clb_index]) {
+					setcolor(DRIVES_IT_COLOR);
+				} else if (sink_pb->pb_graph_node == pb->pb_graph_node && clb == &block[sink_lblk->clb_index]) {
+					setcolor(DRIVEN_BY_IT_COLOR);
+				} else {
+					continue; // not showing all, and not the selected block, so skip
+				}
+			}
 
 			// get the abs. bbox of the sink pb
 			const t_draw_bbox& sink_bbox = t_draw_bbox::get_absolute_bbox(sink_lblk->clb_index, sink_lblk->pb);
 
-			// draw a link connecting the center of the pbs.
-			drawline(src_bbox.get_xcenter(), src_bbox.get_ycenter(),
-				sink_bbox.get_xcenter(), sink_bbox.get_ycenter());
-
-			if (sink_lblk->clb_index == src_lblk->clb_index) {
-				// if they are in the same clb, put one arrow in the center
-				float center_x = (src_bbox.get_xcenter() + sink_bbox.get_xcenter()) / 2;
-				float center_y = (src_bbox.get_ycenter() + sink_bbox.get_ycenter()) / 2;
-
-				draw_triangle_along_line(
-					center_x, center_y,
-					src_bbox.get_xcenter(), sink_bbox.get_xcenter(),
-					src_bbox.get_ycenter(), sink_bbox.get_ycenter()
-				);
-			} else {
-				// if they are not, put 2 near each end
-				draw_triangle_along_line(
-					3,
-					src_bbox.get_xcenter(), sink_bbox.get_xcenter(),
-					src_bbox.get_ycenter(), sink_bbox.get_ycenter()
-				);
-				draw_triangle_along_line(
-					-3,
-					src_bbox.get_xcenter(), sink_bbox.get_xcenter(),
-					src_bbox.get_ycenter(), sink_bbox.get_ycenter()
-				);
-			}
+			draw_one_logical_connection(*src_lblk, src_bbox, *sink_lblk, sink_bbox);		
 		}
 	}
+}
+
+void draw_one_logical_connection(
+	const t_logical_block& src_lblk,  const t_draw_bbox& src_abs_bbox,
+	const t_logical_block& sink_lblk, const t_draw_bbox& sink_abs_bbox) {
+
+	const t_point src_center =  { src_abs_bbox.get_xcenter(),  src_abs_bbox.get_ycenter() };
+	const t_point sink_center = { sink_abs_bbox.get_xcenter(), sink_abs_bbox.get_ycenter() };
+
+	// draw a link connecting the center of the pbs.
+	drawline(src_center.x, src_center.y,
+		sink_center.x, sink_center.y);
+
+	if (sink_lblk.clb_index == src_lblk.clb_index) {
+		// if they are in the same clb, put one arrow in the center
+		float center_x = (src_center.x + sink_center.x) / 2;
+		float center_y = (src_center.y + sink_center.y) / 2;
+
+		draw_triangle_along_line(
+			center_x, center_y,
+			src_center.x, sink_center.x,
+			src_center.y, sink_center.y
+		);
+	} else {
+		// if they are not, put 2 near each end
+		draw_triangle_along_line(
+			3,
+			src_center.x, sink_center.x,
+			src_center.y, sink_center.y
+		);
+		draw_triangle_along_line(
+			-3,
+			src_center.x, sink_center.x,
+			src_center.y, sink_center.y
+		);
+	}
+
 }
 
 /* This function checks whether a top-level clb has been highlighted. It does 

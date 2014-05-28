@@ -61,12 +61,8 @@ int highlight_sub_block(int blocknum, float rel_x, float rel_y);
 t_selected_sub_block_info& get_selected_sub_block_info();
 
 /*
- * Draws lines from every logical source, to every logical sink
+ * Draws lines from the proper logical sources, to the proper logical sinks.
+ * If the draw state says to show all logical connections, it will,
+ * and if there is a selected sub-block, it will highlight it's conections
  */
-void draw_all_logical_connections();
-
-/*
- * Draws only the connections driven by pb. Passing NULL to either of both
- * will result in the drawing of all connections, (however, use draw_all_logical_connections() )
- */
-void draw_logical_connections(const t_pb* pb, const t_block* clb);
+void draw_logical_connections();

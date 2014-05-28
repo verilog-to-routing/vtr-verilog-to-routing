@@ -287,9 +287,6 @@ static void redraw_screen() {
 				drawnets();
 			break;
 			case DRAW_LOGICAL_CONNECTIONS:
-				if (draw_state->show_blk_internal) {
-					draw_all_logical_connections();
-				}
 			break;
 			default:
 			break;
@@ -302,7 +299,6 @@ static void redraw_screen() {
 			break;
 			case DRAW_LOGICAL_CONNECTIONS:
 				if (draw_state->show_blk_internal) {
-					draw_all_logical_connections();
 					break;
 				}
 			// fall through
@@ -315,6 +311,8 @@ static void redraw_screen() {
 			draw_congestion();
 		}
 	}
+
+	draw_logical_connections();
 }
 
 static void toggle_nets(void (*drawscreen_ptr)(void)) {
@@ -2013,8 +2011,8 @@ static bool draw_if_net_highlighted (int inet) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	if (draw_state->net_color[inet] == MAGENTA || draw_state->net_color[inet] == RED 
-		|| draw_state->net_color[inet] == LIGHTMEDIUMBLUE || draw_state->net_color[inet] == DARKGREEN 
+	if (draw_state->net_color[inet] == MAGENTA || draw_state->net_color[inet] == DRIVES_IT_COLOR 
+		|| draw_state->net_color[inet] == DRIVEN_BY_IT_COLOR || draw_state->net_color[inet] == DARKGREEN 
 		|| draw_state->net_color[inet] == TURQUOISE)
 		highlighted = true;
 
@@ -2067,7 +2065,7 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 
 		if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
 			// If node is highlighted, highlight its fanout
-			draw_state->draw_rr_node[fanout_node].color = RED;
+			draw_state->draw_rr_node[fanout_node].color = DRIVES_IT_COLOR;
 			draw_state->draw_rr_node[fanout_node].node_highlighted = true;
 		}
 		else if (draw_state->draw_rr_node[hit_node].color == WHITE) {
@@ -2350,7 +2348,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 		iclass = type->pin_class[k];
 
 		if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
-			if (draw_state->block_color[bnum] == GREEN) {
+			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanout. (the deselect case)*/
 				draw_state->net_color[netnum] = BLACK;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
@@ -2360,15 +2358,15 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			}
 			else {
 				/* Highlight the fanout */
-				draw_state->net_color[netnum] = RED;
+				draw_state->net_color[netnum] = DRIVES_IT_COLOR;
 				for (ipin = 1; ipin < g_clbs_nlist.net[netnum].pins.size(); ipin++) {
 					fanblk = g_clbs_nlist.net[netnum].pins[ipin].block;
-					draw_state->block_color[fanblk] = RED;
+					draw_state->block_color[fanblk] = DRIVES_IT_COLOR;
 				}
 			}
 		} 
 		else { /* This net is fanin to the block. */
-			if (draw_state->block_color[bnum] == GREEN) {
+			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanin. (the deselect case)*/
 				draw_state->net_color[netnum] = BLACK;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
@@ -2376,20 +2374,20 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			}
 			else {
 				/* Highlight the fanin */
-				draw_state->net_color[netnum] = LIGHTMEDIUMBLUE;
+				draw_state->net_color[netnum] = DRIVEN_BY_IT_COLOR;
 				fanblk = g_clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
-				draw_state->block_color[fanblk] = LIGHTMEDIUMBLUE;
+				draw_state->block_color[fanblk] = DRIVEN_BY_IT_COLOR;
 			}
 		}
 	}
 
-	if (draw_state->block_color[bnum] == GREEN) { 
+	if (draw_state->block_color[bnum] == SELECTED_COLOR) { 
 		/* If block already highlighted, de-highlight the selected block. */
 		draw_reset_blk_color(bnum);
 	}
 	else { 
 		/* Highlight the selected block. */
-		draw_state->block_color[bnum] = GREEN; 
+		draw_state->block_color[bnum] = SELECTED_COLOR; 
 	}
 }
 
