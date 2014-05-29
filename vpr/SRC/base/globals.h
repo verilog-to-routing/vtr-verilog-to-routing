@@ -13,6 +13,7 @@
 #define GLOBALS_H
 
 #include "netlist.h"
+#include "rr_node.h"
 
 /********************************************************************
 Checking OS System

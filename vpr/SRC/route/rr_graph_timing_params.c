@@ -120,11 +120,11 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			 * }     */
 
 			if (from_rr_type == CHANX) {
-				iseg_low = rr_node[inode].xlow;
-				iseg_high = rr_node[inode].xhigh;
+				iseg_low = rr_node[inode].get_xlow();
+				iseg_high = rr_node[inode].get_xhigh();
 			} else { /* CHANY */
-				iseg_low = rr_node[inode].ylow;
-				iseg_high = rr_node[inode].yhigh;
+				iseg_low = rr_node[inode].get_ylow();
+				iseg_high = rr_node[inode].get_yhigh();
 			}
 
 			for (icblock = iseg_low; icblock <= iseg_high; icblock++) {

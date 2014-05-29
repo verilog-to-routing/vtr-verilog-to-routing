@@ -54,27 +54,11 @@ typedef struct s_clb_to_clb_directs {
 
 /******************* Variables local to this module. ***********************/
 
-/* Create an array of strings which maps to an enumeration (t_rr_type)  *
- * defined in vpr_types.h, so a routing resource name can be identified *
- * by its index in the array. To retrieve desired rr-type name, call    *
- * member function rr_get_type_string() of the structure s_rr_node.     */
-static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", 
-							"CHANY", "INTRA_CLUSTER_EDGE" };
 
 /* Used to free "chunked" memory.  If NULL, no rr_graph exists right now.  */
 static t_chunk rr_mem_ch = {NULL, 0, NULL};
 
 /* Status of current chunk being dished out by calls to my_chunk_malloc.   */
-
-/******************* Subroutines exported by rr_graph.c ********************/
-
-/* Member function of "struct s_rr_node" used to retrieve a routing *
- * resource type string by its index, which is defined by           *
- * "t_rr_type type".												*/
-const char *s_rr_node::rr_get_type_string()
-{
-	return name_type[type];
-}
 
 /********************* Subroutines local to this module. *******************/
 static int *****alloc_and_load_pin_to_track_map(
@@ -1085,10 +1069,10 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		/* Things common to both SOURCEs and SINKs.   */
 		L_rr_node[inode].capacity = class_inf[iclass].num_pins;
 		L_rr_node[inode].occ = 0;
-		L_rr_node[inode].xlow = i;
-		L_rr_node[inode].xhigh = i + type->width - 1;
-		L_rr_node[inode].ylow = j;
-		L_rr_node[inode].yhigh = j + type->height - 1;
+		L_rr_node[inode].set_xlow(i);
+		L_rr_node[inode].set_xhigh(i + type->width - 1);
+		L_rr_node[inode].set_ylow(j);
+		L_rr_node[inode].set_yhigh(j + type->height - 1);
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].ptc_num = iclass;
@@ -1186,10 +1170,10 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		/* Common to both DRIVERs and RECEIVERs */
 		L_rr_node[inode].capacity = 1;
 		L_rr_node[inode].occ = 0;
-		L_rr_node[inode].xlow = i;
-		L_rr_node[inode].xhigh = i + type->width - 1;
-		L_rr_node[inode].ylow = j;
-		L_rr_node[inode].yhigh = j + type->height - 1;
+		L_rr_node[inode].set_xlow(i);
+		L_rr_node[inode].set_xhigh(i + type->width - 1);
+		L_rr_node[inode].set_ylow (j);
+		L_rr_node[inode].set_yhigh(j + type->height - 1);
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].ptc_num = ipin;
@@ -1294,10 +1278,10 @@ static void build_rr_xchan(INP int i, INP int j,
 		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].capacity = 1; /* GLOBAL routing handled elsewhere */
 
-		L_rr_node[node].xlow = start;
-		L_rr_node[node].xhigh = end;
-		L_rr_node[node].ylow = j;
-		L_rr_node[node].yhigh = j;
+		L_rr_node[node].set_xlow(start);
+		L_rr_node[node].set_xhigh(end);
+		L_rr_node[node].set_ylow(j);
+		L_rr_node[node].set_yhigh(j);
 
 		int length = end - start + 1;
 		L_rr_node[node].R = length * seg_details[track].Rmetal;
@@ -1406,10 +1390,10 @@ static void build_rr_ychan(INP int i, INP int j,
 		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].capacity = 1; /* GLOBAL routing handled elsewhere */
 
-		L_rr_node[node].xlow = i;
-		L_rr_node[node].xhigh = i;
-		L_rr_node[node].ylow = start;
-		L_rr_node[node].yhigh = end;
+		L_rr_node[node].set_xlow(i);
+		L_rr_node[node].set_xhigh(i);
+		L_rr_node[node].set_ylow(start);
+		L_rr_node[node].set_yhigh(end);
 
 		int length = end - start + 1;
 		L_rr_node[node].R = length * seg_details[track].Rmetal;
@@ -1970,14 +1954,14 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	assert((L_rr_node[inode].drivers + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
 	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].rr_get_type_string());
-	if ((L_rr_node[inode].xlow == L_rr_node[inode].xhigh)
-			&& (L_rr_node[inode].ylow == L_rr_node[inode].yhigh)) {
+	if ((L_rr_node[inode].get_xlow() == L_rr_node[inode].get_xhigh())
+			&& (L_rr_node[inode].get_ylow() == L_rr_node[inode].get_yhigh())) {
 		fprintf(fp, "(%d, %d) ", 
-				L_rr_node[inode].xlow, L_rr_node[inode].ylow);
+				L_rr_node[inode].get_xlow(), L_rr_node[inode].get_ylow());
 	} else {
 		fprintf(fp, "(%d, %d) to (%d, %d) ", 
-				L_rr_node[inode].xlow, L_rr_node[inode].ylow, 
-				L_rr_node[inode].xhigh, L_rr_node[inode].yhigh);
+				L_rr_node[inode].get_xlow(), L_rr_node[inode].get_ylow(), 
+				L_rr_node[inode].get_xhigh(), L_rr_node[inode].get_yhigh());
 	}
 	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num);
 	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction + 1]);

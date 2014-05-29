@@ -168,8 +168,8 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 	t_type_ptr type;
 
 	assert(rr_node[inode].type == SINK);
-	i = rr_node[inode].xlow;
-	j = rr_node[inode].ylow;
+	i = rr_node[inode].get_xlow();
+	j = rr_node[inode].get_ylow();
 	type = grid[i][j].type;
 	ptc_num = rr_node[inode].ptc_num; /* For sinks, ptc_num is the class */
 	ifound = 0;
@@ -220,8 +220,8 @@ static void check_source(int inode, int inet) {
 			"in check_source: net %d begins with a node of type %d.\n", inet, rr_type);
 	}
 
-	i = rr_node[inode].xlow;
-	j = rr_node[inode].ylow;
+	i = rr_node[inode].get_xlow();
+	j = rr_node[inode].get_ylow();
 	ptc_num = rr_node[inode].ptc_num; /* for sinks and sources, ptc_num is class */
 	bnum = g_clbs_nlist.net[inet].pins[0].block; /* First node_block for net is the source */
 	type = grid[i][j].type;
@@ -325,16 +325,16 @@ static boolean check_adjacent(int from_node, int to_node) {
 	num_adj = 0;
 
 	from_type = rr_node[from_node].type;
-	from_xlow = rr_node[from_node].xlow;
-	from_ylow = rr_node[from_node].ylow;
-	from_xhigh = rr_node[from_node].xhigh;
-	from_yhigh = rr_node[from_node].yhigh;
+	from_xlow = rr_node[from_node].get_xlow();
+	from_ylow = rr_node[from_node].get_ylow();
+	from_xhigh = rr_node[from_node].get_xhigh();
+	from_yhigh = rr_node[from_node].get_yhigh();
 	from_ptc = rr_node[from_node].ptc_num;
 	to_type = rr_node[to_node].type;
-	to_xlow = rr_node[to_node].xlow;
-	to_ylow = rr_node[to_node].ylow;
-	to_xhigh = rr_node[to_node].xhigh;
-	to_yhigh = rr_node[to_node].yhigh;
+	to_xlow = rr_node[to_node].get_xlow();
+	to_ylow = rr_node[to_node].get_ylow();
+	to_xhigh = rr_node[to_node].get_xhigh();
+	to_yhigh = rr_node[to_node].get_yhigh();
 	to_ptc = rr_node[to_node].ptc_num;
 
 	switch (from_type) {
@@ -387,8 +387,8 @@ static boolean check_adjacent(int from_node, int to_node) {
 		if (to_type == IPIN) {
 			num_adj += pin_and_chan_adjacent(to_node, from_node);
 		} else if (to_type == CHANX) {
-			from_xhigh = rr_node[from_node].xhigh;
-			to_xhigh = rr_node[to_node].xhigh;
+			from_xhigh = rr_node[from_node].get_xhigh();
+			to_xhigh = rr_node[to_node].get_xhigh();
 			if (from_ylow == to_ylow) {
 				/* UDSD Modification by WMF Begin */
 				/*For Fs > 3, can connect to overlapping wire segment */
@@ -419,8 +419,8 @@ static boolean check_adjacent(int from_node, int to_node) {
 		if (to_type == IPIN) {
 			num_adj += pin_and_chan_adjacent(to_node, from_node);
 		} else if (to_type == CHANY) {
-			from_yhigh = rr_node[from_node].yhigh;
-			to_yhigh = rr_node[to_node].yhigh;
+			from_yhigh = rr_node[from_node].get_yhigh();
+			to_yhigh = rr_node[to_node].get_yhigh();
 			if (from_xlow == to_xlow) {
 				/* UDSD Modification by WMF Begin */
 				if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
@@ -469,13 +469,13 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	int chanx_y, chanx_xlow, chanx_xhigh;
 	int chany_x, chany_ylow, chany_yhigh;
 
-	chanx_y = rr_node[chanx_node].ylow;
-	chanx_xlow = rr_node[chanx_node].xlow;
-	chanx_xhigh = rr_node[chanx_node].xhigh;
+	chanx_y = rr_node[chanx_node].get_ylow();
+	chanx_xlow = rr_node[chanx_node].get_xlow();
+	chanx_xhigh = rr_node[chanx_node].get_xhigh();
 
-	chany_x = rr_node[chany_node].xlow;
-	chany_ylow = rr_node[chany_node].ylow;
-	chany_yhigh = rr_node[chany_node].yhigh;
+	chany_x = rr_node[chany_node].get_xlow();
+	chany_ylow = rr_node[chany_node].get_ylow();
+	chany_yhigh = rr_node[chany_node].get_yhigh();
 
 	if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
 		return (0);
@@ -494,18 +494,18 @@ static int pin_and_chan_adjacent(int pin_node, int chan_node) {
 
 	int num_adj = 0;
 
-	int pin_xlow = rr_node[pin_node].xlow;
-	int pin_ylow = rr_node[pin_node].ylow;
-	int pin_xhigh = rr_node[pin_node].xhigh;
-	int pin_yhigh = rr_node[pin_node].yhigh;
+	int pin_xlow = rr_node[pin_node].get_xlow();
+	int pin_ylow = rr_node[pin_node].get_ylow();
+	int pin_xhigh = rr_node[pin_node].get_xhigh();
+	int pin_yhigh = rr_node[pin_node].get_yhigh();
 	t_type_ptr pin_grid_type = grid[pin_xlow][pin_ylow].type;
 	int pin_ptc = rr_node[pin_node].ptc_num;
 
 	int chan_type = rr_node[chan_node].type;
-	int chan_xlow = rr_node[chan_node].xlow;
-	int chan_ylow = rr_node[chan_node].ylow;
-	int chan_xhigh = rr_node[chan_node].xhigh;
-	int chan_yhigh = rr_node[chan_node].yhigh;
+	int chan_xlow = rr_node[chan_node].get_xlow();
+	int chan_ylow = rr_node[chan_node].get_ylow();
+	int chan_xhigh = rr_node[chan_node].get_xhigh();
+	int chan_yhigh = rr_node[chan_node].get_yhigh();
 
 	if (chan_type == CHANX) {
 		for (int width = 0; width < pin_grid_type->width; ++width) {

@@ -43,10 +43,10 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 	 * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
 
 	if (from_rr_type == CHANX)
-		return (rr_node[to_node].xlow);
+		return (rr_node[to_node].get_xlow());
 	else
 		/* CHANY */
-		return (rr_node[to_node].ylow);
+		return (rr_node[to_node].get_ylow());
 }
 
 int seg_index_of_sblock(int from_node, int to_node) {
@@ -65,12 +65,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 
 	if (from_rr_type == CHANX) {
 		if (to_rr_type == CHANY) {
-			return (rr_node[to_node].xlow);
+			return (rr_node[to_node].get_xlow());
 		} else if (to_rr_type == CHANX) {
-			if (rr_node[to_node].xlow > rr_node[from_node].xlow) { /* Going right */
-				return (rr_node[from_node].xhigh);
+			if (rr_node[to_node].get_xlow() > rr_node[from_node].get_xlow()) { /* Going right */
+				return (rr_node[from_node].get_xhigh());
 			} else { /* Going left */
-				return (rr_node[to_node].xhigh);
+				return (rr_node[to_node].get_xhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -82,12 +82,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	/* End from_rr_type is CHANX */
 	else if (from_rr_type == CHANY) {
 		if (to_rr_type == CHANX) {
-			return (rr_node[to_node].ylow);
+			return (rr_node[to_node].get_ylow());
 		} else if (to_rr_type == CHANY) {
-			if (rr_node[to_node].ylow > rr_node[from_node].ylow) { /* Going up */
-				return (rr_node[from_node].yhigh);
+			if (rr_node[to_node].get_ylow() > rr_node[from_node].get_ylow()) { /* Going up */
+				return (rr_node[from_node].get_yhigh());
 			} else { /* Going down */
-				return (rr_node[to_node].yhigh);
+				return (rr_node[to_node].get_yhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 

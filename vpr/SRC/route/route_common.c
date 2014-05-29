@@ -211,7 +211,7 @@ void get_serial_num(void) {
 		while (tptr != NULL) {
 			inode = tptr->index;
 			serial_num += (inet + 1)
-					* (rr_node[inode].xlow * (nx + 1) - rr_node[inode].yhigh);
+					* (rr_node[inode].get_xlow() * (nx + 1) - rr_node[inode].get_yhigh());
 
 			serial_num -= rr_node[inode].ptc_num * (inet + 1) * 10;
 
@@ -1170,16 +1170,16 @@ void print_route(char *route_file) {
 				while (tptr != NULL) {
 					inode = tptr->index;
 					rr_type = rr_node[inode].type;
-					ilow = rr_node[inode].xlow;
-					jlow = rr_node[inode].ylow;
+					ilow = rr_node[inode].get_xlow();
+					jlow = rr_node[inode].get_ylow();
 
 					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, 
 							rr_node[inode].rr_get_type_string(), ilow, jlow);
 
-					if ((ilow != rr_node[inode].xhigh)
-							|| (jlow != rr_node[inode].yhigh))
-						fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh,
-								rr_node[inode].yhigh);
+					if ((ilow != rr_node[inode].get_xhigh())
+							|| (jlow != rr_node[inode].get_yhigh()))
+						fprintf(fp, "to (%d,%d) ", rr_node[inode].get_xhigh(),
+								rr_node[inode].get_yhigh());
 
 					switch (rr_type) {
 

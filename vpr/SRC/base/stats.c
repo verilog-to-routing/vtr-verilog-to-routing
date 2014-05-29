@@ -257,14 +257,14 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 			}
 
 			else if (rr_type == CHANX) {
-				j = rr_node[inode].ylow;
-				for (i = rr_node[inode].xlow; i <= rr_node[inode].xhigh; i++)
+				j = rr_node[inode].get_ylow();
+				for (i = rr_node[inode].get_xlow(); i <= rr_node[inode].get_xhigh(); i++)
 					chanx_occ[i][j]++;
 			}
 
 			else if (rr_type == CHANY) {
-				i = rr_node[inode].xlow;
-				for (j = rr_node[inode].ylow; j <= rr_node[inode].yhigh; j++)
+				i = rr_node[inode].get_xlow();
+				for (j = rr_node[inode].get_ylow(); j <= rr_node[inode].get_yhigh(); j++)
 					chany_occ[i][j]++;
 			}
 
@@ -312,8 +312,8 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 
 		else if (curr_type == CHANX || curr_type == CHANY) {
 			segments++;
-			length += 1 + rr_node[inode].xhigh - rr_node[inode].xlow
-					+ rr_node[inode].yhigh - rr_node[inode].ylow;
+			length += 1 + rr_node[inode].get_xhigh() - rr_node[inode].get_xlow()
+					+ rr_node[inode].get_yhigh() - rr_node[inode].get_ylow();
 
 			if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
 				bends++;

@@ -1025,8 +1025,8 @@ void TCH_PreRoutedHandler_c::LoadVPR_GraphNodeList_(
 
       t_rr_type vpr_type = vpr_rrNode.type;
       int ptcNum = vpr_rrNode.ptc_num;
-      int xlow = vpr_rrNode.xlow;
-      int ylow = vpr_rrNode.ylow;
+      int xlow = vpr_rrNode.get_xlow();
+      int ylow = vpr_rrNode.get_ylow();
 
       int numPins = vpr_gridArray[xlow][ylow].type->num_pins;
       int capacity = vpr_gridArray[xlow][ylow].type->capacity;

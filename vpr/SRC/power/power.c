@@ -895,9 +895,9 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 			wire_length = 0;
 			if (node->type == CHANX) {
-				wire_length = node->xhigh - node->xlow + 1;
+				wire_length = node->get_xhigh() - node->get_xlow() + 1;
 			} else if (node->type == CHANY) {
-				wire_length = node->yhigh - node->ylow + 1;
+				wire_length = node->get_yhigh() - node->get_ylow() + 1;
 			}
 			C_wire =
 					wire_length

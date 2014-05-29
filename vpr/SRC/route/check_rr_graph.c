@@ -47,8 +47,8 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 		/* Ignore any uninitialized rr_graph nodes */
 		if ((rr_node[inode].type == SOURCE) 
-				&& (rr_node[inode].xlow == 0) && (rr_node[inode].ylow == 0)
-				&& (rr_node[inode].xhigh == 0) && (rr_node[inode].yhigh == 0)) {
+				&& (rr_node[inode].get_xlow() == 0) && (rr_node[inode].get_ylow() == 0)
+				&& (rr_node[inode].get_xhigh() == 0) && (rr_node[inode].get_yhigh() == 0)) {
 			continue;
 		}
 
@@ -141,16 +141,16 @@ void check_rr_graph(INP t_graph_type graph_type,
 				 */
 
 				if(rr_type == IPIN) {
-					type = grid[rr_node[inode].xlow][rr_node[inode].ylow].type;
+					type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
 					if(Fc_in[type->index][rr_node[inode].ptc_num] == 0) {
 						is_chain = TRUE;
 					}
 				}
 
-				is_fringe = (boolean)((rr_node[inode].xlow == 1)
-						|| (rr_node[inode].ylow == 1)
-						|| (rr_node[inode].xhigh == L_nx)
-						|| (rr_node[inode].yhigh == L_ny));
+				is_fringe = (boolean)((rr_node[inode].get_xlow() == 1)
+						|| (rr_node[inode].get_ylow() == 1)
+						|| (rr_node[inode].get_xhigh() == L_nx)
+						|| (rr_node[inode].get_yhigh() == L_ny));
 				is_wire = (boolean)(rr_node[inode].type == CHANX
 						|| rr_node[inode].type == CHANY);
 
@@ -188,7 +188,7 @@ static boolean rr_node_is_global_clb_ipin(int inode) {
 	int ipin;
 	t_type_ptr type;
 
-	type = grid[rr_node[inode].xlow][rr_node[inode].ylow].type;
+	type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
 
 	if (rr_node[inode].type != IPIN)
 		return (FALSE);
@@ -211,10 +211,10 @@ void check_node(int inode, enum e_route_type route_type) {
 	float C, R;
 
 	rr_type = rr_node[inode].type;
-	xlow = rr_node[inode].xlow;
-	xhigh = rr_node[inode].xhigh;
-	ylow = rr_node[inode].ylow;
-	yhigh = rr_node[inode].yhigh;
+	xlow = rr_node[inode].get_xlow();
+	xhigh = rr_node[inode].get_xhigh();
+	ylow = rr_node[inode].get_ylow();
+	yhigh = rr_node[inode].get_yhigh();
 	ptc_num = rr_node[inode].ptc_num;
 	capacity = rr_node[inode].capacity;
 	type = NULL;

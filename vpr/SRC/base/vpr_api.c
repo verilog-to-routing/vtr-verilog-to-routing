@@ -1134,8 +1134,8 @@ static t_trace *expand_routing_trace(t_trace *trace, int i_g_atoms_net) {
 						current->next = new_trace;
 						if (rr_node[inter_cb_trace->index].type == IPIN) {
 							current = current->next;
-							int gridx = rr_node[new_trace->index].xlow;
-							int gridy = rr_node[new_trace->index].ylow;
+							int gridx = rr_node[new_trace->index].get_xlow();
+							int gridy = rr_node[new_trace->index].get_ylow();
 							gridx = gridx - grid[gridx][gridy].width_offset;
 							gridy = gridy - grid[gridx][gridy].height_offset;
 							new_trace = (t_trace*) my_calloc(1, sizeof(t_trace));
@@ -1215,17 +1215,17 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 			} else {
 				fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
 						rr_node[inode].rr_get_type_string(),
-						rr_node[inode].xlow, rr_node[inode].ylow);
+						rr_node[inode].get_xlow(), rr_node[inode].get_ylow());
 
-				if ((rr_node[inode].xlow != rr_node[inode].xhigh)
-						|| (rr_node[inode].ylow != rr_node[inode].yhigh))
-					fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh, rr_node[inode].yhigh);
+				if ((rr_node[inode].get_xlow() != rr_node[inode].get_xhigh())
+						|| (rr_node[inode].get_ylow() != rr_node[inode].get_yhigh()))
+					fprintf(fp, "to (%d,%d) ", rr_node[inode].get_xhigh(), rr_node[inode].get_yhigh());
 
 				switch (rr_node[inode].type) {
 
 				case IPIN:
 				case OPIN:
-					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type == IO_TYPE) {
+					if (grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type == IO_TYPE) {
 						fprintf(fp, " Pad: ");
 					} else { /* IO Pad. */
 						fprintf(fp, " Pin: ");
@@ -1239,7 +1239,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 
 				case SOURCE:
 				case SINK:
-					if (grid[rr_node[inode].xlow][rr_node[inode].ylow].type == IO_TYPE) {
+					if (grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type == IO_TYPE) {
 						fprintf(fp, " Pad: ");
 					} else { /* IO Pad. */
 						fprintf(fp, " Class: ");
@@ -1288,8 +1288,8 @@ void resync_post_route_netlist() {
 		t_trace *trace = (trace_head ? trace_head[i] : 0);
 		while (trace != NULL) {
 			if (rr_node[trace->index].type == OPIN && j == 0) {
-				int gridx = rr_node[trace->index].xlow;
-				int gridy = rr_node[trace->index].ylow;
+				int gridx = rr_node[trace->index].get_xlow();
+				int gridy = rr_node[trace->index].get_ylow();
 				gridx = gridx - grid[gridx][gridy].width_offset;
 				gridy = gridy - grid[gridx][gridy].height_offset;
 
@@ -1300,8 +1300,8 @@ void resync_post_route_netlist() {
 				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
 				j++;
 			} else if (rr_node[trace->index].type == IPIN) {
-				int gridx = rr_node[trace->index].xlow;
-				int gridy = rr_node[trace->index].ylow;
+				int gridx = rr_node[trace->index].get_xlow();
+				int gridy = rr_node[trace->index].get_ylow();
 				gridx = gridx - grid[gridx][gridy].width_offset;
 				gridy = gridy - grid[gridx][gridy].height_offset;
 
