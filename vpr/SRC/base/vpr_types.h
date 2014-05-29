@@ -167,7 +167,10 @@ typedef struct s_pb {
 		return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
 	}
 	int get_num_children_of_type(int type_index) const {
-		return pb_graph_node->pb_type->modes[mode].pb_type_children[type_index].num_pb;
+		return get_mode()->pb_type_children[type_index].num_pb;
+	}
+	t_mode* get_mode() const {
+		return &pb_graph_node->pb_type->modes[mode];
 	}
 } t_pb;
 

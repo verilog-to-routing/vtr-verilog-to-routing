@@ -6,24 +6,46 @@
  */
 
 #include "vpr_types.h"
+#include <unordered_set>
 
 struct t_selected_sub_block_info {
 private:
-	t_pb* selected_subblock;
-	t_block* block;
+	struct pair_hash {
+		inline std::size_t operator()(const std::pair<const t_pb_graph_node*, const t_block*>& v) const {
+			std::hash<const void*> ptr_hasher;
+			return ptr_hasher((const void*)v.first) ^ ptr_hasher((const void*)v.second);
+		}
+	};
+
+	t_pb* selected_pb;
+	t_block* containing_block;
+	t_pb_graph_node* selected_pb_gnode;
+	std::unordered_set< std::pair<const t_pb_graph_node*, const t_block*>, pair_hash> sinks;
+	std::unordered_set< std::pair<const t_pb_graph_node*, const t_block*>, pair_hash> sources;
+
+	void add_sinks_and_sources_of(const t_pb_graph_node* g_node, const t_block* clb);
 public:
 
 	t_selected_sub_block_info();
 
 	void set(t_pb* new_selected_sub_block, t_block* containing_block);
 
-	t_pb* get_selected_sub_block() const;
+	t_pb_graph_node* get_selected_pb_gnode() const;
 	t_block* get_containing_block() const;
+
+	/*
+	 * gets the t_pb that is currently selected. Please don't use this if
+	 * you think you can get away with using get_selected_pb_gnode() and 
+	 * get_containing_block(). May disappear in future. 
+	 */
+	t_pb* get_selected_pb() const;
 
 	bool has_selection() const;
 	void clear();
-	bool is_selected(t_pb* test) const;
+	bool is_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 
+	bool is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
+	bool is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 };
 
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the

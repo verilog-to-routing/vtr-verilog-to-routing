@@ -48,8 +48,9 @@ static float calc_text_xbound(float start_x, float start_y, float end_x, float e
 
 static void draw_logical_connections_of(t_pb* pb, t_block* clb);
 
-static void draw_one_logical_connection(const t_logical_block& src_lblk,  const t_draw_bbox& src_abs_bbox,
-                                 const t_logical_block& sink_lblk, const t_draw_bbox& sink_abs_bbox);
+void draw_one_logical_connection(
+	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_draw_bbox& src_abs_bbox,
+	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_draw_bbox& sink_abs_bbox);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -330,6 +331,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	t_draw_state *draw_state = get_draw_state_vars();
 
 	t_pb_type *pb_type = pb->pb_graph_node->pb_type;
+	const t_block* clb = &block[blk_id];
 
 	/* If the sub-block level (depth) is equal or greater than the number 
 	 * of sub-block levels to be shown, don't draw.
@@ -343,7 +345,7 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 	 */
 	if (pb_type->depth == 0 && is_top_lvl_block_highlighted(blk_id)) 
 		;
-	else if (!get_selected_sub_block_info().is_selected(pb)) {
+	else if (!get_selected_sub_block_info().is_selected(pb->pb_graph_node, clb)) {
 
 		setcolor(WHITE);
 		fillrect(start_x, start_y, end_x, end_y); 
@@ -386,13 +388,17 @@ static void draw_internal_pb(int blk_id, t_pb *pb, float start_x, float start_y,
 				setlinestyle(SOLID);
 				
 				/* type_index indicates what type of block. */
-				int type_index = block[blk_id].type->index;
+				const int type_index = clb->type->index;
 
 				t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
 				/* Set default background color based on the top-level physical block type */
-				if (sel_sub_info.is_selected(child_pb)) {
+				if (sel_sub_info.is_selected(child_pb->pb_graph_node, clb)) {
 					setcolor(SELECTED_COLOR);
+				} else if (sel_sub_info.is_sink_of_selected(child_pb->pb_graph_node, clb)) {
+					setcolor(DRIVES_IT_COLOR);
+				} else if (sel_sub_info.is_source_of_selected(child_pb->pb_graph_node, clb)) {
+					setcolor(DRIVEN_BY_IT_COLOR);
 				} else if (type_index < 3) {
 					setcolor(LIGHTGREY);
 				} else if (type_index < 3 + MAX_BLOCK_COLOURS) {
@@ -465,7 +471,7 @@ void draw_logical_connections() {
 
 	if (sel_sub_info.has_selection()) {
 
-		t_pb* pb = sel_sub_info.get_selected_sub_block();
+		t_pb* pb = sel_sub_info.get_selected_pb();
 		t_block* clb = sel_sub_info.get_containing_block();
 
 		draw_logical_connections_of(pb,clb);
@@ -495,7 +501,6 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
 		t_logical_block* src_lblk = &logical_block[logical_block_id];
 		t_pb* src_pb = src_lblk->pb;
 
-
 		// get the abs bbox of of the driver pb
 		const t_draw_bbox& src_bbox = t_draw_bbox::get_absolute_bbox(src_lblk->clb_index, src_pb);
 
@@ -514,50 +519,127 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
 				} else if (sink_pb->pb_graph_node == pb->pb_graph_node && clb == &block[sink_lblk->clb_index]) {
 					setcolor(DRIVEN_BY_IT_COLOR);
 				} else {
-					continue; // not showing all, and not the selected block, so skip
+					continue; // not showing all, and not the sperified block, so skip
 				}
 			}
 
 			// get the abs. bbox of the sink pb
 			const t_draw_bbox& sink_bbox = t_draw_bbox::get_absolute_bbox(sink_lblk->clb_index, sink_lblk->pb);
 
-			draw_one_logical_connection(*src_lblk, src_bbox, *sink_lblk, sink_bbox);		
+			draw_one_logical_connection(net->pins.at(0), *src_lblk, src_bbox, *pin, *sink_lblk, sink_bbox);		
 		}
 	}
 }
 
-void draw_one_logical_connection(
-	const t_logical_block& src_lblk,  const t_draw_bbox& src_abs_bbox,
-	const t_logical_block& sink_lblk, const t_draw_bbox& sink_abs_bbox) {
+void find_pin_index_at_model_scope(
+	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
+	OUTP int* pin_index, OUTP int* total_pins) {
 
-	const t_point src_center =  { src_abs_bbox.get_xcenter(),  src_abs_bbox.get_ycenter() };
-	const t_point sink_center = { sink_abs_bbox.get_xcenter(), sink_abs_bbox.get_ycenter() };
+	t_model_ports* port = NULL;
+	if (search_inputs) {
+		port = lblk.model->inputs;
+	} else { // searching outputs
+		port = lblk.model->outputs;
+	}
+
+	*pin_index = -1;
+	int i = 0;
+	// Note, that all iterations must go through - no early exits -
+	// as we are also trying to count the total number of pins
+
+	// iterate over the ports.
+	while(port != NULL) {
+		if(search_inputs ? port->is_clock == FALSE : true) {
+			int iport = port->index;
+			// iterate over the pins on that port
+			for (int ipin = 0; ipin < port->size; ipin++) {
+				// get the net that connects here.
+				int inet = OPEN;
+				if (search_inputs) {
+					inet = lblk.input_nets[iport][ipin];
+				} else {
+					inet = lblk.output_nets[iport][ipin];
+				}
+				if(inet != OPEN) {
+					t_vnet& net = g_atoms_nlist.net.at(inet);
+					for (auto pin = net.pins.begin(); pin != net.pins.end(); ++pin) {
+
+						if (pin->block == the_pin.block
+							&& ipin == the_pin.block_pin
+							&& iport == the_pin.block_port) {
+							// we've found our pin
+							*pin_index = i;
+						}
+						
+						i = i + 1;
+					}
+				}
+				i = i + 1;
+			}
+		}
+		port = port->next;
+	}
+	*total_pins = i;
+	// if (*pin_index < 0) {
+	// 	puts("didn't find!!!!");
+	// }
+	// puts("--- NEXT! ---");
+}
+
+void draw_one_logical_connection(
+	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_draw_bbox& src_abs_bbox,
+	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_draw_bbox& sink_abs_bbox) {
+
+	const float FRACTION_USABLE_WIDTH = 0.3;
+
+	float src_width =  (src_abs_bbox.xright  - src_abs_bbox.xleft);
+	float sink_width = (sink_abs_bbox.xright - sink_abs_bbox.xleft);
+
+	float src_usable_width =  src_width  * FRACTION_USABLE_WIDTH;
+	float sink_usable_width = sink_width * FRACTION_USABLE_WIDTH;
+
+	float src_x_offset = src_abs_bbox.xleft + src_width * (1 - FRACTION_USABLE_WIDTH)/2;
+	float sink_x_offset = sink_abs_bbox.xleft + sink_width * (1 - FRACTION_USABLE_WIDTH)/2;
+
+	int src_pin_index, sink_pin_index, src_pin_total, sink_pin_total;
+
+	find_pin_index_at_model_scope(src_pin,  src_lblk, false,  &src_pin_index, &src_pin_total );
+	find_pin_index_at_model_scope(sink_pin, sink_lblk, true, &sink_pin_index, &sink_pin_total);
+
+	const t_point src_start =  {
+		src_x_offset + src_usable_width * src_pin_index / ((float)src_pin_total),
+		src_abs_bbox.get_ycenter()
+	};
+	const t_point sink_start = {
+		sink_x_offset + sink_usable_width * sink_pin_index / ((float)sink_pin_total),
+		sink_abs_bbox.get_ycenter()
+	};
 
 	// draw a link connecting the center of the pbs.
-	drawline(src_center.x, src_center.y,
-		sink_center.x, sink_center.y);
+	drawline(src_start.x, src_start.y,
+		sink_start.x, sink_start.y);
 
-	if (sink_lblk.clb_index == src_lblk.clb_index) {
+	if (src_lblk.clb_index == sink_lblk.clb_index) {
 		// if they are in the same clb, put one arrow in the center
-		float center_x = (src_center.x + sink_center.x) / 2;
-		float center_y = (src_center.y + sink_center.y) / 2;
+		float center_x = (src_start.x + sink_start.x) / 2;
+		float center_y = (src_start.y + sink_start.y) / 2;
 
 		draw_triangle_along_line(
 			center_x, center_y,
-			src_center.x, sink_center.x,
-			src_center.y, sink_center.y
+			src_start.x, sink_start.x,
+			src_start.y, sink_start.y
 		);
 	} else {
 		// if they are not, put 2 near each end
 		draw_triangle_along_line(
 			3,
-			src_center.x, sink_center.x,
-			src_center.y, sink_center.y
+			src_start.x, sink_start.x,
+			src_start.y, sink_start.y
 		);
 		draw_triangle_along_line(
 			-3,
-			src_center.x, sink_center.x,
-			src_center.y, sink_center.y
+			src_start.x, sink_start.x,
+			src_start.y, sink_start.y
 		);
 	}
 
@@ -687,9 +769,73 @@ float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, c
  * Begin definition of t_selected_sub_block_info functions.
  */
 
-void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* containing_block) {
-	selected_subblock = new_selected_sub_block;
-	block = containing_block;
+void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_containing_block) {
+	selected_pb = new_selected_sub_block;
+	selected_pb_gnode = (selected_pb == NULL) ? NULL : selected_pb->pb_graph_node;
+	containing_block = new_containing_block;
+	sinks.clear();
+	sources.clear();
+
+
+	if (has_selection()) {
+		for (int i = 0; i < num_logical_blocks; ++i) {
+			const t_logical_block* lblk = &logical_block[i];
+			// find the logical block that corrisponds to this pb.
+			if (&block[lblk->clb_index] == get_containing_block()
+				&& lblk->pb->pb_graph_node == get_selected_pb_gnode()) {
+
+				t_model* model = lblk->model;
+
+				t_model_ports* model_ports = model->inputs;
+				// iterate over the input ports
+				while(model_ports != NULL) {
+					if(model_ports->is_clock == FALSE) {
+						int iport = model_ports->index;
+						// iterate over the pins on that port
+						for (int ipin = 0; ipin < model_ports->size; ipin++) {
+							// get the net that connects here.
+							int inet = lblk->input_nets[iport][ipin];
+							if(inet != OPEN) {
+								t_vnet& net = g_atoms_nlist.net.at(inet);
+
+								// put the driver in the sources list
+								t_net_pin& pin = net.pins.at(0);
+								t_logical_block* src_lblk = &logical_block[pin.block];
+
+								sources.insert(std::make_pair(
+									src_lblk->pb->pb_graph_node, &block[src_lblk->clb_index])
+								);
+							}
+						}
+					}
+					model_ports = model_ports->next;
+				}
+
+				model_ports = model->outputs;
+				while(model_ports != NULL) {
+					int iport = model_ports->index;
+					for (int ipin = 0; ipin < model_ports->size; ipin++) {
+						int inet = lblk->output_nets[iport][ipin];
+						if(inet != OPEN) {
+							t_vnet& net = g_atoms_nlist.net.at(inet);
+
+							// put the all sinks in the sink list
+							for (auto pin = net.pins.begin() + 1; pin != net.pins.end(); ++pin) {
+								t_logical_block* sink_lblk = &logical_block[pin->block];
+
+								sinks.insert(std::make_pair(
+									sink_lblk->pb->pb_graph_node, &block[sink_lblk->clb_index])
+								);
+							}
+						}
+					}
+					model_ports = model_ports->next;
+				}
+
+				break;
+			}
+		}
+	}
 }
 
 t_selected_sub_block_info::t_selected_sub_block_info() {
@@ -700,16 +846,26 @@ void t_selected_sub_block_info::clear() {
 	set(NULL, NULL);
 }
 
-t_pb* t_selected_sub_block_info::get_selected_sub_block() const { return selected_subblock; }
+t_pb* t_selected_sub_block_info::get_selected_pb() const { return selected_pb; }
 
-t_block* t_selected_sub_block_info::get_containing_block() const { return block; }
+t_pb_graph_node* t_selected_sub_block_info::get_selected_pb_gnode() const { return selected_pb_gnode; }
+
+t_block* t_selected_sub_block_info::get_containing_block() const { return containing_block; }
 
 bool t_selected_sub_block_info::has_selection() const {
-	return get_selected_sub_block() != NULL && get_containing_block() != NULL; 
+	return get_selected_pb_gnode() != NULL && get_containing_block() != NULL; 
 }
 
-bool t_selected_sub_block_info::is_selected(t_pb* test) const {
-	return get_selected_sub_block() == test;
+bool t_selected_sub_block_info::is_selected(const t_pb_graph_node* test, const t_block* test_block) const {
+	return get_selected_pb_gnode() == test && get_containing_block() == test_block;
+}
+
+bool t_selected_sub_block_info::is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const {
+	return sinks.find(std::make_pair(test,test_block)) != sinks.end();
+}
+
+bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const {
+	return sources.find(std::make_pair(test,test_block)) != sources.end();
 }
 
 t_selected_sub_block_info& get_selected_sub_block_info() {

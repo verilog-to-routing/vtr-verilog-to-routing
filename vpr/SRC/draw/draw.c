@@ -2318,7 +2318,7 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	highlight_sub_block(bnum, x - draw_coords->tile_x[i], y - draw_coords->tile_y[j]);
 	
 	if (get_selected_sub_block_info().has_selection()) {
-		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_sub_block();
+		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
 		sprintf(msg, "sub-block %s (a \"%s\") selected", 
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
