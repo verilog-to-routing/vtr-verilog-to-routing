@@ -4576,11 +4576,11 @@ float t_bound_box::get_ycenter() const {
 }
 
 float t_bound_box::get_width() const {
-	return abs(right() - left());
+	return right() - left();
 }
 
 float t_bound_box::get_height() const {
-	return abs(top() - bottom());
+	return top() - bottom();
 }
 
 void t_bound_box::offset(const t_point& relative_to) {
