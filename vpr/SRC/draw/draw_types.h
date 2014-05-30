@@ -114,45 +114,13 @@ struct t_draw_state {
 	void reset_nets_congestion_and_rr();
 };
 
-/* Stores the minimum and maximum coordinates for a drawing 
- * object with a bouding box.
- */
-struct t_draw_bbox {
-
-	const float& left() const;
-	const float& right() const;
-	const float& bottom() const;
-	const float& top() const;
-
-	float& left();
-	float& right();
-	float& bottom();
-	float& top();	
-
-	const t_point& bottom_left() const;
-	const t_point& top_right() const;
-	t_point& bottom_left();
-	t_point& top_right();
-
-	float get_xcenter() const;
-	float get_ycenter() const;
-
-	float get_width() const;
-	float get_height() const;
-
-	void offset(const t_point& relative_to);
-private:
-	t_point bottomleft;
-	t_point topright;
-};
-
 /* For each cluster type, this structure stores drawing 
  * information for all sub-blocks inside. This includes
  * the bounding box for drawing each sub-block. */
 struct t_draw_pb_type_info {
-	vector<t_draw_bbox> subblk_array;
+	vector<t_bound_box> subblk_array;
 
-	t_draw_bbox& get_pb_bbox(const t_pb_graph_node& pb_gnode);
+	t_bound_box& get_pb_bbox(const t_pb_graph_node& pb_gnode);
 };
 
 /* Structure used to store coordinates and dimensions for 
@@ -180,15 +148,15 @@ struct t_draw_coords {
 	 * Retrieve the bounding box for the given pb in the given
 	 * clb, from this data structure
 	 */
-	t_draw_bbox& get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode);
-	t_draw_bbox& get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode);
+	t_bound_box& get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode);
+	t_bound_box& get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode);
 
 	/**
 	 * Calculate and return a bounding box for the given pb in the given
 	 * clb with absolute coordinates, that can be directtly drawn.
 	 */
-	t_draw_bbox get_absolute_pb_bbox(const t_block& clb, t_pb_graph_node* pb_gnode);
-	t_draw_bbox get_absolute_pb_bbox(int clb_index, t_pb_graph_node* pb_gnode);
+	t_bound_box get_absolute_pb_bbox(const t_block& clb, t_pb_graph_node* pb_gnode);
+	t_bound_box get_absolute_pb_bbox(int clb_index, t_pb_graph_node* pb_gnode);
 };
 
 #endif

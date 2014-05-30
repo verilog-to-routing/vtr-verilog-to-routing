@@ -3,13 +3,17 @@
 * Written by Vaughn Betz at the University of Toronto, Department of       *
 * Electrical and Computer Engineering, with additions by Paul Leventis     *
 * and William Chow of Altera, Guy Lemieux of the University of Brish       *
-* Columbia, and Long Yu (Mike) Wang of the University of Toronto.          *
+* Columbia, Long Yu (Mike) Wang of the University of Toronto, and          *
+* Matthew J.P. Walker of the University of Toronto                         *
 * All rights reserved by U of T, etc.                                      *
 *                                                                          *
 * You may freely use this graphics interface for non-commercial purposes   *
 * as long as you leave the author info above in it.                        *
 *                                                                          *
 * Revision History:                                                        *
+*                                                                          *
+* V2.0.3 May 2014 - June 2013 (Matthew J.P. Walker)                        *
+* - continued integration with c++                                         *
 *                                                                          *
 * V2.0.2 May 2013 - June 2013 (Mike Wang)                                  *
 * - In Win32, removed "Window" operation with right mouse click to align   *
@@ -1498,7 +1502,7 @@ rect_off_screen (float x1, float y1, float x2, float y2)
 	return (0);
 }
 
-void drawline (t_point p1, t_point p2) {
+void drawline (const t_point& p1, const t_point& p2) {
 	drawline(p1.x, p1.y, p2.x, p2.y);
 }
 
@@ -1537,7 +1541,11 @@ drawline (float x1, float y1, float x2, float y2)
 	}
 }
 
-void drawrect (t_point bottomleft, t_point upperright) {
+void drawrect (const t_bound_box& rect) {
+	drawrect(rect.bottom_left(), rect.top_right());
+}
+
+void drawrect (const t_point& bottomleft, const t_point& upperright) {
 	drawrect(bottomleft.x, bottomleft.y, upperright.x, upperright.y);
 }
 
@@ -1604,6 +1612,13 @@ drawrect (float x1, float y1, float x2, float y2)
 	}
 }
 
+void fillrect (const t_bound_box& rect) {
+	fillrect(rect.bottom_left(), rect.top_right());
+}
+
+void fillrect (const t_point& bottomleft, const t_point& upperright) {
+	fillrect(bottomleft.x, bottomleft.y, upperright.x, upperright.y);
+}
 
 /* (x1,y1) and (x2,y2) are diagonally opposed corners in world coords. */
 void 
@@ -1669,7 +1684,7 @@ angnorm (float ang)
 	return (ang);
 }
 
-void drawellipticarc (t_point center, float radx, float rady, float startang, float angextent) {
+void drawellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) {
 	drawellipticarc(center.x, center.y, radx, rady, startang, angextent);
 }
 
@@ -1749,7 +1764,7 @@ drawarc (float xc, float yc, float rad, float startang,
  * direction.  Angles in degrees.                                           
  */
 
-void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent) {
+void fillellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) {
 	fillellipticarc(center.x, center.y, radx, rady, startang, angextent);
 }
 
@@ -1830,15 +1845,13 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 	}
 }
 
-void fillarc (t_point center, float rad, float startang, float angextent) { 
-	fillellipticarc(center, rad, rad, startang, angextent);
+void fillarc (const t_point& center, float rad, float startang, float angextent) { 
+	fillellipticarc(center.x, center.y, rad, rad, startang, angextent);
 }
 
-void 
-fillarc (float xc, float yc, float rad, float startang, float angextent) {
+void fillarc (float xc, float yc, float rad, float startang, float angextent) {
 	fillellipticarc(xc, yc, rad, rad, startang, angextent);
 }
-
 
 void 
 fillpoly (t_point *points, int npoints) 
@@ -1909,7 +1922,7 @@ fillpoly (t_point *points, int npoints)
 	}
 }
 
-void drawtext (t_point center, const char *text, float boundx) {
+void drawtext (const t_point& center, const char *text, float boundx) {
 	drawtext(center.x, center.y, text, boundx);
 }
 
@@ -4438,25 +4451,28 @@ int getcolor (void) { return 0; }
 void setlinestyle (int linestyle) { }
 void setlinewidth (int linewidth) { }
 void setfontsize (int pointsize) { }
-void drawline (t_point p1, t_point p2) { }
+void drawline (const t_point& p1, const t_point& p2) { }
 void drawline (float x1, float y1, float x2, float y2) { }
-void drawrect (t_point bottomleft, t_point upperright) { }
+void drawrect (const t_bound_box& rect) { }
+void drawrect (const t_point& bottomleft, const t_point& upperright) { }
 void drawrect (float x1, float y1, float x2, float y2) { }
+void fillrect (const t_bound_box& rect) { }
+void fillrect (const t_point& bottomleft, const t_point& upperright) { }
 void fillrect (float x1, float y1, float x2, float y2) { }
 void fillpoly (t_point *points, int npoints) { }
 void drawarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
-void drawellipticarc (t_point center, float radx, float rady, float startang, float angextent) { }
+void drawellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) { }
 void drawellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
-void fillarc (t_point center, float rad, float startang, float angextent) { }
+void fillarc (const t_point& center, float rad, float startang, float angextent) { }
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
-void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent) { }
+void fillellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) { }
 void fillellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
 
-void drawtext (t_point center, const char *text, float boundx) { }
+void drawtext (const t_point& center, const char *text, float boundx) { }
 void drawtext (float xc, float yc, const char *text, float boundx) { }
 void clearscreen (void) { }
 
@@ -4492,3 +4508,122 @@ void win32_fillcurve(t_point *points, int npoints) { }
 #endif  // WIN32 (subset of commands)
 
 #endif  // NO_GRAPHICS
+
+/****************** begin definition of data structure members *********************/
+
+/******************************************
+ * begin t_point function definitions *
+ ******************************************/
+
+t_point t_point::operator+ (const t_point& rhs) const {
+	t_point result = *this;
+	result.x += rhs.x;
+	result.y += rhs.y;
+	return result;
+}
+
+t_point& t_point::operator+= (const t_point& rhs) {
+	this->x += rhs.x;
+	this->y += rhs.y;
+	return *this;
+}
+
+t_point& t_point::operator= (const t_point& src) {
+	this->x = src.x;
+	this->y = src.y;
+	return *this;
+}
+
+t_point::t_point() { }
+
+t_point::t_point(const t_point& src) :
+	x(src.x), y(src.y) {
+}
+
+t_point::t_point(float _x, float _y) : x(_x), y(_y) { }
+
+void t_point::offset(float _x, float _y) {
+	x += _x;
+	y += _y;
+}
+
+void t_point::set(float _x, float _y) { x = _x; y = _y; }
+void t_point::set(const t_point& src) { x = src.x; y = src.y; }
+
+/******************************************
+ * begin t_bound_box function definitions *
+ ******************************************/
+
+const float& t_bound_box::left() const { return bottom_left().x; }
+const float& t_bound_box::right() const { return top_right().x; }
+const float& t_bound_box::bottom() const { return bottom_left().y; }
+const float& t_bound_box::top() const { return top_right().y; }
+const t_point& t_bound_box::bottom_left() const { return bottomleft; }
+const t_point& t_bound_box::top_right() const { return topright; }
+float& t_bound_box::left() { return bottom_left().x; }
+float& t_bound_box::right() { return top_right().x; }
+float& t_bound_box::bottom() { return bottom_left().y; }
+float& t_bound_box::top() { return top_right().y; }
+t_point& t_bound_box::bottom_left() { return bottomleft; }
+t_point& t_bound_box::top_right() { return topright; }
+
+float t_bound_box::get_xcenter() const {
+	return (right() + left()) / 2;
+}
+
+float t_bound_box::get_ycenter() const {
+	return (top() + bottom()) / 2;
+}
+
+float t_bound_box::get_width() const {
+	return abs(right() - left());
+}
+
+float t_bound_box::get_height() const {
+	return abs(top() - bottom());
+}
+
+void t_bound_box::offset(const t_point& relative_to) {
+	this->bottomleft += relative_to;
+	this->topright += relative_to;
+}
+
+void t_bound_box::offset(float by_x, float by_y) {
+	this->bottomleft.offset(by_x, by_y);
+	this->topright.offset(by_x, by_y);
+}
+
+t_bound_box t_bound_box::operator+ (const t_point& rhs) const {
+	t_bound_box result = *this;
+	result.offset(rhs);
+	return result;
+}
+
+t_bound_box& t_bound_box::operator+= (const t_point& rhs) {
+	this->offset(rhs);
+	return *this;
+}
+
+t_bound_box& t_bound_box::operator= (const t_bound_box& src) {
+	this->bottom_left() = src.bottom_left();
+	this->top_right() = src.top_right();
+	return *this;
+}
+
+t_bound_box::t_bound_box() { }
+
+t_bound_box::t_bound_box(const t_bound_box& src) :
+	bottomleft(src.bottom_left()), topright(src.top_right()) {
+}
+t_bound_box::t_bound_box(float _left, float _bottom, float _right, float _top) :
+	bottomleft(_left,_bottom), topright(_right,_top) {
+}
+
+t_bound_box::t_bound_box(const t_point& _bottomleft, const t_point& _topright) :
+	bottomleft(_bottomleft), topright(_topright) {
+}
+
+t_bound_box::t_bound_box(const t_point& _bottomleft, float width, float height) :
+	bottomleft(_bottomleft) , topright(_bottomleft) {
+	topright.offset(width, height);
+}

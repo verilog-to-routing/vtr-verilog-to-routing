@@ -10,37 +10,6 @@ enum line_types {SOLID, DASHED};
 
 #define MAXPTS 100    /* Maximum number of points drawable by fillpoly */
 
-typedef struct s_point {
-	float x; 
-	float y;
-
-	#ifdef __cplusplus
-
-	struct s_point operator+ (const struct s_point& rhs) const {
-		struct s_point result = *this;
-		result.x += rhs.x;
-		result.y += rhs.y;
-		return result;
-	}
-
-	struct s_point& operator+= (const struct s_point& rhs) {
-		this->x += rhs.x;
-		this->y += rhs.y;
-		return *this;
-	}
-
-	s_point() { }
-	s_point(float _x, float _y) : x(_x), y(_y) { }
-
-	struct s_point& offset(float _x, float _y) {
-		x += _x;
-		y += _y;
-		return *this;
-	}
-
-	#endif
-} t_point; /* Used in calls to fillpoly, and elsewhere */
-
 typedef struct {
 	bool shift_pressed;  /* indicates whether a Shift key was pressed when a mouse button is pressed */
 	bool ctrl_pressed;	/* indicates whether a Ctrl key was pressed when a mouse button is pressed */

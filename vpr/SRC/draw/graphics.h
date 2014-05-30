@@ -21,6 +21,7 @@ using namespace std;
 * Minor updates by Guy Lemieux (lemieux@ece.ubc.ca)
 * More updates by Vaughn Betz to make win32 cleaner and more robust.
 * More updates and code cleanup by Long Yu Wang (longyu.wang@mail.utoronto.ca)
+* More updates and c++ integration - Matthew J.P. Walker (matthewjp.walker@mail.utoronto.ca)
 */
 
 
@@ -39,6 +40,71 @@ typedef struct {
 	float xleft, xright, ytop, ybot;
 	int top_width, top_height;
 } t_report;
+
+
+/*
+ * Used in calls to fillpoly, and elsewhere
+ */
+struct t_point {
+	float x; 
+	float y;
+
+	void set(float x, float y);
+	void set(const t_point& src);
+	void offset(float x, float y);
+	
+	t_point operator+ (const t_point& rhs) const;
+	t_point& operator+= (const t_point& rhs);
+	t_point& operator= (const t_point& src);
+
+	t_point();
+	t_point(const t_point& src);
+	t_point(float x, float y);
+
+};
+
+/* 
+ * represents a rectangle, used as a bounding box
+ */
+struct t_bound_box {
+
+	const float& left() const;
+	const float& right() const;
+	const float& bottom() const;
+	const float& top() const;
+
+	float& left();
+	float& right();
+	float& bottom();
+	float& top();	
+
+	const t_point& bottom_left() const;
+	const t_point& top_right() const;
+	t_point& bottom_left();
+	t_point& top_right();
+
+	float get_xcenter() const;
+	float get_ycenter() const;
+
+	float get_width() const;
+	float get_height() const;
+
+	void offset(const t_point& make_relative_to);
+	void offset(float by_x, float by_y);
+
+	t_bound_box operator+ (const t_point& rhs) const;
+	t_bound_box& operator+= (const t_point& rhs);
+	t_bound_box& operator= (const t_bound_box& src);
+
+	t_bound_box();
+	t_bound_box(const t_bound_box& src);
+	t_bound_box(float left, float bottom, float right, float top);
+	t_bound_box(const t_point& bottomleft, const t_point& topright);
+	t_bound_box(const t_point& bottomleft, float width, float height);
+private:
+	t_point bottomleft;
+	t_point topright;
+};
 
 /************** ESSENTIAL FUNCTIONS ******************/
 
@@ -149,16 +215,19 @@ void setlinewidth (int linewidth);
 void setfontsize (int pointsize);
 
 /* Draws a line from (x1, y1) to (x2, y2) in world coordinates */
-void drawline (t_point p1, t_point p2);
+void drawline (const t_point& p1, const t_point& p2);
 void drawline (float x1, float y1, float x2, float y2);
 
 /* Draws a rectangle from (x1, y1) to (x2, y2) in world coordinates, using
  * the current line style, colour and width.
  */
-void drawrect (t_point bottomleft, t_point upperright);
+void drawrect (const t_bound_box& rect);
+void drawrect (const t_point& bottomleft, const t_point& upperright);
 void drawrect (float x1, float y1, float x2, float y2);
 
 /* Draws a filled rectangle with the specified corners, in world coordinates. */
+void fillrect (const t_bound_box& rect);
+void fillrect (const t_point& bottomleft, const t_point& upperright);
 void fillrect (float x1, float y1, float x2, float y2);
 
 /* Draws a filled polygon */
@@ -171,10 +240,10 @@ void fillpoly (t_point *points, int npoints);
  */
 void drawarc (float xcen, float ycen, float rad, float startang,
 			  float angextent); 
-void fillarc (t_point center, float rad, float startang, float angextent);
+void fillarc (const t_point& center, float rad, float startang, float angextent);
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent);
-void drawellipticarc (t_point center, float radx, float rady, float startang, float angextent);
+void drawellipticarc (const t_point& center, float radx, float rady, float startang, float angextent);
 void drawellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
 
 void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent);
@@ -186,7 +255,7 @@ void fillellipticarc (float xc, float yc, float radx, float rady, float startang
  * If you always want the text to display (even if it overwrites lots of
  * stuff at high zoom levels), just specify a huge boundx.
  */
-void drawtext (t_point center, const char *text, float boundx);
+void drawtext (const t_point& center, const char *text, float boundx);
 void drawtext (float xc, float yc, const char *text, float boundx);
 
 /* Control what buttons are active (default:  all enabled) and
