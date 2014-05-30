@@ -149,11 +149,13 @@ void setlinewidth (int linewidth);
 void setfontsize (int pointsize);
 
 /* Draws a line from (x1, y1) to (x2, y2) in world coordinates */
+void drawline (t_point p1, t_point p2);
 void drawline (float x1, float y1, float x2, float y2);
 
 /* Draws a rectangle from (x1, y1) to (x2, y2) in world coordinates, using
  * the current line style, colour and width.
  */
+void drawrect (t_point bottomleft, t_point upperright);
 void drawrect (float x1, float y1, float x2, float y2);
 
 /* Draws a filled rectangle with the specified corners, in world coordinates. */
@@ -169,9 +171,13 @@ void fillpoly (t_point *points, int npoints);
  */
 void drawarc (float xcen, float ycen, float rad, float startang,
 			  float angextent); 
+void fillarc (t_point center, float rad, float startang, float angextent);
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent);
+void drawellipticarc (t_point center, float radx, float rady, float startang, float angextent);
 void drawellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
+
+void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent);
 void fillellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
 
 /* boundx specifies horizontal bounding box.  If text won't fit in    
@@ -180,6 +186,7 @@ void fillellipticarc (float xc, float yc, float radx, float rady, float startang
  * If you always want the text to display (even if it overwrites lots of
  * stuff at high zoom levels), just specify a huge boundx.
  */
+void drawtext (t_point center, const char *text, float boundx);
 void drawtext (float xc, float yc, const char *text, float boundx);
 
 /* Control what buttons are active (default:  all enabled) and

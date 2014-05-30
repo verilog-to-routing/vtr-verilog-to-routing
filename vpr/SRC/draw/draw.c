@@ -131,7 +131,7 @@ void draw_shifted_line(int inode)
 		bottom_shift_y = get_draw_coords_vars()->tile_width + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
 		top_shift_y = chan_width.y_list[ix]   + chan_width.y_list[ix] - 0.25*chan_width.y_list[ix];
 	}
-	drawline(bound_box.xleft, bound_box.ybottom+bottom_shift_y, bound_box.xright, bound_box.ytop+top_shift_y);
+	drawline(bound_box.left(), bound_box.bottom()+bottom_shift_y, bound_box.right(), bound_box.top()+top_shift_y);
 	setcolor(savecolor);
 }
 
@@ -919,72 +919,72 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 	int k; 
 	char str[BUFFSIZE];
 
-	// For CHANX, bound_box.ybottom is same as bound_box.ytop
+	// For CHANX, bound_box.bottom() is same as bound_box.top()
 	bound_box = draw_get_rr_chan_bbox(inode);
 
 	setcolor(color);
 	if (color != DEFAULT_RR_NODE_COLOR) {
 		// If wire is highlighted, then draw with thicker linewidth.
 		setlinewidth(3);
-		drawline(bound_box.xleft, bound_box.ybottom, bound_box.xright, bound_box.ytop);
+		drawline(bound_box.bottom_left(), bound_box.top_right());
 		setlinewidth(0);
 	}
 	else
-		drawline(bound_box.xleft, bound_box.ybottom, bound_box.xright, bound_box.ytop);
+		drawline(bound_box.bottom_left(), bound_box.top_right());
 
-	wire_start_y1 = bound_box.ybottom - 0.25;
-	wire_start_y2 = bound_box.ytop + 0.25;
+	wire_start_y1 = bound_box.bottom() - 0.25;
+	wire_start_y2 = bound_box.top() + 0.25;
 
 	if (rr_node[inode].direction == INC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
 		/* Draw a line at start of wire to indicate mux */
-		drawline(bound_box.xleft, wire_start_y1, bound_box.xleft, wire_start_y2); 
+		drawline(bound_box.left(), wire_start_y1, bound_box.left(), wire_start_y2); 
 
 		/* Mux balence numbers */
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].fan_in);
-		drawtext(bound_box.xleft, bound_box.ybottom, str, 5);
+		drawtext(bound_box.bottom_left(), str, 5);
 
 		setcolor(BLACK);
 		setlinewidth(0);
-		draw_triangle_along_line(bound_box.xright - 0.15, bound_box.ytop, bound_box.xleft, 
-								 bound_box.xright, bound_box.ybottom, bound_box.ytop);
+		draw_triangle_along_line(bound_box.right() - 0.15, bound_box.top(), bound_box.left(), 
+								 bound_box.right(), bound_box.bottom(), bound_box.top());
 
 		setcolor(LIGHTGREY);
 		/* TODO: this looks odd, why does it ignore final block? does this mean nothing 
 		 * appears with L=1 ? 
 		 */
 		for (k = rr_node[inode].get_xlow(); k < rr_node[inode].get_xhigh(); k++) {
-			bound_box.xright = draw_coords->tile_x[k] + draw_coords->tile_width;
-			draw_triangle_along_line(bound_box.xright - 0.15, bound_box.ytop, bound_box.xleft, 
-									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
-			bound_box.xright = draw_coords->tile_x[k + 1];
-			draw_triangle_along_line(bound_box.xright + 0.15, bound_box.ytop, bound_box.xleft, 
-									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
+			bound_box.right() = draw_coords->tile_x[k] + draw_coords->tile_width;
+			draw_triangle_along_line(bound_box.right() - 0.15, bound_box.top(), bound_box.left(), 
+									 bound_box.right(), bound_box.bottom(), bound_box.top());
+			bound_box.right() = draw_coords->tile_x[k + 1];
+			draw_triangle_along_line(bound_box.right() + 0.15, bound_box.top(), bound_box.left(), 
+									 bound_box.right(), bound_box.bottom(), bound_box.top());
 		}
 		setcolor(color);
 	} else if (rr_node[inode].direction == DEC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
-		drawline(bound_box.xright, wire_start_y1, bound_box.xright, wire_start_y2);
+		drawline(bound_box.right(), wire_start_y1, bound_box.right(), wire_start_y2);
 
 		/* Mux balance numbers */
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].fan_in);
-		drawtext(bound_box.xright, bound_box.ybottom, str, 5);
+		drawtext(bound_box.right(), bound_box.bottom(), str, 5);
 
 		setlinewidth(0);
-		draw_triangle_along_line(bound_box.xleft + 0.15, bound_box.ybottom, bound_box.xright, 
-								 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
+		draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
+								 bound_box.left(), bound_box.top(), bound_box.bottom());
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].get_xhigh(); k > rr_node[inode].get_xlow(); k--) {
-			bound_box.xleft = draw_coords->tile_x[k];
-			draw_triangle_along_line(bound_box.xleft + 0.15, bound_box.ybottom, bound_box.xright, 
-									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
-			bound_box.xleft = draw_coords->tile_x[k - 1] + draw_coords->tile_width;
-			draw_triangle_along_line(bound_box.xleft - 0.15, bound_box.ybottom, bound_box.xright, 
-									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
+			bound_box.left() = draw_coords->tile_x[k];
+			draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
+									 bound_box.left(), bound_box.top(), bound_box.bottom());
+			bound_box.left() = draw_coords->tile_x[k - 1] + draw_coords->tile_width;
+			draw_triangle_along_line(bound_box.left() - 0.15, bound_box.bottom(), bound_box.right(), 
+									 bound_box.left(), bound_box.top(), bound_box.bottom());
 		}
 		setcolor(color);
 	}
@@ -1004,7 +1004,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 	char str[BUFFSIZE];
 
 	// Get the coordinates of the channel wire segment.
-	// For CHANY, bound_box.xleft is equal to bound_box.xright.
+	// For CHANY, bound_box.left() is equal to bound_box.right().
 	bound_box = draw_get_rr_chan_bbox(inode);
 
 	setcolor(color);
@@ -1020,10 +1020,10 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 		}
 		else
 		{
-			drawline(bound_box.xleft, bound_box.ybottom, bound_box.xright, bound_box.ytop);
+			drawline(bound_box.bottom_left(), bound_box.top_right());
 		}
 		#else
-		drawline(bound_box.xleft, bound_box.ybottom, bound_box.xright, bound_box.ytop);
+		drawline(bound_box.bottom_left(), bound_box.top_right());
 		#endif		
 		
 		setlinewidth(0);
@@ -1037,60 +1037,60 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 		}
 		else
 		{
-			drawline(bound_box.xleft, bound_box.ybottom, bound_box.xright, bound_box.ytop);
+			drawline(bound_box.bottom_left(), bound_box.top_right());
 		}
 		#else
-		drawline(bound_box.xleft, bound_box.ybottom, bound_box.xright, bound_box.ytop);
+		drawline(bound_box.bottom_left(), bound_box.top_right());
 		#endif
 	}
 
-	wire_start_x1 = bound_box.xleft - 0.25;
-	wire_start_x2 = bound_box.xright + 0.25;
+	wire_start_x1 = bound_box.left() - 0.25;
+	wire_start_x2 = bound_box.right() + 0.25;
 	
 	if (rr_node[inode].direction == INC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
-		drawline(wire_start_x1, bound_box.ybottom, wire_start_x2, bound_box.ybottom);
+		drawline(wire_start_x1, bound_box.bottom(), wire_start_x2, bound_box.bottom());
 
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].fan_in);
-		drawtext(bound_box.xleft, bound_box.ybottom, str, 5);
+		drawtext(bound_box.bottom_left(), str, 5);
 		setcolor(BLACK);
 
 		setlinewidth(0);
-		draw_triangle_along_line(bound_box.xright, bound_box.ytop - 0.15, bound_box.xleft, 
-								 bound_box.xright, bound_box.ybottom, bound_box.ytop);
+		draw_triangle_along_line(bound_box.right(), bound_box.top() - 0.15, bound_box.left(), 
+								 bound_box.right(), bound_box.bottom(), bound_box.top());
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].get_ylow(); k < rr_node[inode].get_yhigh(); k++) {
-			bound_box.ytop = draw_coords->tile_y[k] + draw_coords->tile_width;
-			draw_triangle_along_line(bound_box.xright, bound_box.ytop - 0.15, bound_box.xleft, 
-									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
-			bound_box.ytop = draw_coords->tile_y[k + 1];
-			draw_triangle_along_line(bound_box.xright, bound_box.ytop + 0.15, bound_box.xleft, 
-									 bound_box.xright, bound_box.ybottom, bound_box.ytop);
+			bound_box.top() = draw_coords->tile_y[k] + draw_coords->tile_width;
+			draw_triangle_along_line(bound_box.right(), bound_box.top() - 0.15, bound_box.left(), 
+									 bound_box.right(), bound_box.bottom(), bound_box.top());
+			bound_box.top() = draw_coords->tile_y[k + 1];
+			draw_triangle_along_line(bound_box.right(), bound_box.top() + 0.15, bound_box.left(), 
+									 bound_box.right(), bound_box.bottom(), bound_box.top());
 		}
 		setcolor(color);
 	} else if (rr_node[inode].direction == DEC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
-		drawline(wire_start_x1, bound_box.ytop, wire_start_x2, bound_box.ytop);
+		drawline(wire_start_x1, bound_box.top(), wire_start_x2, bound_box.top());
 
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].fan_in);
-		drawtext(bound_box.xleft, bound_box.ytop, str, 5);
+		drawtext(bound_box.left(), bound_box.top(), str, 5);
 		setcolor(BLACK);
 
 		setlinewidth(0);
-		draw_triangle_along_line(bound_box.xleft, bound_box.ybottom + 0.15, bound_box.xright, 
-								 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
+		draw_triangle_along_line(bound_box.left(), bound_box.bottom() + 0.15, bound_box.right(), 
+								 bound_box.left(), bound_box.top(), bound_box.bottom());
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].get_yhigh(); k > rr_node[inode].get_ylow(); k--) {
-			bound_box.ybottom = draw_coords->tile_y[k];
-			draw_triangle_along_line(bound_box.xleft, bound_box.ybottom + 0.15, bound_box.xright, 
-									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
-			bound_box.ybottom = draw_coords->tile_y[k - 1] + draw_coords->tile_width;
-			draw_triangle_along_line(bound_box.xleft, bound_box.ybottom - 0.15, bound_box.xright, 
-									 bound_box.xleft, bound_box.ytop, bound_box.ybottom);
+			bound_box.bottom() = draw_coords->tile_y[k];
+			draw_triangle_along_line(bound_box.left(), bound_box.bottom() + 0.15, bound_box.right(), 
+									 bound_box.left(), bound_box.top(), bound_box.bottom());
+			bound_box.bottom() = draw_coords->tile_y[k - 1] + draw_coords->tile_width;
+			draw_triangle_along_line(bound_box.left(), bound_box.bottom() - 0.15, bound_box.right(), 
+									 bound_box.left(), bound_box.top(), bound_box.bottom());
 		}
 		setcolor(color);
 	}
@@ -1306,8 +1306,8 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	/* (x1,y1): point on CHANX segment, (x2,y2): point on CHANY segment. */
 
-	y1 = chanx_bbox.ybottom; 
-	x2 = chany_bbox.xleft;
+	y1 = chanx_bbox.bottom(); 
+	x2 = chany_bbox.left();
 
 	chanx_xlow = rr_node[chanx_node].get_xlow();
 	chanx_y = rr_node[chanx_node].get_ylow();
@@ -1327,7 +1327,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		}
 		
 	} else { /* Must draw connection going left. */
-		x1 = chanx_bbox.xleft;
+		x1 = chanx_bbox.left();
 	}
 
 	if (chany_ylow <= chanx_y) { /* Can draw connection going up. */
@@ -1343,7 +1343,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		}
 		
 	} else { /* Must draw connection going down. */
-		y2 = chany_bbox.ybottom;
+		y2 = chany_bbox.bottom();
 	}
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
@@ -1395,8 +1395,8 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 
 	/* (x1, y1) point on from_node, (x2, y2) point on to_node. */
 
-	y1 = from_chan.ybottom;
-	y2 = to_chan.ybottom;
+	y1 = from_chan.bottom();
+	y2 = to_chan.bottom();
 
 	from_xlow = rr_node[from_node].get_xlow();
 	from_xhigh = rr_node[from_node].get_xhigh();
@@ -1406,13 +1406,13 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 	if (to_xhigh < from_xlow) { /* From right to left */
 		/* UDSD Note by WMF: could never happen for INC wires, unless U-turn. For DEC 
 		 * wires this handles well */
-		x1 = from_chan.xleft;
-		x2 = to_chan.xright;
+		x1 = from_chan.left();
+		x2 = to_chan.right();
 	} else if (to_xlow > from_xhigh) { /* From left to right */
 		/* UDSD Note by WMF: could never happen for DEC wires, unless U-turn. For INC 
 		 * wires this handles well */
-		x1 = from_chan.xright;
-		x2 = to_chan.xleft;
+		x1 = from_chan.right();
+		x2 = to_chan.left();
 	}
 
 	/* Segments overlap in the channel.  Figure out best way to draw.  Have to  *
@@ -1424,31 +1424,31 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 			/* must connect to to_node's wire beginning at x2 */
 			if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
 				assert(from_xlow < to_xlow);
-				x2 = to_chan.xleft;
+				x2 = to_chan.left();
 				/* since no U-turns from_track must be INC as well */
 				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->tile_width;
 			} else { /* DEC wire starts at rightmost edge */
 				assert(from_xhigh > to_xhigh);
-				x2 = to_chan.xright;
+				x2 = to_chan.right();
 				x1 = draw_coords->tile_x[to_xhigh + 1];
 			}
 		} else {
 			if (to_xlow < from_xlow) { /* Draw from left edge of one to other */
-				x1 = from_chan.xleft;
+				x1 = from_chan.left();
 				x2 = draw_coords->tile_x[from_xlow - 1] + draw_coords->tile_width;
 			} else if (from_xlow < to_xlow) {
 				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->tile_width;
-				x2 = to_chan.xleft;
+				x2 = to_chan.left();
 			} /* The following then is executed when from_xlow == to_xlow */
 			else if (to_xhigh > from_xhigh) { /* Draw from right edge of one to other */
-				x1 = from_chan.xright;
+				x1 = from_chan.right();
 				x2 = draw_coords->tile_x[from_xhigh + 1];
 			} else if (from_xhigh > to_xhigh) {
 				x1 = draw_coords->tile_x[to_xhigh + 1];
-				x2 = to_chan.xright;
+				x2 = to_chan.right();
 			} else { /* Complete overlap: start and end both align. Draw outside the sbox */
-				x1 = from_chan.xleft;
-				x2 = from_chan.xleft + draw_coords->tile_width;
+				x1 = from_chan.left();
+				x2 = from_chan.left() + draw_coords->tile_width;
 			}
 		}
 	}
@@ -1494,15 +1494,15 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 
 	/* (x1, y1) point on from_node, (x2, y2) point on to_node. */
 
-	x1 = from_chan.xleft;
-	x2 = to_chan.xleft;
+	x1 = from_chan.left();
+	x2 = to_chan.left();
 
 	if (to_yhigh < from_ylow) { /* From upper to lower */
-		y1 = from_chan.ybottom;
-		y2 = to_chan.ytop;
+		y1 = from_chan.bottom();
+		y2 = to_chan.top();
 	} else if (to_ylow > from_yhigh) { /* From lower to upper */
-		y1 = from_chan.ytop;
-		y2 = to_chan.ybottom;
+		y1 = from_chan.top();
+		y2 = to_chan.bottom();
 	}
 
 	/* Segments overlap in the channel.  Figure out best way to draw.  Have to  *
@@ -1522,7 +1522,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				assert(from_ylow < to_ylow);
 				#endif
 				
-				y2 = to_chan.ybottom;
+				y2 = to_chan.bottom();
 				/* since no U-turns from_track must be INC as well */
 				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->tile_width;
 			} else { /* DEC wire starts at top edge */
@@ -1545,25 +1545,25 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				}
 				#endif
 				
-				y2 = to_chan.ytop;
+				y2 = to_chan.top();
 				y1 = draw_coords->tile_y[to_yhigh + 1];
 			}
 		} else {
 			if (to_ylow < from_ylow) { /* Draw from bottom edge of one to other. */
-				y1 = from_chan.ybottom;
+				y1 = from_chan.bottom();
 				y2 = draw_coords->tile_y[from_ylow - 1] + draw_coords->tile_width;
 			} else if (from_ylow < to_ylow) {
 				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->tile_width;
-				y2 = to_chan.ybottom;
+				y2 = to_chan.bottom();
 			} else if (to_yhigh > from_yhigh) { /* Draw from top edge of one to other. */
-				y1 = from_chan.ytop;
+				y1 = from_chan.top();
 				y2 = draw_coords->tile_y[from_yhigh + 1];
 			} else if (from_yhigh > to_yhigh) {
 				y1 = draw_coords->tile_y[to_yhigh + 1];
-				y2 = to_chan.ytop;
+				y2 = to_chan.top();
 			} else { /* Complete overlap: start and end both align. Draw outside the sbox */
-				y1 = from_chan.ybottom;
-				y2 = from_chan.ybottom + draw_coords->tile_width;
+				y1 = from_chan.bottom();
+				y2 = from_chan.bottom() + draw_coords->tile_width;
 			}
 		}
 	}
@@ -1621,28 +1621,27 @@ static t_draw_bbox draw_get_rr_chan_bbox (int inode) {
 
 	switch (rr_node[inode].type) {
 		case CHANX:
-			bound_box.xleft = draw_coords->tile_x[rr_node[inode].get_xlow()];
-	        bound_box.xright = draw_coords->tile_x[rr_node[inode].get_xhigh()] 
+			bound_box.left() = draw_coords->tile_x[rr_node[inode].get_xlow()];
+	        bound_box.right() = draw_coords->tile_x[rr_node[inode].get_xhigh()] 
 						        + draw_coords->tile_width;
-			bound_box.ybottom = draw_coords->tile_y[rr_node[inode].get_ylow()] 
+			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()] 
 								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
-			bound_box.ytop = draw_coords->tile_y[rr_node[inode].get_ylow()] 
+			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_ylow()] 
 								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
 			break;
 		case CHANY:
-			bound_box.xleft = draw_coords->tile_x[rr_node[inode].get_xlow()] 
+			bound_box.left() = draw_coords->tile_x[rr_node[inode].get_xlow()] 
 								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
-			bound_box.xright = draw_coords->tile_x[rr_node[inode].get_xlow()] 
+			bound_box.right() = draw_coords->tile_x[rr_node[inode].get_xlow()] 
 								+ draw_coords->tile_width + (1. + rr_node[inode].ptc_num);
-			bound_box.ybottom = draw_coords->tile_y[rr_node[inode].get_ylow()];
-			bound_box.ytop = draw_coords->tile_y[rr_node[inode].get_yhigh()] 
-								+ draw_coords->tile_width;
+			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()];
+			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_yhigh()];
 			break;
 		default:
-			bound_box.xleft = -1;
-			bound_box.xright = -1;
-			bound_box.ybottom = -1;
-			bound_box.ytop = -1;
+			bound_box.left() = -1;
+			bound_box.right() = -1;
+			bound_box.bottom() = -1;
+			bound_box.top() = -1;
 			break;
 	}
 
@@ -2147,10 +2146,10 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 				// Check if we clicked on this wire, with 30%
 				// tolerance outside its boundary
 				const float tolerance = 0.3;
-				if (click_x >= bound_box.xleft - tolerance &&
-					click_x <= bound_box.xright + tolerance &&
-					click_y >= bound_box.ybottom - tolerance && 
-					click_y <= bound_box.ytop + tolerance) {
+				if (click_x >= bound_box.left() - tolerance &&
+					click_x <= bound_box.right() + tolerance &&
+					click_y >= bound_box.bottom() - tolerance && 
+					click_y <= bound_box.top() + tolerance) {
 					hit_node = inode;
 					return hit_node;
 				}
@@ -2571,13 +2570,13 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
 
 		y1 += draw_pin_off;
-		y2 = chan_bbox.ybottom;
+		y2 = chan_bbox.bottom();
 		x2 = x1;
 		if (is_opin(pin_num, type)) {
 			if (direction == INC_DIRECTION) {
-				x2 = chan_bbox.xleft;
+				x2 = chan_bbox.left();
 			} else if (direction == DEC_DIRECTION) {
-				x2 = chan_bbox.xright;
+				x2 = chan_bbox.right();
 			}
 		}
 		break;
@@ -2624,13 +2623,13 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
 		
 		x1 += draw_pin_off;
-		x2 = chan_bbox.xleft;
+		x2 = chan_bbox.left();
 		y2 = y1;
 		if (is_opin(pin_num, type)) {
 			if (direction == INC_DIRECTION) {
-				y2 = chan_bbox.ybottom;
+				y2 = chan_bbox.bottom();
 			} else if (direction == DEC_DIRECTION) {
-				y2 = chan_bbox.ytop;
+				y2 = chan_bbox.top();
 			}
 		}
 		break;

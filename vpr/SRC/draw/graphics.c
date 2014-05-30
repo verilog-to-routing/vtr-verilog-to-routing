@@ -1498,6 +1498,9 @@ rect_off_screen (float x1, float y1, float x2, float y2)
 	return (0);
 }
 
+void drawline (t_point p1, t_point p2) {
+	drawline(p1.x, p1.y, p2.x, p2.y);
+}
 
 void 
 drawline (float x1, float y1, float x2, float y2) 
@@ -1534,6 +1537,9 @@ drawline (float x1, float y1, float x2, float y2)
 	}
 }
 
+void drawrect (t_point bottomleft, t_point upperright) {
+	drawrect(bottomleft.x, bottomleft.y, upperright.x, upperright.y);
+}
 
 /* (x1,y1) and (x2,y2) are diagonally opposed corners, in world coords. */
 void 
@@ -1663,6 +1669,9 @@ angnorm (float ang)
 	return (ang);
 }
 
+void drawellipticarc (t_point center, float radx, float rady, float startang, float angextent) {
+	drawellipticarc(center.x, center.y, radx, rady, startang, angextent);
+}
 
 void 
 drawellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent) 
@@ -1739,6 +1748,11 @@ drawarc (float xc, float yc, float rad, float startang,
 /* Fills a elliptic arc.  Startang is relative to the Window's positive x   
  * direction.  Angles in degrees.                                           
  */
+
+void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent) {
+	fillellipticarc(center.x, center.y, radx, rady, startang, angextent);
+}
+
 void 
 fillellipticarc (float xc, float yc, float radx, float rady, float startang, 
 		 float angextent) 
@@ -1816,6 +1830,9 @@ fillellipticarc (float xc, float yc, float radx, float rady, float startang,
 	}
 }
 
+void fillarc (t_point center, float rad, float startang, float angextent) { 
+	fillellipticarc(center, rad, rad, startang, angextent);
+}
 
 void 
 fillarc (float xc, float yc, float rad, float startang, float angextent) {
@@ -1892,6 +1909,9 @@ fillpoly (t_point *points, int npoints)
 	}
 }
 
+void drawtext (t_point center, const char *text, float boundx) {
+	drawtext(center.x, center.y, text, boundx);
+}
 
 /* Draws text centered on xc,yc if it fits in boundx */
 void 
@@ -4418,20 +4438,25 @@ int getcolor (void) { return 0; }
 void setlinestyle (int linestyle) { }
 void setlinewidth (int linewidth) { }
 void setfontsize (int pointsize) { }
+void drawline (t_point p1, t_point p2) { }
 void drawline (float x1, float y1, float x2, float y2) { }
+void drawrect (t_point bottomleft, t_point upperright) { }
 void drawrect (float x1, float y1, float x2, float y2) { }
 void fillrect (float x1, float y1, float x2, float y2) { }
 void fillpoly (t_point *points, int npoints) { }
 void drawarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
+void drawellipticarc (t_point center, float radx, float rady, float startang, float angextent) { }
 void drawellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
-
+void fillarc (t_point center, float rad, float startang, float angextent) { }
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
+void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent) { }
 void fillellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
 
+void drawtext (t_point center, const char *text, float boundx) { }
 void drawtext (float xc, float yc, const char *text, float boundx) { }
 void clearscreen (void) { }
 
