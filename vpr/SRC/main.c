@@ -31,7 +31,7 @@ static void print_hmetis_logical_graph() {
   }
   fclose(hypergraph);
 
-  FILE* blocks_file = fopen("blocks.txt", "w");
+  FILE* blocks_file = fopen("logical_blocks.txt", "w");
   for(int i = 0; i < num_logical_blocks; i++){
     fprintf(blocks_file, "%s %s\n", logical_block[i].name, logical_block[i].model->name);
   }
@@ -43,7 +43,7 @@ static void print_hmetis_logical_graph() {
 static void print_hmetis_clb_graph() {
 			/* ANDRE: printing the hypergraph */
 			FILE *hypergraph;
-			hypergraph = fopen("hypergraph.txt", "w");
+			hypergraph = fopen("clb_hypergraph.txt", "w");
 
 			fprintf(hypergraph, "%d %d\n", num_nets, num_blocks); // first line of file: numnets, numblocks, format (weighted edges and nodes)
 			for(int i = 0; i < num_nets; i++){
@@ -55,7 +55,7 @@ static void print_hmetis_clb_graph() {
 			}
 			fclose(hypergraph);
 
-			FILE* blocks_file = fopen("blocks.txt", "w");
+			FILE* blocks_file = fopen("clb_blocks.txt", "w");
 			for(int i = 0; i < num_blocks; i++){
 			  fprintf(blocks_file, "%s %s\n", block[i].name, block[i].pb->pb_graph_node->pb_type->name);
 			}
@@ -92,6 +92,7 @@ int main(int argc, char **argv) {
 			vpr_pack(vpr_setup, Arch);
 			vpr_init_pre_place_and_route(vpr_setup, Arch);
          	        print_hmetis_logical_graph();
+         	        print_hmetis_clb_graph();
 		} else {
 			vpr_init_pre_place_and_route(vpr_setup, Arch);
                 }

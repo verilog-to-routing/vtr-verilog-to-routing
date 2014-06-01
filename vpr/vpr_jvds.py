@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import argparse
 import sys
@@ -18,7 +18,14 @@ VPR_BIN=os.path.join(os.path.dirname(__file__), "vpr")
 METIS_BIN=os.path.join(os.path.dirname(__file__), "gpmetis")
 ROUTE_LOG_FILE='vpr_jvds.route.out'
 PACK_LOG_FILE='vpr_jvds.pack.out'
-HYPERGRAPH_FILE='logical_hypergraph.txt'
+
+LOGICAL_HYPERGRAPH_FILE='logical_hypergraph.txt'
+LOGICAL_BLOCKS_FILE='logical_blocks.txt'
+
+CLB_HYPERGRAPH_FILE='clb_hypergraph.txt'
+CLB_BLOCKS_FILE='clb_blocks.txt'
+
+PLACEMENT_CONSTRAINTS_ONLY=False
 
 def main():
     parser = argparse.ArgumentParser(description='')
@@ -60,8 +67,14 @@ def main():
         sys.exit(status)
 
     if args.graph_model != "none":
+        if PLACEMENT_CONSTRAINTS_ONLY:
+            input_hypergraph = CLB_HYPERGRAPH_FILE
+            input_blocks = CLB_BLOCKS_FILE
+        else:
+            input_hypergraph = LOGICAL_HYPERGRAPH_FILE
+            input_blocks = LOGICAL_BLOCKS_FILE
         # convert hypergraph to graph
-        hypergraph_to_graph.run(blocks_file='blocks.txt', input_hypergraph=HYPERGRAPH_FILE, output_graph='justgraph.txt', graph_model=args.graph_model, graph_edge_weight=args.graph_edge_weight)
+        hypergraph_to_graph.run(blocks_file=input_blocks, input_hypergraph=input_hypergraph, output_graph='justgraph.txt', graph_model=args.graph_model, graph_edge_weight=args.graph_edge_weight)
 
         # run metis
         status = os.system("%s -ufactor=%d justgraph.txt 2" % (METIS_BIN, args.ub_factor * 10))
@@ -69,7 +82,7 @@ def main():
             sys.exit(status)
 
         # get the hyperedge cut
-        hec = compute_hyperedge_cut.run(HYPERGRAPH_FILE, 'justgraph.txt.part.2')
+        hec = compute_hyperedge_cut.run(input_hypergraph, 'justgraph.txt.part.2')
         with open('hyperedge_cut.txt', 'w') as f:
             f.write("%d\n" % hec)
 
@@ -86,12 +99,14 @@ def main():
         assert(nx != -1)
         assert(ny != -1)
 
-        # update net file with regions
-        #update_net_file.run(input_net_file='packed.net', output_net_file='packed_partitioned.net', partitions_file='justgraph.txt.part.2', total_partitions=2, nx=nx, ny=ny, blocks='blocks.txt')
-        generate_logical_block_placement_constraints.run(output_partitions='placement_regions.txt', partitions_file='justgraph.txt.part.2', total_partitions=2, nx=nx,ny=nx)
-        # run the damn thing again, hoping it uses the new placement regions file
-        status = os.system(vpr_cmd)
-        shutil.copyfile('packed.net', 'packed_partitioned.net')
+        if PLACEMENT_CONSTRAINTS_ONLY:
+            # update net file with regions
+            update_net_file.run(input_net_file='packed.net', output_net_file='packed_partitioned.net', partitions_file='justgraph.txt.part.2', total_partitions=2, nx=nx, ny=ny, blocks=input_blocks)
+        else:
+            generate_logical_block_placement_constraints.run(output_partitions='placement_regions.txt', partitions_file='justgraph.txt.part.2', total_partitions=2, nx=nx,ny=nx)
+            # run the damn thing again, hoping it uses the new placement regions file
+            status = os.system(vpr_cmd)
+            shutil.copyfile('packed.net', 'packed_partitioned.net')
     else:
         shutil.copyfile('packed.net', 'packed_partitioned.net')
 
