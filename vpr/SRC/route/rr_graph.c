@@ -482,7 +482,7 @@ void build_rr_graph(
 	if (graph_type == GRAPH_GLOBAL) {
 		for (int i = 0; i < num_rr_nodes; i++) {
 			if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-				rr_node[i].capacity = chan_width.max;
+				rr_node[i].set_capacity(chan_width.max);
 			}
 		}
 	}
@@ -798,7 +798,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 	 * know the number of OPINs driving each mux presently */
 	int *opin_mux_size = (int *) my_malloc(sizeof(int) * num_nodes);
 	for (int i = 0; i < num_nodes; ++i) {
-		opin_mux_size[i] = L_rr_node[i].fan_in;
+		opin_mux_size[i] = L_rr_node[i].get_fan_in();
 	}
 
 	/* Build channels */
@@ -1032,7 +1032,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			inode = get_rr_node_index(i, j, SOURCE, iclass, L_rr_node_indices);
 
 			int num_edges = class_inf[iclass].num_pins;
-			L_rr_node[inode].num_edges = num_edges;
+			L_rr_node[inode].set_num_edges(num_edges);
 			L_rr_node[inode].edges = (int *) my_malloc(num_edges * sizeof(int));
 			L_rr_node[inode].switches = (short *) my_malloc(num_edges * sizeof(short));
 
@@ -1042,10 +1042,10 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 				L_rr_node[inode].edges[ipin] = to_node;
 				L_rr_node[inode].switches[ipin] = delayless_switch;
 
-				++L_rr_node[to_node].fan_in;
+				L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
 			}
 
-			L_rr_node[inode].cost_index = SOURCE_COST_INDEX;
+			L_rr_node[inode].set_cost_index(SOURCE_COST_INDEX);
 			L_rr_node[inode].type = SOURCE;
 		} else { /* SINK */
 			assert(class_inf[iclass].type == RECEIVER);
@@ -1058,16 +1058,16 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			 * base cost of OPINs and/or SOURCES so they aren't used excessively.      */
 
 			/* Initialize to unconnected to fix values */
-			L_rr_node[inode].num_edges = 0;
+			L_rr_node[inode].set_num_edges(0);
 			L_rr_node[inode].edges = NULL;
 			L_rr_node[inode].switches = NULL;
 
-			L_rr_node[inode].cost_index = SINK_COST_INDEX;
+			L_rr_node[inode].set_cost_index(SINK_COST_INDEX);
 			L_rr_node[inode].type = SINK;
 		}
 
 		/* Things common to both SOURCEs and SINKs.   */
-		L_rr_node[inode].capacity = class_inf[iclass].num_pins;
+		L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
 		L_rr_node[inode].occ = 0;
 		L_rr_node[inode].set_xlow(i);
 		L_rr_node[inode].set_xhigh(i + type->width - 1);
@@ -1100,16 +1100,16 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
 			int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
-			L_rr_node[inode].num_edges = 1;
+			L_rr_node[inode].set_num_edges(1);
 			L_rr_node[inode].edges = (int *) my_malloc(sizeof(int));
 			L_rr_node[inode].switches = (short *) my_malloc(sizeof(short));
 
 			L_rr_node[inode].edges[0] = to_node;
 			L_rr_node[inode].switches[0] = delayless_switch;
 
-			++L_rr_node[to_node].fan_in;
+			L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
 
-			L_rr_node[inode].cost_index = IPIN_COST_INDEX;
+			L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
 			L_rr_node[inode].type = IPIN;
 
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
@@ -1150,10 +1150,10 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
 			L_rr_node[inode].z = z;
-			L_rr_node[inode].num_edges = 0;
+			L_rr_node[inode].set_num_edges(0);
 			L_rr_node[inode].edges = NULL;
 			L_rr_node[inode].switches = NULL;
-			L_rr_node[inode].cost_index = OPIN_COST_INDEX;
+			L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
 			L_rr_node[inode].type = OPIN;
 			
 			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[oport][opb_pin];
@@ -1168,7 +1168,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		}
 
 		/* Common to both DRIVERs and RECEIVERs */
-		L_rr_node[inode].capacity = 1;
+		L_rr_node[inode].set_capacity(1);
 		L_rr_node[inode].occ = 0;
 		L_rr_node[inode].set_xlow(i);
 		L_rr_node[inode].set_xhigh(i + type->width - 1);
@@ -1274,9 +1274,9 @@ static void build_rr_xchan(INP int i, INP int j,
 		}
 
 		/* Edge arrays have now been built up.  Do everything else.  */
-		L_rr_node[node].cost_index = cost_index_offset + seg_details[track].index;
+		L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
 		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
-		L_rr_node[node].capacity = 1; /* GLOBAL routing handled elsewhere */
+		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
 		L_rr_node[node].set_xlow(start);
 		L_rr_node[node].set_xhigh(end);
@@ -1386,9 +1386,9 @@ static void build_rr_ychan(INP int i, INP int j,
 		}
 
 		/* Edge arrays have now been built up.  Do everything else.  */
-		L_rr_node[node].cost_index = cost_index_offset + seg_details[track].index;
+		L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
 		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
-		L_rr_node[node].capacity = 1; /* GLOBAL routing handled elsewhere */
+		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
 		L_rr_node[node].set_xlow(i);
 		L_rr_node[node].set_xhigh(i);
@@ -1439,11 +1439,11 @@ void alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node, INP int inode,
 	int i;
 
 	/* Check we aren't overwriting edges */
-	assert(L_rr_node[inode].num_edges < 1);
+	assert(L_rr_node[inode].get_num_edges() < 1);
 	assert(NULL == L_rr_node[inode].edges);
 	assert(NULL == L_rr_node[inode].switches);
 
-	L_rr_node[inode].num_edges = num_edges;
+	L_rr_node[inode].set_num_edges(num_edges);
 	L_rr_node[inode].edges = (int *) my_malloc(num_edges * sizeof(int));
 	L_rr_node[inode].switches = (short *) my_malloc(num_edges * sizeof(short));
 
@@ -1453,7 +1453,7 @@ void alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node, INP int inode,
 		L_rr_node[inode].edges[i] = list_ptr->edge;
 		L_rr_node[inode].switches[i] = list_ptr->iswitch;
 
-		++L_rr_node[list_ptr->edge].fan_in;
+		L_rr_node[list_ptr->edge].set_fan_in(L_rr_node[list_ptr->edge].get_fan_in() + 1);
 
 		/* Unmark the edge since we are done considering fanout from node. */
 		L_rr_edge_done[list_ptr->edge] = FALSE;
@@ -1972,22 +1972,22 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	{
 		fprintf(fp, "name %s\n", L_rr_node[inode].pb_graph_pin->port->name);
 	}
-	fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges);
-	for (int iconn = 0; iconn < L_rr_node[inode].num_edges; ++iconn)
+	fprintf(fp, "%d edge(s):", L_rr_node[inode].get_num_edges());
+	for (int iconn = 0; iconn < L_rr_node[inode].get_num_edges(); ++iconn)
 		fprintf(fp, " %d", L_rr_node[inode].edges[iconn]);
 	fprintf(fp, "\n");
 
 	fprintf(fp, "Switch types:");
-	for (int iconn = 0; iconn < L_rr_node[inode].num_edges; ++iconn)
+	for (int iconn = 0; iconn < L_rr_node[inode].get_num_edges(); ++iconn)
 		fprintf(fp, " %d", L_rr_node[inode].switches[iconn]);
 	fprintf(fp, "\n");
 
 	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].occ,
-			L_rr_node[inode].capacity);
+			L_rr_node[inode].get_capacity());
 	if (rr_type != INTRA_CLUSTER_EDGE) {
 		fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R, L_rr_node[inode].C);
 	}
-	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index);
+	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].get_cost_index());
 }
 
 /* Prints all the rr_indexed_data of index to file fp.   */

@@ -53,7 +53,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 		}
 
 		rr_type = rr_node[inode].type;
-		num_edges = rr_node[inode].num_edges;
+		num_edges = rr_node[inode].get_num_edges();
 
 		check_node(inode, route_type);
 
@@ -216,7 +216,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	ylow = rr_node[inode].get_ylow();
 	yhigh = rr_node[inode].get_yhigh();
 	ptc_num = rr_node[inode].get_ptc_num();
-	capacity = rr_node[inode].capacity;
+	capacity = rr_node[inode].get_capacity();
 	type = NULL;
 
 	if (xlow > xhigh || ylow > yhigh) {
@@ -399,7 +399,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	}
 
 	/* Check that the number of (out) edges is reasonable. */
-	num_edges = rr_node[inode].num_edges;
+	num_edges = rr_node[inode].get_num_edges();
 
 	if (rr_type != SINK && rr_type != IPIN) {
 		if (num_edges <= 0) {
@@ -436,7 +436,7 @@ void check_node(int inode, enum e_route_type route_type) {
 		}
 	}
 
-	cost_index = rr_node[inode].cost_index;
+	cost_index = rr_node[inode].get_cost_index();
 	if (cost_index < 0 || cost_index >= num_rr_indexed_data) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
@@ -457,7 +457,7 @@ static void check_pass_transistors(int from_node) {
 	if (from_rr_type != CHANX && from_rr_type != CHANY)
 		return;
 
-	from_num_edges = rr_node[from_node].num_edges;
+	from_num_edges = rr_node[from_node].get_num_edges();
 
 	for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
 		to_node = rr_node[from_node].edges[from_edge];
@@ -475,7 +475,7 @@ static void check_pass_transistors(int from_node) {
 		 * check that there is a corresponding edge from to_node back to         *
 		 * from_node.                                                            */
 
-		to_num_edges = rr_node[to_node].num_edges;
+		to_num_edges = rr_node[to_node].get_num_edges();
 		trans_matched = FALSE;
 
 		for (to_edge = 0; to_edge < to_num_edges; to_edge++) {

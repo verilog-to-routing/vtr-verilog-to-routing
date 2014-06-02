@@ -353,7 +353,7 @@ boolean feasible_routing(void) {
 	int inode;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (rr_node[inode].occ > rr_node[inode].capacity) {
+		if (rr_node[inode].occ > rr_node[inode].get_capacity()) {
 			return (FALSE);
 		}
 	}
@@ -383,7 +383,7 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 		inode = tptr->index;
 
 		occ = rr_node[inode].occ + add_or_sub;
-		capacity = rr_node[inode].capacity;
+		capacity = rr_node[inode].get_capacity();
 
 		rr_node[inode].occ = occ;
 
@@ -423,7 +423,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		occ = rr_node[inode].occ;
-		capacity = rr_node[inode].capacity;
+		capacity = rr_node[inode].get_capacity();
 
 		if (occ > capacity) {
 			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
@@ -585,7 +585,7 @@ float get_rr_cong_cost(int inode) {
 	short cost_index;
 	float cost;
 
-	cost_index = rr_node[inode].cost_index;
+	cost_index = rr_node[inode].get_cost_index();
 	cost = rr_indexed_data[cost_index].base_cost
 			* rr_node_route_inf[inode].acc_cost
 			* rr_node_route_inf[inode].pres_cost;
@@ -1294,7 +1294,7 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
 				from_node = rr_blk_source[iblk][iclass];
-				num_edges = rr_node[from_node].num_edges;
+				num_edges = rr_node[from_node].get_num_edges();
 				for (iconn = 0; iconn < num_edges; iconn++) {
 					to_node = rr_node[from_node].edges[iconn];
 					cost = get_rr_cong_cost(to_node);
@@ -1324,7 +1324,7 @@ static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 	int occ, capacity;
 
 	occ = rr_node[inode].occ + add_or_sub;
-	capacity = rr_node[inode].capacity;
+	capacity = rr_node[inode].get_capacity();
 	rr_node[inode].occ = occ;
 
 	if (occ < capacity) {

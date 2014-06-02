@@ -839,7 +839,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 				}
 			}
 
-			for (j = 0; j < block[iblock].pb->rr_graph[irr_node].num_edges;
+			for (j = 0; j < block[iblock].pb->rr_graph[irr_node].get_num_edges();
 					j++) {
 				dnode = local_rr_graph[irr_node].edges[j];
 				if ((local_rr_graph[dnode].prev_node == irr_node)
@@ -854,7 +854,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 
 			/* Load edges */
 			count = 0;
-			for (j = 0; j < local_rr_graph[irr_node].num_edges; j++) {
+			for (j = 0; j < local_rr_graph[irr_node].get_num_edges(); j++) {
 				dnode = local_rr_graph[irr_node].edges[j];
 				if ((local_rr_graph[dnode].prev_node == irr_node)
 						&& (j == local_rr_graph[dnode].prev_edge)) {

@@ -162,7 +162,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 
 		case CHANX:
 		case CHANY:
-			num_edges = rr_node[from_node].num_edges;
+			num_edges = rr_node[from_node].get_num_edges();
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
@@ -253,7 +253,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 			break;
 
 		case OPIN:
-			num_edges = rr_node[from_node].num_edges;
+			num_edges = rr_node[from_node].get_num_edges();
 			shared_opin_buffer_trans = 0.;
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
@@ -358,8 +358,8 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 		case CHANX:
 		case CHANY:
-			num_edges = rr_node[from_node].num_edges;
-			cost_index = rr_node[from_node].cost_index;
+			num_edges = rr_node[from_node].get_num_edges();
+			cost_index = rr_node[from_node].get_cost_index();
 			seg_type = rr_indexed_data[cost_index].seg_index;
 			switch_type = segment_inf[seg_type].wire_switch;
 			assert(
@@ -376,7 +376,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			/* Each wire segment begins with a multipexer followed by a driver for unidirectional */
 			/* Each multiplexer contains all the fan-in to that routing node */
 			/* Add up area of multiplexer */
-			ntrans += trans_per_mux(rr_node[from_node].fan_in, trans_sram_bit,
+			ntrans += trans_per_mux(rr_node[from_node].get_fan_in(), trans_sram_bit,
 					switch_inf[switch_type].mux_trans_size);			
 
 			/* Add up area of buffer */

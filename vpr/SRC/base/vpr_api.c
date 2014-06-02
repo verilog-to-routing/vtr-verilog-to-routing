@@ -1158,7 +1158,7 @@ static t_trace *expand_routing_trace(t_trace *trace, int i_g_atoms_net) {
 		/* connection to another intra-cluster pin */
 		current = trace;
 		boolean success = FALSE;
-		for (int i = 0; i < local_rr_graph[inode].num_edges; ++i) {
+		for (int i = 0, l = local_rr_graph[inode].get_num_edges(); i < l; ++i) {
 			if (local_rr_graph[local_rr_graph[inode].edges[i]].prev_node
 					== inode) {
 				if (success == FALSE) {
@@ -1402,14 +1402,14 @@ static void clay_lut_input_rebalancing(int iblock, t_pb *pb) {
 					int snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;
 					free(local_rr_graph[snode].edges);
 					local_rr_graph[snode].edges = NULL;
-					local_rr_graph[snode].num_edges = 0;
+					local_rr_graph[snode].set_num_edges(0);
 				}
 				for (int i = 0; i < lut_size; ++i) {
 					int input = lut_pin_remap[i];
 					if (input != OPEN) {
 						int snode = lut_wrapper->input_pins[0][i].pin_count_in_cluster;
-						assert(local_rr_graph[snode].num_edges == 0);
-						local_rr_graph[snode].num_edges = 1;
+						assert(local_rr_graph[snode].get_num_edges() == 0);
+						local_rr_graph[snode].set_num_edges(1);
 						local_rr_graph[snode].edges = (int*) my_malloc(sizeof(int));
 						local_rr_graph[snode].edges[0] = lut->input_pins[0][input].pin_count_in_cluster;
 					}

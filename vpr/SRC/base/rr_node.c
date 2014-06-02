@@ -34,6 +34,22 @@ short t_rr_node::get_ptc_num() const {
 	return ptc_num;
 }
 
+short t_rr_node::get_cost_index() const {
+	return cost_index;
+}
+
+short t_rr_node::get_capacity() const {
+	return capacity;
+}
+
+short t_rr_node::get_fan_in() const{
+	return fan_in;
+}
+
+short t_rr_node::get_num_edges() const {
+	return num_edges;
+}
+
 void t_rr_node::set_xlow(short _xlow) {
 	xlow = _xlow;
 }
@@ -54,3 +70,18 @@ void t_rr_node::set_ptc_num(short _ptc_num) {
 	ptc_num = _ptc_num;
 }
 
+void t_rr_node::set_cost_index(short _cost_index) {
+	cost_index = _cost_index;
+}
+
+void t_rr_node::set_capacity(short _capacity) {
+	capacity = _capacity;
+}
+
+void t_rr_node::set_fan_in(short _fan_in) {
+	fan_in = _fan_in;
+}
+
+void t_rr_node::set_num_edges(short _num_edges) {
+	num_edges = _num_edges;
+}

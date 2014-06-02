@@ -368,7 +368,7 @@ bool TCH_RoutePath_c::ValidateRouteNodeList(
       // Validate from/to nodes are cosecutive nodes w.r.t. VPR's "rr_graph"
       bool validFromToNode = false;
       const t_rr_node& vpr_rrFromNode = vpr_rrNodeArray[vpr_rrFromIndex];
-      int vpr_edgeCount = vpr_rrFromNode.num_edges;
+      int vpr_edgeCount = vpr_rrFromNode.get_num_edges();
       for( int vpr_edgeIndex = 0; vpr_edgeIndex < vpr_edgeCount; ++vpr_edgeIndex )
       {
          int vpr_rrChildIndex = vpr_rrFromNode.edges[vpr_edgeIndex];

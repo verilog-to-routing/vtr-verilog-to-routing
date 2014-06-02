@@ -61,12 +61,12 @@ private:
 
 	short ptc_num;
 
-public:
 	short cost_index;
-	short occ;
 	short capacity;
 	short fan_in;
 	short num_edges;
+public:
+	short occ;
 	t_rr_type type;
 	int *edges;
 	short *switches;
@@ -97,11 +97,21 @@ public:
 	short get_xhigh() const;
 	short get_yhigh() const;
 	short get_ptc_num() const;
+	short get_cost_index() const;
+	short get_capacity() const;
+	short get_fan_in() const;
+	short get_num_edges() const;
+
 	void set_xlow(short);
 	void set_ylow(short);
 	void set_xhigh(short);
 	void set_yhigh(short);
 	void set_ptc_num(short);
+	void set_cost_index(short);
+	void set_capacity(short);
+	void set_fan_in(short);
+	void set_num_edges(short);
+
 };
 
 

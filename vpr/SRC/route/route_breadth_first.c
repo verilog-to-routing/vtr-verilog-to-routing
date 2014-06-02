@@ -305,7 +305,7 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	t_rr_type from_type, to_type;
 	float tot_cost;
 
-	num_edges = rr_node[inode].num_edges;
+	num_edges = rr_node[inode].get_num_edges();
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
 

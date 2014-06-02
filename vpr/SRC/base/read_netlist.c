@@ -1050,10 +1050,10 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 /* Recursive function that fills rr_graph of cb with net numbers starting at the given rr_node */
 static int count_sinks_internal_cb_rr_graph_net_nums(
 		INP t_rr_node * cur_rr_node, INP t_rr_node * rr_graph) {
-	int i;
+	int i, l;
 	int count = 0;
 
-	for (i = 0; i < cur_rr_node->num_edges; i++) {
+	for (i = 0, l = cur_rr_node->get_num_edges(); i < l; i++) {
 		if (&rr_graph[rr_graph[cur_rr_node->edges[i]].prev_node]
 				== cur_rr_node) {
 			assert(
@@ -1080,7 +1080,7 @@ static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,
 	boolean terminal;
 	terminal = TRUE;
 
-	for (i = 0; i < cur_rr_node->num_edges; i++) {
+	for (i = 0; i < cur_rr_node->get_num_edges(); i++) {
 		if (&rr_graph[rr_graph[cur_rr_node->edges[i]].prev_node]
 				== cur_rr_node) {
 			/* TODO: If multiple edges to same node (should not happen in reasonable design) this always

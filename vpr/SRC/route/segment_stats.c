@@ -42,7 +42,7 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
-			cost_index = rr_node[inode].cost_index;
+			cost_index = rr_node[inode].get_cost_index();
 			seg_type = rr_indexed_data[cost_index].seg_index;
 
 			if (!segment_inf[seg_type].longline)
@@ -51,9 +51,9 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 				length = LONGLINE;
 
 			seg_occ_by_length[length] += rr_node[inode].occ;
-			seg_cap_by_length[length] += rr_node[inode].capacity;
+			seg_cap_by_length[length] += rr_node[inode].get_capacity();
 			seg_occ_by_type[seg_type] += rr_node[inode].occ;
-			seg_cap_by_type[seg_type] += rr_node[inode].capacity;
+			seg_cap_by_type[seg_type] += rr_node[inode].get_capacity();
 
 		}
 	}

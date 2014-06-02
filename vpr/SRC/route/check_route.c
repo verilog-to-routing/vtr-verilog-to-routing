@@ -312,7 +312,7 @@ static boolean check_adjacent(int from_node, int to_node) {
 
 	reached = FALSE;
 
-	for (iconn = 0; iconn < rr_node[from_node].num_edges; iconn++) {
+	for (iconn = 0; iconn < rr_node[from_node].get_num_edges(); iconn++) {
 		if (rr_node[from_node].edges[iconn] == to_node) {
 			reached = TRUE;
 			break;

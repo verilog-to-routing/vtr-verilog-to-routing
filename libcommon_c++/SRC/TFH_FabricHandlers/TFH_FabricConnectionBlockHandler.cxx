@@ -566,7 +566,7 @@ void TFH_FabricConnectionBlockHandler_c::DisconnectGraphOutputPins_(
       {
          // Found matching OPIN pin in given connection block list
          // now override "rr_graph" by deleting existing connections
-         for( int j = 0; j < pfrom_rrNode->num_edges; ++j )
+         for( int j = 0; j < pfrom_rrNode->get_num_edges(); ++j )
          {
             short* poutputPinSwitch = const_cast< short* >( &this->outputPinSwitch_ );
             bool deletedNode = this->DeleteGraphNodeEdge_( pfrom_rrNode, j,
@@ -667,7 +667,7 @@ void TFH_FabricConnectionBlockHandler_c::DisconnectGraphInputPins_(
       if(( pfrom_rrNode->type != CHANX ) && ( pfrom_rrNode->type != CHANY ))
          continue;
 
-      for( int i = 0; i < pfrom_rrNode->num_edges; ++i )
+      for( int i = 0; i < pfrom_rrNode->get_num_edges(); ++i )
       {
          int to_rrIndex = pfrom_rrNode->edges[i];
          if( to_rrIndex == -1 )
@@ -707,9 +707,9 @@ bool TFH_FabricConnectionBlockHandler_c::AppendGraphNodeEdge_(
    bool ok = true;
 
    t_rr_node* pvpr_rrNode = static_cast< t_rr_node* >( vpr_rrNode );
-   pvpr_rrNode->num_edges += 1;
+   int len = pvpr_rrNode->get_num_edges() + 1;
+   pvpr_rrNode->set_num_edges(len);
 
-   int len = pvpr_rrNode->num_edges;
 
    pvpr_rrNode->edges = static_cast< int* >( TC_realloc( pvpr_rrNode->edges, len, sizeof( int )));
    if( !pvpr_rrNode->edges )
@@ -752,17 +752,17 @@ bool TFH_FabricConnectionBlockHandler_c::DeleteGraphNodeEdge_(
    // Disconnect graph edge by deleting it from the node's edge list
    // (after copying last edge into this position to shrink allocated list)
    t_rr_node* pvpr_rrNode = static_cast< t_rr_node* >( vpr_rrNode );
-   if( edgeIndex < pvpr_rrNode->num_edges )
+   if( edgeIndex < pvpr_rrNode->get_num_edges() )
    {
       int i = edgeIndex;
-      int len = pvpr_rrNode->num_edges;
+      int len = pvpr_rrNode->get_num_edges();
 
       if( pioPinSwitch )
       {
          *pioPinSwitch = pvpr_rrNode->switches[i];
       }
 
-      pvpr_rrNode->num_edges -= 1;
+      pvpr_rrNode->set_num_edges(len-1);
 
       pvpr_rrNode->edges[i] = pvpr_rrNode->edges[len-1];
       pvpr_rrNode->edges[len-1] = -1;

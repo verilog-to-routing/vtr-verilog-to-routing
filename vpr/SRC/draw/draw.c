@@ -390,7 +390,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	} else {
 		num_congested = 0;
 		for (inode = 0; inode < num_rr_nodes; inode++) {
-			if (rr_node[inode].occ > rr_node[inode].capacity) {
+			if (rr_node[inode].occ > rr_node[inode].get_capacity()) {
 				num_congested++;
 			}
 		}
@@ -785,11 +785,11 @@ static void draw_congestion(void) {
 			case CHANX:
 				itrack = rr_node[inode].get_ptc_num();
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					rr_node[inode].occ > rr_node[inode].capacity) {
+					rr_node[inode].occ > rr_node[inode].get_capacity()) {
 					draw_rr_chanx(inode, itrack, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (rr_node[inode].occ > rr_node[inode].capacity)
+					if (rr_node[inode].occ > rr_node[inode].get_capacity())
 						draw_rr_chanx(inode, itrack, RED);
 					else
 						draw_rr_chanx(inode, itrack, BLUE);
@@ -799,11 +799,11 @@ static void draw_congestion(void) {
 			case CHANY:
 				itrack = rr_node[inode].get_ptc_num();
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					rr_node[inode].occ > rr_node[inode].capacity) {
+					rr_node[inode].occ > rr_node[inode].get_capacity()) {
 					draw_rr_chany(inode, itrack, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (rr_node[inode].occ > rr_node[inode].capacity)
+					if (rr_node[inode].occ > rr_node[inode].get_capacity())
 						draw_rr_chany(inode, itrack, RED);
 					else
 						draw_rr_chany(inode, itrack, BLUE);
@@ -813,11 +813,11 @@ static void draw_congestion(void) {
 			case IPIN:
 			case OPIN:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					rr_node[inode].occ > rr_node[inode].capacity) {
+					rr_node[inode].occ > rr_node[inode].get_capacity()) {
 					draw_rr_pin(inode, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (rr_node[inode].occ > rr_node[inode].capacity)
+					if (rr_node[inode].occ > rr_node[inode].get_capacity())
 						draw_rr_pin(inode, RED);
 					else
 						draw_rr_pin(inode, BLUE);
@@ -943,7 +943,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 
 		/* Mux balence numbers */
 		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].fan_in);
+		sprintf(str, "%d", rr_node[inode].get_fan_in());
 		drawtext(bound_box.bottom_left(), str, 5);
 
 		setcolor(BLACK);
@@ -971,7 +971,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 
 		/* Mux balance numbers */
 		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].fan_in);
+		sprintf(str, "%d", rr_node[inode].get_fan_in());
 		drawtext(bound_box.right(), bound_box.bottom(), str, 5);
 
 		setlinewidth(0);
@@ -1053,7 +1053,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 		drawline(wire_start_x1, bound_box.bottom(), wire_start_x2, bound_box.bottom());
 
 		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].fan_in);
+		sprintf(str, "%d", rr_node[inode].get_fan_in());
 		drawtext(bound_box.bottom_left(), str, 5);
 		setcolor(BLACK);
 
@@ -1076,7 +1076,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 		drawline(wire_start_x1, bound_box.top(), wire_start_x2, bound_box.top());
 
 		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].fan_in);
+		sprintf(str, "%d", rr_node[inode].get_fan_in());
 		drawtext(bound_box.left(), bound_box.top(), str, 5);
 		setcolor(BLACK);
 
@@ -1103,7 +1103,7 @@ static void draw_rr_edges(int inode) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	t_rr_type from_type, to_type;
-	int iedge, to_node, from_ptc_num, to_ptc_num;
+	int to_node, from_ptc_num, to_ptc_num;
 	short switch_type;
 
 	from_type = rr_node[inode].type;
@@ -1115,7 +1115,7 @@ static void draw_rr_edges(int inode) {
 
 	from_ptc_num = rr_node[inode].get_ptc_num();
 
-	for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+	for (int iedge = 0, l = rr_node[inode].get_num_edges(); iedge < l; iedge++) {
 		to_node = rr_node[inode].edges[iedge];
 		to_type = rr_node[to_node].type;
 		to_ptc_num = rr_node[to_node].get_ptc_num();
@@ -2058,12 +2058,12 @@ static void highlight_nets(char *message, int hit_node) {
  * de-highlight its fan_in and fan_out.
  */
 static void draw_highlight_fan_in_fan_out(int hit_node) {
-	int iedge, inode;
+	int inode;
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Highlight the fanout nodes in red. */
-	for (iedge = 0; iedge < rr_node[hit_node].num_edges; iedge++) {
+	for (int iedge = 0, l = rr_node[hit_node].get_num_edges(); iedge < l; iedge++) {
 		int fanout_node = rr_node[hit_node].edges[iedge];
 
 		if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
@@ -2080,7 +2080,7 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 
 	/* Highlight the nodes that can fanin to this node in blue. */
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+		for (int iedge = 0, l = rr_node[inode].get_num_edges(); iedge < l; iedge++) {
 			int fanout_node = rr_node[inode].edges[iedge];
 			if (fanout_node == hit_node) { 
 				if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
@@ -2204,8 +2204,8 @@ static void highlight_rr_nodes(float x, float y) {
 
 			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
 				    hit_node, rr_node[hit_node].rr_get_type_string(),
-				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].num_edges, 
-				    rr_node[hit_node].occ, rr_node[hit_node].capacity);
+				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].get_num_edges(), 
+				    rr_node[hit_node].occ, rr_node[hit_node].get_capacity());
 
 		}
 		else {

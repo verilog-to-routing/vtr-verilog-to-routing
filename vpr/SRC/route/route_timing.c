@@ -383,8 +383,8 @@ static double get_overused_ratio(){
 	double overused_nodes = 0.0;
 	int inode;
 	for(inode = 0; inode < num_rr_nodes; inode++){
-		if(rr_node[inode].occ > rr_node[inode].capacity)
-			overused_nodes += (rr_node[inode].occ - rr_node[inode].capacity);
+		if(rr_node[inode].occ > rr_node[inode].get_capacity())
+			overused_nodes += (rr_node[inode].occ - rr_node[inode].get_capacity());
 	}
 	overused_nodes /= (double)num_rr_nodes;
 	return overused_nodes;
@@ -636,7 +636,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	inode = current->index;
 	old_back_pcost = current->backward_path_cost;
 	R_upstream = current->R_upstream;
-	num_edges = rr_node[inode].num_edges;
+	num_edges = rr_node[inode].get_num_edges();
 
 	target_x = rr_node[target_node].get_xhigh();
 	target_y = rr_node[target_node].get_yhigh();
@@ -734,7 +734,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
 				&num_segs_ortho_dir);
-		cost_index = rr_node[inode].cost_index;
+		cost_index = rr_node[inode].get_cost_index();
 		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 
 		cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
@@ -889,7 +889,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	
 	target_x = rr_node[target_node].get_xlow();
 	target_y = rr_node[target_node].get_ylow();
-	cost_index = rr_node[inode].cost_index;
+	cost_index = rr_node[inode].get_cost_index();
 	inv_length = rr_indexed_data[cost_index].inv_length;
 	ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 	ortho_inv_length = rr_indexed_data[ortho_cost_index].inv_length;
@@ -1194,7 +1194,7 @@ static bool should_route_net(int inet) {
 	for (;;) {
 		int inode = tptr->index;
 		int occ = rr_node[inode].occ;
-		int capacity = rr_node[inode].capacity;
+		int capacity = rr_node[inode].get_capacity();
 
 		if (occ > capacity) {
 			return TRUE; /* overuse detected */

@@ -44,7 +44,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 		if (from_rr_type == CHANX || from_rr_type == CHANY) {
 
-			for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+			for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
 
 				to_node = rr_node[inode].edges[iedge];
 				to_rr_type = rr_node[to_node].type;
@@ -140,7 +140,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		/* End node is CHANX or CHANY */
 		else if (from_rr_type == OPIN) {
 
-			for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+			for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
 				switch_index = rr_node[inode].switches[iedge];
 				/* UDSD by ICK Start */
 				to_node = rr_node[inode].edges[iedge];
@@ -165,7 +165,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * out what the Cout's should be */
 	Couts_to_add = (float *) my_calloc(num_rr_nodes, sizeof(float));
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+		for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
 			switch_index = rr_node[inode].switches[iedge];
 			to_node = rr_node[inode].edges[iedge];
 			to_rr_type = rr_node[to_node].type;

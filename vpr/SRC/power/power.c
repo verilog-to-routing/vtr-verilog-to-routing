@@ -807,7 +807,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 			node->net_num = net_idx;
 
-			for (edge_idx = 0; edge_idx < node->num_edges; edge_idx++) {
+			for (edge_idx = 0; edge_idx < node->get_num_edges(); edge_idx++) {
 				if (node->edges[edge_idx] != OPEN) {
 					t_rr_node * next_node = &rr_node[node->edges[edge_idx]];
 					t_rr_node_power * next_node_power =
@@ -826,9 +826,9 @@ static void power_usage_routing(t_power_usage * power_usage,
 						next_node_power->in_prob[next_node_power->num_inputs] =
 								clb_net_prob(node->net_num);
 						next_node_power->num_inputs++;
-						if (next_node_power->num_inputs > next_node->fan_in) {
+						if (next_node_power->num_inputs > next_node->get_fan_in()) {
 							printf("%d %d\n", next_node_power->num_inputs,
-									next_node->fan_in);
+									next_node->get_fan_in());
 							fflush(0);
 							assert(0);
 						}
@@ -867,13 +867,13 @@ static void power_usage_routing(t_power_usage * power_usage,
 			 *  - Driver (accounted for at end of CHANX/Y - see below)
 			 *  - Multiplexor */
 
-			if (node->fan_in) {
+			if (node->get_fan_in()) {
 				assert(node_power->in_dens);
 				assert(node_power->in_prob);
 
 				/* Multiplexor */
 				power_usage_mux_multilevel(&sub_power_usage,
-						power_get_mux_arch(node->fan_in,
+						power_get_mux_arch(node->get_fan_in(),
 								g_power_arch->mux_transistor_size),
 						node_power->in_prob, node_power->in_dens,
 						node_power->selected_input, TRUE,
@@ -901,13 +901,13 @@ static void power_usage_routing(t_power_usage * power_usage,
 			}
 			C_wire =
 					wire_length
-							* segment_inf[rr_indexed_data[node->cost_index].seg_index].Cmetal;
+							* segment_inf[rr_indexed_data[node->get_cost_index()].seg_index].Cmetal;
 			//(double)g_power_commonly_used->tile_length);
-			assert(node_power->selected_input < node->fan_in);
+			assert(node_power->selected_input < node->get_fan_in());
 
 			/* Multiplexor */
 			power_usage_mux_multilevel(&sub_power_usage,
-					power_get_mux_arch(node->fan_in,
+					power_get_mux_arch(node->get_fan_in(),
 							g_power_arch->mux_transistor_size),
 					node_power->in_prob, node_power->in_dens,
 					node_power->selected_input, TRUE, g_solution_inf.T_crit);
@@ -972,7 +972,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 			/* Determine types of switches that this wire drives */
 			connectionbox_fanout = 0;
 			switchbox_fanout = 0;
-			for (switch_idx = 0; switch_idx < node->num_edges; switch_idx++) {
+			for (switch_idx = 0; switch_idx < node->get_num_edges(); switch_idx++) {
 				if (node->switches[switch_idx]
 						== routing_arch->wire_to_ipin_switch) {
 					connectionbox_fanout++;
@@ -1184,17 +1184,17 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 		switch (node->type) {
 		case IPIN:
 			max_IPIN_fanin = max(max_IPIN_fanin,
-					static_cast<int>(node->fan_in));
-			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
+					static_cast<int>(node->get_fan_in()));
+			max_fanin = max(max_fanin, static_cast<int>(node->get_fan_in()));
 
-			node_power->in_dens = (float*) my_calloc(node->fan_in,
+			node_power->in_dens = (float*) my_calloc(node->get_fan_in(),
 					sizeof(float));
-			node_power->in_prob = (float*) my_calloc(node->fan_in,
+			node_power->in_prob = (float*) my_calloc(node->get_fan_in(),
 					sizeof(float));
 			break;
 		case CHANX:
 		case CHANY:
-			for (switch_idx = 0; switch_idx < node->num_edges; switch_idx++) {
+			for (switch_idx = 0; switch_idx < node->get_num_edges(); switch_idx++) {
 				if (node->switches[switch_idx]
 						== routing_arch->wire_to_ipin_switch) {
 					fanout_to_IPIN++;
@@ -1206,11 +1206,11 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 			max_seg_to_IPIN_fanout = max(max_seg_to_IPIN_fanout,
 					fanout_to_IPIN);
 			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
-			max_fanin = max(max_fanin, static_cast<int>(node->fan_in));
+			max_fanin = max(max_fanin, static_cast<int>(node->get_fan_in()));
 
-			node_power->in_dens = (float*) my_calloc(node->fan_in,
+			node_power->in_dens = (float*) my_calloc(node->get_fan_in(),
 					sizeof(float));
-			node_power->in_prob = (float*) my_calloc(node->fan_in,
+			node_power->in_prob = (float*) my_calloc(node->get_fan_in(),
 					sizeof(float));
 			break;
 		default:
@@ -1233,7 +1233,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 		int edge_idx;
 
-		for (edge_idx = 0; edge_idx < node->num_edges; edge_idx++) {
+		for (edge_idx = 0; edge_idx < node->get_num_edges(); edge_idx++) {
 			if (node->edges[edge_idx] != OPEN) {
 				if (rr_node_power[node->edges[edge_idx]].driver_switch_type
 						== OPEN) {
@@ -1256,8 +1256,8 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 		switch (node->type) {
 		case CHANX:
 		case CHANY:
-			if (node->num_edges > max_seg_fanout) {
-				max_seg_fanout = node->num_edges;
+			if (node->get_num_edges() > max_seg_fanout) {
+				max_seg_fanout = node->get_num_edges();
 			}
 			break;
 		default:
@@ -1343,7 +1343,7 @@ boolean power_uninit(void) {
 		case CHANX:
 		case CHANY:
 		case IPIN:
-			if (node->fan_in) {
+			if (node->get_fan_in()) {
 				free(node_power->in_dens);
 				free(node_power->in_prob);
 			}

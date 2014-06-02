@@ -445,7 +445,7 @@ bool TCH_PreRoutedHandler_c::IsMemberPreRoutePath(
       const t_rr_node& vpr_rrFromNode = vpr_rrNodeArray[vpr_rrFromIndex];
 
       // Iterate 'from' node edges, searching for 'to' node membership
-      int vpr_edgeCount = vpr_rrFromNode.num_edges;
+      int vpr_edgeCount = vpr_rrFromNode.get_num_edges();
       for( int vpr_edgeIndex = 0; vpr_edgeIndex < vpr_edgeCount; ++vpr_edgeIndex )
       {
          int vpr_rrChildIndex = vpr_rrFromNode.edges[vpr_edgeIndex];
