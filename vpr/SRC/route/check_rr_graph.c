@@ -142,7 +142,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 				if(rr_type == IPIN) {
 					type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
-					if(Fc_in[type->index][rr_node[inode].ptc_num] == 0) {
+					if(Fc_in[type->index][rr_node[inode].get_ptc_num()] == 0) {
 						is_chain = TRUE;
 					}
 				}
@@ -193,7 +193,7 @@ static boolean rr_node_is_global_clb_ipin(int inode) {
 	if (rr_node[inode].type != IPIN)
 		return (FALSE);
 
-	ipin = rr_node[inode].ptc_num;
+	ipin = rr_node[inode].get_ptc_num();
 
 	return (type->is_global_pin[ipin]);
 }
@@ -215,7 +215,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	xhigh = rr_node[inode].get_xhigh();
 	ylow = rr_node[inode].get_ylow();
 	yhigh = rr_node[inode].get_yhigh();
-	ptc_num = rr_node[inode].ptc_num;
+	ptc_num = rr_node[inode].get_ptc_num();
 	capacity = rr_node[inode].capacity;
 	type = NULL;
 

@@ -171,7 +171,8 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 	i = rr_node[inode].get_xlow();
 	j = rr_node[inode].get_ylow();
 	type = grid[i][j].type;
-	ptc_num = rr_node[inode].ptc_num; /* For sinks, ptc_num is the class */
+	/* For sinks, ptc_num is the class */
+	ptc_num = rr_node[inode].get_ptc_num(); 
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
@@ -222,8 +223,10 @@ static void check_source(int inode, int inet) {
 
 	i = rr_node[inode].get_xlow();
 	j = rr_node[inode].get_ylow();
-	ptc_num = rr_node[inode].ptc_num; /* for sinks and sources, ptc_num is class */
-	bnum = g_clbs_nlist.net[inet].pins[0].block; /* First node_block for net is the source */
+	/* for sinks and sources, ptc_num is class */
+	ptc_num = rr_node[inode].get_ptc_num(); 
+	/* First node_block for net is the source */
+	bnum = g_clbs_nlist.net[inet].pins[0].block; 
 	type = grid[i][j].type;
 
 	if (block[bnum].x != i || block[bnum].y != j) {		
@@ -329,13 +332,13 @@ static boolean check_adjacent(int from_node, int to_node) {
 	from_ylow = rr_node[from_node].get_ylow();
 	from_xhigh = rr_node[from_node].get_xhigh();
 	from_yhigh = rr_node[from_node].get_yhigh();
-	from_ptc = rr_node[from_node].ptc_num;
+	from_ptc = rr_node[from_node].get_ptc_num();
 	to_type = rr_node[to_node].type;
 	to_xlow = rr_node[to_node].get_xlow();
 	to_ylow = rr_node[to_node].get_ylow();
 	to_xhigh = rr_node[to_node].get_xhigh();
 	to_yhigh = rr_node[to_node].get_yhigh();
-	to_ptc = rr_node[to_node].ptc_num;
+	to_ptc = rr_node[to_node].get_ptc_num();
 
 	switch (from_type) {
 
@@ -499,7 +502,7 @@ static int pin_and_chan_adjacent(int pin_node, int chan_node) {
 	int pin_xhigh = rr_node[pin_node].get_xhigh();
 	int pin_yhigh = rr_node[pin_node].get_yhigh();
 	t_type_ptr pin_grid_type = grid[pin_xlow][pin_ylow].type;
-	int pin_ptc = rr_node[pin_node].ptc_num;
+	int pin_ptc = rr_node[pin_node].get_ptc_num();
 
 	int chan_type = rr_node[chan_node].type;
 	int chan_xlow = rr_node[chan_node].get_xlow();
@@ -619,7 +622,7 @@ static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
 						iblk, block[iblk].name, iclass, inode, rr_type);
 				}
 
-				ipin = rr_node[inode].ptc_num;
+				ipin = rr_node[inode].get_ptc_num();
 				if (block[iblk].type->pin_class[ipin] != iclass) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s):\n"

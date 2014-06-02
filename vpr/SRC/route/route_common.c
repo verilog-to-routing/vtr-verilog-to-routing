@@ -213,7 +213,7 @@ void get_serial_num(void) {
 			serial_num += (inet + 1)
 					* (rr_node[inode].get_xlow() * (nx + 1) - rr_node[inode].get_yhigh());
 
-			serial_num -= rr_node[inode].ptc_num * (inet + 1) * 10;
+			serial_num -= rr_node[inode].get_ptc_num() * (inet + 1) * 10;
 
 			serial_num -= rr_node[inode].type * (inet + 1) * 100;
 			serial_num %= 2000000000; /* Prevent overflow */
@@ -1213,7 +1213,7 @@ void print_route(char *route_file) {
 						break;
 					}
 
-					fprintf(fp, "%d  ", rr_node[inode].ptc_num);
+					fprintf(fp, "%d  ", rr_node[inode].get_ptc_num());
 
 					/* Uncomment line below if you're debugging and want to see the switch types *
 					 * used in the routing.                                                      */

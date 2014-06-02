@@ -1075,7 +1075,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].set_yhigh(j + type->height - 1);
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].C = 0;
-		L_rr_node[inode].ptc_num = iclass;
+		L_rr_node[inode].set_ptc_num(iclass);
 		L_rr_node[inode].direction = (enum e_direction)OPEN;
 		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
 	}
@@ -1176,7 +1176,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].set_yhigh(j + type->height - 1);
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].R = 0;
-		L_rr_node[inode].ptc_num = ipin;
+		L_rr_node[inode].set_ptc_num(ipin);
 		L_rr_node[inode].direction = (enum e_direction)OPEN;
 		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
 	}
@@ -1287,7 +1287,7 @@ static void build_rr_xchan(INP int i, INP int j,
 		L_rr_node[node].R = length * seg_details[track].Rmetal;
 		L_rr_node[node].C = length * seg_details[track].Cmetal;
 
-		L_rr_node[node].ptc_num = track;
+		L_rr_node[node].set_ptc_num(track);
 		L_rr_node[node].type = CHANX;
 		L_rr_node[node].direction = seg_details[track].direction;
 		L_rr_node[node].drivers = seg_details[track].drivers;
@@ -1399,7 +1399,7 @@ static void build_rr_ychan(INP int i, INP int j,
 		L_rr_node[node].R = length * seg_details[track].Rmetal;
 		L_rr_node[node].C = length * seg_details[track].Cmetal;
 
-		L_rr_node[node].ptc_num = track;
+		L_rr_node[node].set_ptc_num(track);
 		L_rr_node[node].type = CHANY;
 		L_rr_node[node].direction = seg_details[track].direction;
 		L_rr_node[node].drivers = seg_details[track].drivers;
@@ -1963,7 +1963,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 				L_rr_node[inode].get_xlow(), L_rr_node[inode].get_ylow(), 
 				L_rr_node[inode].get_xhigh(), L_rr_node[inode].get_yhigh());
 	}
-	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num);
+	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].get_ptc_num());
 	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction + 1]);
 	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].drivers + 1]);
 	fprintf(fp, "\n");

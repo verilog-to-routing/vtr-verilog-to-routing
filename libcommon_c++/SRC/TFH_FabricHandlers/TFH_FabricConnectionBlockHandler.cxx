@@ -411,7 +411,7 @@ void TFH_FabricConnectionBlockHandler_c::UpdateConnectionMapList_(
       TGO_Point_c vpr_channelOrigin( vpr_rrNode.get_xlow(), vpr_rrNode.get_ylow() );
       TGO_OrientMode_t channelOrient = ( vpr_rrNode.type == CHANX ?
                                          TGO_ORIENT_HORIZONTAL : TGO_ORIENT_VERTICAL );
-      int vpr_trackIndex = vpr_rrNode.ptc_num;
+      int vpr_trackIndex = vpr_rrNode.get_ptc_num();
 
       TFH_ConnectionMap_c connectionMap( vpr_channelOrigin, channelOrient, vpr_trackIndex );
       if( pconnectionMapList->IsMember( connectionMap ))
@@ -497,7 +497,7 @@ bool TFH_FabricConnectionBlockHandler_c::ConnectGraphOutputPins_(
          continue;
 
       TGO_Point_c vpr_blockOrigin( pfrom_rrNode->get_xlow(), pfrom_rrNode->get_ylow(), pfrom_rrNode->z );
-      int vpr_pinIndex = pfrom_rrNode->ptc_num;
+      int vpr_pinIndex = pfrom_rrNode->get_ptc_num();
 
       TFH_ConnectionBlock_c connectionBlock( vpr_blockOrigin, vpr_pinIndex );
       if( connectionBlockList.IsMember( connectionBlock ))
@@ -559,7 +559,7 @@ void TFH_FabricConnectionBlockHandler_c::DisconnectGraphOutputPins_(
          continue;
 
       TGO_Point_c vpr_blockOrigin( pfrom_rrNode->get_xlow(), pfrom_rrNode->get_ylow(), pfrom_rrNode->z );
-      int vpr_pinIndex = pfrom_rrNode->ptc_num;
+      int vpr_pinIndex = pfrom_rrNode->get_ptc_num();
 
       TFH_ConnectionBlock_c connectionBlock( vpr_blockOrigin, vpr_pinIndex );
       if( connectionBlockList.IsMember( connectionBlock ))
@@ -605,7 +605,7 @@ bool TFH_FabricConnectionBlockHandler_c::ConnectGraphInputPins_(
          continue;
 
       TGO_Point_c vpr_blockOrigin( pto_rrNode->get_xlow(), pto_rrNode->get_ylow(), pto_rrNode->z );
-      int vpr_pinIndex = pto_rrNode->ptc_num;
+      int vpr_pinIndex = pto_rrNode->get_ptc_num();
 
       TFH_ConnectionBlock_c connectionBlock( vpr_blockOrigin, vpr_pinIndex );
       if( connectionBlockList.IsMember( connectionBlock ))
@@ -678,7 +678,7 @@ void TFH_FabricConnectionBlockHandler_c::DisconnectGraphInputPins_(
             continue;
 
          TGO_Point_c vpr_blockOrigin( to_rrNode.get_xlow(), to_rrNode.get_ylow(), to_rrNode.z );
-         int vpr_pinIndex = to_rrNode.ptc_num;
+         int vpr_pinIndex = to_rrNode.get_ptc_num();
 
          TFH_ConnectionBlock_c connectionBlock( vpr_blockOrigin, vpr_pinIndex );
          if( connectionBlockList.IsMember( connectionBlock ))

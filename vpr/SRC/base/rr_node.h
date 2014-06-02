@@ -52,15 +52,16 @@
 #define NO_PREVIOUS -1
 
 class t_rr_node {
-	
+
+private:
 	short xlow;
 	short xhigh;
 	short ylow;
 	short yhigh;
 
-public:
 	short ptc_num;
 
+public:
 	short cost_index;
 	short occ;
 	short capacity;
@@ -90,15 +91,17 @@ public:
 	int z; 
 	
 	/* Member functions */
-	const char *rr_get_type_string(); /* Retrieve rr_type as a string */
+	const char *rr_get_type_string() const; /* Retrieve rr_type as a string */
 	short get_xlow() const;
 	short get_ylow() const;
 	short get_xhigh() const;
 	short get_yhigh() const;
+	short get_ptc_num() const;
 	void set_xlow(short);
 	void set_ylow(short);
 	void set_xhigh(short);
 	void set_yhigh(short);
+	void set_ptc_num(short);
 };
 
 

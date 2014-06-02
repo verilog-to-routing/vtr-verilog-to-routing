@@ -1255,7 +1255,7 @@ static void print_complete_net_trace(t_trace* trace, const char *file_name) {
 					break;
 				}
 
-				fprintf(fp, "%d  ", rr_node[inode].ptc_num);
+				fprintf(fp, "%d  ", rr_node[inode].get_ptc_num());
 
 				/* Uncomment line below if you're debugging and want to see the switch types *
 				 * used in the routing.                                                      */
@@ -1287,32 +1287,25 @@ void resync_post_route_netlist() {
 
 		t_trace *trace = (trace_head ? trace_head[i] : 0);
 		while (trace != NULL) {
+			int gridx = rr_node[trace->index].get_xlow();
+			int gridy = rr_node[trace->index].get_ylow();
+			gridx = gridx - grid[gridx][gridy].width_offset;
+			gridy = gridy - grid[gridx][gridy].height_offset;
+
+			int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 			if (rr_node[trace->index].type == OPIN && j == 0) {
-				int gridx = rr_node[trace->index].get_xlow();
-				int gridy = rr_node[trace->index].get_ylow();
-				gridx = gridx - grid[gridx][gridy].width_offset;
-				gridy = gridy - grid[gridx][gridy].height_offset;
-
-				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 				assert(g_clbs_nlist.net[i].pins[j].block == iblock);
-				g_clbs_nlist.net[i].pins[j].block_pin = rr_node[trace->index].ptc_num;
-				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num; //Daniel to-do: take out clb_net
-				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
-				j++;
+				g_clbs_nlist.net[i].pins[j].block_pin = rr_node[trace->index].get_ptc_num();
 			} else if (rr_node[trace->index].type == IPIN) {
-				int gridx = rr_node[trace->index].get_xlow();
-				int gridy = rr_node[trace->index].get_ylow();
-				gridx = gridx - grid[gridx][gridy].width_offset;
-				gridy = gridy - grid[gridx][gridy].height_offset;
-
-				int iblock = grid[gridx][gridy].blocks[rr_node[trace->index].z];
 				g_clbs_nlist.net[i].pins[j].block = iblock;
-				g_clbs_nlist.net[i].pins[j].block_pin = rr_node[trace->index].ptc_num;
+				g_clbs_nlist.net[i].pins[j].block_pin = rr_node[trace->index].get_ptc_num();
 				clb_net[i].node_block[j] = iblock; //Daniel to-do: take out clb_net
-				clb_net[i].node_block_pin[j] = rr_node[trace->index].ptc_num; //Daniel to-do: take out clb_net
-				block[iblock].nets[rr_node[trace->index].ptc_num] = i;
-				j++;
 			}
+
+			//Daniel to-do: take out clb_net
+			clb_net[i].node_block_pin[j] = rr_node[trace->index].get_ptc_num(); 
+			block[iblock].nets[rr_node[trace->index].get_ptc_num()] = i;
+			j++;
 			trace = trace->next;
 		}
 	}
@@ -1465,7 +1458,7 @@ static void clay_reload_ble_locations(int iblock) {
 				t_trace *trace = (trace_head ? trace_head[inet] : 0);
 				while (trace) {
 					if (rr_node[trace->index].type == OPIN) {
-						ipin = rr_node[trace->index].ptc_num;
+						ipin = rr_node[trace->index].get_ptc_num();
 						break;
 					}
 					trace = trace->next;

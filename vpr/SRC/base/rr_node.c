@@ -10,8 +10,7 @@ static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX",
 /* Member function of "struct s_rr_node" used to retrieve a routing *
  * resource type string by its index, which is defined by           *
  * "t_rr_type type".												*/
-const char *t_rr_node::rr_get_type_string()
-{
+const char *t_rr_node::rr_get_type_string() const {
 	return name_type[type];
 }
 
@@ -31,6 +30,10 @@ short t_rr_node::get_yhigh() const {
 	return yhigh;
 }
 
+short t_rr_node::get_ptc_num() const {
+	return ptc_num;
+}
+
 void t_rr_node::set_xlow(short _xlow) {
 	xlow = _xlow;
 }
@@ -45,5 +48,9 @@ void t_rr_node::set_xhigh(short _xhigh) {
 
 void t_rr_node::set_yhigh(short _yhigh) {
 	yhigh = _yhigh;
+}
+
+void t_rr_node::set_ptc_num(short _ptc_num) {
+	ptc_num = _ptc_num;
 }
 

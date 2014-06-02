@@ -126,12 +126,10 @@ enum e_block_pack_status {
 	BLK_PASSED, BLK_FAILED_FEASIBLE, BLK_FAILED_ROUTE, BLK_STATUS_UNDEFINED
 };
 
+/* these are defined later, but need to declare here because it is used */
 class t_rr_node;
-/* defined later, but need to declare here because it is used */
 struct s_pack_molecule;
-/* defined later, but need to declare here because it is used */
 struct s_pb_stats;
-/* defined later, but need to declare here because it is used */
 
 /* An FPGA complex block is represented by a hierarchy of physical blocks.  
  These include leaf physical blocks that a netlist block can map to (such as LUTs, flip-flops, memory slices, etc),

@@ -110,7 +110,7 @@ void get_length_and_bends_stats(void) {
 	/* Figures out maximum, minimum and average number of bends and net length   *
 	 * in the routing.                                                           */
 
-	unsigned int inet;
+	unsigned int inet, l;
 	int bends, total_bends, max_bends;
 	int length, total_length, max_length;
 	int segments, total_segments, max_segments;
@@ -126,7 +126,7 @@ void get_length_and_bends_stats(void) {
 	num_global_nets = 0;
 	num_clb_opins_reserved = 0;
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+	for (inet = 0, l = g_clbs_nlist.net.size(); inet < l; inet++) {
 		if (g_clbs_nlist.net[inet].is_global == FALSE && g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
@@ -224,7 +224,7 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 	 * channel segments in the FPGA.                                           */
 
 	int i, j, inode;
-	unsigned inet;
+	unsigned int inet, l;
 	struct s_trace *tptr;
 	t_rr_type rr_type;
 
@@ -240,7 +240,7 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+	for (inet = 0, l = g_clbs_nlist.net.size(); inet < l; inet++) {
 
 		if (g_clbs_nlist.net[inet].is_global && g_clbs_nlist.net[inet].num_sinks() != 0) /* Skip global and empty nets. */
 			continue;
