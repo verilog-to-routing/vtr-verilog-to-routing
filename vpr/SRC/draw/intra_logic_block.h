@@ -75,7 +75,7 @@ void draw_internal_draw_subblk();
  * so that the other subblock drawing functions will obey it.
  * If the user missed all sub-parts, will return 1, else 0.
  */
-int highlight_sub_block(int blocknum, float rel_x, float rel_y);
+int highlight_sub_block(float abs_x, float abs_y);
 
 /*
  * returns the struct with information about the sub-block selection

@@ -51,10 +51,13 @@ struct t_point {
 
 	void set(float x, float y);
 	void set(const t_point& src);
+
 	void offset(float x, float y);
 	
 	t_point operator+ (const t_point& rhs) const;
+	t_point operator- (const t_point& rhs) const;
 	t_point& operator+= (const t_point& rhs);
+	t_point& operator-= (const t_point& rhs);
 	t_point& operator= (const t_point& src);
 
 	t_point();
@@ -92,8 +95,13 @@ struct t_bound_box {
 	void offset(const t_point& make_relative_to);
 	void offset(float by_x, float by_y);
 
+	bool intersects(const t_point& test_pt) const;
+	bool intersects(float x, float y) const;
+
 	t_bound_box operator+ (const t_point& rhs) const;
+	t_bound_box operator- (const t_point& rhs) const;
 	t_bound_box& operator+= (const t_point& rhs);
+	t_bound_box& operator-= (const t_point& rhs);
 	t_bound_box& operator= (const t_bound_box& src);
 
 	t_bound_box();

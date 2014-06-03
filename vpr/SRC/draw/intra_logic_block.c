@@ -89,7 +89,6 @@ void draw_internal_init_blk() {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	t_pb_graph_node *pb_graph_head_node;
-	int num_sub_tiles;
 
 	for (int i = 0; i < num_types; ++i) {
 		/* Empty block has no sub_blocks */
@@ -99,15 +98,15 @@ void draw_internal_init_blk() {
 		pb_graph_head_node = type_descriptors[i].pb_graph_head;
 		int type_descriptor_index = type_descriptors[i].index;
 
-		num_sub_tiles = type_descriptors[i].capacity;
-		
+		int num_sub_tiles = type_descriptors[i].capacity;
+
 		float clb_width = type_descriptors[i].width * draw_coords->tile_width
 					/num_sub_tiles;
-		float clb_height = type_descriptors[i].height * draw_coords->tile_width
-					/num_sub_tiles;
+		float clb_height = type_descriptors[i].height * draw_coords->tile_width;
 
 		// set the clb dimensions
 		t_bound_box& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
+
 		clb_bbox.bottom_left().set(0,0);
 		clb_bbox.top_right().set(clb_bbox.bottom_left());
 		clb_bbox.top_right().offset(clb_width, clb_height);
@@ -124,16 +123,8 @@ void draw_internal_init_blk() {
 
 
 void draw_internal_draw_subblk() {
-	t_draw_coords *draw_coords;
-	int i, j, k;
-	int num_sub_tiles, blk_height, bnum;
-	float sub_tile_offset;
-
-	/* Call accessor function to retrieve global variables. */
-	draw_coords = get_draw_coords_vars();
-
-	for (i = 0; i <= (nx + 1); i++) {
-		for (j = 0; j <= (ny + 1); j++) {
+	for (int i = 0; i <= (nx + 1); i++) {
+		for (int j = 0; j <= (ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
 			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
 				continue;
@@ -141,46 +132,20 @@ void draw_internal_draw_subblk() {
 			/* Don't draw if tile is empty. This includes corners. */
 			if (grid[i][j].type == EMPTY_TYPE)
 				continue;
-			
-			num_sub_tiles = grid[i][j].type->capacity;
-			sub_tile_offset = draw_coords->tile_width / num_sub_tiles;
-			blk_height = grid[i][j].type->height;
 
-			for (k = 0; k < num_sub_tiles; ++k) {
+			int num_sub_tiles = grid[i][j].type->capacity;
+			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Don't draw if block is empty. */
 				if (grid[i][j].blocks[k] == EMPTY || grid[i][j].blocks[k] == INVALID)
 					continue;
 
 				/* Get block ID */
-				bnum = grid[i][j].blocks[k];
+				int bnum = grid[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
 				if (block[bnum].pb == NULL)
 					continue;
 
-				if ((j < 1) || (j > ny)) {
-					// draw blocks on the left and right edges sideways (ie. the i/o blocks there)
-					t_point bottomleft(
-						draw_coords->tile_x[i] + (k * sub_tile_offset),
-						draw_coords->tile_y[j]
-					);
-					t_bound_box parent_bbox(
-						bottomleft,
-						sub_tile_offset,
-						draw_coords->tile_width
-					);
-
-					draw_internal_pb(&block[bnum], block[bnum].pb, parent_bbox);
-				}
-				else {
-					t_bound_box parent_bbox(
-						draw_coords->tile_x[i],
-						draw_coords->tile_y[j] + (k * sub_tile_offset),
-						draw_coords->tile_x[i] + draw_coords->tile_width,
-						draw_coords->tile_y[j + blk_height - 1] + ((k + 1) * sub_tile_offset)
-					);
-
-					draw_internal_pb(&block[bnum], block[bnum].pb, parent_bbox);
-				}
+				draw_internal_pb(&block[bnum], block[bnum].pb, t_bound_box(0,0,0,0));
 			}
 		}
 	}
@@ -239,7 +204,7 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *p
 		for (j = 0; j < num_children; ++j) {
 			/* Find the number of instances for each child pb_type. */
 			num_pb = mode.pb_type_children[j].num_pb;
-			
+
 			for (k = 0; k < num_pb; ++k) { 
 				/* Compute bound box for block. Don't call if pb_type is root-level pb. */
 				draw_internal_calc_coords(type_descrip_index, 
@@ -272,19 +237,30 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	float sub_tile_x, sub_tile_y;
 	float child_width, child_height;
 	// get the bbox for this pb type
-	t_bound_box& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox(*pb_graph_node);
+	t_bound_box& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
 
 	const float FRACTION_PARENT_PADDING_X = 0.01;
 
-	const float FRACTION_PARENT_HEIGHT = 0.90;
+	const float NORMAL_FRACTION_PARENT_HEIGHT = 0.90;
+	      float capacity_divisor = 1;
 	const float FRACTION_PARENT_PADDING_BOTTOM = 0.01;
 
 	const float FRACTION_CHILD_MARGIN_X = 0.025;
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
+	int capacity = type_descriptors[type_descrip_index].capacity;
+	if (capacity > 1 && nx > 0 && ny > 0 && grid[1][0].usage != 0
+		&& type_descrip_index == grid[1][0].type->index) {
+
+		// that should test for io blocks, and setting capacity_divisor > 1
+		// will squish every thing down
+		capacity_divisor = capacity - 1;
+	}
+
 	/* Draw all child-level blocks in just most of the space inside their parent block. */
 	parent_drawing_width = parent_width * (1 - FRACTION_PARENT_PADDING_X*2);
-	parent_drawing_height = parent_height * FRACTION_PARENT_HEIGHT;
+	parent_drawing_height = parent_height * (NORMAL_FRACTION_PARENT_HEIGHT / capacity_divisor);
+
 
 	/* The left and bottom corner (inside the parent block) of the space to draw 
 	 * child blocks. 
@@ -321,131 +297,141 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
  * each click on the "Blk Internal" button, a new level is shown. 
  */
 static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox) {
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
-	t_draw_coords *draw_coords = get_draw_coords_vars();
-	t_draw_state *draw_state = get_draw_state_vars();
+	t_pb_type* pb_type = pb->pb_graph_node->pb_type;
+	t_bound_box abs_bbox = draw_coords->get_pb_bbox(*clb, *pb->pb_graph_node) + parent_bbox.bottom_left();
 
-	t_pb_type *pb_type = pb->pb_graph_node->pb_type;
-
-	/* If the sub-block level (depth) is equal or greater than the number 
-	 * of sub-block levels to be shown, don't draw.
-	 */
-	if (pb_type->depth >= draw_state->show_blk_internal)
+	// if we've gone too far, don't draw anything
+	if (pb_type->depth > draw_state->show_blk_internal) {
 		return;
-
-	/* Set the color in the block to white, so the child blocks can be drawn
-	 * in grey. If the block is a top-level physical block, only set block
-	 * color to white if the block has not been highlighted.
-	 */
-	if (pb_type->depth == 0 && is_top_lvl_block_highlighted(*clb)) 
-		;
-	else if (!get_selected_sub_block_info().is_selected(pb->pb_graph_node, clb)) {
-
-		setcolor(WHITE);
-		fillrect(parent_bbox.bottom_left(), parent_bbox.top_right()); 
-		setcolor(BLACK);
-		setlinestyle(SOLID);
-		drawrect(parent_bbox);
 	}
 
-	/* Draw text for block pb_type (the text at the top, eg. "clb" ) */
-	setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
-	// here, I am tricking the function into using a slightly different weighting because
-	// the text is very close to the top of the block.
-	drawtext(parent_bbox.get_xcenter(), parent_bbox.top() - (parent_bbox.get_height()) / 15.0,
-	        pb_type->name, calc_text_xbound(parent_bbox.left(), parent_bbox.bottom() / 5.0f,
-	                                        parent_bbox.right(), parent_bbox.top() / 5.0f, pb_type->name)
-	);
+	/// first draw box ///
 
+	if (pb_type->depth == 0) {
+		if (!is_top_lvl_block_highlighted(*clb)) {
+			// if this is a top level pb, and only if it isn't selected (ie. a funny colour),
+			// overwrite it. (but stil draw the text)
+			setcolor(WHITE);
+			fillrect(abs_bbox); 
+			setcolor(BLACK);
+			setlinestyle(SOLID);
+			drawrect(abs_bbox);
+		}
+	} else {
+		if (pb->name != NULL) {
+			// If block is used, draw it in colour with solid border.
+
+			setlinestyle(SOLID);
+
+			// type_index indicates what type of block.
+			const int type_index = clb->type->index;
+
+			// determine default background color
+			if (sel_sub_info.is_selected(pb->pb_graph_node, clb)) {
+				setcolor(SELECTED_COLOR);
+			} else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb)) {
+				setcolor(DRIVES_IT_COLOR);
+			} else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb)) {
+				setcolor(DRIVEN_BY_IT_COLOR);
+			} else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != NULL) {
+				setcolor(WHITE); // draw anthing that will have a child as white
+			} else if (type_index < 3) {
+				setcolor(LIGHTGREY);
+			} else if (type_index < 3 + MAX_BLOCK_COLOURS) {
+				setcolor(BISQUE + MAX_BLOCK_COLOURS + type_index - 3);
+			} else {
+				setcolor(BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
+			}
+		}
+		else {
+			// If block is not used, draw as empty block (ie. white
+			// background with dashed border).
+
+			setlinestyle(DASHED);
+			setcolor(WHITE);
+		}
+
+		fillrect(abs_bbox);
+		setcolor(BLACK);
+		drawrect(abs_bbox);
+	}
+
+	/// then draw text ///
+
+	if (pb->name != NULL) {
+		setfontsize(16); // note: calc_text_xbound(...) assumes this is 16
+		if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == NULL) {
+			// If this pb is at the lowest displayed level, or has no more children, then
+			// label it in the center with its type and name
+
+			int type_len = strlen(pb_type->name);
+			int name_len = strlen(pb->name);
+			int tot_len = type_len + name_len;
+			char* blk_tag = (char *)my_malloc((tot_len + 8) * sizeof(char));
+
+			sprintf (blk_tag, "%s(%s)", pb_type->name, pb->name);
+
+			drawtext(abs_bbox.get_xcenter(), abs_bbox.get_ycenter(),
+				 blk_tag, calc_text_xbound(abs_bbox, blk_tag));
+
+			free(blk_tag);
+		} else {
+			// else (ie. has chilren, and isn't at the lowest displayed level)
+			// just label its type, and put it up at the top so we can see it
+			// Note: Here, I am tricking the function into using a slightly different weighting because
+			// the text is very close to the top of the block.
+			drawtext(abs_bbox.get_xcenter(), abs_bbox.top() - (abs_bbox.get_height()) / 15.0,
+		        pb_type->name, calc_text_xbound(abs_bbox.left(), abs_bbox.bottom() / 5.0f,
+				                                abs_bbox.right(), abs_bbox.top() / 5.0f, pb_type->name)
+			);
+		}
+	} else {
+		// If child block is not used, label it only by its type
+		drawtext(abs_bbox.get_xcenter(), abs_bbox.get_ycenter(),
+			 pb_type->name, calc_text_xbound(abs_bbox, pb_type->name));
+	}
+
+	/// now recurse on the child pbs. ///
+
+	// return if no children, or this is an unusused pb,
+	// or if going down will be too far down (this one is redundant, but for optimazition)
+	if(pb->child_pbs == NULL || pb->name == NULL
+		|| pb_type->depth == draw_state->show_blk_internal) {
+
+		return;
+	}
 
 	int num_child_types = pb->get_num_child_types();
 	for (int i = 0; i < num_child_types; ++i) {
-			
+
+		if (pb->child_pbs[i] == NULL) {
+			continue;
+		}
+
 		int num_pb = pb->get_num_children_of_type(i);
-		for (int j = 0; j < num_pb; ++j) {	
-			/* Iterate through each child_pb */
+		for (int j = 0; j < num_pb; ++j) {
+
 			t_pb* child_pb = &pb->child_pbs[i][j];
 
-			/* Point to child block */
+			// don't go farther if null 
+			if (child_pb == NULL) {
+				continue;
+			}
+
 			t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
-			const t_bound_box& child_bbox = draw_coords->get_pb_bbox(*clb, *child_pb->pb_graph_node);
-			const t_bound_box child_abs_bbox = child_bbox + parent_bbox.bottom_left();
-			
-			if (child_pb->name != NULL) {
-				/* If child block is used, draw it in default background and
-				 * solid border.
-				 */
-				setlinestyle(SOLID);
-				
-				/* type_index indicates what type of block. */
-				const int type_index = clb->type->index;
-
-				t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
-
-				/* Set default background color based on the top-level physical block type */
-				if (sel_sub_info.is_selected(child_pb->pb_graph_node, clb)) {
-					setcolor(SELECTED_COLOR);
-				} else if (sel_sub_info.is_sink_of_selected(child_pb->pb_graph_node, clb)) {
-					setcolor(DRIVES_IT_COLOR);
-				} else if (sel_sub_info.is_source_of_selected(child_pb->pb_graph_node, clb)) {
-					setcolor(DRIVEN_BY_IT_COLOR);
-				} else if (type_index < 3) {
-					setcolor(LIGHTGREY);
-				} else if (type_index < 3 + MAX_BLOCK_COLOURS) {
-					setcolor(BISQUE + MAX_BLOCK_COLOURS + type_index - 3);
-				} else {
-					setcolor(BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
-				}
-			}
-			else {
-				/* If child block is not used, draw empty block (ie. white 
-				 * background with dashed border). 
-				 */
-				setlinestyle(DASHED);
-				setcolor(WHITE);
-			}
-			
-			fillrect(child_abs_bbox); 
-			setcolor(BLACK);
-			drawrect(child_abs_bbox);
-
-			/* Display names for sub_blocks */
-			setfontsize(16);
-			if (child_pb->name != NULL) {
-				/* If child block is used, label it by its pb_type, followed
-				 * by its name in brackets.
-				 */
-				int type_len, name_len, tot_len;
-				char *blk_tag;
-
-				type_len = strlen(pb_child_type->name);
-				name_len = strlen(child_pb->name);
-				tot_len = type_len + name_len;
-				blk_tag = (char *)my_malloc((tot_len + 8) * sizeof(char));
-
-				sprintf (blk_tag, "%s(%s)", pb_child_type->name, child_pb->name);
-
-				drawtext(child_abs_bbox.get_xcenter(), child_abs_bbox.get_ycenter(),
-					 blk_tag, calc_text_xbound(child_abs_bbox, blk_tag));
-				// min((x2 - x1) * 0.9f , (y2 - y1) * strlen(blk_tag) * 0.45f)
-
-				free(blk_tag);
-			}
-			else {
-				/* If child block is not used, label it only by its pb_type
-				 */
-				drawtext(child_abs_bbox.get_xcenter(), child_abs_bbox.get_ycenter(),
-					 pb_child_type->name, calc_text_xbound(child_abs_bbox, pb_child_type->name));
-			}
-
-			/* If no more child physical blocks to draw, return */
-			if (pb_child_type->num_modes == 0 || pb->child_pbs == NULL 
-				|| pb->child_pbs[i] == NULL || child_pb->name == NULL)
+			// don't go farther if 0 modes
+			if (pb_child_type == NULL && pb_child_type->num_modes == 0) {
 				continue;
+			}
 
-			/* Traverse to next-level in pb_graph */
-			draw_internal_pb(clb, child_pb, child_abs_bbox);
+			// now recurse
+			draw_internal_pb(clb, child_pb, abs_bbox);
+
 		}
 	}
 }
@@ -652,7 +638,7 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 
 	/* Call accessor function to retrieve global variables. */
 	draw_state = get_draw_state_vars();
-	
+
 	if (clb.type->index < 3) {
 		if (draw_state->block_color[blk_id] == LIGHTGREY)
 			return false;
@@ -669,40 +655,71 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 }
 
 t_pb* highlight_sub_block_helper(
-	t_draw_pb_type_info* blk_info, t_pb* pb, float rel_x, float rel_y, int max_depth);
+	t_block* clb, t_pb* pb, t_point local_pt, int max_depth);
 
-int highlight_sub_block(int blocknum, float rel_x, float rel_y) {
+int highlight_sub_block(float abs_x, float abs_y) {
 	t_draw_state* draw_state = get_draw_state_vars();
-	t_draw_coords *draw_coords = get_draw_coords_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	int max_depth = draw_state->show_blk_internal;
+	// determine block, pass it in
+	t_block* clb = NULL;
+	t_bound_box clb_bbox(0,0,0,0);
+	int i, j, k;
 
-	int type_index = block[blocknum].type->index;
-	t_draw_pb_type_info* blk_info = &draw_coords->blk_info.at(type_index);
-	
+	// determine grid x
+	for (i = 0; i <= nx + 1; ++i) {
+		if (draw_coords->tile_x[i] > abs_x) {
+			break;
+		}
+	}
+	--i;
+
+	// determine grid y
+	for(j = 0; j <= ny + 1; ++j) {
+		if (draw_coords->tile_y[j] > abs_y) {
+			break;
+		}
+	}
+	--j;
+
+	// determine sub_block
+	t_grid_tile* grid_tile = &grid[i][j];
+	for (k = 0; k < grid_tile->type->capacity; ++k) {
+		int clb_index = grid_tile->blocks[k];
+		if (clb_index >= 0) {
+			clb_bbox = draw_coords->
+				get_absolute_pb_bbox(block[clb_index], block[clb_index].pb->pb_graph_node);
+			if (clb_bbox.intersects(abs_x, abs_y)) {
+				clb = &block[clb_index];
+				break;
+			}
+		}
+	}
+
+	if (clb == NULL) {
+		return 1;
+	}
+
+	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
+
 	t_pb* new_selected_sub_block = 
-		highlight_sub_block_helper(blk_info, block[blocknum].pb, rel_x, rel_y, max_depth);
+		highlight_sub_block_helper(clb, clb->pb, point_in_clb, max_depth);
 	if (new_selected_sub_block == NULL) {
 		get_selected_sub_block_info().clear();
 		return 1;
 	} else {
-		get_selected_sub_block_info().set(new_selected_sub_block, &block[blocknum]);
+		get_selected_sub_block_info().set(new_selected_sub_block, clb);
 		return 0;
 	}
 }
 
 t_pb* highlight_sub_block_helper(
-	t_draw_pb_type_info* blk_info, t_pb* pb, float rel_x, float rel_y, int max_depth)
+	t_block* clb, t_pb* pb, t_point local_pt, int max_depth)
 {
 	
-	t_pb* child_pb;
-	t_pb_graph_node *pb_graph_node, *pb_child_node;
-	t_pb_type *pb_type;
-	t_mode mode;
-	int i, j, num_children, num_pb;
-
-	pb_graph_node = pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;
+	t_draw_coords *draw_coords = get_draw_coords_vars();
+	t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
 	// check to see if we are past the displayed level,
 	// if pb has children,
@@ -713,36 +730,32 @@ t_pb* highlight_sub_block_helper(
 		return NULL;
 	}
 
-	// Get the mode of operation
-	mode = pb_type->modes[pb->mode];
-	num_children = mode.num_pb_type_children;
+	int num_child_types = pb->get_num_child_types();
 
 	// Iterate through each type of child pb, and each pb of that type.
-	for (i = 0; i < num_children; ++i) {
-		num_pb = mode.pb_type_children[i].num_pb;
+	for (int i = 0; i < num_child_types; ++i) {
+		int num_children_of_type = pb->get_num_children_of_type(i);
 
-		for (j = 0; j < num_pb; ++j) {
+		for (int j = 0; j < num_children_of_type; ++j) {
 
 			if (pb->child_pbs[i] == NULL) {
 				continue;
 			}
 
-			child_pb = &pb->child_pbs[i][j];
-			pb_child_node = child_pb->pb_graph_node;
+			t_pb* child_pb = &pb->child_pbs[i][j];
+			t_pb_graph_node* pb_child_node = child_pb->pb_graph_node;
 
 			// get the bbox for this child
-			const t_bound_box& bbox = blk_info->get_pb_bbox(*pb_child_node);
+			const t_bound_box& bbox = draw_coords->get_pb_bbox(*clb, *pb_child_node);
 
 			// If child block is being used, check if it intersects
-			if (child_pb->name != NULL &&
-				bbox.left() < rel_x && rel_x < bbox.right() &&
-				bbox.bottom() < rel_y && rel_y < bbox.top()) {
+			if (child_pb->name != NULL && bbox.intersects(local_pt)) {
 
 				// check farther down the graph, see if we can find
 				// something more specific.
 				t_pb* subtree_result =
 					highlight_sub_block_helper(
-						blk_info, child_pb, rel_x - bbox.left(), rel_y - bbox.bottom(), max_depth);
+						clb, child_pb, local_pt - bbox.bottom_left(), max_depth);
 				if (subtree_result != NULL) {
 					// we found something more specific.
 					return subtree_result;

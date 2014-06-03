@@ -4515,6 +4515,21 @@ void win32_fillcurve(t_point *points, int npoints) { }
  * begin t_point function definitions *
  ******************************************/
 
+void t_point::set(float _x, float _y) { x = _x; y = _y; }
+void t_point::set(const t_point& src) { x = src.x; y = src.y; }
+
+void t_point::offset(float _x, float _y) {
+	x += _x;
+	y += _y;
+}
+
+t_point t_point::operator- (const t_point& rhs) const {
+	t_point result = *this;
+	result.x -= rhs.x;
+	result.y -= rhs.y;
+	return result;
+}
+
 t_point t_point::operator+ (const t_point& rhs) const {
 	t_point result = *this;
 	result.x += rhs.x;
@@ -4525,6 +4540,12 @@ t_point t_point::operator+ (const t_point& rhs) const {
 t_point& t_point::operator+= (const t_point& rhs) {
 	this->x += rhs.x;
 	this->y += rhs.y;
+	return *this;
+}
+
+t_point& t_point::operator-= (const t_point& rhs) {
+	this->x -= rhs.x;
+	this->y -= rhs.y;
 	return *this;
 }
 
@@ -4541,14 +4562,6 @@ t_point::t_point(const t_point& src) :
 }
 
 t_point::t_point(float _x, float _y) : x(_x), y(_y) { }
-
-void t_point::offset(float _x, float _y) {
-	x += _x;
-	y += _y;
-}
-
-void t_point::set(float _x, float _y) { x = _x; y = _y; }
-void t_point::set(const t_point& src) { x = src.x; y = src.y; }
 
 /******************************************
  * begin t_bound_box function definitions *
@@ -4593,14 +4606,37 @@ void t_bound_box::offset(float by_x, float by_y) {
 	this->topright.offset(by_x, by_y);
 }
 
+bool t_bound_box::intersects(const t_point& test_pt) const {
+	return intersects(test_pt.x, test_pt.y);
+}
+
+bool t_bound_box::intersects(float x, float y) const {
+	if (x < left() || right() < x || y < bottom() || top() < y) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 t_bound_box t_bound_box::operator+ (const t_point& rhs) const {
 	t_bound_box result = *this;
 	result.offset(rhs);
 	return result;
 }
 
+t_bound_box t_bound_box::operator- (const t_point& rhs) const {
+	t_bound_box result = *this;
+	result.offset(t_point(-rhs.x, -rhs.y));
+	return result;
+}
+
 t_bound_box& t_bound_box::operator+= (const t_point& rhs) {
 	this->offset(rhs);
+	return *this;
+}
+
+t_bound_box& t_bound_box::operator-= (const t_point& rhs) {
+	this->offset(t_point(-rhs.x, -rhs.y));
 	return *this;
 }
 

@@ -2318,7 +2318,7 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	bnum = grid[i][j].blocks[k];
 
 	// note: this is equivalent to clearing the selected sub-block if show_blk_internal is 0
-	highlight_sub_block(bnum, x - draw_coords->tile_x[i], y - draw_coords->tile_y[j]);
+	highlight_sub_block(x, y);
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();

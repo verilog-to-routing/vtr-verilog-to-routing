@@ -120,7 +120,8 @@ struct t_draw_state {
 struct t_draw_pb_type_info {
 	vector<t_bound_box> subblk_array;
 
-	t_bound_box& get_pb_bbox(const t_pb_graph_node& pb_gnode);
+	t_bound_box get_pb_bbox(const t_pb_graph_node& pb_gnode);
+	t_bound_box& get_pb_bbox_ref(const t_pb_graph_node& pb_gnode);
 };
 
 /* Structure used to store coordinates and dimensions for 
@@ -148,8 +149,8 @@ struct t_draw_coords {
 	 * Retrieve the bounding box for the given pb in the given
 	 * clb, from this data structure
 	 */
-	t_bound_box& get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode);
-	t_bound_box& get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode);
+	t_bound_box get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode);
+	t_bound_box get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode);
 
 	/**
 	 * Calculate and return a bounding box for the given pb in the given
