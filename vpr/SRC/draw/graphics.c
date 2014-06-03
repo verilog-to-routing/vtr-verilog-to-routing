@@ -4646,7 +4646,10 @@ t_bound_box& t_bound_box::operator= (const t_bound_box& src) {
 	return *this;
 }
 
-t_bound_box::t_bound_box() { }
+t_bound_box::t_bound_box() :
+	t_bound_box(0,0,0,0) {
+
+}
 
 t_bound_box::t_bound_box(const t_bound_box& src) :
 	bottomleft(src.bottom_left()), topright(src.top_right()) {

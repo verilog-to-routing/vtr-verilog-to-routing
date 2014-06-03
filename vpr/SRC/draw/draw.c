@@ -567,8 +567,10 @@ void init_draw_coords(float width_val) {
 	draw_coords->tile_width = width_val;
 	draw_coords->pin_size = 0.3;
 	for (i = 0; i < num_types; ++i) {
-		draw_coords->pin_size = min(draw_coords->pin_size,
-				(draw_coords->tile_width / (4.0F * type_descriptors[i].num_pins)));
+		if (type_descriptors[i].num_pins > 0) {
+			draw_coords->pin_size = min(draw_coords->pin_size,
+					(draw_coords->tile_width / (4.0F * type_descriptors[i].num_pins)));
+		}
 	}
 
 	j = 0;
@@ -623,13 +625,14 @@ static void drawplace(void) {
 			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
 				continue;
 
+
 			num_sub_tiles = grid[i][j].type->capacity;
+			/* Don't draw if tile capacity is zero. eg. corners. */
+			if (num_sub_tiles == 0) {
+				continue;
+			}
 			sub_tile_step = draw_coords->tile_width / num_sub_tiles;
 			height = grid[i][j].type->height;
-
-			/* Don't draw if tile capacity is zero. This includes corners. */
-			if (num_sub_tiles == 0)
-				continue;
 
 			for (k = 0; k < num_sub_tiles; ++k) {
 				/* Graphics will look unusual for multiple height and capacity */
@@ -1639,15 +1642,14 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 								+ draw_coords->tile_width 
 								+ (1. + rr_node[inode].get_ptc_num());
 			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()];
-			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_yhigh()];
+			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_yhigh()]
+			                    + draw_coords->tile_width;
 			break;
 		default:
-			bound_box.left() = -1;
-			bound_box.right() = -1;
-			bound_box.bottom() = -1;
-			bound_box.top() = -1;
+			// a problem. leave at default value (ie. zeros)
 			break;
 	}
+
 
 	return bound_box;
 }
@@ -2478,6 +2480,7 @@ void draw_triangle_along_line(float xend, float yend, float x1, float x2,
 	xdelta = x2 - x1;
 	ydelta = y2 - y1;
 	magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
+
 	xunit = xdelta / magnitude;
 	yunit = ydelta / magnitude;
 
