@@ -51,6 +51,7 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb);
 void draw_one_logical_connection(
 	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
 	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox);
+static t_pb* highlight_sub_block_helper(t_block* clb, t_pb* pb, t_point local_pt, int max_depth);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -454,9 +455,18 @@ void draw_logical_connections() {
 	}
 }
 
+/**
+ * Draws the logical connections of the given pb in clb, and all of it's
+ * children, and children's children and so on. pb must be in clb, and in 
+ * fact could be determined from pb, but is generally available where this
+ * function is called. 
+ *
+ * *NOTE: If pb or clb is null, then this function will not recurse, and instead
+ *        will draw ALL logical connections of ALL logical blocks.
+ */
 static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
 	
-	if (pb && clb && pb->child_pbs != 0) {
+	if (pb != NULL && clb != NULL && pb->child_pbs != 0) {
 		int num_child_types = pb->get_num_child_types();
 		for (int i = 0; i < num_child_types; ++i) {
 				
@@ -507,6 +517,13 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
 	}
 }
 
+/**
+ * Helper function for draw_one_logical_connection(...). Finds the index of a pin
+ * in the given model. It counts pins in the model until it finds the given pin,
+ * and puts this count in pin_index. The total number of pins is also calculated
+ * and put in total_pins. The search inpts parameter tells this function to search
+ * inpts (if true) or outputs (if false).
+ */
 void find_pin_index_at_model_scope(
 	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
 	OUTP int* pin_index, OUTP int* total_pins) {
@@ -570,6 +587,11 @@ void find_pin_index_at_model_scope(
 	// puts("--- NEXT! ---");
 }
 
+/**
+ * Draws ONE logical connection from src_pin in src_lblk to sink_pin in sink_lblk.
+ * The *_abs_bbox parameters are for mild optmization, as the absolute bbox can be calculated
+ * more effeciently else where.
+ */
 void draw_one_logical_connection(
 	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
 	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox) {
@@ -590,40 +612,40 @@ void draw_one_logical_connection(
 	find_pin_index_at_model_scope(src_pin,  src_lblk, false,  &src_pin_index, &src_pin_total );
 	find_pin_index_at_model_scope(sink_pin, sink_lblk, true, &sink_pin_index, &sink_pin_total);
 
-	const t_point src_start =  {
+	const t_point src_point =  {
 		src_x_offset + src_usable_width * src_pin_index / ((float)src_pin_total),
 		src_abs_bbox.get_ycenter()
 	};
-	const t_point sink_start = {
+	const t_point sink_point = {
 		sink_x_offset + sink_usable_width * sink_pin_index / ((float)sink_pin_total),
 		sink_abs_bbox.get_ycenter()
 	};
 
-	// draw a link connecting the center of the pbs.
-	drawline(src_start.x, src_start.y,
-		sink_start.x, sink_start.y);
+	// draw a link connecting the pins.
+	drawline(src_point.x, src_point.y,
+		sink_point.x, sink_point.y);
 
 	if (src_lblk.clb_index == sink_lblk.clb_index) {
 		// if they are in the same clb, put one arrow in the center
-		float center_x = (src_start.x + sink_start.x) / 2;
-		float center_y = (src_start.y + sink_start.y) / 2;
+		float center_x = (src_point.x + sink_point.x) / 2;
+		float center_y = (src_point.y + sink_point.y) / 2;
 
 		draw_triangle_along_line(
 			center_x, center_y,
-			src_start.x, sink_start.x,
-			src_start.y, sink_start.y
+			src_point.x, sink_point.x,
+			src_point.y, sink_point.y
 		);
 	} else {
 		// if they are not, put 2 near each end
 		draw_triangle_along_line(
 			3,
-			src_start.x, sink_start.x,
-			src_start.y, sink_start.y
+			src_point.x, sink_point.x,
+			src_point.y, sink_point.y
 		);
 		draw_triangle_along_line(
 			-3,
-			src_start.x, sink_start.x,
-			src_start.y, sink_start.y
+			src_point.x, sink_point.x,
+			src_point.y, sink_point.y
 		);
 	}
 
@@ -653,9 +675,6 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 
 	return true;
 }
-
-t_pb* highlight_sub_block_helper(
-	t_block* clb, t_pb* pb, t_point local_pt, int max_depth);
 
 int highlight_sub_block(float abs_x, float abs_y) {
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -714,6 +733,11 @@ int highlight_sub_block(float abs_x, float abs_y) {
 	}
 }
 
+/**
+ * The recursive part of highlight_sub_block. finds which pb is under
+ * the given location. local_pt is relative to the given pb, and pb should
+ * be in clb.
+ */
 t_pb* highlight_sub_block_helper(
 	t_block* clb, t_pb* pb, t_point local_pt, int max_depth)
 {
@@ -773,11 +797,14 @@ float calc_text_xbound(const t_bound_box& center_of, char* const text) {
 	return calc_text_xbound(center_of.left(), center_of.bottom(), center_of.right(), center_of.top(), text);
 }
 
+/**
+ * Returns a hopefully useful xbound with this in mind:
+ *     limit the text display length to just outside of the bounding box,
+ *     and limit it by the the height of the bounding box, with an adjustment
+ *     for the length of the text, so effectively by the height of the text.
+ *     note that this is calibrated for a 16pt font
+ */
 float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text) {
-	// limit the text display length to just outside of the bounding box,
-	// and limit it by the the height of the bounding box, with an adjustment
-	// for the length of the text, so effectively by the height of the text.
-	// note that this is calibrated for a 16pt font
 	return min((end_x - start_x) * 1.1f, (end_y - start_y) * strlen(text) * 0.5f);
 }
 

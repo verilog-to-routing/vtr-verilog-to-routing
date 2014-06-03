@@ -4525,15 +4525,13 @@ void t_point::offset(float _x, float _y) {
 
 t_point t_point::operator- (const t_point& rhs) const {
 	t_point result = *this;
-	result.x -= rhs.x;
-	result.y -= rhs.y;
+	result -= rhs;
 	return result;
 }
 
 t_point t_point::operator+ (const t_point& rhs) const {
 	t_point result = *this;
-	result.x += rhs.x;
-	result.y += rhs.y;
+	result += rhs;
 	return result;
 }
 
@@ -4555,7 +4553,7 @@ t_point& t_point::operator= (const t_point& src) {
 	return *this;
 }
 
-t_point::t_point() { }
+t_point::t_point() : x(0), y(0) { }
 
 t_point::t_point(const t_point& src) :
 	x(src.x), y(src.y) {
@@ -4647,8 +4645,7 @@ t_bound_box& t_bound_box::operator= (const t_bound_box& src) {
 }
 
 t_bound_box::t_bound_box() :
-	t_bound_box(0,0,0,0) {
-
+	bottomleft(), topright() {
 }
 
 t_bound_box::t_bound_box(const t_bound_box& src) :

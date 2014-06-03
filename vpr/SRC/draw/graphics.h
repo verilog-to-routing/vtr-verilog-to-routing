@@ -42,8 +42,8 @@ typedef struct {
 } t_report;
 
 
-/*
- * Used in calls to fillpoly, and elsewhere
+/**
+ * A point datatype.
  */
 struct t_point {
 	float x; 
@@ -52,12 +52,25 @@ struct t_point {
 	void set(float x, float y);
 	void set(const t_point& src);
 
+	/**
+	 * beahves like a 2 argument plusequals.
+	 */
 	void offset(float x, float y);
 	
+	/**
+	 * These add the given point to this point in a 
+	 * componentwise fashion, ie x = x + rhs.x
+	 *
+	 * Naturally, {+,-} don't modify and {+,-}= do.
+	 */
 	t_point operator+ (const t_point& rhs) const;
 	t_point operator- (const t_point& rhs) const;
 	t_point& operator+= (const t_point& rhs);
 	t_point& operator-= (const t_point& rhs);
+
+	/**
+	 * Assign that point to this one - copy the components
+	 */
 	t_point& operator= (const t_point& src);
 
 	t_point();
@@ -66,16 +79,18 @@ struct t_point {
 
 };
 
-/* 
- * represents a rectangle, used as a bounding box
+/**
+ * represents a rectangle, used as a bounding box.
  */
 struct t_bound_box {
 
+	/**
+	 * These return their respective edge/point's location
+	 */
 	const float& left() const;
 	const float& right() const;
 	const float& bottom() const;
 	const float& top() const;
-
 	float& left();
 	float& right();
 	float& bottom();
@@ -86,22 +101,45 @@ struct t_bound_box {
 	t_point& bottom_left();
 	t_point& top_right();
 
+	/**
+	 * calculate and return the center
+	 */
 	float get_xcenter() const;
 	float get_ycenter() const;
+	t_point get_center() const;
 
+	/**
+	 * calculate and return the width/height
+	 */
 	float get_width() const;
 	float get_height() const;
 
+	/**
+	 * These behave like the plusequal operator
+	 * They add their x and y values to all corners
+	 */
 	void offset(const t_point& make_relative_to);
 	void offset(float by_x, float by_y);
 
 	bool intersects(const t_point& test_pt) const;
 	bool intersects(float x, float y) const;
 
+	/**
+	 * These add the given point to this bbox - they
+	 * offset each corner by this point. Usful for calculating
+	 * the location of a box in a higher scope, or for moving
+	 * it around as part of a calculation
+	 *
+	 * Naturally, the {+,-} don't modify and the {+,-}= do.
+	 */
 	t_bound_box operator+ (const t_point& rhs) const;
 	t_bound_box operator- (const t_point& rhs) const;
 	t_bound_box& operator+= (const t_point& rhs);
 	t_bound_box& operator-= (const t_point& rhs);
+
+	/**
+	 * Assign that box to this one - copy it's left, right, bottom, and top.
+	 */
 	t_bound_box& operator= (const t_bound_box& src);
 
 	t_bound_box();
