@@ -1616,14 +1616,14 @@ static void update_connection_gain_values(int inet, int clustered_block,
 				
 				if (num_internal_connections > 1) {
 					cur_pb->pb_stats->connectiongain[iblk] -= 1
-							/ (float) (g_atoms_nlist.net[inet].num_sinks()
+							/ (float) (g_atoms_nlist.net[inet].pins.size()
 									- (num_internal_connections - 1)
-									+ 1 * num_stuck_connections);
+									+ num_stuck_connections);
 				}
 				cur_pb->pb_stats->connectiongain[iblk] += 1
-						/ (float) (g_atoms_nlist.net[inet].num_sinks()
+						/ (float) (g_atoms_nlist.net[inet].pins.size()
 								- num_internal_connections
-								+ 1 * num_stuck_connections);
+								+ num_stuck_connections);
 			}
 		}
 	}
@@ -1639,14 +1639,14 @@ static void update_connection_gain_values(int inet, int clustered_block,
 			}
 			if (num_internal_connections > 1) {
 				cur_pb->pb_stats->connectiongain[iblk] -= 1
-						/ (float) (g_atoms_nlist.net[inet].num_sinks()
-								- (num_internal_connections - 1) + 1
-								+ 1 * num_stuck_connections);
+						/ (float) (g_atoms_nlist.net[inet].pins.size()
+								- (num_internal_connections - 1)
+								+ num_stuck_connections);
 			}
 			cur_pb->pb_stats->connectiongain[iblk] += 1
-					/ (float) (g_atoms_nlist.net[inet].num_sinks()
-							- num_internal_connections + 1
-							+ 1 * num_stuck_connections);
+					/ (float) (g_atoms_nlist.net[inet].pins.size()
+							- num_internal_connections
+							+ num_stuck_connections);
 		}
 	}
 }
