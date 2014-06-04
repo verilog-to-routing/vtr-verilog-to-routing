@@ -1069,10 +1069,10 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		/* Things common to both SOURCEs and SINKs.   */
 		L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
 		L_rr_node[inode].occ = 0;
-		L_rr_node[inode].set_xlow(i);
-		L_rr_node[inode].set_xhigh(i + type->width - 1);
-		L_rr_node[inode].set_ylow(j);
-		L_rr_node[inode].set_yhigh(j + type->height - 1);
+		//assuming that type->width is always 1.
+		//if this needs to change, rr_node.{h,c} need to be modified accordingly
+		assert(type->width == 1);
+		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].set_ptc_num(iclass);
@@ -1170,10 +1170,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		/* Common to both DRIVERs and RECEIVERs */
 		L_rr_node[inode].set_capacity(1);
 		L_rr_node[inode].occ = 0;
-		L_rr_node[inode].set_xlow(i);
-		L_rr_node[inode].set_xhigh(i + type->width - 1);
-		L_rr_node[inode].set_ylow (j);
-		L_rr_node[inode].set_yhigh(j + type->height - 1);
+		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].set_ptc_num(ipin);
@@ -1278,10 +1275,7 @@ static void build_rr_xchan(INP int i, INP int j,
 		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
-		L_rr_node[node].set_xlow(start);
-		L_rr_node[node].set_xhigh(end);
-		L_rr_node[node].set_ylow(j);
-		L_rr_node[node].set_yhigh(j);
+		L_rr_node[node].set_coordinates(start, j, end, j);
 
 		int length = end - start + 1;
 		L_rr_node[node].R = length * seg_details[track].Rmetal;
@@ -1390,10 +1384,7 @@ static void build_rr_ychan(INP int i, INP int j,
 		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
-		L_rr_node[node].set_xlow(i);
-		L_rr_node[node].set_xhigh(i);
-		L_rr_node[node].set_ylow(start);
-		L_rr_node[node].set_yhigh(end);
+		L_rr_node[node].set_coordinates(i, start, i, end);
 
 		int length = end - start + 1;
 		L_rr_node[node].R = length * seg_details[track].Rmetal;

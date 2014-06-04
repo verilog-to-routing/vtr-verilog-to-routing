@@ -55,16 +55,15 @@ class t_rr_node {
 
 private:
 	short xlow;
-	short xhigh;
 	short ylow;
-	short yhigh;
-
+	signed short length;
+	
 	short ptc_num;
-
 	short cost_index;
-	short capacity;
 	short fan_in;
 	short num_edges;
+	short capacity;
+
 public:
 	short occ;
 	t_rr_type type;
@@ -102,10 +101,7 @@ public:
 	short get_fan_in() const;
 	short get_num_edges() const;
 
-	void set_xlow(short);
-	void set_ylow(short);
-	void set_xhigh(short);
-	void set_yhigh(short);
+	void set_coordinates(short, short, short, short);
 	void set_ptc_num(short);
 	void set_cost_index(short);
 	void set_capacity(short);

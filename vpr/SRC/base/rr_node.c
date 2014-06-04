@@ -1,4 +1,5 @@
 #include "rr_node.h"
+#include "globals.h"
 
 /* Create an array of strings which maps to an enumeration (t_rr_type)  *
  * so a routing resource name can be identified 						*
@@ -22,12 +23,25 @@ short t_rr_node::get_ylow() const {
 	return ylow;
 }
 
+/*
+	Note: assuming that type -> width is 1, see assertion in rr_graph.c
+*/
 short t_rr_node::get_xhigh() const {
-	return xhigh;
+	if (type == CHANX) {
+		return xlow + length;
+	} else {
+		return xlow;
+	}
 }
 
 short t_rr_node::get_yhigh() const {
-	return yhigh;
+	if (type == CHANY || type == SINK || type == SOURCE || 
+		type == IPIN || type ==  OPIN) {
+		
+		return ylow + length;
+	} else {
+		return ylow;
+	}
 }
 
 short t_rr_node::get_ptc_num() const {
@@ -42,7 +56,7 @@ short t_rr_node::get_capacity() const {
 	return capacity;
 }
 
-short t_rr_node::get_fan_in() const{
+short t_rr_node::get_fan_in() const {
 	return fan_in;
 }
 
@@ -50,20 +64,28 @@ short t_rr_node::get_num_edges() const {
 	return num_edges;
 }
 
-void t_rr_node::set_xlow(short _xlow) {
-	xlow = _xlow;
-}
+/*
+	Pass in two coordinate variables describing location of node.
+	They do not have to be in any particular order.
+*/
+void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
+	if (x1 < x2) {
+		xlow = x1;
+	} else {
+		xlow = x2;
+	}
 
-void t_rr_node::set_ylow(short _ylow) {
-	ylow = _ylow;
-}
-
-void t_rr_node::set_xhigh(short _xhigh) {
-	xhigh = _xhigh;
-}
-
-void t_rr_node::set_yhigh(short _yhigh) {
-	yhigh = _yhigh;
+	if (y1 < y2) {
+		ylow = y1;
+	} else {
+		ylow = y2;
+	}
+	
+	if (y1 == y2) {
+		length = abs(x2 - x1);
+	} else {
+		length = abs(y2 - y1);
+	}
 }
 
 void t_rr_node::set_ptc_num(short _ptc_num) {
