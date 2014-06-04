@@ -65,8 +65,10 @@ struct t_point {
 	 */
 	t_point operator+ (const t_point& rhs) const;
 	t_point operator- (const t_point& rhs) const;
+	t_point operator* (float rhs) const;
 	t_point& operator+= (const t_point& rhs);
 	t_point& operator-= (const t_point& rhs);
+	t_point& operator*= (float rhs);
 
 	/**
 	 * Assign that point to this one - copy the components
@@ -78,6 +80,8 @@ struct t_point {
 	t_point(float x, float y);
 
 };
+
+t_point operator*(float lhs, const t_point& rhs);
 
 /**
  * represents a rectangle, used as a bounding box.
@@ -295,14 +299,29 @@ void drawellipticarc (float xc, float yc, float radx, float rady, float startang
 void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent);
 void fillellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
 
-/* boundx specifies horizontal bounding box.  If text won't fit in    
- * the space specified by boundx (world coordinates) the text isn't drawn.
- * That avoids text going everywhere for high zoom levels.
- * If you always want the text to display (even if it overwrites lots of
- * stuff at high zoom levels), just specify a huge boundx.
+/* 
+ * These functions all draw text within some sort of bounding box.
+ * The text is drawn centred around the point (xc,yc), text_center, or
+ * in the case of drawtext_in, the centre of the bbox parameter. 
+ *
+ * boundx and boundy specify the width and height bound, respectively, wheras
+ * bounds and bbox specifiy a box in which the text must fit inside completely.
+ *
+ * If you would like to have these functions ignore a particular bound,
+ * specify a huge value. I recommend FLT_MAX or std::numeric_limits<float>::max()
+ * 
+ * If text won't fit in bounds specified, the text isn't drawn.
+ * Useful for avoiding text going everywhere at high zoom levels.
+ *
+ * tolerance, effectively, makes the given bounding box bigger, on
+ * all sides by that amount.
  */
-void drawtext (const t_point& center, const char *text, float boundx);
-void drawtext (float xc, float yc, const char *text, float boundx);
+void drawtext_in (const t_bound_box& bbox, const char* text);
+void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance);
+void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds);
+void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance);
+void drawtext (const t_point& text_center, const char* text, float boundx, float boundy);
+void drawtext (float xc, float yc, const char* text, float boundx, float boundy);
 
 /* Control what buttons are active (default:  all enabled) and
  * whether mouse movements and keypresses are sent to callback

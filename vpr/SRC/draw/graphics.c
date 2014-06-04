@@ -14,6 +14,7 @@
 *                                                                          *
 * V2.0.3 May 2014 - June 2013 (Matthew J.P. Walker)                        *
 * - continued integration with c++                                         *
+* - added ybounding and convenience functions to text drawing              *
 *                                                                          *
 * V2.0.2 May 2013 - June 2013 (Mike Wang)                                  *
 * - In Win32, removed "Window" operation with right mouse click to align   *
@@ -1922,16 +1923,53 @@ fillpoly (t_point *points, int npoints)
 	}
 }
 
-void drawtext (const t_point& center, const char *text, float boundx) {
-	drawtext(center.x, center.y, text, boundx);
+/**
+ * drawtext convenience functions
+ */
+
+void drawtext_in (const t_bound_box& bbox, const char* text) {
+	drawtext(bbox.get_center(), text, bbox);
 }
 
-/* Draws text centered on xc,yc if it fits in boundx */
-void 
-drawtext (float xc, float yc, const char *text, float boundx) 
+void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance) {
+	drawtext(bbox.get_center(), text, bbox, tolerance);
+}
+
+void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance) {
+	t_point tolerance_pt(tolerance, tolerance);
+	t_bound_box tolerance_bounds = bounds;
+
+	tolerance_bounds.bottom_left() -= tolerance_pt;
+	tolerance_bounds.top_right() += tolerance_pt;
+
+	drawtext(text_center, text, tolerance_bounds);
+}
+
+void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds) {
+	if (bounds.intersects(text_center) != true) {
+		printf("the center of the text \"%s\" isn't in it's bounding box", text);
+	}
+	t_point bottomleft_bounds = text_center - bounds.bottom_left();
+	t_point topright_bounds = bounds.top_right() - text_center;
+	t_point min_bounds(
+		min(bottomleft_bounds.x, topright_bounds.x),
+		min(bottomleft_bounds.y, topright_bounds.y)
+	);
+	min_bounds *= 2;
+	drawtext(text_center, text, min_bounds.x, min_bounds.y);
+}
+
+void drawtext (const t_point& text_center, const char *text, float boundx, float boundy) {
+	drawtext(text_center.x, text_center.y, text, boundx, boundy);
+}
+
+/**
+ * the real drawtext function
+ */
+void drawtext (float xc, float yc, const char *text, float boundx, float boundy) 
 {
-	int len, width, xw_off, yw_off, font_ascent, font_descent;
-	
+	int len, width, font_ascent, font_descent;
+	float xw_off, yw_off;
 #ifdef X11
 	len = strlen(text);
 	width = XTextWidth(x11_state.font_info[gl_state.currentfontsize], text, len);
@@ -1954,21 +1992,26 @@ drawtext (float xc, float yc, const char *text, float boundx)
 	font_descent = textmetric.tmDescent;
 #endif	
 	
-	if (width > fabs(boundx*trans_coord.wtos_xmult)) 
-		return; /* Don't draw if it won't fit */
-	
-	xw_off = (int)(width/(2.*trans_coord.wtos_xmult));      /* NB:  sign doesn't matter. */
+	if (width > fabs(boundx*trans_coord.wtos_xmult)) {
+		return; // Don't draw if it won't fit in xbound
+	}
+
+	xw_off = (width/(2.*trans_coord.wtos_xmult));      /* NB:  sign doesn't matter. */
 	
 	/* NB:  2 * descent makes this slightly conservative but simplifies code. */
-	yw_off = (int)((font_ascent + 2 * font_descent)/(2.*trans_coord.wtos_ymult));
-	
+	yw_off = (((font_ascent + 2 * font_descent))/(2.*trans_coord.wtos_ymult));
+
+	if (2*fabs(yw_off) > fabs(boundy)) {
+		return; // don't draw if it won't fit in ybound.
+	}
+
 	/* Note:  text can be clipped when a little bit of it would be visible *
 	* right now.  Perhaps X doesn't return extremely accurate width and   *
 	* ascent values, etc?  Could remove this completely by multiplying    *
 	* xw_off and yw_off by, 1.2 or 1.5.                                   */
 	if (rect_off_screen(xc-xw_off, yc-yw_off, xc+xw_off, yc+yw_off)) 
 		return;
-	
+
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
 		XDrawString(x11_state.display, x11_state.toplevel, x11_state.current_gc, 
@@ -4472,8 +4515,13 @@ void fillellipticarc (const t_point& center, float radx, float rady, float start
 void fillellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
 
-void drawtext (const t_point& center, const char *text, float boundx) { }
-void drawtext (float xc, float yc, const char *text, float boundx) { }
+void drawtext_in (const t_bound_box& bbox, const char* text) { }
+void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance) { }
+void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds) { }
+void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance) { }
+void drawtext (const t_point& text_center, const char* text, float boundx, float boundy) { }
+void drawtext (float xc, float yc, const char* text, float boundx, float boundy) { }
+
 void clearscreen (void) { }
 
 void create_button (const char *prev_button_text , const char *button_text,
@@ -4535,6 +4583,12 @@ t_point t_point::operator+ (const t_point& rhs) const {
 	return result;
 }
 
+t_point t_point::operator* (float rhs) const {
+	t_point result = *this;
+	result *= rhs;
+	return result;
+}
+
 t_point& t_point::operator+= (const t_point& rhs) {
 	this->x += rhs.x;
 	this->y += rhs.y;
@@ -4544,6 +4598,12 @@ t_point& t_point::operator+= (const t_point& rhs) {
 t_point& t_point::operator-= (const t_point& rhs) {
 	this->x -= rhs.x;
 	this->y -= rhs.y;
+	return *this;
+}
+
+t_point& t_point::operator *= (float rhs) {
+	this->x *= rhs;
+	this->y *= rhs;
 	return *this;
 }
 
@@ -4560,6 +4620,10 @@ t_point::t_point(const t_point& src) :
 }
 
 t_point::t_point(float _x, float _y) : x(_x), y(_y) { }
+
+t_point operator*(float lhs, const t_point& rhs) {
+	return rhs*lhs;
+}
 
 /******************************************
  * begin t_bound_box function definitions *
@@ -4584,6 +4648,10 @@ float t_bound_box::get_xcenter() const {
 
 float t_bound_box::get_ycenter() const {
 	return (top() + bottom()) / 2;
+}
+
+t_point t_bound_box::get_center() const {
+	return t_point(get_xcenter(), get_ycenter());
 }
 
 float t_bound_box::get_width() const {

@@ -611,8 +611,6 @@ static void drawplace(void) {
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	float sub_tile_step;
-	float x1, y1, x2, y2;
 	int i, j, k, bnum;
 	int num_sub_tiles;
 	int height;
@@ -631,32 +629,14 @@ static void drawplace(void) {
 			if (num_sub_tiles == 0) {
 				continue;
 			}
-			sub_tile_step = draw_coords->tile_width / num_sub_tiles;
 			height = grid[i][j].type->height;
 
 			for (k = 0; k < num_sub_tiles; ++k) {
 				/* Graphics will look unusual for multiple height and capacity */
 				assert(height == 1 || num_sub_tiles == 1);
+
 				/* Get coords of current sub_tile */
-				if ((j < 1) || (j > ny)) { /* top and bottom fringes */
-					/* Only for the top and bottom fringes (ie. io blocks place on top 
-					 * and bottom edges of the chip), sub_tiles are placed next to each 
-					 * other horizontally, because it is easier to visualize the 
-					 * connection from each individual io block to other parts of the 
-					 * chip when toggle_nets is selected.
-					 */
-					x1 = draw_coords->tile_x[i] + (k * sub_tile_step);
-					y1 = draw_coords->tile_y[j];
-					x2 = x1 + sub_tile_step;
-					y2 = y1 + draw_coords->tile_width;
-				}
-				else {
-					/* Sub_tiles are stacked on top of each other vertically. */
-					x1 = draw_coords->tile_x[i];
-					y1 = draw_coords->tile_y[j] + (k * sub_tile_step);
-					x2 = x1 + draw_coords->tile_width;
-					y2 = draw_coords->tile_y[j + height - 1] + ((k + 1) * sub_tile_step);
-				}
+				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
 
 				/* Look at the tile at start of large block */
 				bnum = grid[i][j].blocks[k];
@@ -666,7 +646,7 @@ static void drawplace(void) {
 				 */
 				if (bnum != EMPTY && bnum != INVALID) {
 					setcolor(draw_state->block_color[bnum]);
-					fillrect(x1, y1, x2, y2);
+					fillrect(abs_clb_bbox);
 				} else {
 					/* colour empty blocks a particular colour depending on type  */
 					if (grid[i][j].type->index < 3) {
@@ -676,25 +656,24 @@ static void drawplace(void) {
 					} else {
 						setcolor(BISQUE + MAX_BLOCK_COLOURS - 1);
 					}
-					fillrect(x1, y1, x2, y2);
+					fillrect(abs_clb_bbox);
 				}
 
 				setcolor(BLACK);
 
 				setlinestyle((EMPTY == bnum) ? DASHED : SOLID);
-				drawrect(x1, y1, x2, y2);
+				drawrect(abs_clb_bbox);
 
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY && bnum != INVALID) {
-					drawtext((x1 + x2) / 2.0, (y1 + y2) / 2.0, block[bnum].name,
-							sub_tile_step);
+					drawtext_in(abs_clb_bbox, block[bnum].name);
 				}
 
 				/* Draw text for block type so that user knows what block */
 				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					if (i > 0 && i <= nx && j > 0 && j <= ny) {
-						drawtext((x1 + x2) / 2.0, y1 + (draw_coords->tile_width / 4.0),
-								grid[i][j].type->name, sub_tile_step);
+						drawtext(t_point(abs_clb_bbox.get_xcenter(), abs_clb_bbox.get_ycenter() - (abs_clb_bbox.get_width() / 4)),
+								grid[i][j].type->name, abs_clb_bbox);
 					}
 				}
 			}
@@ -935,8 +914,8 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 	else
 		drawline(bound_box.bottom_left(), bound_box.top_right());
 
-	wire_start_y1 = bound_box.bottom() - 0.25;
-	wire_start_y2 = bound_box.top() + 0.25;
+	wire_start_y1 = bound_box.bottom() - WIRE_DRAWING_WIDTH/2;
+	wire_start_y2 = bound_box.top() + WIRE_DRAWING_WIDTH/2;
 
 	if (rr_node[inode].direction == INC_DIRECTION) {
 		setlinewidth(2);
@@ -947,7 +926,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 		/* Mux balence numbers */
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.bottom_left(), str, 5);
+		drawtext(bound_box.bottom_left(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
 
 		setcolor(BLACK);
 		setlinewidth(0);
@@ -975,7 +954,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 		/* Mux balance numbers */
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.right(), bound_box.bottom(), str, 5);
+		drawtext(bound_box.right(), bound_box.bottom(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
 
 		setlinewidth(0);
 		draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
@@ -1047,8 +1026,8 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 		#endif
 	}
 
-	wire_start_x1 = bound_box.left() - 0.25;
-	wire_start_x2 = bound_box.right() + 0.25;
+	wire_start_x1 = bound_box.left() - WIRE_DRAWING_WIDTH/2;
+	wire_start_x2 = bound_box.right() + WIRE_DRAWING_WIDTH/2;
 	
 	if (rr_node[inode].direction == INC_DIRECTION) {
 		setlinewidth(2);
@@ -1057,7 +1036,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.bottom_left(), str, 5);
+		drawtext(bound_box.bottom_left(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
 		setcolor(BLACK);
 
 		setlinewidth(0);
@@ -1080,7 +1059,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 
 		setcolor(BLACK);
 		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.left(), bound_box.top(), str, 5);
+		drawtext(bound_box.left(), bound_box.top(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
 		setcolor(BLACK);
 
 		setlinewidth(0);
@@ -1724,7 +1703,7 @@ static void draw_rr_pin(int inode, enum color_types color) {
 					 xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
 			sprintf(str, "%d", ipin);
 			setcolor(BLACK);
-			drawtext(xcen, ycen, str, 2 * draw_coords->pin_size);
+			drawtext(xcen, ycen, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
 			setcolor(color);
 		}
 	}

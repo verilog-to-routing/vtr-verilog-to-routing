@@ -52,14 +52,20 @@ t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode) {
-	const int clb_type_id = clb.type->index;
+	return get_pb_bbox(clb.x, clb.y, clb.z, pb_gnode);
+}
+
+t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode) {
+	const int clb_type_id = grid[grid_x][grid_y].type->index;
 	t_draw_pb_type_info& blk_type_info = this->blk_info.at(clb_type_id);
 
 	t_bound_box result = blk_type_info.get_pb_bbox(pb_gnode);
 
 	// if pb is in the leftmost, rightmost, top, or bottom rows,
 	// flip the bbox accordingly
-	if (clb.y == 0 || clb.x == 0) {
+
+	// flip vertically
+	if (grid_y == 0 || grid_x == 0) {
 		if (pb_gnode.parent_pb_graph_node != NULL) {
 			float parent_height = blk_type_info.get_pb_bbox_ref(*pb_gnode.parent_pb_graph_node).get_height();
 			float new_then_old_bottom = parent_height - result.top();
@@ -74,23 +80,24 @@ t_bound_box t_draw_coords::get_pb_bbox(const t_block& clb, const t_pb_graph_node
 		// }
 	}
 
-	if (clb.x == nx + 1 || clb.x == 0) {
+	// reflect it over the line x=y
+	if (grid_x == nx + 1 || grid_x == 0) {
 		std::swap(result.right(), result.top());
 		std::swap(result.left(), result.bottom());
 	}
 
 	// if getting clb bbox, apply location info.
 	if (pb_gnode.parent_pb_graph_node == NULL) {
-		float sub_blk_offset = this->tile_width * (clb.z/(float)grid[clb.x][clb.y].type->capacity);
+		float sub_blk_offset = this->tile_width * (sub_block_index/(float)grid[grid_x][grid_y].type->capacity);
 
 		// blk_height = grid[i][j].type->height;
-		// this->tile_x[clb.x] + this->tile_width,
-		// this->tile_y[clb.y + blk_height - 1] + ((clb.z + 1) * sub_tile_offset)
-		result += t_point(this->tile_x[clb.x], this->tile_y[clb.y]);
-		if (clb.z != 0) {
-			if (clb.x == 0 || clb.x == nx + 1) {
+		// this->tile_x[grid_x] + this->tile_width,
+		// this->tile_y[grid_y + blk_height - 1] + ((sub_block_index + 1) * sub_tile_offset)
+		result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
+		if (sub_block_index != 0) {
+			if (grid_x == 0 || grid_x == nx + 1) {
 				result += t_point(0, sub_blk_offset);
-			} else if (clb.y == 0 || clb.y == ny + 1) {
+			} else if (grid_y == 0 || grid_y == ny + 1) {
 				result += t_point(sub_blk_offset, 0);
 			}
 		}
@@ -102,7 +109,8 @@ t_bound_box t_draw_coords::get_pb_bbox(const t_block& clb, const t_pb_graph_node
 t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, t_pb_graph_node* pb_gnode) {
 	t_bound_box result = this->get_pb_bbox(clb,*pb_gnode);
 	
-
+	// go up the graph, adding the parent bboxes to the result,
+	// ie. make it relative to one level higher each time.
 	while (pb_gnode->parent_pb_graph_node != NULL) {
 		t_bound_box parents_bbox = this->get_pb_bbox(clb, *pb_gnode->parent_pb_graph_node);
 		result += parents_bbox.bottom_left();
@@ -114,4 +122,8 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, t_pb_graph_n
 
 t_bound_box t_draw_coords::get_absolute_pb_bbox(int clb_index, t_pb_graph_node* pb_gnode) {
 	return get_absolute_pb_bbox(block[clb_index], pb_gnode);
+}
+
+t_bound_box t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {
+	return get_pb_bbox(grid_x, grid_y, sub_block_index, *grid[grid_x][grid_y].type->pb_graph_head);
 }

@@ -27,4 +27,6 @@ const color_types SELECTED_COLOR = GREEN;
 const color_types DRIVES_IT_COLOR = RED;
 const color_types DRIVEN_BY_IT_COLOR = LIGHTMEDIUMBLUE;
 
+const float WIRE_DRAWING_WIDTH = 0.5;
+
 #endif /* DRAW_H */

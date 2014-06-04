@@ -43,9 +43,6 @@ static int draw_internal_find_max_lvl(t_pb_type pb_type);
 static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox);
 static bool is_top_lvl_block_highlighted(const t_block& clb);
 
-static float calc_text_xbound(const t_bound_box& center_of, char* const text);
-static float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text);
-
 static void draw_logical_connections_of(t_pb* pb, t_block* clb);
 
 void draw_one_logical_connection(
@@ -376,24 +373,32 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 
 			sprintf (blk_tag, "%s(%s)", pb_type->name, pb->name);
 
-			drawtext(abs_bbox.get_xcenter(), abs_bbox.get_ycenter(),
-				 blk_tag, calc_text_xbound(abs_bbox, blk_tag));
+			drawtext(
+				t_point(abs_bbox.get_xcenter(), abs_bbox.get_ycenter()),
+				blk_tag,
+				abs_bbox
+			);
 
 			free(blk_tag);
 		} else {
 			// else (ie. has chilren, and isn't at the lowest displayed level)
 			// just label its type, and put it up at the top so we can see it
-			// Note: Here, I am tricking the function into using a slightly different weighting because
-			// the text is very close to the top of the block.
-			drawtext(abs_bbox.get_xcenter(), abs_bbox.top() - (abs_bbox.get_height()) / 15.0,
-		        pb_type->name, calc_text_xbound(abs_bbox.left(), abs_bbox.bottom() / 5.0f,
-				                                abs_bbox.right(), abs_bbox.top() / 5.0f, pb_type->name)
+			drawtext(
+				t_point(
+					abs_bbox.get_xcenter(),
+					abs_bbox.top() - (abs_bbox.get_height()) / 15.0
+				),
+				pb_type->name,
+				abs_bbox
 			);
 		}
 	} else {
 		// If child block is not used, label it only by its type
-		drawtext(abs_bbox.get_xcenter(), abs_bbox.get_ycenter(),
-			 pb_type->name, calc_text_xbound(abs_bbox, pb_type->name));
+		drawtext(
+			t_point(abs_bbox.get_xcenter(), abs_bbox.get_ycenter()),
+			pb_type->name,
+			abs_bbox
+		);
 	}
 
 	/// now recurse on the child pbs. ///
@@ -590,7 +595,7 @@ void find_pin_index_at_model_scope(
 /**
  * Draws ONE logical connection from src_pin in src_lblk to sink_pin in sink_lblk.
  * The *_abs_bbox parameters are for mild optmization, as the absolute bbox can be calculated
- * more effeciently else where.
+ * more effeciently elsewhere.
  */
 void draw_one_logical_connection(
 	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
@@ -791,21 +796,6 @@ t_pb* highlight_sub_block_helper(
 		}
 	}
 	return NULL;
-}
-
-float calc_text_xbound(const t_bound_box& center_of, char* const text) {
-	return calc_text_xbound(center_of.left(), center_of.bottom(), center_of.right(), center_of.top(), text);
-}
-
-/**
- * Returns a hopefully useful xbound with this in mind:
- *     limit the text display length to just outside of the bounding box,
- *     and limit it by the the height of the bounding box, with an adjustment
- *     for the length of the text, so effectively by the height of the text.
- *     note that this is calibrated for a 16pt font
- */
-float calc_text_xbound(float start_x, float start_y, float end_x, float end_y, char* const text) {
-	return min((end_x - start_x) * 1.1f, (end_y - start_y) * strlen(text) * 0.5f);
 }
 
 /*
