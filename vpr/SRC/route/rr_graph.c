@@ -23,11 +23,6 @@ using namespace std;
 #include "rr_graph_multi.h"
 #endif
 
-/* #define ENABLE_DUMP */
-/* #define MUX_SIZE_DIST_DISPLAY */
-
-/* mux size statistic data structures */
-
 typedef struct s_mux {
 	int size;
 	struct s_mux *next;
@@ -204,15 +199,6 @@ static void load_uniform_opin_switch_pattern_paired(
 		OUTP boolean * Fc_clipped);
 #endif
 void watch_edges(int inode, t_linked_edge * edge_list_head);
-#if MUX_SIZE_DIST_DISPLAY
-static void view_mux_size_distribution(
-		t_ivec *** L_rr_node_indices,
-		int max_chan_width,
-		t_seg_details * seg_details_x,
-		t_seg_details * seg_details_y);
-static void print_distribution(FILE * fptr,
-		t_mux_size_distribution * distr_struct);
-#endif
 
 static void free_type_pin_to_track_map(
 		int ******ipin_to_track_map,
@@ -454,13 +440,6 @@ void build_rr_graph(
 	}
 	/* END OPINP MAP */
 
-	/* UDSD Modifications by WMF begin */
-	/* I'm adding 2 new fields to t_rr_node, and I want them initialized to 0. */
-	for (int i = 0; i < num_rr_nodes; i++) {
-		rr_node[i].num_wire_drivers = 0;
-		rr_node[i].num_opin_drivers = 0;
-	}
-
 	boolean Fc_clipped = FALSE;
 	alloc_and_load_rr_graph(num_rr_nodes, rr_node, num_seg_types, 
 			seg_details, chan_details_x, chan_details_y,
@@ -469,14 +448,6 @@ void build_rr_graph(
 			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, max_chan_width, sb_type,
 			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped, 
 			directs, num_directs, clb_to_clb_directs, ignore_overrides);
-
-#ifdef MUX_SIZE_DIST_DISPLAY
-	if (UNI_DIRECTIONAL == directionality)
-	{
-		view_mux_size_distribution(rr_node_indices, max_chan_width,
-				seg_details, seg_details);
-	}
-#endif
 
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
@@ -1076,8 +1047,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].set_ptc_num(iclass);
-		L_rr_node[inode].direction = (enum e_direction)OPEN;
-		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
+		L_rr_node[inode].set_direction((enum e_direction)OPEN);
+		//L_rr_node[inode].set_drivers((enum e_drivers)OPEN);
 	}
 
 	int ipb_pin = 0;
@@ -1174,8 +1145,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].set_ptc_num(ipin);
-		L_rr_node[inode].direction = (enum e_direction)OPEN;
-		L_rr_node[inode].drivers = (enum e_drivers)OPEN;
+		L_rr_node[inode].set_direction((enum e_direction)OPEN);
+		//L_rr_node[inode].set_drivers((enum e_drivers)OPEN);
 	}
 }
 
@@ -1283,8 +1254,8 @@ static void build_rr_xchan(INP int i, INP int j,
 
 		L_rr_node[node].set_ptc_num(track);
 		L_rr_node[node].type = CHANX;
-		L_rr_node[node].direction = seg_details[track].direction;
-		L_rr_node[node].drivers = seg_details[track].drivers;
+		L_rr_node[node].set_direction(seg_details[track].direction);
+		//L_rr_node[node].set_drivers(seg_details[track].drivers);
 	}
 }
 
@@ -1392,8 +1363,8 @@ static void build_rr_ychan(INP int i, INP int j,
 
 		L_rr_node[node].set_ptc_num(track);
 		L_rr_node[node].type = CHANY;
-		L_rr_node[node].direction = seg_details[track].direction;
-		L_rr_node[node].drivers = seg_details[track].drivers;
+		L_rr_node[node].set_direction(seg_details[track].direction);
+		//L_rr_node[node].set_drivers(seg_details[track].drivers);
 	}
 }
 
@@ -1941,8 +1912,8 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	t_rr_type rr_type = L_rr_node[inode].type;
 
 	/* Make sure we don't overrun const arrays */
-	assert((L_rr_node[inode].direction + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
-	assert((L_rr_node[inode].drivers + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
+	assert((L_rr_node[inode].get_direction() + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
+	assert((L_rr_node[inode].get_drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
 	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].rr_get_type_string());
 	if ((L_rr_node[inode].get_xlow() == L_rr_node[inode].get_xhigh())
@@ -1955,8 +1926,8 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 				L_rr_node[inode].get_xhigh(), L_rr_node[inode].get_yhigh());
 	}
 	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].get_ptc_num());
-	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction + 1]);
-	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].drivers + 1]);
+	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].get_direction() + 1]);
+	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].get_drivers() + 1]);
 	fprintf(fp, "\n");
 
 	if( rr_type == IPIN || rr_type == OPIN)
@@ -2261,391 +2232,6 @@ static void load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
 		alloc_and_load_edges_and_switches(L_rr_node, from_node, num_edges,
 				L_rr_edge_done, edge_list);
 	}
-}
-#endif
-
-#if MUX_SIZE_DIST_DISPLAY
-/* This routine prints and dumps statistics on the mux sizes on a sblock 
- * per sblock basis, over the entire chip. Mux sizes should be balanced (off by
- * at most 1) for all muxes in the same sblock in the core, and corner sblocks.
- * Fringe sblocks will have imbalance due to missing one side and constrains on 
- * where wires must connect. Comparing two core sblock sblocks, muxes need not 
- * be balanced if W is not quantized to 2L multiples, again for reasons that 
- * there could be sblocks with different number of muxes but same number of incoming
- * wires that need to make connections to these muxes (we don't want to under-connect
- * user-specified Fc and Fs). */
-static void view_mux_size_distribution(t_ivec *** L_rr_node_indices,
-		int max_chan_width,
-		t_seg_details * seg_details_x,
-		t_seg_details * seg_details_y)
-{
-
-	int i, j, itrack, seg_num, chan_num, max_len;
-	int start, end, inode, max_value, min_value;
-	int array_count, k, num_muxes;
-	short direction, side;
-	float *percent_range_array;
-	float percent_range, percent_range_sum, avg_percent_range;
-	float std_dev_percent_range, deviation_f;
-	int range, *range_array, global_max_range;
-	float avg_range, range_sum, std_dev_range;
-	t_seg_details *seg_details;
-	t_mux *new_mux, *sblock_mux_list_head, *current, *next;
-
-#ifdef ENABLE_DUMP
-	FILE *dump_file_per_sblock, *dump_file;
-#endif /* ENABLE_DUMP */
-	t_mux_size_distribution *distr_list, *distr_current, *new_distribution,
-	*distr_next;
-
-#ifdef ENABLE_DUMP
-	dump_file = my_fopen("mux_size_dump.txt", "w", 0);
-	dump_file_per_sblock = my_fopen("mux_size_per_sblock_dump.txt", "w", 0);
-#endif /* ENABLE_DUMP */
-
-	sblock_mux_list_head = NULL;
-	percent_range_array =
-	(float *)my_malloc((nx - 1) * (ny - 1) * sizeof(float));
-	range_array = (int *)my_malloc((nx - 1) * (ny - 1) * sizeof(int));
-	array_count = 0;
-	percent_range_sum = 0.0;
-	range_sum = 0.0;
-	global_max_range = 0;
-	min_value = 0;
-	max_value = 0;
-	seg_num = 0;
-	chan_num = 0;
-	direction = 0;
-	seg_details = 0;
-	max_len = 0;
-	distr_list = NULL;
-
-	/* With the specified range, I'm only looking at core sblocks */
-	for (j = (ny - 1); j > 0; j--)
-	{
-		for (i = 1; i < nx; i++)
-		{
-			num_muxes = 0;
-			for (side = 0; side < 4; side++)
-			{
-				switch (side)
-				{
-					case LEFT:
-					seg_num = i;
-					chan_num = j;
-					direction = DEC_DIRECTION; /* only DEC have muxes in that sblock */
-					seg_details = seg_details_x;
-					max_len = nx;
-					break;
-
-					case RIGHT:
-					seg_num = i + 1;
-					chan_num = j;
-					direction = INC_DIRECTION;
-					seg_details = seg_details_x;
-					max_len = nx;
-					break;
-
-					case TOP:
-					seg_num = j + 1;
-					chan_num = i;
-					direction = INC_DIRECTION;
-					seg_details = seg_details_y;
-					max_len = ny;
-					break;
-
-					case BOTTOM:
-					seg_num = j;
-					chan_num = i;
-					direction = DEC_DIRECTION;
-					seg_details = seg_details_y;
-					max_len = ny;
-					break;
-
-					default:
-					assert(FALSE);
-				}
-
-				assert(max_chan_width > 0);
-				for (itrack = 0; itrack < max_chan_width; itrack++)
-				{
-					start = get_seg_start(seg_details, itrack, seg_num, chan_num);
-					end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
-
-					if ((seg_details[itrack].direction == direction) 
-							&& (((start == seg_num) && (direction == INC_DIRECTION))
-								|| ((end == seg_num) && (direction == DEC_DIRECTION))))
-					{ /* mux found */
-						num_muxes++;
-						if (side == LEFT || side == RIGHT)
-						{ /* CHANX */
-							inode =	get_rr_node_index(seg_num, chan_num,
-									CHANX, itrack, L_rr_node_indices);
-						}
-						else
-						{
-							assert((side == TOP) || (side == BOTTOM)); /* CHANY */
-							inode =	get_rr_node_index(chan_num, seg_num,
-									CHANY, itrack, L_rr_node_indices);
-						}
-
-						new_mux = (t_mux *)
-						my_malloc(sizeof(t_mux));
-						new_mux->size =
-						rr_node[inode].
-						num_wire_drivers +
-						rr_node[inode].
-						num_opin_drivers;
-						new_mux->next = NULL;
-
-						/* insert in linked list, descending */
-						if (sblock_mux_list_head == NULL)
-						{
-							/* first entry */
-							sblock_mux_list_head = new_mux;
-						}
-						else if (sblock_mux_list_head->
-								size < new_mux->size)
-						{
-							/* insert before head */
-							new_mux->next = sblock_mux_list_head;
-							sblock_mux_list_head = new_mux;
-						}
-						else
-						{
-							/* insert after head */
-							current = sblock_mux_list_head;
-							next = current->next;
-
-							while ((next != NULL)
-									&& (next->size > new_mux->size))
-							{
-								current = next;
-								next = current->next;
-							}
-
-							if (next == NULL)
-							{
-								current->next = new_mux;
-							}
-							else
-							{
-								new_mux->next = current->next;
-								current->next = new_mux;
-							}
-						}
-						/* end of insert in linked list */
-					}
-				}
-			} /* end of mux searching over all four sides of sblock */
-			/* now sblock_mux_list_head holds a linked list of all muxes in this sblock */
-
-			current = sblock_mux_list_head;
-
-#ifdef ENABLE_DUMP
-			fprintf(dump_file_per_sblock,
-					"sblock at (%d, %d) has mux sizes: {", i, j);
-#endif /* ENABLE_DUMP */
-
-			if (current != NULL)
-			{
-				max_value = min_value = current->size;
-			}
-			while (current != NULL)
-			{
-				if (max_value < current->size)
-					max_value = current->size;
-				if (min_value > current->size)
-					min_value = current->size;
-
-#ifdef ENABLE_DUMP
-				fprintf(dump_file_per_sblock, "%d ", current->size);
-				fprintf(dump_file, "%d\n", current->size);
-#endif /* ENABLE_DUMP */
-
-				current = current->next;
-			}
-
-#ifdef ENABLE_DUMP
-			fprintf(dump_file_per_sblock, "}\n\tmax: %d\tmin:%d", max_value, min_value);
-#endif /* ENABLE_DUMP */
-
-			range = max_value - min_value;
-			percent_range = ((float)range) / ((float)min_value);
-
-			if (global_max_range < range)
-			global_max_range = range;
-
-#ifdef ENABLE_DUMP
-			fprintf(dump_file_per_sblock,
-					"\t\trange: %d\t\tpercent range:%.2f\n",
-					range, percent_range);
-#endif /* ENABLE_DUMP */
-
-			percent_range_array[array_count] = percent_range;
-			range_array[array_count] = range;
-
-			percent_range_sum += percent_range;
-			range_sum += range;
-
-			array_count++;
-
-			/* I will use a distribution for each (core) sblock type. 
-			 * There are more than 1 type of sblocks, 
-			 * when quantization of W to 2L multiples is not observed. */
-
-			distr_current = distr_list;
-			while (distr_current != NULL
-					&& distr_current->mux_count != num_muxes)
-			{
-				distr_current = distr_current->next;
-			}
-
-			if (distr_current == NULL)
-			{
-				/* Create a distribution for the new sblock type, 
-				 * and put it as head of linked list by convention */
-
-				new_distribution = (t_mux_size_distribution *)
-				my_malloc(sizeof(t_mux_size_distribution));
-				new_distribution->mux_count = num_muxes;
-				new_distribution->max_index = max_value;
-				new_distribution->distr =
-				(int *)my_calloc(max_value + 1, sizeof(int));
-
-				/* filling in the distribution */
-				current = sblock_mux_list_head;
-				while (current != NULL)
-				{
-					assert(current->size <= new_distribution->max_index);
-					new_distribution->distr[current->size]++;
-					current = current->next;
-				}
-
-				/* add it to head */
-				new_distribution->next = distr_list;
-				distr_list = new_distribution;
-			}
-			else
-			{
-				/* distr_current->mux_count == num_muxes so add this sblock's mux sizes in this distribution */
-				current = sblock_mux_list_head;
-
-				while (current != NULL)
-				{
-					if (current->size > distr_current->max_index)
-					{
-						/* needs to realloc to expand the distribution array to hold the new large-valued data */
-						distr_current->distr = my_realloc(distr_current->distr,
-								(current->size + 1) * sizeof(int));
-
-						/* initializing the newly allocated elements */
-						for (k = (distr_current->max_index + 1); k <= current->size; k++)
-							distr_current->distr[k] = 0;
-
-						distr_current->max_index = current->size;
-						distr_current->distr[current->size]++;
-					}
-					else
-					{
-						distr_current->distr[current->size]++;
-					}
-					current = current->next;
-				}
-			}
-
-			/* done - now free memory */
-			current = sblock_mux_list_head;
-			while (current != NULL)
-			{
-				next = current->next;
-				free(current);
-				current = next;
-			}
-			sblock_mux_list_head = NULL;
-		}
-	}
-
-	avg_percent_range = (float)percent_range_sum / array_count;
-	avg_range = (float)range_sum / array_count;
-
-	percent_range_sum = 0.0;
-	range_sum = 0.0;
-	for (k = 0; k < array_count; k++)
-	{
-		deviation_f = (percent_range_array[k] - avg_percent_range);
-		percent_range_sum += deviation_f * deviation_f;
-
-		deviation_f = ((float)range_array[k] - avg_range);
-		range_sum += deviation_f * deviation_f;
-	}
-	std_dev_percent_range =
-	sqrt(percent_range_sum / ((float)array_count - 1.0));
-	std_dev_range = sqrt(range_sum / ((float)array_count - 1.0));
-	vpr_printf_info("==== MUX size statistics ====\n");
-	vpr_printf_info("Max range of mux size within a sblock: %d\n", global_max_range);
-	vpr_printf_info("Average range of mux size within a sblock: %.2f\n", avg_range);
-	vpr_printf_info("Std dev of range of mux size within a sblock: %.2f\n", std_dev_range);
-	vpr_printf_info("Average percent range of mux size within a sblock: %.2f%%\n", avg_percent_range * 100.0);
-	vpr_printf_info("Std dev of percent range of mux size within a sblock: %.2f%%\n", std_dev_percent_range * 100.0);
-
-	vpr_printf_info(" -- Detailed MUX size distribution by sblock type -- \n");
-	distr_current = distr_list;
-	while (distr_current != NULL)
-	{
-		print_distribution(stdout, distr_current);
-
-		/* free */
-		distr_next = distr_current->next;
-
-		free(distr_current->distr);
-		free(distr_current);
-
-		distr_current = distr_next;
-	}
-
-	free(percent_range_array);
-	free(range_array);
-#ifdef ENABLE_DUMP
-	fclose(dump_file_per_sblock);
-	fclose(dump_file);
-#endif /* ENABLE_DUMP */
-}
-
-static void print_distribution(FILE * fptr,
-		t_mux_size_distribution * distr_struct)
-{
-	int *distr;
-	int k;
-	float sum;
-	boolean zeros;
-
-	distr = distr_struct->distr;
-	fprintf(fptr,
-			"For Sblocks containing %d MUXes, the MUX size distribution is:\n",
-			distr_struct->mux_count);
-	fprintf(fptr, "\t\t\tSize\t\t\tFrequency (percent)\n");
-
-	sum = 0.0;
-	for (k = 0; k <= distr_struct->max_index; k++)
-	sum += distr[k];
-
-	zeros = TRUE;
-	for (k = 0; k <= distr_struct->max_index; k++)
-	{
-		if (zeros && (distr[k] == 0))
-		{
-			/* do nothing for leading string of zeros */
-		}
-		else
-		{
-			zeros = FALSE; /* leading string of zeros ended */
-			fprintf(fptr, "\t\t\t%d\t\t\t%d (%.2f%%)\n", k, distr[k],
-					(float)distr[k] / sum * 100.0);
-		}
-	}
-	fprintf(fptr, "\nEnd of this Sblock MUX size distribution.\n");
-
 }
 #endif
 

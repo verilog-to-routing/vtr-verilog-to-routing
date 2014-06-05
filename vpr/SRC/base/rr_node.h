@@ -64,6 +64,9 @@ private:
 	short num_edges;
 	short capacity;
 
+	enum e_direction direction; /* UDSD by AY */
+	//enum e_drivers drivers; /* UDSD by AY */
+
 public:
 	short occ;
 	t_rr_type type;
@@ -72,11 +75,6 @@ public:
 
 	float R;
 	float C;
-
-	enum e_direction direction; /* UDSD by AY */
-	enum e_drivers drivers; /* UDSD by AY */
-	int num_wire_drivers; /* UDSD by WMF */
-	int num_opin_drivers; /* UDSD by WMF (could use "short") */
 
 	/* Used by clustering only (TODO, may wish to extend to regular router) */
 	int prev_node;
@@ -100,6 +98,8 @@ public:
 	short get_capacity() const;
 	short get_fan_in() const;
 	short get_num_edges() const;
+	enum e_direction get_direction() const;
+	enum e_drivers get_drivers() const;
 
 	void set_coordinates(short, short, short, short);
 	void set_ptc_num(short);
@@ -107,6 +107,8 @@ public:
 	void set_capacity(short);
 	void set_fan_in(short);
 	void set_num_edges(short);
+	void set_direction(e_direction);
+	//void set_drivers(e_drivers);
 
 };
 

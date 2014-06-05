@@ -917,7 +917,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 	wire_start_y1 = bound_box.bottom() - WIRE_DRAWING_WIDTH/2;
 	wire_start_y2 = bound_box.top() + WIRE_DRAWING_WIDTH/2;
 
-	if (rr_node[inode].direction == INC_DIRECTION) {
+	if (rr_node[inode].get_direction() == INC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
 		/* Draw a line at start of wire to indicate mux */
@@ -946,7 +946,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 									 bound_box.right(), bound_box.bottom(), bound_box.top());
 		}
 		setcolor(color);
-	} else if (rr_node[inode].direction == DEC_DIRECTION) {
+	} else if (rr_node[inode].get_direction() == DEC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
 		drawline(bound_box.right(), wire_start_y1, bound_box.right(), wire_start_y2);
@@ -1029,7 +1029,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 	wire_start_x1 = bound_box.left() - WIRE_DRAWING_WIDTH/2;
 	wire_start_x2 = bound_box.right() + WIRE_DRAWING_WIDTH/2;
 	
-	if (rr_node[inode].direction == INC_DIRECTION) {
+	if (rr_node[inode].get_direction() == INC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
 		drawline(wire_start_x1, bound_box.bottom(), wire_start_x2, bound_box.bottom());
@@ -1052,7 +1052,7 @@ static void draw_rr_chany(int inode, int itrack, enum color_types color) {
 									 bound_box.right(), bound_box.bottom(), bound_box.top());
 		}
 		setcolor(color);
-	} else if (rr_node[inode].direction == DEC_DIRECTION) {
+	} else if (rr_node[inode].get_direction() == DEC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
 		drawline(wire_start_x1, bound_box.top(), wire_start_x2, bound_box.top());
@@ -1300,7 +1300,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		/* Connection not at end of the CHANX segment. */
 		x1 = draw_coords->tile_x[chany_x] + draw_coords->tile_width;
 		
-		if (rr_node[chanx_node].direction != BI_DIRECTION) {
+		if (rr_node[chanx_node].get_direction() != BI_DIRECTION) {
 			if (edge_dir == FROM_X_TO_Y) {
 				if ((chanx_track % 2) == 1) { /* If dec wire, then going left */
 					x1 = draw_coords->tile_x[chany_x + 1];
@@ -1316,7 +1316,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		/* Connection not at end of the CHANY segment. */
 		y2 = draw_coords->tile_y[chanx_y] + draw_coords->tile_width;
 		
-		if (rr_node[chany_node].direction != BI_DIRECTION) {
+		if (rr_node[chany_node].get_direction() != BI_DIRECTION) {
 			if (edge_dir == FROM_Y_TO_X) {
 				if ((chany_track % 2) == 1) { /* If dec wire, then going down */
 					y2 = draw_coords->tile_y[chanx_y + 1];
@@ -1402,7 +1402,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 	 * will be drawn on top of each other for bidirectional connections.        */
 
 	else {
-		if (rr_node[to_node].direction != BI_DIRECTION) {
+		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
 			/* must connect to to_node's wire beginning at x2 */
 			if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
 				assert(from_xlow < to_xlow);
@@ -1493,7 +1493,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 
 	/* UDSD Modification by WMF Begin */
 	else {
-		if (rr_node[to_node].direction != BI_DIRECTION) {
+		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
 			if (to_track % 2 == 0) { /* INC wire starts at bottom edge */
 			
 				// for interposer-based architectures, the interposer node will have
@@ -2498,7 +2498,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	enum e_side iside;
 	t_type_ptr type;
 
-	direction = rr_node[chan_node].direction;
+	direction = rr_node[chan_node].get_direction();
 	grid_x = rr_node[pin_node].get_xlow();
 	grid_y = rr_node[pin_node].get_ylow();
 	pin_num = rr_node[pin_node].get_ptc_num();

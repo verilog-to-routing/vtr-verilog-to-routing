@@ -64,6 +64,18 @@ short t_rr_node::get_num_edges() const {
 	return num_edges;
 }
 
+enum e_direction t_rr_node::get_direction() const {
+	return direction;
+}
+
+enum e_drivers t_rr_node::get_drivers() const {
+	if (direction == BI_DIRECTION) {
+		return MULTI_BUFFERED;
+	} else {
+		return SINGLE;
+	}
+}
+
 /*
 	Pass in two coordinate variables describing location of node.
 	They do not have to be in any particular order.
@@ -107,3 +119,13 @@ void t_rr_node::set_fan_in(short _fan_in) {
 void t_rr_node::set_num_edges(short _num_edges) {
 	num_edges = _num_edges;
 }
+
+void t_rr_node::set_direction(e_direction _direction) {
+	direction = _direction;
+}
+
+/*
+void t_rr_node::set_drivers(e_drivers _drivers) {
+	drivers = _drivers;
+}
+*/

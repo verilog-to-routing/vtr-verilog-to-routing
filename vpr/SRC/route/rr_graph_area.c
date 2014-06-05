@@ -368,11 +368,6 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			assert(switch_inf[switch_type].mux_trans_size >= 1);
 			/* can't be smaller than min sized transistor */
 
-			assert(rr_node[from_node].num_opin_drivers == 0);
-			/* undir has no opin or wire switches */
-			assert(rr_node[from_node].num_wire_drivers == 0);
-			/* undir has no opin or wire switches */
-
 			/* Each wire segment begins with a multipexer followed by a driver for unidirectional */
 			/* Each multiplexer contains all the fan-in to that routing node */
 			/* Add up area of multiplexer */
