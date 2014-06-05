@@ -6,6 +6,7 @@
  */
 
 #include "vpr_types.h"
+#include "draw_types.h"
 #include <unordered_set>
 
 struct t_selected_sub_block_info {
@@ -75,7 +76,7 @@ void draw_internal_draw_subblk();
  * so that the other subblock drawing functions will obey it.
  * If the user missed all sub-parts, will return 1, else 0.
  */
-int highlight_sub_block(float abs_x, float abs_y);
+int highlight_sub_block(const t_point& point_in_clb, t_block& clb);
 
 /*
  * returns the struct with information about the sub-block selection

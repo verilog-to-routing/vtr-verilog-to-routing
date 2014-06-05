@@ -90,9 +90,6 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	if (pb_gnode.parent_pb_graph_node == NULL) {
 		float sub_blk_offset = this->tile_width * (sub_block_index/(float)grid[grid_x][grid_y].type->capacity);
 
-		// blk_height = grid[i][j].type->height;
-		// this->tile_x[grid_x] + this->tile_width,
-		// this->tile_y[grid_y + blk_height - 1] + ((sub_block_index + 1) * sub_tile_offset)
 		result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
 		if (sub_block_index != 0) {
 			if (grid_x == 0 || grid_x == nx + 1) {
@@ -122,6 +119,10 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, t_pb_graph_n
 
 t_bound_box t_draw_coords::get_absolute_pb_bbox(int clb_index, t_pb_graph_node* pb_gnode) {
 	return get_absolute_pb_bbox(block[clb_index], pb_gnode);
+}
+
+t_bound_box t_draw_coords::get_absolute_clb_bbox(const t_block& clb) {
+	return get_pb_bbox(clb.x, clb.y, clb.z, *clb.type->pb_graph_head);
 }
 
 t_bound_box t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {

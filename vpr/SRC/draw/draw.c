@@ -67,7 +67,6 @@ static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
-static void get_block_center(int bnum, float *x, float *y);
 static void deselect_all(void);
 
 static void draw_rr(void);
@@ -682,14 +681,14 @@ static void drawplace(void) {
 }
 
 static void drawnets(void) {
-
+	t_draw_state* draw_state = get_draw_state_vars();
+	t_draw_coords* draw_coords = get_draw_coords_vars();
 	/* This routine draws the nets on the placement.  The nets have not *
 	 * yet been routed, so we just draw a chain showing a possible path *
 	 * for each net.  This gives some idea of future congestion.        */
 
 	unsigned ipin, inet;
 	int b1, b2;
-	float x1, y1, x2, y2;
 
 	setlinestyle(SOLID);
 	setlinewidth(0);
@@ -701,54 +700,18 @@ static void drawnets(void) {
 		if (g_clbs_nlist.net[inet].is_global)
 			continue; /* Don't draw global nets. */
 
-		setcolor(get_draw_state_vars()->net_color[inet]);
+		setcolor(draw_state->net_color[inet]);
 		b1 = g_clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
-		get_block_center(b1, &x1, &y1);
+		t_point driver_center = draw_coords->get_absolute_clb_bbox(block[b1]).get_center();
 
 		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 			b2 = g_clbs_nlist.net[inet].pins[ipin].block;
-			get_block_center(b2, &x2, &y2);
-			drawline(x1, y1, x2, y2);
+			t_point sink_center = draw_coords->get_absolute_clb_bbox(block[b2]).get_center();
+			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
-			/*      x1 = x2;  */
-			/*      y1 = y2;  */
+			/* driver_center = sink_center;  */
 		}
-	}
-}
-
-static void get_block_center(int bnum, float *x, float *y) {
-
-	/* This routine finds the center of block bnum in the current placement, *
-	 * and returns it in *x and *y.  This is used in routine shownets.       */
-	t_draw_coords* draw_coords = get_draw_coords_vars();
-
-	int i, j, k;
-	float sub_tile_step;
-
-	i = block[bnum].x;
-	j = block[bnum].y;
-	k = block[bnum].z;
-
-	sub_tile_step = draw_coords->tile_width / block[bnum].type->capacity;
-
-	if ((j < 1) || (j > ny)) { /* Top and bottom fringe */
-		/* For the top and bottom fringes (ie. io blocks place on top 
-		 * and bottom edges of the chip), sub_tiles are placed next to each 
-		 * other horizontally. Therefore, for the center of each io 
-		 * sub_block, the x-coordinate varies but the y-coordinate is half
-		 * tile_width above the bottom of the tile.
-		 */
-		*x = draw_coords->tile_x[i] + (sub_tile_step * (k + 0.5));
-		*y = draw_coords->tile_y[j] + (draw_coords->tile_width / 2.0);
-	} else {
-		/* For everything other than the top and bottom io blocks, sub_tiles
-		 * (if any) are stacked vertically. Therefore, y-coordinate changes
-		 * for each io sub_block but x-coordinate is half way across the 
-		 * block.
-		 */
-		*x = draw_coords->tile_x[i] + (draw_coords->tile_width / 2.0);
-		*y = draw_coords->tile_y[j] + (sub_tile_step * (k + 0.5));
 	}
 }
 
@@ -2221,7 +2184,7 @@ static void highlight_rr_nodes(float x, float y) {
 }
 
 
-static void highlight_blocks(float x, float y, t_event_buttonPressed button_info) {
+static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed button_info) {
 
 	/* This routine is called when the user clicks in the graphics area. *
 	 * It determines if a clb was clicked on.  If one was, it is         *
@@ -2235,71 +2198,68 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	int i, j, k, hit, bnum;
-	float io_step;
-	t_type_ptr type;
 	char msg[BUFSIZE];
+	int clb_index = -2;
 
 	/* Control + mouse click to select multiple nets. */
 	if (!button_info.ctrl_pressed)
 		deselect_all();
 
-	hit = i = j = k = 0;
+	/// determine block ///
 
-	for (i = 0; i <= (nx + 1) && !hit; i++) {
-		if (x <= draw_coords->tile_x[i] + draw_coords->tile_width) {
-			if (x >= draw_coords->tile_x[i]) {
-				for (j = 0; j <= (ny + 1) && !hit; j++) {
-					if (grid[i][j].width_offset != 0 || grid[i][j].height_offset != 0)
-						continue;
-					type = grid[i][j].type;
-					if (y <= draw_coords->tile_y[j + type->height - 1] 
-						+ draw_coords->tile_width) 
-					{
-						if (y >= draw_coords->tile_y[j])
-							hit = 1;
+	t_block* clb = NULL;
+	t_bound_box clb_bbox(0,0,0,0);
+
+	// iterate over grid x
+	for (int i = 0; i <= nx + 1; ++i) {
+		if (draw_coords->tile_x[i] > abs_x) {
+			break; // we've gone to far in the x direction
+		}
+		// iterate over grid y
+		for(int j = 0; j <= ny + 1; ++j) {
+			if (draw_coords->tile_y[j] > abs_y) {
+				break; // we've gone to far in the y direction
+			}
+			// iterate over sub_blocks
+			t_grid_tile* grid_tile = &grid[i][j];
+			for (int k = 0; k < grid_tile->type->capacity; ++k) {
+				clb_index = grid_tile->blocks[k];
+				if (clb_index != EMPTY) {
+					clb = &block[clb_index];
+					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb);
+					if (clb_bbox.intersects(abs_x, abs_y)) {
+						break;
+					} else {
+						clb = NULL;
 					}
 				}
-
+			}
+			if (clb != NULL) {
+				break; // we've found something
 			}
 		}
+		if (clb != NULL) {
+			break; // we've found something
+		}
 	}
-	i--;
-	j--;
 
-	if (!hit) {
-		highlight_rr_nodes(x, y);
+	if (clb == NULL) {
+		highlight_rr_nodes(abs_x, abs_y);
 		/* update_message(draw_state->default_message);
 		 drawscreen(); */
 		return;
-	}
-	type = grid[i][j].type;
-	hit = 0;
+	} 
 
-	if (EMPTY_TYPE == type) {
+	if (clb_index == EMPTY) {
 		update_message(draw_state->default_message);
 		drawscreen();
 		return;
 	}
 
-	/* The user selected the clb at location (i,j). */
-	io_step = draw_coords->tile_width / type->capacity;
-
-	if ((i < 1) || (i > nx)) /* Vertical columns of IOs */
-		k = (int) ((y - draw_coords->tile_y[j]) / io_step);
-	else
-		k = (int) ((x - draw_coords->tile_x[i]) / io_step);
-
-	assert(k < type->capacity);
-	if (grid[i][j].blocks[k] == EMPTY) {
-		update_message(draw_state->default_message);
-		drawscreen();
-		return;
-	}
-	bnum = grid[i][j].blocks[k];
-
-	// note: this is equivalent to clearing the selected sub-block if show_blk_internal is 0
-	highlight_sub_block(x, y);
+	// note: this will clear the selected sub-block if show_blk_internal is 0,
+	// or if it doesn't find anything
+	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
+	highlight_sub_block(point_in_clb, *clb);
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2307,8 +2267,8 @@ static void highlight_blocks(float x, float y, t_event_buttonPressed button_info
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
-		draw_highlight_blocks_color(type, bnum);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", bnum, block[bnum].name, i, j);
+		draw_highlight_blocks_color(clb->type, clb_index);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, clb->name, clb->x, clb->y);
 	}
 
 	update_message(msg);

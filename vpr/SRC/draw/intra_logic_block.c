@@ -48,7 +48,7 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb);
 void draw_one_logical_connection(
 	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
 	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox);
-static t_pb* highlight_sub_block_helper(t_block* clb, t_pb* pb, t_point local_pt, int max_depth);
+t_pb* highlight_sub_block_helper(const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -98,19 +98,20 @@ void draw_internal_init_blk() {
 
 		int num_sub_tiles = type_descriptors[i].capacity;
 
-		float clb_width = type_descriptors[i].width * draw_coords->tile_width
-					/num_sub_tiles;
-		float clb_height = type_descriptors[i].height * draw_coords->tile_width;
 
 		// set the clb dimensions
 		t_bound_box& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
 
+		// note, that all clbs of the same type are the same size,
+		// and that we won't know exactly where they are. 
 		clb_bbox.bottom_left().set(0,0);
-		clb_bbox.top_right().set(clb_bbox.bottom_left());
-		clb_bbox.top_right().offset(clb_width, clb_height);
+		clb_bbox.top_right().set(
+			draw_coords->tile_x[type_descriptors[i].width  - 1] + draw_coords->tile_width/num_sub_tiles,
+			draw_coords->tile_y[type_descriptors[i].height - 1] + draw_coords->tile_width
+		);
 
 		draw_internal_load_coords(type_descriptor_index, pb_graph_head_node, 
-								  clb_width, clb_height);
+								  clb_bbox.get_width(), clb_bbox.get_height());
 
 		/* Determine the max number of sub_block levels in the FPGA */
 		draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_descriptors[i].pb_type),
@@ -681,59 +682,18 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 	return true;
 }
 
-int highlight_sub_block(float abs_x, float abs_y) {
+int highlight_sub_block(const t_point& point_in_clb, t_block& clb) {
 	t_draw_state* draw_state = get_draw_state_vars();
-	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	int max_depth = draw_state->show_blk_internal;
-	// determine block, pass it in
-	t_block* clb = NULL;
-	t_bound_box clb_bbox(0,0,0,0);
-	int i, j, k;
-
-	// determine grid x
-	for (i = 0; i <= nx + 1; ++i) {
-		if (draw_coords->tile_x[i] > abs_x) {
-			break;
-		}
-	}
-	--i;
-
-	// determine grid y
-	for(j = 0; j <= ny + 1; ++j) {
-		if (draw_coords->tile_y[j] > abs_y) {
-			break;
-		}
-	}
-	--j;
-
-	// determine sub_block
-	t_grid_tile* grid_tile = &grid[i][j];
-	for (k = 0; k < grid_tile->type->capacity; ++k) {
-		int clb_index = grid_tile->blocks[k];
-		if (clb_index >= 0) {
-			clb_bbox = draw_coords->
-				get_absolute_pb_bbox(block[clb_index], block[clb_index].pb->pb_graph_node);
-			if (clb_bbox.intersects(abs_x, abs_y)) {
-				clb = &block[clb_index];
-				break;
-			}
-		}
-	}
-
-	if (clb == NULL) {
-		return 1;
-	}
-
-	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
 
 	t_pb* new_selected_sub_block = 
-		highlight_sub_block_helper(clb, clb->pb, point_in_clb, max_depth);
+		highlight_sub_block_helper(clb, clb.pb, point_in_clb, max_depth);
 	if (new_selected_sub_block == NULL) {
 		get_selected_sub_block_info().clear();
 		return 1;
 	} else {
-		get_selected_sub_block_info().set(new_selected_sub_block, clb);
+		get_selected_sub_block_info().set(new_selected_sub_block, &clb);
 		return 0;
 	}
 }
@@ -744,8 +704,7 @@ int highlight_sub_block(float abs_x, float abs_y) {
  * be in clb.
  */
 t_pb* highlight_sub_block_helper(
-	t_block* clb, t_pb* pb, t_point local_pt, int max_depth)
-{
+	const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth) {
 	
 	t_draw_coords *draw_coords = get_draw_coords_vars();
 	t_pb_type* pb_type = pb->pb_graph_node->pb_type;
@@ -775,7 +734,7 @@ t_pb* highlight_sub_block_helper(
 			t_pb_graph_node* pb_child_node = child_pb->pb_graph_node;
 
 			// get the bbox for this child
-			const t_bound_box& bbox = draw_coords->get_pb_bbox(*clb, *pb_child_node);
+			const t_bound_box& bbox = draw_coords->get_pb_bbox(clb, *pb_child_node);
 
 			// If child block is being used, check if it intersects
 			if (child_pb->name != NULL && bbox.intersects(local_pt)) {
