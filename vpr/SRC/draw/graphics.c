@@ -15,6 +15,10 @@
 * V2.0.3 May 2014 - June 2013 (Matthew J.P. Walker)                        *
 * - continued integration with c++                                         *
 * - added ybounding and convenience functions to text drawing              *
+* - added get_visible_world() - returns a rectangle describing the bounds  *
+*   of the visible world.                                                  *
+* - Panning in X11 will drop movement events instead of drawing all of     *
+*   them. Much more usable on large drawings now.
 *                                                                          *
 * V2.0.2 May 2013 - June 2013 (Mike Wang)                                  *
 * - In Win32, removed "Window" operation with right mouse click to align   *
@@ -1501,6 +1505,15 @@ rect_off_screen (float x1, float y1, float x2, float y2)
 		return (1);
 	
 	return (0);
+}
+
+t_bound_box get_visible_world() {
+	return t_bound_box(
+		min (trans_coord.xleft, trans_coord.xright),
+		max (trans_coord.xleft, trans_coord.xright),
+		min (trans_coord.ytop, trans_coord.ybot),
+		max (trans_coord.ytop, trans_coord.ybot)
+	);
 }
 
 void drawline (const t_point& p1, const t_point& p2) {
@@ -3174,8 +3187,25 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 #define ON 0
 	
 	x11_turn_on_off (ON);
-	while (1) {
-		XNextEvent (x11_state.display, &report);
+	while (true) {
+
+		while (true) {
+			XSync(x11_state.display, false);
+			XNextEvent (x11_state.display, &report);
+			if (report.type != MotionNotify || XQLength(x11_state.display) < 1) {
+				break; // if the queue is empty or this is not a motion event, process it now.
+			} else {
+				// here, we have a non empty queue and a motion event. So,
+				// we'll skip motion events, until the queue has only one event
+				// or this is the last motion event.
+				XEvent next_event;
+				XPeekEvent(x11_state.display, &next_event);
+				if (next_event.type != MotionNotify) {
+					break; // the last motion event was found - process it now.
+				}
+			}
+		}
+
 		switch (report.type) {  
 		case Expose:
 			if (report.xexpose.count != 0)
@@ -3204,12 +3234,13 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 				 * program.																		   */
 				x11_handle_button_info(&button_info, report.xbutton.button, report.xbutton.state);
 #ifdef VERBOSE
-			if (button_info.shift_pressed == true)
-				printf("Shift is pressed at button press.\n");
-			if (button_info.ctrl_pressed == true)
-				printf("Ctrl is pressed at button press.\n");
+				if (button_info.shift_pressed == true) {
+					printf("Shift is pressed at button press.\n");
+				}
+				if (button_info.ctrl_pressed == true) {
+					printf("Ctrl is pressed at button press.\n");
+				}
 #endif
-
 				switch (report.xbutton.button) {
 				case Button1:  /* Left mouse click; pass back to client program */
 				case Button3:  /* Right mouse click; pass back to client program */
@@ -4523,6 +4554,8 @@ void drawtext (const t_point& text_center, const char* text, float boundx, float
 void drawtext (float xc, float yc, const char* text, float boundx, float boundy) { }
 
 void clearscreen (void) { }
+
+t_bound_box get_visible_world() { return t_bound_box(0,0,0,0); }
 
 void create_button (const char *prev_button_text , const char *button_text,
 					void (*button_func) (void (*drawscreen) (void))) { }

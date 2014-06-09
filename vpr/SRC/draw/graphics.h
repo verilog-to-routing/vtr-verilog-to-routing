@@ -237,6 +237,12 @@ void close_postscript (void);
  */
 void clearscreen (void);
 
+/**
+ * Returns a rectangle with the bounds of the drawn world.
+ * Possibly useful for making level of detail drawing decisions.
+ */
+t_bound_box get_visible_world();
+
 /* The following routines draw to SCREEN if disp_type = SCREEN 
  * and to a PostScript file if disp_type = POSTSCRIPT         
  */
