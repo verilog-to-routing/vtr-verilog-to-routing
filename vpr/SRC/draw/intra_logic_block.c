@@ -745,7 +745,7 @@ void add_all_children(const t_pb* pb, const t_block* clb,
 		return;
 	}
 
-	set.emplace(pb->pb_graph_node, clb);
+	set.insert(std::make_pair(pb->pb_graph_node, clb));
 
 	int num_child_types = pb->get_num_child_types();
 	for (int i = 0; i < num_child_types; ++i) {
@@ -827,7 +827,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 }
 
 void t_selected_sub_block_info::add_to_critical_path(const t_tnode& src_tnode, const t_tnode& sink_tnode) {
-	on_critical_path.emplace(
+	on_critical_path.insert(std::make_pair(
 		clb_pin_tuple(
 			 src_tnode.block,
 			 src_tnode.pb_graph_pin->port->index,
@@ -840,7 +840,7 @@ void t_selected_sub_block_info::add_to_critical_path(const t_tnode& src_tnode, c
 			sink_tnode.pb_graph_pin->pin_number,
 			sink_tnode.pb_graph_pin->parent_node
 		)
-	);
+	));
 }
 
 void t_selected_sub_block_info::clear() {
