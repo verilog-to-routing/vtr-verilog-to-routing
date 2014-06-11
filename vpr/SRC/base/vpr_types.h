@@ -162,13 +162,24 @@ typedef struct s_pb {
 	 so this optimization is crucial for handling LUT based FPGAs.	 */ /* jedit TODO: Delete this because it is no longer used by anyone */ 
 
 	int get_num_child_types() const {
-		return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
+		if (child_pbs != NULL && has_modes()) {
+			return pb_graph_node->pb_type->modes[mode].num_pb_type_children;
+		} else {
+			return 0;
+		}
 	}
 	int get_num_children_of_type(int type_index) const {
 		return get_mode()->pb_type_children[type_index].num_pb;
 	}
 	t_mode* get_mode() const {
-		return &pb_graph_node->pb_type->modes[mode];
+		if (has_modes()) {
+			return &pb_graph_node->pb_type->modes[mode];
+		} else {
+			return NULL;
+		}
+	}
+	bool has_modes() const {
+		return pb_graph_node->pb_type->num_modes > 0;
 	}
 } t_pb;
 

@@ -422,6 +422,7 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 
 	/* Highlights all the blocks and nets on the critical path. */
 	t_draw_state* draw_state = get_draw_state_vars();
+	t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
 
 	t_linked_int *critical_path_head, *critical_path_node;
 	int inode, iblk, inet, num_nets_seen;
@@ -438,10 +439,16 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 
 	critical_path_head = allocate_and_load_critical_path();
 	critical_path_node = critical_path_head;
-	num_nets_seen = 0;
+	num_nets_seen = 1;
 
-	while (critical_path_node != NULL) {
+	sel_subblk_info.clear_critical_path();
+
+	t_tnode* last_opin = NULL; // last output pin
+
+	while (critical_path_node != NULL && num_nets_seen <= nets_to_highlight) {
 		inode = critical_path_node->data;
+		t_tnode* current_pin = &tnode[inode];
+
 		get_tnode_block_and_output_net(inode, &iblk, &inet);
 
 		if (num_nets_seen == nets_to_highlight) { /* Last block */
@@ -453,13 +460,34 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 		}
 
 		if (inet != OPEN) {
-			num_nets_seen++;
-
 			if (num_nets_seen < nets_to_highlight) { /* First nets. */
 				draw_state->net_color[inet] = DARKGREEN;
 			} else if (num_nets_seen == nets_to_highlight) {
 				draw_state->net_color[inet] = TURQUOISE; /* Last (new) net. */
 			}
+		}
+
+		switch (current_pin->type) {
+			case TN_INPAD_OPIN:
+			case TN_PRIMITIVE_OPIN:
+			case TN_FF_SOURCE:
+				last_opin = current_pin;
+			break;
+			default:
+			if (last_opin != NULL) {
+				switch (current_pin->type) {
+					case TN_OUTPAD_IPIN:
+					case TN_PRIMITIVE_IPIN:
+					case TN_FF_SINK:
+						sel_subblk_info.add_to_critical_path(*last_opin,*current_pin);
+						last_opin = NULL;
+						num_nets_seen++;
+					break;
+					default:
+					break;
+				}
+			}
+			break;
 		}
 
 		critical_path_node = critical_path_node->next;

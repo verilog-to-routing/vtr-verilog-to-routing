@@ -43,8 +43,6 @@ static int draw_internal_find_max_lvl(t_pb_type pb_type);
 static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox);
 static bool is_top_lvl_block_highlighted(const t_block& clb);
 
-static void draw_logical_connections_of(t_pb* pb, t_block* clb);
-
 void draw_one_logical_connection(
 	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
 	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox);
@@ -444,47 +442,10 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 }
 
 void draw_logical_connections() {
-	const t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
+	const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
 	t_draw_state* draw_state = get_draw_state_vars();
-	// t_draw_coords *draw_coords = get_draw_coords_vars();
+	t_draw_coords *draw_coords = get_draw_coords_vars();
 
-	if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS) {
-		draw_logical_connections_of(NULL,NULL);
-	}
-
-	if (sel_sub_info.has_selection()) {
-
-		t_pb* pb = sel_sub_info.get_selected_pb();
-		t_block* clb = sel_sub_info.get_containing_block();
-
-		draw_logical_connections_of(pb,clb);
-	}
-}
-
-/**
- * Draws the logical connections of the given pb in clb, and all of it's
- * children, and children's children and so on. pb must be in clb, and in 
- * fact could be determined from pb, but is generally available where this
- * function is called. 
- *
- * *NOTE: If pb or clb is null, then this function will not recurse, and instead
- *        will draw ALL logical connections of ALL logical blocks.
- */
-static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
-	
-	if (pb != NULL && clb != NULL && pb->child_pbs != 0) {
-		int num_child_types = pb->get_num_child_types();
-		for (int i = 0; i < num_child_types; ++i) {
-				
-			int num_pb = pb->get_num_children_of_type(i);
-			for (int j = 0; j < num_pb; ++j) {	
-
-				draw_logical_connections_of(&pb->child_pbs[i][j], clb);
-
-			}
-		}
-		return;
-	}
 
 	// iterate over all the atom nets
 	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
@@ -492,9 +453,12 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
 		int src_lblk_id = net->pins.at(0).block;
 		t_logical_block* src_lblk = &logical_block[src_lblk_id];
 		t_pb_graph_node* src_pb_gnode = src_lblk->pb->pb_graph_node;
+		t_block* src_clb = &block[src_lblk->clb_index];
+		bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
+		bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
 		// get the abs bbox of of the driver pb
-		const t_bound_box& src_bbox = get_draw_coords_vars()->get_absolute_pb_bbox(src_lblk->clb_index, src_pb_gnode);
+		const t_bound_box& src_bbox = draw_coords->get_absolute_pb_bbox(src_lblk->clb_index, src_pb_gnode);
 
 		// iterate over the sinks
 		for (std::vector<t_net_pin>::iterator pin = net->pins.begin() + 1;
@@ -502,21 +466,22 @@ static void draw_logical_connections_of(t_pb* pb, t_block* clb) {
 
 			t_logical_block* sink_lblk = &logical_block[pin->block];
 			t_pb_graph_node* sink_pb_gnode = sink_lblk->pb->pb_graph_node;
+			t_block* sink_clb = &block[sink_lblk->clb_index];
 
-			if (pb == NULL || clb == NULL) {
-				setcolor(BLACK);
+			if (sel_subblk_info.is_on_critical_path(net->pins.at(0), src_pb_gnode, *pin, sink_pb_gnode)) {
+				setcolor(CYAN);
+			} else if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
+				setcolor(DRIVES_IT_COLOR);
+			} else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
+				setcolor(DRIVEN_BY_IT_COLOR);
+			} else if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS) {
+				setcolor(BLACK); // if showing all, draw the other ones in black
 			} else {
-				if (src_pb_gnode == pb->pb_graph_node && clb == &block[src_lblk->clb_index]) {
-					setcolor(DRIVES_IT_COLOR);
-				} else if (sink_pb_gnode == pb->pb_graph_node && clb == &block[sink_lblk->clb_index]) {
-					setcolor(DRIVEN_BY_IT_COLOR);
-				} else {
-					continue; // not showing all, and not the sperified block, so skip
-				}
+				continue; // not showing all, and not the sperified block, so skip
 			}
 
 			// get the abs. bbox of the sink pb
-			const t_bound_box& sink_bbox = get_draw_coords_vars()->get_absolute_pb_bbox(sink_lblk->clb_index, sink_pb_gnode);
+			const t_bound_box& sink_bbox = draw_coords->get_absolute_pb_bbox(sink_lblk->clb_index, sink_pb_gnode);
 
 			draw_one_logical_connection(net->pins.at(0), *src_lblk, src_bbox, *pin, *sink_lblk, sink_bbox);		
 		}
@@ -757,9 +722,39 @@ t_pb* highlight_sub_block_helper(
 	return NULL;
 }
 
+t_selected_sub_block_info& get_selected_sub_block_info() {
+	// used to keep track of the selected sub-block.
+	static t_selected_sub_block_info selected_sub_block_info;
+
+	return selected_sub_block_info;
+}
+
 /*
  * Begin definition of t_selected_sub_block_info functions.
  */
+
+t_selected_sub_block_info::t_selected_sub_block_info() {
+	clear();
+}
+
+template<typename HashType>
+void add_all_children(const t_pb* pb, const t_block* clb,
+	std::unordered_set< std::pair<const t_pb_graph_node*,const t_block*>, HashType>& set) {
+
+	if (pb == NULL) {
+		return;
+	}
+
+	set.emplace(pb->pb_graph_node, clb);
+
+	int num_child_types = pb->get_num_child_types();
+	for (int i = 0; i < num_child_types; ++i) {
+		int num_children_of_type = pb->get_num_children_of_type(i);
+		for (int j = 0; j < num_children_of_type; ++j) {
+			add_all_children(&pb->child_pbs[i][j], clb, set);
+		}
+	}
+}
 
 void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_containing_block) {
 	selected_pb = new_selected_sub_block;
@@ -767,15 +762,17 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	containing_block = new_containing_block;
 	sinks.clear();
 	sources.clear();
+	in_selected_subtree.clear();
 
 	// printf("selecting in clb #%ld\n", new_containing_block - block);
 
 	if (has_selection()) {
+		add_all_children(selected_pb, containing_block, in_selected_subtree);
+
 		for (int i = 0; i < num_logical_blocks; ++i) {
 			const t_logical_block* lblk = &logical_block[i];
 			// find the logical block that corrisponds to this pb.
-			if (&block[lblk->clb_index] == get_containing_block()
-				&& lblk->pb->pb_graph_node == get_selected_pb_gnode()) {
+			if ( is_in_selected_subtree(lblk->pb->pb_graph_node, &block[lblk->clb_index]) ) {
 
 				t_model* model = lblk->model;
 
@@ -824,19 +821,35 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 					}
 					model_ports = model_ports->next;
 				}
-
-				break;
 			}
 		}
 	}
 }
 
-t_selected_sub_block_info::t_selected_sub_block_info() {
-	clear();
+void t_selected_sub_block_info::add_to_critical_path(const t_tnode& src_tnode, const t_tnode& sink_tnode) {
+	on_critical_path.emplace(
+		clb_pin_tuple(
+			 src_tnode.block,
+			 src_tnode.pb_graph_pin->port->index,
+			 src_tnode.pb_graph_pin->pin_number,
+			 src_tnode.pb_graph_pin->parent_node
+		),
+		clb_pin_tuple(
+			sink_tnode.block,
+			sink_tnode.pb_graph_pin->port->index,
+			sink_tnode.pb_graph_pin->pin_number,
+			sink_tnode.pb_graph_pin->parent_node
+		)
+	);
 }
 
 void t_selected_sub_block_info::clear() {
 	set(NULL, NULL);
+	clear_critical_path();
+}
+
+void t_selected_sub_block_info::clear_critical_path() {
+	on_critical_path.clear();
 }
 
 t_pb* t_selected_sub_block_info::get_selected_pb() const { return selected_pb; }
@@ -861,9 +874,44 @@ bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* tes
 	return sources.find(std::make_pair(test,test_block)) != sources.end();
 }
 
-t_selected_sub_block_info& get_selected_sub_block_info() {
-	// used to keep track of the selected sub-block.
-	static t_selected_sub_block_info selected_sub_block_info;
+bool t_selected_sub_block_info::is_on_critical_path(
+	const t_net_pin& test_src, const t_pb_graph_node* test_src_pb_gnode,
+	const t_net_pin& test_sink, const t_pb_graph_node* test_sink_pb_gnode) const {
 
-	return selected_sub_block_info;
+	return on_critical_path.find(
+		std::make_pair(
+			clb_pin_tuple(test_src, test_src_pb_gnode),
+			clb_pin_tuple(test_sink, test_sink_pb_gnode)
+		)
+	) != on_critical_path.end();
+}
+
+bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const {
+	return in_selected_subtree.find(std::make_pair(test,test_block)) != in_selected_subtree.end();
+}
+
+/*
+ * Begin definition of t_selected_sub_block_info::clb_pin_tuple functions.
+ */
+
+t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(
+	int clb_index_, int port_number_, int pin_number_, const t_pb_graph_node* pb_gnode_) :
+	clb_index(clb_index_),
+	port_number(0),//port_number_),
+	pin_number(0),//pin_number_),
+	pb_gnode(pb_gnode_) {
+}
+
+t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const t_net_pin& pin, const t_pb_graph_node* pb_gnode_) :
+	clb_index(logical_block[pin.block].clb_index),
+	port_number(0),//pin.block_port),
+	pin_number(0),//pin.block_pin),
+	pb_gnode(pb_gnode_) {
+}
+
+bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {
+	return   clb_index == rhs.clb_index 
+	&&     port_number == rhs.port_number
+	&&      pin_number == rhs.pin_number
+	&&        pb_gnode == rhs.pb_gnode;
 }
