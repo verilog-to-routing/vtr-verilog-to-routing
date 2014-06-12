@@ -2,6 +2,7 @@
 #define VPR_UTILS_H
 
 #include "util.h"
+#include "netlist.h"
 
 void print_tabs(FILE * fpout, int num_tab);
 
@@ -23,7 +24,9 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
 boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node);
+t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pin, bool is_input_pin, bool is_in_global_net);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin);
+t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin);
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);

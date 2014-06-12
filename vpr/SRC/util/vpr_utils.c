@@ -394,11 +394,19 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin) {
+	return get_pb_graph_node_pin_from_g_atoms_nlist_pin(
+		g_atoms_nlist.net[inet].pins[ipin],
+		ipin > 0,
+		g_atoms_nlist.net[inet].is_global
+	);
+}
+
+t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pin, bool is_input_pin, bool is_in_global_net) {
 
 	int ilogical_block;
 	t_model_ports *port;
 
-	ilogical_block = g_atoms_nlist.net[inet].pins[ipin].block;
+	ilogical_block = pin.block;
 
 	assert(ilogical_block != OPEN);
 	if(logical_block[ilogical_block].pb == NULL) {
@@ -406,12 +414,12 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 		return NULL;
 	}
 
-	if(ipin > 0) {
+	if(is_input_pin) {
 		port = logical_block[ilogical_block].model->inputs;
-		if(g_atoms_nlist.net[inet].is_global) {
+		if(is_in_global_net) {
 			while(port != NULL) {
 				if(port->is_clock) {
-					if(port->index == g_atoms_nlist.net[inet].pins[ipin].block_port) {
+					if(port->index == pin.block_port) {
 						break;
 					}
 				}
@@ -420,7 +428,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 		} else {
 			while(port != NULL) {
 				if(!port->is_clock) {
-					if(port->index == g_atoms_nlist.net[inet].pins[ipin].block_port) {
+					if(port->index == pin.block_port) {
 						break;
 					}
 				}
@@ -431,7 +439,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 		/* This is an output pin */
 		port = logical_block[ilogical_block].model->outputs;
 		while(port != NULL) {
-			if(port->index == g_atoms_nlist.net[inet].pins[ipin].block_pin) {
+			if(port->index == pin.block_pin) {
 				break;
 			}
 			port = port->next;
@@ -439,7 +447,11 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin)
 	}
 
 	assert(port != NULL);
-	return get_pb_graph_node_pin_from_model_port_pin(port, g_atoms_nlist.net[inet].pins[ipin].block_pin, logical_block[ilogical_block].pb->pb_graph_node);
+	return get_pb_graph_node_pin_from_model_port_pin(port, pin.block_pin, logical_block[ilogical_block].pb->pb_graph_node);
+}
+
+t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin) {
+	return get_pb_graph_node_pin_from_block_pin(pin.block, pin.block_pin);
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin) {

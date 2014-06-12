@@ -18,19 +18,27 @@ struct t_selected_sub_block_info {
 private:
 	struct clb_pin_tuple {
 		int clb_index;
-		int port_number;
-		int pin_number;
+		//const t_pb_graph_pin* pb_gpin;
 		const t_pb_graph_node* pb_gnode;
 
-		clb_pin_tuple(int clb_index, int port_number, int pin_number, const t_pb_graph_node* pb_gnode);
-		clb_pin_tuple(const t_net_pin& pin, const t_pb_graph_node* pb_gnode);
+		// clb_pin_tuple(int clb_index, const t_pb_graph_pin* pb_gpin);
+		clb_pin_tuple(int clb_index, const t_pb_graph_node* pb_gnode);
+		clb_pin_tuple(const t_net_pin& atom_pin, bool is_input_pin, bool is_in_global_net);
 		bool operator==(const clb_pin_tuple&) const;
 	};
 
+	struct gnode_clb_pair {
+		const t_pb_graph_node* pb_gnode;
+		const t_block* clb;
+		gnode_clb_pair(const t_pb_graph_node* pb_gnode, const t_block* clb);
+		gnode_clb_pair();
+		bool operator==(const gnode_clb_pair&) const;
+	};
+
 	struct sel_subblk_hasher {
-		inline std::size_t operator()(const std::pair<const t_pb_graph_node*, const t_block*>& v) const {
+		inline std::size_t operator()(const gnode_clb_pair& v) const {
 			std::hash<const void*> ptr_hasher;
-			return ptr_hasher((const void*)v.first) ^ ptr_hasher((const void*)v.second);
+			return ptr_hasher((const void*)v.pb_gnode) ^ ptr_hasher((const void*)v.clb);
 		}
 
 		inline std::size_t operator()(const std::pair<clb_pin_tuple, clb_pin_tuple>& v) const {
@@ -40,20 +48,27 @@ private:
 		inline std::size_t operator()(const clb_pin_tuple& v) const {
 			std::hash<int> int_hasher;
 			std::hash<const void*> ptr_hasher;
-			return int_hasher(v.clb_index) ^ int_hasher(v.port_number)
-				^ int_hasher(v.pin_number) ^ ptr_hasher((const void*)v.pb_gnode);
+			return int_hasher(v.clb_index) 
+				// ^ ptr_hasher((const void*)v.pb_gpin);
+				^ ptr_hasher((const void*)v.pb_gnode);
 		}
 	};
 
 	t_pb* selected_pb;
 	t_block* containing_block;
 	t_pb_graph_node* selected_pb_gnode;
-	std::unordered_set< std::pair<const t_pb_graph_node*, const t_block*>, sel_subblk_hasher> sinks;
-	std::unordered_set< std::pair<const t_pb_graph_node*, const t_block*>, sel_subblk_hasher> sources;
-	std::unordered_set< std::pair<clb_pin_tuple, clb_pin_tuple>, sel_subblk_hasher> on_critical_path;
-	std::unordered_set< std::pair<const t_pb_graph_node*, const t_block*>, sel_subblk_hasher> in_selected_subtree;
+	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > sinks;
+	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > sources;
+	std::unordered_set< std::pair<clb_pin_tuple, clb_pin_tuple>, sel_subblk_hasher> nets_on_critical_path;
+	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > in_selected_subtree;
+	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > blocks_on_critical_path;
+	gnode_clb_pair head_of_critical_path;
+	gnode_clb_pair driver_of_head_of_critical_path;
 
 	void add_sinks_and_sources_of(const t_pb_graph_node* pb_gnode, const t_block* clb);
+
+	template<typename HashType> friend void add_all_children(const t_pb* pb, const t_block* clb,
+	std::unordered_set< gnode_clb_pair, HashType>& set);
 public:
 
 	t_selected_sub_block_info();
@@ -79,9 +94,11 @@ public:
 
 	bool is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_on_critical_path(const t_net_pin& test_src, const t_pb_graph_node* test_src_pb_gnode,
-	                         const t_net_pin& test_sink, const t_pb_graph_node* test_sink_pb_gnode) const;
+	bool is_on_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const;
 	bool is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const;
+	bool is_on_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
+	bool is_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
+	bool is_driver_of_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
 };
 
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the

@@ -334,8 +334,14 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 				setcolor(DRIVES_IT_COLOR);
 			} else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb)) {
 				setcolor(DRIVEN_BY_IT_COLOR);
+			} else if (sel_sub_info.is_head_of_critical_path(pb->pb_graph_node, clb)) {
+				setcolor(MAGENTA);
+			} else if (sel_sub_info.is_driver_of_head_of_critical_path(pb->pb_graph_node, clb)) {
+				setcolor(YELLOW);
+			} else if (sel_sub_info.is_on_critical_path(pb->pb_graph_node, clb)) {
+				setcolor(DARKGREEN);
 			} else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != NULL) {
-				setcolor(WHITE); // draw anthing that will have a child as white
+				setcolor(WHITE); // draw anthing else that will have a child as white
 			} else if (type_index < 3) {
 				setcolor(LIGHTGREY);
 			} else if (type_index < 3 + MAX_BLOCK_COLOURS) {
@@ -468,7 +474,7 @@ void draw_logical_connections() {
 			t_pb_graph_node* sink_pb_gnode = sink_lblk->pb->pb_graph_node;
 			t_block* sink_clb = &block[sink_lblk->clb_index];
 
-			if (sel_subblk_info.is_on_critical_path(net->pins.at(0), src_pb_gnode, *pin, sink_pb_gnode)) {
+			if (sel_subblk_info.is_on_critical_path(net->pins.at(0), *pin)) {
 				setcolor(CYAN);
 			} else if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVES_IT_COLOR);
@@ -735,17 +741,18 @@ t_selected_sub_block_info& get_selected_sub_block_info() {
 
 t_selected_sub_block_info::t_selected_sub_block_info() {
 	clear();
+	clear_critical_path();
 }
 
 template<typename HashType>
 void add_all_children(const t_pb* pb, const t_block* clb,
-	std::unordered_set< std::pair<const t_pb_graph_node*,const t_block*>, HashType>& set) {
+	std::unordered_set< t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
 
 	if (pb == NULL) {
 		return;
 	}
 
-	set.insert(std::make_pair(pb->pb_graph_node, clb));
+	set.insert(t_selected_sub_block_info::gnode_clb_pair(pb->pb_graph_node, clb));
 
 	int num_child_types = pb->get_num_child_types();
 	for (int i = 0; i < num_child_types; ++i) {
@@ -792,7 +799,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 								t_net_pin& pin = net.pins.at(0);
 								t_logical_block* src_lblk = &logical_block[pin.block];
 
-								sources.insert(std::make_pair(
+								sources.insert(gnode_clb_pair(
 									src_lblk->pb->pb_graph_node, &block[src_lblk->clb_index])
 								);
 							}
@@ -813,7 +820,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 							for (auto pin = net.pins.begin() + 1; pin != net.pins.end(); ++pin) {
 								t_logical_block* sink_lblk = &logical_block[pin->block];
 
-								sinks.insert(std::make_pair(
+								sinks.insert(gnode_clb_pair(
 									sink_lblk->pb->pb_graph_node, &block[sink_lblk->clb_index])
 								);
 							}
@@ -827,17 +834,26 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 }
 
 void t_selected_sub_block_info::add_to_critical_path(const t_tnode& src_tnode, const t_tnode& sink_tnode) {
-	on_critical_path.insert(std::make_pair(
+
+	driver_of_head_of_critical_path = gnode_clb_pair(
+		src_tnode.pb_graph_pin->parent_node,
+		&block[src_tnode.block]
+	);
+	blocks_on_critical_path.insert(driver_of_head_of_critical_path);
+
+	head_of_critical_path = gnode_clb_pair(
+		sink_tnode.pb_graph_pin->parent_node,
+		&block[sink_tnode.block]
+	);
+	blocks_on_critical_path.insert(head_of_critical_path);
+
+	nets_on_critical_path.insert(std::make_pair(
 		clb_pin_tuple(
 			 src_tnode.block,
-			 src_tnode.pb_graph_pin->port->index,
-			 src_tnode.pb_graph_pin->pin_number,
 			 src_tnode.pb_graph_pin->parent_node
 		),
 		clb_pin_tuple(
 			sink_tnode.block,
-			sink_tnode.pb_graph_pin->port->index,
-			sink_tnode.pb_graph_pin->pin_number,
 			sink_tnode.pb_graph_pin->parent_node
 		)
 	));
@@ -845,11 +861,13 @@ void t_selected_sub_block_info::add_to_critical_path(const t_tnode& src_tnode, c
 
 void t_selected_sub_block_info::clear() {
 	set(NULL, NULL);
-	clear_critical_path();
 }
 
 void t_selected_sub_block_info::clear_critical_path() {
-	on_critical_path.clear();
+	nets_on_critical_path.clear();
+	blocks_on_critical_path.clear();
+	head_of_critical_path = gnode_clb_pair(NULL,NULL);
+	driver_of_head_of_critical_path = gnode_clb_pair(NULL,NULL);
 }
 
 t_pb* t_selected_sub_block_info::get_selected_pb() const { return selected_pb; }
@@ -867,51 +885,78 @@ bool t_selected_sub_block_info::is_selected(const t_pb_graph_node* test, const t
 }
 
 bool t_selected_sub_block_info::is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const {
-	return sinks.find(std::make_pair(test,test_block)) != sinks.end();
+	return sinks.find(gnode_clb_pair(test,test_block)) != sinks.end();
 }
 
 bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const {
-	return sources.find(std::make_pair(test,test_block)) != sources.end();
+	return sources.find(gnode_clb_pair(test,test_block)) != sources.end();
 }
 
-bool t_selected_sub_block_info::is_on_critical_path(
-	const t_net_pin& test_src, const t_pb_graph_node* test_src_pb_gnode,
-	const t_net_pin& test_sink, const t_pb_graph_node* test_sink_pb_gnode) const {
+bool t_selected_sub_block_info::is_on_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const {
 
-	return on_critical_path.find(
+	clb_pin_tuple src_clb_pin_tuple(test_src, false, false);
+	clb_pin_tuple sink_clb_pin_tuple(test_sink, true, false);
+	return nets_on_critical_path.find(
 		std::make_pair(
-			clb_pin_tuple(test_src, test_src_pb_gnode),
-			clb_pin_tuple(test_sink, test_sink_pb_gnode)
+			src_clb_pin_tuple,
+			sink_clb_pin_tuple
 		)
-	) != on_critical_path.end();
+	) != nets_on_critical_path.end();
+}
+
+bool t_selected_sub_block_info::is_on_critical_path(const t_pb_graph_node* test, const t_block* test_block) const {
+	return blocks_on_critical_path.find(gnode_clb_pair(test,test_block)) != blocks_on_critical_path.end();
+}
+
+bool t_selected_sub_block_info::is_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const {
+	return head_of_critical_path == gnode_clb_pair(test, test_block);
+}
+
+bool t_selected_sub_block_info::is_driver_of_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const {
+	return driver_of_head_of_critical_path == gnode_clb_pair(test, test_block);
 }
 
 bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const {
-	return in_selected_subtree.find(std::make_pair(test,test_block)) != in_selected_subtree.end();
+	return in_selected_subtree.find(gnode_clb_pair(test,test_block)) != in_selected_subtree.end();
 }
 
 /*
  * Begin definition of t_selected_sub_block_info::clb_pin_tuple functions.
  */
 
-t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(
-	int clb_index_, int port_number_, int pin_number_, const t_pb_graph_node* pb_gnode_) :
+// t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_pb_graph_pin* pb_gpin_) :
+t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_pb_graph_node* pb_gnode_) :
 	clb_index(clb_index_),
-	port_number(0),//port_number_),
-	pin_number(0),//pin_number_),
 	pb_gnode(pb_gnode_) {
 }
 
-t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const t_net_pin& pin, const t_pb_graph_node* pb_gnode_) :
-	clb_index(logical_block[pin.block].clb_index),
-	port_number(0),//pin.block_port),
-	pin_number(0),//pin.block_pin),
-	pb_gnode(pb_gnode_) {
+t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const t_net_pin& atom_pin, bool is_input_pin, bool is_in_global_net) :
+	clb_index(logical_block[atom_pin.block].clb_index),
+	// pb_gpin(get_pb_graph_node_pin_from_g_atoms_nlist_pin(atom_pin, is_input_pin, is_in_global_net)) {
+	pb_gnode(get_pb_graph_node_pin_from_g_atoms_nlist_pin(atom_pin, is_input_pin, is_in_global_net)->parent_node) {
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {
-	return   clb_index == rhs.clb_index 
-	&&     port_number == rhs.port_number
-	&&      pin_number == rhs.pin_number
+	return   clb_index == rhs.clb_index
+	// &&         pb_gpin == rhs.pb_gpin;
 	&&        pb_gnode == rhs.pb_gnode;
+}
+
+/*
+ * Begin definition of t_selected_sub_block_info::gnode_clb_pair functions
+ */
+
+t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair() :
+	pb_gnode(NULL),
+	clb(NULL) {
+}
+
+t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node* pb_gnode_, const t_block* clb_) :
+	pb_gnode(pb_gnode_),
+	clb(clb_) {
+}
+
+bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair& rhs) const {
+	return   clb == rhs.clb
+	&&  pb_gnode == rhs.pb_gnode;
 }
