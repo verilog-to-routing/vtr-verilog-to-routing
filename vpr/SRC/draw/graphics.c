@@ -2192,7 +2192,9 @@ handle_zoom_in (float x, float y, void (*drawscreen) (void))
 	trans_coord.ybot = y + (trans_coord.ybot -y)/(float) ZOOM_FACTOR;
 
 	update_transform ();
-	drawscreen();
+	if (drawscreen != NULL) {
+		drawscreen();
+	}
 }
 
 
@@ -2207,7 +2209,9 @@ handle_zoom_out (float x, float y, void (*drawscreen) (void))
 	trans_coord.ybot = y + (trans_coord.ybot -y)*((float) ZOOM_FACTOR);
 
 	update_transform ();
-	drawscreen();
+	if (drawscreen != NULL) {
+		drawscreen();
+	}
 }
 
 
@@ -3171,6 +3175,15 @@ static void x11_init_graphics (const char *window_name, int cindex)
    XPeekIfEvent (x11_state.display, &event, x11_test_if_exposed, NULL); 
 }
 
+bool is_droppable_event(XEvent* event) {
+	return
+	event->type == MotionNotify || (
+		event->type == ButtonPress && (
+			event->xbutton.button == Button4 ||
+			event->xbutton.button == Button5
+		)
+	);
+}
 
 /* Helper function called by event_loop(). Not visible to client program. */
 static void 
@@ -3180,6 +3193,7 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 				void (*drawscreen) (void))
 {
 	XEvent report;
+	unsigned int last_skipped_button_press_button = -1;
 	int bnum;
 	float x, y;
 	
@@ -3189,20 +3203,48 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 	x11_turn_on_off (ON);
 	while (true) {
 
-		while (true) {
-			XSync(x11_state.display, false);
-			XNextEvent (x11_state.display, &report);
-			if (report.type != MotionNotify || XQLength(x11_state.display) < 1) {
-				break; // if the queue is empty or this is not a motion event, process it now.
-			} else {
-				// here, we have a non empty queue and a motion event. So,
-				// we'll skip motion events, until the queue has only one event
-				// or this is the last motion event.
-				XEvent next_event;
+		XSync(x11_state.display, false);
+		XNextEvent (x11_state.display, &report);
+		if (is_droppable_event(&report) && XQLength(x11_state.display) > 0) {
+			printf("dropping a %d",report.type);
+			if (report.type == ButtonPress) {
+				last_skipped_button_press_button = report.xbutton.button;
+			}
+			// if the current event is droppable, and there are more events
+			// in the queue, check to see if the next event is droppable too.
+			XEvent next_event;
+			XPeekEvent(x11_state.display, &next_event);
+			if (next_event.type == ButtonRelease 
+				&& next_event.xbutton.button == last_skipped_button_press_button
+				&& XQLength(x11_state.display) > 1) {
+				XSync(x11_state.display, false);
+				XNextEvent(x11_state.display, &next_event);
 				XPeekEvent(x11_state.display, &next_event);
-				if (next_event.type != MotionNotify) {
-					break; // the last motion event was found - process it now.
+				last_skipped_button_press_button = -1;
+				printf(" (dropped a ButtonRelease)");
+			}
+			printf(" (next is %d)?", next_event.type);
+			if (is_droppable_event(&next_event)) {
+				// if so, skip this event.
+				if (report.type == ButtonPress) {
+					x = xscrn_to_world(report.xbutton.x);
+					y = yscrn_to_world(report.xbutton.y);
+					switch (report.xbutton.button) {
+						case Button4:
+							handle_zoom_in(x, y, NULL); // (same function as normal event logic)
+						break;
+						case Button5:
+							handle_zoom_out(x, y, NULL); // (same function as normal event logic)
+						break;
+						default:
+							// do nothing, also should be impossible (we don't want to skip mouse presses)
+						break;
+					}
 				}
+				puts(" yes");
+				continue;
+			} else {
+				puts(" no");
 			}
 		}
 
@@ -3251,10 +3293,10 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 					panning_on(report.xbutton.x, report.xbutton.y);
 					break;
 				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
-					handle_zoom_in(x, y, drawscreen);
+					handle_zoom_in(x, y, drawscreen); // note, this is also called in the skipping logic
 					break;
 				case Button5:  /* Scroll wheel rotated backward; screen does zoom_out */
-					handle_zoom_out(x, y, drawscreen);
+					handle_zoom_out(x, y, drawscreen); // note, this is also called in the skipping logic
 					break;
 				}
 			} 
