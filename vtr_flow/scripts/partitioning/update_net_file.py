@@ -76,6 +76,17 @@ def run(input_net_file, output_net_file, partitions_file, total_partitions, bloc
 
     tree.write(output_net_file)
 
+def remove_regions(input_filename, output_filename):
+    tree = ET.parse(input_filename)
+    root = tree.getroot()
+    
+    for child in root:
+        if child.tag == "block":
+            for r in child.findall("regions"):
+                child.remove(r)
+
+    tree.write(output_filename)
+
 def main():
     parser = argparse.ArgumentParser(description='Adds placement regions to VPR\'s net file based on hmetis output')
     parser.add_argument('--input-net-file', required=True)
