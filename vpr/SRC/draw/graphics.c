@@ -197,6 +197,7 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <vector>
 #include "graphics.h"
 using namespace std;
 
@@ -338,8 +339,8 @@ typedef struct {
  * initialized:  true if the graphics window & state have been 
  *      created and initialized, false otherwise.
  * disp_type: Selects SCREEN or POSTSCRIPT 
- * background_cindex: index of the window (or page for PS) background colour
- * currentcolor: current color in the graphics context
+ * background_color: colour of the window (or page for PS) background colour
+ * foreground_color: current color in the graphics context
  * currentlinestyle: current linestyle in the graphics context
  * currentlinewidth: current linewidth in the graphics context
  * currentfontsize: current font size in the graphics context
@@ -350,12 +351,18 @@ typedef struct {
  * font_is_loaded: whether a specified font size is loaded
  * get_keypress_input: whether keypresses are sent back to callback functions
  * get_mouse_move_input: whether mouse movements are sent back to callback functions
+ *
+ * Need to initialize graphics_loaded to false, since checking it is 
+ * how we avoid multiple construction or destruction of the graphics
+ * window. Initializing display type and background color index is not 
+ * necessary since they are set in init_graphics(), but doing so
+ * just for safety.
  */
-typedef struct {
+struct t_gl_state {
    bool initialized;
    t_display_type disp_type;
-   int background_cindex;
-   int currentcolor;
+   t_color background_color;
+   t_color foreground_color;
    int currentlinestyle;
    int currentlinewidth;
    int currentfontsize;
@@ -365,7 +372,12 @@ typedef struct {
    char statusMessage[BUFSIZE];
    bool font_is_loaded[MAX_FONT_SIZE + 1];
    bool get_keypress_input, get_mouse_move_input;
-} t_gl_state;
+   t_gl_state() :
+       initialized(false),
+       disp_type(SCREEN),
+       background_color(0xFF,0xFF,0xCC) {
+   }
+};
 
 
 /* Structure used to store coordinate information used for
@@ -431,9 +443,7 @@ typedef struct {
  */
 typedef struct {
    Display *display; 
-   int screen_num; 
-   int colors[NUM_COLOR];
-   Colormap private_cmap; 
+   int screen_num;
    Window toplevel, menu, textarea; 
    GC gc_normal, gc_xor, gc_menus, current_gc; 
    XFontStruct *font_info[MAX_FONT_SIZE+1]; 
@@ -501,12 +511,7 @@ typedef struct {
  *        File scope variables.              *
  *********************************************************************/
 
-// Need to initialize graphics_loaded to false, since checking it is 
-// how we avoid multiple construction or destruction of the graphics
-// window. Initializing display type and background color index is not 
-// necessary since they are set in init_graphics(), but doing so
-// just for safety.
-static t_gl_state gl_state = {false, SCREEN, 0};
+static t_gl_state gl_state;
 
 // Stores all the menu buttons created. Initialize the button pointer 
 // and num_buttons for safety.
@@ -518,12 +523,69 @@ static t_transform_coordinates trans_coord;
 // Initialize panning_enabled to false, so panning is not activated
 static t_panning_state pan_state = {0, 0, false};
 
-// Color references, also used in postscript generation
-static const char *ps_cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75",
-		"blue", "green", "yellow", "cyan", "red", "pink", "lightpink", "darkgreen", 
-		"magenta", "bisque", "lightskyblue", "thistle", "plum", "khaki", "coral",
-		"turquoise", "mediumpurple", "darkslateblue", "darkkhaki", "lightmediumblue",
-		"saddlebrown", "firebrick", "limegreen"};
+// Predefined colours
+static const vector<t_color> predef_colors = {
+	t_color(0xFF, 0xFF, 0xFF),  // "white"
+	t_color(0x00, 0x00, 0x00),  // "black"
+	t_color(0x8C, 0x8C, 0x8C),  // "grey55"
+	t_color(0xBF, 0xBF, 0xBF),  // "grey75"
+	t_color(0x00, 0x00, 0xFF),  // "blue"
+	t_color(0x00, 0xFF, 0x00),  // "green"
+	t_color(0xFF, 0xFF, 0x00),  // "yellow"
+	t_color(0x00, 0xFF, 0xFF),  // "cyan"
+	t_color(0xFF, 0x00, 0x00),  // "red"
+	t_color(0xFF, 0xC0, 0xCB),  // "pink"
+	t_color(0xFF, 0xB6, 0xC1),  // "lightpink"
+	t_color(0x00, 0x64, 0x00),  // "darkgreen"
+	t_color(0xFF, 0x00, 0xFF),  // "magenta"
+	t_color(0xFF, 0xE4, 0xC4),  // "bisque"
+	t_color(0x87, 0xCE, 0xFA),  // "lightskyblue"
+	t_color(0xD8, 0xBF, 0xD8),  // "thistle"
+	t_color(0xDD, 0xA0, 0xDD),  // "plum"
+	t_color(0xF0, 0xE6, 0x8C),  // "khaki"
+	t_color(0xFF, 0x7F, 0x50),  // "coral"
+	t_color(0x40, 0xE0, 0xD0),  // "turquoise"
+	t_color(0x93, 0x70, 0xDB),  // "mediumpurple"
+	t_color(0x48, 0x3D, 0x8B),  // "darkslateblue"
+	t_color(0xBD, 0xB7, 0x6B),  // "darkkhaki"
+	t_color(0x44, 0x44, 0xFF),  // "lightmediumblue" (NON X11)
+	t_color(0x8B, 0x45, 0x13),  // "saddlebrown"
+	t_color(0xB2, 0x22, 0x22),  // "firebrick"
+	t_color(0x32, 0xCD, 0x32)   // "limegreen"
+};
+
+// assert(predef_colors.size() == NUM_COLOR);
+
+// Color names, also used in postscript generation
+static const char *ps_cnames[NUM_COLOR] = {
+	"white",
+	"black",
+	"grey55",
+	"grey75",
+	"blue",
+	"green",
+	"yellow",
+	"cyan",
+	"red",
+	"pink",
+	"lightpink",
+	"darkgreen",
+	"magenta",
+	"bisque",
+	"lightskyblue",
+	"thistle",
+	"plum",
+	"khaki",
+	"coral",
+	"turquoise",
+	"mediumpurple",
+	"darkslateblue",
+	"darkkhaki",
+	"lightmediumblue", // (NON X11)
+	"saddlebrown",
+	"firebrick",
+	"limegreen"
+};
 
 #ifdef X11
 
@@ -544,15 +606,6 @@ t_x11_state x11_state;
 
 /* Linestyle references for Win32. */
 static const int win32_line_styles[2] = { PS_SOLID, PS_DASH };
-
-/* Color references for Win32. Colors have to be specified by RGB values for Win32. */
-static const COLORREF win32_colors[NUM_COLOR] = { RGB(255, 255, 255),
-RGB(0, 0, 0), RGB(128, 128, 128), RGB(192, 192, 192), RGB(0, 0, 255),
-RGB(0, 255, 0), RGB(255, 255, 0), RGB(0, 255, 255), RGB(255, 0, 0), RGB(255, 192, 203), 
-RGB(255, 182, 193), RGB(0, 128, 0), RGB(255, 0, 255), RGB(255, 228, 196), RGB(135, 206, 250), 
-RGB(216, 191, 216), RGB(221, 160, 221), RGB(240, 230, 140), RGB(255, 127, 80), 
-RGB(64, 224, 208), RGB(147, 112, 219), RGB(72, 61, 139), RGB(189, 183, 107),
-RGB(0x44, 0x44, 0xFF), RGB(0x8B, 0x45, 0x13), RGB(0xB2, 0x22, 0x22), RGB(0x32, 0xCD, 0x32)};
 
 /* Name of each window */
 static TCHAR szAppName[256], szGraphicsName[] = TEXT("VPR Graphics"), 
@@ -583,6 +636,8 @@ static float xworld_to_post(float worldx);
 static float yworld_to_post(float worldy);
 
 static void force_setcolor(int cindex);
+static void force_setcolor(const t_color& new_color);
+static void update_brushes();
 static void force_setlinestyle(int linestyle);
 static void force_setlinewidth(int linewidth);
 static void force_setfontsize (int pointsize);
@@ -693,6 +748,8 @@ static void win32_drain_message_queue ();
 static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam);
 static void win32_handle_button_info (t_event_buttonPressed &button_info, UINT message, 
 									  WPARAM wParam);
+
+COLORREF convert_to_win_color(const t_color& src);
 
 #endif /* Win32 Declarations */
 
@@ -819,21 +876,29 @@ static float yworld_to_post(float worldy)
 }
 
 
+
 /* Sets the current graphics context colour to cindex, regardless of whether we think it is 
  * needed or not. 
  */
-static void force_setcolor (int cindex) 
-{
-	gl_state.currentcolor = cindex;
+static void force_setcolor (int cindex) {
+	gl_state.foreground_color = predef_colors[cindex];
+	update_brushes();
+}
 
+static void force_setcolor(const t_color& new_color) {
+	gl_state.foreground_color = new_color;
+	update_brushes();
+}
+
+static void update_brushes() {
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-		XSetForeground (x11_state.display, x11_state.current_gc, x11_state.colors[cindex]);
+		XSetForeground (x11_state.display, x11_state.current_gc, gl_state.foreground_color.as_rgb_int());
 #else /* Win32 */
 		int win_linestyle, linewidth;
 		LOGBRUSH lb;
 		lb.lbStyle = BS_SOLID;
-		lb.lbColor = win32_colors[cindex];
+		lb.lbColor = convert_to_win_color(gl_state.foreground_color);
 		lb.lbHatch = (LONG)NULL;
 		win_linestyle = win32_line_styles[gl_state.currentlinestyle];
 		linewidth = max (gl_state.currentlinewidth, 1);  // Win32 won't draw 0 width dashed lines.
@@ -854,7 +919,7 @@ static void force_setcolor (int cindex)
 		if(!DeleteObject(win32_state.hGraphicsBrush)) 
 			WIN32_DELETE_ERROR();
 		/* Create a new brush */
-		win32_state.hGraphicsBrush = CreateSolidBrush(win32_colors[gl_state.currentcolor]);
+		win32_state.hGraphicsBrush = CreateSolidBrush(convert_to_win_color(gl_state.foreground_color));
 		if(!win32_state.hGraphicsBrush)
 			WIN32_CREATE_ERROR();
 		/* Select created brush into specified device context */
@@ -863,20 +928,39 @@ static void force_setcolor (int cindex)
 #endif
 	}
 	else {
-		fprintf (gl_state.ps,"%s\n", ps_cnames[cindex]);
+		auto color_index = std::find(predef_colors.begin(), predef_colors.end(), gl_state.foreground_color);
+		if (color_index != predef_colors.end()) {
+			fprintf(gl_state.ps, "%s\n", ps_cnames[color_index - predef_colors.begin()]);
+		} else {
+			fprintf(
+				gl_state.ps,
+				"%f %f %f setrgbcolor\n",
+				gl_state.foreground_color.red/(float)0xFF,
+				gl_state.foreground_color.green/(float)0xFF,
+				gl_state.foreground_color.blue/(float)0xFF
+			);
+		}
 	}
 }
 
 
 /* Sets the current graphics context colour to cindex if it differs from the old colour */
-void setcolor (int cindex) 
-{
-	if (gl_state.currentcolor != cindex) 
+void setcolor (int cindex) {
+	if (gl_state.foreground_color != predef_colors[cindex]) { 
 		force_setcolor (cindex);
-   
+	}
 }
 
- 
+void setcolor (const t_color& color) {
+	if (gl_state.foreground_color != color) {
+		force_setcolor(color);
+	}
+}
+
+void setcolor (uint_fast8_t r, uint_fast8_t g, uint_fast8_t b) {
+	setcolor(t_color(r,g,b));
+}
+
 /* Sets the current graphics context color to the index that corresponds to the
  * string name passed in.  Slower, but maybe more convenient for simple 
  * client code.
@@ -898,8 +982,8 @@ void setcolor_by_name (string cname) {
 }
 
 
-int getcolor() {
-	return gl_state.currentcolor;
+t_color getcolor() {
+	return gl_state.foreground_color;
 }
 
 
@@ -919,7 +1003,7 @@ static void force_setlinestyle (int linestyle)
 #else  // Win32
 		LOGBRUSH lb;
 		lb.lbStyle = BS_SOLID;
-		lb.lbColor = win32_colors[gl_state.currentcolor];
+		lb.lbColor = convert_to_win_color(gl_state.foreground_color);
 		lb.lbHatch = (LONG)NULL;
 		int win_linestyle = win32_line_styles[linestyle];
 		/* Win32 won't draw 0 width dashed lines. */
@@ -978,7 +1062,7 @@ static void force_setlinewidth (int linewidth)
 #else /* Win32 */
 		LOGBRUSH lb;
 		lb.lbStyle = BS_SOLID;
-		lb.lbColor = win32_colors[gl_state.currentcolor];
+		lb.lbColor = convert_to_win_color(gl_state.foreground_color);
 		lb.lbHatch = (LONG)NULL;
 		int win_linestyle = win32_line_styles[gl_state.currentlinestyle];
 
@@ -1100,8 +1184,8 @@ static void map_button (int bnum)
 															button_state.button[bnum].ytop, 
 															button_state.button[bnum].width, 
 															button_state.button[bnum].height, 0, 
-															x11_state.colors[WHITE], 
-															x11_state.colors[LIGHTGREY]); 
+															predef_colors[WHITE].as_rgb_int(), 
+															predef_colors[LIGHTGREY].as_rgb_int()); 
 		XMapWindow (x11_state.display, button_state.button[bnum].win);
 		XSelectInput (x11_state.display, button_state.button[bnum].win, ButtonPressMask);
 #else
@@ -1290,7 +1374,7 @@ init_graphics (const char *window_name, int cindex)
    reset_common_state ();
 
    gl_state.disp_type = SCREEN;
-   gl_state.background_cindex = cindex;
+   gl_state.background_color = predef_colors[cindex];
 
 #ifdef X11
    x11_init_graphics (window_name, cindex);
@@ -1303,7 +1387,7 @@ init_graphics (const char *window_name, int cindex)
 
 
 static void reset_common_state () {
-   gl_state.currentcolor = BLACK;
+   gl_state.foreground_color = predef_colors[BLACK];
    gl_state.currentlinestyle = SOLID;
    gl_state.currentlinewidth = 0;
    gl_state.currentfontsize = 12;
@@ -1452,13 +1536,13 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 void 
 clearscreen (void) 
 {
-   int savecolor;
+   t_color savecolor;
    if (gl_state.disp_type == SCREEN) {
 #ifdef X11
       XClearWindow (x11_state.display, x11_state.toplevel);
 #else /* Win32 */
-      savecolor = gl_state.currentcolor;
-      setcolor(gl_state.background_cindex);
+      savecolor = gl_state.foreground_color;
+      setcolor(gl_state.background_color);
       fillrect (trans_coord.xleft, trans_coord.ytop,
     		  	  trans_coord.xright, trans_coord.ybot);
       setcolor(savecolor);
@@ -1468,8 +1552,8 @@ clearscreen (void)
      /* erases current page.  Don't use erasepage, since this will erase *
       * everything, (even stuff outside the clipping path) causing       *
       * problems if this picture is incorporated into a larger document. */
-      savecolor = gl_state.currentcolor;
-      setcolor (gl_state.background_cindex);
+      savecolor = gl_state.foreground_color;
+      setcolor (gl_state.background_color);
       fprintf(gl_state.ps,"clippath fill\n\n");
       setcolor (savecolor);
    }
@@ -1992,7 +2076,7 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 	SIZE textsize;
 	TEXTMETRIC textmetric;
 	
-	if(SetTextColor(win32_state.hGraphicsDC, win32_colors[gl_state.currentcolor]) == CLR_INVALID)
+	if(SetTextColor(win32_state.hGraphicsDC, convert_to_win_color(gl_state.foreground_color)) == CLR_INVALID)
 		WIN32_DRAW_ERROR();
 	
 	len = strlen(text);
@@ -2087,7 +2171,8 @@ init_world (float x1, float y1, float x2, float y2)
 void 
 draw_message (void) 
 {
-	int savefontsize, savecolor;
+	int savefontsize;
+	t_color savecolor;
 	float ylow;
 #ifdef X11
 	int len, width;
@@ -2098,10 +2183,10 @@ draw_message (void)
 		XClearWindow (x11_state.display, x11_state.textarea);
 		len = strlen (gl_state.statusMessage);
 		width = XTextWidth(x11_state.font_info[MENU_FONT_SIZE], gl_state.statusMessage, len);
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 		XDrawRectangle(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, 0,
 						trans_coord.top_width - MWIDTH, T_AREA_HEIGHT);
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 		XDrawLine(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, T_AREA_HEIGHT-1,
 					trans_coord.top_width-MWIDTH, T_AREA_HEIGHT-1);
 		XDrawLine(x11_state.display, x11_state.textarea, x11_state.gc_menus, 
@@ -2124,7 +2209,7 @@ draw_message (void)
 	/* Draw the message in the bottom margin.  Printer's generally can't  *
 		* print on the bottom 1/4" (area with y < 18 in PostScript coords.)  */
 		
-		savecolor = gl_state.currentcolor;
+		savecolor = gl_state.foreground_color;
 		setcolor (BLACK);
 		savefontsize = gl_state.currentfontsize;
 		setfontsize (MENU_FONT_SIZE - 2);  /* Smaller OK on paper */
@@ -2429,7 +2514,7 @@ adjustwin (void (*drawscreen) (void))
                                 // width etc. (but they might only be on the normal context)
                                 force_setlinewidth(1);  
 				force_setlinestyle(DASHED);
-				force_setcolor(gl_state.background_cindex);
+				force_setcolor(gl_state.background_color);
 
                                 // Draw rubber band box.
 				XDrawRectangle(x11_state.display,x11_state.toplevel,x11_state.gc_xor,min(x[0],xold),
@@ -2512,9 +2597,6 @@ close_graphics (void)
 	XFreeGC(x11_state.display,x11_state.gc_normal);
 	XFreeGC(x11_state.display,x11_state.gc_xor);
 	XFreeGC(x11_state.display,x11_state.gc_menus);
-	
-	if (x11_state.private_cmap != None) 
-		XFreeColormap (x11_state.display, x11_state.private_cmap);
 	
 	XCloseDisplay(x11_state.display);
 #else /* Win32 */
@@ -2677,7 +2759,7 @@ int init_postscript (const char *fname)
 	fprintf(gl_state.ps,"%%%%Page: 1 1\n\n");
 	
 	/* Set up PostScript graphics state to match current one. */
-	force_setcolor (gl_state.currentcolor);
+	force_setcolor (gl_state.foreground_color);
 	force_setlinestyle (gl_state.currentlinestyle);
 	force_setlinewidth (gl_state.currentlinewidth);
 	force_setfontsize (gl_state.currentfontsize); 
@@ -2712,7 +2794,7 @@ void close_postscript (void)
      * subsequent drawing commands work properly.
      */
 	
-	force_setcolor (gl_state.currentcolor);
+	force_setcolor (gl_state.foreground_color);
 	force_setlinestyle (gl_state.currentlinestyle);
 	force_setlinewidth (gl_state.currentlinewidth);
 	force_setfontsize (gl_state.currentfontsize); 
@@ -2731,9 +2813,9 @@ build_default_menu (void)
 	XSetWindowAttributes menu_attributes;
 	
 	x11_state.menu = XCreateSimpleWindow(x11_state.display,x11_state.toplevel, 
-										 trans_coord.top_width-MWIDTH, 0, MWIDTH, 
-										 trans_coord.display_height, 0, x11_state.colors[BLACK], 
-										 x11_state.colors[LIGHTGREY]);
+	                                     trans_coord.top_width-MWIDTH, 0, MWIDTH,
+	                                     trans_coord.display_height, 0, predef_colors[BLACK].as_rgb_int(),
+	                                     predef_colors[LIGHTGREY].as_rgb_int());
 	menu_attributes.event_mask = ExposureMask;
 	/* Ignore button presses on the menu background. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
@@ -3042,16 +3124,7 @@ static void x11_init_graphics (const char *window_name, int cindex)
    int x, y;                       /* window position */
    unsigned int border_width = 2;  /* ignored by OpenWindows */
    XTextProperty windowName;
-   
-   /* X Windows' names for my colours. */
-   const char *cnames[NUM_COLOR] = {"white", "black", "grey55", "grey75", "blue", 
-   	"green", "yellow", "cyan", "red", "pink", "lightpink", "RGBi:0.0/0.39/0.0", 
-	"magenta", "bisque", "lightskyblue", "thistle", "plum", "khaki", "coral",
-	"turquoise", "mediumpurple", "darkslateblue", "darkkhaki" , "RGB:44/44/FF",
-	"saddlebrown", "firebrick", "limegreen"};
-	
-   XColor exact_def;
-   Colormap cmap;
+
    unsigned long valuemask = 0; /* ignore XGCvalues and use defaults */
    XGCValues values;
    XEvent event;
@@ -3074,51 +3147,43 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	
    trans_coord.top_width = 2 * trans_coord.display_width / 3;
    trans_coord.top_height = 4 * trans_coord.display_height / 5;
-   
-   cmap = DefaultColormap(x11_state.display, x11_state.screen_num);
-   x11_state.private_cmap = None;
-	
-   for (int i=0;i<NUM_COLOR;i++) {
-      if (!XParseColor(x11_state.display,cmap,cnames[i],&exact_def)) {
-         fprintf(stderr, "Color name %s not in database", cnames[i]);
-         exit(-1);
-      }
-      if (!XAllocColor(x11_state.display, cmap, &exact_def)) {
-         fprintf(stderr, "Couldn't allocate color %s.\n",cnames[i]); 
-   		
-         if (x11_state.private_cmap == None) {
-            fprintf(stderr, "Will try to allocate a private colourmap.\n");
-            fprintf(stderr, "Colours will only display correctly when your "
-                            "cursor is in the graphics window.\n"
-                            "Exit other colour applications and rerun this "
-                            "program if you don't like that.\n\n");
-				
-            x11_state.private_cmap = XCopyColormapAndFree (x11_state.display, cmap);
-            cmap = x11_state.private_cmap;
-            if (!XAllocColor (x11_state.display, cmap, &exact_def)) {
-               fprintf (stderr, "Couldn't allocate color %s as private.\n",
-                                 cnames[i]);
-               exit (1);
-            }
-         }
-			
-         else {
-            fprintf (stderr, "Couldn't allocate color %s as private.\n",
-               cnames[i]);
-            exit (1);
-         }
-      }
-      x11_state.colors[i] = exact_def.pixel;
-   }  // End setting up colours
-	
-   x11_state.toplevel = XCreateSimpleWindow(x11_state.display,
-											RootWindow(x11_state.display,x11_state.screen_num),
-              								x, y, trans_coord.top_width, trans_coord.top_height,
-              								border_width, x11_state.colors[BLACK], 
-											x11_state.colors[cindex]);
 
-   if (x11_state.private_cmap != None) 
-      XSetWindowColormap (x11_state.display, x11_state.toplevel, x11_state.private_cmap);
+	XVisualInfo visual_info;
+   
+	// select a 24 bit TrueColor visual
+	if (XMatchVisualInfo(x11_state.display, x11_state.screen_num, 24, TrueColor, &visual_info) == 0) {
+		fprintf(stderr, "Cannot handle a non 24-bit TrueColour visual\n");
+		exit(-1);
+	}
+
+	if (visual_info.bits_per_rgb != 8 ||
+		visual_info.red_mask   != 0xFF0000 ||
+		visual_info.green_mask != 0x00FF00 ||
+		visual_info.blue_mask  != 0x0000FF) {
+		fprintf(stderr, "Cannot handle strange 24-bit TrueColor visual\n");
+		exit(-1);
+	}
+
+	Window root_window = XDefaultRootWindow(x11_state.display);
+
+	XSetWindowAttributes attrs;
+
+	attrs.colormap = XCreateColormap(x11_state.display, root_window, visual_info.visual, AllocNone);
+	attrs.border_pixel = predef_colors[BLACK].as_rgb_int();
+	attrs.background_pixel = predef_colors[cindex].as_rgb_int();
+
+	x11_state.toplevel = XCreateWindow(
+		x11_state.display,
+		root_window,
+		x, y,
+		trans_coord.top_width, trans_coord.top_height,
+		border_width,
+		visual_info.depth,
+		InputOutput,
+		visual_info.visual,
+		CWBackPixel | CWColormap | CWBorderPixel,
+		&attrs
+	);
 	
    XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | StructureNotifyMask |
                     ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
@@ -3131,7 +3196,7 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	
    /* Create XOR graphics context for Rubber Banding */
    values.function = GXxor;   
-   values.foreground = x11_state.colors[cindex];
+   values.foreground = predef_colors[cindex].as_rgb_int();
    x11_state.gc_xor = XCreateGC(x11_state.display, x11_state.toplevel, (GCFunction | GCForeground),
                      &values);
 	
@@ -3142,7 +3207,7 @@ static void x11_init_graphics (const char *window_name, int cindex)
    /* Set drawing defaults for user-drawable area.  Use whatever the *
    * initial values of the current stuff was set to.                */
    force_setfontsize(gl_state.currentfontsize);
-   force_setcolor (gl_state.currentcolor);
+   force_setcolor (gl_state.foreground_color);
    force_setlinestyle (gl_state.currentlinestyle);
    force_setlinewidth (gl_state.currentlinewidth);
 	
@@ -3380,8 +3445,8 @@ static void x11_build_textarea (void)
 	unsigned long valuemask;
 	
 	x11_state.textarea = XCreateSimpleWindow(x11_state.display,x11_state.toplevel, 0,
-			   	   trans_coord.top_height-T_AREA_HEIGHT, trans_coord.display_width-MWIDTH,
-			   	   T_AREA_HEIGHT, 0, x11_state.colors[BLACK], x11_state.colors[LIGHTGREY]);
+		trans_coord.top_height-T_AREA_HEIGHT, trans_coord.display_width-MWIDTH,
+		T_AREA_HEIGHT, 0, predef_colors[BLACK].as_rgb_int(), predef_colors[LIGHTGREY].as_rgb_int());
 	menu_attributes.event_mask = ExposureMask;
 	/* ButtonPresses in this area are ignored. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
@@ -3434,9 +3499,9 @@ static void x11_drawbut (int bnum)
 
 		x = button_state.button[bnum].xleft;
 		y = button_state.button[bnum].ytop;
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 		XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y+1, x+width, y+1);
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 		XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y, x+width, y);
 		return;
 	}
@@ -3445,10 +3510,10 @@ static void x11_drawbut (int bnum)
 	thick = 2;
 	/* Draw top and left edges of 3D box. */
 	if (ispressed) {
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 	}
 	else {
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 	}
 	
 	/* Note:  X Windows doesn't appear to draw the bottom pixel of *
@@ -3471,10 +3536,10 @@ static void x11_drawbut (int bnum)
 	
 	/* Draw bottom and right edges of 3D box. */
 	if (ispressed) {
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 	}
 	else {
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 	} 
 	mypoly[0].x = 0;
 	mypoly[0].y = height;
@@ -3493,10 +3558,10 @@ static void x11_drawbut (int bnum)
 	
 	/* Draw background */
 	if (ispressed) {
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[DARKGREY]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[DARKGREY].as_rgb_int());
 	}
 	else {
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[LIGHTGREY]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[LIGHTGREY].as_rgb_int());
 	}
 	
 	/* Give x,y of top corner and width and height */
@@ -3509,7 +3574,7 @@ static void x11_drawbut (int bnum)
 			mypoly[i].x = button_state.button[bnum].poly[i][0];
 			mypoly[i].y = button_state.button[bnum].poly[i][1];
 		}
-		XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 		XFillPolygon(x11_state.display,button_state.button[bnum].win,
 					 x11_state.gc_menus,mypoly,3,Convex,CoordModeOrigin);
 	}
@@ -3517,9 +3582,9 @@ static void x11_drawbut (int bnum)
 	/* Draw text, if there is any */
 	if (button_state.button[bnum].type == BUTTON_TEXT) {
 		if (button_state.button[bnum].enabled)
-			XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+			XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 		else
-			XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[DARKGREY]);
+			XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[DARKGREY].as_rgb_int());
 		menutext(button_state.button[bnum].win,button_state.button[bnum].width/2,
 			button_state.button[bnum].height/2,button_state.button[bnum].text);
 	}
@@ -3558,10 +3623,10 @@ static void x11_drawmenu(void)
 	int i;
 
 	XClearWindow (x11_state.display, x11_state.menu);
-	XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[WHITE]);
+	XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 	XDrawRectangle(x11_state.display, x11_state.menu, x11_state.gc_menus, 0, 0, MWIDTH, 
 				   trans_coord.top_height);
-	XSetForeground(x11_state.display, x11_state.gc_menus,x11_state.colors[BLACK]);
+	XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 	XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, 0, trans_coord.top_height-1, 
 			  MWIDTH, trans_coord.top_height-1);
 	XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, MWIDTH-1, 
@@ -3636,7 +3701,7 @@ win32_init_graphics (const char *window_name, int cindex)
    int x, y;
    LOGBRUSH lb;
    lb.lbStyle = BS_SOLID;
-   lb.lbColor = win32_colors[gl_state.currentcolor];
+   lb.lbColor = convert_to_win_color(gl_state.foreground_color);
    lb.lbHatch = (LONG)NULL;
    x = 0;
    y = 0;
@@ -3654,15 +3719,15 @@ win32_init_graphics (const char *window_name, int cindex)
    /* Grab the Application name */
    wsprintf(szAppName, TEXT(window_name));
 	
-   //win32_state.hGraphicsPen = CreatePen(win32_line_styles[SOLID], 1, win32_colors[BLACK]);
+   //win32_state.hGraphicsPen = CreatePen(win32_line_styles[SOLID], 1, convert_to_win_color(predef_colors[BLACK]);
    win32_state.hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win32_line_styles[gl_state.currentlinestyle] 
 										    | PS_ENDCAP_FLAT, 1, &lb, (LONG)NULL, NULL);
    if(!win32_state.hGraphicsPen)
       WIN32_CREATE_ERROR();
-   win32_state.hGraphicsBrush = CreateSolidBrush(win32_colors[DARKGREY]); 
+   win32_state.hGraphicsBrush = CreateSolidBrush(convert_to_win_color(predef_colors[DARKGREY]));
    if(!win32_state.hGraphicsBrush)
       WIN32_CREATE_ERROR();
-   win32_state.hGrayBrush = CreateSolidBrush(win32_colors[LIGHTGREY]);
+   win32_state.hGrayBrush = CreateSolidBrush(convert_to_win_color(predef_colors[LIGHTGREY]));
    if(!win32_state.hGrayBrush)
       WIN32_CREATE_ERROR();
 
@@ -3679,7 +3744,7 @@ win32_init_graphics (const char *window_name, int cindex)
    wndclass.hInstance = hInstance;
    wndclass.hIcon = LoadIcon (NULL, IDI_APPLICATION);
    wndclass.hCursor = LoadCursor( NULL, IDC_ARROW);
-   wndclass.hbrBackground = (HBRUSH) CreateSolidBrush(win32_colors[cindex]);
+   wndclass.hbrBackground = (HBRUSH) CreateSolidBrush(convert_to_win_color(predef_colors[cindex]));
    wndclass.lpszMenuName = NULL;
    wndclass.lpszClassName = szAppName;
 	
@@ -3832,7 +3897,7 @@ WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 			/* Setup the pens, etc */
 			gl_state.currentlinestyle = SOLID;
-			gl_state.currentcolor = BLACK;
+			gl_state.foreground_color = predef_colors[BLACK];
 			gl_state.currentlinewidth = 1;
 			gl_state.currentfontsize = 12;
 			return 0;
@@ -3917,7 +3982,7 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
 				win32_drawscreen_ptr();
 
 			// Create pen for rubber band drawing
-			hDotPen = CreatePen(PS_DASH, 1, win32_colors[gl_state.background_cindex]);
+			hDotPen = CreatePen(PS_DASH, 1, convert_to_win_color(gl_state.background_color));
 			if(!hDotPen)
 				WIN32_CREATE_ERROR();
 			if (!SetROP2(win32_state.hGraphicsDC, R2_XORPEN))
@@ -4187,7 +4252,7 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hdc = GetDC(hwnd);
 			if(!hdc)
 				WIN32_DRAW_ERROR();
-			hBrush = CreateSolidBrush(win32_colors[LIGHTGREY]);
+			hBrush = CreateSolidBrush(convert_to_win_color(predef_colors[LIGHTGREY]));
 			if(!hBrush)
 				WIN32_CREATE_ERROR();
 			if(!SelectObject(hdc, hBrush))
@@ -4563,7 +4628,10 @@ void draw_message (void) { }
 void init_world (float xl, float yt, float xr, float yb) { }
 void flushinput (void) { }
 void setcolor (int cindex) { }
-int getcolor (void) { return 0; }
+void setcolor (const t_color& c) { }
+void setcolor (uint_fast8_t r, uint_fast8_t g, uint_fast8_t b) { }
+void setcolor_by_name (std::string cname) { }
+t_color getcolor (void) { return t_color(0,0,0); }
 void setlinestyle (int linestyle) { }
 void setlinewidth (int linewidth) { }
 void setfontsize (int pointsize) { }
@@ -4806,3 +4874,39 @@ t_bound_box::t_bound_box(const t_point& _bottomleft, float width, float height) 
 	bottomleft(_bottomleft) , topright(_bottomleft) {
 	topright.offset(width, height);
 }
+
+/******************************************
+ * begin t_color function definitions *
+ ******************************************/
+
+t_color::t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b) :
+	red(r),
+	green(g),
+	blue(b) {
+}
+
+t_color::t_color() :
+	red(0),
+	green(0),
+	blue(0) {
+}
+
+bool t_color::operator== (const t_color& rhs) const {
+	return red == rhs.red
+	&&   green == rhs.green
+	&&    blue == rhs.blue;
+}
+
+bool t_color::operator!= (const t_color& rhs) const {
+	return !(*this == rhs);
+}
+
+unsigned long t_color::as_rgb_int() const {
+	return (((red << 8) | green) << 8) | blue;
+}
+
+#ifdef WIN32
+COLORREF convert_to_win_color(const t_color& src) {
+	return RGB(src.red, src.green, src.blue);
+}
+#endif /* WIN32 */

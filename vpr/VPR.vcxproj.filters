@@ -288,6 +288,12 @@
     <ClCompile Include="SRC\base\print_netlist_as_blif.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\base\rr_node.c">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\draw\draw_types.c">
+      <Filter>Source Files\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -510,6 +516,9 @@
       <Filter>Header Files\draw</Filter>
     </ClInclude>
     <ClInclude Include="SRC\base\print_netlist_as_blif.h">
+      <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\base\rr_node.h">
       <Filter>Header Files\base</Filter>
     </ClInclude>
   </ItemGroup>

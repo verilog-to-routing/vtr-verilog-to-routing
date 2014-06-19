@@ -2,7 +2,7 @@
  * Date: August 2013
  *
  * Author: Matthew J.P. Walker
- * Date: May 2014
+ * Date: May,June 2014
  */
 
 #ifndef INTRA_LOGIC_BLOCK_H
@@ -15,7 +15,6 @@
 #include <unordered_set>
 
 struct t_selected_sub_block_info {
-private:
 	struct clb_pin_tuple {
 		int clb_index;
 		//const t_pb_graph_pin* pb_gpin;
@@ -53,7 +52,7 @@ private:
 				^ ptr_hasher((const void*)v.pb_gnode);
 		}
 	};
-
+private:
 	t_pb* selected_pb;
 	t_block* containing_block;
 	t_pb_graph_node* selected_pb_gnode;

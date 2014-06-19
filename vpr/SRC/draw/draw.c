@@ -121,7 +121,7 @@ void draw_shifted_line(int inode)
 {
 	t_bound_box bound_box = draw_get_rr_chan_bbox(inode);
 	int ix = rr_node[inode].get_xlow();
-	int savecolor = getcolor();
+	t_color savecolor = getcolor();
 	int bottom_shift_y = 0; 
 	int top_shift_y = 0;
 	if(is_inode_an_interposer_wire(inode))

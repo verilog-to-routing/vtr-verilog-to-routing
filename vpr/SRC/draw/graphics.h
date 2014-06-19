@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include "easygl_constants.h"
-using namespace std;
+#include <cstdint>
 
 // Set X11 by default, if neither NO_GRAPHICS nor WIN32 are defined
 #ifndef NO_GRAPHICS
@@ -156,6 +156,19 @@ private:
 	t_point topright;
 };
 
+struct t_color {
+	uint_fast8_t red;
+	uint_fast8_t green;
+	uint_fast8_t blue;
+
+	t_color(uint_fast8_t red, uint_fast8_t green, uint_fast8_t blue);
+	t_color();
+	bool operator== (const t_color& rhs) const;
+	bool operator!= (const t_color& rhs) const;
+
+	unsigned long as_rgb_int() const;
+};
+
 /************** ESSENTIAL FUNCTIONS ******************/
 
 /* This is the main routine for the graphics.  When event_loop is
@@ -247,14 +260,19 @@ t_bound_box get_visible_world();
  * and to a PostScript file if disp_type = POSTSCRIPT         
  */
 
-/* Set the current draw colour to the supplied colour index from color_types */
+/**
+ * Set the current draw colour to the supplied colour index from color_types
+ * or the specified rgb colour or triplet
+ */
 void setcolor (int cindex);
+void setcolor (const t_color& new_color);
+void setcolor (uint_fast8_t r, uint_fast8_t g, uint_fast8_t b);
 
 /* Set the color with a string instead of an enumerated constant */
-void setcolor_by_name (string cname);
+void setcolor_by_name (std::string cname);
 
 /* Get the current color */
-int getcolor(void);
+t_color getcolor(void);
 
 /* Sets the line style to the specified line_style */
 void setlinestyle (int linestyle); 

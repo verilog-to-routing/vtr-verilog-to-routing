@@ -184,10 +184,12 @@
     <ClCompile Include="SRC\base\netlist.c" />
     <ClCompile Include="SRC\base\print_netlist_as_blif.c" />
     <ClCompile Include="SRC\base\read_settings.c" />
+    <ClCompile Include="SRC\base\rr_node.c" />
     <ClCompile Include="SRC\base\verilog_writer.c" />
     <ClCompile Include="SRC\base\vpr_api.c" />
     <ClCompile Include="SRC\draw\draw.c" />
     <ClCompile Include="SRC\draw\draw_global.c" />
+    <ClCompile Include="SRC\draw\draw_types.c" />
     <ClCompile Include="SRC\draw\graphics.c" />
     <ClCompile Include="SRC\draw\intra_logic_block.c" />
     <ClCompile Include="SRC\main.c" />
@@ -268,6 +270,7 @@
     <ClInclude Include="SRC\base\read_place.h" />
     <ClInclude Include="SRC\base\ReadOptions.h" />
     <ClInclude Include="SRC\base\read_settings.h" />
+    <ClInclude Include="SRC\base\rr_node.h" />
     <ClInclude Include="SRC\base\SetupGrid.h" />
     <ClInclude Include="SRC\base\SetupVPR.h" />
     <ClInclude Include="SRC\base\stats.h" />
