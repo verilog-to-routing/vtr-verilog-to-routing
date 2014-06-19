@@ -330,16 +330,16 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 			// determine default background color
 			if (sel_sub_info.is_selected(pb->pb_graph_node, clb)) {
 				setcolor(SELECTED_COLOR);
+			} else if (sel_sub_info.is_head_of_critical_path(pb->pb_graph_node, clb)) {
+				setcolor(crit_path_colors::blk::HEAD);
+			} else if (sel_sub_info.is_driver_of_head_of_critical_path(pb->pb_graph_node, clb)) {
+				setcolor(crit_path_colors::blk::HEAD_DRIVER);
+			} else if (sel_sub_info.is_on_critical_path(pb->pb_graph_node, clb)) {
+				setcolor(crit_path_colors::blk::TAIL);
 			} else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb)) {
 				setcolor(DRIVES_IT_COLOR);
 			} else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb)) {
 				setcolor(DRIVEN_BY_IT_COLOR);
-			} else if (sel_sub_info.is_head_of_critical_path(pb->pb_graph_node, clb)) {
-				setcolor(MAGENTA);
-			} else if (sel_sub_info.is_driver_of_head_of_critical_path(pb->pb_graph_node, clb)) {
-				setcolor(YELLOW);
-			} else if (sel_sub_info.is_on_critical_path(pb->pb_graph_node, clb)) {
-				setcolor(DARKGREEN);
 			} else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != NULL) {
 				setcolor(WHITE); // draw anthing else that will have a child as white
 			} else if (type_index < 3) {
@@ -474,13 +474,16 @@ void draw_logical_connections() {
 			t_pb_graph_node* sink_pb_gnode = sink_lblk->pb->pb_graph_node;
 			t_block* sink_clb = &block[sink_lblk->clb_index];
 
-			if (sel_subblk_info.is_on_critical_path(net->pins.at(0), *pin)) {
-				setcolor(CYAN);
+			if (sel_subblk_info.is_head_net_of_critical_path(net->pins.at(0), *pin)) {
+				setcolor(crit_path_colors::net::HEAD);
+			} else if (sel_subblk_info.is_on_critical_path(net->pins.at(0), *pin)) {
+				setcolor(crit_path_colors::net::TAIL);
 			} else if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVES_IT_COLOR);
 			} else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVEN_BY_IT_COLOR);
-			} else if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS) {
+			} else if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS &&
+				(draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
 				setcolor(BLACK); // if showing all, draw the other ones in black
 			} else {
 				continue; // not showing all, and not the sperified block, so skip
@@ -642,11 +645,11 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 		if (draw_state->block_color[blk_id] == LIGHTGREY)
 			return false;
 	} else if (clb.type->index < 3 + MAX_BLOCK_COLOURS) {
-		if (draw_state->block_color[blk_id] == (BISQUE + MAX_BLOCK_COLOURS 
+		if (draw_state->block_color[blk_id] == (color_types) (BISQUE + MAX_BLOCK_COLOURS 
 												+ clb.type->index - 3))
 			return false;
 	} else {
-		if (draw_state->block_color[blk_id] == (BISQUE + 2 * MAX_BLOCK_COLOURS - 1))
+		if (draw_state->block_color[blk_id] == (color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1))
 			return false;
 	}
 
@@ -906,6 +909,15 @@ bool t_selected_sub_block_info::is_on_critical_path(const t_net_pin& test_src, c
 
 bool t_selected_sub_block_info::is_on_critical_path(const t_pb_graph_node* test, const t_block* test_block) const {
 	return blocks_on_critical_path.find(gnode_clb_pair(test,test_block)) != blocks_on_critical_path.end();
+}
+
+bool t_selected_sub_block_info::is_head_net_of_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const {
+	clb_pin_tuple src_clb_pin_tuple(test_src, false, false);
+	clb_pin_tuple sink_clb_pin_tuple(test_sink, true, false);
+
+	return 
+	is_driver_of_head_of_critical_path( src_clb_pin_tuple.pb_gnode, &block[ src_clb_pin_tuple.clb_index])
+	&&        is_head_of_critical_path(sink_clb_pin_tuple.pb_gnode, &block[sink_clb_pin_tuple.clb_index]);
 }
 
 bool t_selected_sub_block_info::is_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const {

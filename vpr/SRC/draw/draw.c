@@ -71,9 +71,9 @@ static void deselect_all(void);
 
 static void draw_rr(void);
 static void draw_rr_edges(int from_node);
-static void draw_rr_pin(int inode, enum color_types color);
-static void draw_rr_chanx(int inode, int itrack, enum color_types color);
-static void draw_rr_chany(int inode, int itrack, enum color_types color);
+static void draw_rr_pin(int inode, const t_color& color);
+static void draw_rr_chanx(int inode, int itrack, const t_color& color);
+static void draw_rr_chany(int inode, int itrack, const t_color& color);
 static t_bound_box draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
@@ -297,9 +297,6 @@ static void redraw_screen() {
 				drawroute(ALL_NETS);
 			break;
 			case DRAW_LOGICAL_CONNECTIONS:
-				if (draw_state->show_blk_internal) {
-					break;
-				}
 			// fall through
 			default:
 				draw_rr();
@@ -328,19 +325,11 @@ static void toggle_nets(void (*drawscreen_ptr)(void)) {
 			new_state = DRAW_NETS;
 		break;
 		case DRAW_NETS:
-			if (draw_state->show_blk_internal) {
-				new_state = DRAW_LOGICAL_CONNECTIONS;
-			} else {
-				new_state = DRAW_NO_NETS;
-			}
+			new_state = DRAW_LOGICAL_CONNECTIONS;
 		break;
 		default:
 		case DRAW_LOGICAL_CONNECTIONS:
-			if (draw_state->show_blk_internal) {
-				new_state = DRAW_NO_NETS;
-			} else {
-				new_state = DRAW_NETS;
-			}
+			new_state = DRAW_NO_NETS;
 		break;
 	}
 
@@ -461,9 +450,9 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 
 		if (inet != OPEN) {
 			if (num_nets_seen < nets_to_highlight - 1) { /* First nets. */
-				draw_state->net_color[inet] = DARKGREEN;
+				draw_state->net_color[inet] = crit_path_colors::net::TAIL;
 			} else if (num_nets_seen == nets_to_highlight - 1) {
-				draw_state->net_color[inet] = TURQUOISE; /* Last (new) net. */
+				draw_state->net_color[inet] = crit_path_colors::net::HEAD; /* Last (new) net. */
 			}
 		}
 
@@ -473,10 +462,10 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 			case TN_FF_SOURCE:
 				if ((num_nets_seen + 1) < nets_to_highlight) {
 					// not the head, or not the block driving the head.
-					draw_state->block_color[iblk] = DARKGREEN;
+					draw_state->block_color[iblk] = crit_path_colors::blk::TAIL;
 				} else {
 					// highlight the block driving the head.
-					draw_state->block_color[iblk] = YELLOW;
+					draw_state->block_color[iblk] = crit_path_colors::blk::HEAD_DRIVER;
 				}
 				last_opin = current_pin;
 			break;
@@ -487,7 +476,7 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 					case TN_PRIMITIVE_IPIN:
 					case TN_FF_SINK:
 						// highlight the head block.
-						draw_state->block_color[iblk] = MAGENTA;
+						draw_state->block_color[iblk] = crit_path_colors::blk::HEAD;
 						sel_subblk_info.add_to_critical_path(*last_opin,*current_pin);
 						last_opin = NULL;
 						num_nets_seen++;
@@ -533,11 +522,9 @@ void alloc_draw_structs(void) {
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
 
-	draw_state->net_color = (enum color_types *) my_malloc(
-								g_clbs_nlist.net.size() * sizeof(enum color_types));
+	draw_state->net_color = (t_color *) my_malloc(g_clbs_nlist.net.size() * sizeof(t_color));
 
-	draw_state->block_color = (enum color_types *) my_malloc(
-								 num_blocks * sizeof(enum color_types));
+	draw_state->block_color = (t_color *) my_malloc(num_blocks * sizeof(t_color));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
@@ -888,7 +875,7 @@ void draw_rr(void) {
 }
 
 
-static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
+static void draw_rr_chanx(int inode, int itrack, const t_color& color) {
 
 	/* Draws an x-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -972,7 +959,7 @@ static void draw_rr_chanx(int inode, int itrack, enum color_types color) {
 	}
 }
 
-static void draw_rr_chany(int inode, int itrack, enum color_types color) {
+static void draw_rr_chany(int inode, int itrack, const t_color& color) {
 
 	/* Draws a y-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1673,7 +1660,7 @@ static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
 	}
 }
 
-static void draw_rr_pin(int inode, enum color_types color) {
+static void draw_rr_pin(int inode, const t_color& color) {
 
 	/* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
 	 * than one side of a clb.  Also note that this routine can change the     *
@@ -1995,10 +1982,14 @@ static bool draw_if_net_highlighted (int inet) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	if (draw_state->net_color[inet] == MAGENTA || draw_state->net_color[inet] == DRIVES_IT_COLOR 
-		|| draw_state->net_color[inet] == DRIVEN_BY_IT_COLOR || draw_state->net_color[inet] == DARKGREEN 
-		|| draw_state->net_color[inet] == TURQUOISE)
+	if (draw_state->net_color[inet] == MAGENTA
+		|| draw_state->net_color[inet] == DRIVES_IT_COLOR
+		|| draw_state->net_color[inet] == DRIVEN_BY_IT_COLOR
+		|| draw_state->net_color[inet] == crit_path_colors::net::HEAD
+		|| draw_state->net_color[inet] == crit_path_colors::net::TAIL) {
+
 		highlighted = true;
+	}
 
 	return highlighted;
 }
@@ -2406,11 +2397,9 @@ static void draw_reset_blk_color(int i) {
 	if (block[i].type->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
 	} else if (block[i].type->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS 
-															+ block[i].type->index - 3);
+			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + block[i].type->index - 3);
 	} else {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS 
-															- 1);
+			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
 	}
 }
 

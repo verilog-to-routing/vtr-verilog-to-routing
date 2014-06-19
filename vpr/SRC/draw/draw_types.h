@@ -64,7 +64,7 @@ enum e_edge_dir {
  *					 highlighting routing resources on rr_graph
  */
 typedef struct {
-	color_types color;
+	t_color color;
 	bool node_highlighted;
 } t_draw_rr_node;
 
@@ -106,12 +106,14 @@ struct t_draw_state {
 	int gr_automode;
 	e_route_type draw_route_type;
 	char default_message[BUFSIZE];
-	color_types *net_color, *block_color;
+	t_color *net_color, *block_color;
 	t_draw_rr_node *draw_rr_node;
 
 	t_draw_state();
 
 	void reset_nets_congestion_and_rr();
+
+	bool showing_sub_blocks();
 };
 
 /* For each cluster type, this structure stores drawing 

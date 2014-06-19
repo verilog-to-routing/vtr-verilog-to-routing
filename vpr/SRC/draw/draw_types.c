@@ -30,6 +30,9 @@ void t_draw_state::reset_nets_congestion_and_rr() {
 	show_congestion = DRAW_NO_CONGEST;
 }
 
+bool t_draw_state::showing_sub_blocks() {
+	return show_blk_internal > 0;
+}
 /**************************************************
  * begin t_draw_pb_type_info function definitions *
  **************************************************/

@@ -3271,7 +3271,6 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 		XSync(x11_state.display, false);
 		XNextEvent (x11_state.display, &report);
 		if (is_droppable_event(&report) && XQLength(x11_state.display) > 0) {
-			printf("dropping a %d",report.type);
 			if (report.type == ButtonPress) {
 				last_skipped_button_press_button = report.xbutton.button;
 			}
@@ -3282,13 +3281,13 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 			if (next_event.type == ButtonRelease 
 				&& next_event.xbutton.button == last_skipped_button_press_button
 				&& XQLength(x11_state.display) > 1) {
+				// if the next event is a matching ButtonRelease, then drop
+				// it too, but only if the queue has more events still.
 				XSync(x11_state.display, false);
 				XNextEvent(x11_state.display, &next_event);
 				XPeekEvent(x11_state.display, &next_event);
 				last_skipped_button_press_button = -1;
-				printf(" (dropped a ButtonRelease)");
 			}
-			printf(" (next is %d)?", next_event.type);
 			if (is_droppable_event(&next_event)) {
 				// if so, skip this event.
 				if (report.type == ButtonPress) {
@@ -3306,10 +3305,7 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 						break;
 					}
 				}
-				puts(" yes");
 				continue;
-			} else {
-				puts(" no");
 			}
 		}
 
@@ -4885,10 +4881,20 @@ t_color::t_color(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b) :
 	blue(b) {
 }
 
+t_color::t_color(const t_color& src) :
+	red(src.red),
+	green(src.green),
+	blue(src.blue) {
+}
+
 t_color::t_color() :
 	red(0),
 	green(0),
 	blue(0) {
+}
+
+t_color::t_color(color_types src) {
+	*this = src;
 }
 
 bool t_color::operator== (const t_color& rhs) const {
@@ -4904,6 +4910,44 @@ bool t_color::operator!= (const t_color& rhs) const {
 unsigned long t_color::as_rgb_int() const {
 	return (((red << 8) | green) << 8) | blue;
 }
+
+color_types t_color::operator=(color_types color_enum) {
+	*this = predef_colors[color_enum];
+	return color_enum;
+}
+
+bool t_color::operator== (color_types rhs) const {
+	const t_color& test = predef_colors[rhs];
+	if (test == *this) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool t_color::operator!= (color_types rhs) const {
+	return !(*this == rhs);
+}
+
+// bool t_color::operator> (color_types rhs) const {
+// 	auto color_index = std::find(predef_colors.begin(), predef_colors.end(), *this);
+// 	if (color_index != predef_colors.end()) {
+// 		return (color_index - predef_colors.begin()) > rhs;
+// 	} else {
+// 		return false;
+// 	}
+// }
+
+// bool t_color::operator< (color_types rhs) const {
+// 	auto color_index = std::find(predef_colors.begin(), predef_colors.end(), *this);
+// 	if (color_index != predef_colors.end()) {
+// 		return (color_index - predef_colors.begin()) < rhs;
+// 	} else {
+// 		return false;
+// 	}
+// }
+
+
 
 #ifdef WIN32
 COLORREF convert_to_win_color(const t_color& src) {

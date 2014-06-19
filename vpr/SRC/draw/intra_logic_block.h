@@ -62,12 +62,10 @@ private:
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > in_selected_subtree;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > blocks_on_critical_path;
 	gnode_clb_pair head_of_critical_path;
+	// clb_pin_tuple head_of_critical_path;
 	gnode_clb_pair driver_of_head_of_critical_path;
+	// clb_pin_tuple driver_of_head_of_critical_path;
 
-	void add_sinks_and_sources_of(const t_pb_graph_node* pb_gnode, const t_block* clb);
-
-	template<typename HashType> friend void add_all_children(const t_pb* pb, const t_block* clb,
-	std::unordered_set< gnode_clb_pair, HashType>& set);
 public:
 
 	t_selected_sub_block_info();
@@ -88,16 +86,19 @@ public:
 	bool has_selection() const;
 	void clear();
 	void clear_critical_path();
-	bool is_selected(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_child_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 
+	// pb related selection test functions
+	bool is_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_on_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const;
 	bool is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_on_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_driver_of_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
+
+	// net related selection test functions
+	bool is_head_net_of_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const;
+	bool is_on_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const;
 };
 
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the

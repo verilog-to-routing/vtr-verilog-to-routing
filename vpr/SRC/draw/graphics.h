@@ -162,11 +162,20 @@ struct t_color {
 	uint_fast8_t blue;
 
 	t_color(uint_fast8_t red, uint_fast8_t green, uint_fast8_t blue);
+	t_color(const t_color& src);
 	t_color();
 	bool operator== (const t_color& rhs) const;
 	bool operator!= (const t_color& rhs) const;
 
 	unsigned long as_rgb_int() const;
+
+	// (temporary?)
+	t_color(color_types src);
+	color_types operator=(color_types color_enum);
+	bool operator== (color_types rhs) const;
+	bool operator!= (color_types rhs) const;
+	// bool operator> (color_types rhs) const;
+	// bool operator< (color_types rhs) const;
 };
 
 /************** ESSENTIAL FUNCTIONS ******************/
