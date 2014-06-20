@@ -210,7 +210,7 @@ using namespace std;
 // #define VERBOSE
 
 #define MWIDTH			104 /* Width of menu window */
-#define MENU_FONT_SIZE  12  /* Font for menus and dialog boxes. */
+#define MENU_FONT_SIZE  11  /* Font for menus and dialog boxes. */
 #define T_AREA_HEIGHT	24  /* Height of text window */
 #define MAX_FONT_SIZE	24  /* Largest point size of text.   */
                             // Some computers only have up to 24 point 
@@ -232,6 +232,7 @@ using namespace std;
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
 #include <X11/Xatom.h>
+#include <X11/Xft/Xft.h>
 
 /* Uncomment the line below if your X11 header files don't define XPointer */
 /* typedef char *XPointer;                                                 */
@@ -314,6 +315,7 @@ typedef struct {
    void (*fcn) (void (*drawscreen) (void));
 #ifdef X11
    Window win; 
+   XftDraw* draw;
 #else
    HWND hwnd;
 #endif
@@ -330,8 +332,8 @@ typedef struct {
  * num_buttons: number of menu buttons created
  */
 typedef struct {
-   t_button *button;             
-   int num_buttons;        
+   t_button *button;
+   int num_buttons;
 } t_button_state;
 
 
@@ -440,13 +442,20 @@ typedef struct {
  * gc_menus: Graphic context for drawing in the status message
  *			 and menu area
  * font_info: Data for each font size.
+ * current_font: the currently selected font.
+ * xft_menutextcolor: the XFT colour used for drawing button and menu text.
  */
 typedef struct {
    Display *display; 
    int screen_num;
    Window toplevel, menu, textarea; 
    GC gc_normal, gc_xor, gc_menus, current_gc; 
-   XFontStruct *font_info[MAX_FONT_SIZE+1]; 
+   XftFont* font_info[MAX_FONT_SIZE+1];
+   XftFont* current_font;
+   XftDraw *toplevel_draw, *menu_draw, *textarea_draw;
+   XftColor xft_menutextcolor;
+   XVisualInfo visual_info;
+   Colormap colormap_to_use;
 } t_x11_state;
 
 #endif
@@ -1097,6 +1106,11 @@ void setlinewidth (int linewidth)
 		force_setlinewidth (linewidth);
 }
 
+#ifdef X11
+void x11_force_setfontsize (int pointsize) {
+	x11_state.current_font = x11_state.font_info[pointsize]; 
+}
+#endif
 
 /* Force the selected fontsize to be applied to the graphics context, 
  * whether or not it appears to match the current fontsize. This is necessary
@@ -1117,7 +1131,7 @@ static void force_setfontsize (int pointsize)
 	if (gl_state.disp_type == SCREEN) {
 			load_font (pointsize);
 #ifdef X11
-		XSetFont(x11_state.display, x11_state.current_gc, x11_state.font_info[pointsize]->fid); 
+		x11_force_setfontsize(pointsize);
 #else /* Win32 */
 		/* Delete previously used font */
 		if(!DeleteObject(win32_state.hGraphicsFont))
@@ -1188,6 +1202,12 @@ static void map_button (int bnum)
 															predef_colors[LIGHTGREY].as_rgb_int()); 
 		XMapWindow (x11_state.display, button_state.button[bnum].win);
 		XSelectInput (x11_state.display, button_state.button[bnum].win, ButtonPressMask);
+		button_state.button[bnum].draw = XftDrawCreate(
+			x11_state.display,
+			button_state.button[bnum].win,
+			x11_state.visual_info.visual,
+			x11_state.colormap_to_use
+		);
 #else
 		button_state.button[bnum].hwnd = CreateWindow(TEXT("button"), 
 													  TEXT(button_state.button[bnum].text),
@@ -1226,6 +1246,7 @@ static void unmap_button (int bnum)
 	if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
 		XUnmapWindow (x11_state.display, button_state.button[bnum].win);
+		XftDrawDestroy(button_state.button[bnum].draw);
 #else
 		if(!DestroyWindow(button_state.button[bnum].hwnd))
 			WIN32_DRAW_ERROR();
@@ -2069,7 +2090,9 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 	float xw_off, yw_off;
 #ifdef X11
 	len = strlen(text);
-	width = XTextWidth(x11_state.font_info[gl_state.currentfontsize], text, len);
+	XGlyphInfo extents;
+	XftTextExtentsUtf8(x11_state.display, x11_state.current_font, (const FcChar8*) text, len, &extents);
+	width = extents.width;
 	font_ascent = x11_state.font_info[gl_state.currentfontsize]->ascent;
 	font_descent = x11_state.font_info[gl_state.currentfontsize]->descent;
 #else /* WC : WIN32 */
@@ -2102,20 +2125,21 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 		return; // don't draw if it won't fit in ybound.
 	}
 
-	/* Note:  text can be clipped when a little bit of it would be visible *
-	* right now.  Perhaps X doesn't return extremely accurate width and   *
-	* ascent values, etc?  Could remove this completely by multiplying    *
-	* xw_off and yw_off by, 1.2 or 1.5.                                   */
 	if (rect_off_screen(xc-xw_off, yc-yw_off, xc+xw_off, yc+yw_off)) 
 		return;
 
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-		XDrawString(x11_state.display, x11_state.toplevel, x11_state.current_gc, 
-					xworld_to_scrn(xc)-width/2, 
-					yworld_to_scrn(yc)+(x11_state.font_info[gl_state.currentfontsize]->ascent 
-										 -x11_state.font_info[gl_state.currentfontsize]->descent)/2,
-					text, len);
+		XftDrawStringUtf8(
+			x11_state.toplevel_draw,
+			&x11_state.xft_menutextcolor,
+			x11_state.current_font,
+			xworld_to_scrn(xc)-width/2,
+			yworld_to_scrn(yc)+(x11_state.font_info[gl_state.currentfontsize]->ascent 
+				- x11_state.font_info[gl_state.currentfontsize]->descent)/2,
+			(const FcChar8*) text,
+			len
+		);
 #else /* Win32 */
 		SetBkMode(win32_state.hGraphicsDC, TRANSPARENT); 
 		if(!TextOut (win32_state.hGraphicsDC, xworld_to_scrn(xc)-width/2, 
@@ -2182,7 +2206,15 @@ draw_message (void)
 #ifdef X11
 		XClearWindow (x11_state.display, x11_state.textarea);
 		len = strlen (gl_state.statusMessage);
-		width = XTextWidth(x11_state.font_info[MENU_FONT_SIZE], gl_state.statusMessage, len);
+		XGlyphInfo extents;
+		XftTextExtentsUtf8(
+			x11_state.display,
+			x11_state.font_info[MENU_FONT_SIZE],
+			(const FcChar8*) gl_state.statusMessage,
+			len,
+			&extents
+		);
+		width = extents.width;
 		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 		XDrawRectangle(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, 0,
 						trans_coord.top_width - MWIDTH, T_AREA_HEIGHT);
@@ -2193,10 +2225,18 @@ draw_message (void)
 				  trans_coord.top_width-MWIDTH-1, 0, trans_coord.top_width-MWIDTH-1, 
 				  T_AREA_HEIGHT-1);
 		
-		XDrawString(x11_state.display, x11_state.textarea, x11_state.gc_menus, 
+		XftDrawStringUtf8(
+			x11_state.textarea_draw,
+			&x11_state.xft_menutextcolor,
+			x11_state.font_info[MENU_FONT_SIZE],
 			(trans_coord.top_width - MWIDTH - width)/2,
-			T_AREA_HEIGHT/2 + (x11_state.font_info[MENU_FONT_SIZE]->ascent - 
-			x11_state.font_info[MENU_FONT_SIZE]->descent)/2, gl_state.statusMessage, len);
+			T_AREA_HEIGHT/2 + (
+				x11_state.font_info[MENU_FONT_SIZE]->ascent
+				- x11_state.font_info[MENU_FONT_SIZE]->descent
+			)/2,
+			(const FcChar8*) gl_state.statusMessage,
+			len
+		);
 #else
 		if(!InvalidateRect(win32_state.hStatusWnd, NULL, TRUE))
 			WIN32_DRAW_ERROR();
@@ -2591,13 +2631,20 @@ close_graphics (void)
 	int i;
 	for (i=0;i<=MAX_FONT_SIZE;i++) {
 		if (gl_state.font_is_loaded[i])
-			XFreeFont(x11_state.display,x11_state.font_info[i]);
+			XftFontClose(x11_state.display,x11_state.font_info[i]);
 	}
 	
 	XFreeGC(x11_state.display,x11_state.gc_normal);
 	XFreeGC(x11_state.display,x11_state.gc_xor);
 	XFreeGC(x11_state.display,x11_state.gc_menus);
 	
+	XftDrawDestroy(x11_state.toplevel_draw);
+	XftDrawDestroy(x11_state.menu_draw);
+	XftDrawDestroy(x11_state.textarea_draw);
+
+	x11_state.colormap_to_use = -1; // is free()'d by XCloseDisplay
+	memset(&x11_state.visual_info, 0, sizeof(x11_state.visual_info)); // dont need to free this
+
 	XCloseDisplay(x11_state.display);
 #else /* Win32 */
 	int i;
@@ -2816,6 +2863,12 @@ build_default_menu (void)
 	                                     trans_coord.top_width-MWIDTH, 0, MWIDTH,
 	                                     trans_coord.display_height, 0, predef_colors[BLACK].as_rgb_int(),
 	                                     predef_colors[LIGHTGREY].as_rgb_int());
+	x11_state.menu_draw = XftDrawCreate(
+		x11_state.display,
+		x11_state.menu,
+		x11_state.visual_info.visual,
+		x11_state.colormap_to_use
+	);
 	menu_attributes.event_mask = ExposureMask;
 	/* Ignore button presses on the menu background. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
@@ -2955,45 +3008,37 @@ load_font(int pointsize)
    if (gl_state.font_is_loaded[pointsize])  // Nothing to do.
 		return;
 
-#ifdef X11
-   #define NUM_FONT_TYPES 3
-   char fontname[NUM_FONT_TYPES][BUFSIZE];
-   int ifont;
-   bool success = false;
+	bool success = false;
 
-   /* Use proper point-size medium-weight upright helvetica font */
-   // Exists on most X11 systems.
-   // Backup font:  lucidasans, in the new naming style.
-   sprintf(fontname[0],"-*-helvetica-medium-r-*--*-%d0-*-*-*-*-*-*",
-             pointsize);
-   sprintf(fontname[1], "lucidasans-%d", pointsize);
-   sprintf(fontname[2],"-schumacher-clean-medium-r-*--*-%d0-*-*-*-*-*-*",
-             pointsize);
-	
-   for (ifont = 0; ifont < NUM_FONT_TYPES; ifont++) {
-#ifdef VERBOSE
-      printf ("Loading font: point size: %d, fontname: %s\n",pointsize, 
-               fontname[ifont]);
-#endif
-      /* Load font and get font information structure. */
-      x11_state.font_info[pointsize] = XLoadQueryFont(x11_state.display,fontname[ifont]);
-      if (x11_state.font_info[pointsize] == NULL) {
-#ifdef VERBOSE
-         fprintf( stderr, "Cannot open font %s\n", fontname[ifont]);
-#endif
-      }
-      else {
-         success = true;
-         break; 
-      }
-   }
-   if (!success) {
-      printf ("Error in load_font:  cannot load any font of pointsize %d.\n",
-               pointsize);
-      printf ("Use xlsfonts to list available fonts, and modify load_font\n");
-      printf ("in graphics.cpp.\n");
-      exit (1);
-   }
+#ifdef X11
+    for (int ifont = 0; ifont < NUM_FONT_TYPES; ifont++) {
+		
+		#ifdef VERBOSE
+			printf ("Loading font: %s-%d\n", fontname_config[ifont], pointsize);
+		#endif
+
+		/* Load font and get font information structure. */
+		x11_state.font_info[pointsize] = XftFontOpen(
+			x11_state.display, x11_state.screen_num,
+			XFT_FAMILY, XftTypeString, fontname_config[ifont],
+			XFT_SIZE,   XftTypeDouble, (double)pointsize,
+			NULL // (sentinel)
+		);
+		if (x11_state.font_info[pointsize] == NULL) {
+			#ifdef VERBOSE
+				fprintf( stderr, "Cannot open font %s\n", fontname_config[ifont]);
+			#endif
+		} else {
+			success = true;
+			break; 
+		}
+	}
+	if (success == false) {
+		printf ("Error in load_font: fontconfig couldn't find any font of pointsize %d.\n", pointsize);
+		printf ("Use `fc-list` to list available fonts, `fc-match` to test, and then modify\n");
+		printf ("the font config array in easygl_constants.h .\n");
+		exit (1);
+	}
 #else /* WIN32 */
    LOGFONT *lf = win32_state.font_info[pointsize] = (LOGFONT*)my_malloc(sizeof(LOGFONT));
    ZeroMemory(lf, sizeof(LOGFONT));
@@ -3009,7 +3054,31 @@ load_font(int pointsize)
    lf->lfClipPrecision = CLIP_DEFAULT_PRECIS;
    lf->lfQuality = PROOF_QUALITY;
    lf->lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-   strcpy(lf->lfFaceName, "Arial");	 
+    HFONT testfont;
+	for (int ifont = 0; ifont < NUM_FONT_TYPES; ++ifont) {
+		strcpy(lf->lfFaceName, fontname_config[ifont]);
+		
+		testfont = CreateFontIndirect(lf);
+		if(testfont == NULL) {
+			#ifdef VERBOSE
+				fprintf(stderr, "Couldn't open font %s in pointsize %d.\n", fontname_config[ifont], pointsize);
+			#endif
+			continue;
+		}
+
+		if(DeleteObject(testfont) == 0) {
+			WIN32_DELETE_ERROR();
+		} else {
+			success = true;
+			break;
+		}
+	}
+	if (success == false) {
+		printf ("Error in load_font: Windows couldn't find any font of pointsize %d.\n", pointsize);
+		printf ("check installed fonts, and then modify\n");
+		printf ("the font config array in easygl_constants.h .\n");
+		exit (1);
+	}
 #endif
 
    gl_state.font_is_loaded[pointsize] = true;
@@ -3147,28 +3216,37 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	
    trans_coord.top_width = 2 * trans_coord.display_width / 3;
    trans_coord.top_height = 4 * trans_coord.display_height / 5;
-
-	XVisualInfo visual_info;
    
-	// select a 24 bit TrueColor visual
-	if (XMatchVisualInfo(x11_state.display, x11_state.screen_num, 24, TrueColor, &visual_info) == 0) {
+	// select a 24 bit TrueColor visual. Note that setting this visual
+	// for the top level window will make all children inherit it.
+	if (XMatchVisualInfo(
+			x11_state.display,
+			x11_state.screen_num,
+			24,	TrueColor,
+			&x11_state.visual_info) == 0) {
 		fprintf(stderr, "Cannot handle a non 24-bit TrueColour visual\n");
 		exit(-1);
 	}
 
-	if (visual_info.bits_per_rgb != 8 ||
-		visual_info.red_mask   != 0xFF0000 ||
-		visual_info.green_mask != 0x00FF00 ||
-		visual_info.blue_mask  != 0x0000FF) {
+	if (x11_state.visual_info.bits_per_rgb != 8 ||
+		x11_state.visual_info.red_mask   != 0xFF0000 ||
+		x11_state.visual_info.green_mask != 0x00FF00 ||
+		x11_state.visual_info.blue_mask  != 0x0000FF) {
 		fprintf(stderr, "Cannot handle strange 24-bit TrueColor visual\n");
 		exit(-1);
 	}
 
 	Window root_window = XDefaultRootWindow(x11_state.display);
 
-	XSetWindowAttributes attrs;
+	x11_state.colormap_to_use = XCreateColormap(
+		x11_state.display,
+		root_window,
+		x11_state.visual_info.visual,
+		AllocNone
+	);
 
-	attrs.colormap = XCreateColormap(x11_state.display, root_window, visual_info.visual, AllocNone);
+	XSetWindowAttributes attrs;
+	attrs.colormap = x11_state.colormap_to_use;
 	attrs.border_pixel = predef_colors[BLACK].as_rgb_int();
 	attrs.background_pixel = predef_colors[cindex].as_rgb_int();
 
@@ -3178,13 +3256,33 @@ static void x11_init_graphics (const char *window_name, int cindex)
 		x, y,
 		trans_coord.top_width, trans_coord.top_height,
 		border_width,
-		visual_info.depth,
+		x11_state.visual_info.depth,
 		InputOutput,
-		visual_info.visual,
+		x11_state.visual_info.visual,
 		CWBackPixel | CWColormap | CWBorderPixel,
 		&attrs
 	);
+
+	x11_state.toplevel_draw = XftDrawCreate(
+		x11_state.display,
+		x11_state.toplevel,
+		x11_state.visual_info.visual,
+		x11_state.colormap_to_use
+	);
 	
+	XRenderColor xr_textcolor;
+	xr_textcolor.red = 0x0;
+	xr_textcolor.green = 0x0;
+	xr_textcolor.blue = 0x0;
+	xr_textcolor.alpha = 0xffff;
+	XftColorAllocValue(
+		x11_state.display,
+		DefaultVisual(x11_state.display, x11_state.screen_num),
+		DefaultColormap( x11_state.display, x11_state.screen_num),
+		&xr_textcolor,
+		&x11_state.xft_menutextcolor
+	);
+
    XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | StructureNotifyMask |
                     ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
                     KeyPressMask);
@@ -3202,7 +3300,6 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	
    /* specify font for menus.  */
    load_font(MENU_FONT_SIZE);
-   XSetFont(x11_state.display, x11_state.gc_menus, x11_state.font_info[MENU_FONT_SIZE]->fid);
 	
    /* Set drawing defaults for user-drawable area.  Use whatever the *
    * initial values of the current stuff was set to.                */
@@ -3443,6 +3540,14 @@ static void x11_build_textarea (void)
 	x11_state.textarea = XCreateSimpleWindow(x11_state.display,x11_state.toplevel, 0,
 		trans_coord.top_height-T_AREA_HEIGHT, trans_coord.display_width-MWIDTH,
 		T_AREA_HEIGHT, 0, predef_colors[BLACK].as_rgb_int(), predef_colors[LIGHTGREY].as_rgb_int());
+
+	x11_state.textarea_draw = XftDrawCreate(
+		x11_state.display,
+		x11_state.textarea,
+		x11_state.visual_info.visual,
+		x11_state.colormap_to_use
+	);
+
 	menu_attributes.event_mask = ExposureMask;
 	/* ButtonPresses in this area are ignored. */
 	menu_attributes.do_not_propagate_mask = ButtonPressMask;
@@ -3468,16 +3573,24 @@ static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dumm
 
 
 /* draws text center at xc, yc -- used only by menu drawing stuff */
-static void menutext(Window win, int xc, int yc, const char *text) 
-{
+static void menutext(XftDraw* draw, int xc, int yc, const char *text) {
 	int len, width; 
 	
 	len = strlen(text);
-	width = XTextWidth(x11_state.font_info[MENU_FONT_SIZE], text, len);
-	XDrawString(x11_state.display, win, x11_state.gc_menus, xc-width/2, 
-				yc + (x11_state.font_info[MENU_FONT_SIZE]->ascent 
-					   - x11_state.font_info[MENU_FONT_SIZE]->descent)/2,
-				text, len);
+	XGlyphInfo extents;
+	XftTextExtentsUtf8(x11_state.display,
+		x11_state.font_info[MENU_FONT_SIZE], (const FcChar8*) text, len, &extents);
+	width = extents.width;
+
+	XftDrawStringUtf8(
+		draw,
+		&x11_state.xft_menutextcolor,
+		x11_state.font_info[MENU_FONT_SIZE],
+		xc - width/2,
+		yc + (x11_state.font_info[MENU_FONT_SIZE]->ascent - x11_state.font_info[MENU_FONT_SIZE]->descent)/2,
+		(const FcChar8*) text,
+		len
+	);
 }
 
 
@@ -3581,7 +3694,7 @@ static void x11_drawbut (int bnum)
 			XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
 		else
 			XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[DARKGREY].as_rgb_int());
-		menutext(button_state.button[bnum].win,button_state.button[bnum].width/2,
+		menutext(button_state.button[bnum].draw,button_state.button[bnum].width/2,
 			button_state.button[bnum].height/2,button_state.button[bnum].text);
 	}
 }

@@ -23,7 +23,7 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 
 CC = $(COMPILER)
 LIB_DIR = -L.
-LIB = -lm -lvpr
+LIB = -lm -lvpr -lXft
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
@@ -40,7 +40,8 @@ OTHER_DIR := $(OTHER_DIR) \
 	-I../libcommon_c++/SRC/TIO_InputOutputHandlers \
 	-I../libcommon_c++/SRC/TC_Common \
 	-I../libcommon_c/pcre/SRC \
-	-I../libsdc_parse/src
+	-I../libsdc_parse/src \
+	$(shell pkg-config --cflags freetype2)
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 

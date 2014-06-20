@@ -18,4 +18,29 @@ typedef struct {
 						 /* scroll wheel backward is 5. */
 } t_event_buttonPressed;   /* Used to pass information from event_loop when a mouse button or modifier key is pressed */
 
+/**
+ * Linux:
+ *   The strings listed below will be submitted to fontconfig, in this order,
+ *   with point size specified, and it will try to find something that matches.
+ *
+ *   If fontconfig can't find something that looks like a font you specify, (unlikely with the defaults)
+ *   you must find one that it will. Run `fc-list` to list available fonts, if you'd like.
+ *   Then `fc-match <test_font_name>` to test, and then modify this array with that name string.
+ *   Note:
+ *     - The fc-* commands are a CLI frontend for fontconfig,
+ *       so anything that works there will work in this graphics library.
+ *     - The font returned by fontconfig may not be the same, but will look similar.
+ *
+ * Windows:
+ *   Something will similar effect will be done, but it is harder to tell what will happen.
+ *   Check your installed fonts if the program exits immediately or while changing font size.
+ *
+ */
+#define NUM_FONT_TYPES 3
+const char* const fontname_config[] {
+	"helvetica",
+	"lucida sans",
+	"schumacher"
+};
+
 #endif // EASYGL_CONSTANTS_H
