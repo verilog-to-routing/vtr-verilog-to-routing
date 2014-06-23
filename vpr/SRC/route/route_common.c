@@ -353,7 +353,7 @@ boolean feasible_routing(void) {
 	int inode;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (rr_node[inode].occ > rr_node[inode].get_capacity()) {
+		if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
 			return (FALSE);
 		}
 	}
@@ -382,10 +382,10 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 	for (;;) {
 		inode = tptr->index;
 
-		occ = rr_node[inode].occ + add_or_sub;
+		occ = rr_node[inode].get_occ() + add_or_sub;
 		capacity = rr_node[inode].get_capacity();
 
-		rr_node[inode].occ = occ;
+		rr_node[inode].set_occ(occ);
 
 		/* pres_cost is Pn in the Pathfinder paper. I set my pres_cost according to *
 		 * the overuse that would result from having ONE MORE net use this routing  *
@@ -422,7 +422,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	int inode, occ, capacity;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		occ = rr_node[inode].occ;
+		occ = rr_node[inode].get_occ();
 		capacity = rr_node[inode].get_capacity();
 
 		if (occ > capacity) {
@@ -1323,9 +1323,9 @@ static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 
 	int occ, capacity;
 
-	occ = rr_node[inode].occ + add_or_sub;
+	occ = rr_node[inode].get_occ() + add_or_sub;
 	capacity = rr_node[inode].get_capacity();
-	rr_node[inode].occ = occ;
+	rr_node[inode].set_occ(occ);
 
 	if (occ < capacity) {
 		rr_node_route_inf[inode].pres_cost = 1.0;

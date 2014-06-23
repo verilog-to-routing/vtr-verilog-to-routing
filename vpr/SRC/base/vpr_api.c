@@ -1353,7 +1353,7 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 
 		/* reset rr_graph */
 		for (int j = 0; j < num_rr_nodes; ++j) {
-			rr_node[j].occ = 0;
+			rr_node[j].set_occ(0);
 			rr_node[j].prev_edge = OPEN;
 			rr_node[j].prev_node = OPEN;
 		}

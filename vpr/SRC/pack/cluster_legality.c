@@ -1135,7 +1135,7 @@ void save_cluster_solution(void) {
 }
 
 boolean is_pin_open(int i) {
-	return (boolean) (rr_node[i].occ == 0);
+	return (boolean) (rr_node[i].get_occ() == 0);
 }
 
 static float rr_node_intrinsic_cost(int inode) {

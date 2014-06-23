@@ -378,7 +378,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	} else {
 		num_congested = 0;
 		for (inode = 0; inode < num_rr_nodes; inode++) {
-			if (rr_node[inode].occ > rr_node[inode].get_capacity()) {
+			if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
 				num_congested++;
 			}
 		}
@@ -749,16 +749,17 @@ static void draw_congestion(void) {
 	setlinewidth(2);
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (rr_node[inode].occ > 0) {
+		short occ = rr_node[inode].get_occ();
+		if (occ > 0) {
 			switch (rr_node[inode].type) {
 			case CHANX:
 				itrack = rr_node[inode].get_ptc_num();
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					rr_node[inode].occ > rr_node[inode].get_capacity()) {
+					occ > rr_node[inode].get_capacity()) {
 					draw_rr_chanx(inode, itrack, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (rr_node[inode].occ > rr_node[inode].get_capacity())
+					if (occ > rr_node[inode].get_capacity())
 						draw_rr_chanx(inode, itrack, RED);
 					else
 						draw_rr_chanx(inode, itrack, BLUE);
@@ -768,11 +769,11 @@ static void draw_congestion(void) {
 			case CHANY:
 				itrack = rr_node[inode].get_ptc_num();
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					rr_node[inode].occ > rr_node[inode].get_capacity()) {
+					occ > rr_node[inode].get_capacity()) {
 					draw_rr_chany(inode, itrack, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (rr_node[inode].occ > rr_node[inode].get_capacity())
+					if (occ > rr_node[inode].get_capacity())
 						draw_rr_chany(inode, itrack, RED);
 					else
 						draw_rr_chany(inode, itrack, BLUE);
@@ -782,11 +783,11 @@ static void draw_congestion(void) {
 			case IPIN:
 			case OPIN:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					rr_node[inode].occ > rr_node[inode].get_capacity()) {
+					occ > rr_node[inode].get_capacity()) {
 					draw_rr_pin(inode, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (rr_node[inode].occ > rr_node[inode].get_capacity())
+					if (occ > rr_node[inode].get_capacity())
 						draw_rr_pin(inode, RED);
 					else
 						draw_rr_pin(inode, BLUE);
@@ -2177,7 +2178,7 @@ static void highlight_rr_nodes(float x, float y) {
 			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
 				    hit_node, rr_node[hit_node].rr_get_type_string(),
 				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].get_num_edges(), 
-				    rr_node[hit_node].occ, rr_node[hit_node].get_capacity());
+				    rr_node[hit_node].get_occ(), rr_node[hit_node].get_capacity());
 
 		}
 		else {

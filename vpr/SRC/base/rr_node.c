@@ -76,6 +76,10 @@ enum e_drivers t_rr_node::get_drivers() const {
 	}
 }
 
+short t_rr_node::get_occ() const {
+	return occ;
+}
+
 /*
 	Pass in two coordinate variables describing location of node.
 	They do not have to be in any particular order.
@@ -124,8 +128,6 @@ void t_rr_node::set_direction(e_direction _direction) {
 	direction = _direction;
 }
 
-/*
-void t_rr_node::set_drivers(e_drivers _drivers) {
-	drivers = _drivers;
+void t_rr_node::set_occ(short _occ) {
+	occ = _occ;
 }
-*/

@@ -383,8 +383,8 @@ static double get_overused_ratio(){
 	double overused_nodes = 0.0;
 	int inode;
 	for(inode = 0; inode < num_rr_nodes; inode++){
-		if(rr_node[inode].occ > rr_node[inode].get_capacity())
-			overused_nodes += (rr_node[inode].occ - rr_node[inode].get_capacity());
+		if(rr_node[inode].get_occ() > rr_node[inode].get_capacity())
+			overused_nodes += (rr_node[inode].get_occ() - rr_node[inode].get_capacity());
 	}
 	overused_nodes /= (double)num_rr_nodes;
 	return overused_nodes;
@@ -1193,7 +1193,7 @@ static bool should_route_net(int inet) {
 
 	for (;;) {
 		int inode = tptr->index;
-		int occ = rr_node[inode].occ;
+		int occ = rr_node[inode].get_occ();
 		int capacity = rr_node[inode].get_capacity();
 
 		if (occ > capacity) {

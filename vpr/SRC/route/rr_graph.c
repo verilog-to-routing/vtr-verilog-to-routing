@@ -184,20 +184,6 @@ static void alloc_and_load_rr_clb_source(t_ivec *** L_rr_node_indices);
 static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(INP t_direct_inf *directs, INP int num_directs,
         INP int delayless_switch);
 
-#if 0
-static void load_uniform_opin_switch_pattern_paired(
-		INP int *Fc_out,
-		INP int num_pins,
-		INP int *pins_in_chan_seg,
-		INP int num_wire_inc_muxes,
-		INP int num_wire_dec_muxes,
-		INP int *wire_inc_muxes,
-		INP int *wire_dec_muxes,
-		INOUTP t_rr_node * L_rr_node,
-		INOUTP boolean * L_rr_edge_done,
-		INP t_seg_details * seg_details,
-		OUTP boolean * Fc_clipped);
-#endif
 void watch_edges(int inode, t_linked_edge * edge_list_head);
 
 static void free_type_pin_to_track_map(
@@ -1039,7 +1025,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 
 		/* Things common to both SOURCEs and SINKs.   */
 		L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
-		L_rr_node[inode].occ = 0;
+		L_rr_node[inode].set_occ(0);
 		//assuming that type->width is always 1.
 		//if this needs to change, rr_node.{h,c} need to be modified accordingly
 		assert(type->width == 1);
@@ -1140,7 +1126,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 
 		/* Common to both DRIVERs and RECEIVERs */
 		L_rr_node[inode].set_capacity(1);
-		L_rr_node[inode].occ = 0;
+		L_rr_node[inode].set_occ(0);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].R = 0;
@@ -1243,7 +1229,7 @@ static void build_rr_xchan(INP int i, INP int j,
 
 		/* Edge arrays have now been built up.  Do everything else.  */
 		L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
-		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
+		L_rr_node[node].set_occ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
 		L_rr_node[node].set_coordinates(start, j, end, j);
@@ -1352,7 +1338,7 @@ static void build_rr_ychan(INP int i, INP int j,
 
 		/* Edge arrays have now been built up.  Do everything else.  */
 		L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
-		L_rr_node[node].occ = ( track < tracks_per_chan ? 0 : 1 );
+		L_rr_node[node].set_occ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
 		L_rr_node[node].set_coordinates(i, start, i, end);
@@ -1890,16 +1876,6 @@ void dump_rr_graph(INP const char *file_name) {
 		fprintf(fp, "\n");
 	}
 
-#if 0
-	fprintf(fp, "\n\n%d rr_indexed_data entries.\n\n", num_rr_indexed_data);
-
-	for (int index = 0; index < num_rr_indexed_data; ++index)
-	{
-		print_rr_indexed_data(fp, index);
-		fprintf(fp, "\n");
-	}
-#endif
-
 	fclose(fp);
 }
 
@@ -1944,7 +1920,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 		fprintf(fp, " %d", L_rr_node[inode].switches[iconn]);
 	fprintf(fp, "\n");
 
-	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].occ,
+	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].get_occ(),
 			L_rr_node[inode].get_capacity());
 	if (rr_type != INTRA_CLUSTER_EDGE) {
 		fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R, L_rr_node[inode].C);
@@ -2090,150 +2066,6 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 		}
 	}
 }
-
-#if 0
-static void load_uniform_opin_switch_pattern_paired(INP int *Fc_out,
-		INP int num_pins,
-		INP int *pins_in_chan_seg,
-		INP int num_wire_inc_muxes,
-		INP int num_wire_dec_muxes,
-		INP int *wire_inc_muxes,
-		INP int *wire_dec_muxes,
-		INOUTP t_rr_node * L_rr_node,
-		INOUTP boolean * L_rr_edge_done,
-		INP t_seg_details * seg_details,
-		OUTP boolean * Fc_clipped)
-{
-
-	/* Directionality is assumed to be uni-directional */
-
-	/* Make turn-based assignment to avoid overlap when Fc_ouput is low. This is a bipartite
-	 * matching problem. Out of "num_wire_muxes" muxes "Fc_output" of them is assigned
-	 * to each outpin (total "num_pins" of them); assignment is uniform (spacing - spreadout) 
-	 * and staggered to avoid overlap when Fc_output is low. */
-
-	/* The natural order wires muxes are stored in wire_muxes is alternating in directionality 
-	 * already (by my implementation), so no need to do anything extra to avoid directional bias */
-
-	/* TODO: Due to spacing, it's possible to have directional bias: all Fc_out wires connected 
-	 * to one opin goes in either INC or DEC -> whereas I want a mix of both.
-	 * SOLUTION: Use quantization of 2 to ensure that if an opin connects to one wire, it 
-	 * must also connect to its companion wire, which runs in the opposite direction. This 
-	 * means instead of having num_wire_muxes as the matching set, pick out the INC wires
-	 * in num_wires_muxes as the matching set (the DEC wires are their companions)  April 17, 2007 
-	 * NEWS: That solution does not work, as treating wires in groups will lead to serious
-	 * abnormal patterns (conns crossing multiple blocks) for W nonquantized to multiples of 2L.
-	 * So, I'm chaning that approach to a new one that avoids directional bias: I will separate
-	 * the INC muxes and DEC muxes into two sets. Each set is uniformly assigned to opins with
-	 * Fc_output/2; this should be identical as before for normal cases and contains all conns
-	 * in the same chan segment for the nonquantized cases. */
-
-	/* Finally, separated the two approaches: 1. Take all wire muxes and assign them to opins
-	 * one at a time (load_uniform_opin_switch_pattern) 2. Take pairs (by companion) 
-	 * of wire muxes and assign them to opins a pair at a time (load_uniform_opin_switch_pattern_paired). 
-	 * The first is used for fringe channel segments (ends of channels, where
-	 * there are lots of muxes due to partial wire segments) and the second is used in core */
-
-	/* float spacing, step_size, f_mux; */
-	int ipin, iconn, num_edges, init_mux;
-	int from_node, to_node, to_track;
-	int xlow, ylow;
-	t_linked_edge *edge_list;
-	int *wire_muxes;
-	int k, num_wire_muxes, Fc_output_per_side, CurFc;
-	int count_inc, count_dec;
-	t_type_ptr type;
-
-	*Fc_clipped = FALSE;
-
-	count_inc = count_dec = 0;
-
-	for (ipin = 0; ipin < num_pins; ipin++)
-	{
-		from_node = pins_in_chan_seg[ipin];
-		xlow = L_rr_node[from_node].xlow;
-		ylow = L_rr_node[from_node].ylow;
-		type = grid[xlow][ylow].type;
-		edge_list = NULL;
-		num_edges = 0;
-
-		/* Assigning the INC muxes first, then DEC muxes */
-		for (k = 0; k < 2; ++k)
-		{
-			if (k == 0)
-			{
-				num_wire_muxes = num_wire_inc_muxes;
-				wire_muxes = wire_inc_muxes;
-			}
-			else
-			{
-				num_wire_muxes = num_wire_dec_muxes;
-				wire_muxes = wire_dec_muxes;
-			}
-
-			/* Half the Fc will be assigned for each direction. */
-			assert(Fc_out[type->index] % 2 == 0);
-			Fc_output_per_side = Fc_out[type->index] / 2;
-
-			/* Clip the demand. Make sure to use a new variable so
-			 * on the second pass it is not clipped. */
-			CurFc = Fc_output_per_side;
-			if (Fc_output_per_side > num_wire_muxes)
-			{
-				*Fc_clipped = TRUE;
-				CurFc = num_wire_muxes;
-			}
-
-			if (k == 0)
-			{
-				init_mux = (count_inc) % num_wire_muxes;
-				count_inc += CurFc;
-			}
-			else
-			{
-				init_mux = (count_dec) % num_wire_muxes;
-				count_dec += CurFc;
-			}
-
-			for (iconn = 0; iconn < CurFc; iconn++)
-			{
-				/* FINALLY, make the outpin to mux connection */
-				/* Latest update: I'm not using Uniform Pattern, but a similarly staggered pattern */
-				to_node =
-				wire_muxes[(init_mux +
-						iconn) % num_wire_muxes];
-
-				L_rr_node[to_node].num_opin_drivers++; /* keep track of mux size */
-				to_track = L_rr_node[to_node].ptc_num;
-
-				if (FALSE == L_rr_edge_done[to_node])
-				{
-					/* Use of alloc_and_load_edges_and_switches 
-					 * must be accompanied by rr_edge_done check. */
-					L_rr_edge_done[to_node] = TRUE;
-					edge_list =
-					insert_in_edge_list(edge_list,
-							to_node,
-							seg_details
-							[to_track].
-							wire_switch);
-					num_edges++;
-				}
-			}
-		}
-
-		if (num_edges < 1)
-		{
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"opin %d at (%d,%d) does not connect to any tracks.\n", 
-				L_rr_node[from_node].ptc_num, L_rr_node[from_node].xlow, L_rr_node[from_node].ylow);
-		}
-
-		alloc_and_load_edges_and_switches(L_rr_node, from_node, num_edges,
-				L_rr_edge_done, edge_list);
-	}
-}
-#endif
 
 /**
  * Parse out which CLB pins should connect directly to which other CLB pins then store that in a clb_to_clb_directs data structure

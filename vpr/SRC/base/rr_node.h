@@ -66,9 +66,9 @@ private:
 
 	enum e_direction direction; /* UDSD by AY */
 	//enum e_drivers drivers; /* UDSD by AY */
+	short occ;
 
 public:
-	short occ;
 	t_rr_type type;
 	int *edges;
 	short *switches;
@@ -98,6 +98,7 @@ public:
 	short get_capacity() const;
 	short get_fan_in() const;
 	short get_num_edges() const;
+	short get_occ() const;
 	enum e_direction get_direction() const;
 	enum e_drivers get_drivers() const;
 
@@ -108,7 +109,7 @@ public:
 	void set_fan_in(short);
 	void set_num_edges(short);
 	void set_direction(e_direction);
-	//void set_drivers(e_drivers);
+	void set_occ(short);
 
 };
 
