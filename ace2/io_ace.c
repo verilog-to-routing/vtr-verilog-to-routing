@@ -227,9 +227,16 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 			Abc_NtkForEachPi(ntk, obj_ptr, i)
 			{
 				info = Ace_ObjInfo(obj_ptr);
-				info->static_prob = p;
-				info->switch_prob = d;
-				info->switch_act = d;
+
+				if (strcmp(Abc_ObjName(obj_ptr), clk_name) == 0) {
+					info->static_prob = 0.5;
+					info->switch_prob = 1;
+					info->switch_act = 2;
+				} else {
+					info->static_prob = p;
+					info->switch_prob = d;
+					info->switch_act = d;
+				}
 			}
 		}
 	} else {
