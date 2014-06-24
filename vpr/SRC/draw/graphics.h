@@ -297,6 +297,20 @@ void setlinewidth (int linewidth);
  */
 void setfontsize (int pointsize);
 
+/*
+ * Set the rotation of text to be drawn. I recommend setting rotation
+ * back to zero once you are done drawing all rotated text, as most
+ * text will not be rotated, and setting rotation there may have been omitted.
+ */
+void settextrotation (float degrees);
+
+/*
+ * Set both the point size and rotation of the text in one call.
+ * This should be more effecient then calling setfontsize() and settextrotation()
+ * sepearatly, if that makes sense for your program.
+ */
+void settextattrs (int pointsize, float degrees);
+
 /* Draws a line from (x1, y1) to (x2, y2) in world coordinates */
 void drawline (const t_point& p1, const t_point& p2);
 void drawline (float x1, float y1, float x2, float y2);
