@@ -689,13 +689,20 @@ static void drawplace(void) {
 
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY && bnum != INVALID) {
+					float saved_rotation = gettextrotation();
+					if (j == 0 || j == ny + 1) {
+						settextrotation(90);
+					}
 					drawtext_in(abs_clb_bbox, block[bnum].name);
+					if (j == 0 || j == ny + 1) {
+						settextrotation(saved_rotation);
+					}
 				}
 
 				/* Draw text for block type so that user knows what block */
 				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 					if (i > 0 && i <= nx && j > 0 && j <= ny) {
-						drawtext(t_point(abs_clb_bbox.get_xcenter(), abs_clb_bbox.get_ycenter() - (abs_clb_bbox.get_width() / 4)),
+						drawtext(abs_clb_bbox.get_center() - t_point(0, abs_clb_bbox.get_width()/4),
 								grid[i][j].type->name, abs_clb_bbox);
 					}
 				}

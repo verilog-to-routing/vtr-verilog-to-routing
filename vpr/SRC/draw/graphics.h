@@ -303,6 +303,7 @@ void setfontsize (int pointsize);
  * text will not be rotated, and setting rotation there may have been omitted.
  */
 void settextrotation (float degrees);
+float gettextrotation();
 
 /*
  * Set both the point size and rotation of the text in one call.
@@ -340,8 +341,10 @@ void drawarc (float xcen, float ycen, float rad, float startang,
 void fillarc (const t_point& center, float rad, float startang, float angextent);
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent);
-void drawellipticarc (const t_point& center, float radx, float rady, float startang, float angextent);
-void drawellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
+void drawellipticarc (
+	const t_point& center, float radx, float rady, float startang, float angextent);
+void drawellipticarc (
+	float xc, float yc, float radx, float rady, float startang, float angextent);
 
 void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent);
 void fillellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
@@ -366,7 +369,8 @@ void fillellipticarc (float xc, float yc, float radx, float rady, float startang
 void drawtext_in (const t_bound_box& bbox, const char* text);
 void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance);
 void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds);
-void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance);
+void drawtext (
+	const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance);
 void drawtext (const t_point& text_center, const char* text, float boundx, float boundy);
 void drawtext (float xc, float yc, const char* text, float boundx, float boundy);
 

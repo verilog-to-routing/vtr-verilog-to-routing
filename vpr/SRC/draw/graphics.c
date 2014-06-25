@@ -910,7 +910,11 @@ static void force_setcolor(const t_color& new_color) {
 static void update_brushes() {
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
-		XSetForeground (x11_state.display, x11_state.current_gc, gl_state.foreground_color.as_rgb_int());
+		XSetForeground (
+			x11_state.display,
+			x11_state.current_gc,
+			gl_state.foreground_color.as_rgb_int()
+		);
 #else /* Win32 */
 		int win_linestyle, linewidth;
 		LOGBRUSH lb;
@@ -945,7 +949,11 @@ static void update_brushes() {
 #endif
 	}
 	else {
-		auto color_index = std::find(predef_colors.begin(), predef_colors.end(), gl_state.foreground_color);
+		auto color_index = std::find(
+			predef_colors.begin(),
+			predef_colors.end(),
+			gl_state.foreground_color
+		);
 		if (color_index != predef_colors.end()) {
 			fprintf(gl_state.ps, "%s\n", ps_cnames[color_index - predef_colors.begin()]);
 		} else {
@@ -1192,6 +1200,8 @@ void settextrotation(float degrees) {
 	}
 }
 
+float gettextrotation() { return gl_state.currentfontrotation; }
+
 void settextattrs(int pointsize, float degrees) {
 	if (degrees != gl_state.currentfontrotation
 		|| pointsize != gl_state.currentfontsize) {
@@ -1225,13 +1235,16 @@ static void map_button (int bnum)
 
 	if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
-		button_state.button[bnum].win = XCreateSimpleWindow(x11_state.display,x11_state.menu,
-															button_state.button[bnum].xleft, 
-															button_state.button[bnum].ytop, 
-															button_state.button[bnum].width, 
-															button_state.button[bnum].height, 0, 
-															predef_colors[WHITE].as_rgb_int(), 
-															predef_colors[LIGHTGREY].as_rgb_int()); 
+		button_state.button[bnum].win = XCreateSimpleWindow(
+			x11_state.display,x11_state.menu,
+			button_state.button[bnum].xleft,
+			button_state.button[bnum].ytop,
+			button_state.button[bnum].width,
+			button_state.button[bnum].height, 0,
+			predef_colors[WHITE].as_rgb_int(),
+			predef_colors[LIGHTGREY].as_rgb_int()
+		);
+
 		XMapWindow (x11_state.display, button_state.button[bnum].win);
 		XSelectInput (x11_state.display, button_state.button[bnum].win, ButtonPressMask);
 		button_state.button[bnum].draw = XftDrawCreate(
@@ -1241,17 +1254,19 @@ static void map_button (int bnum)
 			x11_state.colormap_to_use
 		);
 #else
-		button_state.button[bnum].hwnd = CreateWindow(TEXT("button"), 
-													  TEXT(button_state.button[bnum].text),
-													  WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 
-													  button_state.button[bnum].xleft, 
-													  button_state.button[bnum].ytop,
-													  button_state.button[bnum].width, 
-													  button_state.button[bnum].height, 
-													  win32_state.hButtonsWnd, (HMENU)(200+bnum), 
-													  (HINSTANCE) GetWindowLong(win32_state.hMainWnd, 
-																				GWL_HINSTANCE), 
-													  NULL);
+		button_state.button[bnum].hwnd = CreateWindow(
+			TEXT("button"),
+			TEXT(button_state.button[bnum].text),
+			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+			button_state.button[bnum].xleft,
+			button_state.button[bnum].ytop
+			button_state.button[bnum].width,
+			button_state.button[bnum].height,
+			win32_state.hButtonsWnd, (HMENU)(200+bnum),
+			(HINSTANCE) GetWindowLong(win32_state.hMainWnd, GWL_HINSTANCE),
+			NULL
+		);
+
 		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hButtonsWnd))
@@ -1840,7 +1855,9 @@ angnorm (float ang)
 	return (ang);
 }
 
-void drawellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) {
+void drawellipticarc (
+	const t_point& center, float radx, float rady, float startang, float angextent) {
+
 	drawellipticarc(center.x, center.y, radx, rady, startang, angextent);
 }
 
@@ -1920,7 +1937,9 @@ drawarc (float xc, float yc, float rad, float startang,
  * direction.  Angles in degrees.                                           
  */
 
-void fillellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) {
+void fillellipticarc (
+	const t_point& center, float radx, float rady, float startang, float angextent) {
+
 	fillellipticarc(center.x, center.y, radx, rady, startang, angextent);
 }
 
@@ -2090,7 +2109,9 @@ void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance) {
 	drawtext(bbox.get_center(), text, bbox, tolerance);
 }
 
-void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance) {
+void drawtext (
+	const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance) {
+
 	t_point tolerance_pt(tolerance, tolerance);
 	t_bound_box tolerance_bounds = bounds;
 
@@ -2133,8 +2154,12 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 #else /* WC : WIN32 */
 	SIZE textsize;
 
-	if (SetTextColor(win32_state.hGraphicsDC, convert_to_win_color(gl_state.foreground_color)) == CLR_INVALID)
+	if (SetTextColor(
+			win32_state.hGraphicsDC,
+			convert_to_win_color(gl_state.foreground_color)
+	) == CLR_INVALID) {
 		WIN32_DRAW_ERROR();
+	}
 
 	len = strlen(text);
 	if (!GetTextExtentPoint32(win32_state.hGraphicsDC, text, len, &textsize))
@@ -2235,6 +2260,7 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 	else {
 		fprintf(gl_state.ps, "gsave\n");
 		fprintf(gl_state.ps, "%.2f %.2f moveto\n", xworld_to_post(xc),yworld_to_post(yc));
+		fprintf(gl_state.ps, "0.8 0.8 scale\n"); // text comes out a little bit bigger in ps than X11
 		fprintf(gl_state.ps, "%d rotate\n",  (((int)gl_state.currentfontrotation) % 360));
 		fprintf(gl_state.ps, "(%s) 0 0 rcenshow\n", text);
 		fprintf(gl_state.ps, "grestore\n");
@@ -2953,10 +2979,14 @@ build_default_menu (void)
 	unsigned long valuemask;
 	XSetWindowAttributes menu_attributes;
 	
-	x11_state.menu = XCreateSimpleWindow(x11_state.display,x11_state.toplevel, 
-	                                     trans_coord.top_width-MWIDTH, 0, MWIDTH,
-	                                     trans_coord.display_height, 0, predef_colors[BLACK].as_rgb_int(),
-	                                     predef_colors[LIGHTGREY].as_rgb_int());
+	x11_state.menu = XCreateSimpleWindow(
+		x11_state.display,x11_state.toplevel,
+		trans_coord.top_width-MWIDTH, 0, MWIDTH,
+		trans_coord.display_height, 0,
+		predef_colors[BLACK].as_rgb_int(),
+		predef_colors[LIGHTGREY].as_rgb_int()
+	);
+
 	x11_state.menu_draw = XftDrawCreate(
 		x11_state.display,
 		x11_state.menu,
@@ -3183,7 +3213,8 @@ load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
 		testfont = CreateFontIndirect(lf);
 		if(testfont == NULL) {
 			#ifdef VERBOSE
-				fprintf(stderr, "Couldn't open font %s in pointsize %d.\n", fontname_config[ifont], pointsize);
+				fprintf(stderr, "Couldn't open font %s in pointsize %d.\n",
+					fontname_config[ifont], pointsize);
 			#endif
 			continue;
 		}
@@ -3520,7 +3551,8 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 							handle_zoom_out(x, y, NULL); // (same function as normal event logic)
 						break;
 						default:
-							// do nothing, also should be impossible (we don't want to skip mouse presses)
+							// do nothing, also should be impossible
+							// (we don't want to skip mouse presses)
 						break;
 					}
 				}
@@ -3709,7 +3741,8 @@ static void menutext(XftDraw* draw, int xc, int yc, const char *text) {
 		&x11_state.xft_menutextcolor,
 		gl_state.font_info[MENU_FONT_SIZE],
 		xc - width/2,
-		yc + (gl_state.font_info[MENU_FONT_SIZE]->ascent - gl_state.font_info[MENU_FONT_SIZE]->descent) / 2,
+		yc + (gl_state.font_info[MENU_FONT_SIZE]->ascent
+			- gl_state.font_info[MENU_FONT_SIZE]->descent) / 2,
 		(const FcChar8*) text,
 		len
 	);
@@ -3949,10 +3982,15 @@ win32_init_graphics (const char *window_name, int cindex)
 	
    /* Grab the Application name */
    wsprintf(szAppName, TEXT(window_name));
-	
-   //win32_state.hGraphicsPen = CreatePen(win32_line_styles[SOLID], 1, convert_to_win_color(predef_colors[BLACK]);
-   win32_state.hGraphicsPen = ExtCreatePen(PS_GEOMETRIC | win32_line_styles[gl_state.currentlinestyle] 
-										    | PS_ENDCAP_FLAT, 1, &lb, (LONG)NULL, NULL);
+
+   win32_state.hGraphicsPen = ExtCreatePen(
+      PS_GEOMETRIC | win32_line_styles[gl_state.currentlinestyle] | PS_ENDCAP_FLAT,
+      1,
+      &lb,
+      (LONG)NULL,
+      NULL
+   );
+
    if(!win32_state.hGraphicsPen)
       WIN32_CREATE_ERROR();
    win32_state.hGraphicsBrush = CreateSolidBrush(convert_to_win_color(predef_colors[DARKGREY]));
@@ -4867,6 +4905,7 @@ void setlinestyle (int linestyle) { }
 void setlinewidth (int linewidth) { }
 void setfontsize (int pointsize) { }
 void settextrotation (float degrees) { }
+float gettextrotation() { return 0; }
 void settextattrs(int pointsize, float degrees) { }
 void drawline (const t_point& p1, const t_point& p2) { }
 void drawline (float x1, float y1, float x2, float y2) { }
@@ -4879,20 +4918,23 @@ void fillrect (float x1, float y1, float x2, float y2) { }
 void fillpoly (t_point *points, int npoints) { }
 void drawarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
-void drawellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) { }
+void drawellipticarc (
+	const t_point& center, float radx, float rady, float startang, float angextent) { }
 void drawellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
 void fillarc (const t_point& center, float rad, float startang, float angextent) { }
 void fillarc (float xcen, float ycen, float rad, float startang,
 			  float angextent) { }
-void fillellipticarc (const t_point& center, float radx, float rady, float startang, float angextent) { }
+void fillellipticarc (
+	const t_point& center, float radx, float rady, float startang, float angextent) { }
 void fillellipticarc (float xc, float yc, float radx, float rady, 
 					  float startang, float angextent) { }
 
 void drawtext_in (const t_bound_box& bbox, const char* text) { }
 void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance) { }
 void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds) { }
-void drawtext (const t_point& text_center, const char* text, const t_bound_box& bounds, float tolerance) { }
+void drawtext (const t_point& text_center, const char* text, 
+	const t_bound_box& bounds, float tolerance) { }
 void drawtext (const t_point& text_center, const char* text, float boundx, float boundy) { }
 void drawtext (float xc, float yc, const char* text, float boundx, float boundy) { }
 
