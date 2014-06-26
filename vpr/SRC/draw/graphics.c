@@ -643,12 +643,22 @@ static void *my_realloc(void *memblk, int ibytes);
  * used by the client program.									*/
 static float xscrn_to_world(int x);
 static float yscrn_to_world(int y); 
+// static t_point scrn_to_world(const t_point& point); // uncomment if needed
+// static t_bound_box scrn_to_world(const t_bound_box& box); // uncomment if needed
+
 /* translation from world to screen coordinates */
 static int xworld_to_scrn (float worldx);
 static int yworld_to_scrn (float worldy);
+static float xworld_to_scrn_fl (float worldx); // without rounding to nearest pixel
+static float yworld_to_scrn_fl (float worldy);
+static t_point world_to_scrn(const t_point& point);
+static t_bound_box world_to_scrn(const t_bound_box& box);
+
 /* translation from world to PostScript coordinates */
 static float xworld_to_post(float worldx); 
 static float yworld_to_post(float worldy);
+// static t_point world_to_post(const t_point& point); // uncomment if needed
+// static t_bound_box world_to_post(const t_bound_box& box); // uncomment if needed
 
 static void force_setcolor(int cindex);
 static void force_setcolor(const t_color& new_color);
@@ -825,15 +835,32 @@ static float yscrn_to_world(int y)
 	return world_coord_y;
 }
 
+// static t_point scrn_to_world(const t_point& point) {
+// 	return t_point(
+// 		xscrn_to_world(point.x),
+// 		yscrn_to_world(point.y)
+// 	);
+// }
+
+// static t_bound_box scrn_to_world(const t_bound_box& box) {
+// 	return t_bound_box(
+// 		scrn_to_world(box.bottom_left()),
+// 		scrn_to_world(box.top_right())
+// 	);
+// }
 
 /* Translates from world (client program) coordinates to screen coordinates
  * (pixels) in the x direction.  Add 0.5 at end for extra half-pixel accuracy. 
  */
-static int xworld_to_scrn (float worldx) 
+static int xworld_to_scrn (float worldx) {
+	return (int) (xworld_to_scrn_fl(worldx) + 0.5);
+}
+
+static float xworld_to_scrn_fl (float worldx) 
 {
-	int winx;
+	float winx;
 	
-	winx = (int) ((worldx-trans_coord.xleft)*trans_coord.wtos_xmult + 0.5);
+	winx = (worldx-trans_coord.xleft)*trans_coord.wtos_xmult;
 
 #ifdef WIN32
 	/* Avoids overflow in the  Window routines.  This will allow horizontal *
@@ -857,11 +884,15 @@ static int xworld_to_scrn (float worldx)
 /* Translates from world (client program) coordinates to screen coordinates
  * (pixels) in the y direction.  Add 0.5 at end for extra half-pixel accuracy. 
  */
-static int yworld_to_scrn (float worldy) 
+static int yworld_to_scrn (float worldy) {
+	return (int) (yworld_to_scrn_fl(worldy) + 0.5);
+}
+
+static float yworld_to_scrn_fl (float worldy) 
 {
-	int winy;
+	float winy;
 	
-	winy = (int) ((worldy-trans_coord.ytop)*trans_coord.wtos_ymult + 0.5);
+	winy = (worldy-trans_coord.ytop)*trans_coord.wtos_ymult;
 
 #ifdef WIN32
 	/* Avoid overflow in the X/Win32 Window routines. */
@@ -872,6 +903,19 @@ static int yworld_to_scrn (float worldy)
 	return (winy);
 }
 
+static t_point world_to_scrn(const t_point& point) {
+	return t_point(
+		xworld_to_scrn_fl(point.x),
+		yworld_to_scrn_fl(point.y)
+	);
+}
+
+static t_bound_box world_to_scrn(const t_bound_box& box) {
+	return t_bound_box(
+		world_to_scrn(box.bottom_left()),
+		world_to_scrn(box.top_right())
+	);
+}
 
 /* translation from world to PostScript coordinates in the x direction */
 static float xworld_to_post(float worldx)
@@ -892,7 +936,19 @@ static float yworld_to_post(float worldy)
 	return ps_coord_y;
 }
 
+// static t_point world_to_post(const t_point& point) {
+// 	return t_point(
+// 		xworld_to_post(point.x),
+// 		yworld_to_post(point.y)
+// 	);
+// }
 
+// static t_bound_box world_to_post(const t_bound_box& box) {
+// 	return t_bound_box(
+// 		world_to_post(box.bottom_left()),
+// 		world_to_post(box.top_right())
+// 	);
+// }
 
 /* Sets the current graphics context colour to cindex, regardless of whether we think it is 
  * needed or not. 
@@ -1667,10 +1723,15 @@ static int rect_off_screen(t_bound_box& bbox) {
 t_bound_box get_visible_world() {
 	return t_bound_box(
 		min (trans_coord.xleft, trans_coord.xright),
-		max (trans_coord.xleft, trans_coord.xright),
 		min (trans_coord.ytop, trans_coord.ybot),
+		max (trans_coord.xleft, trans_coord.xright),
 		max (trans_coord.ytop, trans_coord.ybot)
 	);
+}
+
+bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold) {
+	printf("screen area = %f\n", world_to_scrn(test).area());
+	return world_to_scrn(test).area() > screen_area_threshold;
 }
 
 void drawline (const t_point& p1, const t_point& p2) {
@@ -5100,6 +5161,10 @@ bool t_bound_box::intersects(float x, float y) const {
 	} else {
 		return true;
 	}
+}
+
+float t_bound_box::area() const {
+	return fabs(get_width() * get_height());
 }
 
 t_bound_box t_bound_box::operator+ (const t_point& rhs) const {

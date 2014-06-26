@@ -134,7 +134,9 @@ struct t_draw_pb_type_info {
  * to (tile_x[nx+1]+tile_width, tile_y[ny+1]+tile_width) in 
  * the upper right corner.       
  * tile_width: Width (and height) of a grid_tile.
- *			   Set when init_draw_coords is called.
+ *			 Set when init_draw_coords is called.
+ * gap_size: distance of the gap between two adjacent
+ *           clbs; the literal channel "width" .
  * pin_size: The half-width or half-height of a pin.
  *			 Set when init_draw_coords is called.
  * blk_info: a list of drawing information for each type of
@@ -143,9 +145,11 @@ struct t_draw_pb_type_info {
  */
 struct t_draw_coords {
 	float *tile_x, *tile_y;
-	float tile_width, pin_size;
+	float pin_size;
 
 	vector<t_draw_pb_type_info> blk_info;
+
+	float get_tile_width();
 
 	/**
 	 * Retrieve the bounding box for the given pb in the given
@@ -169,6 +173,9 @@ struct t_draw_coords {
 	t_bound_box get_absolute_clb_bbox(const t_block& clb);
 	t_bound_box get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
 
+private:
+	float tile_width;
+	friend void init_draw_coords(float);
 };
 
 #endif

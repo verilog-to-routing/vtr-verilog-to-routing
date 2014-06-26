@@ -50,6 +50,10 @@ t_bound_box& t_draw_pb_type_info::get_pb_bbox_ref(const t_pb_graph_node& pb_grap
  * begin t_draw_corrds function definitions *
  ********************************************/
 
+float t_draw_coords::get_tile_width() {
+	return tile_width;
+}
+
 t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode) {
 	return get_pb_bbox(block[clb_index], pb_gnode);
 }

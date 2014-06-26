@@ -15,6 +15,12 @@
 
 #define MAX_BLOCK_COLOURS 5
 
+#define DEFAULT_ARROW_SIZE 0.3
+
+// a very small area, in (screen pixels)^2
+// used for level of detail culling
+#define MIN_VISIBLE_AREA 3.0
+
 t_draw_coords *get_draw_coords_vars();
 t_draw_state *get_draw_state_vars();
 

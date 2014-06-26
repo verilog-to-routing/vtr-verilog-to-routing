@@ -104,8 +104,8 @@ void draw_internal_init_blk() {
 		// and that we won't know exactly where they are. 
 		clb_bbox.bottom_left().set(0,0);
 		clb_bbox.top_right().set(
-			draw_coords->tile_x[type_descriptors[i].width  - 1] + draw_coords->tile_width/num_sub_tiles,
-			draw_coords->tile_y[type_descriptors[i].height - 1] + draw_coords->tile_width
+			draw_coords->tile_x[type_descriptors[i].width  - 1] + draw_coords->get_tile_width()/num_sub_tiles,
+			draw_coords->tile_y[type_descriptors[i].height - 1] + draw_coords->get_tile_width()
 		);
 
 		draw_internal_load_coords(type_descriptor_index, pb_graph_head_node, 

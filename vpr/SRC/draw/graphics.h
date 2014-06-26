@@ -128,6 +128,8 @@ struct t_bound_box {
 	bool intersects(const t_point& test_pt) const;
 	bool intersects(float x, float y) const;
 
+	float area() const;
+
 	/**
 	 * These add the given point to this bbox - they
 	 * offset each corner by this point. Usful for calculating
@@ -258,12 +260,6 @@ void close_postscript (void);
  * screen redrawing function.
  */
 void clearscreen (void);
-
-/**
- * Returns a rectangle with the bounds of the drawn world.
- * Possibly useful for making level of detail drawing decisions.
- */
-t_bound_box get_visible_world();
 
 /* The following routines draw to SCREEN if disp_type = SCREEN 
  * and to a PostScript file if disp_type = POSTSCRIPT         
@@ -408,6 +404,54 @@ void change_button_text(const char *button_text, const char *new_button_text);
 /* For debugging only.  Get window size etc. */
 void report_structure(t_report*);
 
+/************************************
+ * Level Of Detail Functions
+ *
+ * These functions may be convenient for deciding to not draw
+ * small details, unless they user is zoomed in past a certain level.
+ ************************************/
+
+/**
+ * Returns a rectangle with the bounds of the drawn world.
+ */
+t_bound_box get_visible_world();
+
+/**
+ * returns true iff the _world_ area of the screen is
+ * below a area_threshold.
+ */
+inline bool LOD_area_test(float area_threshold) {
+	return get_visible_world().area() < area_threshold;
+}
+
+/**
+ * returns true iff the smallest dimension of the visible
+ * world is less than dim_threshold.
+ */
+inline bool LOD_min_dim_test(float dim_threshold) {
+	t_bound_box vis_world = get_visible_world();
+	return
+		(
+			(vis_world.get_height() < vis_world.get_width()) ?
+			vis_world.get_height() : vis_world.get_width()
+		) < dim_threshold;
+}
+
+/**
+ * screen_area_threshold is in (screen pixels)^2. I suggest something around 3
+ *
+ * Iff the _screen_ area of the rectangle, specified throught the various means,
+ * is less than screen_area_threshold then these functions return false.
+ */
+bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold);
+
+inline bool LOD_screen_area_test(float width, float height, float screen_area_threshold) {
+	return LOD_screen_area_test(t_bound_box(0,0,width,height),screen_area_threshold);
+}
+
+inline bool LOD_screen_area_test_square(float width, float screen_area_threshold) {
+	return LOD_screen_area_test(width,width,screen_area_threshold);
+}
 
 /**************** Extra functions available only in WIN32. *******/
 #ifdef WIN32

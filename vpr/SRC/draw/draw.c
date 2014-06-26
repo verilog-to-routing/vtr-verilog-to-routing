@@ -96,6 +96,10 @@ static void highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum);
 static void draw_reset_blk_color(int i);
 
+static inline bool default_triangle_LOD_screen_area_test();
+static inline bool triangle_LOD_screen_area_test(float arrow_size);
+
+
 /********************** Subroutine definitions ******************************/
 
 bool is_inode_an_interposer_wire(int inode)
@@ -127,7 +131,7 @@ void draw_shifted_line(int inode)
 	if(is_inode_an_interposer_wire(inode))
 	{
 		setcolor(RED);
-		bottom_shift_y = get_draw_coords_vars()->tile_width + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
+		bottom_shift_y = get_draw_coords_vars()->get_tile_width() + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
 		top_shift_y = chan_width.y_list[ix]   + chan_width.y_list[ix] - 0.25*chan_width.y_list[ix];
 	}
 	drawline(bound_box.left(), bound_box.bottom()+bottom_shift_y, bound_box.right(), bound_box.top()+top_shift_y);
@@ -592,13 +596,13 @@ void init_draw_coords(float width_val) {
 	for (i = 0; i < num_types; ++i) {
 		if (type_descriptors[i].num_pins > 0) {
 			draw_coords->pin_size = min(draw_coords->pin_size,
-					(draw_coords->tile_width / (4.0F * type_descriptors[i].num_pins)));
+					(draw_coords->get_tile_width() / (4.0F * type_descriptors[i].num_pins)));
 		}
 	}
 
 	j = 0;
 	for (i = 0; i < (nx + 1); i++) {
-		draw_coords->tile_x[i] = (i * draw_coords->tile_width) + j;
+		draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
 		j += chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
 
 		// to show the interposer wires, we need more space between the blocks
@@ -606,11 +610,11 @@ void init_draw_coords(float width_val) {
 		j += (chan_width.y_list[i] + 1);
 		#endif
 	}
-	draw_coords->tile_x[nx + 1] = ((nx + 1) * draw_coords->tile_width) + j;
+	draw_coords->tile_x[nx + 1] = ((nx + 1) * draw_coords->get_tile_width()) + j;
 
 	j = 0;
 	for (i = 0; i < (ny + 1); ++i) {
-		draw_coords->tile_y[i] = (i * draw_coords->tile_width) + j;
+		draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
 		j += chan_width.x_list[i] + 1;
 
 		// to show the interposer wires, we need more space between the blocks
@@ -618,13 +622,13 @@ void init_draw_coords(float width_val) {
 		j += (chan_width.x_list[i] + 1);
 		#endif
 	}
-	draw_coords->tile_y[ny + 1] = ((ny + 1) * draw_coords->tile_width) + j;
+	draw_coords->tile_y[ny + 1] = ((ny + 1) * draw_coords->get_tile_width()) + j;
 
 	/* Load coordinates of sub-blocks inside the clbs */
 	draw_internal_init_blk();
 
-	init_world(0.0, draw_coords->tile_y[ny + 1] + draw_coords->tile_width, 
-			   draw_coords->tile_x[nx + 1] + draw_coords->tile_width, 0.0);
+	init_world(0.0, draw_coords->tile_y[ny + 1] + draw_coords->get_tile_width(), 
+			   draw_coords->tile_x[nx + 1] + draw_coords->get_tile_width(), 0.0);
 }
 
 static void drawplace(void) {
@@ -912,6 +916,11 @@ static void draw_rr_chanx(int inode, int itrack, const t_color& color) {
 	wire_start_y1 = bound_box.bottom() - WIRE_DRAWING_WIDTH/2;
 	wire_start_y2 = bound_box.top() + WIRE_DRAWING_WIDTH/2;
 
+	// draw the arrows and small lines iff zoomed in really far.
+	if (default_triangle_LOD_screen_area_test() == false) {
+		return;
+	}
+
 	if (rr_node[inode].get_direction() == INC_DIRECTION) {
 		setlinewidth(2);
 		setcolor(YELLOW);
@@ -933,7 +942,7 @@ static void draw_rr_chanx(int inode, int itrack, const t_color& color) {
 		 * appears with L=1 ? 
 		 */
 		for (k = rr_node[inode].get_xlow(); k < rr_node[inode].get_xhigh(); k++) {
-			bound_box.right() = draw_coords->tile_x[k] + draw_coords->tile_width;
+			bound_box.right() = draw_coords->tile_x[k] + draw_coords->get_tile_width();
 			draw_triangle_along_line(bound_box.right() - 0.15, bound_box.top(), bound_box.left(), 
 									 bound_box.right(), bound_box.bottom(), bound_box.top());
 			bound_box.right() = draw_coords->tile_x[k + 1];
@@ -959,7 +968,7 @@ static void draw_rr_chanx(int inode, int itrack, const t_color& color) {
 			bound_box.left() = draw_coords->tile_x[k];
 			draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
 									 bound_box.left(), bound_box.top(), bound_box.bottom());
-			bound_box.left() = draw_coords->tile_x[k - 1] + draw_coords->tile_width;
+			bound_box.left() = draw_coords->tile_x[k - 1] + draw_coords->get_tile_width();
 			draw_triangle_along_line(bound_box.left() - 0.15, bound_box.bottom(), bound_box.right(), 
 									 bound_box.left(), bound_box.top(), bound_box.bottom());
 		}
@@ -1023,6 +1032,11 @@ static void draw_rr_chany(int inode, int itrack, const t_color& color) {
 
 	wire_start_x1 = bound_box.left() - WIRE_DRAWING_WIDTH/2;
 	wire_start_x2 = bound_box.right() + WIRE_DRAWING_WIDTH/2;
+
+	// draw the arrows and small lines iff zoomed in really far.
+	if (default_triangle_LOD_screen_area_test() == false) {
+		return;
+	}
 	
 	if (rr_node[inode].get_direction() == INC_DIRECTION) {
 		setlinewidth(2);
@@ -1039,7 +1053,7 @@ static void draw_rr_chany(int inode, int itrack, const t_color& color) {
 								 bound_box.right(), bound_box.bottom(), bound_box.top());
 		setcolor(LIGHTGREY);
 		for (k = rr_node[inode].get_ylow(); k < rr_node[inode].get_yhigh(); k++) {
-			bound_box.top() = draw_coords->tile_y[k] + draw_coords->tile_width;
+			bound_box.top() = draw_coords->tile_y[k] + draw_coords->get_tile_width();
 			draw_triangle_along_line(bound_box.right(), bound_box.top() - 0.15, bound_box.left(), 
 									 bound_box.right(), bound_box.bottom(), bound_box.top());
 			bound_box.top() = draw_coords->tile_y[k + 1];
@@ -1065,7 +1079,7 @@ static void draw_rr_chany(int inode, int itrack, const t_color& color) {
 			bound_box.bottom() = draw_coords->tile_y[k];
 			draw_triangle_along_line(bound_box.left(), bound_box.bottom() + 0.15, bound_box.right(), 
 									 bound_box.left(), bound_box.top(), bound_box.bottom());
-			bound_box.bottom() = draw_coords->tile_y[k - 1] + draw_coords->tile_width;
+			bound_box.bottom() = draw_coords->tile_y[k - 1] + draw_coords->get_tile_width();
 			draw_triangle_along_line(bound_box.left(), bound_box.bottom() - 0.15, bound_box.right(), 
 									 bound_box.left(), bound_box.top(), bound_box.bottom());
 		}
@@ -1293,7 +1307,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (chanx_xlow <= chany_x) { /* Can draw connection going right */
 		/* Connection not at end of the CHANX segment. */
-		x1 = draw_coords->tile_x[chany_x] + draw_coords->tile_width;
+		x1 = draw_coords->tile_x[chany_x] + draw_coords->get_tile_width();
 		
 		if (rr_node[chanx_node].get_direction() != BI_DIRECTION) {
 			if (edge_dir == FROM_X_TO_Y) {
@@ -1309,7 +1323,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (chany_ylow <= chanx_y) { /* Can draw connection going up. */
 		/* Connection not at end of the CHANY segment. */
-		y2 = draw_coords->tile_y[chanx_y] + draw_coords->tile_width;
+		y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width();
 		
 		if (rr_node[chany_node].get_direction() != BI_DIRECTION) {
 			if (edge_dir == FROM_Y_TO_X) {
@@ -1328,7 +1342,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 	// connect to the bottom of an interposer wire
 	if(chany_track >= chan_width.y_list[chany_x])
 	{
-		y2 = draw_coords->tile_y[chanx_y] + draw_coords->tile_width + chan_width.y_list[chany_x] + 0.25*chan_width.y_list[chany_x];
+		y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width() + chan_width.y_list[chany_x] + 0.25*chan_width.y_list[chany_x];
 	}
 #endif 
 
@@ -1403,7 +1417,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 				assert(from_xlow < to_xlow);
 				x2 = to_chan.left();
 				/* since no U-turns from_track must be INC as well */
-				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->tile_width;
+				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at rightmost edge */
 				assert(from_xhigh > to_xhigh);
 				x2 = to_chan.right();
@@ -1412,9 +1426,9 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 		} else {
 			if (to_xlow < from_xlow) { /* Draw from left edge of one to other */
 				x1 = from_chan.left();
-				x2 = draw_coords->tile_x[from_xlow - 1] + draw_coords->tile_width;
+				x2 = draw_coords->tile_x[from_xlow - 1] + draw_coords->get_tile_width();
 			} else if (from_xlow < to_xlow) {
-				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->tile_width;
+				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->get_tile_width();
 				x2 = to_chan.left();
 			} /* The following then is executed when from_xlow == to_xlow */
 			else if (to_xhigh > from_xhigh) { /* Draw from right edge of one to other */
@@ -1425,7 +1439,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 				x2 = to_chan.right();
 			} else { /* Complete overlap: start and end both align. Draw outside the sbox */
 				x1 = from_chan.left();
-				x2 = from_chan.left() + draw_coords->tile_width;
+				x2 = from_chan.left() + draw_coords->get_tile_width();
 			}
 		}
 	}
@@ -1501,7 +1515,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				
 				y2 = to_chan.bottom();
 				/* since no U-turns from_track must be INC as well */
-				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->tile_width;
+				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at top edge */
 			
 				// for interposer-based architectures, the interposer node is marked as CHANY
@@ -1528,9 +1542,9 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 		} else {
 			if (to_ylow < from_ylow) { /* Draw from bottom edge of one to other. */
 				y1 = from_chan.bottom();
-				y2 = draw_coords->tile_y[from_ylow - 1] + draw_coords->tile_width;
+				y2 = draw_coords->tile_y[from_ylow - 1] + draw_coords->get_tile_width();
 			} else if (from_ylow < to_ylow) {
-				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->tile_width;
+				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_width();
 				y2 = to_chan.bottom();
 			} else if (to_yhigh > from_yhigh) { /* Draw from top edge of one to other. */
 				y1 = from_chan.top();
@@ -1540,7 +1554,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				y2 = to_chan.top();
 			} else { /* Complete overlap: start and end both align. Draw outside the sbox */
 				y1 = from_chan.bottom();
-				y2 = from_chan.bottom() + draw_coords->tile_width;
+				y2 = from_chan.bottom() + draw_coords->get_tile_width();
 			}
 		}
 	}
@@ -1551,22 +1565,22 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 	{
 		if(rr_node[from_node].direction == DEC_DIRECTION)
 		{
-			y1 = draw_coords->tile_y[from_ylow] + draw_coords->tile_width + chan_width.y_list[from_x] + 0.25*chan_width.y_list[from_x];
+			y1 = draw_coords->tile_y[from_ylow] + draw_coords->get_tile_width() + chan_width.y_list[from_x] + 0.25*chan_width.y_list[from_x];
 		}
 		else if(rr_node[from_node].direction == INC_DIRECTION)
 		{
-			y1 = draw_coords->tile_y[from_ylow] + draw_coords->tile_width + 2*chan_width.y_list[from_x] - 0.25*chan_width.y_list[from_x];
+			y1 = draw_coords->tile_y[from_ylow] + draw_coords->get_tile_width() + 2*chan_width.y_list[from_x] - 0.25*chan_width.y_list[from_x];
 		}
 	}
 	if(is_inode_an_interposer_wire(to_node))
 	{
 		if(rr_node[to_node].direction == INC_DIRECTION)
 		{
-			y2 = draw_coords->tile_y[to_ylow] + draw_coords->tile_width + chan_width.y_list[to_x] + 0.25*chan_width.y_list[to_x];
+			y2 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() + chan_width.y_list[to_x] + 0.25*chan_width.y_list[to_x];
 		}
 		else if(rr_node[to_node].direction == DEC_DIRECTION)
 		{
-			y2 = draw_coords->tile_y[to_ylow] + draw_coords->tile_width + 2*chan_width.y_list[to_x] - 0.25*chan_width.y_list[to_x];
+			y2 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() + 2*chan_width.y_list[to_x] - 0.25*chan_width.y_list[to_x];
 		}
 	}
 #endif
@@ -1600,24 +1614,24 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 		case CHANX:
 			bound_box.left() = draw_coords->tile_x[rr_node[inode].get_xlow()];
 	        bound_box.right() = draw_coords->tile_x[rr_node[inode].get_xhigh()] 
-						        + draw_coords->tile_width;
+						        + draw_coords->get_tile_width();
 			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()] 
-								+ draw_coords->tile_width 
+								+ draw_coords->get_tile_width() 
 								+ (1. + rr_node[inode].get_ptc_num());
 			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_ylow()] 
-								+ draw_coords->tile_width 
+								+ draw_coords->get_tile_width() 
 								+ (1. + rr_node[inode].get_ptc_num());
 			break;
 		case CHANY:
 			bound_box.left() = draw_coords->tile_x[rr_node[inode].get_xlow()] 
-								+ draw_coords->tile_width 
+								+ draw_coords->get_tile_width() 
 								+ (1. + rr_node[inode].get_ptc_num());
 			bound_box.right() = draw_coords->tile_x[rr_node[inode].get_xlow()] 
-								+ draw_coords->tile_width 
+								+ draw_coords->get_tile_width() 
 								+ (1. + rr_node[inode].get_ptc_num());
 			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()];
 			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_yhigh()]
-			                    + draw_coords->tile_width;
+			                    + draw_coords->get_tile_width();
 			break;
 		default:
 			// a problem. leave at default value (ie. zeros)
@@ -1674,7 +1688,13 @@ static void draw_rr_pin(int inode, const t_color& color) {
 	 * than one side of a clb.  Also note that this routine can change the     *
 	 * current color to BLACK.                                                 */
 
+
 	t_draw_coords* draw_coords = get_draw_coords_vars();
+
+	//exit early unless zoomed in really far.
+	if (LOD_screen_area_test_square(draw_coords->pin_size, MIN_VISIBLE_AREA) == false) {
+		return;
+	}
 
 	int ipin, i, j, iside;
 	float xcen, ycen;
@@ -1738,7 +1758,7 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	 * we can treat as a block box for this step */
 
 	/* For each sub_tile we need and extra padding space */
-	step = (float) (draw_coords->tile_width) / (float) (type->num_pins + type->capacity);
+	step = (float) (draw_coords->get_tile_width()) / (float) (type->num_pins + type->capacity);
 	offset = (ipin + k + 1) * step;
 
 	switch (iside) {
@@ -1747,7 +1767,7 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 		break;
 
 	case RIGHT:
-		xc += draw_coords->tile_width;
+		xc += draw_coords->get_tile_width();
 		yc += offset;
 		break;
 
@@ -1757,7 +1777,7 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 
 	case TOP:
 		xc += offset;
-		yc += draw_coords->tile_width;
+		yc += draw_coords->get_tile_width();
 		break;
 
 	default:
@@ -2412,38 +2432,56 @@ static void draw_reset_blk_color(int i) {
 }
 
 /**
- * Draws a small triange, like draw_triangle_along_line(6 x float), but at a distance from the
- * point (x1, y1) if greater than zero, or a distance from (x2, y2) if less than or equal to
- * zero. Note that pasinging zero results in a typical pointing arrow.
+ * Draws a small triange, using draw_triangle_along_line(6 x float), but at
+ * a distance from the point (x1, y1) if greater than zero, or a distance
+ * from (x2, y2) if less than or equal to zero.
+ *
+ * Note that therefore pasing 0 results in a
+ * typical pointing arrow line, from (x1,y1) to (x2,y2).
  */
-void draw_triangle_along_line(float distance_from_end, float x1, float x2, float y1, float y2) {
+void draw_triangle_along_line(
+	float distance_from_end, float x1, float x2, float y1, float y2)
+{
 	float xdelta = x2 - x1;
 	float ydelta = y2 - y1;
 	float magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
 	float xunit = xdelta / magnitude;
 	float yunit = ydelta / magnitude;	
 
-	float xbase, ybase;
+	float xcenter, ycenter;
 	if (distance_from_end > 0) {
-		xbase = x1;
-		ybase = y1;
+		xcenter = x1;
+		ycenter = y1;
 	} else {
-		xbase = x2;
-		ybase = y2;
+		xcenter = x2;
+		ycenter = y2;
 	}
 
 	draw_triangle_along_line(
-		xbase + xunit * distance_from_end, ybase + yunit * distance_from_end, x1, x2, y1, y2);
+		xcenter + xunit * distance_from_end, ycenter + yunit * distance_from_end, x1, x2, y1, y2);
 }
 
 /**
- * Draws a small trangle with the center of it's base at (xend, yend),
- * rotated such that it points in the direction of the directed line segment
- * (x1, y1) -> (x2, y2). Note that the parameters are in a strange order
+ * Draws a small trangle using draw_triangle_along_line(7 floats), and
+ * DEFAULT_ARROW_SIZE.
  */
-void draw_triangle_along_line(float xend, float yend, float x1, float x2,
-		float y1, float y2) {
-	float switch_rad = 0.15;
+void draw_triangle_along_line(
+	float xend, float yend, float x1, float x2, float y1, float y2)
+{
+	draw_triangle_along_line(xend, yend, x1, x2, y1, y2, DEFAULT_ARROW_SIZE);
+}
+
+/**
+ * Draws a trangle with it's center at (xend, yend), and of length & width
+ * arrow_size, rotated such that it points in the direction
+ * of the directed line segment (x1, y1) -> (x2, y2).
+ *
+ * Note that the parameters are in a strange order
+ */
+void draw_triangle_along_line(
+	float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size)
+{
+	float switch_rad = arrow_size/2;
 	float xdelta, ydelta;
 	float magnitude;
 	float xunit, yunit;
@@ -2467,6 +2505,14 @@ void draw_triangle_along_line(float xend, float yend, float x1, float x2,
 	poly[2].y = ybaseline + xunit * switch_rad;
 
 	fillpoly(poly, 3);
+}
+
+static inline bool default_triangle_LOD_screen_area_test() {
+	return triangle_LOD_screen_area_test(DEFAULT_ARROW_SIZE);
+}
+
+static inline bool triangle_LOD_screen_area_test(float arrow_size) {
+	return LOD_screen_area_test_square(arrow_size*0.66, MIN_VISIBLE_AREA);
 }
 
 static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
@@ -2621,12 +2667,18 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	}
 
 	drawline(x1, y1, x2, y2);
+
+	//don't draw the ex, or triangle unless zoomed in really far
 	if (direction == BI_DIRECTION || !is_opin(pin_num, type)) {
-		draw_x(x2, y2, 0.7 * draw_coords->pin_size);
+		if (LOD_screen_area_test_square(draw_coords->pin_size*1.3,MIN_VISIBLE_AREA) == true) {
+			draw_x(x2, y2, 0.7 * draw_coords->pin_size);
+		}
 	} else {
-		xend = x2 + (x1 - x2) / 10.;
-		yend = y2 + (y1 - y2) / 10.;
-		draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+		if (default_triangle_LOD_screen_area_test() == true) {
+			xend = x2 + (x1 - x2) / 10.;
+			yend = y2 + (y1 - y2) / 10.;
+			draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+		}
 	}
 }
 
