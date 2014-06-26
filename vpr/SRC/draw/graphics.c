@@ -640,7 +640,7 @@ static void *my_malloc(int ibytes);
 static void *my_realloc(void *memblk, int ibytes);
 
 /* translation from screen coordinates to the world coordinates *
- * used by the client program.									*/
+ * used by the client program.                                  */
 static float xscrn_to_world(int x);
 static float yscrn_to_world(int y); 
 // static t_point scrn_to_world(const t_point& point); // uncomment if needed
@@ -996,7 +996,9 @@ static void update_brushes() {
 		if(!DeleteObject(win32_state.hGraphicsBrush)) 
 			WIN32_DELETE_ERROR();
 		/* Create a new brush */
-		win32_state.hGraphicsBrush = CreateSolidBrush(convert_to_win_color(gl_state.foreground_color));
+		win32_state.hGraphicsBrush = CreateSolidBrush(
+			convert_to_win_color(gl_state.foreground_color)
+		);
 		if(!win32_state.hGraphicsBrush)
 			WIN32_CREATE_ERROR();
 		/* Select created brush into specified device context */
@@ -1315,7 +1317,7 @@ static void map_button (int bnum)
 			TEXT(button_state.button[bnum].text),
 			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 			button_state.button[bnum].xleft,
-			button_state.button[bnum].ytop
+			button_state.button[bnum].ytop,
 			button_state.button[bnum].width,
 			button_state.button[bnum].height,
 			win32_state.hButtonsWnd, (HMENU)(200+bnum),
@@ -1730,7 +1732,6 @@ t_bound_box get_visible_world() {
 }
 
 bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold) {
-	printf("screen area = %f\n", world_to_scrn(test).area());
 	return world_to_scrn(test).area() > screen_area_threshold;
 }
 
@@ -2206,6 +2207,7 @@ void drawtext (const t_point& text_center, const char *text, float boundx, float
 void drawtext (float xc, float yc, const char *text, float boundx, float boundy) 
 {
 	int len, width, height;
+
 #ifdef X11
 	len = strlen(text);
 	XGlyphInfo extents;
@@ -2225,10 +2227,10 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 	len = strlen(text);
 	if (!GetTextExtentPoint32(win32_state.hGraphicsDC, text, len, &textsize))
 		WIN32_DRAW_ERROR();
-	float angle = PI*(gl_state.current_font->lfEscapement / 10.0) / 180;
+	float angle = PI*gl_state.currentfontrotation/180;
 	float abscos = fabs(cos(angle));
 	float abssin = fabs(sin(angle));
-	width = textsize.cx*abscos + textsize.cy*abssin;
+	width  = textsize.cx*abscos + textsize.cy*abssin;
 	height = textsize.cx*abssin + textsize.cy*abscos;
 #endif	
 
@@ -2247,21 +2249,33 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 	//
 	// XGlyphInfo.{x,y} - relative location of the start of the text to the point passed
 	//     to XftDrawString*().
-	// XGlyphInfo.{x,y}Off - relative location of the end of the text to (x,y)
-	// XGlyphInfo.{width,height} - these ones mean what they say, but note that they
-	//     will change based on rotation and whether or not the text contains non short
-	//     letters like 'p' or 'b')
+	// XGlyphInfo.{x,y}Off - relative location of the end of the text to (x,y); where
+	//     the drawing of the next character would start, I believe.
+	// XGlyphInfo.{width,height} - these ones mean what they say - ie. width and height
+	//     of a bounding rectangle, but note that they will change based on rotation and
+	//     whether or not the text contains non short letters like 'p' or 'b').
 	//
-	// Also, it should be noted that with rotation, XftFont.{height,descent,ascent,max_advance_width}
-	// cannot be trusted. You would have to take those values from an unrotated font.
-	//
-	// Finally, you may notice that the WIN32 graphics are not as exactly centered. This is the case.
-	// I could not find a way to aquire enough information about the text offset it properly.
+	// Also, it should be noted that with rotation, 
+	// XftFont.{height,descent,ascent,max_advance_width} cannot be trusted.
+	// You would have to take those values from an unrotated font.
+#ifdef X11
+	// these two work almost perfectly, with aligned baselines, but only for the interval [0-90]
+	//float X11_xmagicoffset = (extents.width - (extents.x + extents.xOff))*trans_coord.stow_xmult;
+	// float X11_ymagicoffset = - (extents.y - extents.height)*trans_coord.stow_ymult;
+
+	// however just leaving them at 0 works good enough for [0-360], however baselines
+	// will not be aligned, and text with different heights and the same yc will look bad next
+	// to each other. If you would like aligned baselines, use the previous equations, but note
+	// their caveats.
+	float X11_xmagicoffset = 0;
+	float X11_ymagicoffset = 0;
+#endif
+
 	t_bound_box text_bbox(
 #ifdef X11
 		t_point(
-		xc - (wrld_width - (extents.width - (extents.x + extents.xOff))*trans_coord.stow_xmult) / 2.0,
-		yc - (wrld_height + (extents.y - extents.height)*trans_coord.stow_ymult) / 2.0
+			xc + ( -wrld_width  + X11_xmagicoffset) / 2.0,
+			yc + ( -wrld_height + X11_ymagicoffset) / 2.0
 		),
 #elif WIN32
 		t_point(xc - wrld_width / 2, yc - wrld_height / 2),
@@ -2298,19 +2312,32 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 			x11_state.toplevel_draw,
 			&x11_state.xft_menutextcolor,
 			gl_state.current_font,
-			// more magick offsets
+			// more magic offsets
 			xworld_to_scrn(text_bbox.left()) + extents.x,
 			yworld_to_scrn(text_bbox.top()) + extents.y - extents.height,
 			(const FcChar8*)text,
 			len
-			);
+		);
 #elif WIN32
+		float WIN_xtextoffset = 0;
+		float WIN_ytextoffset = 0;
+		float normalized_angle = (angle - (int)(angle/(2*PI))*2*PI);
+		if (normalized_angle < PI/2) { // quadrant I
+			WIN_ytextoffset = textsize.cx*abssin;
+		} else if (normalized_angle < PI) { // quadrant II
+			WIN_ytextoffset = height;
+			WIN_xtextoffset = textsize.cx*abscos;
+		} else if (normalized_angle < PI*3/2) { // quadrant III
+			WIN_xtextoffset = width;
+			WIN_ytextoffset = textsize.cy*abscos;
+		} else { // quadrant IV
+			WIN_xtextoffset = textsize.cy*abssin;
+		}
 		SetBkMode(win32_state.hGraphicsDC, TRANSPARENT);
 		if (TextOut(
 			win32_state.hGraphicsDC,
-			xworld_to_scrn(text_bbox.left()),
-			//why sin squared? no idea. it works though:
-			yworld_to_scrn(text_bbox.bottom()) + sin(angle)*sin(angle)*height, 
+			xworld_to_scrn(text_bbox.left()) + WIN_xtextoffset,
+			yworld_to_scrn(text_bbox.bottom()) + WIN_ytextoffset, 
 			text,
 			len
 		) == 0) {
@@ -3644,9 +3671,9 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 				y = yscrn_to_world(report.xbutton.y);
 
 				t_event_buttonPressed button_info; 
-				/* t_event_buttonPressed is used as a structure for storing information about a	   *
-				 * button press event. This information can be passed back to and used by a client *
-				 * program.																		   */
+				/* t_event_buttonPressed is used as a structure for storing information about a	  *
+				 * button press event. This information can be passed back to and used by a client*
+				 * program.                                                                      */
 				x11_handle_button_info(&button_info, report.xbutton.button, report.xbutton.state);
 #ifdef VERBOSE
 				if (button_info.shift_pressed == true) {
@@ -3666,10 +3693,12 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 					panning_on(report.xbutton.x, report.xbutton.y);
 					break;
 				case Button4:  /* Scroll wheel rotated forward; screen does zoom_in */
-					handle_zoom_in(x, y, drawscreen); // note, this is also called in the skipping logic
+					// note, this is also called in the skipping logic
+					handle_zoom_in(x, y, drawscreen);
 					break;
 				case Button5:  /* Scroll wheel rotated backward; screen does zoom_out */
-					handle_zoom_out(x, y, drawscreen); // note, this is also called in the skipping logic
+					// note, this is also called in the skipping logic
+					handle_zoom_out(x, y, drawscreen);
 					break;
 				}
 			} 
@@ -3883,10 +3912,13 @@ static void x11_drawbut (int bnum)
 	
 	/* Draw background */
 	if (ispressed) {
-		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[DARKGREY].as_rgb_int());
-	}
-	else {
-		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[LIGHTGREY].as_rgb_int());
+		XSetForeground(x11_state.display, x11_state.gc_menus,
+			predef_colors[DARKGREY].as_rgb_int()
+		);
+	} else {
+		XSetForeground(x11_state.display, x11_state.gc_menus,
+			predef_colors[LIGHTGREY].as_rgb_int()
+		);
 	}
 	
 	/* Give x,y of top corner and width and height */
@@ -3899,17 +3931,24 @@ static void x11_drawbut (int bnum)
 			mypoly[i].x = button_state.button[bnum].poly[i][0];
 			mypoly[i].y = button_state.button[bnum].poly[i][1];
 		}
-		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
+		XSetForeground(x11_state.display, x11_state.gc_menus,
+			predef_colors[BLACK].as_rgb_int()
+		);
 		XFillPolygon(x11_state.display,button_state.button[bnum].win,
 					 x11_state.gc_menus,mypoly,3,Convex,CoordModeOrigin);
 	}
 	
 	/* Draw text, if there is any */
 	if (button_state.button[bnum].type == BUTTON_TEXT) {
-		if (button_state.button[bnum].enabled)
-			XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
-		else
-			XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[DARKGREY].as_rgb_int());
+		if (button_state.button[bnum].enabled) {
+			XSetForeground(x11_state.display, x11_state.gc_menus,
+				predef_colors[BLACK].as_rgb_int()
+			);
+		} else {
+			XSetForeground(x11_state.display, x11_state.gc_menus,
+				predef_colors[DARKGREY].as_rgb_int()
+			);
+		}
 		menutext(button_state.button[bnum].draw,button_state.button[bnum].width/2,
 			button_state.button[bnum].height/2,button_state.button[bnum].text);
 	}

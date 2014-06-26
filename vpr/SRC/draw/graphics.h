@@ -53,7 +53,7 @@ struct t_point {
 	void set(const t_point& src);
 
 	/**
-	 * beahves like a 2 argument plusequals.
+	 * Behaves like a 2 argument plusequals.
 	 */
 	void offset(float x, float y);
 	
@@ -84,10 +84,10 @@ struct t_point {
 t_point operator*(float lhs, const t_point& rhs);
 
 /**
- * represents a rectangle, used as a bounding box.
+ * Represents a rectangle, used as a bounding box.
  */
-struct t_bound_box {
-
+class t_bound_box {
+public:
 	/**
 	 * These return their respective edge/point's location
 	 */
@@ -106,14 +106,15 @@ struct t_bound_box {
 	t_point& top_right();
 
 	/**
-	 * calculate and return the center
+	 * Calculate and return the center
 	 */
 	float get_xcenter() const;
 	float get_ycenter() const;
 	t_point get_center() const;
 
 	/**
-	 * calculate and return the width/height
+	 * Calculate and return the width/height
+	 * ie. right/top - left/bottom respectively.
 	 */
 	float get_width() const;
 	float get_height() const;
@@ -125,9 +126,16 @@ struct t_bound_box {
 	void offset(const t_point& make_relative_to);
 	void offset(float by_x, float by_y);
 
+	/**
+	 * Does the given point coinside with this bbox?
+	 * Points on the edges or corners are included.
+	 */
 	bool intersects(const t_point& test_pt) const;
 	bool intersects(float x, float y) const;
 
+	/**
+	 * Calculate and return the area of this rectangle.
+	 */
 	float area() const;
 
 	/**
@@ -158,6 +166,10 @@ private:
 	t_point topright;
 };
 
+/**
+ * A datatype that holds an RGB triplet, used in this
+ * graphics library for specifying and holding colours.
+ */
 struct t_color {
 	uint_fast8_t red;
 	uint_fast8_t green;
@@ -171,7 +183,10 @@ struct t_color {
 
 	unsigned long as_rgb_int() const;
 
-	// (temporary?)
+	/*
+	 * Some useful functions for working with indexed colour,
+	 * but not much else.
+	 */
 	t_color(color_types src);
 	color_types operator=(color_types color_enum);
 	bool operator== (color_types rhs) const;
@@ -350,8 +365,8 @@ void fillellipticarc (float xc, float yc, float radx, float rady, float startang
  * The text is drawn centred around the point (xc,yc), text_center, or
  * in the case of drawtext_in, the centre of the bbox parameter. 
  *
- * boundx and boundy specify the width and height bound, respectively, wheras
- * bounds and bbox specifiy a box in which the text must fit inside completely.
+ * boundx and boundy specify the width and height bound, respectively, whereas
+ * bounds and bbox specify a box in which the text must fit inside completely.
  *
  * If you would like to have these functions ignore a particular bound,
  * specify a huge value. I recommend FLT_MAX or std::numeric_limits<float>::max()
@@ -361,6 +376,15 @@ void fillellipticarc (float xc, float yc, float radx, float rady, float startang
  *
  * tolerance, effectively, makes the given bounding box bigger, on
  * all sides by that amount.
+ *
+ * Finally, it should be noted that bounding is done based on the dimensions of 
+ * the final bounding rectangle of the actual rendered text, so the content _will_
+ * affect the height (and/or width with rotated text), and therefore the bounding.
+ * If you would like to hide text based on zoomlevel and fontsize directly, use 
+ * the Level Of Detail functions for this.
+ *
+ * Oh, and one more thing, if you would like aligned baselines, see comments in 
+ * drawtext(..) in graphics.c
  */
 void drawtext_in (const t_bound_box& bbox, const char* text);
 void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance);
