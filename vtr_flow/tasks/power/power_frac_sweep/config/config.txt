@@ -2,7 +2,7 @@
 # Configuration file for running experiments
 ##############################################
 
-script_params=-power -vpr_route_chan_width 200
+script_params=-power
 
 cmos_tech_behavior=PTM_45nm/45nm.xml
 
