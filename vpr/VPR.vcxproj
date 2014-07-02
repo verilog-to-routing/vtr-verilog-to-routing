@@ -222,6 +222,7 @@
     <ClCompile Include="SRC\power\power_lowlevel.c" />
     <ClCompile Include="SRC\power\power_sizing.c" />
     <ClCompile Include="SRC\power\power_util.c" />
+    <ClCompile Include="SRC\route\cb_metrics.c" />
     <ClCompile Include="SRC\timing\read_sdc.c" />
     <ClCompile Include="SRC\timing\slre.c" />
     <ClCompile Include="SRC\util\hash.c" />
@@ -298,6 +299,7 @@
     <ClInclude Include="SRC\power\power_lowlevel.h" />
     <ClInclude Include="SRC\power\power_sizing.h" />
     <ClInclude Include="SRC\power\power_util.h" />
+    <ClInclude Include="SRC\route\cb_metrics.h" />
     <ClInclude Include="SRC\timing\net_delay.h" />
     <ClInclude Include="SRC\timing\path_delay.h" />
     <ClInclude Include="SRC\timing\path_delay2.h" />

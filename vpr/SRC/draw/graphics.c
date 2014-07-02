@@ -203,6 +203,7 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <sys/timeb.h>
 #include "graphics.h"
 using namespace std;
 
@@ -772,7 +773,7 @@ static void win32_invalidate_screen();
 static void win32_reset_state ();
 static void win32_drain_message_queue ();
 
-static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam);
+static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam, bool draw_screen);
 static void win32_handle_button_info (t_event_buttonPressed &button_info, UINT message, 
 									  WPARAM wParam);
 
@@ -1616,6 +1617,26 @@ update_ps_transform (void)
 	}
 }
 
+bool is_droppable_event(
+	#ifdef X11
+		XEvent* event
+	#elif WIN32
+		MSG* message
+	#endif
+	) {
+	#ifdef X11
+		return
+		event->type == MotionNotify || (
+			event->type == ButtonPress && (
+				event->xbutton.button == Button4 ||
+				event->xbutton.button == Button5
+			)
+		);
+	#elif WIN32
+		return message->message == WM_MOUSEWHEEL
+		||     message->message == WM_MOUSEMOVE;
+	#endif
+}
 
 /* The program's main event loop.  Must be passed a user routine        
 * drawscreen which redraws the screen.  It handles all window resizing 
@@ -1648,10 +1669,38 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 	
 	win32_invalidate_screen();
 	
+	// timout timer, for event loop. Supposed to be 2 seconds, but isn't?
+	// UINT_PTR timeout_timer = SetTimer(NULL, NULL, 2000, NULL);
+	bool dropped_something = false;
+
+	// Windows event dropping explanation:
+	// like X11, it will drop events which match is_droppable_event(...), and
+	// are followed by another event which matches is_droppable_event(...).
+	// However, there is no way to sync events with the system; no way to make
+	// sure that this application has all pending events in it's queue to
+	// process. So, hopefully this doesn't cause any problems. Also, due to the
+	// fact that windows groups multiple fast scrolls into one message, there
+	// is logic in win32_handle_mousewheel_zooming to address this.
 	while(!gl_state.ProceedPressed && GetMessage(&msg, NULL, 0, 0)) {
-		//TranslateMessage(&msg);
+		TranslateMessage(&msg);
 		if (msg.message == WM_CHAR) { // only the top window can get keyboard events
 			msg.hwnd = win32_state.hMainWnd;
+		}
+		if (is_droppable_event(&msg)) {
+			MSG next_msg;
+			if (PeekMessage(&next_msg, NULL, 0, 0, PM_NOREMOVE)) {
+				// if the current event is droppable, check if
+				// if the next event is droppable.
+				if (is_droppable_event(&next_msg)) {
+					// if both droppable, skip the event.
+					if (msg.message == WM_MOUSEWHEEL) {
+						// if dropping scroll event, do the scroll, but don't redraw.
+						win32_handle_mousewheel_zooming(msg.wParam, msg.lParam, false);
+					}
+					dropped_something = true;
+					continue;
+				}
+			}
 		}
 		DispatchMessage(&msg);
 	}
@@ -3578,16 +3627,6 @@ static void x11_init_graphics (const char *window_name, int cindex)
    force_settextattrs(gl_state.currentfontsize, gl_state.currentfontrotation);
 }
 
-bool is_droppable_event(XEvent* event) {
-	return
-	event->type == MotionNotify || (
-		event->type == ButtonPress && (
-			event->xbutton.button == Button4 ||
-			event->xbutton.button == Button5
-		)
-	);
-}
-
 /* Helper function called by event_loop(). Not visible to client program. */
 static void 
 x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed button_info),
@@ -3606,6 +3645,14 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 	x11_turn_on_off (ON);
 	while (true) {
 
+		// X11 event dropping explanation:
+		// this will drop events which match is_droppable_event(...), and are
+		// followed by another event which matches is_droppable_event(...).
+		// There are appropriate calls to XSync to make sure that this application
+		// has all of it's pending events in it's queue. In X11, scrolls are
+		// like button presses - they have press *and release* events. There is
+		// logic to ignore the release event in the case where it's already dropped
+		// the press one.
 		XSync(x11_state.display, false);
 		XNextEvent (x11_state.display, &report);
 		if (is_droppable_event(&report) && XQLength(x11_state.display) > 0) {
@@ -3616,11 +3663,12 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 			// in the queue, check to see if the next event is droppable too.
 			XEvent next_event;
 			XPeekEvent(x11_state.display, &next_event);
+			// if the next event is a matching ButtonRelease, then drop
+			// it too, but only if the queue has more events still.
 			if (next_event.type == ButtonRelease 
 				&& next_event.xbutton.button == last_skipped_button_press_button
 				&& XQLength(x11_state.display) > 1) {
-				// if the next event is a matching ButtonRelease, then drop
-				// it too, but only if the queue has more events still.
+
 				XSync(x11_state.display, false);
 				XNextEvent(x11_state.display, &next_event);
 				XPeekEvent(x11_state.display, &next_event);
@@ -4234,8 +4282,11 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			t_event_buttonPressed button_info;
 			win32_handle_button_info(button_info, message, wParam);
 
-			win32_handle_mousewheel_zooming(wParam, lParam);
+			win32_handle_mousewheel_zooming(wParam, lParam, true);
 			return 0;
+		case WM_TIMER:
+			win32_drawscreen_ptr();
+			// fall out.
 	}
 	
 	return DefWindowProc(hwnd, message, wParam, lParam);
@@ -4780,8 +4831,7 @@ static void win32_drain_message_queue () {
 }
 
 
-static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam) 
-{
+static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam, bool draw_screen) {
 	// zDelta indicates the distance which the mouse wheel is rotated. 
 	// The value for zDelta is a multiple of WHEEL_DELTA, which is 120.
 	// WHEEL_DELTA is the value for scrolling the mouse wheel by one increment.
@@ -4803,16 +4853,17 @@ static void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam)
 	mousePos.y = GET_Y_LPARAM(lParam);
 	ScreenToClient(win32_state.hMainWnd, &mousePos);
 
-	int i;
-	for (i=0; i<roll_detent; i++) {
+
+	for (int i = 1; i <= roll_detent; i++) {
 		// Positive value for zDelta indicates that the wheel was rotated forward, which
 		// will trigger zoom_in. Otherwise, zoom_out is called.
+		// Also, only redraw the screen on the last one.
 		if (zDelta > 0)
 			handle_zoom_in(xscrn_to_world(mousePos.x), yscrn_to_world(mousePos.y), 
-									win32_drawscreen_ptr);
+				(draw_screen && (i == roll_detent)) ? win32_drawscreen_ptr : NULL);
 		else
 			handle_zoom_out(xscrn_to_world(mousePos.x), yscrn_to_world(mousePos.y), 
-									win32_drawscreen_ptr);
+				(draw_screen && (i == roll_detent)) ? win32_drawscreen_ptr : NULL);
 	}
 }
 

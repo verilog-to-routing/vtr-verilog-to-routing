@@ -294,6 +294,9 @@
     <ClCompile Include="SRC\draw\draw_types.c">
       <Filter>Source Files\draw</Filter>
     </ClCompile>
+    <ClCompile Include="SRC\route\cb_metrics.c">
+      <Filter>Source Files\route</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SRC\base\check_netlist.h">
@@ -520,6 +523,9 @@
     </ClInclude>
     <ClInclude Include="SRC\base\rr_node.h">
       <Filter>Header Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="SRC\route\cb_metrics.h">
+      <Filter>Header Files\route</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
