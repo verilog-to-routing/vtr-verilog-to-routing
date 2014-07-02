@@ -18,6 +18,7 @@ using namespace std;
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "cb_metrics.h"
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 #include "rr_graph_multi.h"
@@ -416,12 +417,29 @@ void build_rr_graph(
 	int ******opin_to_track_map = NULL; /* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 
 	if (BI_DIRECTIONAL == directionality) {
+		bool test_metrics = false;
 		opin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
 		for (int i = 0; i < L_num_types; ++i) {
 			boolean perturb_opins = get_perturb_opins(&types[i], Fc_out[i], 
 					max_chan_width,	num_seg_types, segment_inf);
 			opin_to_track_map[i] = alloc_and_load_pin_to_track_map(DRIVER,
 					nodes_per_chan, Fc_out[i], &types[i], perturb_opins, directionality);
+
+			/* adjust CLB connection block, if enabled */
+			if (strcmp("clb", types[i].name) == 0 && test_metrics){
+				//TODO: figure out current seed, set seed to 1, and then set to current seed afterwards
+				float target_metric;
+				target_metric = 6;
+
+				adjust_cb_metric(WIRE_HOMOGENEITY, target_metric, 0.005, 0.05, &types[i], opin_to_track_map[i], DRIVER, Fc_out[i], nodes_per_chan,
+					num_seg_types, segment_inf);
+
+				Conn_Block_Metrics cb_metrics;
+				get_conn_block_metrics(&types[i], opin_to_track_map[i], num_seg_types, segment_inf, DRIVER, Fc_out[i], nodes_per_chan, &cb_metrics);
+				vpr_printf_info("Block Type: %s   Pin Diversity: %f   Wire Homogeneity: %f   Hamming Distance: %f  Hamming Proximity: %f\n",
+					types[i].name, cb_metrics.pin_diversity, cb_metrics.wire_homogeneity,
+					cb_metrics.lemieux_cost_func, cb_metrics.hamming_proximity);
+			}
 		} 
 	}
 	/* END OPINP MAP */
