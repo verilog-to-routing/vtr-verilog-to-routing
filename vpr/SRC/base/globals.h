@@ -139,12 +139,6 @@ extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest in
  ********************************************************************/
 extern t_clock_arch * g_clock_arch;
 
-/*******************************************************************
- Miscellaneous
- ********************************************************************/
-extern int initial_seed;
-
-
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 /******************************************************************
