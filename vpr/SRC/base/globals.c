@@ -6,9 +6,6 @@
 
 
 /******** General global variables ********/
-int Fs_seed = -1;
-
-int W_seed = -1;
 int binary_search = -1;
 
 float grid_logic_tile_area = 0;

@@ -701,6 +701,12 @@ void my_srandom(int seed) {
 	current_random = (unsigned int) seed;
 }
 
+/* returns the current_random value */
+unsigned int get_current_random(){
+	unsigned int result = current_random;
+	return current_random;
+}
+
 int my_irand(int imax) {
 
 	/* Creates a random integer between 0 and imax, inclusive.  i.e. [0..imax] */

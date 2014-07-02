@@ -427,10 +427,15 @@ void build_rr_graph(
 
 			/* adjust CLB connection block, if enabled */
 			if (strcmp("clb", types[i].name) == 0 && test_metrics){
-				//TODO: figure out current seed, set seed to 1, and then set to current seed afterwards
 				float target_metric;
-				target_metric = 6;
+				target_metric = 1;
 
+				/* during binary search routing we want the connection block (CB) to be deterministic. That is, 
+				   if we calculate a CB, check other CBs for other values of W, and then come back to that 
+				   CB, that CB should be the same as before, otherwise we get connectivity errors. So to achieve this determinism
+				   we save (and later restore) the current seed, and just use a seed of 1 for generating the connection block */
+				unsigned int saved_seed = get_current_random();
+				my_srandom(1);
 				adjust_cb_metric(WIRE_HOMOGENEITY, target_metric, 0.005, 0.05, &types[i], opin_to_track_map[i], DRIVER, Fc_out[i], nodes_per_chan,
 					num_seg_types, segment_inf);
 
@@ -439,6 +444,8 @@ void build_rr_graph(
 				vpr_printf_info("Block Type: %s   Pin Diversity: %f   Wire Homogeneity: %f   Hamming Distance: %f  Hamming Proximity: %f\n",
 					types[i].name, cb_metrics.pin_diversity, cb_metrics.wire_homogeneity,
 					cb_metrics.lemieux_cost_func, cb_metrics.hamming_proximity);
+				
+				my_srandom(saved_seed);			
 			}
 		} 
 	}

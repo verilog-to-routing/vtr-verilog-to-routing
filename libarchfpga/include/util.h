@@ -162,6 +162,7 @@ boolean check_file_name_extension(INP const char* file_name,
 
 /*********************** Portable random number generators *******************/
 void my_srandom(int seed);
+unsigned int get_current_random();
 int my_irand(int imax);
 float my_frand(void);
 
