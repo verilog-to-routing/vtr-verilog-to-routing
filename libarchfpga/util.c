@@ -704,7 +704,7 @@ void my_srandom(int seed) {
 /* returns the current_random value */
 unsigned int get_current_random(){
 	unsigned int result = current_random;
-	return current_random;
+	return result;
 }
 
 int my_irand(int imax) {

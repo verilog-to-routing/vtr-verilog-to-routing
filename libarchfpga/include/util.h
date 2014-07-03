@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
-#include <map>
-#include <set>
+//#include <map>
+//#include <set>
 
 #include "TIO_PrintHandlerExtern.h"
 
@@ -202,29 +202,4 @@ t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, 
 void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
 void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
 
-/*********************** Utilities for working with STL types ***************************************/
-/* a generic function for determining if a given map key exists */
-template< typename F, typename T > bool map_has_key( INP F key, INP std::map< F, T > *my_map ){
-	bool exists;
-	typename std::map< F, T >::const_iterator it = my_map->find(key);
-	if (my_map->end() != it){
-		exists = true;
-	} else {
-		exists = false;
-	}
-
-	return exists;
-}
-
-/* a generic function for determining if a given set element exists */
-template< typename T > bool set_has_element( INP T elem, INP std::set< T > *my_set ){
-	bool exists;
-	typename std::set< T >::const_iterator it = my_set->find(elem);
-	if (my_set->end() != it){
-		exists = true;
-	} else {
-		exists = false;
-	}
-	return exists;
-} 
 #endif

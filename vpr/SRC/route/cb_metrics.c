@@ -18,6 +18,30 @@
 
 using namespace std;
 
+/* a generic function for determining if a given map key exists */
+template< typename F, typename T > bool map_has_key( INP F key, INP std::map< F, T > *my_map ){
+	bool exists;
+	typename std::map< F, T >::const_iterator it = my_map->find(key);
+	if (my_map->end() != it){
+		exists = true;
+	} else {
+		exists = false;
+	}
+
+	return exists;
+}
+
+/* a generic function for determining if a given set element exists */
+template< typename T > bool set_has_element( INP T elem, INP std::set< T > *my_set ){
+	bool exists;
+	typename std::set< T >::const_iterator it = my_set->find(elem);
+	if (my_set->end() != it){
+		exists = true;
+	} else {
+		exists = false;
+	}
+	return exists;
+} 
 
 
 /**** Function Declarations ****/
