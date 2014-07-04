@@ -1616,14 +1616,10 @@ static void update_connection_gain_values(int inet, int clustered_block,
 				
 				if (num_internal_connections > 1) {
 					cur_pb->pb_stats->connectiongain[iblk] -= 1
-							/ (float) (g_atoms_nlist.net[inet].pins.size()
-									- (num_internal_connections - 1)
-									+ num_stuck_connections);
+							/ (float) (num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
 				}
 				cur_pb->pb_stats->connectiongain[iblk] += 1
-						/ (float) (g_atoms_nlist.net[inet].pins.size()
-								- num_internal_connections
-								+ num_stuck_connections);
+						/ (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1);
 			}
 		}
 	}
@@ -1639,14 +1635,10 @@ static void update_connection_gain_values(int inet, int clustered_block,
 			}
 			if (num_internal_connections > 1) {
 				cur_pb->pb_stats->connectiongain[iblk] -= 1
-						/ (float) (g_atoms_nlist.net[inet].pins.size()
-								- (num_internal_connections - 1)
-								+ num_stuck_connections);
+						/ (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
 			}
 			cur_pb->pb_stats->connectiongain[iblk] += 1
-					/ (float) (g_atoms_nlist.net[inet].pins.size()
-							- num_internal_connections
-							+ num_stuck_connections);
+					/ (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1);
 		}
 	}
 }
