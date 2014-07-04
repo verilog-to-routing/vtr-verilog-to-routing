@@ -301,7 +301,7 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 	}
 
 	/* get the number of block pins that are of pin_type */
-	int num_pin_type_pins;
+	int num_pin_type_pins = UNDEFINED; 
 	if (DRIVER == pin_type){
 		num_pin_type_pins = block_type->num_drivers;
 	} else if (RECEIVER == pin_type){
