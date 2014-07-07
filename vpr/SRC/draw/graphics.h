@@ -217,33 +217,35 @@ void event_loop (void (*act_on_mousebutton) (float x, float y, t_event_buttonPre
 			void (*act_on_keypress) (char key_pressed),
 			void (*drawscreen) (void));  
 
-/* Opens up the graphics; the window will have window_name in its
- * title bar and the specified background colour.
+/* Opens up the graphics; the window will have the UTF-8 string window_name
+ * in its title bar and have the specified background colour.
  * Known bug:  can't re-open graphics after closing them.
  */
 void init_graphics (const char *window_name, int cindex_background);
+void init_graphics (const char *window_name, const t_color& background);
 
 /* Sets world coordinates of the graphics window so that the 
- * upper-left corner has virtual coordinate (xl, yt) and the
- * bottom-right corner has virtual coordinate (xr, yb). 
+ * lower-left corner has world coordinate (xl, yb) and the
+ * top-right corner has world coordinate (xr, yt).
  * Call this function before you call event_loop. Do not call it 
  * in your drawscreen () callback function, since it will undo any
  * panning or zooming the user has done.
  */
-void init_world (float xl, float yt, float xr, float yb); 
+void init_world(const t_bound_box& bounds);
+void init_world (float xl, float yb, float xr, float yt);
 
 /* Closes the graphics */
 void close_graphics (void);
 
-/* Changes the status bar message to msg. */
+/* Changes the status bar message to the UTF-8 string msg. */
 void update_message (const char *msg);
 
-/* Creates a button on the menu bar below the button with text
- * prev_button_text.  The button will have text button_text,
- * and when clicked will call function button_func.  
+/* Creates a button on the menu bar below the button with text (UTF-8)
+ * prev_button_text.  The button will have text (UTF-8) button_text,
+ * and when clicked will call function button_func.
  * button_func is a function that accepts a void function as
  * an argument; this argument is set to the drawscreen routine
- * as passed into the event loop. 
+ * as passed into the event loop.
  */
 void create_button (const char *prev_button_text , const char *button_text, 
 			void (*button_func) (void (*drawscreen) (void))); 
@@ -262,6 +264,8 @@ void destroy_button (const char *button_text);
  * just click on the "PostScript" button though, and that button 
  * calls this routine and drawscreen to generate a postscript file
  * that exactly matches the graphics area display on the screen.
+ *
+ * Warning: not all UTF-8 filenames will work on Windows (this uses fopen)
  */
 int init_postscript (const char *fname);   /* Returns 1 if successful */
 
@@ -271,24 +275,29 @@ void close_postscript (void);
 
 /*************** DRAWING ROUTINES ******************/
 
+/****
+ * The following routines draw to either the window
+ * or postscript file, whichever one is active.
+ ****/
+
 /* Clears the screen. Should normally be the first call in your 
  * screen redrawing function.
  */
 void clearscreen (void);
 
-/* The following routines draw to SCREEN if disp_type = SCREEN 
- * and to a PostScript file if disp_type = POSTSCRIPT         
- */
-
 /**
- * Set the current draw colour to the supplied colour index from color_types
- * or the specified rgb colour or triplet
+ * Set the current draw colour to the supplied index colour from color_types,
+ * the specified t_colour, or rgb triplet. Affects all drawing functions, including text.
  */
 void setcolor (int cindex);
 void setcolor (const t_color& new_color);
 void setcolor (uint_fast8_t r, uint_fast8_t g, uint_fast8_t b);
 
-/* Set the color with a string instead of an enumerated constant */
+/**
+ * Set the color with a string instead of an enumerated constant.
+ * Colour names should be the same as their enum name, but all lower
+ * case, and still no spaces.
+ */
 void setcolor_by_name (std::string cname);
 
 /* Get the current color */
@@ -302,16 +311,22 @@ void setlinestyle (int linestyle);
  */
 void setlinewidth (int linewidth);
 
-/* Sets the font size, in points. 72 points is 1 inch high. I allow
- * fonts from 1 to 24 points in size; change MAX_FONT_SIZE if you want
- * bigger fonts still.
+/**
+ * Sets/gets the font size, in points. 72 points is 1 inch high.
+ *
+ * Having performance problems with lots of different text attribute combinations?
+ * See comments about the font cache in settextattrs(..)
  */
 void setfontsize (int pointsize);
+int getfontsize();
 
 /*
- * Set the rotation of text to be drawn. I recommend setting rotation
+ * Set/get the rotation of text to be drawn. I recommend setting rotation
  * back to zero once you are done drawing all rotated text, as most
  * text will not be rotated, and setting rotation there may have been omitted.
+ *
+ * Having performance problems with lots of different text attribute combinations?
+ * See comments about the font cache in settextattrs(..)
  */
 void settextrotation (float degrees);
 float gettextrotation();
@@ -320,21 +335,26 @@ float gettextrotation();
  * Set both the point size and rotation of the text in one call.
  * This should be more effecient then calling setfontsize() and settextrotation()
  * sepearatly, if that makes sense for your program.
+ *
+ * Also, If you plan on having many (ie > 40) nonzero rotation-pointsize, or
+ * zero rotation-pointsize, combinations of text visible at the same time, I
+ * recommend you look into changing the size of the font cache. See comments
+ * near FONT_CACHE_SIZE_FOR_ROTATED and FONT_CACHE_SIZE_FOR_ZEROS in graphics.c
  */
 void settextattrs (int pointsize, float degrees);
 
-/* Draws a line from (x1, y1) to (x2, y2) in world coordinates */
+/* Draws a line from p1 to p2 or (x1, y1) to (x2, y2) */
 void drawline (const t_point& p1, const t_point& p2);
 void drawline (float x1, float y1, float x2, float y2);
 
-/* Draws a rectangle from (x1, y1) to (x2, y2) in world coordinates, using
- * the current line style, colour and width.
+/* Draws the rectangle rect or a rectangle from bottomleft to upperright or (x1, y1) to (x2, y2)
+ * using the current line style, colour and width.
  */
 void drawrect (const t_bound_box& rect);
 void drawrect (const t_point& bottomleft, const t_point& upperright);
 void drawrect (float x1, float y1, float x2, float y2);
 
-/* Draws a filled rectangle with the specified corners, in world coordinates. */
+/* Draws a filled rectangle with the specified corners. */
 void fillrect (const t_bound_box& rect);
 void fillrect (const t_point& bottomleft, const t_point& upperright);
 void fillrect (float x1, float y1, float x2, float y2);
@@ -361,30 +381,43 @@ void fillellipticarc (t_point center, float radx, float rady, float startang, fl
 void fillellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
 
 /* 
- * These functions all draw text within some sort of bounding box.
+ * These functions all draw UTF-8 text within some sort of bounding box.
  * The text is drawn centred around the point (xc,yc), text_center, or
- * in the case of drawtext_in, the centre of the bbox parameter. 
+ * in the case of drawtext_in, the centre of the bbox parameter.
  *
- * boundx and boundy specify the width and height bound, respectively, whereas
+ * For debugging purposes, if you would like to see exactly where the
+ * bounds of the text are, its center, as what well as where boundx
+ * and boundy really extend to, define SHOW_TEXT_BBOX in your build,
+ * or uncomment it in drawtext(..) in graphics.c .
+ *
+ * - SPECIFIC PAREMETER SPECIFICATION:
+ * boundx and boundy specify a width and height bound, respectively, whereas
  * bounds and bbox specify a box in which the text must fit inside completely.
  *
  * If you would like to have these functions ignore a particular bound,
- * specify a huge value. I recommend FLT_MAX or std::numeric_limits<float>::max()
- * 
+ * specify a huge value. I recommend FLT_MAX or std::numeric_limits<float>::max(),
+ * from <cfloat> and <limits> respectively.
+ *
  * If text won't fit in bounds specified, the text isn't drawn.
  * Useful for avoiding text going everywhere at high zoom levels.
  *
  * tolerance, effectively, makes the given bounding box bigger, on
  * all sides by that amount.
  *
- * Finally, it should be noted that bounding is done based on the dimensions of 
+ * - NOTES:
+ * Finally, it should be noted that bounding is done based on the dimensions of
  * the final bounding rectangle of the actual rendered text, so the content _will_
- * affect the height (and/or width with rotated text), and therefore the bounding.
- * If you would like to hide text based on zoomlevel and fontsize directly, use 
+ * affect the height (and/or width with rotated text), therefore affecting the bounds.
+ * If you would like to hide text based on zoomlevel and fontsize directly, use
  * the Level Of Detail functions for this.
  *
- * Oh, and one more thing, if you would like aligned baselines, see comments in 
- * drawtext(..) in graphics.c
+ * As said before, these functions take UTF-8 encoded strings, so if you would like
+ * to use non-ASCII characters, make sure your font supports them. Also, note that
+ * those characters probably won't show up in postscript output, as postscript doesn't
+ * understand UTF-8. They will be present in the file, but won't be displayed.
+ *
+ * Oh, and one more thing, if you would like aligned baselines, see the large comment
+ * in drawtext(..) in graphics.c .
  */
 void drawtext_in (const t_bound_box& bbox, const char* text);
 void drawtext_in (const t_bound_box& bbox, const char* text, float tolerance);
@@ -406,7 +439,7 @@ void enable_or_disable_button (int ibutton, bool enabled);
 
 /* Normal users shouldn't have to use draw_message.  Should only be 
  * useful if using non-interactive graphics and you want to redraw  
- * yourself because of an expose.                                    i
+ * yourself because of an expose.
  */
 void draw_message (void);     
 
@@ -421,7 +454,8 @@ void flushinput (void);
 enum e_draw_mode {DRAW_NORMAL = 0, DRAW_XOR};
 void set_draw_mode (enum e_draw_mode draw_mode);
 
-/* Change the text on a button.
+/**
+ * Change the text on a button. Both strings are UTF-8.
  */
 void change_button_text(const char *button_text, const char *new_button_text);
 
@@ -437,6 +471,9 @@ void report_structure(t_report*);
 
 /**
  * Returns a rectangle with the bounds of the drawn world.
+ * Also useful for getting the currently visible rectangle,
+ * to manipulate it, or restore it later, by passing it back
+ * to init_world(..)
  */
 t_bound_box get_visible_world();
 

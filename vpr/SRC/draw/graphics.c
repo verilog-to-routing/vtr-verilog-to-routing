@@ -1,5 +1,5 @@
 /*                                                                         *
-* Easygl Version 2.1_alpha                                                 *
+* Easygl Version 3.0                                                       *
 * Written by Vaughn Betz at the University of Toronto, Department of       *
 * Electrical and Computer Engineering, with additions by Paul Leventis     *
 * and William Chow of Altera, Guy Lemieux of the University of Brish       *
@@ -12,18 +12,18 @@
 *                                                                          *
 * Revision History:                                                        *
 *                                                                          *
-* V2.1_alpha May 2014 - June 2014 (Matthew J.P. Walker)                    *
+* V3.0 May 2014 - June 2014 (Matthew J.P. Walker)                          *
 * - continued integration with c++                                         *
 * - added ybounding and convenience functions to text drawing              *
 * - added get_visible_world() - returns a rectangle describing the bounds  *
 *   of the visible world.                                                  *
-* - Panning in X11 will drop movement events instead of drawing all of     *
-*   them. Much more usable on large drawings now.                          *
+* - Panning and zooming will drop events instead of drawing all of them.   *
+*   Much more usable on large drawings now.                                *
 * - Added support for aribtrary RGB color triplets to X11, windows and ps. *
 * - Modernized X11 font handling and text drawing by converting it to Xft. *
-* - Added text rotation to X11, windows and postscript. Currently support  *
-*   only angles from 0-90 degrees properly. Other angles give platform     *
-*   dependent, strange behaviour.                                          *
+* - Added text rotation to X11, windows and postscript.                    *
+* - Changed font caching, removing font size limit.                        *
+* - Added unicode support in all text, via UTF-8.                          *
 *                                                                          *
 * V2.0.2 May 2013 - June 2013 (Mike Wang)                                  *
 * - In Win32, removed "Window" operation with right mouse click to align   *
@@ -203,6 +203,8 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <queue>
+#include <unordered_map>
 #include <sys/timeb.h>
 #include "graphics.h"
 using namespace std;
@@ -218,8 +220,29 @@ using namespace std;
 #define MWIDTH			104 /* Width of menu window */
 #define MENU_FONT_SIZE  11  /* Font for menus and dialog boxes. */
 #define T_AREA_HEIGHT	24  /* Height of text window */
-#define MAX_FONT_SIZE	24  /* Largest point size of text.   */
-                            // Some computers only have up to 24 point 
+
+/**
+ * Maximum sizes for the font cache. The "ZEROS" one is for fonts of zero rotation, and
+ * the "ROTATED" one is for fonts with other rotation. If you plan on rotating text to
+ * many rotations, say random ones, and displaying them all at the same time, I suggest
+ * something large for "ROTATED". The value of "ZEROS" is probably fine.
+ *
+ * What these values really mean to you is: because the text drawing is really lazy about
+ * loading fonts, the "ZEROS" should be at least how many font sizes you expect to be visible
+ * at a given time, and the "ROTATED" is for how many other different angle-fontsize combinations
+ * you expect to be visible at a given time. If you program remains within these limits, there
+ * will be no slow frames, except the first one where you change many visible combinations.
+ * For after this frame, the font cache has filled up with the fonts that are visible
+ *
+ * A quick experiment gave these results:
+ *    10 fonts =>     540 KiB
+ *   100 fonts =>   1.7   MiB
+ *  1000 fonts =>  13.5   Mib
+ * 10000 fonts => 132.4   Mib
+ */
+#define FONT_CACHE_SIZE_FOR_ZEROS 40
+#define FONT_CACHE_SIZE_FOR_ROTATED 40
+
 #define PI				3.141592654
 
 #define BUTTON_TEXT_LEN	100
@@ -252,6 +275,10 @@ using namespace std;
  *************************************************************/
 
 #pragma warning(disable : 4996)   // Turn off annoying warnings about strcmp.
+
+#ifndef UNICODE
+ #define UNICODE // force windows api into unicode (usually UTF-16) mode.
+#endif
 
 #include <windows.h>
 #include <WindowsX.h>
@@ -296,6 +323,8 @@ using namespace std;
  * gc_menus: Graphic context for drawing in the status message
  *			 and menu area
  * xft_menutextcolor: the XFT colour used for drawing button and menu text.
+ * xft_currentcolor: the XFT colour used for drawing normal text. Is kept in
+ *                   sync with gl_state.foreground_color
  */
 struct t_x11_state {
    Display *display;
@@ -304,6 +333,7 @@ struct t_x11_state {
    GC gc_normal, gc_xor, gc_menus, current_gc;
    XftDraw *toplevel_draw, *menu_draw, *textarea_draw;
    XftColor xft_menutextcolor;
+   XftColor xft_currentcolor;
    XVisualInfo visual_info;
    Colormap colormap_to_use;
 };
@@ -432,6 +462,67 @@ typedef struct {
 	int num_buttons;
 } t_button_state;
 
+/**
+ * This is a class that caches fonts. It separates out unrotated and rotated fonts,
+ * for the reason that the unrotated ones are used for bounds estimation anyway, as
+ * well as that they are generally convenient to have around. For each group, it uses
+ * a queue to keep track of the order of creation, and when a new font would put a
+ * cache over capacity, it deletes the oldest one first. The maps are to allow fast
+ * lookup of fonts from their size and rotation.
+ *
+ * This cache is also not very complicated, and it could be, if there were a good reason.
+ *
+ * Also note that no references retrieved from this cache should be retained, as
+ * another part of the program may cause the creation of another font(s) that will
+ * push yours out. Instead a font should be retrieved every time it is needed.
+ */
+class FontCache {
+public:
+	FontCache()
+		: order_zeros()
+		, descriptor2font_zeros()
+		, order_rotated()
+		, descriptor2font_rotated()
+	{ }
+
+	/**
+	 * Retrieve a font from this cache, or create it if it doesn't already exist,
+	 * pushing out, and deleting a font if the new font wont fit in its cache.
+	 * Gets a font from one of two caches depending on whether or not it is rotated.
+	 */
+	font_ptr get_font_info(size_t pointsize, float degrees);
+
+	/**
+	 * Clear out this cache so that it contains no fonts. This deletes all fonts,
+	 * as well, so make sure any fonts that were retrieved before cannot be referenced.
+	 */
+	void clear();
+private:
+	typedef std::pair<size_t,float> font_descriptor;
+	struct fontdesc_hasher {
+		inline std::size_t operator()(const font_descriptor& v) const {
+			std::hash<size_t> sizet_hasher;
+			std::hash<float> float_hasher;
+			return sizet_hasher(v.first) ^ float_hasher(v.second);
+		}
+	};
+	FontCache(const FontCache&);
+	FontCache& operator=(const FontCache&);
+
+	// this function actually does all the work of get_font_info, but only
+	// looks/creates in the given map and queue.
+	template<class queue_type, class map_type>
+	static font_ptr get_font_info(
+		size_t pointsize, float degrees,
+		queue_type& orderqueue, map_type& descr2font_map, size_t max_size);
+
+	// unrotated fonts (zero rotation)
+	std::deque<font_descriptor> order_zeros;
+	std::unordered_map<font_descriptor, font_ptr, fontdesc_hasher> descriptor2font_zeros;
+	// rotated fonts
+	std::deque<font_descriptor> order_rotated;
+	std::unordered_map<font_descriptor, font_ptr, fontdesc_hasher> descriptor2font_rotated;
+};
 
 /* Structure used to store overall graphics state variables.
  * initialized:  true if the graphics window & state have been
@@ -447,8 +538,7 @@ typedef struct {
  * ps: for PostScript output
  * ProceedPressed: whether the Proceed button has been pressed
  * statusMessage: user message to display
- * font_info: Data for each font size.
- * rotated_font: a pointer to the last set rotated font
+ * font_info: a font cache
  * get_keypress_input: whether keypresses are sent back to callback functions
  * get_mouse_move_input: whether mouse movements are sent back to callback functions
  *
@@ -471,15 +561,12 @@ struct t_gl_state {
    FILE *ps;
    bool ProceedPressed;
    char statusMessage[BUFSIZE];
-   font_ptr font_info[MAX_FONT_SIZE + 1];
-   font_ptr rotated_font;
-   font_ptr current_font;
+   FontCache font_info;
    bool get_keypress_input, get_mouse_move_input;
 	t_gl_state()
 		: initialized(false)
 		, disp_type(SCREEN)
 		, background_color(0xFF, 0xFF, 0xCC)
-		, rotated_font(NULL)
 	{ }
 };
 
@@ -545,11 +632,13 @@ static const vector<t_color> predef_colors = {
 	t_color(0x00, 0x00, 0x00),  // "black"
 	t_color(0x8C, 0x8C, 0x8C),  // "grey55"
 	t_color(0xBF, 0xBF, 0xBF),  // "grey75"
-	t_color(0x00, 0x00, 0xFF),  // "blue"
-	t_color(0x00, 0xFF, 0x00),  // "green"
-	t_color(0xFF, 0xFF, 0x00),  // "yellow"
-	t_color(0x00, 0xFF, 0xFF),  // "cyan"
 	t_color(0xFF, 0x00, 0x00),  // "red"
+	t_color(0xFF, 0xA5, 0x00),  // "orange"
+	t_color(0xFF, 0xFF, 0x00),  // "yellow"
+	t_color(0x00, 0xFF, 0x00),  // "green"
+	t_color(0x00, 0xFF, 0xFF),  // "cyan"
+	t_color(0x00, 0x00, 0xFF),  // "blue"
+	t_color(0xA0, 0x20, 0xF0),  // "purple"
 	t_color(0xFF, 0xC0, 0xCB),  // "pink"
 	t_color(0xFF, 0xB6, 0xC1),  // "lightpink"
 	t_color(0x00, 0x64, 0x00),  // "darkgreen"
@@ -564,7 +653,7 @@ static const vector<t_color> predef_colors = {
 	t_color(0x93, 0x70, 0xDB),  // "mediumpurple"
 	t_color(0x48, 0x3D, 0x8B),  // "darkslateblue"
 	t_color(0xBD, 0xB7, 0x6B),  // "darkkhaki"
-	t_color(0x44, 0x44, 0xFF),  // "lightmediumblue" (NON X11)
+	t_color(0x44, 0x44, 0xFF),  // "lightmediumblue"
 	t_color(0x8B, 0x45, 0x13),  // "saddlebrown"
 	t_color(0xB2, 0x22, 0x22),  // "firebrick"
 	t_color(0x32, 0xCD, 0x32)   // "limegreen"
@@ -578,11 +667,13 @@ static const char *ps_cnames[NUM_COLOR] = {
 	"black",
 	"grey55",
 	"grey75",
-	"blue",
-	"green",
-	"yellow",
-	"cyan",
 	"red",
+	"orange",
+	"yellow",
+	"green",
+	"cyan",
+	"blue",
+	"purple",
 	"pink",
 	"lightpink",
 	"darkgreen",
@@ -597,7 +688,7 @@ static const char *ps_cnames[NUM_COLOR] = {
 	"mediumpurple",
 	"darkslateblue",
 	"darkkhaki",
-	"lightmediumblue", // (NON X11)
+	"lightmediumblue", // (Non X11, but that won't be a problem)
 	"saddlebrown",
 	"firebrick",
 	"limegreen"
@@ -624,8 +715,8 @@ t_x11_state x11_state;
 static const int win32_line_styles[2] = { PS_SOLID, PS_DASH };
 
 /* Name of each window */
-static TCHAR szAppName[256], szGraphicsName[] = TEXT("VPR Graphics"), 
-			 szStatusName[] = TEXT("VPR Status"), szButtonsName[] = TEXT("VPR Buttons");
+static wchar_t szAppName[256], szGraphicsName[] = L"VPR Graphics",
+			 szStatusName[] = L"VPR Status", szButtonsName[] = L"VPR Buttons";
 
 /* Stores all state variables for Win32 */
 static t_win32_state win32_state = {false, WINDOW_DEACTIVATED, -1};
@@ -667,9 +758,8 @@ static void update_brushes();
 static void force_setlinestyle(int linestyle);
 static void force_setlinewidth(int linewidth);
 static void force_settextattrs(int pointsize, float degrees);
-static void load_font(int pointsize);
-static void load_font_into(int pointsize, float degrees,
-	font_ptr* put_font_ptr_here);
+static font_ptr do_font_loading(int pointsize, float degrees);
+static void close_font(font_ptr font);
 
 static void reset_common_state ();
 static void build_default_menu (void); 
@@ -701,12 +791,12 @@ static void unmap_button (int bnum);
  *****************************************************/
 
 /* Helper functions for X11; not visible to client program. */
-static void x11_init_graphics (const char* window_name, int cindex);
+static void x11_init_graphics (const char* window_name);
 static void x11_event_loop (void (*act_on_mousebutton)
 									(float x, float y, t_event_buttonPressed button_info),
 							void (*act_on_mousemove)(float x, float y), 
 							void (*act_on_keypress)(char key_pressed),
-							void (*drawscreen) (void)); 
+							void (*drawscreen) (void));
 
 static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, 
 							 XPointer dummy);
@@ -716,6 +806,7 @@ static int x11_which_button (Window win);
 
 static void x11_turn_on_off (int pressed);
 static void x11_drawmenu(void);
+static void menutext(XftDraw* draw, int xc, int yc, const char *text);
 
 static void x11_handle_expose (XEvent report, void (*drawscreen) (void));
 static void x11_handle_configure_notify (XEvent report);
@@ -731,7 +822,7 @@ static void x11_handle_button_info (t_event_buttonPressed *button_info,
  *******************************************************************/
 
 /* Helper function called by init_graphics(). Not visible to client program. */
-static void win32_init_graphics (const char* window_name, int cindex);
+static void win32_init_graphics (const char* window_name);
 
 /* Callback functions for the top-level window and 3 sub-windows.  
  * Windows uses an odd mix of events and callbacks, so it needs these.
@@ -972,6 +1063,18 @@ static void update_brushes() {
 			x11_state.current_gc,
 			gl_state.foreground_color.as_rgb_int()
 		);
+		XRenderColor xr_textcolor;
+		xr_textcolor.red   = (gl_state.foreground_color.red   << 8);
+		xr_textcolor.green = (gl_state.foreground_color.green << 8);
+		xr_textcolor.blue  = (gl_state.foreground_color.blue  << 8);
+		xr_textcolor.alpha = 0xffff;
+		XftColorAllocValue(
+			x11_state.display,
+			x11_state.visual_info.visual,
+			x11_state.colormap_to_use,
+			&xr_textcolor,
+			&x11_state.xft_currentcolor
+		);
 #else /* Win32 */
 		int win_linestyle, linewidth;
 		LOGBRUSH lb;
@@ -1190,55 +1293,23 @@ static void force_settextattrs(int pointsize, float degrees) {
 	
 	if (pointsize < 1) 
 		pointsize = 1;
-
-	if (pointsize > MAX_FONT_SIZE) 
-		pointsize = MAX_FONT_SIZE;
 	
 	gl_state.currentfontsize = pointsize;
 	gl_state.currentfontrotation = degrees;
 	
 	if (gl_state.disp_type == SCREEN) {
-		font_ptr font_to_use = NULL;
-		if (degrees == 0) {
-			load_font(pointsize);
-			font_to_use = gl_state.font_info[pointsize];
-		}
-		else {
-			if (gl_state.rotated_font != NULL) {
-				#ifdef X11
-					XftFontClose(x11_state.display, gl_state.rotated_font);
-				#elif WIN32
-					free(gl_state.rotated_font);
-				#endif
-			}
-			load_font_into(
-				pointsize,
-				degrees,
-				&gl_state.rotated_font
-			);
-
-			font_to_use = gl_state.rotated_font;
-		}
-		gl_state.current_font = font_to_use;
 		#ifdef WIN32
-			/* Delete previously used font */
-			if (!DeleteObject(win32_state.hGraphicsFont)) {
-				WIN32_DELETE_ERROR();
+			if (win32_state.hGraphicsFont != NULL) {
+				/* Delete previously used font */
+				if (!DeleteObject(win32_state.hGraphicsFont)) {
+					WIN32_DELETE_ERROR();
+				}
 			}
-			/* Create a new font */
-			win32_state.hGraphicsFont = CreateFontIndirect(font_to_use);
-
-			if (!win32_state.hGraphicsFont) {
-				WIN32_CREATE_ERROR();
-			}
-			/* Select created font into specified device context */
-			if (!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsFont)) {
-				WIN32_SELECT_ERROR();
-			}
+			win32_state.hGraphicsFont = NULL; // expected by drawtext(..)
 		#endif
 	} else {
 		fprintf(gl_state.ps,"%d setfontsize\n",pointsize);
-	} 
+	}
 }
 
 
@@ -1252,6 +1323,8 @@ void setfontsize(int pointsize) {
 		force_settextattrs(pointsize, gl_state.currentfontrotation);
 	}
 }
+
+int getfontsize() { return gl_state.currentfontsize; }
 
 void settextrotation(float degrees) {
 	if (degrees != gl_state.currentfontrotation) {
@@ -1313,9 +1386,12 @@ static void map_button (int bnum)
 			x11_state.colormap_to_use
 		);
 #else
-		button_state.button[bnum].hwnd = CreateWindow(
-			TEXT("button"),
-			TEXT(button_state.button[bnum].text),
+		wchar_t* WIN32_wchar_button_text = new wchar_t[BUTTON_TEXT_LEN];
+			MultiByteToWideChar(CP_UTF8, 0, button_state.button[bnum].text, -1,
+				WIN32_wchar_button_text, BUTTON_TEXT_LEN);
+		button_state.button[bnum].hwnd = CreateWindowW(
+			L"button",
+			WIN32_wchar_button_text,
 			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 			button_state.button[bnum].xleft,
 			button_state.button[bnum].ytop,
@@ -1325,6 +1401,8 @@ static void map_button (int bnum)
 			(HINSTANCE) GetWindowLong(win32_state.hMainWnd, GWL_HINSTANCE),
 			NULL
 		);
+
+		delete[] WIN32_wchar_button_text;
 
 		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			WIN32_DRAW_ERROR();
@@ -1373,6 +1451,7 @@ void create_button (const char *prev_button_text , const char *button_text,
 {
 	int i, bnum, space, bheight;
 	t_button_type button_type = BUTTON_TEXT;
+
 	
 	space = 8;
 	
@@ -1436,7 +1515,7 @@ void create_button (const char *prev_button_text , const char *button_text,
 
 	button_state.num_buttons++;
 
-	for (i = 0; i<button_state.num_buttons;i++) 
+	for (; i < button_state.num_buttons; i++)
 		map_button (i);
 }
 
@@ -1495,18 +1574,22 @@ destroy_button (const char *button_text)
 void 
 init_graphics (const char *window_name, int cindex) 
 {
+	init_graphics(window_name, predef_colors[cindex]);
+}
+
+void init_graphics (const char *window_name, const t_color& background) {
    if (gl_state.initialized)  // Singleton graphics.
       return;
 
    reset_common_state ();
 
    gl_state.disp_type = SCREEN;
-   gl_state.background_color = predef_colors[cindex];
+   gl_state.background_color = background;
 
 #ifdef X11
-   x11_init_graphics (window_name, cindex);
+   x11_init_graphics (window_name);
 #else /* WIN32 */
-   win32_init_graphics (window_name, cindex);
+   win32_init_graphics (window_name);
 #endif
 
    gl_state.initialized = true;
@@ -1520,10 +1603,7 @@ static void reset_common_state () {
    gl_state.currentfontsize = 12;
    gl_state.currentfontrotation = 0;
    gl_state.current_draw_mode = DRAW_NORMAL;
-
-   for (int i=0;i<=MAX_FONT_SIZE;i++) 
-      gl_state.font_info[i] = NULL;     /* No fonts loaded yet. */
-
+   gl_state.font_info.clear();
    gl_state.ProceedPressed = false;
    gl_state.get_keypress_input = false;
    gl_state.get_mouse_move_input = false;
@@ -1767,16 +1847,16 @@ rect_off_screen (float x1, float y1, float x2, float y2)
 	return (0);
 }
 
-static int rect_off_screen(t_bound_box& bbox) {
+static int rect_off_screen(const t_bound_box& bbox) {
 	return rect_off_screen(bbox.left(), bbox.bottom(), bbox.right(), bbox.top());
 }
 
 t_bound_box get_visible_world() {
 	return t_bound_box(
-		min (trans_coord.xleft, trans_coord.xright),
-		min (trans_coord.ytop, trans_coord.ybot),
-		max (trans_coord.xleft, trans_coord.xright),
-		max (trans_coord.ytop, trans_coord.ybot)
+		trans_coord.xleft,
+		trans_coord.ybot,
+		trans_coord.xright,
+		trans_coord.ytop
 	);
 }
 
@@ -2251,20 +2331,118 @@ void drawtext (const t_point& text_center, const char *text, float boundx, float
 }
 
 /**
- * the real drawtext function
+ * the real drawtext function.
+ * First, using a non rotated font (probably already loaded), it conservatively checks
+ * if an approximation of the bbox is on the screen, and not to large for the given
+ * bound{x,y}. Then it loads the proper (possibly rotated) font, and checks the real
+ * bounds of the text and performs the same checks. Then it draws the text to the
+ * XftDraw (X11) or screen (WIN32)
  */
 void drawtext (float xc, float yc, const char *text, float boundx, float boundy) 
 {
-	int len, width, height;
+	int text_byte_length = strlen(text);
+	float angle = PI*gl_state.currentfontrotation/180;
+	float abscos = fabs(cos(angle));
+	float abssin = fabs(sin(angle));
+	#ifdef WIN32
+		wchar_t* WIN32_wchar_text = new wchar_t[text_byte_length+1];
+		size_t WIN32_wchar_text_len =
+			MultiByteToWideChar(CP_UTF8, 0, text, text_byte_length, WIN32_wchar_text, text_byte_length);
+		WIN32_wchar_text[text_byte_length] = 0;
+	#endif
+
+	// exit early (conservatively) to prevent filling the font cache with fonts not visible
+	if (rect_off_screen(t_bound_box(t_point(xc-boundx/2, yc-boundy/2), boundx, boundy))) {
+		// if the largest bbox the text could have is off the screen, don't even load the font.
+		return;
+	} else {
+		// approximate width & height and check against bound{x,y}
+		font_ptr zero_font = gl_state.font_info.get_font_info(gl_state.currentfontsize, 0);
 
 #ifdef X11
-	len = strlen(text);
+		XGlyphInfo zero_extents;
+		XftTextExtentsUtf8(
+			x11_state.display, zero_font, (const FcChar8*)text, text_byte_length, &zero_extents);
+		int zero_approx_height = zero_extents.height;
+		int zero_approx_width  = zero_extents.width;
+
+#elif WIN32
+		HFONT zero_hfont = CreateFontIndirect(zero_font);
+		if (!zero_hfont) {
+			WIN32_CREATE_ERROR();
+		}
+		// Select zero font into specified device context
+		if (!SelectObject(win32_state.hGraphicsDC, zero_hfont)) {
+			WIN32_SELECT_ERROR();
+		}
+
+		SIZE textsize;
+		if (!GetTextExtentPoint32W(
+				win32_state.hGraphicsDC,
+				WIN32_wchar_text,
+				WIN32_wchar_text_len,
+				&textsize)
+			) {
+			WIN32_DRAW_ERROR();
+		}
+
+		int zero_approx_width  = textsize.cx;
+		int zero_approx_height = textsize.cy;
+
+		// reselect normal font
+		if (win32_state.hGraphicsFont != NULL) {
+			if (!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsFont)) {
+				WIN32_SELECT_ERROR();
+			}
+		}
+
+		// eventhough it might be selected, we wont't be drawing with it, because
+		// the HFONT in wit32_state is NULL, so it will be set before something
+		// tries to draw text. Putting it in a later, more proper, place in this
+		// function causes an draw error on font cache cache overflow, for some reason.
+		if (zero_hfont != NULL) {
+			if (!DeleteObject(zero_hfont)) {
+				WIN32_DELETE_ERROR();
+			}
+		}
+#endif
+		// conservatively check if the bbox is to large
+		if (
+			fabs(0.9*
+				(abssin*zero_approx_width + abscos*zero_approx_height)*trans_coord.stow_ymult
+			) > boundy ||
+			fabs(0.9*
+				(abscos*zero_approx_width + abssin*zero_approx_height)*trans_coord.stow_xmult
+			) > boundx) {
+
+			return;
+		}
+	}
+
+	int width, height;
+	font_ptr current_font = gl_state.font_info.get_font_info(
+		gl_state.currentfontsize,
+		gl_state.currentfontrotation
+	);
+#ifdef X11
 	XGlyphInfo extents;
-	XftTextExtentsUtf8(x11_state.display, gl_state.current_font, (const FcChar8*)text, len, &extents);
+	XftTextExtentsUtf8(x11_state.display, current_font, (const FcChar8*)text, text_byte_length, &extents);
 	width = extents.width;
 	height = extents.height;
 #else /* WC : WIN32 */
-	SIZE textsize;
+	if (win32_state.hGraphicsFont == NULL) {
+		// if the font isn't already created, create it.
+		// note: set to NULL by settextattrs(...) if something changed
+		win32_state.hGraphicsFont = CreateFontIndirect(current_font);
+
+		if (!win32_state.hGraphicsFont) {
+			WIN32_CREATE_ERROR();
+		}
+		// Select created font into specified device context
+		if (!SelectObject(win32_state.hGraphicsDC, win32_state.hGraphicsFont)) {
+			WIN32_SELECT_ERROR();
+		}
+	}
 
 	if (SetTextColor(
 			win32_state.hGraphicsDC,
@@ -2273,12 +2451,17 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 		WIN32_DRAW_ERROR();
 	}
 
-	len = strlen(text);
-	if (!GetTextExtentPoint32(win32_state.hGraphicsDC, text, len, &textsize))
+	SIZE textsize;
+
+	if (!GetTextExtentPoint32W(
+		win32_state.hGraphicsDC,
+		WIN32_wchar_text,
+		WIN32_wchar_text_len,
+		&textsize)
+		) {
 		WIN32_DRAW_ERROR();
-	float angle = PI*gl_state.currentfontrotation/180;
-	float abscos = fabs(cos(angle));
-	float abssin = fabs(sin(angle));
+	}
+
 	width  = textsize.cx*abscos + textsize.cy*abssin;
 	height = textsize.cx*abssin + textsize.cy*abscos;
 #endif	
@@ -2337,6 +2520,7 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 		return;
 	}
 
+	// #define SHOW_TEXT_BBOX // useful for debugging text placement.
 	#ifdef SHOW_TEXT_BBOX
 		drawrect(text_bbox);
 		t_color save = getcolor();
@@ -2359,13 +2543,13 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 #ifdef X11
 		XftDrawStringUtf8(
 			x11_state.toplevel_draw,
-			&x11_state.xft_menutextcolor,
-			gl_state.current_font,
+			&x11_state.xft_currentcolor,
+			current_font,
 			// more magic offsets
 			xworld_to_scrn(text_bbox.left()) + extents.x,
 			yworld_to_scrn(text_bbox.top()) + extents.y - extents.height,
 			(const FcChar8*)text,
-			len
+			text_byte_length
 		);
 #elif WIN32
 		float WIN_xtextoffset = 0;
@@ -2383,15 +2567,17 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 			WIN_xtextoffset = textsize.cy*abssin;
 		}
 		SetBkMode(win32_state.hGraphicsDC, TRANSPARENT);
-		if (TextOut(
+		if (TextOutW(
 			win32_state.hGraphicsDC,
 			xworld_to_scrn(text_bbox.left()) + WIN_xtextoffset,
 			yworld_to_scrn(text_bbox.bottom()) + WIN_ytextoffset, 
-			text,
-			len
+			WIN32_wchar_text,
+			WIN32_wchar_text_len
 		) == 0) {
 			WIN32_DRAW_ERROR();
 		}
+
+		delete[] WIN32_wchar_text;
 #endif
 	}
 	else {
@@ -2416,15 +2602,17 @@ flushinput (void)
 }
 
 
-void 
-init_world (float x1, float y1, float x2, float y2) 
-{
+void init_world(float left, float bottom, float right, float top) {
+	init_world(t_bound_box(left,bottom,right,top));
+}
+
+void init_world(const t_bound_box& bounds) {
 	/* Sets the coordinate system the user wants to draw into.          */
 	
-	trans_coord.xleft = x1;
-	trans_coord.xright = x2;
-	trans_coord.ytop = y1;
-	trans_coord.ybot = y2;
+	trans_coord.xleft = bounds.left();
+	trans_coord.xright = bounds.right();
+	trans_coord.ytop = bounds.top();
+	trans_coord.ybot = bounds.bottom();
 	
 	/* Save initial world coordinates to allow full view button
 	 * to zoom all the way out.
@@ -2450,23 +2638,11 @@ draw_message (void)
 	int savefontsize;
 	t_color savecolor;
 	float ylow;
-#ifdef X11
-	int len, width;
-#endif
 	
 	if (gl_state.disp_type == SCREEN) {
 #ifdef X11
 		XClearWindow(x11_state.display, x11_state.textarea);
-		len = strlen (gl_state.statusMessage);
-		XGlyphInfo extents;
-		XftTextExtentsUtf8(
-			x11_state.display,
-			gl_state.font_info[MENU_FONT_SIZE],
-			(const FcChar8*) gl_state.statusMessage,
-			len,
-			&extents
-		);
-		width = extents.width;
+
 		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 		XDrawRectangle(x11_state.display, x11_state.textarea, x11_state.gc_menus, 0, 0,
 						trans_coord.top_width - MWIDTH, T_AREA_HEIGHT);
@@ -2477,17 +2653,11 @@ draw_message (void)
 				  trans_coord.top_width-MWIDTH-1, 0, trans_coord.top_width-MWIDTH-1, 
 				  T_AREA_HEIGHT-1);
 		
-		XftDrawStringUtf8(
+		menutext(
 			x11_state.textarea_draw,
-			&x11_state.xft_menutextcolor,
-			gl_state.font_info[MENU_FONT_SIZE],
-			(trans_coord.top_width - MWIDTH - width) / 2,
-			T_AREA_HEIGHT / 2 + (
-				gl_state.font_info[MENU_FONT_SIZE]->ascent
-				- gl_state.font_info[MENU_FONT_SIZE]->descent
-			) / 2,
-			(const FcChar8*) gl_state.statusMessage,
-			len
+			(trans_coord.top_width - MWIDTH)/2,
+			T_AREA_HEIGHT / 2,
+			gl_state.statusMessage
 		);
 #else
 		if(!InvalidateRect(win32_state.hStatusWnd, NULL, TRUE))
@@ -2851,7 +3021,7 @@ postscript (void (*drawscreen) (void))
 	else {
 		printf ("Error initializing for postscript output.\n");
 #ifdef WIN32
-		MessageBox(win32_state.hMainWnd, "Error initializing postscript output.", NULL, MB_OK);
+		MessageBoxW(win32_state.hMainWnd, L"Error initializing postscript output.", NULL, MB_OK);
 #endif
 	}
 }
@@ -2860,6 +3030,7 @@ postscript (void (*drawscreen) (void))
 static void 
 proceed (void (*drawscreen) (void)) 
 {
+	(void)drawscreen; // suppress unused warning
 	gl_state.ProceedPressed = true;
 }
 
@@ -2867,6 +3038,7 @@ proceed (void (*drawscreen) (void))
 static void 
 quit (void (*drawscreen) (void)) 
 {
+	(void)drawscreen; // suppress unused warning
 	close_graphics();
 	exit(0);
 }
@@ -2880,25 +3052,15 @@ close_graphics (void)
 	if (!gl_state.initialized)
 		return;
 
-	if (gl_state.rotated_font != NULL) {
-		#ifdef X11
-			XftFontClose(x11_state.display, gl_state.rotated_font);
-		#elif WIN32
-			free(gl_state.rotated_font);
-		#endif
-	}
+	gl_state.font_info.clear();
 
-	for (int i = 0; i <= MAX_FONT_SIZE; i++) {
-		if (gl_state.font_info[i] != NULL) {
-			#ifdef X11
-				XftFontClose(x11_state.display, gl_state.font_info[i]);
-			#elif WIN32
-				free(gl_state.font_info[i]);
-			#endif
-			gl_state.font_info[i] = NULL;
-		}
+	for (int i = 0; i < button_state.num_buttons; ++i) {
+		unmap_button(i);
 	}
-	
+	free(button_state.button);
+	button_state.button = NULL;
+	button_state.num_buttons = 0;
+
 #ifdef X11
 	XFreeGC(x11_state.display,x11_state.gc_normal);
 	XFreeGC(x11_state.display,x11_state.gc_xor);
@@ -2921,20 +3083,17 @@ close_graphics (void)
    // for each of the four window types we created.  Otherwise a 
    // later call to init_graphics to open the graphics window up again
    // will fail.
-   if (!UnregisterClass (szAppName, GetModuleHandle(NULL)) )
-      WIN32_DRAW_ERROR();
-   if (!UnregisterClass (szGraphicsName, GetModuleHandle(NULL)) )
-      WIN32_DRAW_ERROR();
-   if (!UnregisterClass (szStatusName, GetModuleHandle(NULL)) )
-      WIN32_DRAW_ERROR();
-   if (!UnregisterClass (szButtonsName, GetModuleHandle(NULL)) )
-      WIN32_DRAW_ERROR();
+	if (!UnregisterClassW(szAppName, GetModuleHandle(NULL)) )
+		WIN32_DRAW_ERROR();
+	if (!UnregisterClassW(szGraphicsName, GetModuleHandle(NULL)) )
+		WIN32_DRAW_ERROR();
+	if (!UnregisterClassW(szStatusName, GetModuleHandle(NULL)) )
+		WIN32_DRAW_ERROR();
+	if (!UnregisterClassW(szButtonsName, GetModuleHandle(NULL)) )
+		WIN32_DRAW_ERROR();
 #endif
 
-   free(button_state.button);
-   button_state.button = NULL;
-
-   gl_state.initialized = false;
+	gl_state.initialized = false;
 }
 
 
@@ -3154,8 +3313,8 @@ build_default_menu (void)
 	setpoly (0, bwid/2, bwid/2, bwid/3, -PI/2.); /* Up */
 #else
 	button_state.button[0].type = BUTTON_TEXT;
-	strcpy(button_state.button[0].text, "U");
 #endif
+	strcpy(button_state.button[0].text, "U");
 	button_state.button[0].fcn = translate_up;
 	
 	y1 += bwid + space;
@@ -3166,8 +3325,8 @@ build_default_menu (void)
 	setpoly (1, bwid/2, bwid/2, bwid/3, PI);  /* Left */
 #else
 	button_state.button[1].type = BUTTON_TEXT;
-	strcpy(button_state.button[1].text, "L");
 #endif
+	strcpy(button_state.button[1].text, "L");
 	button_state.button[1].fcn = translate_left;
 	
 	x1 = xcen + bwid/2 + space;
@@ -3177,8 +3336,8 @@ build_default_menu (void)
 	setpoly (2, bwid/2, bwid/2, bwid/3, 0);  /* Right */
 #else
 	button_state.button[2].type = BUTTON_TEXT;
-	strcpy(button_state.button[2].text, "R");
 #endif
+	strcpy(button_state.button[2].text, "R");
 	button_state.button[2].fcn = translate_right;
 	
 	y1 += bwid + space;
@@ -3189,8 +3348,8 @@ build_default_menu (void)
 	setpoly (3, bwid/2, bwid/2, bwid/3, +PI/2.);  /* Down */
 #else
 	button_state.button[3].type = BUTTON_TEXT;
-	strcpy(button_state.button[3].text, "D");
 #endif
+	strcpy(button_state.button[3].text, "D");
 	button_state.button[3].fcn = translate_down;
 	
 	for (i = 0; i < NUM_ARROW_BUTTONS; i++) {
@@ -3222,7 +3381,7 @@ build_default_menu (void)
 			y1 += 2 + space;
 		}
 	}
-	
+
 	strcpy (button_state.button[4].text,"Zoom In");
 	strcpy (button_state.button[5].text,"Zoom Out");
 	strcpy (button_state.button[6].text,"Zoom Fit");
@@ -3254,37 +3413,14 @@ build_default_menu (void)
 #endif
 }
 
-
-/**
- * Loads a zero rotated font into the corrisponding display systems'
- * font array, if it is not already loaded. Note: pointsize must be
- * greater than 1 and less than MAX_FONT_SIZE.
- */
-static void
-load_font(int pointsize) {
-	if (pointsize > MAX_FONT_SIZE || pointsize < 1) {
-		printf("Error:  font size %d is out of valid range, 1 to %d.\n",
-			pointsize, MAX_FONT_SIZE);
-		return;
-	}
-
-	if (gl_state.font_info[pointsize] != NULL)  // Nothing to do.
-		return;
-
-	load_font_into(
-		pointsize,
-		0.0,
-		&gl_state.font_info[pointsize]
-	);
-}
-
 /**
  * Loads the font with given attributes, and puts the pointer to in in put_font_ptr_here
  */
-static void
-load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
+static font_ptr
+do_font_loading(int pointsize, float degrees) {
 
 	bool success = false;
+	font_ptr retval = NULL;
 
 #ifdef X11
 	for (int ifont = 0; ifont < NUM_FONT_TYPES; ifont++) {
@@ -3300,7 +3436,7 @@ load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
 		}
 
 		/* Load font and get font information structure. */
-		*put_font_ptr_here = XftFontOpen(
+		retval = XftFontOpen(
 			x11_state.display, x11_state.screen_num,
 			XFT_FAMILY, XftTypeString, fontname_config[ifont],
 			XFT_SIZE,   XftTypeDouble, (double)pointsize,
@@ -3308,7 +3444,7 @@ load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
 			NULL // (sentinel)
 		);
 
-		if (*put_font_ptr_here == NULL) {
+		if (retval == NULL) {
 			#ifdef VERBOSE
 				fprintf(stderr, "Cannot open font %s", fontname_config[ifont]);
 				if (degrees != 0) { fprintf(stderr, "with rotation %f deg", degrees); }
@@ -3327,7 +3463,7 @@ load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
 		exit(1);
 	}
 #elif WIN32
-	LOGFONT *lf = *put_font_ptr_here = (LOGFONT*)my_malloc(sizeof(LOGFONT));
+	LOGFONT *lf = retval = (LOGFONT*)my_malloc(sizeof(LOGFONT));
 	ZeroMemory(lf, sizeof(LOGFONT));
 	// lfHeight specifies the desired height of characters in logical units.
 	// A positive value of lfHeight will request a font that is appropriate
@@ -3345,7 +3481,8 @@ load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
 	lf->lfOrientation = degrees * 10;
 	HFONT testfont;
 	for (int ifont = 0; ifont < NUM_FONT_TYPES; ++ifont) {
-		strcpy(lf->lfFaceName, fontname_config[ifont]);
+		MultiByteToWideChar(CP_UTF8, 0, fontname_config[ifont], -1,
+			lf->lfFaceName, sizeof(lf->lfFaceName)/sizeof(wchar_t));
 
 		testfont = CreateFontIndirect(lf);
 		if(testfont == NULL) {
@@ -3370,9 +3507,16 @@ load_font_into(int pointsize, float degrees, font_ptr* put_font_ptr_here) {
 		exit(1);
 	}
 #endif
-
+	return retval;
 }
 
+static void close_font(font_ptr font) {
+	#ifdef X11
+		XftFontClose(x11_state.display, font);
+	#elif WIN32
+		free(font);
+	#endif
+}
 
 /* Return information useful for debugging.
  * Used to return the top-level window object too, but that made graphics.h
@@ -3464,8 +3608,84 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 #ifdef X11
 		x11_drawbut (i);
 #else // Win32
-		SetWindowText(button_state.button[bnum].hwnd, new_button_text);
+		wchar_t* WIN32_wchar_button_text = new wchar_t[BUTTON_TEXT_LEN];
+		MultiByteToWideChar(CP_UTF8, 0, new_button_text, -1,
+			WIN32_wchar_button_text, BUTTON_TEXT_LEN);
+
+		SetWindowTextW(button_state.button[bnum].hwnd, WIN32_wchar_button_text);
+
+		delete[] WIN32_wchar_button_text;
 #endif
+	}
+}
+
+/******************************************
+ * begin FontCache function definitions *
+ ******************************************/
+
+font_ptr FontCache::get_font_info(size_t pointsize, float degrees) {
+	if (degrees == 0) {
+		return get_font_info(
+			pointsize, degrees,
+			order_zeros, descriptor2font_zeros, FONT_CACHE_SIZE_FOR_ZEROS
+		);
+	} else {
+		return get_font_info(
+			pointsize, degrees,
+			order_rotated, descriptor2font_rotated, FONT_CACHE_SIZE_FOR_ROTATED
+		);
+	}
+}
+
+void FontCache::clear() {
+	for(
+		auto iter = descriptor2font_zeros.begin();
+		iter != descriptor2font_zeros.end();
+		++iter
+	) {
+		close_font(iter->second);
+	}
+	order_zeros.clear();
+	descriptor2font_zeros.clear();
+
+	for(
+		auto iter = descriptor2font_rotated.begin();
+		iter != descriptor2font_rotated.end();
+		++iter
+	) {
+		close_font(iter->second);
+	}
+	order_rotated.clear();
+	descriptor2font_rotated.clear();
+}
+
+template<class queue_type, class map_type>
+font_ptr FontCache::get_font_info(
+	size_t pointsize, float degrees,
+	queue_type& orderqueue, map_type& descr2font_map, size_t max_size) {
+
+	auto search_result = descr2font_map.find(std::make_pair(pointsize,degrees));
+	if (search_result == descr2font_map.end()) {
+
+		if (orderqueue.size() + 1 > max_size) {
+			// if too many fonts, remove the oldest font from the cache.
+			font_descriptor fontdesc_to_remove = orderqueue.back();
+			auto font_to_remove = descr2font_map.find(fontdesc_to_remove);
+
+			close_font(font_to_remove->second);
+
+			descr2font_map.erase(font_to_remove);
+			orderqueue.pop_back();
+			puts("font cache overflow");
+		}
+
+		font_ptr new_font = do_font_loading(pointsize, degrees);
+		font_descriptor new_font_desc = std::make_pair(pointsize,degrees);
+		orderqueue.push_front(new_font_desc);
+		descr2font_map.insert(std::make_pair(new_font_desc, new_font));
+		return new_font;
+	} else {
+		return search_result->second;
 	}
 }
 
@@ -3476,7 +3696,7 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 #ifdef X11
 
 /* Helper function called by init_graphics(). Not visible to client program. */
-static void x11_init_graphics (const char *window_name, int cindex)
+static void x11_init_graphics (const char *window_name)
 {
    char *display_name = NULL;
    int x, y;                       /* window position */
@@ -3537,7 +3757,7 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	XSetWindowAttributes attrs;
 	attrs.colormap = x11_state.colormap_to_use;
 	attrs.border_pixel = predef_colors[BLACK].as_rgb_int();
-	attrs.background_pixel = predef_colors[cindex].as_rgb_int();
+	attrs.background_pixel = gl_state.background_color.as_rgb_int();
 
 	x11_state.toplevel = XCreateWindow(
 		x11_state.display,
@@ -3583,12 +3803,9 @@ static void x11_init_graphics (const char *window_name, int cindex)
 	
    /* Create XOR graphics context for Rubber Banding */
    values.function = GXxor;   
-   values.foreground = predef_colors[cindex].as_rgb_int();
+   values.foreground = gl_state.background_color.as_rgb_int();
    x11_state.gc_xor = XCreateGC(x11_state.display, x11_state.toplevel, (GCFunction | GCForeground),
                      &values);
-	
-   /* specify font for menus.  */
-   load_font(MENU_FONT_SIZE);
 	
    /* Set drawing defaults for user-drawable area.  Use whatever the *
    * initial values of the current stuff was set to.                */
@@ -3856,6 +4073,8 @@ static void x11_build_textarea (void)
  */
 static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dummy) 
 {
+	(void)disp;  // suppress unused warning
+	(void)dummy; // suppress unused warning
 	if (event_ptr->type == Expose) {
 		return (True);
 	}
@@ -3864,23 +4083,30 @@ static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dumm
 }
 
 
-/* draws text center at xc, yc -- used only by menu drawing stuff */
+/* draws UTF-8 text center at xc, yc -- used only by menu and button drawing stuff */
 static void menutext(XftDraw* draw, int xc, int yc, const char *text) {
-	int len, width; 
+	int len, width;
+
+	font_ptr menu_font = gl_state.font_info.get_font_info(MENU_FONT_SIZE, 0);
 	
 	len = strlen(text);
 	XGlyphInfo extents;
-	XftTextExtentsUtf8(x11_state.display,
-		gl_state.font_info[MENU_FONT_SIZE], (const FcChar8*)text, len, &extents);
+	XftTextExtentsUtf8(
+		x11_state.display,
+		menu_font,
+		(const FcChar8*)text,
+		len,
+		&extents
+	);
 	width = extents.width;
 
 	XftDrawStringUtf8(
 		draw,
 		&x11_state.xft_menutextcolor,
-		gl_state.font_info[MENU_FONT_SIZE],
+		menu_font,
 		xc - width/2,
-		yc + (gl_state.font_info[MENU_FONT_SIZE]->ascent
-			- gl_state.font_info[MENU_FONT_SIZE]->descent) / 2,
+		yc + (menu_font->ascent
+			- menu_font->descent) / 2,
 		(const FcChar8*) text,
 		len
 	);
@@ -4106,9 +4332,9 @@ static void x11_handle_button_info (t_event_buttonPressed *button_info,
 #ifdef WIN32
 
 static void 
-win32_init_graphics (const char *window_name, int cindex)
+win32_init_graphics (const char *window_name)
 {
-   WNDCLASS wndclass;
+   WNDCLASSW wndclass;
    HINSTANCE hInstance = GetModuleHandle(NULL);
    int x, y;
    LOGBRUSH lb;
@@ -4117,7 +4343,7 @@ win32_init_graphics (const char *window_name, int cindex)
    lb.lbHatch = (LONG)NULL;
    x = 0;
    y = 0;
-	
+
    /* get screen size from display structure macro */
    trans_coord.display_width = GetSystemMetrics( SM_CXSCREEN );
    if (!(trans_coord.display_width))
@@ -4128,8 +4354,10 @@ win32_init_graphics (const char *window_name, int cindex)
    trans_coord.top_width = 2*trans_coord.display_width/3;
    trans_coord.top_height = 4*trans_coord.display_height/5;
 	
-   /* Grab the Application name */
-   wsprintf(szAppName, TEXT(window_name));
+	/* Copy the Application name */
+	int text_byte_length = strlen(window_name);
+	MultiByteToWideChar(CP_UTF8, 0, window_name, -1,
+		szAppName, text_byte_length);
 
    win32_state.hGraphicsPen = ExtCreatePen(
       PS_GEOMETRIC | win32_line_styles[gl_state.currentlinestyle] | PS_ENDCAP_FLAT,
@@ -4147,11 +4375,6 @@ win32_init_graphics (const char *window_name, int cindex)
    win32_state.hGrayBrush = CreateSolidBrush(convert_to_win_color(predef_colors[LIGHTGREY]));
    if(!win32_state.hGrayBrush)
       WIN32_CREATE_ERROR();
-
-   load_font (gl_state.currentfontsize);
-   win32_state.hGraphicsFont = CreateFontIndirect(gl_state.font_info[gl_state.currentfontsize]);
-   if (!win32_state.hGraphicsFont)
-      WIN32_CREATE_ERROR();
 	
    /* Register the Main Window class */
    wndclass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -4161,24 +4384,26 @@ win32_init_graphics (const char *window_name, int cindex)
    wndclass.hInstance = hInstance;
    wndclass.hIcon = LoadIcon (NULL, IDI_APPLICATION);
    wndclass.hCursor = LoadCursor( NULL, IDC_ARROW);
-   wndclass.hbrBackground = (HBRUSH) CreateSolidBrush(convert_to_win_color(predef_colors[cindex]));
+   wndclass.hbrBackground = (HBRUSH) CreateSolidBrush(
+      convert_to_win_color(gl_state.background_color)
+   );
    wndclass.lpszMenuName = NULL;
    wndclass.lpszClassName = szAppName;
 	
-   if (!RegisterClass(&wndclass)) {
-      printf ("Error code: %d\n", GetLastError());
-      MessageBox(NULL, TEXT("Initialization of Windows graphics (init_graphics) failed."),
-                    szAppName, MB_ICONERROR);
-      exit(-1);
-   }
+	if (!RegisterClassW(&wndclass)) {
+		printf ("Error code: %d\n", GetLastError());
+		MessageBoxW(NULL, L"Initialization of Windows graphics (init_graphics) failed.",
+		            szAppName, MB_ICONERROR);
+		exit(-1);
+	}
 	
    /* Register the Graphics Window class */
    wndclass.lpfnWndProc = WIN32_GraphicsWND;
    wndclass.hIcon = NULL;
    wndclass.lpszClassName = szGraphicsName;
 	
-   if(!RegisterClass(&wndclass))
-      WIN32_DRAW_ERROR();
+	if(!RegisterClassW(&wndclass))
+		WIN32_DRAW_ERROR();
 	
    /* Register the Status Window class */
    wndclass.lpfnWndProc = WIN32_StatusWND;
@@ -4186,8 +4411,8 @@ win32_init_graphics (const char *window_name, int cindex)
    wndclass.lpszClassName = szStatusName;
    wndclass.hbrBackground = win32_state.hGrayBrush;
    
-   if(!RegisterClass(&wndclass))
-      WIN32_DRAW_ERROR();
+	if(!RegisterClassW(&wndclass))
+		WIN32_DRAW_ERROR();
 	
    /* Register the Buttons Window class */
    wndclass.lpfnWndProc = WIN32_ButtonsWND;
@@ -4195,13 +4420,14 @@ win32_init_graphics (const char *window_name, int cindex)
    wndclass.lpszClassName = szButtonsName;
    wndclass.hbrBackground = win32_state.hGrayBrush;
 	
-   if (!RegisterClass(&wndclass))
-      WIN32_DRAW_ERROR();
-	
-   win32_state.hMainWnd = CreateWindow(szAppName, TEXT(window_name),
-                 WS_OVERLAPPEDWINDOW, x, y, trans_coord.top_width,
-                 trans_coord.top_height, NULL, NULL, hInstance, NULL);
-	
+	if (!RegisterClassW(&wndclass))
+		WIN32_DRAW_ERROR();
+
+	win32_state.hMainWnd = CreateWindowW(
+		szAppName, szAppName,
+		WS_OVERLAPPEDWINDOW, x, y, trans_coord.top_width,
+		trans_coord.top_height, NULL, NULL, hInstance, NULL);
+
    if(!win32_state.hMainWnd)
       WIN32_DRAW_ERROR();
 	
@@ -4225,11 +4451,11 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch(message)
 	{
 		case WM_CREATE:
-			win32_state.hStatusWnd = CreateWindow(szStatusName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
+			win32_state.hStatusWnd = CreateWindowW(szStatusName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
 				0, 0, 0, 0, hwnd, (HMENU) 102, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
-			win32_state.hButtonsWnd = CreateWindow(szButtonsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
+			win32_state.hButtonsWnd = CreateWindowW(szButtonsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
 				0, 0, 0, 0, hwnd, (HMENU) 103, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
-			win32_state.hGraphicsWnd = CreateWindow(szGraphicsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
+			win32_state.hGraphicsWnd = CreateWindowW(szGraphicsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
 				0, 0, 0, 0, hwnd, (HMENU) 101, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
 			return 0;
 		
@@ -4339,7 +4565,7 @@ WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				WIN32_DELETE_ERROR();
 			if(!DeleteObject(win32_state.hGraphicsBrush))
 				WIN32_DELETE_ERROR();
-			if(!DeleteObject(win32_state.hGraphicsFont))
+			if(win32_state.hGraphicsFont != NULL && !DeleteObject(win32_state.hGraphicsFont))
 				WIN32_DELETE_ERROR();
 			PostQuitMessage(0);
 			return 0;
@@ -4598,7 +4824,7 @@ WIN32_StatusWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				WIN32_DRAW_ERROR();
 			return 0;
 		
-		case WM_PAINT:
+		case WM_PAINT: {
 			hdc = BeginPaint(hwnd, &ps);
 			if(!hdc)
 				WIN32_DRAW_ERROR();
@@ -4621,15 +4847,26 @@ WIN32_StatusWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(!LineTo(hdc, rect.right-1, rect.top))
 				WIN32_DRAW_ERROR();
 
-			if(!DrawText(hdc, TEXT(gl_state.statusMessage), -1, &rect, 
+			int text_byte_length = strlen(gl_state.statusMessage);
+			wchar_t* WIN32_wchar_text = new wchar_t[text_byte_length];
+			size_t WIN32_wchar_text_len =
+				MultiByteToWideChar(
+					CP_UTF8, 0,
+					gl_state.statusMessage, text_byte_length,
+					WIN32_wchar_text, text_byte_length
+				);
+
+			if(!DrawTextW(hdc, WIN32_wchar_text, WIN32_wchar_text_len, &rect, 
 						 DT_CENTER | DT_VCENTER | DT_SINGLELINE))
 				WIN32_DRAW_ERROR();
 		
+			delete[] WIN32_wchar_text;
+
 			if(!EndPaint(hwnd, &ps))
 				WIN32_DRAW_ERROR();
 			return 0;
 		
-		case WM_SIZE:
+		} case WM_SIZE:
 			return 0;
 		
 		case WM_DESTROY:
@@ -4748,44 +4985,48 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 static void WIN32_SELECT_ERROR()
 { 
-	char msg[BUFSIZE];
-	sprintf (msg, "Error %i: Couldn't select graphics object on line %d of graphics.c\n", 
-			 GetLastError(), __LINE__); 
+	wchar_t msg[BUFSIZE];
+	wsprintf (msg, L"Error %i: Couldn't select graphics object on line %d of graphics.c\n",
+			 GetLastError(), __LINE__);
 
-	MessageBox(NULL, msg, NULL, MB_OK); 
+	wprintf(msg);
+	MessageBoxW(NULL, msg, NULL, MB_OK);
 	exit(-1); 
 }
 
 
 static void WIN32_DELETE_ERROR()
 { 
-	char msg[BUFSIZE]; 
-	sprintf (msg, "Error %i: Couldn't delete graphics object on line %d of graphics.c\n", 
-			 GetLastError(), __LINE__); 
+	wchar_t msg[BUFSIZE];
+	wsprintf (msg, L"Error %i: Couldn't delete graphics object on line %d of graphics.c\n",
+			 GetLastError(), __LINE__);
 	
-	MessageBox(NULL, msg, NULL, MB_OK); 
+	wprintf(msg);
+	MessageBoxW(NULL, msg, NULL, MB_OK);
 	exit(-1); 
 }
 
 
 static void WIN32_CREATE_ERROR() 
 { 
-	char msg[BUFSIZE]; 
-	sprintf (msg, "Error %i: Couldn't create graphics object on line %d of graphics.c\n", 
-			 GetLastError(), __LINE__); 
-	
-	MessageBox(NULL, msg, NULL, MB_OK); 
+	wchar_t msg[BUFSIZE];
+	wsprintf (msg, L"Error %i: Couldn't create graphics object on line %d of graphics.c\n",
+			 GetLastError(), __LINE__);
+
+	wprintf(msg);
+	MessageBoxW(NULL, msg, NULL, MB_OK);
 	exit(-1); 
 }
 
 
 static void WIN32_DRAW_ERROR()
 { 
-	char msg[BUFSIZE]; 
-	sprintf (msg, "Error %i: Couldn't draw graphics object on line %d of graphics.c\n", 
-			 GetLastError(), __LINE__); 
+	wchar_t msg[BUFSIZE];
+	wsprintf (msg, L"Error %i: Couldn't draw graphics object on line %d of graphics.c\n",
+			 GetLastError(), __LINE__);
 
-	MessageBox(NULL, msg, NULL, MB_OK); 
+	wprintf(msg);
+	MessageBoxW(NULL, msg, NULL, MB_OK);
 	exit(-1); 
 }
 
@@ -5042,10 +5283,12 @@ void event_loop (void (*act_on_mousebutton) (float x, float y, t_event_buttonPre
                  void (*drawscreen) (void)) { }
 
 void init_graphics (const char *window_name, int cindex) { }
+void init_graphics (const char *window_name, const t_color& background) { }
 void close_graphics (void) { }
 void update_message (const char *msg) { }
 void draw_message (void) { }
 void init_world (float xl, float yt, float xr, float yb) { }
+void init_world(const t_bound_box& bounds) { }
 void flushinput (void) { }
 void setcolor (int cindex) { }
 void setcolor (const t_color& c) { }
@@ -5055,6 +5298,7 @@ t_color getcolor (void) { return t_color(0,0,0); }
 void setlinestyle (int linestyle) { }
 void setlinewidth (int linewidth) { }
 void setfontsize (int pointsize) { }
+int getfontsize() { return 0; }
 void settextrotation (float degrees) { }
 float gettextrotation() { return 0; }
 void settextattrs(int pointsize, float degrees) { }

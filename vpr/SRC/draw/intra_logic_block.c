@@ -88,31 +88,46 @@ void draw_internal_init_blk() {
 
 	for (int i = 0; i < num_types; ++i) {
 		/* Empty block has no sub_blocks */
-		if (&type_descriptors[i] == EMPTY_TYPE)
+		s_type_descriptor& type_desc = type_descriptors[i];
+		if (&type_desc == EMPTY_TYPE)
 			continue;
 
-		pb_graph_head_node = type_descriptors[i].pb_graph_head;
-		int type_descriptor_index = type_descriptors[i].index;
+		pb_graph_head_node = type_desc.pb_graph_head;
+		int type_descriptor_index = type_desc.index;
 
-		int num_sub_tiles = type_descriptors[i].capacity;
+		int num_sub_tiles = type_desc.capacity;
 
 
 		// set the clb dimensions
 		t_bound_box& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
 
 		// note, that all clbs of the same type are the same size,
-		// and that we won't know exactly where they are. 
+		// and that consequently we have *one* model for each type.
 		clb_bbox.bottom_left().set(0,0);
-		clb_bbox.top_right().set(
-			draw_coords->tile_x[type_descriptors[i].width  - 1] + draw_coords->get_tile_width()/num_sub_tiles,
-			draw_coords->tile_y[type_descriptors[i].height - 1] + draw_coords->get_tile_width()
+		if (type_desc.width > (nx + 2) || type_desc.height > (ny + 2)) {
+			// in this case, the clb certainly wont't fit, but this prevents
+			// an out-of-bounds access, and provides some sort of (probably right)
+			// value
+			clb_bbox.top_right().set(
+				(draw_coords->tile_x[1]-draw_coords->tile_x[0])*(type_desc.width - 1),
+				(draw_coords->tile_y[1]-draw_coords->tile_y[0])*(type_desc.height - 1)
+			);
+		} else {
+			clb_bbox.top_right().set(
+				draw_coords->tile_x[type_desc.width  - 1],
+				draw_coords->tile_y[type_desc.height - 1]
+			);
+		}
+		clb_bbox.top_right() += t_point(
+			draw_coords->get_tile_width()/num_sub_tiles,
+			draw_coords->get_tile_width()
 		);
 
 		draw_internal_load_coords(type_descriptor_index, pb_graph_head_node, 
 								  clb_bbox.get_width(), clb_bbox.get_height());
 
 		/* Determine the max number of sub_block levels in the FPGA */
-		draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_descriptors[i].pb_type),
+		draw_state->max_sub_blk_lvl = max(draw_internal_find_max_lvl(*type_desc.pb_type),
 							   draw_state->max_sub_blk_lvl);
 	}
 }
