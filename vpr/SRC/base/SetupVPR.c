@@ -705,7 +705,7 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 	if (Options.Count[OT_CLUSTER_SEED]) {
 		PackerOpts->cluster_seed_type = Options.cluster_seed_type;
 	}
-	PackerOpts->alpha = 0.5; /* DEFAULT */
+	PackerOpts->alpha = 0.75; /* DEFAULT */
 	if (Options.Count[OT_ALPHA_CLUSTERING]) {
 		PackerOpts->alpha = Options.alpha;
 	}
