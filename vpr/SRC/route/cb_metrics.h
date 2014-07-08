@@ -11,8 +11,6 @@
 #define TEMP_DECREASE_FAC 0.999
 
 
-
-
 /**** Enums ****/
 /* Defines the different kinds of metrics that we can adjust */
 enum e_metric{
@@ -66,9 +64,12 @@ public:
 
 /**** Function Declarations ****/
 
+/* wires may be grouped in a channel according to their start points. i.e. at a given channel segment with L=4, there are up to
+   four 'types' of L=4 wires: those that start in this channel segment, those than end in this channel segment, and two types
+   that are in between. here we return the number of wire types. 
+   the current connection block metrics code can only deal with channel segments that carry wires of only one length (i.e. L=4).
+   this may be enhanced in the future. */
 int get_num_wire_types(INP int num_segments, INP t_segment_inf *segment_inf);
-
-int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_type);
 
 /* calculates all the connection block metrics and returns them through the cb_metrics variable */
 void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_connected_to_pin, INP int num_segments, INP t_segment_inf *segment_inf, 
@@ -79,4 +80,5 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 		INP t_type_ptr block_type, INOUTP int *****pin_to_track_connections, 
 		INP e_pin_type pin_type, INP int *Fc_array, INP t_chan_width *chan_width_inf, 
 		INP int num_segments, INP t_segment_inf *segment_inf);
+
 #endif /*CB_METRICS_H*/
