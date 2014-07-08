@@ -56,7 +56,8 @@ static void init_cb_structs( INP t_type_ptr block_type, INP int *****tracks_conn
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
    greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
-static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP vector< set<int> > *track_to_pins, INP int criteria, INOUTP vector<int> *result );
+static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP t_vec_vec_set *track_to_pins, INP int side, 
+		INP bool both_sides, INP int criteria, INOUTP vector<int> *result );
 /* given a pin on some side of a block, we'd like to find the set of tracks that is NOT connected to that pin on that side. This set of tracks
    is passed back in the 'result' vector */
 static void find_tracks_unconnected_to_pin( INP set<int> *pin_tracks, INP vector< set<int> > *track_to_pins, INOUTP vector<int> *result );
@@ -136,7 +137,7 @@ int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_
 	return Fc;
 }
 
-/* adjusts the connection block until the appropriate wire metric has hit it's target value. the pin metric is kept constant
+/* adjusts the connection block until the appropriate metric has hit it's target value. the other orthogonal metric is kept constant
    within some tolerance */
 void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_tolerance, INP float pin_tolerance,
 		INP t_type_ptr block_type, INOUTP int *****pin_to_track_connections, 
@@ -175,14 +176,14 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 
 	/* determine which pins of our desired type come out on which side of the block */
 	Conn_Block_Metrics cb_metrics;
-
 	
 	/* get initial values for metrics */
 	get_conn_block_metrics(block_type, pin_to_track_connections, num_segments, segment_inf, pin_type,
 			Fc_array, chan_width_inf, &cb_metrics);
 
 	/* now run the annealer to adjust the desired metric towards the target value */
-	bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target, target_tolerance, pin_to_track_connections, &cb_metrics);
+	bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target, 
+			target_tolerance, pin_to_track_connections, &cb_metrics);
 	if (!success){
 		vpr_printf_info("Failed to adjust specified connection block metric\n");
 	}
@@ -335,7 +336,6 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 	cb_metrics->lemieux_cost_func = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
 
 	cb_metrics->pin_diversity = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
-
 }
 
 /* returns the pin diversity metric of a block */
@@ -360,7 +360,6 @@ static float get_pin_diversity(INP t_type_ptr block_type, INP e_pin_type pin_typ
 					      (1 - exp(-exp_factor * (float)cb_metrics->wire_types_used_count.at(iside).at(ipin).at(i) / mean));
 			}
 			total_pin_diversity += pin_diversity;
-			
 		}
 	}
 	total_pin_diversity /= num_pin_type_pins;
@@ -627,13 +626,26 @@ static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
    greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
-static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP vector< set<int> > *track_to_pins, INP int criteria, INOUTP vector<int> *result ){
+static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP t_vec_vec_set *track_to_pins, INP int side, 
+		INP bool both_sides, INP int criteria, INOUTP vector<int> *result ){
 	result->clear();
+
+	if (both_sides && side >= 2){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "when accounting for pins on both sides of a channel segment, the passed-in side should have index < 2. got %d\n", side);
+	}
+
 	/* for each track connected to the pin */
 	set<int>::const_iterator it;
 	for (it = pin_tracks->begin(); it != pin_tracks->end(); it++){
 		int track = *it;
-		if ( (int)track_to_pins->at(track).size() > criteria ){
+
+		int num_switches = 0;
+		if (both_sides){
+			num_switches = (int)track_to_pins->at(side).at(track).size() + (int)track_to_pins->at(side+2).at(track).size();
+		} else {
+			num_switches = (int)track_to_pins->at(side).at(track).size();
+		}
+		if ( num_switches > criteria ){
 			result->push_back(track);
 		}
 	}
@@ -681,10 +693,10 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 		/* many CLBs are adjacent to eachother, so connections from one CLB	
 		*  will share the channel segment with its neighbor. We'd like to take this into	
 		*  account for the applicable metrics. */
-		both_sides = TRUE;
+		both_sides = true;
 	} else {
 		/* other blocks (i.e. IO, RAM, etc) are not as frequent as CLBs */
-		both_sides = FALSE;
+		both_sides = false;
 	}
 
 	static vector<int> set_of_tracks;
@@ -704,12 +716,20 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 	   switch from this track to another, this track will still be connected. */
 	
 	/* find the set of tracks satisfying the 'number of switches' criteria mentioned above */
+	int check_side = rand_side;
+	if (both_sides && check_side >= 2){
+		check_side -= 2;	/* will be checking this, along with (check_side + 2) */
+	}
 	if (preserve_tracks){
 		/* looking for tracks with 2 or more switches */
-		find_tracks_with_more_switches_than(tracks_connected_to_pin, &track_to_pins->at(rand_side), 1, &set_of_tracks);
+		find_tracks_with_more_switches_than(tracks_connected_to_pin, track_to_pins, check_side, both_sides, 1, &set_of_tracks);
 	} else {
 		/* looking for tracks with 1 or more switches */
-		find_tracks_with_more_switches_than(tracks_connected_to_pin, &track_to_pins->at(rand_side), 0, &set_of_tracks);
+		find_tracks_with_more_switches_than(tracks_connected_to_pin, track_to_pins, check_side, both_sides, 0, &set_of_tracks);
+	}
+
+	if (set_of_tracks.size() == 0){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "could not find any tracks that carry more than %d switches. Fc may be too low\n", set_of_tracks.size());
 	}
 
 	/* now choose a random track from the returned set of qualifying tracks */
@@ -845,7 +865,6 @@ static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr
 	/* get initial metrics and cost */
 	double cost = 0;
 	if (metric < NUM_WIRE_METRICS){
-		//TODO: add tolerance as a passed-in parameter
 		initial_orthogonal_metric = cb_metrics->pin_diversity;
 		orthogonal_metric_tolerance = 0.05;
 
@@ -879,7 +898,6 @@ static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr
 
 
 	for (int i_outer = 0; i_outer < MAX_OUTER_ITERATIONS; i_outer++){
-
 		for (int i_inner = 0; i_inner < MAX_INNER_ITERATIONS; i_inner++){
 			double new_cost = 0;
 			new_cost = try_move(metric, nodes_per_chan, initial_orthogonal_metric, orthogonal_metric_tolerance,
@@ -890,7 +908,6 @@ static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr
 				cost = new_cost;
 			}
 		}
-		//printf("T %f   cost %f\n", temp, cost);
 
 		temp = update_temp(temp, i_outer);
 
@@ -940,7 +957,6 @@ static bool accept_move(INP double del_cost, INP double temp){
 		/* determine probabilistically whether or not to accept */
 		double probability = pow(2.718, -( del_cost / temp ) );
 		double rand_value = (double)my_frand();
-		rand_value = rand_value / (double)RAND_MAX;
 		if (rand_value < probability){
 			accept = true;
 		} else {
