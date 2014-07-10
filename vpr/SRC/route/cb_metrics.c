@@ -28,6 +28,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <map>
+
 using namespace std;
 
 
@@ -114,6 +116,7 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 		INP int num_pin_type_pins, INP double cost, INP double temp, INP float target_metric, 
 		INOUTP int *****pin_to_track_connections, INOUTP Conn_Block_Metrics *cb_metrics);
 
+static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metrics *cb_metrics);
 
 
 /**** Function Definitions ****/
@@ -201,6 +204,8 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 	if (!success){
 		vpr_printf_info("Failed to adjust specified connection block metric\n");
 	}
+
+	print_switch_histogram(nodes_per_chan, &cb_metrics);
 }
 
 /* calculates all the connection block metrics and returns them through the cb_metrics variable */
@@ -720,138 +725,144 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 	int rand_pin = cb_metrics->pin_locations.at(rand_side).at(rand_pin_index);
 	set<int> *tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
 
-	/* get an old track connection i.e. one that is connected to our pin. this track has to have a certain number of switches.
-	   for instance, if we want to avoid completely disconnecting a track, it should have > 1 switch so that when we move one
-	   switch from this track to another, this track will still be connected. */
-	
-	/* find the set of tracks satisfying the 'number of switches' criteria mentioned above */
-	int check_side = rand_side;
-	if (both_sides && check_side >= 2){
-		check_side -= 2;	/* will be checking this, along with (check_side + 2) */
-	}
-	if (preserve_tracks){
-		/* looking for tracks with 2 or more switches */
-		find_tracks_with_more_switches_than(tracks_connected_to_pin, track_to_pins, check_side, both_sides, 1, &set_of_tracks);
-	} else {
-		/* looking for tracks with 1 or more switches */
-		find_tracks_with_more_switches_than(tracks_connected_to_pin, track_to_pins, check_side, both_sides, 0, &set_of_tracks);
-	}
-
-	if (set_of_tracks.size() == 0){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "could not find any tracks that carry more than %d switches. Fc may be too low\n", set_of_tracks.size());
-	}
-
-	/* now choose a random track from the returned set of qualifying tracks */
-	int old_track = my_irand(set_of_tracks.size()-1);
-	old_track = set_of_tracks.at(old_track);
-
-	/* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
-	find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
-	int new_track = my_irand(set_of_tracks.size()-1);
-	new_track = set_of_tracks.at(new_track);
-
-	/* move the rand_pin's connection from the old track to the new track and see what the new cost is */
-	/* update CB metrics structures */
-	pin_to_tracks->at(rand_side).at(rand_pin_index).erase(old_track);
-	pin_to_tracks->at(rand_side).at(rand_pin_index).insert(new_track);
-
-	track_to_pins->at(rand_side).at(old_track).erase(rand_pin);
-	track_to_pins->at(rand_side).at(new_track).insert(rand_pin);
-
-	wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)--;
-	wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)++;
-	
-	/* the orthogonal metric needs to stay within some tolerance of its initial value. here we get the
-	   orthogonal metric after the above move */
-	if (metric < NUM_WIRE_METRICS){
-		/* get the new pin diversity cost */
-		new_orthogonal_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
-	} else {
-		/* get the new wire homogeneity cost */
-		new_orthogonal_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-	}
-
-	/* check if the orthogonal metric has remained within tolerance */
-	if (new_orthogonal_metric >= initial_orthogonal_metric - orthogonal_metric_tolerance 
-	    && new_orthogonal_metric <= initial_orthogonal_metric + orthogonal_metric_tolerance){
-		/* The orthogonal metric is within tolerance. Can proceed */
-
-		/* get the new wire metric */
-		new_metric = 0;
-
-		double delta_cost;
-		switch(metric){
-			case WIRE_HOMOGENEITY:
-				new_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-				break;
-			case HAMMING_PROXIMITY:
-				new_metric = get_hamming_proximity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-				break;
-			case LEMIEUX_COST_FUNC:
-				new_metric = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-				break;
-			case PIN_DIVERSITY:
-				new_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
-				break;
-			default:
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
-				break;
-		}
-		new_cost = fabs(target_metric - new_metric);
-		delta_cost = new_cost - cost;
-		if (!accept_move(delta_cost, temp)){
-			revert = true;
-		}
-	} else {
-		/* the new orthogoanl metric changed too much. will undo the move made before */
-		revert = true;
-	}
-
-	if (revert){
-		/* revert the attempted move */
-		pin_to_tracks->at(rand_side).at(rand_pin_index).insert(old_track);
-		pin_to_tracks->at(rand_side).at(rand_pin_index).erase(new_track);
-
-		track_to_pins->at(rand_side).at(old_track).insert(rand_pin);
-		track_to_pins->at(rand_side).at(new_track).erase(rand_pin);
-
-		wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)++;
-		wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)--;
-
+	/* If the pin is unconnected, return. Happens for input CBs; probably clock */
+	if (0 == tracks_connected_to_pin->size()){
 		new_cost = cost;
 	} else {
-		/* accept the attempted move */
 
-		/* need to update the actual pin-to-track mapping used by build_rr_graph */
-		int track_index = 0;
-		for (track_index = 0; track_index < Fc; track_index++){
-			if (pin_to_track_connections[rand_pin][0][0][rand_side][track_index] == old_track){
-				break;
-			}
+		/* get an old track connection i.e. one that is connected to our pin. this track has to have a certain number of switches.
+		   for instance, if we want to avoid completely disconnecting a track, it should have > 1 switch so that when we move one
+		   switch from this track to another, this track will still be connected. */
+		
+		/* find the set of tracks satisfying the 'number of switches' criteria mentioned above */
+		int check_side = rand_side;
+		if (both_sides && check_side >= 2){
+			check_side -= 2;	/* will be checking this, along with (check_side + 2) */
 		}
-		pin_to_track_connections[rand_pin][0][0][rand_side][track_index] = new_track;
+		if (preserve_tracks){
+			/* looking for tracks with 2 or more switches */
+			find_tracks_with_more_switches_than(tracks_connected_to_pin, track_to_pins, check_side, both_sides, 1, &set_of_tracks);
+		} else {
+			/* looking for tracks with 1 or more switches */
+			find_tracks_with_more_switches_than(tracks_connected_to_pin, track_to_pins, check_side, both_sides, 0, &set_of_tracks);
+		}
 
-		/* update metrics */
-		switch(metric){
-			case WIRE_HOMOGENEITY:
-				cb_metrics->wire_homogeneity = new_metric;
-				cb_metrics->pin_diversity = new_orthogonal_metric;
-				break;
-			case HAMMING_PROXIMITY:
-				cb_metrics->hamming_proximity = new_metric;
-				cb_metrics->pin_diversity = new_orthogonal_metric;
-				break;
-			case LEMIEUX_COST_FUNC:
-				cb_metrics->lemieux_cost_func = new_metric;
-				cb_metrics->pin_diversity = new_orthogonal_metric;
-				break;
-			case PIN_DIVERSITY:
-				cb_metrics->pin_diversity = new_metric;
-				cb_metrics->wire_homogeneity = new_orthogonal_metric;
-				break;
-			default:
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric: %d\n", (int)metric);
-				break;
+		if (set_of_tracks.size() == 0){
+			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "could not find any tracks that carry more than %d switches. Fc may be too low\n", set_of_tracks.size());
+		}
+
+		/* now choose a random track from the returned set of qualifying tracks */
+		int old_track = my_irand(set_of_tracks.size()-1);
+		old_track = set_of_tracks.at(old_track);
+
+		/* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
+		find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
+		int new_track = my_irand(set_of_tracks.size()-1);
+		new_track = set_of_tracks.at(new_track);
+
+		/* move the rand_pin's connection from the old track to the new track and see what the new cost is */
+		/* update CB metrics structures */
+		pin_to_tracks->at(rand_side).at(rand_pin_index).erase(old_track);
+		pin_to_tracks->at(rand_side).at(rand_pin_index).insert(new_track);
+
+		track_to_pins->at(rand_side).at(old_track).erase(rand_pin);
+		track_to_pins->at(rand_side).at(new_track).insert(rand_pin);
+
+		wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)--;
+		wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)++;
+		
+		/* the orthogonal metric needs to stay within some tolerance of its initial value. here we get the
+		   orthogonal metric after the above move */
+		if (metric < NUM_WIRE_METRICS){
+			/* get the new pin diversity cost */
+			new_orthogonal_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+		} else {
+			/* get the new wire homogeneity cost */
+			new_orthogonal_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+		}
+
+		/* check if the orthogonal metric has remained within tolerance */
+		if (new_orthogonal_metric >= initial_orthogonal_metric - orthogonal_metric_tolerance 
+		    && new_orthogonal_metric <= initial_orthogonal_metric + orthogonal_metric_tolerance){
+			/* The orthogonal metric is within tolerance. Can proceed */
+
+			/* get the new wire metric */
+			new_metric = 0;
+
+			double delta_cost;
+			switch(metric){
+				case WIRE_HOMOGENEITY:
+					new_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+					break;
+				case HAMMING_PROXIMITY:
+					new_metric = get_hamming_proximity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+					break;
+				case LEMIEUX_COST_FUNC:
+					new_metric = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+					break;
+				case PIN_DIVERSITY:
+					new_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+					break;
+				default:
+					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
+					break;
+			}
+			new_cost = fabs(target_metric - new_metric);
+			delta_cost = new_cost - cost;
+			if (!accept_move(delta_cost, temp)){
+				revert = true;
+			}
+		} else {
+			/* the new orthogoanl metric changed too much. will undo the move made before */
+			revert = true;
+		}
+
+		if (revert){
+			/* revert the attempted move */
+			pin_to_tracks->at(rand_side).at(rand_pin_index).insert(old_track);
+			pin_to_tracks->at(rand_side).at(rand_pin_index).erase(new_track);
+
+			track_to_pins->at(rand_side).at(old_track).insert(rand_pin);
+			track_to_pins->at(rand_side).at(new_track).erase(rand_pin);
+
+			wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)++;
+			wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)--;
+
+			new_cost = cost;
+		} else {
+			/* accept the attempted move */
+
+			/* need to update the actual pin-to-track mapping used by build_rr_graph */
+			int track_index = 0;
+			for (track_index = 0; track_index < Fc; track_index++){
+				if (pin_to_track_connections[rand_pin][0][0][rand_side][track_index] == old_track){
+					break;
+				}
+			}
+			pin_to_track_connections[rand_pin][0][0][rand_side][track_index] = new_track;
+
+			/* update metrics */
+			switch(metric){
+				case WIRE_HOMOGENEITY:
+					cb_metrics->wire_homogeneity = new_metric;
+					cb_metrics->pin_diversity = new_orthogonal_metric;
+					break;
+				case HAMMING_PROXIMITY:
+					cb_metrics->hamming_proximity = new_metric;
+					cb_metrics->pin_diversity = new_orthogonal_metric;
+					break;
+				case LEMIEUX_COST_FUNC:
+					cb_metrics->lemieux_cost_func = new_metric;
+					cb_metrics->pin_diversity = new_orthogonal_metric;
+					break;
+				case PIN_DIVERSITY:
+					cb_metrics->pin_diversity = new_metric;
+					cb_metrics->wire_homogeneity = new_orthogonal_metric;
+					break;
+				default:
+					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric: %d\n", (int)metric);
+					break;
+			}
 		}
 	}
 	return new_cost;
@@ -976,4 +987,26 @@ static bool accept_move(INP double del_cost, INP double temp){
 	return accept;
 }
 
+static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metrics *cb_metrics){
+	/* key: number of switches; element: number of tracks with that switch count */
+	map<int, int> switch_histogram;
 
+	t_vec_vec_set *track_to_pins = &cb_metrics->track_to_pins;
+
+	for (int iside = 0; iside < 2; iside++){
+		for (int itrack = 0; itrack < nodes_per_chan; itrack++){
+			int num_switches = (int)track_to_pins->at(iside).at(itrack).size() + (int)track_to_pins->at(iside+2).at(itrack).size();
+			if (map_has_key(num_switches, &switch_histogram)){
+				switch_histogram.at(num_switches)++;
+			} else {
+				switch_histogram[num_switches] = 1;
+			}
+		}
+	}
+
+	vpr_printf_info("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
+	map<int,int>::const_iterator it;
+	for (it = switch_histogram.begin(); it != switch_histogram.end(); it++){
+		vpr_printf_info("\t%d ==> %d\n", it->first, it->second);
+	}
+}
