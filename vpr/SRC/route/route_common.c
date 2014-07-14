@@ -1215,6 +1215,16 @@ void print_route(char *route_file) {
 
 					fprintf(fp, "%d  ", rr_node[inode].get_ptc_num());
 
+					if (grid[ilow][jlow].type != IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
+						int pin_num = rr_node[inode].get_ptc_num();
+						int offset = grid[ilow][jlow].height_offset;
+						int iblock = grid[ilow][jlow - offset].blocks[0];
+						assert(iblock != OPEN);
+						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
+						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
+					}
+
 					/* Uncomment line below if you're debugging and want to see the switch types *
 					 * used in the routing.                                                      */
 					/*          fprintf (fp, "Switch: %d", tptr->iswitch);    */
