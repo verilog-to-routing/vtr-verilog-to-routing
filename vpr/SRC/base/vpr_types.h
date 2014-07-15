@@ -152,9 +152,6 @@ typedef struct s_pb {
 	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 	struct s_pb_stats *pb_stats; /* statistics for current pb */
 
-	struct s_net *local_nets; /*Records post-packing connections, valid only for top-level */ /* jedit TODO: Delete this because it is unused */ 
-	int num_local_nets; /* Records post-packing connections, valid only for top-level */ /* jedit TODO: Delete this because it is unused */ 
-
 	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
 	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
@@ -184,9 +181,14 @@ typedef struct s_pb {
 } t_pb;
 
 /* Representation of intra-logic block routing */
-struct t_pb_pin_route_stats {
+struct t_pb_route {
 	int atom_net_idx;	/* which net in the atomic netlist uses this pin */
 	int prev_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
+
+	t_pb_route() {
+		atom_net_idx = OPEN;
+		prev_pb_pin_id = OPEN;
+	}
 };
 
 struct s_tnode;
@@ -611,8 +613,8 @@ struct s_block {
 	int y;
 	int z;
 
-	t_pb *pb;
-	t_pb_pin_route_stats *pb_pin_route_stats;
+	t_pb *pb; /* Internal-to-block hierarchy */
+	t_pb_route *pb_route; /* Internal-to-block routing */
 
 	unsigned int is_fixed : 1;
 

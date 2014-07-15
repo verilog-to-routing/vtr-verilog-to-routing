@@ -58,17 +58,10 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		INP struct s_net nlist[], OUTP int *ext_ncount,
 		OUTP struct s_net **ext_nets, INP char **circuit_clocks);
 
-static void load_internal_cb_nets(INOUTP t_pb *top_level,
-		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph,
-		INOUTP int * curr_net);
+static void load_internal_to_cb_net_nums(INOUTP t_pb *top_level,
+		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph);
 
-static void alloc_internal_cb_nets(INOUTP t_pb *top_level,
-		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph,
-		INP int pass);
-
-static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,
-		INP t_rr_node * rr_graph, INOUTP struct s_net * nets,
-		INOUTP int * curr_net, INOUTP int * curr_sink);
+static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,	INP t_rr_node * rr_graph);
 
 static void mark_constant_generators(INP int L_num_blocks,
 		INP struct s_block block_list[], INP int ncount,
@@ -76,6 +69,8 @@ static void mark_constant_generators(INP int L_num_blocks,
 
 static void mark_constant_generators_rec(INP t_pb *pb, INP t_rr_node *rr_graph,
 		INOUTP struct s_net nlist[]);
+
+static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
 
 /**
  * Initializes the block_list with info from a netlist 
@@ -304,6 +299,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 					+ cb[index].type->pb_type->num_output_pins
 					+ cb[index].type->pb_type->num_clock_pins,
 			sizeof(t_rr_node));
+	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
 	alloc_and_load_rr_graph_for_pb_graph_node(cb[index].pb->pb_graph_node, arch,
 			0);
 	cb[index].pb->rr_node_to_pb_mapping = (t_pb **) my_calloc(
@@ -334,24 +330,9 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	for (i = 0; i < cb[index].type->num_pins; i++) {
 		cb[index].nets[i] = OPEN;
 	}
-	alloc_internal_cb_nets(cb[index].pb, cb[index].pb->pb_graph_node,
-			cb[index].pb->rr_graph, 1);
-	alloc_internal_cb_nets(cb[index].pb, cb[index].pb->pb_graph_node,
-			cb[index].pb->rr_graph, 2);
-	i = 0;
-	load_internal_cb_nets(cb[index].pb, cb[index].pb->pb_graph_node,
-			cb[index].pb->rr_graph, &i);
+	load_internal_to_cb_net_nums(cb[index].pb, cb[index].pb->pb_graph_node,
+			cb[index].pb->rr_graph);
 	freeTokens(tokens, num_tokens);
-#if 0
-	/* print local nets */
-	for (i = 0; i < cb[index].pb->num_local_nets; i++) {
-		vpr_printf_info("local net %s: ", cb[index].pb->name);
-		for (j = 0; j <= cb[index].pb->local_nets[i].num_sinks; j++) {
-			vpr_printf_info("%d ", cb[index].pb->local_nets[i].node_block[j]);
-		}
-		vpr_printf_info("\n");
-	}
-#endif
 }
 
 /**
@@ -1072,9 +1053,7 @@ static int count_sinks_internal_cb_rr_graph_net_nums(
 }
 
 /* Recursive function that fills rr_graph of cb with net numbers starting at the given rr_node */
-static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,
-		INP t_rr_node * rr_graph, INOUTP struct s_net * nets,
-		INOUTP int * curr_net, INOUTP int * curr_sink) {
+static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,	INP t_rr_node * rr_graph) {
 	int i;
 
 	boolean terminal;
@@ -1091,61 +1070,27 @@ static void load_internal_cb_rr_graph_net_nums(INP t_rr_node * cur_rr_node,
 									== cur_rr_node->net_num);
 			rr_graph[cur_rr_node->edges[i]].net_num = cur_rr_node->net_num;
 			rr_graph[cur_rr_node->edges[i]].prev_edge = i;
-			load_internal_cb_rr_graph_net_nums(&rr_graph[cur_rr_node->edges[i]],
-					rr_graph, nets, curr_net, curr_sink);
+			load_internal_cb_rr_graph_net_nums(&rr_graph[cur_rr_node->edges[i]], rr_graph);
 			terminal = FALSE;
 		}
 	}
-	if (terminal == TRUE) {
-		/* Since the routing node index is known, assign that instead of the more obscure node block */
-		nets[*curr_net].node_block[*curr_sink] =
-				cur_rr_node->pb_graph_pin->pin_count_in_cluster;
-		nets[*curr_net].node_block_pin[*curr_sink] = OPEN;
-		nets[*curr_net].node_block_port[*curr_sink] = OPEN;
-		(*curr_sink)++;
-	}
 }
 
-/* Load internal cb nets and fill rr_graph of cb with net numbers */
-static void load_internal_cb_nets(INOUTP t_pb *top_level,
-		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph,
-		INOUTP int * curr_net) {
+/* Load internal rr_graph with net numbers */
+static void load_internal_to_cb_net_nums(INOUTP t_pb *top_level,
+		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph) {
 	int i, j, k;
 	const t_pb_type *pb_type;
-	int temp, size;
-	struct s_net * nets;
 
 	pb_type = pb_graph_node->pb_type;
-
-	nets = top_level->local_nets;
-
-	temp = 0;
-
+	
 	if (pb_graph_node->parent_pb_graph_node == NULL) { /* determine nets driven from inputs at top level */
-		*curr_net = 0;
 		for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 			for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 				if (rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster].net_num
 						!= OPEN) {
 					load_internal_cb_rr_graph_net_nums(
-							&rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster],
-							rr_graph, nets, curr_net, &temp);
-					assert(temp == nets[*curr_net].num_sinks);
-					temp = 0;
-					size =
-							strlen(pb_graph_node->pb_type->name)
-									+ pb_graph_node->placement_index / 10
-									+ i / 10 + j / 10
-									+ pb_graph_node->input_pins[i][j].pin_count_in_cluster
-											/ 10 + 26;
-					nets[*curr_net].name = (char *) my_calloc(size,
-							sizeof(char));
-					sprintf(nets[*curr_net].name,
-							"%s[%d].input[%d][%d].pin[%d]",
-							pb_graph_node->pb_type->name,
-							pb_graph_node->placement_index, i, j,
-							pb_graph_node->input_pins[i][j].pin_count_in_cluster);
-					(*curr_net)++;
+							&rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster], rr_graph);					
 				}
 			}
 		}
@@ -1154,25 +1099,8 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level,
 				if (rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].net_num
 						!= OPEN) {
 					load_internal_cb_rr_graph_net_nums(
-							&rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster],
-							rr_graph, nets, curr_net, &temp);
-					assert(temp == nets[*curr_net].num_sinks);
-					temp = 0;
-					nets[*curr_net].is_global = TRUE;
-					size =
-							strlen(pb_graph_node->pb_type->name)
-									+ pb_graph_node->placement_index / 10
-									+ i / 10 + j / 10
-									+ pb_graph_node->clock_pins[i][j].pin_count_in_cluster
-											/ 10 + 26;
-					nets[*curr_net].name = (char *) my_calloc(size,
-							sizeof(char));
-					sprintf(nets[*curr_net].name,
-							"%s[%d].clock[%d][%d].pin[%d]",
-							pb_graph_node->pb_type->name,
-							pb_graph_node->placement_index, i, j,
-							pb_graph_node->clock_pins[i][j].pin_count_in_cluster);
-					(*curr_net)++;
+							&rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster], rr_graph);
+					
 				}
 			}
 		}
@@ -1185,24 +1113,7 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level,
 				if (rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num
 						!= OPEN) {
 					load_internal_cb_rr_graph_net_nums(
-							&rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster],
-							rr_graph, nets, curr_net, &temp);
-					assert(temp == nets[*curr_net].num_sinks);
-					temp = 0;
-					size =
-							strlen(pb_graph_node->pb_type->name)
-									+ pb_graph_node->placement_index / 10
-									+ i / 10 + j / 10
-									+ pb_graph_node->output_pins[i][j].pin_count_in_cluster
-											/ 10 + 26;
-					nets[*curr_net].name = (char *) my_calloc(size,
-							sizeof(char));
-					sprintf(nets[*curr_net].name,
-							"%s[%d].output[%d][%d].pin[%d]",
-							pb_graph_node->pb_type->name,
-							pb_graph_node->placement_index, i, j,
-							pb_graph_node->output_pins[i][j].pin_count_in_cluster);
-					(*curr_net)++;
+							&rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster], rr_graph);					
 				}
 			}
 		}
@@ -1212,126 +1123,15 @@ static void load_internal_cb_nets(INOUTP t_pb *top_level,
 			for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
 				for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
 						k++) {
-					load_internal_cb_nets(top_level,
+					load_internal_to_cb_net_nums(top_level,
 							&pb_graph_node->child_pb_graph_nodes[i][j][k],
-							rr_graph, curr_net);
+							rr_graph);
 				}
 			}
 		}
-	}
-
-	if (pb_graph_node->parent_pb_graph_node == NULL) { /* at top level */
-		assert(*curr_net == top_level->num_local_nets);
 	}
 }
 
-/* allocate space to store nets internal to cb 
- two pass algorithm, pass 1 count and allocate # nets, pass 2 determine # sinks
- */
-static void alloc_internal_cb_nets(INOUTP t_pb *top_level,
-		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph,
-		INP int pass) {
-	int i, j, k;
-	const t_pb_type *pb_type;
-	int num_sinks;
-
-	pb_type = pb_graph_node->pb_type;
-
-	if (pb_graph_node->parent_pb_graph_node == NULL) { /* determine nets driven from inputs at top level */
-		top_level->num_local_nets = 0;
-		if (pass == 1)
-			top_level->local_nets = NULL;
-		for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-			for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-				if (rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster].net_num
-						!= OPEN) {
-					if (pass == 2) {
-						num_sinks =
-								count_sinks_internal_cb_rr_graph_net_nums(
-										&rr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster],
-										rr_graph);
-						top_level->local_nets[top_level->num_local_nets].num_sinks =
-								num_sinks;
-						top_level->local_nets[top_level->num_local_nets].node_block =
-								(int *) my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_port =
-								(int *) my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_pin =
-								(int *) my_calloc(num_sinks, sizeof(int));
-					}
-					top_level->num_local_nets++;
-				}
-			}
-		}
-		for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-			for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-				if (rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].net_num
-						!= OPEN) {
-					if (pass == 2) {
-						num_sinks =
-								count_sinks_internal_cb_rr_graph_net_nums(
-										&rr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster],
-										rr_graph);
-						top_level->local_nets[top_level->num_local_nets].num_sinks =
-								num_sinks;
-						top_level->local_nets[top_level->num_local_nets].node_block =
-								(int *) my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_port =
-								(int *) my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_pin =
-								(int *) my_calloc(num_sinks, sizeof(int));
-					}
-					top_level->num_local_nets++;
-				}
-			}
-		}
-	}
-
-	if (pb_type->blif_model != NULL) {
-		/* This is a terminal node so it might drive nets, find and map the rr_graph path for those nets */
-		for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-			for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-				if (rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num
-						!= OPEN) {
-					if (pass == 2) {
-						num_sinks =
-								count_sinks_internal_cb_rr_graph_net_nums(
-										&rr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster],
-										rr_graph);
-						top_level->local_nets[top_level->num_local_nets].num_sinks =
-								num_sinks;
-						top_level->local_nets[top_level->num_local_nets].node_block =
-								(int *) my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_port =
-								(int *) my_calloc(num_sinks, sizeof(int));
-						top_level->local_nets[top_level->num_local_nets].node_block_pin =
-								(int *) my_calloc(num_sinks, sizeof(int));
-					}
-					top_level->num_local_nets++;
-				}
-			}
-		}
-	} else {
-		/* Recurse down to primitives */
-		for (i = 0; i < pb_type->num_modes; i++) {
-			for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-				for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
-						k++) {
-					alloc_internal_cb_nets(top_level,
-							&pb_graph_node->child_pb_graph_nodes[i][j][k],
-							rr_graph, pass);
-				}
-			}
-		}
-	}
-
-	if (pb_graph_node->parent_pb_graph_node == NULL) { /* at top level */
-		if (pass == 1) {
-			top_level->local_nets = (struct s_net *) my_calloc(
-					top_level->num_local_nets, sizeof(struct s_net));
-		}
-	}
-}
 
 static void mark_constant_generators(INP int L_num_blocks,
 		INP struct s_block block_list[], INP int ncount,
@@ -1504,3 +1304,15 @@ void free_logical_nets(void) {
 	}
 }
 
+
+
+static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
+	t_pb_route *pb_route;
+	int num_pins = pb_graph_node->total_pb_pins;
+
+	assert(pb_graph_node->parent_pb_graph_node == NULL); /* This function only operates on top-level pb_graph_node */
+
+	pb_route = new t_pb_route[num_pins];
+
+	return pb_route;
+}

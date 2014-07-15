@@ -94,15 +94,15 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 
 /* Print netlist atom in blif format */
 static void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
-	t_pb_pin_route_stats * pb_pin_route_stats;
+	t_pb_route * pb_route;
 	int clb_index;
 	t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
 
 	clb_index = logical_block[ilogical_block].clb_index;
 	assert(clb_index != OPEN);
-	pb_pin_route_stats = clb[clb_index].pb_pin_route_stats;
-	assert(pb_pin_route_stats != NULL);
+	pb_route = clb[clb_index].pb_route;
+	assert(pb_route != NULL);
 	pb_graph_node = logical_block[ilogical_block].pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
 
@@ -132,10 +132,10 @@ static void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 						int k;
 						for (k = 0; k < pb_type->ports[i].num_pins; k++) {
 							int node_index = pb_graph_node->input_pins[0][k].pin_count_in_cluster;
-							int a_net_index = pb_pin_route_stats[node_index].atom_net_idx;
+							int a_net_index = pb_route[node_index].atom_net_idx;
 							if (a_net_index != OPEN) {
 								if (a_net_index == logical_block[ilogical_block].input_nets[0][j]) {
-									fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
+									fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_route[node_index].prev_pb_pin_id);
 									break;
 								}
 							}
@@ -154,7 +154,7 @@ static void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 			if (pb_type->ports[i].type == OUT_PORT) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				assert(pb_type->ports[i].num_pins == 1);
-				assert(logical_block[ilogical_block].output_nets[0][0] == pb_pin_route_stats[node_index].atom_net_idx);
+				assert(logical_block[ilogical_block].output_nets[0][0] == pb_route[node_index].atom_net_idx);
 				fprintf(fpout, "clb_%d_rr_node_%d\n", clb_index, node_index);
 			}
 		}
@@ -175,7 +175,7 @@ static void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				assert(logical_block[ilogical_block].input_nets[0][0] != OPEN);
 				int node_index =
 					pb_graph_node->input_pins[0][0].pin_count_in_cluster;
-				fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
+				fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_route[node_index].prev_pb_pin_id);
 			}
 			else if (pb_type->ports[i].type == OUT_PORT) {
 				assert(pb_type->ports[i].num_pins == 1);
@@ -187,7 +187,7 @@ static void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				assert(pb_type->ports[i].num_pins == 1);
 				assert(logical_block[ilogical_block].clock_net != OPEN);
 				int node_index = pb_graph_node->clock_pins[0][0].pin_count_in_cluster;
-				fprintf(fpout, "clb_%d_rr_node_%d 2", clb_index, pb_pin_route_stats[node_index].prev_pb_pin_id);
+				fprintf(fpout, "clb_%d_rr_node_%d 2", clb_index, pb_route[node_index].prev_pb_pin_id);
 			}
 			else {
 				assert(0);
@@ -201,7 +201,7 @@ static void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 }
 
 static void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
-	t_pb_pin_route_stats * pb_pin_route_stats;
+	t_pb_route * pb_route;
 	t_pb_graph_node *pb_graph_node;
 	t_pb_graph_node *pb_graph_node_of_pin;
 	int max_pb_graph_pin;
@@ -211,33 +211,33 @@ static void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 	pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(clb[iclb].type);
 	pb_graph_node = clb[iclb].pb->pb_graph_node;
 	max_pb_graph_pin = pb_graph_node->total_pb_pins;
-	pb_pin_route_stats = clb[iclb].pb_pin_route_stats;
+	pb_route = clb[iclb].pb_route;
 
 
 	for (int i = 0; i < max_pb_graph_pin; i++) {
-		if (pb_pin_route_stats[i].atom_net_idx != OPEN) {
+		if (pb_route[i].atom_net_idx != OPEN) {
 			int column = 0;
 			pb_graph_node_of_pin = pb_graph_pin_lookup[i]->parent_node;
 
 			/* Print interconnect */
-			if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_pin_route_stats[i].prev_pb_pin_id == OPEN) {
+			if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_route[i].prev_pb_pin_id == OPEN) {
 				/* Logic block input pin */
 				assert(pb_graph_node_of_pin->parent_pb_graph_node == NULL);
 				fprintf(fpout, ".names ");
-				print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
+				print_net_name(pb_route[i].atom_net_idx, &column, fpout);
 				fprintf(fpout, " clb_%d_rr_node_%d\n", iclb, i);
 				fprintf(fpout, "1 1\n\n");
 			}
 			else if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_graph_node_of_pin->parent_pb_graph_node == NULL) {
 				/* Logic block output pin */
-				fprintf(fpout, ".names clb_%d_rr_node_%d ", iclb, pb_pin_route_stats[i].prev_pb_pin_id);
-				print_net_name(pb_pin_route_stats[i].atom_net_idx, &column, fpout);
+				fprintf(fpout, ".names clb_%d_rr_node_%d ", iclb, pb_route[i].prev_pb_pin_id);
+				print_net_name(pb_route[i].atom_net_idx, &column, fpout);
 				fprintf(fpout, "\n");
 				fprintf(fpout, "1 1\n\n");
 			}
 			else if (pb_graph_node_of_pin->pb_type->num_modes != 0 || pb_graph_pin_lookup[i]->port->type != OUT_PORT) {
 				/* Logic block internal pin */
-				fprintf(fpout, ".names clb_%d_rr_node_%d clb_%d_rr_node_%d\n", iclb, pb_pin_route_stats[i].prev_pb_pin_id, iclb, i);
+				fprintf(fpout, ".names clb_%d_rr_node_%d clb_%d_rr_node_%d\n", iclb, pb_route[i].prev_pb_pin_id, iclb, i);
 				fprintf(fpout, "1 1\n\n");
 			}
 		}
@@ -260,7 +260,7 @@ static void output_blif(const t_arch *arch, t_block *clb, int num_clusters, cons
 	int bnum, column;
 	struct s_linked_vptr *p_io_removed;
 
-	if (clb[0].pb_pin_route_stats == NULL) {
+	if (clb[0].pb_route == NULL) {
 		return;
 	}
 
