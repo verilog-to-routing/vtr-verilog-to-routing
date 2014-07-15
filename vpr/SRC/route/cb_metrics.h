@@ -81,4 +81,29 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 		INP e_pin_type pin_type, INP int *Fc_array, INP t_chan_width *chan_width_inf, 
 		INP int num_segments, INP t_segment_inf *segment_inf);
 
+
+
+/**** EXPERIMENTAL ****/
+#include <map>
+
+class Wire_Counting{
+public:
+	/* number of wires in this wire group (here, wires are grouped by the number of switches they carry) */
+	int num_wires;
+	/* map key is number of wires used. element represents how many times, over all possible configurations of the switches
+	   in the channel, 'map key' wires from this wire group is used */
+	std::map<int, long double> configs_used;
+
+	/* the probabilistic expectation of how many wires will actually be used */
+	float expectation_available;
+};
+
+
+typedef std::vector< std::vector<float> > t_xbar_matrix;
+
+void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_ptr block_type, INP int *Fc_array_out,
+		 INP int *Fc_array_in, INP t_chan_width *chan_width_inf);
+
+/**** END EXPERIMENTAL ****/
+
 #endif /*CB_METRICS_H*/

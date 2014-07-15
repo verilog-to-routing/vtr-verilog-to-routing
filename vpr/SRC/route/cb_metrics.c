@@ -29,6 +29,7 @@
 #include <algorithm>
 
 #include <map>
+#include <iterator>
 
 using namespace std;
 
@@ -246,7 +247,7 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 	/* check based on block type whether we should account for pins on both sides of a channel when computing the relevant CB metrics
 	  (i.e. from a block on the left and from a block on the right for a vertical channel, for instance) */
 	bool both_sides = false;
-	if (0 == strcmp("clb", block_type->name)){
+	if (0 == strcmp("clb", block_type->name) && DRIVER == pin_type){
 		/* many CLBs are adjacent to eachother, so connections from one CLB	
 		*  will share the channel segment with its neighbor. We'd like to take this into	
 		*  account for the applicable metrics. */
@@ -339,7 +340,7 @@ static void init_cb_structs(INP t_type_ptr block_type, INP int *****tracks_conne
 						pair< set<int>::iterator, bool > result2 = cb_metrics->track_to_pins.at(iside).at(track).insert( pin );
 						if (!result2.second){
 							/* this pin should not already be a part of the set */
-							vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Attempted to insert element into tracks_to_pin set which already exists there\n");
+							vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Attempted to insert element into track_to_pins set which already exists there\n");
 						}
 
 						/* keep track of how many of each wire type is used by the current pin */
@@ -618,7 +619,7 @@ static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type
 			for (int iwidth = 0; iwidth < block_type->width; iwidth++){
 				for (int iheight = 0; iheight < block_type->height; iheight++){
 					/* check if ipin is present at this side/width/height */
-					if (1 == block_type->pinloc[iwidth][iheight][iside][ipin]){
+					if (-1 != tracks_connected_to_pin[ipin][iwidth][iheight][iside][0]){ /* checking 'pinloc' gives false positive for clk pin, so do this */
 						if ((int)counted_pins.size() == num_pin_type_pins){
 							/* Some blocks like io appear to have four sides, but only one	*
 							*  of those sides is actually used in practice. So here we try	*
@@ -703,7 +704,7 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 	/* for the CLB block types it is appropriate to account for pins on both sides of a channel segment when
 	   calculating a CB metric (because CLBs are often found side by side) */
 	bool both_sides = false;
-	if (0 == strcmp("clb", block_type->name)){
+	if (0 == strcmp("clb", block_type->name) && DRIVER == pin_type){
 		/* many CLBs are adjacent to eachother, so connections from one CLB	
 		*  will share the channel segment with its neighbor. We'd like to take this into	
 		*  account for the applicable metrics. */
@@ -748,120 +749,120 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 		}
 
 		if (set_of_tracks.size() == 0){
-			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "could not find any tracks that carry more than %d switches. Fc may be too low\n", set_of_tracks.size());
-		}
-
-		/* now choose a random track from the returned set of qualifying tracks */
-		int old_track = my_irand(set_of_tracks.size()-1);
-		old_track = set_of_tracks.at(old_track);
-
-		/* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
-		find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
-		int new_track = my_irand(set_of_tracks.size()-1);
-		new_track = set_of_tracks.at(new_track);
-
-		/* move the rand_pin's connection from the old track to the new track and see what the new cost is */
-		/* update CB metrics structures */
-		pin_to_tracks->at(rand_side).at(rand_pin_index).erase(old_track);
-		pin_to_tracks->at(rand_side).at(rand_pin_index).insert(new_track);
-
-		track_to_pins->at(rand_side).at(old_track).erase(rand_pin);
-		track_to_pins->at(rand_side).at(new_track).insert(rand_pin);
-
-		wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)--;
-		wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)++;
-		
-		/* the orthogonal metric needs to stay within some tolerance of its initial value. here we get the
-		   orthogonal metric after the above move */
-		if (metric < NUM_WIRE_METRICS){
-			/* get the new pin diversity cost */
-			new_orthogonal_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
-		} else {
-			/* get the new wire homogeneity cost */
-			new_orthogonal_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-		}
-
-		/* check if the orthogonal metric has remained within tolerance */
-		if (new_orthogonal_metric >= initial_orthogonal_metric - orthogonal_metric_tolerance 
-		    && new_orthogonal_metric <= initial_orthogonal_metric + orthogonal_metric_tolerance){
-			/* The orthogonal metric is within tolerance. Can proceed */
-
-			/* get the new wire metric */
-			new_metric = 0;
-
-			double delta_cost;
-			switch(metric){
-				case WIRE_HOMOGENEITY:
-					new_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-					break;
-				case HAMMING_PROXIMITY:
-					new_metric = get_hamming_proximity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-					break;
-				case LEMIEUX_COST_FUNC:
-					new_metric = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
-					break;
-				case PIN_DIVERSITY:
-					new_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
-					break;
-				default:
-					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
-					break;
-			}
-			new_cost = fabs(target_metric - new_metric);
-			delta_cost = new_cost - cost;
-			if (!accept_move(delta_cost, temp)){
-				revert = true;
-			}
-		} else {
-			/* the new orthogoanl metric changed too much. will undo the move made before */
-			revert = true;
-		}
-
-		if (revert){
-			/* revert the attempted move */
-			pin_to_tracks->at(rand_side).at(rand_pin_index).insert(old_track);
-			pin_to_tracks->at(rand_side).at(rand_pin_index).erase(new_track);
-
-			track_to_pins->at(rand_side).at(old_track).insert(rand_pin);
-			track_to_pins->at(rand_side).at(new_track).erase(rand_pin);
-
-			wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)++;
-			wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)--;
-
 			new_cost = cost;
 		} else {
-			/* accept the attempted move */
+			/* now choose a random track from the returned set of qualifying tracks */
+			int old_track = my_irand(set_of_tracks.size()-1);
+			old_track = set_of_tracks.at(old_track);
 
-			/* need to update the actual pin-to-track mapping used by build_rr_graph */
-			int track_index = 0;
-			for (track_index = 0; track_index < Fc; track_index++){
-				if (pin_to_track_connections[rand_pin][0][0][rand_side][track_index] == old_track){
-					break;
-				}
+			/* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
+			find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
+			int new_track = my_irand(set_of_tracks.size()-1);
+			new_track = set_of_tracks.at(new_track);
+
+			/* move the rand_pin's connection from the old track to the new track and see what the new cost is */
+			/* update CB metrics structures */
+			pin_to_tracks->at(rand_side).at(rand_pin_index).erase(old_track);
+			pin_to_tracks->at(rand_side).at(rand_pin_index).insert(new_track);
+
+			track_to_pins->at(rand_side).at(old_track).erase(rand_pin);
+			track_to_pins->at(rand_side).at(new_track).insert(rand_pin);
+
+			wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)--;
+			wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)++;
+			
+			/* the orthogonal metric needs to stay within some tolerance of its initial value. here we get the
+			   orthogonal metric after the above move */
+			if (metric < NUM_WIRE_METRICS){
+				/* get the new pin diversity cost */
+				new_orthogonal_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+			} else {
+				/* get the new wire homogeneity cost */
+				new_orthogonal_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
 			}
-			pin_to_track_connections[rand_pin][0][0][rand_side][track_index] = new_track;
 
-			/* update metrics */
-			switch(metric){
-				case WIRE_HOMOGENEITY:
-					cb_metrics->wire_homogeneity = new_metric;
-					cb_metrics->pin_diversity = new_orthogonal_metric;
-					break;
-				case HAMMING_PROXIMITY:
-					cb_metrics->hamming_proximity = new_metric;
-					cb_metrics->pin_diversity = new_orthogonal_metric;
-					break;
-				case LEMIEUX_COST_FUNC:
-					cb_metrics->lemieux_cost_func = new_metric;
-					cb_metrics->pin_diversity = new_orthogonal_metric;
-					break;
-				case PIN_DIVERSITY:
-					cb_metrics->pin_diversity = new_metric;
-					cb_metrics->wire_homogeneity = new_orthogonal_metric;
-					break;
-				default:
-					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric: %d\n", (int)metric);
-					break;
+			/* check if the orthogonal metric has remained within tolerance */
+			if (new_orthogonal_metric >= initial_orthogonal_metric - orthogonal_metric_tolerance 
+			    && new_orthogonal_metric <= initial_orthogonal_metric + orthogonal_metric_tolerance){
+				/* The orthogonal metric is within tolerance. Can proceed */
+
+				/* get the new wire metric */
+				new_metric = 0;
+
+				double delta_cost;
+				switch(metric){
+					case WIRE_HOMOGENEITY:
+						new_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+						break;
+					case HAMMING_PROXIMITY:
+						new_metric = get_hamming_proximity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+						break;
+					case LEMIEUX_COST_FUNC:
+						new_metric = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+						break;
+					case PIN_DIVERSITY:
+						new_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+						break;
+					default:
+						vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
+						break;
+				}
+				new_cost = fabs(target_metric - new_metric);
+				delta_cost = new_cost - cost;
+				if (!accept_move(delta_cost, temp)){
+					revert = true;
+				}
+			} else {
+				/* the new orthogoanl metric changed too much. will undo the move made before */
+				revert = true;
+			}
+
+			if (revert){
+				/* revert the attempted move */
+				pin_to_tracks->at(rand_side).at(rand_pin_index).insert(old_track);
+				pin_to_tracks->at(rand_side).at(rand_pin_index).erase(new_track);
+
+				track_to_pins->at(rand_side).at(old_track).insert(rand_pin);
+				track_to_pins->at(rand_side).at(new_track).erase(rand_pin);
+
+				wire_types_used_count->at(rand_side).at(rand_pin_index).at(old_track % num_wire_types)++;
+				wire_types_used_count->at(rand_side).at(rand_pin_index).at(new_track % num_wire_types)--;
+
+				new_cost = cost;
+			} else {
+				/* accept the attempted move */
+
+				/* need to update the actual pin-to-track mapping used by build_rr_graph */
+				int track_index = 0;
+				for (track_index = 0; track_index < Fc; track_index++){
+					if (pin_to_track_connections[rand_pin][0][0][rand_side][track_index] == old_track){
+						break;
+					}
+				}
+				pin_to_track_connections[rand_pin][0][0][rand_side][track_index] = new_track;
+
+				/* update metrics */
+				switch(metric){
+					case WIRE_HOMOGENEITY:
+						cb_metrics->wire_homogeneity = new_metric;
+						cb_metrics->pin_diversity = new_orthogonal_metric;
+						break;
+					case HAMMING_PROXIMITY:
+						cb_metrics->hamming_proximity = new_metric;
+						cb_metrics->pin_diversity = new_orthogonal_metric;
+						break;
+					case LEMIEUX_COST_FUNC:
+						cb_metrics->lemieux_cost_func = new_metric;
+						cb_metrics->pin_diversity = new_orthogonal_metric;
+						break;
+					case PIN_DIVERSITY:
+						cb_metrics->pin_diversity = new_metric;
+						cb_metrics->wire_homogeneity = new_orthogonal_metric;
+						break;
+					default:
+						vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric: %d\n", (int)metric);
+						break;
+				}
 			}
 		}
 	}
@@ -1010,3 +1011,407 @@ static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metric
 		vpr_printf_info("\t%d ==> %d\n", it->first, it->second);
 	}
 }
+
+
+/**** EXPERIMENTAL ****/
+
+/* constructs a crossbar matrix from the connection block 'conn_block'. rows correspond to the pins,
+   columns correspond to the wires. entry (i,j) is set to 1 if that pin and track are connected. the 
+   only pins accounted for here are the pins that actually have switches on the conn block side in question */
+static void get_xbar_matrix(INP int *****conn_block, INP t_type_ptr block_type, e_pin_type pin_type, INP int side, INP bool both_sides, 
+		INP int nodes_per_chan, INP int Fc, INOUTP t_xbar_matrix *xbar_matrix){
+	xbar_matrix->clear();
+	if (both_sides && side >= 2){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "If analyzing both sides of a conn block, the initial side should have index < 2");
+	}
+
+	int num_pins = block_type->num_pins;
+
+	/* if we're checking both sides of a channel, we're dealing with two CLBs instead of one */
+	int pins_to_check = both_sides ? num_pins*2 : num_pins;
+
+	int checked_pins = 0;
+	for (int ipin = 0; ipin < pins_to_check; ipin++){
+		int width = 0;		/* CLBs have width/height of 0 */
+		int height = 0;
+
+		int pin = ipin;
+		int check_side = side;
+		if (pin >= num_pins){
+			/* checking on the other side of the channel */
+			pin %= num_pins;
+			check_side += 2;
+		}
+
+		/* skip if specified pin isn't of 'pin_type' */
+		int pin_class_index = block_type->pin_class[pin];
+		if (pin_type != block_type->class_inf[pin_class_index].type){
+			continue;
+		}
+		/* skip if specified pin doesn't connect to tracks on the specified side */
+		if (conn_block[pin][width][height][check_side][0] == -1){
+			continue;
+		}
+	
+		/* each pin corresponds to a row of the xbar matrix */
+		xbar_matrix->push_back( vector<float>() );
+		
+		/* each wire in the channel corresponds to a column of the xbar matrix */
+		for (int icol = 0; icol < nodes_per_chan; icol++){
+			xbar_matrix->at(checked_pins).push_back(0.0);
+		}
+		/* set appropriate elements of the current xbar row to 1 (according to which tracks the pin connects to) */
+		for (int iswitch = 0; iswitch < Fc; iswitch++){
+			int set_col = conn_block[pin][width][height][check_side][iswitch];
+			xbar_matrix->at(checked_pins).at(set_col) = 1.0;
+		}
+
+		/* increment the number of pins for which we have created an xbar row */
+		checked_pins++;
+	}
+}
+
+/* returns a transposed version of the specified crossbar matrix */
+static t_xbar_matrix transpose_xbar( INP t_xbar_matrix *xbar ){
+	t_xbar_matrix result;
+	
+	int new_cols = (int)xbar->size();
+	int new_rows = (int)xbar->at(0).size();
+
+	for (int i = 0; i < new_rows; i++){
+		result.push_back(vector<float>());
+		for (int j = 0; j < new_cols; j++){
+			result.at(i).push_back(xbar->at(j).at(i));
+		}
+	}
+	return result;
+}
+
+/* calculates the factorial of 'num'. result is a long double. some precision may be lost, but that's
+   OK for my purposes */
+static long double factorial(INP int num){
+	long double result = 1;
+	if (num <= 1){
+		result = 1;
+	} else {
+		for (int i = 2; i <= num; i++){
+			result *= (long double)i;
+		}
+	}
+	return result;
+}
+
+/* calculates n choose k. some precision may be lost, but for my purposes
+   that doesn't really matter */
+static long double binomial_coefficient(INP int n, INP int k){
+	if (n < k){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "calculating the binomial coefficient requires that n >= k");
+	}
+	long double result;
+	result = factorial(n) / (factorial(k) * factorial(n-k));
+	return result;
+}
+
+
+
+static long double count_switch_configurations(INP int level, INP int signals_left, INP int capacity_left, INP vector<int> *config, 
+		INOUTP map<int, Wire_Counting> *count_map){
+	long double result = 0;
+
+	if (capacity_left < signals_left){
+		printf("capacity left %d   signals left %d   level %d\n", capacity_left, signals_left, level);
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "the number of signals remaining should not be greater than the remaining capacity");
+	}
+
+	/* get the capacity of the current wire group (here, group is defined by the number of switches a wire carries) */
+	map<int, Wire_Counting>::const_iterator it = count_map->begin();
+	advance(it, level);
+	int my_capacity = it->second.num_wires;
+
+	/* get the total capacity of the remaining wire groups */
+	int downstream_capacity = capacity_left - my_capacity;
+
+	/* get the maximum number of signals this wire group can carry */
+	int can_take = min(my_capacity, signals_left);
+
+	/* we cannot push more signals onto the other wire groups than they can take. to avoid this the minimum number of signals allowed
+	   to be carried by the current wire group may be above 0 */
+	int start_fill = signals_left - downstream_capacity;
+	if (start_fill < 0){
+		start_fill = 0;
+	}
+
+	/* now, for each number of signals this wire group can carry... */
+	for (int isigs = start_fill; isigs <= can_take; isigs++){
+		config->at(level) = isigs;
+		if (level == (int)count_map->size()-1){
+			/* if this is the final wire group, we want to count the number of possible ways that we can
+			   configure the switches in the channel to achieve the wire usage specified by the current value of the config vector */
+			long double num_configs = 1;
+			for (int i = 0; i < (int)config->size(); i++){
+				it = count_map->begin();
+				advance(it, i);
+				int num_switches_per_wire = it->first;
+				int num_wires_in_group = it->second.num_wires;
+				int num_wires_used_in_group = config->at(i);
+				num_configs *= binomial_coefficient(num_wires_in_group, num_wires_used_in_group) 
+							* (long double)pow((long double)num_switches_per_wire, (long double)num_wires_used_in_group);
+			}
+
+			/* add this info for the final wire group */
+			it = count_map->begin();
+			advance(it, level);
+			map<int, long double> *configs_used = &count_map->at(it->first).configs_used;
+			if ( map_has_key(config->at(level), configs_used) ){
+				configs_used->at(config->at(level)) += num_configs;
+			} else {
+				(*configs_used)[config->at(level)] = num_configs;
+			}
+			result = num_configs;
+		} else {
+			/* recurse to the next wire group */
+			long double num_configs;
+			num_configs = count_switch_configurations(level + 1, signals_left - isigs, downstream_capacity, config, count_map);
+			/* add this info for the current wire group */
+			it = count_map->begin();
+			advance(it, level);
+			map<int, long double> *configs_used = &count_map->at(it->first).configs_used;
+			if ( map_has_key(config->at(level), configs_used) ){
+				configs_used->at(config->at(level)) += num_configs;
+			} else {
+				(*configs_used)[config->at(level)] = num_configs;
+			}
+			
+			result += num_configs;
+		}
+	}
+
+
+	return result;
+}
+
+/* 'normalizes' the given crossbar. normalization is done in a way such that an entry which was formerly equal to '1'
+    will not equal to the probability of that switch being available */
+static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_used, INOUTP t_xbar_matrix *xbar ){
+
+
+	int rows = (int)xbar->size();		/* rows correspond to pins */
+	int cols = (int)xbar->at(0).size();	/* columns correspond to wires */
+
+	map<int, Wire_Counting> count_map;
+
+	/* the number of signals that this channel can carry (each wire with switches contributes 1 to capacity) */
+	int capacity = 0;
+
+	/* create a map where the key is the number of switches, and the element is a class with a field
+	   that specifies how many wires carry this number of switches */
+	for (int iwire = 0; iwire < cols; iwire++){
+		int num_switches = 0;
+		for (int ipin = 0; ipin < rows; ipin++){
+			if (1 == xbar->at(ipin).at(iwire)){
+				num_switches++;
+			}
+		}
+
+		if ( 0 == num_switches ){
+			continue;
+		}
+		capacity++;
+		if ( map_has_key(num_switches, &count_map) ){
+			/* a map entry for this number of switches exists. increment the number of wires that use this number of switches */
+			count_map.at(num_switches).num_wires++;
+		} else {
+			/* create a map entry. so far only 1 wire uses this number of switches */
+			Wire_Counting dummy;
+			dummy.num_wires = 1;
+			count_map[num_switches] = dummy;
+		}
+	}
+
+	/* now we have to count two things. 
+	   1) the total number of possible switch configurations in which 'wires_used' wires are occupied by a signal 
+	   2) in general, we have some number of 'wire groups' as defined above. each wire group is used a certain number of times in some
+		specific configuration of switches. we want to determine, for each wire group, the number of switch configurations
+		that leads to y wires of this group being used, for every feasable y.
+
+	   These two things should allow us to calculate the expectation of how many wires of each group are used on average. 
+	   And this in turn allows us to set the probabilities of each wire in the xbar matrix being available/unavailable 
+	*/
+
+	/* the config vector represents some distribution of signals over available wires. i.e. x wires of type 0 get used, y wires of type 1, etc 
+	   this vector is created here, but is updated inside the count_switch_configurations function */
+	vector<int> config;
+	for (int i = 0; i < (int)count_map.size(); i++){
+		config.push_back(0);
+	}
+
+	/* the nuber of wires that are used */
+	int wires_used = nint(fraction_wires_used * (float)capacity);
+
+	long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);
+	printf("%f\n   ", (float)wires_used/(float)capacity);
+	printf("%LF\n", total_configurations);
+
+
+	/* next we need to calculate the expectation of the number of wires available for each wire group */
+	map<int, Wire_Counting>::const_iterator it;
+	for (it = count_map.begin(); it != count_map.end(); it++){
+		map<int, long double> *configs_used = &count_map.at(it->first).configs_used;
+		
+		float *expectation_available = &count_map.at(it->first).expectation_available;
+		(*expectation_available) = 0;
+		map<int, long double>::const_iterator it2;
+		for (it2 = configs_used->begin(); it2 != configs_used->end(); it2++){
+			int used = it2->first;
+			long double num_configurations = it2->second;
+			long double probability = num_configurations / total_configurations;
+			(*expectation_available) += (float)probability * (float)used;
+		} 
+		(*expectation_available) = (float)it->second.num_wires - (*expectation_available);
+	} 
+
+
+	/* and now we adjust the column values of the xbar matrix according to the expected availability of the corresponding wires
+	   (recall a column corresponds to a wire) */
+	for (int iwire = 0; iwire < cols; iwire++){
+		int num_switches = 0;
+		for (int ipin = 0; ipin < rows; ipin++){
+			if (1 == xbar->at(ipin).at(iwire)){
+				num_switches++;
+			}
+		}
+		
+		if (num_switches == 0){
+			continue;
+		}
+
+		float fraction_available = count_map.at(num_switches).expectation_available / count_map.at(num_switches).num_wires;
+
+		for (int ipin = 0; ipin < rows; ipin++){
+			if (1 == xbar->at(ipin).at(iwire)){
+				xbar->at(ipin).at(iwire) = fraction_available;
+			}
+		}
+	}
+}
+
+/* prints a crossbar matrix */
+static void print_xbar( t_xbar_matrix *xbar ){
+	int rows = (int)xbar->size();
+	int cols = (int)xbar->at(0).size();
+
+	for (int irow = 0; irow < rows; irow++){
+		vpr_printf_info("\t\t|\t");
+		for (int icol = 0; icol < cols; icol++){
+			vpr_printf_info("%.2f\t", xbar->at(irow).at(icol));
+		}
+		vpr_printf_info(" |\n");
+	}
+}
+
+static float probabilistic_or(INP float a, INP float b){
+	float result;
+	result = a + b - a*b;	/* assuming a & b are not mutually exclusive */
+	return result;
+}
+
+/* allocates an xbar with specified number of rows and columns where each element is set to 'num' */
+static void allocate_xbar(INP int rows, INP int cols, INP float num, INOUTP t_xbar_matrix *xbar){
+	xbar->clear();
+	for (int irow = 0; irow < rows; irow++){
+		xbar->push_back(vector<float>());
+		for (int icol = 0; icol < cols; icol++){
+			xbar->at(irow).push_back(num);
+		}
+	}
+}
+
+/* combines xbar1 followed by xbar2 into a compound xbar returned via the return value */
+static t_xbar_matrix combine_two_xbars(INP t_xbar_matrix *xbar1, INP t_xbar_matrix *xbar2){
+	
+	t_xbar_matrix xbar_out;
+
+	if (xbar1->at(0).size() != xbar2->size()){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "xbar1 should have the same number of columns as xbar2 has rows");
+	}
+
+	/* get the dimensions of the combined xbar */
+	int rows = (int)xbar1->size();
+	int cols = (int)xbar2->at(0).size();
+
+	/* allocate xbar_out */
+	allocate_xbar(rows, cols, 0.0, &xbar_out);
+
+	/* the xbars are combined similar to matrix multiplication, except instead of adding the multiplied elements together,
+	   we treat the elements as probabilities and 'or' them together */
+	
+	/* create xbar_out */
+	int vec_length = (int)xbar2->size();
+	for (int irow = 0; irow < rows; irow++){
+		for (int icol = 0; icol < cols; icol++){
+			/* combine irow'th row of xbar1 with icol'th column of xbar2 */
+			float result = 0;
+			for (int ielem = 0; ielem < vec_length; ielem++){
+				float product = xbar1->at(irow).at(ielem) * xbar2->at(ielem).at(icol);
+				result = probabilistic_or(product, result);
+			}
+			xbar_out.at(irow).at(icol) = result;
+		}
+	}
+
+	return xbar_out;
+}
+
+void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_ptr block_type, INP int *Fc_array_out,
+		 INP int *Fc_array_in, INP t_chan_width *chan_width_inf){
+	
+	if (0 != strcmp(block_type->name, "clb")){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "This code currently works for CLB blocks only");
+	}
+	if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max
+		|| chan_width_inf->x_max != chan_width_inf->y_max){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "This code currently assumes that channel width is uniform throughout the fpga");
+	}
+	int nodes_per_chan = chan_width_inf->x_min;
+
+	/* get Fc */
+	int Fc_out = get_max_Fc(Fc_array_out, block_type, DRIVER);
+	int Fc_in = get_max_Fc(Fc_array_in, block_type, RECEIVER);
+
+	/* get the basic input and output conn block crossbars */
+	t_xbar_matrix output_xbar, input_xbar;
+	get_xbar_matrix(opin_cb, block_type, DRIVER, 0, true, nodes_per_chan, Fc_out, &output_xbar);
+	get_xbar_matrix(ipin_cb, block_type, RECEIVER, 0, false, nodes_per_chan, Fc_in, &input_xbar);
+	input_xbar = transpose_xbar(&input_xbar);
+
+	/* 'normalize' the output_xbar such that each entry which was formerly equal to '1' will now 
+	   equal to the probability of that corresponding switch being available for use */
+	normalize_xbar(nodes_per_chan, 0.7, &output_xbar);
+	
+	/* combine the output and input CB crossbars */
+	t_xbar_matrix compound_xbar;
+	compound_xbar = combine_two_xbars(&output_xbar, &input_xbar);
+
+	/* and then combine that with a full crossbar */
+	t_xbar_matrix full_xbar;
+	allocate_xbar((int)compound_xbar.size(), (int)compound_xbar.size(), 1.0, &full_xbar);
+	compound_xbar = combine_two_xbars(&compound_xbar, &full_xbar);
+
+	printf("output crossbar\n");
+	print_xbar( &output_xbar );
+	printf("\n\ninput crossbar\n");
+	print_xbar( &input_xbar );
+	printf("\n\ncompound crossbar\n");
+	print_xbar( &compound_xbar );
+	
+
+	for (int irow = 0; irow < (int)compound_xbar.size(); irow++){
+		float row_total = 0;
+		for (int icol = 0; icol < (int)compound_xbar.at(0).size(); icol++){
+			row_total += compound_xbar.at(irow).at(icol);
+		}
+		printf("pin %d    total %f\n", irow, row_total);
+	}
+}
+
+/**** END EXPERIMENTAL ****/
