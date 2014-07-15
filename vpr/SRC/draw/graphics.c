@@ -1733,11 +1733,11 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 	x11_event_loop(act_on_mousebutton, act_on_mousemove, act_on_keypress, drawscreen);
 #else /* Win32 */
 	
-	// For event handling with Win32, need to set these file scope function 
-	// pointers, then dispatch the event and get called via callbacks from 
-	// Windows (eg. WIN32_GraphicsWND()). Actual event handling is done 
+	// For event handling with Win32, need to set these file scope function
+	// pointers, then dispatch the event and get called via callbacks from
+	// Windows (eg. WIN32_GraphicsWND()). Actual event handling is done
 	// in these Win32-specific callback functions.
-  
+
 	MSG msg;
 	
 	win32_mouseclick_ptr = act_on_mousebutton;
@@ -1746,11 +1746,9 @@ event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed b
 	win32_drawscreen_ptr = drawscreen;
 	gl_state.ProceedPressed = false;
 	win32_state.InEventLoop = true;
-	
+
 	win32_invalidate_screen();
-	
-	// timout timer, for event loop. Supposed to be 2 seconds, but isn't?
-	// UINT_PTR timeout_timer = SetTimer(NULL, NULL, 2000, NULL);
+
 	bool dropped_something = false;
 
 	// Windows event dropping explanation:
@@ -3676,7 +3674,6 @@ font_ptr FontCache::get_font_info(
 
 			descr2font_map.erase(font_to_remove);
 			orderqueue.pop_back();
-			puts("font cache overflow");
 		}
 
 		font_ptr new_font = do_font_loading(pointsize, degrees);

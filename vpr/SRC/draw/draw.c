@@ -627,8 +627,11 @@ void init_draw_coords(float width_val) {
 	/* Load coordinates of sub-blocks inside the clbs */
 	draw_internal_init_blk();
 
-	init_world(0.0, draw_coords->tile_y[ny + 1] + draw_coords->get_tile_width(), 
-			   draw_coords->tile_x[nx + 1] + draw_coords->get_tile_width(), 0.0);
+	init_world(
+		0.0, 0.0,
+		draw_coords->tile_y[ny + 1] + draw_coords->get_tile_width(), 
+		draw_coords->tile_x[nx + 1] + draw_coords->get_tile_width()
+	);
 }
 
 static void drawplace(void) {

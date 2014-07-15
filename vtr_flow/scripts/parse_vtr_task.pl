@@ -155,7 +155,7 @@ sub parse_single_task {
 	elsif ( -e "$vtr_flow_path/parse/parse_config/$parse_file" ) {
 		$parse_file = "$vtr_flow_path/parse/parse_config/$parse_file";
 	}
-	else {
+	elsif ( $parse_file !~ /^\/.*/ ) {
 		die "Parse file does not exist ($parse_file)";
 	}
 	
