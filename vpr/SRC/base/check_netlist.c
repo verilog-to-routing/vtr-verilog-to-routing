@@ -1,4 +1,6 @@
-/* TODO: Consider deleting this file altogether.  Many netlist checks now done during parsing.  Also, the checks here are too strict.  For example, we may actually want to allow mixing of local/global signals */
+/**
+* Simple checks to make sure netlist data structures are consistent.  These include checking for duplicated names, dangling links, etc.
+*/
 
 #include <cstdio>
 #include <cstring>
@@ -25,13 +27,7 @@ static int check_clb_conn(int iblk, int num_conn);
 
 static int check_clb_internal_nets(unsigned int iblk);
 
-static int check_subblock_internal_nets(int iblk, int isub);
-
 static int get_num_conn(int bnum);
-
-static int check_subblocks(int iblk);
-
-static int check_primitives(int iblk, int isub);
 
 /*********************** Subroutine definitions *****************************/
 
@@ -40,16 +36,7 @@ void check_netlist() {
 	int error, num_conn;
 	struct s_hash **net_hash_table, *h_net_ptr;
 
-	/* TODO: Remove the following the function calls after these functions have 
-	 been fleshed and are legitimately used in the code!!! They are called here so that 
-	 the compiler will not throw an error for an unused function				*/
-
-	int unused_var;
-	unused_var = check_subblock_internal_nets(0, 0);
-	unused_var = check_primitives(0, 0);
-	if (unused_var)
-		vpr_printf_info("Please go to the check_netlist() function in check_netlist.c and remove the first section as needed.");
-
+	
 	/* This routine checks that the netlist makes sense         */
 
 	net_hash_table = alloc_hash_table();
@@ -77,7 +64,6 @@ void check_netlist() {
 		num_conn = get_num_conn(i);
 		error += check_clb_conn(i, num_conn);
 		error += check_clb_internal_nets(i);
-		error += check_subblocks(i);
 		if (error >= ERROR_THRESHOLD) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"Too many errors in netlist, exiting.\n");
@@ -215,60 +201,59 @@ static int check_clb_conn(int iblk, int num_conn) {
 	return (error);
 }
 
+
+/* Check that internal-to-logic-block connectivity is continuous and logically consistent
+*/
 static int check_clb_internal_nets(unsigned int iblk) {
-	/** TODO:
-	 * Check if the internal CLB nets makes sense and are connected properly 
-	 *  Consists of 3 main loops
-	 * 1. a) Check name uniqueness
-	 b) Check all net connections are to CLB pins or subblock pins and that they match the net examined
-	 * 2. Check all connected CLB pins are connected to valid internal nets
-	 * 3. Check all connected subblock pins are connected to valid internal nets and that these match the net indexes
-	 */
-	return 0;
-}
+	
+	
+	int error = 0;
+	t_pb_route * pb_route = block[iblk].pb_route;
+	int num_pins_in_block = block[iblk].pb->pb_graph_node->total_pb_pins;
 
-static int check_subblock_internal_nets(int iblk, int isub) {
-	/**
-	 * TODO
-	 * Check if the internal CLB nets makes sense and are connected properly 
-	 *  Consists of 3 main checks
-	 * 1. a) Check name uniqueness
-	 b) Check all net connections are to CLB pins or subblock pins and that they match the net examined
-	 * 2. Check all connected CLB pins are connected to valid internal nets
-	 * 3. Check all connected subblock pins are connected to valid internal nets and that these match the net indexes
-	 */
-	return 0;
-}
+	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(block[iblk].type);
 
-static int check_subblocks(int iblk) {
-	/* TODO */
-	/* This routine checks the subblocks of iblk (which must be a CLB).  It    *
-	 * returns the number of errors found.                                     */
-	return 0;
-}
+	for (int i = 0; i < num_pins_in_block; i++) {
+		if (pb_route[i].atom_net_idx != OPEN || pb_route[i].prev_pb_pin_id != OPEN) {
+			if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->parent_node->parent_pb_graph_node == NULL) ||
+				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->pb_type->num_modes == 0)
+				) {
+				if (pb_route[i].prev_pb_pin_id != OPEN) {
+					vpr_printf_error(__FILE__, __LINE__,
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, block[iblk].name, i);
+					error++;
+				}
+			}
+			else {
+				if (pb_route[i].atom_net_idx == OPEN || pb_route[i].prev_pb_pin_id == OPEN) {
+					vpr_printf_error(__FILE__, __LINE__,
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, block[iblk].name, i);
+					error++;
+				}
+				else {
+					int prev_pin = pb_route[i].prev_pb_pin_id;
+					if (pb_route[prev_pin].atom_net_idx != pb_route[i].atom_net_idx) {
+						vpr_printf_error(__FILE__, __LINE__,
+							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, block[iblk].name, i, prev_pin);
+						error++;
+					}
+				}
+			}
+		}
+	}
 
-static int check_primitives(int iblk, int isub) {
-
-	/* TODO:
-	 This routine checks the subblocks of iblk (which must be a CLB).  It    *
-	 * returns the number of errors found.                                     */
-	return 0;
-
+	free_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup);
+	return error;
 }
 
 static int check_for_duplicated_names(void) {
-#if 0
-	int iblk, isub, iprim, error;
-	int clb_count, sub_count, prim_count;
+	int iblk, error;
+	int clb_count;
 	struct s_hash **clb_hash_table, *clb_h_ptr;
-	struct s_hash **sub_hash_table, *sub_h_ptr;
-	struct s_hash **prim_hash_table, *prim_h_ptr;
-
+	
 	clb_hash_table = alloc_hash_table();
-	sub_hash_table = alloc_hash_table();
-	prim_hash_table = alloc_hash_table();
-
-	error = clb_count = sub_count = prim_count = 0;
+	
+	error = clb_count = 0;
 
 	for (iblk = 0; iblk < num_blocks; iblk++)
 	{
@@ -280,33 +265,11 @@ static int check_for_duplicated_names(void) {
 		} else {
 			clb_count++;
 		}
-		for (isub = 0; isub < block[iblk].num_subblocks; isub++)
-		{
-			sub_h_ptr = insert_in_hash_table(sub_hash_table, block[iblk].subblocks[isub].name, sub_count);
-			if (sub_h_ptr->count > 1) {
-				vpr_printf_error(__FILE__, __LINE__, 
-						"Subblock %s has duplicated name.\n", block[iblk].subblocks[isub].name);
-				error++;
-			} else {
-				sub_count++;
-			}
-			for (iprim = 0; iprim < block[iblk].subblocks[isub].num_primitives; iprim++)
-			{
-				prim_h_ptr = insert_in_hash_table(prim_hash_table, block[iblk].subblocks[isub].primitives[iprim].name, prim_count);
-				if (prim_h_ptr->count > 1) {
-					vpr_printf_error(__FILE__, __LINE__, 
-							"Primitive %s has duplicated name.\n", 
-							block[iblk].subblocks[isub].primitives[iprim].name);
-					error++;
-				} else {
-					prim_count++;
-				}
-			}
-		}
 	}
+
+	free_hash_table(clb_hash_table);
+
 	return error;
-#endif
-	return 0;
 }
 
 static int get_num_conn(int bnum) {

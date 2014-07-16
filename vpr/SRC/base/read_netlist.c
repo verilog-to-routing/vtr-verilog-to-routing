@@ -28,7 +28,7 @@ using namespace std;
 
 static const char* netlist_file_name = NULL;
 
-static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
+static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_route *pb_route,
 		INOUTP t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping,
 		INP struct s_hash **vpack_net_hash);
 
@@ -38,7 +38,7 @@ static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 //===========================================================================//
 
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
-		INOUTP t_pb* pb, INOUTP t_rr_node *rr_graph,
+		INOUTP t_pb* pb, INOUTP t_pb_route *pb_route, INOUTP t_rr_node *rr_graph,
 		INOUTP t_pb **rr_node_to_pb_mapping, INOUTP int *num_primitives,
 		INP struct s_hash **vpack_net_hash,
 		INP struct s_hash **logical_block_hash);
@@ -57,6 +57,10 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		INP struct s_block block_list[], INP int ncount,
 		INP struct s_net nlist[], OUTP int *ext_ncount,
 		OUTP struct s_net **ext_nets, INP char **circuit_clocks);
+
+static void load_interal_to_block_net_nums(INP t_type_ptr type, INOUTP t_pb_route *pb_route);
+
+static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
 static void load_internal_to_cb_net_nums(INOUTP t_pb *top_level,
 		INP t_pb_graph_node *pb_graph_node, INOUTP t_rr_node *rr_graph);
@@ -322,7 +326,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 				index);
 	}
 
-	processPb(Parent, cb, index, cb[index].pb, cb[index].pb->rr_graph,
+	processPb(Parent, cb, index, cb[index].pb, cb[index].pb_route, cb[index].pb->rr_graph,
 			cb[index].pb->rr_node_to_pb_mapping, num_primitives, vpack_net_hash,
 			logical_block_hash);
 
@@ -330,6 +334,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	for (i = 0; i < cb[index].type->num_pins; i++) {
 		cb[index].nets[i] = OPEN;
 	}
+	load_interal_to_block_net_nums(cb[index].type, cb[index].pb_route);
 	load_internal_to_cb_net_nums(cb[index].pb, cb[index].pb->pb_graph_node,
 			cb[index].pb->rr_graph);
 	freeTokens(tokens, num_tokens);
@@ -343,7 +348,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
  * logical_block_hash - hashtable of original blif atom names and indices
  */
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
-		INOUTP t_pb* pb, INOUTP t_rr_node *rr_graph,
+	INOUTP t_pb* pb, INOUTP t_pb_route *pb_route, INOUTP t_rr_node *rr_graph,
 		INOUTP t_pb** rr_node_to_pb_mapping, INOUTP int *num_primitives,
 		INP struct s_hash **vpack_net_hash,
 		INP struct s_hash **logical_block_hash) {
@@ -358,13 +363,13 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 	struct s_hash *temp_hash;
 
 	Cur = FindElement(Parent, "inputs", TRUE);
-	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
+	processPorts(Cur, pb, pb_route, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 	Cur = FindElement(Parent, "outputs", TRUE);
-	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
+	processPorts(Cur, pb, pb_route, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 	Cur = FindElement(Parent, "clocks", TRUE);
-	processPorts(Cur, pb, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
+	processPorts(Cur, pb, pb_route, rr_graph, rr_node_to_pb_mapping, vpack_net_hash);
 	FreeNode(Cur);
 
 	Cur = FindElement(Parent, "regions", FALSE);
@@ -497,7 +502,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 					pb->child_pbs[i][pb_index].parent_pb = pb;
 					pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
 
-					processPb(Cur, cb, index, &pb->child_pbs[i][pb_index],
+					processPb(Cur, cb, index, &pb->child_pbs[i][pb_index], pb_route,
 							rr_graph, rr_node_to_pb_mapping, num_primitives,
 							vpack_net_hash, logical_block_hash);
 				} else {
@@ -534,7 +539,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 						}
 						pb->child_pbs[i][pb_index].parent_pb = pb;
 						pb->child_pbs[i][pb_index].rr_graph = pb->rr_graph;
-						processPb(Cur, cb, index, &pb->child_pbs[i][pb_index],
+						processPb(Cur, cb, index, &pb->child_pbs[i][pb_index], pb_route,
 								rr_graph, rr_node_to_pb_mapping, num_primitives,
 								vpack_net_hash, logical_block_hash);
 					}
@@ -609,7 +614,7 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 	return hash_value->index;
 }
 
-static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
+static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_route *pb_route,
 		t_rr_node *rr_graph, INOUTP t_pb** rr_node_to_pb_mapping,
 		INP struct s_hash **vpack_net_hash) {
 
@@ -708,6 +713,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 										pins[i]);
 							}
 							rr_graph[rr_node_index].net_num = temp_hash->index;
+							pb_route[rr_node_index].atom_net_idx = temp_hash->index;
 						}
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
@@ -736,6 +742,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 									pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].prev_node =
 								pin_node[0][0]->pin_count_in_cluster;
+						pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 						found = FALSE;
 						for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
@@ -775,6 +782,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 										pins[i]);
 							}
 							rr_graph[rr_node_index].net_num = temp_hash->index;
+							pb_route[rr_node_index].atom_net_idx = temp_hash->index;
 						}
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 					}
@@ -799,6 +807,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb,
 								pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 						rr_graph[rr_node_index].prev_node =
 								pin_node[0][0]->pin_count_in_cluster;
+						pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
 						rr_node_to_pb_mapping[rr_node_index] = pb;
 						found = FALSE;
 						for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
@@ -1315,4 +1324,27 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
 	pb_route = new t_pb_route[num_pins];
 
 	return pb_route;
+}
+
+static void load_interal_to_block_net_nums(INP t_type_ptr type, INOUTP t_pb_route *pb_route) {
+	int num_pins = type->pb_graph_head->total_pb_pins;
+
+	for (int i = 0; i < num_pins; i++) {
+		if (pb_route[i].prev_pb_pin_id != OPEN && pb_route[i].atom_net_idx == OPEN) {
+			load_atom_index_for_pb_pin(pb_route, i);
+		}
+	}
+}
+
+static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
+	int driver = pb_route[ipin].prev_pb_pin_id;
+	
+	assert(driver != OPEN);
+	assert(pb_route[ipin].atom_net_idx == OPEN);
+
+	if (pb_route[driver].atom_net_idx == OPEN) {
+		load_atom_index_for_pb_pin(pb_route, driver);
+	}	
+		
+	pb_route[ipin].atom_net_idx = pb_route[driver].atom_net_idx;
 }
