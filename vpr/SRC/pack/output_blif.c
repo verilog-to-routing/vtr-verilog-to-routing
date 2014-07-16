@@ -1,9 +1,9 @@
 /*
- Jason Luu 2008
- Print blif representation of circuit
- Assumptions: Assumes first valid rr input to node is the correct rr input
- Assumes clocks are routed globally
+ Jason Luu
+ Date: February 11, 2013
 
+ Print blif representation of circuit
+ 
  Limitations: [jluu] Due to ABC requiring that all blackbox inputs be named exactly the same in the netlist to be checked as in the input netlist,
  I am forced to skip all internal connectivity checking for inputs going into subckts.  If in the future, ABC no longer treats
  blackboxes as primariy I/Os, then we should revisit this and make it so that we can do formal equivalence on a more representative netlist.
@@ -385,8 +385,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 	}
 }
 
-void output_blif (const t_arch *arch, t_block *clb, int num_clusters, boolean global_clocks,
-		boolean * is_clock, const char *out_fname, boolean skip_clustering) {
+void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char *out_fname) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *

@@ -439,7 +439,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pi
 		/* This is an output pin */
 		port = logical_block[ilogical_block].model->outputs;
 		while(port != NULL) {
-			if(port->index == pin.block_pin) {
+			if(port->index == pin.block_port) {
 				break;
 			}
 			port = port->next;

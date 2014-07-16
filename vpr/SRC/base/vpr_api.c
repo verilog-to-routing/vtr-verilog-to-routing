@@ -46,7 +46,7 @@ using namespace std;
 #include "power.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
-#include "print_netlist_as_blif.h"
+#include "output_blif.h"
 
 #include "TFH_FabricGridHandler.h"
 #include "TFH_FabricBlockHandler.h"
@@ -151,6 +151,9 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
 	vpr_printf_info("\t[--criticality_exp <float>]\n");
 	vpr_printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
+	vpr_printf_info("\n");
+	vpr_printf_info("VPR Developer Options:\n");
+	vpr_printf_info("\t[--gen_netlist_as_blif]\n");
 	vpr_printf_info("\n");
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 	vpr_printf_info("Options for controlling the interposer-based architectures:\n");
@@ -270,7 +273,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)my_malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
-			print_preplace_netlist(&Arch, name);
+			output_blif(&Arch, block, num_blocks, name);
 			free(name);
 		}
 	}

@@ -978,8 +978,7 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 	fclose(fpout);
 
 #ifdef OUTPUT_BLIF
-		output_blif (arch, clb, num_clusters, global_clocks, is_clock,
-			getEchoFileName(E_ECHO_POST_PACK_NETLIST), FALSE);
+		output_blif (arch, clb, num_clusters, getEchoFileName(E_ECHO_POST_PACK_NETLIST));
 #endif
 
 	print_stats(clb, num_clusters);
