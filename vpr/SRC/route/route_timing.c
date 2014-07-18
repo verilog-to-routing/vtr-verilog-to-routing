@@ -248,7 +248,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			if (timing_analysis_enabled) {
 				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+				do_timing_analysis(slacks, FALSE, FALSE);
 				float critical_path_delay = get_critical_path_delay();
                 vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
@@ -286,11 +286,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			load_timing_graph_net_delays(net_delay);
 
-	#ifdef HACK_LUT_PIN_SWAPPING
-			do_timing_analysis(slacks, FALSE, TRUE, FALSE);
-	#else
-			do_timing_analysis(slacks, FALSE, FALSE, FALSE);
-	#endif
+			do_timing_analysis(slacks, FALSE, FALSE);
 
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the

@@ -80,11 +80,8 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 
 			load_timing_graph_net_delays(net_delay);
 
-#ifdef HACK_LUT_PIN_SWAPPING			
-			do_timing_analysis(slacks, FALSE, TRUE, TRUE);
-#else
-			do_timing_analysis(slacks, FALSE, FALSE, TRUE);
-#endif
+			do_timing_analysis(slacks, FALSE, TRUE);
+
 			if (getEchoEnabled()) {
 				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
 					print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));

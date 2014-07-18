@@ -70,7 +70,7 @@ t_linked_int *allocate_and_load_critical_path(void);
 
 void load_timing_graph_net_delays(float **net_delay);
 
-void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_input_balancing, boolean is_final_analysis);
+void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean is_final_analysis);
 
 void free_timing_graph(t_slack * slack);
 

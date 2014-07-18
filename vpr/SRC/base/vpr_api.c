@@ -1350,11 +1350,6 @@ static boolean clay_logical_equivalence_handling(const t_arch *arch) {
 		if(!success)
 			break;
 
-#ifdef HACK_LUT_PIN_SWAPPING
-		/* Resolve rebalancing of LUT inputs */
-		clay_lut_input_rebalancing(i, block[i].pb);
-#endif
-
 		/* reset rr_graph */
 		for (int j = 0; j < num_rr_nodes; ++j) {
 			rr_node[j].set_occ(0);

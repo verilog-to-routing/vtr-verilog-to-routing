@@ -197,8 +197,6 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 static void do_path_counting(float criticality_denom);
 #endif
 
-static void do_lut_rebalancing();
-
 #if SLACK_DEFINITION == 'I'
 static float find_least_slack(boolean is_prepacked);
 #endif
@@ -211,15 +209,13 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
 		long max_critical_output_paths);
 #endif
 
-static void print_primitive_as_blif (FILE *fpout, int iblk);
+static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
 
-static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing); 
-
-static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked);
+static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked, int **lookup_tnode_from_pin_id);
 
 static char * find_tnode_net_name(int inode, boolean is_prepacked);
 
-static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked);
+static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked, int **lookup_tnode_from_pin_id);
 
 static inline int get_tnode_index(t_tnode * node);
 
@@ -245,6 +241,10 @@ static void print_timing_constraint_info(const char *fname);
 
 static void print_spaces(FILE * fp, int num_spaces);
 
+static int **alloc_and_load_tnode_lookup_from_pin_id();
+
+static void free_tnode_lookup_from_pin_id(int **tnode_lookup);
+
 /********************* Subroutine definitions *******************************/
 
 t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
@@ -262,7 +262,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	int num_sinks;
 	t_slack * slacks = NULL;
 	boolean do_process_constraints = FALSE;
-
+	int ** lookup_tnode_from_pin_id;
+	
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
@@ -287,14 +288,18 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 		read_sdc(timing_inf);
 		do_process_constraints = TRUE;
 	}
-	
-	load_clock_domain_and_clock_and_io_delay(FALSE); 
+
+	lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
+		
+	load_clock_domain_and_clock_and_io_delay(FALSE, lookup_tnode_from_pin_id);
 
 	if (do_process_constraints) 
 		process_constraints();
 	
 	if (f_timing_stats == NULL)
 		alloc_timing_stats();
+
+	free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);
 
 	return slacks;
 }
@@ -315,11 +320,14 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	int num_sinks;
 	t_slack * slacks = NULL;
 	boolean do_process_constraints = FALSE;
+	int **lookup_tnode_from_pin_id;
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
 	}
+
+	lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
 
 	num_timing_nets = (int) g_atoms_nlist.net.size();
 	timing_nets = &g_atoms_nlist.net;
@@ -346,13 +354,15 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 		do_process_constraints = TRUE;
 	}
 	
-	load_clock_domain_and_clock_and_io_delay(TRUE); 
+	load_clock_domain_and_clock_and_io_delay(TRUE, lookup_tnode_from_pin_id);
 
 	if (do_process_constraints) 
 		process_constraints();
 	
 	if (f_timing_stats == NULL)
 		alloc_timing_stats();
+
+	free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);
 
 	return slacks;
 }
@@ -749,14 +759,21 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	int inode;
 	int num_nodes_in_block;
 	int count;
-	int iblock, irr_node;
+	int iblock, i_pin_id;
 	int inet, dport, dpin, dblock, dnode;
 	int normalized_pin, normalization;
 	t_pb_graph_pin *ipb_graph_pin;
-	t_rr_node *local_rr_graph, *d_rr_graph;
+	t_pb_route *intra_lb_route, *d_intra_lb_route;
 	int num_dangling_pins;
+	t_pb_graph_pin*** intra_lb_pb_pin_lookup; 
+	int **lookup_tnode_from_pin_id;
 
 	f_net_to_driver_tnode = (int*)my_malloc(num_timing_nets * sizeof(int));
+
+	intra_lb_pb_pin_lookup = new t_pb_graph_pin**[num_types];
+	for (i = 0; i < num_types; i++) {
+		intra_lb_pb_pin_lookup[i] = alloc_and_load_pb_graph_pin_lookup_from_index(&type_descriptors[i]);
+	}
 
 	for (i = 0; i < num_timing_nets; i++) {
 		f_net_to_driver_tnode[i] = OPEN;
@@ -766,12 +783,13 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	num_tnodes = 0;
 	for (i = 0; i < num_blocks; i++) {
 		num_nodes_in_block = 0;
+		int itype = block[i].type->index;
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (block[i].pb->rr_graph[j].net_num != OPEN) {
-				if (block[i].pb->rr_graph[j].pb_graph_pin->type == PB_PIN_INPAD
-						|| block[i].pb->rr_graph[j].pb_graph_pin->type
+			if (block[i].pb_route[j].atom_net_idx != OPEN) {
+				if (intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_INPAD
+					|| intra_lb_pb_pin_lookup[itype][j]->type
 								== PB_PIN_OUTPAD
-						|| block[i].pb->rr_graph[j].pb_graph_pin->type
+					|| intra_lb_pb_pin_lookup[itype][j]->type
 								== PB_PIN_SEQUENTIAL) {
 					num_nodes_in_block += 2;
 				} else {
@@ -787,16 +805,20 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 	/* populate tnode lookups for edge info */
 	inode = 0;
 	for (i = 0; i < num_blocks; i++) {
+		int itype = block[i].type->index;
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (block[i].pb->rr_graph[j].net_num != OPEN) {
+			if (block[i].pb_route[j].atom_net_idx != OPEN) {
 				assert(tnode[inode].pb_graph_pin == NULL);
-				load_tnode(block[i].pb->rr_graph[j].pb_graph_pin, i, &inode,
+				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode,
 						timing_inf);
 			}
 		}
 	}
 	assert(inode == num_tnodes);
 	num_dangling_pins = 0;
+
+	lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
+
 
 	/* load edge delays and initialize clock domains to OPEN 
 	and prepacked_data (which is not used post-packing) to NULL. */
@@ -810,6 +832,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		 */
 		count = 0;
 		iblock = tnode[i].block;
+		int itype = block[iblock].type->index;
 		switch (tnode[i].type) {
 		case TN_INPAD_OPIN:
 		case TN_INTERMEDIATE_NODE:
@@ -819,9 +842,9 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		case TN_CB_IPIN:
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
-			irr_node = tnode[i].pb_graph_pin->pin_count_in_cluster;
-			local_rr_graph = block[iblock].pb->rr_graph;
-			ipb_graph_pin = local_rr_graph[irr_node].pb_graph_pin;
+			i_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
+			intra_lb_route = block[iblock].pb_route;
+			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
 					!= UNDEFINED) {
@@ -839,11 +862,10 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 				}
 			}
 
-			for (j = 0; j < block[iblock].pb->rr_graph[irr_node].get_num_edges();
-					j++) {
-				dnode = local_rr_graph[irr_node].edges[j];
-				if ((local_rr_graph[dnode].prev_node == irr_node)
-						&& (j == local_rr_graph[dnode].prev_edge)) {
+			for (j = 0; j < ipb_graph_pin->num_output_edges; j++) {
+				assert(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
+				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
+				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
 					count++;
 				}
 			}
@@ -854,19 +876,18 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 
 			/* Load edges */
 			count = 0;
-			for (j = 0; j < local_rr_graph[irr_node].get_num_edges(); j++) {
-				dnode = local_rr_graph[irr_node].edges[j];
-				if ((local_rr_graph[dnode].prev_node == irr_node)
-						&& (j == local_rr_graph[dnode].prev_edge)) {
-					assert(
-							(ipb_graph_pin->output_edges[j]->num_output_pins == 1) && (local_rr_graph[ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster].net_num == local_rr_graph[irr_node].net_num));
+			for (j = 0; j < ipb_graph_pin->num_output_edges; j++) {
+				assert(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
+				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
+				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
+					assert(intra_lb_route[dnode].atom_net_idx == intra_lb_route[i_pin_id].atom_net_idx);
 
 					tnode[i].out_edges[count].Tdel =
 							ipb_graph_pin->output_edges[j]->delay_max;
-					tnode[i].out_edges[count].to_node =
-							get_tnode_index(local_rr_graph[dnode].tnode);
+					tnode[i].out_edges[count].to_node = lookup_tnode_from_pin_id[iblock][dnode];
+					assert(tnode[i].out_edges[count].to_node != OPEN);
 
-					if (g_atoms_nlist.net[local_rr_graph[irr_node].net_num].is_const_gen
+					if (g_atoms_nlist.net[intra_lb_route[i_pin_id].atom_net_idx].is_const_gen
 							== TRUE && tnode[i].type == TN_PRIMITIVE_OPIN) {
 						tnode[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						tnode[i].type = TN_CONSTANT_GEN_SOURCE;
@@ -884,41 +905,41 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 			/*there would be no slack information if timing analysis is off*/
 			if (timing_inf.timing_analysis_enabled)
 			{
-			irr_node = tnode[i].pb_graph_pin->pin_count_in_cluster;
-			local_rr_graph = block[iblock].pb->rr_graph;
-			ipb_graph_pin = local_rr_graph[irr_node].pb_graph_pin;
-			tnode[i].num_edges = ipb_graph_pin->num_pin_timing;
-			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
-					ipb_graph_pin->num_pin_timing * sizeof(t_tedge),
-					&tedge_ch);
-			k = 0;
+				i_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
+				intra_lb_route = block[iblock].pb_route;
+				ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
+				tnode[i].num_edges = ipb_graph_pin->num_pin_timing;
+				tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
+						ipb_graph_pin->num_pin_timing * sizeof(t_tedge),
+						&tedge_ch);
+				k = 0;
 
-			for (j = 0; j < tnode[i].num_edges; j++) {
-				/* Some outpins aren't used, ignore these.  Only consider output pins that are used */
-				if (local_rr_graph[ipb_graph_pin->pin_timing[j]->pin_count_in_cluster].net_num
-						!= OPEN) {
-					tnode[i].out_edges[k].Tdel =
-							ipb_graph_pin->pin_timing_del_max[j];
-					tnode[i].out_edges[k].to_node =
-							get_tnode_index(local_rr_graph[ipb_graph_pin->pin_timing[j]->pin_count_in_cluster].tnode);
-					assert(tnode[i].out_edges[k].to_node != OPEN);
-					k++;
+				for (j = 0; j < tnode[i].num_edges; j++) {
+					/* Some outpins aren't used, ignore these.  Only consider output pins that are used */
+					if (intra_lb_route[ipb_graph_pin->pin_timing[j]->pin_count_in_cluster].atom_net_idx
+							!= OPEN) {
+						tnode[i].out_edges[k].Tdel =
+								ipb_graph_pin->pin_timing_del_max[j];
+						tnode[i].out_edges[k].to_node = lookup_tnode_from_pin_id[tnode[i].block][ipb_graph_pin->pin_timing[j]->pin_count_in_cluster];
+						assert(tnode[i].out_edges[k].to_node != OPEN);
+						k++;
+					}
 				}
-			}
-			tnode[i].num_edges -= (j - k); /* remove unused edges */
-			if (tnode[i].num_edges == 0) {
-				/* Dangling pin */
-				num_dangling_pins++;
-			}
+				tnode[i].num_edges -= (j - k); /* remove unused edges */
+				if (tnode[i].num_edges == 0) {
+					/* Dangling pin */
+					num_dangling_pins++;
+				}
 			}
 			break;
 		case TN_CB_OPIN:
 			/* load up net info */
-			irr_node = tnode[i].pb_graph_pin->pin_count_in_cluster;
-			local_rr_graph = block[iblock].pb->rr_graph;
-			ipb_graph_pin = local_rr_graph[irr_node].pb_graph_pin;
-			assert(local_rr_graph[irr_node].net_num != OPEN);
-			inet = vpack_to_clb_net_mapping[local_rr_graph[irr_node].net_num];
+			i_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
+			intra_lb_route = block[iblock].pb_route;
+			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
+
+			assert(intra_lb_route[i_pin_id].atom_net_idx != OPEN);
+			inet = vpack_to_clb_net_mapping[intra_lb_route[i_pin_id].atom_net_idx];
 			assert(inet != OPEN);
 			f_net_to_driver_tnode[inet] = i;
 			tnode[i].num_edges = g_clbs_nlist.net[inet].num_sinks();
@@ -931,7 +952,7 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 						/ block[dblock].type->capacity;
 				normalized_pin = g_clbs_nlist.net[inet].pins[j].block_pin
 						% normalization;
-				d_rr_graph = block[dblock].pb->rr_graph;
+				d_intra_lb_route = block[dblock].pb_route;
 				dpin = OPEN;
 				dport = OPEN;
 				count = 0;
@@ -972,16 +993,18 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 					}
 					assert(dpin != OPEN);
 					assert(
-							inet == vpack_to_clb_net_mapping[d_rr_graph[block[dblock].pb->pb_graph_node->clock_pins[dport][dpin].pin_count_in_cluster].net_num]);
+						inet == vpack_to_clb_net_mapping[d_intra_lb_route[block[dblock].pb->pb_graph_node->clock_pins[dport][dpin].pin_count_in_cluster].atom_net_idx]);
 					tnode[i].out_edges[j - 1].to_node =
-							get_tnode_index(d_rr_graph[block[dblock].pb->pb_graph_node->clock_pins[dport][dpin].pin_count_in_cluster].tnode);
+						lookup_tnode_from_pin_id[dblock][block[dblock].pb->pb_graph_node->clock_pins[dport][dpin].pin_count_in_cluster];
+					assert(tnode[i].out_edges[j - 1].to_node != OPEN);
 				} else {
 					assert(dpin != OPEN);
 					assert(
-							inet == vpack_to_clb_net_mapping[d_rr_graph[block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster].net_num]);
+						inet == vpack_to_clb_net_mapping[d_intra_lb_route[block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster].atom_net_idx]);
 					/* delays are assigned post routing */
 					tnode[i].out_edges[j - 1].to_node =
-							get_tnode_index(d_rr_graph[block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster].tnode);
+						lookup_tnode_from_pin_id[dblock][block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster];
+					assert(tnode[i].out_edges[j - 1].to_node != OPEN);
 				}
 				tnode[i].out_edges[j - 1].Tdel = 0;
 				assert(inet != OPEN);
@@ -1007,6 +1030,13 @@ static void alloc_and_load_tnodes(t_timing_inf timing_inf) {
 		vpr_printf_warning(__FILE__, __LINE__, 
 				"Unconnected logic in design, number of dangling tnodes = %d\n", num_dangling_pins);
 	}
+
+	
+	for (i = 0; i < num_types; i++) {
+		free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup[i]);
+	}
+	free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);
+	delete[] intra_lb_pb_pin_lookup;
 }
 
 /* Allocate timing graph for pre packed netlist
@@ -1361,8 +1391,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 	i = *inode;
 	tnode[i].pb_graph_pin = pb_graph_pin;
 	tnode[i].block = iblock;
-	block[iblock].pb->rr_graph[pb_graph_pin->pin_count_in_cluster].tnode =
-			&tnode[i];
+
 	if (tnode[i].pb_graph_pin->parent_node->pb_type->blif_model == NULL) {
 		assert(tnode[i].pb_graph_pin->type == PB_PIN_NORMAL);
 		if (tnode[i].pb_graph_pin->parent_node->parent_pb_graph_node == NULL) {
@@ -1696,7 +1725,7 @@ static void alloc_timing_stats(void) {
 	}
 }
 
-void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_input_balancing, boolean is_final_analysis) {
+void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean is_final_analysis) {
 
 /*  Performs timing analysis on the circuit.  Before this routine is called, t_slack * slacks 
 	must have been allocated, and the circuit must have been converted into a timing graph.
@@ -1761,11 +1790,6 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 	normalized_Tarr, normalized_total_critical_paths). Setting this to FALSE saves time in post-
 	packed timing analyses.
 
-	Do_lut_input_balancing flags whether to rebalance LUT inputs.  LUT rebalancing takes advantage of 
-	the fact that different LUT inputs often have different delays. Since we can freely permute which 
-	LUT inputs are used by just changing the logic in the LUT, these LUT permutations can be performed 
-	late into the routing stage of the flow. 
-	
 	Is_final_analysis flags whether this is the final, analysis pass.  If it is, the analyser will 
 	compute actual slacks instead of relaxed ones. We "relax" slacks by setting the required time to 
 	the maximum arrival time for tight constraints so that no slacks are negative (which confuses 
@@ -1867,10 +1891,6 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 		}
 	}
 #endif
-
-	if (do_lut_input_balancing) {
-		do_lut_rebalancing();
-	}
 
 	
 #if SLACK_DEFINITION == 'I'
@@ -1995,55 +2015,6 @@ void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_i
 #endif
 }
 
-static void do_lut_rebalancing() {
-	
-	int inode, num_at_level, i, ilevel, num_edges, iedge, to_node;
-	t_tedge * tedge;
-
-	/* Reset all arrival times to a very large negative number. */
-	for (inode = 0; inode < num_tnodes; inode++) {
-		tnode[inode].T_arr = HUGE_NEGATIVE_FLOAT; 
-	}
-
-	/* Set arrival times for each top-level tnode. */
-	num_at_level = tnodes_at_level[0].nelem;	
-	for (i = 0; i < num_at_level; i++) {
-		inode = tnodes_at_level[0].list[i];	
-		if (tnode[inode].type == TN_FF_SOURCE) { 
-			/* Set the arrival time of this flip-flop tnode to its clock skew. */
-			tnode[inode].T_arr = tnode[inode].clock_delay;
-		} else if (tnode[inode].type == TN_INPAD_SOURCE) { 
-			/* There's no such thing as clock skew for external clocks. The closest equivalent, 
-			input delay, is already marked on the edge coming out from this node. 
-			As a result, the signal can be said to arrive at t = 0. */
-			tnode[inode].T_arr = 0.;
-		}
-	}
-
-	/* Now we actually start the forward topological traversal, to compute arrival times. */
-	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++) {	/* For each level of our levelized timing graph... */
-		num_at_level = tnodes_at_level[ilevel].nelem;		/* ...there are num_at_level tnodes at that level. */
-			
-		for (i = 0; i < num_at_level; i++) {					
-			inode = tnodes_at_level[ilevel].list[i];		/* Go through each of the tnodes at the level we're on. */
-	
-			num_edges = tnode[inode].num_edges;				/* Get the number of edges fanning out from the node we're visiting */
-			tedge = tnode[inode].out_edges;					/* Get the list of edges from the node we're visiting */
-
-			for (iedge = 0; iedge < num_edges; iedge++) {	/* Now go through each edge coming out from this tnode */
-				to_node = tedge[iedge].to_node;				/* Get the index of the destination tnode of this edge. */
-				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
-
-				/* The arrival time T_arr at the destination node is set to the maximum of all the 
-				possible arrival times from all edges fanning in to the node. 
-				The arrival time represents the latest time that all inputs must arrive at a node. 
-				LUT input rebalancing also occurs at this step. */
-				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, TRUE);	
-			}
-		}
-	}
-}
-
 #if SLACK_DEFINITION == 'I'
 static float find_least_slack(boolean is_prepacked) {
 	/* Perform a simplified version of do_timing_analysis_for_constraint 
@@ -2091,7 +2062,7 @@ static float find_least_slack(boolean is_prepacked) {
 							int to_node = tedge[iedge].to_node;	
 							if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
-							set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, FALSE);	
+							tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[inode].T_arr + tedge[iedge].Tdel);
 						}
 					}
 				}
@@ -2292,9 +2263,8 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				
 				/* The arrival time T_arr at the destination node is set to the maximum of all 
 				the possible arrival times from all edges fanning in to the node. The arrival 
-				time represents the latest time that all inputs must arrive at a node. LUT input
-				rebalancing also occurs at this step. */
-				set_and_balance_arrival_time(to_node, inode, tedge[iedge].Tdel, FALSE);	
+				time represents the latest time that all inputs must arrive at a node. */
+				tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[inode].T_arr + tedge[iedge].Tdel);
 
 #if SLACK_DEFINITION == 'R' || SLACK_DEFINITION == 'G'
 				/* Since we updated the destination node (to_node), change the max arrival  
@@ -2960,7 +2930,7 @@ void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr) {
 
 	if (tnode_type == TN_CB_OPIN) {
 		ipin = tnode[inode].pb_graph_pin->pin_count_in_cluster;
-		inet = block[iblk].pb->rr_graph[ipin].net_num;
+		inet = block[iblk].pb_route[ipin].atom_net_idx;
 		assert(inet != OPEN);
 		inet = vpack_to_clb_net_mapping[inet];
 	} else {
@@ -2991,7 +2961,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 		(*timing_nets).size());
 	load_timing_graph_net_delays(net_delay);
 	
-	do_timing_analysis(slacks, FALSE, FALSE, TRUE);
+	do_timing_analysis(slacks, FALSE, TRUE);
 
 	if (getEchoEnabled()) {
 		if(isEchoFileEnabled(E_ECHO_CRITICAL_PATH))
@@ -3039,110 +3009,9 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 	}
 }
 #endif
-/* Set new arrival time
-	Special code for LUTs to enable LUT input delay balancing
-*/
-static void set_and_balance_arrival_time(int to_node, int from_node, float Tdel, boolean do_lut_input_balancing) {
-	int i, j;
-	t_pb *pb;
-	boolean rebalance;
-	t_tnode *input_tnode;
 
-	boolean *assigned = NULL;
-	int fastest_unassigned_pin, most_crit_tnode, most_crit_pin;
-	float min_delay, highest_T_arr, balanced_T_arr;
 
-	/* Normal case for determining arrival time */
-	tnode[to_node].T_arr = max(tnode[to_node].T_arr, tnode[from_node].T_arr + Tdel);
-
-	/* Do LUT input rebalancing for LUTs */
-	if (do_lut_input_balancing && tnode[to_node].type == TN_PRIMITIVE_OPIN && tnode[to_node].pb_graph_pin != NULL) {
-		pb = block[tnode[to_node].block].pb->rr_node_to_pb_mapping[tnode[to_node].pb_graph_pin->pin_count_in_cluster];
-		if (pb != NULL && pb->lut_pin_remap != NULL) {
-			/* this is a LUT primitive, do pin swapping */
-			assert(pb->pb_graph_node->pb_type->num_output_pins == 1 && pb->pb_graph_node->pb_type->num_clock_pins == 0); /* ensure LUT properties are valid */
-			assert(pb->pb_graph_node->num_input_ports == 1);
-			assert(tnode[from_node].block == tnode[to_node].block);
-			
-			/* assign from_node to default location */
-			assert(pb->lut_pin_remap[tnode[from_node].pb_graph_pin->pin_number] == OPEN);
-			pb->lut_pin_remap[tnode[from_node].pb_graph_pin->pin_number] = tnode[from_node].pb_graph_pin->pin_number;
-			
-			/* If all input pins are known, perform LUT input delay rebalancing, do nothing otherwise */
-			rebalance = TRUE;
-			for (i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-				input_tnode = block[tnode[to_node].block].pb->rr_graph[pb->pb_graph_node->input_pins[0][i].pin_count_in_cluster].tnode;
-				if (input_tnode != NULL && pb->lut_pin_remap[i] == OPEN) {
-					rebalance = FALSE;
-				}
-			}
-			if (rebalance == TRUE) {
-				/* Rebalance LUT inputs so that the most critical paths get the fastest inputs */
-				balanced_T_arr = OPEN;
-				assigned = (boolean*)my_calloc(pb->pb_graph_node->num_input_pins[0], sizeof(boolean));
-				/* Clear pin remapping */
-				for (i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-					pb->lut_pin_remap[i] = OPEN;
-				}
-				/* load new T_arr and pin mapping */
-				for (i = 0; i < pb->pb_graph_node->num_input_pins[0]; i++) {
-					/* Find fastest physical input pin of LUT */
-					fastest_unassigned_pin = OPEN;
-					min_delay = OPEN;
-					for (j = 0; j < pb->pb_graph_node->num_input_pins[0]; j++) {
-						if (pb->lut_pin_remap[j] == OPEN) {
-							if (fastest_unassigned_pin == OPEN) {
-								fastest_unassigned_pin = j;
-								min_delay = pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0];
-							} else if (min_delay > pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0]) {
-								fastest_unassigned_pin = j;
-								min_delay = pb->pb_graph_node->input_pins[0][j].pin_timing_del_max[0];
-							}
-						}
-					}
-					assert(fastest_unassigned_pin != OPEN);
-
-					/* Find most critical LUT input pin in user circuit */
-					most_crit_tnode = OPEN;
-					highest_T_arr = OPEN;
-					most_crit_pin = OPEN;
-					for (j = 0; j < pb->pb_graph_node->num_input_pins[0]; j++) {
-						input_tnode = block[tnode[to_node].block].pb->rr_graph[pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].tnode;
-						if (input_tnode != NULL && assigned[j] == FALSE) {
-							if (most_crit_tnode == OPEN) {
-								most_crit_tnode = get_tnode_index(input_tnode);
-								highest_T_arr = input_tnode->T_arr;
-								most_crit_pin = j;
-							} else if (highest_T_arr < input_tnode->T_arr) {
-								most_crit_tnode = get_tnode_index(input_tnode);
-								highest_T_arr = input_tnode->T_arr;
-								most_crit_pin = j;
-							}
-						}
-					}
-
-					if (most_crit_tnode == OPEN) {
-						break;
-					} else {
-						assert(tnode[most_crit_tnode].num_edges == 1);
-						tnode[most_crit_tnode].out_edges[0].Tdel = min_delay;
-						pb->lut_pin_remap[fastest_unassigned_pin] = most_crit_pin;
-						assigned[most_crit_pin] = TRUE;
-						if (balanced_T_arr < min_delay + highest_T_arr) {
-							balanced_T_arr = min_delay + highest_T_arr;
-						}
-					}
-				}
-				free(assigned);
-				if (balanced_T_arr != OPEN) {
-					tnode[to_node].T_arr = balanced_T_arr;
-				}
-			}
-		}
-	} 
-}
-
-static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked) {
+static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked, int **lookup_tnode_from_pin_id) {
 /* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
 The clock domain of each clock is its index in g_sdc->constrained_clocks.
 We do this by matching each clock input pad (TN_INPAD_SOURCE), or internal clock 
@@ -3235,7 +3104,7 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 	/* Third, visit all TN_FF_SOURCE and TN_FF_SINK tnodes, and transfer the clock domain and skew from their corresponding TN_FF_CLOCK tnodes*/
 	for (inode = 0; inode < num_tnodes; inode++) {
 		if (tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_FF_SINK) {
-			clock_node = find_ff_clock_tnode(inode, is_prepacked);
+			clock_node = find_ff_clock_tnode(inode, is_prepacked, lookup_tnode_from_pin_id);
 			tnode[inode].clock_domain = clock_node->clock_domain;
 			tnode[inode].clock_delay   = clock_node->clock_delay;
 		}
@@ -3335,12 +3204,13 @@ static char * find_tnode_net_name(int inode, boolean is_prepacked) {
     assert(0); //Should never get here
 }
 
-static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked) {
+static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked, int **lookup_tnode_from_pin_id) {
 	/* Finds the TN_FF_CLOCK tnode on the same flipflop as an TN_FF_SOURCE or TN_FF_SINK tnode. */
 	
 	int logic_block; /* Name chosen not to conflict with the array logical_block */
 	t_tnode * ff_clock_tnode;
-	t_rr_node * rr_graph;
+	int ff_tnode;
+	t_pb_route *pb_route;
 	t_pb_graph_node * parent_pb_graph_node;
 	t_pb_graph_pin * ff_source_or_sink_pb_graph_pin, * clock_pb_graph_pin;
 
@@ -3348,14 +3218,16 @@ static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked) {
 	if (is_prepacked) {
 		ff_clock_tnode = logical_block[logic_block].clock_net_tnode;
 	} else {
-		rr_graph = block[logic_block].pb->rr_graph;
+		pb_route = block[logic_block].pb_route;
 		ff_source_or_sink_pb_graph_pin = tnode[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
 		/* Make sure there's only one clock port and only one clock pin in that port */
 		assert(parent_pb_graph_node->num_clock_ports == 1);
 		assert(parent_pb_graph_node->num_clock_pins[0] == 1);
 		clock_pb_graph_pin = &parent_pb_graph_node->clock_pins[0][0];
-		ff_clock_tnode = rr_graph[clock_pb_graph_pin->pin_count_in_cluster].tnode;
+		ff_tnode = lookup_tnode_from_pin_id[logic_block][clock_pb_graph_pin->pin_count_in_cluster];
+		assert(ff_tnode != OPEN);
+		ff_clock_tnode = &tnode[ff_tnode];
 	}
 	assert(ff_clock_tnode != NULL);
 	assert(ff_clock_tnode->type == TN_FF_CLOCK);
@@ -3749,6 +3621,8 @@ void print_timing_graph_as_blif (const char *fname, t_model *models) {
 	FILE *fp;
 	int i, j;
 
+	int **lookup_tnode_from_pin_id = NULL;
+
 	fp = my_fopen(fname, "w", 0);
 
 	fprintf(fp, ".model %s\n", blif_circuit_name);
@@ -3780,7 +3654,7 @@ void print_timing_graph_as_blif (const char *fname, t_model *models) {
 
 	/* Print out primitives */
 	for (i = 0; i < num_logical_blocks; i++) {
-		print_primitive_as_blif (fp, i);
+		print_primitive_as_blif(fp, i, lookup_tnode_from_pin_id);
 	}
 
 	/* Print out tnode connections */
@@ -3833,15 +3707,18 @@ void print_timing_graph_as_blif (const char *fname, t_model *models) {
 	fclose(fp);
 }
 
-static void print_primitive_as_blif (FILE *fpout, int iblk) {
+
+static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id) {
 	int i, j;
 	struct s_model_ports *port;
 	struct s_linked_vptr *truth_table;
-	t_rr_node *irr_graph;
+	t_pb_route *pb_route;
 	t_pb_graph_node *pb_graph_node;
 	int node;
 
+	
 	/* Print primitives found in timing graph in blif format based on whether this is a logical primitive or a physical primitive */
+	pb_route = block[logical_block[iblk].clb_index].pb_route;
 
 	if (logical_block[iblk].type == VPACK_INPAD) {
 		if (logical_block[iblk].pb == NULL) {
@@ -3849,7 +3726,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 					get_tnode_index(logical_block[iblk].output_net_tnodes[0][0]));
 		} else {
 			fprintf(fpout, ".names %s tnode_%d\n", logical_block[iblk].name,
-					get_tnode_index(logical_block[iblk].pb->rr_graph[logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster].tnode));
+				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster]);
 		}
 		fprintf(fpout, "1 1\n\n");
 	} else if (logical_block[iblk].type == VPACK_OUTPAD) {
@@ -3861,7 +3738,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 		} else {
 			/* avoid the out: from output pad naming */
 			fprintf(fpout, ".names tnode_%d %s\n",
-					get_tnode_index(logical_block[iblk].pb->rr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster].tnode),
+				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster],
 					(logical_block[iblk].name + 4));
 		}
 		fprintf(fpout, "1 1\n\n");
@@ -3926,18 +3803,17 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 			}
 			assert(i == 1);
 		} else {
-			irr_graph = logical_block[iblk].pb->rr_graph;
 			assert(
-					irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster].net_num != OPEN);
+					pb_route[logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster].atom_net_idx != OPEN);
 			fprintf(fpout, "tnode_%d ",
-					get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster].tnode));
+				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster]);
 			node =
-					get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster].tnode);
+				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster];
 			fprintf(fpout, "latch_%s re ", logical_block[iblk].name);
 			assert(
-					irr_graph[logical_block[iblk].pb->pb_graph_node->clock_pins[0][0].pin_count_in_cluster].net_num != OPEN);
+					pb_route[logical_block[iblk].pb->pb_graph_node->clock_pins[0][0].pin_count_in_cluster].atom_net_idx != OPEN);
 			fprintf(fpout, "tnode_%d 0\n\n",
-					get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->clock_pins[0][0].pin_count_in_cluster].tnode));
+				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->clock_pins[0][0].pin_count_in_cluster]);
 		}
 		assert(node != OPEN);
 		fprintf(fpout, ".names latch_%s tnode_%d\n", logical_block[iblk].name,
@@ -3977,18 +3853,17 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 			}
 			assert(i == 1);
 		} else {
-			irr_graph = logical_block[iblk].pb->rr_graph;
 			assert(logical_block[iblk].pb->pb_graph_node->num_input_ports == 1);
 			for (i = 0;
 					i < logical_block[iblk].pb->pb_graph_node->num_input_pins[0];
 					i++) {
 				if(logical_block[iblk].input_nets[0][i] != OPEN) {
 					for (j = 0; j < logical_block[iblk].pb->pb_graph_node->num_input_pins[0]; j++) {
-						if (irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].net_num
+						if (pb_route[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
-							if (irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].net_num == logical_block[iblk].input_nets[0][i]) {
+							if (pb_route[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].atom_net_idx == logical_block[iblk].input_nets[0][i]) {
 								fprintf(fpout, "tnode_%d ",
-								get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster].tnode));
+									lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->input_pins[0][j].pin_count_in_cluster]);
 								break;
 							}
 						}
@@ -4002,7 +3877,7 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 					logical_block[iblk].pb->pb_graph_node->num_output_pins[0] == 1);
 			fprintf(fpout, "lut_%s\n", logical_block[iblk].name);
 			node =
-					get_tnode_index(irr_graph[logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster].tnode);
+				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster];
 		}
 		assert(node != OPEN);
 		truth_table = logical_block[iblk].truth_table;
@@ -4105,21 +3980,20 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 				port = port->next;
 			}
 		} else {
-			irr_graph = logical_block[iblk].pb->rr_graph;
 			pb_graph_node = logical_block[iblk].pb->pb_graph_node;
 			for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 				for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-					if (irr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster].net_num
+					if (pb_route[pb_graph_node->input_pins[i][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
 						if (pb_graph_node->num_input_pins[i] > 1) {
 							fprintf(fpout, "\\\n%s[%d]=tnode_%d ",
 									pb_graph_node->input_pins[i][j].port->name,
 									j,
-									get_tnode_index(irr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster].tnode));
+									lookup_tnode_from_pin_id[iblk][pb_graph_node->input_pins[i][j].pin_count_in_cluster]);
 						} else {
 							fprintf(fpout, "\\\n%s=tnode_%d ",
 									pb_graph_node->input_pins[i][j].port->name,
-									get_tnode_index(irr_graph[pb_graph_node->input_pins[i][j].pin_count_in_cluster].tnode));
+									lookup_tnode_from_pin_id[iblk][pb_graph_node->input_pins[i][j].pin_count_in_cluster]);
 						}
 					} else {
 						if (pb_graph_node->num_input_pins[i] > 1) {
@@ -4135,19 +4009,19 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 			}
 			for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-					if (irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num
+					if (pb_route[pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
 						if (pb_graph_node->num_output_pins[i] > 1) {
 							fprintf(fpout, "\\\n%s[%d]=%s ",
 									pb_graph_node->output_pins[i][j].port->name,
 									j,
-									g_atoms_nlist.net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name);
+									g_atoms_nlist.net[pb_route[pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx].name);
 						} else {
 							char* port_name =
 									pb_graph_node->output_pins[i][j].port->name;
 							int pin_count =
 									pb_graph_node->output_pins[i][j].pin_count_in_cluster;
-							int node_index = irr_graph[pin_count].net_num;
+							int node_index = pb_route[pin_count].atom_net_idx;
 							char* node_name = g_atoms_nlist.net[node_index].name;
 							fprintf(fpout, "\\\n%s=%s ", port_name, node_name);
 						}
@@ -4165,17 +4039,17 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 			}
 			for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 				for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-					if (irr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].net_num
+					if (pb_route[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
 						if (pb_graph_node->num_clock_pins[i] > 1) {
 							fprintf(fpout, "\\\n%s[%d]=tnode_%d ",
 									pb_graph_node->clock_pins[i][j].port->name,
 									j,
-									get_tnode_index(irr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].tnode));
+									lookup_tnode_from_pin_id[iblk][pb_graph_node->clock_pins[i][j].pin_count_in_cluster]);
 						} else {
 							fprintf(fpout, "\\\n%s=tnode_%d ",
 									pb_graph_node->clock_pins[i][j].port->name,
-									get_tnode_index(irr_graph[pb_graph_node->clock_pins[i][j].pin_count_in_cluster].tnode));
+									lookup_tnode_from_pin_id[iblk][pb_graph_node->clock_pins[i][j].pin_count_in_cluster]);
 						}
 					} else {
 						if (pb_graph_node->num_clock_pins[i] > 1) {
@@ -4194,11 +4068,11 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 			/* connect up output port names to output tnodes */
 			for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-					if (irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num
+					if (pb_route[pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
 						fprintf(fpout, ".names %s tnode_%d\n",
-								g_atoms_nlist.net[irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].net_num].name,
-								get_tnode_index(irr_graph[pb_graph_node->output_pins[i][j].pin_count_in_cluster].tnode));
+								g_atoms_nlist.net[pb_route[pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx].name,
+								lookup_tnode_from_pin_id[iblk][pb_graph_node->output_pins[i][j].pin_count_in_cluster]);
 						fprintf(fpout, "1 1\n\n");
 					}
 				}
@@ -4207,3 +4081,44 @@ static void print_primitive_as_blif (FILE *fpout, int iblk) {
 	}
 }
 
+/*
+ Create a lookup table that returns the tnode index for [iblock][pb_graph_pin_id]
+*/
+static int **alloc_and_load_tnode_lookup_from_pin_id() {
+	int **tnode_lookup;
+
+	tnode_lookup = new int* [num_blocks];
+
+	for (int i = 0; i < num_blocks; i++) {
+		int num_pins = block[i].type->pb_graph_head->total_pb_pins;
+		tnode_lookup[i] = new int[num_pins];
+		for (int j = 0; j < num_pins; j++) {
+			tnode_lookup[i][j] = OPEN;
+		}
+	}
+
+	for (int i = 0; i < num_tnodes; i++) {
+		if (tnode[i].pb_graph_pin != NULL) {
+			if (tnode[i].type != TN_CLOCK_SOURCE &&
+				tnode[i].type != TN_FF_SOURCE &&
+				tnode[i].type != TN_CONSTANT_GEN_SOURCE &&
+				tnode[i].type != TN_INPAD_SOURCE &&
+				tnode[i].type != TN_FF_SINK &&
+				tnode[i].type != TN_OUTPAD_SINK
+				) {
+				int pb_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
+				int iblk = tnode[i].block;
+				assert(tnode_lookup[iblk][pb_pin_id] == OPEN);				
+				tnode_lookup[iblk][pb_pin_id] = i;
+			}
+		}
+	}
+	return tnode_lookup;
+}
+
+static void free_tnode_lookup_from_pin_id(int **tnode_lookup) {
+	for (int i = 0; i < num_blocks; i++) {
+		delete[] tnode_lookup[i];
+	}
+	delete[] tnode_lookup;
+}

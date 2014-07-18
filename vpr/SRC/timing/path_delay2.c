@@ -285,13 +285,13 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node) {
 
 	if (type == TN_CB_OPIN) {
 		inet =
-				block[iblk].pb->rr_graph[pb_graph_pin->pin_count_in_cluster].net_num;
+				block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx;
 		inet = vpack_to_clb_net_mapping[inet];
 		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
 			inet, g_clbs_nlist.net[inet].name, (int) g_clbs_nlist.net[inet].pins.size());
 	} else if (pb_graph_pin != NULL) {
 		inet =
-				block[iblk].pb->rr_graph[pb_graph_pin->pin_count_in_cluster].net_num;
+			block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx;
 		fprintf(fp, "Internal Net: #%d (%s).  Pins on net: %d.\n", inet,
 			g_atoms_nlist.net[inet].name, (int) g_atoms_nlist.net[inet].pins.size());
 	}

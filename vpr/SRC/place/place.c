@@ -403,7 +403,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_constant_net_delay(net_delay, place_delay_value);
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, FALSE, TRUE);
+		do_timing_analysis(slacks, FALSE, TRUE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
@@ -419,7 +419,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_constant_net_delay(net_delay, 0);
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, FALSE, TRUE);
+		do_timing_analysis(slacks, FALSE, TRUE);
 
 #endif
 
@@ -477,7 +477,7 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+		do_timing_analysis(slacks, FALSE, FALSE);
 		load_criticalities(slacks, crit_exponent);
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
@@ -745,7 +745,7 @@ void try_place(struct s_placer_opts placer_opts,
 		 *the same values that the placer is using*/
 		load_timing_graph_net_delays(net_delay);
 
-		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+		do_timing_analysis(slacks, FALSE, FALSE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
@@ -828,7 +828,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 		 *because it accesses point_to_point_delay array */
 
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+		do_timing_analysis(slacks, FALSE, FALSE);
 		load_criticalities(slacks, crit_exponent);
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
@@ -913,7 +913,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				 * criticalities; then update the timing cost since it will change.
 				 */
 				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, FALSE, FALSE, FALSE);
+				do_timing_analysis(slacks, FALSE, FALSE);
 				load_criticalities(slacks, crit_exponent);
 				comp_td_costs(timing_cost, delay_cost);
 			}
