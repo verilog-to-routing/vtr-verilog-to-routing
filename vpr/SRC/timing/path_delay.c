@@ -4097,7 +4097,6 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
 		if (tnode[i].pb_graph_pin != NULL) {
 			if (tnode[i].type != TN_CLOCK_SOURCE &&
 				tnode[i].type != TN_FF_SOURCE &&
-				tnode[i].type != TN_CONSTANT_GEN_SOURCE &&
 				tnode[i].type != TN_INPAD_SOURCE &&
 				tnode[i].type != TN_FF_SINK &&
 				tnode[i].type != TN_OUTPAD_SINK

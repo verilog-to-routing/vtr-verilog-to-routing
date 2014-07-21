@@ -1366,8 +1366,10 @@ static conn_list *find_connected_primitives_downhill(int block_num, t_pb *pb, co
 
 		      pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
 			  int source_tnode = lookup_tnode_from_pin_id[logical_block[starting_block].clb_index][pin_number];
+			  assert(source_tnode != OPEN);
 			  int end_tnode = lookup_tnode_from_pin_id[logical_block[next_block].clb_index][pin_count];
-			  assert(end_tnode != OPEN && source_tnode != OPEN);
+			  assert(end_tnode != OPEN);
+			  
 		      
 		      start_delay = tnode[source_tnode].T_arr; /*The arrival time of the source pin*/		
 			  end_delay = tnode[end_tnode].T_arr;/*The arrival time of the sink pin*/
