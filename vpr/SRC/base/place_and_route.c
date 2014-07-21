@@ -1,5 +1,6 @@
 #include <sys/types.h>
 
+#include <cassert>
 #include <cstdio>
 #include <ctime>
 #include <climits>

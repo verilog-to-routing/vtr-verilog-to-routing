@@ -1,21 +1,19 @@
 
-#include "verilog_writer.h"
-
 /***********************************************************************************************************
 
 Author: Miad Nasr;  August 30, 2012
 
-The code in this file generates the Verilog and SDF files for the post-synthesized circuit. The Verilog file 
+The code in this file generates the Verilog and SDF files for the post-synthesized circuit. The Verilog file
 can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
 
-The Verilog file contains instantiated modules of the primitives in the circuit. Currently VPR can generate 
-Verilog files for circuits that only contain LUTs , Flip Flops , IOs , Multipliers , and BRAMs. The Verilog 
-description of these primitives are in the primitives.v file. To simulate the post-synthesized circuit, one 
+The Verilog file contains instantiated modules of the primitives in the circuit. Currently VPR can generate
+Verilog files for circuits that only contain LUTs , Flip Flops , IOs , Multipliers , and BRAMs. The Verilog
+description of these primitives are in the primitives.v file. To simulate the post-synthesized circuit, one
 must include the generated Verilog file and also the primitives.v Verilog file, in the simulation directory.
 
-If one wants to generate the post-synthesized Verilog file of a circuit that contains a primitive other than 
-those mentioned above, he/she should contact the VTR team to have the source code updated. Furthermore to 
-perform simulation on that circuit the Verilog description of that new primitive must be appended to the 
+If one wants to generate the post-synthesized Verilog file of a circuit that contains a primitive other than
+those mentioned above, he/she should contact the VTR team to have the source code updated. Furthermore to
+perform simulation on that circuit the Verilog description of that new primitive must be appended to the
 primitives.v file as a separate module.
 
 The VTR team can be contacted through the VTR website:
@@ -28,38 +26,207 @@ All the functions declared bellow are called directly or indirectly by verilog_w
 
 Basic Description of how verilog_writer() writes the Verilog and SDF files:
 
-First - The name of the clock signal in the circuit is stored in clock_name. the find_clock_name() function 
-        searches through all the inputs of the design and returns the name of the clock in the design. The verilog 
-        writer currently works with only single clocked circuits
+First - The name of the clock signal in the circuit is stored in clock_name. the find_clock_name() function
+searches through all the inputs of the design and returns the name of the clock in the design. The verilog
+writer currently works with only single clocked circuits
 
-Second - instantiate_top_level() module is called. This function will will traverse through all the inputs and 
-        outputs in the circuit and instantiate the list of inputs and inputs in the top level module
+Second - instantiate_top_level() module is called. This function will will traverse through all the inputs and
+outputs in the circuit and instantiate the list of inputs and inputs in the top level module
 
 Third - instantiate_SDF_header() is a short function that will just write the top level declarations in the SDF file.
 
 Fourth - All the wires in the design are instantiated. This is done in the way demonstrated bellow:
-                                                      
-                                                      Traverse through all primitives
 
-                                                               -For each primitive traverse through all input ports
-                                                                        -For each input port traverse through all input pins and then instantiate the wire
+Traverse through all primitives
 
-                                                               -For each primitive traverse through all output ports
-                                                                        -For each output port traverse through all output pins and then instantiate the wire
-         
+-For each primitive traverse through all input ports
+-For each input port traverse through all input pins and then instantiate the wire
+
+-For each primitive traverse through all output ports
+-For each output port traverse through all output pins and then instantiate the wire
+
 Fifth - Instantiate_input_interconnect() will instantiate the interconnect modules that connect the inputs to the design to the rest of the primitives.
 
 Sixth - Instantiate_primitive_modules() will instantiate all the primitives in the design. This is how this function works in summary:
 
-                                                      Traverse through all primitives
-  
-                                                               -For each primitive instantiate the primitive module and instantiate inputs/outputs by traversing
-                                                               -For each primitive instantiate the interconnect modules that conect the outputs of that primitive 
-                                                                to other primitives
-                                                               -Instantiate the SDF block corersponding to this primitive
+Traverse through all primitives
 
- 
+-For each primitive instantiate the primitive module and instantiate inputs/outputs by traversing
+-For each primitive instantiate the interconnect modules that conect the outputs of that primitive
+to other primitives
+-Instantiate the SDF block corersponding to this primitive
+
+
 */
+
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <time.h>
+#include "util.h"
+#include "vpr_types.h"
+#include "vpr_utils.h"
+#include "globals.h"
+#include "rr_graph.h"
+#include "path_delay.h"
+#include "net_delay.h"
+#include "physical_types.h"
+#include "verilog_writer.h"
+
+/*#define DEBUG_VERILOG_WRITER*/
+
+/* ***************************************************************************************************************
+The pb_list data structure is used in a linked list by the function traverse_clb that will find primitives.
+This data structure represents a single primitive.
+
+pb: A pointer to the t_pb data structure representing the primitive.
+pb_graph: A pointer to the t_pb_graph_node representing the primitive.
+driver_pin: (Only applicable to "find_connected_primitives_downhill" & "find_connected_primitives_uphill")
+A pointer to the t_pb_graph_pin data structure corresponding to the pin that drives the signal on the load_pin of this pb primitive.
+The port index and pin number for the pin is accessible through this data structure.
+load_pin: (Only applicable to "find_connected_primitives_downhill" & "find_connected_primitives_uphill")
+A pointer to the t_pb_graph_pin data structure corresponding to the input pin that receives the signal from the driver_pin.
+The port index and pin number for the pin is accessible through this data structure.
+next: pointer to the next pb primitive found in the linked list*/
+typedef struct found_pins{
+
+	t_pb *pb;
+
+	struct found_pins *next;
+
+}pb_list;
+
+
+/* ***************************************************************************************************************
+The conn_list data structure is used in a linked list by functions that will be used by functions that will find the connectivity between primitives.
+This data structure represents a single driver to load pair of primitives.
+
+driver_pb: A pointer to the t_pb data structure representing the driver primitive.
+load_pb: A pointer to the t_pb data structure representing the load primitive.
+driver_pin: A pointer to the t_pb_graph_pin data structure corresponding to the pin that drives the signal on the load_pin of this pb primitive.
+The port index and pin number for the pin is accessible through this data structure.
+load_pin: A pointer to the t_pb_graph_pin data structure corresponding to the input pin that receives the signal from the driver_pin.
+The port index and pin number for the pin is accessible through this data structure.
+driver_to_load_delay: The delay, in seconds, for a signal to propagate from the driver pin to the load pin.
+next: pointer to the next driver-load pair found.
+*/
+typedef struct found_connectivity{
+
+	t_pb *driver_pb;
+	t_pb *load_pb;
+
+	t_pb_graph_pin *driver_pin;
+	t_pb_graph_pin *load_pin;
+
+	float driver_to_load_delay;
+
+	struct found_connectivity *next;
+
+}conn_list;
+
+
+/*The traverse_clb function returns a linked list of all the primitives inside a complex block.
+These primitives may be LUTs , FlipFlops , etc.
+block_num: the block number for the complex block.
+pb: The t_pb data structure corresponding to the complex block. (i.e block[block_num].pb)
+prim_list: A pin_list pointer corresponding to the head of the linked list. The function will populate this head pointer.*/
+static pb_list *traverse_clb(t_pb *pb, pb_list *prim_list);
+
+
+/*The find_connected_primitives_downhill function will return a linked list of all the primitives that a particular primitive connects to.
+block_num: the block number of the complex block that the primitive resides in.
+pb: A pointer to the t_pb data structure that represents the primitive (not the complex block).
+list: A head pointer to the start of a linked list. This function will populate the linked list. The linked list can be empty (i.e list=NULL)
+or contain other primitives.*/
+static conn_list *find_connected_primitives_downhill(int block_num, t_pb *pb, conn_list *list, int **lookup_tnode_from_pin_id);
+
+/*The function insert_to_linked_list inserts a new primitive to the pb_list type linked list pointed by "list".*/
+static pb_list *insert_to_linked_list(t_pb *pb_new, pb_list *list);
+
+/*The function insert_to_linked_list_conn inserts a new primitive to the conn_list type linked list pointed by "list".*/
+static conn_list *insert_to_linked_list_conn(t_pb *driver_new, t_pb *load_new, t_pb_graph_pin *driver_pin_, t_pb_graph_pin *load_pin_, float path_delay, conn_list *list);
+
+#ifdef DEBUG_VERILOG_WRITER
+/*The traverse_linked_list function prints the entire pb_list type linked list pointed to by "list"*/
+static void traverse_linked_list(pb_list *list);
+#endif
+
+#ifdef DEBUG_VERILOG_WRITER
+/*The traverse_linked_list_conn function prints the entire conn_list type linked list pointed to by "list"*/
+static void traverse_linked_list_conn(conn_list *list);
+#endif
+
+/*The free_linked_list function frees the memory used by the pb_list type linked list pointed to by "list"*/
+static pb_list *free_linked_list(pb_list *list);
+
+/*The free_linked_list_conn function frees the memory used by the conn_list type linked list pointed to by "list"*/
+static conn_list *free_linked_list_conn(conn_list *list);
+
+/*The function instantiate_top_level_module instantiates the top level verilog module of the post-synthesized circuit and the list of inputs and outputs to that module*/
+static void instantiate_top_level_module(FILE *Verilog);
+
+/*The instantiate_wires function instantiates all the wire in the post-synthesized design*/
+static void instantiate_wires(FILE *Verilog);
+
+/*The function instantiate_input_interconnect will instantiate the interconnect segments from input pins to the rest of the design*/
+static void instantiate_input_interconnect(FILE *Verilog, FILE *SDF, char *clock_name);
+
+/*This function instantiates the interconnect modules that connect from the output pins of the primitive "pb" to whatever it connects to*/
+static void instantiate_interconnect(FILE *Verilog, int block_num, t_pb *pb, FILE *SDF, int ** lookup_tnode_from_pin_id);
+
+/*This function instantiates the primitive verilog modules e.g. LUTs ,Flip Flops, etc.*/
+static void instantiate_primitive_modules(FILE *Verilog, char *clock_name, FILE *SDF);
+
+/*This function returns the truth table corresponding to the LUT primitive represented by "pb"*/
+static char *load_truth_table(int inputs, t_pb *pb);
+
+/*The names of some primitives contain certain characters that would cause syntax errors in Verilog (e.g. '^' , '~' , '[' , etc. ). This function returns a new string
+with those illegal characters removed and replaced with '_'*/
+static char *fix_name(char *name);
+
+/*This function finds the number of inputs to a primitive.*/
+static int find_number_of_inputs(t_pb *pb);
+
+/*This function is a utility function used by load_truth_table and load_truth_table_new functions. It will return the index of a particular row in the truth table*/
+static int find_index(char *row, int inputs);
+
+/*This function is a utility function called by intantiate_interconnect*/
+static void interconnect_printing(FILE *fp, conn_list *downhill);
+
+/*This function will instantiate the header of te Standar Delay Format (SDF) file.*/
+static void instantiate_SDF_header(FILE *SDF);
+
+/*This funciton will instantiate the SDF cell that contains the delay information of the Verilog interconnect modules*/
+static void SDF_interconnect_delay_printing(FILE *SDF, conn_list *downhill);
+
+/*This function instantiates the SDF cell that contains the delay information of a LUT*/
+static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
+
+/*This function instantiates the SdF cell that contains the delay information of a Flip Flop*/
+static void sdf_DFF_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
+
+/*This function instantiates the SdF cell that contains the delay information of a Multiplier*/
+static void SDF_Mult_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
+
+/*This function instantiates the SdF cell that contains the delay information of a Adder*/
+static void SDF_Adder_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
+
+/*Finds and returns the name of the clock signal int he circuit*/
+static char *find_clock_name(void);
+
+/*This function instantiates the SdF cell that contains the delay information of a Single_port_RAM*/
+static void SDF_ram_single_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
+
+/*This function instantiates the SdF cell that contains the delay information of a Dual_port_RAM*/
+static void SDF_ram_dual_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
+
+
+
+
+
 
 void verilog_writer(void)
 {
@@ -91,10 +258,12 @@ void verilog_writer(void)
   fclose(verilog);
   fclose(SDF);
   printf("Done\n\n");
+  free(verilog_file_name);
+  free(sdf_file_name);
 }
 
 /*The function instantiate_top_level_module instantiates the top level verilog module of the post-synthesized circuit and the list of inputs and outputs to that module*/
-void instantiate_top_level_module(FILE *verilog)
+static void instantiate_top_level_module(FILE *verilog)
 {
   int i,place_comma;
   pb_list *temp=NULL;
@@ -138,13 +307,13 @@ void instantiate_top_level_module(FILE *verilog)
 
 }
 
-void instantiate_SDF_header(FILE *SDF)
+static void instantiate_SDF_header(FILE *SDF)
 {
   fprintf(SDF , "(DELAYFILE\n\t(SDFVERSION \"2.1\")\n\t(DIVIDER /)\n\t(TIMESCALE 1 ps)\n\n ");
 }
 
 /*The instantiate_wires function instantiates all the wire in the post-synthesized design*/
-void instantiate_wires(FILE *verilog)
+static void instantiate_wires(FILE *verilog)
 {
   int i,j,k;
   pb_list *primitive_list=NULL;
@@ -197,12 +366,14 @@ void instantiate_wires(FILE *verilog)
   The function instantiate_input_interconnect will instantiate the interconnect segments from input pins to the rest of the design.
   This function is necessary because the inputs to the design are not instantiated as a module in verilog.
 */
-void instantiate_input_interconnect(FILE *verilog , FILE *SDF , char *clock_name)
+static void instantiate_input_interconnect(FILE *verilog, FILE *SDF, char *clock_name)
 {
   int blocks;
   pb_list *current;
   pb_list *primitive_list = NULL;
   conn_list *downhill = NULL;
+
+  int **lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
 
   for(blocks=0 ; blocks<num_blocks ; blocks++)
     {
@@ -221,9 +392,10 @@ void instantiate_input_interconnect(FILE *verilog , FILE *SDF , char *clock_name
 	    {
 	      continue;
 	    }
-	  downhill = find_connected_primitives_downhill(blocks , current->pb , downhill );/*find all the other primitives that it connects to*/
-	  
-	  /*traverse_linked_list_conn(downhill);*/
+	  downhill = find_connected_primitives_downhill(blocks , current->pb , downhill, lookup_tnode_from_pin_id);/*find all the other primitives that it connects to*/
+#ifdef DEBUG_VERILOG_WRITER
+	  traverse_linked_list_conn(downhill);
+#endif
 	  interconnect_printing(verilog , downhill);/*Print the interconnects modules that connect the inputs to the rest of the design*/
 	  SDF_interconnect_delay_printing(SDF , downhill);/*Print the Delays of the interconnect module to the SDF file*/
 	  downhill = free_linked_list_conn(downhill);
@@ -231,10 +403,12 @@ void instantiate_input_interconnect(FILE *verilog , FILE *SDF , char *clock_name
 	}
       primitive_list = free_linked_list(primitive_list);
     }
+
+  free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);
 }
 
 /*This function instantiates the primitive verilog modules e.g. LUTs ,Flip Flops, etc.*/
-void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
+static void instantiate_primitive_modules(FILE *fp, char *clock_name, FILE *SDF)
 {
   int i,j,k,h;
   pb_list *primitives = NULL;
@@ -245,6 +419,10 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
   int inputs_to_lut;
   char *fixed_name = NULL;
   int power;
+  int **lookup_tnode_from_pin_id;
+
+  lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
+
   for(i=0 ; i<num_blocks ; i++)
     {
       primitives = traverse_clb(block[i].pb , primitives);/*find all the primitives inside block i*/
@@ -271,7 +449,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 		{
 		  for(h=0 ; h<current->pb->pb_graph_node->num_input_pins[k] ; h++)
 		    {
-		      if(current->pb->rr_graph[current->pb->pb_graph_node->input_pins[k][h].pin_count_in_cluster].net_num != OPEN)/*check if that pin is used*/
+		      if(block[i].pb_route[current->pb->pb_graph_node->input_pins[k][h].pin_count_in_cluster].atom_net_idx != OPEN)/*check if that pin is used*/
 			{
 			  if(place_comma)/*need this flag check to properly place the commas*/
 			    {
@@ -305,18 +483,18 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	      place_comma=0;
 	      fprintf(fp , " , %s_output_0_0 );\n\n",fixed_name);/*finaly write the output of the module*/
 
-	      instantiate_interconnect(fp,i,current->pb,SDF);/*this function will instantiate the routing                                                                                    
+		  instantiate_interconnect(fp, i, current->pb, SDF, lookup_tnode_from_pin_id);/*this function will instantiate the routing
                                                                           interconnect from the output of this lut to                                                                         
                                                                           the inputs of other luts that it connects to*/
-	      sdf_LUT_delay_printing(SDF , current->pb);/*This function will instantiate the internal delays of the lut to the SDF file*/
+		  sdf_LUT_delay_printing(SDF, current->pb, i, lookup_tnode_from_pin_id);/*This function will instantiate the internal delays of the lut to the SDF file*/
 	    }
 	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"latch"))/*If this primitive is a Flip Flop*/
 	    {
 	      char *fixed_clock_name;
 	      fixed_clock_name = fix_name(clock_name);
 	      fprintf(fp , "\nD_Flip_Flop DFF_%s(%s_output_0_0 , %s_input_0_0 , 1'b1 , 1'b1 , %s_output_0_0 );\n",fixed_name,fixed_clock_name,fixed_name,fixed_name);
-	      instantiate_interconnect(fp , i , current->pb , SDF);
-	      sdf_DFF_delay_printing(SDF , current->pb);
+		  instantiate_interconnect(fp, i, current->pb, SDF, lookup_tnode_from_pin_id);
+		  sdf_DFF_delay_printing(SDF, current->pb, i, lookup_tnode_from_pin_id);
 	      free(fixed_clock_name);
 	    }
 	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"multiply") || 
@@ -348,7 +526,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 		  for(i_pin=logical_block[current->pb->logical_block].pb->pb_graph_node->num_input_pins[i_port]-1 ; i_pin>=0 ; i_pin--)
 		    {
 		      /*If this input pin is used*/
-		      if(current->pb->rr_graph[current->pb->pb_graph_node->input_pins[i_port][i_pin].pin_count_in_cluster].net_num != OPEN)
+			  if (block[i].pb_route[current->pb->pb_graph_node->input_pins[i_port][i_pin].pin_count_in_cluster].atom_net_idx != OPEN)
 			{
 			  if(place_comma)/*need this flag check to properly place the commas*/
 			    {
@@ -394,11 +572,11 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 		  fprintf(fp , "}");/*End concatination*/
 		}
 	      fprintf(fp , ");\n\n");
-	      instantiate_interconnect(fp , i , current->pb , SDF);
+		  instantiate_interconnect(fp, i, current->pb, SDF, lookup_tnode_from_pin_id);
 	      if (mult)
-		SDF_Mult_delay_printing(SDF, current->pb);
+			  SDF_Mult_delay_printing(SDF, current->pb, i, lookup_tnode_from_pin_id);
 	      else
-		SDF_Adder_delay_printing(SDF, current->pb);
+			  SDF_Adder_delay_printing(SDF, current->pb, i, lookup_tnode_from_pin_id);
 	    }
 	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"single_port_ram")){/*If this primitive is a single port RAM block*/
 	    
@@ -425,7 +603,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 		for(i_pin=logical_block[current->pb->logical_block].pb->pb_graph_node->num_input_pins[i_port]-1 ; i_pin>=0 ; i_pin--)
 		  {
 		    /*If this input pin is used*/
-		    if(current->pb->rr_graph[current->pb->pb_graph_node->input_pins[i_port][i_pin].pin_count_in_cluster].net_num != OPEN)
+			if (block[i].pb_route[current->pb->pb_graph_node->input_pins[i_port][i_pin].pin_count_in_cluster].atom_net_idx != OPEN)
 		      {
 			if(place_comma)/*need this flag check to properly place the commas*/
 			  {
@@ -473,8 +651,8 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	    fprintf(fp , ", %s_output_0_0" , fixed_clock_name);
 	    fprintf(fp , ");\n\n");
 	    free(fixed_clock_name);
-	    instantiate_interconnect(fp , i , current->pb , SDF);
-	    SDF_ram_single_port_delay_printing(SDF , current->pb);
+		instantiate_interconnect(fp, i, current->pb, SDF, lookup_tnode_from_pin_id);
+		SDF_ram_single_port_delay_printing(SDF, current->pb, i, lookup_tnode_from_pin_id);
 	  }
 	  else if(!strcmp(logical_block[current->pb->logical_block].model->name,"dual_port_ram")){/*If this primitive is a dual_port_ram*/
 	    
@@ -512,7 +690,7 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
                 for(i_pin=logical_block[current->pb->logical_block].pb->pb_graph_node->num_input_pins[i_port]-1 ; i_pin>=0 ; i_pin--)
                   {
 		    /*If this pin is used*/
-                    if(current->pb->rr_graph[current->pb->pb_graph_node->input_pins[i_port][i_pin].pin_count_in_cluster].net_num != OPEN)
+					if (block[i].pb_route[current->pb->pb_graph_node->input_pins[i_port][i_pin].pin_count_in_cluster].atom_net_idx != OPEN)
                       {
                         if(place_comma)/*need this flag check to properly place the commas*/
                           {
@@ -560,8 +738,8 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
             fprintf(fp , ", %s_output_0_0" , fixed_clock_name);
             fprintf(fp , ");\n\n");
             free(fixed_clock_name);
-            instantiate_interconnect(fp , i , current->pb , SDF);
-            SDF_ram_dual_port_delay_printing(SDF , current->pb);
+			instantiate_interconnect(fp, i, current->pb, SDF, lookup_tnode_from_pin_id);
+			SDF_ram_dual_port_delay_printing(SDF, current->pb, i, lookup_tnode_from_pin_id);
 
 	  }
 	  else if(strcmp(logical_block[current->pb->logical_block].model->name,"input") && strcmp(logical_block[current->pb->logical_block].model->name,"output"))
@@ -579,14 +757,16 @@ void instantiate_primitive_modules(FILE *fp, char *clock_name , FILE *SDF)
 	}
       primitives = free_linked_list(primitives);
     }
+
+	free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);
 }
 
 /*This function instantiates the interconnect modules that connect from the output pins of the primitive "pb" to whatever it connects to block_num is the block number that the pb resides in*/
-void instantiate_interconnect(FILE *verilog , int block_num , t_pb *pb , FILE *SDF)
+static void instantiate_interconnect(FILE *verilog, int block_num, t_pb *pb, FILE *SDF, int** lookup_tnode_from_pin_id)
 {
   conn_list *downhill_connections = NULL;
 
-  downhill_connections = find_connected_primitives_downhill(block_num , pb , downhill_connections);/*find all the other luts that the lut corresponding to "pb", connects to*/
+  downhill_connections = find_connected_primitives_downhill(block_num, pb, downhill_connections, lookup_tnode_from_pin_id);/*find all the other luts that the lut corresponding to "pb", connects to*/
 
   interconnect_printing(verilog , downhill_connections);
   SDF_interconnect_delay_printing(SDF , downhill_connections);
@@ -597,7 +777,7 @@ void instantiate_interconnect(FILE *verilog , int block_num , t_pb *pb , FILE *S
 inputs: total number of inputs that the LUT has.
 pb: the t_pb data structure corresponding to the LUT*/
 
-char *load_truth_table(int inputs , t_pb *pb)
+static char *load_truth_table(int inputs, t_pb *pb)
 {
   int number_of_dont_cares=0;
   int tries,shift,which_row,i,j;
@@ -702,7 +882,7 @@ char *load_truth_table(int inputs , t_pb *pb)
   return(tt);
 }
 
-int find_index(char *row,int inputs)/*returns the index of the 64bit truth table that this temporary truth table row corresponds to*/
+static int find_index(char *row, int inputs)/*returns the index of the 64bit truth table that this temporary truth table row corresponds to*/
 {
   int index=0;/*initially setting index to 0*/
   int or_=0x1;
@@ -727,7 +907,7 @@ int find_index(char *row,int inputs)/*returns the index of the 64bit truth table
 
 /*The names of some primitives contain certain characters that would cause syntax errors in Verilog (e.g. '^' , '~' , '[' , etc. ). This function returns a new string
   with those illegal characters removed and replaced with '_'*/
-char *fix_name(char *name)
+static char *fix_name(char *name)
 {
   int i;
 
@@ -745,7 +925,7 @@ char *fix_name(char *name)
 }
 
 /*This function finds the number of inputs to a primitive.*/
-int find_number_of_inputs(t_pb *pb)
+static int find_number_of_inputs(t_pb *pb)
 {
   int i,j,count=0;
   for(i=0 ; i<pb->pb_graph_node->num_input_ports ; i++)
@@ -759,7 +939,7 @@ int find_number_of_inputs(t_pb *pb)
 }
 
 /*This function is a utility function called by intantiate_interconnect*/
-void interconnect_printing(FILE *fp , conn_list *downhill)
+static void interconnect_printing(FILE *fp, conn_list *downhill)
 {
   char *fixed_name1;
   char *fixed_name2;
@@ -799,7 +979,7 @@ void interconnect_printing(FILE *fp , conn_list *downhill)
 }
 
 /*This funciton will instantiate the SDF cell that contains the delay information of the Verilog interconnect modules*/
-void SDF_interconnect_delay_printing(FILE *SDF , conn_list *downhill)
+static void SDF_interconnect_delay_printing(FILE *SDF, conn_list *downhill)
 {
   conn_list *connections;
   char *fixed_name1;
@@ -845,7 +1025,7 @@ void SDF_interconnect_delay_printing(FILE *SDF , conn_list *downhill)
 }
 
 /*This function instantiates the SDF cell that contains the delay information of a LUT*/
-void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
+static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   char *fixed_name;
   int j,pin_count;
@@ -866,13 +1046,14 @@ void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
 	  for (q = 0; q < pb->pb_graph_node->num_input_pins[0]; q++)
 	  {
 	    pin_count = pb->pb_graph_node->input_pins[0][q].pin_count_in_cluster;
-	    if (logical_block[logical_block_index].pb->rr_graph[pin_count].net_num == logical_block[logical_block_index].input_nets[0][j])
+	    if (block[iblock].pb_route[pin_count].atom_net_idx == logical_block[logical_block_index].input_nets[0][j])
 	      break;
 	  }
 	  
 	  assert(q != pb->pb_graph_node->num_input_pins[0]);
+	  int itnode = lookup_tnode_from_pin_id[iblock][pin_count];
 
-          internal_delay = pb->rr_graph[pin_count].tnode->out_edges->Tdel;
+          internal_delay = tnode[itnode].out_edges->Tdel;
           internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
           internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
           del = (int)internal_delay;
@@ -891,7 +1072,7 @@ void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)
 }
 
 /*This function instantiates the SdF cell that contains the delay information of a Flip Flop*/
-void sdf_DFF_delay_printing(FILE *SDF , t_pb *pb)
+static void sdf_DFF_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   char *fixed_name;
   float internal_delay;
@@ -901,8 +1082,9 @@ void sdf_DFF_delay_printing(FILE *SDF , t_pb *pb)
   fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"D_Flip_Flop\")\n\t(INSTANCE inst/DFF_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , fixed_name);
 
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // the Q output of the FF (which has only a single output port and pin)
-  assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->T_arr * 1.0E12 + 0.5;
+  int itnode = lookup_tnode_from_pin_id[iblock][pin_count];
+  assert(itnode != OPEN);
+  internal_delay = tnode[itnode].T_arr * 1.0E12 + 0.5;
   del = (int)internal_delay;
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) Q (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
@@ -910,7 +1092,7 @@ void sdf_DFF_delay_printing(FILE *SDF , t_pb *pb)
   free(fixed_name);
 }
 
-void SDF_Mult_delay_printing(FILE *SDF , t_pb *pb)
+static void SDF_Mult_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   char *fixed_name;
   int pin_count;
@@ -920,18 +1102,19 @@ void SDF_Mult_delay_printing(FILE *SDF , t_pb *pb)
   fixed_name = fix_name(pb->name);
   fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"mult\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
-
   pin_count = pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster;
-  assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->out_edges->Tdel;
+  int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real multiplication, will need to assign another student to fix */
+  assert(itnode != OPEN);
+  internal_delay = tnode[itnode].out_edges->Tdel;
   internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
   internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
   del = (int)internal_delay;
   fprintf(SDF , "\t\t\t(IOPATH delay/A delay/B (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
   
   pin_count = pb->pb_graph_node->input_pins[1][0].pin_count_in_cluster;
-  assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->out_edges->Tdel;
+  itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real multiplication, will need to assign another student to fix */
+  assert(itnode != OPEN);
+  internal_delay = tnode[itnode].out_edges->Tdel;
   internal_delay = internal_delay * 1.0E12;/*converting the delay from seconds to picoseconds*/
   internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
   del = (int)internal_delay;
@@ -942,7 +1125,7 @@ void SDF_Mult_delay_printing(FILE *SDF , t_pb *pb)
   
 }
 
-void SDF_Adder_delay_printing(FILE *SDF , t_pb *pb)
+static void SDF_Adder_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   int i, j, k;
   int total_input_ports = pb->pb_graph_node->num_input_ports;
@@ -958,10 +1141,13 @@ void SDF_Adder_delay_printing(FILE *SDF , t_pb *pb)
 
       pin_count = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
       
-      t_tnode* tNodeInput = pb->rr_graph[pin_count].tnode; // source pin of timing arc
+	  int itnode = lookup_tnode_from_pin_id[iblock][pin_count];
 
-      if (!tNodeInput)
+
+      if (itnode == OPEN)
 	continue; // no timing information on pin
+
+      t_tnode* tNodeInput = &tnode[itnode]; // source pin of timing arc
       
       for (k = 0; k < tNodeInput->num_edges; k++) {   
 
@@ -989,7 +1175,7 @@ void SDF_Adder_delay_printing(FILE *SDF , t_pb *pb)
 }
 
 
-void SDF_ram_single_port_delay_printing(FILE *SDF , t_pb *pb)
+static void SDF_ram_single_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   //  int num_inputs;
   char *fixed_name;
@@ -1002,8 +1188,10 @@ void SDF_ram_single_port_delay_printing(FILE *SDF , t_pb *pb)
   fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"single_port_ram\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
-  assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->T_arr * 1.0E12 + 0.5;
+  int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real memory, will need to assign another student to fix */
+
+  assert(itnode != OPEN);
+  internal_delay = tnode[itnode].T_arr * 1.0E12 + 0.5;
   del = (int)internal_delay;
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
@@ -1013,7 +1201,7 @@ void SDF_ram_single_port_delay_printing(FILE *SDF , t_pb *pb)
 
 }
 
-void SDF_ram_dual_port_delay_printing(FILE *SDF , t_pb *pb)
+static void SDF_ram_dual_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   //  int num_inputs;
   char *fixed_name;
@@ -1026,8 +1214,9 @@ void SDF_ram_dual_port_delay_printing(FILE *SDF , t_pb *pb)
   fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"dual_port_ram\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
-  assert(pb->rr_graph[pin_count].tnode);
-  internal_delay = pb->rr_graph[pin_count].tnode->T_arr * 1.0E12 + 0.5;
+  int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; 
+  assert(itnode != OPEN);
+  internal_delay = tnode[itnode].T_arr * 1.0E12 + 0.5;
   del = (int)internal_delay;
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out1 (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
@@ -1037,7 +1226,7 @@ void SDF_ram_dual_port_delay_printing(FILE *SDF , t_pb *pb)
   free(fixed_name);
 }
 
-char *find_clock_name(void)
+static char *find_clock_name(void)
 {
   unsigned int j;
   char *clock_in_the_design=NULL;
@@ -1066,7 +1255,7 @@ char *find_clock_name(void)
   pb: The t_pb data structure corresponding to the complex block. (i.e block[block_num].pb)
   prim_list: A pin_list pointer corresponding to the head of the linked list. The function will populate this head pointer.*/
 
-pb_list *traverse_clb(t_pb *pb , pb_list *prim_list)
+static pb_list *traverse_clb(t_pb *pb, pb_list *prim_list)
 {
   int i,j;
   const t_pb_type *pb_type;
@@ -1099,7 +1288,7 @@ pb_list *traverse_clb(t_pb *pb , pb_list *prim_list)
   list: A head pointer to the start of a linked list. This function will populate the linked list. The linked list can be empty (i.e list=NULL)
   or contain other primitives.*/
 
-conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_list*list)
+static conn_list *find_connected_primitives_downhill(int block_num, t_pb *pb, conn_list*list, int **lookup_tnode_from_pin_id)
 {
   int i,j,q,r;
   unsigned int k;
@@ -1127,7 +1316,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 
 	  vpck_net = logical_block[starting_block].output_nets[model_port_index][j]; /*The index for the g_atoms_nlist.net struct corresponding to this source to sink(s) connections*/
 	 
-	  if (pb->rr_graph[pin_number].net_num != OPEN) /* If this output pin is used*/
+	  if (block[block_num].pb_route[pin_number].atom_net_idx != OPEN) /* If this output pin is used*/
 	  { /*Then we will use the logical_block netlist method for finding the connectivity and timing information*/
 	      if(vpck_net != OPEN)
 	      {
@@ -1147,7 +1336,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 		      for (q = 0; q <  logical_block[next_block].pb->pb_graph_node->num_input_pins[port_number_out]; q++) 
 		      {
 			int physical_pin_pos = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][q].pin_count_in_cluster;
-			if (logical_block[next_block].pb->rr_graph[physical_pin_pos].net_num == vpck_net)
+			if (block[logical_block[next_block].clb_index].pb_route[physical_pin_pos].atom_net_idx == vpck_net)
 			  break;
 		      }
 		      
@@ -1161,7 +1350,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 		      for (r = 0; r < logical_block[next_block].pb->pb_graph_node->num_input_ports; r++) {
 			 for (q = 0; q < logical_block[next_block].pb->pb_graph_node->num_input_pins[r]; q++) {
 			   int physical_pin_pos = logical_block[next_block].pb->pb_graph_node->input_pins[r][q].pin_count_in_cluster;
-			   if (logical_block[next_block].pb->rr_graph[physical_pin_pos].net_num == vpck_net) {
+			   if (block[logical_block[next_block].clb_index].pb_route[physical_pin_pos].atom_net_idx == vpck_net) {
 			     port_number_out = r;
 			     pin_number_out = q;
 			     r = logical_block[next_block].pb->pb_graph_node->num_input_ports;
@@ -1176,10 +1365,12 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
 			  int unswapped_pin_number =  g_atoms_nlist.net[vpck_net].pins[k].block_pin;
 
 		      pin_count = logical_block[next_block].pb->pb_graph_node->input_pins[port_number_out][pin_number_out].pin_count_in_cluster;/*pin count for the sink pin*/
-		      assert(logical_block[next_block].pb->rr_graph[pin_count].tnode);
+			  int source_tnode = lookup_tnode_from_pin_id[logical_block[starting_block].clb_index][pin_number];
+			  int end_tnode = lookup_tnode_from_pin_id[logical_block[next_block].clb_index][pin_count];
+			  assert(end_tnode != OPEN && source_tnode != OPEN);
 		      
-		      start_delay = pb->rr_graph[pin_number].tnode->T_arr; /*The arrival time of the source pin*/		
-		      end_delay = logical_block[next_block].pb->rr_graph[pin_count].tnode->T_arr;/*The arrival time of the sink pin*/
+		      start_delay = tnode[source_tnode].T_arr; /*The arrival time of the source pin*/		
+			  end_delay = tnode[end_tnode].T_arr;/*The arrival time of the sink pin*/
 		      delay = end_delay - start_delay;   /*The difference of start and end arrival times is the delay for going from the source to sink pin*/		
 		      list=insert_to_linked_list_conn(pb , logical_block[next_block].pb , 
 						      &pb->pb_graph_node->output_pins[i][j] , 
@@ -1195,7 +1386,7 @@ conn_list *find_connected_primitives_downhill(int block_num , t_pb *pb , conn_li
   return(list);  
 }
 
-pb_list *insert_to_linked_list(t_pb *pb_new , pb_list *list)
+static pb_list *insert_to_linked_list(t_pb *pb_new, pb_list *list)
 {
   pb_list *new_list = (pb_list *)malloc(1 * sizeof(pb_list));
   assert(new_list);
@@ -1205,7 +1396,7 @@ pb_list *insert_to_linked_list(t_pb *pb_new , pb_list *list)
   return(list);
 }
 
-conn_list *insert_to_linked_list_conn(t_pb *driver_new , t_pb *load_new , t_pb_graph_pin *driver_pin_ , t_pb_graph_pin *load_pin_ , float path_delay , conn_list *list)
+static conn_list *insert_to_linked_list_conn(t_pb *driver_new, t_pb *load_new, t_pb_graph_pin *driver_pin_, t_pb_graph_pin *load_pin_, float path_delay, conn_list *list)
 {
   conn_list *new_list = (conn_list *)malloc(1 * sizeof(conn_list));
   assert(new_list);
@@ -1219,8 +1410,9 @@ conn_list *insert_to_linked_list_conn(t_pb *driver_new , t_pb *load_new , t_pb_g
   return(list);
 }
 
+#ifdef DEBUG_VERILOG_WRITER
 /*traverse_linked_list_conn can be used to print out the found connections of a primitive to the screen */
-void traverse_linked_list_conn(conn_list *list)
+static void traverse_linked_list_conn(conn_list *list)
 {
   conn_list *current;
   
@@ -1235,9 +1427,11 @@ void traverse_linked_list_conn(conn_list *list)
 	     current->driver_to_load_delay );
     }
 }
+#endif
 
+#ifdef DEBUG_VERILOG_WRITER
 /*traverse_linked_list can be used to print out the primitives of a clb to the screen */
-void traverse_linked_list(pb_list *list)
+static void traverse_linked_list(pb_list *list)
 {
   pb_list *current;
   
@@ -1246,8 +1440,9 @@ void traverse_linked_list(pb_list *list)
       printf("type: %s , name: %s \n", logical_block[current->pb->logical_block].model->name , current->pb->name);
     }
 }
+#endif
 
-pb_list *free_linked_list(pb_list *list)
+static pb_list *free_linked_list(pb_list *list)
 {
   pb_list *current;
   pb_list *temp_free;
@@ -1263,7 +1458,7 @@ pb_list *free_linked_list(pb_list *list)
   return(list);
 }
 
-conn_list *free_linked_list_conn(conn_list *list)
+static conn_list *free_linked_list_conn(conn_list *list)
 {
   conn_list *current;
   conn_list *temp_free;

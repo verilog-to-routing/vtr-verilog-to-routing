@@ -107,6 +107,12 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 
 void print_timing_graph_as_blif (const char *fname, t_model *models);
 
+int **alloc_and_load_tnode_lookup_from_pin_id();
+
+void free_tnode_lookup_from_pin_id(int **tnode_lookup);
+
+
+
 /*************************** Variable declarations ********************************/
 
 extern int num_tnodes; /* Number of nodes (pins) in the timing graph */

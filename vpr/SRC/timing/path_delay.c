@@ -241,10 +241,6 @@ static void print_timing_constraint_info(const char *fname);
 
 static void print_spaces(FILE * fp, int num_spaces);
 
-static int **alloc_and_load_tnode_lookup_from_pin_id();
-
-static void free_tnode_lookup_from_pin_id(int **tnode_lookup);
-
 /********************* Subroutine definitions *******************************/
 
 t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
@@ -4084,7 +4080,7 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 /*
  Create a lookup table that returns the tnode index for [iblock][pb_graph_pin_id]
 */
-static int **alloc_and_load_tnode_lookup_from_pin_id() {
+int **alloc_and_load_tnode_lookup_from_pin_id() {
 	int **tnode_lookup;
 
 	tnode_lookup = new int* [num_blocks];
@@ -4116,7 +4112,7 @@ static int **alloc_and_load_tnode_lookup_from_pin_id() {
 	return tnode_lookup;
 }
 
-static void free_tnode_lookup_from_pin_id(int **tnode_lookup) {
+void free_tnode_lookup_from_pin_id(int **tnode_lookup) {
 	for (int i = 0; i < num_blocks; i++) {
 		delete[] tnode_lookup[i];
 	}
