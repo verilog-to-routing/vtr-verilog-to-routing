@@ -2,9 +2,16 @@
 	Author: Oleg Petelin
 	Date: July 2014
 
-	The connection block metrics quantify certain qualities of the connection block. 
-	The code below currently works for the output connection block of bidirectional
-	architectures, though this will be extended in the future. 
+	The connection block metrics quantify certain qualities of the connection block.
+	There are basically two orthogonal classes of metrics. One which is related to 
+	what groups of wires a pin connects to (groups being defined by wire start points).
+	And a second class which is related to the quality of the switch pattern that the pins
+	make into the channel in general (specifically, how much the switches of the pins overlap
+	with eachother). Again, these two classes of metrics are fairly orthogonal, so it is 
+	possible to adjust one while keeping the other relatively constant.
+
+	The code below currently works for the input/output connection blocks of bidirectional
+	architectures and input connection blocks of unidirectional architectures. 
 	This code provides functions for calculating the connection block metrics, as well
 	as for adjusting the actual connection block so that a certain value of a specified 
 	metric is achieved (this is done using an annealer).
@@ -44,7 +51,6 @@ template< typename F, typename T > bool map_has_key( INP F key, INP std::map< F,
 	} else {
 		exists = false;
 	}
-
 	return exists;
 }
 /* a generic function for determining if a given set element exists */
@@ -121,42 +127,8 @@ static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metric
 
 
 /**** Function Definitions ****/
-/* wires may be grouped in a channel according to their start points. i.e. at a given channel segment with L=4, there are up to
-   four 'types' of L=4 wires: those that start in this channel segment, those than end in this channel segment, and two types
-   that are in between. here we return the number of wire types. 
-   the current connection block metrics code can only deal with channel segments that carry wires of only one length (i.e. L=4).
-   this may be enhanced in the future. */
-int get_num_wire_types(INP int num_segments, INP t_segment_inf *segment_inf){
 
-	int num_wire_types = 0;
-
-	if (num_segments == 1){
-		/* There are as many wire start points as the value of L */
-		num_wire_types = segment_inf[0].length;
-	} else {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Currently, the connection block metrics code can only deal with channel segments that carry wires of only one lenght.\n");
-	}
-
-	return num_wire_types;
-}
-
-/* Gets the maximum Fc value from the Fc_array of this pin type. Errors out if the pins of this pin_type don't all have the same Fc */
-int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_type){
-	int Fc = 0;
-	for (int ipin = 0; ipin < block_type->num_pins; ++ipin) {
-		int iclass = block_type->pin_class[ipin];
-		if (Fc_array[ipin] > Fc && block_type->class_inf[iclass].type == pin_type) {
-			/* currently I'm assuming that the Fc for all pins are the same. Check this here. */
-			if (Fc != 0 && Fc_array[ipin] != Fc){
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Two pins of the same type have different Fc values. This is currently not allowed for CB metrics\n");
-			}
-			Fc = Fc_array[ipin];
-		}
-	}
-	return Fc;
-}
-
-/* adjusts the connection block until the appropriate metric has hit it's target value. the other orthogonal metric is kept constant
+/* adjusts the connection block until the appropriate metric has hit its target value. the other orthogonal metric is kept constant
    within some tolerance */
 void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_tolerance, INP float pin_tolerance,
 		INP t_type_ptr block_type, INOUTP int *****pin_to_track_connections, 
@@ -167,17 +139,17 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 
 	/* various error checks */
 	if (metric >= NUM_METRICS){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Invalid CB metric type specified: %d\n", (int)metric);
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Invalid CB metric type specified: %d\n", (int)metric);
 	}
 	if (block_type->num_pins == 0){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Trying to adjust CB metrics for a block with no pins!\n");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Trying to adjust CB metrics for a block with no pins!\n");
 	}
 	if (block_type->height > 1 || block_type->width > 1){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Adjusting connection block metrics is currently intended for CLBs, which have height and width = 1\n");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Adjusting connection block metrics is currently intended for CLBs, which have height and width = 1\n");
 	}
 	if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max
 		|| chan_width_inf->x_max != chan_width_inf->y_max){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "This code currently assumes that channel width is uniform throughout the fpga");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "This code currently assumes that channel width is uniform throughout the fpga");
 	}
 
 	int nodes_per_chan = chan_width_inf->x_min;
@@ -192,7 +164,7 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 	} else if (RECEIVER == pin_type){
 		num_pin_type_pins = block_type->num_receivers;
 	} else {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Found unexpected pin type when adjusting CB wire metric: %d\n", pin_type);
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Found unexpected pin type when adjusting CB wire metric: %d\n", pin_type);
 	}
 
 	/* get initial values for metrics */
@@ -215,7 +187,7 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 
 	if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max 
 		|| chan_width_inf->x_max != chan_width_inf->y_max){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "get_conn_block_metrics: currently this code assumes that channel width is uniform throughout the fpga");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Currently this code assumes that channel width is uniform throughout the fpga");
 	}
 	int nodes_per_chan = chan_width_inf->x_min;
 
@@ -225,9 +197,9 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 	/* a bit of error checking */
 	if (0 == block_type->index){
 		/* an empty block */
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Cannot calculate CB metrics for empty blocks\n");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Cannot calculate CB metrics for empty blocks\n");
 	} else if (0 == Fc){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Can not compute CB metrics for pins not connected to any tracks\n");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Can not compute CB metrics for pins not connected to any tracks\n");
 	}
 
 	/* get the number of block pins that are of pin_type */
@@ -237,7 +209,7 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 	} else if (RECEIVER == pin_type){
 		num_pin_type_pins = block_type->num_receivers;
 	} else {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Found unexpected pin type when adjusting CB wire metric: %d\n", pin_type);
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Found unexpected pin type when adjusting CB wire metric: %d\n", pin_type);
 	}
 
 	/* initialize CB metrics structures */
@@ -274,7 +246,7 @@ static void init_cb_structs(INP t_type_ptr block_type, INP int *****tracks_conne
 	
 	/* can not calculate CB metrics for open pins */
 	if(OPEN == pin_type){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Can not initialize CB metric structures for pins of OPEN type\n");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Can not initialize CB metric structures for pins of OPEN type\n");
 	}
 
 	int num_wire_types = get_num_wire_types(num_segments, segment_inf);
@@ -333,14 +305,14 @@ static void init_cb_structs(INP t_type_ptr block_type, INP int *****tracks_conne
 						pair< set<int>::iterator, bool > result1 = cb_metrics->pin_to_tracks.at(iside).at(ipin).insert( track );
 						if (!result1.second){
 							/* this track should not already be a part of the set */
-							vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Attempted to insert element into pin_to_tracks set which already exists there\n");
+							vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Attempted to insert element into pin_to_tracks set which already exists there\n");
 						}
 						
 						/* insert the current pin into the corresponding tracks_to_pin entry */
 						pair< set<int>::iterator, bool > result2 = cb_metrics->track_to_pins.at(iside).at(track).insert( pin );
 						if (!result2.second){
 							/* this pin should not already be a part of the set */
-							vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Attempted to insert element into track_to_pins set which already exists there\n");
+							vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Attempted to insert element into track_to_pins set which already exists there\n");
 						}
 
 						/* keep track of how many of each wire type is used by the current pin */
@@ -354,6 +326,41 @@ static void init_cb_structs(INP t_type_ptr block_type, INP int *****tracks_conne
 			}
 		}
 	}
+}
+
+/* wires may be grouped in a channel according to their start points. i.e. at a given channel segment with L=4, there are up to
+   four 'types' of L=4 wires: those that start in this channel segment, those than end in this channel segment, and two types
+   that are in between. here we return the number of wire types. 
+   the current connection block metrics code can only deal with channel segments that carry wires of only one length (i.e. L=4).
+   this may be enhanced in the future. */
+int get_num_wire_types(INP int num_segments, INP t_segment_inf *segment_inf){
+
+	int num_wire_types = 0;
+
+	if (num_segments == 1){
+		/* There are as many wire start points as the value of L */
+		num_wire_types = segment_inf[0].length;
+	} else {
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Currently, the connection block metrics code can only deal with channel segments that carry wires of only one lenght.\n");
+	}
+
+	return num_wire_types;
+}
+
+/* Gets the maximum Fc value from the Fc_array of this pin type. Errors out if the pins of this pin_type don't all have the same Fc */
+int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_type){
+	int Fc = 0;
+	for (int ipin = 0; ipin < block_type->num_pins; ++ipin) {
+		int iclass = block_type->pin_class[ipin];
+		if (Fc_array[ipin] > Fc && block_type->class_inf[iclass].type == pin_type) {
+			/* currently I'm assuming that the Fc for all pins are the same. Check this here. */
+			if (Fc != 0 && Fc_array[ipin] != Fc){
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Two pins of the same type have different Fc values. This is currently not allowed for CB metrics\n");
+			}
+			Fc = Fc_array[ipin];
+		}
+	}
+	return Fc;
 }
 
 /* returns the pin diversity metric of a block */
@@ -602,7 +609,7 @@ static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type
 	set<int> counted_pins;	
 
 	pin_locations->clear();
-	/* over each side/width/height */
+	/* over each side */
 	for (int iside = 0; iside < 4; iside++){
 		/* go through each pin of the block */
 		for (int ipin = 0; ipin < block_type->num_pins; ipin++){
@@ -619,7 +626,7 @@ static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type
 			for (int iwidth = 0; iwidth < block_type->width; iwidth++){
 				for (int iheight = 0; iheight < block_type->height; iheight++){
 					/* check if ipin is present at this side/width/height */
-					if (-1 != tracks_connected_to_pin[ipin][iwidth][iheight][iside][0]){ /* checking 'pinloc' gives false positive for clk pin, so do this */
+					if (-1 != tracks_connected_to_pin[ipin][iwidth][iheight][iside][0]){
 						if ((int)counted_pins.size() == num_pin_type_pins){
 							/* Some blocks like io appear to have four sides, but only one	*
 							*  of those sides is actually used in practice. So here we try	*
@@ -646,7 +653,7 @@ static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP t
 	result->clear();
 
 	if (both_sides && side >= 2){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "when accounting for pins on both sides of a channel segment, the passed-in side should have index < 2. got %d\n", side);
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "when accounting for pins on both sides of a channel segment, the passed-in side should have index < 2. got %d\n", side);
 	}
 
 	/* for each track connected to the pin */
@@ -726,7 +733,7 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 	int rand_pin = cb_metrics->pin_locations.at(rand_side).at(rand_pin_index);
 	set<int> *tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
 
-	/* If the pin is unconnected, return. Happens for input CBs; probably clock */
+	/* If the pin is unconnected, return. */
 	if (0 == tracks_connected_to_pin->size()){
 		new_cost = cost;
 	} else {
@@ -786,7 +793,7 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 			    && new_orthogonal_metric <= initial_orthogonal_metric + orthogonal_metric_tolerance){
 				/* The orthogonal metric is within tolerance. Can proceed */
 
-				/* get the new wire metric */
+				/* get the new metric */
 				new_metric = 0;
 
 				double delta_cost;
@@ -804,7 +811,7 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 						new_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
 						break;
 					default:
-						vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
+						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
 						break;
 				}
 				new_cost = fabs(target_metric - new_metric);
@@ -860,7 +867,7 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 						cb_metrics->wire_homogeneity = new_orthogonal_metric;
 						break;
 					default:
-						vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "try_move: illegal CB metric: %d\n", (int)metric);
+						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "try_move: illegal CB metric: %d\n", (int)metric);
 						break;
 				}
 			}
@@ -900,7 +907,7 @@ static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr
 				cost = fabs(cb_metrics->lemieux_cost_func - target_metric);
 				break;
 			default:
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "CB metrics annealer: illegal wire metric: %d\n", (int)metric);
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "CB metrics annealer: illegal wire metric: %d\n", (int)metric);
 				break;
 		}
 	} else {
@@ -911,7 +918,7 @@ static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr
 				cost = fabs(cb_metrics->pin_diversity - target_metric);
 				break;
 			default:
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "CB metrics annealer: illegal pin metric: %d\n", (int)metric);
+				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "CB metrics annealer: illegal pin metric: %d\n", (int)metric);
 				break;
 		}
 	}
@@ -1022,7 +1029,7 @@ static void get_xbar_matrix(INP int *****conn_block, INP t_type_ptr block_type, 
 		INP int nodes_per_chan, INP int Fc, INOUTP t_xbar_matrix *xbar_matrix){
 	xbar_matrix->clear();
 	if (both_sides && side >= 2){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "If analyzing both sides of a conn block, the initial side should have index < 2");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "If analyzing both sides of a conn block, the initial side should have index < 2");
 	}
 
 	int num_pins = block_type->num_pins;
@@ -1105,7 +1112,7 @@ static long double factorial(INP int num){
    that doesn't really matter */
 static long double binomial_coefficient(INP int n, INP int k){
 	if (n < k){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "calculating the binomial coefficient requires that n >= k");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "calculating the binomial coefficient requires that n >= k");
 	}
 	long double result;
 	result = factorial(n) / (factorial(k) * factorial(n-k));
@@ -1120,7 +1127,7 @@ static long double count_switch_configurations(INP int level, INP int signals_le
 
 	if (capacity_left < signals_left){
 		printf("capacity left %d   signals left %d   level %d\n", capacity_left, signals_left, level);
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "the number of signals remaining should not be greater than the remaining capacity");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "the number of signals remaining should not be greater than the remaining capacity");
 	}
 
 	/* get the capacity of the current wire group (here, group is defined by the number of switches a wire carries) */
@@ -1191,7 +1198,7 @@ static long double count_switch_configurations(INP int level, INP int signals_le
 }
 
 /* 'normalizes' the given crossbar. normalization is done in a way such that an entry which was formerly equal to '1'
-    will not equal to the probability of that switch being available */
+    will now equal to the probability of that switch being available */
 static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_used, INOUTP t_xbar_matrix *xbar ){
 
 
@@ -1249,9 +1256,6 @@ static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_use
 	int wires_used = nint(fraction_wires_used * (float)capacity);
 
 	long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);
-	printf("%f\n   ", (float)wires_used/(float)capacity);
-	printf("%LF\n", total_configurations);
-
 
 	/* next we need to calculate the expectation of the number of wires available for each wire group */
 	map<int, Wire_Counting>::const_iterator it;
@@ -1289,7 +1293,8 @@ static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_use
 
 		for (int ipin = 0; ipin < rows; ipin++){
 			if (1 == xbar->at(ipin).at(iwire)){
-				xbar->at(ipin).at(iwire) = fraction_available;
+				//xbar->at(ipin).at(iwire) = fraction_available;
+				xbar->at(ipin).at(iwire) = 0.15;
 			}
 		}
 	}
@@ -1332,7 +1337,7 @@ static t_xbar_matrix combine_two_xbars(INP t_xbar_matrix *xbar1, INP t_xbar_matr
 	t_xbar_matrix xbar_out;
 
 	if (xbar1->at(0).size() != xbar2->size()){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "xbar1 should have the same number of columns as xbar2 has rows");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "xbar1 should have the same number of columns as xbar2 has rows");
 	}
 
 	/* get the dimensions of the combined xbar */
@@ -1366,11 +1371,11 @@ void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_
 		 INP int *Fc_array_in, INP t_chan_width *chan_width_inf){
 	
 	if (0 != strcmp(block_type->name, "clb")){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "This code currently works for CLB blocks only");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "This code currently works for CLB blocks only");
 	}
 	if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max
 		|| chan_width_inf->x_max != chan_width_inf->y_max){
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "This code currently assumes that channel width is uniform throughout the fpga");
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "This code currently assumes that channel width is uniform throughout the fpga");
 	}
 	int nodes_per_chan = chan_width_inf->x_min;
 
@@ -1393,9 +1398,9 @@ void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_
 	compound_xbar = combine_two_xbars(&output_xbar, &input_xbar);
 
 	/* and then combine that with a full crossbar */
-	t_xbar_matrix full_xbar;
-	allocate_xbar((int)compound_xbar.size(), (int)compound_xbar.size(), 1.0, &full_xbar);
-	compound_xbar = combine_two_xbars(&compound_xbar, &full_xbar);
+	//t_xbar_matrix full_xbar;
+	//allocate_xbar((int)compound_xbar.size(), (int)compound_xbar.size(), 1.0, &full_xbar);
+	//compound_xbar = combine_two_xbars(&compound_xbar, &full_xbar);
 
 	printf("output crossbar\n");
 	print_xbar( &output_xbar );
@@ -1413,5 +1418,85 @@ void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_
 		printf("pin %d    total %f\n", irow, row_total);
 	}
 }
+
+/* make a poor cb pattern. */
+void make_poor_cb_pattern(INP e_pin_type pin_type, INP t_type_ptr block_type, INP int *Fc_array,
+		 INP t_chan_width *chan_width_inf, INOUTP int *****cb){
+
+	if (block_type->num_pins == 0){
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Trying to adjust CB metrics for a block with no pins!\n");
+	}
+	if (block_type->height > 1 || block_type->width > 1){
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Adjusting connection block metrics is currently intended for CLBs, which have height and width = 1\n");
+	}
+	if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max
+		|| chan_width_inf->x_max != chan_width_inf->y_max){
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "This code currently assumes that channel width is uniform throughout the fpga");
+	}
+
+	int nodes_per_chan = chan_width_inf->x_min;
+
+	/* get Fc */
+	int Fc = get_max_Fc(Fc_array, block_type, pin_type);
+	
+	/* get the number of block pins that are of pin_type */
+	int num_pin_type_pins = 0;
+	if (DRIVER == pin_type){
+		num_pin_type_pins = block_type->num_drivers;
+	} else if (RECEIVER == pin_type){
+		num_pin_type_pins = block_type->num_receivers;
+	} else {
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Found unexpected pin type: %d\n", pin_type);
+	}
+
+	/* clear the existing CB */
+	for (int ipin = 0; ipin < block_type->num_pins; ipin++){
+		for (int iwidth = 0; iwidth < block_type->width; iwidth++){
+			for (int iheight = 0; iheight < block_type->height; iheight++){
+				for (int iside = 0; iside < 4; iside++){
+					for (int ifc = 0; ifc < Fc; ifc++){
+						cb[ipin][iwidth][iheight][iside][ifc] = -1;
+					}
+				}
+			}
+		}
+	}
+
+
+	/* now set the CB to what would seem to be a bad switch pattern */
+	for (int iside = 0; iside < 2; iside++){
+		int track_counter = 0;
+		for (int ipin = 0; ipin < 2*block_type->num_pins; ipin++){
+			for (int iwidth = 0; iwidth < block_type->width; iwidth++){
+				for (int iheight = 0; iheight < block_type->height; iheight++){
+					int side = iside;
+					int pin = ipin;
+					if (ipin >= block_type->num_pins){
+						side += 2;
+						pin %= block_type->num_pins;
+					}
+
+					/* if this pin is not of the correct type, skip it */	
+					e_pin_type this_pin_type = block_type->class_inf[ block_type->pin_class[pin] ].type;
+					if (this_pin_type != pin_type || block_type->is_global_pin[pin]){
+						continue;
+					}
+
+					/* make sure this pin exists at this location */
+					if (1 != block_type->pinloc[iwidth][iheight][side][pin]){
+						continue;
+					}
+
+					/* consecutive assignment */
+					for (int iconn = 0; iconn < Fc; iconn++){
+						cb[pin][iwidth][iheight][side][iconn] = track_counter % nodes_per_chan;
+						track_counter++;
+					}
+				}
+			}
+		}
+	}
+}
+
 
 /**** END EXPERIMENTAL ****/

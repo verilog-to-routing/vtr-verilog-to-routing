@@ -101,8 +101,15 @@ public:
 
 typedef std::vector< std::vector<float> > t_xbar_matrix;
 
+/* perform a probabilistic analysis on the compound crossbar formed by the input and output connection blocks */
 void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_ptr block_type, INP int *Fc_array_out,
 		 INP int *Fc_array_in, INP t_chan_width *chan_width_inf);
+
+
+/* make a poor cb pattern. */
+void make_poor_cb_pattern(INP e_pin_type pin_type, INP t_type_ptr block_type, INP int *Fc_array,
+		 INP t_chan_width *chan_width_inf, INOUTP int *****cb);
+
 
 /**** END EXPERIMENTAL ****/
 
