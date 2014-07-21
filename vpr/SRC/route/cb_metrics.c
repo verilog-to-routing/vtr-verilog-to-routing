@@ -1293,8 +1293,8 @@ static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_use
 
 		for (int ipin = 0; ipin < rows; ipin++){
 			if (1 == xbar->at(ipin).at(iwire)){
-				//xbar->at(ipin).at(iwire) = fraction_available;
-				xbar->at(ipin).at(iwire) = 0.15;
+				xbar->at(ipin).at(iwire) = fraction_available;
+				//xbar->at(ipin).at(iwire) = 0.15;
 			}
 		}
 	}
