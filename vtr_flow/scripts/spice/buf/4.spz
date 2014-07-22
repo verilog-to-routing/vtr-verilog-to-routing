@@ -5,7 +5,7 @@ Vdut Vdut 0 Vol
 Vdrive Vdrive 0 Vol
 Vref Vref 0 Vol
 
-Vin in 0 PULSE(0 Vol 'simt/4' 'rise' rise' 'simt/2' 'simt')
+Vin in 0 PULSE(0 Vol 'simt/4' 'rise' 'rise' 'simt/2' 'simt')
 
 X0 in mid1 Vdrive 0 inv nsize='1' psize='1*pnratio'
 X1 in x Vref 0 inv nsize='1' psize='1*pnratio'

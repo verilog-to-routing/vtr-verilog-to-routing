@@ -4,7 +4,7 @@ Vdut Vdut 0 Vol
 Vdrive Vdrive 0 Vol
 Vref Vref 0 Vol
 
-Vin in 0 PULSE(0 Vol 'simt/4' 'rise' rise' 'simt/2' 'simt')
+Vin in 0 PULSE(0 Vol 'simt/4' 'rise' 'rise' 'simt/2' 'simt')
 
 X2 Vref mid2 Vdut 0 levr
 
