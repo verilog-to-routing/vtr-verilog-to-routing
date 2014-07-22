@@ -413,7 +413,7 @@ sub run_single_task {
 					print PBS_FILE "#PBS -l mem=6000mb\n";
 				}
 				elsif ( $circuit =~ /mcml/ or $circuit =~ /stereovision2/ ) {
-					print PBS_FILE "#PBS -l mem=3000mb\n";
+					print PBS_FILE "#PBS -l mem=5000mb\n";
 				}
 				else {
 					print PBS_FILE "#PBS -l mem=1500mb\n";

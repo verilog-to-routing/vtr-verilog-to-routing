@@ -7342,6 +7342,7 @@
 		</nmos>
 	 </nmos_leakages>
 	<components>
+		<buf>
 			<inputs num_inputs="1">
 				<size transistor_size="1" power="1.7263E-06"/>
 				<size transistor_size="4" power="1.0605E-05"/>
@@ -7349,6 +7350,7 @@
 				<size transistor_size="64" power="2.0055E-04"/>
 			</inputs>
 		</buf>
+		<buf_levr>
 			<inputs num_inputs="1">
 				<size transistor_size="1" power="2.5475E-06"/>
 				<size transistor_size="4" power="1.5230E-05"/>
@@ -7356,6 +7358,7 @@
 				<size transistor_size="64" power="2.1025E-04"/>
 			</inputs>
 		</buf_levr>
+		<mux>
 			<inputs num_inputs="4">
 				<size transistor_size="1.00" power="2.3212E-06"/>
 				<size transistor_size="1.25" power="2.6703E-06"/>
@@ -7425,6 +7428,7 @@
 				<size transistor_size="22.74" power="1.3592E-04"/>
 			</inputs>
 		</mux>
+		<lut>
 			<inputs num_inputs="2">
 				<size transistor_size="1.00" power="1.1526E-05"/>
 				<size transistor_size="1.25" power="1.1800E-05"/>
@@ -7477,6 +7481,7 @@
 				<size transistor_size="22.74" power="1.3424E-03"/>
 			</inputs>
 		</lut>
+		<dff>
 			<inputs num_inputs="1">
 				<size transistor_size="1" power="7.7598E-06"/>
 				<size transistor_size="2" power="1.4052E-05"/>

@@ -50,3 +50,5 @@ clock_power;*.power;^\s+Clock\s+(.*?)\s+
 clock_dyn;*.power;^\s+Clock\s+\S+\s+\S+\s+(.*?)\s+
 
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+
+routing_utilization;vpr.crit_path.out;^\s+4\s+(0\.\d+)$
