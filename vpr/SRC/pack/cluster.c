@@ -2213,7 +2213,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						}
 						if (success) {
 							add_molecule_to_pb_stats_candidates(molecule,
-									cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_HIGH_FANOUT_EXPLORE);
+									cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
 							count++;
 						}
 					}
@@ -2255,7 +2255,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 					}
 					if (success) {
 						add_molecule_to_pb_stats_candidates(molecule,
-								cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_TRANSITIVE_EXPLORE);
+								cur_pb->pb_stats->gain, cur_pb, min(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE,AAPACK_MAX_TRANSITIVE_EXPLORE));
 					}
 				}
 			}
