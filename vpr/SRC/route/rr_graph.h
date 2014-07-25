@@ -1,6 +1,13 @@
 #ifndef RR_GRAPH_H
 #define RR_GRAPH_H
 
+
+/* Include track buffers or not. Track buffers isolate the tracks from the
+   input connection block. However, they are difficult to lay out in practice,
+   and so are not currently used in commercial architectures. */
+#define INCLUDE_TRACK_BUFFERS false
+
+
 enum e_graph_type {
 	GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
 	GRAPH_BIDIR, /* Detailed bidirectional graph */

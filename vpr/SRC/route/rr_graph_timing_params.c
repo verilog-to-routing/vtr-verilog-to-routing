@@ -22,7 +22,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * 1) The output capacitance of the switches coming from OPINs;             *
 	 * 2) The input and output capacitance of the switches between the various  *
 	 *    wiring (CHANX and CHANY) segments; and                                *
-	 * 3) The input capacitance of the buffers separating routing tracks from   *
+	 * 3) The input capacitance of the buffers separating routing tracks from   *	//FIXME: this buffer should have been removed. outdated comment?
 	 *    the connection block inputs.                                          */
 
 	int inode, iedge, switch_index, to_node, maxlen;
@@ -65,7 +65,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 					 * so that there is a corresponding edge using the same switch  *
 					 * type from y to x.) So, I arbitrarily choose to add in the    *
 					 * capacitance in that case of a pass transistor only when      *
-					 * processing the the lower inode number.                       *
+					 * processing the lower inode number.                           *
 					 * If an edge uses a buffer I always have to add in the output  *
 					 * capacitance.  I assume that buffers are shared at the same   *
 					 * (i,j) location, so only one input capacitance needs to be    *
@@ -93,15 +93,18 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				/* End edge to CHANX or CHANY node. */
 				else if (to_rr_type == IPIN) {
 
-					/* Code below implements sharing of the track to connection     *
-					 * box buffer.  I assume there is one such buffer at every      *
-					 * segment of the wire at which at least one logic block input  *
-					 * connects.                                                    */
-
-					icblock = seg_index_of_cblock(from_rr_type, to_node);
-					if (cblock_counted[icblock] == FALSE) {
+					if (INCLUDE_TRACK_BUFFERS){
+						/* Implements sharing of the track to connection box buffer.
+						   Such a buffer exists at every segment of the wire at which
+						   at least one logic block input connects. */
+						icblock = seg_index_of_cblock(from_rr_type, to_node);
+						if (cblock_counted[icblock] == FALSE) {
+							rr_node[inode].C += C_ipin_cblock;
+							cblock_counted[icblock] = TRUE;
+						}
+					} else {
+						/* No track buffer. Simply add the capacitance onto the wire */
 						rr_node[inode].C += C_ipin_cblock;
-						cblock_counted[icblock] = TRUE;
 					}
 				}
 			} /* End loop over all edges of a node. */
@@ -151,7 +154,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 				if (rr_node[to_node].get_drivers() != SINGLE) {
 					Cout = switch_inf[switch_index].Cout;
-					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY or IPIN */
+					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY or IPIN */	//FIXME: no IPIN according to 'continue' above. outdated?
 					rr_node[to_node].C += Cout;
 				}
 			}
@@ -159,7 +162,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		/* End node is OPIN. */
 	} /* End for all nodes. */
 
-	/* Now we need to add any cout loads for nets that we previously didn't process
+	/* Now we need to add any Cout loads for nets that we previously didn't process
 	 * Current structures only keep switch information from a node to the next node and
 	 * not the reverse.  Therefore I need to go through all the possible edges to figure 
 	 * out what the Cout's should be */

@@ -6,15 +6,16 @@ using namespace std;
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "rr_graph.h"
 #include "rr_graph_util.h"
 #include "rr_graph_area.h"
 
-/* Select which area equation to use */
+/* Select which transistor area equation to use. As found by Chiasson's and Betz's FPL 2013 paper
+   (Should FPGAs Abandon the Pass Gate?), the traditional transistor area model
+   significantly overpredicts area at smaller process nodes. Their improved area model
+   was obtained based on TSMC's 65nm layout rules, and scaled down to 22nm */
 enum e_trans_area_eq {AREA_ORIGINAL, AREA_IMPROVED};
 static const e_trans_area_eq trans_area_eq = AREA_IMPROVED;
-
-/* Include track buffers or not */
-static const boolean include_track_buffers = FALSE;
 
 /************************ Subroutines local to this module *******************/
 
@@ -132,7 +133,7 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 	 * drive a fanout of up to 16 pretty nicely -- should cover a reasonable * 
 	 * wiring C plus the fanout.                                             */
 
-	if (include_track_buffers) {
+	if (INCLUDE_TRACK_BUFFERS) {
 		trans_track_to_cblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
 				R_minW_pmos);
 	} else {
@@ -311,7 +312,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	int max_inputs_to_cblock, cost_index, seg_type, switch_type;
 	float input_cblock_trans;
 
-	/* Two variables below are the accumulator variables that add up all the    *
+	/* Two variables below are the accumulator variables that add up all the    *	//FIXME: only one variable. incorrect comment?
 	 * transistors in the routing.  Make doubles so that they don't stop        *
 	 * incrementing once adding a switch makes a change of less than 1 part in  *
 	 * 10^7 to the total.  If this still isn't good enough (adding 1 part in    *
@@ -335,7 +336,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	 * drive a fanout of up to 16 pretty nicely -- should cover a reasonable * 
 	 * wiring C plus the fanout.                                             */
 
-	if (include_track_buffers) {
+	if (INCLUDE_TRACK_BUFFERS) {
 		trans_track_to_cblock_buf = trans_per_buf(R_minW_nmos / 4., R_minW_nmos,
 				R_minW_pmos);
 	} else {
@@ -652,18 +653,19 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
 	 * not two (i.e. two min W transistors need two spaces; a 2W transistor    *
 	 * needs only 1).                                                          */
 
-	/* New area model (developed with 65nm process rules) */
+	/* New area model (developed with 65nm process rules) 			   */
 	/* These more advanced process rules change how much area we need to add   *
 	 * for each additional unit of width vs. the old area model.               */
 
+	float drive_strength = R_minW_trans / Rtrans;
 	if (trans_area_eq == AREA_ORIGINAL) {
 		/* Old transistor area estimation equation */
-		trans_area = 0.5 * R_minW_trans / Rtrans + 0.5;
-	} else {
+		trans_area = 0.5 * drive_strength + 0.5;
+	} else if (trans_area_eq == AREA_IMPROVED) {
 		/* New transistor area estimation equation */
-		float drive_strength;
-		drive_strength = R_minW_trans / Rtrans;
 		trans_area = 0.447 + 0.128*drive_strength + 0.391*sqrt(drive_strength);
+	} else {
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Unrecognized transistor area model: %d\n", (int)trans_area_eq);
 	}
 
 	return (trans_area);
