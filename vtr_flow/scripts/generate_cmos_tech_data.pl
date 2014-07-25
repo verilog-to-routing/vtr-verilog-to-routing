@@ -53,12 +53,13 @@ if ($quick_test) {
 	$pn_interval           = 1.0;
 	$pn_search_lower_bound = 1.0;
 	$pn_search_upper_bound = 3.0;
-	$max_size              = 10;
+	$max_size              = 2;
 	$size_interval         = 1.5;
-	$max_mux_size          = 4;
+	$max_mux_size          = 2;
 	$vin_intervals         = 3;
 	$vds_intervals         = 5;
 	$nmos_pass_interval    = 2.0;
+    $nmos_pass_max_size    = 3.0;
 }
 
 #my $max_buffer_size = 100;

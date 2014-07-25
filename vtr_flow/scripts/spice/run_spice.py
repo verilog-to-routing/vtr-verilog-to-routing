@@ -55,7 +55,7 @@ else:
 f = open(file_path, 'w')
 
 f.write ("Auto Spice\n")
-f.write (".include \"" + tech_file + "\n")
+f.write (".include \"" + tech_file + "\"\n")
 
 f.write (".param tech = " + str(tech_size) + "e-9\n")
 f.write(".param tempr = " + temp + "\n")
