@@ -1005,8 +1005,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 								* g_power_commonly_used->NMOS_1X_C_d);
 
 				power_usage_buffer(&sub_power_usage, buffer_size,
-						node_power->in_dens[node_power->selected_input],
 						1 - node_power->in_prob[node_power->selected_input],
+						node_power->in_dens[node_power->selected_input],
 						FALSE, g_solution_inf.T_crit);
 				power_add_usage(power_usage, &sub_power_usage);
 				power_component_add_usage(&sub_power_usage,
