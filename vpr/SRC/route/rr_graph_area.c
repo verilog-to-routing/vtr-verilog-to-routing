@@ -12,10 +12,13 @@ using namespace std;
 
 /* Select which transistor area equation to use. As found by Chiasson's and Betz's FPL 2013 paper
    (Should FPGAs Abandon the Pass Gate?), the traditional transistor area model
-   significantly overpredicts area at smaller process nodes. Their improved area model
-   was obtained based on TSMC's 65nm layout rules, and scaled down to 22nm */
-enum e_trans_area_eq {AREA_ORIGINAL, AREA_IMPROVED};
-static const e_trans_area_eq trans_area_eq = AREA_IMPROVED;
+   significantly overpredicts area at smaller process nodes. Their improved area models
+   were obtained based on TSMC's 65nm layout rules, and scaled down to 22nm */
+enum e_trans_area_eq {	AREA_ORIGINAL, 
+			AREA_IMPROVED_NMOS_ONLY,	/* only NMOS transistors taken into account */
+			AREA_IMPROVED_MIXED		/* both NMOS and PMOS. extra spacing required for N-wells */
+			};
+static const e_trans_area_eq trans_area_eq = AREA_IMPROVED_NMOS_ONLY;
 
 /************************ Subroutines local to this module *******************/
 
@@ -661,9 +664,14 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
 	if (trans_area_eq == AREA_ORIGINAL) {
 		/* Old transistor area estimation equation */
 		trans_area = 0.5 * drive_strength + 0.5;
-	} else if (trans_area_eq == AREA_IMPROVED) {
-		/* New transistor area estimation equation */
+	} else if (trans_area_eq == AREA_IMPROVED_NMOS_ONLY) {
+		/* New transistor area estimation equation. Here only NMOS transistors
+		   are taken into account */
 		trans_area = 0.447 + 0.128*drive_strength + 0.391*sqrt(drive_strength);
+	} else if (trans_area_eq == AREA_IMPROVED_MIXED) {
+		/* New transistor area estimation equation. Here both NMOS and PMOS 
+		   transistors are taken into account (extra spacing needed for N-wells) */
+		trans_area = 0.518 + 0.127*drive_strength + 0.428*sqrt(drive_strength);
 	} else {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Unrecognized transistor area model: %d\n", (int)trans_area_eq);
 	}
