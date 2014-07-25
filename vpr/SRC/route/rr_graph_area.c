@@ -315,8 +315,8 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	int max_inputs_to_cblock, cost_index, seg_type, switch_type;
 	float input_cblock_trans;
 
-	/* Two variables below are the accumulator variables that add up all the    *	//FIXME: only one variable. incorrect comment?
-	 * transistors in the routing.  Make doubles so that they don't stop        *
+	/* The variable below is an accumulator variable that will add up all the   *
+	 * transistors in the routing.  Make double so that it doesn't stop         *
 	 * incrementing once adding a switch makes a change of less than 1 part in  *
 	 * 10^7 to the total.  If this still isn't good enough (adding 1 part in    *
 	 * 10^15 will still be thrown away), compute the transistor count in        *

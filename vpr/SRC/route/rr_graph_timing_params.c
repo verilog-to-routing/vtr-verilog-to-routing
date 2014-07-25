@@ -22,8 +22,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * 1) The output capacitance of the switches coming from OPINs;             *
 	 * 2) The input and output capacitance of the switches between the various  *
 	 *    wiring (CHANX and CHANY) segments; and                                *
-	 * 3) The input capacitance of the buffers separating routing tracks from   *	//FIXME: this buffer should have been removed. outdated comment?
-	 *    the connection block inputs.                                          */
+	 * 3) The input capacitance of the input connection block (or buffers       *
+	 *    separating tracks from the input connection block, if enabled by      *
+	 *    INCLUDE_TRACK_BUFFERS)                                    	    */
 
 	int inode, iedge, switch_index, to_node, maxlen;
 	int icblock, isblock, iseg_low, iseg_high;
@@ -154,7 +155,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 				if (rr_node[to_node].get_drivers() != SINGLE) {
 					Cout = switch_inf[switch_index].Cout;
-					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY or IPIN */	//FIXME: no IPIN according to 'continue' above. outdated?
+					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY */
 					rr_node[to_node].C += Cout;
 				}
 			}
