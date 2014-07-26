@@ -2799,7 +2799,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 
 	#ifdef INTERPOSER_BASED_ARCHITECTURE	
 	/* find the least common multiple of block heights
-	 * for interposer based architectures, a culine cannot go through a block */
+	 * for interposer based architectures, a cutline cannot go through a block */
 	arch->lcm_of_block_heights = 1;
 	for(int i=0; i < *NumTypes; ++i)
 	{
