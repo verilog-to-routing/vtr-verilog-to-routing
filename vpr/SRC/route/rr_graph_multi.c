@@ -33,8 +33,9 @@ static CutPatternType s_pattern_type = CHUNK_CUT_WITHOUT_ROTATION;
 // if you want the rr_node ID to appear in the dump file, change this variable to true
 // the rr_node ID is not guaranteed to be the same between different runs so,
 // not including the rr_node ID will allow you to compare sorted versions of the rr_graph between different runs
-bool include_rr_node_IDs_in_rr_graph_dump = true;
+bool include_rr_node_IDs_in_rr_graph_dump = false;
 
+bool allow_bidir_interposer_wires = false;
 
 /* ---------------------------------------------------------------------------
  * 				Helper data structures
@@ -131,6 +132,87 @@ void free_reverse_map(int num_all_rr_nodes)
 	free(reverse_map);
 }
 
+void print_stats_signal_direction_at_cuts(int nodes_per_chan)
+{
+	int i, inet, icut;
+	int *num_signals_going_up_at_cut = (int*) malloc(num_cuts * sizeof(int));
+	int *num_signals_going_dn_at_cut = (int*) malloc(num_cuts * sizeof(int));
+
+	bool *net_crosses_cut_up = (bool*) malloc(num_cuts * sizeof(bool));
+	bool *net_crosses_cut_dn = (bool*) malloc(num_cuts * sizeof(bool));
+
+	for(i=0; i<num_cuts; ++i)
+	{
+		num_signals_going_up_at_cut[i]=0;
+		num_signals_going_dn_at_cut[i]=0;
+	}
+	
+	for (inet = 0; inet < num_nets; inet++) 
+	{
+		for(icut = 0; icut < num_cuts; ++icut)
+		{
+			net_crosses_cut_up[icut] = false;
+			net_crosses_cut_dn[icut] = false;
+		}
+
+		int source_block = clb_net[inet].node_block[0];		
+		int ipin = clb_net[inet].node_block_pin[0];
+		int source_y = block[source_block].y + block[source_block].type->pin_height[ipin];
+		
+		for (i = 1; i < (clb_net[inet].num_sinks + 1); i++) 
+		{
+			int sink_block = clb_net[inet].node_block[i];
+			ipin = clb_net[inet].node_block_pin[i];
+			int sink_y = block[sink_block].y + block[sink_block].type->pin_height[ipin];
+			
+			for(icut = 0; icut < num_cuts; ++icut)
+			{
+				int cut_y = arch_cut_locations[icut];
+				if( source_y <= cut_y && sink_y > cut_y )
+				{
+					net_crosses_cut_up[icut] = true;
+
+				}
+				if ( source_y > cut_y && sink_y <= cut_y )
+				{
+					net_crosses_cut_dn[icut] = true;
+				}
+			}
+		}
+
+		for(icut = 0; icut < num_cuts; ++icut)
+		{
+			if(net_crosses_cut_up[icut]) {
+				num_signals_going_up_at_cut[icut]++;
+			}
+			if(net_crosses_cut_dn[icut]) {
+				num_signals_going_dn_at_cut[icut]++;
+			}
+		}
+	}
+	
+	int num_wires_cut = (nodes_per_chan * percent_wires_cut) / 100;
+	if(num_wires_cut % 2) 
+	{
+		num_wires_cut++;
+	}
+	assert(num_wires_cut%2==0);
+	int num_wires_going_through = nodes_per_chan - num_wires_cut;
+	assert(num_wires_going_through%2==0);
+	int num_wires_going_through_in_each_direction =  num_wires_going_through / 2;
+	int interopser_capacity_in_each_direction_at_each_cut = (nx+1) * (num_wires_going_through_in_each_direction);
+	vpr_printf_info("Info: Interposer capacity in each direction at each cut:%d\n", interopser_capacity_in_each_direction_at_each_cut);
+
+	for(i=0; i<num_cuts; ++i)
+	{
+		vpr_printf_info("Info: Cut#%d: Number of signals crossing up:%d \t Number of signals crossing down:%d\n", 
+						i, 
+						num_signals_going_up_at_cut[i], 
+						num_signals_going_dn_at_cut[i]
+						);
+	}
+}
+
 /*
  * Description: Helper function for debugging. Prints out fanins and fanouts of a specific rr_node
  * 
@@ -170,8 +252,8 @@ void dump_rr_graph_connections(FILE* fp)
 		for(iedge = 0; iedge < rr_node[inode].num_edges; iedge++)
 		{
 			dst_node = rr_node[inode].edges[iedge];
-			const char* inode_dir = (rr_node[inode].direction == INC_DIRECTION) ? "INC" : "DEC";
-			const char* dst_node_dir = (rr_node[dst_node].direction == INC_DIRECTION) ? "INC" : "DEC";
+			const char* inode_dir = (rr_node[inode].direction == INC_DIRECTION) ? "INC" : (rr_node[inode].direction == DEC_DIRECTION) ? "DEC" : "BIDIR";
+			const char* dst_node_dir = (rr_node[dst_node].direction == INC_DIRECTION) ? "INC" : (rr_node[dst_node].direction == DEC_DIRECTION) ? "DEC" : "BIDIR";
 
 			if(include_rr_node_IDs_in_rr_graph_dump)
 			{
@@ -1100,6 +1182,272 @@ void cut_chanx_interposer_node_connections(int nodes_per_chan)
 }
 
 /*
+ * Description: The channel contains PAIRs of tracks. For each wire, its pair is the track right next to it with the opposite direction.
+ *              For wire X, we call its pair X'.
+ *              This function takes the index of X and returns the index of X'.
+ *              For instance: (0 and 1) are a pair. (2 and 3) are a pair, etc.
+ */
+int get_pair_track_index(int index)
+{
+	if(index%2==0)
+	{
+		return index+1;
+	}
+	else
+	{
+		return index-1;
+	}
+}
+
+/*
+ * Description: SET method for datastructure "vertical_wires_at_cut_locations"
+ * 
+ * Returns: none.
+*/
+void set_wire_index_at_location(int x, int y, int itrack, int ***vertical_wires_at_cut_locations, int node_id)
+{
+	assert(vertical_wires_at_cut_locations!=0);
+
+	// e.g. if cuts are at y=10, y=20 and y=30
+	// this map will have:
+	// 10->0, 
+	// 11->1
+	// 20->2
+	// 21->3
+	// 30->4
+	// 31->5
+	std::map<int,int> y_coord_to_cut_index_map;
+	int i=0;
+	for(i=0; i<num_cuts; ++i)
+	{
+		y_coord_to_cut_index_map[ arch_cut_locations[i] ] = 2*i;
+		y_coord_to_cut_index_map[ arch_cut_locations[i]+1 ] = 2*i+1;
+	}
+
+	int cut_location_index = y_coord_to_cut_index_map[y];
+	vertical_wires_at_cut_locations[x][cut_location_index][itrack] = node_id;
+}
+
+/*
+ * Description: GET method for datastructure "vertical_wires_at_cut_locations"
+ * 
+ * Returns: none.
+*/
+int get_wire_index_at_location(int x, int y, int itrack, int ***vertical_wires_at_cut_locations)
+{
+	assert(vertical_wires_at_cut_locations!=0);
+
+	// e.g. if cuts are at y=10, y=20 and y=30
+	// this map will have:
+	// 10->0, 
+	// 11->1
+	// 20->2
+	// 21->3
+	// 30->4
+	// 31->5
+	std::map<int,int> y_coord_to_cut_index_map;
+	int i=0;
+	for(i=0; i<num_cuts; ++i)
+	{
+		y_coord_to_cut_index_map[ arch_cut_locations[i] ] = 2*i;
+		y_coord_to_cut_index_map[ arch_cut_locations[i]+1 ] = 2*i+1;
+	}
+
+	int cut_location_index = y_coord_to_cut_index_map[y];
+	return vertical_wires_at_cut_locations[x][cut_location_index][itrack];
+}
+
+/*
+ * Description: Frees the datastructure allocated by allocate_and_initialize_vertical_wires_at_cut_locations
+ * 
+ * Returns: none.
+*/ 
+void free_vertical_wires_at_cut_locations(int nodes_per_chan, int*** vertical_wires_at_cut_locations)
+{
+	int i,j;
+	for(i=0; i<nx+1; ++i)
+	{
+		for(j=0; j<2*num_cuts; ++j)
+		{
+			free(vertical_wires_at_cut_locations[i][j]);
+		}
+	}
+	for(i=0; i<nx+1; ++i)
+	{
+		free(vertical_wires_at_cut_locations[i]);
+	}
+	free(vertical_wires_at_cut_locations);
+}
+
+/*
+ * Description: Allocate memory for a helper datastructure that stores the rr_node_id for a given vertical wire (x,y,ptc_num) at the cut location.
+ *              Some vertical wires are just below the cut and some are just above the cut
+ *              vertical_wires_at_cut_locations[x][y][track#] = inode.
+ *              initializes all entries to -1
+ * Returns: none.
+*/ 
+int*** allocate_and_initialize_vertical_wires_at_cut_locations(int nodes_per_chan)
+{
+	// Make a list of wires that can feed or be fed by bidirectional interposer wires
+	// vertical_wires_at_cut_locations[x][y][track#]
+	int i, j, k;
+	int num_vertical_channels = nx+1;
+	int ***vertical_wires_at_cut_locations = (int***) my_malloc(num_vertical_channels * sizeof(int**));
+	for(i=0; i<num_vertical_channels; ++i)
+	{
+		// at every cut, there are 2 wires per interposer node (1 wire below the cut, and 1 wire above the cut)
+		vertical_wires_at_cut_locations[i] = (int**)my_malloc(2*num_cuts * sizeof(int*));
+	}
+	for(i=0; i<num_vertical_channels; ++i)
+	{
+		for(j=0; j<2*num_cuts; ++j)
+		{
+			vertical_wires_at_cut_locations[i][j] = (int*)my_malloc(nodes_per_chan * sizeof(int));
+		}
+	}
+	for(i=0; i<num_vertical_channels; ++i)
+	{
+		for(j=0; j<2*num_cuts; ++j)
+		{
+			for(k=0; k<nodes_per_chan; ++k)
+			{
+				set_wire_index_at_location(i,j,k,vertical_wires_at_cut_locations,-1);
+			}
+		}
+	}
+	return vertical_wires_at_cut_locations;
+}
+
+
+/*
+ * Description: Go over all interposer wires, change their direction from INC or DEC to BIDIR
+ *              The channel contains PAIRs of tracks. For each wire, its pair is the track right next to it with the opposite direction.
+ *              For wire X, we call its pair X'.
+ *              If wire X is feeding an interposer wire, wire X' should be fed by the same interposer wire.
+ *              If wire X is fed  by an interposer wire, wire X' should feed the same interposer wire.
+ * Returns: none.
+*/ 
+int*** get_vertical_wires_at_cut_locations(int nodes_per_chan)
+{
+	
+	// Make a list of wires that can feed or be fed by bidirectional interposer wires
+	// vertical_wires_at_cut_locations[x][y][track#]
+	int*** vertical_wires_at_cut_locations = allocate_and_initialize_vertical_wires_at_cut_locations(nodes_per_chan);
+
+	int i, j, k;
+	for(i=0; i<s_num_interposer_nodes; ++i)
+	{
+		int interposer_node_id = interposer_nodes[i];
+		t_rr_node* interposer_node = &rr_node[interposer_node_id];
+		
+		assert(interposer_node->ylow==interposer_node->yhigh);
+
+		int cut_position = interposer_node->ylow;
+
+		// go over all fanins
+		for(j=0; j < interposer_node->fan_in; ++j)
+		{
+			int fanin_node_id = reverse_map[interposer_node_id][j];
+			if(rr_node[fanin_node_id].type==CHANY)
+			{
+				assert(rr_node[fanin_node_id].xlow==rr_node[fanin_node_id].xhigh);
+				int x = rr_node[fanin_node_id].xlow;
+				int y = (rr_node[fanin_node_id].ylow > cut_position) ? cut_position+1 : cut_position;
+				int itrack = rr_node[fanin_node_id].ptc_num;
+				set_wire_index_at_location(x, y, itrack, vertical_wires_at_cut_locations, fanin_node_id);
+			}
+		}
+		// go over all fanouts
+		for(j=0; j < interposer_node->num_edges; ++j)
+		{
+			int fanout_node_id = interposer_node->edges[j];
+			if(rr_node[fanout_node_id].type==CHANY)
+			{
+				assert(rr_node[fanout_node_id].xlow==rr_node[fanout_node_id].xhigh);
+				int x = rr_node[fanout_node_id].xlow;
+				int y = (rr_node[fanout_node_id].ylow > cut_position) ? cut_position+1 : cut_position;
+				int itrack = rr_node[fanout_node_id].ptc_num;
+				set_wire_index_at_location(x, y, itrack, vertical_wires_at_cut_locations, fanout_node_id);
+			}
+		}
+	}
+
+	// sanity check
+	for(i=0; i<nx+1; ++i)
+		for(j=0; j<2*num_cuts; ++j)
+			for(k=0; k<nodes_per_chan; ++k)
+				assert( get_wire_index_at_location(i, j, k, vertical_wires_at_cut_locations) != -1 );
+
+	return vertical_wires_at_cut_locations;
+}
+
+/*
+ * Description: Change interposer wire directions from INC/DEC to BIDIR. Also create connections from the bidir interposer wires
+ *              to vertical wires in the proper direction on both sides of the cut
+*/
+void make_interposer_wires_bidirectional(int nodes_per_chan, int ***vertical_wires_at_cut_locations)
+{
+	int i, j;
+
+	assert(vertical_wires_at_cut_locations!=0);
+
+	// for all interposer wires
+	for(i=0; i<s_num_interposer_nodes; ++i)
+	{
+		// 1. Change the wire direction to BIDIR
+		int interposer_node_id = interposer_nodes[i];
+		t_rr_node* interposer_node = &rr_node[interposer_node_id];
+		interposer_node->direction=BI_DIRECTION;
+
+		// 2. Find all wires feeding this interposer wire ( call such wire X ) (i.e. fanins of the interposer wire)
+		//    Find the pair of X ( call it X' ) (For each wire, its pair is the track right next to it with the opposite direction)
+		//    have the interposer wire feed X'
+		for(j=0; j < interposer_node->fan_in; ++j)
+		{
+			int fanin_node_id = reverse_map[interposer_node_id][j];
+			if(rr_node[fanin_node_id].type==CHANY)
+			{
+				assert(interposer_node->ylow==interposer_node->yhigh);
+				assert(rr_node[fanin_node_id].xlow==rr_node[fanin_node_id].xhigh);
+				int iswitch = get_connection_switch_index(fanin_node_id,interposer_node_id);
+				assert(iswitch!=-1);
+				int cut_position = interposer_node->ylow;
+				int x = rr_node[fanin_node_id].xlow;
+				int y = (rr_node[fanin_node_id].ylow > cut_position) ? cut_position+1 : cut_position;
+				int itrack = rr_node[fanin_node_id].ptc_num;
+				int pair_track_index = get_pair_track_index(itrack);
+				int pair_rr_node_id = get_wire_index_at_location(x, y, pair_track_index, vertical_wires_at_cut_locations);
+				create_rr_connection(interposer_node_id, pair_rr_node_id, iswitch);
+			}
+		}		
+
+		// 3. Find all wires fed by this interposer wire ( call such wire X ) (i.e. fanouts of the interposer wire)
+		//    Find the pair of X ( call it X' ) (For each wire, its pair is the track right next to it with the opposite direction)
+		//    have X' drive the interposer wire
+		for(j=0; j < interposer_node->num_edges; ++j)
+		{
+			int fanout_node_id = interposer_node->edges[j];
+			if(rr_node[fanout_node_id].type==CHANY)
+			{
+				assert(interposer_node->ylow==interposer_node->yhigh);
+				assert(rr_node[fanout_node_id].xlow==rr_node[fanout_node_id].xhigh);
+				int iswitch = get_connection_switch_index(interposer_node_id,fanout_node_id); 
+				assert(iswitch!=-1);
+				int cut_position = interposer_node->ylow;
+				int x = rr_node[fanout_node_id].xlow;
+				int y = (rr_node[fanout_node_id].ylow > cut_position) ? cut_position+1 : cut_position;
+				int itrack = rr_node[fanout_node_id].ptc_num;
+				int pair_track_index = get_pair_track_index(itrack);
+				int pair_rr_node_id = get_wire_index_at_location(x, y, pair_track_index, vertical_wires_at_cut_locations);
+				create_rr_connection(pair_rr_node_id, interposer_node_id, iswitch);
+			}
+		}		
+		
+	}
+}
+
+
+/*
  * Description: This is the MAIN entry point for rr_graph modifications for interposer based architectures
  *           
  *  Note: either USE_SIMPLER_SWITCH_MODIFICATION_METHODOLOGY or 
@@ -1229,12 +1577,19 @@ void modify_rr_graph_using_interposer_node_addition_methodology
 
 	int *rr_nodes_that_cross = 0;
 	int num_rr_nodes_that_cross = 0;
-	
+	int ***vertical_wires_at_cut_locations = 0;
+
 	// 1. find all CHANY wires that cross the interposer
 	find_all_CHANY_wires_that_cross_the_interposer(nodes_per_chan, &rr_nodes_that_cross, &num_rr_nodes_that_cross);
 	
 	// 2. This the tough part: add new rr_nodes and fix up fanins and fanouts and switches
 	expand_rr_graph(rr_nodes_that_cross, num_rr_nodes_that_cross, nodes_per_chan); 
+
+	// 2b. set up a helper data structure that will be used when making bidirectional interposer wires
+	if(allow_bidir_interposer_wires)
+	{
+		vertical_wires_at_cut_locations = get_vertical_wires_at_cut_locations(nodes_per_chan);
+	}
 
 	// 3. cut some of the wires
 	cut_rr_connections(nodes_per_chan);
@@ -1242,10 +1597,26 @@ void modify_rr_graph_using_interposer_node_addition_methodology
 	// 4. increase the delay of interposer nodes that were not cut
 	increase_rr_graph_edge_delays(nodes_per_chan);
 
-	/// DO additional graph ops here for experimentation
+	// 5. additional graph ops here for experimentation (cut vs. not cut the CHANX to interposer wire connections
 	if(!allow_chanx_interposer_connections)
 	{
+		vpr_printf_info("Info: Not connecting horizontal wires below the cuts to interposer mux inputs\n");
 		cut_chanx_interposer_node_connections(nodes_per_chan);
+	}
+	else
+	{
+		vpr_printf_info("Info: connecting horizontal wires below the cuts to interposer mux inputs\n");
+	}
+
+	// 6. make interposer wires bidirectional and connect them to vertical wires of in both directions
+	if(allow_bidir_interposer_wires)
+	{
+		// First, let's see some stats about number of signals crossing in each direction at the cuts
+		print_stats_signal_direction_at_cuts(nodes_per_chan);
+
+		vpr_printf_info("Info: Changing interposer wires into Bidirectional wires.\n");
+		make_interposer_wires_bidirectional(nodes_per_chan, vertical_wires_at_cut_locations);
+		free_vertical_wires_at_cut_locations(nodes_per_chan, vertical_wires_at_cut_locations);
 	}
 
 	// 5.1 free helper data-structures that are not needed anymore
