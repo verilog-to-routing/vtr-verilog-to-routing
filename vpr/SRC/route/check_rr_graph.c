@@ -155,8 +155,8 @@ void check_rr_graph(INP t_graph_type graph_type,
 						|| rr_node[inode].type == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
-					vpr_printf_error(__FILE__, __LINE__,
-						  	"in check_rr_graph: node %d has no fanin.\n", inode);
+					/*vpr_printf_error(__FILE__, __LINE__,
+						  	"in check_rr_graph: node %d has no fanin.\n", inode);*/
 				} else if (!is_chain && !is_fringe_warning_sent) {
 					vpr_printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d has no fanin.\n"

@@ -851,9 +851,8 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 		}
 		else
 		{
-			/*	this means direction is BIDIRECTIONAL! Error out. */
-			y_start = -1;
-			assert(rr_node[inode].direction!=BI_DIRECTION);
+			// interposer wires can be bidirectional
+			y_start = rr_node[inode].ylow;
 		}
 	}
 
