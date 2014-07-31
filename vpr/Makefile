@@ -69,7 +69,7 @@ ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
   # The following block defines the graphics library directories. If X11 library
   # or fontconfig is located elsewhere, change it here.
   ifneq (,$(findstring true, $(MAC_OS)))
-    LIB_DIR := $(LIB_DIR) -L/usr/X11/lib
+    LIB_DIR := $(LIB_DIR) -L/usr/X11/lib -L/opt/X11/lib
   else  
     LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
     PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi; fi
