@@ -2474,7 +2474,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		{
 			nnet_t *temp_net;
 			/* searching for the clock with no net */
-			long sc_spot = sc_spot = sc_lookup_string(output_nets_sc, potential_clocks->pins[i]->name);
+			long sc_spot = sc_lookup_string(output_nets_sc, potential_clocks->pins[i]->name);
 			if (sc_spot == -1)
 			{
 				sc_spot = sc_lookup_string(input_nets_sc, potential_clocks->pins[i]->name);

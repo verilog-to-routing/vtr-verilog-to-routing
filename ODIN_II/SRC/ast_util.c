@@ -220,7 +220,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 		index_string_pointer++;
 	}
 
-	if (index_string_pointer == strlen(number))
+	if (index_string_pointer == (int)strlen(number))
 	{
 		flag_constant_decimal = TRUE;
 		/* this is base d */

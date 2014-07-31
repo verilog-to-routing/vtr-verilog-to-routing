@@ -554,7 +554,7 @@ void change_to_number_node(ast_node_t *node, char *number)
 		index_string_pointer++;
 	}
 
-	if (index_string_pointer == strlen(number))
+	if (index_string_pointer == (int) strlen(number))
 	{
 		flag_constant_decimal = TRUE;
 		node->types.number.base = DEC;

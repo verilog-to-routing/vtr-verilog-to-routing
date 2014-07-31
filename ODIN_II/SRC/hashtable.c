@@ -191,7 +191,7 @@ int ___hashtable_compare_keys(void *key, size_t key_len, void* key1, size_t key_
 unsigned int ___hashtable_hash(void *key, size_t key_len, int max_key)
 {
 	unsigned int hash = 1;
-	int i;
+	unsigned int i;
 	for(i = 0; i < key_len; i++)
 		hash = (hash << 5) ^ ((unsigned char *)key)[i] ^ hash;
 

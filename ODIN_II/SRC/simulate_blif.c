@@ -2091,7 +2091,7 @@ FILE *preprocess_mif_file(FILE *source)
 	int in_multiline_comment = FALSE;
 	while (fgets(line, BUFFER_MAX_SIZE, source))
 	{
-		int i;
+		unsigned int i;
 		for (i = 0; i < strlen(line); i++)
 		{
 			if (!in_multiline_comment)
@@ -2446,7 +2446,7 @@ int verify_test_vector_headers(FILE *in, lines_t *l)
 	// Parse the header, checking each entity against the corresponding line.
 	char buffer [BUFFER_MAX_SIZE];
 	buffer[0] = '\0';
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(read_buffer) && i < BUFFER_MAX_SIZE; i++)
 	{
 		char next = read_buffer[i];
@@ -3190,7 +3190,7 @@ void trim_string(char* string, const char *chars)
 		int length;
 		while((length = strlen(string)))
 		{	int trimmed = FALSE;
-			int i;
+			unsigned int i;
 			for (i = 0; i < strlen(chars); i++)
 			{
 				if (string[length-1] == chars[i])

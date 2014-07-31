@@ -398,7 +398,7 @@ short *boolean_difference(nnode_t *node, int variable_spot)
 	long long skip_size = 1 << variable_spot;
 	int index;
 
-	oassert(node->num_input_pins < sizeof (long long int)*8);
+	oassert(node->num_input_pins < (int) sizeof (long long int)*8);
 	oassert(node->associated_function != NULL);
 	oassert(node->num_input_pins > 1);
 
@@ -448,7 +448,7 @@ double calc_density(nnode_t *node, int variable_spot, short *boolean_difference)
 	double totalProb = 0;
 	double input_density = 0;
 
-	oassert(node->num_input_pins < sizeof (long long int)*8);
+	oassert(node->num_input_pins < (int) sizeof (long long int)*8);
 
 	if ((node->input_pins[variable_spot] != NULL) && (node->input_pins[variable_spot]->net->driver_pin != NULL) && (node->input_pins[variable_spot]->net->driver_pin->node != NULL))
 	{

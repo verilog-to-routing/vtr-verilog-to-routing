@@ -381,7 +381,7 @@ char *convert_binary_string_of_size_to_bit_string(char *orig_string, int binary_
  */
 int is_hex_string(char *string)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
 			return FALSE;
@@ -394,7 +394,7 @@ int is_hex_string(char *string)
  */
 int is_decimal_string(char *string)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '9'))
 			return FALSE;
@@ -407,7 +407,7 @@ int is_decimal_string(char *string)
  */
 int is_octal_string(char *string)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '7'))
 			return FALSE;
@@ -420,7 +420,7 @@ int is_octal_string(char *string)
  */
 int is_binary_string(char *string)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
 		if (!(string[i] >= '0' && string[i] <= '1'))
 			return FALSE;
@@ -512,8 +512,8 @@ char *make_string_based_on_id(nnode_t *node)
  *-------------------------------------------------------------------------------------------*/
 char *make_simple_name(char *input, const char *flatten_string, char flatten_char)
 {
-	int i;
-	int j;
+	unsigned int i;
+	unsigned int j;
 	char *return_string = NULL;
 	oassert(input != NULL);
 
@@ -586,7 +586,7 @@ void string_to_upper(char *string)
 {
 	if (string)
 	{
-		int i;
+		unsigned int i;
 		for (i = 0; i < strlen(string); i++)
 		{
 			string[i] = toupper(string[i]);
@@ -601,7 +601,7 @@ void string_to_lower(char *string)
 {
 	if (string)
 	{
-		int i;
+		unsigned int i;
 		for (i = 0; i < strlen(string); i++)
 		{
 			string[i] = tolower(string[i]);
