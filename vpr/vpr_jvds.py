@@ -26,7 +26,7 @@ CLB_HYPERGRAPH_FILE='clb_hypergraph.txt'
 CLB_BLOCKS_FILE='clb_blocks.txt'
 
 PLACEMENT_CONSTRAINTS_ONLY=False
-PASS_CONSTRAINTS_TO_PLACER=False
+PASS_CONSTRAINTS_TO_PLACER=True
 
 def read_stage():
     stage = 0
