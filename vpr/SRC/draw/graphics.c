@@ -189,7 +189,6 @@ setfontsize, setlinewidth, and setlinestyle) and draw simple shapes as
 desired. When the program is done executing the graphics, it should call
 close_graphics() to release all drawing structures and close the graphics.*/
 
-#ifndef NO_GRAPHICS  // Strip everything out and just put in stubs if NO_GRAPHICS defined
 
 /**********************************
  * Common Preprocessor Directives *
@@ -208,6 +207,8 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include <sys/timeb.h>
 #include "graphics.h"
 using namespace std;
+
+#ifndef NO_GRAPHICS  // Strip everything out and just put in stubs if NO_GRAPHICS defined
 
 
 #if defined(X11) || defined(WIN32)
@@ -5357,11 +5358,12 @@ void enable_or_disable_button(int ibutton, bool enabled) { }
 
 void change_button_text(const char *button_text, const char *new_button_text) { }
 
+bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold) { return false; }
+
 #ifdef WIN32
 void win32_drawcurve(t_point *points, int npoints) { }
 
 void win32_fillcurve(t_point *points, int npoints) { }
-
 
 #endif  // WIN32 (subset of commands)
 
