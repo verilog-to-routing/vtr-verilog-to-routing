@@ -12,7 +12,7 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
-int arch_file_line_number; /* file in line number being parsed */
+static int file_line_number = 0; /* file in line number being parsed */
 char *out_file_prefix = NULL;
 vpr_PrintHandlerMessage vpr_printf = PrintHandlerMessage;
 vpr_PrintHandlerInfo vpr_printf_info = PrintHandlerInfo;
@@ -59,6 +59,8 @@ FILE *my_fopen(const char *fname, const char *flag, int prompt) {
 	size_t Len;
 	char *new_fname = NULL;
 	char prompt_filename[256];
+
+	file_line_number = 0;
 
 	/* Appends a prefix string for output files */
 	if (out_file_prefix) {
@@ -409,7 +411,7 @@ char *my_fgets(char *buf, int max_size, FILE * fp) {
 	int i;
 
 	cont = 0; /* line continued? */
-	arch_file_line_number++; /* global variable */
+	file_line_number++; /* global variable */
 
 	for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
 
@@ -451,7 +453,7 @@ char *my_fgets(char *buf, int max_size, FILE * fp) {
 	vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
 		"Error on line %d -- line is too long for input buffer.\n"
 		"All lines must be at most %d characters long.\n",
-			arch_file_line_number, BUFSIZE - 2);	
+			file_line_number, BUFSIZE - 2);	
 	return NULL;
 }
 
@@ -874,4 +876,11 @@ boolean check_file_name_extension(INP const char* file_name,
 	}
 
 	return TRUE;
+}
+
+/*
+ * Returns line number of last opened and read file
+ */
+int get_file_line_number_of_last_opened_file() {
+	return file_line_number;
 }

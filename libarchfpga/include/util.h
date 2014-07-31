@@ -96,7 +96,6 @@ typedef struct s_vpr_error {
 extern "C" {
 #endif
 
-extern int file_line_number; /* line in file being parsed */
 extern char *out_file_prefix; /* Default prefix string for output files */
 
 /************************ Memory allocation routines *************************/
@@ -159,6 +158,8 @@ boolean file_exists(const char * filename);
 
 boolean check_file_name_extension(INP const char* file_name, 
 								INP const char* file_extension);
+
+int get_file_line_number_of_last_opened_file();
 
 /*********************** Portable random number generators *******************/
 void my_srandom(int seed);
