@@ -138,10 +138,6 @@ void read_sdc(t_timing_inf timing_inf) {
 	/* Allocate container structure for SDC constraints. */
 	g_sdc = (t_timing_constraints *) my_calloc(1, sizeof(t_timing_constraints));
 	
-	/* Reset file line number. */
-	file_line_number = 0;
-
-	
 
 	/* If no SDC file is included or specified, or timing analysis is off,
 	use default behaviour of cutting paths between domains and optimizing each clock separately */
@@ -924,7 +920,7 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 	(*constraint_array)[num_constraints - 1].num_sink = num_to;	
 	(*constraint_array)[num_constraints - 1].constraint = constraint;
 	(*constraint_array)[num_constraints - 1].num_multicycles = num_multicycles;
-	(*constraint_array)[num_constraints - 1].file_line_number = file_line_number; /* global var */
+	(*constraint_array)[num_constraints - 1].file_line_number = get_file_line_number_of_last_opened_file(); /* global var */
 }
 
 static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
@@ -1027,7 +1023,7 @@ static boolean regex_match (char * string, char * regular_expression) {
 	else if (strcmp(error, "No match") == 0) 
 		return FALSE;
 	else {
-		vpr_throw(VPR_ERROR_SDC, sdc_file_name, file_line_number, 
+		vpr_throw(VPR_ERROR_SDC, sdc_file_name, get_file_line_number_of_last_opened_file(), 
 				"Error matching regular expression \"%s\".\n", regular_expression);
 		return FALSE;
 	}

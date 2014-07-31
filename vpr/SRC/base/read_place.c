@@ -144,7 +144,6 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 	vpr_printf_info("\n");
 	vpr_printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
-	file_line_number = 0;
 	fp = fopen(pad_loc_file, "r");
 
 	hash_table = alloc_hash_table();
@@ -180,35 +179,35 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &xtmp);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &ytmp);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &k);
 
 		ptr = my_strtok(NULL, TOKENS, fp, buf);
 		if (ptr != NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
 					"Extra characters at end of line.\n");
 		}
 
 		h_ptr = get_hash_entry(hash_table, bname);
 		if (h_ptr == NULL) {
 			vpr_printf_warning(__FILE__, __LINE__, 
-					"[Line %d] Block %s invalid, no such IO pad.\n", file_line_number, bname);
+					"[Line %d] Block %s invalid, no such IO pad.\n", get_file_line_number_of_last_opened_file(), bname);
 			ptr = my_fgets(buf, BUFSIZE, fp);
 			continue;
 		}
@@ -217,7 +216,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 		j = ytmp;
 
 		if (block[bnum].x != OPEN) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
 
@@ -236,7 +235,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 		}
 
 		if (k >= IO_TYPE->capacity || k < 0) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, file_line_number, 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
 					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
 		grid[i][j].blocks[k] = bnum;

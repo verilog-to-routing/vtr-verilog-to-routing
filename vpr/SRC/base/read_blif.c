@@ -114,7 +114,6 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 #endif
 
 		begin = clock();
-		file_line_number = 0; /* Reset line number. */
 		done = FALSE;
 		add_truth_table = FALSE;
 		model_lines = 0;
@@ -403,7 +402,7 @@ static boolean add_lut(int doall, t_model *logic_model) {
 		if (i > logic_model->inputs->size) {
 			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"[LINE %d] .names %s ... %s has a LUT size that exceeds the maximum LUT size (%d) of the architecture.\n",
-					file_line_number, saved_names[0], ptr,
+					get_file_line_number_of_last_opened_file(), saved_names[0], ptr,
 					logic_model->inputs->size);
 		}
 		strcpy(saved_names[i], ptr);
@@ -496,7 +495,7 @@ static void add_latch(int doall, INP t_model *latch_model) {
 	if (i != 5) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				".latch does not have 5 parameters.\n"
-						"Check netlist, line %d.\n", file_line_number);
+						"Check netlist, line %d.\n", get_file_line_number_of_last_opened_file());
 	}
 
 	if (!doall) { /* If only a counting pass ... */
