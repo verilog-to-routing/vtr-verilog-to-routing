@@ -94,7 +94,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				/* End edge to CHANX or CHANY node. */
 				else if (to_rr_type == IPIN) {
 
-					if (INCLUDE_TRACK_BUFFERS){
+					if (true){//INCLUDE_TRACK_BUFFERS){
 						/* Implements sharing of the track to connection box buffer.
 						   Such a buffer exists at every segment of the wire at which
 						   at least one logic block input connects. */
