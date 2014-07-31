@@ -51,6 +51,8 @@ extern netlist_t *blif_netlist;
 extern netlist_t *read_blif_netlist;
 extern global_args_read_blif_t global_args_read_blif;
 
+extern int file_line_number;
+
 #endif
 
 
