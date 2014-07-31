@@ -33,7 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "util.h"
 
 
-global_args_t global_args;
+extern global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_nnode)
  *-------------------------------------------------------------------------------------------*/
@@ -1024,7 +1024,7 @@ mark_clock_node (
  * Gets the index of the first output pin with the given mapping
  * on the given node.
  */
-int get_output_pin_index_from_mapping(nnode_t *node, char *name)
+int get_output_pin_index_from_mapping(nnode_t *node, const char *name)
 {
 	int i;
 	for (i = 0; i < node->num_output_pins; i++)
@@ -1041,7 +1041,7 @@ int get_output_pin_index_from_mapping(nnode_t *node, char *name)
  * Gets the index of the first output port containing a pin with the given
  * mapping.
  */
-int get_output_port_index_from_mapping(nnode_t *node, char *name)
+int get_output_port_index_from_mapping(nnode_t *node, const char *name)
 {
 	int i;
 	int pin_number = 0;
@@ -1061,7 +1061,7 @@ int get_output_port_index_from_mapping(nnode_t *node, char *name)
 /*
  * Gets the index of the first pin with the given mapping.
  */
-int get_input_pin_index_from_mapping(nnode_t *node, char *name)
+int get_input_pin_index_from_mapping(nnode_t *node, const char *name)
 {
 	int i;
 	for (i = 0; i < node->num_input_pins; i++)
@@ -1078,7 +1078,7 @@ int get_input_pin_index_from_mapping(nnode_t *node, char *name)
  * Gets the port index of the first port containing a pin with
  * the given mapping.
  */
-int get_input_port_index_from_mapping(nnode_t *node, char *name)
+int get_input_port_index_from_mapping(nnode_t *node, const char *name)
 {
 	int i;
 	int pin_number = 0;

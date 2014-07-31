@@ -247,7 +247,7 @@ static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 			}
 
 			/* Get side */
-			int side;
+			int side = 0;
 			Prop = FindProperty(Cur, "side", TRUE);
 			if (0 == strcmp(Prop, "left")) {
 				side = LEFT;

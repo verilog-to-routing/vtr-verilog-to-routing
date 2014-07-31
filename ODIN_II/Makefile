@@ -1,9 +1,9 @@
-CC = gcc
+CC = g++
 
 PARSER1 = flex 
 PARSER2 = bison
 
-WARN_FLAGS = -Wall -Wno-unused-function
+WARN_FLAGS = -Wall -Wno-unused-function 
 
 SRC_DIR = SRC
 OBJ_DIR = OBJ
@@ -83,7 +83,7 @@ DEP = $(OBJ:.o=.d)
 all: CTAGS $(EXEO)
 
 $(EXEO): $(OBJ)
-	g++ $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB)
+	$(CC) $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB)
 
 CTAGS :
 	@ cd SRC && ctags *.[ch]

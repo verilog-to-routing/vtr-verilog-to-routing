@@ -36,9 +36,9 @@ typedef struct {
 /* creates the hash where it is indexed by a string and the void ** holds the data */
 STRING_CACHE *sc_new_string_cache(void);
 /* returns an index of the spot where string is */
-long sc_lookup_string(STRING_CACHE *sc, char * string);
+long sc_lookup_string(STRING_CACHE *sc, const char * string);
 /* adds an element into the cache and returns and id...check with cache_name->data[i] == NULL to see if already added */
-long sc_add_string(STRING_CACHE *sc, char *string);
+long sc_add_string(STRING_CACHE *sc, const char *string);
 int sc_valid_id(STRING_CACHE *sc, long string_id);
 void * sc_do_alloc(long, long);
 /* free the cache */

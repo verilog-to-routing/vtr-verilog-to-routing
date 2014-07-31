@@ -1,4 +1,4 @@
-	/*
+/*
 Copyright (c) 2009 Peter Andrew Jamieson (jamieson.peter@gmail.com)
 
 Permission is hereby granted, free of charge, to any person
@@ -413,7 +413,7 @@ void check_and_replace(ast_node_t *node, char *p[])
 
 		case BLOCKING_STATEMENT:
 			//sprintf((p+count++), "%s", "=");
-			p[count++] = "=";
+			p[count++] = strdup("=");
 			break;
 
 		case NUMBERS:
@@ -426,19 +426,19 @@ void check_and_replace(ast_node_t *node, char *p[])
 			{
 				case ADD:
 					//sprintf((p+count++), "%s", "+");
-					p[count++] = "+";
+					p[count++] = strdup("+");
 					break;
 				case MINUS:
 					//sprintf((p+count++), "%s", "-");
-					p[count++] = "-";
+					p[count++] = strdup("-");
 					break;
 				case MULTIPLY:
 					//sprintf((p+count++), "%s", "*");
-					p[count++] = "*";
+					p[count++] = strdup("*");
 					break;
 				case DIVIDE:
 					//sprintf((p+count++), "%s", "/");
-					p[count++] = "/";
+					p[count++] = strdup("/");
 					break;
 
 				default:
@@ -1455,7 +1455,7 @@ void delete_bracket(int begin, int end)
 
 void delete_bracket_head(enode *begin, enode *end)
 {
-	enode *temp, *s;
+	enode *temp, *s = NULL;
 	for (temp = end; temp != NULL; temp = temp->next)
 	{
 		if ((temp->flag == 2) && (temp->priority == 2))
@@ -1469,7 +1469,7 @@ void delete_bracket_head(enode *begin, enode *end)
 
 void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 {
-	enode *temp, *new_head, *tail, *p, *partial, *start;
+	enode *temp, *new_head, *tail, *p, *partial, *start = NULL;
 	int mark;
 	switch (flag)
 	{
@@ -1582,7 +1582,7 @@ void copy_enode(enode *node, enode *new_node)
 
 void delete_bracket_tail(enode *begin, enode *end)
 {
-	enode *temp, *s;
+	enode *temp, *s = NULL;
 	for (temp = begin; temp != NULL; temp = temp->pre)
 		if ((temp->flag == 2) && (temp->priority == 2))
 		{

@@ -998,7 +998,7 @@ void reduce_operations(netlist_t *netlist, operation_list op)
 		break;
 
 		default:
-
+			oper = NO_OP;
 		break;
 
 	}

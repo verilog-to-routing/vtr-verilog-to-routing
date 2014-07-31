@@ -45,10 +45,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 int file_line_number;
 
-char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
-char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";
-char *BLIF_PAD_STRING    = "ZERO_PAD_ZERO";
-char *DEFAULT_CLOCK_NAME = "top^clock";
+const char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
+const char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";
+const char *BLIF_PAD_STRING    = "ZERO_PAD_ZERO";
+const char *DEFAULT_CLOCK_NAME = "top^clock";
 
 // Stores pin names of the form port[pin]
 typedef struct {
@@ -89,10 +89,9 @@ typedef struct {
 
 
 //netlist_t * verilog_netlist;
-int file_line_number;/* keeps track of the present line, used for printing the error line : line number */
 short static skip_reading_bit_map=FALSE; 
 
-void rb_create_top_driver_nets(char *instance_name_prefix, hashtable_t *output_nets_hash);
+void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash);
 void rb_look_for_clocks();// not sure if this is needed
 void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash);
 void rb_create_top_output_nodes(FILE *file);
@@ -347,7 +346,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			else           names[3] = NULL;
 
 			names[4] = strdup(names[2]);
-			names[2] = "re";
+			names[2] = strdup("re");
 		}
 		else
 		{	
@@ -402,7 +401,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	new_node->name = make_full_ref_name(names[1],NULL, NULL, NULL,-1);
 
 	/*add this node to verilog_netlist as an ff (flip-flop) node */
-	verilog_netlist->ff_nodes = realloc(verilog_netlist->ff_nodes, sizeof(nnode_t*)*(verilog_netlist->num_ff_nodes+1));
+	verilog_netlist->ff_nodes = (nnode_t **)realloc(verilog_netlist->ff_nodes, sizeof(nnode_t*)*(verilog_netlist->num_ff_nodes+1));
 	verilog_netlist->ff_nodes[verilog_netlist->num_ff_nodes++] = new_node;
 
 	/*add name information and a net(driver) for the output */
@@ -486,7 +485,7 @@ char* search_clock_name(FILE* file)
 	fsetpos(file,&pos);
 
 	if (found) return input_names[0];
-	else       return DEFAULT_CLOCK_NAME;
+	else       return strdup(DEFAULT_CLOCK_NAME);
 }
   
 
@@ -587,7 +586,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	for(i = 0; i < model->inputs->count; i++)
   	{
   		char *mapping = model->inputs->names[i];
-  		char *name    = mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
+  		char *name    = (char *)mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
 
   		if (!name)
   			error_message(NETLIST_ERROR, file_line_number, -1, "Invalid hard block mapping: %s", mapping);
@@ -604,7 +603,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	for(i = 0; i < model->outputs->count; i++)
   	{
   		char *mapping = model->outputs->names[i];
-  		char *name = mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
+  		char *name = (char *)mapping_index->get(mapping_index, mapping, strlen(mapping) * sizeof(char));
 
   		if (!name) error_message(NETLIST_ERROR, file_line_number, -1,"Invalid hard block mapping: %s", model->outputs->names[i]);
 
@@ -631,7 +630,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	new_node->related_ast_node->children[0]->types.identifier = strdup(subcircuit_name);
 
   	/*add this node to verilog_netlist as an internal node */
-  	verilog_netlist->internal_nodes = realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*) * (verilog_netlist->num_internal_nodes + 1));
+  	verilog_netlist->internal_nodes = (nnode_t **)realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*) * (verilog_netlist->num_internal_nodes + 1));
   	verilog_netlist->internal_nodes[verilog_netlist->num_internal_nodes++] = new_node;
 
   	free_hard_block_ports(ports);
@@ -676,7 +675,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	else
 	{
 		/* assign the node type by seeing the name */
-		short node_type = assign_node_type_from_node_name(names[input_count-1]);
+		operation_list node_type = (operation_list)assign_node_type_from_node_name(names[input_count-1]);
 
 		if(node_type != GENERIC)
 		{
@@ -686,7 +685,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		/* Check for GENERIC type , change the node by reading the bit map */
 		else if(node_type == GENERIC)
 		{
-			new_node->type = read_bit_map_find_unknown_gate(input_count-1, new_node, file);
+			new_node->type = (operation_list)read_bit_map_find_unknown_gate(input_count-1, new_node, file);
 			skip_reading_bit_map = TRUE;
 		}
 
@@ -726,7 +725,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			add_input_port_information(new_node, 1);
 
 			npin_t *new_pin = allocate_npin();
-			new_pin->name = GND_NAME;
+			new_pin->name = strdup(GND_NAME);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin,0);
 		}
@@ -737,7 +736,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			add_input_port_information(new_node, 1);
 
 			npin_t *new_pin = allocate_npin();
-			new_pin->name = VCC_NAME;
+			new_pin->name = strdup(VCC_NAME);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin,0);
 		}
@@ -782,8 +781,8 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 {
 	fpos_t pos;
 	int last_line = file_line_number;
-	char *One = "1";
-	char *Zero = "0";
+	const char *One = "1";
+	const char *Zero = "0";
 	fgetpos(file,&pos);
 
 	if(!input_count)
@@ -820,12 +819,12 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 	if (!strcmp(output_bit_map, One))
 	{
 		free(output_bit_map);
-		output_bit_map = One;
+		output_bit_map = strdup(One);
 	}
 	else
 	{
 		free(output_bit_map);
-		output_bit_map = Zero;
+		output_bit_map = strdup(Zero);
 	}
 
 	file_line_number = last_line;
@@ -1123,7 +1122,7 @@ function: Creates the drivers for the top module
 ---------------------------------------------------------------------------
 */
 
-void rb_create_top_driver_nets(char *instance_name_prefix, hashtable_t *output_nets_hash)
+void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash)
 {
 	npin_t *new_pin;
 	/* create the constant nets */
@@ -1163,25 +1162,25 @@ void rb_create_top_driver_nets(char *instance_name_prefix, hashtable_t *output_n
 	BLIF_ZERO_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
 	verilog_netlist->gnd_node->name = (char *)GND_NAME;
 
-	output_nets_hash->add(output_nets_hash, GND_NAME, strlen(GND_NAME)*sizeof(char), verilog_netlist->zero_net);
+	output_nets_hash->add(output_nets_hash, (void *)GND_NAME, strlen(GND_NAME)*sizeof(char), verilog_netlist->zero_net);
 
-	verilog_netlist->zero_net->name = BLIF_ZERO_STRING;
+	verilog_netlist->zero_net->name = strdup(BLIF_ZERO_STRING);
 
 	/* CREATE the driver for the ONE and store twice */
 	BLIF_ONE_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
 	verilog_netlist->vcc_node->name = (char *)VCC_NAME;
 
-	output_nets_hash->add(output_nets_hash, VCC_NAME, strlen(VCC_NAME)*sizeof(char), verilog_netlist->one_net);
+	output_nets_hash->add(output_nets_hash, (char *)VCC_NAME, strlen(VCC_NAME)*sizeof(char), verilog_netlist->one_net);
 
-	verilog_netlist->one_net->name = BLIF_ONE_STRING;
+	verilog_netlist->one_net->name = strdup(BLIF_ONE_STRING);
 
 	/* CREATE the driver for the PAD */
 	BLIF_PAD_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
 	verilog_netlist->pad_node->name = (char *)HBPAD_NAME;
 
-	output_nets_hash->add(output_nets_hash, HBPAD_NAME, strlen(HBPAD_NAME)*sizeof(char), verilog_netlist->pad_net);
+	output_nets_hash->add(output_nets_hash, (void *)HBPAD_NAME, strlen(HBPAD_NAME)*sizeof(char), verilog_netlist->pad_net);
 
-	verilog_netlist->pad_net->name = BLIF_PAD_STRING;
+	verilog_netlist->pad_net->name = strdup(BLIF_PAD_STRING);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1229,7 +1228,7 @@ void hook_up_node(nnode_t *node, hashtable_t *output_nets_hash)
 	{
 		npin_t *input_pin = node->input_pins[j];
 
-		nnet_t *output_net = output_nets_hash->get(output_nets_hash, input_pin->name, strlen(input_pin->name)*sizeof(char));
+		nnet_t *output_net = (nnet_t *)output_nets_hash->get(output_nets_hash, (void *)(input_pin->name), strlen(input_pin->name)*sizeof(char));
 
 		if(!output_net)
 			error_message(NETLIST_ERROR,file_line_number, -1, "Error: Could not hook up the pin %s: not available.", input_pin->name);
@@ -1263,13 +1262,13 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 			// match .model followed buy the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(my_strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
-				model = malloc(sizeof(hard_block_model));
+				model = (hard_block_model *)malloc(sizeof(hard_block_model));
 				model->name = strdup(name_subckt);
-				model->inputs = malloc(sizeof(hard_block_pins));
+				model->inputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
 				model->inputs->count = 0;
 				model->inputs->names = NULL;
 
-				model->outputs = malloc(sizeof(hard_block_pins));
+				model->outputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
 				model->outputs->count = 0;
 				model->outputs->names = NULL;
 
@@ -1282,7 +1281,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 						char *name;
 						while ((name = my_strtok(NULL, TOKENS, file, buffer)))
 						{
-							model->inputs->names = realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
+							model->inputs->names = (char **)realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
 							model->inputs->names[model->inputs->count++] = strdup(name);
 						}
 					}
@@ -1291,7 +1290,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 						char *name;
 						while ((name = my_strtok(NULL, TOKENS, file, buffer)))
 						{
-							model->outputs->names = realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
+							model->outputs->names = (char **)realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
 							model->outputs->names[model->outputs->count++] = strdup(name);
 						}
 					}
@@ -1376,7 +1375,8 @@ hashtable_t *index_names(char **names, int count)
 	hashtable_t *index = create_hashtable((count*2) + 1);
 	int i;
 	for (i = 0; i < count; i++)
-	{	int *offset = malloc(sizeof(int));
+	{	
+		int *offset = (int *)malloc(sizeof(int));
 		*offset = i;
 		index->add(index, names[i], sizeof(char) * strlen(names[i]), offset);
 	}
@@ -1405,7 +1405,7 @@ hashtable_t *associate_names(char **names1, char **names2, int count)
 hard_block_ports *get_hard_block_ports(char **pins, int count)
 {
 	// Count the input port sizes.
-	hard_block_ports *ports = malloc(sizeof(hard_block_ports));
+	hard_block_ports *ports = (hard_block_ports *)malloc(sizeof(hard_block_ports));
 	ports->count = 0;
 	ports->sizes = 0;
 	ports->names = 0;
@@ -1417,8 +1417,8 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 		// Compare the part of the name before the "["
 		if (!i || strcmp(prev_portname, portname))
 		{
-			ports->sizes = realloc(ports->sizes, sizeof(int) * (ports->count + 1));
-			ports->names = realloc(ports->names, sizeof(char *) * (ports->count + 1));
+			ports->sizes = (int *)realloc(ports->sizes, sizeof(int) * (ports->count + 1));
+			ports->names = (char **)realloc(ports->names, sizeof(char *) * (ports->count + 1));
 
 			ports->sizes[ports->count] = 0;
 			ports->names[ports->count] = portname;
@@ -1452,7 +1452,7 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 			// Look up each port from the model in "ports"
 			char *name = p->names[j];
 			int   size = p->sizes[j];
-			int  *idx  = ports->index->get(ports->index, name, strlen(name) * sizeof(char));
+			int  *idx  = (int *)ports->index->get(ports->index, name, strlen(name) * sizeof(char));
 			// Model port not specified in ports.
 			if (!idx)
 			{
@@ -1478,8 +1478,8 @@ int verify_hard_block_ports_against_model(hard_block_ports *ports, hard_block_mo
 	{
 		// Look up each port from the subckt to make sure it appears in the model.
 		char *name   = ports->names[j];
-		int *in_idx  = in->index->get(in->index, name, strlen(name) * sizeof(char));
-		int *out_idx = out->index->get(out->index, name, strlen(name) * sizeof(char));
+		int *in_idx  = (int *)in->index->get(in->index, name, strlen(name) * sizeof(char));
+		int *out_idx = (int *)out->index->get(out->index, name, strlen(name) * sizeof(char));
 		// Port does not appear in the model.
 		if (!in_idx && !out_idx)
 		{
@@ -1564,7 +1564,7 @@ void add_hard_block_model(hard_block_model *m, hard_block_ports *ports, hard_blo
 	needle[0] = '\0';
 	strcat(needle, m->name);
 	strcat(needle, ports->signature);
-	models->models = realloc(models->models, (models->count * sizeof(hard_block_model *)) + 1);
+	models->models = (hard_block_model **)realloc(models->models, (models->count * sizeof(hard_block_model *)) + 1);
 	models->models[models->count++] = m;
 	models->index->add(models->index, needle, strlen(needle) * sizeof(char), m);
 }
@@ -1579,7 +1579,7 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
 	needle[0] = '\0';
 	strcat(needle, name);
 	strcat(needle, ports->signature);
-	return models->index->get(models->index, needle, strlen(needle) * sizeof(char));
+	return (hard_block_model *)models->index->get(models->index, needle, strlen(needle) * sizeof(char));
 }
 
 /*
@@ -1587,7 +1587,7 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
  */
 hard_block_models *create_hard_block_models()
 {
-	hard_block_models *m = malloc(sizeof(hard_block_models));
+	hard_block_models *m = (hard_block_models *)malloc(sizeof(hard_block_models));
 	m->models = 0;
 	m->count  = 0;
 	m->index  = create_hashtable(100);

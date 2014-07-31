@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_util.h"
 
 config_t configuration;
+char empty_string[] = "";
 
 void read_verilog_files(ezxml_t a_node, config_t *config);
 void read_outputs(ezxml_t a_node, config_t *config);
@@ -107,7 +108,7 @@ void read_verilog_files(ezxml_t a_node, config_t *config)
 			config->list_of_file_names[config->num_list_of_file_names] = strdup(ezxml_txt(child));
 			config->num_list_of_file_names ++;
 		}
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		junk = child;
 		child = ezxml_next(child);
 		FreeNode(junk);
@@ -126,7 +127,7 @@ void read_outputs(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		config->output_type = strdup(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -134,7 +135,7 @@ void read_outputs(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		global_args.output_file = strdup(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -153,7 +154,7 @@ void read_outputs(ezxml_t a_node, config_t *config)
 				exit(-1);
 			}
 			global_args.arch_file = strdup(ezxml_txt(child));
-			ezxml_set_txt(child, "");
+			ezxml_set_txt(child, empty_string);
 			FreeNode(child);
 		}
 		FreeNode(junk);
@@ -172,7 +173,7 @@ void read_debug_switches(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		config->output_ast_graphs = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -180,7 +181,7 @@ void read_debug_switches(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		config->output_netlist_graphs = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -188,7 +189,7 @@ void read_debug_switches(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		config->debug_output_path = strdup(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -196,7 +197,7 @@ void read_debug_switches(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		config->print_parse_tokens = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -204,7 +205,7 @@ void read_debug_switches(ezxml_t a_node, config_t *config)
 	if (child != NULL)
 	{
 		config->output_preproc_source = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, "");
+		ezxml_set_txt(child, empty_string);
 		FreeNode(child);
 	}
 
@@ -244,7 +245,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		if (prop != NULL)
 		{
 			config->min_hard_multiplier = atoi(prop);
-			ezxml_set_attr(child, "size", NULL);
+			ezxml_set_attr(child, strdup("size"), NULL);
 		}
 		else /* Default: No minimum hard multiply size */
 			config->min_hard_multiplier = 0;
@@ -253,7 +254,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		if (prop != NULL)
 		{
 			config->mult_padding = atoi(prop);
-			ezxml_set_attr(child, "padding", NULL);
+			ezxml_set_attr(child, strdup("padding"), NULL);
 		}
 		else /* Default: Pad to hbpad pins */
 			config->mult_padding = -1;
@@ -262,7 +263,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		if (prop != NULL)
 		{
 			config->fixed_hard_multiplier = atoi(prop);
-			ezxml_set_attr(child, "fixed", NULL);
+			ezxml_set_attr(child, strdup("fixed"), NULL);
 		}
 		else /* Default: No fixed hard multiply size */
 			config->fixed_hard_multiplier = 0;
@@ -271,7 +272,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		if (prop != NULL)
 		{
 			config->split_hard_multiplier = atoi(prop);
-			ezxml_set_attr(child, "fracture", NULL);
+			ezxml_set_attr(child, strdup("fracture"), NULL);
 		}
 		else /* Default: use fractured hard multiply size */
 			config->split_hard_multiplier = 1;
@@ -285,7 +286,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		if (prop != NULL)
 		{
 			config->split_memory_width = atoi(prop);
-			ezxml_set_attr(child, "split_memory_width", NULL);
+			ezxml_set_attr(child, strdup("split_memory_width"), NULL);
 		}
 		else /* Default: Do not split memory width! */
 			config->split_memory_width = 0;
@@ -299,7 +300,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 				config->split_memory_depth = -2;
 			else
 				config->split_memory_depth = atoi(prop);
-			ezxml_set_attr(child, "split_memory_depth", NULL);
+			ezxml_set_attr(child, strdup("split_memory_depth"), NULL);
 		}
 		else /* Default: Do not split memory depth! */
 			config->split_memory_depth = 0;
@@ -314,7 +315,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			if (prop != NULL)
 			{
 				config->min_hard_adder = atoi(prop);
-				ezxml_set_attr(child, "size", NULL);
+				ezxml_set_attr(child, strdup("size"), NULL);
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_hard_adder = 0;
@@ -323,7 +324,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			if (prop != NULL)
 			{
 				config->min_threshold_adder = atoi(prop);
-				ezxml_set_attr(child, "threshold_size", NULL);
+				ezxml_set_attr(child, strdup("threshold_size"), NULL);
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_threshold_adder = 0;
@@ -332,7 +333,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			if (prop != NULL)
 			{
 				config->add_padding = atoi(prop);
-				ezxml_set_attr(child, "padding", NULL);
+				ezxml_set_attr(child, strdup("padding"), NULL);
 			}
 			else /* Default: Pad to hbpad pins */
 				config->add_padding = -1;
@@ -341,7 +342,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			if (prop != NULL)
 			{
 				config->fixed_hard_adder = atoi(prop);
-				ezxml_set_attr(child, "fixed", NULL);
+				ezxml_set_attr(child, strdup("fixed"), NULL);
 			}
 			else /* Default: Fixed hard adder size */
 				config->fixed_hard_adder = 1;
@@ -350,7 +351,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			if (prop != NULL)
 			{
 				config->split_hard_adder = atoi(prop);
-				ezxml_set_attr(child, "fracture", NULL);
+				ezxml_set_attr(child, strdup("fracture"), NULL);
 			}
 			else /* Default: use fractured hard adder size */
 				config->split_hard_adder = 1;

@@ -30,8 +30,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "partial_map.h"
 
-t_model *single_port_rams;
-t_model *dual_port_rams;
+t_model *single_port_rams = NULL;
+t_model *dual_port_rams = NULL;
 
 struct s_linked_vptr *sp_memory_list;
 struct s_linked_vptr *dp_memory_list;
@@ -43,8 +43,8 @@ int split_size = 0;
 
 void pad_dp_memory_width(nnode_t *node, netlist_t *netlist);
 void pad_sp_memory_width(nnode_t *node, netlist_t *netlist);
-void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, char *port_name);
-void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, char *port_name);
+void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name);
+void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name);
 
 
 int get_sp_ram_depth(nnode_t *node)
@@ -81,7 +81,7 @@ int get_dp_ram_width(nnode_t *node)
 	return width;
 }
 
-int get_memory_port_size(char *name)
+int get_memory_port_size(const char *name)
 {
 	struct s_linked_vptr *mpl;
 
@@ -95,14 +95,14 @@ int get_memory_port_size(char *name)
 	return -1;
 }
 
-void copy_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name)
+void copy_input_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name)
 {
 	signal_list_t *temp = copy_input_signals(signals);
 	add_input_port_to_memory(node, temp, port_name);
 	free_signal_list(temp);
 }
 
-void copy_output_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name)
+void copy_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name)
 {
 	signal_list_t *temp = copy_output_signals(signals);
 	add_output_port_to_memory(node, temp, port_name);
@@ -112,7 +112,7 @@ void copy_output_port_to_memory(nnode_t *node, signal_list_t *signals, char *por
 /*
  * Re-maps the given input signals to the given port name on the given memory node.
  */
-void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name)
+void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name)
 {
 	int i;
 	int j = node->num_input_pins;
@@ -146,7 +146,7 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, char *por
  *
  * Only allows each port to be added once.
  */
-void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name)
+void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const char *port_name)
 {
 	int i;
 	int j = node->num_input_pins;
@@ -217,7 +217,7 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char 
  * signals to the given memory node. Only allows the same port
  * to be added once.
  */
-void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, char *port_name)
+void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name)
 {
 	int i;
 	int j = node->num_output_pins;
@@ -383,21 +383,21 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 	// Hook up addresses and write enables.
 	{
 		signal_list_t *we;
-		nnode_t *and = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node1, new_mem_node1->traverse_visited);
-		remap_pin_to_new_node(signals->we, and, 1);
-		remap_pin_to_new_node(signals->addr->pins[0], and, 0);
+		nnode_t *and_g = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node1, new_mem_node1->traverse_visited);
+		remap_pin_to_new_node(signals->we, and_g, 1);
+		remap_pin_to_new_node(signals->addr->pins[0], and_g, 0);
 
-		we = make_output_pins_for_existing_node(and, 1);
+		we = make_output_pins_for_existing_node(and_g, 1);
 		add_input_port_to_memory(new_mem_node1, we, "we");
 		free_signal_list(we);
 
-		nnode_t *not = make_not_gate_with_input(copy_input_npin(signals->addr->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
-		and = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
-		connect_nodes(not, 0, and, 0);
+		nnode_t *not_g = make_not_gate_with_input(copy_input_npin(signals->addr->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
+		and_g = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
+		connect_nodes(not_g, 0, and_g, 0);
 
-		add_input_pin_to_node(and, copy_input_npin(signals->we), 1);
+		add_input_pin_to_node(and_g, copy_input_npin(signals->we), 1);
 
-		we = make_output_pins_for_existing_node(and, 1);
+		we = make_output_pins_for_existing_node(and_g, 1);
 		add_input_port_to_memory(new_mem_node2, we, "we");
 		free_signal_list(we);
 	}
@@ -418,10 +418,10 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 	for (i = 0; i < signals->data->count; i++)
 	{
 		nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
-		nnode_t *not = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
+		nnode_t *not_g = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
 		add_input_pin_to_node(mux, copy_input_npin(signals->addr->pins[0]), 0);
-		add_input_pin_to_node(not, copy_input_npin(signals->addr->pins[0]), 0);
-		connect_nodes(not, 0, mux, 1);
+		add_input_pin_to_node(not_g, copy_input_npin(signals->addr->pins[0]), 0);
+		connect_nodes(not_g, 0, mux, 1);
 
 		npin_t *pin = signals->out->pins[i];
 		pin->name = mux->name;
@@ -430,10 +430,10 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
-		new_mem_node1->output_pins[i]->mapping = "out";
+		new_mem_node1->output_pins[i]->mapping = strdup("out");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
-		new_mem_node2->output_pins[i]->mapping = "out";
+		new_mem_node2->output_pins[i]->mapping = strdup("out");
 	}
 
 	free_sp_ram_signals(signals);
@@ -525,18 +525,18 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		add_input_port_to_memory(new_mem_node1, we, "we2");
 		free_signal_list(we);
 
-		nnode_t *not = make_not_gate_with_input(copy_input_npin(signals->addr1->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
+		nnode_t *not_g = make_not_gate_with_input(copy_input_npin(signals->addr1->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
 		and_node = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
-		connect_nodes(not, 0, and_node, 0);
+		connect_nodes(not_g, 0, and_node, 0);
 		add_input_pin_to_node(and_node, copy_input_npin(signals->we1), 1);
 
 		we = make_output_pins_for_existing_node(and_node, 1);
 		add_input_port_to_memory(new_mem_node2, we, "we1");
 		free_signal_list(we);
 
-		not = make_not_gate_with_input(copy_input_npin(signals->addr2->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
+		not_g = make_not_gate_with_input(copy_input_npin(signals->addr2->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
 		and_node = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
-		connect_nodes(not, 0, and_node, 0);
+		connect_nodes(not_g, 0, and_node, 0);
 
 		add_input_pin_to_node(and_node, copy_input_npin(signals->we2), 1);
 
@@ -563,10 +563,10 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 	for (i = 0; i < signals->data1->count; i++)
 	{
 		nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
-		nnode_t *not = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
+		nnode_t *not_g = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
 		add_input_pin_to_node(mux, copy_input_npin(signals->addr1->pins[0]), 0);
-		add_input_pin_to_node(not, copy_input_npin(signals->addr1->pins[0]), 0);
-		connect_nodes(not, 0, mux, 1);
+		add_input_pin_to_node(not_g, copy_input_npin(signals->addr1->pins[0]), 0);
+		connect_nodes(not_g, 0, mux, 1);
 
 		npin_t *pin = signals->out1->pins[i];
 		pin->name = mux->name;
@@ -575,20 +575,20 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
-		new_mem_node1->output_pins[i]->mapping = "out1";
+		new_mem_node1->output_pins[i]->mapping = strdup("out1");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
-		new_mem_node2->output_pins[i]->mapping = "out1";
+		new_mem_node2->output_pins[i]->mapping = strdup("out1");
 	}
 
 	/* Copy over the output pins for the new memory */
 	for (i = 0; i < signals->data1->count; i++)
 	{
 		nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
-		nnode_t *not = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
+		nnode_t *not_g = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
 		add_input_pin_to_node(mux, copy_input_npin(signals->addr2->pins[0]), 0);
-		add_input_pin_to_node(not, copy_input_npin(signals->addr2->pins[0]), 0);
-		connect_nodes(not, 0, mux, 1);
+		add_input_pin_to_node(not_g, copy_input_npin(signals->addr2->pins[0]), 0);
+		connect_nodes(not_g, 0, mux, 1);
 
 		int pin_index = new_mem_node1->output_port_sizes[0] + i;
 
@@ -599,10 +599,10 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, pin_index, mux, 2);
-		new_mem_node1->output_pins[pin_index]->mapping = "out2";
+		new_mem_node1->output_pins[pin_index]->mapping = strdup("out2");
 
 		connect_nodes(new_mem_node2, pin_index, mux, 3);
-		new_mem_node2->output_pins[pin_index]->mapping = "out2";
+		new_mem_node2->output_pins[pin_index]->mapping = strdup("out2");
 	}
 
 	free_dp_ram_signals(signals);
@@ -620,7 +620,7 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
  */
 void split_sp_memory_width(nnode_t *node, int target_size)
 {
-	char *port_name = "data";
+	char port_name[] = "data";
 	int data_port_number = get_input_port_index_from_mapping(node, port_name);
 
 	oassert(data_port_number != -1);
@@ -724,10 +724,10 @@ void split_sp_memory_width(nnode_t *node, int target_size)
  */
 void split_dp_memory_width(nnode_t *node, int target_size)
 {
-	char *data1_name = "data1";
-	char *data2_name = "data2";
-	char *out1_name = "out1";
-	char *out2_name = "out2";
+	char data1_name[] = "data1";
+	char data2_name[] = "data2";
+	char out1_name[] = "out1";
+	char out2_name[] = "out2";
 
 	int data1_port_number = get_input_port_index_from_mapping(node, data1_name);
 	int data2_port_number = get_input_port_index_from_mapping(node, data2_name);
@@ -951,7 +951,7 @@ int get_sp_ram_split_width()
 	else
 	{
 		t_model *model = single_port_rams;
-		char *port_name = "data";
+		char port_name[] = "data";
 		t_model_ports *ports = get_model_port(model->inputs, port_name);
 		return ports->size;
 	}
@@ -970,7 +970,7 @@ int get_dp_ram_split_width()
 	else
 	{
 		t_model *model = dual_port_rams;
-		char *port_name = "data1";
+		char port_name[] = "data1";
 		t_model_ports *ports = get_model_port(model->inputs, port_name);
 		return ports->size;
 	}
@@ -1180,7 +1180,7 @@ void pad_sp_memory_width(nnode_t *node, netlist_t *netlist)
 /*
  * Pads the given output port to the width specified in the given model.
  */
-void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, char *port_name)
+void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name)
 {
 	static int pad_pin_number = 0; 
 
@@ -1219,7 +1219,7 @@ void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, c
 /*
  * Pads the given input port to the width specified in the given model.
  */
-void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, char *port_name)
+void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name)
 {
 	oassert(node->type == MEMORY);
 	oassert(model != NULL);
@@ -1296,7 +1296,7 @@ sp_ram_signals *get_sp_ram_signals(nnode_t *node)
 	oassert(is_sp_ram(node));
 
 	ast_node_t *ast_node = node->related_ast_node;
-	sp_ram_signals *signals = malloc(sizeof(sp_ram_signals));
+	sp_ram_signals *signals = (sp_ram_signals *)malloc(sizeof(sp_ram_signals));
 
 	// Separate the input signals according to their mapping.
 	signals->addr = init_signal_list();
@@ -1359,7 +1359,7 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	oassert(is_dp_ram(node));
 
 	ast_node_t *ast_node = node->related_ast_node;
-	dp_ram_signals *signals = malloc(sizeof(dp_ram_signals));
+	dp_ram_signals *signals = (dp_ram_signals *)malloc(sizeof(dp_ram_signals));
 
 	// Separate the input signals according to their mapping.
 	signals->addr1 = init_signal_list();
@@ -1452,7 +1452,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	// The total number of memory addresses. (2^address_bits)
 	int num_addr = decoder->count;
 
-	nnode_t **and_gates = malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
 
 	int i;
 	for (i = 0; i < num_addr; i++)
@@ -1460,13 +1460,13 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		npin_t *address_pin = decoder->pins[i];
 
 		// An AND gate to enable and disable writing.
-		nnode_t *and = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
-		add_input_pin_to_node(and, address_pin, 0);
+		nnode_t *and_g = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
+		add_input_pin_to_node(and_g, address_pin, 0);
 
-		if (!i) remap_pin_to_new_node(signals->we, and, 1);
-		else    add_input_pin_to_node(and, copy_input_npin(signals->we), 1);
+		if (!i) remap_pin_to_new_node(signals->we, and_g, 1);
+		else    add_input_pin_to_node(and_g, copy_input_npin(signals->we), 1);
 
-		and_gates[i] = and;
+		and_gates[i] = and_g;
 	}
 
 
@@ -1484,10 +1484,10 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 
 			// A multiplexer switches between accepting incoming data and keeping existing data.
 			nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
-			nnode_t *not = make_not_gate(node, mark);
-			connect_nodes(and_gates[j], 0, not, 0);
+			nnode_t *not_g = make_not_gate(node, mark);
+			connect_nodes(and_gates[j], 0, not_g, 0);
 			connect_nodes(and_gates[j], 0, mux, 0);
-			connect_nodes(not,0,mux,1);
+			connect_nodes(not_g,0,mux,1);
 			if (!j) remap_pin_to_new_node(data_pin, mux, 2);
 			else    add_input_pin_to_node(mux, copy_input_npin(data_pin), 2);
 
@@ -1546,9 +1546,9 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 	int data_width = signals->data1->count;
 
 	// Arrays of common gates, one per address.
-	nnode_t **and1_gates = malloc(sizeof(nnode_t *) * num_addr);
-	nnode_t **and2_gates = malloc(sizeof(nnode_t *) * num_addr);
-	nnode_t **or_gates = malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and1_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and2_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **or_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
 
 	int i;
 	for (i = 0; i < num_addr; i++)
@@ -1574,11 +1574,11 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		and2_gates[i] = and2;
 
 		// OR, to enable writing to this address when either port selects it for writing.
-		nnode_t *or = make_1port_logic_gate(LOGICAL_OR, 2, node, mark);
-		connect_nodes(and1, 0, or, 0);
-		connect_nodes(and2, 0, or, 1);
+		nnode_t *or_g = make_1port_logic_gate(LOGICAL_OR, 2, node, mark);
+		connect_nodes(and1, 0, or_g, 0);
+		connect_nodes(and2, 0, or_g, 1);
 
-		or_gates[i] = or;
+		or_gates[i] = or_g;
 	}
 
 	for (i = 0; i < data_width; i++)
@@ -1606,13 +1606,13 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 			if (!j) remap_pin_to_new_node(data1_pin, data_mux, 3);
 			else    add_input_pin_to_node(data_mux, copy_input_npin(data1_pin), 3);
 
-			nnode_t *not = make_not_gate(node, mark);
-			connect_nodes(or_gates[j], 0, not, 0);
+			nnode_t *not_g = make_not_gate(node, mark);
+			connect_nodes(or_gates[j], 0, not_g, 0);
 
 			// A multiplexer switches between accepting incoming data and keeping existing data.
 			nnode_t *mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
 			connect_nodes(or_gates[j], 0, mux, 0);
-			connect_nodes(not, 0, mux, 1);
+			connect_nodes(not_g, 0, mux, 1);
 			connect_nodes(data_mux, 0, mux, 2);
 
 			// A flipflop holds the value of each memory cell.
@@ -1675,10 +1675,10 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 	int i;
 	for (i = 0; i < num_inputs; i++)
 	{
-		nnode_t *not = make_not_gate(node, mark);
-		remap_pin_to_new_node(input_list->pins[i], not, 0);
+		nnode_t *not_g = make_not_gate(node, mark);
+		remap_pin_to_new_node(input_list->pins[i], not_g, 0);
 		npin_t *not_output = allocate_npin();
-		add_output_pin_to_node(not, not_output, 0);
+		add_output_pin_to_node(not_g, not_output, 0);
 		nnet_t *net = allocate_nnet();
 		add_driver_pin_to_net(net, not_output);
 		not_output = allocate_npin();
@@ -1698,7 +1698,7 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 	for (i = 0; i < num_outputs; i++)
 	{
 		// Each output is connected to an and gate which is driven by a single permutation of the inputs.
-		nnode_t *and = make_1port_logic_gate(LOGICAL_AND, num_inputs, node, mark);
+		nnode_t *and_g = make_1port_logic_gate(LOGICAL_AND, num_inputs, node, mark);
 
 		int j;
 		for (j = 0; j < num_inputs; j++)
@@ -1712,13 +1712,13 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 				pin = copy_input_npin(pin);
 
 			// Connect the signal to the output and gate.
-			add_input_pin_to_node(and, pin, j);
+			add_input_pin_to_node(and_g, pin, j);
 		}
 
 		// Add output pin, net, and fanout pin.
 		npin_t *output = allocate_npin();
 		nnet_t *net = allocate_nnet();
-		add_output_pin_to_node(and, output, 0);
+		add_output_pin_to_node(and_g, output, 0);
 		add_driver_pin_to_net(net, output);
 		output = allocate_npin();
 		add_fanout_pin_to_net(net, output);

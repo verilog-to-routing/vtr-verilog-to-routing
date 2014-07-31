@@ -23,10 +23,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _IMPLICIT_MEMORY_H_
 #define _IMPLICIT_MEMORY_H_
 
-// Hashes the implicit memory name to the implicit_memory structure.
-hashtable_t *implicit_memories;
-// Hashes the implicit memory input name to the implicit_memory structure.
-hashtable_t *implicit_memory_inputs;
+extern hashtable_t *implicit_memories;
+extern hashtable_t *implicit_memory_inputs;
 
 /*
  * Contains a pointer to the implicit memory node as well as other
@@ -41,8 +39,8 @@ typedef struct {
 	char *name;
 } implicit_memory;
 
-void add_input_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, char *port_name);
-void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, char *port_name);
+void add_input_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, const char *port_name);
+void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, const char *port_name);
 
 implicit_memory *lookup_implicit_memory_reference_ast(char *instance_name_prefix, ast_node_t *node);
 

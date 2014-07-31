@@ -425,7 +425,7 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 			{
 				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
 				{
-					newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
 					if (newNode->types.variable.is_parameter == TRUE)
 					{
 						range_max = symbol_list->children[0]->children[1];
@@ -454,7 +454,7 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 			{
 				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
 				{
-					newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
 					if (newNode->types.variable.is_parameter == TRUE)
 					{
 						range_min = symbol_list->children[0]->children[2];
@@ -1560,7 +1560,7 @@ long calculate_operation(ast_node_t *node)
 			return 0;
 	ast_node_t *newNode;
 
-	long result, operand0, operand1;
+	long result, operand0 = 0, operand1 = 0;
 	/*Only calculate binary operation currently*/
 	if (node->type == BINARY_OPERATION)
 	{
@@ -1569,7 +1569,7 @@ long calculate_operation(ast_node_t *node)
 			long sc_spot;
 			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[0]->types.identifier)) != -1)
 			{
-				newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+				newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
 				if (newNode->types.variable.is_parameter == TRUE)
 				{
 					operand0 = newNode->types.number.value;
@@ -1592,7 +1592,7 @@ long calculate_operation(ast_node_t *node)
 			long sc_spot;
 			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[1]->types.identifier)) != -1)
 			{
-				newNode = defines_for_module_sc[num_modules]->data[sc_spot];
+				newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
 				if (newNode->types.variable.is_parameter == TRUE)
 				{
 					operand1 = newNode->types.number.value;

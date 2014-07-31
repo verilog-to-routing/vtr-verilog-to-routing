@@ -493,8 +493,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 			num = (b + 1) - i * sizeb;
 			if(num > sizeb)
 				num = sizeb;
-			else
-				num = num;
+
 			for(j = 0; j < num; j++)
 			{
 				if(i == count - 1 && flag == 1)

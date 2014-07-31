@@ -70,6 +70,12 @@ int main(int argc, char **argv)
 {
 	int num_types;
 
+	/* Some initialization */
+	one_string = strdup("ONE_VCC_CNS");
+	zero_string = strdup("ZERO_GND_ZERO");
+	pad_string = strdup("ZERO_PAD_ZERO");
+
+
 	printf("--------------------------------------------------------------------\n");
 	printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
 	printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");

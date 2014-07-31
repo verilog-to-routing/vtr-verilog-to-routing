@@ -40,7 +40,7 @@ long unique_node_name_id = 0;
 npin_t *get_pad_pin(netlist_t *netlist)
 {
 	npin_t *pad_fanout_pin = allocate_npin();	
-	pad_fanout_pin->name = pad_string;
+	pad_fanout_pin->name = strdup(pad_string);
 	add_fanout_pin_to_net(netlist->pad_net, pad_fanout_pin);
 	return pad_fanout_pin;
 }
@@ -52,7 +52,7 @@ npin_t *get_pad_pin(netlist_t *netlist)
 npin_t *get_zero_pin(netlist_t *netlist)
 {
 	npin_t *zero_fanout_pin = allocate_npin();	
-	zero_fanout_pin->name = zero_string;
+	zero_fanout_pin->name = strdup(zero_string);
 	add_fanout_pin_to_net(netlist->zero_net, zero_fanout_pin);
 	return zero_fanout_pin;
 }
@@ -64,7 +64,7 @@ npin_t *get_zero_pin(netlist_t *netlist)
 npin_t *get_one_pin(netlist_t *netlist)
 {
 	npin_t *one_fanout_pin = allocate_npin();	
-	one_fanout_pin->name = one_string;
+	one_fanout_pin->name = strdup(one_string);
 	add_fanout_pin_to_net(netlist->one_net, one_fanout_pin);
 	return one_fanout_pin;
 }
@@ -214,56 +214,56 @@ nnode_t *make_2port_gate(operation_list type, int width_port1, int width_port2, 
 }
 
 /* string conversions */
-char *MULTI_PORT_MUX_string = "MULTI_PORT_MUX";
-char *FF_NODE_string = "FF_NODE"; 
-char *BUF_NODE_string = "BUF_NODE"; 
-char *INPUT_NODE_string = "INPUT_NODE"; 
-char *CLOCK_NODE_string = "CLOCK_NODE"; 
-char *OUTPUT_NODE_string = "OUTPUT_NODE"; 
-char *GND_NODE_string = "GND_NODE"; 
-char *VCC_NODE_string = "VCC_NODE"; 
-char *ADD_string = "ADD"; 
-char *MINUS_string = "MINUS"; 
-char *BITWISE_NOT_string = "BITWISE_NOT"; 
-char *BITWISE_AND_string = "BITWISE_AND"; 
-char *BITWISE_OR_string = "BITWISE_OR"; 
-char *BITWISE_NAND_string = "BITWISE_NAND"; 
-char *BITWISE_NOR_string = "BITWISE_NOR"; 
-char *BITWISE_XNOR_string = "BITWISE_XNOR"; 
-char *BITWISE_XOR_string = "BITWISE_XOR"; 
-char *LOGICAL_NOT_string = "LOGICAL_NOT"; 
-char *LOGICAL_OR_string = "LOGICAL_OR"; 
-char *LOGICAL_AND_string = "LOGICAL_AND"; 
-char *LOGICAL_NAND_string = "LOGICAL_NAND"; 
-char *LOGICAL_NOR_string = "LOGICAL_NOR"; 
-char *LOGICAL_XOR_string = "LOGICAL_XOR"; 
-char *LOGICAL_XNOR_string = "LOGICAL_XNOR"; 
-char *MULTIPLY_string = "MULTIPLY"; 
-char *DIVIDE_string = "DIVIDE"; 
-char *MODULO_string = "MODULO"; 
-char *LT_string = "LT"; 
-char *GT_string = "GT"; 
-char *LOGICAL_EQUAL_string = "LOGICAL_EQUAL"; 
-char *NOT_EQUAL_string = "NOT_EQUAL"; 
-char *LTE_string = "LTE"; 
-char *GTE_string = "GTE"; 
-char *SR_string = "SR"; 
-char *SL_string = "SL"; 
-char *CASE_EQUAL_string = "CASE_EQUAL"; 
-char *CASE_NOT_EQUAL_string = "CASE_NOT_EQUAL";
-char *ADDER_FUNC_string = "ADDER_FUNC";
-char *CARRY_FUNC_string = "CARRY_FUNC";
-char *MUX_2_string = "MUX_2";
-char *HARD_IP_string = "HARD_IP";
-char *MEMORY_string = "MEMORY";
+const char *MULTI_PORT_MUX_string = "MULTI_PORT_MUX";
+const char *FF_NODE_string = "FF_NODE"; 
+const char *BUF_NODE_string = "BUF_NODE"; 
+const char *INPUT_NODE_string = "INPUT_NODE"; 
+const char *CLOCK_NODE_string = "CLOCK_NODE"; 
+const char *OUTPUT_NODE_string = "OUTPUT_NODE"; 
+const char *GND_NODE_string = "GND_NODE"; 
+const char *VCC_NODE_string = "VCC_NODE"; 
+const char *ADD_string = "ADD"; 
+const char *MINUS_string = "MINUS"; 
+const char *BITWISE_NOT_string = "BITWISE_NOT"; 
+const char *BITWISE_AND_string = "BITWISE_AND"; 
+const char *BITWISE_OR_string = "BITWISE_OR"; 
+const char *BITWISE_NAND_string = "BITWISE_NAND"; 
+const char *BITWISE_NOR_string = "BITWISE_NOR"; 
+const char *BITWISE_XNOR_string = "BITWISE_XNOR"; 
+const char *BITWISE_XOR_string = "BITWISE_XOR"; 
+const char *LOGICAL_NOT_string = "LOGICAL_NOT"; 
+const char *LOGICAL_OR_string = "LOGICAL_OR"; 
+const char *LOGICAL_AND_string = "LOGICAL_AND"; 
+const char *LOGICAL_NAND_string = "LOGICAL_NAND"; 
+const char *LOGICAL_NOR_string = "LOGICAL_NOR"; 
+const char *LOGICAL_XOR_string = "LOGICAL_XOR"; 
+const char *LOGICAL_XNOR_string = "LOGICAL_XNOR"; 
+const char *MULTIPLY_string = "MULTIPLY"; 
+const char *DIVIDE_string = "DIVIDE"; 
+const char *MODULO_string = "MODULO"; 
+const char *LT_string = "LT"; 
+const char *GT_string = "GT"; 
+const char *LOGICAL_EQUAL_string = "LOGICAL_EQUAL"; 
+const char *NOT_EQUAL_string = "NOT_EQUAL"; 
+const char *LTE_string = "LTE"; 
+const char *GTE_string = "GTE"; 
+const char *SR_string = "SR"; 
+const char *SL_string = "SL"; 
+const char *CASE_EQUAL_string = "CASE_EQUAL"; 
+const char *CASE_NOT_EQUAL_string = "CASE_NOT_EQUAL";
+const char *ADDER_FUNC_string = "ADDER_FUNC";
+const char *CARRY_FUNC_string = "CARRY_FUNC";
+const char *MUX_2_string = "MUX_2";
+const char *HARD_IP_string = "HARD_IP";
+const char *MEMORY_string = "MEMORY";
 
 /*---------------------------------------------------------------------------------------------
  * (function: node_name_based_on_op)
  * 	Get the string version of a node
  *-------------------------------------------------------------------------------------------*/
-char *node_name_based_on_op(nnode_t *node)
+const char *node_name_based_on_op(nnode_t *node)
 {
-	char *return_string;
+	const char *return_string;
 
 	switch(node->type)
 	{

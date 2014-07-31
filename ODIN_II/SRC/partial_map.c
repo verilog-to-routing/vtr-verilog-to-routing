@@ -543,7 +543,7 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 			cell_op = LOGICAL_XOR;
 			break;
 		default:
-			cell_op = 0;
+			cell_op = NO_OP;
 			oassert(FALSE);
 			break;
 	}
@@ -611,7 +611,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			cell_op = LOGICAL_XOR;
 			break;
 		default:
-			cell_op = 0;
+			cell_op = NO_OP;
 			oassert(FALSE);
 			break;
 	}

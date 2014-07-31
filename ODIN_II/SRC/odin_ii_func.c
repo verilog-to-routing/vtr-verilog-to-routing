@@ -61,7 +61,7 @@ void set_default_options()
 	global_args.config_file = NULL;
 	global_args.verilog_file = NULL;
 	global_args.blif_file = NULL;
-	global_args.output_file = "./default_out.blif";
+	global_args.output_file = strdup("./default_out.blif");
 	global_args.arch_file = NULL;
 	global_args.activation_blif_file = NULL;
 	global_args.activation_netlist_file = NULL;
@@ -81,12 +81,12 @@ void set_default_options()
 	/* Set up the global configuration. */
 	configuration.list_of_file_names = NULL;
 	configuration.num_list_of_file_names = 0;
-	configuration.output_type = "blif";
+	configuration.output_type = strdup("blif");
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
 	configuration.output_preproc_source = 0;
-	configuration.debug_output_path = ".";
+	configuration.debug_output_path = strdup(".");
 	configuration.arch_file = NULL;
 
 	configuration.fixed_hard_multiplier = 0;

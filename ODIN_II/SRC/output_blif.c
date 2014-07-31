@@ -41,7 +41,7 @@ void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *ne
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
 void output_node(nnode_t *node, short traverse_number, FILE *fp);
 void define_logical_function(nnode_t *node, short type, FILE *out);
-void define_set_input_logical_function(nnode_t *node, char *bit_output, FILE *out);
+void define_set_input_logical_function(nnode_t *node, const char *bit_output, FILE *out);
 void define_ff(nnode_t *node, FILE *out);
 void define_decoded_mux(nnode_t *node, FILE *out);
 void output_blif_pin_connect(nnode_t *node, FILE *out);
@@ -229,9 +229,9 @@ void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *ne
 {
 	int i;
 
-	netlist->gnd_node->name = "gnd";
-	netlist->vcc_node->name = "vcc";
-	netlist->pad_node->name = "unconn";
+	netlist->gnd_node->name = strdup("gnd");
+	netlist->vcc_node->name = strdup("vcc");
+	netlist->pad_node->name = strdup("unconn");
 	/* now traverse the ground, vcc, and unconn pins */
 	depth_traverse_output_blif(netlist->gnd_node, marker_value, fp);
 	depth_traverse_output_blif(netlist->vcc_node, marker_value, fp);
@@ -575,7 +575,7 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 /*------------------------------------------------------------------------
  * (function: define_set_input_logical_function)
  *----------------------------------------------------------------------*/
-void define_set_input_logical_function(nnode_t *node, char *bit_output, FILE *out)
+void define_set_input_logical_function(nnode_t *node, const char *bit_output, FILE *out)
 {
 	int i;
 	int flag = 0;

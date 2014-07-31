@@ -505,7 +505,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
  *-------------------------------------------------------------------------------------------*/
 char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit)
 {
-	char *return_string; 
+	char *return_string = NULL; 
 
 	/* calculate the port details */
 	if (var_declare->children[1] == NULL)
@@ -520,7 +520,6 @@ char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit)
 	}
 	else if (var_declare->children[3] != NULL)
 	{
-		return_string = NULL;
 		/* MEMORY output */
 		oassert(FALSE);
 	}
@@ -841,7 +840,7 @@ ast_node_t *resolve_node(char *module_name, ast_node_t *node)
 		ast_node_t *node_copy;
 		node_copy = (ast_node_t *)malloc(sizeof(ast_node_t));
 		memcpy(node_copy, node, sizeof(ast_node_t));
-		node_copy->children = malloc(sizeof(ast_node_t*) * node_copy->num_children);
+		node_copy->children = (ast_node_t **)malloc(sizeof(ast_node_t*) * node_copy->num_children);
 
 		for (i = 0; i < node->num_children; i++)
 		{

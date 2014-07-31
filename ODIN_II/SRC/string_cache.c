@@ -8,7 +8,7 @@
 
 unsigned long
 string_hash(STRING_CACHE * sc,
-	    char *string)
+	    const char *string)
 {
     long a, i, mod, mul;
 
@@ -65,7 +65,7 @@ sc_new_string_cache(void)
 
 long
 sc_lookup_string(STRING_CACHE * sc,
-	      char *string)
+	      const char *string)
 {
     long i, hash;
 
@@ -82,7 +82,7 @@ sc_lookup_string(STRING_CACHE * sc,
 
 long
 sc_add_string(STRING_CACHE * sc,
-	   char *string)
+	   const char *string)
 {
     long i;
     long hash;

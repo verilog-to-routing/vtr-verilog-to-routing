@@ -26,9 +26,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "node_creation_library.h"
 #include "odin_util.h"
 
+// Hashes the implicit memory name to the implicit_memory structure.
+hashtable_t *implicit_memories;
+// Hashes the implicit memory input name to the implicit_memory structure.
+hashtable_t *implicit_memory_inputs;
+
 void finalize_implicit_memory(implicit_memory *memory);
-void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size, char *port_name);
-void add_dummy_input_port_to_implicit_memory(implicit_memory *memory, int size, char *port_name);
+void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name);
+void add_dummy_input_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name);
 void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory);
 
 /*
@@ -37,7 +42,7 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory);
 implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identifier)
 {
 	char *memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
-	return implicit_memories->get(implicit_memories, memory_string, strlen(memory_string));
+	return (implicit_memory *)implicit_memories->get(implicit_memories, memory_string, strlen(memory_string));
 }
 
 /*
@@ -70,6 +75,7 @@ char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node
  */
 implicit_memory *create_implicit_memory_block(int data_width, long long words, char *name, char *instance_name_prefix)
 {
+	char implicit_string[] = "implicit_ram";
 	long addr_width = 1;
 	while ((1 << addr_width) < words)
 		addr_width++;
@@ -79,7 +85,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 
 	nnode_t *node = allocate_nnode();
 	node->type = MEMORY;
-	node->name = hard_node_name(node, instance_name_prefix, "implicit_ram", name);
+	node->name = hard_node_name(node, instance_name_prefix, implicit_string, name);
 
 	// Create a fake ast node.
 	node->related_ast_node = (ast_node_t *)calloc(1, sizeof(ast_node_t));
@@ -89,7 +95,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 
 	char *full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, -1);
 
-	implicit_memory *memory = malloc(sizeof(implicit_memory));
+	implicit_memory *memory = (implicit_memory *)malloc(sizeof(implicit_memory));
 	memory->node = node;
 	memory->addr_width = addr_width;
 	memory->data_width = data_width;
@@ -105,7 +111,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 /*
  * Adds an input port to the given implicit memory.
  */
-void add_input_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, char *port_name)
+void add_input_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, const char *port_name)
 {
 	nnode_t *node = memory->node;
 
@@ -115,7 +121,7 @@ void add_input_port_to_implicit_memory(implicit_memory *memory, signal_list_t *s
 /*
  * Add an output port to the given implicit memory.
  */
-void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, char *port_name)
+void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *signals, const char *port_name)
 {
 	nnode_t *node = memory->node;
 
@@ -127,7 +133,7 @@ void add_output_port_to_implicit_memory(implicit_memory *memory, signal_list_t *
  */
 implicit_memory *lookup_implicit_memory_input(char *name)
 {
-	return implicit_memory_inputs->get(implicit_memory_inputs, name, strlen(name));
+	return (implicit_memory *)implicit_memory_inputs->get(implicit_memory_inputs, name, strlen(name));
 }
 
 /*
@@ -182,7 +188,7 @@ void free_implicit_memory_index_and_finalize_memories()
  * Adds a zeroed input port with to the given implicit memory
  * with the given size and port name (mapping)
  */
-void add_dummy_input_port_to_implicit_memory(implicit_memory *memory, int size, char *port_name)
+void add_dummy_input_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name)
 {
 	signal_list_t *signals = init_signal_list();
 	int i;
@@ -198,7 +204,7 @@ void add_dummy_input_port_to_implicit_memory(implicit_memory *memory, int size, 
  * Adds an unconnected output port with to the given implicit memory
  * with the given size and port name (mapping)
  */
-void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size, char *port_name)
+void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name)
 {
 	signal_list_t *signals = init_signal_list();
 	static int dummy_output_pin_number = 0;
@@ -341,5 +347,5 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory)
 	}
 
 	ast_node_t *ast_node = node->related_ast_node;
-	ast_node->children[0]->types.identifier = "single_port_ram";
+	ast_node->children[0]->types.identifier = strdup("single_port_ram");
 }

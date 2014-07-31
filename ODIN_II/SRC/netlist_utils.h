@@ -59,9 +59,9 @@ void free_netlist(netlist_t *to_free);
 void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node);
 void mark_clock_node ( netlist_t *netlist, char *clock_name);
 
-int get_output_pin_index_from_mapping(nnode_t *node, char *name);
-int get_output_port_index_from_mapping(nnode_t *node, char *name);
-int get_input_pin_index_from_mapping(nnode_t *node, char *name);
-int get_input_port_index_from_mapping(nnode_t *node, char *name);
+int get_output_pin_index_from_mapping(nnode_t *node, const char *name);
+int get_output_port_index_from_mapping(nnode_t *node, const char *name);
+int get_input_pin_index_from_mapping(nnode_t *node, const char *name);
+int get_input_port_index_from_mapping(nnode_t *node, const char *name);
 chain_information_t* allocate_chain_info();
 void remove_fanout_pins_from_net(nnet_t *net, npin_t *pin, int id);

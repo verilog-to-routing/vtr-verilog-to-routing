@@ -28,6 +28,8 @@ extern struct s_linked_vptr *sp_memory_list;
 extern struct s_linked_vptr *dp_memory_list;
 extern struct s_linked_vptr *memory_instances;
 extern struct s_linked_vptr *memory_port_size_list;
+extern t_model *single_port_rams;
+extern t_model *dual_port_rams;
 
 #define MEMORY_DEPTH_LIMIT 25
 
@@ -86,7 +88,7 @@ char is_ast_dp_ram(ast_node_t *node);
 void init_memory_distribution();
 void check_memories_and_report_distribution();
 
-int get_memory_port_size(char *name);
+int get_memory_port_size(const char *name);
 
 int get_sp_ram_depth(nnode_t *node);
 int get_dp_ram_depth(nnode_t *node);
@@ -105,8 +107,8 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 
 signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_list);
 
-void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
-void add_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
+void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const char *port_name);
+void add_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const char *port_name);
 
 #endif // MEMORIES_H
 

@@ -33,7 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 /*---------------------------------------------------------------------------------------------
  * (function: error_message)
  *-------------------------------------------------------------------------------------------*/
-void error_message(short error_type, int line_number, int file, char *message, ...)
+void error_message(short error_type, int line_number, int file, const char *message, ...)
 {
 	va_list ap;
 
@@ -60,7 +60,7 @@ void error_message(short error_type, int line_number, int file, char *message, .
 /*---------------------------------------------------------------------------------------------
  * (function: warning_message)
  *-------------------------------------------------------------------------------------------*/
-void warning_message(short error_type, int line_number, int file, char *message, ...)
+void warning_message(short error_type, int line_number, int file, const char *message, ...)
 {
 	va_list ap;
 	static short is_warned = FALSE;

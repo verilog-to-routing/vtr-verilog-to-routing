@@ -47,7 +47,7 @@ hashtable_t* create_hashtable(int store_size)
 	hashtable_t *h = (hashtable_t *)malloc(sizeof(hashtable_t));
 	
 	h->store_size = store_size; 
-	h->store = calloc(store_size, sizeof(hashtable_node_t*)); 
+	h->store = (hashtable_node_t **)calloc(store_size, sizeof(hashtable_node_t*)); 
 	h->count = 0;
 
 	h->add                = ___hashtable_add;
@@ -162,7 +162,7 @@ void* ___hashtable_get(hashtable_t *h, void *key, size_t key_length)
 
 void** ___hashtable_get_all(hashtable_t *h) {		
 	int count = 0;
-	void **items = malloc(h->count * sizeof(void*));  
+	void **items = (void **)malloc(h->count * sizeof(void*));  
 
 	int i;
 	for (i = 0; i < h->store_size; i++)

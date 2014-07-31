@@ -196,7 +196,7 @@ pin_names *parse_pin_name_list(char *list);
 void free_pin_name_list(pin_names *p);
 hashtable_t *index_pin_name_list(pin_names *list);
 
-void trim_string(char* string, char *chars);
+void trim_string(char* string, const char *chars);
 char *vector_value_to_hex(signed char *value, int length);
 
 int  print_progress_bar(double completion, int position, int length, double time);

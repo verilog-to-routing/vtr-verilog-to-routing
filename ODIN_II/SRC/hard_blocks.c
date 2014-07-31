@@ -30,16 +30,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "types.h"
 #include "globals.h"
 #include "hard_blocks.h"
-
-t_model *single_port_rams = NULL;
-t_model *dual_port_rams = NULL;
-
 #include "memories.h"
 
 STRING_CACHE *hard_block_names = NULL;
 
 
-t_model_ports *get_model_port(t_model_ports *ports, char *name)
+t_model_ports *get_model_port(t_model_ports *ports, const char *name)
 {
 	while (ports && strcmp(ports->name, name))
 		ports = ports->next;
@@ -117,7 +113,7 @@ void deregister_hard_blocks()
 	return;
 }
 
-t_model* find_hard_block(char *name)
+t_model* find_hard_block(const char *name)
 {
 	t_model *hard_blocks;
 

@@ -36,6 +36,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 %s COMMENT
 
+%option noyywrap
+
 %%
 
 	/*     Keywords */

@@ -67,9 +67,9 @@ short local_clock_found;
 int local_clock_idx;
 
 /* CONSTANT NET ELEMENTS */
-char *one_string = "ONE_VCC_CNS";
-char *zero_string = "ZERO_GND_ZERO";
-char *pad_string = "ZERO_PAD_ZERO";
+char *one_string;
+char *zero_string;
+char *pad_string;
 
 ast_node_t *top_module;
 
@@ -310,6 +310,7 @@ void create_netlist()
 	 * be instance names.  There are a few implied nets as in Muxes for cases, signals
 	 * for flip-flops and memories */
 
+	char top_string[] = "top";
 	// Alias the symbol nodes in ast_modules to the actual MODULE nodes
 	int i;
 	for (i = 0; i < num_modules; i++)
@@ -367,14 +368,14 @@ void create_netlist()
 	verilog_netlist = allocate_netlist();
 
 	// create the parameter table for the top module
-	create_param_table_for_module(NULL, top_module->children[2], "top");
+	create_param_table_for_module(NULL, top_module->children[2], top_string);
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
-	create_top_driver_nets(top_module, "top");
+	create_top_driver_nets(top_module, top_string);
 	init_implicit_memory_index();
-	convert_ast_to_netlist_recursing_via_modules(top_module, "top", 0);
+	convert_ast_to_netlist_recursing_via_modules(top_module, top_string, 0);
 	free_implicit_memory_index_and_finalize_memories();
-	create_top_output_nodes(top_module, "top");
+	create_top_output_nodes(top_module, top_string);
 
 	/* now look for high-level signals */
 	look_for_clocks(verilog_netlist); 
@@ -961,8 +962,9 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	add_driver_pin_to_net(verilog_netlist->pad_net, new_pin);
 
 	/* CREATE the driver for the ZERO */
-	zero_string = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
-	verilog_netlist->gnd_node->name = zero_string;
+	verilog_netlist->gnd_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
+	free(zero_string);
+	zero_string = verilog_netlist->gnd_node->name;
 
 	sc_spot = sc_add_string(output_nets_sc, zero_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
@@ -974,8 +976,9 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	verilog_netlist->zero_net->name = zero_string;
 
 	/* CREATE the driver for the ONE and store twice */
-	one_string = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
-	verilog_netlist->vcc_node->name = one_string;
+	verilog_netlist->vcc_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
+	free(one_string);
+	one_string = verilog_netlist->vcc_node->name;
 
 	sc_spot = sc_add_string(output_nets_sc, one_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
@@ -987,8 +990,9 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	verilog_netlist->one_net->name = one_string;
 
 	/* CREATE the driver for the PAD */
-	pad_string = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
-	verilog_netlist->pad_node->name = pad_string;
+	verilog_netlist->pad_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
+	free(pad_string);
+	pad_string = verilog_netlist->pad_node->name;
 
 	sc_spot = sc_add_string(output_nets_sc, pad_string);
 	if (output_nets_sc->data[sc_spot] != NULL)
@@ -1063,7 +1067,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 							add_input_pin_to_node(new_node, new_pin, 0);
 
 							/* record this node */	
-							verilog_netlist->top_output_nodes = realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
+							verilog_netlist->top_output_nodes = (nnode_t **)realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
 							verilog_netlist->top_output_nodes[verilog_netlist->num_top_output_nodes] = new_node;
 							verilog_netlist->num_top_output_nodes++;
 						}	
@@ -1101,7 +1105,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 								add_input_pin_to_node(new_node, new_pin, 0);
 
 								/* record this node */	
-								verilog_netlist->top_output_nodes = realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
+								verilog_netlist->top_output_nodes = (nnode_t **)realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
 								verilog_netlist->top_output_nodes[verilog_netlist->num_top_output_nodes] = new_node;
 								verilog_netlist->num_top_output_nodes++;
 							}
@@ -1452,7 +1456,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 
 						/* store the symbol */		
 						local_symbol_table = (ast_node_t **)realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
-						local_symbol_table[num_local_symbol_table] = (void *)var_declare;
+						local_symbol_table[num_local_symbol_table] = (ast_node_t *)var_declare;
 						num_local_symbol_table ++;
 						
 						/* check for an initial value and store it if found */
@@ -2533,7 +2537,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 				error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
 						"Assignment is missing driver (%s)\n", pin->name);
 			}
-			nnet_t *net = output_nets_sc->data[sc_spot];
+			nnet_t *net = (nnet_t *)output_nets_sc->data[sc_spot];
 
 			/* HERE create the ff node and hookup everything */
 			nnode_t *ff_node = allocate_nnode();
@@ -2543,7 +2547,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
-			char *ff_name = malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
+			char *ff_name = (char *)malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
 			strcpy(ff_name, pin->name);
 			strcat(ff_name, "_FF_NODE");
 			ff_node->name = ff_name;
@@ -2646,7 +2650,7 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 						"Assignment (%s) is missing driver\n", pin->name);
 			}
 
-			nnet_t *net = output_nets_sc->data[sc_spot];
+			nnet_t *net = (nnet_t *)output_nets_sc->data[sc_spot];
 
 			if (net->name == NULL)
 				net->name = pin->name;

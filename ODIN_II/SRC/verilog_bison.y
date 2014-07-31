@@ -32,7 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define PARSE {printf("here\n");}
 
 #ifndef YYLINENO
-int yylineno;
+extern int yylineno;
 #define YYLINENO yylineno
 #else
 extern int yylineno;

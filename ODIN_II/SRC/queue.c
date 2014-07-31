@@ -98,7 +98,7 @@ void **___queue_remove_all(queue_t *q)
 	void **items = NULL; 
 	if (!q->is_empty(q))
 	{
-		items = malloc(q->count * sizeof(void *)); 
+		items = (void **)malloc(q->count * sizeof(void *)); 
 		int count = 0; 
 		void *item;
 		while ((item = q->remove(q)))

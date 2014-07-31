@@ -12,7 +12,7 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
-int file_line_number; /* file in line number being parsed */
+int arch_file_line_number; /* file in line number being parsed */
 char *out_file_prefix = NULL;
 vpr_PrintHandlerMessage vpr_printf = PrintHandlerMessage;
 vpr_PrintHandlerInfo vpr_printf_info = PrintHandlerInfo;
@@ -409,7 +409,7 @@ char *my_fgets(char *buf, int max_size, FILE * fp) {
 	int i;
 
 	cont = 0; /* line continued? */
-	file_line_number++; /* global variable */
+	arch_file_line_number++; /* global variable */
 
 	for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
 
@@ -451,7 +451,7 @@ char *my_fgets(char *buf, int max_size, FILE * fp) {
 	vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
 		"Error on line %d -- line is too long for input buffer.\n"
 		"All lines must be at most %d characters long.\n",
-			file_line_number, BUFSIZE - 2);	
+			arch_file_line_number, BUFSIZE - 2);	
 	return NULL;
 }
 
