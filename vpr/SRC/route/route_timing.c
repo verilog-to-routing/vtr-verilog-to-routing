@@ -193,7 +193,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		   to them are reserved for that purpose. */
 
 		boolean rip_up_local_opins = (itry == 1 ? FALSE : TRUE);
-		reserve_locally_used_opins(pres_fac, rip_up_local_opins, clb_opins_used_locally);
+		reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins, clb_opins_used_locally);
 
 		/* Pathfinder guys quit after finding a feasible route. I may want to keep 
 		   going longer, trying to improve timing.  Think about this some. */

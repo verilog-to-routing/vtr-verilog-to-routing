@@ -94,8 +94,8 @@ static struct s_heap *alloc_heap_data(void);
 static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
 
 static t_ivec **alloc_and_load_clb_opins_used_locally(void);
-static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
-		float pres_fac);
+static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
+		float pres_fac, float acc_fac);
 
 /************************** Subroutine definitions ***************************/
 
@@ -1267,7 +1267,7 @@ void print_route(char *route_file) {
 }
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
-void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
+void reserve_locally_used_opins(float pres_fac, float acc_fac, boolean rip_up_local_opins,
 		t_ivec ** clb_opins_used_locally) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
@@ -1290,7 +1290,7 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
 					inode = clb_opins_used_locally[iblk][iclass].list[ipin];
-					adjust_one_rr_occ_and_pcost(inode, -1, pres_fac);
+					adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
 				}
 			}
 		}
@@ -1314,7 +1314,7 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
 					heap_head_ptr = get_heap_head();
 					inode = heap_head_ptr->index;
-					adjust_one_rr_occ_and_pcost(inode, 1, pres_fac);
+					adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
 					clb_opins_used_locally[iblk][iclass].list[ipin] = inode;
 					free_heap_data(heap_head_ptr);
 				}
@@ -1325,8 +1325,8 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 	}
 }
 
-static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
-		float pres_fac) {
+static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
+		float pres_fac, float acc_fac) {
 
 	/* Increments or decrements (depending on add_or_sub) the occupancy of    *
 	 * one rr_node, and adjusts the present cost of that node appropriately.  */
@@ -1341,6 +1341,9 @@ static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 		rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
 		rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+		if (add_or_sub == 1) {
+			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
+		}
 	}
 }
 

@@ -109,7 +109,7 @@ void alloc_route_static_structs(void);
 
 void free_trace_structs(void);
 
-void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
+void reserve_locally_used_opins(float pres_fac, float acc_fac, boolean rip_up_local_opins,
 		t_ivec ** clb_opins_used_locally);
 
 void free_chunk_memory_trace(void);

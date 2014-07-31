@@ -73,7 +73,7 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 		else
 			rip_up_local_opins = TRUE;
 
-		reserve_locally_used_opins(pres_fac, rip_up_local_opins,
+		reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins,
 				clb_opins_used_locally);
 
 		success = feasible_routing();
