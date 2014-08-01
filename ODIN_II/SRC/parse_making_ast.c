@@ -35,14 +35,19 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "util.h"
-#include "hard_blocks.h"
+#include "hard_blocks.h" 
 
 extern int yylineno;
 
 STRING_CACHE *defines_for_file_sc;
+//for module
 STRING_CACHE **defines_for_module_sc;
 STRING_CACHE *modules_inputs_sc;
 STRING_CACHE *modules_outputs_sc;
+//for function
+STRING_CACHE **defines_for_function_sc;
+STRING_CACHE *functions_inputs_sc;
+STRING_CACHE *functions_outputs_sc;
 
 STRING_CACHE *module_names_to_idx;
 
@@ -51,10 +56,18 @@ int size_block_instantiations;
 
 ast_node_t **module_instantiations_instance;
 int size_module_instantiations;
+ast_node_t **module_variables_not_defined;
+int size_module_variables_not_defined;
+ast_node_t **function_instantiations_instance;
+int size_function_instantiations;
+ast_node_t **function_instantiations_instance_by_module;
+int size_function_instantiations_by_module;
 
 int num_modules;
 ast_node_t **ast_modules;
 
+int num_functions;
+ast_node_t **ast_functions;
 ast_node_t **all_file_items_list;
 int size_all_file_items_list;
 
@@ -225,12 +238,21 @@ void init_parser()
 
 	defines_for_module_sc = NULL;
 
+	defines_for_function_sc = NULL;
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
+	num_functions = 0;
 	ast_modules = NULL;
+	ast_functions = NULL;
 	module_names_to_idx = sc_new_string_cache();
 	module_instantiations_instance = NULL;
+	function_instantiations_instance = NULL;
+	module_variables_not_defined = NULL;
+	size_module_variables_not_defined = 0;
 	size_module_instantiations = 0;
+  	size_function_instantiations = 0;
+  	function_instantiations_instance_by_module = NULL;
+	size_function_instantiations_by_module = 0;
 	block_instantiations_instance = NULL;
 	size_block_instantiations = 0;
 
@@ -270,6 +292,8 @@ void init_parser_for_file()
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_new_string_cache();
 	modules_outputs_sc = sc_new_string_cache();
+	functions_inputs_sc = sc_new_string_cache();
+	functions_outputs_sc = sc_new_string_cache();
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -315,27 +339,33 @@ ast_node_t *newSymbolNode(char *id, int line_number)
 	long sc_spot;
 	ast_node_t *current_node;
 
-	if (id[0] == '`')
-	{
-		/* IF - this is a define replace with number constant */ 
-		/* def_reduct */
-
-		/* get the define symbol from the string cache */
-		if ((sc_spot = sc_lookup_string(defines_for_file_sc, (id+1))) == -1)
+	if(id != NULL) {
+		if (id[0] == '`')
 		{
-			error_message(PARSE_ERROR, line_number, current_parse_file, "Define \"%s\" used but not declared\n", id);
-		}
+			/* IF - this is a define replace with number constant */ 
+			/* def_reduct */
 
-		/* return the number node */
-		return (ast_node_t*)defines_for_file_sc->data[sc_spot];
+			/* get the define symbol from the string cache */
+			if ((sc_spot = sc_lookup_string(defines_for_file_sc, (id+1))) == -1)
+			{
+				error_message(PARSE_ERROR, line_number, current_parse_file, "Define \"%s\" used but not declared\n", id);
+			}
+
+			/* return the number node */
+			return (ast_node_t*)defines_for_file_sc->data[sc_spot];
+		}
+		else
+		{
+			/* create node */
+			current_node = create_tree_node_id(id, line_number, current_parse_file);
+		}
 	}
-	else
-	{
-		/* create node */
+	else {
 		current_node = create_tree_node_id(id, line_number, current_parse_file);
 	}
 
 	return current_node;
+
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -360,6 +390,17 @@ ast_node_t *newList(ids node_type, ast_node_t *child)
 	return new_node;
 }
 
+ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
+{
+    /* create a output node for this array reference that is going to be the first child */
+   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, yylineno, current_parse_file);    
+    /* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, output_node, child);
+    
+    return new_node;
+}
 /*---------------------------------------------------------------------------------------------
  * (function: newList_entry)
  *-------------------------------------------------------------------------------------------*/
@@ -376,7 +417,7 @@ ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
  * Basically this functions emulates verilog replication: {5{1'b0}} by concatenating that many
  * children together -- certainly not the most elegant solution, but was the easiest
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child )
+ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 {
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(CONCATENATE, yylineno, current_parse_file);
@@ -394,11 +435,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child )
 
 	return new_node;
 }
-
-/*---------------------------------------------------------------------------------------------
- * (function: markAndProcessSymbolListWith)
- *-------------------------------------------------------------------------------------------*/
-ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
+ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
 	int i;
 	long sc_spot;
@@ -408,195 +445,385 @@ ast_node_t *markAndProcessSymbolListWith(ids id, ast_node_t *symbol_list)
 	ast_node_t *range_max = 0;
 	ast_node_t *newNode = 0;
 
-	for (i = 0; i < symbol_list->num_children; i++)
+    for (i = 0; i < symbol_list->num_children; i++)
 	{
 		/* checks range is legal.  */
-		get_range(symbol_list->children[i]);
+		
+        get_range(symbol_list->children[i]);
 
-		if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
-						&& ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
-						&& ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
-		{
+        if(top_type == MODULE) {  
+
+		    if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
+						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
+						    && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
+		    {
 			/* Do lookup in sc_add_string */
 			/* Verify node->type.variables.is_parameter == TRUE */
 			/* If type is BINARY_OPERATION, Calculate it*/
-			/* ELSE REPORT ERROR */
-			if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
-			{
-				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
-				{
-					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-					if (newNode->types.variable.is_parameter == TRUE)
-					{
-						range_max = symbol_list->children[0]->children[1];
-						range_temp_max = newNode->types.number.value;
-					}
-					else
-						error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
-								"parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
-				}
-				else
-					error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
-								"parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
-			}
-			else if(symbol_list->children[0]->children[1]->type == NUMBERS)
-			{
-				range_max = symbol_list->children[0]->children[1];
-				range_temp_max = range_max->types.number.value;
-			}
-			else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
-			{
-				range_max = symbol_list->children[0]->children[1];
-				range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
-			}
+			/* ELSE REPORT ERROR */            
 
-			if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
-			{
-				if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
-				{
-					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-					if (newNode->types.variable.is_parameter == TRUE)
-					{
-						range_min = symbol_list->children[0]->children[2];
-						range_temp_min = newNode->types.number.value;
-					}
-					else
-						error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
-								"parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
-					}
-					else
-						error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
-								"parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
-				}
-				else if(symbol_list->children[0]->children[2]->type == NUMBERS)
-				{
-					range_min = symbol_list->children[0]->children[2];
-					range_temp_min = range_min->types.number.value;
-				}
-				else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
-				{
-					range_min = symbol_list->children[0]->children[2];
-					range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
-				}
+			    if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
+			    {
+				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[1]->types.identifier)) != -1)
+				    {
+					    newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+					    if (newNode->types.variable.is_parameter == TRUE)
+					    {
+						    range_max = symbol_list->children[0]->children[1];
+						    range_temp_max = newNode->types.number.value;
+					    }
+					    else
+						    error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								    "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+				    }
+				    else
+					    error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								    "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+			    }
+			    else if(symbol_list->children[0]->children[1]->type == NUMBERS)
+			    {
+				    range_max = symbol_list->children[0]->children[1];
+				    range_temp_max = range_max->types.number.value;
+			    }
+			    else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
+			    {
+				    range_max = symbol_list->children[0]->children[1];
+				    range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
+			    }
 
-			if(range_temp_min > range_temp_max)
-				error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
-			//ODIN doesn't support negative number in index now.
-			if(range_temp_min < 0 || range_temp_max < 0)
-				warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+			    if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
+			    {
+				    if ((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_list->children[0]->children[2]->types.identifier)) != -1)
+				    {
+					    newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
+					    if (newNode->types.variable.is_parameter == TRUE)
+					    {
+						    range_min = symbol_list->children[0]->children[2];
+						    range_temp_min = newNode->types.number.value;
+					    }
+					    else
+						    error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								    "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+					    }
+					    else
+						    error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								    "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+				    }
+				    else if(symbol_list->children[0]->children[2]->type == NUMBERS)
+				    {
+					    range_min = symbol_list->children[0]->children[2];
+					    range_temp_min = range_min->types.number.value;
+				    }
+				    else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
+				    {
+					    range_min = symbol_list->children[0]->children[2];
+					    range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
+				    }
 
-		}
+			    if(range_temp_min > range_temp_max)
+				    error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+			    //ODIN doesn't support negative number in index now.
+			    if(range_temp_min < 0 || range_temp_max < 0)
+				    warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
 
-		if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
-		{
-			symbol_list->children[i]->children[1] = range_max;
-			symbol_list->children[i]->children[2] = range_min;
-		}
+                }
 
-		switch(id)
-		{
-			case PORT:
-			{
-				short found_match = FALSE;
+		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
+		        {
+			        symbol_list->children[i]->children[1] = range_max;
+			        symbol_list->children[i]->children[2] = range_min;
+		        } 
 
-				symbol_list->children[i]->types.variable.is_port = TRUE;
+                switch(id)
+	            {
+		            case PORT:
+		            {
+			            short found_match = FALSE;
+
+			            symbol_list->children[i]->types.variable.is_port = TRUE;
+
+                        /* find the related INPUT or OUTPUT definition and store that instead */
+			            if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+			            {
+				            symbol_list->children[i]->types.variable.is_input = TRUE;
+				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+				            found_match = TRUE;
+			            }
+			            if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
+			            {
+				            symbol_list->children[i]->types.variable.is_output = TRUE;
+				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+				            found_match = TRUE;
+			            }
+
+			            if (found_match == FALSE)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+			            }
+			            break;
+		            }
+		            case PARAMETER:
+		            {
+			            int binary_range = -1;
+			            if (i == 0)
+			            {
+				            binary_range = get_range(symbol_list->children[i]);
+			            }
+			
+			            /* fifth spot in the children list holds a parameter value */
+			            if (binary_range != -1)
+			            {
+				            /* check that the parameter size matches the number included */
+				             if((symbol_list->children[i]->children[5]->types.number.size != 0) 
+					            && (symbol_list->children[i]->children[5]->types.number.base == BIN) 
+					            && (symbol_list->children[i]->children[5]->types.number.size != binary_range)) 
+				            {
+					            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+				            }
+				            else
+				            {
+					            symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range 
+				            }
+			            }
+
+			            /* create an entry in the symbol table for this parameter */
+			            if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules], symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n", 
+					            symbol_list->children[i]->children[0]->types.identifier, 
+					            ((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
+			            }
+			            symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
+			            defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
+			            /* mark the node as shared so we don't delete it */
+			            symbol_list->children[i]->children[5]->shared_node = TRUE;
+			            /* now do the mark */
+			            symbol_list->children[i]->types.variable.is_parameter = TRUE;
+			            break;
+		            }
+		            case INPUT:
+			            symbol_list->children[i]->types.variable.is_input = TRUE;
+			            /* add this input to the modules string cache */
+			            if ((sc_spot = sc_add_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+			            }
+			            /* store the data which is an idx here */
+			            modules_inputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
+			            break;
+		            case OUTPUT:
+			            symbol_list->children[i]->types.variable.is_output = TRUE;
+			            /* add this output to the modules string cache */
+			            if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+			            }
+			            /* store the data which is an idx here */
+			            modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
+			            break;
+		            case INOUT:
+			            symbol_list->children[i]->types.variable.is_inout = TRUE;
+			            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+			            break;
+		            case WIRE:
+			            symbol_list->children[i]->types.variable.is_wire = TRUE;
+			            break;
+		            case REG:
+			            symbol_list->children[i]->types.variable.is_reg = TRUE;
+			            break;
+		            case INTEGER:
+			            symbol_list->children[i]->types.variable.is_integer = TRUE;
+			            break;
+		            default:
+			            oassert(FALSE);
+	            }
+        }
+        else if(top_type == FUNCTION) {
+
+            if ((i == 0) && (symbol_list->children[0]->children[1] != NULL) && (symbol_list->children[0]->children[2] != NULL)
+						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
+						    && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
+		    {
+
+                if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
+			        {
+				        if ((sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_list->children[0]->children[1]->types.identifier)) != -1)
+				        {
+					        newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
+					        if (newNode->types.variable.is_parameter == TRUE)
+					        {
+						        range_max = symbol_list->children[0]->children[1];
+						        range_temp_max = newNode->types.number.value;
+					        }
+					        else
+						        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								        "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+				        }
+				        else
+					        error_message(PARSE_ERROR, symbol_list->children[0]->children[1]->line_number, current_parse_file,
+								        "parameter %s don't match\n", symbol_list->children[0]->children[1]->types.identifier);
+			        }
+			        else if(symbol_list->children[0]->children[1]->type == NUMBERS)
+			        {
+				        range_max = symbol_list->children[0]->children[1];
+				        range_temp_max = range_max->types.number.value;
+			        }
+			        else if(symbol_list->children[0]->children[1]->type == BINARY_OPERATION)
+			        {
+				        range_max = symbol_list->children[0]->children[1];
+				        range_temp_max = calculate_operation(symbol_list->children[0]->children[1]);
+			        }
+
+			        if (symbol_list->children[0]->children[2]->type == IDENTIFIERS)
+			        {
+				        if ((sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_list->children[0]->children[2]->types.identifier)) != -1)
+				        {
+					        newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
+					        if (newNode->types.variable.is_parameter == TRUE)
+					        {
+						        range_min = symbol_list->children[0]->children[2];
+						        range_temp_min = newNode->types.number.value;
+					        }
+					        else
+						        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								        "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+					        }
+					        else
+						        error_message(PARSE_ERROR, symbol_list->children[0]->children[2]->line_number, current_parse_file,
+								        "parameter %s don't match\n", symbol_list->children[0]->children[2]->types.identifier);
+				        }
+				        else if(symbol_list->children[0]->children[2]->type == NUMBERS)
+				        {
+					        range_min = symbol_list->children[0]->children[2];
+					        range_temp_min = range_min->types.number.value;
+				        }
+				        else if(symbol_list->children[0]->children[2]->type == BINARY_OPERATION)
+				        {
+					        range_min = symbol_list->children[0]->children[2];
+					        range_temp_min = calculate_operation(symbol_list->children[0]->children[2]);
+				        }
+
+			        if(range_temp_min > range_temp_max)
+				        error_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support arrays declared [m:n] where m is less than n.");
+			        //ODIN doesn't support negative number in index now.
+			        if(range_temp_min < 0 || range_temp_max < 0)
+				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
+
+                }
+
+		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
+		        {
+			        symbol_list->children[i]->children[1] = range_max;
+			        symbol_list->children[i]->children[2] = range_min;
+		        }
+
+                switch(id)
+		        {
+			        case PORT:
+			        {
+				        short found_match = FALSE;
+
+				        symbol_list->children[i]->types.variable.is_port = TRUE;
+
+                        /* find the related INPUT or OUTPUT definition and store that instead */
+				        if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				        {
+					        symbol_list->children[i]->types.variable.is_input = TRUE;
+					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+					        found_match = TRUE;
+				        }
+
+				        if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
+				        {
+                            symbol_list->children[i]->types.variable.is_output = TRUE;
+					        symbol_list->children[i]->children[0] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+					        found_match = TRUE;
+				        }
+
+				        if (found_match == FALSE)
+				        {
+					        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				        }
+				        break;
+			        }
+			        case PARAMETER:
+			        {
+				        int binary_range = -1;
+				        if (i == 0)
+				        {
+					        binary_range = get_range(symbol_list->children[i]);
+				        }
 				
-				/* find the related INPUT or OUTPUT definition and store that instead */
-				if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
-				{
-					symbol_list->children[i]->types.variable.is_input = TRUE;
-					symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
-					found_match = TRUE;
-				}
-				if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
-				{
-					symbol_list->children[i]->types.variable.is_output = TRUE;
-					symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
-					found_match = TRUE;
-				}
-				
-				if (found_match == FALSE)
-				{
-					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching input declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				}
-				break;
-			}
-			case PARAMETER:
-			{
-				int binary_range = -1;
-				if (i == 0)
-				{
-					binary_range = get_range(symbol_list->children[i]);
-				}
-				
-				/* fifth spot in the children list holds a parameter value */
-				if (binary_range != -1)
-				{
-					/* check that the parameter size matches the number included */
-					 if((symbol_list->children[i]->children[5]->types.number.size != 0) 
-						&& (symbol_list->children[i]->children[5]->types.number.base == BIN) 
-						&& (symbol_list->children[i]->children[5]->types.number.size != binary_range)) 
-					{
-						error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
-					}
-					else
-					{
-						symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range 
-					}
-				}
+				        /* fifth spot in the children list holds a parameter value */
+				        if (binary_range != -1)
+				        {
+					        /* check that the parameter size matches the number included */
+					         if((symbol_list->children[i]->children[5]->types.number.size != 0) 
+						        && (symbol_list->children[i]->children[5]->types.number.base == BIN) 
+						        && (symbol_list->children[i]->children[5]->types.number.size != binary_range)) 
+					        {
+						        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "parameter %s and range %d don't match\n", symbol_list->children[i]->children[0]->types.identifier, binary_range);
+					        }
+					        else
+					        {
+						        symbol_list->children[i]->children[5]->types.number.size = binary_range; // assign the binary range 
+					        }
+				        }
 
-				/* create an entry in the symbol table for this parameter */
-				if ((sc_spot = sc_add_string(defines_for_module_sc[num_modules], symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				{
-					error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n", 
-						symbol_list->children[i]->children[0]->types.identifier, 
-						((ast_node_t*)(defines_for_module_sc[num_modules]->data[sc_spot]))->line_number);
-				}
-				symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
-				defines_for_module_sc[num_modules]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
-				/* mark the node as shared so we don't delete it */
-				symbol_list->children[i]->children[5]->shared_node = TRUE;
-				/* now do the mark */
-				symbol_list->children[i]->types.variable.is_parameter = TRUE;
-				break;
-			}
-			case INPUT:
-				symbol_list->children[i]->types.variable.is_input = TRUE;
-				/* add this input to the modules string cache */
-				if ((sc_spot = sc_add_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				{
-					error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				}
-				/* store the data which is an idx here */
-				modules_inputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
-				break;
-			case OUTPUT:
-				symbol_list->children[i]->types.variable.is_output = TRUE;
-				/* add this output to the modules string cache */
-				if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
-				{
-					error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
-				}
-				/* store the data which is an idx here */
-				modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
-				break;
-			case INOUT:
-				symbol_list->children[i]->types.variable.is_inout = TRUE;
-				error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-				break;
-			case WIRE:
-				symbol_list->children[i]->types.variable.is_wire = TRUE;
-				break;
-			case REG:
-				symbol_list->children[i]->types.variable.is_reg = TRUE;
-				break;
-			case INTEGER:
-				symbol_list->children[i]->types.variable.is_integer = TRUE;
-				break;
-			default:
-				oassert(FALSE);
-		}
-	}
+				        /* create an entry in the symbol table for this parameter */
+				        if ((sc_spot = sc_add_string(defines_for_function_sc[num_functions], symbol_list->children[i]->children[0]->types.identifier)) == -1)
+				        {
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[5]->line_number, current_parse_file, "define has same name (%s).  Other define migh be in another file.  Odin considers a define as global.\n", 
+						        symbol_list->children[i]->children[0]->types.identifier, 
+						        ((ast_node_t*)(defines_for_function_sc[num_functions]->data[sc_spot]))->line_number);
+				        }
+				        symbol_list->children[i]->children[5]->types.variable.is_parameter = TRUE;
+				        defines_for_function_sc[num_functions]->data[sc_spot] = (void*)symbol_list->children[i]->children[5];
+				        /* mark the node as shared so we don't delete it */
+				        symbol_list->children[i]->children[5]->shared_node = TRUE;
+				        /* now do the mark */
+				        symbol_list->children[i]->types.variable.is_parameter = TRUE;
+				        break;
+			        }
+			        case INPUT:
+				        symbol_list->children[i]->types.variable.is_input = TRUE;
+				        /* add this input to the modules string cache */
+				        if ((sc_spot = sc_add_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+				        {
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				        }
+				        /* store the data which is an idx here */
+        		        functions_inputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
+				        break;
+			        case OUTPUT:
+                        symbol_list->children[i]->types.variable.is_output = TRUE;
+				        /* add this output to the modules string cache */
+				        if ((sc_spot = sc_add_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+				        {
+					        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				        }
+				        /* store the data which is an idx here */
+				        functions_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
+				        break;
+			        case INOUT:
+				        symbol_list->children[i]->types.variable.is_inout = TRUE;
+				        error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+				        break;
+			        case WIRE:
+				        symbol_list->children[i]->types.variable.is_wire = TRUE;
+				        break;
+			        case REG:
+				        symbol_list->children[i]->types.variable.is_reg = TRUE;
+				        break;
+			        case INTEGER:
+				        symbol_list->children[i]->types.variable.is_integer = TRUE;
+				        break;
+			        default:
+				        oassert(FALSE);
+                }
+        }
+
+    }
 
 	return symbol_list;
 }
@@ -739,6 +966,18 @@ ast_node_t *newDefaultCase(ast_node_t *statement, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newNonBlocking)
  *-------------------------------------------------------------------------------------------*/
+ast_node_t *newParallelConnection(ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(SPECIFY_PAL_CONNECTION_STATEMENT, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, expression1, expression2);
+
+	return new_node;
+}
+/*---------------------------------------------------------------------------------------------
+ * (function: newNonBlocking)
+ *-------------------------------------------------------------------------------------------*/
 ast_node_t *newNonBlocking(ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
 	/* create a node for this array reference */
@@ -750,6 +989,18 @@ ast_node_t *newNonBlocking(ast_node_t *expression1, ast_node_t *expression2, int
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: newInitial)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newInitial(ast_node_t *expression1, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(INITIALS, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 1, expression1);
+
+	return new_node;
+}
+/*---------------------------------------------------------------------------------------------
  * (function: newBlocking)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int line_number)
@@ -760,6 +1011,30 @@ ast_node_t *newBlocking(ast_node_t *expression1, ast_node_t *expression2, int li
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	return new_node;
+}
+/*---------------------------------------------------------------------------------------------
+ * (function: newBlocking)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	char *label;
+	ast_node_t *node;
+     
+    label = (char *)calloc(strlen(expression1->types.identifier)+10,sizeof(char));
+    
+	strcpy(label,expression1->types.identifier);
+
+	node = newSymbolNode(label,line_number);
+
+    expression2->children[1]->children[1]->children[0] = newModuleConnection(NULL,  node, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(BLOCKING_STATEMENT, line_number, current_parse_file);
+    
+    /* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, expression1, expression2);
+
+    return new_node;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -914,6 +1189,29 @@ ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect
 	return new_node;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: newModuleNamedInstance)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number)
+{
+    char *unique_name, *aux_name;
+    int char_qntd = 100;
+    
+    aux_name = (char *)calloc(char_qntd,sizeof(char));
+    unique_name = (char *)calloc(char_qntd,sizeof(char));
+    strcpy(unique_name,"function_instance_");
+    sprintf(aux_name,"%d",size_function_instantiations_by_module);
+    strcat(unique_name,aux_name);
+
+    ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
+    
+    /* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(FUNCTION_NAMED_INSTANCE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 3, symbol_node, module_connect_list, module_parameter_list);
+
+	return new_node;
+}
 /*-------------------------------------------------------------------------
  * (function: newHardBlockInstance)
  *-----------------------------------------------------------------------*/
@@ -939,6 +1237,10 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
+	int i;
+	/* create a node for this array reference */
+	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
+	for(i = 0; i < module_named_instance->num_children; i++){
 	#ifdef VPR6
 	if
 	(
@@ -947,12 +1249,12 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 		|| !strcmp(module_ref_name, "dual_port_ram")
 	)
 	{
-		return newHardBlockInstance(module_ref_name, module_named_instance, line_number);
+		return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
 	}
 	#endif
 
 	// make a unique module name based on its parameter list
-	ast_node_t *module_param_list = module_named_instance->children[2];
+    ast_node_t *module_param_list = module_named_instance->children[i]->children[2];        
 	char *module_param_name = make_module_param_name(module_param_list, module_ref_name);
 	ast_node_t *symbol_node = newSymbolNode(module_param_name, line_number);
 
@@ -979,12 +1281,51 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 2, symbol_node, module_named_instance);
+	    allocate_children_to_node(new_node, 2, symbol_node, module_named_instance->children[i]);
+        if(i == 0) allocate_children_to_node(new_master_node, 1, new_node);
+        else add_child_to_node(new_master_node,new_node);        
 
 	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
 	module_instantiations_instance = (ast_node_t **)realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
 	module_instantiations_instance[size_module_instantiations] = new_node;
 	size_module_instantiations++;
+
+    }
+    free(module_named_instance);
+	return new_master_node;
+}
+/*-------------------------------------------------------------------------
+ * (function: newModuleInstance)
+ *-----------------------------------------------------------------------*/
+ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_named_instance, int line_number)
+{
+	#ifdef VPR6
+	if
+	(
+		   sc_lookup_string(hard_block_names, function_ref_name) != -1
+		|| !strcmp(function_ref_name, "single_port_ram")
+		|| !strcmp(function_ref_name, "dual_port_ram")
+	)
+	{
+		return newHardBlockInstance(function_ref_name, function_named_instance, line_number);
+	}
+	#endif
+
+	// make a unique module name based on its parameter list
+	ast_node_t *function_param_list = function_named_instance->children[2];
+    
+	char *function_param_name = make_module_param_name(function_param_list, function_ref_name);
+	ast_node_t *symbol_node = newSymbolNode(function_param_name, line_number);
+
+    /* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(FUNCTION_INSTANCE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 2, symbol_node, function_named_instance);
+
+	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
+	function_instantiations_instance_by_module = (ast_node_t **)realloc(function_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_function_instantiations_by_module+1));
+	function_instantiations_instance_by_module[size_function_instantiations_by_module] = new_node;
+	size_function_instantiations_by_module++;
 
 	return new_node;
 }
@@ -1003,12 +1344,69 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 		symbol_node = newSymbolNode(gate_instance_name, line_number);
 	}
 
+	char *newChar;
+	newChar = (char *)calloc(strlen(expression1->types.identifier)+10,sizeof(char));
+	strcpy(newChar,expression1->types.identifier);
+	ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
+	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
+	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList);
+	if(size_module_variables_not_defined == 0){
+		module_variables_not_defined = (ast_node_t **)calloc(1, sizeof(ast_node_t*));
+	}
+	else{
+		module_variables_not_defined = (ast_node_t **)realloc(module_variables_not_defined, sizeof(ast_node_t*)*(size_module_variables_not_defined+1));
+	}
+	module_variables_not_defined[size_module_variables_not_defined] = newVarMaked;
+	size_module_variables_not_defined++;
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 4, symbol_node, expression1, expression2, expression3);
 
 	return new_node;
 }
 
+ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
+{
+    int i;
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
+
+	ast_node_t* symbol_node = NULL;
+
+	if (gate_instance_name != NULL)
+	{
+		symbol_node = newSymbolNode(gate_instance_name, line_number);
+	}
+
+    char *newChar;
+
+    newChar = (char *)calloc(strlen(expression1->types.identifier)+10,sizeof(char));
+
+    strcpy(newChar,expression1->types.identifier);
+
+    ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
+
+    ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
+
+    ast_node_t *newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList);
+
+    if(size_module_variables_not_defined == 0){
+       module_variables_not_defined = (ast_node_t **)calloc(1, sizeof(ast_node_t*));
+    }
+    else{
+       module_variables_not_defined = (ast_node_t **)realloc(module_variables_not_defined, sizeof(ast_node_t*)*(size_module_variables_not_defined+1));
+    }
+
+    module_variables_not_defined[size_module_variables_not_defined] = newVarMarked;
+
+    size_module_variables_not_defined++;
+
+    allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
+
+    /* allocate n children nodes to this node */
+    for(i = 1; i < expression3->num_children; i++) add_child_to_node(new_node, expression3->children[i]);    
+
+    return new_node;
+}
 /*---------------------------------------------------------------------------------------------
  * (function: newGate)
  *-------------------------------------------------------------------------------------------*/
@@ -1024,18 +1422,7 @@ ast_node_t *newGate(operation_list op_id, ast_node_t *gate_instance, int line_nu
 	return new_node;
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: newAssign)
- *-------------------------------------------------------------------------------------------*/
-ast_node_t *newAssign(ast_node_t *statement, int line_number)
-{
-	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(ASSIGN, line_number, current_parse_file);
-	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, 1, statement);
 
-	return new_node;
-}
 
 /*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare)
@@ -1053,19 +1440,47 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 	return new_node;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: newIntegerTypeVarDeclare)
+ *-------------------------------------------------------------------------------------------*/
+
+ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
+{
+
+    char *number_0 = (char*)malloc(5 * sizeof(char));
+    strcpy(number_0,"0");
+
+    char *number_31 = (char*)malloc(5 * sizeof(char));
+    strcpy(number_31,"31");    
+
+	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
+
+    ast_node_t *number_node_with_value_31 = newNumberNode(number_31, line_number);
+
+    ast_node_t *number_node_with_value_0 = newNumberNode(number_0, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 6, symbol_node, number_node_with_value_31, number_node_with_value_0, expression3, expression4, value);
+
+	return new_node;
+}
 /*-----------------------------------------
  * ----------------------------------------------------
  * (function: newModule)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
+	int i, j, k;
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);
 	/* mark all the ports symbols as ports */
-	markAndProcessSymbolListWith(PORT, list_of_ports);
+	markAndProcessSymbolListWith(MODULE, PORT, list_of_ports);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
 
@@ -1075,9 +1490,24 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	new_node->types.module.is_instantiated = FALSE;
 	new_node->types.module.index = num_modules;
 
+	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
+	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
+	new_node->types.function.is_instantiated = FALSE;
+	new_node->types.function.index = num_functions;
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
+	for(i = 0; i < size_module_variables_not_defined; i++){
+		short variable_found = FALSE;
+		for(j = 0; j < list_of_module_items->num_children && variable_found == FALSE; j++){
+		if(list_of_module_items->children[j]->type == VAR_DECLARE_LIST){
+			for(k = 0; k < list_of_module_items->children[j]->num_children; k++){
+				if(strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier,module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0) variable_found = TRUE;
+				}
+			}
+		}
+		if(!variable_found) add_child_at_the_beginning_of_the_node(list_of_module_items, module_variables_not_defined[i]);
+	}
 
 	if ((sc_spot = sc_add_string(module_names_to_idx, module_name)) == -1)
 	{
@@ -1092,12 +1522,120 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	return new_node;
 }
 
+/*-----------------------------------------
+ * ----------------------------------------------------
+ * (function: newFunction)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number) //function and module declaration work the same way (Lucas Cambuim)
+{
+
+	int i,j;
+	long sc_spot;
+	char *function_name;
+	char *label;
+	ast_node_t *var_node;
+	ast_node_t *symbol_node, *output_node;
+
+
+	function_name = (char *)calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
+	strcpy(function_name,list_of_ports->children[0]->children[0]->types.identifier);
+
+	label = (char *)calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
+
+	strcpy(label,list_of_ports->children[0]->children[0]->types.identifier);
+
+	list_of_ports->children[0]->children[0]->types.identifier = label;
+
+	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0]);
+
+	markAndProcessSymbolListWith(FUNCTION, OUTPUT, output_node);
+
+	add_child_at_the_beginning_of_the_node(list_of_module_items, output_node);
+
+	label = (char *)calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
+
+	strcpy(label,list_of_ports->children[0]->children[0]->types.identifier);
+
+	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+
+	list_of_ports->children[0] = var_node;
+    
+
+	for(i = 0; i < list_of_module_items->num_children; i++) {
+		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST){
+			for(j = 0; j < list_of_module_items->children[i]->num_children; j++) {
+				if(list_of_module_items->children[i]->children[j]->types.variable.is_input){
+                    label = (char *)calloc(strlen(list_of_module_items->children[i]->children[j]->children[0]->types.identifier)+10,sizeof(char));
+                    strcpy(label,list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+					newList_entry(list_of_ports,var_node);
+				}
+			}
+		}
+	}		
+
+	symbol_node = newSymbolNode(function_name, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(FUNCTION, line_number, current_parse_file);
+	/* mark all the ports symbols as ports */
+	
+	markAndProcessSymbolListWith(FUNCTION, PORT, list_of_ports);
+	
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 3, symbol_node, list_of_ports, list_of_module_items);
+
+	/* store the list of modules this module instantiates */
+	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
+	new_node->types.function.size_function_instantiations = size_function_instantiations;
+	new_node->types.function.is_instantiated = FALSE;
+	
+	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
+	ast_modules = (ast_node_t **)realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
+	ast_modules[num_modules] = new_node;
+
+	if ((sc_spot = sc_add_string(module_names_to_idx, function_name)) == -1)
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", function_name);
+	}
+	/* store the data which is an idx here */
+	module_names_to_idx->data[sc_spot] = (void*)new_node;
+
+	/* now that we've bottom up built the parse tree for this module, go to the next module */
+	next_function();    
+
+	return new_node;
+}
+/*---------------------------------------------------------------------------------------------
+ * (function: next_function)
+ *-------------------------------------------------------------------------------------------*/
+void next_function()
+{
+	num_functions++;
+    //num_modules++;
+
+	/* define the string cache for the next function */
+	defines_for_function_sc = (STRING_CACHE**)realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
+	defines_for_function_sc[num_functions] = sc_new_string_cache();
+
+	/* create a new list for the instantiations list */
+	function_instantiations_instance = NULL;
+	size_function_instantiations = 0;
+
+	/* old ones are done so clean */
+	sc_free_string_cache(functions_inputs_sc);
+	sc_free_string_cache(functions_outputs_sc);
+	/* make for next function */
+	functions_inputs_sc = sc_new_string_cache();
+	functions_outputs_sc = sc_new_string_cache();
+}
 /*---------------------------------------------------------------------------------------------
  * (function: next_module)
  *-------------------------------------------------------------------------------------------*/
 void next_module()
 {
 	num_modules ++;
+    num_functions = 0;
 
 	/* define the string cache for the next module */
 	defines_for_module_sc = (STRING_CACHE**)realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
@@ -1107,6 +1645,11 @@ void next_module()
 	module_instantiations_instance = NULL;
 	size_module_instantiations = 0;
 
+	function_instantiations_instance_by_module = NULL;
+	size_function_instantiations_by_module = 0;
+
+	module_variables_not_defined = NULL;
+	size_module_variables_not_defined = 0;
 	/* old ones are done so clean */
 	sc_free_string_cache(modules_inputs_sc);
 	sc_free_string_cache(modules_outputs_sc);

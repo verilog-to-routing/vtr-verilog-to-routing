@@ -42,6 +42,7 @@ typedef struct global_args_t_t global_args_t;
 typedef struct global_args_read_blif_t_t global_args_read_blif_t;
 
 typedef struct ast_node_t_t ast_node_t;
+typedef struct typ_t typ;
 typedef struct info_ast_visit_t_t info_ast_visit_t;
 
 typedef struct sim_state_t_t sim_state_t;
@@ -255,15 +256,21 @@ typedef enum
 	REG,
 	INTEGER,
 	PARAMETER,
+	INITIALS,
 	PORT,
 	/* OTHER MODULE ITEMS */
 	MODULE_ITEMS, 
 	VAR_DECLARE,
 	VAR_DECLARE_LIST,
 	ASSIGN,
+   	/* OTHER MODULE AND FUNCTION ITEMS */    
+	FUNCTION,
+   	/* OTHER FUNCTION ITEMS */
+  	FUNCTION_ITEMS,     
 	/* primitives */
 	GATE,
 	GATE_INSTANCE,
+	ONE_GATE_INSTANCE,
 	/* Module instances */
 	MODULE_CONNECT_LIST,
 	MODULE_CONNECT,
@@ -271,10 +278,18 @@ typedef enum
 	MODULE_PARAMETER,
 	MODULE_NAMED_INSTANCE,
 	MODULE_INSTANCE,
+	MODULE_MASTER_INSTANCE,
+	ONE_MODULE_INSTANCE,
+	/* Function instances*/
+	FUNCTION_NAMED_INSTANCE,
+	FUNCTION_INSTANCE,     
+	SPECIFY_PAL_CONNECTION_STATEMENT,
+	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */
 	BLOCK, 
 	NON_BLOCKING_STATEMENT,
 	BLOCKING_STATEMENT,
+	ASSIGNING_LIST,
 	CASE,
 	CASE_LIST,
 	CASE_ITEM,
@@ -307,54 +322,67 @@ typedef enum
 	RAM
 } ids;
 
+struct typ_t
+{
+	char *identifier;
+    
+	struct
+	{
+		short base;
+		int size;
+		int binary_size;
+		char *binary_string;
+		char *number;
+		long long value;
+		short is_full; //'bx means all of the wire get 'x'(dont care)
+	} number;
+	struct
+	{
+		operation_list op;
+	} operation;
+	struct
+	{
+		short is_parameter;
+		short is_port;
+		short is_input;
+		short is_output;
+		short is_inout;
+		short is_wire;
+		short is_reg;
+		short is_integer;
+		short is_initialized; // should the variable be initialized with some value?
+		long long initial_value;
+	} variable;
+	struct
+	{
+		short is_instantiated;
+		ast_node_t **module_instantiations_instance;
+		int size_module_instantiations;
+		int index;
+	} module;
+	struct
+	{
+		short is_instantiated;
+		ast_node_t **function_instantiations_instance;
+		int size_function_instantiations;
+		int index;		
+	} function;
+	struct
+	{
+		int num_bit_strings;
+		char **bit_strings;
+	} concat;
+    
+};
+
+
 struct ast_node_t_t
 {
 	int unique_count;
 	int far_tag;
 	int high_number;
 	ids type;
-	union
-	{
-		char *identifier;
-		struct
-		{
-			short base;
-			int size;
-			int binary_size;
-			char *binary_string;
-			char *number;
-			long long value;
-		} number;
-		struct
-		{
-			operation_list op;
-		} operation;
-		struct
-		{
-			short is_parameter;
-			short is_port;
-			short is_input;
-			short is_output;
-			short is_inout;
-			short is_wire;
-			short is_reg;
-			short is_integer;
-			short is_initialized; // should the variable be initialized with some value?
-			long long initial_value;
-		} variable;
-		struct
-		{
-			short is_instantiated;
-			ast_node_t **module_instantiations_instance;
-			int size_module_instantiations;
-			int index;
-		} module;
-		struct
-		{
-			int num_bit_strings;
-			char **bit_strings;
-		} concat;
-	} types;
+	typ types;
 
 	ast_node_t **children;
 	int num_children;

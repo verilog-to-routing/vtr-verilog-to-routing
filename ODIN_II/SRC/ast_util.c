@@ -256,11 +256,17 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 		}
 
 		/* check if the size matches the design specified size */
-		temp_string = strdup(number); 
-		temp_string[index_string_pointer] = '\0';
-		/* size is the rest of the string */
-		new_node->types.number.size = atoi(temp_string); 
-		free(temp_string);
+		if(index_string_pointer > 0){
+			temp_string = strdup(number); 
+			temp_string[index_string_pointer] = '\0';
+			/* size is the rest of the string */
+			new_node->types.number.is_full = 0;
+			new_node->types.number.size = atoi(temp_string); 
+		}
+		else{
+			new_node->types.number.is_full = 1;
+			new_node->types.number.size = 1;
+		}          
 	
 		/* move to the digits */
 		string_pointer += 2;
@@ -296,10 +302,15 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 			new_node->types.number.binary_string = convert_long_long_to_bit_string(new_node->types.number.value, new_node->types.number.binary_size);
 			break;
 		case(HEX):
-			new_node->types.number.binary_size *= 4;
-			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,16); // This will have limited width.
-			// This will have full width.
-			new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(new_node->types.number.number, new_node->types.number.binary_size);
+			if(!is_dont_care_string(new_node->types.number.number)){
+				new_node->types.number.binary_size *= 4;
+				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,16); // This will have limited width.
+				// This will have full width.
+				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(0, new_node->types.number.number, new_node->types.number.binary_size);
+			}
+			else{
+				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
+			}
 			break;
 		case(OCT):
 			new_node->types.number.binary_size *= 3;
@@ -308,14 +319,20 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 			new_node->types.number.binary_string = convert_oct_string_of_size_to_bit_string(new_node->types.number.number, new_node->types.number.binary_size);
 			break;
 		case(BIN):
-			// This will have limited width.
-			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
-			// This will have full width.
-			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(new_node->types.number.number,  new_node->types.number.binary_size);
-			break;
-	}
+		{
+			if(new_node->types.number.is_full == 0){
+				// This will have limited width.
+				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
+				// This will have full width.
+		
+			}
+			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
+		}
+		break;
+		}
 
 	return new_node;
+
 }
 
 /*---------------------------------------------------------------------------
@@ -354,6 +371,34 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child)
 	node->children[node->num_children-1] = child;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: add_child_to_node)
+ *-------------------------------------------------------------------------------------------*/
+void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child) 
+{
+    int i;
+    ast_node_t *ref, *ref1;
+	/* Handle case where we have an empty statement. */
+	if (child == NULL)
+		return;
+
+
+
+	/* allocate space for the children */
+	node->children = (ast_node_t**)realloc(node->children, sizeof(ast_node_t*)*(node->num_children+1));
+    node->num_children ++;
+
+    ref = node->children[0];
+
+    for(i = 1; i < node->num_children; i++){
+        ref1 = node->children[i];         
+        node->children[i] = ref;
+        ref = ref1;
+    }
+
+    node->children[0] = child;
+		
+}
 /*---------------------------------------------------------------------------------------------
  * (function: get_range)
  *  Check the node range is legal. Will return the range if it's legal.
@@ -411,12 +456,9 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		{
 			char *temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->children[i]->types.identifier, -1);
 			long sc_spot;
-
-			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
-			{
-				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s (in make_concat_into_list_of_strings)\n", temp_string);
-			}
-			free(temp_string);
+			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) != -1)
+			{				
+				free(temp_string);
 
 			if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
 			{
@@ -442,7 +484,10 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			{
 				oassert(FALSE);	
 			}
-	
+			}
+			else {
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missssing declaration of this symbol %s\n", temp_string);						
+			}
 		}
 		else if (concat_top->children[i]->type == ARRAY_REF)
 		{
@@ -561,10 +606,12 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 		long sc_spot;
 		int pin_index;
 
-		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) == -1)
+		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) > -1)
 		{
+		}
+		else {
 			pin_index = 0;
-			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s (in get_name_of_pin_at_bit)\n", var_node->types.identifier);
+			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
 		}
 
 		if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
@@ -650,6 +697,7 @@ char **get_name_of_pins_number(ast_node_t *var_node, int start, int width)
 			{
 			case '1': return_string[i] = strdup("ONE_VCC_CNS"); break;
 			case '0': return_string[i] = strdup("ZERO_GND_ZERO"); break;
+			case 'x': return_string[i] = strdup("ZERO_GND_ZERO"); break; 
 			default: error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.number.binary_string);
 			}
 		}
@@ -715,13 +763,18 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		{
 			char *temp_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
 
-			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
+            if ((sc_spot = sc_lookup_string(function_local_symbol_table_sc, temp_string)) > -1)
 			{
-				error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s (in get_name_of_pins) \n", temp_string);
+                sym_node = (ast_node_t*)function_local_symbol_table_sc->data[sc_spot];
 			}
+		    else if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
+			{
+                sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
+			}
+            else {
+                error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
+            }
 			free(temp_string);
-
-			sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
 
 			if (sym_node->children[1] == NULL)
 			{

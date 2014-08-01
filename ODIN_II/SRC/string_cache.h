@@ -42,6 +42,6 @@ long sc_add_string(STRING_CACHE *sc, const char *string);
 int sc_valid_id(STRING_CACHE *sc, long string_id);
 void * sc_do_alloc(long, long);
 /* free the cache */
-void sc_free_string_cache(STRING_CACHE *sc);
+STRING_CACHE * sc_free_string_cache(STRING_CACHE *sc);
 
 #endif

@@ -23,8 +23,9 @@ extern STRING_CACHE *module_names_to_idx;
 extern STRING_CACHE *output_nets_sc;
 extern STRING_CACHE *input_nets_sc;
 extern STRING_CACHE *local_symbol_table_sc;
-extern STRING_CACHE *global_param_table_sc;
+extern STRING_CACHE *global_param_table_sc; 
 
+extern STRING_CACHE *function_local_symbol_table_sc;
 extern netlist_t *verilog_netlist;
 
 extern ast_node_t *top_module;

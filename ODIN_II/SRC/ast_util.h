@@ -11,6 +11,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 
 void allocate_children_to_node(ast_node_t* node, int num_children, ...);
 void add_child_to_node(ast_node_t* node, ast_node_t *child);
+void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);  
 
 int get_range(ast_node_t* first_node);
 

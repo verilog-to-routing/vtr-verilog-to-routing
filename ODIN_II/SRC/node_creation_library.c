@@ -213,6 +213,32 @@ nnode_t *make_2port_gate(operation_list type, int width_port1, int width_port2, 
 	return logic_node;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: make_nport_logic_gates)
+ * 	Make a n port gate with variable sizes.  The first port will be input_pins index 0..width_port1.
+ *-------------------------------------------------------------------------------------------*/
+nnode_t *make_nport_gate(operation_list type, int port_sizes, int width, int width_output, nnode_t *node, short mark)
+{
+    int i;
+	nnode_t *logic_node = allocate_nnode();
+	logic_node->traverse_visited = mark;
+	logic_node->type = type;
+	logic_node->name = node_name(logic_node, node->name);
+	logic_node->related_ast_node = node->related_ast_node;
+
+	/* add the input ports as needed */
+    for(i = 0; i < port_sizes; i++) {
+    	allocate_more_input_pins(logic_node, width);
+	    add_input_port_information(logic_node, width);
+    }
+	//allocate_more_input_pins(logic_node, width_port2);
+	//add_input_port_information(logic_node, width_port2);
+	/* add output */
+	allocate_more_output_pins(logic_node, width_output);
+	add_output_port_information(logic_node, width_output);
+
+	return logic_node;
+}
 /* string conversions */
 const char *MULTI_PORT_MUX_string = "MULTI_PORT_MUX";
 const char *FF_NODE_string = "FF_NODE"; 

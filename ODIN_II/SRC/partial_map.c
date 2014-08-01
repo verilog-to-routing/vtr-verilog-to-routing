@@ -160,7 +160,7 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 		case BITWISE_NOR:
 		case BITWISE_XNOR:
 		case BITWISE_XOR:
-			if (node->num_input_port_sizes == 2)
+			if (node->num_input_port_sizes >= 2)
 			{
 				instantiate_bitwise_logic(node, node->type, traverse_number, netlist);
 			}
@@ -575,20 +575,22 @@ void instantiate_bitwise_reduction(nnode_t *node, operation_list op, short mark,
 void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, netlist_t *netlist)
 {
 	int width;
-	int i;
+	int i, j, k;
 	int port_B_offset;
-	int width_a;
-	int width_b;
+        int lenght_is_larger_others;
+	int *port_width;
 	nnode_t **new_logic_cells;
 	operation_list cell_op;
 
 	oassert(node->num_input_pins > 0);
-	oassert(node->num_input_port_sizes == 2);
+	oassert(node->num_input_port_sizes >= 2);
+	port_width = (int *)calloc(node->num_input_port_sizes,sizeof(int));
 	/* setup the calculations for padding and indexing */
 	width = node->output_port_sizes[0];
-	width_a = node->input_port_sizes[0];
-	width_b = node->input_port_sizes[1];
-	port_B_offset = width_a;
+	for(i = 0; i < node->num_input_port_sizes; i++){   
+		port_width[i] = node->input_port_sizes[i];  
+	}
+	port_B_offset = port_width[0];
 
 	switch (op)
 	{
@@ -619,41 +621,32 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 	for (i = 0; i < width; i++)
 	{
 		/* instantiate the cells */
-		new_logic_cells[i] = make_2port_gate(cell_op, 1, 1, 1, node, mark);
+		new_logic_cells[i] = make_nport_gate(cell_op, node->num_input_port_sizes, 1, 1, node, mark);
 	}
 
 	/* connect inputs.  In the case that a signal is smaller than the other then zero pad */
 	for(i = 0; i < width; i++)
 	{
 		/* Joining the inputs to the input 1 of that gate */
-		if (i < width_a)
-		{
-			if (i < width_b)
-			{
-				/* IF - this current input will also have a corresponding b_port input then join it to the gate */
-				remap_pin_to_new_node(node->input_pins[i], new_logic_cells[i], 0);
-			}
-			else
-			{
-				/* ELSE - the B input does not exist, so this answer goes right through */
-				add_input_pin_to_node(new_logic_cells[i], get_zero_pin(netlist), 0);
-			}
+		for(j = 0; j < node->num_input_port_sizes; j++){
+			if(i < port_width[j]){
+			lenght_is_larger_others = 0;
+			for(k = 0; k < node->num_input_port_sizes && lenght_is_larger_others == 0; k++){
+			if(k == j){
+				if(i >= port_width[k]) { 
+				lenght_is_larger_others = 1;
+				}
+	                   }
 		}
-
-		if (i < width_b)
-		{
-			if (i < width_a)
-			{
-				/* IF - this current input will also have a corresponding a_port input then join it to the gate */
-				/* Joining the inputs to the input 2 of that gate */
-				remap_pin_to_new_node(node->input_pins[i+port_B_offset], new_logic_cells[i], 1);
-			}
-			else
-			{
-				/* ELSE - the A input does not exist, so this answer goes right through */
-				add_input_pin_to_node(new_logic_cells[i], get_zero_pin(netlist), 1);
-			}
-		}
+		if(lenght_is_larger_others == 0){ 
+		/* IF - this current input will also have a corresponding other input ports then join it to the gate */
+			remap_pin_to_new_node(node->input_pins[i+port_B_offset*j], new_logic_cells[i], j);             }
+		else {
+		/* ELSE - the input does not exist, so this answer goes right through */
+			add_input_pin_to_node(new_logic_cells[i], get_zero_pin(netlist), j); 
+                }
+            }      
+        }       
 
 		remap_pin_to_new_node(node->output_pins[i], new_logic_cells[i], 0);
 	}

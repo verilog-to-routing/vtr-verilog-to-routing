@@ -143,7 +143,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 {
 	if (radix == 16)
 	{
-		return convert_hex_string_of_size_to_bit_string(string, binary_size);
+		return convert_hex_string_of_size_to_bit_string(0, string, binary_size);
 	}
 	else if (radix == 10)
 	{
@@ -156,7 +156,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 	}
 	else if (radix == 2)
 	{
-		return convert_binary_string_of_size_to_bit_string(string, binary_size);
+		return convert_binary_string_of_size_to_bit_string(0, string, binary_size);
 	}
 	else
 	{
@@ -238,8 +238,9 @@ int is_string_of_radix(char *string, int radix)
  * Parses the given little endian hex string into a little endian bit string padded or truncated to
  * binary_size bits. Throws an error if there are non-hex characters in the input string.
  */
-char *convert_hex_string_of_size_to_bit_string(char *orig_string, int binary_size)
+char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size)
 {
+    if(is_dont_care_number == 0){
 	if (!is_hex_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
 
@@ -285,6 +286,55 @@ char *convert_hex_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	char *return_string = strdup(bit_string);
 	free(bit_string);
 	return return_string;
+    }
+    else if(is_dont_care_number == 1){
+       char *string = strdup(orig_string); 
+       int   size       = strlen(string); 
+       char *bit_string = (char *)calloc(1,sizeof(char));
+       int count = 0;
+       int i;
+       for (i = 0; i < size; i++)
+	   {
+		    //char temp[] = {string[i],'\0'};
+
+		    //unsigned long value = strtoul(temp, NULL, 16);
+		    int k;
+		    for (k = 0; k < 4; k++)
+		    {
+			    //char bit = value % 2;
+			    //value /= 2;
+			    bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			    bit_string[count++] = string[i];
+			    bit_string[count]   = '\0';
+		    }
+	    }
+
+        free(string);
+
+        while (count < binary_size)
+	    {
+		    bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		    bit_string[count++] = '0';
+		    bit_string[count]   = '\0';
+	    }
+
+        bit_string[binary_size] = '\0';
+
+        reverse_string(bit_string, binary_size);
+
+        char *return_string = strdup(bit_string);
+	    free(bit_string);
+
+        
+
+       // printf("bit_string %s",bit_string);
+       // getchar();
+
+        //printf("return_string %s", return_string);
+        //getchar();
+        return return_string;
+	    
+    }
 }
 
 /*
@@ -344,9 +394,9 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
  * Parses the given little endian bit string into a bit string padded or truncated to
  * binary_size bits.
  */
-char *convert_binary_string_of_size_to_bit_string(char *orig_string, int binary_size)
+char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size)
 {
-	if (!is_binary_string(orig_string))
+	if (!is_binary_string(orig_string) && !is_dont_care_number)
 		error_message(PARSE_ERROR, -1, -1, "Invalid binary number: %s.\n", orig_string);
 
 	int   count      = strlen(orig_string);
@@ -389,6 +439,19 @@ int is_hex_string(char *string)
 	return TRUE;
 }
 
+/*
+ * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ */
+int is_dont_care_string(char *string)
+{
+	int i;
+	for (i = 0; i < strlen(string); i++)
+        if(string[i] != 'x') return FALSE;
+		//if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
+		//	return FALSE;
+
+	return TRUE;
+}
 /*
  * Returns TRUE if the string contains only '0' to '9'
  */
