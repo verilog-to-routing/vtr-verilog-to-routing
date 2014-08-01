@@ -240,6 +240,7 @@ int is_string_of_radix(char *string, int radix)
  */
 char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size)
 {
+    char *return_string;
     if(is_dont_care_number == 0){
 	if (!is_hex_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
@@ -283,9 +284,9 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	// Change to little endian
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
-	char *return_string = strdup(bit_string);
+	return_string = strdup(bit_string);
 	free(bit_string);
-	return return_string;
+	
     }
     else if(is_dont_care_number == 1){
        char *string = strdup(orig_string); 
@@ -322,7 +323,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 
         reverse_string(bit_string, binary_size);
 
-        char *return_string = strdup(bit_string);
+        return_string = strdup(bit_string);
 	    free(bit_string);
 
         
@@ -332,9 +333,11 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 
         //printf("return_string %s", return_string);
         //getchar();
-        return return_string;
+        //return return_string;
 	    
     }
+    
+    return return_string;
 }
 
 /*
@@ -444,7 +447,7 @@ int is_hex_string(char *string)
  */
 int is_dont_care_string(char *string)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < strlen(string); i++)
         if(string[i] != 'x') return FALSE;
 		//if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))

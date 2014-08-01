@@ -611,7 +611,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix)
 {
 	/* with the top module we need to visit the entire ast tree */
-	int i, j;
+	int i;
 	short *child_skip_list = NULL; // list of children not to traverse into
 	short skip_children = FALSE; // skips the DFS completely if TRUE 
 	signal_list_t *return_sig_list = NULL;
@@ -3198,7 +3198,6 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 	signal_list_t *memory_inputs = init_signal_list();
 	char *ref_string;
-	int ref_type;
 	int i, j, dependence_variable_position;
 	for (i = 0; i < assignment->count; i++)
 	{

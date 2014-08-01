@@ -346,7 +346,7 @@ list_of_specify_statement: list_of_specify_statement specify_statement    {$$ = 
 	| specify_statement							                          {$$ = newList(SPECIFY_PAL_CONNECT_LIST, $1);}
     ;
 specify_statement: 								    
-	| '(' parallel_connection ')' '=' primary ';'						  {$$ = newParallelConnection($2, $5, yylineno);}	
+     '(' parallel_connection ')' '=' primary ';'						  {$$ = newParallelConnection($2, $5, yylineno);}	
 	;
 blocking_assignment: primary '=' expression 					{$$ = newBlocking($1, $3, yylineno);}
 	| primary '=' vDELAY_ID expression					{$$ = newBlocking($1, $4, yylineno);}
