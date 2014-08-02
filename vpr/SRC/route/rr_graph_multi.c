@@ -35,7 +35,6 @@ static CutPatternType s_pattern_type = CHUNK_CUT_WITHOUT_ROTATION;
 // not including the rr_node ID will allow you to compare sorted versions of the rr_graph between different runs
 bool include_rr_node_IDs_in_rr_graph_dump = false;
 
-bool allow_bidir_interposer_wires = false;
 
 /* ---------------------------------------------------------------------------
  * 				Helper data structures

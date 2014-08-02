@@ -95,6 +95,7 @@ struct s_options {
 	boolean transfer_interposer_fanouts;
 	boolean allow_additional_interposer_fanouts;
 	int  pct_of_chany_wires_an_interposer_node_can_drive;
+	boolean allow_bidir_interposer_wires;
 #endif
 
 	/* Timing-driven router options only */

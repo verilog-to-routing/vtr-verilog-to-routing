@@ -122,4 +122,5 @@ bool transfer_interposer_fanouts = false;
 bool allow_additional_interposer_fanouts = false;
 int  pct_of_chany_wires_an_interposer_node_can_drive= 0;
 int* arch_cut_locations = 0;
+bool allow_bidir_interposer_wires = false;
 #endif

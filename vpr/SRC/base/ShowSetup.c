@@ -47,6 +47,7 @@ void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	vpr_printf_info("transfer_interposer_fanouts: %s\n", transfer_interposer_fanouts? "YES":"NO");
 	vpr_printf_info("allow_additional_interposer_fanouts: %s\n", allow_additional_interposer_fanouts? "YES":"NO");
 	vpr_printf_info("pct_of_chany_wires_an_interposer_node_can_drive: %d\n\n", pct_of_chany_wires_an_interposer_node_can_drive);
+	vpr_printf_info("allow_bidir_interposer_wires: %s\n\n", allow_bidir_interposer_wires? "YES":"NO");
 #endif
 
 	if (vpr_setup.PackerOpts.doPacking) {

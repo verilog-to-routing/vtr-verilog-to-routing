@@ -218,6 +218,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	transfer_interposer_fanouts = Options->transfer_interposer_fanouts? true: false;
 	allow_additional_interposer_fanouts = Options->allow_additional_interposer_fanouts? true: false;
 	pct_of_chany_wires_an_interposer_node_can_drive = Options->pct_of_chany_wires_an_interposer_node_can_drive;
+	allow_bidir_interposer_wires = Options->allow_bidir_interposer_wires? true: false;
 #endif
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);

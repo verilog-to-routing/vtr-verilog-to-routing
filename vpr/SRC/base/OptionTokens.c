@@ -92,6 +92,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "allow_additional_fanout", OT_ALLOW_ADDITIONAL_FANOUT },
 		{ "pct_interp_to_drive", OT_PCT_INTERP_TO_DRIVE },
 		{ "pct_interp_to_be_driven_by", OT_PCT_INTERP_TO_BE_DRIVEN_BY },
+		{ "allow_bidir_interposer_wires", OT_ALLOW_BIDIR_INTERP_WIRES },
 #endif
 
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */

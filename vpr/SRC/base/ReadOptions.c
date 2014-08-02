@@ -504,6 +504,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadInt(Args, &Options->pct_of_interposer_nodes_each_chany_can_drive);
 	case OT_PCT_INTERP_TO_BE_DRIVEN_BY:
 		return ReadInt(Args, &Options->pct_of_chany_wires_an_interposer_node_can_drive);
+	case OT_ALLOW_BIDIR_INTERP_WIRES:
+		return ReadOnOff(Args, &Options->allow_bidir_interposer_wires);
 #endif
 
 		/* Power options */

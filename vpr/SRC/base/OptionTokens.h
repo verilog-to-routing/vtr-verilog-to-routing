@@ -92,6 +92,7 @@ enum e_OptionBaseToken {
 	OT_ALLOW_ADDITIONAL_FANOUT,
 	OT_PCT_INTERP_TO_DRIVE,
 	OT_PCT_INTERP_TO_BE_DRIVEN_BY,
+	OT_ALLOW_BIDIR_INTERP_WIRES,
 #endif
 
 	OT_BASE_UNKNOWN /* Must be last since used for counting enum items */
