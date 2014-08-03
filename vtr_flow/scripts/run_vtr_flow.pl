@@ -23,6 +23,8 @@
 #
 #   -percent_wires_cut <int>
 #   
+#   -astar_fac <float>
+#
 #   -cuts <int>: num_cuts
 #
 #   -delay <int>: delay_increase
@@ -32,6 +34,22 @@
 #   -graph_model <string>: either "star" or "clique"
 #
 #   -graph_edge_weight <string>: one of "1/f", "1/f2", "1"
+#
+#   -allow_bidir_interposer_wires  <on|off>
+#
+#   -allow_chanx_conn  <on|off>
+#
+#   -allow_fanin_transfer <on|off>
+#
+#   -allow_additional_fanin <on|off>
+#
+#   -pct_interp_to_drive <int>
+#
+#   -allow_fanout_transfer <on|off>
+#
+#   -allow_additional_fanout <on|off>
+#
+#   -pct_interp_to_be_driven_by <int>
 ###################################################################################
 
 use strict;
@@ -68,6 +86,8 @@ sub xml_find_mem_size;
 my $temp_dir = "./temp";
 
 my $percent_wires_cut = 0;
+my $astar_fac = 1.2;
+
 my $num_cuts = 0;
 my $delay_increase = 0;
 my $placer_cost_constant = 0.0;
@@ -75,6 +95,14 @@ my $constant_type = 0;
 my $ub_factor = 30;
 my $graph_model = "clique";
 my $graph_edge_weight = "1/f";
+my $allow_bidir_interposer_wires = "off";
+my $allow_chanx_conn = "on";
+my $allow_fanin_transfer = "off";
+my $allow_additional_fanin = "off";
+my $allow_fanout_transfer = "off";
+my $allow_additional_fanout = "off";
+my $pct_interp_to_drive = 0;
+my $pct_interp_to_be_driven_by = 0;
 
 my $stage_idx_odin   = 1;
 my $stage_idx_abc    = 2;
@@ -160,6 +188,9 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	}
+	elsif ( $token eq "-astar_fac" ){
+		$astar_fac = shift(@ARGV);
+	}	
 	elsif ( $token eq "-percent_wires_cut" ){
 		$percent_wires_cut = int (shift(@ARGV) );
 	}
@@ -185,6 +216,31 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-graph_edge_weight" ){
 		$graph_edge_weight = shift(@ARGV);
 	}
+	elsif ( $token eq "-allow_bidir_interposer_wires" ){
+		$allow_bidir_interposer_wires = shift(@ARGV);
+	}	
+	elsif ( $token eq "-allow_chanx_conn" ){
+		$allow_chanx_conn = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_fanin_transfer" ){
+		$allow_fanin_transfer = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_additional_fanin" ){
+		$allow_additional_fanin = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_fanout_transfer" ){
+		$allow_fanout_transfer = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_additional_fanout" ){
+		$allow_additional_fanout = shift(@ARGV);
+	}
+	elsif ( $token eq "-pct_interp_to_drive" ){
+		$pct_interp_to_drive = int( shift(@ARGV) );
+	}
+	elsif ( $token eq "-pct_interp_to_be_driven_by" ){
+		$pct_interp_to_be_driven_by = int( shift(@ARGV) );
+	}
+	
 	else {
 		die "Error: Invalid argument ($token)\n";
 	}
@@ -515,11 +571,20 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--seed",			 		  "$seed",
 			"--nodisp",
 			"--verify_binary_search",
-			"--percent_wires_cut",		"$percent_wires_cut",
-			"--num_cuts",			"$num_cuts",
-			"--delay_increase",		"$delay_increase", # Doing binary search without increased delay
-			"--placer_cost_constant",	"$placer_cost_constant",
-			"--constant_type", 		"$constant_type",
+			"--percent_wires_cut",			"$percent_wires_cut",
+			"--astar_fac",					"$astar_fac",
+			"--num_cuts",					"$num_cuts",
+			"--delay_increase",				"$delay_increase", # Doing binary search without increased delay
+			"--placer_cost_constant",		"$placer_cost_constant",
+			"--constant_type",				"$constant_type",
+			"--allow_bidir_interposer_wires", "$allow_bidir_interposer_wires",
+			"--allow_chanx_conn",			"$allow_chanx_conn",
+			"--allow_fanin_transfer",		"$allow_fanin_transfer",
+			"--allow_additional_fanin",		"$allow_additional_fanin",
+			"--allow_fanout_transfer",		"$allow_fanout_transfer",
+			"--allow_additional_fanout",	"$allow_additional_fanout", 
+			"--pct_interp_to_drive",		"$pct_interp_to_drive",
+			"--pct_interp_to_be_driven_by",	"$pct_interp_to_be_driven_by",
 			"--ub-factor=$ub_factor",
 			"--graph-model=$graph_model",
 			"--graph-edge-weight=$graph_edge_weight"
@@ -567,11 +632,20 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--nodisp",              @vpr_power_args,
 					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 					"--sdc_file",			 "$sdc_file_path",
-					"--percent_wires_cut",		"$percent_wires_cut",
-					"--num_cuts",			"$num_cuts",
-					"--delay_increase",		"$delay_increase",
-					"--placer_cost_constant",	"$placer_cost_constant",
-					"--constant_type",		"$constant_type",
+					"--percent_wires_cut",			"$percent_wires_cut",
+					"--astar_fac", 					"$astar_fac",
+					"--num_cuts",					"$num_cuts",
+					"--delay_increase",				"$delay_increase",
+					"--placer_cost_constant",		"$placer_cost_constant",
+					"--constant_type",				"$constant_type",
+					"--allow_bidir_interposer_wires", "$allow_bidir_interposer_wires",
+					"--allow_chanx_conn",			"$allow_chanx_conn",
+					"--allow_fanin_transfer",		"$allow_fanin_transfer",
+					"--allow_additional_fanin",		"$allow_additional_fanin",
+					"--allow_fanout_transfer",		"$allow_fanout_transfer",
+					"--allow_additional_fanout",	"$allow_additional_fanout", 
+					"--pct_interp_to_drive",		"$pct_interp_to_drive",
+					"--pct_interp_to_be_driven_by",	"$pct_interp_to_be_driven_by",					
 			"--ub-factor=$ub_factor",
 			"--graph-model=$graph_model",
 			"--graph-edge-weight=$graph_edge_weight"
@@ -592,11 +666,20 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 			"--sdc_file",				  "$sdc_file_path",
-			"--percent_wires_cut",		"$percent_wires_cut",
-			"--num_cuts",			"$num_cuts",
-			"--delay_increase",		"$delay_increase",
-			"--placer_cost_constant",	"$placer_cost_constant",
-			"--constant_type",		"$constant_type",
+			"--percent_wires_cut",			"$percent_wires_cut",
+			"--astar_fac", 					"$astar_fac",
+			"--num_cuts",					"$num_cuts",
+			"--delay_increase",				"$delay_increase",
+			"--placer_cost_constant",		"$placer_cost_constant",
+			"--constant_type",				"$constant_type",
+			"--allow_bidir_interposer_wires", "$allow_bidir_interposer_wires",
+			"--allow_chanx_conn",			"$allow_chanx_conn",
+			"--allow_fanin_transfer",		"$allow_fanin_transfer",
+			"--allow_additional_fanin",		"$allow_additional_fanin",
+			"--allow_fanout_transfer",		"$allow_fanout_transfer",
+			"--allow_additional_fanout",	"$allow_additional_fanout", 
+			"--pct_interp_to_drive",		"$pct_interp_to_drive",
+			"--pct_interp_to_be_driven_by",	"$pct_interp_to_be_driven_by",			
 			"--ub-factor=$ub_factor",
 			"--graph-model=$graph_model",
 			"--graph-edge-weight=$graph_edge_weight"

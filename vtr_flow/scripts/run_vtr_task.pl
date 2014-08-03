@@ -20,6 +20,8 @@
 #	-percent_wires_cut <int>: the percentage of wires that go through interchip cuts that
 #	should be cut
 #
+#   -astar_fac <float>: cost multiplier - the measure of how aggressive the directed search should be
+#
 #	-num_cuts <int>: the number of cuts to be done to the chip
 #
 #	-delay_increase <int>: the increased delay to be added to wires which cross the cuts (ps)
@@ -29,6 +31,22 @@
 #   -graph_model <string>: either "star" or "clique"
 #
 #   -graph_edge_weight <string>: one of "1/f", "1/f2", "1"
+#
+#   -allow_bidir_interposer_wires  <on|off>
+#
+#   -allow_chanx_conn:
+#
+#   -allow_fanin_transfer:
+#
+#   -allow_additional_fanin:
+#
+#   -pct_interp_to_drive
+#
+#   -allow_fanout_transfer
+#
+#   -allow_additional_fanout
+#
+#   -pct_interp_to_be_driven_by
 #
 # Note: At least one task must be specified, either directly as a parameter or
 #		through the -l option.
@@ -67,6 +85,7 @@ my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
 my $system_type            = "local";
 my $percent_wires_cut		   = 0;
+my $astar_fac		   = "1.2";
 my $num_cuts		   = 0;
 my $delay_increase		   = 0;
 my $placer_cost_constant   = 0.0;
@@ -74,6 +93,16 @@ my $constant_type 	   = 0;
 my $ub_factor = 30;
 my $graph_model = "clique";
 my $graph_edge_weight = "1/f";
+my $allow_bidir_interposer_wires = "off"
+my $allow_chanx_conn = "on";
+my $allow_fanin_transfer = "off";
+my $allow_additional_fanin = "off";
+my $allow_fanout_transfer = "off";
+my $allow_additional_fanout = "off";
+my $pct_interp_to_drive = 0;
+my $pct_interp_to_be_driven_by = 0;
+
+
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -87,11 +116,15 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-p" ) {
 		$processors = int( shift(@ARGV) );
 	}
-
+	
+	elsif ( $token eq "-astar_fac" ){
+		$astar_fac = shift(@ARGV);
+	}
+	
 	elsif ( $token eq "-percent_wires_cut" ){
 		$percent_wires_cut = int( shift(@ARGV) );
 	}
-
+	
 	elsif ( $token eq "-num_cuts" ){
 		$num_cuts = int( shift(@ARGV) );
 	}
@@ -99,7 +132,31 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-delay_increase" ){
 		$delay_increase = int( shift(@ARGV) );
 	}
-
+	elsif ( $token eq "-allow_bidir_interposer_wires" ){
+		$allow_bidir_interposer_wires = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_chanx_conn" ){
+		$allow_chanx_conn = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_fanin_transfer" ){
+		$allow_fanin_transfer = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_additional_fanin" ){
+		$allow_additional_fanin = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_fanout_transfer" ){
+		$allow_fanout_transfer = shift(@ARGV);
+	}
+	elsif ( $token eq "-allow_additional_fanout" ){
+		$allow_additional_fanout = shift(@ARGV);
+	}
+	elsif ( $token eq "-pct_interp_to_drive" ){
+		$pct_interp_to_drive = int( shift(@ARGV) );
+	}
+	elsif ( $token eq "-pct_interp_to_be_driven_by" ){
+		$pct_interp_to_be_driven_by = int( shift(@ARGV) );
+	}
+	
 	elsif ( $token eq "-placer_cost_constant" ){
 		$placer_cost_constant = shift(@ARGV);
 		$placer_cost_constant = $placer_cost_constant * 1.0;
@@ -179,6 +236,7 @@ if ( $#tasks == -1 ) {
 	  . "OPTIONS:\n"
 	  . "-l <path_to_task_list.txt> - Provides a text file with a list of tasks\n"
 	  . "-p <N> - Execution is performed in parallel using N threads (Default: 1)\n"
+	  . "-astar_fac <float>: cost multiplier - the measure of how aggressive the directed search should be. (Default:1.2)\n"
 	  . "-percent_wires_cut <int>: the percentage of wires that go through the interposer that should be cut (Default: 0)\n"
 	  . "-num_cuts <int>: the number of cuts to be done to the chip (Default: 0)\n"
 	  . "-delay_increase <int>: the increased delay to be added to wires which go through the interposer (ps) (Default: 0)\n";
@@ -250,7 +308,9 @@ sub run_single_task {
 			$script = $value;
 		}
 		elsif ( $key eq "script_params" ) {
-			$script_params = $value;
+			# bug fix by ehsan
+			#$script_params = $value;
+			$script_params = $script_params . " " . $value;
 		}
 		elsif ( $key eq "cmos_tech_behavior" ) {
 			$cmos_tech_path = $value;
@@ -409,7 +469,7 @@ sub run_single_task {
 					# SDC file defaults to circuit_name.sdc
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 					system(
-						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params -percent_wires_cut $percent_wires_cut -cuts $num_cuts -delay $delay_increase -placer_cost_constant $placer_cost_constant -constant_type $constant_type -ub_factor $ub_factor -graph_model $graph_model -graph_edge_weight $graph_edge_weight\n"
+						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params -astar_fac $astar_fac -percent_wires_cut $percent_wires_cut -cuts $num_cuts -delay $delay_increase -placer_cost_constant $placer_cost_constant -constant_type $constant_type -allow_bidir_interposer_wires $allow_bidir_interposer_wires -allow_chanx_conn $allow_chanx_conn -allow_fanin_transfer $allow_fanin_transfer -allow_additional_fanin $allow_additional_fanin -allow_fanout_transfer $allow_fanout_transfer -allow_additional_fanout $allow_additional_fanout -pct_interp_to_drive $pct_interp_to_drive -pct_interp_to_be_driven_by $pct_interp_to_be_driven_by -ub_factor $ub_factor -graph_model $graph_model -graph_edge_weight $graph_edge_weight\n"
 					);
 				}
 			}
@@ -430,7 +490,7 @@ sub run_single_task {
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
 
 					my $command =
-					  "$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params -percent_wires_cut $percent_wires_cut -cuts $num_cuts -delay $delay_increase -placer_cost_constant $placer_cost_constant -constant_type $constant_type -ub_factor $ub_factor -graph_model $graph_model -graph_edge_weight $graph_edge_weight";
+					  "$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params -astar_fac $astar_fac -percent_wires_cut $percent_wires_cut -cuts $num_cuts -delay $delay_increase -placer_cost_constant $placer_cost_constant -constant_type $constant_type -allow_bidir_interposer_wires $allow_bidir_interposer_wires -allow_chanx_conn $allow_chanx_conn -allow_fanin_transfer $allow_fanin_transfer -allow_additional_fanin $allow_additional_fanin -allow_fanout_transfer $allow_fanout_transfer -allow_additional_fanout $allow_additional_fanout -pct_interp_to_drive $pct_interp_to_drive -pct_interp_to_be_driven_by $pct_interp_to_be_driven_by -ub_factor $ub_factor -graph_model $graph_model -graph_edge_weight $graph_edge_weight";
 					$thread_work->enqueue("$dir||||$command");
 				}
 			}
