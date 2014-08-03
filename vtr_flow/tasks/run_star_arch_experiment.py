@@ -2,14 +2,13 @@ import os
 import sys
 
 def main():
-    task = sys.argv[1]
-    const_types = [1]
-    vals = [80]
-    delays = [1000]
-    cuts = [1]
-    constants = [1.0]
-
-
+	task = sys.argv[1]
+	const_types = [1]
+	vals = [80]
+	delays = [1000]
+	cuts = [1]
+	constants = [1.0]
+	
 	allow_bidir_interposer_wires = "off"
 	allow_chanx_conn = "on"
 	
