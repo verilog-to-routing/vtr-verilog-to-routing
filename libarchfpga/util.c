@@ -129,50 +129,50 @@ int my_atoi(const char *str) {
 	return (atoi(str));
 }
 
-void *my_calloc(size_t nelem, size_t size) {
+void *my_calloc_impl(size_t nelem, size_t size, const char* const file, const int line) {
 	void *ret;
 	if (nelem == 0) {
 		return NULL ;
 	}
 
 	if ((ret = calloc(nelem, size)) == NULL ) {
-		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_UNKNOWN, file, line,
 				"Error:  Unable to calloc memory.  Aborting.\n");			
 	}
 	return (ret);
 }
 
-void *my_malloc(size_t size) {
+void *my_malloc_impl(size_t size, const char* const file, const int line) {
 	void *ret;
 	if (size == 0) {
 		return NULL ;
 	}
 
 	if ((ret = malloc(size)) == NULL ) {
-		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_UNKNOWN, file, line,
 			"Error:  Unable to malloc memory.  Aborting.\n");		
 	}
 	return (ret);
 }
 
-void *my_realloc(void *ptr, size_t size) {
+void *my_realloc_impl(void *ptr, size_t size, const char* const file, const int line) {
 	void *ret;
 
 	if (size <= 0) {
-		vpr_printf_warning(__FILE__, __LINE__,
+		vpr_printf_warning(file, line,
 				"reallocating of size <= 0.\n");
 	}
 
 	ret = realloc(ptr, size);
 	if (NULL == ret) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vpr_printf_error(file, line,
 				"Unable to realloc memory. Aborting. "
 				"ptr=%p, Size=%d.\n", ptr, (int) size);
 		if (ptr == NULL ) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vpr_printf_error(file, line,
 					"my_realloc: ptr == NULL. Aborting.\n");
 		}
-			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_UNKNOWN, file, line,
 					"Unable to realloc memory. Aborting. ptr=%p, Size=%d.\n", ptr, (int) size);				
 	}
 	return (ret);

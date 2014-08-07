@@ -853,7 +853,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 static void free_pack_pattern(INOUTP t_pack_pattern_block *pattern_block, INOUTP t_pack_pattern_block **pattern_block_list) {
 	t_pack_pattern_connections *connection, *next;
-	if (pattern_block->block_id == OPEN) {
+	if (pattern_block == NULL || pattern_block->block_id == OPEN) {
 		/* already traversed, return */
 		return; 
 	}
@@ -884,23 +884,38 @@ static t_pack_molecule *try_create_molecule(
 	t_pack_molecule *molecule;
 	struct s_linked_vptr *molecule_linked_list;
 
-	molecule = (t_pack_molecule*)my_calloc(1, sizeof(t_pack_molecule));
-	molecule->valid = TRUE;
-	molecule->type = MOLECULE_FORCED_PACK;
-	molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
-	molecule->logical_block_ptrs = (t_logical_block **)my_calloc(molecule->pack_pattern->num_blocks,
-			sizeof(t_logical_block *));
-	molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
-	molecule->root =
-			list_of_pack_patterns[pack_pattern_index].root_block->block_id;
-	molecule->num_ext_inputs = 0;
+	bool failed = false;
 
-	if(list_of_pack_patterns[pack_pattern_index].is_chain == TRUE) {
-		/* A chain pattern extends beyond a single logic block so we must find the block_index that matches with the portion of a chain for this particular logic block */
-		block_index = find_new_root_atom_for_chain(block_index, &list_of_pack_patterns[pack_pattern_index]);
+	{
+		molecule = (t_pack_molecule*)my_calloc(1, sizeof(t_pack_molecule));
+		molecule->valid = TRUE;
+		molecule->type = MOLECULE_FORCED_PACK;
+		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
+		if (molecule->pack_pattern == NULL) {failed = true; goto end_prolog;}
+
+		molecule->logical_block_ptrs = (t_logical_block **)my_calloc(
+			molecule->pack_pattern->num_blocks,
+			sizeof(t_logical_block *)
+		);
+		if (molecule->logical_block_ptrs == NULL) {failed = true; goto end_prolog;}
+
+		molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
+		if (molecule->num_blocks == 0) {failed = true; goto end_prolog;}
+
+		if (list_of_pack_patterns[pack_pattern_index].root_block == NULL) {failed = true; goto end_prolog;}
+		molecule->root =
+				list_of_pack_patterns[pack_pattern_index].root_block->block_id;
+		molecule->num_ext_inputs = 0;
+
+		if(list_of_pack_patterns[pack_pattern_index].is_chain == TRUE) {
+			/* A chain pattern extends beyond a single logic block so we must find the block_index that matches with the portion of a chain for this particular logic block */
+			block_index = find_new_root_atom_for_chain(block_index, &list_of_pack_patterns[pack_pattern_index]);
+		}
 	}
 
-	if (block_index != OPEN && try_expand_molecule(molecule, block_index,
+	end_prolog:
+
+	if (!failed && block_index != OPEN && try_expand_molecule(molecule, block_index,
 			molecule->pack_pattern->root_block) == TRUE) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
@@ -916,12 +931,15 @@ static t_pack_molecule *try_create_molecule(
 					molecule_linked_list;
 		}
 	} else {
+		failed = true;
+	}
+
+	if (failed == true) {
 		/* Does not match pattern, free molecule */
 		free(molecule->logical_block_ptrs);
 		free(molecule);
 		molecule = NULL;
 	}
-
 	return molecule;
 }
 

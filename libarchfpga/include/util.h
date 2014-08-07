@@ -100,9 +100,14 @@ extern char *out_file_prefix; /* Default prefix string for output files */
 
 /************************ Memory allocation routines *************************/
 
-void* my_malloc(size_t size);
-void* my_calloc(size_t nelem, size_t size);
-void *my_realloc(void *ptr, size_t size);
+#define my_calloc(nelem, size) my_calloc_impl(nelem, size, __FILE__, __LINE__)
+#define my_malloc(size) my_malloc_impl(size, __FILE__, __LINE__)
+#define my_realloc(ptr, size) my_realloc_impl(ptr, size, __FILE__, __LINE__)
+
+void *my_calloc_impl(size_t nelem, size_t size, const char* const file, const int line);
+void *my_malloc_impl(size_t size, const char* const file, const int line);
+void *my_realloc_impl(void *ptr, size_t size, const char* const file, const int line);
+
 void *my_chunk_malloc(size_t size, t_chunk *chunk_info);
 void free_chunk_memory(t_chunk *chunk_info);
 
