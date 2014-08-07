@@ -1,8 +1,8 @@
 ################################   MAKEFILE OPTIONS     ####################################
 
-# If ENABLE_GRAPHICS is set to true, VPR requires X11 to compile.  
+# If ENABLE_GRAPHICS is set to true, VPR requires X11 and Xft to compile.
 # On Ubuntu, type 'make packages' or 
-# 'sudo apt-get install libx11-dev' to install.  
+# 'sudo apt-get install libx11-dev libxft-dev' to install.
 # Please look online for information on how to install X11 on other Linux distributions.
 
 # Please note that a Mac can run the graphics if the X11 library is installed. 
@@ -72,8 +72,10 @@ ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
     LIB_DIR := $(LIB_DIR) -L/usr/X11/lib -L/opt/X11/lib
   else  
     LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
-    PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi; fi
-    PACKAGENOTIFICATION := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then echo "\n\n\n\n*****************************************************\n* VPR has detected that graphics are enabled,       *\n* but the required graphics package libx11-dev      *\n* is missing. Try:                                  *\n* a) Type 'make packages' to install libx11-dev     *\n*    automatically if not already installed.        *\n* b) Type 'sudo apt-get install libx11-dev' to      *\n*    install manually.                              *\n* c) If libx11-dev is installed, point the Makefile *\n*    to where your X11 libraries are installed.     *\n* d) If you wish to run VPR without graphics, set   *\n*    the flag ENABLE_GRAPHICS = false at the top    *\n*    of the Makefile in VPR's parent directory.     *\n*****************************************************\n\n\n\n"; fi; fi
+    PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi; fi;
+    PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libxft-dev -c >>/dev/null; then sudo apt-get install libxft-dev; fi; fi;
+    PACKAGENOTIFICATION :=                        if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then printf "\n\n\n\n*****************************************************\n* VPR has detected that graphics are enabled,       *\n* but the required graphics package libx11-dev      *\n* is missing. Try:                                  *\n* a) Type 'make packages' to install libx11-dev     *\n*    automatically if not already installed.        *\n* b) Type 'sudo apt-get install libx11-dev' to      *\n*    install manually.                              *\n* c) If libx11-dev is installed, point the Makefile *\n*    to where your X11 libraries are installed.     *\n* d) If you wish to run VPR without graphics, set   *\n*    the flag ENABLE_GRAPHICS = false at the top    *\n*    of the Makefile in VPR's parent directory.     *\n*****************************************************\n\n\n\n"; fi; fi;
+    PACKAGENOTIFICATION := $(PACKAGENOTIFICATION) if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libxft-dev -c >>/dev/null; then printf "\n\n\n\n*****************************************************\n* VPR has detected that graphics are enabled,       *\n* but the required graphics package libxft-dev      *\n* is missing. Try:                                  *\n* a) Type 'make packages' to install libxft-dev     *\n*    automatically if not already installed.        *\n* b) Type 'sudo apt-get install libxft-dev' to      *\n*    install manually.                              *\n* c) If libxft-dev is installed, point the Makefile *\n*    to where your X11 libraries are installed.     *\n* d) If you wish to run VPR without graphics, set   *\n*    the flag ENABLE_GRAPHICS = false at the top    *\n*    of the Makefile in VPR's parent directory.     *\n*****************************************************\n\n\n\n"; fi; fi;
   endif
   LIB := $(LIB) -lX11 -lXft -lfontconfig
 else
@@ -90,11 +92,11 @@ DEP := $(OBJ:.o=.d)
 $(EXE): $(OBJ) Makefile libvpr.a | notify
 	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
 
-# if graphics enabled but libx11-dev is not installed, notify the user
+# if graphics enabled but a library is not installed, notify the user
 notify:
 	@ $(PACKAGENOTIFICATION) 
 
-#if graphics enabled but libx11-dev is not installed, install it
+#if graphics enabled but a library is not installed, install it
 packages: 
 	@ $(PACKAGEINSTALL)
 
