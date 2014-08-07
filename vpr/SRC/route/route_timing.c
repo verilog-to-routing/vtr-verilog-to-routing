@@ -1,9 +1,11 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-using namespace std;
 
 #include <assert.h>
+
+#include <vector>
+#include <algorithm>
 
 #include "util.h"
 #include "vpr_types.h"
@@ -18,6 +20,7 @@ using namespace std;
 #include "stats.h"
 #include "ReadOptions.h"
 
+using namespace std;
 //===========================================================================//
 #include "TCH_PreRoutedHandler.h"
 
@@ -60,7 +63,11 @@ static double get_overused_ratio();
 
 static bool should_route_net(int inet);
 
-
+struct more_sinks_than {
+	inline bool operator() (const int& net_index1, const int& net_index2) {
+		return g_clbs_nlist.net[net_index1].num_sinks() > g_clbs_nlist.net[net_index2].num_sinks();
+	}
+};
 
 /************************ Subroutine definitions *****************************/
 
@@ -72,18 +79,20 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns TRUE if the routing succeeds, FALSE otherwise.                    */
 
-	float *sinks = (float*)my_malloc(sizeof(float) * g_clbs_nlist.net.size());
-	int *net_index = (int*)my_malloc(sizeof(int) * g_clbs_nlist.net.size());
-	for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
-		sinks[i] = g_clbs_nlist.net[i].num_sinks();
-		net_index[i] = i;
-	}
-	heapsort(net_index, sinks, (int) g_clbs_nlist.net.size(), 1);
+	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
-	float *pin_criticality; /* [1..max_pins_per_net-1] */
-	int *sink_order; /* [1..max_pins_per_net-1] */;
-	t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
-	alloc_timing_driven_route_structs(&pin_criticality, &sink_order, &rt_node_of_sink);
+	for (size_t i = 0; i < g_clbs_nlist.net.size(); ++i) {
+		sorted_nets[i] = i;
+	}
+
+	// sort so net with most sinks is first.
+	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
+
+	timing_driven_route_structs route_structs{}; // allocs route strucs (calls default constructor)
+	// contains:
+	// float *pin_criticality; /* [1..max_pins_per_net-1] */
+	// int *sink_order; /* [1..max_pins_per_net-1] */;
+	// t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
 
 	/* First do one routing iteration ignoring congestion to get reasonable net 
 	   delay estimates. Set criticalities to 1 when timing analysis is on to 
@@ -94,7 +103,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
-	double *historical_overuse_ratio = (double*)my_calloc(router_opts.max_router_iterations + 1, sizeof(double));
+	auto historical_overuse_ratio = vector<double>(router_opts.max_router_iterations + 1);
 	
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 		if (g_clbs_nlist.net[inet].is_global == FALSE) {
@@ -125,19 +134,30 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			g_clbs_nlist.net[inet].is_fixed = FALSE;
 		}
 
-		timing_driven_order_prerouted_first(itry, router_opts, pres_fac, 
-				pin_criticality, sink_order, 
-				rt_node_of_sink, net_delay, slacks);
+		timing_driven_order_prerouted_first(
+			itry,
+			router_opts,
+			pres_fac,
+			route_structs.pin_criticality,
+			route_structs.sink_order,
+			route_structs.rt_node_of_sink,
+			net_delay,
+			slacks
+		);
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
-			int inet = net_index[i];
-			boolean is_routable = try_timing_driven_route_net(inet, itry, pres_fac,
-				router_opts, pin_criticality, sink_order,
-				rt_node_of_sink, net_delay, slacks);
+			bool is_routable = try_timing_driven_route_net(
+				sorted_nets[i],
+				itry,
+				pres_fac,
+				router_opts,
+				route_structs.pin_criticality,
+				route_structs.sink_order,
+				route_structs.rt_node_of_sink,
+				net_delay,
+				slacks
+			);
 			if (!is_routable) {
-				free(net_index);
-				free(sinks);
-				free(historical_overuse_ratio);
 				return (FALSE);
 			}
 		}
@@ -178,10 +198,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
 				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
-				free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
-				free(net_index);
-				free(sinks);
-				free(historical_overuse_ratio);
 				return FALSE;
 			}
 			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
@@ -234,10 +250,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				expected_successful_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
 				if (expected_successful_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
 					vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_successful_route_iter);
-					free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
-					free(net_index);
-					free(sinks);
-					free(historical_overuse_ratio);
 					return (FALSE);
 				}
 			}
@@ -257,14 +269,10 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			}
 
 			vpr_printf_info("Successfully routed after %d routing iterations.\n", itry);
-			free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
 #ifdef DEBUG
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
-			free(net_index);
-			free(sinks);
-			free(historical_overuse_ratio);
 			return (TRUE);
 		}
 
@@ -314,10 +322,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	}
 
 	vpr_printf_info("Routing failed.\n");
-	free_timing_driven_route_structs(pin_criticality, sink_order, rt_node_of_sink);
-	free(net_index);
-	free(sinks);
-	free(historical_overuse_ratio);
 	return (FALSE);
 }
 
@@ -348,13 +352,15 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
 		} else {
 			vpr_printf_info("Routing failed.\n");
-			free_timing_driven_route_structs(pin_criticality,
-					sink_order, rt_node_of_sink);
 		}
 	}
 	return (is_routed);
 }
 
+/*
+ * NOTE:
+ * Suggest using a timing_driven_route_structs struct. Memory is managed for you
+ */
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 		int **sink_order_ptr, t_rt_node *** rt_node_of_sink_ptr) {
 
@@ -386,6 +392,10 @@ static double get_overused_ratio(){
 	return overused_nodes;
 }
 
+/*
+ * NOTE:
+ * Suggest using a timing_driven_route_structs struct. Memory is managed for you
+ */
 void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 		t_rt_node ** rt_node_of_sink) {
 
@@ -395,6 +405,22 @@ void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 	free(sink_order + 1);
 	free(rt_node_of_sink + 1);
 	free_route_tree_timing_structs();
+}
+
+timing_driven_route_structs::timing_driven_route_structs() {
+	alloc_timing_driven_route_structs(
+		&pin_criticality,
+		&sink_order,
+		&rt_node_of_sink
+	);
+}
+
+timing_driven_route_structs::~timing_driven_route_structs() {
+	free_timing_driven_route_structs(
+		pin_criticality,
+		sink_order,
+		rt_node_of_sink
+	);
 }
 
 static int get_max_pins_per_net(void) {
