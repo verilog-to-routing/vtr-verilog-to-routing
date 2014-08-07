@@ -24,6 +24,12 @@ using namespace std;
 //===========================================================================//
 #include "TCH_PreRoutedHandler.h"
 
+// Disable the routing predictor for circuits with less that this number of nets.
+// This was experimentally determined, by Matthew Walker, to be the most useful
+// metric, and this is also somewhat larger than largest circuit observed to have
+// inaccurate predictions, thought this is still only affects quite small circuits.
+const int MIN_NETS_TO_ACTIVATE_PREDICTOR = 150;
+
 static bool timing_driven_order_prerouted_first(int try_count, 
 		struct s_router_opts router_opts, float pres_fac, 
 		float* pin_criticality, int* sink_order, 
@@ -231,7 +237,10 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 					routing_predictor_running_average *= 1.5;
 				}
 			}
-			if (itry > routing_predictor_running_average && router_opts.routing_failure_predictor != OFF) {
+			if (itry > routing_predictor_running_average
+			 && router_opts.routing_failure_predictor != OFF
+			 && num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) {
+
 				/* linear extrapolation to predict what routing iteration will succeed */
 				int expected_successful_route_iter;
 				int ref_iter;
