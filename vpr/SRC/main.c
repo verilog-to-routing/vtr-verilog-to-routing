@@ -53,11 +53,6 @@ int main(int argc, char **argv) {
 			#endif
 			
 			vpr_place_and_route(vpr_setup, Arch);
-	#if 0
-			if(vpr_setup.RouterOpts.doRouting) {
-				vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(&Arch);
-			}
-	#endif
 		}
 
 		if (vpr_setup.PowerOpts.do_power) {
