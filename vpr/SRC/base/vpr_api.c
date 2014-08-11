@@ -39,7 +39,6 @@ using namespace std;
 #include "ReadOptions.h"
 #include "route_common.h"
 #include "timing_place_lookup.h"
-#include "cluster_legality.h"
 #include "route_export.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
@@ -72,7 +71,6 @@ static void toro_delete_handlers(void);
 static boolean has_printhandler_pre_vpr = FALSE;
 
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
-static void reload_intra_cluster_nets(t_pb *pb);
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
 
 /* Local subroutines end */
@@ -1014,26 +1012,6 @@ void vpr_set_output_file_name(enum e_output_files ename, const char *name,
 }
 char *vpr_get_output_file_name(enum e_output_files ename) {
 	return getOutputFileName(ename);
-}
-
-/* reload intra cluster nets to complex block */
-static void reload_intra_cluster_nets(t_pb *pb) {
-
-	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
-	if (pb_type->blif_model != NULL) {
-		setup_intracluster_routing_for_logical_block(pb->logical_block,	pb->pb_graph_node);
-	} else if (pb->child_pbs != NULL) {
-		set_pb_graph_mode(pb->pb_graph_node, pb->mode, 1);
-		for (int i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; ++i) {
-			for (int j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
-				if (pb->child_pbs[i] != NULL) {
-					if (pb->child_pbs[i][j].name != NULL) {
-						reload_intra_cluster_nets(&pb->child_pbs[i][j]);
-					}
-				}
-			}
-		}
-	}
 }
 
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,

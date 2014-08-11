@@ -22,7 +22,6 @@ using namespace std;
 #include "output_clustering.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
-#include "cluster_legality.h"
 #include "path_delay2.h"
 #include "path_delay.h"
 #include "vpr_utils.h"
@@ -32,7 +31,6 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
-#define JEDIT_INTRA_LB_ROUTE
 
 #define AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE 30      /* This value is used to determine the max size of the priority queue for candidates that pass the early filter legality test but not the more detailed routing test */
 #define AAPACK_MAX_NET_SINKS_IGNORE 256				/* The packer looks at all sinks of a net when deciding what next candidate block to pack, for high-fanout nets, this is too runtime costly for marginal benefit, thus ignore those high fanout nets */
@@ -224,10 +222,6 @@ static t_pack_molecule* get_molecule_for_cluster(
 		INP t_cluster_placement_stats *cluster_placement_stats_ptr,
 		INP t_lb_net_stats *clb_inter_blk_nets,
 		INP int cluster_index);
-
-#ifndef JEDIT_INTRA_LB_ROUTE
-static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb);
-#endif
 
 static void check_clustering(int num_clb, t_block *clb, boolean *is_clock);
 
@@ -505,9 +499,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		is_cluster_legal = FALSE;
 		savedseedindex = seedindex;
 		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
-#ifndef JEDIT_INTRA_LB_ROUTE
-			reset_legalizer_for_cluster(&clb[num_clb]);
-#endif
 
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list, arch,
@@ -602,11 +593,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 			vpr_printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
-#ifdef JEDIT_INTRA_LB_ROUTE
 				is_cluster_legal = try_intra_lb_route(router_data);
-#else
-				is_cluster_legal = try_breadth_first_route_cluster();
-#endif
 				if (is_cluster_legal == TRUE) {
 					vpr_printf_info("Passed route at end.\n");
 				} else {
@@ -616,13 +603,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				is_cluster_legal = TRUE;
 			}
 			if (is_cluster_legal == TRUE) {
-				#ifdef JEDIT_INTRA_LB_ROUTE
-					intra_lb_routing.push_back(router_data->saved_lb_nets);
-					assert((int)intra_lb_routing.size() == num_clb);
-					router_data->saved_lb_nets = NULL;
-				#else
-					save_cluster_solution();
-				#endif
+				intra_lb_routing.push_back(router_data->saved_lb_nets);
+				assert((int)intra_lb_routing.size() == num_clb);
+				router_data->saved_lb_nets = NULL;
 				if (timing_driven) {
 					if (num_blocks_hill_added > 0 && !early_exit) {
 						blocks_since_last_analysis += num_blocks_hill_added;
@@ -672,12 +655,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/****************************************************************
 	* Free Data Structures 
 	*****************************************************************/
-#ifndef JEDIT_INTRA_LB_ROUTE
-	free_cluster_legality_checker();
-	alloc_and_load_cluster_info(num_clb, clb);
-#endif
-
-
 	check_clustering(num_clb, clb, is_clock);
 
 	block = clb;
@@ -685,12 +662,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	output_clustering(arch, clb, num_clb, intra_lb_routing, global_clocks, is_clock, out_fname, FALSE);
 	
 	block = NULL;
-	#ifdef JEDIT_INTRA_LB_ROUTE
-		for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
-			free_intra_lb_nets(intra_lb_routing[irt]);
-		}
-		intra_lb_routing.clear();
-	#endif
+	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
+		free_intra_lb_nets(intra_lb_routing[irt]);
+	}
+	intra_lb_routing.clear();
 
 	if (hill_climbing_flag) {
 		free(hill_climbing_inputs_avail);
@@ -850,10 +825,6 @@ static void alloc_and_init_clustering(boolean global_clocks, float alpha,
 	t_pack_molecule *cur_molecule;
 	t_pack_molecule **molecule_array;
 	int max_molecule_size;
-
-#ifndef JEDIT_INTRA_LB_ROUTE
-	alloc_and_load_cluster_legality_checker();
-#endif
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		logical_block[i].clb_index = NO_CLUSTER;
@@ -1295,9 +1266,6 @@ static enum e_block_pack_status try_pack_molecule(
 	failed_location = 0;
 
 	while (block_pack_status != BLK_PASSED) {
-#ifndef JEDIT_INTRA_LB_ROUTE
-		save_and_reset_routing_cluster(); /* save current routing information because speculative packing will change routing*/
-#endif
 		if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
 				primitives_list, clb_index)) {
 			block_pack_status = BLK_PASSED;
@@ -1333,18 +1301,10 @@ static enum e_block_pack_status try_pack_molecule(
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/							
-#ifdef JEDIT_INTRA_LB_ROUTE
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data) == FALSE) {
 					/* Cannot pack */
 					block_pack_status = BLK_FAILED_ROUTE;
 				}
-#else
-				setup_intracluster_routing_for_molecule(molecule, primitives_list);
-				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_breadth_first_route_cluster() == FALSE) {
-					/* Cannot pack */
-					block_pack_status = BLK_FAILED_ROUTE;
-				}
-#endif
 				else{
 					/* Pack successful, commit 
 					 TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
@@ -1378,11 +1338,9 @@ static enum e_block_pack_status try_pack_molecule(
 			}
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {
-					#ifdef JEDIT_INTRA_LB_ROUTE
 					if (molecule->logical_block_ptrs[i] != NULL) {
 						remove_atom_from_target(router_data, molecule->logical_block_ptrs[i]->index);
 					}
-					#endif
 				}
 				for (i = 0; i < failed_location; i++) {					
 					if (molecule->logical_block_ptrs[i] != NULL) {
@@ -1391,15 +1349,9 @@ static enum e_block_pack_status try_pack_molecule(
 								max_models, router_data);
 					}
 				}
-#ifndef JEDIT_INTRA_LB_ROUTE
-				restore_routing_cluster();
-#endif
 			}
 		} else {
 			block_pack_status = BLK_FAILED_FEASIBLE;
-#ifndef JEDIT_INTRA_LB_ROUTE
-			restore_routing_cluster();
-#endif
 			break; /* no more candidate primitives available, this molecule will not pack, return fail */
 		}
 	}
@@ -1448,12 +1400,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-#ifdef JEDIT_INTRA_LB_ROUTE
 		set_reset_pb_modes(router_data, parent_pb, TRUE);
-#else
-		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* TODO: default mode is to use mode 0, document this! */
-		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
-#endif
 		parent_pb->child_pbs =
 				(t_pb **) my_calloc(
 						parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,
@@ -1508,10 +1455,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
 
-#ifdef JEDIT_INTRA_LB_ROUTE
 		add_atom_as_target(router_data, ilogical_block);
-#endif
-
 		if (!primitive_feasible(ilogical_block, pb)) {
 			/* failed location feasibility check, revert pack */
 			block_pack_status = BLK_FAILED_FEASIBLE;
@@ -1559,12 +1503,7 @@ static void revert_place_logical_block(INP int iblock, INP int max_models, INOUT
 			
 			if (pb->child_pbs != NULL && pb->pb_stats != NULL
 					&& pb->pb_stats->num_child_blocks_in_pb == 0) {
-#ifdef JEDIT_INTRA_LB_ROUTE
 				set_reset_pb_modes(router_data, pb, FALSE);
-#else
-				set_pb_graph_mode(pb->pb_graph_node, pb->mode, 0); /* default mode is to use mode 1 */
-				set_pb_graph_mode(pb->pb_graph_node, 0, 1);
-#endif
 				if (next != NULL) {
 					/* If the code gets here, then that means that placing the initial seed molecule failed, don't free the actual complex block itself as the seed needs to find another placement */
 					free_pb(pb);
@@ -2050,11 +1989,7 @@ static void start_new_cluster(
 				alloc_and_load_pb_stats(new_cluster->pb, num_models, max_nets_in_pb_type);
 				new_cluster->pb->parent_pb = NULL;
 
-#ifdef JEDIT_INTRA_LB_ROUTE
 				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &type_descriptors[i]);
-#else
-				alloc_and_load_legalizer_for_cluster(new_cluster, clb_index, arch);
-#endif				
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
@@ -2069,11 +2004,7 @@ static void start_new_cluster(
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					break;
 				} else {
-#ifdef JEDIT_INTRA_LB_ROUTE
 					free_router_data(*router_data);
-#else
-					free_legalizer_for_cluster(new_cluster, TRUE);
-#endif
 					free_pb_stats(new_cluster->pb);
 					free(new_cluster->pb);
 					*router_data = NULL;
@@ -2324,67 +2255,6 @@ static t_pack_molecule *get_molecule_for_cluster(
 	return best_molecule;
 }
 
-#ifndef JEDIT_INTRA_LB_ROUTE
-/*****************************************/
-static void alloc_and_load_cluster_info(INP int num_clb, INOUTP t_block *clb) {
-
-	/* Loads all missing clustering info necessary to complete clustering.  */
-	int i, j, i_clb, node_index, ipin, iclass;
-	int inport, outport, clockport;
-
-	const t_pb_type * pb_type;
-	t_pb *pb;
-
-	for (i_clb = 0; i_clb < num_clb; i_clb++) {
-		rr_node = clb[i_clb].pb->rr_graph;
-		pb_type = clb[i_clb].pb->pb_graph_node->pb_type;
-		pb = clb[i_clb].pb;
-
-		clb[i_clb].nets = (int*)my_malloc(clb[i_clb].type->num_pins * sizeof(int));
-		for (i = 0; i < clb[i_clb].type->num_pins; i++) {
-			clb[i_clb].nets[i] = OPEN;
-		}
-
-		inport = outport = clockport = 0;
-		ipin = 0;
-		/* Assume top-level pb and clb share a one-to-one connection */
-		for (i = 0; i < pb_type->num_ports; i++) {
-			if (!pb_type->ports[i].is_clock
-					&& pb_type->ports[i].type == IN_PORT) {
-				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-					iclass = clb[i_clb].type->pin_class[ipin];
-					assert(clb[i_clb].type->class_inf[iclass].type == RECEIVER);
-					assert(clb[i_clb].type->is_global_pin[ipin] == pb->pb_graph_node->input_pins[inport][j].port->is_non_clock_global);
-					node_index = pb->pb_graph_node->input_pins[inport][j].pin_count_in_cluster;
-					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;
-					ipin++;
-				}
-				inport++;
-			} else if (pb_type->ports[i].type == OUT_PORT) {
-				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-					iclass = clb[i_clb].type->pin_class[ipin];
-					assert(clb[i_clb].type->class_inf[iclass].type == DRIVER);
-					node_index = pb->pb_graph_node->output_pins[outport][j].pin_count_in_cluster;
-					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;
-					ipin++;
-				}
-				outport++;
-			} else {
-				assert(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
-				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-					iclass = clb[i_clb].type->pin_class[ipin];
-					assert(clb[i_clb].type->class_inf[iclass].type == RECEIVER);
-					assert(clb[i_clb].type->is_global_pin[ipin]);
-					node_index = pb->pb_graph_node->clock_pins[clockport][j].pin_count_in_cluster;
-					clb[i_clb].nets[ipin] = rr_node[node_index].net_num;
-					ipin++;
-				}
-				clockport++;
-			}
-		}
-	}
-}
-#endif
 
 /* TODO: Add more error checking, too light */
 /*****************************************/
