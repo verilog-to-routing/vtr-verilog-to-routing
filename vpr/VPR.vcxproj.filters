@@ -123,9 +123,6 @@
     <ClCompile Include="SRC\pack\cluster.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\pack\cluster_legality.c">
-      <Filter>Source Files\pack</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\pack\output_blif.c">
       <Filter>Source Files\pack</Filter>
     </ClCompile>
@@ -285,9 +282,6 @@
     <ClCompile Include="SRC\draw\draw_global.c">
       <Filter>Source Files\draw</Filter>
     </ClCompile>
-    <ClCompile Include="SRC\base\print_netlist_as_blif.c">
-      <Filter>Source Files\base</Filter>
-    </ClCompile>
     <ClCompile Include="SRC\base\rr_node.c">
       <Filter>Source Files\base</Filter>
     </ClCompile>
@@ -390,9 +384,6 @@
       <Filter>Header Files\route</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\cluster.h">
-      <Filter>Header Files\pack</Filter>
-    </ClInclude>
-    <ClInclude Include="SRC\pack\cluster_legality.h">
       <Filter>Header Files\pack</Filter>
     </ClInclude>
     <ClInclude Include="SRC\pack\output_blif.h">
@@ -517,9 +508,6 @@
     </ClInclude>
     <ClInclude Include="SRC\draw\draw_types.h">
       <Filter>Header Files\draw</Filter>
-    </ClInclude>
-    <ClInclude Include="SRC\base\print_netlist_as_blif.h">
-      <Filter>Header Files\base</Filter>
     </ClInclude>
     <ClInclude Include="SRC\base\rr_node.h">
       <Filter>Header Files\base</Filter>
