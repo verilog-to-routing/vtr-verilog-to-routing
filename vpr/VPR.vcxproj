@@ -182,7 +182,6 @@
   <ItemGroup>
     <ClCompile Include="SRC\base\globals.c" />
     <ClCompile Include="SRC\base\netlist.c" />
-    <ClCompile Include="SRC\base\print_netlist_as_blif.c" />
     <ClCompile Include="SRC\base\read_settings.c" />
     <ClCompile Include="SRC\base\rr_node.c" />
     <ClCompile Include="SRC\base\verilog_writer.c" />
@@ -230,7 +229,6 @@
     <ClCompile Include="SRC\util\token.c" />
     <ClCompile Include="SRC\util\vpr_utils.c" />
     <ClCompile Include="SRC\pack\cluster.c" />
-    <ClCompile Include="SRC\pack\cluster_legality.c" />
     <ClCompile Include="SRC\pack\output_blif.c" />
     <ClCompile Include="SRC\pack\output_clustering.c" />
     <ClCompile Include="SRC\pack\pack.c" />
@@ -265,7 +263,6 @@
     <ClInclude Include="SRC\base\netlist.h" />
     <ClInclude Include="SRC\base\OptionTokens.h" />
     <ClInclude Include="SRC\base\place_and_route.h" />
-    <ClInclude Include="SRC\base\print_netlist_as_blif.h" />
     <ClInclude Include="SRC\base\read_blif.h" />
     <ClInclude Include="SRC\base\read_netlist.h" />
     <ClInclude Include="SRC\base\read_place.h" />
@@ -319,7 +316,6 @@
     <ClInclude Include="SRC\route\rr_graph_util.h" />
     <ClInclude Include="SRC\route\segment_stats.h" />
     <ClInclude Include="SRC\pack\cluster.h" />
-    <ClInclude Include="SRC\pack\cluster_legality.h" />
     <ClInclude Include="SRC\pack\output_blif.h" />
     <ClInclude Include="SRC\pack\output_clustering.h" />
     <ClInclude Include="SRC\pack\pack.h" />
