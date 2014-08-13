@@ -18,6 +18,6 @@ int alloc_and_load_timing_graph_levels(void);
 
 void check_timing_graph(int num_sinks);
 
-float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node);
+float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node, t_pb ***pin_id_to_pb_mapping);
 
 void detect_and_fix_timing_graph_combinational_loops();

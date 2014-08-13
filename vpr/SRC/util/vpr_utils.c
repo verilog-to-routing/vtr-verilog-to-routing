@@ -74,6 +74,8 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node);
 
+static void load_pin_id_to_pb_mapping_rec(INP t_pb *cur_pb, INOUTP t_pb **pin_id_to_pb_mapping);
+
 /******************** Subroutine definitions *********************************/
 
 /**
@@ -574,6 +576,71 @@ void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_fr
 	delete [] pb_graph_pin_lookup_from_type;
 }
 
+
+/**
+* Create lookup table that returns a pointer to the pb given [index to block][pin_id].
+*/
+t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
+	t_pb ***pin_id_to_pb_mapping;
+	pin_id_to_pb_mapping = new t_pb**[num_blocks];
+	for (int i = 0; i < num_blocks; i++) {
+		pin_id_to_pb_mapping[i] = new t_pb*[block[i].type->pb_graph_head->total_pb_pins];
+		for (int j = 0; j < block[i].type->pb_graph_head->total_pb_pins; j++) {
+			pin_id_to_pb_mapping[i][j] = NULL;
+		}
+		load_pin_id_to_pb_mapping_rec(block[i].pb, pin_id_to_pb_mapping[i]);
+	}
+	return pin_id_to_pb_mapping;
+}
+
+
+/**
+* Recursively create lookup table that returns a pointer to the pb given a pb_graph_pin id.
+*/
+static void load_pin_id_to_pb_mapping_rec(INP t_pb *cur_pb, INOUTP t_pb **pin_id_to_pb_mapping) {
+	t_pb_graph_node *pb_graph_node = cur_pb->pb_graph_node;
+	t_pb_type *pb_type = pb_graph_node->pb_type;
+	int mode = cur_pb->mode;
+
+	for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
+		for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+			pin_id_to_pb_mapping[pb_graph_node->input_pins[i][j].pin_count_in_cluster] = cur_pb;
+		}
+	}
+	for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
+		for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+			pin_id_to_pb_mapping[pb_graph_node->output_pins[i][j].pin_count_in_cluster] = cur_pb;
+		}
+	}
+	for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
+		for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+			pin_id_to_pb_mapping[pb_graph_node->clock_pins[i][j].pin_count_in_cluster] = cur_pb;
+		}
+	}
+
+	if (pb_type->num_modes == 0 || cur_pb->child_pbs == NULL) {
+		return;
+	}
+
+	for (int i = 0; i < pb_type->modes[mode].num_pb_type_children; i++) {
+		for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb; j++) {
+			load_pin_id_to_pb_mapping_rec(&cur_pb->child_pbs[i][j], pin_id_to_pb_mapping);
+		}
+	}
+}
+
+/*
+* free pin_index_to_pb_mapping lookup table
+*/
+void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping) {
+	for (int i = 0; i < num_blocks; i++) {
+		delete[] pin_id_to_pb_mapping[i];
+	}
+	delete[] pin_id_to_pb_mapping;
+}
+
+
+
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
@@ -638,7 +705,7 @@ int num_ext_inputs_logical_block(int iblk) {
 void free_cb(t_pb *pb) {
 
 	const t_pb_type * pb_type;
-	int i, total_nodes;
+	int total_nodes;
 
 	if (pb == NULL) {
 		return;
@@ -649,17 +716,6 @@ void free_cb(t_pb *pb) {
 	total_nodes = pb->pb_graph_node->total_pb_pins + pb_type->num_input_pins
 			+ pb_type->num_output_pins + pb_type->num_clock_pins;
 
-	if (pb->rr_graph != NULL) {
-		for (i = 0; i < total_nodes; i++) {
-			if (pb->rr_graph[i].edges != NULL) {
-				free(pb->rr_graph[i].edges);
-			}
-			if (pb->rr_graph[i].switches != NULL) {
-				free(pb->rr_graph[i].switches);
-			}
-		}
-		free(pb->rr_graph);
-	}	
 	free_pb(pb);
 }
 
@@ -687,11 +743,6 @@ void free_pb(t_pb *pb) {
 			free(pb->child_pbs);
 		pb->child_pbs = NULL;
 
-		if (pb->rr_node_to_pb_mapping != NULL) {
-			free(pb->rr_node_to_pb_mapping);
-			pb->rr_node_to_pb_mapping = NULL;
-		}
-		
 		if (pb->name)
 			free(pb->name);
 		pb->name = NULL;
@@ -700,10 +751,6 @@ void free_pb(t_pb *pb) {
 		if (pb->name)
 			free(pb->name);
 		pb->name = NULL;
-		if (pb->lut_pin_remap) {
-			free(pb->lut_pin_remap);
-		}
-		pb->lut_pin_remap = NULL;
 		if (pb->logical_block != EMPTY && pb->logical_block != INVALID && logical_block != NULL) {
 			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
 			logical_block[pb->logical_block].pb = NULL;
@@ -1283,3 +1330,4 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	*idirect_from_blk_pin = temp_idirect_from_blk_pin;
 	*direct_type_from_blk_pin = temp_direct_type_from_blk_pin;
 }
+

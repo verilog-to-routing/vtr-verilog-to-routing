@@ -78,8 +78,6 @@ void free_timing_stats(void);
 
 void print_timing_graph(const char *fname);
 
-void print_lut_remapping(const char *fname);
-
 void print_slack(float ** slack, boolean slack_is_normalized, const char *fname);
 
 void print_criticality(t_slack * slacks, const char *fname);

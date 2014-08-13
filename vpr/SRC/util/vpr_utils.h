@@ -31,6 +31,8 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin);
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
+t_pb ***alloc_and_load_pin_id_to_pb_mapping();
+void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping);
 
 
 float compute_primitive_base_cost(INP t_pb_graph_node *primitive);

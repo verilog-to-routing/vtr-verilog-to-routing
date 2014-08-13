@@ -805,22 +805,12 @@ void post_place_sync(INP int L_num_blocks,
 void free_pb_data(t_pb *pb) {
 	int i, j;
 	const t_pb_type *pb_type;
-	t_rr_node *temp;
 
 	if (pb == NULL || pb->name == NULL) {
 		return;
 	}
 
 	pb_type = pb->pb_graph_node->pb_type;
-
-	/* free existing rr graph for pb */
-	if (pb->rr_graph) {
-		temp = rr_node;
-		rr_node = pb->rr_graph;
-		num_rr_nodes = pb->pb_graph_node->total_pb_pins;
-		free_rr_graph();
-		rr_node = temp;
-	}
 
 	if (pb_type->num_modes > 0) {
 		/* Free children of pb */

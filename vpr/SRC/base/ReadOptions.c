@@ -155,7 +155,6 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_COMPRESSED_NETLIST, "compressed_netlist.echo");
 	setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
 	setEchoFileName(E_ECHO_TIMING_GRAPH, "timing_graph.echo");
-	setEchoFileName(E_ECHO_LUT_REMAPPING, "lut_remapping.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "pre_packing_timing_graph.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF, "pre_packing_timing_graph_as_blif.blif");
 	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");

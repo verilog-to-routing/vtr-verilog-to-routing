@@ -15,17 +15,13 @@
 
  logical_block - One node in the input technology-mapped netlist
  net - Connectivity data structure for the user netlist
- block - An already clustered logic block
+ block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
  rr_node - The basic building block of the interconnect in the FPGA architecture
 
  Cluster-specific main data structure:
 
  t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA achitecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  The t_pb hierarchy follows what is described by t_pb_graph_node
-
- Each top-level pb stores the entire routing resource graph (rr_graph).  The traceback information is included in this rr_graph so if you needed to determine connectivity down to the wire level, this is the data structure that you would traverse.
- The rr_graph is generated based on the pb_graph_node netlist of that pb.  Each pb_graph_node has a member variable called pin_count that serves as the index for the rr_node (in retrospect, I should have used rr_node_index instead of pin_count for the member variable to be more descriptive).  
- This makes it easy to identify which rr_node corresponds to which pb_graph_pin.  Additional sources and sinks are generated at the inputs and outputs of the complex logic block to match with what has already been packed into the cluster.
 
  */
 
@@ -147,15 +143,9 @@ typedef struct s_pb {
 	struct s_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
 	struct s_pb *parent_pb; /* pointer to parent node */
 
-	t_rr_node *rr_graph; /* pointer to rr_graph connecting pbs of cluster */
-	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 	struct s_pb_stats *pb_stats; /* statistics for current pb */
 
 	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
-
-	int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
-	 LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),
-	 so this optimization is crucial for handling LUT based FPGAs.	 */ /* jedit TODO: Delete this because it is no longer used by anyone */ 
 
 	int get_num_child_types() const {
 		if (child_pbs != NULL && has_modes()) {
