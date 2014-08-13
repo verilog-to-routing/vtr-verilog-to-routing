@@ -90,7 +90,7 @@ void power_usage_lut(t_power_usage * power_usage, int LUT_size,
 		float transistor_size, char * SRAM_values, float * input_densities,
 		float * input_probabilities, float period);
 void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
-		t_interconnect_pins * interc_pins);
+		t_interconnect_pins * interc_pins, int iblk);
 void power_usage_mux_multilevel(t_power_usage * power_usage,
 		t_mux_arch * mux_arch, float * in_prob, float * in_dens,
 		int selected_input, boolean output_level_restored, float period);

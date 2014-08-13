@@ -78,13 +78,12 @@ char * transistor_type_name(e_tx_type type) {
 	}
 }
 
-float pin_dens(t_pb * pb, t_pb_graph_pin * pin) {
+float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float density = 0.;
 
 	if (pb) {
 		int net_num;
-		net_num = pb->rr_graph[pin->pin_count_in_cluster].net_num;
-
+		net_num = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_idx;
 		if (net_num != OPEN) {
 			density = vpack_net_power[net_num].density;
 		}
@@ -93,14 +92,13 @@ float pin_dens(t_pb * pb, t_pb_graph_pin * pin) {
 	return density;
 }
 
-float pin_prob(t_pb * pb, t_pb_graph_pin * pin) {
+float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	/* Assumed pull-up on unused interconnect */
 	float prob = 1.;
 
 	if (pb) {
 		int net_num;
-		net_num = pb->rr_graph[pin->pin_count_in_cluster].net_num;
-
+		net_num = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_idx;
 		if (net_num != OPEN) {
 			prob = vpack_net_power[net_num].probability;
 		}

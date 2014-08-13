@@ -77,13 +77,13 @@ static void power_usage_routing(t_power_usage * power_usage,
 /* Tiles */
 static void power_usage_blocks(t_power_usage * power_usage);
 static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_node);
+		t_pb_graph_node * pb_node, int iblk);
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_graph_node);
+	t_pb_graph_node * pb_graph_node, int iblk);
 static void power_reset_tile_usage(void);
 static void power_reset_pb_type(t_pb_type * pb_type);
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_node * pb_node);
+		t_pb * pb, t_pb_graph_node * pb_node, int iblk);
 
 /* Clock */
 static void power_usage_clock(t_power_usage * power_usage,
@@ -122,7 +122,7 @@ static char * power_estimation_method_name(
  *  - calc_static: Calculate static power? Otherwise ignore
  */
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_graph_node) {
+		t_pb_graph_node * pb_graph_node, int iblk) {
 	t_power_usage sub_power_usage;
 
 	power_zero_usage(power_usage);
@@ -147,8 +147,8 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
 			t_pb_graph_pin * pin = &pb_graph_node->input_pins[0][pin_idx];
 
-			input_probabilities[pin_idx] = pin_prob(pb, pin);
-			input_densities[pin_idx] = pin_dens(pb, pin);
+			input_probabilities[pin_idx] = pin_prob(pb, pin, iblk);
+			input_densities[pin_idx] = pin_dens(pb, pin, iblk);
 		}
 
 		if (pb) {
@@ -177,10 +177,10 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		float clk_dens = 0.;
 		float clk_prob = 0.;
 
-		D_dens = pin_dens(pb, D_pin);
-		D_prob = pin_prob(pb, D_pin);
-		Q_dens = pin_dens(pb, Q_pin);
-		Q_prob = pin_prob(pb, Q_pin);
+		D_dens = pin_dens(pb, D_pin, iblk);
+		D_prob = pin_prob(pb, D_pin, iblk);
+		Q_dens = pin_dens(pb, Q_pin, iblk);
+		Q_prob = pin_prob(pb, Q_pin, iblk);
 
 		clk_prob = g_clock_arch->clock_inf[0].prob;
 		clk_dens = g_clock_arch->clock_inf[0].dens;
@@ -203,13 +203,13 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 }
 
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_pin * pin) {
+	t_pb_graph_pin * pin, int iblk) {
 	float scale_factor;
 
 	power_zero_usage(power_usage);
 
 	if (pin->pin_power->scaled_by_pin) {
-		scale_factor = pin_prob(pb, pin->pin_power->scaled_by_pin);
+		scale_factor = pin_prob(pb, pin->pin_power->scaled_by_pin, iblk);
 		if (pin->port->port_power->reverse_scaled) {
 			scale_factor = 1 - scale_factor;
 		}
@@ -219,12 +219,12 @@ void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 
 	/* Divide by 2 because density is switches/cycle, but a toggle is 2 switches */
 	power_usage->dynamic += scale_factor
-			* pin->port->port_power->energy_per_toggle * pin_dens(pb, pin) / 2.0
+		* pin->port->port_power->energy_per_toggle * pin_dens(pb, pin, iblk) / 2.0
 			/ g_solution_inf.T_crit;
 }
 
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_pin * pin) {
+	t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	t_power_usage sub_power_usage;
 	float buffer_size = 0.;
 	double C_wire;
@@ -233,21 +233,21 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 
 	/* Wire switching */
 	C_wire = pin->pin_power->C_wire;
-	power_usage_wire(&sub_power_usage, C_wire, pin_dens(pb, pin),
+	power_usage_wire(&sub_power_usage, C_wire, pin_dens(pb, pin, iblk),
 			g_solution_inf.T_crit);
 	power_add_usage(power_usage, &sub_power_usage);
 
 	/* Buffer power */
 	buffer_size = pin->pin_power->buffer_size;
 	if (buffer_size) {
-		power_usage_buffer(&sub_power_usage, buffer_size, pin_prob(pb, pin),
-				pin_dens(pb, pin), FALSE, g_solution_inf.T_crit);
+		power_usage_buffer(&sub_power_usage, buffer_size, pin_prob(pb, pin, iblk),
+			pin_dens(pb, pin, iblk), FALSE, g_solution_inf.T_crit);
 		power_add_usage(power_usage, &sub_power_usage);
 	}
 }
 
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_node * pb_node) {
+		t_pb * pb, t_pb_graph_node * pb_node, int iblk) {
 	int port_idx;
 	int pin_idx;
 	t_power_usage pin_power;
@@ -259,7 +259,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
 		for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 				pin_idx++) {
 			power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-					&pb_node->input_pins[port_idx][pin_idx]);
+					&pb_node->input_pins[port_idx][pin_idx], iblk);
 			power_add_usage(power_usage, &pin_power);
 		}
 	}
@@ -269,7 +269,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
 		for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
 				pin_idx++) {
 			power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-					&pb_node->output_pins[port_idx][pin_idx]);
+				&pb_node->output_pins[port_idx][pin_idx], iblk);
 			power_add_usage(power_usage, &pin_power);
 		}
 	}
@@ -279,7 +279,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
 		for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
 				pin_idx++) {
 			power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-					&pb_node->clock_pins[port_idx][pin_idx]);
+				&pb_node->clock_pins[port_idx][pin_idx], iblk);
 			power_add_usage(power_usage, &pin_power);
 		}
 	}
@@ -292,7 +292,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
  * - If no children, must be a primitive.  Call primitive hander.
  */
 static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_node) {
+		t_pb_graph_node * pb_node, int iblk) {
 
 	t_power_usage power_usage_bufs_wires;
 	t_power_usage power_usage_local_muxes;
@@ -356,7 +356,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 			for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 					pin_idx++) {
 				dens_avg += pin_dens(pb,
-						&pb_node->input_pins[port_idx][pin_idx]);
+					&pb_node->input_pins[port_idx][pin_idx], iblk);
 				num_pins++;
 			}
 		}
@@ -386,7 +386,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 					pin_idx++) {
 				t_power_usage pin_power;
 				power_usage_local_pin_toggle(&pin_power, pb,
-						&pb_node->input_pins[port_idx][pin_idx]);
+					&pb_node->input_pins[port_idx][pin_idx], iblk);
 				power_add_usage(&power_usage_pin_toggle, &pin_power);
 			}
 		}
@@ -397,7 +397,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 					pin_idx++) {
 				t_power_usage pin_power;
 				power_usage_local_pin_toggle(&pin_power, pb,
-						&pb_node->output_pins[port_idx][pin_idx]);
+						&pb_node->output_pins[port_idx][pin_idx], iblk);
 				power_add_usage(&power_usage_pin_toggle, &pin_power);
 			}
 		}
@@ -408,7 +408,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 					pin_idx++) {
 				t_power_usage pin_power;
 				power_usage_local_pin_toggle(&pin_power, pb,
-						&pb_node->clock_pins[port_idx][pin_idx]);
+					&pb_node->clock_pins[port_idx][pin_idx], iblk);
 				power_add_usage(&power_usage_pin_toggle, &pin_power);
 			}
 		}
@@ -454,7 +454,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		/* This is a leaf node, which is a primitive (lut, ff, etc) */
 		if (estimate_primitives) {
 			assert(pb_node->pb_type->blif_model);
-			power_usage_primitive(&power_usage_sub, pb, pb_node);
+			power_usage_primitive(&power_usage_sub, pb, pb_node, iblk);
 
 			// Add to power of this PB
 			power_add_usage(power_usage, &power_usage_sub);
@@ -475,7 +475,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		if (estimate_buffers_and_wire) {
 			/* Check pins of all interconnect */
 			power_usage_local_buffers_and_wires(&power_usage_bufs_wires, pb,
-					pb_node);
+					pb_node, iblk);
 			power_component_add_usage(&power_usage_bufs_wires,
 					POWER_COMPONENT_PB_BUFS_WIRE);
 			power_add_usage(
@@ -491,7 +491,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 					interc_idx < pb_type->modes[pb_mode].num_interconnect;
 					interc_idx++) {
 				power_usage_local_interc_mux(&power_usage_sub, pb,
-						&pb_node->interconnect_pins[pb_mode][interc_idx]);
+						&pb_node->interconnect_pins[pb_mode][interc_idx], iblk);
 				power_add_usage(&power_usage_local_muxes, &power_usage_sub);
 
 			}
@@ -530,7 +530,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 							&pb_node->child_pb_graph_nodes[pb_mode][pb_type_idx][pb_idx];
 
 					power_usage_pb(&power_usage_sub, child_pb,
-							child_pb_graph_node);
+							child_pb_graph_node, iblk);
 					power_add_usage(&power_usage_children, &power_usage_sub);
 				}
 			}
@@ -617,7 +617,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				}
 
 				/* Calculate power of this CLB */
-				power_usage_pb(&pb_power, pb, grid[x][y].type->pb_graph_head);
+				power_usage_pb(&pb_power, pb, grid[x][y].type->pb_graph_head, grid[x][y].blocks[z]);
 				power_add_usage(power_usage, &pb_power);
 			}
 		}
