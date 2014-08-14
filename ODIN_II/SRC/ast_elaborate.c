@@ -1562,7 +1562,7 @@ void delete_bracket_head(enode *begin, enode *end)
  *-------------------------------------------------------------------------*/
 void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 {
-	enode *temp, *new_head, *tail, *p, *partial, *start;
+	enode *temp, *new_head, *tail, *p, *partial, *start = NULL;
 	int mark;
 	switch (flag)
 	{
@@ -1683,7 +1683,7 @@ void copy_enode(enode *node, enode *new_node)
  *-------------------------------------------------------------------------*/
 void delete_bracket_tail(enode *begin, enode *end)
 {
-	enode *temp, *s;
+	enode *temp, *s = NULL;
 	for (temp = begin; temp != NULL; temp = temp->pre)
 		if ((temp->flag == 2) && (temp->priority == 2)) // '+' or '-'
 		{
