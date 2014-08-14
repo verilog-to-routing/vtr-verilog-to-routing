@@ -288,7 +288,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 	return error;
 }
 
-inline Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj) {
+Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj) {
 	Ace_Obj_Info_t * info;
 
 	if (st_lookup(ace_info_hash_table, (char *) obj, (char **) &info)) {

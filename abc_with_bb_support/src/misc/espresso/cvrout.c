@@ -515,7 +515,7 @@ char *out_string;
     putc('\n', fp);
 }
 
-output_symbolic_constraints(fp, PLA, output_symbolic)
+void output_symbolic_constraints(fp, PLA, output_symbolic)
 FILE *fp;
 pPLA PLA;
 int output_symbolic;

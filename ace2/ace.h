@@ -56,7 +56,7 @@ typedef struct {
 
 extern st_table * ace_info_hash_table;
 
-inline Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj);
+Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj);
 //static inline void 				Ace_InfoPtrSet(Abc_Obj_t * obj_ptr, Ace_Obj_Info_t* info_ptr)	{obj_ptr->pTemp = info_ptr;					}
 
 #endif
