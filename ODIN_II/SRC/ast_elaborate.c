@@ -1,4 +1,4 @@
-/*
+	/*
 Copyright (c) 2009 Peter Andrew Jamieson (jamieson.peter@gmail.com)
 
 Permission is hereby granted, free of charge, to any person
@@ -56,11 +56,14 @@ enode *head, *p;
 
 int simplify_ast()
 {
-	//reduce_parameter();
-	//reduce_assignment_expression();
+	/* for loop support */
 	optimize_for_tree();
+	/* reduce parameters with their values if they have been set */
+	reduce_parameter();
+	/* simplify assignment expressions */
 	reduce_assignment_expression();
-	//ast_node_t *top = find_top_module();
+	/* find multiply or divide operation that can be replaced with shift operation */
+	shift_operation();
 
 	return 1;
 }
@@ -73,11 +76,13 @@ void optimize_for_tree()
 {
 	ast_node_t *top;
 	ast_node_t *T;
-	int i, j;
+	int i, j, k;
 
 	ast_node_t *list_for_node[N] = {0};
 	ast_node_t *list_parent[N] = {0};
 	int idx[N] = {0};
+
+	find_most_unique_count(); // find out the most unique_count prepared for new AST nodes
 
 	/* we will find the top module */
 	for (i = 0; i < num_modules; i++)
@@ -86,18 +91,23 @@ void optimize_for_tree()
 		/* search the tree looking for FOR node */
 		search_for_node(top, list_for_node, list_parent, idx);
 
-		find_most_unique_count(top);
-
 		/* simplify every FOR node */
 		for (j = 0; j < num_for; j++)
 		{
-			int initial, terminal, from;
-			char *expression[Max_size]= {0};
-			char infix_expression[Max_size] = {0};
-			char suffix_expression[Max_size] = {0};
+			int initial, terminal;
+			char *expression[Max_size];
+			char *infix_expression[Max_size];
+			char *postfix_expression[Max_size];
 			char node_write[10][20];
+			char *value_string;
 			count_write = 0;
 			count = 0;
+			for (k = 0; k < Max_size; k++) //initial *expression[], *infix_expression[], *postfix_expression[]
+			{
+				expression[k] = NULL;
+				infix_expression[k] = NULL;
+				postfix_expression[k] = NULL;
+			}
 			memset(node_write, 0, sizeof(node_write));
 			v_name = (char*)malloc(sizeof(list_for_node[j]->children[0]->children[0]->types.identifier)+1);
 			sprintf(v_name, "%s", list_for_node[j]->children[0]->children[0]->types.identifier);
@@ -107,23 +117,24 @@ void optimize_for_tree()
 			record_expression(list_for_node[j]->children[2], expression);
 			mark_node_write(list_for_node[j]->children[3], node_write);
 			mark_node_read(list_for_node[j]->children[3], node_write);
-			from = list_parent[j]->num_children - 1;
 
 			while(v_value < terminal)
 			{
 				T  = (ast_node_t*)malloc(sizeof(ast_node_t));
 				copy_tree((list_for_node[j])->children[3], T);
 				add_child_to_node(list_parent[j], T);
-				modify_expression(expression, infix_expression);
-				translate(infix_expression, suffix_expression);
-				v_value = calculation(suffix_expression);
+				value_string = (char*)malloc(sizeof(int));
+				sprintf(value_string, "%lld", v_value);
+				modify_expression(expression, infix_expression, value_string);
+				translate_expression(infix_expression, postfix_expression);
+				v_value = calculation(postfix_expression);
 				memset(infix_expression, 0, Max_size);
-				memset(suffix_expression, 0, Max_size);
+				memset(postfix_expression, 0, Max_size);
 
 			}
 
 			reallocate_node(list_parent[j], idx[j]);
-			remove_intermediate_variable(list_parent[j], node_write, from);
+			remove_intermediate_variable(list_parent[j], node_write);
 			free(v_name);
 		}
 	}
@@ -158,7 +169,6 @@ void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *
 		}
 	}
 
-
 }
 
 /*---------------------------------------------------------------------------
@@ -167,7 +177,7 @@ void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *
 void copy_tree(ast_node_t *node, ast_node_t *new_node)
 {
 	int i, n, len;
-	char number[12] = {0};
+	char number[1024] = {0};
 	if (node == NULL)
 		new_node = NULL;
 
@@ -268,135 +278,102 @@ void record_expression(ast_node_t *node, char *array[])
 }
 
 /*---------------------------------------------------------------------------
- * (function: calculation)
+ * (function: calculate)
  *-------------------------------------------------------------------------*/
-int calculation(char expression[])
+int calculation(char *post_exp[])
 {
-	struct
-	{
-		int data[Max_size];
-		int top;
-	}st;
-	int d;
-	char ch;
-	int t = 0;
-	st.top = -1;
-	ch = expression[t];
-	t++;
-	while(ch != '\0')
-	{
-		switch(ch)
-		{
-			case '+':
-				st.data[st.top-1] = st.data[st.top-1]+st.data[st.top];
-				st.top--;
-				break;
-			case '-':
-				st.data[st.top-1] = st.data[st.top-1]-st.data[st.top];
-				st.top--;
-				break;
-			case '*':
-				st.data[st.top-1] = st.data[st.top-1]*st.data[st.top];
-				st.top--;
-				break;
-			case '/':
-				if(st.data[st.top] != 0)
-				st.data[st.top-1]=st.data[st.top-1]/st.data[st.top];
-				st.top--;
-				break;
-			   	default:
-			    d=0;
-			    while(ch >= '0'&&ch <= '9')
-			    {
-			    	d = 10*d+ch-'0';
-			    	ch = expression[t];
-			    	t++;
-			    }
-				  	st.top++;
-				  	st.data[st.top] = d;
-				  	break;
-		}
-	            ch = expression[t];
-	            t++;
-	}
-	return st.data[st.top];
+  int value;
+  struct
+  {
+    int data[Max_size];
+    int top;
+  }pop;
+  pop.top = -1;
+  int i, num;
+  for (i = 0; post_exp[i] != NULL; i++)
+  {
+    if (*post_exp[i] == '+' || *post_exp[i] == '-' || *post_exp[i] == '*' || *post_exp[i] == '/')
+    {
+      switch(*post_exp[i])
+      {
+        case '+':
+          num = pop.data[pop.top-1] + pop.data[pop.top];
+          break;
+        case '-':
+          num = pop.data[pop.top-1] - pop.data[pop.top];
+          break;
+        case '*':
+          num = pop.data[pop.top-1] * pop.data[pop.top];
+          break;
+        case '/':
+          num = pop.data[pop.top-1] / pop.data[pop.top];
+          break;
+        default:
+          break;
+      }
+      pop.top--;
+      pop.data[pop.top] = num;
+    }
+    else // number
+    {
+      pop.top++;
+      pop.data[pop.top] = atoi(post_exp[i]);
+    }
+  }
+  value = pop.data[pop.top];
+
+  return value;
 }
 
 /*---------------------------------------------------------------------------
- * (function: translate)
- * translate infix expression into suffix notation
+ * (function: translate_expression)
+ * translate infix expression into postfix expression
  *-------------------------------------------------------------------------*/
-void translate(char str[],char exp[])
+void translate_expression(char *exp[], char *post_exp[])
 {
-	struct
-	{
-		char data[Max_size];
-		int top;
-	}op;
-	char ch;
-	int i = 0,t = 0;
-	op.top = -1;
-	ch = str[i];
-	i++;
-	while(ch != '\000')
-	{
-		switch(ch)
-		{
-			case '(':
-				op.top++;op.data[op.top]=ch;
-				break;
-			case ')':
-				while(op.data[op.top] != '(')
-				{
-					exp[t]=op.data[op.top];
-					op.top--;
-					t++;
-				}
-				op.top--;
-				break;
-			case '+':
-			case '-':
-				while(op.top != -1&&op.data[op.top] != '(')
-				{
-					exp[t] = op.data[op.top];
-					op.top--;
-					t++;
-				}
-				op.top++;
-				op.data[op.top] = ch;
-				break;
-			case '*':
-			case '/':
-				while(op.top == '/'||op.top == '*')
-				{
-					exp[t] = op.data[op.top];
-					op.top--;
-					t++;
-				}
-				op.top++;
-				op.data[op.top] = ch;
-				break;
-			default:
-			while(ch >= '0'&&ch <= '9')
-			{
-				exp[t] = ch;t++;
-				ch = str[i];i++;
-			}
-			i--;
-			exp[t] = '#';
-			t++;
-			break;
-		}
-		  ch = str[i];
-		  i++;
-	}
-	while(op.top != -1)
-	{
-		exp[t] = op.data[op.top];
-		t++;
-		op.top--;
-	}
-	exp[t] = '\000';
+  struct
+  {
+    char *mem[Max_size];
+    int top;
+  }pop;
+  int i, j;
+  pop.top = -1;
+  j = 0;
+
+  for (i = 0; exp[i] != NULL; i++)
+  {
+    switch(*exp[i])
+    {
+      case '+':
+      case '-':
+        if (*pop.mem[pop.top] == '*' || *pop.mem[pop.top] == '/')
+        {
+	  while (pop.top >= 0)
+          {
+            post_exp[j++] = pop.mem[pop.top--];
+          }
+   	  pop.top++;
+          pop.mem[pop.top] = exp[i];
+        }
+        else
+          pop.mem[++pop.top] = exp[i];
+        break;
+
+      case '*':
+      case '/':
+        pop.mem[++pop.top] = exp[i];
+        break;
+
+      default: // number
+        post_exp[j++] = exp[i];
+        break;
+
+    }
+  }
+  while (pop.top >= 0)
+  {
+    post_exp[j++] = pop.mem[pop.top--];
+  }
 }
 
 /*---------------------------------------------------------------------------
@@ -407,17 +384,20 @@ void check_and_replace(ast_node_t *node, char *p[])
 	switch(node->type)
 	{
 		case IDENTIFIERS:
-				//sprintf((p+count++), "%s", node->types.identifier);
 				p[count++] = node->types.identifier;
 				break;
 
 		case BLOCKING_STATEMENT:
-			//sprintf((p+count++), "%s", "=");
-			p[count++] = strdup("=");
+			//p[count++] = '=';
+			sprintf(p[count++], "%s", "=");
+			break;
+
+		case NON_BLOCKING_STATEMENT:
+			//p[count++] = "<=";
+			sprintf(p[count++], "%s", "<=");
 			break;
 
 		case NUMBERS:
-			//sprintf((p+count++), "%lld", node->types.number.value);
 			p[count++] = node->types.number.number;
 			break;
 
@@ -425,20 +405,20 @@ void check_and_replace(ast_node_t *node, char *p[])
 			switch(node->types.operation.op)
 			{
 				case ADD:
-					//sprintf((p+count++), "%s", "+");
-					p[count++] = strdup("+");
+					//p[count++] = '+';
+					sprintf(p[count++], "%s", "+");
 					break;
 				case MINUS:
-					//sprintf((p+count++), "%s", "-");
-					p[count++] = strdup("-");
+					//p[count++] = '-';
+					sprintf(p[count++], "%s", "-");
 					break;
 				case MULTIPLY:
-					//sprintf((p+count++), "%s", "*");
-					p[count++] = strdup("*");
+					//p[count++] = '*';
+					sprintf(p[count++], "%s", "*");
 					break;
 				case DIVIDE:
-					//sprintf((p+count++), "%s", "/");
-					p[count++] = strdup("/");
+					//p[count++] = '/';
+					sprintf(p[count++], "%s", "/");
 					break;
 
 				default:
@@ -455,11 +435,11 @@ void check_and_replace(ast_node_t *node, char *p[])
 /*---------------------------------------------------------------------------
  * (function: modify_expression)
  *-------------------------------------------------------------------------*/
-void modify_expression(char *exp[], char s_exp[])
+void modify_expression(char *exp[], char *infix_exp[], char *value)
 {
-	int i = 0;
-	int j;
-	int k = 0;
+	int i, j, k;
+	i = 0;
+	k = 0;
 
 	while((strcmp(exp[i], "=") != 0) && i < Max_size)
 		i++;
@@ -467,10 +447,10 @@ void modify_expression(char *exp[], char s_exp[])
 	for (j = i + 1; exp[j] != NULL; j++)
 	{
 		if (strcmp(exp[j], v_name) == 0)
-			sprintf(&s_exp[k++], "%lld", v_value);
+			infix_exp[k++] = value;
 
 		else
-			sprintf(&s_exp[k++], "%s", exp[j]);
+			infix_exp[k++] = exp[j];
 
 	}
 
@@ -538,12 +518,15 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 
 /*---------------------------------------------------------------------------
  * (function: change_to_number_node)
+ * change the original AST node to a NUMBER node or change the value of the node
+ * originate from the function: create_tree_node_number() in ast_util.c
  *-------------------------------------------------------------------------*/
 void change_to_number_node(ast_node_t *node, char *number)
 {
 	char *string_pointer = number;
 	int index_string_pointer = 0;
 	short flag_constant_decimal = FALSE;
+	int len = 0;
 
 	for (string_pointer=number; *string_pointer; string_pointer++)
 	{
@@ -553,8 +536,9 @@ void change_to_number_node(ast_node_t *node, char *number)
 		}
 		index_string_pointer++;
 	}
-
-	if (index_string_pointer == (int) strlen(number))
+	
+	len = strlen(number);
+	if (index_string_pointer == len)
 	{
 		flag_constant_decimal = TRUE;
 		node->types.number.base = DEC;
@@ -603,19 +587,15 @@ void reallocate_node(ast_node_t *node, int idx)
 /*---------------------------------------------------------------------------
  * (function: find_most_unique_count)
  *-------------------------------------------------------------------------*/
-void find_most_unique_count(ast_node_t *node)
+void find_most_unique_count()
 {
 	int i;
-	if (node == NULL)
-		return;
-
-	if (count_id < node->unique_count)
-		count_id = node->unique_count;
-
-	if (node->num_children != 0)
+	ast_node_t *top_node;
+	for (i = 0; i < num_modules; i++)
 	{
-		for (i = 0; i < node->num_children; i++)
-			find_most_unique_count(node->children[i]);
+		top_node = ast_modules[i];
+		if (count_id < top_node->unique_count)
+			count_id = top_node->unique_count;
 	}
 
 }
@@ -630,7 +610,7 @@ void mark_node_write(ast_node_t *node, char list[10][20])
 	if (node == NULL)
 		return;
 
-	if (node->type == BLOCKING_STATEMENT && node->types.operation.op == NO_OP)
+	if (node->type == BLOCKING_STATEMENT || node->type == NON_BLOCKING_STATEMENT)
 		if (node->children[0]->type == IDENTIFIERS)
 		{
 			node->children[0]->is_read_write = 2;
@@ -671,7 +651,7 @@ void mark_node_read(ast_node_t *node, char list[10][20])
  * (function: remove_intermediate_variable)
  * remove the intermediate variables, and prune the syntax tree of FOR loop
  *-------------------------------------------------------------------------*/
-void remove_intermediate_variable(ast_node_t *node, char list[10][20], int from)
+void remove_intermediate_variable(ast_node_t *node, char list[10][20])
 {
 	int i, j, k, n;
 	ast_node_t *write = NULL;
@@ -680,15 +660,15 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20], int from)
 	char *temp;
 	k = 0;
 
-	for (i =  from; i < node->num_children-1; i++)
+	for (i =  0; i < node->num_children-1; i++)
 	{
 		for (j = 0; j < count_write; j++)
 		{
 			temp = (char*)malloc(sizeof(char)*20);
 			new_node = (ast_node_t *)malloc(sizeof(ast_node_t));
 			sprintf(temp, "%s", list[j]);
-			search_marked_node(node->children[i], 2, temp, &write);
-			search_marked_node(node->children[i+1], 1, temp, &read);
+			search_marked_node(node->children[i], 2, temp, &write); //search for "write" nodes
+			search_marked_node(node->children[i+1], 1, temp, &read); // search for "read" nodes
 			for (n = 0; n < read->num_children; n++)
 				if (read->children[n]->is_read_write == 1)
 				{
@@ -774,6 +754,7 @@ void reduce_assignment_expression()
 	int i, j, build, mark, *n;
 	n = &mark;
 	int line_num, file_num;
+	int triger = -1;
 	head = NULL;
 	p = NULL;
 	int *bd = &build;
@@ -781,13 +762,13 @@ void reduce_assignment_expression()
 	ast_node_t *T = NULL;
 	ast_node_t *list_assign[10240] = {0};
 	ast_node_t *top = NULL;
+
+	find_most_unique_count(); // find out most unique_count prepared for new AST nodes
 	for (i = 0; i < num_modules; i++)
 	{
 		top = ast_modules[i];
 		count_assign = 0;
 		find_assign_node(top, list_assign);
-		count_id = 0;
-		find_most_unique_count(top);
 		for (j = 0; j < count_assign; j++)
 		{
 			mark = 0;
@@ -796,7 +777,9 @@ void reduce_assignment_expression()
 			{
 				build = 0;
 				store_exp_list(list_assign[j]->children[1]);
-				deal_with_bracket(list_assign[j]->children[1]);
+				triger = deal_with_bracket(list_assign[j]->children[1]);
+				if (triger == 1) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
+					return;
 				simplify_expression(bd);
 				if (build == 1)
 				{
@@ -824,7 +807,7 @@ void find_assign_node(ast_node_t *node, ast_node_t *list[])
 	if ((node == NULL) || (node->num_children == 0))
 		return;
 
-	if (node->type == BLOCKING_STATEMENT)
+	if (node->type == BLOCKING_STATEMENT || node->type == NON_BLOCKING_STATEMENT)
 		list[count_assign++] = node;
 
 	for (i = 0; i < node->num_children; i++)
@@ -832,6 +815,10 @@ void find_assign_node(ast_node_t *node, ast_node_t *list[])
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: simplify_expression)
+ * simplify the expression stored in the linked_list
+ *-------------------------------------------------------------------------*/
 void simplify_expression(int *build)
 {
 	adjoin_constant(build);
@@ -842,6 +829,9 @@ void simplify_expression(int *build)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: find_tail)
+ *-------------------------------------------------------------------------*/
 enode *find_tail(enode *node)
 {
 	enode *temp;
@@ -853,6 +843,9 @@ enode *find_tail(enode *node)
 	return tail;
 }
 
+/*---------------------------------------------------------------------------
+ * (function: reduce_enode_list)
+ *-------------------------------------------------------------------------*/
 void reduce_enode_list()
 {
 	enode *temp;
@@ -896,6 +889,9 @@ void reduce_enode_list()
 	}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: store_exp_list)
+ *-------------------------------------------------------------------------*/
 void store_exp_list(ast_node_t *node)
 {
 	enode *temp;
@@ -910,6 +906,9 @@ void store_exp_list(ast_node_t *node)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: record_tree_info)
+ *-------------------------------------------------------------------------*/
 void record_tree_info(ast_node_t *node)
 {
 	if (node == NULL)
@@ -935,6 +934,10 @@ void record_tree_info(ast_node_t *node)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: create_enode)
+ * store elements of an expression in nodes consisting the linked_list
+ *-------------------------------------------------------------------------*/
 void create_enode(ast_node_t *node)
 {
 	enode *s;
@@ -1002,6 +1005,10 @@ void create_enode(ast_node_t *node)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: adjoin_constant)
+ * compute the constant numbers in the linked_list
+ *-------------------------------------------------------------------------*/
 void adjoin_constant(int *build)
 {
 	enode *t, *replace;
@@ -1063,6 +1070,9 @@ void adjoin_constant(int *build)
 	}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: replace_enode)
+ *-------------------------------------------------------------------------*/
 enode *replace_enode(int data, enode *t, int mark)
 {
 	enode *replace;
@@ -1105,6 +1115,9 @@ enode *replace_enode(int data, enode *t, int mark)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: combine_constant)
+ *-------------------------------------------------------------------------*/
 void combine_constant(int *build)
 {
 	enode *temp, *m, *s1, *s2, *replace;
@@ -1126,7 +1139,7 @@ void combine_constant(int *build)
 						s2 = m;
 						a = s1->type.data;
 						b = s2->type.data;
-						if ((temp = head) || (temp->pre->type.operation == '+'))
+						if ((s1 == head) || (s1->pre->type.operation == '+'))
 						{
 							if (s2->pre->type.operation == '+')
 								result = a + b;
@@ -1179,6 +1192,9 @@ void combine_constant(int *build)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: construct_new_tree)
+ *-------------------------------------------------------------------------*/
 void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_num)
 {
 	enode *temp, *tail1, *tail2;
@@ -1232,6 +1248,9 @@ void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_nu
 	return;
 }
 
+/*---------------------------------------------------------------------------
+ * (function: check_exp_list)
+ *-------------------------------------------------------------------------*/
 int check_exp_list(enode *tail)
 {
 	enode *temp;
@@ -1246,6 +1265,9 @@ int check_exp_list(enode *tail)
 	return 3;
 }
 
+/*---------------------------------------------------------------------------
+ * (function: delete_continuous_multiply)
+ *-------------------------------------------------------------------------*/
 void delete_continuous_multiply(int *build)
 {
 	enode *temp, *t, *m, *replace;
@@ -1305,6 +1327,9 @@ void delete_continuous_multiply(int *build)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: create_ast_node)
+ *-------------------------------------------------------------------------*/
 void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 {
 	char num[12] = {0};
@@ -1335,6 +1360,9 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: create_op_node)
+ *-------------------------------------------------------------------------*/
 void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num)
 {
 	initial_node(node, BINARY_OPERATION, line_num, file_num);
@@ -1360,6 +1388,9 @@ void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: free_exp_list)
+ *-------------------------------------------------------------------------*/
 void free_exp_list()
 {
 	enode *next, *temp;
@@ -1370,21 +1401,67 @@ void free_exp_list()
 	}
 }
 
-void deal_with_bracket(ast_node_t *node)
+/*---------------------------------------------------------------------------
+ * (function: deal_with_bracket)
+ *-------------------------------------------------------------------------*/
+int deal_with_bracket(ast_node_t *node)
 {
 	int i, begin, end;
+	int flag = -1;
 	int list_bracket[Max_size] = {0};
 	int num_bracket = 0;
 	int *count_bracket = &num_bracket;
 	recursive_tree(node, list_bracket, count_bracket);
-	for (i = num_bracket-2; i >= 0; i = i - 2)
+	flag = check_mult_bracket(list_bracket, num_bracket); // if there are brackets multiplying continuously ()*()
+	if (flag == 1) // there are multiple brackets multiplying, stop expanding brackets which may not simplify AST but make it mroe complex
+		return flag;
+	else
 	{
-		begin = list_bracket[i];
-		end = list_bracket[i+1];
-		delete_bracket(begin, end);
+		for (i = num_bracket-2; i >= 0; i = i - 2)
+		{
+			begin = list_bracket[i];
+			end = list_bracket[i+1];
+			delete_bracket(begin, end);
+		}
+		return flag;
 	}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: check_mult_bracket)
+ * check if the brackets are continuously multiplying
+ *-------------------------------------------------------------------------*/
+int check_mult_bracket(int list[], int num_bracket)
+{
+	int flag = -1;
+	int i, num_1, num_2;
+	enode *node;
+	for (i = 1; i < num_bracket - 2; i = i + 2)
+	{
+		num_1 = list[i];
+		num_2 = list[i+1];
+		node = head;
+		while (node != NULL && node->next != NULL && node->next->next != NULL)
+		{
+			if (node->id == num_1 && node->next->next->id == num_2)
+			{
+				if (node->next->flag == 2 && (node->next->type.operation == '*' || node->next->type.operation == '/'))
+					flag = 1;
+				break;
+			}
+			node = node->next;
+		}
+		if (flag == 1)
+			break;
+	}
+	return flag;
+
+}
+
+/*---------------------------------------------------------------------------
+ * (function: recursive_tree)
+ * search the AST recursively to find brackets
+ *-------------------------------------------------------------------------*/
 void recursive_tree(ast_node_t *node, int list_bracket[], int *count_bracket)
 {
 	int i;
@@ -1409,6 +1486,9 @@ void recursive_tree(ast_node_t *node, int list_bracket[], int *count_bracket)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: find_lead_node)
+ *-------------------------------------------------------------------------*/
 void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, int ids)
 {
 	if (node == NULL)
@@ -1422,6 +1502,9 @@ void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, in
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: delete_bracket)
+ *-------------------------------------------------------------------------*/
 void delete_bracket(int begin, int end)
 {
 	enode *s1, *s2, *temp, *p;
@@ -1450,12 +1533,17 @@ void delete_bracket(int begin, int end)
 			delete_bracket_tail(s1, s2);
 		else
 			delete_bracket_body(s1, s2);
+	if (s1 != head)
+		check_operation(s1, s2);
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: delete_bracket_head)
+ *-------------------------------------------------------------------------*/
 void delete_bracket_head(enode *begin, enode *end)
 {
-	enode *temp, *s = NULL;
+	enode *temp, *s;
 	for (temp = end; temp != NULL; temp = temp->next)
 	{
 		if ((temp->flag == 2) && (temp->priority == 2))
@@ -1463,13 +1551,18 @@ void delete_bracket_head(enode *begin, enode *end)
 			s = temp->pre;
 			break;
 		}
+		if (temp->next == NULL)
+			s = temp;
 	}
 	change_exp_list(begin, end, s, 1);
 }
 
+/*---------------------------------------------------------------------------
+ * (function: change_exp_list)
+ *-------------------------------------------------------------------------*/
 void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 {
-	enode *temp, *new_head, *tail, *p, *partial, *start = NULL;
+	enode *temp, *new_head, *tail, *p, *partial, *start;
 	int mark;
 	switch (flag)
 	{
@@ -1555,7 +1648,9 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 	}
 }
 
-
+/*---------------------------------------------------------------------------
+ * (function: copy_enode_list)
+ *-------------------------------------------------------------------------*/
 enode *copy_enode_list(enode *new_head, enode *begin, enode *end)
 {
 	enode *temp, *new_enode, *next_enode;
@@ -1572,6 +1667,9 @@ enode *copy_enode_list(enode *new_head, enode *begin, enode *end)
 	return new_enode;
 }
 
+/*---------------------------------------------------------------------------
+ * (function: copy_enode)
+ *-------------------------------------------------------------------------*/
 void copy_enode(enode *node, enode *new_node)
 {
 	new_node->type = node->type;
@@ -1580,11 +1678,14 @@ void copy_enode(enode *node, enode *new_node)
 	new_node->id = -1;
 }
 
+/*---------------------------------------------------------------------------
+ * (function: deleted_bracket_tail)
+ *-------------------------------------------------------------------------*/
 void delete_bracket_tail(enode *begin, enode *end)
 {
-	enode *temp, *s = NULL;
+	enode *temp, *s;
 	for (temp = begin; temp != NULL; temp = temp->pre)
-		if ((temp->flag == 2) && (temp->priority == 2))
+		if ((temp->flag == 2) && (temp->priority == 2)) // '+' or '-'
 		{
 			s = temp->next;
 			break;
@@ -1592,7 +1693,9 @@ void delete_bracket_tail(enode *begin, enode *end)
 	change_exp_list(begin, end, s, 2);
 }
 
-
+/*---------------------------------------------------------------------------
+ * (function: delete_bracket_body)
+ *-------------------------------------------------------------------------*/
 void delete_bracket_body(enode *begin, enode *end)
 {
 	enode *temp;
@@ -1614,6 +1717,9 @@ void delete_bracket_body(enode *begin, enode *end)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: check_tree_operation)
+ *-------------------------------------------------------------------------*/
 void check_tree_operation(ast_node_t *node, int *mark)
 {
 	int i;
@@ -1632,6 +1738,34 @@ void check_tree_operation(ast_node_t *node, int *mark)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: check_operation)
+ *-------------------------------------------------------------------------*/
+void check_operation(enode *begin, enode *end)
+{
+	enode *temp, *op;
+	for (temp = begin; temp != head; temp = temp->pre)
+	{
+		if (temp->flag == 2 && temp->priority == 2 && temp->type.operation == '-')
+		{
+			for (op = begin; op != end; op = op->next)
+			{
+				if (op->flag == 2 && op->priority == 2)
+				{
+					if (op->type.operation == '+')
+						op->type.operation = '-';
+					else
+						op->type.operation = '+';
+				}
+			}
+		}
+	}
+}
+
+/*---------------------------------------------------------------------------
+ * (function: reduce_parameter)
+ * replace parameters with their values in the AST
+ *-------------------------------------------------------------------------*/
 void reduce_parameter()
 {
 	ast_node_t *top;
@@ -1652,6 +1786,9 @@ void reduce_parameter()
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: find_parameter)
+ *-------------------------------------------------------------------------*/
 void find_parameter(ast_node_t *top, ast_node_t *para[], int *count)
 {
 	int i;
@@ -1674,7 +1811,9 @@ void find_parameter(ast_node_t *top, ast_node_t *para[], int *count)
 
 }
 
-
+/*---------------------------------------------------------------------------
+ * (function: remove_para_node)
+ *-------------------------------------------------------------------------*/
 void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
 {
 	int i, j;
@@ -1708,6 +1847,9 @@ void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
 	}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: change_para_node)
+ *-------------------------------------------------------------------------*/
 void change_para_node(ast_node_t *node, char *name, int value)
 {
 	int i;
@@ -1726,9 +1868,12 @@ void change_para_node(ast_node_t *node, char *name, int value)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: change_ast_node)
+ *-------------------------------------------------------------------------*/
 void change_ast_node(ast_node_t *node, int value)
 {
-	char num[12] = {0};
+	char num[1024] = {0};
 	if (node->types.identifier != NULL)
 			free(node->types.identifier);
 	node->type = NUMBERS;
@@ -1736,13 +1881,156 @@ void change_ast_node(ast_node_t *node, int value)
 	change_to_number_node(node, num);
 
 }
+/*---------------------------------------------------------------------------
+ * (function: copy_tree)
+ * find multiply or divide operation that can be replaced with shift operation
+ *-------------------------------------------------------------------------*/
+void shift_operation()
+{
+	int i;
+	ast_node_t *top;
+	for (i = 0; i < num_modules; i++)
+	{
+		top = ast_modules[i];
+		search_certain_operation(top, i);
+	}
 
+}
 
+/*---------------------------------------------------------------------------
+ * (function: change_ast_node)
+ *  search all AST to find multiply or divide operations
+ *-------------------------------------------------------------------------*/
+void search_certain_operation(ast_node_t *node, int module_num)
+{
+	int i;
+	ast_node_t *child;
 
+	if (node == NULL || node->num_children == 0)
+		return;
 
+	for (i = 0; i < node->num_children; i++)
+	{
+		child = node->children[i];
+		if (child != NULL)
+		{
+			if (child->type == BINARY_OPERATION && (child->types.operation.op == MULTIPLY || child->types.operation.op == DIVIDE))
+				check_binary_operation(child, module_num);
+			search_certain_operation(child, module_num);
+		}
+	}
 
+}
 
+/*---------------------------------------------------------------------------
+ * (function: change_ast_node)
+ *  check the children nodes of an operation node
+ *-------------------------------------------------------------------------*/
+void check_binary_operation(ast_node_t *node, int module_num)
+{
+	if (node->types.operation.op == MULTIPLY)
+	{
+		if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
+			check_node_number(node, node->children[1], 1, module_num); // 1 means multiply and don't need to move children nodes
+		if (node->children[0]->type == NUMBERS && node->children[1]->type == IDENTIFIERS)
+			check_node_number(node, node->children[0], 2, module_num); // 2 means multiply and needs to move children nodes
 
+	}
+
+	else if (node->types.operation.op == DIVIDE)
+	{
+		if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
+			check_node_number(node, node->children[1], 3, module_num); // 3 means divide
+	}
+
+}
+
+/*---------------------------------------------------------------------------
+ * (function: change_ast_node)
+ * check if the number is the power of 2
+ *-------------------------------------------------------------------------*/
+void check_node_number(ast_node_t *parent, ast_node_t *child, int flag, int module_num)
+{
+	long long power = 0;
+	char num[1024] = {0};
+	long long number = child->types.number.value;
+	if (number <= 1)
+		return;
+	while (((number % 2) == 0) && number > 1) // While number is even and > 1
+	{
+		number >>= 1;
+		power++;
+	}
+	if (number == 1) // the previous number is a power of 2
+	{
+		sprintf(num, "%lld", power);
+		change_to_number_node(child, num);
+		if (flag == 1) // multiply
+			parent->types.operation.op = SL;
+		else if (flag == 2) // multiply and needs to move children nodes
+		{
+			parent->types.operation.op = SL;
+			parent->children[0] = parent->children[1];
+			parent->children[1] = child;
+		}
+		else if (flag == 3) // divide
+			parent->types.operation.op = SR;
+		if (flag == 1 || flag == 2) // multiply
+		change_bit_size(parent->children[0], module_num, power);
+	}
+}
+
+/*---------------------------------------------------------------------------
+ * (function: change_bit_size)
+ * enlarge the bit size of inputs
+ *-------------------------------------------------------------------------*/
+void change_bit_size(ast_node_t *node, int module_num, long long size)
+{
+	ast_node_t *top;
+	char *name;
+	top= ast_modules[module_num];
+	name = node->types.identifier;
+	sprintf(name, "%s", node->types.identifier);
+	search_var_declare_list(top, name, size);
+
+}
+
+/*---------------------------------------------------------------------------
+ * (function: search_var_declare_list)
+ * find the variable in var_declare_list and change its input bit size
+ *-------------------------------------------------------------------------*/
+void search_var_declare_list(ast_node_t *node, char *name, long long size)
+{
+	int i;
+	long long value;
+	char num[1024] = {0};
+	if (node == NULL)
+		return;
+
+	if (node->type == VAR_DECLARE)
+	{
+		if (node->children[0] != NULL && node->children[0]->type == IDENTIFIERS)
+		{
+			if (strcmp(node->children[0]->types.identifier, name) == 0)
+			{
+				if (node->children[1] != NULL)
+				{
+					value = node->children[1]->types.number.value + size;
+					sprintf(num, "%lld", value);
+					change_to_number_node(node->children[1], num);
+				}
+			}
+		}
+
+	}
+
+	else if (node->num_children != 0)
+	{
+		for (i = 0; i < node->num_children; i++)
+			search_var_declare_list(node->children[i], name, size);
+	}
+
+}
 
 
 

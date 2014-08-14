@@ -1021,6 +1021,9 @@ void traverse_list(operation_list oper, struct s_linked_vptr *place)
 		}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: match_node)
+ *-------------------------------------------------------------------------*/
 void match_node(struct s_linked_vptr *place, operation_list oper)
 {
 	int flag, mark;
@@ -1063,6 +1066,9 @@ void match_node(struct s_linked_vptr *place, operation_list oper)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: match_ports)
+ *-------------------------------------------------------------------------*/
 int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
 {
 	int flag = 0;
@@ -1157,7 +1163,9 @@ void traverse_operation_node(ast_node_t *node, char *component[], operation_list
 
 }
 
-
+/*---------------------------------------------------------------------------
+ * (function: merge_node)
+ *-------------------------------------------------------------------------*/
 void merge_nodes(nnode_t *node, nnode_t *next_node)
 {
 
@@ -1167,6 +1175,9 @@ void merge_nodes(nnode_t *node, nnode_t *next_node)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: remove_list_node)
+ *-------------------------------------------------------------------------*/
 void remove_list_node(struct s_linked_vptr *pre, struct s_linked_vptr *next)
 {
 	if (next->next != NULL)
@@ -1177,6 +1188,9 @@ void remove_list_node(struct s_linked_vptr *pre, struct s_linked_vptr *next)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: remove_fanout_pins)
+ *-------------------------------------------------------------------------*/
 void remove_fanout_pins(nnode_t *node)
 {
 	int i, j, k, idx;
@@ -1199,6 +1213,9 @@ void remove_fanout_pins(nnode_t *node)
 	}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: reallocate_pins)
+ *-------------------------------------------------------------------------*/
 void reallocate_pins(nnode_t *node, nnode_t *next_node)
 {
 	int i, j;
@@ -1223,6 +1240,9 @@ void reallocate_pins(nnode_t *node, nnode_t *next_node)
 	}
 }
 
+/*---------------------------------------------------------------------------
+ * (function: free_op_nodes)
+ *-------------------------------------------------------------------------*/
 void free_op_nodes(nnode_t *node)
 {
 	int i;
@@ -1242,6 +1262,9 @@ void free_op_nodes(nnode_t *node)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: match_pins)
+ *-------------------------------------------------------------------------*/
 int match_pins(nnode_t *node, nnode_t *next_node)
 {
 	int flag;

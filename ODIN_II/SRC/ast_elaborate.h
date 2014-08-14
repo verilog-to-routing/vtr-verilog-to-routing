@@ -1,21 +1,44 @@
+/*
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 int simplify_ast();
 void optimize_for_tree();
 void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[], int idx[]);
 void copy_tree(ast_node_t *node, ast_node_t *new_node);
 void complete_node(ast_node_t *node, ast_node_t *new_node);
 void record_expression(ast_node_t *node, char *array[]);
-int calculation(char list[]);
-void translate(char str[],char exp[]);
+int calculation(char *post_exp[]);
+void translate_expression(char *exp[],char *post_exp[]);
 void check_and_replace(ast_node_t *node, char *p[]);
-void modify_expression(char *exp[], char s_exp[]);
+void modify_expression(char *exp[], char *infix_exp[], char *value);
 void free_whole_tree(ast_node_t *node);
 void initial_node(ast_node_t *node, ids id, int line_number, int file_number);
 void change_to_number_node(ast_node_t *node, char *number);
 void reallocate_node(ast_node_t *node, int idx);
-void find_most_unique_count(ast_node_t *node);
+void find_most_unique_count();
 void mark_node_write(ast_node_t *node, char list[10][20]);
 void mark_node_read(ast_node_t *node, char list[10][20]);
-void remove_intermediate_variable(ast_node_t *node, char list[10][20], int from);
+void remove_intermediate_variable(ast_node_t *node, char list[10][20]);
 void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p);
 void free_single_node(ast_node_t *node);
 void reduce_assignment_expression();
@@ -52,7 +75,7 @@ int check_exp_list(enode *tail);
 void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num);
 void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num);
 void free_exp_list();
-void deal_with_bracket(ast_node_t *node);
+int deal_with_bracket(ast_node_t *node);
 void recursive_tree(ast_node_t *node, int list_brackets[], int *count_bracket);
 void find_leaf_node(ast_node_t *node, int list_brackets[], int *count_bracket, int ids);
 void delete_bracket(int beign, int end);
@@ -68,5 +91,11 @@ void find_parameter(ast_node_t *top, ast_node_t *para[], int *count);
 void remove_para_node(ast_node_t *top, ast_node_t *para[], int num);
 void change_para_node(ast_node_t *node, char *name, int value);
 void change_ast_node(ast_node_t *node, int value);
-
-
+void check_operation(enode *begin, enode *end);
+void shift_operation();
+void search_certain_operation(ast_node_t *node, int module_num);
+void check_binary_operation(ast_node_t *node, int module_num);
+void check_node_number(ast_node_t *parent, ast_node_t *child, int flag, int module_num);
+int check_mult_bracket(int list[], int num_bracket);
+void change_bit_size(ast_node_t *node, int module_num, long long size);
+void search_var_declare_list(ast_node_t *top, char *name, long long size);

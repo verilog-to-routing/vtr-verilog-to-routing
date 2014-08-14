@@ -42,7 +42,7 @@ void netlist_optimizations_top(netlist_t *netlist)
 {
 	#ifdef VPR6
 	/* Perform a splitting of the multipliers for hard block mults */
-    reduce_operations(netlist, MULTIPLY);
+    	reduce_operations(netlist, MULTIPLY);
 	iterate_multipliers(netlist);
 	clean_multipliers();
 
