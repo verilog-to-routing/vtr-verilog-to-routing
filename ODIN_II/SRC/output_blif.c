@@ -5,7 +5,7 @@ files (the "Software"), to deal in the Software without
 restriction, including without limitation the rights to use,
 copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
+Software is furnished to do so, subject to the following 
 conditions:
 
 The above copyright notice and this permission notice shall be
@@ -87,32 +87,33 @@ void output_blif(char *file_name, netlist_t *netlist)
 			first_time_inputs = TRUE;
 		}
 
-        if(netlist->top_input_nodes[i]->output_pins[0]->net->fanout_pins != NULL){
-		if (global_args.high_level_block != NULL)
+		if(netlist->top_input_nodes[i]->output_pins[0]->net->fanout_pins != NULL)
 		{
-			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
-				count = count + fprintf(out, " %s^^%i-%i", netlist->top_input_nodes[i]->name, netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
-			else
+			if (global_args.high_level_block != NULL)
 			{
-				/* wrapping line */
-				count = fprintf(out, " \\\n %s^^%i-%i", netlist->top_input_nodes[i]->name,netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
-				count = count - 3;
-			}
-		}
-		else
-		{
-			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
-			{
-				count = count + fprintf(out, " %s", netlist->top_input_nodes[i]->name);
+				if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
+					count = count + fprintf(out, " %s^^%i-%i", netlist->top_input_nodes[i]->name, netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
+				else
+				{
+					/* wrapping line */
+					count = fprintf(out, " \\\n %s^^%i-%i", netlist->top_input_nodes[i]->name,netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
+					count = count - 3;
+				}
 			}
 			else
 			{
-				/* wrapping line */
-				count = fprintf(out, " \\\n %s", netlist->top_input_nodes[i]->name);
-				count = count - 3;
+				if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
+				{
+					count = count + fprintf(out, " %s", netlist->top_input_nodes[i]->name);
+				}
+				else
+				{
+					/* wrapping line */
+					count = fprintf(out, " \\\n %s", netlist->top_input_nodes[i]->name);
+					count = count - 3;
+				}
 			}
 		}
-	}
 	}
 	fprintf(out, "\n");
 
@@ -414,10 +415,9 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 void define_logical_function(nnode_t *node, short type, FILE *out)
 {
 	int i, j;
-	//char *temp_string;
+	char *temp_string;
 	int flag = 0;
 
-	if(node->type != LOGICAL_XOR && node->type != LOGICAL_XNOR){
 	fprintf(out, ".names");
 
 
@@ -473,7 +473,6 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 		fprintf(out, " %s", node->name);
 	}
 	fprintf(out, "\n");
-	}
 
 	oassert(node->num_output_pins == 1);
 
@@ -536,261 +535,35 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 		case LOGICAL_EQUAL:
 		case LOGICAL_XOR:
 		{
-            //it will generate as many as necessary xor logic of 3 inputs at most hooked up by a wire.  
-            i = 0;
-            short finish_condition = FALSE;
-            int initial_condition = 0;			
-            int count = 0;
-            char *temp_string = (char *)calloc(1,sizeof(char));
-            char *temp_string_1 = (char *)calloc(1,sizeof(char));
-
-            while(finish_condition==FALSE){
-                int amount_of_inputs_left = node->num_input_pins - i + initial_condition;			
-                if(amount_of_inputs_left == 1) {
-                    finish_condition = TRUE;
-                    //number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on.
-                    temp_string = (char *)realloc(temp_string,(strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));                    
-                    sprintf(temp_string, ".names %s %s",  node->input_pins[i]->net->driver_pin->node->name,node->name);
-                    fprintf(out, "%s", temp_string);
-                    fprintf(out, "\n");
-                    fprintf(out, "1 1\n");
-                }
-                else if(amount_of_inputs_left == 2) { 
-                    finish_condition = TRUE;
-                    if(i == 0){
-                        //number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on.
-                        temp_string = (char *)realloc(temp_string,(strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));                        
-	                    sprintf(temp_string, ".names %s %s %s",  node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name,node->name);
-                    }
-                    else{
-                        //number 20 is for '.name' as string, empty spaces such as '\b', '\n' and so on.
-	                    temp_string = (char *)realloc(temp_string, (strlen(temp_string_1)+strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));     
-                        sprintf(temp_string, ".names %s %s %s", temp_string_1, node->input_pins[i]->net->driver_pin->node->name, node->name);
-                    }
-
-                    fprintf(out, "%s", temp_string);
-                    fprintf(out, "\n");
-
-                    //generate xor logic with just two inputs
-                    for (j = 0; j < my_power(2, 2); j++)
-                    {
-	                    if ((j % 8 == 1) || (j % 8 == 2) || (j % 8 == 4) || (j % 8 == 7))
-	                    {
-		                    char *temp_string_2 = convert_long_long_to_bit_string(j, 2);
-		                    fprintf(out, "%s", temp_string_2);
-		                    free(temp_string_2);
-		                    fprintf(out, " 1\n");
-	                    }
-                    }
-                }
-                else if(amount_of_inputs_left == 3) {
-
-                    finish_condition = TRUE;
-
-                    if(i == 0){
-                        //number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on.
-                        temp_string = (char *)realloc(temp_string,(strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->input_pins[i+2]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));
-                        sprintf(temp_string, ".names %s %s %s %s",  node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name,node->input_pins[i+2]->net->driver_pin->node->name,node->name);
-                        }
-                        else{
-                        //number 20 is for '.name' string, empty spaces such as '\b', '\n' and so on.
-                        temp_string = (char *)realloc(temp_string,(strlen(temp_string_1)+strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));                   
-	                    sprintf(temp_string, ".names %s %s %s %s", temp_string_1, node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name, node->name);
-                        }
-
-                        fprintf(out, "%s", temp_string);
-                        fprintf(out, "\n");
-
-                        //it generates xor logic with just three inputs
-                        for (j = 0; j < my_power(2, 3); j++)
-                        {
-	                        if ((j % 8 == 1) || (j % 8 == 2) || (j % 8 == 4) || (j % 8 == 7))
-	                        {
-		                        char *temp_string_2 = convert_long_long_to_bit_string(j, 3);
-		                        fprintf(out, "%s", temp_string_2);
-		                        free(temp_string_2);
-		                        fprintf(out, " 1\n");
-	                        }
-                        }
-                }
-                else {
-
-                    initial_condition = 1;
-
-                    if(i == 0){
-                        //the first number 20 is for allocating a '.name' as string, empty spaces such as '\b', '\n' and so on. The another number 20 is for allocating the largest integer number of 64 bits.
-                        temp_string = (char *)realloc(temp_string, (strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->input_pins[i+2]->net->driver_pin->node->name)+strlen(node->name)+20+20)*sizeof(char));                   
-	                    sprintf(temp_string, ".names %s %s %s %s~%d",  node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name, node->input_pins[i+2]->net->driver_pin->node->name,node->name,count);
-	                    i+=3;
-                    }
-                    else{
-                        //the first number 20 is for allocating a '.name' as string, empty spaces such as '\b', '\n' and so on. The another number 20 is for allocating the largest integer number of 64 bits.
-                        temp_string = (char *)realloc(temp_string,(strlen(temp_string_1)+strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->name)+20+20)*sizeof(char));
-                        sprintf(temp_string, ".names %s %s %s %s~%d", temp_string_1, node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name, node->name,count);
-	                    i+=2;
-                    }
-
-                    //the first number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on. The another number 20 is for allocating the largest space for integer number of 64 bits.
-                    temp_string_1 = (char *)realloc(temp_string_1, sizeof(char)*(sizeof(node->name) + 20+ 20));
-                
-                    sprintf(temp_string_1,"%s~%d",node->name,count);
-                    fprintf(out, "%s", temp_string);
-                    fprintf(out, "\n");	
-					
-                    //it generates xor logic with just three inputs					
-                    for (j = 0; j < my_power(2, 3); j++)
-                    {
-	                    if ((j % 8 == 1) || (j % 8 == 2) || (j % 8 == 4) || (j % 8 == 7))
-	                    {
-		                    char *temp_string_2 = convert_long_long_to_bit_string(j, 3);
-		                    fprintf(out, "%s", temp_string_2);
-		                    free(temp_string_2);
-		                    fprintf(out, " 1\n");
-	                    }
-                    }
-
-                    count++;
-                    fprintf(out, "\n");
-                }
-            }		
-
-            free(temp_string);
-            free(temp_string_1);
-            break;
+			oassert(node->num_input_pins <= 3);
+			/* generates: a 1 when odd number of 1s */
+			for (i = 0; i < my_power(2, node->num_input_pins); i++)
+			{
+				if ((i % 8 == 1) || (i % 8 == 2) || (i % 8 == 4) || (i % 8 == 7))
+				{
+					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
+					fprintf(out, "%s", temp_string);
+					free(temp_string);
+					fprintf(out, " 1\n");
+				}
+			}
+			break;
 		}
 		case NOT_EQUAL:
 		case LOGICAL_XNOR:
 		{
-			//it will generate as many as necessary xnor logic of 3 inputs at most hooked up by a wire.  
-            i = 0;
-            short finish_condition = FALSE;
-            int initial_condition = 0;			
-            int count = 0;
-            char *temp_string = (char *)calloc(1,sizeof(char));
-            char *temp_string_1 = (char *)calloc(1,sizeof(char));
-
-            while(finish_condition==FALSE){
-                int amount_of_inputs_left = node->num_input_pins - i + initial_condition;			
-                if(amount_of_inputs_left == 1) {
-
-                    finish_condition = TRUE;
-
-                    //number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on.
-                    temp_string = (char *)realloc(temp_string,(strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));                    
-                    sprintf(temp_string, ".names %s %s",  node->input_pins[i]->net->driver_pin->node->name,node->name);
-                    fprintf(out, "%s", temp_string);
-                    fprintf(out, "\n");
-                    fprintf(out, "1 1\n");
-                }
-                else if(amount_of_inputs_left == 2) { 
-
-                    finish_condition = TRUE;
-
-                    if(i == 0){
-                        //if i equal to 0 then the amount of inputs are either 3, 2 or 1. 
-
-                        //number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on.
-                        temp_string = (char *)realloc(temp_string,(strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));                        
-	                    sprintf(temp_string, ".names %s %s %s",  node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name,node->name);
-                    }
-                    else{
-                        //number 20 is for '.name' as string, empty spaces such as '\b', '\n' and so on.
-	                    temp_string = (char *)realloc(temp_string, (strlen(temp_string_1)+strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));     
-                        sprintf(temp_string, ".names %s %s %s", temp_string_1, node->input_pins[i]->net->driver_pin->node->name, node->name);
-                    }
-
-                    fprintf(out, "%s", temp_string);
-                    fprintf(out, "\n");
-
-                    //generate xor logic with just two inputs
-                    for (j = 0; j < my_power(2, 2); j++)
-                    {
-	                    if ((j % 8 == 0) || (j % 8 == 3) || (j % 8 == 5) || (j % 8 == 6))
-	                    {
-		                    char *temp_string_2 = convert_long_long_to_bit_string(j, 2);
-		                    fprintf(out, "%s", temp_string_2);
-		                    free(temp_string_2);
-		                    fprintf(out, " 1\n");
-	                    }
-                    }
-                }
-                else if(amount_of_inputs_left == 3) {
-
-                    finish_condition = TRUE;
-
-                    if(i == 0){
-                        //if i equal to 0 then the amount of inputs are either 3, 2 or 1.
-                        
-                        //number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on.
-                        temp_string = (char *)realloc(temp_string,(strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->input_pins[i+2]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));
-                        sprintf(temp_string, ".names %s %s %s %s",  node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name,node->input_pins[i+2]->net->driver_pin->node->name,node->name);
-                        }
-                        else{
-                        //number 20 is for '.name' string, empty spaces such as '\b', '\n' and so on.
-                        temp_string = (char *)realloc(temp_string,(strlen(temp_string_1)+strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->name)+20)*sizeof(char));                   
-	                    sprintf(temp_string, ".names %s %s %s %s", temp_string_1, node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name, node->name);
-                        }
-
-                        fprintf(out, "%s", temp_string);
-                        fprintf(out, "\n");
-
-                        //it generates xor logic with just three inputs
-                        for (j = 0; j < my_power(2, 3); j++)
-                        {
-	                        if ((j % 8 == 0) || (j % 8 == 3) || (j % 8 == 5) || (j % 8 == 6))
-	                        {
-		                        char *temp_string_2 = convert_long_long_to_bit_string(j, 3);
-		                        fprintf(out, "%s", temp_string_2);
-		                        free(temp_string_2);
-		                        fprintf(out, " 1\n");
-	                        }
-                        }
-                }
-                else {
-
-                    initial_condition = 1;
-
-                    if(i == 0){
-                        //if i equal to 0 then the amount of inputs are either 3, 2 or 1.
-
-                        //the first number 20 is for allocating a '.name' as string, empty spaces such as '\b', '\n' and so on. The another number 20 is for allocating the largest integer number of 64 bits.
-                        temp_string = (char *)realloc(temp_string, (strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->input_pins[i+2]->net->driver_pin->node->name)+strlen(node->name)+20+20)*sizeof(char));                   
-	                    sprintf(temp_string, ".names %s %s %s %s~%d",  node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name, node->input_pins[i+2]->net->driver_pin->node->name,node->name,count);
-	                    i+=3;
-                    }
-                    else{
-                        //the first number 20 is for allocating a '.name' as string, empty spaces such as '\b', '\n' and so on. The another number 20 is for allocating the largest integer number of 64 bits.
-                        temp_string = (char *)realloc(temp_string,(strlen(temp_string_1)+strlen(node->input_pins[i]->net->driver_pin->node->name)+strlen(node->input_pins[i+1]->net->driver_pin->node->name)+strlen(node->name)+20+20)*sizeof(char));
-                        sprintf(temp_string, ".names %s %s %s %s~%d", temp_string_1, node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i+1]->net->driver_pin->node->name, node->name,count);
-	                    i+=2;
-                    }
-
-                    //the first number 20 is for allocating '.name' as string, empty spaces such as '\b', '\n' and so on. The another number 20 is for allocating the largest space for integer number of 64 bits.
-                    temp_string_1 = (char *)realloc(temp_string_1, sizeof(char)*(sizeof(node->name) + 20+ 20));
-                
-                    sprintf(temp_string_1,"%s~%d",node->name,count);
-                    fprintf(out, "%s", temp_string);
-                    fprintf(out, "\n");	
-					
-                    //it generates xor logic with just three inputs					
-                    for (j = 0; j < my_power(2, 3); j++)
-                    {
-	                    if ((j % 8 == 0) || (j % 8 == 3) || (j % 8 == 5) || (j % 8 == 6))
-	                    {
-		                    char *temp_string_2 = convert_long_long_to_bit_string(j, 3);
-		                    fprintf(out, "%s", temp_string_2);
-		                    free(temp_string_2);
-		                    fprintf(out, " 1\n");
-	                    }
-                    }
-                    count++;
-                    fprintf(out, "\n");
-                }
-            }			
-
-            free(temp_string);
-            free(temp_string_1);
-            break;
+			oassert(node->num_input_pins <= 3);
+			for (i = 0; i < my_power(2, node->num_input_pins); i++)
+			{
+				if ((i % 8 == 0) || (i % 8 == 3) || (i % 8 == 5) || (i % 8 == 6))
+				{
+					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
+					fprintf(out, "%s", temp_string);
+					free(temp_string);
+					fprintf(out, " 1\n");
+				}
+			}
+			break;
 		}
 		default:
 			oassert(FALSE);
