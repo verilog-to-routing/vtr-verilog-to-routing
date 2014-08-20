@@ -37,7 +37,7 @@ void build_rr_graph(
 		INP enum e_switch_block_type sb_type, 
 		INP int Fs, 
 		INP int num_seg_types,
-		INP int num_switches, 
+		INP int num_arch_switches, 
 		INP t_segment_inf * segment_inf,
 		INP int global_route_switch, 
 		INP int delayless_switch,
@@ -50,6 +50,8 @@ void build_rr_graph(
 		INP int num_directs,
 		INP boolean ignore_Fc_0,
 		INP boolean ignore_overrides,
+		OUTP int *wire_to_rr_ipin_switch,
+		OUTP int *num_rr_switches,
 		OUTP int *Warnings);
 
 void free_rr_graph(void);

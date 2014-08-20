@@ -266,7 +266,7 @@ void dump_rr_graph_connections(FILE* fp)
 				fprintf(fp, "(%s,%d,%d,%d,%d,%s) \t ", type[rr_node[dst_node].type], rr_node[dst_node].xlow, rr_node[dst_node].xhigh, rr_node[dst_node].ylow, rr_node[dst_node].yhigh, dst_node_dir );
 			}
 			int switch_index = rr_node[inode].switches[iedge];
-			fprintf(fp, "switch_delay[%d]=%g\n",switch_index, switch_inf[switch_index].Tdel);
+			fprintf(fp, "switch_delay[%d]=%g\n",switch_index, rr_switch_inf[switch_index].Tdel);
 		}
 	}
 }
@@ -1110,7 +1110,7 @@ void increase_rr_graph_edge_delays(int nodes_per_chan)
 			new_switch = increased_delay_edge_map[old_switch];
 			rr_node[fanin_node_id].switches[cnt] = new_switch;
 
-			// printf("Changing from switch_delay[%d]=%g to switch_delay[%d]=%g\n", old_switch, switch_inf[old_switch].Tdel, new_switch, switch_inf[new_switch].Tdel);
+			// printf("Changing from switch_delay[%d]=%g to switch_delay[%d]=%g\n", old_switch, rr_switch_inf[old_switch].Tdel, new_switch, rr_switch_inf[new_switch].Tdel);
 		}
 	}
 }

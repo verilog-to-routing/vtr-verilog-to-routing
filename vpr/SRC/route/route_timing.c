@@ -721,14 +721,14 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				+ (1. - criticality_fac) * get_rr_cong_cost(to_node);
 		
 		iswitch = rr_node[inode].switches[iconn];
-		if (switch_inf[iswitch].buffered) {
-			new_R_upstream = switch_inf[iswitch].R;
+		if (g_rr_switch_inf[iswitch].buffered) {
+			new_R_upstream = g_rr_switch_inf[iswitch].R;
 		} else {
-			new_R_upstream = R_upstream + switch_inf[iswitch].R;
+			new_R_upstream = R_upstream + g_rr_switch_inf[iswitch].R;
 		}
 
 		Tdel = rr_node[to_node].C * (new_R_upstream + 0.5 * rr_node[to_node].R);
-		Tdel += switch_inf[iswitch].Tdel;
+		Tdel += g_rr_switch_inf[iswitch].Tdel;
 		new_R_upstream += rr_node[to_node].R;
 		new_back_pcost += criticality_fac * Tdel;
 

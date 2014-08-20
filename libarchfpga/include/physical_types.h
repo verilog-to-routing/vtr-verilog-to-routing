@@ -26,6 +26,7 @@
 #ifndef PHYSICAL_TYPES_H
 #define PHYSICAL_TYPES_H
 
+#include <map>
 #include "logic_types.h"
 #include "util.h"
 
@@ -701,10 +702,16 @@ enum e_Fc_type {
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]  *
  * frequency:  ratio of tracks which are of this segment type.            *
  * length:     Length (in clbs) of the segment.                              *
- * wire_switch:  Index of the switch type that connects other wires *to*     *
- *               this segment.                                               *
- * opin_switch:  Index of the switch type that connects output pins (OPINs)  *
- *               *to* this segment.                                          *
+ * arch_wire_switch: Index of the switch type that connects other wires     *
+ *                   *to* this segment. Note that this index is in relation *
+ *                   to the switches from the architecture file, not the    *
+ *                   expanded list of switches that is built at the end of  *
+ *                   build_rr_graph.                                        *
+ * arch_wire_switch: Index of the switch type that connects output pins     *
+ *                   (OPINs) *to* this segment. Note that this index is in  *
+ *                   relation to the switches from the architecture file,   *
+ *                   not the expanded list of switches that is is built     *
+ *                   at the end of build_rr_graph                           *
  * frac_cb:  The fraction of logic blocks along its length to which this     *
  *           segment can connect.  (i.e. internal population).               *
  * frac_sb:  The fraction of the length + 1 switch blocks along the segment  *
@@ -717,8 +724,8 @@ enum e_Fc_type {
 typedef struct s_segment_inf {
 	int frequency;
 	int length;
-	short wire_switch;
-	short opin_switch;
+	short arch_wire_switch;
+	short arch_opin_switch;
 	float frac_cb;
 	float frac_sb;
 	boolean longline;
@@ -732,8 +739,51 @@ typedef struct s_segment_inf {
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 } t_segment_inf;
 
-/* Lists all the important information about a switch type.                  *
- * [0 .. Arch.num_switch]                                        *
+/* Lists all the important information about a switch type read from the     *
+ * architecture file.                                                        *
+ * [0 .. Arch.num_switch]                                                    *
+ * buffered:  Does this switch include a buffer?                             *
+ * R:  Equivalent resistance of the buffer/switch.                           *
+ * Cin:  Input capacitance.                                                  *
+ * Cout:  Output capacitance.                                                *
+ * Tdel_map: A map where the key is the number of inputs and the entry       *
+ *           is the corresponding delay. If there is only one entry at key   *
+ *           UNDEFINED, then delay is a constant (doesn't vary with fan-in). *
+ *	     A map saves us the trouble of sorting, and has lower access     *
+ *           time for interpolation/extrapolation purposes                   *
+ * mux_trans_size:  The area of each transistor in the segment's driving mux *
+ *                  measured in minimum width transistor units               *
+ * buf_size:  The area of the buffer. If set to zero, area should be         *
+ *            calculated from R                                              */
+typedef struct s_arch_switch_inf {
+	boolean buffered;
+	float R;
+	float Cin;
+	float Cout;
+	std::map< int, double > Tdel_map;
+	float mux_trans_size;
+	float buf_size;
+	char *name;
+	e_power_buffer_type power_buffer_type;
+	float power_buffer_size;
+
+	s_arch_switch_inf(){
+		buffered = FALSE;
+		R = 0;
+		Cin = 0;
+		Cout = 0;
+		mux_trans_size = 0;
+		buf_size = 0;
+		name = NULL;
+		power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
+		power_buffer_size = 0;
+	}
+} t_arch_switch_inf;
+
+/* Lists all the important information about an rr switch type.              *
+ * The s_rr_switch_inf describes a switch derived from a switch described    *
+ * by s_arch_switch_inf. This indirection allows us to vary properties of a  *
+ * given switch, such as varying delay with switch fan-in.                   * 
  * buffered:  Does this switch include a buffer?                             *
  * R:  Equivalent resistance of the buffer/switch.                           *
  * Cin:  Input capacitance.                                                  *
@@ -744,7 +794,7 @@ typedef struct s_segment_inf {
  *                  measured in minimum width transistor units               *
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
-typedef struct s_switch_inf {
+typedef struct s_rr_switch_inf {
 	boolean buffered;
 	float R;
 	float Cin;
@@ -755,6 +805,19 @@ typedef struct s_switch_inf {
 	char *name;
 	e_power_buffer_type power_buffer_type;
 	float power_buffer_size;
+
+	s_rr_switch_inf(){
+		buffered = FALSE;
+		R = 0;
+		Cin = 0;
+		Cout = 0;
+		Tdel = 0;
+		mux_trans_size = 0;
+		buf_size = 0;
+		name = NULL;
+		power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
+		power_buffer_size = 0;
+	}
 } t_switch_inf;
 
 /* Lists all the important information about a direct chain connection.     *
@@ -791,14 +854,11 @@ struct s_arch {
 	float R_minW_nmos;
 	float R_minW_pmos;
 	int Fs;
-	float C_ipin_cblock;
-	float T_ipin_cblock;
 	float grid_logic_tile_area;
-	float ipin_mux_trans_size;
 	struct s_clb_grid clb_grid;
 	t_segment_inf * Segments;
 	int num_segments;
-	struct s_switch_inf *Switches;
+	struct s_arch_switch_inf *Switches;
 	int num_switches;
 	t_direct_inf *Directs;
 	int num_directs;
@@ -807,6 +867,13 @@ struct s_arch {
 	t_power_arch * power;
 	t_clock_arch * clocks;
 	
+	/* Ipin cblock parameters may be set through a switch or through the timing/sizing nodes under <device>.
+	   The former sets the ipin_cblock_switch_index. The latter sets the other 3 fields. */
+	char *ipin_cblock_switch_name;
+	float C_ipin_cblock;
+	float T_ipin_cblock;
+	float ipin_mux_trans_size;
+
 	#ifdef INTERPOSER_BASED_ARCHITECTURE
 	// this is used to make sure a cutline does not go through a physical block
 	int lcm_of_block_heights;

@@ -95,6 +95,8 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 		boolean * default_leakage_mode);
 static void Process_Fc(ezxml_t Node, t_type_descriptor * Type);
 static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type);
+static void ProcessSizingTimingIpinCblock(INOUTP ezxml_t Node,
+		OUTP struct s_arch *arch, INP boolean timing_enabled);
 static void ProcessChanWidthDistr(INOUTP ezxml_t Node,
 		OUTP struct s_arch *arch);
 static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan);
@@ -110,14 +112,16 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		OUTP t_type_descriptor ** Types, OUTP int *NumTypes,
 		INP boolean timing_enabled);
 static void ProcessSwitches(INOUTP ezxml_t Node,
-		OUTP struct s_switch_inf **Switches, OUTP int *NumSwitches,
+		OUTP struct s_arch_switch_inf **Switches, OUTP int *NumSwitches,
 		INP boolean timing_enabled);
+static void ProcessSwitchTdel(INOUTP ezxml_t Node, INP boolean timing_enabled,
+		INP int switch_index, OUTP s_arch_switch_inf *Switches);
 static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
-		 OUTP int *NumDirects, INP struct s_switch_inf *Switches, INP int NumSwitches,
+		 OUTP int *NumDirects, INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
 		 INP boolean timing_enabled);
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
-		INP struct s_switch_inf *Switches, INP int NumSwitches,
+		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
 		INP boolean timing_enabled);
 static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 		INP int len);
@@ -2028,19 +2032,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	const char *Prop;
 	ezxml_t Cur;
 
-	Cur = FindElement(Node, "sizing", TRUE);
-	arch->R_minW_nmos = GetFloatProperty(Cur, "R_minW_nmos", timing_enabled, 0);
-	arch->R_minW_pmos = GetFloatProperty(Cur, "R_minW_pmos", timing_enabled, 0);
-	arch->ipin_mux_trans_size = GetFloatProperty(Cur, "ipin_mux_trans_size",
-			FALSE, 0);
-	FreeNode(Cur);
-
-	Cur = FindElement(Node, "timing", timing_enabled);
-	if (Cur != NULL) {
-		arch->C_ipin_cblock = GetFloatProperty(Cur, "C_ipin_cblock", FALSE, 0);
-		arch->T_ipin_cblock = GetFloatProperty(Cur, "T_ipin_cblock", FALSE, 0);
-		FreeNode(Cur);
-	}
+	ProcessSizingTimingIpinCblock(Node, arch, timing_enabled);
 
 	Cur = FindElement(Node, "area", TRUE);
 	arch->grid_logic_tile_area = GetFloatProperty(Cur, "grid_logic_tile_area",
@@ -2070,6 +2062,62 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	arch->Fs = GetIntProperty(Cur, "fs", TRUE, 3);
 
 	FreeNode(Cur);
+}
+
+/* Processes the sizing, timing, and ipin_cblock child objects of the 'device' node.
+   We can specify an ipin cblock's info through the sizing/timing nodes (legacy),
+   OR through the ipin_cblock node which specifies the info using the index of a switch. */
+static void ProcessSizingTimingIpinCblock(INOUTP ezxml_t Node,
+		OUTP struct s_arch *arch, INP boolean timing_enabled) {
+
+	ezxml_t Cur;
+
+	boolean ipin_cblock_info_as_switch = FALSE;
+	arch->ipin_cblock_switch_name = NULL;
+	arch->ipin_mux_trans_size = UNDEFINED;
+	arch->C_ipin_cblock = UNDEFINED;
+	arch->T_ipin_cblock = UNDEFINED;
+
+	Cur = FindElement(Node, "ipin_cblock", FALSE);
+	if (Cur) {
+		const char *switch_name;
+		/* if an ipin_cblock node exists, then ipin cblock delay/capacitance/area are specified
+		   through a corresponding switch. in this case, ipin cblock info cannot be specified 
+		   through the timing/sizing nodes */
+		switch_name = FindProperty(Cur, "switch", TRUE);
+		arch->ipin_cblock_switch_name = my_strdup(switch_name);
+		ezxml_set_attr(Cur, "switch", NULL);
+		ipin_cblock_info_as_switch = TRUE;
+		FreeNode(Cur);
+	}
+
+	Cur = FindElement(Node, "sizing", TRUE);
+	arch->R_minW_nmos = GetFloatProperty(Cur, "R_minW_nmos", timing_enabled, 0);
+	arch->R_minW_pmos = GetFloatProperty(Cur, "R_minW_pmos", timing_enabled, 0);
+	arch->ipin_mux_trans_size = GetFloatProperty(Cur, "ipin_mux_trans_size",
+			FALSE, 0);
+	if (arch->ipin_mux_trans_size && ipin_cblock_info_as_switch){
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line,
+				"If ipin cblock mux trans size is specified via a switch, it should not be specified again via sizing/timing nodes\n");
+	}
+	FreeNode(Cur);
+
+	/* currently only ipin cblock info is specified in the timing node */
+	Cur = FindElement(Node, "timing", (boolean)(timing_enabled && !ipin_cblock_info_as_switch));
+	if (Cur != NULL) {
+		arch->C_ipin_cblock = GetFloatProperty(Cur, "C_ipin_cblock", FALSE, 0);
+		arch->T_ipin_cblock = GetFloatProperty(Cur, "T_ipin_cblock", FALSE, 0);
+
+		if (arch->C_ipin_cblock && ipin_cblock_info_as_switch){
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line,
+					"If ipin cblock C is specified via a switch, it should not be specified again via sizing/timing nodes\n");
+		}
+		if (arch->T_ipin_cblock && ipin_cblock_info_as_switch){
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line,
+					"If ipin cblock T is specified via a switch, it should not be specified again via sizing/timing nodes\n");
+		}
+		FreeNode(Cur);
+	}
 }
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
@@ -2885,7 +2933,7 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
-		INP struct s_switch_inf *Switches, INP int NumSwitches,
+		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
 		INP boolean timing_enabled) {
 	int i, j, length;
 	const char *tmp;
@@ -2976,8 +3024,8 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 			/* Unidir muxes must have the same switch
 			 * for wire and opin fanin since there is
 			 * really only the mux in unidir. */
-			(*Segs)[i].wire_switch = j;
-			(*Segs)[i].opin_switch = j;
+			(*Segs)[i].arch_wire_switch = j;
+			(*Segs)[i].arch_opin_switch = j;
 		}
 
 		else {
@@ -2995,7 +3043,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				vpr_throw(VPR_ERROR_ARCH, arch_file_name, SubElem->line,
 						"'%s' is not a valid wire_switch name.\n", tmp);
 			}
-			(*Segs)[i].wire_switch = j;
+			(*Segs)[i].arch_wire_switch = j;
 			ezxml_set_attr(SubElem, "name", NULL);
 			FreeNode(SubElem);
 			SubElem = FindElement(Node, "opin_switch", TRUE);
@@ -3011,7 +3059,7 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 				vpr_throw(VPR_ERROR_ARCH, arch_file_name, SubElem->line,
 						"'%s' is not a valid opin_switch name.\n", tmp);
 			}
-			(*Segs)[i].opin_switch = j;
+			(*Segs)[i].arch_opin_switch = j;
 			ezxml_set_attr(SubElem, "name", NULL);
 			FreeNode(SubElem);
 		}
@@ -3105,7 +3153,7 @@ static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP boolean * list,
 }
 
 static void ProcessSwitches(INOUTP ezxml_t Parent,
-		OUTP struct s_switch_inf **Switches, OUTP int *NumSwitches,
+		OUTP struct s_arch_switch_inf **Switches, OUTP int *NumSwitches,
 		INP boolean timing_enabled) {
 	int i, j;
 	const char *type_name;
@@ -3122,9 +3170,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 	/* Alloc switch list */
 	*Switches = NULL;
 	if (*NumSwitches > 0) {
-		*Switches = (struct s_switch_inf *) my_malloc(
-				*NumSwitches * sizeof(struct s_switch_inf));
-		memset(*Switches, 0, (*NumSwitches * sizeof(struct s_switch_inf)));
+		(*Switches) = new s_arch_switch_inf[(*NumSwitches)];
 	}
 
 	/* Load the switches. */
@@ -3166,7 +3212,8 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		(*Switches)[i].R = GetFloatProperty(Node, "R", timing_enabled, 0);
 		(*Switches)[i].Cin = GetFloatProperty(Node, "Cin", timing_enabled, 0);
 		(*Switches)[i].Cout = GetFloatProperty(Node, "Cout", timing_enabled, 0);
-		(*Switches)[i].Tdel = GetFloatProperty(Node, "Tdel", timing_enabled, 0);
+		//(*Switches)[i].Tdel = GetFloatProperty(Node, "Tdel", timing_enabled, 0);
+		ProcessSwitchTdel(Node, timing_enabled, i, (*Switches));
 		(*Switches)[i].buf_size = GetFloatProperty(Node, "buf_size",
 				has_buf_size, 0);
 		(*Switches)[i].mux_trans_size = GetFloatProperty(Node, "mux_trans_size",
@@ -3188,8 +3235,84 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 	}
 }
 
+/* Processes the switch delay. Switch delay can be specified in two ways. 
+   First way: switch delay is specified as a constant via the property Tdel in the switch node. 
+   Second way: switch delay is specified as a function of the switch fan-in. In this 
+               case, multiple nodes in the form
+
+               <Tdel num_inputs="1" delay="3e-11"/>
+
+               are specified as children of the switch node. In this case, Tdel
+               is not included as a property of the switch node (first way). */
+static void ProcessSwitchTdel(INOUTP ezxml_t Node, INP boolean timing_enabled,
+		INP int switch_index, OUTP s_arch_switch_inf *Switches){
+
+	float Tdel_prop_value;
+	int num_Tdel_children;
+
+	/* check if switch node has the Tdel property */
+	bool has_Tdel_prop = false;
+	Tdel_prop_value = GetFloatProperty(Node, "Tdel", FALSE, UNDEFINED);
+	if (Tdel_prop_value != UNDEFINED){
+		has_Tdel_prop = true;
+	}
+
+	/* check if switch node has Tdel children */
+	bool has_Tdel_children = false;
+	num_Tdel_children = CountChildren(Node, "Tdel", 0);
+	if (num_Tdel_children != 0){
+		has_Tdel_children = true;
+	}
+
+	/* delay should not be specified as a Tdel property AND a Tdel child */
+	if (has_Tdel_prop && has_Tdel_children){
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+				"Switch delay should be specified as EITHER a Tdel property OR as a child of the switch node, not both");
+	}
+
+	/* get pointer to the switch's Tdel map, then read-in delay data into this map */
+	std::map<int, double> *Tdel_map = &Switches[switch_index].Tdel_map;
+	if (has_Tdel_prop){
+		/* delay specified as a constant */
+		if (Tdel_map->count(UNDEFINED)){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+					"what the fuck");
+		} else {
+			(*Tdel_map)[UNDEFINED] = Tdel_prop_value;
+		}
+	} else if (has_Tdel_children) {
+		/* Delay specified as a function of switch fan-in. 
+		   Go through each Tdel child, read-in num_inputs and the delay value.
+		   Insert this info into the switch delay map */
+		for (int ichild = 0; ichild < num_Tdel_children; ichild++){
+			ezxml_t Tdel_child = ezxml_child(Node, "Tdel");
+
+			int num_inputs = GetIntProperty(Tdel_child, "num_inputs", TRUE, 0);
+			float Tdel_value = GetFloatProperty(Tdel_child, "delay", TRUE, 0.);
+
+			if (Tdel_map->count( num_inputs ) ){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Tdel_child->line,
+					"Tdel node specified num_inputs (%d) that has already been specified by another Tdel node", num_inputs);
+			} else {
+				(*Tdel_map)[num_inputs] = Tdel_value;
+			}
+
+			FreeNode(Tdel_child);
+		}
+	} else {
+		/* No delay info specified for switch */
+		if (timing_enabled){
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+					"Switch should contain intrinsic delay information if timing is enabled");
+		} else {
+			/* set a default value */
+			(*Tdel_map)[UNDEFINED] = 0;
+		}
+	}
+}
+
 static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
-		 OUTP int *NumDirects, INP struct s_switch_inf *Switches, INP int NumSwitches,
+		 OUTP int *NumDirects, INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
 		 INP boolean timing_enabled) {
 	int i, j;
 	const char *direct_name;
@@ -4017,8 +4140,8 @@ static void PrintArchInfo(INP FILE * Echo, struct s_arch *arch) {
 		}
 		fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->Switches[i].R,
 				arch->Switches[i].Cin, arch->Switches[i].Cout);
-		fprintf(Echo, "\t\t\t\tTdel %e buf_size %e mux_trans_size %e\n",
-				arch->Switches[i].Tdel, arch->Switches[i].buf_size,
+		fprintf(Echo, "\t\t\t\t#Tdel values %d buf_size %e mux_trans_size %e\n",
+				(int)arch->Switches[i].Tdel_map.size(), arch->Switches[i].buf_size,
 				arch->Switches[i].mux_trans_size);
 		if (arch->Switches[i].power_buffer_type == POWER_BUFFER_TYPE_AUTO) {
 			fprintf(Echo, "\t\t\t\tpower_buffer_size auto\n");
@@ -4039,13 +4162,13 @@ static void PrintArchInfo(INP FILE * Echo, struct s_arch *arch) {
 				arch->Segments[i].Rmetal, arch->Segments[i].Cmetal);
 
 		if (arch->Segments[i].directionality == UNI_DIRECTIONAL) {
-			//wire_switch == opin_switch
+			//wire_switch == arch_opin_switch
 			fprintf(Echo, "\t\t\t\ttype unidir mux_name %s\n",
-					arch->Switches[arch->Segments[i].wire_switch].name);
+					arch->Switches[arch->Segments[i].arch_wire_switch].name);
 		} else { //Should be bidir
-			fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s opin_switch %s\n",
-					arch->Switches[arch->Segments[i].wire_switch].name,
-					arch->Switches[arch->Segments[i].opin_switch].name);
+			fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
+					arch->Switches[arch->Segments[i].arch_wire_switch].name,
+					arch->Switches[arch->Segments[i].arch_opin_switch].name);
 		}
 
 		fprintf(Echo, "\t\t\t\tcb ");

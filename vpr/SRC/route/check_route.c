@@ -27,7 +27,7 @@ static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, int num_switch,
+void check_route(enum e_route_type route_type, int num_switches,
 		t_ivec ** clb_opins_used_locally) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
@@ -87,7 +87,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 
 		inode = tptr->index;
 		check_node_and_range(inode, route_type);
-		check_switch(tptr, num_switch);
+		check_switch(tptr, num_switches);
 		connected_to_route[inode] = TRUE; /* Mark as in path. */
 
 		check_source(inode, inet);
@@ -101,7 +101,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 		while (tptr != NULL) {
 			inode = tptr->index;
 			check_node_and_range(inode, route_type);
-			check_switch(tptr, num_switch);
+			check_switch(tptr, num_switches);
 
 			if (rr_node[prev_node].type == SINK) {
 				if (connected_to_route[inode] == FALSE) {

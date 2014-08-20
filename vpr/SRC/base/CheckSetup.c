@@ -77,10 +77,10 @@ void CheckSetup(INP enum e_operation Operation,
 	}
 
 	for (i = 0; i < RoutingArch.num_segment; ++i) {
-		Tmp = Segments[i].opin_switch;
-		if (FALSE == switch_inf[Tmp].buffered) {
+		Tmp = Segments[i].arch_opin_switch;
+		if (FALSE == g_arch_switch_inf[Tmp].buffered) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-					"opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
+					"arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
 		}
 	}
 

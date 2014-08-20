@@ -20,7 +20,7 @@ static void check_pass_transistors(int from_node);
 
 void check_rr_graph(INP t_graph_type graph_type, 
 		INP int L_nx, INP int L_ny,
-		INP int num_switches, INP int **Fc_in) {
+		INP int num_rr_switches, INP int **Fc_in) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
@@ -73,14 +73,14 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 			switch_type = rr_node[inode].switches[iedge];
 
-			if (switch_type < 0 || switch_type >= num_switches) {
+			if (switch_type < 0 || switch_type >= num_rr_switches) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_rr_graph: node %d has a switch type %d.\n"
 				"\tSwitch type is out of range.\n",
 				inode, switch_type);
 			}
 
-			if (switch_inf[switch_type].buffered)
+			if (g_rr_switch_inf[switch_type].buffered)
 				switch_types_from_current_to_node[to_node] |= BUF_FLAG;
 			else
 				switch_types_from_current_to_node[to_node] |= PTRANS_FLAG;
@@ -468,7 +468,7 @@ static void check_pass_transistors(int from_node) {
 
 		from_switch_type = rr_node[from_node].switches[from_edge];
 
-		if (switch_inf[from_switch_type].buffered)
+		if (g_rr_switch_inf[from_switch_type].buffered)
 			continue;
 
 		/* We know that we have a pass transitor from from_node to to_node.  Now *

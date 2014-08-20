@@ -53,9 +53,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				if (to_rr_type == CHANX || to_rr_type == CHANY) {
 
 					switch_index = rr_node[inode].switches[iedge];
-					Cin = switch_inf[switch_index].Cin;
-					Cout = switch_inf[switch_index].Cout;
-					buffered = switch_inf[switch_index].buffered;
+					Cin = g_rr_switch_inf[switch_index].Cin;
+					Cout = g_rr_switch_inf[switch_index].Cout;
+					buffered = g_rr_switch_inf[switch_index].buffered;
 
 					/* If both the switch from inode to to_node and the switch from *
 					 * to_node back to inode use bidirectional switches (i.e. pass  *
@@ -154,7 +154,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 					continue;
 
 				if (rr_node[to_node].get_drivers() != SINGLE) {
-					Cout = switch_inf[switch_index].Cout;
+					Cout = g_rr_switch_inf[switch_index].Cout;
 					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY */
 					rr_node[to_node].C += Cout;
 				}
@@ -181,14 +181,14 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						 * We could take the max of all possibilities but
 						 * instead I will fail if there are conflicting Couts */
 						if (Couts_to_add[to_node]
-								!= switch_inf[switch_index].Cout) {
+								!= g_rr_switch_inf[switch_index].Cout) {
 							vpr_throw(VPR_ERROR_ROUTE, __FILE__,__LINE__,
 								"A single driver resource (%i) is driven by different Cout's (%e!=%e)\n",
 									to_node, Couts_to_add[to_node],
-									switch_inf[switch_index].Cout);
+									g_rr_switch_inf[switch_index].Cout);
 						}
 					}
-					Couts_to_add[to_node] = switch_inf[switch_index].Cout;
+					Couts_to_add[to_node] = g_rr_switch_inf[switch_index].Cout;
 
 				}
 			}

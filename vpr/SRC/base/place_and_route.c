@@ -35,7 +35,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		boolean full_stats, boolean verify_binary_search,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
 		t_model *models, t_direct_inf *directs, int num_directs);
 
@@ -61,7 +61,7 @@ boolean place_and_route(enum e_operation operation,
 		char *arch_file, char *route_file,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
 		struct s_model *models,
 		t_direct_inf *directs, int num_directs) {
@@ -107,13 +107,14 @@ boolean place_and_route(enum e_operation operation,
 
 	int width_fac = router_opts.fixed_channel_width;
 
+	/* build rr graph and return if we're not doing routing */
 	if (!router_opts.doRouting) {
-        if(width_fac != NO_FIXED_CHANNEL_WIDTH) {
-            //Only try if a fixed channel width is specified
-            try_graph(width_fac, router_opts, det_routing_arch, 
-                    segment_inf, timing_inf, chan_width_dist,
-                    directs, num_directs);
-        }
+		if(width_fac != NO_FIXED_CHANNEL_WIDTH) {
+		    //Only try if a fixed channel width is specified
+		    try_graph(width_fac, router_opts, det_routing_arch, 
+			    segment_inf, timing_inf, chan_width_dist,
+			    directs, num_directs);
+		}
 		return(TRUE);
 	}
 
@@ -127,7 +128,7 @@ boolean place_and_route(enum e_operation operation,
 		success = (g_solution_inf.channel_width > 0 ? TRUE : FALSE);
 	} else {
 		g_solution_inf.channel_width = width_fac;
-		if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
+		if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 						"in pack_place_and_route.c: Given odd chan width (%d) for udsd architecture.\n",
@@ -159,16 +160,17 @@ boolean place_and_route(enum e_operation operation,
 		}
 
 		else {
-			check_route(router_opts.route_type, det_routing_arch.num_switch, clb_opins_used_locally);
+			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally);
 			get_serial_num();
 
 			vpr_printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
 			routing_stats(router_opts.full_stats, router_opts.route_type,
-					det_routing_arch.num_switch, segment_inf,
-					det_routing_arch.num_segment, det_routing_arch.R_minW_nmos,
-					det_routing_arch.R_minW_pmos,
-					det_routing_arch.directionality,
+					g_num_rr_switches, segment_inf,
+					det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
+					det_routing_arch->R_minW_pmos,
+					det_routing_arch->directionality,
+					det_routing_arch->wire_to_rr_ipin_switch,
 					timing_inf.timing_analysis_enabled, net_delay, slacks);
 
 			print_route(route_file);
@@ -241,7 +243,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		boolean full_stats, boolean verify_binary_search,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
 		 t_model *models, t_direct_inf *directs, int num_directs) {
 
@@ -275,7 +277,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		graph_type = GRAPH_GLOBAL;
 	} else {
 		graph_type = (
-				det_routing_arch.directionality == BI_DIRECTIONAL ?
+				det_routing_arch->directionality == BI_DIRECTIONAL ?
 						GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
@@ -292,7 +294,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 	/* UDSD by AY Start */
-	if (det_routing_arch.directionality == BI_DIRECTIONAL)
+	if (det_routing_arch->directionality == BI_DIRECTIONAL)
 		udsd_multiplier = 1;
 	else
 		udsd_multiplier = 2;
@@ -307,7 +309,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	}
 
 	/* Constraints must be checked to not break rr_graph generator */
-	if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
+	if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 		if (current % 2 != 0) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					"in pack_place_and_route.c: Tried odd chan width (%d) for udsd architecture.\n",
@@ -316,7 +318,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	}
 
 	else {
-		if (det_routing_arch.Fs % 3) {
+		if (det_routing_arch->Fs % 3) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					"Fs must be three in bidirectional mode.\n");
 		}
@@ -350,7 +352,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			}
 		}
 
-		if ((current * 3) < det_routing_arch.Fs) {
+		if ((current * 3) < det_routing_arch->Fs) {
 			vpr_printf_info("Width factor is now below specified Fs. Stop search.\n");
 			final = high;
 			break;
@@ -372,7 +374,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #else
 			if (success
 					&& (Fc_clipped == FALSE
-							|| det_routing_arch.Fc_type == FRACTIONAL))
+							|| det_routing_arch->Fc_type == FRACTIONAL))
 			{
 #endif
 			if (current == high) {
@@ -487,7 +489,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			prev2_success = prev_success;
 			prev_success = success;
 			current--;
-			if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
+			if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 				current--; /* width must be even */
 			}
 		}
@@ -511,21 +513,23 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_rr_graph();
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch.switch_block_type,
-			det_routing_arch.Fs, det_routing_arch.num_segment,
-			det_routing_arch.num_switch, segment_inf,
-			det_routing_arch.global_route_switch,
-			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch, 
+			&chan_width, NULL, det_routing_arch->switch_block_type,
+			det_routing_arch->Fs, det_routing_arch->num_segment,
+			g_num_arch_switches, segment_inf,
+			det_routing_arch->global_route_switch,
+			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->wire_to_arch_ipin_switch, 
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs, FALSE, FALSE,
+			&det_routing_arch->wire_to_rr_ipin_switch,
+			&g_num_rr_switches,
 			&warnings);
 
 	restore_routing(best_routing, clb_opins_used_locally,
 			saved_clb_opins_used_locally);
-	check_route(router_opts.route_type, det_routing_arch.num_switch,
+	check_route(router_opts.route_type, g_num_rr_switches,
 			clb_opins_used_locally);
 	get_serial_num();
 	if (Fc_clipped) {
@@ -535,9 +539,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	vpr_printf_info("Best routing used a channel width factor of %d.\n", final);
 
 	routing_stats(full_stats, router_opts.route_type,
-			det_routing_arch.num_switch, segment_inf,
-			det_routing_arch.num_segment, det_routing_arch.R_minW_nmos,
-			det_routing_arch.R_minW_pmos, det_routing_arch.directionality,
+			g_num_rr_switches, segment_inf,
+			det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
+			det_routing_arch->R_minW_pmos, det_routing_arch->directionality,
+			det_routing_arch->wire_to_rr_ipin_switch,
 			timing_inf.timing_analysis_enabled, net_delay, slacks);
 
 	print_route(route_file);

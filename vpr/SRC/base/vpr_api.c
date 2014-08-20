@@ -70,6 +70,9 @@ static void toro_delete_handlers(void);
 
 static boolean has_printhandler_pre_vpr = FALSE;
 
+static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
+			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin);
+
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
 
@@ -489,22 +492,34 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
 	 a block through an opin switch to a length-4 wire, then through a wire switch to another
 	 length-4 wire, then through a wire-to-ipin-switch into another block. */
+	int wire_segment_length = 4;
 
 	float inter_cluster_delay = UNDEFINED;
 	if (vpr_setup.PackerOpts.timing_driven
 			&& vpr_setup.PackerOpts.auto_compute_inter_cluster_net_delay) {
 
+		/* We want to determine a reasonable fan-in to the opin, wire, and ipin switches, based
+		   on which the intercluster delays can be estimated. The fan-in of a switch influences its
+		   delay. 
+		   
+		   The fan-in of the switch depends on the architecture (unidirectional/bidirectional), as
+		   well as Fc_in/out and Fs */
+		int opin_switch_fanin, wire_switch_fanin, ipin_switch_fanin;
+		get_intercluster_switch_fanin_estimates(vpr_setup, wire_segment_length, &opin_switch_fanin, 
+				&wire_switch_fanin, &ipin_switch_fanin);
+		
+
 		float Tdel_opin_switch, R_opin_switch, Cout_opin_switch;
-		float opin_switch_del = get_switch_info(arch.Segments[0].opin_switch,
+		float opin_switch_del = get_arch_switch_info(arch.Segments[0].arch_opin_switch, opin_switch_fanin,
 				Tdel_opin_switch, R_opin_switch, Cout_opin_switch);
 
 		float Tdel_wire_switch, R_wire_switch, Cout_wire_switch;
-		float wire_switch_del = get_switch_info(arch.Segments[0].wire_switch,
+		float wire_switch_del = get_arch_switch_info(arch.Segments[0].arch_wire_switch, wire_switch_fanin,
 				Tdel_wire_switch, R_wire_switch, Cout_wire_switch);
 
 		float Tdel_wtoi_switch, R_wtoi_switch, Cout_wtoi_switch;
-		float wtoi_switch_del = get_switch_info(
-				vpr_setup.RoutingArch.wire_to_ipin_switch, 
+		float wtoi_switch_del = get_arch_switch_info(
+				vpr_setup.RoutingArch.wire_to_arch_ipin_switch, ipin_switch_fanin,
 				Tdel_wtoi_switch, R_wtoi_switch, Cout_wtoi_switch);
 
 		float Rmetal = arch.Segments[0].Rmetal;
@@ -513,13 +528,12 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 		/* The delay of a wire with its driving switch is the switch delay plus the 
 		 product of the equivalent resistance and capacitance experienced by the wire. */
 
-#define WIRE_SEGMENT_LENGTH 4
 		float first_wire_seg_delay = opin_switch_del
-				+ (R_opin_switch + Rmetal * WIRE_SEGMENT_LENGTH / 2)
-						* (Cout_opin_switch + Cmetal * WIRE_SEGMENT_LENGTH);
+				+ (R_opin_switch + Rmetal * (float)wire_segment_length / 2)
+						* (Cout_opin_switch + Cmetal * (float)wire_segment_length);
 		float second_wire_seg_delay = wire_switch_del
-				+ (R_wire_switch + Rmetal * WIRE_SEGMENT_LENGTH / 2)
-						* (Cout_wire_switch + Cmetal * WIRE_SEGMENT_LENGTH);
+				+ (R_wire_switch + Rmetal * (float)wire_segment_length / 2)
+						* (Cout_wire_switch + Cmetal * (float)wire_segment_length);
 		inter_cluster_delay = 4
 				* (first_wire_seg_delay + second_wire_seg_delay
 						+ wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
@@ -534,27 +548,117 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	fflush(stdout);
 }
 
-boolean vpr_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+/* Since the parameters of a switch may change as a function of its fanin,
+   to get an estimation of inter-cluster delays we need a reasonable estimation
+   of the fan-ins of switches that connect clusters together. These switches are
+	1) opin to wire switch
+	2) wire to wire switch
+	3) wire to ipin switch
+   We can estimate the fan-in of these switches based on the Fc_in/Fc_out of 
+   a logic block, and the switch block Fs value */
+static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
+			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin){
+	e_directionality directionality;
+	int Fs;
+	float Fc_in, Fc_out;
+	int W = 100;	//W is unknown pre-packing, so *if* we need W here, we will assume a value of 100
+
+	directionality = vpr_setup.RoutingArch.directionality;
+	Fs = vpr_setup.RoutingArch.Fs;
+	Fc_in = 0, Fc_out = 0;
+
+	/* get Fc_in/out for FILL_TYPE block (i.e. logic blocks) */
+	int num_pins = FILL_TYPE->num_pins;	
+	for (int ipin = 0; ipin < num_pins; ipin++){
+		int iclass = FILL_TYPE->pin_class[ipin];
+		e_pin_type pin_type = FILL_TYPE->class_inf[iclass].type;
+		int Fc = FILL_TYPE->Fc[ipin];
+		boolean is_fractional = FILL_TYPE->is_Fc_frac[ipin];
+		boolean is_full_flex = FILL_TYPE->is_Fc_full_flex[ipin];
+
+		if (pin_type == DRIVER){
+			if (is_full_flex){
+				/* opin connects to all wire segments in channel */
+				Fc = 1.0;
+			} else if (!is_fractional) {
+				/* convert to fractional representation if necessary */
+				Fc /= W;
+			}
+			if (Fc > Fc_out){
+				Fc_out = Fc;
+			}
+		}
+		if (pin_type == RECEIVER){
+			if (!is_fractional){
+				Fc /= W;
+			}
+			if (Fc > Fc_in){
+				Fc_in = Fc;
+			}
+		}
+	}
+	
+	/* Estimates of switch fan-in are done as follows:
+	   1) opin to wire switch:
+		2 CLBs connect to a channel, each with #opins/4 pins. Each pin has Fc_out*W
+		switches, and then we assume the switches are distributed evenly over the W wires.
+		In the unidirectional case, all these switches are then crammed down to W/wire_segment_length wires.
+
+			Unidirectional: 2 * #opins_per_side * Fc_out * wire_segment_length
+			Bidirectional:  2 * #opins_per_side * Fc_out
+	
+	   2) wire to wire switch
+		A wire segment in a switchblock connects to Fs other wires. Assuming these connections are evenly
+		distributed, each target wire receives Fs connections as well. In the unidirectional case, 
+		source wires can only connect to W/wire_segment_length wires.
+
+			Unidirectional: Fs * wire_segment_length
+			Bidirectional:  Fs
+
+	   3) wire to ipin switch
+		An input pin of a CLB simply receives Fc_in connections.
+			
+			Unidirectional: Fc_in
+			Bidirectional:  Fc_in
+	*/
+
+
+	/* Fan-in to opin/ipin/wire switches depends on whether the architecture is unidirectional/bidirectional */
+	(*opin_switch_fanin) = 2 * FILL_TYPE->num_drivers/4 * Fc_out;
+	(*wire_switch_fanin) = Fs;
+	(*ipin_switch_fanin) = Fc_in;
+	if (directionality == UNI_DIRECTIONAL){
+		/* adjustments to opin-to-wire and wire-to-wire switch fan-ins */
+		(*opin_switch_fanin) *= wire_segment_length;
+		(*wire_switch_fanin) *= wire_segment_length;
+	} else if (directionality == BI_DIRECTIONAL){
+		/* no adjustments need to be made here */
+	} else {
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Unrecognized directionality: %d\n", (int)directionality);
+	}
+}
+
+boolean vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch) {
 
 	/* Startup X graphics */
-	init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-			vpr_setup.RouterOpts.route_type);
-	if (vpr_setup.ShowGraphics) {
+	init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
+			vpr_setup->RouterOpts.route_type);
+	if (vpr_setup->ShowGraphics) {
 		init_graphics("VPR:  Versatile Place and Route for FPGAs", WHITE);
 		alloc_draw_structs();
 	}
 
 	/* Do placement and routing */
-	boolean success = place_and_route(vpr_setup.Operation, vpr_setup.PlacerOpts,
-			vpr_setup.FileNameOpts.PlaceFile, vpr_setup.FileNameOpts.NetFile,
-			vpr_setup.FileNameOpts.ArchFile, vpr_setup.FileNameOpts.RouteFile,
-			vpr_setup.AnnealSched, vpr_setup.RouterOpts, vpr_setup.RoutingArch,
-			vpr_setup.Segments, vpr_setup.Timing, arch.Chans, arch.models,
+	boolean success = place_and_route(vpr_setup->Operation, vpr_setup->PlacerOpts,
+			vpr_setup->FileNameOpts.PlaceFile, vpr_setup->FileNameOpts.NetFile,
+			vpr_setup->FileNameOpts.ArchFile, vpr_setup->FileNameOpts.RouteFile,
+			vpr_setup->AnnealSched, vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
+			vpr_setup->Segments, vpr_setup->Timing, arch.Chans, arch.models,
 			arch.Directs, arch.num_directs);
 	fflush(stdout);
 
 	/* Close down X Display */
-	if (vpr_setup.ShowGraphics)
+	if (vpr_setup->ShowGraphics)
 		close_graphics();
 	free_draw_structs();
 
@@ -576,8 +680,10 @@ void free_arch(t_arch* Arch) {
 			free(Arch->Switches[i].name);
 		}
 	}
-	free(Arch->Switches);
-	free(switch_inf);
+	delete[] Arch->Switches;
+	delete[] g_arch_switch_inf;
+	Arch->Switches = NULL;
+	g_arch_switch_inf = NULL;
 	for (int i = 0; i < Arch->num_segments; ++i) {
 		if (Arch->Segments->cb != NULL) {
 			free(Arch->Segments[i].cb);
@@ -659,6 +765,8 @@ void free_arch(t_arch* Arch) {
 
 	free_complex_block_types();
 	free_chunk_memory_trace();
+
+	free(Arch->ipin_cblock_switch_name);
 }
 
 void free_options(t_options *options) {

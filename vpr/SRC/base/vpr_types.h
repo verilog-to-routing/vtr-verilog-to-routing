@@ -817,12 +817,8 @@ struct s_router_opts {
  *           University of Toronto, 1996.  The UNIVERSAL switch block is    *
  *           from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.       *
  * num_segment:  Number of distinct segment types in the FPGA.              *
- * num_switch:  Number of distinct switch types (pass transistors or        *
- *              buffers) in the FPGA.                                       *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
- * wire_to_ipin_switch:  Index of a switch used to connect wire segments    *
- *                       to clb or pad input pins (IPINs).                  *
  * R_minW_nmos:  Resistance (in Ohms) of a minimum width nmos transistor.   *
  *               Used only in the FPGA area model.                          *
  * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   */
@@ -833,10 +829,11 @@ struct s_det_routing_arch {
 	int Fs;
 	enum e_switch_block_type switch_block_type;
 	int num_segment;
-	short num_switch;
+
 	short global_route_switch;
 	short delayless_switch;
-	short wire_to_ipin_switch;
+	int wire_to_arch_ipin_switch;
+	int wire_to_rr_ipin_switch;
 	float R_minW_nmos;
 	float R_minW_pmos;
 };
@@ -861,10 +858,16 @@ enum e_direction {
  *      segment start, at which there is a switch box.                      *
  * cb:  [0..length-1]:  TRUE for every logic block along the segment at     *
  *      which there is a connection box.                                    *
- * wire_switch:  Index of the switch type that connects other wires *to*    *
- *               this segment.                                              *
- * opin_switch:  Index of the switch type that connects output pins (OPINs) *
- *               *to* this segment.                                         *
+ * arch_wire_switch: Index of the switch type that connects other wires     *
+ *                   *to* this segment. Note that this index is in relation *
+ *                   to the switches from the architecture file, not the    *
+ *                   expanded list of switches that is built at the end of  *
+ *                   build_rr_graph.                                        *
+ * arch_wire_switch: Index of the switch type that connects output pins     *
+ *                   (OPINs) *to* this segment. Note that this index is in  *
+ *                   relation to the switches from the architecture file,   *
+ *                   not the expanded list of switches that is is built     *
+ *                   at the end of build_rr_graph                           *
  * Cmetal: Capacitance of a routing track, per unit logic block length.     *
  * Rmetal: Resistance of a routing track, per unit logic block length.      *
  * (UDSD by AY) direction: The direction of a routing track.                *
@@ -878,8 +881,8 @@ typedef struct s_seg_details {
 	boolean longline;
 	boolean *sb;
 	boolean *cb;
-	short wire_switch;
-	short opin_switch;
+	short arch_wire_switch;
+	short arch_opin_switch;
 	float Rmetal;
 	float Cmetal;
 	boolean twisted;

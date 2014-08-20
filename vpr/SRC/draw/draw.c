@@ -1363,9 +1363,9 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 	}
 
 	if (edge_dir == FROM_X_TO_Y)
-		draw_rr_switch(x1, y1, x2, y2, switch_inf[switch_type].buffered);
+		draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
 	else
-		draw_rr_switch(x2, y2, x1, y1, switch_inf[switch_type].buffered);
+		draw_rr_switch(x2, y2, x1, y1, g_rr_switch_inf[switch_type].buffered);
 }
 
 
@@ -1450,7 +1450,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR)
-		draw_rr_switch(x1, y1, x2, y2, switch_inf[switch_type].buffered);
+		draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
 	else if (draw_state->draw_rr_node[from_node].node_highlighted) {
 		float xend, yend;
 		xend = x2 + (x1 - x2) / 10.;
@@ -1592,7 +1592,7 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle == DRAW_ALL_RR)
-		draw_rr_switch(x1, y1, x2, y2, switch_inf[switch_type].buffered);
+		draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
 	else if (draw_state->draw_rr_node[from_node].node_highlighted) {
 		float xend, yend;
 		xend = x2 + (x1 - x2) / 10.;

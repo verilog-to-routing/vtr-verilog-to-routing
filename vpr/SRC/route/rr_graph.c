@@ -1,6 +1,9 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+
+#include <vector>
+#include <set>
 using namespace std;
 
 #include <assert.h>
@@ -168,10 +171,17 @@ static void build_rr_ychan(
 		INP boolean * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality);
 
+static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_to_arch_ipin_switch, OUTP int *wire_to_rr_ipin_switch);
+
+static void remap_rr_node_switch_indices(INP map<int,int> *switch_fanin);
+
+static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switches, INOUTP map<int,int> *switch_fanin);
+
+static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin);
+
 static void rr_graph_externals(
-		t_timing_inf timing_inf,
 		t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
-		int wire_to_ipin_switch, enum e_base_cost_type base_cost_type);
+		int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type);
 
 void alloc_and_load_edges_and_switches(
 		INP t_rr_node * L_rr_node, INP int inode,
@@ -216,15 +226,17 @@ void build_rr_graph(
 		INP struct s_chan_width *nodes_per_chan,
 		INP struct s_chan_width_dist *chan_capacity_inf,
 		INP enum e_switch_block_type sb_type, INP int Fs, 
-		INP int num_seg_types, INP int num_switches, 
+		INP int num_seg_types, INP int num_arch_switches, 
 		INP t_segment_inf * segment_inf,
 		INP int global_route_switch, INP int delayless_switch,
-		INP t_timing_inf timing_inf, INP int wire_to_ipin_switch,
+		INP t_timing_inf timing_inf, INP int wire_to_arch_ipin_switch,
 		INP enum e_base_cost_type base_cost_type, 
 		INP boolean trim_empty_channels,
 		INP boolean trim_obs_channels,
 		INP t_direct_inf *directs, INP int num_directs, 
 		INP boolean ignore_Fc_0, INP boolean ignore_overrides,
+		OUTP int *wire_to_rr_ipin_switch,
+		OUTP int *num_rr_switches,
 		OUTP int *Warnings) {
 
 	/* Reset warning flag */
@@ -404,6 +416,7 @@ void build_rr_graph(
 	ipin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
 	track_to_pin_lookup = (struct s_ivec *****) my_malloc(sizeof(struct s_ivec ****) * L_num_types);
 	for (int i = 0; i < L_num_types; ++i) {
+		bool test_metrics_inp = false;
 		ipin_to_track_map[i] = alloc_and_load_pin_to_track_map(RECEIVER,
 				nodes_per_chan, Fc_in[i], &types[i], perturb_ipins[i], directionality);
 		track_to_pin_lookup[i] = alloc_and_load_track_to_pin_lookup(
@@ -417,7 +430,7 @@ void build_rr_graph(
 	int ******opin_to_track_map = NULL; /* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 
 	if (BI_DIRECTIONAL == directionality) {
-		bool test_metrics = false;
+		bool test_metrics_outp = false;
 		opin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
 		for (int i = 0; i < L_num_types; ++i) {
 			boolean perturb_opins = get_perturb_opins(&types[i], Fc_out[i], 
@@ -426,9 +439,9 @@ void build_rr_graph(
 					nodes_per_chan, Fc_out[i], &types[i], perturb_opins, directionality);
 
 			/* adjust CLB connection block, if enabled */
-			if (strcmp("clb", types[i].name) == 0 && test_metrics){
-				float target_metric;
-				target_metric = 1;
+			if (strcmp("clb", types[i].name) == 0 && test_metrics_outp){
+				float target_metric_outp;
+				target_metric_outp = 0;
 
 				/* during binary search routing we want the connection block (CB) to be deterministic. That is, 
 				   if we calculate a CB, check other CBs for other values of W, and then come back to that 
@@ -436,7 +449,7 @@ void build_rr_graph(
 				   we save (and later restore) the current seed, and just use a seed of 1 for generating the connection block */
 				unsigned int saved_seed = get_current_random();
 				my_srandom(1);
-				adjust_cb_metric(WIRE_HOMOGENEITY, target_metric, 0.005, 0.05, &types[i], opin_to_track_map[i], DRIVER, Fc_out[i], nodes_per_chan,
+				adjust_cb_metric(WIRE_HOMOGENEITY, target_metric_outp, 0.005, 0.05, &types[i], opin_to_track_map[i], DRIVER, Fc_out[i], nodes_per_chan,
 					num_seg_types, segment_inf);
 
 				Conn_Block_Metrics cb_metrics;
@@ -457,7 +470,7 @@ void build_rr_graph(
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
 			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, max_chan_width, sb_type,
-			delayless_switch, directionality, wire_to_ipin_switch, &Fc_clipped, 
+			delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped, 
 			directs, num_directs, clb_to_clb_directs, ignore_overrides);
 
 	/* Update rr_nodes capacities if global routing */
@@ -469,8 +482,12 @@ void build_rr_graph(
 		}
 	}
 
-	rr_graph_externals(timing_inf, segment_inf, num_seg_types, max_chan_width,
-			wire_to_ipin_switch, base_cost_type);
+	/* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
+	   based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
+	(*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+
+	rr_graph_externals(segment_inf, num_seg_types, max_chan_width,
+			*wire_to_rr_ipin_switch, base_cost_type);
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
 		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
 	}
@@ -483,7 +500,7 @@ void build_rr_graph(
 	}
 #endif
 
-	check_rr_graph(graph_type, L_nx, L_ny, num_switches, Fc_in);
+	check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, Fc_in);
 
 	/* Free all temp structs */
 	if (seg_details) {
@@ -543,13 +560,186 @@ void build_rr_graph(
 	}
 }
 
-static void rr_graph_externals(t_timing_inf timing_inf,
-		t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
-		int wire_to_ipin_switch, enum e_base_cost_type base_cost_type) {
 
-	add_rr_graph_C_from_switches(timing_inf.C_ipin_cblock);
+/* Allocates and loads the global rr_switch_inf array based on the global
+   arch_switch_inf array and the fan-ins used by the rr nodes. 
+   Also changes switch indices of rr_nodes to index into rr_switch_inf 
+   instead of arch_switch_inf.
+
+   Returns the number of rr switches created.
+   Also returns, through a pointer, the index of a representative ipin cblock switch.
+	- Currently we're not allowing a designer to specify an ipin cblock switch with
+	  multiple fan-ins, so there's just one of these switches in the g_rr_switch_inf array.
+	  But in the future if we allow this, we can return an index to a representative switch
+
+   The rr_switch_inf switches are derived from the arch_switch_inf switches 
+   (which were read-in from the architecture file) based on fan-in. The delays of 
+   the rr switches depend on their fan-in, so we first go through the rr_nodes
+   and count how many different fan-ins exist for each arch switch.
+   Then we create these rr switches and update the switch indices
+   of rr_nodes to index into the rr_switch_inf array. */
+static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_to_arch_ipin_switch, OUTP int *wire_to_rr_ipin_switch){
+	/* we will potentially be creating a couple of versions of each arch switch where
+	   each version corresponds to a different fan-in. We will need to fill g_rr_switch_inf
+	   with this expanded list of switches. 
+	   To do this we will use an array of maps where each map corresponds to a different arch switch.
+	   So for each arch switch we will use this map to keep track of the different fan-ins that it uses (map key)
+	   and which index in the g_rr_switch inf array this arch switch / fanin combination will be placed in */
+	map< int, int > *switch_fanin;
+	switch_fanin = new map<int,int>[num_arch_switches];
+
+	/* Determine what the different fan-ins are for each arch switch, and also
+	   how many entries the rr_switch_inf array should have */
+	int num_rr_switches = alloc_rr_switch_inf(switch_fanin);
+
+	/* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf 
+	   array each version of its fanin has been mapped to */
+	load_rr_switch_inf(num_arch_switches, num_rr_switches, switch_fanin);
+
+	/* next, walk through rr nodes again and remap their switch indices to rr_switch_inf */
+	remap_rr_node_switch_indices(switch_fanin);
+	
+	/* now we need to set the wire_to_rr_ipin_switch variable which points the detailed routing architecture
+	   to the representative ipin cblock switch. currently we're not allowing the specification of an ipin cblock switch
+	   with multiple fan-ins, so right now there's just one. May change in the future, in which case we'd need to 
+	   return a representative switch */
+	if (switch_fanin[wire_to_arch_ipin_switch].count(UNDEFINED)){
+		/* only have one ipin cblock switch. OK. */
+		(*wire_to_rr_ipin_switch) = switch_fanin[wire_to_arch_ipin_switch][UNDEFINED];
+	} else {
+		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, 
+			"Not currently allowing an ipin cblock switch to have multiple fan-ins");
+		
+	}
+
+	delete[] switch_fanin;
+	
+	return num_rr_switches;
+}
+
+/* Allocates space for the global g_rr_switch_inf variable and returns the 
+   number of rr switches that were allocated */
+static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin){
+
+	int num_rr_switches = 0;
+	for (int inode = 0; inode < num_rr_nodes; inode++){
+		t_rr_node from_node = rr_node[inode];
+		int num_edges = from_node.get_num_edges();
+		for (int iedge = 0; iedge < num_edges; iedge++){
+			t_rr_node to_node = rr_node[ from_node.edges[iedge] ];
+			/* get the switch which this edge uses and its fanin */
+			int switch_index = from_node.switches[iedge];
+			int fanin = to_node.get_fan_in();
+
+			/* we want to keep track of fan-in only for those switches that actually defined
+			   delays for multiple fan-in values */
+			bool keep_track_of_fanin;
+			if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1){
+				/* if an arch switch has specified delay at an UNDEFINED (-1) index, 
+				   then the switch didn't specify delays for multiple values of fan-in
+				   (and should only have one entry in its Tdel_map */
+				keep_track_of_fanin = false;
+			} else {
+				keep_track_of_fanin = true;
+			}
+
+			if ( !keep_track_of_fanin ){
+				/* want the switch_fanin[switch_index] set to only have a single entry
+				   at index UNDEFINED to indicate that it's not keeping track of fanin */
+				fanin = UNDEFINED;
+			}
+
+			/* mark the fact that the arch switch at switch_index has a version with 'fanin' 
+			   inputs */
+			if (switch_fanin[switch_index].count(fanin) == 0){
+				/* this value of fanin has not yet been inserted. so insert it */
+				switch_fanin[switch_index][fanin] = 0;
+				num_rr_switches++;
+			}
+		}
+	}
+
+	/* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
+	g_rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
+
+	return num_rr_switches;
+}
+
+/* load the global g_rr_switch_inf variable. also keep track of, for each arch switch, what 
+   index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
+static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switches, INOUTP map<int,int> *switch_fanin){
+	int i_rr_switch = 0;
+	for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++){
+		map<int,int>::iterator it;
+		for (it = switch_fanin[i_arch_switch].begin(); it != switch_fanin[i_arch_switch].end(); it++){
+			/* the fanin value is in it->first, and we'll need to set what index this i_arch_switch/fanin
+			   combination maps to (within rr_switch_inf) in it->second) */
+			int fanin = it->first;
+			it->second = i_rr_switch;
+
+			/* figure out, by looking at the arch switch's Tdel map, what the delay of the new
+			   rr switch should be */
+			map<int,double> *Tdel_map = &g_arch_switch_inf[i_arch_switch].Tdel_map;
+			double rr_switch_Tdel;
+			if (Tdel_map->count(UNDEFINED) == 1){
+				/* the switch specified a single constant delay. i.e., it did not
+				   specify fanin/delay pairs */
+				rr_switch_Tdel = (*Tdel_map)[UNDEFINED];
+			} else {
+				/* interpolate/extrapolate based on the available (fanin,delay) pairs in the 
+				   Tdel_map to get the rr_switch_Tdel at 'fanin' */
+				rr_switch_Tdel = linear_interpolate_or_extrapolate(Tdel_map, fanin);
+			}
+
+			/* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */
+			g_rr_switch_inf[i_rr_switch].buffered = g_arch_switch_inf[i_arch_switch].buffered;
+			g_rr_switch_inf[i_rr_switch].R = g_arch_switch_inf[i_arch_switch].R;
+			g_rr_switch_inf[i_rr_switch].Cin = g_arch_switch_inf[i_arch_switch].Cin;
+			g_rr_switch_inf[i_rr_switch].Cout = g_arch_switch_inf[i_arch_switch].Cout;
+			g_rr_switch_inf[i_rr_switch].Tdel = rr_switch_Tdel;
+			g_rr_switch_inf[i_rr_switch].mux_trans_size = g_arch_switch_inf[i_arch_switch].mux_trans_size;
+			g_rr_switch_inf[i_rr_switch].buf_size = g_arch_switch_inf[i_arch_switch].buf_size;
+			g_rr_switch_inf[i_rr_switch].name = g_arch_switch_inf[i_arch_switch].name;
+			g_rr_switch_inf[i_rr_switch].power_buffer_type = g_arch_switch_inf[i_arch_switch].power_buffer_type;
+			g_rr_switch_inf[i_rr_switch].power_buffer_size = g_arch_switch_inf[i_arch_switch].power_buffer_size;
+
+			/* have created a switch in the rr_switch_inf array */
+			i_rr_switch++;
+		}
+	}
+}
+
+/* switch indices of each rr_node original point into the global g_arch_switch_inf array.
+   now we want to remap these indices to point into the global g_rr_switch_inf array 
+   which contains switch info at different fan-in values */
+static void remap_rr_node_switch_indices(INP map<int,int> *switch_fanin){
+	for (int inode = 0; inode < num_rr_nodes; inode++){
+		t_rr_node from_node = rr_node[inode];
+		int num_edges = from_node.get_num_edges();
+		for (int iedge = 0; iedge < num_edges; iedge++){
+			t_rr_node to_node = rr_node[ from_node.edges[iedge] ];
+			/* get the switch which this edge uses and its fanin */
+			int switch_index = from_node.switches[iedge];
+			int fanin = to_node.get_fan_in();
+
+			if (switch_fanin[switch_index].count(UNDEFINED) == 1){
+				fanin = UNDEFINED;
+			}
+
+			int rr_switch_index = switch_fanin[switch_index][fanin];
+
+			from_node.switches[iedge] = rr_switch_index;
+		}
+	}
+}
+
+static void rr_graph_externals(
+		t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
+		int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
+
+	add_rr_graph_C_from_switches(g_rr_switch_inf[wire_to_rr_ipin_switch].Cin);
 	alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, rr_node_indices,
-			max_chan_width, wire_to_ipin_switch, base_cost_type);
+			max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
 
 	alloc_net_rr_terminals();
 	load_net_rr_terminals(rr_node_indices);
@@ -599,8 +789,8 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 	seg_details->index = 0;
 	seg_details->length = 1;
-	seg_details->wire_switch = global_route_switch;
-	seg_details->opin_switch = global_route_switch;
+	seg_details->arch_wire_switch = global_route_switch;
+	seg_details->arch_opin_switch = global_route_switch;
 	seg_details->longline = FALSE;
 	seg_details->direction = BI_DIRECTION;
 	seg_details->Cmetal = 0.0;
@@ -904,6 +1094,9 @@ void free_rr_graph(void) {
 	rr_node_indices = NULL;
 	rr_indexed_data = NULL;
 	num_rr_nodes = 0;
+
+	delete[] g_rr_switch_inf;
+	g_rr_switch_inf = NULL;
 }
 
 static void alloc_net_rr_terminals(void) {
@@ -2011,7 +2204,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 	/* Go through each pin and find its fanout. */
 	for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
-		/* Skip global pins and pins */
+		/* Skip global pins and pins that are not of DRIVER type */
 		int class_index = type->pin_class[pin_index];
 		if (type->class_inf[class_index].type != DRIVER) {
 			continue;
@@ -2065,7 +2258,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 					/* Get the list of opin to mux connections for that chan seg. */
 					boolean clipped;
-					num_edges += get_unidir_opin_connections(chan, seg,
+					num_edges += get_unidir_opin_connections(type, chan, seg,
 							max_Fc, chan_type, seg_details, &edge_list,
 							Fc_ofs, L_rr_edge_done, max_len, max_chan_width,
 							L_rr_node_indices, &clipped);
@@ -2081,8 +2274,8 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 				directs, num_directs, clb_to_clb_directs);
 
 		/* Add the edges */
-		int node = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
-		alloc_and_load_edges_and_switches(rr_node, node, num_edges,
+		int opin_node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
+		alloc_and_load_edges_and_switches(rr_node, opin_node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
 			t_linked_edge *next_edge = edge_list->next;

@@ -202,9 +202,9 @@ update_route_tree(struct s_heap * hptr) {
 	if (subtree_parent_rt_node != NULL) { /* Parent exists. */
 		Tdel_start = subtree_parent_rt_node->Tdel;
 		iswitch = unbuffered_subtree_rt_root->parent_switch;
-		Tdel_start += switch_inf[iswitch].R
+		Tdel_start += g_rr_switch_inf[iswitch].R
 				* unbuffered_subtree_rt_root->C_downstream;
-		Tdel_start += switch_inf[iswitch].Tdel;
+		Tdel_start += g_rr_switch_inf[iswitch].Tdel;
 	} else { /* Subtree starts at SOURCE */
 		Tdel_start = 0.;
 	}
@@ -290,7 +290,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->u.child_list = linked_rt_edge;
 		rt_node->inode = inode;
 
-		if (switch_inf[iswitch].buffered == FALSE)
+		if (g_rr_switch_inf[iswitch].buffered == FALSE)
 			C_downstream += rr_node[inode].C;
 		else
 			C_downstream = rr_node[inode].C;
@@ -355,9 +355,9 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 	inode = rt_node->inode;
 	parent_rt_node = rt_node->parent_node;
 
-	R_upstream = switch_inf[iswitch].R + rr_node[inode].R;
+	R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R;
 
-	if (switch_inf[iswitch].buffered == FALSE)
+	if (g_rr_switch_inf[iswitch].buffered == FALSE)
 		R_upstream += parent_rt_node->R_upstream;
 
 	rt_node->R_upstream = R_upstream;
@@ -381,10 +381,10 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 		iswitch = linked_rt_edge->iswitch;
 		inode = rt_node->inode;
 
-		if (switch_inf[iswitch].buffered)
-			R_upstream = switch_inf[iswitch].R + rr_node[inode].R;
+		if (g_rr_switch_inf[iswitch].buffered)
+			R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R;
 		else
-			R_upstream += switch_inf[iswitch].R + rr_node[inode].R;
+			R_upstream += g_rr_switch_inf[iswitch].R + rr_node[inode].R;
 
 		rt_node->R_upstream = R_upstream;
 		linked_rt_edge = rt_node->u.child_list;
@@ -408,7 +408,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	parent_rt_node = rt_node->parent_node;
 	iswitch = rt_node->parent_switch;
 
-	while (parent_rt_node != NULL && switch_inf[iswitch].buffered == FALSE) {
+	while (parent_rt_node != NULL && g_rr_switch_inf[iswitch].buffered == FALSE) {
 		rt_node = parent_rt_node;
 		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;
@@ -449,8 +449,8 @@ static void load_rt_subtree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 		iswitch = linked_rt_edge->iswitch;
 		child_node = linked_rt_edge->child;
 
-		Tchild = Tdel + switch_inf[iswitch].R * child_node->C_downstream;
-		Tchild += switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
+		Tchild = Tdel + g_rr_switch_inf[iswitch].R * child_node->C_downstream;
+		Tchild += g_rr_switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
 		load_rt_subtree_Tdel(child_node, Tchild);
 
 		linked_rt_edge = linked_rt_edge->next;

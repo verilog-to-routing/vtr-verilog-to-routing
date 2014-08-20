@@ -916,7 +916,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 					POWER_COMPONENT_ROUTE_SB);
 
 			/* Buffer Size */
-			switch (switch_inf[node_power->driver_switch_type].power_buffer_type) {
+			switch (g_rr_switch_inf[node_power->driver_switch_type].power_buffer_type) {
 			case POWER_BUFFER_TYPE_AUTO:
 				/*
 				 C_per_seg_split = ((float) node->num_edges
@@ -927,11 +927,11 @@ static void power_usage_routing(t_power_usage * power_usage,
 				 buffer_size = max(buffer_size, 1.0F);
 				 */
 				buffer_size = power_calc_buffer_size_from_Cout(
-						switch_inf[node_power->driver_switch_type].Cout);
+						g_rr_switch_inf[node_power->driver_switch_type].Cout);
 				break;
 			case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
 				buffer_size =
-						switch_inf[node_power->driver_switch_type].power_buffer_size;
+						g_rr_switch_inf[node_power->driver_switch_type].power_buffer_size;
 				buffer_size = max(buffer_size, 1.0F);
 				break;
 			case POWER_BUFFER_TYPE_NONE:
@@ -974,7 +974,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 			switchbox_fanout = 0;
 			for (switch_idx = 0; switch_idx < node->get_num_edges(); switch_idx++) {
 				if (node->switches[switch_idx]
-						== routing_arch->wire_to_ipin_switch) {
+						== routing_arch->wire_to_rr_ipin_switch) {
 					connectionbox_fanout++;
 				} else if (node->switches[switch_idx]
 						== routing_arch->delayless_switch) {
@@ -1196,7 +1196,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 		case CHANY:
 			for (switch_idx = 0; switch_idx < node->get_num_edges(); switch_idx++) {
 				if (node->switches[switch_idx]
-						== routing_arch->wire_to_ipin_switch) {
+						== routing_arch->wire_to_rr_ipin_switch) {
 					fanout_to_IPIN++;
 				} else if (node->switches[switch_idx]
 						!= routing_arch->delayless_switch) {

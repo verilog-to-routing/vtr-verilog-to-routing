@@ -15,6 +15,7 @@ using namespace std;
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
 #include "ReadOptions.h"
+#include "rr_graph_area.c"
 
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation);
@@ -35,7 +36,7 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing);
 static void SetupSwitches(INP t_arch Arch,
 		INOUTP struct s_det_routing_arch *RoutingArch,
-		INP struct s_switch_inf *ArchSwitches, INP int NumArchSwitches);
+		INP struct s_arch_switch_inf *ArchSwitches, INP int NumArchSwitches);
 static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 		t_arch * Arch);
 
@@ -230,7 +231,6 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	/* init global variables */
 	out_file_prefix = Options->out_file_prefix;
 	grid_logic_tile_area = Arch->grid_logic_tile_area;
-	ipin_mux_trans_size = Arch->ipin_mux_trans_size;
 
 	/* Set seed for pseudo-random placement, default seed to 1 */
 	PlacerOpts->seed = 1;
@@ -296,13 +296,46 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 	}
 }
 
-/* This loads up VPR's switch_inf data by combining the switches from 
+/* This loads up VPR's arch_switch_inf data by combining the switches from 
  * the arch file with the special switches that VPR needs. */
 static void SetupSwitches(INP t_arch Arch,
 		INOUTP struct s_det_routing_arch *RoutingArch,
-		INP struct s_switch_inf *ArchSwitches, INP int NumArchSwitches) {
+		INP struct s_arch_switch_inf *ArchSwitches, INP int NumArchSwitches) {
+
+	int switches_to_copy = NumArchSwitches;
+	g_num_arch_switches = NumArchSwitches;
+
+	/* If ipin cblock info has not been read in from a switch, then we will
+	   create a new switch for it. Otherwise, the switch already exists */
+	if (NULL == Arch.ipin_cblock_switch_name){
+		/* Depends on g_num_arch_switches */
+		RoutingArch->wire_to_arch_ipin_switch = g_num_arch_switches;
+		++g_num_arch_switches;
+		++NumArchSwitches;
+	} else {
+		/* need to find the index of the input cblock switch */
+		int ipin_cblock_switch_index = -1;
+		char *ipin_cblock_switch_name = Arch.ipin_cblock_switch_name;
+		for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch++){
+			char *iswitch_name = ArchSwitches[iswitch].name;
+			if (0 == strcmp(ipin_cblock_switch_name, iswitch_name)){
+				ipin_cblock_switch_index = iswitch;
+				break;
+			}
+		}
+		if (ipin_cblock_switch_index == -1){
+			vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "Could not find arch switch matching name %s\n", ipin_cblock_switch_name);
+		}
+
+		RoutingArch->wire_to_arch_ipin_switch = ipin_cblock_switch_index;
+	}
+
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
+	/* Order of the switches will be as follows:
+	 * 0..NumArchSwitches-1: Original switches from arch file (including wire to ipin switch)
+	 * NumArchSwitches...2*NumArchSwitches-1: switches with increased delay
+	 * 2*NumArchSwitches: delayless switch */
 	int i;
 	double d_delay_increase;
 
@@ -311,128 +344,116 @@ static void SetupSwitches(INP t_arch Arch,
 	vpr_printf_info("delay_increase:%d d_delay_increase: %g\n", delay_increase, d_delay_increase);
 	
 
-	RoutingArch->num_switch = NumArchSwitches;
-
 	/* ANDRE: Adds the extra switch types with increased delay */
-	RoutingArch->num_switch *= 2;
+	g_num_arch_switches *= 2;
 
-	/* Depends on RoutingArch->num_switch */
-	RoutingArch->wire_to_ipin_switch = RoutingArch->num_switch;
-	++RoutingArch->num_switch;
-
-	/* Adds the extra switch type with increased delay for the wire_to_ipin case */
-	++RoutingArch->num_switch;
-
-	/* Depends on RoutingArch->num_switch */
-	RoutingArch->delayless_switch = RoutingArch->num_switch;
+	/* Depends on RoutingArch->num_arch_switches */
+	RoutingArch->delayless_switch = g_num_arch_switches;
 	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
-	++RoutingArch->num_switch;
+	++g_num_arch_switches;
 
-	/* TODO I don't think I need to create new version of delayless, need to check that */
-
-	/* Alloc the list now that we know the final num_switch value */
-	switch_inf = (struct s_switch_inf *) my_malloc(
-			sizeof(struct s_switch_inf) * RoutingArch->num_switch);
+	/* Alloc the list now that we know the final num_arch_switches value */
+	g_arch_switch_inf = new s_arch_switch_inf[g_num_arch_switches];
 
 	/* Mapping of the switches to their respective increased delay versions */
-	increased_delay_edge_map = (int *) my_malloc(sizeof(int) * RoutingArch->num_switch);
-
-	/* Order of the switches:
-	 * 0...NumArchSwitches-1: Original switches from arch file
-	 * NumArchSwitches...2*NumArchSwitches-1: switches with increased delay
-	 * 2*NumArchSwitches: Original wire_to_ipin_switch
-	 * 2*NumArchSwitches+1: wire_to_ipin_switch with increased delay
-	 * 2*NumArchSwitches+2: delayless_switch */
-	for(i = 0; i < NumArchSwitches; i++){
+	increased_delay_edge_map = (int *) my_malloc(sizeof(int) * g_num_arch_switches);
+	
+	/* create delay edge map which maps from a normal switch to its increased-delay counterpart */
+	for(i = 0; i < switches_to_copy; i++){
 		increased_delay_edge_map[i] = i + NumArchSwitches;
 		increased_delay_edge_map[i+NumArchSwitches] = i + NumArchSwitches;
 	}
-	increased_delay_edge_map[RoutingArch->wire_to_ipin_switch] = 
-		RoutingArch->wire_to_ipin_switch + 1;
-	increased_delay_edge_map[RoutingArch->wire_to_ipin_switch+1] = 
-		RoutingArch->wire_to_ipin_switch + 1;
 	increased_delay_edge_map[RoutingArch->delayless_switch] = RoutingArch->delayless_switch;
 
-	/* Copy the switch data from architecture file */
-	memcpy(switch_inf, ArchSwitches,
-			sizeof(struct s_switch_inf) * NumArchSwitches);
+	/* copy switches that were specified in the architecture file */
+	for (int iswitch = 0; iswitch < NumArchSwitches; iswitch++){
+		g_arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+	}
+
+	/* If ipin cblock info has *not* been read in from a switch, then we have
+	   created a new switch for it, and now need to set its values */
+	if (NULL == Arch.ipin_cblock_switch_name){
+		/* The wire to ipin switch for all types. Curently all types
+		 * must share ipin switch. Some of the timing code would
+		 * need to be changed otherwise. */
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = TRUE;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Tdel_map[UNDEFINED] = Arch.T_ipin_cblock;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].mux_trans_size = Arch.ipin_mux_trans_size;
+
+		/* Assume the ipin cblock output to lblock input buffer below is 4x     *
+		 * minimum drive strength (enough to drive a fanout of up to 16 pretty  * 
+		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
+	}
 
 	/* Actually create the new switch types for the switch boxes */
 	for(i = NumArchSwitches; i < 2*NumArchSwitches; i++){
-		memcpy(&switch_inf[i], &switch_inf[i-NumArchSwitches],
-			sizeof(struct s_switch_inf));
-		switch_inf[i].Tdel += d_delay_increase;
+		g_arch_switch_inf[i] = g_arch_switch_inf[i-NumArchSwitches];
+		std::map<int, double> *Tdel_map = &g_arch_switch_inf[i].Tdel_map;
+		std::map<int, double>::iterator it;
+
+		for (it = Tdel_map->begin(); it != Tdel_map->end(); it++){
+			it->second += d_delay_increase;
+		}
 	}
 
-
-	/* The wire to ipin switch for all types. Curently all types
-	 * must share ipin switch. Some of the timing code would
-	 * need to be changed otherwise. */
-	switch_inf[RoutingArch->wire_to_ipin_switch].buffered = TRUE;
-	switch_inf[RoutingArch->wire_to_ipin_switch].R = 0.;
-	switch_inf[RoutingArch->wire_to_ipin_switch].Cin = Arch.C_ipin_cblock;
-	switch_inf[RoutingArch->wire_to_ipin_switch].Cout = 0.;
-	switch_inf[RoutingArch->wire_to_ipin_switch].Tdel = Arch.T_ipin_cblock;
-	switch_inf[RoutingArch->wire_to_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-	switch_inf[RoutingArch->wire_to_ipin_switch].mux_trans_size = 0.;
-
-	/* Copy and increase the delay of wire_to_ipin_switch */
-	memcpy(&switch_inf[RoutingArch->wire_to_ipin_switch+1],
-		&switch_inf[RoutingArch->wire_to_ipin_switch],
-		sizeof(struct s_switch_inf));
-	switch_inf[RoutingArch->wire_to_ipin_switch+1].Tdel += d_delay_increase;
-
 	/* Delayless switch for connecting sinks and sources with their pins. */
-	switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
-	switch_inf[RoutingArch->delayless_switch].R = 0.;
-	switch_inf[RoutingArch->delayless_switch].Cin = 0.;
-	switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-	switch_inf[RoutingArch->delayless_switch].Tdel = 0.;
-	switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-	switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
+	g_arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].Tdel_map[UNDEFINED] = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+	g_arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 
 #else
 
-	RoutingArch->num_switch = NumArchSwitches;
 
-	/* Depends on RoutingArch->num_switch */
-	RoutingArch->wire_to_ipin_switch = RoutingArch->num_switch;
-	++RoutingArch->num_switch;
-
-	/* Depends on RoutingArch->num_switch */
-	RoutingArch->delayless_switch = RoutingArch->num_switch;
+	/* Depends on g_num_arch_switches */
+	RoutingArch->delayless_switch = g_num_arch_switches;
 	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
-	++RoutingArch->num_switch;
+	++g_num_arch_switches;
 
-	/* Alloc the list now that we know the final num_switch value */
-	switch_inf = (struct s_switch_inf *) my_malloc(
-			sizeof(struct s_switch_inf) * RoutingArch->num_switch);
-
-	/* Copy the switch data from architecture file */
-	memcpy(switch_inf, ArchSwitches,
-			sizeof(struct s_switch_inf) * NumArchSwitches);
+	/* Alloc the list now that we know the final num_arch_switches value */
+	g_arch_switch_inf = new s_arch_switch_inf[g_num_arch_switches];
+	for (int iswitch = 0; iswitch < switches_to_copy; iswitch++){
+		g_arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+	}
 
 	/* Delayless switch for connecting sinks and sources with their pins. */
-	switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
-	switch_inf[RoutingArch->delayless_switch].R = 0.;
-	switch_inf[RoutingArch->delayless_switch].Cin = 0.;
-	switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-	switch_inf[RoutingArch->delayless_switch].Tdel = 0.;
-	switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-	switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
+	g_arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].Tdel_map[UNDEFINED] = 0.;
+	g_arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+	g_arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 
-	/* The wire to ipin switch for all types. Curently all types
-	 * must share ipin switch. Some of the timing code would
-	 * need to be changed otherwise. */
-	switch_inf[RoutingArch->wire_to_ipin_switch].buffered = TRUE;
-	switch_inf[RoutingArch->wire_to_ipin_switch].R = 0.;
-	switch_inf[RoutingArch->wire_to_ipin_switch].Cin = Arch.C_ipin_cblock;
-	switch_inf[RoutingArch->wire_to_ipin_switch].Cout = 0.;
-	switch_inf[RoutingArch->wire_to_ipin_switch].Tdel = Arch.T_ipin_cblock;
-	switch_inf[RoutingArch->wire_to_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-	switch_inf[RoutingArch->wire_to_ipin_switch].mux_trans_size = 0.;
+	/* If ipin cblock info has *not* been read in from a switch, then we have
+	   created a new switch for it, and now need to set its values */
+	if (NULL == Arch.ipin_cblock_switch_name){
+		/* The wire to ipin switch for all types. Curently all types
+		 * must share ipin switch. Some of the timing code would
+		 * need to be changed otherwise. */
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = TRUE;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Tdel_map[UNDEFINED] = Arch.T_ipin_cblock;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].mux_trans_size = Arch.ipin_mux_trans_size;
 
+		/* Assume the ipin cblock output to lblock input buffer below is 4x     *
+		 * minimum drive strength (enough to drive a fanout of up to 16 pretty  * 
+		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
+	}
 #endif
+
 
 }
 

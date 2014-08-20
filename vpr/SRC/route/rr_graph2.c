@@ -177,7 +177,7 @@ t_seg_details *alloc_and_load_seg_details(
 	 *     as they will not be staggered by different segment start points.     */
 
 	int i, cur_track, ntracks, itrack, length, j, index;
-	int wire_switch, opin_switch, fac, num_sets, tmp;
+	int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
 	int group_start, first_track;
 	int *sets_per_seg_type = NULL;
 	t_seg_details *seg_details = NULL;
@@ -224,9 +224,9 @@ t_seg_details *alloc_and_load_seg_details(
 			length = max_len;
 		}
 
-		wire_switch = segment_inf[i].wire_switch;
-		opin_switch = segment_inf[i].opin_switch;
-		assert((wire_switch == opin_switch) || (directionality != UNI_DIRECTIONAL));
+		arch_wire_switch = segment_inf[i].arch_wire_switch;
+		arch_opin_switch = segment_inf[i].arch_opin_switch;
+		assert((arch_wire_switch == arch_opin_switch) || (directionality != UNI_DIRECTIONAL));
 
 		/* Set up the tracks of same type */
 		group_start = 0;
@@ -312,8 +312,8 @@ t_seg_details *alloc_and_load_seg_details(
 			seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
 			//seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
 
-			seg_details[cur_track].wire_switch = wire_switch;
-			seg_details[cur_track].opin_switch = opin_switch;
+			seg_details[cur_track].arch_wire_switch = arch_wire_switch;
+			seg_details[cur_track].arch_opin_switch = arch_opin_switch;
 
 			if (BI_DIRECTIONAL == directionality) {
 				seg_details[cur_track].direction = BI_DIRECTION;
@@ -427,8 +427,8 @@ t_chan_details* init_chan_details(
 				p_seg_details[i].Cmetal = seg_details[i].Cmetal;
 				p_seg_details[i].Cmetal_per_m = seg_details[i].Cmetal_per_m;
 
-				p_seg_details[i].wire_switch = seg_details[i].wire_switch;
-				p_seg_details[i].opin_switch = seg_details[i].opin_switch;
+				p_seg_details[i].arch_wire_switch = seg_details[i].arch_wire_switch;
+				p_seg_details[i].arch_opin_switch = seg_details[i].arch_opin_switch;
 
 				p_seg_details[i].direction = seg_details[i].direction;
 				p_seg_details[i].drivers = seg_details[i].drivers;
@@ -778,7 +778,7 @@ int get_bidir_opin_connections(
 
 			/* Only connect to wire if there is a CB */
 			if (is_cblock(chan, seg, to_track, seg_details, BI_DIRECTIONAL)) {
-				to_switch = seg_details[to_track].wire_switch;
+				to_switch = seg_details[to_track].arch_wire_switch;
 				to_node = get_rr_node_index(tr_i, tr_j, to_type, to_track,
 						L_rr_node_indices);
 
@@ -794,6 +794,7 @@ int get_bidir_opin_connections(
 }
 
 int get_unidir_opin_connections(
+		INP t_type_ptr type,
 		INP int chan, INP int seg, INP int Fc,
 		INP t_rr_type chan_type, INP t_seg_details * seg_details,
 		INOUTP t_linked_edge ** edge_list_ptr, INOUTP int **Fc_ofs,
@@ -808,7 +809,7 @@ int get_unidir_opin_connections(
 	int *inc_muxes = NULL;
 	int *dec_muxes = NULL;
 	int num_inc_muxes, num_dec_muxes, iconn;
-	int inc_inode, dec_inode;
+	int inc_inode_index, dec_inode_index;
 	int inc_mux, dec_mux;
 	int inc_track, dec_track;
 	int x, y;
@@ -848,22 +849,22 @@ int get_unidir_opin_connections(
 		dec_track = dec_muxes[dec_mux];
 
 		/* Figure the inodes of those muxes */
-		inc_inode = get_rr_node_index(x, y, chan_type, inc_track,
+		inc_inode_index = get_rr_node_index(x, y, chan_type, inc_track,
 				L_rr_node_indices);
-		dec_inode = get_rr_node_index(x, y, chan_type, dec_track,
+		dec_inode_index = get_rr_node_index(x, y, chan_type, dec_track,
 				L_rr_node_indices);
 
 		/* Add to the list. */
-		if (FALSE == L_rr_edge_done[inc_inode]) {
-			L_rr_edge_done[inc_inode] = TRUE;
-			*edge_list_ptr = insert_in_edge_list(*edge_list_ptr, inc_inode,
-					seg_details[inc_track].opin_switch);
+		if (FALSE == L_rr_edge_done[inc_inode_index]) {
+			L_rr_edge_done[inc_inode_index] = TRUE;
+			*edge_list_ptr = insert_in_edge_list(*edge_list_ptr, inc_inode_index,
+					seg_details[inc_track].arch_opin_switch);
 			++num_edges;
 		}
-		if (FALSE == L_rr_edge_done[dec_inode]) {
-			L_rr_edge_done[dec_inode] = TRUE;
-			*edge_list_ptr = insert_in_edge_list(*edge_list_ptr, dec_inode,
-					seg_details[dec_track].opin_switch);
+		if (FALSE == L_rr_edge_done[dec_inode_index]) {
+			L_rr_edge_done[dec_inode_index] = TRUE;
+			*edge_list_ptr = insert_in_edge_list(*edge_list_ptr, dec_inode_index,
+					seg_details[dec_track].arch_opin_switch);
 			++num_edges;
 		}
 	}
@@ -937,9 +938,9 @@ void dump_seg_details(
 				fprintf(fp, " [%d,%d]",
 						seg_details[i].seg_start, seg_details[i].seg_end);
 			}
-			fprintf(fp, "  longline: %d  wire_switch: %d  opin_switch: %d", 
+			fprintf(fp, "  longline: %d  arch_wire_switch: %d  arch_opin_switch: %d", 
 					seg_details[i].longline,
-					seg_details[i].wire_switch, seg_details[i].opin_switch);
+					seg_details[i].arch_wire_switch, seg_details[i].arch_opin_switch);
 		}
 		fprintf(fp, "\n"); 
 
@@ -982,9 +983,9 @@ void dump_seg_details(
 	for (i = 0; i < max_chan_width; i++) {
 		fprintf(fp, "Track: %d.\n", i);
 		fprintf(fp, "Length: %d,  Start: %d,  Long line: %d  "
-				"wire_switch: %d  opin_switch: %d.\n", seg_details[i].length,
+				"arch_wire_switch: %d  arch_opin_switch: %d.\n", seg_details[i].length,
 				seg_details[i].start, seg_details[i].longline,
-				seg_details[i].wire_switch, seg_details[i].opin_switch);
+				seg_details[i].arch_wire_switch, seg_details[i].arch_opin_switch);
 
 		fprintf(fp, "Rmetal: %g  Cmetal: %g\n", seg_details[i].Rmetal,
 				seg_details[i].Cmetal);
@@ -1518,6 +1519,7 @@ int get_track_to_pins(
 				/* Move from logical (straight) to physical (twisted) track index 
 				 * - algorithm assigns ipin connections to same physical track index
 				 * so that the logical track gets distributed uniformly */
+
 				phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
 				phy_track %= tracks_per_chan;
 
@@ -1582,7 +1584,7 @@ int get_track_to_tracks(
 
 	assert(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
 
-	from_switch = from_seg_details[from_track].wire_switch;
+	from_switch = from_seg_details[from_track].arch_wire_switch;
 	from_end = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
 	from_first = from_seg - 1;
 
@@ -1756,7 +1758,7 @@ static int get_bidir_track_to_chan_seg(
 		}
 
 		/* Get the switches for any edges between the two tracks */
-		to_switch = seg_details[to_track].wire_switch;
+		to_switch = seg_details[to_track].arch_wire_switch;
 
 		to_is_sblock = is_sblock(to_chan, to_seg, to_sb, to_track, seg_details,
 				directionality);
@@ -1871,7 +1873,7 @@ static int get_unidir_track_to_chan_seg(
 
 			/* Add edge to list. */
 			L_rr_edge_done[to_node] = TRUE;
-			*edge_list = insert_in_edge_list(*edge_list, to_node, seg_details[to_track].wire_switch);
+			*edge_list = insert_in_edge_list(*edge_list, to_node, seg_details[to_track].arch_wire_switch);
 			++count;
 		}
 	}
@@ -1937,7 +1939,7 @@ static void get_switch_type(
 	/* Connect forward if we are a sblock */
 	if (is_from_sblock) {
 		switch_types[used] = to_node_switch;
-		if (FALSE == switch_inf[to_node_switch].buffered) {
+		if (FALSE == g_arch_switch_inf[to_node_switch].buffered) {
 			forward_pass_trans = TRUE;
 		}
 		++used;
@@ -1945,7 +1947,7 @@ static void get_switch_type(
 
 	/* Check for pass_trans coming backwards */
 	if (is_to_sblock) {
-		if (FALSE == switch_inf[from_node_switch].buffered) {
+		if (FALSE == g_arch_switch_inf[from_node_switch].buffered) {
 			switch_types[used] = from_node_switch;
 			backward_pass_trans = TRUE;
 			++used;
@@ -1960,7 +1962,7 @@ static void get_switch_type(
 		/* Take the smaller index unless the other 
 		 * pass_trans is bigger (smaller R). */
 		switch_types[used] = min_switch;
-		if (switch_inf[max_switch].R < switch_inf[min_switch].R) {
+		if (g_arch_switch_inf[max_switch].R < g_arch_switch_inf[min_switch].R) {
 			switch_types[used] = max_switch;
 		}
 		++used;
@@ -2577,12 +2579,13 @@ static int *label_wire_muxes_for_balance(
 			max_opin_mux_size = opin_mux_size[inode];
 		}
 	}
+
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
-		vpr_printf_error(__FILE__, __LINE__, 
-				"opin muxes are not balanced!\n");
 		vpr_printf_info("%smax_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
 				TIO_PREFIX_ERROR_SPACE,
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+				"opin muxes are not balanced!\n");
 	}
 
 	/* Create a new list that we will move the muxes with 'holes' to the start of list. */

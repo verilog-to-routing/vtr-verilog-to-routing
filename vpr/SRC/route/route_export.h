@@ -2,12 +2,12 @@
  ******** are used outside the router modules.                     ***********/
 
 void try_graph(int width_fac, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs);
 
 boolean try_route(int width_fac, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
 		boolean * Fc_clipped, t_direct_inf *directs, int num_directs);

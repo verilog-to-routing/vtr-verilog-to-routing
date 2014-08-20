@@ -109,13 +109,21 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	vpr_printf_info("\n");
 }
 
-float get_switch_info(short switch_index, float &Tdel_switch, float &R_switch, float &Cout_switch) {
-	/* Fetches delay, resistance and output capacitance of the switch at switch_index. 
+float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_switch, float &R_switch, float &Cout_switch){
+	/* Fetches delay, resistance and output capacitance of the architecture switch at switch_index. 
 	Returns the total delay through the switch. Used to calculate inter-cluster net delay. */
 
-	Tdel_switch = switch_inf[switch_index].Tdel; /* Delay when unloaded */
-	R_switch = switch_inf[switch_index].R;
-	Cout_switch = switch_inf[switch_index].Cout;
+	/* The intrinsic delay may depend on fanin to the switch. If the delay map of a 
+	   switch from the architecture file has multiple (#inputs, delay) entries, we
+	   interpolate/extrapolate to get the delay at 'switch_fanin'. */
+	std::map<int, double> *Tdel_map = &g_arch_switch_inf[switch_index].Tdel_map;
+	if (Tdel_map->size() == 1){
+		Tdel_switch = (Tdel_map->begin())->second;
+	} else {
+		Tdel_switch = linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
+	}
+	R_switch = g_arch_switch_inf[switch_index].R;
+	Cout_switch = g_arch_switch_inf[switch_index].Cout;
 
 	/* The delay through a loaded switch is its intrinsic (unloaded) 
 	delay plus the product of its resistance and output capacitance. */

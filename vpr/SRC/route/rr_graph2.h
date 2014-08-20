@@ -126,6 +126,7 @@ int get_bidir_opin_connections(
 		INP t_seg_details *seg_details);
 
 int get_unidir_opin_connections(
+		INP t_type_ptr type,
 		INP int chan,
 		INP int seg,
 		INP int Fc,

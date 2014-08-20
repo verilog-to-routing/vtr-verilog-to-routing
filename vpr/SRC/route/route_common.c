@@ -224,7 +224,7 @@ void get_serial_num(void) {
 }
 
 void try_graph(int width_fac, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs) {
 
@@ -232,7 +232,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ?
+		graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?
 						GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
@@ -247,16 +247,18 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch.switch_block_type,
-			det_routing_arch.Fs, det_routing_arch.num_segment,
-			det_routing_arch.num_switch, segment_inf,
-			det_routing_arch.global_route_switch,
-			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch, 
+			&chan_width, NULL, det_routing_arch->switch_block_type,
+			det_routing_arch->Fs, det_routing_arch->num_segment,
+			g_num_arch_switches, segment_inf,
+			det_routing_arch->global_route_switch,
+			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->wire_to_arch_ipin_switch,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs, FALSE, FALSE,
+			&det_routing_arch->wire_to_rr_ipin_switch,
+			&g_num_rr_switches,
 			&warning_count);
 
 	clock_t end = clock();
@@ -268,7 +270,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 }
 
 boolean try_route(int width_fac, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
 		boolean * Fc_clipped, t_direct_inf *directs, int num_directs) {
@@ -284,7 +286,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ?
+		graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?
 						GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
@@ -299,16 +301,18 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch.switch_block_type,
-			det_routing_arch.Fs, det_routing_arch.num_segment,
-			det_routing_arch.num_switch, segment_inf,
-			det_routing_arch.global_route_switch,
-			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch, 
+			&chan_width, NULL, det_routing_arch->switch_block_type,
+			det_routing_arch->Fs, det_routing_arch->num_segment,
+			g_num_arch_switches, segment_inf,
+			det_routing_arch->global_route_switch,
+			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->wire_to_arch_ipin_switch, 
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs, FALSE, FALSE,
+			&det_routing_arch->wire_to_rr_ipin_switch,
+			&g_num_rr_switches,
 			&warning_count);
 
 	clock_t end = clock();

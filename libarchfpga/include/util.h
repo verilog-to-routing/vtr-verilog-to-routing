@@ -5,8 +5,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
-//#include <map>
-//#include <set>
+#include <map>
 
 #include "TIO_PrintHandlerExtern.h"
 
@@ -201,6 +200,8 @@ extern vpr_PrintHandlerDirect vpr_printf_direct;
 
 /*********************** Math operations *************************************/
 int ipow(int base, int exp);
+
+template<typename X, typename Y> Y linear_interpolate_or_extrapolate(INP std::map<X,Y> *xy_map, INP X requested_x);
 
 /*********************** Error-related ***************************************/
 void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename);

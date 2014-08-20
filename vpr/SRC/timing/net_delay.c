@@ -378,7 +378,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 		child_node = linked_rc_edge->child;
 		C_downstream = load_rc_tree_C(child_node);
 
-		if (switch_inf[iswitch].buffered == FALSE)
+		if (g_rr_switch_inf[iswitch].buffered == FALSE)
 			C += C_downstream;
 
 		linked_rc_edge = linked_rc_edge->next;
@@ -428,8 +428,8 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 
-		Tchild = Tdel + switch_inf[iswitch].R * child_node->C_downstream;
-		Tchild += switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
+		Tchild = Tdel + g_rr_switch_inf[iswitch].R * child_node->C_downstream;
+		Tchild += g_rr_switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
 		load_rc_tree_T(child_node, Tchild);
 
 		linked_rc_edge = linked_rc_edge->next;

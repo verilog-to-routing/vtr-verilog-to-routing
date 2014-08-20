@@ -120,7 +120,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 		t_chan_width_dist chan_width_dist);
 
 static void alloc_routing_structs(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, INP t_direct_inf *directs, 
 		INP int num_directs);
 
@@ -479,7 +479,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 
 /**************************************/
 static void alloc_routing_structs(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, INP t_direct_inf *directs, 
 		INP int num_directs) {
 
@@ -500,17 +500,17 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ?
+		graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?
 				GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
 	build_rr_graph(graph_type, num_types, dummy_type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch.switch_block_type,
-			det_routing_arch.Fs, det_routing_arch.num_segment,
-			det_routing_arch.num_switch, segment_inf,
-			det_routing_arch.global_route_switch,
-			det_routing_arch.delayless_switch, timing_inf,
-			det_routing_arch.wire_to_ipin_switch,
+			&chan_width, NULL, det_routing_arch->switch_block_type,
+			det_routing_arch->Fs, det_routing_arch->num_segment,
+			g_num_arch_switches, segment_inf,
+			det_routing_arch->global_route_switch,
+			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->wire_to_arch_ipin_switch,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
@@ -521,6 +521,8 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
                         which should not be carry chain pins. */
 			TRUE, 
 			TRUE, /* do not process any (optional) switchbox overrides */
+			&det_routing_arch->wire_to_rr_ipin_switch,
+			&g_num_rr_switches,
 			&warnings);
 
 	alloc_and_load_rr_node_route_structs();
@@ -1045,7 +1047,7 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 
 /**************************************/
 void compute_delay_lookup_tables(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
+		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, INP t_direct_inf *directs, 
 		INP int num_directs) {
 
@@ -1086,15 +1088,15 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	num_cuts = temp_num_cuts;
 #endif
 
-	longest_length = get_longest_segment_length(det_routing_arch, segment_inf);
+	longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
 
 	/*now setup and compute the actual arrays */
 	alloc_delta_arrays();
-	compute_delta_arrays(router_opts, det_routing_arch, segment_inf, timing_inf,
+	compute_delta_arrays(router_opts, (*det_routing_arch), segment_inf, timing_inf,
 			longest_length);
 
 	/*free all data structures that are no longer needed */
-	free_routing_structs(router_opts, det_routing_arch, segment_inf,
+	free_routing_structs(router_opts, (*det_routing_arch), segment_inf,
 			timing_inf);
 
 	restore_original_device();

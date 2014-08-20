@@ -884,3 +884,66 @@ boolean check_file_name_extension(INP const char* file_name,
 int get_file_line_number_of_last_opened_file() {
 	return file_line_number;
 }
+
+/* Performs linear interpolation or extrapolation on the set of (x,y) values specified by the xy_map.
+   A requested x value is passed in, and we return the interpolated/extrapolated y value at this requested value of x.
+   Meant for maps where both key and element are numbers.
+   This is specifically enforced by the explicit instantiations below this function. i.e. only templates
+   using those types listed in the explicit instantiations below are allowed */
+template<typename X, typename Y> Y linear_interpolate_or_extrapolate(INP std::map<X,Y> *xy_map, INP X requested_x){
+	Y result;
+
+	/* the intention of this function is to interpolate/extrapolate. we can't do so with less than 2 values in the xy_map */
+	if (xy_map->size() < 2){
+		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, 
+			"linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs");		
+	}
+
+	if (xy_map->count(requested_x) == 1){
+		/* requested x already exists in the x,y map */
+		result = (*xy_map)[requested_x];
+	} else {
+		/* requested x does not exist in the x,y map. need to interpolate/extrapolate */
+
+		typename std::map<X,Y>::const_iterator it;
+		double x_low, x_high, y_low, y_high;
+		double slope, reference_y, delta_x;
+
+		/* get first x greater than the one requested */
+		it = xy_map->upper_bound(requested_x);
+
+		if(it == xy_map->end()){
+			/* need to extrapolate to higher x. based on the y values at the two largest x values */
+			it--;
+			x_high = (double)it->first;
+			y_high = (double)it->second;
+			it--;
+			x_low = (double)it->first;
+			y_low = (double)it->second;
+		} else if (it == xy_map->begin()){
+			/* need to extrapolate to lower x. based on the y values at the two smallest x */
+			x_low = (double)it->first;
+			y_low = (double)it->second;
+			it++;
+			x_high = (double)it->first;
+			y_high = (double)it->second;
+		} else {
+			/* need to interpolate. based on y values at x just above/below
+			   the one we want */
+			x_high = (double)it->first;
+			y_high = (double)it->second;
+			it--;
+			x_low = (double)it->first;
+			y_low = (double)it->second;
+		}
+
+		slope = (y_high - y_low) / (x_high - x_low);
+		reference_y = y_low;
+		delta_x = (double)requested_x - x_low;
+		result = (Y)(reference_y + (slope * delta_x));
+	}
+
+	return result;
+}
+template double linear_interpolate_or_extrapolate(std::map<int,double> *xy_map, int requested_x);	/* (int,double) */
+template double linear_interpolate_or_extrapolate(std::map<double,double> *xy_map, double requested_x);	/* (double,double) */
