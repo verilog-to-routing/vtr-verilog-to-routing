@@ -268,7 +268,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 	 * array and averaging the R and C values of all segments of the same type  *
 	 * and using them to compute average delay values for this type of segment. */
 
-	int itrack, iseg, inode, cost_index, iswitch;
+	int itrack, inode, cost_index;
 	float *C_total, *R_total; /* [0..num_rr_indexed_data - 1] */
 	double *switch_R_total, *switch_T_total; /* [0..num_rr_indexed_data - 1] */
 	short *switches_buffered;

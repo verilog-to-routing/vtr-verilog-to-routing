@@ -416,7 +416,6 @@ void build_rr_graph(
 	ipin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
 	track_to_pin_lookup = (struct s_ivec *****) my_malloc(sizeof(struct s_ivec ****) * L_num_types);
 	for (int i = 0; i < L_num_types; ++i) {
-		bool test_metrics_inp = false;
 		ipin_to_track_map[i] = alloc_and_load_pin_to_track_map(RECEIVER,
 				nodes_per_chan, Fc_in[i], &types[i], perturb_ipins[i], directionality);
 		track_to_pin_lookup[i] = alloc_and_load_track_to_pin_lookup(
