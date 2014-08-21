@@ -1,0 +1,68 @@
+#
+# Project Related Files
+#
+
+#Executables
+sta
+sta_test
+
+#Generated files
+obj/
+*.echo
+*.blif
+*.xml
+*.constraint
+*.partition
+*.partition_regex
+core
+massif.out*
+*.log
+
+#gprof
+gmon.out
+
+#ctags
+tags
+
+#
+# VIM related files
+#
+*.s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+#
+# VPR temporary files
+#
+*.net
+*.place
+*.route
+
+
+#
+# C++ related files
+#
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Dependency files
+*.d
+
+#
+# Python temp files
+#
+*.pyc
