@@ -24,7 +24,7 @@ test = $(exe)_test
 
 
 #Main program (exe) sources
-DIRS = $(SRC_DIR)/base $(SRC_DIR)/version
+DIRS = $(SRC_DIR)/timing_graph $(SRC_DIR)/waveform_calc $(SRC_DIR)/util $(SRC_DIR)/base $(SRC_DIR)/version
 
 # main must be kept seperate to avoid conflicts with main defined in unit tests
 exe_main = $(SRC_DIR)/main.cpp 
