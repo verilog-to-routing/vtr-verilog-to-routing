@@ -54,6 +54,12 @@ def main():
     #parser.add_argument('--spaceout-factor', type=float, default=1.1)
     args, vpr_args_list = parser.parse_known_args()
 
+    # look for the num_cuts argument to figure out the number of partitions
+    num_cuts_pos = vpr_args_list.index('--num_cuts')
+    assert(num_cuts_pos >= 0)
+    num_cuts = int(vpr_args_list[num_cuts_pos+1])
+    num_partitions = num_cuts+1
+
     # filter out any args that were meant for us
     #vpr_args_list = filter(is_vpr_arg, sys.argv[1:])
     vpr_args = " ".join(vpr_args_list)
@@ -103,12 +109,12 @@ def main():
             hypergraph_to_graph.run(blocks_file=input_blocks, input_hypergraph=input_hypergraph, output_graph='justgraph.txt', graph_model=args.graph_model, graph_edge_weight=args.graph_edge_weight)
 
             # run metis
-            status = os.system("%s -ufactor=%d justgraph.txt 2" % (METIS_BIN, args.ub_factor * 10))
+            status = os.system("%s -ufactor=%d justgraph.txt %d" % (METIS_BIN, args.ub_factor * 10, num_partitions))
             if status != 0:
                 sys.exit(status)
 
             # get the hyperedge cut
-            hec = compute_hyperedge_cut.run(input_hypergraph, 'justgraph.txt.part.2')
+            hec = compute_hyperedge_cut.run(input_hypergraph, 'justgraph.txt.part.%d' % num_partitions)
             with open('hyperedge_cut.txt', 'w') as f:
                 f.write("%d\n" % hec)
 
@@ -127,9 +133,9 @@ def main():
 
             if PLACEMENT_CONSTRAINTS_ONLY:
                 # update net file with regions
-                update_net_file.run(input_net_file='packed.net', output_net_file='packed_partitioned.net', partitions_file='justgraph.txt.part.2', total_partitions=2, nx=nx, ny=ny, blocks=input_blocks)
+                update_net_file.run(input_net_file='packed.net', output_net_file='packed_partitioned.net', partitions_file=('justgraph.txt.part.%d' % num_partitions), total_partitions=num_partitions, nx=nx, ny=ny, blocks=input_blocks)
             else:
-                generate_logical_block_placement_constraints.run(output_partitions='placement_regions.txt', partitions_file='justgraph.txt.part.2', total_partitions=2, nx=nx,ny=nx)
+                generate_logical_block_placement_constraints.run(output_partitions='placement_regions.txt', partitions_file=('justgraph.txt.part.%d' % num_partitions), total_partitions=num_partitions, nx=nx,ny=nx)
                 # run the damn thing again, hoping it uses the new placement regions file
                 status = os.system(vpr_cmd)
                 if PASS_CONSTRAINTS_TO_PLACER:

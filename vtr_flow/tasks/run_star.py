@@ -6,7 +6,7 @@ def main():
     const_types = [1]
     vals = [80]
     delays = [1000]
-    cuts = [1]
+    cuts = [3]
     constants = [1.0]
 
     for t in const_types:
