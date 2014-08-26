@@ -399,7 +399,8 @@ if (    $starting_stage <= $stage_idx_ace
 	$q = &system_with_timeout(
 		$ace_path, "ace.out",             $timeout, $temp_dir,
 		"-b",      $abc_output_file_name, "-n",     $ace_output_blif_name,
-		"-o",      $ace_output_act_name
+		"-o",      $ace_output_act_name,
+		"-s", $seed
 	);
 
 	if ( -e $ace_output_blif_path ) {

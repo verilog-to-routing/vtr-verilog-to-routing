@@ -319,8 +319,8 @@ int main(int argc, char * argv[]) {
 	Abc_Frame_t * pAbc;
 	Abc_Ntk_t * ntk;
 	Abc_Obj_t * obj;
+	int seed = 0;
 
-	srand(0);
 
 	p = ACE_PI_STATIC_PROB;
 	d = ACE_PI_SWITCH_PROB;
@@ -328,8 +328,9 @@ int main(int argc, char * argv[]) {
 	char blif_file_name[BLIF_FILE_NAME_LEN];
 	char new_blif_file_name[BLIF_FILE_NAME_LEN];
 	ace_io_parse_argv(argc, argv, &BLIF, &IN_ACT, &OUT_ACT, blif_file_name,
-			new_blif_file_name, &pi_format, &p, &d);
+			new_blif_file_name, &pi_format, &p, &d, &seed);
 
+	srand(seed);
 
 	pAbc = Abc_FrameGetGlobalFrame();
 

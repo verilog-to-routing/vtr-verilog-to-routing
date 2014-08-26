@@ -285,7 +285,7 @@ void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles,
 	assert(max_cycles > 0);
 	assert(threshold > 0.0);
 
-	srand((unsigned) time(NULL));
+//	srand((unsigned) time(NULL));
 
 	//Vec_PtrForEachEntry(Abc_Obj_t *, nodes, obj, i)
 	Abc_NtkForEachObj(ntk, obj, i)

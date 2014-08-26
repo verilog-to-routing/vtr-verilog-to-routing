@@ -96,7 +96,7 @@ void ace_io_print_activity(Abc_Ntk_t * ntk, FILE * fp) {
 
 int ace_io_parse_argv(int argc, char ** argv, FILE ** BLIF, FILE ** IN_ACT,
 		FILE ** OUT_ACT, char * blif_file_name, char * new_blif_file_name,
-		ace_pi_format_t * pi_format, double *p, double * d) {
+		ace_pi_format_t * pi_format, double *p, double * d, int * seed) {
 	int i;
 	char option;
 
@@ -139,6 +139,9 @@ int ace_io_parse_argv(int argc, char ** argv, FILE ** BLIF, FILE ** IN_ACT,
 			case 'd':
 				*pi_format = ACE_PD;
 				*d = atof(argv[i]);
+				break;
+			case 's':
+				*seed = atoi(argv[i]);
 				break;
 			default:
 				ace_io_print_usage();
