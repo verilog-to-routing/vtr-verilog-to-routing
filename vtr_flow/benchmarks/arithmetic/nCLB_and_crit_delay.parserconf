@@ -1,0 +1,4 @@
+critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+num_clb;vpr.out;Netlist clb blocks: ([0-9]*)
+area_per_clb;vpr.out;per logic tile: ([0-9.]*)
+vpr_status;output.txt;vpr_status=(.*)

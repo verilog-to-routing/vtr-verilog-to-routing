@@ -1,0 +1,37 @@
+YES:
+	md5_piplined
+		18.7k total logic elements
+	piplined_fft_64 - {forward, inverse} fast fourier transform - 128 & 256 bits available, also
+		4.8k total logic elements
+	verilog_cordic_core - calcs trig functions using Volder's algorithm
+		1.1k total logic elements
+		tunable (more iterations -> larger)
+		has one generate loop, and functions
+	rc4-prbs - generates a pseudo random byte stream using rc4
+		7.1k total logic elements
+
+YES, BUT NO (TO SMALL):
+	ima_adpcm_enc_dec - IMA Adaptive differential pulse-code modulation
+		enc: 0.38k total logic elements
+		dec: 0.21k total logic elements 
+	fht
+		fast hadamard transform
+		0.039k total logic elements
+		*tiny*
+
+MAYBE:
+	cavlc - Context-adaptive variable-length coding
+		very few add/sub
+	dvb_s2_ldpc_decoder - Digital Video Broadcasting - Satellite - Second Generation, Low-Density Parity-Check decoder
+		a few adders
+		huge
+		but many generate loops
+	vitdec - Configurable High Speed Viterbi Decoder
+		39.9k total logic elements
+		but many arrays and generate loops
+
+NO:
+	pid_controller - has mult and add, but it's defined combinationally
+	sha3 - mostly xors
+	fpga-median - no adding
+

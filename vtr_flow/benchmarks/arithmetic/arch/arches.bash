@@ -1,0 +1,13 @@
+ALL_INTERCC_ARCHES="
+k6_N8_gate_boost_0.2V_22nm.xml
+k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
+k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
+k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
+k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml"
+
+ALL_ARCHES="
+$ALL_INTERCC_ARCHES
+nointerclb_k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
+nointerclb_k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
+nointerclb_k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
+nointerclb_k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml"

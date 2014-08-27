@@ -1,0 +1,38 @@
+------------------
+www.spiral.net
+------------------
+
+Copyright (c) 2006 Yevgen Voronenko for the Spiral Project
+Carnegie Mellon University
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+This work is based on the following papers:
+
+Yevgen Voronenko and Markus Püschel
+Multiplierless Multiple Constant Multiplication
+to appear in ACM Transactions on Algorithms
+
+D. R. Bull and D. H. Horrocks
+Primitive operator digital filters
+IEE Proceedings G, 138(3):401-412, 1991
+
+A. G. Dempster and M. D. Macleod Use of minimum-adder multiplier
+blocks in FIR digital filters IEEE Transactions in Circuits and
+Systems-II: Analog and Digital Signal Processing, 42(9):569-577, 1995
+
+A. G. Dempster and M. D. Macleod.  Constant integer multiplication
+using minimum adders IEE Proceedings - Circuits, Devices and Systems,
+141(5):407-413, 1994

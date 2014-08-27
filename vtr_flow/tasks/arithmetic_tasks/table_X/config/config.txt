@@ -1,0 +1,39 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=~/Code/carry_chain_experiments/table_X/verilog
+
+# Path to directory of architectures to use
+archs_dir=~/Code/carry_chain_experiments/arch
+
+# Add circuits to list to sweep
+circuit_list_add=arm_core.v
+circuit_list_add=LU8PEEng.v
+circuit_list_add=mcml.v
+circuit_list_add=or1200.v
+circuit_list_add=sha.v
+circuit_list_add=stereovision2.v
+circuit_list_add=LU32PEEng.v
+circuit_list_add=bgm.v
+circuit_list_add=boundtop.v
+circuit_list_add=blob_merge.v
+circuit_list_add=mkSMAdapter4B.v
+circuit_list_add=raygentop.v
+circuit_list_add=stereovision0.v
+circuit_list_add=stereovision1.v
+
+# Add architectures to list to sweep
+arch_list_add=k6_N8_gate_boost_0.2V_22nm.xml
+arch_list_add=k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
+#arch_list_add=k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
+
+# Parse info and how to parse
+parse_file=~/Code/carry_chain_experiments/nCLB_and_crit_delay.parserconf
+
+# Pass requirements
+pass_requirements_file=pass_requirements_chain.txt
+
+script_params=-lut_size 6 -keep_intermediate_files -min_hard_adder_size 12

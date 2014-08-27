@@ -1,0 +1,4 @@
+critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
+vpr_status;output.txt;vpr_status=(.*)
+error;output.txt;error=(.*)
