@@ -1,9 +1,9 @@
-arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-hard_fpu_arch_timing.xml	bfly.v	success	2.985 	2.36	0.54	2.6	2.6	833	649	353	0	193	64	-1	-1	
-hard_fpu_arch_timing.xml	bgm.v	success	2.985 	6.65	1.3	34.23	34.23	1281	693	955	0	257	32	-1	-1	
-hard_fpu_arch_timing.xml	dscg.v	success	2.985 	5.08	0.78	16.57	16.57	769	585	513	0	129	64	-1	-1	
-hard_fpu_arch_timing.xml	fir.v	success	2.985 	46.27	0.74	5.93	5.93	993	808	543	35	161	32	-1	-1	
-hard_fpu_arch_timing.xml	mm3.v	success	2.985 	1.41	0.39	0.91	0.91	545	422	289	0	193	32	-1	-1	
-hard_fpu_arch_timing.xml	ode.v	success	2.985 	1.88	0.7	2.15	2.15	1194	1103	558	151	130	72	-1	-1	
-hard_fpu_arch_timing.xml	syn2.v	success	2.985 	1.5	0.81	2.64	2.64	641	490	479	0	161	128	-1	-1	
-hard_fpu_arch_timing.xml	syn7.v	success	2.985 	1.05	3.03	109.62	109.62	1921	499	1735	2	161	128	-1	-1	
+arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_fpu	num_io	num_outputs	num_memories	num_mult	error
+hard_fpu_arch_timing.xml	bfly.v	success	2.985 	2.46739	0.55	0.58	0.58	833	649	353	0	3	193	64	-1	-1	
+hard_fpu_arch_timing.xml	bgm.v	success	2.985 	6.32816	1.37	9.97	9.97	1281	693	1021	0	10	257	32	-1	-1	
+hard_fpu_arch_timing.xml	dscg.v	success	2.985 	5.11492	0.81	5.9	5.9	769	585	513	0	5	129	64	-1	-1	
+hard_fpu_arch_timing.xml	fir.v	success	2.985 	44.7974	0.79	1.46	1.46	993	808	543	35	4	161	32	-1	-1	
+hard_fpu_arch_timing.xml	mm3.v	success	2.985 	1.50909	0.39	0.3	0.3	545	422	289	0	2	193	32	-1	-1	
+hard_fpu_arch_timing.xml	ode.v	success	2.985 	39.7632	0.66	0.83	0.83	1194	1103	582	125	2	130	72	-1	-1	
+hard_fpu_arch_timing.xml	syn2.v	success	2.985 	1.62839	0.83	0.8	0.8	641	490	479	0	4	161	128	-1	-1	
+hard_fpu_arch_timing.xml	syn7.v	success	2.985 	1.55531	2.94	16.12	16.12	1921	499	1703	0	21	161	128	-1	-1	
