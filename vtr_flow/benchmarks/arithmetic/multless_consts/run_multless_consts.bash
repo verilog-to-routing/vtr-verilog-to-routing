@@ -18,18 +18,18 @@ if [ -z "$1" ] || [ "$1" == "dup_sources" ]; then
 	pushd .
 	
 	# duplicate verilog files
-	cd $EXP_DIR/verilog
+	cd $EXP_DIR/verilog || exit 1
 	rm mult_*
-	./make_multipliers.bash  || exit 1
+	./make_multipliers.bash || exit 1
 	echo "verilog files:"
 	ls mult_*
 	echo -e "\n"
 
 	# # duplicate architecture files
-	# cd $ARCH_DIR
-	# ./make_resized_arches.bash 40 40
-	# echo "architecture files:"
-	# ls "40x40"
+	cd $ARCH_DIR
+	./make_resized_arches.bash 12 24
+	echo "architecture files:"
+	ls "12x24"
 
 	popd
 fi

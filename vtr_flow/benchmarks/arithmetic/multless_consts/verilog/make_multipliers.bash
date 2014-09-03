@@ -1,4 +1,4 @@
-cd firgen
+cd firgen || exit 1
 
 for i in {00{1..9},0{10..99},{100..128}}; do
 	constant=$RANDOM

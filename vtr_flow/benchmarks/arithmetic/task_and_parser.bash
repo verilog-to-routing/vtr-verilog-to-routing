@@ -1,13 +1,17 @@
 
 pushd .
 cd "$ABS_TASK_PATH"
-maxrun=-1
-for rundir in run*; do
-	runnum=${rundir:3}
-	if (( runnum > maxrun )); then
-		maxrun=$runnum
-	fi
-done
+
+maxrun=1
+if stat -t glob* >/dev/null 2>&1; then
+	for rundir in run*; do
+		runnum=${rundir:3}
+		if (( runnum > maxrun )); then
+			maxrun=$runnum
+		fi
+	done
+fi
+
 popd
 
 if [ -z "$1" ] || [ "$1" == "task" ]; then

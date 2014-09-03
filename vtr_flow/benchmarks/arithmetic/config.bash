@@ -1,4 +1,11 @@
-VTR_SVN_DIR=~/Code/vtr-repo
+# The root of your vtr repository
+VTR_SVN_DIR="root of your vtr repository"
+if [[ $VTR_SVN_DIR == /* ]]; then
+	printf ""
+else
+	echo "config.bash: Set VTR_SVN_DIR to a directory please."
+	exit 1;
+fi
 
 FLOW_DIR="${VTR_SVN_DIR}/vtr_flow"
 VERILOG_PREPROCESSOR="${VTR_SVN_DIR}/verilog_preprocessor/verilog_preprocessor"
