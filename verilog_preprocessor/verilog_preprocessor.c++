@@ -265,7 +265,7 @@ void module_redeclaration_pass(istream& is, ostream& os) {
 
 				bool needs_redecl = false;
 				for (auto& param : module_params) {
-					if (param.find("input ") || param.find("output ")) {
+					if (param.find("input ") == 0 || param.find("output ") == 0) {
 						needs_redecl = true;
 						break;
 					}
