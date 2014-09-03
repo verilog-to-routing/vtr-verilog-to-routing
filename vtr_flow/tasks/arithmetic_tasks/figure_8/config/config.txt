@@ -4,10 +4,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=~/Code/carry_chain_experiments/figure_8/verilog
+circuits_dir=benchmarks/arithmetic/figure_8/verilog
 
 # Path to directory of architectures to use
-archs_dir=~/Code/carry_chain_experiments/arch/for_fixing_routing_predictor
+archs_dir=benchmarks/arithmetic/arch/for_fixing_routing_predictor
 
 # Add circuits to list to sweep
 
@@ -311,7 +311,7 @@ arch_list_add=18x36_nointerclb_k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22n
 # arch_list_add=xbar0.125.xml
 
 # Parse info and how to parse
-parse_file=~/Code/carry_chain_experiments/everything.parserconf
+parse_file=benchmarks/arithmetic/everything.parserconf
 
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt

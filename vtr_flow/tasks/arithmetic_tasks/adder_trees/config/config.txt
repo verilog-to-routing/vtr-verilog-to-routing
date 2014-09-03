@@ -4,10 +4,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=~/Code/carry_chain_experiments/adder_trees/verilog
+circuits_dir=benchmarks/arithmetic/adder_trees/verilog
 
 # Path to directory of architectures to use
-archs_dir=~/Code/carry_chain_experiments/arch/40x40
+archs_dir=benchmarks/arithmetic/arch/40x40
 
 # Add circuits to list to sweep
 
@@ -78,7 +78,7 @@ arch_list_add=k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
 
 # Parse info and how to parse
-parse_file=~/Code/carry_chain_experiments/area_and_delay_parser.txt
+parse_file=benchmarks/arithmetic/area_and_delay_parser.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt
