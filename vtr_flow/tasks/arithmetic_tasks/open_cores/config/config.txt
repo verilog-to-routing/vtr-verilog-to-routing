@@ -4,10 +4,11 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/arithmetic/open_cores/verilog/processed_files/dotveesymlinks
+circuits_dir=benchmarks/arithmetic/open_cores/verilog/processed_files/output
 
 # Path to directory of architectures to use
-archs_dir=benchmarks/arithmetic/arch
+# archs_dir=benchmarks/arithmetic/arch
+archs_dir=arch/timing
 
 # Add circuits to list to sweep
 

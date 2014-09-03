@@ -132,6 +132,7 @@ void macro_expansion_pass(istream& is, ostream& os, const vector<string>& predef
 	unordered_map<string,Macro> name2macro;
 	for (const string& predef_macro_name : predef_macros) {
 		name2macro.insert(make_pair(predef_macro_name, Macro(predef_macro_name, {}, "")));
+		os << "`define " << predef_macro_name << "\n";
 	}
 	IfdefState ifdef_state{};
 

@@ -1906,7 +1906,7 @@ wire [31:0] wb_63;
 		'd60:reim = wf_60; 
 		'd61:reim = wf_61; 
 		'd62:reim = wf_62; 
-		'd63:reim = wf_63; 
+		default:reim = wf_63; 
 	endcase
 		end
 	

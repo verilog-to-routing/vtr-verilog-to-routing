@@ -19,10 +19,19 @@ if [ -z "$1" ] || [ "$1" == "dup_sources" ]; then
 	
 	# preproces verilog files
 	cd $EXP_DIR/verilog/processed_files || exit 1
-	
-	
-	
-	ls
+
+	VPP_OUT_DIR="output"
+	VPP_IN_DIR="input"
+	mkdir -p "${VPP_OUT_DIR}"
+
+	"${VERILOG_PREPROCESSOR}" -DITERATE < "${VPP_IN_DIR}/cordic.vv"           > "${VPP_OUT_DIR}/cordic.v"
+	"${VERILOG_PREPROCESSOR}"           < "${VPP_IN_DIR}/Md5Core.vv"          > "${VPP_OUT_DIR}/Md5Core.v"
+	"${VERILOG_PREPROCESSOR}"           < "${VPP_IN_DIR}/rc4.vv"              > "${VPP_OUT_DIR}/rc4.v"
+	"${VERILOG_PREPROCESSOR}"           < "${VPP_IN_DIR}/pipelined_fft_64.vv" > "${VPP_OUT_DIR}/pipelined_fft_64.v"
+
+	echo ""
+	echo "verilog files:"
+	ls "${VPP_OUT_DIR}"
 
 	# # duplicate architecture files
 	# cd $ARCH_DIR

@@ -1,3 +1,4 @@
+`define ITERATE
   // file:        cordic.v
   //   author:      Dale Drinkard
   //   release:     08/06/2008
@@ -128,7 +129,6 @@
 // `define COMBINATORIAL
 
 
-  #### please define either ITERATE, PIPELINE, or COMBINATORIAL ####
 
 
 
@@ -198,7 +198,6 @@ reg    [16:0] Q;
       4: begin
         Q[16-4:0] = D[16: 4];
         Q[16:16-4+1] = 4'b0;
-
       end
       5: begin
         Q[16-5:0] = D[16: 5];
@@ -255,6 +254,9 @@ endmodule
 */
 module rotator ( clk,
  rst,
+ init,
+ iteration,
+ tangle,
  x_i,
  y_i,
  z_i,
@@ -263,6 +265,9 @@ module rotator ( clk,
  z_o);
 input clk;
 input rst;
+input init;
+input [4-1:0] iteration;
+input [16:0] tangle;
 input  [16:0]    x_i;
 input  [16:0]    y_i;
 input  [16:0] z_i;
@@ -281,12 +286,20 @@ output [16:0] z_o;
   signed_shifter y_shifter(iteration,y_i,y_i_shifted);
 
 
+  always @ (posedge clk)
+
 
     if (rst) begin
       x_1 <= 0;
       y_1 <= 0;
       z_1 <= 0;
     end else begin
+
+      if (init) begin
+        x_1 <= x_i;
+        y_1 <= y_i;
+        z_1 <= z_i;
+      end else if (
 
 
       z_i < 0
@@ -311,6 +324,7 @@ endmodule
 */
 module cordic ( clk,
  rst,
+ init,
  x_i,
  y_i,
  theta_i,
@@ -319,6 +333,7 @@ module cordic ( clk,
  theta_o);
 input clk;
 input rst;
+input init;
 input [16:0]    x_i;
 input [16:0]    y_i;
 input [16:0] theta_i;
@@ -383,6 +398,41 @@ assign tanangle_values_15 = 17'd1;       //  2 to the -15
 
 
 
+
+  reg [4:0] iteration;
+
+  //%%GENDEFINE%% (choose_from, blocking, 0, 15)
+  //%%GENDEFINE%% (always_list, 0, 15)
+
+  always @ (iteration or tanangle_values_0 or tanangle_values_1 or tanangle_values_2 or tanangle_values_3 or tanangle_values_4 or tanangle_values_5 or tanangle_values_6 or tanangle_values_7 or tanangle_values_8 or tanangle_values_9 or tanangle_values_10 or tanangle_values_11 or tanangle_values_12 or tanangle_values_13 or tanangle_values_14 or tanangle_values_15) begin
+    case (iteration) 
+		'd0:tanangle_of_iteration = tanangle_values_0; 
+		'd1:tanangle_of_iteration = tanangle_values_1; 
+		'd2:tanangle_of_iteration = tanangle_values_2; 
+		'd3:tanangle_of_iteration = tanangle_values_3; 
+		'd4:tanangle_of_iteration = tanangle_values_4; 
+		'd5:tanangle_of_iteration = tanangle_values_5; 
+		'd6:tanangle_of_iteration = tanangle_values_6; 
+		'd7:tanangle_of_iteration = tanangle_values_7; 
+		'd8:tanangle_of_iteration = tanangle_values_8; 
+		'd9:tanangle_of_iteration = tanangle_values_9; 
+		'd10:tanangle_of_iteration = tanangle_values_10; 
+		'd11:tanangle_of_iteration = tanangle_values_11; 
+		'd12:tanangle_of_iteration = tanangle_values_12; 
+		'd13:tanangle_of_iteration = tanangle_values_13; 
+		'd14:tanangle_of_iteration = tanangle_values_14; 
+		default:tanangle_of_iteration = tanangle_values_15; 
+	endcase
+  end
+
+  wire [16:0] x,y,z;
+  assign x = init ? x_i : x_o;
+  assign y = init ? y_i : y_o;
+  assign z = init ? theta_i : theta_o;
+  always @ (posedge clk or posedge init)
+    if (init) iteration <= 0;
+    else iteration <= iteration + 1;
+  rotator U (clk,rst,init,iteration,tanangle_of_iteration,x,y,z,x_o,y_o,theta_o);
 
 endmodule
 

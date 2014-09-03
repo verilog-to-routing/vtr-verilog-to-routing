@@ -43,7 +43,12 @@ namespace simplemodule {
 		const bool is_pipelined,
 		const string& contents
 	);
-	void instantiate(const string& name, const vector<string>& inputs, const string& output, const bool is_pipelined);
+	void instantiate(
+		const string& name,
+		const vector<string>& inputs,
+		const string& output,
+		const bool is_pipelined
+	);
 }
 
 struct ParsedParams {
@@ -100,7 +105,7 @@ int main(int argc, char const *argv[]) {
 
 	cout << params;
 
-	const size_t DATA_WIDTH = 16;
+	const size_t DATA_WIDTH = 18;
 	const size_t DW_ADD_INT = DATA_WIDTH;                      // Internal adder precision bits
 	const size_t DW_MULT_INT = 2 * DATA_WIDTH;                 // Internal multiplier precision bits
 	const size_t SCALE_FACTOR = DW_MULT_INT - DATA_WIDTH - 1;  // Multiplier normalization shift amount
@@ -129,7 +134,7 @@ int main(int argc, char const *argv[]) {
 	const size_t N_INPUT_REGS = NUM_COEFF + N_EXTRA_INPUT_REG;
 
 
-	// put 16'd in front
+	// put DATA_WIDTH'd in front
 	const vector<int> COEFFICIENTS = {
 		88,
 		0,
@@ -239,7 +244,7 @@ int main(int argc, char const *argv[]) {
 
 	for (size_t i = 0; i < N_UNIQ; ++i) {
 		cout
-		<<	"		"<<coeffecient(i)<<" <= "<<(COEFFICIENTS[i] < 0 ? "-" : "")<<"16'd"<<abs(COEFFICIENTS[i])<<";\n";
+		<<	"		"<<coeffecient(i)<<" <= "<<(COEFFICIENTS[i] < 0 ? "-" : "")<<DATA_WIDTH<<"'d"<<abs(COEFFICIENTS[i])<<";\n";
 	}
 
 	puts(
@@ -407,6 +412,7 @@ int main(int argc, char const *argv[]) {
 
 	cout <<
 	pipeline::assign(
+		DATA_WIDTH,
 		!IS_PIPELINED,
 		twodim::index_into(make_output_wire_name(NUM_ADDER_LEVELS-1), 0),
 		"o_out",
@@ -490,15 +496,17 @@ int main(int argc, char const *argv[]) {
 	simplemodule::declare(
 		"adder_with_1_reg",
 		2,
+		DATA_WIDTH,
 		IS_PIPELINED,
-		pipeline::assign(IS_PIPELINED, "dataa + datab", "result", "clk", "clk_ena")
+		pipeline::assign(DATA_WIDTH, IS_PIPELINED, "dataa + datab", "result", "clk", "clk_ena")
 	);
 
 	simplemodule::declare(
 		"multiplier_with_reg",
 		2,
+		DATA_WIDTH,
 		IS_PIPELINED,
-		pipeline::assign(IS_PIPELINED, "dataa * datab", "result", "clk", "clk_ena")
+		pipeline::assign(DATA_WIDTH, IS_PIPELINED, "dataa * datab", "result", "clk", "clk_ena")
 	);
 	
 	// if NUM_COEFF is a power of 2, we don't need any bye regs,
@@ -507,8 +515,9 @@ int main(int argc, char const *argv[]) {
 		simplemodule::declare(
 			"one_register",
 			1,
+			DATA_WIDTH,
 			IS_PIPELINED,
-			pipeline::assign(IS_PIPELINED, "dataa", "result", "clk", "clk_ena")
+			pipeline::assign(DATA_WIDTH, IS_PIPELINED, "dataa", "result", "clk", "clk_ena")
 		);
 	}
 
@@ -592,7 +601,7 @@ string pipeline::assign(
 	ostringstream builder;
 	if (is_pipelined) {
 		builder
-		<<	"	reg     [15:0]  "<<output<<";\n"
+		<<	"	reg     ["<<(width-1)<<":0]  "<<output<<";\n"
 		<<	"\n"
 		<<	"	always @(posedge "<<clk<<") begin\n"
 		<<	"		if("<<clk_ena<<") begin\n"

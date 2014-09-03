@@ -7,7 +7,9 @@
 circuits_dir=benchmarks/arithmetic/FIR_filters/verilog/fir-gen
 
 # Path to directory of architectures to use
-archs_dir=benchmarks/arithmetic/arch
+# archs_dir=benchmarks/arithmetic/arch/40x40
+archs_dir=arch/timing
+
 
 # Add circuits to list to sweep
 
