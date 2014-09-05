@@ -53,7 +53,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 clean :
 	@ rm -f liblog.a
-	@ rm -f $(OBJS) $(OBJS:.o=.d)
+	@ rm -f $(OBJ_DIR)/$(OBJS) $(OBJ_DIR)/$(OBJS:.o=.d)
 	@ rm -f $(EXE)
-	@ rm -f main.o main.d
+	@ rm -f $(OBJ_DIR)/main.o $(OBJ_DIR)/main.d
 

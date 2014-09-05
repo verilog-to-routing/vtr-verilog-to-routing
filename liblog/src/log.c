@@ -10,36 +10,89 @@
 #include <stdarg.h> /* Allows for variable arguments, necessary for wrapping printf */
 #include "log.h"
 
+#define LOG_DEFAULT_FILE_NAME "output.log"
+
 static int log_warning = 0;
 static int log_error = 0;
+FILE *log_stream = NULL;
 
-void log_set_output_file(char *filename) {
+
+static void check_init();
+
+/* Set the output file of logger.
+   If different than current log file, close current log file and reopen to new log file
+*/
+void log_set_output_file(const char *filename) {
+	if(log_stream != NULL) {
+		fclose(log_stream);
+	}
+	log_stream = fopen(filename, "w");
+	if(log_stream == NULL) {
+		printf("Error writing to file %s\n\n", filename);
+	}
+	fprintf(log_stream, "filename\n");
 }
 
 void log_print_info(const char* message, ...) {
+	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
+
 	va_list args;
 	va_start(args, message);
 	vprintf(message, args);
+	va_end(args);
+
+	va_start(args, message); /* Must reset variable arguments so that they can be read again */
+	vfprintf(log_stream, message, args);
 	va_end(args);
 }
 
 void log_print_warning(const char* message, ...) {
+	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
+
 	va_list args;
 	va_start(args, message);
 	log_warning++;
+
 	printf("Warning %d: ", log_warning);
 	vprintf(message, args);
+	va_end(args);
+
+	va_start(args, message); /* Must reset variable arguments so that they can be read again */
+	fprintf(log_stream, "Warning %d: ", log_warning);
+	vfprintf(log_stream, message, args);
+
 	va_end(args);
 }
 
 void log_print_error(const char* message, ...) {
+	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
+
 	va_list args;
 	va_start(args, message);
 	log_error++;
+
+	check_init();
 	printf("Error %d: ", log_error);
 	vprintf(message, args);
 	va_end(args);
+
+	va_start(args, message); /* Must reset variable arguments so that they can be read again */
+	fprintf(log_stream, "Error %d: ", log_error);
+	vfprintf(log_stream, message, args);
+
+	va_end(args);
 }
 
-
+/**
+ * Check if output log file setup, if not, then this function also sets it up 
+ */
+static void check_init() {
+	if(log_stream == NULL) {
+		log_stream = fopen(LOG_DEFAULT_FILE_NAME, "w");
+		if(log_stream == NULL) {
+			printf("Error writing to file %s\n", LOG_DEFAULT_FILE_NAME);
+		}
+		fprintf(log_stream, "%s\n\n", LOG_DEFAULT_FILE_NAME);
+	}
+}
 
