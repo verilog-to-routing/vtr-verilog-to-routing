@@ -51,7 +51,7 @@
 
 #define NO_PREVIOUS -1
 
-class t_rr_node {
+typedef class RR_Node {
 
 private:
 	short xlow;
@@ -111,7 +111,7 @@ public:
 	void set_direction(e_direction);
 	void set_occ(short);
 
-};
+} t_rr_node;
 
 
 /* Data that is pointed to by the .cost_index member of t_rr_node.  It's     *
