@@ -70,8 +70,6 @@ static void free_circuit(void);
 static void toro_new_handlers(void);
 static void toro_delete_handlers(void);
 
-static boolean has_printhandler_pre_vpr = FALSE;
-
 static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
 			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin);
 
