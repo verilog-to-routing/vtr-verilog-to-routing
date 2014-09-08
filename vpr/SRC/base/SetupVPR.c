@@ -15,7 +15,7 @@ using namespace std;
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
 #include "ReadOptions.h"
-#include "rr_graph_area.c"
+#include "rr_graph_area.h"
 
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation);
