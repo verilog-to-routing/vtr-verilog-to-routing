@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include "util.h"
+#include "log.h"
 
 /* This file contains utility functions widely used in *
  * my programs.  Many are simply versions of file and  *
@@ -14,12 +15,10 @@
 
 static int file_line_number = 0; /* file in line number being parsed */
 char *out_file_prefix = NULL;
-vpr_PrintHandlerMessage vpr_printf = PrintHandlerMessage;
-vpr_PrintHandlerInfo vpr_printf_info = PrintHandlerInfo;
-vpr_PrintHandlerWarning vpr_printf_warning = PrintHandlerWarning;
-vpr_PrintHandlerError vpr_printf_error = PrintHandlerError;
-vpr_PrintHandlerTrace vpr_printf_trace = PrintHandlerTrace;
-vpr_PrintHandlerDirect vpr_printf_direct = PrintHandlerDirect;
+vpr_PrintHandlerInfo vpr_printf_info = log_print_info;
+vpr_PrintHandlerWarning vpr_printf_warning = log_print_warning;
+vpr_PrintHandlerError vpr_printf_error = log_print_error;
+vpr_PrintHandlerDirect vpr_printf_direct = log_print_direct;
 
 static int cont; /* line continued? */
 

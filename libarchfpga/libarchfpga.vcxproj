@@ -43,7 +43,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VCInstallDir)include;include;..\libcommon_c++\SRC\TIO_InputOutputHandlers</IncludePath>
+    <IncludePath>$(VCInstallDir)include;include;..\libcommon_c++\SRC\TIO_InputOutputHandlers;..\liblog\src</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>

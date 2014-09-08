@@ -16,7 +16,7 @@ AR = ar
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
-INC_FLAGS = -Iinclude -I../libcommon_c++/SRC/TIO_InputOutputHandlers
+INC_FLAGS = -Iinclude -I../liblog/src
 LIB_FLAGS = rcs
 
 EXE = read_arch
@@ -39,15 +39,12 @@ $(EXE): main.o libarchfpga.a
 	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
  
 
-libarchfpga.a: $(OBJS) ../libcommon_c/pcre/libpcre.a ../libcommon_c++/libcommon_c++.a
-	 cp ../libcommon_c++/libcommon_c++.a $@
+libarchfpga.a: $(OBJS) ../liblog/liblog.a
+	 cp ../liblog/liblog.a $@
 	 ar rcs $@ $(OBJS)
 
-../libcommon_c/pcre/libpcre.a:
-	@ cd ../libcommon_c/pcre && make
-
-../libcommon_c++/libcommon_c++.a:
-	@ cd ../libcommon_c++ && make
+../liblog/liblog.a:
+	@ cd ../liblog && make
 
 %.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@ 
