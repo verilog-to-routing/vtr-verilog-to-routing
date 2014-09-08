@@ -28,9 +28,9 @@ packages:
 
 ODIN_II: libarchfpga
 
-vpr: libarchfpga libsdc_parse
+vpr: libarchfpga libsdc_parse libcommon_c++
 
-libarchfpga: libcommon_c++
+libarchfpga: liblog
 
 libcommon_c++: libcommon_c/pcre
 
@@ -44,6 +44,7 @@ clean:
 	@ cd libsdc_parse && make clean
 	@ cd libcommon_c++ && make clean
 	@ cd libcommon_c/pcre && make clean
+	@ cd liblog && make clean
 
 clean_vpr:
 	@ cd vpr && make clean
