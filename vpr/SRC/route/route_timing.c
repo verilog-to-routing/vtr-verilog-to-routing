@@ -21,20 +21,13 @@
 #include "ReadOptions.h"
 
 using namespace std;
-//===========================================================================//
-#include "TCH_PreRoutedHandler.h"
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful
 // metric, and this is also somewhat larger than largest circuit observed to have
 // inaccurate predictions, thought this is still only affects quite small circuits.
-const int MIN_NETS_TO_ACTIVATE_PREDICTOR = 150;
+#define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
 
-static bool timing_driven_order_prerouted_first(int try_count, 
-		struct s_router_opts router_opts, float pres_fac, 
-		float* pin_criticality, int* sink_order, 
-		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks);
-//===========================================================================//
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -139,17 +132,6 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			g_clbs_nlist.net[inet].is_routed = FALSE;
 			g_clbs_nlist.net[inet].is_fixed = FALSE;
 		}
-
-		timing_driven_order_prerouted_first(
-			itry,
-			router_opts,
-			pres_fac,
-			route_structs.pin_criticality,
-			route_structs.sink_order,
-			route_structs.rt_node_of_sink,
-			net_delay,
-			slacks
-		);
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
@@ -687,12 +669,6 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
-		int src_node = net_rr_terminals[inet][0];
-		int sink_node = target_node;
-		int from_node = inode;
-		if (restrict_prerouted_path(inet, itry, src_node, sink_node, from_node, to_node))
-			continue;
-
 		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
@@ -1160,63 +1136,6 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
 	vpr_printf_info("Completed net delay value cross check successfully.\n");
 }
-
-//===========================================================================//
-static bool timing_driven_order_prerouted_first(
-		int try_count, 
-		struct s_router_opts router_opts, 
-		float pres_fac,
-		float* pin_criticality,	int* sink_order,
-		t_rt_node** rt_node_of_sink, 
-		float** net_delay, t_slack* slacks ) {
-
-	bool ok= TRUE;
-
-	// Verify at least one pre-routed constraint has been defined
-	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
-	if (preRoutedHandler.IsValid() &&
-		(preRoutedHandler.GetOrderMode() == TCH_ROUTE_ORDER_FIRST)) {
-
-		const TCH_NetList_t& tch_netList = preRoutedHandler.GetNetList();
-		for (size_t i = 0; i < tch_netList.GetLength(); ++i )
-		{
-			const TCH_Net_c& tch_net = *tch_netList[i];
-
-			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FLOAT)
-				continue;
-
-			if ((tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) && (try_count > 1))
-				continue;
-
-			int inet = tch_net.GetVPR_NetIndex();
-			vpr_printf_info("  Prerouting net %s...\n", g_clbs_nlist.net[inet].name);
-
-			// Call existing VPR route code based on the given VPR net index
-			// (Note: this code will auto pre-route based on Toro callback handler)
-			bool is_routable = try_timing_driven_route_net(inet, try_count, pres_fac,
-								router_opts, 
-								pin_criticality, sink_order, 
-								rt_node_of_sink, 
-								net_delay, slacks);
-			if (!is_routable) {
-				ok = false;
-				break;
-			}
-
-			// Force net's "is_routed" or "is_fixed" state to TRUE 
-			// (ie. indicate that net has been pre-routed)
-			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) {
-				g_clbs_nlist.net[inet].is_routed = TRUE;
-				g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
-			} else if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FIXED) {
-				g_clbs_nlist.net[inet].is_fixed = TRUE;
-				g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
-			}
-		}
-	}
-	return (ok);
-}
-//===========================================================================//
 
 
 /* Detect if net should be routed or not */

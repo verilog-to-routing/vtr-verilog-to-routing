@@ -324,27 +324,24 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 
 	boolean success = TRUE;
 
-	bool valid = validate_prerouted_nets();
-	if (valid) {
+	/* Allocate and load additional rr_graph information needed only by the router. */
+	alloc_and_load_rr_node_route_structs();
 
-		/* Allocate and load additional rr_graph information needed only by the router. */
-		alloc_and_load_rr_node_route_structs();
+	init_route_structs(router_opts.bb_factor);
 
-		init_route_structs(router_opts.bb_factor);
-
-		if (router_opts.router_algorithm == BREADTH_FIRST) {
-			vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
-			success = try_breadth_first_route(router_opts, clb_opins_used_locally,
-					width_fac);
-		} else { /* TIMING_DRIVEN route */
-			vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
-			assert(router_opts.route_type != GLOBAL);
-			success = try_timing_driven_route(router_opts, net_delay, slacks,
-				clb_opins_used_locally,timing_inf.timing_analysis_enabled);
-		}
-
-		free_rr_node_route_structs();
+	if (router_opts.router_algorithm == BREADTH_FIRST) {
+		vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
+		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
+				width_fac);
+	} else { /* TIMING_DRIVEN route */
+		vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
+		assert(router_opts.route_type != GLOBAL);
+		success = try_timing_driven_route(router_opts, net_delay, slacks,
+			clb_opins_used_locally,timing_inf.timing_analysis_enabled);
 	}
+
+	free_rr_node_route_structs();
+	
 	return (success);
 }
 
@@ -1356,67 +1353,3 @@ void free_chunk_memory_trace(void) {
 		free_chunk_memory(&trace_ch);
 	}
 }
-
-//===========================================================================//
-bool validate_prerouted_nets(
-		void) {
-
-	bool valid = TRUE;
-
-	// Verify at least one pre-routed constraint has been defined
-	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
-	if (preRoutedHandler.IsValid()) {
-
-		vpr_printf_info("Validating preroutes using mode: %s.\n",
-			preRoutedHandler.GetOrderMode() == TCH_ROUTE_ORDER_FIRST ? "FIRST" : "AUTO");
-
-		// Initialize pre-routing handler based on local data structures
-		preRoutedHandler.Set( grid, nx, ny,
-					block, num_blocks,
-					&g_clbs_nlist, 
-					rr_node, num_rr_nodes);
-
-		// And, validate local data strucures using pre-routing handler
-		valid = preRoutedHandler.ValidatePreRoutes( );
-	}
-	return (valid);
-}
-
-//===========================================================================//
-bool restrict_prerouted_path(
-		int inet, 
-		int itry,
-		int src_node, int sink_node, 
-		int from_node, int to_node) {
-
-	bool restrict = FALSE;
-
-	// Verify at least one pre-routed constraint has been defined
-	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
-	if (preRoutedHandler.IsValid()) {
-
-		const char* pszNetName = g_clbs_nlist.net[inet].name;
-
-		// Test if net is legal based on either ROUTED or FIXED status
-		if (preRoutedHandler.IsLegalPreRouteNet(pszNetName, itry)) {
-
-			// Test if net is a pre-route AND current source/sink is valid
-			// TRUE => need to further examine pre-route path
-			// FALSE => don't need to restrict
-			if (preRoutedHandler.IsMemberPreRouteNet(pszNetName, 
-								src_node, sink_node)) {
-
-				// Test if from/to nodes are part of net's pre-route path
-				// TRUE => don't need to restrict
-				// FALSE => need to restrict since from/to nodes are not part of pre-route path
-				if (!preRoutedHandler.IsMemberPreRoutePath(pszNetName, 
-									src_node, sink_node, 
-									from_node, to_node)) {
-					restrict = TRUE;
-				}
-			}
-		}
-	}
-	return (restrict);
-}
-//===========================================================================//

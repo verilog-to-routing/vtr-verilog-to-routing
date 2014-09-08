@@ -113,13 +113,3 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, boolean rip_up_lo
 		t_ivec ** clb_opins_used_locally);
 
 void free_chunk_memory_trace(void);
-
-//===========================================================================//
-#include "TCH_PreRoutedHandler.h"
-
-bool validate_prerouted_nets(void);
-bool restrict_prerouted_path(
-		int net_index, int try_count,
-		int src_node, int sink_node, 
-		int from_node, int to_node);
-//===========================================================================//

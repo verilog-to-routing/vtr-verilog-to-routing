@@ -20,13 +20,6 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 
 static void breadth_first_add_source_to_heap(int inet);
 
-//===========================================================================//
-#include "TCH_PreRoutedHandler.h"
-
-static bool breadth_first_order_prerouted_first(int try_count, 
-		struct s_router_opts router_opts, float pres_fac);
-//===========================================================================//
-
 /************************ Subroutine definitions ****************************/
 
 boolean try_breadth_first_route(struct s_router_opts router_opts,
@@ -54,8 +47,6 @@ boolean try_breadth_first_route(struct s_router_opts router_opts,
 			g_clbs_nlist.net[inet].is_routed = FALSE;
 			g_clbs_nlist.net[inet].is_fixed = FALSE;
 		}
-
-		breadth_first_order_prerouted_first(itry, router_opts, pres_fac);
 
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 			is_routable = try_breadth_first_route_net(inet, itry, pres_fac, 
@@ -315,11 +306,6 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
-		int src_node = net_rr_terminals[inet][0];
-		int sink_node = net_rr_terminals[inet][iconn];
-		int from_node = inode;
-		if (restrict_prerouted_path(inet, itry, src_node, sink_node, from_node, to_node))
-			continue;
 
 		tot_cost = pcost + get_rr_cong_cost(to_node);
 
@@ -348,49 +334,4 @@ static void breadth_first_add_source_to_heap(int inet) {
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 }
 
-//===========================================================================//
-static bool breadth_first_order_prerouted_first(
-		int try_count,
-		struct s_router_opts router_opts, 
-		float pres_fac) {
 
-	bool ok= TRUE;
-
-	// Verify at least one pre-routed constraint has been defined
-	TCH_PreRoutedHandler_c& preRoutedHandler = TCH_PreRoutedHandler_c::GetInstance();
-	if (preRoutedHandler.IsValid() &&
-		(preRoutedHandler.GetOrderMode() == TCH_ROUTE_ORDER_FIRST)) {
-
-		const TCH_NetList_t& tch_netList = preRoutedHandler.GetNetList();
-		for (size_t i = 0; i < tch_netList.GetLength(); ++i )
-		{
-			const TCH_Net_c& tch_net = *tch_netList[i];
-			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FLOAT)
-				continue;
-
-			int inet = tch_net.GetVPR_NetIndex();
-			vpr_printf_info("  Prerouting net %s...\n", g_clbs_nlist.net[inet].name);
-
-			// Call existing VPR route code based on the given VPR net index
-			// (Note: this code will auto pre-route based on Toro callback handler)
-			bool is_routable = try_breadth_first_route_net(inet, try_count, pres_fac, 
-								router_opts);
-			if (!is_routable) {
-				ok = false;
-				break;
-			}
-
-			// Force net's "is_routed" or "is_fixed" state to TRUE 
-			// (ie. indicate that net has been pre-routed)
-			if (tch_net.GetStatus() == TCH_ROUTE_STATUS_ROUTED) {
-				g_clbs_nlist.net[inet].is_routed = TRUE;
-				g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
-			} else if (tch_net.GetStatus() == TCH_ROUTE_STATUS_FIXED) {
-				g_clbs_nlist.net[inet].is_fixed = TRUE;
-				g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_fixed = TRUE;
-			}
-		}
-	}
-	return (ok);
-}
-//===========================================================================//
