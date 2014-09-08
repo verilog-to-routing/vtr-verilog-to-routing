@@ -33,6 +33,13 @@ void log_set_output_file(const char *filename) {
 	fprintf(log_stream, "filename\n");
 }
 
+void log_print_direct(const char* message, ...) {
+	va_list args;
+	va_start(args, message);
+	vprintf(message, args);
+	va_end(args);
+}
+
 void log_print_info(const char* message, ...) {
 	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
@@ -44,9 +51,11 @@ void log_print_info(const char* message, ...) {
 	va_start(args, message); /* Must reset variable arguments so that they can be read again */
 	vfprintf(log_stream, message, args);
 	va_end(args);
+
+	fflush(log_stream);
 }
 
-void log_print_warning(const char* message, ...) {
+void log_print_warning(const char* filename, unsigned int line_num, const char* message, ...) {
 	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
 	va_list args;
@@ -62,9 +71,10 @@ void log_print_warning(const char* message, ...) {
 	vfprintf(log_stream, message, args);
 
 	va_end(args);
+	fflush(log_stream);
 }
 
-void log_print_error(const char* message, ...) {
+void log_print_error(const char* filename, unsigned int line_num, const char* message, ...) {
 	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
 	va_list args;
@@ -81,6 +91,8 @@ void log_print_error(const char* message, ...) {
 	vfprintf(log_stream, message, args);
 
 	va_end(args);
+
+	fflush(log_stream);
 }
 
 /**
@@ -96,3 +108,7 @@ static void check_init() {
 	}
 }
 
+
+void log_close() {
+	fclose(log_stream);
+}
