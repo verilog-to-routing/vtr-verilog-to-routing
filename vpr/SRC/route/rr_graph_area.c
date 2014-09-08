@@ -38,8 +38,6 @@ static float *alloc_and_load_unsharable_switch_trans(int num_switch,
 static float *alloc_and_load_sharable_switch_trans(int num_switch,
 		float trans_sram_bit, float R_minW_nmos, float R_minW_pmos);
 
-static float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos);
-
 static float trans_per_mux(int num_inputs, float trans_sram_bit,
 		float pass_trans_area);
 
@@ -556,7 +554,7 @@ alloc_and_load_sharable_switch_trans(int num_switch, float trans_sram_bit,
 	return (sharable_switch_trans);
 }
 
-static float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
+float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 
 	/* Returns the number of minimum width transistor area equivalents needed to *
 	 * implement this buffer.  Assumes a stage ratio of 4, and equal strength    *
