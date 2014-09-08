@@ -1,5 +1,7 @@
 #include "synth.cpp"
 
+#include <stdio.h>
+
 reg_t tmpreg() { static int c=100; return c++; }
 reg_t destreg() { static int c=1; return c++; }
 regmap_t regs;

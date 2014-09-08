@@ -9,7 +9,7 @@ default: $(EXE)
 run: Md5Core.vv
 
 $(EXE): $(EXE).c++
-	g++ -Wall -Wextra -Werror -pedantic -std=c++11 $< -o $@ -ggdb -D_GLIBCXX_DEBUG
+	g++ -Wall -Wextra -Werror -pedantic -std=c++0x $< -o $@ -ggdb -D_GLIBCXX_DEBUG
 
 test: Md5Core.v
 	less $<

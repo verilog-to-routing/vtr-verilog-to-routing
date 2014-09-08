@@ -11,22 +11,20 @@
 #define xfree  free
 #define xstrdup strdup
 
-char * flatten_string_array(char** strings, int count, char *delimitor) {
-    if(count > 0) {
+char * flatten_string_array(char** strings, int count, const char* delimitor) {
 	int len = 0, i, ofs;
 	char * result;
 	for(i = 0; i < count; i++) 
 	    len += strlen(strings[i])+1;
 	
 	result = (char*) xmalloc( sizeof(char) * len + 1 );
+    result[0] = '\0';
 	ofs = 0;
 	for(i = 0; i < count; i++) {
 	    if(i!=0) ofs += strlen(strings[i-1]) + 1;
 	    sprintf(result + ofs, "%s%s", strings[i], delimitor);
 	}
 	return result;
-    }
-    else return "";
 }
 
 cmdline_t * cmdline_new(int argc, char **argv) {

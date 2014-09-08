@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CXXFLAGS ?= -O3 -fomit-frame-pointer -Wall -Wextra -pedantic -Werror -std=c++11
+CXXFLAGS ?= -O3 -fomit-frame-pointer -Wall -Wextra -pedantic -Werror -Wno-long-long
 CFLAGS=$(CXXFLAGS)
 LINKFLAGS=
 

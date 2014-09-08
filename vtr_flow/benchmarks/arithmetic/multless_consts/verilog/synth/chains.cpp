@@ -5,11 +5,14 @@
 int MAX_NPRINT = 5;
 bool PRINT_INSTRS = false;
 bool PRINT_CHAINS = false;
-enum { CHAINS_PLAIN, CHAINS_C } PRINT_CHAINS_MODE = CHAINS_PLAIN;
+typedef enum { CHAINS_PLAIN, CHAINS_C } t_print_chains_mode;
+t_print_chains_mode PRINT_CHAINS_MODE = CHAINS_PLAIN;
+
 bool PRINT_ALL_CHAINS = true;
 
 bool PRINT_COSTS = false;
-enum { COSTS_PLAIN, COSTS_C } PRINT_COSTS_MODE = COSTS_C;
+typedef enum { COSTS_PLAIN, COSTS_C } t_print_costs_mode;
+t_print_costs_mode PRINT_COSTS_MODE = COSTS_C;
 int MIN_SHIFT = 0;
 
 coeff_t MAX_NUM;
@@ -107,7 +110,7 @@ void insert_all_sumdiffs(cost_t dest_cost, coeff_t num1, coeff_t num2) {
 void generate_add_coeffs(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
     cfvec_t &src1 = COSTVECS[src1_cost];
     cfvec_t &src2 = COSTVECS[src2_cost];
-    cfvec_t &dest = COSTVECS[dest_cost];
+    // cfvec_t &dest = COSTVECS[dest_cost];
     for(cfviter_t s1 = src1.begin(); s1 != src1.end(); ++s1) {
 	for(cfviter_t s2 = src2.begin(); s2 != src2.end(); ++s2) {
 	    insert_all_sumdiffs(dest_cost, *s1, *s2);
@@ -118,7 +121,7 @@ void generate_add_coeffs(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
 void generate_mul_coeffs(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
     cfvec_t &src1 = COSTVECS[src1_cost];
     cfvec_t &src2 = COSTVECS[src2_cost];
-    cfvec_t &dest = COSTVECS[dest_cost];
+    // cfvec_t &dest = COSTVECS[dest_cost];
     for(cfviter_t s1 = src1.begin(); s1 != src1.end(); ++s1) {
 	for(cfviter_t s2 = src2.begin(); s2 != src2.end(); ++s2) {
 	    coeff_t prod = (*s1) * (*s2);
@@ -131,7 +134,7 @@ void generate_mul_coeffs(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
 void generate_leapfrog2(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
     cfvec_t &src1 = COSTVECS[src1_cost];
     cfvec_t &src2 = COSTVECS[src2_cost];
-    cfvec_t &dest = COSTVECS[dest_cost];
+    // cfvec_t &dest = COSTVECS[dest_cost];
     for(cfviter_t s1 = src1.begin(); s1 != src1.end(); ++s1) {
 	addmap_t leap1;
 	compute_all_sumdiffs(leap1, *s1, 1);
@@ -156,7 +159,7 @@ void generate_leapfrog2(cost_t src1_cost, cost_t src2_cost, cost_t dest_cost) {
 void generate_leapfrog3(cost_t src1_cost, cost_t src3_cost, cost_t dest_cost) {
     cfvec_t &src1 = COSTVECS[src1_cost];
     cfvec_t &src3 = COSTVECS[src3_cost];
-    cfvec_t &dest = COSTVECS[dest_cost];
+    // cfvec_t &dest = COSTVECS[dest_cost];
     for(cfviter_t s1 = src1.begin(); s1 != src1.end(); ++s1) {
 	addmap_t leap1;
 	compute_all_sumdiffs(leap1, *s1, 1);

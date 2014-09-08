@@ -22,6 +22,7 @@
 #include <deque>
 #include <stack>
 #include <math.h>
+#include <stdexcept>
 
 using namespace std;
 
@@ -130,9 +131,13 @@ private:
 
 void macro_expansion_pass(istream& is, ostream& os, const vector<string>& predef_macros) {
 	unordered_map<string,Macro> name2macro;
-	for (const string& predef_macro_name : predef_macros) {
-		name2macro.insert(make_pair(predef_macro_name, Macro(predef_macro_name, {}, "")));
-		os << "`define " << predef_macro_name << "\n";
+	for (
+		auto predef_macro_name = predef_macros.begin();
+		predef_macro_name != predef_macros.end();
+		++predef_macro_name
+	) {
+		name2macro.insert(make_pair(*predef_macro_name, Macro(*predef_macro_name, {}, "")));
+		os << "`define " << *predef_macro_name << "\n";
 	}
 	IfdefState ifdef_state{};
 
@@ -265,8 +270,8 @@ void module_redeclaration_pass(istream& is, ostream& os) {
 				os << '(';
 
 				bool needs_redecl = false;
-				for (auto& param : module_params) {
-					if (param.find("input ") == 0 || param.find("output ") == 0) {
+				for (auto param = module_params.begin(); param != module_params.end(); ++param) {
+					if (param->find("input ") == 0 || param->find("output ") == 0) {
 						needs_redecl = true;
 						break;
 					}
@@ -299,7 +304,6 @@ void module_redeclaration_pass(istream& is, ostream& os) {
 				if (needs_redecl) {
 					for (size_t i = 0; i < module_params.size(); ++i) {
 						string::size_type position_of_reg = string::npos;
-						string::size_type position_of_wire = string::npos;
 						if (module_param_types[i].find("output") != string::npos
 							&& (position_of_reg = module_param_types[i].find("reg")) != string::npos) {
 							// the case of an output reg
@@ -392,10 +396,14 @@ void twodim_reduction_pass_rewrite(
 	unordered_multimap<size_t,string> length2name;
 	size_t longest_name = 2;
 
-	for (const auto& name_and_size : name2size) {
-		length2name.insert(make_pair(name_and_size.first.size(),name_and_size.first));
-		if (name_and_size.first.size() > longest_name) {
-			longest_name = name_and_size.first.size();
+	for (
+		auto name_and_size = name2size.begin();
+		name_and_size != name2size.end();
+		++name_and_size
+	) {
+		length2name.insert(make_pair(name_and_size->first.size(),name_and_size->first));
+		if (name_and_size->first.size() > longest_name) {
+			longest_name = name_and_size->first.size();
 		}
 	}
 
@@ -414,8 +422,8 @@ void twodim_reduction_pass_rewrite(
 		if (!is.eof()) {
 			string comment_line = skipToNextLineIfComment(last_few_chars[0],last_few_chars[1],is);
 			if (comment_line.size() > 0) {
-				for (char c : comment_line) {
-					last_few_chars.push_back(c);
+				for (size_t i = 0; i < comment_line.size(); ++i) {
+					last_few_chars.push_back(comment_line[i]);
 				}
 				flush_buffer = true;
 				goto continue_and_ouput;
@@ -487,8 +495,8 @@ void twodim_reduction_pass_rewrite(
 
 					if (!good) {
 						last_few_chars.push_back('[');
-						for (char c : inside_brackets) {
-							last_few_chars.push_back(c);
+						for (size_t i = 0; i < inside_brackets.size(); ++i) {
+							last_few_chars.push_back(inside_brackets[i]);
 						}
 						flush_buffer = true;
 						goto continue_and_ouput;
@@ -537,10 +545,14 @@ void final_touches_pass(istream& is, ostream& os) {
 	size_t buffer_size = 0;
 	unordered_multimap<size_t,string> length2name;
 
-	for (const auto& string_to_find : ft_strings_to_find) {
-		length2name.insert(make_pair(string_to_find.first.size(),string_to_find.first));
-		if (string_to_find.first.size() > buffer_size) {
-			buffer_size = string_to_find.first.size();
+	for (
+		auto string_to_find = ft_strings_to_find.begin();
+		string_to_find != ft_strings_to_find.end();
+		++string_to_find
+	) {
+		length2name.insert(make_pair(string_to_find->first.size(),string_to_find->first));
+		if (string_to_find->first.size() > buffer_size) {
+			buffer_size = string_to_find->first.size();
 		}
 	}
 
@@ -559,8 +571,8 @@ void final_touches_pass(istream& is, ostream& os) {
 		if (!is.eof()) {
 			string comment_line = skipToNextLineIfComment(last_few_chars[0],last_few_chars[1],is);
 			if (comment_line.size() > 0) {
-				for (char c : comment_line) {
-					last_few_chars.push_back(c);
+				for (size_t i = 0; i < comment_line.size(); ++i) {
+					last_few_chars.push_back(comment_line[i]);
 				}
 				flush_buffer = true;
 				goto continue_and_ouput;
@@ -621,8 +633,8 @@ void final_touches_pass(istream& is, ostream& os) {
 				for (size_t i = 0; i < found_match.size(); ++i) {
 					last_few_chars.pop_back();
 				}
-				for (char c : output_str) {
-					last_few_chars.push_back(c);
+				for (size_t i = 0; i < output_str.size(); ++i) {
+					last_few_chars.push_back(output_str[i]);
 				}
 			}
 		}
@@ -804,10 +816,14 @@ std::pair<bool,WireInfo> WireInfo::parseWire(string& decl) {
 		);
 		success = false;
 	} else {
-		for (auto bracket_location : bracket_locations) {
+		for (
+			auto bracket_location = bracket_locations.begin();
+			bracket_location != bracket_locations.end();
+			++bracket_location
+		) {
 			string dim_decl = decl.substr(
-				bracket_location + 1,
-				decl.find_first_of("]",bracket_location) - (bracket_location + 1)
+				*bracket_location + 1,
+				decl.find_first_of("]",*bracket_location) - (*bracket_location + 1)
 			);
 			try {
 				std::pair<size_t,size_t> dim_pair = parseVectorDeclation(dim_decl);
@@ -970,7 +986,7 @@ enum class GendefineType : size_t {
 	CHOOSE_TO,
 	CHOOSE_FROM,
 	ALWAYS_LIST,
-	MOD_OP,
+	MOD_OP
 };
 
 namespace std {

@@ -1,7 +1,7 @@
 ODIN=odin_II.exe
 
 generate_fir: generate_fir.c++
-	g++ -Wall -Wextra -Werror -pedantic -std=c++11 generate_fir.c++ -o generate_fir
+	g++ -Wall -Wextra -Werror -pedantic -std=c++0x generate_fir.c++ -o generate_fir
 
 test: generate_fir
 	./generate_fir | less
