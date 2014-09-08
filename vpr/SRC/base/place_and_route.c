@@ -703,7 +703,8 @@ static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel,
 
 			if (chan_width_xy[index] != count) {
 
-				ok = vpr_printf_warning(__FILE__, __LINE__, 
+				ok = true;
+				vpr_printf_warning(__FILE__, __LINE__, 
 					"Replacing architecture %s channel[%d] width %d with fabric channel width %d.\n",
 					selectChannel == TFH_SELECT_CHANNEL_X ? "x" : "y",
 					index, chan_width_xy[index], count);

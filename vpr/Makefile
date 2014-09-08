@@ -41,6 +41,7 @@ OTHER_DIR := $(OTHER_DIR) \
 	-I../libcommon_c++/SRC/TC_Common \
 	-I../libcommon_c/pcre/SRC \
 	-I../libsdc_parse/src \
+	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
@@ -106,14 +107,20 @@ libarchfpga:
 libsdc_parse:
 	@ cd ../libsdc_parse && make VERBOSITY=0
 
-libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse
+libcommon_c++:
+	@ cd ../libcommon_c++ && make
+
+libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse libcommon_c++
 	@ cp ../libarchfpga/libarchfpga.a $@
 	@ cp ../libsdc_parse/libsdc_parse.a .
+	@ cp ../libcommon_c++/libcommon_c++.a .
 	@#Ugly. Extract libsdc_parse.a into OBJ/libsdc_parse
 	@#and then have ar archive results
 	@ mkdir -p  OBJ/libsdc_parse/
 	@ cd OBJ/libsdc_parse && ar x ../../libsdc_parse.a 
-	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o
+	@ mkdir -p OBJ/libcommon_c++/
+	@ cd OBJ/libcommon_c++ && ar x ../../libcommon_c++.a
+	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o OBJ/libcommon_c++/*.o
 	@ ar d $@ main.o
 
 # Enable a second round of expansion so that we may include

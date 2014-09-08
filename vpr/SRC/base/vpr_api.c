@@ -47,6 +47,8 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 #include "output_blif.h"
 
+#include "log.h"
+
 #include "TFH_FabricGridHandler.h"
 #include "TFH_FabricBlockHandler.h"
 #include "TFH_FabricChannelHandler.h"
@@ -170,21 +172,8 @@ void vpr_init(INP int argc, INP char **argv,
 		OUTP t_vpr_setup *vpr_setup, 
 		OUTP t_arch *arch) {
 
-	if (PrintHandlerExists() == 1) {
-		has_printhandler_pre_vpr = TRUE;
-	} else {
-		has_printhandler_pre_vpr = FALSE;
-
-		char* pszLogFileName = "vpr_stdout.log";
-		unsigned char enableTimeStamps = 1;
-		unsigned char enableFileLines = 1;
-		unsigned long maxWarningCount = 100000;
-		unsigned long maxErrorCount = 1000;
-
-		PrintHandlerNew(pszLogFileName);
-		PrintHandlerInit(enableTimeStamps, enableFileLines, maxWarningCount, maxErrorCount);
-	}
-
+	log_set_output_file("vpr_stdout.log");
+	
 	/* Print title message */
 	vpr_print_title();
 
@@ -1010,10 +999,8 @@ void vpr_free_all(INOUTP t_arch Arch,
 	}
 	free_trace_structs();
 	vpr_free_vpr_data_structures(Arch, options, vpr_setup);
-	if (has_printhandler_pre_vpr == FALSE) {
-		PrintHandlerDelete();
-	}
-
+	log_close();
+	
 	/* Finally, destroy Toro-specific handler 'singleton' objects */
 	toro_delete_handlers();
 }

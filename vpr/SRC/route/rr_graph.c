@@ -1578,9 +1578,7 @@ void watch_edges(int inode, t_linked_edge * edge_list_head) {
 	list_ptr = edge_list_head;
 	i = 0;
 
-	vpr_printf_trace("!!! Watching Node %d !!!!\n", inode);
 	print_rr_node(stdout, rr_node, inode);
-	vpr_printf_trace("Currently connects to:\n");
 	while (list_ptr != NULL) {
 		to_node = list_ptr->edge;
 		print_rr_node(stdout, rr_node, to_node);
