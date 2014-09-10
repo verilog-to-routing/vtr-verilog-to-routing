@@ -30,6 +30,7 @@
 
 #include "arch_types.h"
 
+#include <algorithm>
 #include <map>
 #include <vector>
 
