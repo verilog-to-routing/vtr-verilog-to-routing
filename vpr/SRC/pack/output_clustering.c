@@ -25,7 +25,7 @@ using namespace std;
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
 
-//#define OUTPUT_BLIF /* Dump blif representation of logic block for debugging using formal verification */ /* jedit TODO: This will get replaced by print netlist as blif */
+//#define OUTPUT_BLIF /* Dump blif representation of logic block for debugging using formal verification */
 
 /****************** Static variables local to this module ************************/
 

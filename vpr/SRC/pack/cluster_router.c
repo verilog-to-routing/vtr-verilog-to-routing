@@ -39,7 +39,7 @@ using namespace std;
 
 enum e_commit_remove {RT_COMMIT, RT_REMOVE};
 
-// jedit check if this hacky class memory reserve thing is still necessary, if not, then delete
+// TODO: check if this hacky class memory reserve thing is still necessary, if not, then delete
 /* Packing uses a priority queue that requires a large number of elements.  This backdoor
 allows me to use a priority queue where I can pre-allocate the # of elements in the underlying container 
 for efficiency reasons.  Note: Must use vector with this */
@@ -413,7 +413,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-			printf(WARNTAG "jedit net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
+			vpr_printf_info("Routing net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
 			is_routed = FALSE;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
@@ -428,8 +428,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			lb_nets[inet].rt_tree = NULL;
 		}
 #ifdef PRINT_INTRA_LB_ROUTE
-		print_route("jedit_failed_route.echo", router_data);
-		printf(WARNTAG "jedit route FAIL\n");
+		print_route("intra_lb_failed_route.echo", router_data);
 #endif
 	}
 	return is_routed;
