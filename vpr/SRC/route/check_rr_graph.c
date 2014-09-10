@@ -160,8 +160,8 @@ void check_rr_graph(INP t_graph_type graph_type,
 				} else if (!is_chain && !is_fringe_warning_sent) {
 					vpr_printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d has no fanin.\n"
-						"%sThis is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
-						inode, TIO_PREFIX_WARNING_SPACE);
+						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
+						inode);
 					is_fringe_warning_sent = TRUE;
 				}
 			}

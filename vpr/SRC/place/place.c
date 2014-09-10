@@ -294,13 +294,6 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
 	float * place_delay_value, float ** net_delay);
 
-//===========================================================================//
-#include "TCH_RegionPlaceHandler.h"
-#include "TCH_RelativePlaceHandler.h"
-//===========================================================================//
-#include "TCH_PrePlacedHandler.h"
-//===========================================================================//
-
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,

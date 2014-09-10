@@ -2581,8 +2581,7 @@ static int *label_wire_muxes_for_balance(
 	}
 
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
-		vpr_printf_info("%smax_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
-				TIO_PREFIX_ERROR_SPACE,
+		vpr_printf_info("\t max_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"opin muxes are not balanced!\n");
