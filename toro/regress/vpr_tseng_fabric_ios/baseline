@@ -1,3 +1,0 @@
-#!/bin/csh -f
-
-../baseline_this vpr_tseng_fabric_ios

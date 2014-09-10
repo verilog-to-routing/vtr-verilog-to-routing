@@ -1,3 +1,0 @@
-#!/bin/csh -f
-
-../clean_this vpr_tseng_fabric_channels

@@ -1,3 +1,0 @@
-#!/bin/csh -f
-
-../clean_this icss_vpr_xml_blif
