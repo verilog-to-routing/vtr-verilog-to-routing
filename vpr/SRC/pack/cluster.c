@@ -1968,7 +1968,6 @@ static void start_new_cluster(
 	new_cluster->x = UNDEFINED;
 	new_cluster->y = UNDEFINED;
 	new_cluster->z = UNDEFINED;
-	new_cluster->placement_region_list = molecule->logical_block_ptrs[molecule->root]->placement_region_list;
 
 	if ((nx > 1) && (ny > 1)) {
 		alloc_and_load_grid(num_instances_type);

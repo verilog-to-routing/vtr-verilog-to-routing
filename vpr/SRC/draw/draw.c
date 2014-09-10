@@ -12,6 +12,7 @@
  */
 
 #include <cstdio>
+#include <cfloat>
 #include <cstring>
 #include <cmath>
 #include <algorithm>

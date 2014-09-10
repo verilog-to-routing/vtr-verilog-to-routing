@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"

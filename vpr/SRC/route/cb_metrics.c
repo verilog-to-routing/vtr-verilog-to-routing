@@ -1439,16 +1439,6 @@ void make_poor_cb_pattern(INP e_pin_type pin_type, INP t_type_ptr block_type, IN
 	/* get Fc */
 	int Fc = get_max_Fc(Fc_array, block_type, pin_type);
 	
-	/* get the number of block pins that are of pin_type */
-	int num_pin_type_pins = 0;
-	if (DRIVER == pin_type){
-		num_pin_type_pins = block_type->num_drivers;
-	} else if (RECEIVER == pin_type){
-		num_pin_type_pins = block_type->num_receivers;
-	} else {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Found unexpected pin type: %d\n", pin_type);
-	}
-
 	/* clear the existing CB */
 	for (int ipin = 0; ipin < block_type->num_pins; ipin++){
 		for (int iwidth = 0; iwidth < block_type->width; iwidth++){

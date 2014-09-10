@@ -204,40 +204,4 @@ void dump_sblock_pattern(
 
 void print_rr_node_indices(int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
 void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
-
-//===========================================================================//
-#include "TFH_FabricSwitchBoxHandler.h"
-
-void override_sblock_pattern_lookup(
-		INP int x, INP int y,
-		INP int max_chan_width,
-		INOUTP short ******sblock_pattern);
-void override_sblock_pattern_lookup_side(
-		INP int x, INP int y,
-		INP const TC_MapTable_c& mapTable,
-		INP TC_SideMode_t sideMode,
-		INP int max_chan_width,
-		INOUTP short ******sblock_pattern);
-void override_sblock_pattern_set_side_track(
-		INP int x, INP int y,
-		INP int from_side, INP int from_track,
-		INP const TC_SideList_t& sideList,
-		INP int max_chan_width,
-		INOUTP short ******sblock_pattern);
-void override_sblock_pattern_reset_side_track(
-		INP int x, INP int y,
-		INP int from_side, INP int from_track,
-		INOUTP short ******sblock_pattern);
-int override_sblock_pattern_map_side_mode(
-		INP TC_SideMode_t sideMode);
-//===========================================================================//
-
-//===========================================================================//
-#include "TFH_FabricConnectionBlockHandler.h"
-
-void override_cblock_edge_lists(
-		int num_rr_nodes, 
-		t_rr_node *rr_node );
-//===========================================================================//
-
 #endif

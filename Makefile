@@ -2,7 +2,7 @@
 # Makefile to build CAD tools in Verilog-to-Routing (VTR) Framework #
 #####################################################################
 
-SUBDIRS = ODIN_II vpr abc_with_bb_support libarchfpga libcommon_c/pcre libcommon_c++ ace2 libsdc_parse
+SUBDIRS = ODIN_II vpr abc_with_bb_support libarchfpga liblog ace2 libsdc_parse
 
 all: notifications subdirs
 
@@ -28,11 +28,9 @@ packages:
 
 ODIN_II: libarchfpga
 
-vpr: libarchfpga libsdc_parse libcommon_c++
+vpr: libarchfpga libsdc_parse
 
 libarchfpga: liblog
-
-libcommon_c++: libcommon_c/pcre
 
 ace2: abc_with_bb_support
 clean:
@@ -42,8 +40,6 @@ clean:
 	@ cd vpr && make clean
 	@ cd libarchfpga && make clean
 	@ cd libsdc_parse && make clean
-	@ cd libcommon_c++ && make clean
-	@ cd libcommon_c/pcre && make clean
 	@ cd liblog && make clean
 
 clean_vpr:

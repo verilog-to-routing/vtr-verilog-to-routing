@@ -28,18 +28,6 @@ SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
 OTHER_DIR := $(OTHER_DIR) \
-	-I../libcommon_c++/SRC/TFH_FabricHandlers \
-	-I../libcommon_c++/SRC/TCH_CircuitHandlers \
-	-I../libcommon_c++/SRC/TCH_PrePlacedHandler \
-	-I../libcommon_c++/SRC/TCH_PreRoutedHandler \
-	-I../libcommon_c++/SRC/TNO_NetObjects \
-	-I../libcommon_c++/SRC/TPO_PhysicalObjects \
-	-I../libcommon_c++/SRC/TLO_LogicalObjects \
-	-I../libcommon_c++/SRC/TGS_GeometricShapes \
-	-I../libcommon_c++/SRC/TGO_GeometricObjects \
-	-I../libcommon_c++/SRC/TIO_InputOutputHandlers \
-	-I../libcommon_c++/SRC/TC_Common \
-	-I../libcommon_c/pcre/SRC \
 	-I../libsdc_parse/src \
 	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
@@ -107,20 +95,14 @@ libarchfpga:
 libsdc_parse:
 	@ cd ../libsdc_parse && make VERBOSITY=0
 
-libcommon_c++:
-	@ cd ../libcommon_c++ && make
-
-libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse libcommon_c++
+libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse
 	@ cp ../libarchfpga/libarchfpga.a $@
 	@ cp ../libsdc_parse/libsdc_parse.a .
-	@ cp ../libcommon_c++/libcommon_c++.a .
 	@#Ugly. Extract libsdc_parse.a into OBJ/libsdc_parse
 	@#and then have ar archive results
 	@ mkdir -p  OBJ/libsdc_parse/
 	@ cd OBJ/libsdc_parse && ar x ../../libsdc_parse.a 
-	@ mkdir -p OBJ/libcommon_c++/
-	@ cd OBJ/libcommon_c++ && ar x ../../libcommon_c++.a
-	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o OBJ/libcommon_c++/*.o
+	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o
 	@ ar d $@ main.o
 
 # Enable a second round of expansion so that we may include

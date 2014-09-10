@@ -109,8 +109,7 @@ static void alloc_and_load_rr_graph(
 		INP int max_chan_width, INP enum e_switch_block_type sb_type,
 		INP int delayless_switch, INP enum e_directionality directionality,
 		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped, 
-		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs,
-		INP boolean ignore_overrides);
+		INP t_direct_inf *directs, INP int num_directs, INP t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void load_uniform_switch_pattern(
 		INP t_type_ptr type,
@@ -234,8 +233,7 @@ void build_rr_graph(
 		INP boolean trim_empty_channels,
 		INP boolean trim_obs_channels,
 		INP t_direct_inf *directs, INP int num_directs, 
-		INP boolean ignore_Fc_0, INP boolean ignore_overrides,
-		OUTP int *wire_to_rr_ipin_switch,
+		INP boolean ignore_Fc_0, OUTP int *wire_to_rr_ipin_switch,
 		OUTP int *num_rr_switches,
 		OUTP int *Warnings) {
 
@@ -394,10 +392,6 @@ void build_rr_graph(
 						chan_details_x, chan_details_y,
 						Fs, sb_type, unidir_sb_pattern);
 
-				if (!ignore_overrides) {
-					override_sblock_pattern_lookup(i, j, max_chan_width,
-							unidir_sb_pattern);
-				}
 			}
 		}
 
@@ -470,7 +464,7 @@ void build_rr_graph(
 			switch_block_conn, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
 			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, max_chan_width, sb_type,
 			delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped, 
-			directs, num_directs, clb_to_clb_directs, ignore_overrides);
+			directs, num_directs, clb_to_clb_directs);
 
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
@@ -929,8 +923,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		INP int delayless_switch, INP enum e_directionality directionality,
 		INP int wire_to_ipin_switch, OUTP boolean * Fc_clipped,
 		INP t_direct_inf *directs, INP int num_directs,
-		INP t_clb_to_clb_directs *clb_to_clb_directs,
-		INP boolean ignore_overrides) {
+		INP t_clb_to_clb_directs *clb_to_clb_directs) {
 
 	/* If Fc gets clipped, this will be flagged to true */
 	*Fc_clipped = FALSE;
@@ -995,9 +988,6 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 		}
 	}
 
-	if (!ignore_overrides) {
-		override_cblock_edge_lists(num_rr_nodes, rr_node);
-	}
 	free(opin_mux_size);
 }
 

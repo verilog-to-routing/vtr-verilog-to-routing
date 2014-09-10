@@ -29,11 +29,6 @@ static const char* netlist_file_name = NULL;
 static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_route *pb_route,		
 		INP struct s_hash **vpack_net_hash);
 
-//===========================================================================//
-static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb,
-		INP int index);
-//===========================================================================//
-
 static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 		INOUTP t_pb* pb, INOUTP t_pb_route *pb_route, INOUTP int *num_primitives,
 		INP struct s_hash **vpack_net_hash,
@@ -346,13 +341,6 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 	Cur = FindElement(Parent, "clocks", TRUE);
 	processPorts(Cur, pb, pb_route, vpack_net_hash);
 	FreeNode(Cur);
-
-	Cur = FindElement(Parent, "regions", FALSE);
-	if (Cur) {
-		processRegions(Cur, cb, index);
-		FreeNode(Cur);
-	}
-
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
 		temp_hash = get_hash_entry(logical_block_hash, pb->name);
@@ -795,35 +783,6 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 		}
 	}
 }
-
-//===========================================================================//
-static void processRegions(INOUTP ezxml_t Parent, INOUTP t_block *cb,
-		INP int index) {
-
-	ezxml_t Cur = Parent->child;
-	while (Cur) {
-		if (0 == strcmp(Cur->name, "region")) {
-			CheckElement(Cur, "region");
-
-			TGO_Region_c placement_region;
-			placement_region.x1 = GetIntProperty(Cur, "x1", TRUE, 0);
-			placement_region.y1 = GetIntProperty(Cur, "y1", TRUE, 0);
-			placement_region.x2 = GetIntProperty(Cur, "x2", TRUE, 0);
-			placement_region.y2 = GetIntProperty(Cur, "y2", TRUE, 0);
-
-			ezxml_set_attr(Cur, "x1", NULL);
-			ezxml_set_attr(Cur, "y1", NULL);
-			ezxml_set_attr(Cur, "x2", NULL);
-			ezxml_set_attr(Cur, "y2", NULL);
-
-			cb[index].placement_region_list.Add(placement_region);
-		}
-		ezxml_t Prev = Cur;
-		Cur = Cur->next;
-		FreeNode(Prev);
-	}
-}
-//===========================================================================//
 
 /**  
  * This function updates the nets list and the connections between that list and the complex block

@@ -74,7 +74,7 @@ PowerCallibSize * PowerCallibInputs::get_entry_bound(bool lower,
 	return NULL;
 }
 
-PowerSpicedComponent::PowerSpicedComponent(string component_name,
+PowerSpicedComponent::PowerSpicedComponent(std::string component_name,
 		float (*usage_fn)(int num_inputs, float transistor_size)) {
 	name = component_name;
 	component_usage = usage_fn;

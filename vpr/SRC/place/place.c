@@ -2820,10 +2820,6 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			continue;
 		}
 
-		if (apply_placement_regions && !block[iblk].placement_region_list.IsValid()) {
-			continue;
-		}
-
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
 		if (!(block[iblk].type == IO_TYPE && pad_loc_type == USER)) {
 

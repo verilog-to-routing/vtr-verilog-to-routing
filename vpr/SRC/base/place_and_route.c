@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <climits>
+#include <cstdlib>
 using namespace std;
 
 #include "util.h"
@@ -45,14 +46,6 @@ void post_place_sync(INP int L_num_blocks,
 		INOUTP const struct s_block block_list[]);
 
 void free_pb_data(t_pb *pb);
-
-//===========================================================================//
-#include "TFH_FabricChannelHandler.h"
-
-static bool init_chan_override(int* chan_override_max);
-static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel, 
-		int nxny, int* chan_width_xy, int* chan_override_max);
-//===========================================================================//
 
 /************************* Subroutine Definitions ****************************/
 
@@ -522,7 +515,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, FALSE, FALSE,
+			directs, num_directs, FALSE, 
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warnings);
@@ -631,10 +624,6 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 		}
 	}
 
-	if (chan_override_max) {
-		init_chan_override(chan_override_max);
-	}
-
 	chan_width.max = 0;
 	chan_width.x_max = chan_width.y_max = INT_MIN;
 	chan_width.x_min = chan_width.y_min = INT_MAX;
@@ -661,63 +650,6 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 	vpr_printf_info("\n");
 #endif
 }
-
-//===========================================================================//
-static bool init_chan_override(int* chan_override_max) {
-
-	/* Overrrides architecture-based channel widths based on optional fabric model channel widths. */
-	bool ok = true;
-
-	TFH_FabricChannelHandler_c& fabricChannelHandler = TFH_FabricChannelHandler_c::GetInstance();
-	if (fabricChannelHandler.IsValid()) {
-
-		vpr_printf_info("Overriding architecture channels based on fabric channel widths...\n");
-
-		// Override channel widths by x and y orientations
-		*chan_override_max = 0;
-		if (ok)
-			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_X, ny, chan_width.x_list, chan_override_max);
-		if (ok)
-			ok = init_chan_override_widths( TFH_SELECT_CHANNEL_Y, nx, chan_width.y_list, chan_override_max);
-	}
-	return (ok);
-}
-
-//===========================================================================//
-static bool init_chan_override_widths(TFH_SelectChannelMode_t selectChannel, 
-					int nxny, int* chan_width_xy, int* chan_override_max) {
-	bool ok = true;
-
-	TFH_FabricChannelHandler_c& fabricChannelHandler = TFH_FabricChannelHandler_c::GetInstance();
-	if (fabricChannelHandler.IsValid()) {
-
-		for (size_t i = 0; i < fabricChannelHandler.GetLength(selectChannel); ++i) {
-
-			const TFH_ChannelWidth_t& channelWidth = *fabricChannelHandler.At(selectChannel, i);
-			int index = channelWidth.GetIndex( );
-			int count = channelWidth.GetCount( );
-
-			// Ignore any fabric channel widths beyond VPR's current grid size
-			if (index > nxny )
-				break;
-
-			if (chan_width_xy[index] != count) {
-
-				ok = true;
-				vpr_printf_warning(__FILE__, __LINE__, 
-					"Replacing architecture %s channel[%d] width %d with fabric channel width %d.\n",
-					selectChannel == TFH_SELECT_CHANNEL_X ? "x" : "y",
-					index, chan_width_xy[index], count);
-
-				chan_width_xy[index] = count;
-				*chan_override_max = max(*chan_override_max, count);
-			}
-		}
-	}
-	return (ok);
-}
-//===========================================================================//
-
 static float comp_width(t_chan * chan, float x, float separation) {
 
 	/* Return the relative channel density.  *chan points to a channel   *

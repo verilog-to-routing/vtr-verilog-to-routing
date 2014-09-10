@@ -166,41 +166,13 @@
 //   This module does an arbitrary right shift to implement'
 //   the 1/2^i function on signed numbers
 
-module signed_shifter (input [3:0] i,
-input_0);
-wire [3:0] i,
-input_1;
-wire [3:0] i,
-input_2;
-wire [3:0] i,
-input_3;
-wire [3:0] i,
-input_4;
-wire [3:0] i,
-input_5;
-wire [3:0] i,
-input_6;
-wire [3:0] i,
-input_7;
-wire [3:0] i,
-input_8;
-wire [3:0] i,
-input_9;
-wire [3:0] i,
-input_10;
-wire [3:0] i,
-input_11;
-wire [3:0] i,
-input_12;
-wire [3:0] i,
-input_13;
-wire [3:0] i,
-input_14;
-wire [3:0] i,
-input_15;
-wire [3:0] i,
-input_16;
-
+module signed_shifter ( i,
+ D,
+ Q);
+input [4-1:0] i;
+input [16:0] D;
+output [16:0] Q;
+reg    [16:0] Q;
 
 
   always @ (D or i) begin
@@ -280,41 +252,28 @@ endmodule
   and the arctan of that step.  See the description of the CORDIC algorithm for details.
 
 */
-module rotator (input [3:0] iteration,
-input_0;
-wire [3:0] iteration,
-input_1;
-wire [3:0] iteration,
-input_2;
-wire [3:0] iteration,
-input_3;
-wire [3:0] iteration,
-input_4;
-wire [3:0] iteration,
-input_5;
-wire [3:0] iteration,
-input_6;
-wire [3:0] iteration,
-input_7;
-wire [3:0] iteration,
-input_8;
-wire [3:0] iteration,
-input_9;
-wire [3:0] iteration,
-input_10;
-wire [3:0] iteration,
-input_11;
-wire [3:0] iteration,
-input_12;
-wire [3:0] iteration,
-input_13;
-wire [3:0] iteration,
-input_14;
-wire [3:0] iteration,
-input_15;
-wire [3:0] iteration,
-input_16;
-
+module rotator ( clk,
+ rst,
+ init,
+ iteration,
+ tangle,
+ x_i,
+ y_i,
+ z_i,
+ x_o,
+ y_o,
+ z_o);
+input clk;
+input rst;
+input init;
+input [4-1:0] iteration;
+input [16:0] tangle;
+input  [16:0]    x_i;
+input  [16:0]    y_i;
+input  [16:0] z_i;
+output [16:0]    x_o;
+output [16:0]    y_o;
+output [16:0] z_o;
 
 
 
@@ -363,24 +322,24 @@ endmodule
                      CORDIC
 
 */
-module cordic (input [16:0] _0;
-wire [16:0] _1;
-wire [16:0] _2;
-wire [16:0] _3;
-wire [16:0] _4;
-wire [16:0] _5;
-wire [16:0] _6;
-wire [16:0] _7;
-wire [16:0] _8;
-wire [16:0] _9;
-wire [16:0] _10;
-wire [16:0] _11;
-wire [16:0] _12;
-wire [16:0] _13;
-wire [16:0] _14;
-wire [16:0] _15;
-wire [16:0] _16;
-
+module cordic ( clk,
+ rst,
+ init,
+ x_i,
+ y_i,
+ theta_i,
+ x_o,
+ y_o,
+ theta_o);
+input clk;
+input rst;
+input init;
+input [16:0]    x_i;
+input [16:0]    y_i;
+input [16:0] theta_i;
+output [16:0]    x_o;
+output [16:0]    y_o;
+output [16:0] theta_o;
 
 
 wire [16:0] tanangle_values_0;
@@ -412,15 +371,15 @@ reg [16:0] tanangle_of_iteration;
 */
 
 assign tanangle_values_0 = 17'd25735 ;   //  2 to the  0
-assign tanangle_values[1] = 17'd15192;    //  2 to the -1
+assign tanangle_values_1 = 17'd15192;    //  2 to the -1
 assign tanangle_values_2 = 17'd8027;     //  2 to the -2
-assign tanangle_values[3] = 17'd4075;     //  2 to the -3
+assign tanangle_values_3 = 17'd4075;     //  2 to the -3
 assign tanangle_values_4 = 17'd2045;     //  2 to the -4
-assign tanangle_values[5] = 17'd1024;     //  2 to the -5
+assign tanangle_values_5 = 17'd1024;     //  2 to the -5
 assign tanangle_values_6 = 17'd512;      //  2 to the -6
-assign tanangle_values[7] = 17'd256;      //  2 to the -7
+assign tanangle_values_7 = 17'd256;      //  2 to the -7
 assign tanangle_values_8 = 17'd128;      //  2 to the -8
-assign tanangle_values[9] = 17'd64;       //  2 to the -9
+assign tanangle_values_9 = 17'd64;       //  2 to the -9
 assign tanangle_values_10 = 17'd32;      //  2 to the -10
 assign tanangle_values_11 = 17'd16;      //  2 to the -11
 assign tanangle_values_12 = 17'd8;       //  2 to the -12

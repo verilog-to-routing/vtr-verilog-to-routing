@@ -520,7 +520,6 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
                         delay estimation between the most numerous pins on the block,
                         which should not be carry chain pins. */
 			TRUE, 
-			TRUE, /* do not process any (optional) switchbox overrides */
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warnings);

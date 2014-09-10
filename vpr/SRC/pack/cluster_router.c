@@ -143,17 +143,13 @@ void free_router_data(INOUTP t_lb_router_data *router_data) {
 /* Add pins of netlist atom to to current routing drivers/targets */
 void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	t_pb *pb;
-	t_pb_type *pb_type;
-	t_pb_graph_node *pb_graph_node;
 	t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
 	map <int, boolean> & atoms_added = *router_data->atoms_added;
 
 	pb = logical_block[iatom].pb;
-	pb_graph_node = pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;
-
+	
 	if(atoms_added.count(iatom) > 0) {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s [%d] added twice to router\n", logical_block[iatom].name, iatom);
 	}
@@ -212,8 +208,6 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 /* Remove pins of netlist atom from current routing drivers/targets */
 void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	t_pb *pb;
-	t_pb_type *pb_type;
-	t_pb_graph_node *pb_graph_node;
 	t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
@@ -225,8 +219,6 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	}
 
 	pb = logical_block[iatom].pb;
-	pb_graph_node = pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;	
 	
 	set_reset_pb_modes(router_data, pb, FALSE);
 		
@@ -790,13 +782,11 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_co
 /* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
 static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) {
 	t_lb_rr_node_stats *lb_rr_node_stats;
-	t_explored_node_tb *explored_node_tb;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	int inode;
 	
 	lb_rr_node_stats = router_data->lb_rr_node_stats;
-	explored_node_tb = router_data->explored_node_tb;
-
+	
 	if (rt == NULL) {
 		return FALSE; /* Net is not routed, therefore must route net */
 	}

@@ -704,17 +704,9 @@ int num_ext_inputs_logical_block(int iblk) {
 
 void free_cb(t_pb *pb) {
 
-	const t_pb_type * pb_type;
-	int total_nodes;
-
 	if (pb == NULL) {
 		return;
 	}
-
-	pb_type = pb->pb_graph_node->pb_type;
-
-	total_nodes = pb->pb_graph_node->total_pb_pins + pb_type->num_input_pins
-			+ pb_type->num_output_pins + pb_type->num_clock_pins;
 
 	free_pb(pb);
 }

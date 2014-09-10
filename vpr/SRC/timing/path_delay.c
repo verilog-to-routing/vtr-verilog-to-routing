@@ -3111,7 +3111,6 @@ static char * find_tnode_net_name(int inode, boolean is_prepacked, t_pb*** pin_i
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
 	int logic_block; /* Name chosen not to conflict with the array logical_block */
-	t_pb * physical_block;
 	t_pb_graph_pin * pb_graph_pin;
 
 	logic_block = tnode[inode].block;
@@ -3141,7 +3140,6 @@ static char * find_tnode_net_name(int inode, boolean is_prepacked, t_pb*** pin_i
         if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_INPAD_OPIN ||
            tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_OUTPAD_IPIN) {
             //For input/input pads the net name is the same as the block name
-            physical_block = block[logic_block].pb;
             pb_graph_pin = tnode[inode].pb_graph_pin;
 			return pin_id_to_pb_mapping[logic_block][pb_graph_pin->pin_count_in_cluster]->name;
         } else {
@@ -3174,7 +3172,6 @@ static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked, int **look
 	int logic_block; /* Name chosen not to conflict with the array logical_block */
 	t_tnode * ff_clock_tnode;
 	int ff_tnode;
-	t_pb_route *pb_route;
 	t_pb_graph_node * parent_pb_graph_node;
 	t_pb_graph_pin * ff_source_or_sink_pb_graph_pin, * clock_pb_graph_pin;
 
@@ -3182,7 +3179,6 @@ static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked, int **look
 	if (is_prepacked) {
 		ff_clock_tnode = logical_block[logic_block].clock_net_tnode;
 	} else {
-		pb_route = block[logic_block].pb_route;
 		ff_source_or_sink_pb_graph_pin = tnode[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
 		/* Make sure there's only one clock port and only one clock pin in that port */

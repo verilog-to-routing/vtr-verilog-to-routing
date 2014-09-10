@@ -33,11 +33,6 @@
 #include <map>
 #include <vector>
 
-//===========================================================================//
-#include "TGO_Typedefs.h"
-#include "TGO_Region.h"
-//===========================================================================//
-
 /*******************************************************************************
  * Global data types and constants
  ******************************************************************************/
@@ -208,8 +203,6 @@ typedef struct s_logical_block {
 	struct s_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
-
-	TGO_RegionList_t placement_region_list; // Optional placement regions (defined by Toro front-end)  /* jedit TODO: Delte this because it is unused */ 
 
 	char ***input_pin_names; /* [0..num_ports-1][0..num_pins-1] save the input name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
 	char ***output_pin_names; /* [0..num_ports-1][0..num_pins-1] save the output name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
@@ -606,8 +599,6 @@ struct s_block {
 	t_pb_route *pb_route; /* Internal-to-block routing */
 
 	unsigned int is_fixed : 1;
-
-	TGO_RegionList_t placement_region_list; // Optional placement regions
 };
 typedef struct s_block t_block;
 
