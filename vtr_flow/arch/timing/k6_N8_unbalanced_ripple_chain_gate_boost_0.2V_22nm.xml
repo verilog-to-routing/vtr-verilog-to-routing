@@ -82,9 +82,9 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
   <layout auto="1.0"/>
 
 		<device>
-			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.508232"/>
-			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="9.55363e-11"/>
-			<area grid_logic_tile_area="12660.7128908"/>
+			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.256"/>
+			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.891e-11"/>
+			<area grid_logic_tile_area="12678"/>
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -93,7 +93,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 			<switch_block type="wilton" fs="3"/>
 		</device>
 		<switchlist>
-			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.305857e-10" mux_trans_size="1.255958" buf_size="20.40368"/>
+			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.202e-10" mux_trans_size="1.50823" buf_size="22.564"/>
 		</switchlist>
 		<segmentlist>
 			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
@@ -102,6 +102,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 			<cb type="pattern">1 1 1 1</cb>
 			</segment>
 		</segmentlist>
+
 
     <directlist>
       <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
@@ -191,12 +192,12 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           -->
           <output name="out" num_pins="1" port_class="lut_out"/>
           <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-            1.51e-10
-            1.51e-10
-            1.51e-10
-            1.51e-10
-            1.51e-10
-            1.51e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
+			1.43259e-10
           </delay_matrix>      
         </pb_type>
         <pb_type name="wrapadd" num_pb="1">
@@ -306,13 +307,13 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3" input="ff.Q arithlut.out" output="ble6.out_local">
-			  <delay_constant max="9.60856e-11" in_port="ff.Q" out_port="ble6.out_local" />
-	      <delay_constant max="9.60856e-11" in_port="arithlut.out" out_port="ble6.out_local" />
+			  <delay_constant max="9.514e-11" in_port="ff.Q" out_port="ble6.out_local" />
+	      <delay_constant max="9.514e-11" in_port="arithlut.out" out_port="ble6.out_local" />
 			</mux>
 	        <!-- BLE output (routing 1) --> 
 	    <mux name="mux4" input="ff.Q arithlut.out" output="ble6.out_routing[0:0]">
-	      <delay_constant max="3.47683e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
-			  <delay_constant max="3.47683e-11" in_port="arithlut.out" out_port="ble6.out_routing[0:0]" />
+	      <delay_constant max="3.211e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
+			  <delay_constant max="3.211e-11" in_port="arithlut.out" out_port="ble6.out_routing[0:0]" />
 			</mux>
 		  </interconnect>
 		</pb_type>
@@ -321,28 +322,28 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
         <interconnect>
           <!-- 50% sparsely populated local routing -->
           <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
-            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_A" />
-            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_A" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_A" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_A" />
           </complete>
           <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
-            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_B" />
-            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_B" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_B" />
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_B" />
             </complete>
           <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
-            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_C" />
-            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_C" />
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_C" />
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_C" />
             </complete>
           <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
-            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_D" />
-            <delay_constant max="6.24207e-11" in_port="clb.I2" out_port="ble6.in_D" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_D" />
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_D" />
             </complete>
           <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
-            <delay_constant max="6.24207e-11" in_port="clb.I3" out_port="ble6.in_E" />
-            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_E" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_E" />
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_E" />
             </complete>
           <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
-            <delay_constant max="6.24207e-11" in_port="clb.I4" out_port="ble6.in_F" />
-            <delay_constant max="6.24207e-11" in_port="clb.I1" out_port="ble6.in_F" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_F" />
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_F" />
             </complete>
           <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
           </complete>
