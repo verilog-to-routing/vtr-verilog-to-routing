@@ -1318,21 +1318,31 @@ void free_rr_node_indices(
 	free(L_rr_node_indices[SINK]);
 	free(L_rr_node_indices[IPIN]);
 
+	/* free CHANY rr node indices */
 	for (i = 0; i <= (nx + 1); ++i) {
+		if (L_rr_node_indices[CHANY][i] == NULL){
+			continue;
+		}
 		for (j = 0; j <= (ny + 1); ++j) {
-			if (L_rr_node_indices[CHANY][i][j].list != NULL) {
-				free(L_rr_node_indices[CHANY][i][j].list);
+			if (L_rr_node_indices[CHANY][i][j].list == NULL) {
+				continue;
 			}
+			free(L_rr_node_indices[CHANY][i][j].list);
 		}
 		free(L_rr_node_indices[CHANY][i]);
 	}
 	free(L_rr_node_indices[CHANY]);
 
+	/* free CHANX rr node indices */
 	for (i = 0; i < (ny + 1); ++i) {
+		if (L_rr_node_indices[CHANX][i] == NULL){
+			continue;
+		}
 		for (j = 0; j < (nx + 1); ++j) {
-			if (L_rr_node_indices[CHANX][i][j].list != NULL) {
-				free(L_rr_node_indices[CHANX][i][j].list);
+			if (L_rr_node_indices[CHANX][i][j].list == NULL) {
+				continue;
 			}
+			free(L_rr_node_indices[CHANX][i][j].list);
 		}
 		free(L_rr_node_indices[CHANX][i]);
 	}
