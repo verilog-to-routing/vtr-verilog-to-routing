@@ -1160,18 +1160,16 @@ static void load_chan_rr_indices(
 		INP t_chan_details * chan_details,
 		INOUTP int *index, INOUTP t_ivec *** indices) {
 
-	indices[type] = (t_ivec **) my_malloc(sizeof(t_ivec *) * num_chans);
-	for (int chan = 0; chan < num_chans; ++chan) {
+	indices[type] = (t_ivec **) my_calloc(num_chans, sizeof(t_ivec *));
+	for (int chan = 0; chan < num_chans-1; ++chan) {
 
-		indices[type][chan] = (t_ivec *) my_malloc(sizeof(t_ivec) * chan_len);
-		indices[type][chan][0].nelem = 0;
-		indices[type][chan][0].list = NULL;
+		indices[type][chan] = (t_ivec *) my_calloc(chan_len, sizeof(t_ivec));
 
-		for (int seg = 1; seg < chan_len; ++seg) {
+		for (int seg = 1; seg < chan_len-1; ++seg) {
 
 			/* Alloc the track inode lookup list */
 			indices[type][chan][seg].nelem = max_chan_width;
-			indices[type][chan][seg].list = (int *) my_malloc(sizeof(int) * max_chan_width);
+			indices[type][chan][seg].list = (int *) my_calloc(max_chan_width, sizeof(int));
 
 			for (int track = 0; track < max_chan_width; ++track) {
 				indices[type][chan][seg].list[track] = OPEN;
@@ -1179,8 +1177,8 @@ static void load_chan_rr_indices(
 		}
 	}
 
-	for (int chan = 0; chan < num_chans; ++chan) {
-		for (int seg = 1; seg < chan_len; ++seg) {
+	for (int chan = 0; chan < num_chans-1; ++chan) {
+		for (int seg = 1; seg < chan_len-1; ++seg) {
 
 			/* Assign an inode to the starts of tracks */
 			int x = (type == CHANX ? seg : chan);
@@ -1225,23 +1223,13 @@ struct s_ivec ***alloc_and_load_rr_node_indices(
 	t_type_ptr type;
 
 	/* Alloc the lookup table */
-	indices = (t_ivec ***) my_malloc(sizeof(t_ivec **) * NUM_RR_TYPES);
-	for (i = 0; i < NUM_RR_TYPES; ++i) {
-		indices[i] = 0;
-	}
+	indices = (t_ivec ***) my_calloc(NUM_RR_TYPES, sizeof(t_ivec **));
 
-	indices[IPIN] = (t_ivec **) my_malloc(sizeof(t_ivec *) * (L_nx + 2));
-	indices[SINK] = (t_ivec **) my_malloc(sizeof(t_ivec *) * (L_nx + 2));
+	indices[IPIN] = (t_ivec **) my_calloc((L_nx + 2), sizeof(t_ivec *));
+	indices[SINK] = (t_ivec **) my_calloc((L_nx + 2), sizeof(t_ivec *));
 	for (i = 0; i <= (L_nx + 1); ++i) {
-		indices[IPIN][i] = (t_ivec *) my_malloc(sizeof(t_ivec) * (L_ny + 2));
-		indices[SINK][i] = (t_ivec *) my_malloc(sizeof(t_ivec) * (L_ny + 2));
-		for (j = 0; j <= (L_ny + 1); ++j) {
-			indices[IPIN][i][j].nelem = 0;
-			indices[IPIN][i][j].list = NULL;
-
-			indices[SINK][i][j].nelem = 0;
-			indices[SINK][i][j].list = NULL;
-		}
+		indices[IPIN][i] = (t_ivec *) my_calloc((L_ny + 2), sizeof(t_ivec));
+		indices[SINK][i] = (t_ivec *) my_calloc((L_ny + 2), sizeof(t_ivec));
 	}
 
 	/* Count indices for block nodes */
@@ -1255,7 +1243,7 @@ struct s_ivec ***alloc_and_load_rr_node_indices(
 				tmp.nelem = type->num_class;
 				tmp.list = NULL;
 				if (tmp.nelem > 0) {
-					tmp.list = (int *) my_malloc(sizeof(int) * tmp.nelem);
+					tmp.list = (int *) my_calloc(tmp.nelem, sizeof(int));
 					for (k = 0; k < tmp.nelem; ++k) {
 						tmp.list[k] = *index;
 						++(*index);
@@ -1268,7 +1256,7 @@ struct s_ivec ***alloc_and_load_rr_node_indices(
 				tmp.nelem = type->num_pins;
 				tmp.list = NULL;
 				if (tmp.nelem > 0) {
-					tmp.list = (int *) my_malloc(sizeof(int) * tmp.nelem);
+					tmp.list = (int *) my_calloc(tmp.nelem, sizeof(int));
 					for (k = 0; k < tmp.nelem; ++k) {
 						tmp.list[k] = *index;
 						++(*index);
@@ -1296,9 +1284,9 @@ struct s_ivec ***alloc_and_load_rr_node_indices(
 	indices[OPIN] = indices[IPIN];
 
 	/* Load the data for x and y channels */
-	load_chan_rr_indices(max_chan_width, L_nx + 1, L_ny + 1,
+	load_chan_rr_indices(max_chan_width, L_nx + 2, L_ny + 2,
 			CHANX, chan_details_x,	index, indices);
-	load_chan_rr_indices(max_chan_width, L_ny + 1, L_nx + 1,
+	load_chan_rr_indices(max_chan_width, L_ny + 2, L_nx + 2,
 			CHANY, chan_details_y,	index, indices);
 	return indices;
 }
@@ -1330,8 +1318,8 @@ void free_rr_node_indices(
 	free(L_rr_node_indices[SINK]);
 	free(L_rr_node_indices[IPIN]);
 
-	for (i = 0; i < (nx + 1); ++i) {
-		for (j = 0; j < (ny + 1); ++j) {
+	for (i = 0; i <= (nx + 1); ++i) {
+		for (j = 0; j <= (ny + 1); ++j) {
 			if (L_rr_node_indices[CHANY][i][j].list != NULL) {
 				free(L_rr_node_indices[CHANY][i][j].list);
 			}
