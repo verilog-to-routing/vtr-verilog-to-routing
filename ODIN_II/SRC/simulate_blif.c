@@ -1287,7 +1287,7 @@ signed char get_pin_value(npin_t *pin, int cycle)
 /*
  * Calculates the index in the values array for the given cycle.
  */
-inline int get_values_offset(int cycle)
+int get_values_offset(int cycle)
 {
 	return (((cycle) + (SIM_WAVE_LENGTH)) % (SIM_WAVE_LENGTH));
 }
@@ -1295,7 +1295,7 @@ inline int get_values_offset(int cycle)
 /*
  * Gets the cycle of the given pin
  */
-inline int get_pin_cycle(npin_t *pin)
+int get_pin_cycle(npin_t *pin)
 {
 	if (!pin->cycle)
 		return -1;
@@ -1308,7 +1308,7 @@ inline int get_pin_cycle(npin_t *pin)
  *
  * Only called from update_pin_value.
  */
-inline void set_pin_cycle(npin_t *pin, int cycle)
+void set_pin_cycle(npin_t *pin, int cycle)
 {
 	*(pin->cycle) = cycle;
 }
@@ -1380,7 +1380,7 @@ void initialize_pin(npin_t *pin)
 /*
  * Returns FALSE if the node is not a clock.
  */
-inline int is_clock_node(nnode_t *node)
+int is_clock_node(nnode_t *node)
 {
 	return (
 		   (node->type == CLOCK_NODE)
@@ -3645,7 +3645,7 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 /*
  * Gets the current time in seconds.
  */
-inline double wall_time()
+double wall_time()
 {
 	struct timeval tv;
 	gettimeofday(&tv, 0);

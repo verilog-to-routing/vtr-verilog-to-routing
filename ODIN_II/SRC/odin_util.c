@@ -240,7 +240,7 @@ int is_string_of_radix(char *string, int radix)
  */
 char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size)
 {
-    char *return_string;
+    char *return_string = NULL;
     if(is_dont_care_number == 0){
 	if (!is_hex_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
