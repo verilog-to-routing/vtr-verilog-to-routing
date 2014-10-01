@@ -1,7 +1,7 @@
 <!-- 
 
-Area-delay optimized for K06 N08 L4 W320 22nm pass-transistor based FPGA with 0.2V of gate-boosting
-Fcin = 0.2, Fcout =0.10 right, 0.10 bottom
+Area-delay optimized for K06 N8 L4 W320 22nm pass-transistor based FPGA with 0.2V of gate-boosting
+Fcin = 0.2, Fcout = 0.10 right, 0.10 bottom
 
 All CLB delays and routing delays obtained from HSPICE as part of this work.
 All I/O delays, multiplier delays and memory delays based on architecture k6_N10_memDepth16384_memData64_40nm_timing_smart_moledule.xml
@@ -10,13 +10,6 @@ Soft logic blocks use 50% depopulated crossbars
 
 Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
 
-carry chain from Safeen's CMOS ripple carry adder not gate boosted
-
-64.34 min width transistors for each bit of 4-bit CLA (257.35 for 4 bits)
-# min width transistors 47.73 per ripple bit + 9 for 2-to-1 mux
-Each 2-to-1 mux for adder adds 22ps delay and 9 MWTAs
-
-Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 -->
   
   <architecture>
@@ -61,18 +54,6 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
       </output_ports>
     </model>
 
-    <model name="adder">
-      <input_ports>
-      <port name="a"/>     
-      <port name="b"/>  
-      <port name="cin"/> 
-      </input_ports>
-      <output_ports>
-      <port name="cout"/>
-      <port name="sumout"/>
-      </output_ports>
-    </model>
-
   </models>
   <!-- ODIN II specific config ends -->
  
@@ -81,8 +62,8 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.256"/>
-			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.891e-11"/>
-			<area grid_logic_tile_area="12691"/>
+			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.973e-11"/>
+			<area grid_logic_tile_area="13472"/> <!-- non frac is 12055 -->
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
@@ -91,7 +72,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 			<switch_block type="wilton" fs="3"/>
 		</device>
 		<switchlist>
-			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.202e-10" mux_trans_size="1.50823" buf_size="22.564"/>
+			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.253e-10" mux_trans_size="1.50823" buf_size="23.9839"/>
 		</switchlist>
 		<segmentlist>
 			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
@@ -101,14 +82,13 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 			</segment>
 		</segmentlist>
 
-
     <directlist>
       <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
     </directlist>
 
 	  <complexblocklist>
        <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
-      <pb_type name="io" capacity="8" area="0">
+      <pb_type name="io" capacity="8">
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
@@ -161,355 +141,294 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
         <input name="I2" num_pins="10" equivalent="true"/>
         <input name="I3" num_pins="10" equivalent="true"/>
         <input name="I4" num_pins="10" equivalent="true"/>
-        <input name="cin" num_pins="1" equivalent="false"/>
-        <output name="O" num_pins="8" equivalent="false"/>
-        <output name="cout" num_pins="1" equivalent="false"/>
+		<input name="cin" num_pins="1" equivalent="false"/>
+        <output name="O" num_pins="16" equivalent="false"/>
+		<output name="cout" num_pins="1" equivalent="false"/>
         <clock name="clk" num_pins="1"/>
 
-        <!-- Basic logic element definition -->
-		<pb_type name="fourBLE" num_pb="2">
-		  <input name="in_A" num_pins="4"/>
-		  <input name="in_B" num_pins="4"/>
-		  <input name="in_C" num_pins="4"/>
-		  <input name="in_D" num_pins="4"/>
-		  <input name="in_E" num_pins="4"/>
-		  <input name="in_F" num_pins="4"/>
-      <input name="cin" num_pins="1"/>
-		  <output name="out_local" num_pins="4"/>
-		  <output name="out_routing" num_pins="4"/>
-      <output name="cout" num_pins="1"/>
+    <!-- Basic logic element definition -->
+		<pb_type name="ble6" num_pb="8">
+		  <input name="in_A" num_pins="1"/>
+		  <input name="in_B" num_pins="1"/>
+		  <input name="in_C" num_pins="1"/>
+		  <input name="in_D" num_pins="1"/>
+		  <input name="in_E" num_pins="1"/>
+		  <input name="in_F" num_pins="1"/>
+		  <output name="out_local" num_pins="2"/>
+		  <output name="out_routing" num_pins="2"/>
 		  <clock name="clk" num_pins="1"/> 
-      <pb_type name="arithlut" num_pb="1">
-        <input name="in1" num_pins="6"/>
-        <input name="in2" num_pins="6"/>
-        <input name="in3" num_pins="6"/>
-        <input name="in4" num_pins="6"/>
-        <input name="cin" num_pins="1"/>
-        <output name="out1" num_pins="1"/>
-        <output name="out2" num_pins="1"/>
-        <output name="out3" num_pins="1"/>
-        <output name="out4" num_pins="1"/>
-        <output name="cout" num_pins="1"/>
-        <mode name="logic">
-          <pb_type name="lut6" blif_model=".names" num_pb="4" class="lut">
-            <input name="in" num_pins="6" port_class="lut_in"/>
-            <!-- I average out the delays because VPR does not to LUT balancing
-            -->
-            <output name="out" num_pins="1" port_class="lut_out"/>
-            <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-			1.43259e-10
-            </delay_matrix>      
-          </pb_type>
-
-          <interconnect>
-            <direct name="direct1_1" input="arithlut.in1[5:0]" output="lut6[0].in"/>
-            <direct name="direct1_2" input="arithlut.in2[5:0]" output="lut6[1].in"/>
-            <direct name="direct1_3" input="arithlut.in3[5:0]" output="lut6[2].in"/>
-            <direct name="direct1_4" input="arithlut.in4[5:0]" output="lut6[3].in"/>
-            <direct name="direct2_1" input="lut6[0].out" output="arithlut.out1">
-              <pack_pattern name="ble6" in_port="lut6[0].out" out_port="arithlut.out1"/>
-              <delay_constant max="22e-12" in_port="lut6[0].out" out_port="arithlut.out1"/>
-            </direct>
-            <direct name="direct2_2" input="lut6[1].out" output="arithlut.out2">
-              <pack_pattern name="ble6" in_port="lut6[1].out" out_port="arithlut.out2"/>
-              <delay_constant max="22e-12" in_port="lut6[1].out" out_port="arithlut.out2"/>
-            </direct>
-            <direct name="direct2_3" input="lut6[2].out" output="arithlut.out3">
-              <pack_pattern name="ble6" in_port="lut6[2].out" out_port="arithlut.out3"/>
-              <delay_constant max="22e-12" in_port="lut6[2].out" out_port="arithlut.out3"/>
-            </direct>
-            <direct name="direct2_4" input="lut6[3].out" output="arithlut.out4">
-              <pack_pattern name="ble6" in_port="lut6[3].out" out_port="arithlut.out4"/>
-              <delay_constant max="22e-12" in_port="lut6[3].out" out_port="arithlut.out4"/>
-            </direct>
-          </interconnect>
 
 
-        </mode>
-        <mode name="arith">
-          <pb_type name="dlut" num_pb="4">
-            <input name="in" num_pins="5"/>
-            <output name="out" num_pins="2"/>
-            <pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
-              <input name="in" num_pins="5" port_class="lut_in"/>
-              <!-- I average out the delays because VPR does not to LUT balancing
-              -->
-              <output name="out" num_pins="1" port_class="lut_out"/>
-              <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
-				1.43259e-10
-				1.43259e-10
-				1.43259e-10
-				1.43259e-10
-				1.43259e-10
-              </delay_matrix>      
-            </pb_type>
-            <interconnect>
-               <direct name="direct1" input="dlut.in" output="lut5[0].in"/>
-               <direct name="direct2" input="dlut.in" output="lut5[1].in"/>
-               <direct name="direct3" input="lut5[1:0].out" output="dlut.out"/>
-            </interconnect>
-          </pb_type>
+		  <mode name="6ble">
+			  <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+				<input name="in" num_pins="6" port_class="lut_in"/>
+				<!-- I average out the delays because VPR does not to LUT balancing
+				-->
+				<output name="out" num_pins="1" port_class="lut_out"/>
+					  <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+				</delay_matrix>      
+			  </pb_type>
 
-          <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
-            <input name="a" num_pins="4"/>
-            <input name="b" num_pins="4"/>
-            <input name="cin" num_pins="1"/>
-            <output name="sumout" num_pins="4"/>
-            <output name="cout" num_pins="1"/>
-            <!-- Carry link delays included in cin->cout delay -->
-            <delay_constant max="65e-12" in_port="adder.a[0]" out_port="adder.sumout[0]"/>
-            <delay_constant max="65e-12" in_port="adder.b[0]" out_port="adder.sumout[0]"/>
-            <delay_constant max="72e-12" in_port="adder.a[1]" out_port="adder.sumout[1]"/>
-            <delay_constant max="72e-12" in_port="adder.b[1]" out_port="adder.sumout[1]"/>
-            <delay_constant max="72e-12" in_port="adder.a[2]" out_port="adder.sumout[2]"/>
-            <delay_constant max="72e-12" in_port="adder.b[2]" out_port="adder.sumout[2]"/>
-            <delay_constant max="82e-12" in_port="adder.a[3]" out_port="adder.sumout[3]"/>
-            <delay_constant max="82e-12" in_port="adder.b[3]" out_port="adder.sumout[3]"/>
-            <delay_constant max="25e-12" in_port="adder.cin" out_port="adder.sumout[0]"/>
-            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[1]"/>
-            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[2]"/>
-            <delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout[3]"/>
-            <delay_constant max="80e-12" in_port="adder.a" out_port="adder.cout"/>
-            <delay_constant max="80e-12" in_port="adder.b" out_port="adder.cout"/>
-            <delay_constant max="20e-12" in_port="adder.cin" out_port="adder.cout"/>
-          </pb_type>
-          <interconnect>
-            <direct name="direct1_1" input="arithlut.in1[4:0]" output="dlut[0].in"/>
-            <direct name="direct1_2" input="arithlut.in2[4:0]" output="dlut[1].in"/>
-            <direct name="direct1_3" input="arithlut.in3[4:0]" output="dlut[2].in"/>
-            <direct name="direct1_4" input="arithlut.in4[4:0]" output="dlut[3].in"/>
-            <direct name="direct2_1a" input="dlut[0].out[0]" output="adder.a[0]"/>
-            <direct name="direct2_2a" input="dlut[1].out[0]" output="adder.a[1]"/>
-            <direct name="direct2_3a" input="dlut[2].out[0]" output="adder.a[2]"/>
-            <direct name="direct2_4a" input="dlut[3].out[0]" output="adder.a[3]"/>
-            <direct name="direct2_1b" input="dlut[0].out[1]" output="adder.b[0]"/>
-            <direct name="direct2_2b" input="dlut[1].out[1]" output="adder.b[1]"/>
-            <direct name="direct2_3b" input="dlut[2].out[1]" output="adder.b[2]"/>
-            <direct name="direct2_4b" input="dlut[3].out[1]" output="adder.b[3]"/>
+			  <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+				<input name="D" num_pins="1" port_class="D"/>
+				<output name="Q" num_pins="1" port_class="Q"/>
+				<clock name="clk" num_pins="1" port_class="clock"/>
+				<T_setup value="1.891e-11" port="ff.D" clock="clk"/>
+				<T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
+			  </pb_type>
 
-            <direct name="direct3_1" input="adder.sumout[0]" output="arithlut.out1">
-              <pack_pattern name="chain" in_port="adder.sumout[0]" out_port="arithlut.out1"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[0]" out_port="arithlut.out1" />
-            </direct>
-            <direct name="direct3_2" input="adder.sumout[1]" output="arithlut.out2">
-              <pack_pattern name="chain" in_port="adder.sumout[1]" out_port="arithlut.out2"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[1]" out_port="arithlut.out2" />
-            </direct>
-            <direct name="direct3_3" input="adder.sumout[2]" output="arithlut.out3">
-              <pack_pattern name="chain" in_port="adder.sumout[2]" out_port="arithlut.out3"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[2]" out_port="arithlut.out3" />
-            </direct>
-            <direct name="direct3_4" input="adder.sumout[3]" output="arithlut.out4">
-              <pack_pattern name="chain" in_port="adder.sumout[3]" out_port="arithlut.out4"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[3]" out_port="arithlut.out4" />
-            </direct>
-            <direct name="direct4" input="arithlut.cin" output="adder.cin">
-              <pack_pattern name="chain" in_port="arithlut.cin" out_port="adder.cin"/>
-            </direct>
-            <direct name="direct5" input="adder.cout" output="arithlut.cout">
-              <pack_pattern name="chain" in_port="adder.cout" out_port="arithlut.cout"/>
-            </direct>
-          </interconnect>
-        </mode>
-      </pb_type>
+			  <interconnect>
+				<!-- BLE input to LUT input direct connections and delays -->
+				<direct name="direct1" input="ble6.in_A" output="lut6.in[0:0]">
+				</direct>
+				<direct name="direct2" input="ble6.in_B" output="lut6.in[1:1]">
+				</direct>
+				<direct name="direct3" input="ble6.in_D" output="lut6.in[3:3]">
+				</direct>
+				<direct name="direct4" input="ble6.in_E" output="lut6.in[4:4]">
+				</direct>
+				<direct name="direct5" input="ble6.in_F" output="lut6.in[5:5]">
+				</direct>
+				<!--Clock -->  
+				<direct name="direct6" input="ble6.clk" output="ff.clk"/>			
+				<!-- Register feedback mux -->   
+				<mux name="mux1" input="ble6.in_C ff.Q" output="lut6.in[2:2]">
+					  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut6.in[2:2]" />
+					  <delay_constant max="0.392e-10" in_port="ff.Q" out_port="lut6.in[2:2]" />  
+					</mux>
+					<!-- FF input selection mux -->
+				<mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
+					  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
+					  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
+				<pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
+					</mux>
+					<!-- BLE output (local) -->                  
+					<mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local[0:0]">
+					  <delay_constant max="1.053e-10" in_port="ff.Q" out_port="ble6.out_local[0:0]" />
+				  <delay_constant max="1.053e-10" in_port="lut6.out" out_port="ble6.out_local[0:0]" />
+					</mux>
+					<!-- BLE output (routing 1) --> 
+				<mux name="mux4" input="ff.Q lut6.out" output="ble6.out_routing[0:0]">
+				  <delay_constant max="3.912e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
+				  <delay_constant max="3.912e-11" in_port="lut6.out" out_port="ble6.out_routing[0:0]" />
+				</mux>
+			  </interconnect>
+		  </mode>
 
-		  <pb_type name="ff" blif_model=".latch" num_pb="4" class="flipflop">
-        <input name="D" num_pins="1" port_class="D"/>
-        <output name="Q" num_pins="1" port_class="Q"/>
-        <clock name="clk" num_pins="1" port_class="clock"/>
-        <T_setup value="1.891e-11" port="ff.D" clock="clk"/>
-        <T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
-		  </pb_type>
+		  <mode name="5ble">
+			  <pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
+				<input name="in" num_pins="5" port_class="lut_in"/>
+				<!-- I average out the delays because VPR does not to LUT balancing
+				-->
+				<output name="out" num_pins="1" port_class="lut_out"/>
+		   	    <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+				</delay_matrix>      
+			  </pb_type>
 
-		  <interconnect>
-			<!-- BLE input to LUT input direct connections and delays -->
-			<direct name="direct1_1" input="fourBLE.in_A[0]" output="arithlut.in1[0:0]">
-			</direct>
-      <direct name="direct1_2" input="fourBLE.in_A[1]" output="arithlut.in2[0:0]">
-			</direct>
-      <direct name="direct1_3" input="fourBLE.in_A[2]" output="arithlut.in3[0:0]">
-			</direct>
-      <direct name="direct1_4" input="fourBLE.in_A[3]" output="arithlut.in4[0:0]">
-			</direct>
-			<direct name="direct2_1" input="fourBLE.in_B[0]" output="arithlut.in1[1:1]">
-			</direct>
-      <direct name="direct2_2" input="fourBLE.in_B[1]" output="arithlut.in2[1:1]">
-			</direct>
-			<direct name="direct2_3" input="fourBLE.in_B[2]" output="arithlut.in3[1:1]">
-			</direct>
-			<direct name="direct2_4" input="fourBLE.in_B[3]" output="arithlut.in4[1:1]">
-			</direct>			
-			<direct name="direct3_1" input="fourBLE.in_D[0]" output="arithlut.in1[3:3]">
-			</direct>
-			<direct name="direct3_2" input="fourBLE.in_D[1]" output="arithlut.in2[3:3]">
-			</direct>
-			<direct name="direct3_3" input="fourBLE.in_D[2]" output="arithlut.in3[3:3]">
-			</direct>
-			<direct name="direct3_4" input="fourBLE.in_D[3]" output="arithlut.in4[3:3]">
-			</direct>
-			<direct name="direct4_1" input="fourBLE.in_E[0]" output="arithlut.in1[4:4]">
-			</direct>
-			<direct name="direct4_2" input="fourBLE.in_E[1]" output="arithlut.in2[4:4]">
-			</direct>
-			<direct name="direct4_3" input="fourBLE.in_E[2]" output="arithlut.in3[4:4]">
-			</direct>
-			<direct name="direct4_4" input="fourBLE.in_E[3]" output="arithlut.in4[4:4]">
-			</direct>
-			<direct name="direct5_1" input="fourBLE.in_F[0]" output="arithlut.in1[5:5]">
-			</direct>
-			<direct name="direct5_2" input="fourBLE.in_F[1]" output="arithlut.in2[5:5]">
-			</direct>
-			<direct name="direct5_3" input="fourBLE.in_F[2]" output="arithlut.in3[5:5]">
-			</direct>
-			<direct name="direct5_4" input="fourBLE.in_F[3]" output="arithlut.in4[5:5]">
-			</direct>
-      <direct name="direct6" input="fourBLE.cin" output="arithlut.cin">
-        <pack_pattern name="chain" in_port="fourBLE.cin" out_port="arithlut.cin"/>
-      </direct>
-      <direct name="direct7" input="arithlut.cout" output="fourBLE.cout">
-        <pack_pattern name="chain" in_port="arithlut.cout" out_port="fourBLE.cout"/>
-      </direct>
-			<!--Clock -->  
-			<direct name="direct8_1" input="fourBLE.clk" output="ff[0].clk"/>
-			<direct name="direct8_2" input="fourBLE.clk" output="ff[1].clk"/>
-			<direct name="direct8_3" input="fourBLE.clk" output="ff[2].clk"/>
-			<direct name="direct8_4" input="fourBLE.clk" output="ff[3].clk"/>
-	        <!-- Register feedback mux -->   
-	    <mux name="mux1_1" input="fourBLE.in_C[0] ff[0].Q" output="arithlut.in1[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[0]" out_port="arithlut.in1[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[0].Q" out_port="arithlut.in1[2:2]" />  
-			</mux>
-	    <mux name="mux1_2" input="fourBLE.in_C[1] ff[1].Q" output="arithlut.in2[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[1]" out_port="arithlut.in2[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[1].Q" out_port="arithlut.in2[2:2]" />  
-			</mux>
-	    <mux name="mux1_3" input="fourBLE.in_C[2] ff[2].Q" output="arithlut.in3[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[2]" out_port="arithlut.in3[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[2].Q" out_port="arithlut.in3[2:2]" />  
-			</mux>
-	    <mux name="mux1_4" input="fourBLE.in_C[3] ff[3].Q" output="arithlut.in4[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[3]" out_port="arithlut.in4[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[3].Q" out_port="arithlut.in4[2:2]" />  
-			</mux>
+			  <pb_type name="ff" blif_model=".latch" num_pb="2" class="flipflop">
+				<input name="D" num_pins="1" port_class="D"/>
+				<output name="Q" num_pins="1" port_class="Q"/>
+				<clock name="clk" num_pins="1" port_class="clock"/>
+				<T_setup value="1.891e-11" port="ff.D" clock="clk"/>
+				<T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
+			  </pb_type>
+
+			  <interconnect>
+				<!-- BLE input to LUT input direct connections and delays -->
+				<direct name="direct1" input="ble6.in_A" output="lut5[0:0].in[0:0]">
+				</direct>
+				<direct name="direct2" input="ble6.in_B" output="lut5[0:0].in[1:1]">
+				</direct>
+				<direct name="direct3" input="ble6.in_D" output="lut5[0:0].in[3:3]">
+				</direct>
+				<direct name="direct4" input="ble6.in_E" output="lut5[0:0].in[4:4]">
+				</direct>
+				<direct name="direct2b" input="ble6.in_B" output="lut5[1:1].in[1:1]">
+				</direct>
+				<direct name="direct3b" input="ble6.in_D" output="lut5[1:1].in[3:3]">
+				</direct>
+				<direct name="direct4b" input="ble6.in_E" output="lut5[1:1].in[4:4]">
+				</direct>
+				<direct name="direct5b" input="ble6.in_F" output="lut5[1:1].in[0:0]">
+				</direct>
 
 
+				<!--Clock -->  
+				<complete name="direct6" input="ble6.clk" output="ff.clk"/>			
+				<!-- Register feedback mux -->   
+				<mux name="mux1" input="ble6.in_C ff[0:0].Q" output="lut5[0:0].in[2:2]">
+				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut5[0:0].in[2:2]" />
+				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut5[0:0].in[2:2]" />  
+				</mux>
+				<mux name="mux1b" input="ble6.in_C ff[0:0].Q" output="lut5[1:1].in[2:2]">
+				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut5[1:1].in[2:2]" />
+				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut5[1:1].in[2:2]" />  
+				</mux>
 
-	        <!-- FF input selection mux -->
-	    <mux name="mux2_1" input="arithlut.out1 fourBLE.in_C[0]" output="ff[0].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out1" out_port="ff[0].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[0]" out_port="ff[0].D" />
-        <pack_pattern name="ble6" in_port="arithlut.out1" out_port="ff[0].D"/>
-        <pack_pattern name="chain" in_port="arithlut.out1" out_port="ff[0].D"/>
-			</mux>
-	        <!-- FF input selection mux -->
-	    <mux name="mux2_2" input="arithlut.out2 fourBLE.in_C[1]" output="ff[1].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out2" out_port="ff[1].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[1]" out_port="ff[1].D" />
-        <pack_pattern name="ble6" in_port="arithlut.out2" out_port="ff[1].D"/>
-        <pack_pattern name="chain" in_port="arithlut.out2" out_port="ff[1].D"/>
-			</mux>
-	        <!-- FF input selection mux -->
-	    <mux name="mux2_3" input="arithlut.out3 fourBLE.in_C[2]" output="ff[2].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out3" out_port="ff[2].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[2]" out_port="ff[2].D" />
-        <pack_pattern name="ble6" in_port="arithlut.out3" out_port="ff[2].D"/>
-        <pack_pattern name="chain" in_port="arithlut.out3" out_port="ff[2].D"/>
-			</mux>
-	        <!-- FF input selection mux -->
-	    <mux name="mux2_4" input="arithlut.out4 fourBLE.in_C[3]" output="ff[3].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out4" out_port="ff[3].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[3]" out_port="ff[3].D" />
-        <pack_pattern name="ble6" in_port="arithlut.out4" out_port="ff[3].D"/>
-        <pack_pattern name="chain" in_port="arithlut.out4" out_port="ff[3].D"/>
-			</mux>
+					<!-- FF input selection mux -->
+				<mux name="mux2" input="lut5[0:0].out ble6.in_C" output="ff[0:0].D">
+				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" />
+				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[0:0].D" />
+				  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
+				</mux>
+				<mux name="mux2b" input="lut5[1:1].out ble6.in_C" output="ff[1:1].D">
+				  <delay_constant max="1.33594e-11" in_port="lut5[1:1].out" out_port="ff[1:1].D" />
+				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[1:1].D" />
+				  <pack_pattern name="ble5" in_port="lut5[1:1].out" out_port="ff[1:1].D"/>
+				</mux>
 
-	        <!-- BLE output (local) -->                  
-			<mux name="mux3_1" input="ff[0].Q arithlut.out1" output="fourBLE.out_local[0]">
-			  <delay_constant max="9.514e-11" in_port="ff[0].Q" out_port="fourBLE.out_local[0]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out1" out_port="fourBLE.out_local[0]" />
-			</mux>
-	        <!-- BLE output (local) -->                  
-			<mux name="mux3_2" input="ff[1].Q arithlut.out2" output="fourBLE.out_local[1]">
-			  <delay_constant max="9.514e-11" in_port="ff[1].Q" out_port="fourBLE.out_local[1]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out2" out_port="fourBLE.out_local[1]" />
-			</mux>
-	        <!-- BLE output (local) -->                  
-			<mux name="mux3_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_local[2]">
-			  <delay_constant max="9.514e-11" in_port="ff[2].Q" out_port="fourBLE.out_local[2]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out3" out_port="fourBLE.out_local[2]" />
-			</mux>
-	        <!-- BLE output (local) -->                  
-			<mux name="mux3_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_local[3]">
-			  <delay_constant max="9.514e-11" in_port="ff[3].Q" out_port="fourBLE.out_local[3]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out4" out_port="fourBLE.out_local[3]" />
-			</mux>
+					<!-- BLE output (local) -->                  
+				<mux name="mux3" input="ff[0:0].Q lut5[0:0].out" output="ble6.out_local[0:0]">
+				  <delay_constant max="1.053e-10" in_port="ff[0:0].Q" out_port="ble6.out_local[0:0]" />
+				  <delay_constant max="1.053e-10" in_port="lut5[0:0].out" out_port="ble6.out_local[0:0]" />
+				</mux>
+				<mux name="mux3b" input="ff[1:1].Q lut5[1:1].out" output="ble6.out_local[1:1]">
+				  <delay_constant max="1.053e-10" in_port="ff[1:1].Q" out_port="ble6.out_local[1:1]" />
+				  <delay_constant max="1.053e-10" in_port="lut5[1:1].out" out_port="ble6.out_local[1:1]" />
+				</mux>
 
-	        <!-- BLE output (routing 1) --> 
-	    <mux name="mux4_1" input="ff[0].Q arithlut.out1" output="fourBLE.out_routing[0]">
-	      <delay_constant max="3.211e-11" in_port="ff[0].Q" out_port="fourBLE.out_routing[0]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out1" out_port="fourBLE.out_routing[0]" />
-			</mux>
-	    <mux name="mux4_2" input="ff[1].Q arithlut.out2" output="fourBLE.out_routing[1]">
-	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[1]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[1]" />
-			</mux>
-	    <mux name="mux4_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_routing[2]">
-	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[2]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[2]" />
-			</mux>
-	    <mux name="mux4_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_routing[3]">
-	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[3]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[3]" />
-			</mux>
-		  </interconnect>
+					<!-- BLE output (routing 1) --> 
+				<mux name="mux4" input="ff[0:0].Q lut5[0:0].out" output="ble6.out_routing[0:0]">
+				  <delay_constant max="3.912e-11" in_port="ff[0:0].Q" out_port="ble6.out_routing[0:0]" />
+				  <delay_constant max="3.912e-11" in_port="lut5[0:0].out" out_port="ble6.out_routing[0:0]" />
+				</mux>
+				<mux name="mux4b" input="ff[1:1].Q lut5[1:1].out" output="ble6.out_routing[1:1]">
+				  <delay_constant max="3.912e-11" in_port="ff[1:1].Q" out_port="ble6.out_routing[1:1]" />
+				  <delay_constant max="3.912e-11" in_port="lut5[1:1].out" out_port="ble6.out_routing[1:1]" />
+				</mux>
+			  </interconnect>
+		  </mode>
+
+		  <mode name="arith">
+			  <pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
+				<input name="in" num_pins="5" port_class="lut_in"/>
+				<!-- I average out the delays because VPR does not to LUT balancing
+				-->
+				<output name="out" num_pins="1" port_class="lut_out"/>
+					  <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+				</delay_matrix>      
+			  </pb_type>
+
+			  <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+				<input name="D" num_pins="1" port_class="D"/>
+				<output name="Q" num_pins="1" port_class="Q"/>
+				<clock name="clk" num_pins="1" port_class="clock"/>
+				<T_setup value="1.891e-11" port="ff.D" clock="clk"/>
+				<T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
+			  </pb_type>
+
+			  <interconnect>
+				<!-- BLE input to LUT input direct connections and delays -->
+				<direct name="direct1" input="ble6.in_A" output="lut5[0:0].in[0:0]">
+				</direct>
+				<direct name="direct2" input="ble6.in_B" output="lut5[0:0].in[1:1]">
+				</direct>
+				<direct name="direct3" input="ble6.in_D" output="lut5[0:0].in[3:3]">
+				</direct>
+				<direct name="direct4" input="ble6.in_E" output="lut5[0:0].in[4:4]">
+				</direct>
+				<direct name="direct2b" input="ble6.in_B" output="lut5[1:1].in[1:1]">
+				</direct>
+				<direct name="direct3b" input="ble6.in_D" output="lut5[1:1].in[3:3]">
+				</direct>
+				<direct name="direct4b" input="ble6.in_E" output="lut5[1:1].in[4:4]">
+				</direct>
+				<direct name="direct5b" input="ble6.in_F" output="lut5[1:1].in[0:0]">
+				</direct>
+
+
+				<!--Clock -->  
+				<direct name="direct6" input="ble6.clk" output="ff.clk"/>			
+				<!-- Register feedback mux -->   
+				<mux name="mux1" input="ble6.in_C ff[0:0].Q" output="lut5[0:0].in[2:2]">
+				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut5[0:0].in[2:2]" />
+				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut5[0:0].in[2:2]" />  
+				</mux>
+				<mux name="mux1b" input="ble6.in_C ff[0:0].Q" output="lut5[1:1].in[2:2]">
+				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut5[1:1].in[2:2]" />
+				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut5[1:1].in[2:2]" />  
+				</mux>
+
+
+					<!-- FF input selection mux -->
+				<mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
+					  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
+					  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
+				<pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
+					</mux>
+					<!-- BLE output (local) -->                  
+					<mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local[0:0]">
+					  <delay_constant max="1.053e-10" in_port="ff.Q" out_port="ble6.out_local[0:0]" />
+				  <delay_constant max="1.053e-10" in_port="lut6.out" out_port="ble6.out_local[0:0]" />
+					</mux>
+					<!-- BLE output (routing 1) --> 
+				<mux name="mux4" input="ff.Q lut6.out" output="ble6.out_routing[0:0]">
+				  <delay_constant max="3.912e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
+				  <delay_constant max="3.912e-11" in_port="lut6.out" out_port="ble6.out_routing[0:0]" />
+				</mux>
+			  </interconnect>
+		  </mode>
+
+
 		</pb_type>
 
         
-        <interconnect>
+         <interconnect>
           <!-- 50% sparsely populated local routing -->
-          <complete name="lutA" input="clb.I4 clb.I3 fourBLE[0].out_local[1:0] fourBLE[0].out_local[3:2]" output="fourBLE.in_A">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_A" />
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_A" />
+          <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
+            <delay_constant max="6.604e-11" in_port="clb.I4" out_port="ble6.in_A" />
+            <delay_constant max="6.604e-11" in_port="clb.I3" out_port="ble6.in_A" />
           </complete>
-          <complete name="lutB" input="clb.I3 clb.I2 fourBLE[0].out_local[3:2] fourBLE[1].out_local[1:0]" output="fourBLE.in_B">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_B" />
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_B" />
+          <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
+            <delay_constant max="6.604e-11" in_port="clb.I3" out_port="ble6.in_B" />
+            <delay_constant max="6.604e-11" in_port="clb.I2" out_port="ble6.in_B" />
             </complete>
-          <complete name="lutC" input="clb.I2 clb.I1 fourBLE[1].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_C">
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_C" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_C" />
+          <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
+            <delay_constant max="6.604e-11" in_port="clb.I2" out_port="ble6.in_C" />
+            <delay_constant max="6.604e-11" in_port="clb.I1" out_port="ble6.in_C" />
             </complete>
-          <complete name="lutD" input="clb.I4 clb.I2 fourBLE[0].out_local[1:0] fourBLE[1].out_local[1:0]" output="fourBLE.in_D">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_D" />
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_D" />
+          <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
+            <delay_constant max="6.604e-11" in_port="clb.I4" out_port="ble6.in_D" />
+            <delay_constant max="6.604e-11" in_port="clb.I2" out_port="ble6.in_D" />
             </complete>
-          <complete name="lutE" input="clb.I3 clb.I1 fourBLE[0].out_local[3:2] fourBLE[1].out_local[3:2]" output="fourBLE.in_E">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_E" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_E" />
+          <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
+            <delay_constant max="6.604e-11" in_port="clb.I3" out_port="ble6.in_E" />
+            <delay_constant max="6.604e-11" in_port="clb.I1" out_port="ble6.in_E" />
             </complete>
-          <complete name="lutF" input="clb.I4 clb.I1 fourBLE[0].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_F">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_F" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_F" />
-          </complete>
-          <complete name="clks" input="clb.clk" output="fourBLE[1:0].clk">
+          <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
+            <delay_constant max="6.604e-11" in_port="clb.I4" out_port="ble6.in_F" />
+            <delay_constant max="6.604e-11" in_port="clb.I1" out_port="ble6.in_F" />
+            </complete>
+          <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
           </complete>
           
           <!-- Direct connections to CLB outputs -->
-          <direct name="clbouts1" input="fourBLE[1:0].out_routing" output="clb.O"/>
-          <direct name="chain1" input="clb.cin" output="fourBLE[0].cin">
-            <pack_pattern name="chain" in_port="clb.cin" out_port="fourBLE[0].cin"/>
+          <direct name="clbouts1" input="ble6[7:0].out_routing" output="clb.O"/>
+		  <direct name="chain1" input="clb.cin" output="ble6[0].cin">
+            <pack_pattern name="chain" in_port="clb.cin" out_port="ble6[0].cin"/>
           </direct>
-          <direct name="chain2" input="fourBLE[1].cout" output="clb.cout">
-            <pack_pattern name="chain" in_port="fourBLE[1].cout" out_port="clb.cout"/>
-            <delay_constant max="20e-12" in_port="fourBLE[1].cout" out_port="clb.cout" />           <!-- delay of carry link joining two adjacent CLBs -->
+          <direct name="chain2" input="ble6[7].cout" output="clb.cout">
+            <pack_pattern name="chain" in_port="ble6[7].cout" out_port="clb.cout"/>
+            <delay_constant max="20e-12" in_port="ble6[7].cout" out_port="clb.cout" />           <!-- delay of carry link joining two adjacent CLBs -->
           </direct>
-          <direct name="chain3" input="fourBLE[0].cout" output="fourBLE[1].cin">
-            <pack_pattern name="chain" in_port="fourBLE[0].cout" out_port="fourBLE[1].cin"/>
+          <direct name="chain3" input="ble6[6:0].cout" output="ble6[7:1].cin">
+            <pack_pattern name="chain" in_port="ble6[6:0].cout" out_port="ble6[7:1].cin"/>
           </direct>
         </interconnect>
 
@@ -521,8 +440,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
           <loc side="right">clb.O clb.I1[4:0] clb.I2[4:0] clb.I3[4:0] clb.I4[4:0] clb.clk</loc> 
-          <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5] clb.cout</loc>    
-          <loc side="top">clb.cin</loc> 
+          <loc side="bottom">clb.O clb.I1[9:5] clb.I2[9:5] clb.I3[9:5] clb.I4[9:5]</loc>     
         </pinlocations>
         <gridlocations>
           <loc type="fill" priority="1"/>
