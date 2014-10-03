@@ -596,11 +596,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 			# Parse out min_chan_width
 			if ( open( VPROUT, "<${temp_dir}vpr.out" ) ) {
-				undef $/;
-				my $content = <VPROUT>;
-				close(VPROUT);
-				$/ = "\n";    # Restore for normal behaviour later in script
-
+			    foreach my $content (<VPROUT>) {
 				if ( $content =~ m/(.*Error.*)/i ) {
 					$error = $1;
 				}
@@ -610,6 +606,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				{
 					$min_chan_width = $1;
 				}
+			    }
+			    close(VPROUT);
 			}
 
 			$min_chan_width = ( $min_chan_width * 1.3 );
