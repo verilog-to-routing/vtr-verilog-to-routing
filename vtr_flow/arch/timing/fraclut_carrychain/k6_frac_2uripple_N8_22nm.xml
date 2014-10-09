@@ -53,6 +53,17 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
       <port name="out2"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
+    <model name="adder">
+      <input_ports>
+      <port name="a"/>
+      <port name="b"/>
+      <port name="cin"/>
+      </input_ports>
+      <output_ports>
+      <port name="cout"/>
+      <port name="sumout"/>
+      </output_ports>
+    </model>
 
   </models>
   <!-- ODIN II specific config ends -->
