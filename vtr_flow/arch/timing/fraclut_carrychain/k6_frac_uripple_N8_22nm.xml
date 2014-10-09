@@ -66,6 +66,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
       </output_ports>
     </model>
 
+
   </models>
   <!-- ODIN II specific config ends -->
  
@@ -166,8 +167,10 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 		  <input name="in_D" num_pins="1"/>
 		  <input name="in_E" num_pins="1"/>
 		  <input name="in_F" num_pins="1"/>
+		  <input name="cin" num_pins="1"/>
 		  <output name="out_local" num_pins="2"/>
 		  <output name="out_routing" num_pins="2"/>
+		  <output name="cout" num_pins="1"/>
 		  <clock name="clk" num_pins="1"/> 
 
 
@@ -216,7 +219,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 					</mux>
 					<!-- FF input selection mux -->
 				<mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
-					  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
+					  <delay_constant max="3.53594e-11" in_port="lut6.out" out_port="ff.D" />  <!-- added 2.2e-11 because of additional adder driving mux -->
 					  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
 				<pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
 					</mux>
@@ -290,7 +293,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 
 					<!-- FF input selection mux -->
 				<mux name="mux2" input="lut5[0:0].out ble6.in_C" output="ff[0:0].D">
-				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" />
+				  <delay_constant max="3.53594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" /> <!-- added 2.2e-11 because of additional adder driving mux -->
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[0:0].D" />
 				  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
 				</mux>
@@ -318,6 +321,94 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				<mux name="mux4b" input="ff[1:1].Q lut5[1:1].out" output="ble6.out_routing[1:1]">
 				  <delay_constant max="3.912e-11" in_port="ff[1:1].Q" out_port="ble6.out_routing[1:1]" />
 				  <delay_constant max="3.912e-11" in_port="lut5[1:1].out" out_port="ble6.out_routing[1:1]" />
+				</mux>
+			  </interconnect>
+		  </mode>
+
+		  <mode name="arith">
+			  <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+				<input name="in" num_pins="6" port_class="lut_in"/>
+				<!-- I average out the delays because VPR does not to LUT balancing
+				-->
+				<output name="out" num_pins="1" port_class="lut_out"/>
+				<delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+					   1.45353e-10
+				</delay_matrix>      
+			  </pb_type>
+
+			  <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+				<input name="D" num_pins="1" port_class="D"/>
+				<output name="Q" num_pins="1" port_class="Q"/>
+				<clock name="clk" num_pins="1" port_class="clock"/>
+				<T_setup value="1.891e-11" port="ff.D" clock="clk"/>
+				<T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
+			  </pb_type>
+
+			  <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+				<input name="a" num_pins="1"/>
+				<input name="b" num_pins="1"/>
+				<input name="cin" num_pins="1"/>
+				<output name="sumout" num_pins="1"/>
+				<output name="cout" num_pins="1"/>
+				<delay_constant max="83e-12" in_port="adder.a" out_port="adder.sumout"/>
+				<delay_constant max="83e-12" in_port="adder.b" out_port="adder.sumout"/>
+				<delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout"/>
+				<delay_constant max="56e-12" in_port="adder.a" out_port="adder.cout"/>
+				<delay_constant max="56e-12" in_port="adder.b" out_port="adder.cout"/>
+				<delay_constant max="11e-12" in_port="adder.cin" out_port="adder.cout"/>
+			  </pb_type>
+
+			  <interconnect>
+				<!-- BLE input to LUT input direct connections and delays -->
+				<direct name="direct1" input="ble6.in_A" output="lut6.in[0:0]">
+				</direct>
+				<direct name="direct2" input="ble6.in_B" output="lut6.in[1:1]">
+				</direct>
+				<direct name="direct3" input="ble6.in_D" output="lut6.in[3:3]">
+				</direct>
+				<direct name="direct4" input="ble6.in_E" output="lut6.in[4:4]">
+				</direct>
+				<direct name="direct5b" input="ble6.in_F" output="lut6.in[5:5]">
+				</direct>
+				<direct name="addera" input="lut6[0:0].out" output="adder.a">
+				</direct>
+				<direct name="addercin" input="ble6.cin" output="adder.cin">
+					<pack_pattern name="chain" in_port="ble6.cin" out_port="adder.cin"/>
+				</direct>
+				<direct name="addercout" input="adder.cout" output="ble6.cout">
+					<pack_pattern name="chain" in_port="adder.cout" out_port="ble6.cout"/>
+				</direct>
+				<direct name="addersumout" input="adder.sumout" output="ff.D">
+					<delay_constant max="2.2e-11" in_port="adder.sumout" out_port="ff.D" />
+					<pack_pattern name="chain" in_port="adder.sumout" out_port="ff.D"/>
+				</direct>
+
+				<!--Clock -->  
+				<direct name="direct6" input="ble6.clk" output="ff.clk"/>			
+				<!-- Register feedback mux -->   
+				<mux name="mux1" input="ble6.in_C ff[0:0].Q" output="lut6[0:0].in[2:2]">
+				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut5[0:0].in[2:2]" />
+				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut5[0:0].in[2:2]" />  
+				</mux>
+				<mux name="adderb" input="ble6.in_D ble6.in_E" output="adder.b">
+				  <delay_constant max="0.22e-10" in_port="ble6.in_D" out_port="adder.b" />
+				  <delay_constant max="0.22e-10" in_port="ble6.in_D" out_port="adder.b" />  
+				</mux>
+
+				<!-- BLE output (local) -->                  
+				<mux name="mux3" input="ff.Q adder.sumout" output="ble6.out_local[0:0]">
+					<delay_constant max="1.053e-10" in_port="ff.Q" out_port="ble6.out_local[0:0]" />
+					<delay_constant max="1.053e-10" in_port="adder.sumout" out_port="ble6.out_local[0:0]" />
+				</mux>
+					<!-- BLE output (routing 1) --> 
+				<mux name="mux4" input="ff.Q adder.sumout" output="ble6.out_routing[0:0]">
+				  <delay_constant max="3.912e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
+				  <delay_constant max="3.912e-11" in_port="adder.sumout" out_port="ble6.out_routing[0:0]" />
 				</mux>
 			  </interconnect>
 		  </mode>
