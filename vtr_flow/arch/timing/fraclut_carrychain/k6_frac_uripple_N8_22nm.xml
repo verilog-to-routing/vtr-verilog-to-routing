@@ -392,8 +392,8 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				<direct name="direct6" input="ble6.clk" output="ff.clk"/>			
 				<!-- Register feedback mux -->   
 				<mux name="mux1" input="ble6.in_C ff[0:0].Q" output="lut6[0:0].in[2:2]">
-				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut5[0:0].in[2:2]" />
-				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut5[0:0].in[2:2]" />  
+				  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut6[0:0].in[2:2]" />
+				  <delay_constant max="0.392e-10" in_port="ff[0:0].Q" out_port="lut6[0:0].in[2:2]" />  
 				</mux>
 				<mux name="adderb" input="ble6.in_D ble6.in_E" output="adder.b">
 				  <delay_constant max="0.22e-10" in_port="ble6.in_D" out_port="adder.b" />
