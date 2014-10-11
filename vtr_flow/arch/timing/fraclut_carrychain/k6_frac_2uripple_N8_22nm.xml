@@ -296,11 +296,11 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 						<direct name="direct3" input="lutf.out" output="adder.a">
 						</direct>
 
-						<direct name="addercin" input="ble6.cin" output="adder.cin">
-							<pack_pattern name="chain" in_port="ble6.cin" out_port="adder.cin"/>
+						<direct name="addercin" input="lut5.cin" output="adder.cin">
+							<pack_pattern name="chain" in_port="lut5.cin" out_port="adder.cin"/>
 						</direct>
-						<direct name="addercout" input="adder.cout" output="ble6.cout">
-							<pack_pattern name="chain" in_port="adder.cout" out_port="ble6.cout"/>
+						<direct name="addercout" input="adder.cout" output="lut5.cout">
+							<pack_pattern name="chain" in_port="adder.cout" out_port="lut5.cout"/>
 						</direct>
 						<direct name="addersumout" input="adder.sumout" output="ff.D">
 							<delay_constant max="2.2e-11" in_port="adder.sumout" out_port="ff.D" />
@@ -357,11 +357,13 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				<mux name="mux2" input="lut5[0:0].out ble6.in_C" output="ff[0:0].D">
 				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" /> 
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[0:0].D" />
+				   <pack_pattern name="chain" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
 				  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
 				</mux>
 				<mux name="mux2b" input="lut5[1:1].out ble6.in_C" output="ff[1:1].D">
 				  <delay_constant max="1.33594e-11" in_port="lut5[1:1].out" out_port="ff[1:1].D" />
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[1:1].D" />
+				   <pack_pattern name="chain" in_port="lut5[1:1].out" out_port="ff[1:1].D"/>
 				  <pack_pattern name="ble5" in_port="lut5[1:1].out" out_port="ff[1:1].D"/>
 				</mux>
 
