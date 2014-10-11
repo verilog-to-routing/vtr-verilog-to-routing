@@ -338,7 +338,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 					   1.45353e-10
 					   1.45353e-10
 					   1.45353e-10
-				</delay_matrix>      
+				</delay_matrix>    
 			  </pb_type>
 
 			  <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
@@ -397,7 +397,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				</mux>
 				<mux name="adderb" input="ble6.in_D ble6.in_E" output="adder.b">
 				  <delay_constant max="0.22e-10" in_port="ble6.in_D" out_port="adder.b" />
-				  <delay_constant max="0.22e-10" in_port="ble6.in_D" out_port="adder.b" />  
+				  <delay_constant max="0.22e-10" in_port="ble6.in_E" out_port="adder.b" />  
 				</mux>
 
 				<!-- BLE output (local) -->                  
