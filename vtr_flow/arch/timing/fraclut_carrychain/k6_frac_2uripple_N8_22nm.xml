@@ -53,6 +53,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
       <port name="out2"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
+
     <model name="adder">
       <input_ports>
       <port name="a"/>
@@ -64,6 +65,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
       <port name="sumout"/>
       </output_ports>
     </model>
+
 
   </models>
   <!-- ODIN II specific config ends -->
@@ -165,8 +167,10 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 		  <input name="in_D" num_pins="1"/>
 		  <input name="in_E" num_pins="1"/>
 		  <input name="in_F" num_pins="1"/>
+		  <input name="cin" num_pins="1"/>
 		  <output name="out_local" num_pins="2"/>
 		  <output name="out_routing" num_pins="2"/>
+		  <output name="cout" num_pins="1"/>
 		  <clock name="clk" num_pins="1"/> 
 
 
@@ -215,7 +219,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 					</mux>
 					<!-- FF input selection mux -->
 				<mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
-					  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
+					  <delay_constant max="3.53594e-11" in_port="lut6.out" out_port="ff.D" />  <!-- added 2.2e-11 because of additional adder driving mux -->
 					  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
 				<pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
 					</mux>
@@ -233,18 +237,80 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 		  </mode>
 
 		  <mode name="5ble">
-			  <pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
-				<input name="in" num_pins="5" port_class="lut_in"/>
-				<!-- I average out the delays because VPR does not to LUT balancing
-				-->
-				<output name="out" num_pins="1" port_class="lut_out"/>
-		   	    <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
-					   1.45353e-10
-					   1.45353e-10
-					   1.45353e-10
-					   1.45353e-10
-					   1.45353e-10
-				</delay_matrix>      
+			  <pb_type name="lut5" num_pb="2">
+			    <input name="in" num_pins="5"/>
+				<input name="cin" num_pins="1"/>
+				<output name="out" num_pins="1"/>
+			    <mode name="lutpure">
+					<pb_type name="lutpure" blif_model=".names" num_pb="1" class="lut">
+						<input name="in" num_pins="5" port_class="lut_in"/>
+						<!-- I average out the delays because VPR does not to LUT balancing
+						-->
+						<output name="out" num_pins="1" port_class="lut_out"/>
+						<delay_matrix type="max" in_port="lutpure.in" out_port="lutpure.out">
+							   1.45353e-10
+							   1.45353e-10
+							   1.45353e-10
+							   1.45353e-10
+							   1.45353e-10
+						</delay_matrix>      
+					</pb_type>
+					<interconnect>
+						<direct name="direct1" input="lut5.in" output="lutpure.in">
+						</direct>
+						<direct name="direct2" input="lutpure.out" output="lut5.out">
+						</direct>
+					</interconnect>
+				</mode>
+				<mode name="arith">
+					<pb_type name="lutf" blif_model=".names" num_pb="1" class="lut">
+						<input name="in" num_pins="5" port_class="lut_in"/>
+						<!-- I average out the delays because VPR does not to LUT balancing
+						-->
+						<output name="out" num_pins="1" port_class="lut_out"/>
+						<delay_matrix type="max" in_port="lutf.in" out_port="lutf.out">
+							   1.45353e-10
+							   1.45353e-10
+							   1.45353e-10
+							   1.45353e-10
+							   1.45353e-10
+						</delay_matrix>      
+					</pb_type>
+					<pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+						<input name="a" num_pins="1"/>
+						<input name="b" num_pins="1"/>
+						<input name="cin" num_pins="1"/>
+						<output name="sumout" num_pins="1"/>
+						<output name="cout" num_pins="1"/>
+						<delay_constant max="83e-12" in_port="adder.a" out_port="adder.sumout"/>
+						<delay_constant max="83e-12" in_port="adder.b" out_port="adder.sumout"/>
+						<delay_constant max="30e-12" in_port="adder.cin" out_port="adder.sumout"/>
+						<delay_constant max="56e-12" in_port="adder.a" out_port="adder.cout"/>
+						<delay_constant max="56e-12" in_port="adder.b" out_port="adder.cout"/>
+						<delay_constant max="11e-12" in_port="adder.cin" out_port="adder.cout"/>
+					</pb_type>
+
+					<interconnect>
+						<direct name="direct1" input="lut5.in" output="lutf.in">
+						</direct>
+						<direct name="direct3" input="lutf.out" output="adder.a">
+						</direct>
+
+						<direct name="addercin" input="ble6.cin" output="adder.cin">
+							<pack_pattern name="chain" in_port="ble6.cin" out_port="adder.cin"/>
+						</direct>
+						<direct name="addercout" input="adder.cout" output="ble6.cout">
+							<pack_pattern name="chain" in_port="adder.cout" out_port="ble6.cout"/>
+						</direct>
+						<direct name="addersumout" input="adder.sumout" output="ff.D">
+							<delay_constant max="2.2e-11" in_port="adder.sumout" out_port="ff.D" />
+							<pack_pattern name="chain" in_port="adder.sumout" out_port="ff.D"/>
+						</direct>
+
+						<mux name="adderb" input="lut5.in[2:2] lut5.in[0:0]" output="adder.b">
+						</mux>
+					</interconnect>
+				</mode>
 			  </pb_type>
 
 			  <pb_type name="ff" blif_model=".latch" num_pb="2" class="flipflop">
@@ -289,7 +355,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 
 					<!-- FF input selection mux -->
 				<mux name="mux2" input="lut5[0:0].out ble6.in_C" output="ff[0:0].D">
-				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" />
+				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" /> 
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[0:0].D" />
 				  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
 				</mux>
@@ -320,8 +386,6 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				</mux>
 			  </interconnect>
 		  </mode>
-
-
 		</pb_type>
 
         
