@@ -368,13 +368,13 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" /> 
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[0:0].D" />
 				  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
-				  <pack_pattern name="chain" in_port="lut5[0:0].sumout" out_port="ff.D"/>
+				  <pack_pattern name="chain" in_port="lut5[0:0].out" out_port="ff.D"/>
 				</mux>
 				<mux name="mux2b" input="lut5[1:1].out ble6.in_C" output="ff[1:1].D">
 				  <delay_constant max="1.33594e-11" in_port="lut5[1:1].out" out_port="ff[1:1].D" />
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[1:1].D" />
 				  <pack_pattern name="ble5" in_port="lut5[1:1].out" out_port="ff[1:1].D"/>
-				  <pack_pattern name="chain" in_port="lut5[1:1].sumout" out_port="ff.D"/>
+				  <pack_pattern name="chain" in_port="lut5[1:1].out" out_port="ff.D"/>
 				</mux>
 
 					<!-- BLE output (local) -->                  
