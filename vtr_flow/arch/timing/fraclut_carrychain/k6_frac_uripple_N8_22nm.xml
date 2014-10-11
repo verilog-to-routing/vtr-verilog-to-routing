@@ -331,7 +331,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				<!-- I average out the delays because VPR does not to LUT balancing
 				-->
 				<output name="out" num_pins="1" port_class="lut_out"/>
-				<delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
+				<delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
 					   1.45353e-10
 					   1.45353e-10
 					   1.45353e-10
