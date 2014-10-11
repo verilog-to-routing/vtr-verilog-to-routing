@@ -241,6 +241,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 			    <input name="in" num_pins="5"/>
 				<input name="cin" num_pins="1"/>
 				<output name="out" num_pins="1"/>
+				<output name="cout" num_pins="1"/>
 			    <mode name="lutpure">
 					<pb_type name="lutpure" blif_model=".names" num_pb="1" class="lut">
 						<input name="in" num_pins="5" port_class="lut_in"/>
