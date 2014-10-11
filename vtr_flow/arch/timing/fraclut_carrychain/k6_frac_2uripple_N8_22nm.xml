@@ -303,9 +303,9 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 						<direct name="addercout" input="adder.cout" output="lut5.cout">
 							<pack_pattern name="chain" in_port="adder.cout" out_port="lut5.cout"/>
 						</direct>
-						<direct name="addersumout" input="adder.sumout" output="ff.D">
-							<delay_constant max="2.2e-11" in_port="adder.sumout" out_port="ff.D" />
-							<pack_pattern name="chain" in_port="adder.sumout" out_port="ff.D"/>
+						<direct name="addersumout" input="adder.sumout" output="lut5.out">
+							<delay_constant max="2.2e-11" in_port="adder.sumout" out_port="lut5.out" />
+							<pack_pattern name="chain" in_port="adder.sumout" out_port="lut5.out"/>
 						</direct>
 
 						<mux name="adderb" input="lut5.in[2:2] lut5.in[0:0]" output="adder.b">
