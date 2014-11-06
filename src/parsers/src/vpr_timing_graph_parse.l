@@ -35,6 +35,13 @@
 num_tnodes:                     { return NUM_TNODES; }
 "Node #\tType\t\tipin\tiblk\tDomain\tSkew\tI/O Delay\t# edges\tto_node     Tdel" { return TGRAPH_HEADER; }
 
+num_tnode_levels:               { return NUM_TNODE_LEVELS; }
+Level:                          { return LEVEL; }
+Num_nodes:                      { return NUM_LEVEL_NODES; }
+Nodes:                          { return NODES; }
+"Net #\tNet_to_driver_tnode"    { return NET_DRIVER_TNODE_HEADER; }
+"Node #\t\tT_arr\t\tT_req"      { return NODE_ARR_REQ_HEADER; }
+
 TN_INPAD_SOURCE                 { return TN_INPAD_SOURCE; }
 TN_INPAD_OPIN                   { return TN_INPAD_OPIN; }
 TN_OUTPAD_IPIN                  { return TN_OUTPAD_IPIN; }
