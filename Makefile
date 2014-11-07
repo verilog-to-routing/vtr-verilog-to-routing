@@ -24,7 +24,6 @@ vecho_0 = true
 vecho_1 = echo
 vecho_2 = echo
 vecho = $(vecho_$(VERBOSITY))
-
 AT_0 := @
 AT_1 := @
 AT_2 := 
@@ -38,7 +37,7 @@ STATIC_LIB=libsta.a
 SRC_DIR = src
 BUILD_DIR = build
 
-DIRS = $(SRC_DIR)/timing_graph $(SRC_DIR)/parsers
+DIRS = $(SRC_DIR)/timing_graph $(SRC_DIR)/parsers $(SRC_DIR)/base
 
 #Flags
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
@@ -66,11 +65,11 @@ LIB_OBJ := $(foreach src, $(LIB_SRC), $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/
 
 LEXER_SRC = $(foreach dir, $(DIRS), $(wildcard $(dir)/*.l))
 LEXER_GEN_SRC = $(patsubst $(SRC_DIR)/%.l, $(BUILD_DIR)/%.lex.c, $(LEXER_SRC))
-LEXER_GEN_OBJ = $(foreach gen_src, $(LEXER_GEN_SRC), $(patsubst %.c, %.o, $(gen_src)))
+LEXER_GEN_OBJ = $(LEXER_GEN_SRC:.c=.o)
 
 PARSER_SRC = $(foreach dir, $(DIRS), $(wildcard $(dir)/*.y))
 PARSER_GEN_SRC = $(patsubst $(SRC_DIR)/%.y, $(BUILD_DIR)/%.parse.c, $(PARSER_SRC))
-PARSER_GEN_OBJ = $(foreach gen_src, $(PARSER_GEN_SRC), $(patsubst %.c, %.o, $(gen_src)))
+PARSER_GEN_OBJ = $(PARSER_GEN_SRC:.c=.o)
 
 OBJECTS_LIB = $(LIB_OBJ) $(LEXER_GEN_OBJ) $(PARSER_GEN_OBJ)
 OBJECTS_EXE = $(MAIN_OBJ) $(OBJECTS_LIB)
@@ -83,8 +82,6 @@ INC_FLAGS = -I$(SRC_DIR) -I$(BUILD_DIR) $(SRC_INC_FLAGS)
 #Dependancies
 DEP = $(OBJECTS_EXE:.o=.d)
 
--include $(DEP)
-
 #
 #Rules
 #
@@ -94,7 +91,9 @@ DEP = $(OBJECTS_EXE:.o=.d)
 .SECONDARY:
 
 all: $(EXE) $(STATIC_LIB)
-	@echo $(main_src)
+
+#Dependancies must be included after all so it is the default goal
+-include $(DEP)
 
 $(EXE): $(OBJECTS_EXE)
 	@$(vecho) "Linking executable: $@"
@@ -104,25 +103,28 @@ $(STATIC_LIB): $(OBJECTS_LIB)
 	@$(vecho) "Linking static library: $@"
 	$(AT) $(AR) rcs $@ $(OBJECTS_LIB)
 
-build/%.lex.c: src/%.l
+$(BUILD_DIR)/%.lex.c: $(SRC_DIR)/%.l
 	@$(vecho) "Generating Lexer $< ..."
 	@mkdir -p $(@D)
 	$(AT) $(LEXER_GEN) -o $@ $<
 
-build/%.parse.c build/%.parse.h: src/%.y
+$(BUILD_DIR)/%.parse.c $(BUILD_DIR)/%.parse.h: $(SRC_DIR)/%.y
 	@$(vecho) "Generating Parser $< ..."
 	@mkdir -p $(@D)
 	$(AT) $(PARSER_GEN) -d $< -o $(BUILD_DIR)/$*.parse.c 
 
-build/%.lex.o: build/%.lex.c build/%.parse.h
+$(BUILD_DIR)/%.lex.o: $(BUILD_DIR)/%.lex.c $(BUILD_DIR)/%.parse.h
 	@$(vecho) "Compiling Lexer $< ..."
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@
 
-build/%.parse.o: build/%.parse.c
+$(BUILD_DIR)/%.parse.o: $(BUILD_DIR)/%.parse.c
 	@$(vecho) "Compiling Parser $< ..."
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@
 
-build/%.o: src/%.cpp
+#Note: % matches recursively between prefix and suffix
+#      so $(SRC_DIR)/%.cpp would match both src/a/a.cpp
+#      and src/b/b.cpp
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@$(vecho) "Compiling Source $< ..."
 	@mkdir -p $(@D)
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@

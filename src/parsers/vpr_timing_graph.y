@@ -8,8 +8,11 @@
 #include <vector>
 
 #include "vpr_timing_graph_common.h"
+#include "TimingGraph.hpp"
+#include "TimingNode.hpp"
+#include "TimingEdge.hpp"
 
-int yyerror(const char *msg);
+int yyerror(const TimingGraph& tg, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -30,6 +33,7 @@ extern char* yytext;
 
 /* Verbose error reporting */
 %error-verbose
+%parse-param{TimingGraph& timing_graph}
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
@@ -108,14 +112,37 @@ extern char* yytext;
 %start timing_graph 
 %%
 
-timing_graph: num_tnodes                    {printf("Timing Graph of %d nodes\n", $1);}
+timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\n", $1);*/}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
-    | timing_graph tnode                    {printf("Node %d, Type %s, ipin %d, iblk %d, domain %d, skew %f, iodelay %f, edges %zu\n", $2.node_id, $2.type, $2.ipin, $2.iblk, $2.domain, $2.skew, $2.iodelay, $2.out_edges->size()); }
-    | timing_graph num_tnode_levels         {printf("Timing Graph Levels %d\n", $2);}
-    | timing_graph timing_graph_level EOL   {printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids->size()); }
+    | timing_graph tnode                    { 
+                                                TimingNode node;
+                                                for(auto& edge_val : *($2.out_edges)) {
+                                                    TimingEdge edge;
+
+                                                    edge.set_to_node(edge_val.to_node);
+                                                    edge.set_delay(edge_val.delay);
+
+                                                    node.add_out_edge(edge);
+                                                }
+                                                timing_graph.add_node(node);
+                                                assert(timing_graph.num_nodes() - 1 == $2.node_id);
+
+                                                /*
+                                                 *printf("Node %d, Type %s, ipin %d, iblk %d, domain %d, skew %f, iodelay %f, edges %zu\n", 
+                                                 *    $2.node_id, $2.type, $2.ipin, $2.iblk, $2.domain, $2.skew, $2.iodelay, $2.out_edges->size()); 
+                                                 */
+                                            }
+    | timing_graph num_tnode_levels         {
+                                                timing_graph.set_num_levels($2); 
+                                                /*printf("Timing Graph Levels %d\n", $2);*/
+                                            }
+    | timing_graph timing_graph_level EOL   {
+                                                timing_graph.add_level($2.level, *($2.node_ids));
+                                                /*printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids->size()); */
+                                            }
     | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
     | timing_graph NODE_ARR_REQ_HEADER EOL  {/*printf("Nodes ARR REQ Header\n");*/}
-    | timing_graph node_arr_req_time        {/*printf("Node %d Arr_T: %g Req_T: %g\n", $2.node_id, $2.T_arr, $2.T_req);*/}
+    | timing_graph node_arr_req_time        { /*printf("Node %d Arr_T: %g Req_T: %g\n", $2.node_id, $2.T_arr, $2.T_req);*/}
     | timing_graph EOL                      {}
     ;
 
@@ -202,7 +229,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const char *msg) {
+int yyerror(const TimingGraph& tg, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

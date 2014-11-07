@@ -5,7 +5,8 @@
 #include "ctype.h"
 #include "string.h"
 #include "vpr_timing_graph_common.h"
-#include "vpr_timing_graph.parse.h"
+#include "TimingGraph.hpp"
+#include "vpr_timing_graph.parse.h" //Must be after TimingGraph.hpp for parser parameter
 
 %}
 

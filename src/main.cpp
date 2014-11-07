@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include "TimingGraph.hpp"
 
-extern int yyparse();
+extern int yyparse(TimingGraph& tg);
 extern FILE *yyin;
 
 int main(int argc, char** argv) {
@@ -9,9 +10,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    TimingGraph timing_graph;
+
     yyin = fopen(argv[1], "r");
     if(yyin != NULL) {
-        int error = yyparse();
+        int error = yyparse(timing_graph);
         if(error) {
             printf("Parse Error\n");
             fclose(yyin);
@@ -22,5 +25,8 @@ int main(int argc, char** argv) {
         printf("Could not open file %s\n", argv[1]);
         return 1;
     }
+
+    timing_graph.print();
+
     return 0;
 }
