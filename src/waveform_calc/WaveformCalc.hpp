@@ -22,6 +22,7 @@ class DelaySlew_WaveformCalc : public WaveformCalc {
                                         unique_ptr<NodeSlewCalc> node_slew_calc, 
                                         unique_ptr<EdgeDelayCalc> edge_delay_calc, 
                                         unique_ptr<EdgeSlewCalc> edge_slew_calc) {
+            //Explcitly take ownership of the pointers
             node_delay_calc_ = std::move(node_delay_calc);
             node_slew_calc_ = std::move(node_slew_calc);
             edge_delay_calc_ = std::move(edge_delay_calc);

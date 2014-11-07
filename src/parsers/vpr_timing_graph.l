@@ -4,8 +4,8 @@
  */
 #include "ctype.h"
 #include "string.h"
-#include "vpr_timing_graph_parse_common.h"
-#include "vpr_timing_graph_parse.tab.h"
+#include "vpr_timing_graph_common.h"
+#include "vpr_timing_graph.parse.h"
 
 %}
 

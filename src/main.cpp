@@ -1,27 +1,26 @@
-#include <iostream>
-#include <memory>
+#include <stdio.h>
 
-#include "make_unique.hpp"
+extern int yyparse();
+extern FILE *yyin;
 
-#include "version.hpp"
+int main(int argc, char** argv) {
+    if(argc != 2) {
+        printf("Usage: %s tg_echo_file\n", argv[0]);
+        return 1;
+    }
 
-#include "DelayCalc.hpp"
-#include "SlewCalc.hpp"
-#include "WaveformCalc.hpp"
-
-class WaveformCalculator;
-using std::unique_ptr;
-using fix::make_unique;
-
-int main(int argc, char* argv[]) {
-    std::cout << "Lib STA: " << build_version << " Compiled: " << build_date << std::endl;
-
-    //Create a waveform calculator that uses a unit delay model for both nodes and edges
-    Time unit_delay(1.);
-    Slew unit_slew(1.);
-    unique_ptr<WaveformCalc> waveform_calc = make_unique<DelaySlew_WaveformCalc>(make_unique<Unit_NodeDelayCalc>(unit_delay),
-                                                                                 make_unique<Unit_NodeSlewCalc>(unit_slew),
-                                                                                 make_unique<Unit_EdgeDelayCalc>(unit_delay),
-                                                                                 make_unique<Unit_EdgeSlewCalc>(unit_slew));
+    yyin = fopen(argv[1], "r");
+    if(yyin != NULL) {
+        int error = yyparse();
+        if(error) {
+            printf("Parse Error\n");
+            fclose(yyin);
+            return 1;
+        }
+        fclose(yyin);
+    } else {
+        printf("Could not open file %s\n", argv[1]);
+        return 1;
+    }
+    return 0;
 }
-

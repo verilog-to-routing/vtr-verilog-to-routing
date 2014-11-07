@@ -1,6 +1,8 @@
 #ifndef VPR_TIMING_GRAPH_PARSE_COMMON_H
 #define VPR_TIMING_GRAPH_PARSE_COMMON_H
 
+#include <vector>
+
 typedef struct ipin_iblk_s {
     int ipin;
     int iblk;
@@ -23,4 +25,19 @@ typedef struct node_arr_req_s {
     float T_req;
 } node_arr_req_t;
 
+typedef struct timing_graph_level_s {
+    int level;
+    std::vector<int>* node_ids;
+} timing_graph_level_t;
+
+typedef struct node_s {
+    int node_id;
+    char* type;
+    int ipin;
+    int iblk;
+    int domain;
+    float skew;
+    float iodelay;
+    std::vector<edge_t>* out_edges;
+} node_t;
 #endif

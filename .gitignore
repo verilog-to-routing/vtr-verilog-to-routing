@@ -7,7 +7,7 @@ sta
 sta_test
 
 #Generated files
-obj/
+build/
 *.echo
 *.blif
 *.xml

@@ -12,9 +12,4 @@ class Time {
         float time_;
 };
 
-class Slew: public Time {
-    public:
-        explicit Slew(double slew): Time(slew) {}
-};
-
 #endif

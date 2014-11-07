@@ -5,8 +5,9 @@
 #include <cstring>
 #include <string>
 #include <cmath>
+#include <vector>
 
-#include "vpr_timing_graph_parse_common.h"
+#include "vpr_timing_graph_common.h"
 
 int yyerror(const char *msg);
 extern int yylex(void);
@@ -23,6 +24,8 @@ extern char* yytext;
     domain_skew_iodelay_t domainSkewIodelayVal;
     edge_t edgeVal;
     node_arr_req_t nodeArrReqVal;
+    timing_graph_level_t timingGraphLevelVal;
+    node_t nodeVal;
 }
 
 /* Verbose error reporting */
@@ -69,7 +72,6 @@ extern char* yytext;
 %type <intVal> int_number
 
 %type <intVal> num_tnodes
-%type <intVal> tnode
 %type <intVal> node_id
 %type <intVal> num_out_edges
 %type <intVal> num_tnode_levels
@@ -98,6 +100,8 @@ extern char* yytext;
 %type <edgeVal> tedge
 %type <nodeArrReqVal> node_arr_req_time
 %type <floatVal> t_arr_req
+%type <timingGraphLevelVal> timing_graph_level
+%type <nodeVal> tnode
 
 
 /* Top level rule */
@@ -105,18 +109,28 @@ extern char* yytext;
 %%
 
 timing_graph: num_tnodes                    {printf("Timing Graph of %d nodes\n", $1);}
-    | timing_graph TGRAPH_HEADER            {printf("Timing Graph file Header\n");}
-    | timing_graph tnode                    {}
+    | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
+    | timing_graph tnode                    {printf("Node %d, Type %s, ipin %d, iblk %d, domain %d, skew %f, iodelay %f, edges %zu\n", $2.node_id, $2.type, $2.ipin, $2.iblk, $2.domain, $2.skew, $2.iodelay, $2.out_edges->size()); }
     | timing_graph num_tnode_levels         {printf("Timing Graph Levels %d\n", $2);}
-    | timing_graph timing_graph_level       {printf("Adding TG level\n");}
-    | timing_graph NET_DRIVER_TNODE_HEADER  {printf("Net to driver Tnode header\n");}
-    | timing_graph NODE_ARR_REQ_HEADER EOL  {printf("Nodes ARR REQ Header\n");}
-    | timing_graph node_arr_req_time        {printf("Adding Node Arr/Req Times\n");}
+    | timing_graph timing_graph_level EOL   {printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids->size()); }
+    | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
+    | timing_graph NODE_ARR_REQ_HEADER EOL  {/*printf("Nodes ARR REQ Header\n");*/}
+    | timing_graph node_arr_req_time        {/*printf("Node %d Arr_T: %g Req_T: %g\n", $2.node_id, $2.T_arr, $2.T_req);*/}
     | timing_graph EOL                      {}
     ;
 
-tnode: node_id tnode_type pin_blk domain_skew_iodelay num_out_edges { printf("Node %d, Type %s, ipin %d, iblk %d, domain %d, skew %f, iodelay %f, edges %d\n", $1, $2, $3.ipin, $3.iblk, $4.domain, $4.skew, $4.iodelay, $5); }
-    | tnode tedge {/*printf("edge to %d delay %e\n", $2.to_node, $2.delay);*/}
+tnode: node_id tnode_type pin_blk domain_skew_iodelay num_out_edges { 
+                                                                      $$.node_id = $1;
+                                                                      $$.type = $2;
+                                                                      $$.ipin = $3.ipin;
+                                                                      $$.iblk = $3.iblk;
+                                                                      $$.domain = $4.domain;
+                                                                      $$.skew = $4.skew;
+                                                                      $$.iodelay = $4.iodelay;
+                                                                      $$.out_edges = new std::vector<edge_t>();
+                                                                      $$.out_edges->reserve($5);
+                                                                    }
+    | tnode tedge { $$.out_edges->push_back($2); }
     ;
 
 node_id: int_number TAB {$$ = $1;}
@@ -163,16 +177,12 @@ num_tnodes: NUM_TNODES int_number {$$ = $2; }
 num_tnode_levels: NUM_TNODE_LEVELS int_number {$$ = $2; }
     ;
 
-timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {printf("Level: %d, Nodes: %d\n", $2, $4);}
-    | timing_graph_level level_node_list {}
+timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {$$.level = $2; $$.node_ids = new std::vector<int>(); $$.node_ids->reserve($4);}
+    | timing_graph_level NODES {}
+    | timing_graph_level TAB int_number   {$$.node_ids->push_back($3);}
     ;
 
-level_node_list: NODES {}
-    | TAB int_number   {printf("    node: %d\n", $2);}
-    | EOL
-    ;
-
-node_arr_req_time: int_number t_arr_req t_arr_req EOL {$$.node_id = $1; $$.T_arr = $2; $$.T_req = $3; printf("Node %d Arr_T: %e Req_T: %e\n", $1, $2, $3);}
+node_arr_req_time: int_number t_arr_req t_arr_req EOL {$$.node_id = $1; $$.T_arr = $2; $$.T_req = $3;}
 
 t_arr_req: TAB number { $$ = $2; }
     | TAB TAB '-' { $$ = NAN; }
