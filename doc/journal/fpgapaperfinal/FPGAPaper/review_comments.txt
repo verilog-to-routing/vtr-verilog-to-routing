@@ -1,0 +1,245 @@
+
+============================================================================
+FPGA 2014 Reviews for Submission #30
+============================================================================
+
+Title: CAD and Routing Architecture for Interposer-Based Multi-FPGA Systems
+
+Authors: Andre Hahn Pereira and Vaughn Betz
+============================================================================
+                            REVIEWER #1
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+Technical Contribution and Quality (1-6): 5
+                             Originality: 4
+                             Readability: 6
+                               Relevance: 6
+                              Confidence: 6
+                                 Overall: 7
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+This paper describes CAD enhancements for an interposer-based architecture, and
+an architecture study.              The paper is solid architecture work, although
+there are not a lot of very novel ideas here.
+
+As the paper states, Xilinx is using an interposer based architecture, but my
+understanding is that the Xilinx placement tool uses an analytical placement
+algorithm rather than pure simulated annealing.  In that light, can you comment
+on whether it interesting to optimize a simulated annealing-based placement
+algorithm for an interposer-based architecture?  Would it not be more
+interesting to consider a placement algorithm closer to the one Xilinx uses?
+
+The graphs in Figure 4 and 5 seem to show noise.  Can we really conclude that
+C=1 and Term 8 is best from these graphs?  I’m a bit worried about drawing
+conclusions from these graphs.
+
+You consider wires_cut=60% and 80%.  How did you determine exactly which 60% or
+80% of the wires are cut?  I can imagine this detailed routing would make a
+difference, just as the detailed routing architecture in an FPGA matters.
+
+Did you have to do anything with the range windows in VPR?  Should they have
+been adjusted or does it not make any difference?
+
+One of the challenges with this sort of work is that you need to fix the CAD
+and then do architecture experiments with the fixed CAD settings.  OF course, a
+different architecture may lead to different CAD conclusions.  Did you consider
+this?
+
+Did you measure the impact on power?
+
+---------------------------------------------------------------------------
+
+Xilinx uses an analytical placement algorithm? What kind of algorithm is that?
+- Try to read about it
+
+Figures 4 and 5 seem to have too much noise, probably inconclusive data
+
+Should we explain in more detail how are the removed wires selected?
+
+Range window? What is that?
+
+Experiments with other kinds of architectures
+
+No measurements of the impact on power
+
+============================================================================
+                            REVIEWER #2
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+Technical Contribution and Quality (1-6): 4
+                             Originality: 3
+                             Readability: 5
+                               Relevance: 6
+                              Confidence: 6
+                                 Overall: 6
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+This paper investigates multi-FPGA systems implemented 2.5D, i.e. in the style
+of the recent Virtex 7 larger devices.
+
+This is rather interesting, but it really just duplicates the study that would
+have been done in even more detail inside Xilinx, and also that could be done
+externally using Xilinx software instead of VPR.    Even the base data on the
+interposer delay is taken from a Xilinx publication.
+
+Though the paper touches on the yield benefits, which are clear, there is no
+model for the interposer cost that might yield insigit into the complete
+picture.  There is also no contrast to row/col redundancy of Altera devices.
+
+Why is assembly yield high?  Packaged yield and test are the some of the
+barriers to 2.5 and 3D commonly discussed.  I’m not arguing against 2.5D, but
+it’s neither free nor easy to implement.
+
+I’m not sure I agree with the conclusion.  Though it may be true, for very
+large FPGAs targeted by this kind of approach, it would be common to manually
+define which parts of the design are in different partitions.  Maybe it’s a
+bigger issue in the separate I/O vs. fabric chips.   I don’t’ disagree with
+the conclusion here either, just not sure that implementing stereovision across
+several artificially small die on an interposer implies that the statement
+holds for the largest V7 which is 2M LEs across 4 500K LE die.
+
+---------------------------------------------------------------------------
+
+Duplicates the work that could have been done by Xilinx. But have they released
+any detailed info about that?
+
+No model for the interposer cost. 2.5D is not easy to implement
+
+In large designs people might want to manually assign pieces to different
+partitions. But Xilinx says Vivado can take care of that automatically.
+
+Scale comparison, are results for small circuits valid for very large ones?
+
+============================================================================
+                            REVIEWER #3
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+Technical Contribution and Quality (1-6): 5
+                             Originality: 6
+                             Readability: 6
+                               Relevance: 5
+                              Confidence: 6
+                                 Overall: 8
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+Well written paper on an current relevant topic.
+
+The methodology is good and the results are solid,
+albeit not surprising.              A good contribution and
+a strong candidate for a full paper.  My only criticism
+is the following.  Given that congestion at the interface
+between die is highly dependent on the target circuit,
+8 benchmark circuits seems like a small number.
+
+============================================================================
+                            REVIEWER #4
+============================================================================
+
+
+---------------------------------------------------------------------------
+Reviewer's Scores
+---------------------------------------------------------------------------
+
+Technical Contribution and Quality (1-6): 4
+                             Originality: 5
+                             Readability: 5
+                               Relevance: 6
+                              Confidence: 6
+                                 Overall: 5
+
+
+---------------------------------------------------------------------------
+Comments
+---------------------------------------------------------------------------
+
+This paper models a Xilinx 2.5D interposer FPGA in VPR and comes to the
+conclusion that the interposer adds delay to benchmarks. It also comes to
+a false conclusion that interposers increase routing channel widths (see
+below).
+
+The work is quite original and appears to be the first architecture study
+to evaluate the effect of interposers. Given that we are likely to see a
+lot more interposers in the future, this is an important area. Unfortunately,
+the scope of the study was rather limited, evaluating only simple cuts like
+the current Xilinx device (limited to 1, 2 or 3 horizontal cuts to support
+2, 3 or 4 dies).
+
+I suppose it is good that the results are all predictable, but unfortunately
+that also makes the paper a bit boring.
+
+The biggest flaw in the work is in the way the # of cuts is measured and
+reported (as a percentage), which leads to a false conclusion that interposer
+systems with a large cut fraction require increased channel widths. If you look
+at the data, you realize that each circuit has a certain wire bandwidth
+requirement between dies due to the way placement is partitioning the logic.
+When a large fraction of the vertical wires are cut, this leads to fewer logic
+wires (lower bandwidth) on the interposer connecting the dies. Of course, to
+compensate for this lack of bandwidth, the router will bump up the total
+channel width until the bandwidth across the interposer is restored. To see
+this, examine Figure 9 where minW=100 up until 50% of the wires are cut. This
+means that 50 wires are local on-die only, and 50 wires cross the interposer to
+the next die. If you continue to follow the curve, say to 80% cut, it appears
+the channel width requirement jumps to minW=250. However, this is just the
+router trying to restore 50 wires across the cutline: 20% * 250 = 50 wires.
+The same is true at 60% (40%*130=52 wires) and 70% (30%*160=48 wires).
+
+Instead, the work should measure the actual bandwidth of the cut, and compare
+this to the bandwidth demand of the partitioned circuit. There is no need to
+increase the on-die channel width to 250, as long as the die-to-die bandwidth
+remains at 50.
+
+Other concerns: Fig 4, 5 appear to be very noisy, making it hard to agree with
+the choice of C. The work uses the smallest square array to fit a circuit,
+which seems to be a bad assumption which artificially increases routing
+congestion.  It's not clear, but is critical path being measured at minW+20%?
+There is a small reversal of ranking in Figute 12 at 70%, is this noise? Tables
+4 to 13 appear to be space fillers rather than useful data. This work should
+really look at the effect of high-level partitioning across dies vs the purely
+placement-oriented approach taken.
+
+Figure 11 is the most meaningful result, but almost predictable. It would be
+great to delve into the data more here -- how many cut crossings are made on
+the critical paths? Does a critical path bounce back and forth across a
+cutline?  Why? Would high-level partitioning help?
+
+The paper assumes a periphery I/O model to the interposer, where signals must
+travel to the very edge of the die, then to the surface, then back to a
+microbump.  This adds unnecessary delay. Why not an area I/O model, where the
+signal escapes to the surface right away and finds a nearby microbump? 
+
+----------------------------------------------------------------------------
+
+Tests limited to Xilinx's current parameters
+
+Channel width not the most relevant criteria, number of wires crossing is
+almost always constant. Suggestion of measuring the actual bandwidth of the
+cut.
+
+TODO: finish analysis of this review

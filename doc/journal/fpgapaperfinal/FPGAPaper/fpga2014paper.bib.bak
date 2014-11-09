@@ -1,0 +1,101 @@
+@inproceedings{vtr2012,
+  title={The {VTR} {P}roject: {A}rchitecture and {CAD} for {FPGA}s from {V}erilog to {R}outing},
+  author={Rose, Jonathan and Luu, Jason and Yu, Chi Wai and Densmore, Opal and Goeders, Jeff and Somerville, Andrew and Kent, Kenneth B. and Jamieson, Peter, and Anderson, Jason},
+  booktitle={20th ACM/SIGDA International Symposium on Field-Programmable Gate Arrays},
+  pages={77--86},
+  year={2012},
+  organization={ACM}
+}
+
+@INPROCEEDINGS{3dfpga1995,
+	author={Alexander, M.J. and Cohoon, James P. and Colflesh, J.L. and Karro, J. and Robins, G.},
+	booktitle={ASIC Conference and Exhibit, 1995., IEEE International},
+	title={Three-dimensional field-programmable gate arrays},
+	year={1995},
+	pages={253-256},
+	doi={10.1109/ASIC.1995.580726},
+	ISSN={1063-0988}
+}
+
+@article{3dfpga,
+	author={Mingjie Lin and El Gamal, A. and Yi-Chang Lu and Simon Wong},
+	journal={Computer-Aided Design of Integrated Circuits and Systems, IEEE Transactions on},
+	title={Performance {B}enefits of {M}onolithically {S}tacked 3-{D} {FPGA}},
+	year={2007},
+	volume={26},
+	number={2},
+	pages={216-229},
+	doi={10.1109/TCAD.2006.887920},
+	ISSN={0278-0070}
+}
+
+@inproceedings{xilinxTSV,
+	author={Chaware, R. and Nagarajan, K. and Ramalingam, S.},
+	booktitle={Electronic Components and Technology Conference (ECTC)},
+	title={Assembly and reliability challenges in 3{D} integration of 28nm {FPGA} die on a large high density 65nm passive interposer},
+	year={2012},
+	pages={279-283},
+	doi={10.1109/ECTC.2012.6248841},
+	ISSN={0569-5503}
+}
+
+@inproceedings{betz1997vpr,
+  title={{VPR}: A new packing, placement and routing tool for {FPGA} research},
+  author={Betz, Vaughn and Rose, Jonathan},
+  booktitle={Field-Programmable Logic and Applications},
+  pages={213--222},
+  year={1997},
+  organization={Springer}
+}
+
+@inproceedings{timing2000,
+ author = {Marquardt, Alexander and Betz, Vaughn and Rose, Jonathan},
+ title = {{T}iming-{D}riven {P}lacement for {FPGA}s},
+ booktitle = {ACM/SIGDA eighth international symposium on Field Programmable Gate Arrays},
+ series = {FPGA '00},
+ year = {2000},
+ isbn = {1-58113-193-3},
+ location = {Monterey, California, USA},
+ pages = {203--213},
+ numpages = {11},
+ url = {http://doi.acm.org/10.1145/329166.329208},
+ doi = {10.1145/329166.329208},
+ acmid = {329208},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@article{xilinxWP,
+ title = {{X}ilinx {S}tacked {S}ilicon {I}nterconnect {T}echnology {D}elivers {B}reakthrough {FPGA} {C}apacity, {B}andwidth, and {P}ower {E}fficiency},
+ year = {2012},
+ journal = {Xilinx, www.xilinx.com},
+ url = {www.xilinx.com},
+}
+
+@inproceedings{icann,
+ author = {Cheng, Chih-Liang Eric},
+ title = {RISA: accurate and efficient placement routability modeling},
+ booktitle = {IEEE/ACM international conference on Computer-aided design},
+ series = {ICCAD '94},
+ year = {1994},
+ isbn = {0-89791-690-5},
+ location = {San Jose, California, USA},
+ pages = {690--695},
+ numpages = {6},
+ url = {http://dl.acm.org/citation.cfm?id=191326.191632},
+ acmid = {191632},
+ publisher = {IEEE Computer Society Press},
+ address = {Los Alamitos, CA, USA},
+}
+
+@ARTICLE{yieldmodel,
+author={Cunningham, J.A.},
+journal={Semiconductor Manufacturing, {IEEE} {T}ransactions on},
+title={The use and evaluation of yield models in integrated circuit manufacturing},
+year={1990},
+volume={3},
+number={2},
+pages={60-71},
+doi={10.1109/66.53188},
+ISSN={0894-6507},
+}

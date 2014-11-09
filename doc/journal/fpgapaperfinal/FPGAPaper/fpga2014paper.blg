@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2012/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: fpga2014paper.aux
+The style file: abbrv.bst
+Database file #1: fpga2014paper.bib
+You've used 14 entries,
+            2118 wiz_defined-function locations,
+            579 strings with 6158 characters,
+and the built_in function-call counts, 5702 in all, are:
+= -- 555
+> -- 257
+< -- 8
++ -- 103
+- -- 88
+* -- 369
+:= -- 885
+add.period$ -- 43
+call.type$ -- 14
+change.case$ -- 86
+chr.to.int$ -- 0
+cite$ -- 14
+duplicate$ -- 245
+empty$ -- 454
+format.name$ -- 88
+if$ -- 1254
+int.to.chr$ -- 0
+int.to.str$ -- 14
+missing$ -- 14
+newline$ -- 73
+num.names$ -- 28
+pop$ -- 104
+preamble$ -- 1
+purify$ -- 72
+quote$ -- 0
+skip$ -- 197
+stack$ -- 0
+substring$ -- 358
+swap$ -- 92
+text.length$ -- 8
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 56
+warning$ -- 0
+while$ -- 52
+width$ -- 16
+write$ -- 154
