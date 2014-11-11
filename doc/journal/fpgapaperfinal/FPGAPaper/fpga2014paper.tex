@@ -260,7 +260,7 @@ Second, knowing the location of the cutlines, the placer uses the \textit{(x,y)}
 
 Third, the Routing Resource Graph (\textit{rrgraph}) must be modified. The rrgraph is the data structure that defines all the available routing wires and switches in the FPGA, as well as the delay of each. Given a suitable rrgraph, the VPR router can implement circuits in the desired FPGA, and the VPR timing analyzer can estimate their delay. In the experiments below, we use an architecture that has only unidirectional wires~\cite{unidirectional}, as these are the dominant routing architecture in modern FPGAs. Such wires can only be driven at their beginning. 
 
-Previous work by Andre et al ~\cite{hahn2014cad} modified the rrgraph by directly removing \textit{\% wires cut} percent of edges from the graph at nodes located at the cutline and increased the switch delay of the remaining edges of the nodes at the cutline. While this is a reasonable method to model such architectures, it makes it difficult to experiment with different routing-interposer interfaces such as placing input muxes for interposer wires. Therefore, we modify the rrgraph differently to more accurately reflect the interposer layer:
+Previous work by Pereira et al ~\cite{hahn2014cad} modified the rrgraph by directly removing \textit{\% wires cut} percent of edges from the graph at nodes located at the cutline and increased the switch delay of the remaining edges of the nodes at the cutline. While this is a reasonable method to model such architectures, it makes it difficult to experiment with different routing-interposer interfaces such as placing input muxes for interposer wires. Therefore, we modify the rrgraph differently to more accurately reflect the interposer layer:
 
 For every vertical routing wire in the channel, we add a new routing node (``\textit{interposer node}") into the rrgraph. Then, we determine routing nodes (e.g. vertical routing wires) that cross a cutline in the rrgraph, and we replace them with 2 routing nodes: one that is above the cutline and one that is below the cutline. We properly transfer fan-ins and fan-outs of the original node onto the two newly created nodes and we connect the two nodes using an interposer node. Finally, we remove \textit{all} edges from \textit{\%wires cut} percent of interposer nodes and increase the switch delay of output edges of the remaining interposer nodes by \textit{increased delay}. Figure~\ref{fig:rrgraph_ops} shows an example of these operations.
 
@@ -288,7 +288,7 @@ As illustrated in Figure~\ref{fig:vpr_interposer_gui}, no vertical routing wires
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=\textwidth]{vpr_gui.eps}
-\caption{VPR Graphical User Interface. Left:Full chip view. Right:Connectivity at the cutline. Interposer wires are drawn in red. Due to limited number of interposer wires, some vertical routing wires are not able to connect to any interposer wire and are left dangling. Routing wires do not crosses the cutline.}
+\caption{VPR Graphical User Interface. Left:Full chip view. Right:Connectivity at the cutline. Interposer wires are drawn in red. Due to limited capacity of the interposer, some vertical routing wires are left dangling. Routing wires do not cross the cutline unless via a connection to an interposer wire.}
 \label{fig:vpr_interposer_gui}
 \end{figure*}
 
@@ -341,7 +341,7 @@ VPR's wiring cost also considers the FPGA to be homogeneous, and uses only the n
 wiring\_cost = wiring\_cost_{orig} + cut\_cost
 \end{equation}
 
-In~\cite{hahn2014cad}, Andre et al. tested several different \textit{cut\_cost} formulations, as well as different weighting for each. They found that the following \textit{cut\_cost} results in the best quality of results in terms of minimum routable channel width and critical path delay.
+In~\cite{hahn2014cad}, Pereira et al tested several different \textit{cut\_cost} formulations, as well as different weighting for each. They found that the following \textit{cut\_cost} results in the best quality of results in terms of minimum routable channel width and critical path delay.
 
 \begin{equation} \label{eq:cost2}
 cut\_cost = \sum_{n=1}^{N_{nets}} C' \times bbHeight(i) \times times\_crossed(n)
