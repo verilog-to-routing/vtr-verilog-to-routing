@@ -35,6 +35,12 @@ J.~Cunningham.
   Manufacturing}.
 \newblock {\em IEEE Trans. on Semiconductor Manufacturing}, 3(2):60--71, 1990.
 
+\bibitem{hahn2014cad}
+A.~Hahn~Pereira and V.~Betz.
+\newblock Cad and routing architecture for interposer-based multi-fpga systems.
+\newblock In {\em Proceedings of the 2014 ACM/SIGDA international symposium on
+  Field-programmable gate arrays}, pages 75--84. ACM, 2014.
+
 \bibitem{hMetis}
 G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar.
 \newblock {Multilevel Hypergraph Partitioning: Applications in VLSI Domain}.
