@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "TimingGraph.hpp"
+#include "SerialTimingAnalyzer.hpp"
 
 extern int yyparse(TimingGraph& tg);
 extern FILE *yyin;
@@ -25,6 +26,12 @@ int main(int argc, char** argv) {
         printf("Could not open file %s\n", argv[1]);
         return 1;
     }
+
+    SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
+
+    TimingAnalyzer& timing_analyzer = serial_analyzer;
+
+    timing_analyzer.update_timing(timing_graph);
 
     timing_graph.print();
 

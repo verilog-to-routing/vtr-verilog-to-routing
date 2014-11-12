@@ -7,10 +7,11 @@
 #include <cmath>
 #include <vector>
 
-#include "vpr_timing_graph_common.h"
+#include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
 #include "TimingNode.hpp"
 #include "TimingEdge.hpp"
+#include "Time.hpp"
 
 int yyerror(const TimingGraph& tg, const char *msg);
 extern int yylex(void);
@@ -29,6 +30,7 @@ extern char* yytext;
     node_arr_req_t nodeArrReqVal;
     timing_graph_level_t timingGraphLevelVal;
     node_t nodeVal;
+    TN_Type nodeTypeVal;
 }
 
 /* Verbose error reporting */
@@ -80,7 +82,7 @@ extern char* yytext;
 %type <intVal> num_out_edges
 %type <intVal> num_tnode_levels
 
-%type <strVal> tnode_type
+%type <nodeTypeVal> tnode_type
 %type <strVal> TN_INPAD_SOURCE       
 %type <strVal> TN_INPAD_OPIN         
 %type <strVal> TN_OUTPAD_IPIN        
@@ -115,12 +117,12 @@ extern char* yytext;
 timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\n", $1);*/}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
-                                                TimingNode node;
+                                                TimingNode node($2.type);
                                                 for(auto& edge_val : *($2.out_edges)) {
                                                     TimingEdge edge;
 
                                                     edge.set_to_node(edge_val.to_node);
-                                                    edge.set_delay(edge_val.delay);
+                                                    edge.set_delay(Time(edge_val.delay));
 
                                                     node.add_out_edge(edge);
                                                 }
@@ -179,23 +181,23 @@ tedge: TAB int_number TAB number EOL { $$.to_node = $2; $$.delay = $4; }
     | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB float_number EOL { $$.to_node = $11; $$.delay = $13; }
     ;
 
-tnode_type: TN_INPAD_SOURCE TAB     { $$ = strdup("TN_INPAD_SOURCE"); } 
-    | TN_INPAD_OPIN TAB             { $$ = strdup("TN_INPAD_OPIN"); } 
-    | TN_OUTPAD_IPIN TAB            { $$ = strdup("TN_OUTPAD_IPIN"); } 
-    | TN_OUTPAD_SINK TAB            { $$ = strdup("TN_OUTPAD_SINK"); } 
-    | TN_CB_IPIN TAB                { $$ = strdup("TN_CB_IPIN"); } 
-    | TN_CB_OPIN TAB                { $$ = strdup("TN_CB_OPIN"); } 
-    | TN_INTERMEDIATE_NODE TAB      { $$ = strdup("TN_INTERMEDIATE_NODE"); } 
-    | TN_PRIMITIVE_IPIN TAB         { $$ = strdup("TN_PRIMITIVE_IPIN"); } 
-    | TN_PRIMITIVE_OPIN TAB         { $$ = strdup("TN_PRIMITIVE_OPIN"); } 
-    | TN_FF_IPIN TAB                { $$ = strdup("TN_FF_IPIN"); } 
-    | TN_FF_OPIN TAB                { $$ = strdup("TN_FF_OPIN"); } 
-    | TN_FF_SINK TAB                { $$ = strdup("TN_FF_SINK"); } 
-    | TN_FF_SOURCE TAB              { $$ = strdup("TN_FF_SOURCE"); } 
-    | TN_FF_CLOCK TAB               { $$ = strdup("TN_FF_CLOCK"); } 
-    | TN_CLOCK_SOURCE TAB           { $$ = strdup("TN_CLOCK_SOURCE"); } 
-    | TN_CLOCK_OPIN TAB             { $$ = strdup("TN_CLOCK_OPIN"); } 
-    | TN_CONSTANT_GEN_SOURCE TAB    { $$ = strdup("TN_CONSTANT_GEN_SOURCE"); }
+tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; } 
+    | TN_INPAD_OPIN TAB             { $$ = TN_Type::INPAD_OPIN; } 
+    | TN_OUTPAD_IPIN TAB            { $$ = TN_Type::OUTPAD_IPIN; } 
+    | TN_OUTPAD_SINK TAB            { $$ = TN_Type::OUTPAD_SINK; } 
+    | TN_CB_IPIN TAB                { $$ = TN_Type::UNKOWN; } 
+    | TN_CB_OPIN TAB                { $$ = TN_Type::UNKOWN; } 
+    | TN_INTERMEDIATE_NODE TAB      { $$ = TN_Type::UNKOWN; } 
+    | TN_PRIMITIVE_IPIN TAB         { $$ = TN_Type::PRIMITIVE_IPIN; } 
+    | TN_PRIMITIVE_OPIN TAB         { $$ = TN_Type::PRIMITIVE_OPIN; } 
+    | TN_FF_IPIN TAB                { $$ = TN_Type::FF_IPIN; } 
+    | TN_FF_OPIN TAB                { $$ = TN_Type::FF_OPIN; } 
+    | TN_FF_SINK TAB                { $$ = TN_Type::FF_SINK; } 
+    | TN_FF_SOURCE TAB              { $$ = TN_Type::FF_SOURCE; } 
+    | TN_FF_CLOCK TAB               { $$ = TN_Type::FF_CLOCK; } 
+    | TN_CLOCK_SOURCE TAB           { $$ = TN_Type::CLOCK_SOURCE; } 
+    | TN_CLOCK_OPIN TAB             { $$ = TN_Type::CLOCK_OPIN; } 
+    | TN_CONSTANT_GEN_SOURCE TAB    { $$ = TN_Type::CONSTANT_GEN_SOURCE; }
     ;
 
 num_tnodes: NUM_TNODES int_number {$$ = $2; }

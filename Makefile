@@ -37,7 +37,7 @@ STATIC_LIB=libsta.a
 SRC_DIR = src
 BUILD_DIR = build
 
-DIRS = $(SRC_DIR)/timing_graph $(SRC_DIR)/parsers $(SRC_DIR)/base
+DIRS = $(SRC_DIR)/timing_graph $(SRC_DIR)/parsers $(SRC_DIR)/base $(SRC_DIR)/timing_analyzer
 
 #Flags
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings

@@ -30,9 +30,11 @@ typedef struct timing_graph_level_s {
     std::vector<int>* node_ids;
 } timing_graph_level_t;
 
+enum class TN_Type; //Forward declaration
+
 typedef struct node_s {
     int node_id;
-    char* type;
+    TN_Type type;
     int ipin;
     int iblk;
     int domain;
@@ -40,4 +42,5 @@ typedef struct node_s {
     float iodelay;
     std::vector<edge_t>* out_edges;
 } node_t;
+
 #endif
