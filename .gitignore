@@ -1,0 +1,52 @@
+#
+# Project Related Files
+#
+
+#Executables
+vqm2blif.exe
+
+#Generated files
+EXE/OBJ
+core
+printhandlerdemo
+pcredemo
+read_arch
+
+#Flex & Bison
+lex.yy.c
+*.tab.c
+*.tab.h
+
+#ctags
+tags
+
+#
+# VIM related files
+#
+*.s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Dependency files
+*.d
+
+#
+# Python temp files
+#
+*.pyc
