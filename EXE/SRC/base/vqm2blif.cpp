@@ -295,7 +295,12 @@ int main(int argc, char* argv[])
     //        to derive the port directionality of black box primitives.  This is 
     //        required when decomposing INOUT pins into input and output pins
 	cout << "\n>> Parsing architecture file " << arch_file << endl ;
-	XmlReadArch( arch_file.c_str(), FALSE, &arch, &types, &numTypes );	//Architecture (XML) Parser call
+    try {
+        XmlReadArch( arch_file.c_str(), FALSE, &arch, &types, &numTypes );	//Architecture (XML) Parser call
+    } catch (t_vpr_error* err) {
+        cout << "Error at line " << err->line_num << " in " << err->file_name << ": " << err->message << endl;
+        exit(1);
+    }
 	assert ((types > 0) && (numTypes > 0));
 	assert (arch.models != NULL);
 			
