@@ -89,6 +89,6 @@ extern char*		yytext;
 extern int			yylineno;
 extern FILE			*yyin;
 
-int			yyerror(t_parse_info* parse_info, char *s);
+int			yyerror(t_parse_info* parse_info, const char *s);
 extern void 			yyrestart(FILE *input_file);
 #endif

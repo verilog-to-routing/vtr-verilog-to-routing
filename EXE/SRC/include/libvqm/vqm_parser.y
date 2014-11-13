@@ -40,6 +40,7 @@ extern int yylex(void);
 	char *string;
 }
 %parse-param {t_parse_info* parse_info}
+%error-verbose
 /********************************************************/
 /**** DEFINE TOKENS *************************************/
 /********************************************************/
@@ -76,7 +77,6 @@ extern int yylex(void);
 %%
 
 design:		modules {
-                        //printf("\tPass Type: %d\n", (int) parse_info->pass_type);
                     }
 			;
 
@@ -730,7 +730,7 @@ PinType:	TOKEN_INPUT	{ $$ = $1; }
 /********************************************************/
 
 
-int yyerror(t_parse_info* parse_info, char *s)
+int yyerror(t_parse_info* parse_info, const char *s)
 {
 	sprintf(most_recent_error, "%s occured at line %i: %s\r\n", s, yylineno, yytext);
 	return 0;
