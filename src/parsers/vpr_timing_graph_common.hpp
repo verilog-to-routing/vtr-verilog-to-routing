@@ -3,6 +3,12 @@
 
 #include <vector>
 
+
+class TimingGraph; //Forward Declaration
+
+extern int yyparse(TimingGraph& tg);
+extern FILE *yyin;
+
 typedef struct ipin_iblk_s {
     int ipin;
     int iblk;

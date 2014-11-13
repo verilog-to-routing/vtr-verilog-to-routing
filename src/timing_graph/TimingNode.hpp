@@ -53,6 +53,7 @@ class TimingNode {
     private:
         Time T_arr_; //Data arrival time at this node
         Time T_req_; //Data required arrival time at this node
+        Time T_clock_delay_; //Clock arrival time at this node, only valid for FF types
 
         TN_Type type_;
 

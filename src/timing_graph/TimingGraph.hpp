@@ -41,7 +41,7 @@ class TimingGraph {
                 std::cout << "Node: " << std::setw(4) << i;
                 std::cout << " T_arr: " << std::setw(num_width) << nodes_[i].arrival_time();
                 std::cout << " T_req: " << std::setw(num_width) << nodes_[i].required_time();
-                std::cout << " Type : " << nodes_[i].type();
+                std::cout << " Type: " << nodes_[i].type();
                 std::cout << std::endl;
                 //nodes_[i].print();
             }

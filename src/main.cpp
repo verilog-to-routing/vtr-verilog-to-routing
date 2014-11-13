@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
-
-extern int yyparse(TimingGraph& tg);
-extern FILE *yyin;
+#include "vpr_timing_graph_common.hpp"
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -31,7 +29,7 @@ int main(int argc, char** argv) {
 
     TimingAnalyzer& timing_analyzer = serial_analyzer;
 
-    timing_analyzer.update_timing(timing_graph);
+    timing_analyzer.calculate_timing(timing_graph);
 
     timing_graph.print();
 
