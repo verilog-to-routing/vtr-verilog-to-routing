@@ -21,6 +21,9 @@ massif.out*
 #gprof
 gmon.out
 
+#valgrind
+callgrind*
+
 #ctags
 tags
 

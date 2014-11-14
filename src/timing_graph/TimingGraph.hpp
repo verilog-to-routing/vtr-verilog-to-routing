@@ -28,14 +28,16 @@ class TimingGraph {
 
         void print() {
             //Save io state
-            std::ios_base::fmtflags saved_flags = std::cout.flags();
-            std::streamsize prec = std::cout.precision();
-            std::streamsize width = std::cout.width();
-
-            std::streamsize num_width = 10;
-            std::streamsize num_prec = 3;
-            std::cout.precision(num_prec);
-            std::cout << std::scientific;
+/*
+ *            std::ios_base::fmtflags saved_flags = std::cout.flags();
+ *            std::streamsize prec = std::cout.precision();
+ *            std::streamsize width = std::cout.width();
+ *
+ *            std::streamsize num_width = 10;
+ *            std::streamsize num_prec = 3;
+ *            std::cout.precision(num_prec);
+ *            std::cout << std::scientific;
+ */
 
             /*
              *for(decltype(nodes_.size()) i = 0; i < nodes_.size(); i++) {
@@ -61,9 +63,11 @@ class TimingGraph {
  *            }
  */
             //Reset I/O format
-            std::cout.flags(saved_flags);
-            std::cout.precision(prec);
-            std::cout.width(width);
+            /*
+             *std::cout.flags(saved_flags);
+             *std::cout.precision(prec);
+             *std::cout.width(width);
+             */
         }
 
     private:
