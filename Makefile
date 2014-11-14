@@ -46,7 +46,7 @@ DEP_FLAGS = -MMD -MP
 
 DEBUG_FLAGS = -g -ggdb3 -g3 -O0 -fno-inline
 
-OPT_FLAGS = -O3
+OPT_FLAGS = -g -O3
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
 	DEBUG_OPT_FLAGS := $(OPT_FLAGS)
@@ -54,7 +54,13 @@ else
 	DEBUG_OPT_FLAGS := $(DEBUG_FLAGS)
 endif
 
-CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(INC_FLAGS) --std=c++11
+ifneq (,$(findstring yes, $(PROFILE)))
+	PROFILE_FLAGS := -pg
+else
+	PROFILE_FLAGS := 
+endif
+
+CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(PROFILE_FLAGS) $(INC_FLAGS) --std=c++11
 
 #Objects
 MAIN_SRC = $(SRC_DIR)/main.cpp

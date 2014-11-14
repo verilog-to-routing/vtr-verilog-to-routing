@@ -6,8 +6,6 @@
 
 class TimingGraph; //Forward Declaration
 
-extern int yyparse(TimingGraph& tg);
-extern FILE *yyin;
 
 typedef struct ipin_iblk_s {
     int ipin;
@@ -48,5 +46,9 @@ typedef struct node_s {
     float iodelay;
     std::vector<edge_t>* out_edges;
 } node_t;
+
+
+extern int yyparse(TimingGraph& tg, std::vector<node_arr_req_t>& arr_req_times);
+extern FILE *yyin;
 
 #endif
