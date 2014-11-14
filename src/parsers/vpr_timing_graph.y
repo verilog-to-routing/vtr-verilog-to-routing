@@ -36,7 +36,8 @@ extern char* yytext;
 
 /* Verbose error reporting */
 %error-verbose
-%parse-param{TimingGraph& timing_graph} {std::vector<node_arr_req_t>& arr_req_times}
+%parse-param{TimingGraph& timing_graph}
+%parse-param{std::vector<node_arr_req_t>& arr_req_times}
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
