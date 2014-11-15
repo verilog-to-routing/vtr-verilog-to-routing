@@ -6,11 +6,39 @@
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
 void ParallelTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+    create_locks(timing_graph);
 #pragma omp parallel
     {
+
+        //TODO: Lock init and pre traversal can occur in parallel
+        init_locks();
         pre_traversal(timing_graph);
+
+        //TODO: While forward and backward tranversals work on the same edges
+        //and nodes, they work on independant data sets (i.e. arrival time for forward and required time for backward)
+        //so they can occur in parallel
         forward_traversal(timing_graph);
         backward_traversal(timing_graph);
+
+        cleanup_locks();
+    }
+}
+
+void ParallelTimingAnalyzer::create_locks(TimingGraph& tg) {
+    node_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
+}
+
+void ParallelTimingAnalyzer::init_locks() {
+#pragma omp for
+    for(int i = 0; i < (int) node_locks_.size(); i++) {
+        omp_init_lock(&node_locks_[i]);
+    }
+}
+
+void ParallelTimingAnalyzer::cleanup_locks() {
+#pragma omp for
+    for(int i = 0; i < (int) node_locks_.size(); i++) {
+        omp_destroy_lock(&node_locks_[i]);
     }
 }
 
@@ -86,6 +114,11 @@ void ParallelTimingAnalyzer::pre_traverse_node(TimingGraph& tg, TimingGraph::Nod
 }
 
 void ParallelTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
+    //From node was updated by the previous level (i.e. is read-only) so we don't need to synchronize
+    //access to it.
+    //
+    //However, multiple edges may connect to to_node, so we multiple threads may try to update it.
+    //To avoid a race condition we must synchronize access to it.
     const TimingNode& from_node = tg.node(node_id);
     float from_arrival_time = from_node.arrival_time().value();
 
@@ -99,7 +132,8 @@ void ParallelTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph:
 
         {
             //Lock the to_node
-            to_node.lock();
+            //to_node.lock();
+            omp_set_lock(&node_locks_[to_node_id]);
 
             //TODO: Generalize this to support a more general Time class (e.g. vector of timing corners)
             float orig_arrival_time = to_node.arrival_time().value();
@@ -114,13 +148,17 @@ void ParallelTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph:
             to_node.set_arrival_time(Time(new_arrival_time));
 
             //Release the lock
-            to_node.unlock();
+            //to_node.unlock();
+            omp_unset_lock(&node_locks_[to_node_id]);
         }
     }
-
 }
 
 void ParallelTimingAnalyzer::backward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
+    //Only one thread ever updates node so we don't need to synchronize access to it
+    //
+    //The downstream (to_node) was updated on the previous level (i.e. is read-only), 
+    //so we don't need to worry about synchronizing access to it.
     TimingNode& node = tg.node(node_id);
     float required_time = node.required_time().value();
 

@@ -31,6 +31,11 @@ class ParallelTimingAnalyzer : public SerialTimingAnalyzer {
         void pre_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id, int level_idx);
         void forward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id);
         void backward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id);
+
+        void create_locks(TimingGraph& tg);
+        void init_locks();
+        void cleanup_locks();
+        std::vector<omp_lock_t> node_locks_;
 };
 
 #endif
