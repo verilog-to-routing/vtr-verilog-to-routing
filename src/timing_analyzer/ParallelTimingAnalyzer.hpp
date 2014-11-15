@@ -1,9 +1,12 @@
 #ifndef ParallelTimingAnalyzer_hpp
 #define ParallelTimingAnalyzer_hpp
-#include "TimingGraph.hpp"
-#include "TimingAnalyzer.hpp"
+#include <omp.h>
 
-class ParallelTimingAnalyzer : public TimingAnalyzer {
+#include "TimingGraph.hpp"
+#include "SerialTimingAnalyzer.hpp"
+
+
+class ParallelTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph);
 

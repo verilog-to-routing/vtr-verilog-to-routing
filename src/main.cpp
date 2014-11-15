@@ -6,7 +6,8 @@
 #include "ParallelTimingAnalyzer.hpp"
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_RUNS 10
+#define NUM_SERIAL_RUNS 3
+#define NUM_PARALLEL_RUNS 10
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
 
@@ -58,66 +59,84 @@ int main(int argc, char** argv) {
     std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
     std::cout << std::endl;
 
-    float serial_analysis_time_avg;
+    float serial_analysis_time = 0.;
+    float serial_analysis_time_avg = 0.;
+    float serial_verify_time = 0.;
     {
-        std::cout << "Running Serial Analysis " << NUM_RUNS << " times" << std::endl;
+        std::cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << std::endl;
         TimingAnalyzer& timing_analyzer = serial_analyzer;
 
-        clock_gettime(CLOCK_MONOTONIC, &analyze_start);
         
-        for(int i = 0; i < NUM_RUNS; i++) {
+        for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
+            //Analyze
+            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
+
             timing_analyzer.calculate_timing(timing_graph);
+
+            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
+            serial_analysis_time += time_sec(analyze_start, analyze_end);
+
+            std::cout << ".";
+            std::cout.flush();
+
+            //Verify
+            clock_gettime(CLOCK_MONOTONIC, &verify_start);
+
+            verify_timing_graph(timing_graph, expected_arr_req_times);
+
+            clock_gettime(CLOCK_MONOTONIC, &verify_end);
+            serial_verify_time += time_sec(verify_start, verify_end);
+
+            //Reset
+            timing_analyzer.reset_timing(timing_graph);
         }
+        serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
 
-        clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-
-        float serial_analysis_time = time_sec(analyze_start, analyze_end);
-        serial_analysis_time_avg = serial_analysis_time / NUM_RUNS;
+        std::cout << std::endl;
         std::cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << "s" << std::endl;
+        std::cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
+        std::cout << std::endl;
     }
 
+    float parallel_analysis_time = 0;
+    float parallel_analysis_time_avg = 0;
+    float parallel_verify_time = 0;
     {
-        clock_gettime(CLOCK_MONOTONIC, &verify_start);
-
-        timing_graph.print();
-
-        verify_timing_graph(timing_graph, expected_arr_req_times);
-
-        clock_gettime(CLOCK_MONOTONIC, &verify_end);
-    }
-    std::cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
-    std::cout << std::endl;
-
-    float parallel_analysis_time_avg;
-    {
-        std::cout << "Running Parrallel Analysis " << NUM_RUNS << " times" << std::endl;
+        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
         TimingAnalyzer& timing_analyzer = parallel_analyzer;
 
-        clock_gettime(CLOCK_MONOTONIC, &analyze_start);
         
-        for(int i = 0; i < NUM_RUNS; i++) {
+        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
+            //Analyze
+            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
+
             timing_analyzer.calculate_timing(timing_graph);
+
+            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
+            parallel_analysis_time += time_sec(analyze_start, analyze_end);
+
+            std::cout << ".";
+            std::cout.flush();
+
+            //Verify
+            clock_gettime(CLOCK_MONOTONIC, &verify_start);
+
+            verify_timing_graph(timing_graph, expected_arr_req_times);
+
+            clock_gettime(CLOCK_MONOTONIC, &verify_end);
+            parallel_verify_time += time_sec(verify_start, verify_end);
+            
+            //Reset
+            timing_analyzer.reset_timing(timing_graph);
         }
-
-        clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-
-        float parallel_analysis_time = time_sec(analyze_start, analyze_end);
-        parallel_analysis_time_avg = parallel_analysis_time / NUM_RUNS;
+        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
+        std::cout << std::endl;
         std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << "s" << std::endl;
+        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
+        std::cout << std::endl;
     }
 
 
-    {
-        clock_gettime(CLOCK_MONOTONIC, &verify_start);
-
-        timing_graph.print();
-
-        verify_timing_graph(timing_graph, expected_arr_req_times);
-
-        clock_gettime(CLOCK_MONOTONIC, &verify_end);
-    }
-    std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
-    std::cout << std::endl;
 
     std::cout << "Parallel Speed-Up: " << std::fixed << serial_analysis_time_avg / parallel_analysis_time_avg << "x" << std::endl;
     std::cout << std::endl;
@@ -153,6 +172,9 @@ float relative_error(float A, float B) {
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times) {
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
+    std::ios_base::fmtflags saved_flags = std::cout.flags();
+    std::streamsize prec = std::cout.precision();
+    std::streamsize width = std::cout.width();
 
     std::streamsize num_width = 10;
     std::cout.precision(3);
@@ -200,4 +222,7 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
         //std::cout << "Timing verification SUCCEEDED" << std::endl;
     }
 
+    std::cout.flags(saved_flags);
+    std::cout.precision(prec);
+    std::cout.width(width);
 }

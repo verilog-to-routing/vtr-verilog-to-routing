@@ -1,6 +1,7 @@
 #ifndef TIMINGNODE_HPP
 #define TIMINGNODE_HPP
 #include <vector>
+#include <omp.h>
 
 #include "TimingEdge.hpp"
 #include "Time.hpp"
@@ -28,8 +29,12 @@ std::istream& operator>>(std::istream& os, TN_Type& type);
 
 class TimingNode {
     public:
-        TimingNode() {}
-        TimingNode(TN_Type new_type): type_(new_type) {}
+        TimingNode() { omp_init_lock(&lock_); }
+        TimingNode(TN_Type new_type): type_(new_type) { omp_init_lock(&lock_); }
+        ~TimingNode() { omp_destroy_lock(&lock_); }
+
+        void lock() { omp_set_lock(&lock_); }
+        void unlock() { omp_unset_lock(&lock_); }
 
         int num_out_edges() const { return out_edges_.size(); }
 
@@ -58,6 +63,8 @@ class TimingNode {
         TN_Type type_;
 
         std::vector<TimingEdge> out_edges_; //Timing edges driven by this node
+
+        omp_lock_t lock_;
 
 };
 

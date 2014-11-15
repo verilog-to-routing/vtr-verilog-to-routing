@@ -5,6 +5,7 @@
 class SerialTimingAnalyzer : public TimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph);
+        void reset_timing(TimingGraph& timing_graph);
 
     private:
         /*

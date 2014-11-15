@@ -130,7 +130,7 @@ timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\
                                                 }
                                                 timing_graph.add_node(node);
                                                 if(timing_graph.num_nodes() % 1000000 == 0) {
-                                                    std::cout << "Loaded " << timing_graph.num_nodes() << " nodes..." << std::endl;
+                                                    std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
                                                 }
                                                 assert(timing_graph.num_nodes() - 1 == $2.node_id);
 
@@ -149,7 +149,13 @@ timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\
                                             }
     | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
     | timing_graph NODE_ARR_REQ_HEADER EOL  {/*printf("Nodes ARR REQ Header\n");*/}
-    | timing_graph node_arr_req_time        { arr_req_times.push_back($2); /*printf("Node %d Arr_T: %g Req_T: %g\n", $2.node_id, $2.T_arr, $2.T_req);*/}
+    | timing_graph node_arr_req_time        { 
+                                                
+                                                arr_req_times.push_back($2); 
+                                                if(arr_req_times.size() % 1000000 == 0) {
+                                                    std::cout << "Loaded " << arr_req_times.size() / 1e6 << "M arr/req times..." << std::endl;
+                                                }
+                                            }
     | timing_graph EOL                      {}
     ;
 

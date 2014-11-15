@@ -1,6 +1,8 @@
 #include "ParallelTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
+#include <omp.h>
+
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
 void ParallelTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
@@ -34,6 +36,13 @@ void ParallelTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
 
 void ParallelTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
+
+    //Need synchronization on nodes, since each source node could propogate
+    //arrival times to multiple nodes.
+    //We could get a race-condition if multiple threads try to update a single
+    //node in parallel
+    
+    //Levelized Breadth-first
     for(int level_idx = 0; level_idx < timing_graph.num_levels(); level_idx++) {
         const std::vector<int>& level_ids = timing_graph.level(level_idx);
 #pragma omp for
@@ -82,23 +91,31 @@ void ParallelTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph:
 
     for(int edge_idx = 0; edge_idx < from_node.num_out_edges(); edge_idx++) {
         const TimingEdge& edge = from_node.out_edge(edge_idx);
+        float edge_delay = edge.delay().value();
 
         int to_node_id = edge.to_node();
 
         TimingNode& to_node = tg.node(to_node_id);
 
-        //TODO: Generalize this to support a more general Time class (e.g. vector of timing corners)
-        float orig_arrival_time = to_node.arrival_time().value();
-        float edge_delay = edge.delay().value();
+        {
+            //Lock the to_node
+            to_node.lock();
 
-        float new_arrival_time;
-        if(isnan(orig_arrival_time)) {
-            new_arrival_time = from_arrival_time + edge_delay;
-        } else {
-            new_arrival_time = std::max(orig_arrival_time, from_arrival_time + edge_delay);
+            //TODO: Generalize this to support a more general Time class (e.g. vector of timing corners)
+            float orig_arrival_time = to_node.arrival_time().value();
+
+            float new_arrival_time;
+            if(isnan(orig_arrival_time)) {
+                new_arrival_time = from_arrival_time + edge_delay;
+            } else {
+                new_arrival_time = std::max(orig_arrival_time, from_arrival_time + edge_delay);
+            }
+
+            to_node.set_arrival_time(Time(new_arrival_time));
+
+            //Release the lock
+            to_node.unlock();
         }
-
-        to_node.set_arrival_time(Time(new_arrival_time));
     }
 
 }

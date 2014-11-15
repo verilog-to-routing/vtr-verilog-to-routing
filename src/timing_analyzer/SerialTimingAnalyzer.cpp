@@ -9,6 +9,16 @@ void SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     backward_traversal(timing_graph);
 }
 
+void SerialTimingAnalyzer::reset_timing(TimingGraph& timing_graph) {
+    for(int node_id = 0; node_id < timing_graph.num_nodes(); node_id++) {
+        TimingNode& node = timing_graph.node(node_id);
+
+        node.set_arrival_time(Time(NAN));
+        node.set_required_time(Time(NAN));
+        
+    }
+}
+
 void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
