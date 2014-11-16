@@ -3678,8 +3678,6 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 
 	
 	/* Print primitives found in timing graph in blif format based on whether this is a logical primitive or a physical primitive */
-	pb_route = block[logical_block[iblk].clb_index].pb_route;
-
 	if (logical_block[iblk].type == VPACK_INPAD) {
 		if (logical_block[iblk].pb == NULL) {
 			fprintf(fpout, ".names %s tnode_%d\n", logical_block[iblk].name,
@@ -3763,6 +3761,7 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 			}
 			assert(i == 1);
 		} else {
+			pb_route = block[logical_block[iblk].clb_index].pb_route;
 			assert(
 					pb_route[logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster].atom_net_idx != OPEN);
 			fprintf(fpout, "tnode_%d ",
@@ -3813,6 +3812,8 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 			}
 			assert(i == 1);
 		} else {
+			pb_route = block[logical_block[iblk].clb_index].pb_route;
+
 			assert(logical_block[iblk].pb->pb_graph_node->num_input_ports == 1);
 			for (i = 0;
 					i < logical_block[iblk].pb->pb_graph_node->num_input_pins[0];
@@ -3941,6 +3942,8 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 			}
 		} else {
 			pb_graph_node = logical_block[iblk].pb->pb_graph_node;
+			pb_route = block[logical_block[iblk].clb_index].pb_route;
+
 			for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 				for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 					if (pb_route[pb_graph_node->input_pins[i][j].pin_count_in_cluster].atom_net_idx
