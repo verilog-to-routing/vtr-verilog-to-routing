@@ -1,12 +1,12 @@
-#ifndef ParallelLevelizedLockedTimingAnalyzer_hpp
-#define ParallelLevelizedLockedTimingAnalyzer_hpp
+#ifndef ParallelLevelizedLockedTasksTimingAnalyzer_hpp
+#define ParallelLevelizedLockedTasksTimingAnalyzer_hpp
 #include <omp.h>
 
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
 
 
-class ParallelLevelizedLockedTimingAnalyzer : public SerialTimingAnalyzer {
+class ParallelLevelizedLockedTasksTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph);
 
