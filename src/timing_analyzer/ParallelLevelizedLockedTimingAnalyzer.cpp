@@ -1,11 +1,11 @@
-#include "ParallelTimingAnalyzer.hpp"
+#include "ParallelLevelizedLockedTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
 #include <omp.h>
 
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
-void ParallelTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+void ParallelLevelizedLockedTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     create_locks(timing_graph);
 #pragma omp parallel
     {
@@ -24,25 +24,25 @@ void ParallelTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     }
 }
 
-void ParallelTimingAnalyzer::create_locks(TimingGraph& tg) {
+void ParallelLevelizedLockedTimingAnalyzer::create_locks(TimingGraph& tg) {
     node_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
 }
 
-void ParallelTimingAnalyzer::init_locks() {
+void ParallelLevelizedLockedTimingAnalyzer::init_locks() {
 #pragma omp for
     for(int i = 0; i < (int) node_locks_.size(); i++) {
         omp_init_lock(&node_locks_[i]);
     }
 }
 
-void ParallelTimingAnalyzer::cleanup_locks() {
+void ParallelLevelizedLockedTimingAnalyzer::cleanup_locks() {
 #pragma omp for
     for(int i = 0; i < (int) node_locks_.size(); i++) {
         omp_destroy_lock(&node_locks_[i]);
     }
 }
 
-void ParallelTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
+void ParallelLevelizedLockedTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
      * and required times.
@@ -62,7 +62,7 @@ void ParallelTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     }
 }
 
-void ParallelTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
+void ParallelLevelizedLockedTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
 
     //Need synchronization on nodes, since each source node could propogate
@@ -81,7 +81,7 @@ void ParallelTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     }
 }
     
-void ParallelTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
+void ParallelLevelizedLockedTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //Backward traversal (required times)
     //  Since we only store edges in the forward direction we calculate required times by
     //  setting the values for the current level based on the one below
@@ -95,7 +95,7 @@ void ParallelTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     }
 }
 
-void ParallelTimingAnalyzer::pre_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id, int level_idx) {
+void ParallelLevelizedLockedTimingAnalyzer::pre_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id, int level_idx) {
     TimingNode& node = tg.node(node_id);
     if(level_idx == 0) { //Primary Input
         //Initialize with zero arrival time
@@ -113,7 +113,7 @@ void ParallelTimingAnalyzer::pre_traverse_node(TimingGraph& tg, TimingGraph::Nod
     }
 }
 
-void ParallelTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
+void ParallelLevelizedLockedTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
     //From node was updated by the previous level (i.e. is read-only) so we don't need to synchronize
     //access to it.
     //
@@ -154,7 +154,7 @@ void ParallelTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph:
     }
 }
 
-void ParallelTimingAnalyzer::backward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
+void ParallelLevelizedLockedTimingAnalyzer::backward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
     //Only one thread ever updates node so we don't need to synchronize access to it
     //
     //The downstream (to_node) was updated on the previous level (i.e. is read-only), 

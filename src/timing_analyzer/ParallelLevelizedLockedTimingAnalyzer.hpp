@@ -6,7 +6,7 @@
 #include "SerialTimingAnalyzer.hpp"
 
 
-class ParallelTimingAnalyzer : public SerialTimingAnalyzer {
+class ParallelLevelizedLockedTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph);
 
