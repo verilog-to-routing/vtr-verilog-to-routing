@@ -1,11 +1,12 @@
 #pragma once
 
-#include "TimingAnalyzer.hpp"
+#include "TimingGraph.hpp"
+#include "SerialTimingAnalyzer.hpp"
 
-class SerialTimingAnalyzer : public TimingAnalyzer {
+
+class ParallelLevelizedBarrierTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph);
-        void reset_timing(TimingGraph& timing_graph);
 
     private:
         /*
@@ -23,4 +24,10 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
          * Propogate required times
          */
         void backward_traversal(TimingGraph& timing_graph);
+
+        //Parallel worker functions
+        void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
+        void forward_traverse_node(TimingGraph& tg, NodeId node_id);
+        void backward_traverse_node(TimingGraph& tg, NodeId node_id);
 };
+

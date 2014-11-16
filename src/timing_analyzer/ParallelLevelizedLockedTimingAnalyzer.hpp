@@ -1,5 +1,5 @@
-#ifndef ParallelLevelizedLockedTimingAnalyzer_hpp
-#define ParallelLevelizedLockedTimingAnalyzer_hpp
+#pragma once
+
 #include <omp.h>
 
 #include "TimingGraph.hpp"
@@ -37,5 +37,3 @@ class ParallelLevelizedLockedTimingAnalyzer : public SerialTimingAnalyzer {
         void cleanup_locks();
         std::vector<omp_lock_t> node_locks_;
 };
-
-#endif

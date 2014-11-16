@@ -1,5 +1,5 @@
-#ifndef TIMINGEDGE_HPP
-#define TIMINGEDGE_HPP
+#pragma once
+
 #include <vector>
 
 #include "Time.hpp"
@@ -21,4 +21,3 @@ class TimingEdge {
         Time delay_;
 };
 
-#endif

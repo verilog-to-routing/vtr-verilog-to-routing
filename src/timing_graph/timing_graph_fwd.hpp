@@ -1,5 +1,4 @@
-#ifndef timing_graph_fwd_hpp
-#define timing_graph_fwd_hpp
+#pragma once
 /*
  * Forward declarations for Timing Graph types
  */
@@ -11,4 +10,3 @@ class TimingEdge;
 typedef int NodeId;
 typedef int EdgeId;
 
-#endif

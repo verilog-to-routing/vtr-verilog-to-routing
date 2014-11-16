@@ -1,5 +1,5 @@
-#ifndef TIMINGGRAPH_HPP
-#define TIMINGGRAPH_HPP
+#pragma once
+
 #include <vector>
 #include <iostream>
 #include <iomanip>
@@ -40,5 +40,3 @@ class TimingGraph {
         std::vector<std::vector<NodeId>> node_levels_;
         std::vector<NodeId> primary_outputs_;
 };
-
-#endif

@@ -1,5 +1,5 @@
-#ifndef TIMINGNODE_HPP
-#define TIMINGNODE_HPP
+#pragma once
+
 #include <vector>
 #include <omp.h>
 
@@ -60,5 +60,3 @@ class TimingNode {
         std::vector<EdgeId> out_edge_ids_; //Timing edges driven by this node
 
 };
-
-#endif

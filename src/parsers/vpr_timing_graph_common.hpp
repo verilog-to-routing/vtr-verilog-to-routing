@@ -1,5 +1,4 @@
-#ifndef VPR_TIMING_GRAPH_PARSE_COMMON_H
-#define VPR_TIMING_GRAPH_PARSE_COMMON_H
+#pragma once
 
 #include <vector>
 
@@ -51,4 +50,3 @@ typedef struct node_s {
 extern int yyparse(TimingGraph& tg, std::vector<node_arr_req_t>& arr_req_times);
 extern FILE *yyin;
 
-#endif

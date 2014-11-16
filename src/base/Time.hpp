@@ -1,5 +1,4 @@
-#ifndef Time_HPP
-#define Time_HPP
+#pragma once
 
 #include <cmath>
 #include <iosfwd>
@@ -18,5 +17,3 @@ class Time {
 
 std::ostream& operator<<(std::ostream& os, const Time& time);
 
-
-#endif
