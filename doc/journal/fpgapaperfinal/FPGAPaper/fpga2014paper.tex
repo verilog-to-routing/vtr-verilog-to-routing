@@ -203,13 +203,13 @@ Overall, these interposer-based FPGAs have increased delay and reduced connectiv
 \section{Architecture models}
 \label{archSection}
 %   - Define parameters
-To properly model a silicon interposer FPGA, the popular FPGA exploration toolset, Verilog-to-Routing (VTR)~\cite{vtr2012}, was used. The logic synthesis portions of the flow (ODIN II and  ABC) were left untouched, while the placement and routing portion of the flow (VPR~\cite{betz1997vpr}) was modified to model and optimize for interposer-based FPGAs. The modifications were made in such a way that they require no changes to any of the input files, so one can experiment with interposer-based FPGAs with any existing benchmark circuits and any existing VPR-format FPGA architecture description simply by specifying appropriate command-line parameters.
+To properly model a silicon interposer FPGA, we use version 7.0 of the popular FPGA exploration toolset, Verilog-to-Routing (VTR)~\cite{luu2014vtr}. The logic synthesis portions of the flow (ODIN II and  ABC) are left untouched, while we modify the placement and routing portion of the flow (VPR~\cite{betz1997vpr}) to model and optimize for interposer-based FPGAs. The modifications are made in such a way that they require no changes to any of the input files, so one can experiment with interposer-based FPGAs with any existing benchmark circuits and any existing VPR-format FPGA architecture description simply by specifying appropriate command-line parameters.
 
-The following parameters were added to VPR: \textit{number of cuts}, \textit{\% wires cut}, \textit{increased delay}, and \textit{interposer-routing interface}. These parameters describe the interposer portion of the 2.5D FPGA as detailed below.
+We add the following parameters to VPR: \textit{number of cuts}, \textit{\% wires cut}, \textit{increased delay}, and \textit{interposer-routing interface}. These parameters describe the interposer portion of the 2.5D FPGA as detailed below.
 
 %	- number of cuts
 \subsection{Number of cuts}
-\textit{Number of cuts} describes how many cuts were made to the interposer-based FPGA versus a monolithic die. If \textit{number of cuts} equals 1 then there are 2 dies, and so on. We investigate values of 1 and 3 (2 and 4 dies). The Virtex 7 family has members with \textit{number of cuts} $=$ 2 and 3. Figure \ref{fig:fpga} shows a sample architecture with one cutline.
+\textit{Number of cuts} describes how many cuts are made to the interposer-based FPGA versus a monolithic die. If \textit{number of cuts} equals 1 then there are 2 dice, and so on. We investigate values of 1 and 3 (2 and 4 dice). The Virtex 7 family has members with \textit{number of cuts} $=$ 2 and 3. Figure \ref{fig:fpga} shows a sample architecture with one cutline.
 
 \begin{figure}[!htbp]
 \centering
@@ -228,69 +228,65 @@ Interposer wires are longer and wider than on-die wires and have microbumps on e
 
 %   - Interposer-Routing interface
 \subsection{Interposer-Routing interface}
-In a simple architecture, the vertical routing wires that can not connect to an interposer wire are dangling. Since interposer wires are scarce, we want to be able to study architectures in which the interposer wires are more accessible. To do so, we have enhanced the router to understand the following interposer-routing interfaces.
+In a simple architecture, the vertical routing wires that can not connect to an interposer wire are dangling. Since interposer wires are scarce, we want to be able to study architectures in which the interposer wires are more accessible. To do so, we have enhanced the router to support the following interposer-routing interface options.
 
 \begin{enumerate}[label=(\alph*)]
 \item Fan-in Transfer for Interposer Wires\\
-For an architecture with \textit{\% wires cut} $=0$, all vertical routing wires have a corresponding interposer wire that connects them to the adjacent die. Practical interposers, however, can only accommodate a fraction of all vertical routing wires. So, we place a multiplexer at the input of each available interposer wire and connect some adjacent ``dangling" vertical routing wires to the multiplexer. This allows for additional flexibility in routing. As an example, if \textit{\% wires cut} $=75\%$, 3 of every 4 interposer wires are cut. Therefore, we place a 4-to-1 multiplexer at the input of the one interposer wire that is not cut, and we connect the 3 vertical routing wires that do not have a corresponding interposer wire to the multiplexer.
+For an architecture with \textit{\% wires cut} $=0$, all vertical routing wires have a corresponding interposer wire that connects them to the adjacent die. Practical interposers, however, can only accommodate a fraction of all vertical routing wires. Hence, when this variable is \textit{on}, we place a multiplexer at the input of each available interposer wire and connect some adjacent ``dangling" vertical routing wires to the multiplexer. This allows for additional flexibility in routing. As an example, if \textit{\% wires cut} $=75\%$, 3 of every 4 interposer wires are cut. Therefore, we place a 4-to-1 multiplexer at the input of the one interposer wire that is not cut, and we connect the 3 vertical routing wires that do not have a corresponding interposer wire to the multiplexer.
 
 \item Fan-out Transfer for Interposer Wires\\
-We allow the interposer wire output to drive not only its own corresponding vertical wire at the other side of the cut, but also the other ``dangling" vertical routing wires that are not driven by anything because their corresponding interposer wires are cut.
+When this option is \textit{on}, we allow the interposer wire output to drive not only its own corresponding vertical wire at the other side of the cut, but also the other ``dangling" vertical routing wires that are not driven by anything because their corresponding interposer wires are cut.
 
 \item Bidirectional Interposer Wires\\
-We allow interposer wires to be driven from one end or the other.
+Dominant routing architectures in modern FPGAs use unidirectional wires~\cite{unidirectional, lewis2005stratix}. Such wires can only be driven at one point, normally their start point. When this option is \textit{on}, we allow interposer wires to be driven from one end or the other by adding tri-state buffers at both ends.
 \end{enumerate}
 
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{architecture_params.eps}
-\caption{For channel width of 4 and 75\% wires cut, only 1 interposer wire exists (in green) and 3 interposer wires are cut (in red). (a)~Fan-in Transfer for Interposer Wires allows red routing wires in die 1  to cross the interposer layer. (b)~Fan-out Transfer for Interposer Wires allows the output of the interposer wire to drive wires in other tracks in die 2.}
+\caption{For a channel width of 4 and 75\% wires cut, only 1 interposer wire exists (in green) and 3 interposer wires are cut (in the red). (a)~Fan-in Transfer for Interposer Wires allows red routing wires in die 1  to drive a mux that allows them to cross the interposer layer. (b)~Fan-out Transfer for Interposer Wires allows the output of the interposer wire to drive wires in other tracks in die 2.}
 \label{fig:architecture_params}
 \end{figure}
 
-
+These options are independent and can be combined to achieve more flexible routing. Enabling any of these options requires adding specific circuitry (such as multiplexers) on the dice which causes very small area and delay increase that we neglect in our experiments.
 
 %   - (briefly) explain how it was put in VPR
 \subsection{Implementation}
 To model an interposer-based multi-FPGA system in the CAD tool, we use the existing VPR infrastructure for monolithic FPGAs and make several modifications to it.
 
-First, The presence of multiple dice in an interposer-based FPGA was modeled by creating horizontal cuts in the FPGA. The \textit{number of cuts} is specified by the user, and we use that to determine the y-location of the cuts. The cutlines ``snap to the grid" such that the height of all dies are equal and no cutline cuts through a block. For instance, a RAM block of height 4 must remain as a unit and can not be sliced by a cutline.
+First, The presence of multiple dice in an interposer-based FPGA is modeled by creating horizontal cuts in the FPGA. The \textit{number of cuts} is specified by the user, and we use that to determine the y-location of the cuts. The cutlines ``snap to the grid" such that the height of all dice are equal and no cutline cuts through a block. For instance, a RAM block of height 4 must remain a unit and can not be sliced by a cutline.
 
-Second, knowing the location of the cutlines, the placer uses the \textit{(x,y)} coordinate of any pin or block to determine which die it belongs to. The placer uses this information as well as \textit{interposer delay} to better decide where to place each block in order to minimize the cost of inter-die signal transfer as described in Section \ref{cad_enh_placer_subsection}.
+Second, knowing the location of the cutlines, the placer uses the \textit{(x,y)} coordinate of any pin or block to determine the die to which it belongs. The placer uses this information as well as \textit{interposer delay} to better decide where to place each netlist block in order to minimize the cost of inter-die signal transfer as described in Section \ref{cad_enh_placer_subsection}.
 
-Third, the Routing Resource Graph (\textit{rrgraph}) must be modified. The rrgraph is the data structure that defines all the available routing wires and switches in the FPGA, as well as the delay of each. Given a suitable rrgraph, the VPR router can implement circuits in the desired FPGA, and the VPR timing analyzer can estimate their delay. In the experiments below, we use an architecture that has only unidirectional wires~\cite{unidirectional}, as these are the dominant routing architecture in modern FPGAs. Such wires can only be driven at their beginning. 
+Third, the Routing Resource Graph (\textit{rrgraph}) must be modified. The rrgraph is the data structure that defines all the available routing wires (\textit{rrnodes}) and switches in the FPGA, as well as the delay of each~\cite{betz1999architecture}. Given a suitable rrgraph, the VPR router can implement circuits in the desired FPGA, and the VPR timing analyzer can estimate their delay. In the experiments below, we use an architecture that has only unidirectional wires.
 
-Previous work by Pereira et al ~\cite{hahn2014cad} modified the rrgraph by directly removing \textit{\% wires cut} percent of edges from the graph at nodes located at the cutline and increased the switch delay of the remaining edges of the nodes at the cutline. While this is a reasonable method to model such architectures, it makes it difficult to experiment with different routing-interposer interfaces such as placing input muxes for interposer wires. Therefore, we modify the rrgraph differently to more accurately reflect the interposer layer:
+Previous work by Pereira et al \cite{hahn2014cad} modeled the interposer indirectly: they did not introduce new rrnodes in the rrgraph to represent the interposer wires. Rather, they found the rrnodes that cross a cutline. Then they either removed all outgoing edges of these rrnodes (if the routing node was part of the \textit{\% wires cut}), or, they increased the switch delay of the rrnode fan-outs (if the wire was not cut) to account for the additional interposer delay.
 
-For every vertical routing wire in the channel, we add a new routing node (``\textit{interposer node}") into the rrgraph. Then, we determine routing nodes (e.g. vertical routing wires) that cross a cutline in the rrgraph, and we replace them with 2 routing nodes: one that is above the cutline and one that is below the cutline. We properly transfer fan-ins and fan-outs of the original node onto the two newly created nodes and we connect the two nodes using an interposer node. Finally, we remove \textit{all} edges from \textit{\%wires cut} percent of interposer nodes and increase the switch delay of output edges of the remaining interposer nodes by \textit{increased delay}. Figure~\ref{fig:rrgraph_ops} shows an example of these operations.
-
+While this is a reasonable method to model such architectures, it makes it difficult to experiment with different routing-interposer interfaces such as placing input muxes for interposer wires. Therefore, we modify the rrgraph differently to more accurately reflect the interposer layer directly:
 
 \begin{figure}[!t]
-\hfill
-\subfigure[Chip View]{\includegraphics[width=4.9cm]{a_b.eps}}
-\hfill
-\subfigure[``rrgraph" View]{\includegraphics[width=3.3cm]{a_b_prime.eps}}
-\hfill
-\caption{(a) Left: regular routing wire connectivity. Right: replacing the long wire with two wires and connecting them via an interposer wire. (b) Left: rrgraph for regular connectivity. Right: rrgraph after modifications}
+\subfigure[]{\includegraphics[width=0.24\linewidth]{a.eps}}
+\subfigure[]{\includegraphics[width=0.24\linewidth]{b.eps}}
+\subfigure[]{\includegraphics[width=0.24\linewidth]{a_prime.eps}}
+\subfigure[]{\includegraphics[width=0.24\linewidth]{b_prime.eps}}
+\caption{(a) Regular routing wire connectivity. (b) Replacing the long wire with two wires and connecting them via an interposer wire. (c) rrgraph for regular connectivity. (d) rrgraph after modifications.}
 \label{fig:rrgraph_ops}
 \end{figure}
 
-As illustrated in Figure~\ref{fig:vpr_interposer_gui}, no vertical routing wires cross a cutline boundary and a fraction of them connect to other dies via interposer wires.
-
-%%%
-%\begin{figure}[!t]
-%\subfigure[Full Chip View]{\includegraphics[width=\textwidth]{vpr_gui_full.eps}}
-%\subfigure[Connectivity at the cutline]{\includegraphics[width=\textwidth]{vpr_gui_zoom.eps}}
-%\caption{(a) Left: regular routing wire connectivity. Right: replacing the long wire with two wires and connecting them via an interposer wire. (b) Left: rrgraph for regular connectivity. Right: rrgraph after modifications}
-%\label{fig:vpr_interposer_gui}
-%\end{figure}
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=\textwidth]{vpr_gui.eps}
-\caption{VPR Graphical User Interface. Left:Full chip view. Right:Connectivity at the cutline. Interposer wires are drawn in red. Due to limited capacity of the interposer, some vertical routing wires are left dangling. Routing wires do not cross the cutline unless via a connection to an interposer wire.}
+\begin{figure*}[!thpb]
+\subfigure[]{\includegraphics[width=0.6\textwidth]{gui_1.eps}}
+\subfigure[]{\includegraphics[width=0.4\textwidth]{gui_2.eps}}
+\caption{VPR Graphical User Interface. (a) Full chip view. (b) Connectivity at the cutline. Due to the limited signal capacity of the interposer, some vertical routing wires are left dangling.}
 \label{fig:vpr_interposer_gui}
 \end{figure*}
+
+For every vertical routing wire in the channel, we add a new routing node (``\textit{interposer node}") into the rrgraph. Then, we determine rrnodes (e.g. vertical routing wires) that cross a cutline in the rrgraph, and we replace them with 2 rrnodes: one that is above the cutline and one that is below the cutline. We properly transfer fan-ins and fan-outs of the original node onto the two newly created nodes and we connect the two nodes using an interposer node. Finally, we remove \textit{all} edges from \textit{\%wires cut} percent of interposer nodes and increase the switch delay of output edges of the remaining interposer nodes by \textit{increased delay}. Figure~\ref{fig:rrgraph_ops} shows an example of these operations.
+
+
+
+As illustrated in Figure~\ref{fig:vpr_interposer_gui}, no vertical routing wires cross a cutline boundary and a fraction of them connect to other dies via interposer wires.
+
+
 
 \section{CAD Enhancements}
 \label{cadSection}
@@ -311,7 +307,7 @@ criticality(i,j)
 \end{equation}
 where \textit{ij} denotes a connection from block i to block j that exists in the circuit netlist.
 
-This cost function assumes that the FPGA is homogeneous and consequently the delay between 2 points $(x_1,y_1)$ and $(x_2,y_2)$ only depends on $(\Delta x,\Delta y)$. This is obviously not true for interposer-based FPGAs, as the cutlines make them heterogeneous in the \textit{y} direction. To solve this problem and improve the quality of the results, an extra term was added to the delay function. The delay function becomes:
+This cost function assumes that the FPGA is homogeneous and consequently the delay between 2 points $(x_1,y_1)$ and $(x_2,y_2)$ only depends on $(\Delta x,\Delta y)$. This is obviously not true for interposer-based FPGAs, as the cutlines make them heterogeneous in the \textit{y} direction. To solve this problem and improve the quality of the results, we add an extra term to the delay function:
 
 \begin{equation} \label{eq:timing_cost}
 \begin{split}
@@ -333,9 +329,9 @@ wiring\_cost_{orig} = \sum_{n=1}^{N_{nets}} q(n) \times [\frac{bb_x(n)}{avg\_cha
 \end{split}
 \end{equation}
 
-where $bb_x(n)$ and $bb_y(n)$ are the dimensions of the bounding box of net \textit{n} in the x and y directions, respectively. $avg\_chanx\_W$ and $avg\_chany\_W$ are the average x-directed and y-directed channel widths over this bounding box. Finally, $q(n)$ is a function obtained from \cite{icann} which models the fact that bounding boxes underpredict the required routing for high fanout nets. $q(n)$ slowly increases with the fanout of net \textit{n}, rising from 1 for nets with 3 or fewer terminals to 2.79 for nets with 50 terminals.
+where $bb_x(n)$ and $bb_y(n)$ are the dimensions of the bounding box of net \textit{n} in the x and y directions, respectively. $avg\_chanx\_W$ and $avg\_chany\_W$ are the average x-directed and y-directed channel widths over this bounding box. Finally, $q(n)$ is a function obtained from \cite{icann} which models the fact that bounding boxes underpredict the required routing for high fanout nets. $q(n)$ slowly increases with the fanout of net \textit{n}.
 
-VPR's wiring cost also considers the FPGA to be homogeneous, and uses only the number of nets, the size of the net's bounding box and the average number of wires per channel to calculate the cost. Thus, to account for the reduced connectivity near the cutlines an extra cost term, \textit{cut\_cost}, was created. This new cost is added to (\ref{eq:bbcost}) to create the total wiring cost.
+VPR's wiring cost also considers the FPGA to be homogeneous, and uses only the number of nets, the size of the net's bounding box and the average number of wires per channel to calculate the cost. Thus, to account for the reduced connectivity near the cutlines we create an extra cost term, \textit{cut\_cost}. This new cost is added to (\ref{eq:bbcost}) to create the total wiring cost.
 
 \begin{equation} \label{eq:total_wiring}
 wiring\_cost = wiring\_cost_{orig} + cut\_cost
@@ -357,39 +353,41 @@ C' = \frac{ratio\_wires\_cut}{avg\_chany\_W(n)}
 \textit{bbHeight(n)} is the height of the bounding box of the net \textit{n} and $ratio\_wires\_cut$ is the ratio of wires cut at the cutline. This formulation of $C'$ ensures that the new cost term is of roughly the same magnitude as $wire\_cost_{orig}$ in (\ref{eq:bbcost}) and that it is weighted more heavily for interposer architectures in which the wiring between dice is more scarce.
 
 \subsection{Router Optimization}
-Once the Routing Resource Graph was modified as detailed in Section \ref{archSection}, the VPR router adapted automatically to the interposer architecture. However, the router's \textit{lookahead algorithm} which decides the front on which the router should expand the current search to the destination was not interposer-aware. Hence it took a long time to converge to a good routing decision. 
+Once the Routing Resource Graph is modified as detailed in Section \ref{archSection}, the VPR router adapted automatically to the interposer architecture. The router starts at a net source node and expands by discovering adjacent routing nodes until it reaches the destination node. At any point, the router knows the cost of the path taken to the current point and it uses a \textit{lookahead cost function} to estimate the resource and delay cost from the current node to the destination. Using this lookahead cost, the router can properly sort routing alternatives. The lookahead cost function in VPR is not aware of the interposer, and therefore it takes a long time to converge to a routing decision. To make the lookahead aware of the interposer, we modify the lookahead cost function by adding terms that account for extra \textit{interposer delay} and extra \textit{interposer nodes} that may exist on the route from the current node to the destination node.
 
-The VPR router uses the following to calculate a cost for any routing element on the route from \textit{i} to \textit{j}:
+The VPR router uses the following to calculate a cost for a routing node \textit{r} on the route from \textit{i} to \textit{j}:
 \begin{equation} \label{eq:routing_cost}
 \begin{split}
-Cost(k) = Criticality(i,j) \times Delay_{Elmore}(k, topology) + \\ [1-Criticality(i,j)] \times Congestion(k)
+Cost(r) = Criticality(i,j) \times Delay_{Elmore}(r, topology) + \\ [1-Criticality(i,j)] \times Congestion(r)
 \end{split}
 \end{equation}
 
-Given this cost function, router's lookahead algorithm determines the total cost of the route from \textit{i} to \textit{j} when routing node \textit{n} is used:
+Given this cost function, the router's lookahead algorithm determines the total cost of the route from \textit{i} to \textit{j} when routing node \textit{r} is used:
 
 \begin{equation} \label{eq:lookahead_cost}
 \begin{split}
-Total\_Cost(n) = \sum_{\forall l \in RT(i,n)} Cost(l) + \alpha \times ExpectedCost(n,j)
+Total\_Cost(r) = \sum_{\forall l \in RT(i,r)} Cost(l) + \alpha \times ExpectedCost(r,j)
 \end{split}
 \end{equation}
 
-where \textit{RT(i,n)} is the set of all routing nodes used so far from \textit{i} to \textit{n} and $\alpha$ is a constant number that determines the aggressiveness of the directed search. $\alpha$ of 0 results in a purely Breadth First Search of the routing graph from \textit{i} to \textit{j}. VPR's original $ExpectedCost(n,j)$ function is~\cite{betz1997vpr}: 
+where \textit{RT(i,r)} is the set of all routing nodes used so far from \textit{i} to \textit{r} and $\alpha$ is a constant number that determines the aggressiveness of the directed search. $\alpha$ is 1.2 by default in VPR. VPR's original $ExpectedCost(n,j)$ function is~\cite{betz1999architecture}: 
 
 \begin{equation} \label{eq:expected_routing_cost}
 \begin{split}
-ExpectedCost(n,j) = Criticality_{fac} \times T_{delay} + \\(1 - Criticality_{fac}) \times ExpectedCongestionCost(n,j);
+ExpectedCost(r,j) = Criticality_{fac} \times T_{delay} + \\(1 - Criticality_{fac}) \times ExpectedCongestionCost(r,j);
 \end{split}
 \end{equation}
 
-$T_{delay}$ is an estimate of the delay that the router predicts it will see on the route from \textit{n} to \textit{j}. Since (\ref{eq:expected_routing_cost}) assumes a homogeneous FPGA, $T_{delay}$ does not include the additional delay some routes experience by going through the interposer. Thus, for interposer-based architectures, we have replaced $T_{delay}$ in (\ref{eq:expected_routing_cost}) with $T^\prime_{delay}$ to include the delay of expected interposer hops that are on the way form \textit{n} to \textit{j}.
+$T_{delay}$ is an estimate of the delay that the router predicts it will see on the route from \textit{r} to \textit{j}. Since (\ref{eq:expected_routing_cost}) assumes a homogeneous FPGA, $T_{delay}$ does not include the additional delay some routes experience by going through the interposer. Thus, for interposer-based architectures, we replace $T_{delay}$ in (\ref{eq:expected_routing_cost}) with $T^\prime_{delay}$ to include the delay of expected interposer hops from \textit{r} to \textit{j}.
 \begin{equation} \label{eq:tdelay}
 \begin{split}
 T^\prime_{delay} = T_{delay} + T_{interposer} \times ExpectedInterposerHops
 \end{split}
 \end{equation}
 
-The interposer-aware router lookahead is able to make routing decisions quicker given the large delay difference of a path that crosses the interposer as opposed to a path that doesn't.
+In a similar way, we modify the $ExpectedCongestionCost(r,j)$ in (\ref{eq:expected_routing_cost}) to account for the new interposer routing nodes. 
+
+The interposer-aware router lookahead is able to make routing decisions more quickly given the large delay difference of a path that crosses the interposer as opposed to a path that doesn't.
 
 %   - Effectiveness / results
 \subsection{Effectiveness of the enhancements}

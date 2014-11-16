@@ -25,7 +25,7 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Lateral view of an interposer-based FPGA\cite  {xilinxWP}. The FPGA dice are at the top, and are connected to the silicon interposer through microbumps. The interposer is then connected to the substrate through C4 bumps.}}{\thepage }}
 \newlabel{fig:interposer}{{1}{\thepage }}
 \citation{xilinxTSV}
-\citation{vtr2012}
+\citation{luu2014vtr}
 \citation{betz1997vpr}
 \citation{xilinxTSV}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Architecture models}{\thepage }}
@@ -37,18 +37,23 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Increased delay}{\thepage }}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Interposer-Routing interface}{\thepage }}
 \citation{unidirectional}
+\citation{lewis2005stratix}
+\citation{betz1999architecture}
 \citation{hahn2014cad}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces For channel width of 4 and 75\% wires cut, only 1 interposer wire exists (in green) and 3 interposer wires are cut (in red). (a)\nobreakspace  {}Fan-in Transfer for Interposer Wires allows red routing wires in die 1 to cross the interposer layer. (b)\nobreakspace  {}Fan-out Transfer for Interposer Wires allows the output of the interposer wire to drive wires in other tracks in die 2.}}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces For a channel width of 4 and 75\% wires cut, only 1 interposer wire exists (in green) and 3 interposer wires are cut (in the red). (a)\nobreakspace  {}Fan-in Transfer for Interposer Wires allows red routing wires in die 1 to drive a mux that allows them to cross the interposer layer. (b)\nobreakspace  {}Fan-out Transfer for Interposer Wires allows the output of the interposer wire to drive wires in other tracks in die 2.}}{\thepage }}
 \newlabel{fig:architecture_params}{{3}{\thepage }}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Implementation}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces (a) Left: regular routing wire connectivity. Right: replacing the long wire with two wires and connecting them via an interposer wire. (b) Left: rrgraph for regular connectivity. Right: rrgraph after modifications}}{\thepage }}
-\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {Chip View}}}{\thepage }}
-\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {``rrgraph" View}}}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces (a) Regular routing wire connectivity. (b) Replacing the long wire with two wires and connecting them via an interposer wire. (c) rrgraph for regular connectivity. (d) rrgraph after modifications.}}{\thepage }}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{\thepage }}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{\thepage }}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(c)}{\ignorespaces {}}}{\thepage }}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(d)}{\ignorespaces {}}}{\thepage }}
 \newlabel{fig:rrgraph_ops}{{4}{\thepage }}
 \citation{timing2000}
 \citation{betz1997vpr}
-\citation{icann}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces VPR Graphical User Interface. Left:Full chip view. Right:Connectivity at the cutline. Interposer wires are drawn in red. Due to limited capacity of the interposer, some vertical routing wires are left dangling. Routing wires do not cross the cutline unless via a connection to an interposer wire.}}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces VPR Graphical User Interface. (a) Full chip view. (b) Connectivity at the cutline. Due to the limited signal capacity of the interposer, some vertical routing wires are left dangling.}}{\thepage }}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{\thepage }}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{\thepage }}
 \newlabel{fig:vpr_interposer_gui}{{5}{\thepage }}
 \@writefile{toc}{\contentsline {section}{\numberline {4}CAD Enhancements}{\thepage }}
 \newlabel{cadSection}{{4}{\thepage }}
@@ -58,10 +63,11 @@
 \newlabel{eq:timing_eq_full}{{1}{\thepage }}
 \newlabel{eq:timing_cost}{{2}{\thepage }}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.2}Placer wiring cost}{\thepage }}
-\newlabel{eq:bbcost}{{3}{\thepage }}
+\citation{icann}
 \citation{hahn2014cad}
-\citation{betz1997vpr}
+\citation{betz1999architecture}
 \citation{vtr2012}
+\newlabel{eq:bbcost}{{3}{\thepage }}
 \newlabel{eq:total_wiring}{{4}{\thepage }}
 \newlabel{eq:cost2}{{5}{\thepage }}
 \newlabel{eq:cprime}{{6}{\thepage }}
@@ -103,11 +109,11 @@
 \newlabel{fig:delays_crit}{{14}{\thepage }}
 \@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 0ns}.}}{\thepage }}
 \newlabel{table:delay0}{{4}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Impact of Number of Dice}{\thepage }}
 \@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 0.5ns}.}}{\thepage }}
 \newlabel{table:delay500}{{5}{\thepage }}
 \@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 1.5ns}.}}{\thepage }}
 \newlabel{table:delay1500}{{6}{\thepage }}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Impact of Number of Dice}{\thepage }}
 \@writefile{toc}{\contentsline {section}{\numberline {6}Conclusions and Future Work}{\thepage }}
 \newlabel{conclusionSection}{{6}{\thepage }}
 \@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
@@ -124,21 +130,24 @@
 \bibcite{3dfpga1995}{1}
 \bibcite{stratixV}{2}
 \bibcite{betz1997vpr}{3}
-\bibcite{xilinxTSV}{4}
-\bibcite{icann}{5}
-\bibcite{yieldmodel}{6}
-\bibcite{hahn2014cad}{7}
-\bibcite{hMetis}{8}
-\bibcite{3dfpga}{9}
-\bibcite{unidirectional}{10}
-\bibcite{timing2000}{11}
+\bibcite{betz1999architecture}{4}
+\bibcite{xilinxTSV}{5}
+\bibcite{icann}{6}
+\bibcite{yieldmodel}{7}
+\bibcite{hahn2014cad}{8}
+\bibcite{hMetis}{9}
+\bibcite{3dfpga}{10}
 \@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Minimum channel width when \textit  {number of cuts = 2} and \textit  {increased delay = 1ns}.}}{\thepage }}
 \newlabel{table:2cut_minW}{{9}{\thepage }}
 \@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 2} and \textit  {increased delay = 1ns}.}}{\thepage }}
 \newlabel{table:2cut_path}{{10}{\thepage }}
 \@writefile{toc}{\contentsline {section}{\numberline {7}Acknowledgments}{\thepage }}
 \@writefile{toc}{\contentsline {section}{\numberline {8}References}{\thepage }}
-\bibcite{xilinxTSVperformance}{12}
-\bibcite{vtr2012}{13}
-\bibcite{xilinxWP}{14}
-\bibcite{xilinx7series}{15}
+\bibcite{unidirectional}{11}
+\bibcite{lewis2005stratix}{12}
+\bibcite{luu2014vtr}{13}
+\bibcite{timing2000}{14}
+\bibcite{xilinxTSVperformance}{15}
+\bibcite{vtr2012}{16}
+\bibcite{xilinxWP}{17}
+\bibcite{xilinx7series}{18}

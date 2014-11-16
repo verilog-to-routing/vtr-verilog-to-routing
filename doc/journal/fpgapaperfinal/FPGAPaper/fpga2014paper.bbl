@@ -16,6 +16,11 @@ V.~Betz and J.~Rose.
 \newblock In {\em Int. Workshp on Field-Programmable Logic and Applications},
   pages 213--222. Springer, 1997.
 
+\bibitem{betz1999architecture}
+V.~Betz, J.~Rose, and A.~Marquardt.
+\newblock {\em {A}rchitecture and {CAD} for deep-submicron {FPGA}s}.
+\newblock Kluwer Academic Publishers, 1999.
+
 \bibitem{xilinxTSV}
 R.~Chaware, K.~Nagarajan, and S.~Ramalingam.
 \newblock {Assembly and Reliability Challenges in 3{D} Integration of 28nm
@@ -57,6 +62,21 @@ G.~Lemieux, E.~Lee, M.~Tom, and A.~Yu.
 \newblock {Directional and Single-Driver Wires in FPGA Interconnect}.
 \newblock In {\em IEEE Int. Conf. on Field Programmable Technology}, pages
   41--48, 2004.
+
+\bibitem{lewis2005stratix}
+D.~Lewis, E.~Ahmed, G.~Baeckler, V.~Betz, M.~Bourgeault, D.~Cashman,
+  D.~Galloway, M.~Hutton, C.~Lane, A.~Lee, et~al.
+\newblock {T}he {S}tratix {II} logic and routing architecture.
+\newblock In {\em Proceedings of the 2005 ACM/SIGDA 13th international
+  symposium on Field-programmable gate arrays}, pages 14--20. ACM, 2005.
+
+\bibitem{luu2014vtr}
+J.~Luu, J.~Goeders, M.~Wainberg, A.~Somerville, T.~Yu, K.~Nasartschuk, M.~Nasr,
+  S.~Wang, T.~Liu, N.~Ahmed, et~al.
+\newblock {VTR} 7.0: {N}ext generation architecture and {CAD} system for
+  {FPGA}s.
+\newblock {\em ACM Transactions on Reconfigurable Technology and Systems
+  (TRETS)}, 7(2):6, 2014.
 
 \bibitem{timing2000}
 A.~Marquardt, V.~Betz, and J.~Rose.
