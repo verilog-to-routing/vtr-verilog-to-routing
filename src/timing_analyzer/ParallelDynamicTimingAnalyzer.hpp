@@ -1,10 +1,11 @@
 #pragma once
+#include <omp.h>
 
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
 
 
-class ParallelLevelizedBarrierTimingAnalyzer : public SerialTimingAnalyzer {
+class ParallelDynamicTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph) override;
 
@@ -29,5 +30,14 @@ class ParallelLevelizedBarrierTimingAnalyzer : public SerialTimingAnalyzer {
         void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
         void forward_traverse_node(TimingGraph& tg, NodeId node_id);
         void backward_traverse_node(TimingGraph& tg, NodeId node_id);
+
+        void create_locks(TimingGraph& tg);
+        void init_locks();
+        void cleanup_locks();
+
+        std::vector<omp_lock_t> node_arrival_locks_;
+        std::vector<omp_lock_t> node_required_locks_;
+        std::vector<int> node_arrival_inputs_ready_count_;
+        std::vector<int> node_required_outputs_ready_count_;
 };
 

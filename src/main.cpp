@@ -8,6 +8,7 @@
 #include "SerialTimingAnalyzer.hpp"
 #include "ParallelLevelizedLockedTimingAnalyzer.hpp"
 #include "ParallelLevelizedBarrierTimingAnalyzer.hpp"
+#include "ParallelDynamicTimingAnalyzer.hpp"
 #include "vpr_timing_graph_common.hpp"
 
 #define NUM_SERIAL_RUNS 3
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
-    ParallelLevelizedBarrierTimingAnalyzer parallel_analyzer = ParallelLevelizedBarrierTimingAnalyzer(); 
+    ParallelDynamicTimingAnalyzer parallel_analyzer = ParallelDynamicTimingAnalyzer(); 
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
