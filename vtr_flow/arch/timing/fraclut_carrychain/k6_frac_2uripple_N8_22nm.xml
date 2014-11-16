@@ -260,6 +260,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 						<direct name="direct1" input="lut5.in" output="lutpure.in">
 						</direct>
 						<direct name="direct2" input="lutpure.out" output="lut5.out">
+							<pack_pattern name="ble5" in_port="lutpure.out" out_port="lut5.out"/>
 						</direct>
 					</interconnect>
 				</mode>
@@ -341,6 +342,16 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				<direct name="direct4b" input="ble6.in_E" output="lut5[1:1].in[4:4]">
 				</direct>
 				<direct name="direct5b" input="ble6.in_F" output="lut5[1:1].in[0:0]">
+				</direct>
+
+				<direct name="chain1" input="ble6.cin" output="lut5[0:0].cin">
+					<pack_pattern name="chain" in_port="ble6.cin" out_port="lut5[0:0].cin"/>
+				</direct>
+				<direct name="chain2" input="lut5[0:0].cout" output="lut5[1:1].cin">
+					<pack_pattern name="chain" in_port="lut5[0:0].cout" out_port="lut5[1:1].cin"/>
+				</direct>
+				<direct name="chain3" input="lut5[1:1].cout" output="ble6.cout">
+					<pack_pattern name="chain" in_port="lut5[1:1].cin" out_port="ble6.cout"/>
 				</direct>
 
 
