@@ -113,22 +113,42 @@ extern char* yytext;
 
 
 /* Top level rule */
-%start timing_graph 
+%start finish 
 %%
+
+finish: timing_graph                        {
+                                                //Add references for back edges (i.e. fan-in) to nodes in timing graph now that all nodes have been created.
+                                                for(EdgeId edge_id = 0; edge_id < timing_graph.num_edges(); edge_id++) {
+                                                    const TimingEdge& edge = timing_graph.edge(edge_id);
+                                                    
+                                                    NodeId node_id = edge.to_node_id();
+                                                    TimingNode& node = timing_graph.node(node_id);
+
+                                                    node.add_in_edge_id(edge_id);
+                                                }
+                                            }
 
 timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\n", $1);*/}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
                                                 TimingNode node($2.type);
+
                                                 for(auto& edge_val : *($2.out_edges)) {
                                                     TimingEdge edge;
 
-                                                    edge.set_to_node(edge_val.to_node);
+                                                    edge.set_from_node_id($2.node_id);
+                                                    edge.set_to_node_id(edge_val.to_node);
                                                     edge.set_delay(Time(edge_val.delay));
 
-                                                    node.add_out_edge(edge);
+                                                    EdgeId edge_id = timing_graph.add_edge(edge);
+
+                                                    node.add_out_edge_id(edge_id);
                                                 }
-                                                timing_graph.add_node(node);
+
+                                                //Add the node only after we have attached the out-going edges
+                                                NodeId node_id = timing_graph.add_node(node);
+                                                assert(node_id == $2.node_id);
+
                                                 if(timing_graph.num_nodes() % 1000000 == 0) {
                                                     std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
                                                 }
@@ -156,7 +176,8 @@ timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\
                                                     std::cout << "Loaded " << arr_req_times.size() / 1e6 << "M arr/req times..." << std::endl;
                                                 }
                                             }
-    | timing_graph EOL                      {}
+    | timing_graph EOL                      {
+                                            }
     ;
 
 tnode: node_id tnode_type pin_blk domain_skew_iodelay num_out_edges { 

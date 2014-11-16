@@ -3,7 +3,7 @@
 #include <vector>
 #include <omp.h>
 
-#include "TimingEdge.hpp"
+#include "timing_graph_fwd.hpp"
 #include "Time.hpp"
 
 enum class TN_Type {
@@ -29,14 +29,17 @@ std::istream& operator>>(std::istream& os, TN_Type& type);
 
 class TimingNode {
     public:
-        TimingNode() {}
+        TimingNode(): type_(TN_Type::UNKOWN) {}
         TimingNode(TN_Type new_type): type_(new_type) {}
 
-        int num_out_edges() const { return out_edges_.size(); }
+        int num_out_edges() const { return out_edge_ids_.size(); }
+        int num_in_edges() const { return in_edge_ids_.size(); }
 
-        TimingEdge& out_edge(int idx) { return out_edges_[idx]; }
-        const TimingEdge& out_edge(int idx) const { return out_edges_[idx]; }
-        void add_out_edge(const TimingEdge& edge) { out_edges_.push_back(edge); }
+        EdgeId out_edge_id(int idx) const { return out_edge_ids_[idx]; }
+        void add_out_edge_id(EdgeId edge_id) { out_edge_ids_.push_back(edge_id); }
+
+        EdgeId in_edge_id(int idx) const { return in_edge_ids_[idx]; }
+        void add_in_edge_id(EdgeId edge_id) { in_edge_ids_.push_back(edge_id); }
 
         TN_Type type() const { return type_; }
 
@@ -46,11 +49,6 @@ class TimingNode {
         Time required_time() const { return T_req_; }
         void set_required_time(Time new_required_time) { T_req_ = new_required_time; }
 
-        void print() {
-            for(auto& edge : out_edges_) {
-                edge.print();
-            }
-        }
     private:
         Time T_arr_; //Data arrival time at this node
         Time T_req_; //Data required arrival time at this node
@@ -58,7 +56,8 @@ class TimingNode {
 
         TN_Type type_;
 
-        std::vector<TimingEdge> out_edges_; //Timing edges driven by this node
+        std::vector<EdgeId> in_edge_ids_; //Timing edges driving this node
+        std::vector<EdgeId> out_edge_ids_; //Timing edges driven by this node
 
 };
 

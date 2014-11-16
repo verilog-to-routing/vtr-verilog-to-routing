@@ -95,7 +95,7 @@ void ParallelLevelizedLockedTimingAnalyzer::backward_traversal(TimingGraph& timi
     }
 }
 
-void ParallelLevelizedLockedTimingAnalyzer::pre_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id, int level_idx) {
+void ParallelLevelizedLockedTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
     TimingNode& node = tg.node(node_id);
     if(level_idx == 0) { //Primary Input
         //Initialize with zero arrival time
@@ -113,7 +113,7 @@ void ParallelLevelizedLockedTimingAnalyzer::pre_traverse_node(TimingGraph& tg, T
     }
 }
 
-void ParallelLevelizedLockedTimingAnalyzer::forward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
+void ParallelLevelizedLockedTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
     //From node was updated by the previous level (i.e. is read-only) so we don't need to synchronize
     //access to it.
     //
@@ -123,10 +123,11 @@ void ParallelLevelizedLockedTimingAnalyzer::forward_traverse_node(TimingGraph& t
     float from_arrival_time = from_node.arrival_time().value();
 
     for(int edge_idx = 0; edge_idx < from_node.num_out_edges(); edge_idx++) {
-        const TimingEdge& edge = from_node.out_edge(edge_idx);
+        EdgeId edge_id = from_node.out_edge_id(edge_idx);
+        const TimingEdge& edge = tg.edge(edge_id);
         float edge_delay = edge.delay().value();
 
-        int to_node_id = edge.to_node();
+        int to_node_id = edge.to_node_id();
 
         TimingNode& to_node = tg.node(to_node_id);
 
@@ -154,7 +155,7 @@ void ParallelLevelizedLockedTimingAnalyzer::forward_traverse_node(TimingGraph& t
     }
 }
 
-void ParallelLevelizedLockedTimingAnalyzer::backward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id) {
+void ParallelLevelizedLockedTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
     //Only one thread ever updates node so we don't need to synchronize access to it
     //
     //The downstream (to_node) was updated on the previous level (i.e. is read-only), 
@@ -163,9 +164,10 @@ void ParallelLevelizedLockedTimingAnalyzer::backward_traverse_node(TimingGraph& 
     float required_time = node.required_time().value();
 
     for(int edge_idx = 0; edge_idx < node.num_out_edges(); edge_idx++) {
-        const TimingEdge& edge = node.out_edge(edge_idx);
+        EdgeId edge_id = node.out_edge_id(edge_idx);
+        const TimingEdge& edge = tg.edge(edge_id);
 
-        int to_node_id = edge.to_node();
+        int to_node_id = edge.to_node_id();
         const TimingNode& to_node = tg.node(to_node_id);
 
         //TODO: Generalize this to support a general Time class (e.g. vector of corners or statistical etc.)

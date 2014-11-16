@@ -1,16 +1,20 @@
 #include <stdio.h>
 #include <ctime>
+#include <cassert>
 
 #include "TimingGraph.hpp"
+#include "TimingNode.hpp"
+
 #include "SerialTimingAnalyzer.hpp"
 #include "ParallelLevelizedLockedTimingAnalyzer.hpp"
-#include "ParallelLevelizedLockedTasksTimingAnalyzer.hpp"
 #include "vpr_timing_graph_common.hpp"
 
 #define NUM_SERIAL_RUNS 3
 #define NUM_PARALLEL_RUNS 10
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
+
+void print_timing_graph(const TimingGraph& tg);
 
 float time_sec(struct timespec start, struct timespec end);
 
@@ -59,6 +63,8 @@ int main(int argc, char** argv) {
     }
     std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
     std::cout << std::endl;
+
+    //print_timing_graph(timing_graph);
 
     float serial_analysis_time = 0.;
     float serial_analysis_time_avg = 0.;
@@ -147,6 +153,22 @@ int main(int argc, char** argv) {
     std::cout << "Total time: " << time_sec(prog_start, prog_end) << " sec" << std::endl;
 
     return 0;
+}
+
+void print_timing_graph(const TimingGraph& tg) {
+    for(NodeId node_id = 0; node_id < tg.num_nodes(); node_id++) {
+        const TimingNode& node = tg.node(node_id);
+        std::cout << "Node: " << node_id << " Out Edges: " << node.num_out_edges() << std::endl;
+        for(int out_edge_idx = 0; out_edge_idx < node.num_out_edges(); out_edge_idx++) {
+            EdgeId edge_id = node.out_edge_id(out_edge_idx);
+            const TimingEdge& edge = tg.edge(edge_id);
+            assert(edge.from_node_id() == node_id);
+
+            NodeId to_node_id = edge.to_node_id();
+
+            std::cout << "\tEdge to node: " << to_node_id << " Delay: " << edge.delay().value() << std::endl;
+        }
+    }
 }
 
 float time_sec(struct timespec start, struct timespec end) {

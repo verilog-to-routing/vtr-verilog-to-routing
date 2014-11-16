@@ -28,9 +28,9 @@ class ParallelLevelizedLockedTimingAnalyzer : public SerialTimingAnalyzer {
         void backward_traversal(TimingGraph& timing_graph);
 
         //Parallel worker functions
-        void pre_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id, int level_idx);
-        void forward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id);
-        void backward_traverse_node(TimingGraph& tg, TimingGraph::NodeId node_id);
+        void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
+        void forward_traverse_node(TimingGraph& tg, NodeId node_id);
+        void backward_traverse_node(TimingGraph& tg, NodeId node_id);
 
         void create_locks(TimingGraph& tg);
         void init_locks();

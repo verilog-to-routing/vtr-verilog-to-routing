@@ -15,7 +15,6 @@ void SerialTimingAnalyzer::reset_timing(TimingGraph& timing_graph) {
 
         node.set_arrival_time(Time(NAN));
         node.set_required_time(Time(NAN));
-        
     }
 }
 
@@ -54,14 +53,15 @@ void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
 void SerialTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
     for(int level_idx = 0; level_idx < timing_graph.num_levels(); level_idx++) {
-        for(int node_id : timing_graph.level(level_idx)) {
+        for(NodeId node_id : timing_graph.level(level_idx)) {
             const TimingNode& from_node = timing_graph.node(node_id);
             float from_arrival_time = from_node.arrival_time().value();
 
             for(int edge_idx = 0; edge_idx < from_node.num_out_edges(); edge_idx++) {
-                const TimingEdge& edge = from_node.out_edge(edge_idx);
+                EdgeId edge_id = from_node.out_edge_id(edge_idx);
+                const TimingEdge& edge = timing_graph.edge(edge_id);
 
-                int to_node_id = edge.to_node();
+                NodeId to_node_id = edge.to_node_id();
 
                 TimingNode& to_node = timing_graph.node(to_node_id);
 
@@ -87,14 +87,15 @@ void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //  Since we only store edges in the forward direction we calculate required times by
     //  setting the values for the current level based on the one below
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
-        for(int node_id : timing_graph.level(level_idx)) {
+        for(NodeId node_id : timing_graph.level(level_idx)) {
             TimingNode& node = timing_graph.node(node_id);
             float required_time = node.required_time().value();
 
             for(int edge_idx = 0; edge_idx < node.num_out_edges(); edge_idx++) {
-                const TimingEdge& edge = node.out_edge(edge_idx);
+                EdgeId edge_id = node.out_edge_id(edge_idx);
+                const TimingEdge& edge = timing_graph.edge(edge_id);
 
-                int to_node_id = edge.to_node();
+                NodeId to_node_id = edge.to_node_id();
                 const TimingNode& to_node = timing_graph.node(to_node_id);
 
                 //TODO: Generalize this to support a general Time class (e.g. vector of corners or statistical etc.)
