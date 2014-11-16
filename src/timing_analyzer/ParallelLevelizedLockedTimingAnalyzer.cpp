@@ -7,9 +7,9 @@
 
 void ParallelLevelizedLockedTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     create_locks(timing_graph);
+
 #pragma omp parallel
     {
-
         //TODO: Lock init and pre traversal can occur in parallel
         init_locks();
         pre_traversal(timing_graph);
