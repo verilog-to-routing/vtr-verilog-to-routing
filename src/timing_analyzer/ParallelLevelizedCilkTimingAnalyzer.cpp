@@ -1,24 +1,20 @@
-#include "SerialTimingAnalyzer.hpp"
+#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
-void SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+void ParallelLevelizedCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+    //TODO: Lock init and pre traversal can occur in parallel
     pre_traversal(timing_graph);
+
+    //TODO: While forward and backward tranversals work on the same edges
+    //and nodes, they work on independant data sets (i.e. arrival time for forward and required time for backward)
+    //so they can occur in parallel
     forward_traversal(timing_graph);
     backward_traversal(timing_graph);
 }
 
-void SerialTimingAnalyzer::reset_timing(TimingGraph& timing_graph) {
-    for(int node_id = 0; node_id < timing_graph.num_nodes(); node_id++) {
-        TimingNode& node = timing_graph.node(node_id);
-
-        node.set_arrival_time(Time(NAN));
-        node.set_required_time(Time(NAN));
-    }
-}
-
-void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
+void ParallelLevelizedCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
      * and required times.
@@ -29,33 +25,49 @@ void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
      */
     //We perform a BFS from primary inputs to initialize the timing graph
     for(int level_idx = 0; level_idx < timing_graph.num_levels(); level_idx++) {
-        for(int node_id : timing_graph.level(level_idx)) {
-            pre_traverse_node(timing_graph, node_id, level_idx);
+        const std::vector<int>& level_ids = timing_graph.level(level_idx);
+        for(int i = 0; i < (int) level_ids.size(); i++) {
+
+            pre_traverse_node(timing_graph, level_ids[i], level_idx);
         }
     }
 }
 
-void SerialTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
+void ParallelLevelizedCilkTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
+
+    //Need synchronization on nodes, since each source node could propogate
+    //arrival times to multiple nodes.
+    //We could get a race-condition if multiple threads try to update a single
+    //node in parallel
+    
+    //Levelized Breadth-first
+    //
+    //The first level was initialized by the pre-traversal
+    //We update each node based on its predicessors
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
-        for(NodeId node_id : timing_graph.level(level_idx)) {
-            forward_traverse_node(timing_graph, node_id);
+        const std::vector<int>& level_ids = timing_graph.level(level_idx);
+        for(int i = 0; i < (int) level_ids.size(); i++) {
+
+            forward_traverse_node(timing_graph, level_ids[i]);
         }
     }
 }
     
-void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
+void ParallelLevelizedCilkTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //Backward traversal (required times)
     //  Since we only store edges in the forward direction we calculate required times by
     //  setting the values for the current level based on the one below
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
-        for(NodeId node_id : timing_graph.level(level_idx)) {
-            backward_traverse_node(timing_graph, node_id);
+        const std::vector<int>& level_ids = timing_graph.level(level_idx);
+        for(int i = 0; i < (int) level_ids.size(); i++) {
+
+            backward_traverse_node(timing_graph, level_ids[i]);
         }
     }
 }
 
-void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
+void ParallelLevelizedCilkTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
     TimingNode& node = tg.node(node_id);
     if(level_idx == 0) { //Primary Input
         //Initialize with zero arrival time
@@ -73,7 +85,10 @@ void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, in
     }
 }
 
-void SerialTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
+void ParallelLevelizedCilkTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
+    //The from nodes were updated by the previous level update, so they are only accessed
+    //read only.
+    //Since only a single thread updates to_node, we don't need any locks
     TimingNode& to_node = tg.node(node_id);
 
     float new_arrival_time = NAN;
@@ -99,7 +114,11 @@ void SerialTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id
     to_node.set_arrival_time(Time(new_arrival_time));
 }
 
-void SerialTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
+void ParallelLevelizedCilkTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
+    //Only one thread ever updates node so we don't need to synchronize access to it
+    //
+    //The downstream (to_node) was updated on the previous level (i.e. is read-only), 
+    //so we don't need to worry about synchronizing access to it.
     TimingNode& node = tg.node(node_id);
     float required_time = node.required_time().value();
 

@@ -99,7 +99,7 @@ void ParallelLevelizedBarrierTimingAnalyzer::forward_traverse_node(TimingGraph& 
     //Since only a single thread updates to_node, we don't need any locks
     TimingNode& to_node = tg.node(node_id);
 
-    float new_arrival_time;
+    float new_arrival_time = NAN;
     for(int edge_idx = 0; edge_idx < to_node.num_in_edges(); edge_idx++) {
         EdgeId edge_id = to_node.in_edge_id(edge_idx);
         const TimingEdge& edge = tg.edge(edge_id);

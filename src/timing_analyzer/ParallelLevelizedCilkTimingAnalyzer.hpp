@@ -1,12 +1,13 @@
 #pragma once
+#include <omp.h>
 
-#include "TimingAnalyzer.hpp"
-#include "timing_graph_fwd.hpp"
+#include "TimingGraph.hpp"
+#include "SerialTimingAnalyzer.hpp"
 
-class SerialTimingAnalyzer : public TimingAnalyzer {
+
+class ParallelLevelizedCilkTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
-        void calculate_timing(TimingGraph& timing_graph);
-        void reset_timing(TimingGraph& timing_graph);
+        void calculate_timing(TimingGraph& timing_graph) override;
 
     private:
         /*
@@ -24,9 +25,11 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
          * Propogate required times
          */
         void backward_traversal(TimingGraph& timing_graph);
-        
-        //Per node worker functions
+
+        //Parallel worker functions
         void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
         void forward_traverse_node(TimingGraph& tg, NodeId node_id);
         void backward_traverse_node(TimingGraph& tg, NodeId node_id);
+
 };
+

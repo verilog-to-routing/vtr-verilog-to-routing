@@ -1,11 +1,11 @@
-#include "ParallelDynamicTimingAnalyzer.hpp"
+#include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
 #include <omp.h>
 
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
-void ParallelDynamicTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     //Create synchronization counters and locks
     create_locks(timing_graph);
     node_arrival_inputs_ready_count_ = std::vector<int>(timing_graph.num_nodes());
@@ -28,12 +28,12 @@ void ParallelDynamicTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) 
     }
 }
 
-void ParallelDynamicTimingAnalyzer::create_locks(TimingGraph& tg) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::create_locks(TimingGraph& tg) {
     node_arrival_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
     node_required_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
 }
 
-void ParallelDynamicTimingAnalyzer::init_locks() {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::init_locks() {
 #pragma omp for
     for(int i = 0; i < (int) node_arrival_locks_.size(); i++) {
         omp_init_lock(&node_arrival_locks_[i]);
@@ -41,7 +41,7 @@ void ParallelDynamicTimingAnalyzer::init_locks() {
     }
 }
 
-void ParallelDynamicTimingAnalyzer::cleanup_locks() {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::cleanup_locks() {
 #pragma omp for
     for(int i = 0; i < (int) node_arrival_locks_.size(); i++) {
         omp_destroy_lock(&node_arrival_locks_[i]);
@@ -49,7 +49,7 @@ void ParallelDynamicTimingAnalyzer::cleanup_locks() {
     }
 }
 
-void ParallelDynamicTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
      * and required times.
@@ -68,7 +68,7 @@ void ParallelDynamicTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     }
 }
 
-void ParallelDynamicTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
     //
     //We perform a 'dynamic' breadth-first like search
@@ -85,7 +85,7 @@ void ParallelDynamicTimingAnalyzer::forward_traversal(TimingGraph& timing_graph)
     }
 }
     
-void ParallelDynamicTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //Backward traversal (required times)
     //
     //We perform a 'dynamic' reverse breadth-first like search
@@ -100,7 +100,7 @@ void ParallelDynamicTimingAnalyzer::backward_traversal(TimingGraph& timing_graph
     }
 }
 
-void ParallelDynamicTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
     TimingNode& node = tg.node(node_id);
     if(level_idx == 0) { //Primary Input
         //Initialize with zero arrival time
@@ -118,13 +118,13 @@ void ParallelDynamicTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId no
     }
 }
 
-void ParallelDynamicTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
     //The from nodes were updated by the previous level update, so they are only accessed
     //read only.
     //Since only a single thread updates to_node, we don't need any locks
     TimingNode& to_node = tg.node(node_id);
 
-    float new_arrival_time;
+    float new_arrival_time = NAN;
     for(int edge_idx = 0; edge_idx < to_node.num_in_edges(); edge_idx++) {
         EdgeId edge_id = to_node.in_edge_id(edge_idx);
         const TimingEdge& edge = tg.edge(edge_id);
@@ -175,7 +175,7 @@ void ParallelDynamicTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeI
     }
 }
 
-void ParallelDynamicTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
+void ParallelDynamicOpenMPTasksTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
     //Only one thread ever updates node so we don't need to synchronize access to it
     //
     //The downstream (to_node) was updated on the previous level (i.e. is read-only), 

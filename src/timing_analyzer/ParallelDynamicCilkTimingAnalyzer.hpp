@@ -5,7 +5,7 @@
 #include "SerialTimingAnalyzer.hpp"
 
 
-class ParallelDynamicTimingAnalyzer : public SerialTimingAnalyzer {
+class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         void calculate_timing(TimingGraph& timing_graph) override;
 

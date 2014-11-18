@@ -8,10 +8,11 @@
 #include "SerialTimingAnalyzer.hpp"
 #include "ParallelLevelizedLockedTimingAnalyzer.hpp"
 #include "ParallelLevelizedBarrierTimingAnalyzer.hpp"
-#include "ParallelDynamicTimingAnalyzer.hpp"
+#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
+#include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 3
+#define NUM_SERIAL_RUNS 10
 #define NUM_PARALLEL_RUNS 10
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
-    ParallelDynamicTimingAnalyzer parallel_analyzer = ParallelDynamicTimingAnalyzer(); 
+    ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);

@@ -1,5 +1,5 @@
 #Tools
-CXX = g++
+CXX = g++-4.9
 AR = ar
 LEXER_GEN = flex
 PARSER_GEN = bison
@@ -46,12 +46,12 @@ DEP_FLAGS = -MMD -MP
 
 DEBUG_FLAGS = -g -ggdb3 -g3 -O0 -fno-inline
 
-OPT_FLAGS = -O3 #-fno-inline
+OPT_FLAGS = -O3
 
-ifneq (,$(findstring release, $(BUILD_TYPE)))
-	DEBUG_OPT_FLAGS := $(OPT_FLAGS)
-else
+ifneq (,$(findstring debug, $(BUILD_TYPE)))
 	DEBUG_OPT_FLAGS := $(DEBUG_FLAGS)
+else
+	DEBUG_OPT_FLAGS := $(OPT_FLAGS)
 endif
 
 ifneq (,$(findstring yes, $(PROFILE)))
