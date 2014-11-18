@@ -200,6 +200,9 @@ The 28nm dies are connected to the 65nm silicon interposer through microbumps wi
 
 Overall, these interposer-based FPGAs have increased delay and reduced connectivity between dies, with approximately $23\%$ of the usual number of vertical wires crossing between dies and approximately $1ns$ of increased delay to cross the interposer.
 
+%---------------------------------------------------------------
+%---------------------------------------------------------------
+%---------------------------------------------------------------
 \section{Architecture models}
 \label{archSection}
 %   - Define parameters
@@ -228,14 +231,15 @@ Interposer wires are longer and wider than on-die wires and have microbumps on e
 
 %   - Interposer-Routing interface
 \subsection{Interposer-Routing interface}
+\label{sec:interposer-routing-interface}
 In a simple architecture, the vertical routing wires that can not connect to an interposer wire are dangling. Since interposer wires are scarce, we want to be able to study architectures in which the interposer wires are more accessible. To do so, we have enhanced the router to support the following interposer-routing interface options.
 
 \begin{enumerate}[label=(\alph*)]
 \item Fan-in Transfer for Interposer Wires\\
-For an architecture with \textit{\% wires cut} $=0$, all vertical routing wires have a corresponding interposer wire that connects them to the adjacent die. Practical interposers, however, can only accommodate a fraction of all vertical routing wires. Hence, when this variable is \textit{on}, we place a multiplexer at the input of each available interposer wire and connect some adjacent ``dangling" vertical routing wires to the multiplexer. This allows for additional flexibility in routing. As an example, if \textit{\% wires cut} $=75\%$, 3 of every 4 interposer wires are cut. Therefore, we place a 4-to-1 multiplexer at the input of the one interposer wire that is not cut, and we connect the 3 vertical routing wires that do not have a corresponding interposer wire to the multiplexer.
+For an architecture with \textit{\% wires cut} $=0$, all vertical routing wires have a corresponding interposer wire that connects them to the adjacent die. Practical interposers, however, can only accommodate a fraction of all vertical routing wires. When \textit{fanin transfer} option is \textit{on}, we place a multiplexer at the input of each available interposer wire and connect some adjacent ``dangling" vertical routing wires to the multiplexer. This allows for additional flexibility in routing by ensuring that \textit{every} vertical routing wire could \textit{potentially} drive an interposer wire through a multiplexer. As an example, if \textit{\% wires cut} $=75\%$, 3 of every 4 interposer wires are cut. Therefore, we place a 4-to-1 multiplexer at the input of the one interposer wire that is not cut, and we connect the 3 vertical routing wires that do not have a corresponding interposer wire to the multiplexer. 
 
 \item Fan-out Transfer for Interposer Wires\\
-When this option is \textit{on}, we allow the interposer wire output to drive not only its own corresponding vertical wire at the other side of the cut, but also the other ``dangling" vertical routing wires that are not driven by anything because their corresponding interposer wires are cut.
+When \textit{fanout transfer} option is \textit{on}, we allow the interposer wire output to drive not only its own corresponding vertical wire at the other side of the cut, but also the other ``dangling" vertical routing wires that are not driven by anything because their corresponding interposer wires are cut.
 
 \item Bidirectional Interposer Wires\\
 Dominant routing architectures in modern FPGAs use unidirectional wires~\cite{unidirectional, lewis2005stratix}. Such wires can only be driven at one point, normally their start point. When this option is \textit{on}, we allow interposer wires to be driven from one end or the other by adding tri-state buffers at both ends.
@@ -282,16 +286,16 @@ While this is a reasonable method to model such architectures, it makes it diffi
 
 For every vertical routing wire in the channel, we add a new routing node (``\textit{interposer node}") into the rrgraph. Then, we determine rrnodes (e.g. vertical routing wires) that cross a cutline in the rrgraph, and we replace them with 2 rrnodes: one that is above the cutline and one that is below the cutline. We properly transfer fan-ins and fan-outs of the original node onto the two newly created nodes and we connect the two nodes using an interposer node. Finally, we remove \textit{all} edges from \textit{\%wires cut} percent of interposer nodes and increase the switch delay of output edges of the remaining interposer nodes by \textit{increased delay}. Figure~\ref{fig:rrgraph_ops} shows an example of these operations.
 
-
-
 As illustrated in Figure~\ref{fig:vpr_interposer_gui}, no vertical routing wires cross a cutline boundary and a fraction of them connect to other dies via interposer wires.
 
 
-
+%---------------------------------------------------------------
+%---------------------------------------------------------------
+%---------------------------------------------------------------
 \section{CAD Enhancements}
 \label{cadSection}
 
-\subsection{Placer Optimization}
+\subsection{Placer optimization}
 \label{cad_enh_placer_subsection}
 Placement is crucial in mitigating the impact of the reduced wiring and increased delay when crossing between dice; a good placement should minimize the number of signals crossing between dice, particularly time-critical ones. VPR uses 2 different costs as the metrics for its placer algorithm: the timing cost and the bounding box (wiring) cost. We modified the placer's bounding box and timing costs to account for the increased latency to cross the interposer and for the reduced wire capacity close to the cutlines, as the wire availability becomes more sparse.
 
@@ -352,7 +356,8 @@ C' = \frac{ratio\_wires\_cut}{avg\_chany\_W(n)}
 
 \textit{bbHeight(n)} is the height of the bounding box of the net \textit{n} and $ratio\_wires\_cut$ is the ratio of wires cut at the cutline. This formulation of $C'$ ensures that the new cost term is of roughly the same magnitude as $wire\_cost_{orig}$ in (\ref{eq:bbcost}) and that it is weighted more heavily for interposer architectures in which the wiring between dice is more scarce.
 
-\subsection{Router Optimization}
+\subsection{Router optimization}
+\label{sec:router_optimizations}
 Once the Routing Resource Graph is modified as detailed in Section \ref{archSection}, the VPR router adapted automatically to the interposer architecture. The router starts at a net source node and expands by discovering adjacent routing nodes until it reaches the destination node. At any point, the router knows the cost of the path taken to the current point and it uses a \textit{lookahead cost function} to estimate the resource and delay cost from the current node to the destination. Using this lookahead cost, the router can properly sort routing alternatives. The lookahead cost function in VPR is not aware of the interposer, and therefore it takes a long time to converge to a routing decision. To make the lookahead aware of the interposer, we modify the lookahead cost function by adding terms that account for extra \textit{interposer delay} and extra \textit{interposer nodes} that may exist on the route from the current node to the destination node.
 
 The VPR router uses the following to calculate a cost for a routing node \textit{r} on the route from \textit{i} to \textit{j}:
@@ -392,54 +397,28 @@ The interposer-aware router lookahead is able to make routing decisions more qui
 %   - Effectiveness / results
 \subsection{Effectiveness of the enhancements}
 \label{sec:CADeffect}
-For all experiments in this paper, the remaining architecture parameters of the FPGA are taken from the "flagship" architecture of the VTR project (\textit{k6\_frac\_N10\_mem32K\_40nm.xml}). The parameters of this architecture are in line with both current commercial FPGAs and academic research into best practices. It consists of logic clusters with 10 fracturable 6-LUTs per block (N=10, k=6), and also includes 32kb RAM blocks and DSP blocks configurable to perform 9x9, 18x18 or 36x36 multipliers. The delay values in the architecture are taken from 40 nm circuit simulations and 40 nm commercial FPGAs. It uses unidirectional routing, with all wire segments having length L = 4.
+For all experiments in this paper, the remaining architecture parameters of the FPGA are taken from the ``flagship" architecture of the VTR project (\textit{k6\_frac\_N10\_mem32K\_40nm.xml}). The parameters of this architecture are in line with both current commercial FPGAs and academic research into best practices. It consists of logic clusters with 10 fracturable 6-LUTs per block (N=10, k=6), and also includes 32kb RAM blocks and DSP blocks configurable to perform 9x9, 18x18 or 36x36 multipliers. The delay values in the architecture are taken from 40 nm circuit simulations and 40 nm commercial FPGAs. It uses unidirectional routing, with all wire segments having length L = 4.
 
-We used VPR 7.0, with the enhancements we detailed above, and the architecture file \textit{k6\_frac\_N10\_mem32K\_40nm} in the experiments below. All experiments targeted the smallest FPGA (with number of rows equal to number of columns) which could accomodate a benchmark circuit; this represents a very full FPGA with little white space left, and hence presents a difficult case to an interposer-based FPGA as no die can be left mostly empty.
+We used VPR 7.0, with the enhancements we detailed above, and the architecture file \textit{k6\_frac\_N10\_mem32K\_40nm} in the experiments below. All experiments targeted the smallest FPGA (with number of rows equal to number of columns) which could accommodate a benchmark circuit; this represents a very full FPGA with little white space left, and hence presents a difficult case to an interposer-based FPGA as no die can be left mostly empty. 
 
-Figures \ref{fig:minW_constant_sweep} and \ref{fig:areadelay_constant_sweep} show the efficacy of the five placer wiring cost modifications as their weight, \textit{C} varies. Each point in the graphs is the geometric mean of the results with \textit{\% wires cut} = 60 and 80, and the results for 60\% and 80\% are themselves geometric means of the results of 6 circuits from the VTR benchmark suite~\cite{vtr2012}:  \textit{stereovision0}, \textit{stereovision1}, \textit{mkDelayWorker32B}, \textit{mkSMAdapter4B}, \textit{or1200} and \textit{blob\_merge}. These values for \textit{\% wires cut} were chosen because they in the likely range of wires which can cross the interposer without exceeding the microbump capacity, as described in Section~\ref{virtex7section}. The \textit{area-delay product} is the product of the \textit{minimum channel width} and the \textit{critical path delay}. To obtain the \textit{critical path delay} the circuits were run with a low stress routing with a channel width, $W = 1.3 \times minW$, where $minW$ is the minimum channel width for which the circuit is still routable. 
+We have used the eight largest circuits from the VTR benchmark~\cite{vtr2012}, namely: \textit{bgm}, \textit{LU8PEEng}, \textit{LU32PEEng}, \textit{mcml}, \textit{mkDelayWorker32B}, \textit{stereovision0}, \textit{stereovision1} and \textit{stereovision2}. The size of these circuits ranges from $9,100$ to $153,000$ primitives (LUTs, FFs, etc.), with an average size of $52,600$ primitives. All results are the geometric mean over all circuits for a given interposer architecture.
 
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{minW_constant_sweep_log.eps}
-\caption{Minimum channel width vs. weighting for different \textit{cut\_cost} terms.}
-\label{fig:minW_constant_sweep}
-\end{figure}
+To obtain the \textit{critical path delay} the circuits were run with a low stress routing with a channel width, $W = 1.3 \times minW$, where $minW$ is the minimum channel width for which the circuit is still routable. 
 
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{areadelay_constant_sweep_log.eps}
-\caption{Area-delay product vs. weighting for different \textit{cut\_cost} terms.}
-\label{fig:areadelay_constant_sweep}
-\end{figure}
+\subsubsection{Effectiveness of placer optimizations}
+\label{sec:effectiveness_of_placer_enhancements}
+Enabling the enhancements described in Section~\ref{cad_enh_placer_subsection} improves the results .... haven't finished running these yet. So, <TODO EHSAN>: fill this section with actual results. For now, let's use a graph from Andre as a placeholder!
+The graphs show that combining the timing with the bounding box optimizations led to an average of 20\% improvement on the area-delay product and the most significant contribution was made by incorporation of \textit{cut\_cost} into the wire cost function.
 
-\begin{table}[htbp]
-\begin{tabular}{|r|r|r|r|r|}
-\hline
-\multicolumn{1}{|l|}{Term} & \multicolumn{1}{l|}{Best C} & \multicolumn{1}{l|}{minW} & \multicolumn{1}{l|}{crit\_path(ns)} & \multicolumn{1}{l|}{Area-delay} \\ \hline \hline
-None & - & 124.636 & 9.844 & 1226.955 \\ \hline
-\ref{eq:cost0} & 0.3 & 122.929 & 9.413 & 1157.09 \\ \hline
-\ref{eq:cost1} & 5 & 114.444 & 9.565 & 1094.68 \\ \hline
-\ref{eq:cost2} & 1 & 107.303 & 9.285 & 996.26 \\ \hline
-\ref{eq:cost4} & 1 & 113.381 & 9.280 & 1052.16 \\ \hline
-\ref{eq:cost5} & 5 & 112.703 & 9.841 & 1109.11 \\ \hline
-\end{tabular}
-\caption{Best weighting and performance for each \textit{cut\_cost} term.}
-\label{table:constant_sweep}
-\end{table}
+We believe the key to the good performance of the new placer cost functions is that it produces gradual gains as bounding boxes crossing the cutline shrink to be closer and closer to being captured entirely on one side of the cutline. Consider for example the 3 bounding boxes shown in Figure \ref{fig:bb_illustration}. Note that bounding box (a) and (b) both cross the cutline, but (b) is penalized less by (\ref{eq:cost2}) because bounding box (b) is mostly on the lower side of the cutline; it is more likely that later smaller placement changes will result in the bounding box moving entirely below the cutline, reducing interposer wiring demand. Cost function (\ref{eq:cost2}) penalize bounding box (a) more than (b) and (b) more than (c) to guide placement to gradually move bounding boxes to one side or the other of a cutline.
 
-The best \textit{C} value and the resulting performance for each term is summarized in Table~\ref{table:constant_sweep}. Note that cost term (\ref{eq:cost2}) with weighting $C = 1.0$ has the best performance; this is the configuration used in the rest of our experiments.
-
-We believe the key to the good performance of this cost function is that it produces gradual gains as bounding boxes crossing the cutline shrink to be closer and closer to being captured entirely on one side of the cutline. Consider for example the 3 bounding boxes shown in Figure \ref{fig:bb_illustration}. Note that bounding box (a) and (b) both cross the cutline and hence are penalized equally by (\ref{eq:cost0}), while bounding box (c) does not cross a cutline and hence is not penalized. However, bounding box (b) is mostly on the lower side of the cutline; it is more likely that later smaller placement changes will result in the bounding box moving entirely below the cutline, reducing interposer wiring demand. Cost function terms (\ref{eq:cost2}) and (\ref{eq:cost4}) will both penalize bounding box (a) more than bounding box (b) to guide placement to gradually move bounding boxes to one side or the other of a cutline. Figure \ref{fig:areadelay_constant_sweep} shows that these are the two best performing \textit{cut\_cost} terms.
-
-\begin{figure}[!htbp]
+\begin{figure}[!h]
 \centering
 \includegraphics[width=\linewidth]{bb.eps}
 \caption{Illustration of three different scenarios for the wiring cost. The dashed green box shows a case where \textit{(a)} it crosses the interposer, the dotted black box shows a case where \textit{(b)} it barely crosses the cutline, and the solid blue one shows a case where \textit{(c)} the bounding box does not span the cutline.}
 \label{fig:bb_illustration}
 \end{figure}
 
-Figure \ref{fig:comparison_minW} shows the minimum channel width for different values of \textit{\% wires cut} when there are no optimizations and when \textit{cut\_const} (\ref{eq:cost2}) is used. % comment about impact vs % wires cut
-Figure \ref{fig:comparison_bars} compares result quality with both enhanced timing and wiring cost functions. These experiments were run with term (\ref{eq:cost2}), and are the geometric means of the runs with \textit{\% wires cut = 60, 70, 80}. 
 
 \begin{figure}[!htbp]
 \centering
@@ -448,170 +427,33 @@ Figure \ref{fig:comparison_bars} compares result quality with both enhanced timi
 \label{fig:comparison_minW}
 \end{figure}
 
-\begin{figure}[!htbp]
+\subsubsection{Effectiveness of router optimizations}
+\label{sec:effectiveness_of_router_enhancements}
+The router optimizations described in Section~\ref{sec:router_optimizations} extensively improve the runtime of the router lookahead algorithm. Figure~\ref{fig:lookahead_runtime} shows geomean of the router runtime for the 8 circuits for different \textit{\% wires cut} values. On average, the router runs 31 times faster and finds identical minimum channel widths for all circuits.
+
+\begin{figure}[!hb]
 \centering
-\includegraphics[width=\linewidth]{comparison_bars_relative.eps}
-\caption{Performance of different placer optimizations, relative to the original VPR results. The area-delay product is calculated as the product $minW \times critical path delay.$}
-\label{fig:comparison_bars}
+\includegraphics[width=\linewidth]{router_opt.eps}
+\caption{Router runtime improvement using updated lookahead function}
+\label{fig:lookahead_runtime}
 \end{figure}
 
-The graphs show that combining the timing with the bounding box optimizations led to an average of 20\% improvement on the area-delay product and the most significant contribution was made by incorporation of \textit{cut\_cost} into the wire cost function.
+The new router lookahead changes the priority of the routes discovered by the router. Using the new router lookahead function increases the critical path delay by 1.3\% on average as shown in Figure~\ref{fig:lookahead_fmax}.
 
+\begin{figure}[!hb]
+\centering
+\includegraphics[width=\linewidth]{router_opt_fmax.eps}
+\caption{The new router lookahead increases the critical path delay.}
+\label{fig:lookahead_fmax}
+\end{figure}
 
-%----------------------------------------------------
+%---------------------------------------------------------------
+%---------------------------------------------------------------
+%---------------------------------------------------------------
 \section{Architecture results}
 \label{resultsSection}
 
-Using the best CAD settings found in Section~\ref{cadSection} we analyzed the impact of three key architecture parameters:  \textit{\% wires cut}, \textit{delay increase} and \textit{number of cuts}. All the experiments were run with the eight largest circuits from the VTR benchmark~\cite{vtr2012}, namely: \textit{bgm}, \textit{LU8PEEng}, \textit{LU32PEEng}, \textit{mcml}, \textit{mkDelayWorker32B}, \textit{stereovision0}, \textit{stereovision1} and \textit{stereovision2}. The size of these circuits ranges from $9,100$ to $153,000$ primitives (LUTs, FFs, etc.), with an average size of $52,600$ primitives. All results are the geometric mean over all circuits for a given interposer architecture.
-
-%   - Channel width vs % wires cut
-\subsection{Interposer Wiring Capacity (\% wires cut)}
-
-To analyze the impact of the number of cut wires we ran experiments varying only this parameter while leaving the number of cuts and the increased delay constant. The values used for these parameters were \textit{number of cuts} $= 3$ (corresponding to four dice) and \textit{increased delay} $= 1ns$, as these values are similar to those of the \textit{XC7V2000T} device.
-
-Figure \ref{fig:standard_minW} shows the graph of minimum channel width versus \textit{\% wires cut}. It can be noted from this graph that the minimum channel width increases slowly up to 60\% of wires cut, indicating that the placement engine is able to avoid saturating the interposer routing until that point. When more than 60\% of the wires are cut however (i.e. the interposer provides less than 40\% of the usual within-die routing capacity), the minimum channel width grows rapidly indicating that the interposer routing bandwidth has become a limiting factor. The minW value at 60\% is 20\% greater than with no wires cut, while at 70\% it is 52\% above and at 80\% it is 125\% larger than the minW with no cut wires.
-
-The critical path delay, depicted in Figure~\ref{fig:standard_crit}, on the other hand, is not strongly influenced by the percentage of wires cut, as the critical path delay at 60\% of the wires cut is essentially the same as at 0\% wires cut. At 80\% of the wires cut the critical path delay does rise somewhat, by 6\%; this is due to two factors: the placement is being modified to improve routability at the expense of timing, and some circuitous routes are occuring due to saturated interconnect across the interposer.
-%Andre, what is the critical path delay with no interposer (i.e. 0% cut and 0 delay)?
-
-Tables \ref{table:standard_minW} and \ref{table:standard_path} show the minimum channel width and critical path delay for each circuit. The trends for individual circuits follow those of the averages quite closely.
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{standard_minW.eps}
-\caption{Minimum channel width vs. \textit{\% wires cut} for 3 cuts and $1ns$ of \textit{delay increase}.}
-\label{fig:standard_minW}
-\end{figure}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{standard_crit_path.eps}
-\caption{Critical path delay vs. \textit{\% wires cut} for 3 cuts and $1ns$ of \textit{delay increase}.}
-\label{fig:standard_crit}
-\end{figure}
-
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 114 & 128 & 124 & 132 & 152 & 226 \\ \hline
-LU32PEEng & 172 & 178 & 182 & 218 & 304 & 426 \\ \hline
-LU8PEEng & 110 & 116 & 118 & 128 & 158 & 236 \\ \hline
-mcml & 108 & 124 & 128 & 116 & 152 & 218 \\ \hline
-mkDelayWorker32B & 76 & 80 & 82 & 88 & 100 & 132 \\ \hline
-stereovision0 & 62 & 60 & 70 & 88 & 110 & 166 \\ \hline
-stereovision1 & 104 & 108 & 116 & 120 & 178 & 312 \\ \hline
-stereovision2 & 162 & 164 & 168 & 194 & 244 & 360 \\ \hline
-Geometric mean & 108 & 114 & 118 & 129 & 164 & 243 \\ \hline
-\end{tabular}
-\caption{Minimum channel width when \textit{number of cuts = 3} and \textit{increased delay = 1ns}.}
-\label{table:standard_minW}
-\end{table}
-
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 35.1 & 33.6 & 32.2 & 32.9 & 37.8 & 40.3 \\ \hline
-LU32PEEng & 115 & 114 & 114 & 114 & 115 & 113 \\ \hline
-LU8PEEng & 118 & 117 & 119 & 116 & 117 & 124 \\ \hline
-mcml & 82.3 & 82.9 & 84.0 & 83.4 & 88.3 & 85.7 \\ \hline
-mkDelayWorker32B & 11.0 & 12.3 & 12.0 & 12.3 & 14.4 & 12.8 \\ \hline
-stereovision0 & 6.9 & 7.8 & 7.0 & 7.4 & 7.6 & 7.0 \\ \hline
-stereovision1 & 11.6 & 9.2 & 10.4 & 11.0 & 11.6 & 11.8 \\ \hline
-stereovision2 & 23.3 & 25.4 & 23.9 & 24.9 & 25.6 & 24.8 \\ \hline
-Geometric mean & 30.8 & 30.9 & 30.6 & 31.2 & 33.1 & 32.6 \\ \hline
-\end{tabular}
-\caption{Critical path delay (in \textit{ns}) when \textit{number of cuts = 3} and \textit{increased delay = 1ns}.}
-\label{table:standard_path}
-\end{table}
-
-% TODO
-% "extra FPGA routing channel width" vs. wires across the interposer
-%\subsection{Intra-FPGA Routing  width vs. wires across the interposer}
-
-%Can you take a crack at adding a section that tries to present the data as "extra FPGA routing channel width" vs. wires across the interposer?  The idea would be to address reviewer 4's comments:  the graph will show we need some minimum number of wires across the interposer, and it will also directly show how many more wires we need to add to the FPGA to maintain routability.  I think you could get this data simply by processing data you already have.
-%So: 
-%x-axis:  geomean wires crossing interposer
-%y-axis:  geomean channel width required
-
-Figure \ref{fig:crossingwires} provides an alternative way to visualize the relationship between interposer routing supply and routability. This figure shows how the geometric average minimum channel width required within the FPGA dice varies as the geometric average of the \emph{absolute} number of wires crossing the interposer in each channel varies, again for 4-die system. When 108 tracks cross the interposer, the interposer channels have the same capacity as the vertical routing channels within each FPGA die. As fewer wires cross the interposer, the channel width required within the FPGA dice increases to compensate for the routing difficulty in crossing the interposer. The increase is gradual as the interposer routing is reduced from 108 tracks per channel to 52 tracks per channel; over this range the routing per channel required in the FPGA dice increases from 108 tracks per channel to 129 tracks per channel. As the routing crossing the interposer is further reduced however, it becomes very difficult to increase the within-die routing sufficiently to compensate. At 49 tracks crossing the interposer channels, for example, the within-die routing must have a channel width of \emph{243} tracks to successfully route the designs. Clearly the CAD tools have the ability to trade-off interposer routing for within-die routing over a reasonable range but below a certain level (48\% of the original within-die minimum channel width in our experiments) routability becomes almost solely limited by the wiring crossing the interposer and further reduction in interposer routing is not productive.
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{numberofcrossingwires.eps}
-\caption{Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 3 cuts and $1ns$ of \textit{delay increase}.}
-\label{fig:crossingwires}
-\end{figure}
-
-%   - Delay vs % wires cut & wire delay
-\subsection{Circuit Speed vs. Interposer Delay}
-
-To investigate the impact of the interposer delay (\textit{delay increase}), we kept the \textit{number of cuts} constant at $3$ while \textit{delay increase} was swept between $0$ and $1.5ns$.
-
-Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires cut} for 4 different values of \textit{delay increase}. The penalty in critical path delay is significant, ranging between $5$ and $9$ times the interposer \textit{delay increase}, when compared to the case where the interposer adds no delay. Note that the 0\% wires cut with a 0 ns \textit{delay increase} in Figure \ref{fig:delays_crit} corresponds to a traditional monolithic FPGA. The speed of an interposer-based FPGA is strongly correlated to \textit{delay increase}: a $0.5ns$ interposer delay increases the critical path delay by 20\%, while a $1ns$ interposer delay increases critical path delay by approximately 35\% vs. a monolithic FPGA. Once again, the critical path increase shows little correlation to the \textit{\% wires cut}, however. Tables \ref{table:delay0}, \ref{table:delay500}, \ref{table:standard_path} and \ref{table:delay1500} show the critical path delay for each circuit for each of the different values of \textit{delay increase}. Once again the results for individual circuits closely parallel the overall averages.
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{delays_crit_path.eps}
-\caption{Critical path delay vs. \textit{\% wires cut} for 3 cuts and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit{delay increase}.}
-\label{fig:delays_crit}
-\end{figure}
-
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline  \hline
-bgm & 25.9 & 26.3 & 25.8 & 26.1 & 25.8 & 26.7 \\ \hline
-LU32PEEng & 113 & 113 & 117 & 118 & 113 & 114 \\ \hline
-LU8PEEng & 115 & 114 & 116 & 115 & 118 & 115 \\ \hline
-mcml & 77.2 & 78.7 & 79.5 & 80.5 & 77.3 & 76.7 \\ \hline
-mkDelayWorker32B & 7.8 & 7.6 & 7.5 & 7.7 & 7.5 & 7.6 \\ \hline
-stereovision0 & 4.5 & 4.3 & 4.5 & 4.5 & 4.5 & 4.5 \\ \hline
-stereovision1 & 6.0 & 6.2 & 5.9 & 6.3 & 6.2 & 6.2 \\ \hline
-stereovision2 & 18.0 & 17.1 & 17.1 & 17.5 & 17.6 & 17.7 \\ \hline
-Geometric mean & 23.7 & 23.5 & 23.6 & 23.9 & 23.6 & 23.7 \\ \hline
-\end{tabular}
-\caption{Critical path delay (in \textit{ns}) when \textit{number of cuts = 3} and \textit{increased delay = 0ns}.}
-\label{table:delay0}
-\end{table}
-
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 31.6 & 30.3 & 29.2 & 29.2 & 29.9 & 31.6 \\ \hline
-LU32PEEng & 119 & 114 & 115 & 114 & 115 & 115 \\ \hline
-LU8PEEng & 118 & 116 & 119 & 117 & 114 & 115 \\ \hline
-mcml & 82.6 & 82.7 & 79.6 & 81.9 & 84.5 & 82.6 \\ \hline
-mkDelayWorker32B & 9.8 & 10.6 & 10.4 & 9.6 & 10.2 & 9.1 \\ \hline
-stereovision0 & 5.7 & 5.3 & 4.8 & 4.9 & 4.9 & 4.8 \\ \hline
-stereovision1 & 8.0 & 7.5 & 7.4 & 8.2 & 7.9 & 8.0 \\ \hline
-stereovision2 & 20.1 & 19.7 & 20.3 & 19.9 & 20.2 & 21.6 \\ \hline
-Geometric mean & 27.5 & 26.9 & 26.4 & 26.5 & 26.7 & 26.8 \\ \hline
-\end{tabular}
-\caption{Critical path delay (in \textit{ns}) when \textit{number of cuts = 3} and \textit{increased delay = 0.5ns}.}
-\label{table:delay500}
-\end{table}
-
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 47.2 & 52.4 & 43.1 & 42.7 & 44.8 & 48.3 \\ \hline
-LU32PEEng & 115 & 112 & 117 & 114 & 116 & 113 \\ \hline
-LU8PEEng & 161 & 159 & 122 & 146 & 118 & 129 \\ \hline
-mcml & 94.0 & 86.0 & 93.9 & 88.7 & 77.3 & 87.5 \\ \hline
-mkDelayWorker32B & 15.3 & 13.8 & 14.3 & 15.3 & 17.9 & 15.4 \\ \hline
-stereovision0 & 7.5 & 9.4 & 8.9 & 7.8 & 9.6 & 8.3 \\ \hline
-stereovision1 & 14.6 & 12.0 & 13.1 & 12.7 & 14.6 & 14.8 \\ \hline
-stereovision2 & 29.9 & 30.3 & 28.7 & 30.3 & 30.1 & 29.8 \\ \hline
-Geometric mean & 37.7 & 37.3 & 35.9 & 36.1 & 37.0 & 36.9 \\ \hline
-\end{tabular}
-\caption{Critical path delay (in \textit{ns}) when \textit{number of cuts = 3} and \textit{increased delay = 1.5ns}.}
-\label{table:delay1500}
-\end{table}
-
+Using the best CAD settings found in Section~\ref{cadSection} and the best CAD flow described in Section~\ref{sec:JaveedSection}, we analyze the impact of the key architecture parameters: \textit{\% wires cut}, \textit{delay increase}, \textit{number of cuts}, and \textit{interposer-routing interface}. We run all the experiments using the setup explained in Section~\ref{sec:CADeffect}.
 
 %   - Impact of # of cutlines
 \subsection{Impact of Number of Dice}
@@ -621,8 +463,6 @@ To examine the impact of the number of die used to construct an interposer-based
 As shown in Figure \ref{fig:cuts_minW}, the number of cuts does have an impact on the minimum channel width, but not a very large or constant one. At 80\% of wires cut the experiments with 2 and 3 cuts had the minimum channel width only 8\% and 10\%, respectively, greater than the scenario with only 1 cut. At lower values of \textit{\% wires cut} the difference was even smaller.
 
 Figure \ref{fig:cuts_crit} shows that the number of dice in an interposer-based FPGA impacts circuit speed significantly, as the critical path delay rises significantly as systems have more cuts. Recall that a monolithic FPGA has a geometric average critical path delay of $23.7ns$ for our test architecture. With \textit{number of cuts} $= 1$ the critical path delay increases by 3 to 4 ns, while with \textit{number of cuts} $= 2$ the critical path delay increases by 5 to 6 ns. With \textit{number of cuts} $= 3$, the critical path delay is typically 7 ns higher than that of a monolithic FPGA.
-
-Tables \ref{table:1cut_minW}, \ref{table:1cut_path}, \ref{table:2cut_minW}, \ref{table:2cut_path}, \ref{table:standard_minW} and \ref{table:standard_path} show the minimum channel width and critical path delay for each circuit for each of the different scenarios. The critical path results for individual circuits again follow the overall averages well. Some of the minimum channel widths for individual circuits show anomalous trends as the number of cutlines increase, however. For example, \textit{mcml} often has a smaller minimum channel width with 2 cuts than with 1 cut. This may be due to a circuit structure that leads to easier division into thirds than halves, but also likely indicates room for further CAD optimization.
 
 \begin{figure}[!htbp]
 \centering
@@ -638,81 +478,96 @@ Tables \ref{table:1cut_minW}, \ref{table:1cut_path}, \ref{table:2cut_minW}, \ref
 \label{fig:cuts_crit}
 \end{figure}
 
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 114 & 114 & 122 & 126 & 142 & 156 \\ \hline
-LU32PEEng & 170 & 176 & 182 & 206 & 318 & 396 \\ \hline
-LU8PEEng & 110 & 114 & 116 & 138 & 164 & 236 \\ \hline
-mcml & 108 & 114 & 106 & 124 & 150 & 238 \\ \hline
-mkDelayWorker32B & 74 & 78 & 80 & 88 & 98 & 138 \\ \hline
-stereovision0 & 62 & 60 & 62 & 76 & 132 & 146 \\ \hline
-stereovision1 & 102 & 104 & 106 & 108 & 144 & 186 \\ \hline
-stereovision2 & 160 & 158 & 164 & 200 & 264 & 432 \\ \hline
-Geometric mean & 107 & 109 & 111 & 126 & 165 & 221 \\ \hline
-\end{tabular}
-\caption{Minimum channel width when \textit{number of cuts = 1} and \textit{increased delay = 1ns}.}
-\label{table:1cut_minW}
-\end{table}
 
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 26.5 & 32.1 & 28.3 & 30.2 & 27.5 & 30.0 \\ \hline
-LU32PEEng & 113 & 113 & 113 & 115 & 114 & 111 \\ \hline
-LU8PEEng & 117 & 118 & 116 & 114 & 114 & 116 \\ \hline
-mcml & 82.5 & 82.0 & 83.0 & 84.5 & 83.2 & 77.9 \\ \hline
-mkDelayWorker32B & 11.2 & 11.4 & 11.2 & 9.9 & 10.6 & 11.5 \\ \hline
-stereovision0 & 4.5 & 5.1 & 5.0 & 4.9 & 4.9 & 5.4 \\ \hline
-stereovision1 & 7.4 & 8.2 & 8.4 & 7.2 & 7.2 & 7.9 \\ \hline
-stereovision2 & 21.3 & 23.1 & 20.9 & 22.3 & 21.6 & 20.9 \\ \hline
-Geometric mean & 26.3 & 28.1 & 27.2 & 26.8 & 26.5 & 27.3 \\ \hline
-\end{tabular}
-\caption{Critical path delay (in \textit{ns}) when \textit{number of cuts = 1} and \textit{increased delay = 1ns}.}
-\label{table:1cut_path}
-\end{table}
+%   - Channel width vs % wires cut
+\subsection{Interposer Wiring Capacity (\% wires cut)}
 
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 114 & 116 & 130 & 140 & 172 & 272 \\ \hline
-LU32PEEng & 170 & 180 & 186 & 198 & 264 & 426 \\ \hline
-LU8PEEng & 110 & 114 & 116 & 124 & 158 & 246 \\ \hline
-mcml & 108 & 110 & 126 & 138 & 114 & 150 \\ \hline
-mkDelayWorker32B & 76 & 80 & 82 & 88 & 100 & 132 \\ \hline
-stereovision0 & 62 & 58 & 60 & 88 & 114 & 166 \\ \hline
-stereovision1 & 104 & 108 & 116 & 136 & 184 & 296 \\ \hline
-stereovision2 & 160 & 156 & 162 & 188 & 246 & 362 \\ \hline
-Geometric mean & 108 & 109 & 116 & 132 & 160 & 237 \\ \hline
-\end{tabular}
-\caption{Minimum channel width when \textit{number of cuts = 2} and \textit{increased delay = 1ns}.}
-\label{table:2cut_minW}
-\end{table}
+To analyze the impact of the number of cut wires we ran experiments varying only this parameter while leaving the other parameters constant. We use \textit{number of cuts} $= 1$ (corresponding to two dice), \textit{increased delay} $= 1ns$, \textit{bidirectional interposer wires = on}, \textit{fanin transfer = on}, and \textit{fanout transfer = on}.
 
-\begin{table}[!htbp]
-\begin{tabular}{|l|r|r|r|r|r|r|}
-\hline
-\% wires cut & 0 & 20 & 40 & 60 & 70 & 80 \\ \hline \hline
-bgm & 31.0 & 30.3 & 28.3 & 36.1 & 35.9 & 37.5 \\ \hline
-LU32PEEng & 113 & 113 & 119 & 113 & 117 & 112 \\ \hline
-LU8PEEng & 118 & 118 & 117 & 116 & 118 & 114 \\ \hline
-mcml & 82.9 & 86.3 & 81.3 & 80.9 & 82.4 & 82.8 \\ \hline
-mkDelayWorker32B & 12.3 & 12.1 & 9.8 & 11.1 & 13.5 & 11.3 \\ \hline
-stereovision0 & 6.4 & 5.7 & 6.3 & 5.3 & 5.3 & 5.9 \\ \hline
-stereovision1 & 9.3 & 10.4 & 9.5 & 9.6 & 10.2 & 9.9 \\ \hline
-stereovision2 & 22.9 & 24.2 & 24.0 & 21.6 & 24.2 & 25.5 \\ \hline
-Geometric mean & 29.5 & 29.7 & 28.6 & 28.8 & 30.4 & 30.1 \\ \hline
-\end{tabular}
-\caption{Critical path delay (in \textit{ns}) when \textit{number of cuts = 2} and \textit{increased delay = 1ns}.}
-\label{table:2cut_path}
-\end{table}
+Figure~\ref{fig:standard_minW} shows the graph of minimum channel width versus \textit{\% wires cut}. It can be noted from this graph that the minimum channel width is almost steady up to 60\% of wires cut, indicating that the placement engine is able to avoid saturating the interposer routing until that point. When more than 60\% of the wires are cut however (i.e. the interposer provides less than 40\% of the usual within-die routing capacity), the minimum channel width grows rapidly indicating that the interposer routing bandwidth has become a limiting factor.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{minChW.eps}
+\caption{Minimum channel width vs. \textit{\% wires cut} for 2 dice and $1ns$ of \textit{delay increase}.}
+\label{fig:standard_minW}
+\end{figure}
+
+The critical path delay, depicted in Figure~\ref{fig:standard_crit}, on the other hand, is not strongly influenced by the percentage of wires cut, as the critical path delay at 80\% of the wires cut is essentially the same as at 0\% wires cut. Note, however, that this same critical path delay is achieved at a much higher channel width.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{standard_crit_path_new.eps}
+\caption{Critical path delay vs. \textit{\% wires cut} for 2 dice and $1ns$ of \textit{delay increase}.}
+\label{fig:standard_crit}
+\end{figure}
+
+
+% TODO
+% "extra FPGA routing channel width" vs. wires across the interposer
+%\subsection{Intra-FPGA Routing  width vs. wires across the interposer}
+
+%Can you take a crack at adding a section that tries to present the data as "extra FPGA routing channel width" vs. wires across the interposer?  The idea would be to address reviewer 4's comments:  the graph will show we need some minimum number of wires across the interposer, and it will also directly show how many more wires we need to add to the FPGA to maintain routability.  I think you could get this data simply by processing data you already have.
+%So: 
+%x-axis:  geomean wires crossing interposer
+%y-axis:  geomean channel width required
+
+Figure \ref{fig:crossingwires} provides an alternative way to visualize the relationship between interposer routing supply and routability. This figure shows how the geometric average minimum channel width required within the FPGA dice varies as the geometric average of the \emph{absolute} number of wires crossing the interposer in each channel varies, again for 2-die system. When 110 tracks cross the interposer, the interposer channels have the same capacity as the vertical routing channels within each FPGA die. As fewer wires cross the interposer, the channel width required within the FPGA dice increases to compensate for the routing difficulty in crossing the interposer. The increase is gradual as the interposer routing is reduced from 110 tracks per channel to 34 tracks per channel; over this range the routing per channel required in the FPGA dice increases from 110 tracks per channel to 114 tracks per channel. As the routing crossing the interposer is further reduced however, it becomes very difficult to increase the within-die routing sufficiently to compensate. At 18 tracks crossing the interposer channels, for example, the within-die routing must have a channel width of \emph{188} tracks to successfully route the designs. Clearly the CAD tools have the ability to trade-off interposer routing for within-die routing over a reasonable range but below a certain level (40\% of the original within-die minimum channel width in our experiments) routability becomes almost solely limited by the wiring crossing the interposer and further reduction in interposer routing is not productive.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{numberofcrossingwires_new.eps}
+\caption{Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 2 dice and $1ns$ of \textit{delay increase}.}
+\label{fig:crossingwires}
+\end{figure}
+
+%   - Delay vs % wires cut & wire delay
+\subsection{Circuit Speed vs. Interposer Delay}
+
+To investigate the impact of the interposer delay (\textit{delay increase}), we keep all parameters constant and we sweep the \textit{delay increase} from 0 to 1.5 \textit{ns}. We use \textit{number of cuts} $= 1$ (corresponding to two dice), \textit{bidirectional interposer wires = on}, \textit{fanin transfer = on}, and \textit{fanout transfer = on}.
+
+Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires cut} for 4 different values of \textit{delay increase}. The penalty in critical path delay is significant, ranging between $1$ and $3.7$ times the interposer \textit{delay increase}, when compared to the case where the interposer adds no delay. Note that the 0\% wires cut with a 0 ns \textit{delay increase} in Figure \ref{fig:delays_crit} corresponds to a traditional monolithic FPGA. The speed of an interposer-based FPGA is strongly correlated to \textit{delay increase}: a $0.5ns$ interposer delay increases the critical path delay by 4\%, while a $1ns$ interposer delay increases critical path delay by approximately 12\% vs. a monolithic FPGA. But once again, the critical path delay shows little correlation to the \textit{\% wires cut}.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{delays_crit_path_new.eps}
+\caption{Critical path delay vs. \textit{\% wires cut} for 2 dice and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit{delay increase}.}
+\label{fig:delays_crit}
+\end{figure}
+
+%   - routing-interposer interface
+\subsection{Routing-Interposer Interface}
+As described in \ref{sec:interposer-routing-interface}, we have added three boolean options to VPR that allow us to experiment with different routing-interposer interfaces. These interfaces provide more flexibility to route signals between different dice and hence help us achieve lower \textit{minimum channel width} and \textit{critical path delay}.
+
+To measure the impact of routing-interposer interface parameters, we set \textit{delay increase}=$1ns$, \textit{number of cuts=1}, and \textit{\% wires cut=80\%}; then, we measure the impact of the \textit{bidirectional interposer wires}, \textit{fanin transfer}, and \textit{fanout transfer} parameters as well as different combinations of them. Figure~\ref{fig:all_arch_experiments} summarizes the results of these experiments.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=\linewidth]{arch_experiments.eps}
+\caption{Exploring more flexible interposer-based architectures by modifying routing-interposer interfaces.}
+\label{fig:all_arch_experiments}
+\end{figure}
+
+Experiments show that using bidirectional interposer wires instead of unidirectional wires (column \textit{b} in Figure~\ref{fig:all_arch_experiments}) improves minimum channel width by 1\% and critical path delay by 0.5\%. Therefore, while it is beneficial to use bidirectional interposer wires, it does not dramatically improve performance. We believe that is because a well placed and routed design that fills the chip completely with little spare room has approximately equal number of signals crossing the interposer in each direction (i.e. number of signals transferred from die 1 to die 2 is close to the number of signals transferred from die 2 to die 1).
+
+Adding multiplexers in front of interposer wires allows dangling routing wires to connect to interposer wires (\textit{``fanin transfer"}) and adding extra load on the output of the interposer wires (\textit{``fanout transfer"}) allows the interposer wire to drive dangling wires on the other side of the cut. Therefore these modifications provide higher flexibility to better utilize interposer wires. Experiments show that enabling these two options alone without using bidirectional interposer wires (column \textit{c} in Figure~\ref{fig:all_arch_experiments}) reduces minimum channel width by 3\% and reduces critical path delay by 1\%. 
+
+Moreover, better performance can be achieved if either of these two options is used together with bidirectional interposer wires. Enabling \textit{fanout transfer} with bidirectional interposer wires (column \textit{d} in Figure~\ref{fig:all_arch_experiments}) reduces the minimum channel width by 9\% and critical path delay by 0.7\%. Enabling \textit{fanin transfer} with bidirectional interposer wires (column \textit{e} in Figure~\ref{fig:all_arch_experiments}) has an even stronger impact and reduces the minimum channel width by 10\% and critical path delay by 0.7\%. This signifies that the flexibility to drive an interposer wire is more important for routability compared to the flexibility of having an interposer wire drive multiple vertical routing wires on the other side of the cut.
+
+Enabling all of these architecture modifications simultaneously (column \textit{f} in Figure~\ref{fig:all_arch_experiments}) provides the highest level of flexibility for the router and achieves 11.2\% reduction in minimum channel width and 1.3\% reduction in critical path delay. These models show that interposer-based FPGAs can extensively benefit from hardware that provides a flexible routing-interposer interface.
+
+The \textit{fanin transfer} and \textit{fanout transfer} options ensure that no vertical routing wires are dangling at the cutline, hence, each vertical routing wire either has exactly \textit{one} interposer wire driving it or it drives a mux of exactly \textit{one} interposer wire. As a final experiment, we try to add additional fanins and fanouts to interposer wires, so that each vertical routing wire can \textit{potentially} drive multiple interposer wires, or be driven by one of many interposer wires. We found that adding extra fanouts to interposer wires does not help performance or area, but adding additional fanins to interposer wire muxes helps reduce the minimum channel width while maintaining the same critical path delay. As shown in Figure~\ref{fig:additional_fanins}, adding 4 additional inputs to interposer wire muxes reduces the minimum channel width by 1\% and adding 8 additional inputs reduces minimum channel width by 1.5\%. After that point the performance is no longer limited by the ability to get on an interposer wire and hence we do not see any gains for adding more than 8 additional inputs. Notice that column \textit{0} of Figure~\ref{fig:additional_fanins} is the same as column \textit{f} of Figure~\ref{fig:all_arch_experiments}.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=\linewidth]{additional_fanins.eps}
+\caption{Adding up to 8 extra fanins to interposer wire muxes helps reduce minimum channel width.}
+\label{fig:additional_fanins}
+\end{figure}
+
 
 \section{Conclusions and Future Work}
 \label{conclusionSection}
-
 We have extended VPR to model and optimize for interposer-based multi-FPGA systems. While such systems are now a commercial reality, we do not know of any prior study of their key architectural parameters. We found that by modifying VPR's placement cost function we could improve the routability (reduce minW) by 18\%, while simultaneously improving speed by 2\%. Interestingly, we found that a smooth cost function that less precisely models the interposing wiring demand outperformed direct monitoring of the number of required interposer connections during annealing.
 
 We defined three key architecture parameters for interposer-based FPGAs, and used this extended VPR to analyze their impact on minimum channel width and critical path delay. We found that the \textit{minimum channel width} increases steeply after more than 60\% of the within-die wires are cut at the interposer, and when 80\% of wires are cut the \textit{minimum channel width} is more than double that required by a monolithic FPGA. The Xilinx \textit{XC7V2000T} FPGA has 77\% of the normal wiring cut at the interposer, indicating that commercial interposer-based FPGAs will require high-quality CAD optimization to maintain good routability. The \textit{critical path delay} is not strongly influenced by the \textit{\% wires cut} but is strongly influenced by the interposer delay and the number of cuts. Our results show that the critical path usually crosses the interposer cutline more than once, as the \textit{critical path delay} is increased by more than the interposer \textit{delay increase}. Increasing the number of dice in an interposer-based FPGA does not significantly impact the \textit{minimum channel width}, but does lead to a larger \textit{critical path delay}.

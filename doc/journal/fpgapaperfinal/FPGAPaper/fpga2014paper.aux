@@ -36,6 +36,7 @@
 \newlabel{fig:fpga}{{2}{\thepage }}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Increased delay}{\thepage }}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Interposer-Routing interface}{\thepage }}
+\newlabel{sec:interposer-routing-interface}{{3.4}{\thepage }}
 \citation{unidirectional}
 \citation{lewis2005stratix}
 \citation{betz1999architecture}
@@ -57,7 +58,7 @@
 \newlabel{fig:vpr_interposer_gui}{{5}{\thepage }}
 \@writefile{toc}{\contentsline {section}{\numberline {4}CAD Enhancements}{\thepage }}
 \newlabel{cadSection}{{4}{\thepage }}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Placer Optimization}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Placer optimization}{\thepage }}
 \newlabel{cad_enh_placer_subsection}{{4.1}{\thepage }}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.1}Placer timing cost}{\thepage }}
 \newlabel{eq:timing_eq_full}{{1}{\thepage }}
@@ -71,62 +72,54 @@
 \newlabel{eq:total_wiring}{{4}{\thepage }}
 \newlabel{eq:cost2}{{5}{\thepage }}
 \newlabel{eq:cprime}{{6}{\thepage }}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Router Optimization}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Router optimization}{\thepage }}
+\newlabel{sec:router_optimizations}{{4.2}{\thepage }}
 \newlabel{eq:routing_cost}{{7}{\thepage }}
 \newlabel{eq:lookahead_cost}{{8}{\thepage }}
 \newlabel{eq:expected_routing_cost}{{9}{\thepage }}
 \newlabel{eq:tdelay}{{10}{\thepage }}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Effectiveness of the enhancements}{\thepage }}
 \newlabel{sec:CADeffect}{{4.3}{\thepage }}
-\citation{vtr2012}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Minimum channel width vs. weighting for different \textit  {cut\_cost} terms.}}{\thepage }}
-\newlabel{fig:minW_constant_sweep}{{6}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Area-delay product vs. weighting for different \textit  {cut\_cost} terms.}}{\thepage }}
-\newlabel{fig:areadelay_constant_sweep}{{7}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Best weighting and performance for each \textit  {cut\_cost} term.}}{\thepage }}
-\newlabel{table:constant_sweep}{{1}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Illustration of three different scenarios for the wiring cost. The dashed green box shows a case where \textit  {(a)} it crosses the interposer, the dotted black box shows a case where \textit  {(b)} it barely crosses the cutline, and the solid blue one shows a case where \textit  {(c)} the bounding box does not span the cutline.}}{\thepage }}
-\newlabel{fig:bb_illustration}{{8}{\thepage }}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.1}Effectiveness of placer optimizations}{\thepage }}
+\newlabel{sec:effectiveness_of_placer_enhancements}{{4.3.1}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Illustration of three different scenarios for the wiring cost. The dashed green box shows a case where \textit  {(a)} it crosses the interposer, the dotted black box shows a case where \textit  {(b)} it barely crosses the cutline, and the solid blue one shows a case where \textit  {(c)} the bounding box does not span the cutline.}}{\thepage }}
+\newlabel{fig:bb_illustration}{{6}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut}.}}{\thepage }}
+\newlabel{fig:comparison_minW}{{7}{\thepage }}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.2}Effectiveness of router optimizations}{\thepage }}
+\newlabel{sec:effectiveness_of_router_enhancements}{{4.3.2}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Router runtime improvement using updated lookahead function}}{\thepage }}
+\newlabel{fig:lookahead_runtime}{{8}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces The new router lookahead increases the critical path delay.}}{\thepage }}
+\newlabel{fig:lookahead_fmax}{{9}{\thepage }}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Architecture results}{\thepage }}
 \newlabel{resultsSection}{{5}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut}.}}{\thepage }}
-\newlabel{fig:comparison_minW}{{9}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Performance of different placer optimizations, relative to the original VPR results. The area-delay product is calculated as the product $minW \times critical path delay.$}}{\thepage }}
-\newlabel{fig:comparison_bars}{{10}{\thepage }}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Interposer Wiring Capacity (\% wires cut)}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
-\newlabel{fig:standard_minW}{{11}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
-\newlabel{fig:standard_crit}{{12}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Minimum channel width when \textit  {number of cuts = 3} and \textit  {increased delay = 1ns}.}}{\thepage }}
-\newlabel{table:standard_minW}{{2}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 1ns}.}}{\thepage }}
-\newlabel{table:standard_path}{{3}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
-\newlabel{fig:crossingwires}{{13}{\thepage }}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Circuit Speed vs. Interposer Delay}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 3 cuts and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit  {delay increase}.}}{\thepage }}
-\newlabel{fig:delays_crit}{{14}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 0ns}.}}{\thepage }}
-\newlabel{table:delay0}{{4}{\thepage }}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Impact of Number of Dice}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 0.5ns}.}}{\thepage }}
-\newlabel{table:delay500}{{5}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 3} and \textit  {increased delay = 1.5ns}.}}{\thepage }}
-\newlabel{table:delay1500}{{6}{\thepage }}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusions and Future Work}{\thepage }}
-\newlabel{conclusionSection}{{6}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
-\newlabel{fig:cuts_minW}{{15}{\thepage }}
-\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
-\newlabel{fig:cuts_crit}{{16}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Minimum channel width when \textit  {number of cuts = 1} and \textit  {increased delay = 1ns}.}}{\thepage }}
-\newlabel{table:1cut_minW}{{7}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 1} and \textit  {increased delay = 1ns}.}}{\thepage }}
-\newlabel{table:1cut_path}{{8}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Impact of Number of Dice}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
+\newlabel{fig:cuts_minW}{{10}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{\thepage }}
+\newlabel{fig:cuts_crit}{{11}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Interposer Wiring Capacity (\% wires cut)}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{\thepage }}
+\newlabel{fig:standard_minW}{{12}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{\thepage }}
+\newlabel{fig:standard_crit}{{13}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 2 dice and $1ns$ of \textit  {delay increase}.}}{\thepage }}
+\newlabel{fig:crossingwires}{{14}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Circuit Speed vs. Interposer Delay}{\thepage }}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Routing-Interposer Interface}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit  {delay increase}.}}{\thepage }}
+\newlabel{fig:delays_crit}{{15}{\thepage }}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Exploring more flexible interposer-based architectures by modifying routing-interposer interfaces.}}{\thepage }}
+\newlabel{fig:all_arch_experiments}{{16}{\thepage }}
 \citation{hMetis}
 \bibstyle{abbrv}
 \bibdata{fpga2014paper}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Adding up to 8 extra fanins to interposer wire muxes helps reduce minimum channel width.}}{\thepage }}
+\newlabel{fig:additional_fanins}{{17}{\thepage }}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusions and Future Work}{\thepage }}
+\newlabel{conclusionSection}{{6}{\thepage }}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Acknowledgments}{\thepage }}
 \bibcite{3dfpga1995}{1}
 \bibcite{stratixV}{2}
 \bibcite{betz1997vpr}{3}
@@ -137,12 +130,6 @@
 \bibcite{hahn2014cad}{8}
 \bibcite{hMetis}{9}
 \bibcite{3dfpga}{10}
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Minimum channel width when \textit  {number of cuts = 2} and \textit  {increased delay = 1ns}.}}{\thepage }}
-\newlabel{table:2cut_minW}{{9}{\thepage }}
-\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Critical path delay (in \textit  {ns}) when \textit  {number of cuts = 2} and \textit  {increased delay = 1ns}.}}{\thepage }}
-\newlabel{table:2cut_path}{{10}{\thepage }}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Acknowledgments}{\thepage }}
-\@writefile{toc}{\contentsline {section}{\numberline {8}References}{\thepage }}
 \bibcite{unidirectional}{11}
 \bibcite{lewis2005stratix}{12}
 \bibcite{luu2014vtr}{13}
@@ -151,3 +138,4 @@
 \bibcite{vtr2012}{16}
 \bibcite{xilinxWP}{17}
 \bibcite{xilinx7series}{18}
+\@writefile{toc}{\contentsline {section}{\numberline {8}References}{\thepage }}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  15 NOV 2014 19:49
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  17 NOV 2014 22:58
 entering extended mode
 **fpga2014paper.tex
 
@@ -375,14 +375,14 @@ Package epstopdf Info: Source file: <fpga.eps>
 (epstopdf)                    size: 13588 bytes
 (epstopdf)             Command: <epstopdf --outfile=fpga-eps-converted-to.pdf f
 pga.eps>
-(epstopdf)             \includegraphics on input line 216.
+(epstopdf)             \includegraphics on input line 219.
 Package epstopdf Info: Output file is already uptodate.
 
 <fpga-eps-converted-to.pdf, id=23, 569.12625pt x 682.55pt>
 File: fpga-eps-converted-to.pdf Graphic file (type pdf)
 
 <use fpga-eps-converted-to.pdf>
-Package pdftex.def Info: fpga-eps-converted-to.pdf used on input line 216.
+Package pdftex.def Info: fpga-eps-converted-to.pdf used on input line 219.
 (pdftex.def)             Requested size: 240.0pt x 287.83551pt.
  [3 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaper
 final/FPGAPaper/fpga-eps-converted-to.pdf>]
@@ -394,7 +394,7 @@ Package epstopdf Info: Source file: <architecture_params.eps>
 (epstopdf)                    size: 28831 bytes
 (epstopdf)             Command: <epstopdf --outfile=architecture_params-eps-con
 verted-to.pdf architecture_params.eps>
-(epstopdf)             \includegraphics on input line 246.
+(epstopdf)             \includegraphics on input line 250.
 Package epstopdf Info: Output file is already uptodate.
 
 <architecture_params-eps-converted-to.pdf, id=29, 754.82pt x 607.26875pt>
@@ -402,7 +402,7 @@ File: architecture_params-eps-converted-to.pdf Graphic file (type pdf)
 
 <use architecture_params-eps-converted-to.pdf>
 Package pdftex.def Info: architecture_params-eps-converted-to.pdf used on input
- line 246.
+ line 250.
 (pdftex.def)             Requested size: 240.0pt x 193.07904pt.
 Package epstopdf Info: Source file: <a.eps>
 (epstopdf)                    date: 2014-11-14 00:21:38
@@ -412,14 +412,14 @@ Package epstopdf Info: Source file: <a.eps>
 (epstopdf)                    size: 18774 bytes
 (epstopdf)             Command: <epstopdf --outfile=a-eps-converted-to.pdf a.ep
 s>
-(epstopdf)             \includegraphics on input line 268.
+(epstopdf)             \includegraphics on input line 272.
 Package epstopdf Info: Output file is already uptodate.
 
 <a-eps-converted-to.pdf, id=30, 203.76125pt x 647.41875pt>
 File: a-eps-converted-to.pdf Graphic file (type pdf)
 
 <use a-eps-converted-to.pdf>
-Package pdftex.def Info: a-eps-converted-to.pdf used on input line 268.
+Package pdftex.def Info: a-eps-converted-to.pdf used on input line 272.
 (pdftex.def)             Requested size: 57.60132pt x 183.01468pt.
 Package epstopdf Info: Source file: <b.eps>
 (epstopdf)                    date: 2014-11-14 00:22:21
@@ -429,14 +429,14 @@ Package epstopdf Info: Source file: <b.eps>
 (epstopdf)                    size: 24681 bytes
 (epstopdf)             Command: <epstopdf --outfile=b-eps-converted-to.pdf b.ep
 s>
-(epstopdf)             \includegraphics on input line 269.
+(epstopdf)             \includegraphics on input line 273.
 Package epstopdf Info: Output file is already uptodate.
 
 <b-eps-converted-to.pdf, id=31, 203.76125pt x 647.41875pt>
 File: b-eps-converted-to.pdf Graphic file (type pdf)
 
 <use b-eps-converted-to.pdf>
-Package pdftex.def Info: b-eps-converted-to.pdf used on input line 269.
+Package pdftex.def Info: b-eps-converted-to.pdf used on input line 273.
 (pdftex.def)             Requested size: 57.60132pt x 183.01468pt.
 Package epstopdf Info: Source file: <a_prime.eps>
 (epstopdf)                    date: 2014-11-14 00:22:29
@@ -446,14 +446,14 @@ Package epstopdf Info: Source file: <a_prime.eps>
 (epstopdf)                    size: 14364 bytes
 (epstopdf)             Command: <epstopdf --outfile=a_prime-eps-converted-to.pd
 f a_prime.eps>
-(epstopdf)             \includegraphics on input line 270.
+(epstopdf)             \includegraphics on input line 274.
 Package epstopdf Info: Output file is already uptodate.
 
 <a_prime-eps-converted-to.pdf, id=32, 203.76125pt x 647.41875pt>
 File: a_prime-eps-converted-to.pdf Graphic file (type pdf)
 
 <use a_prime-eps-converted-to.pdf>
-Package pdftex.def Info: a_prime-eps-converted-to.pdf used on input line 270.
+Package pdftex.def Info: a_prime-eps-converted-to.pdf used on input line 274.
 (pdftex.def)             Requested size: 57.60132pt x 183.01468pt.
 Package epstopdf Info: Source file: <b_prime.eps>
 (epstopdf)                    date: 2014-11-14 00:22:31
@@ -463,14 +463,14 @@ Package epstopdf Info: Source file: <b_prime.eps>
 (epstopdf)                    size: 38348 bytes
 (epstopdf)             Command: <epstopdf --outfile=b_prime-eps-converted-to.pd
 f b_prime.eps>
-(epstopdf)             \includegraphics on input line 271.
+(epstopdf)             \includegraphics on input line 275.
 Package epstopdf Info: Output file is already uptodate.
 
 <b_prime-eps-converted-to.pdf, id=33, 203.76125pt x 647.41875pt>
 File: b_prime-eps-converted-to.pdf Graphic file (type pdf)
 
 <use b_prime-eps-converted-to.pdf>
-Package pdftex.def Info: b_prime-eps-converted-to.pdf used on input line 271.
+Package pdftex.def Info: b_prime-eps-converted-to.pdf used on input line 275.
 (pdftex.def)             Requested size: 57.60132pt x 183.01468pt.
 Package epstopdf Info: Source file: <gui_1.eps>
 (epstopdf)                    date: 2014-11-14 01:15:42
@@ -480,14 +480,14 @@ Package epstopdf Info: Source file: <gui_1.eps>
 (epstopdf)                    size: 425444 bytes
 (epstopdf)             Command: <epstopdf --outfile=gui_1-eps-converted-to.pdf 
 gui_1.eps>
-(epstopdf)             \includegraphics on input line 277.
+(epstopdf)             \includegraphics on input line 281.
 Package epstopdf Info: Output file is already uptodate.
 
 <gui_1-eps-converted-to.pdf, id=34, 791.95876pt x 716.6775pt>
 File: gui_1-eps-converted-to.pdf Graphic file (type pdf)
 
 <use gui_1-eps-converted-to.pdf>
-Package pdftex.def Info: gui_1-eps-converted-to.pdf used on input line 277.
+Package pdftex.def Info: gui_1-eps-converted-to.pdf used on input line 281.
 (pdftex.def)             Requested size: 302.40308pt x 273.6635pt.
 Package epstopdf Info: Source file: <gui_2.eps>
 (epstopdf)                    date: 2014-11-14 01:05:13
@@ -497,17 +497,17 @@ Package epstopdf Info: Source file: <gui_2.eps>
 (epstopdf)                    size: 226157 bytes
 (epstopdf)             Command: <epstopdf --outfile=gui_2-eps-converted-to.pdf 
 gui_2.eps>
-(epstopdf)             \includegraphics on input line 278.
+(epstopdf)             \includegraphics on input line 282.
 Package epstopdf Info: Output file is already uptodate.
 
 <gui_2-eps-converted-to.pdf, id=35, 719.68875pt x 716.6775pt>
 File: gui_2-eps-converted-to.pdf Graphic file (type pdf)
 
 <use gui_2-eps-converted-to.pdf>
-Package pdftex.def Info: gui_2-eps-converted-to.pdf used on input line 278.
+Package pdftex.def Info: gui_2-eps-converted-to.pdf used on input line 282.
 (pdftex.def)             Requested size: 201.59692pt x 200.75581pt.
 
-Overfull \hbox (2.05199pt too wide) in paragraph at lines 277--279
+Overfull \hbox (2.05199pt too wide) in paragraph at lines 281--283
 [][] [] 
  []
 
@@ -525,87 +525,23 @@ erted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal
 hsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/gui_1-e
 ps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/
 journal/fpgapaperfinal/FPGAPaper/gui_2-eps-converted-to.pdf>]
-Overfull \hbox (2.57991pt too wide) in paragraph at lines 371--371
+Overfull \hbox (2.57991pt too wide) in paragraph at lines 376--376
 [] 
  []
 
 
-Overfull \hbox (16.77684pt too wide) in paragraph at lines 388--389
+Overfull \hbox (16.77684pt too wide) in paragraph at lines 393--394
 []\T1/aer/m/n/9 In a sim-i-lar way, we mod-ify the $\OML/cmm/m/it/9 ExpectedCon
 gestionCost\OT1/cmr/m/n/9 (\OML/cmm/m/it/9 r; j\OT1/cmr/m/n/9 )$
  []
 
 
-Overfull \hbox (28.07748pt too wide) in paragraph at lines 395--396
+Overfull \hbox (28.07748pt too wide) in paragraph at lines 400--401
 \T1/aer/m/n/9 ar-chi-tec-ture of the VTR project (\T1/aer/m/it/9 k6_frac_N10_me
 m32K_40nm.xml\T1/aer/m/n/9 ).
  []
 
 [6]
-Package epstopdf Info: Source file: <minW_constant_sweep_log.eps>
-(epstopdf)                    date: 2013-09-25 15:39:06
-(epstopdf)                    size: 116389 bytes
-(epstopdf)             Output file: <minW_constant_sweep_log-eps-converted-to.p
-df>
-(epstopdf)                    date: 2013-09-25 15:41:50
-(epstopdf)                    size: 58367 bytes
-(epstopdf)             Command: <epstopdf --outfile=minW_constant_sweep_log-eps
--converted-to.pdf minW_constant_sweep_log.eps>
-(epstopdf)             \includegraphics on input line 403.
-Package epstopdf Info: Output file is already uptodate.
-
-<minW_constant_sweep_log-eps-converted-to.pdf, id=70, 749.80125pt x 428.60126pt
->
-File: minW_constant_sweep_log-eps-converted-to.pdf Graphic file (type pdf)
- <use minW_constant_sweep_log-eps-converted-to.pdf>
-Package pdftex.def Info: minW_constant_sweep_log-eps-converted-to.pdf used on i
-nput line 403.
-(pdftex.def)             Requested size: 240.0pt x 137.1879pt.
-Package epstopdf Info: Source file: <areadelay_constant_sweep_log.eps>
-(epstopdf)                    date: 2013-09-25 15:40:04
-(epstopdf)                    size: 118769 bytes
-(epstopdf)             Output file: <areadelay_constant_sweep_log-eps-converted
--to.pdf>
-(epstopdf)                    date: 2013-09-25 15:41:52
-(epstopdf)                    size: 59681 bytes
-(epstopdf)             Command: <epstopdf --outfile=areadelay_constant_sweep_lo
-g-eps-converted-to.pdf areadelay_constant_sweep_log.eps>
-(epstopdf)             \includegraphics on input line 410.
-Package epstopdf Info: Output file is already uptodate.
-
-<areadelay_constant_sweep_log-eps-converted-to.pdf, id=71, 744.7825pt x 417.56p
-t>
-File: areadelay_constant_sweep_log-eps-converted-to.pdf Graphic file (type pdf)
-
- <use areadelay_constant_sweep_log-eps-converted-to.pdf>
-Package pdftex.def Info: areadelay_constant_sweep_log-eps-converted-to.pdf used
- on input line 410.
-(pdftex.def)             Requested size: 240.0pt x 134.55215pt.
-
-
-LaTeX Warning: Reference `eq:cost0' on page \thepage  undefined on input line 4
-20.
-
-
-LaTeX Warning: Reference `eq:cost1' on page \thepage  undefined on input line 4
-21.
-
-
-LaTeX Warning: Reference `eq:cost4' on page \thepage  undefined on input line 4
-23.
-
-
-LaTeX Warning: Reference `eq:cost5' on page \thepage  undefined on input line 4
-24.
-
-
-LaTeX Warning: Reference `eq:cost0' on page \thepage  undefined on input line 4
-32.
-
-
-LaTeX Warning: Reference `eq:cost4' on page \thepage  undefined on input line 4
-32.
-
 Package epstopdf Info: Source file: <bb.eps>
 (epstopdf)                    date: 2013-09-25 15:35:46
 (epstopdf)                    size: 18984 bytes
@@ -614,13 +550,13 @@ Package epstopdf Info: Source file: <bb.eps>
 (epstopdf)                    size: 6472 bytes
 (epstopdf)             Command: <epstopdf --outfile=bb-eps-converted-to.pdf bb.
 eps>
-(epstopdf)             \includegraphics on input line 436.
+(epstopdf)             \includegraphics on input line 417.
 Package epstopdf Info: Output file is already uptodate.
-<bb-eps-converted-to.pdf, id=72, 525.965pt x 483.8075pt>
+ <bb-eps-converted-to.pdf, id=70, 525.965pt x 483.8075pt>
 File: bb-eps-converted-to.pdf Graphic file (type pdf)
 
 <use bb-eps-converted-to.pdf>
-Package pdftex.def Info: bb-eps-converted-to.pdf used on input line 436.
+Package pdftex.def Info: bb-eps-converted-to.pdf used on input line 417.
 (pdftex.def)             Requested size: 240.0pt x 220.76764pt.
 Package epstopdf Info: Source file: <comparison_minW.eps>
 (epstopdf)                    date: 2013-09-25 15:52:26
@@ -630,149 +566,64 @@ Package epstopdf Info: Source file: <comparison_minW.eps>
 (epstopdf)                    size: 33628 bytes
 (epstopdf)             Command: <epstopdf --outfile=comparison_minW-eps-convert
 ed-to.pdf comparison_minW.eps>
-(epstopdf)             \includegraphics on input line 446.
+(epstopdf)             \includegraphics on input line 425.
 Package epstopdf Info: Output file is already uptodate.
 
-<comparison_minW-eps-converted-to.pdf, id=73, 892.33376pt x 460.72125pt>
+<comparison_minW-eps-converted-to.pdf, id=71, 892.33376pt x 460.72125pt>
 File: comparison_minW-eps-converted-to.pdf Graphic file (type pdf)
 
 <use comparison_minW-eps-converted-to.pdf>
 Package pdftex.def Info: comparison_minW-eps-converted-to.pdf used on input lin
-e 446.
+e 425.
 (pdftex.def)             Requested size: 240.0pt x 123.91132pt.
-Package epstopdf Info: Source file: <comparison_bars_relative.eps>
-(epstopdf)                    date: 2013-09-25 15:55:50
-(epstopdf)                    size: 118609 bytes
-(epstopdf)             Output file: <comparison_bars_relative-eps-converted-to.
-pdf>
-(epstopdf)                    date: 2013-09-25 15:55:58
-(epstopdf)                    size: 27847 bytes
-(epstopdf)             Command: <epstopdf --outfile=comparison_bars_relative-ep
-s-converted-to.pdf comparison_bars_relative.eps>
-(epstopdf)             \includegraphics on input line 453.
+Package epstopdf Info: Source file: <router_opt.eps>
+(epstopdf)                    date: 2014-11-16 14:08:45
+(epstopdf)                    size: 1633181 bytes
+(epstopdf)             Output file: <router_opt-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-16 14:09:12
+(epstopdf)                    size: 14135 bytes
+(epstopdf)             Command: <epstopdf --outfile=router_opt-eps-converted-to
+.pdf router_opt.eps>
+(epstopdf)             \includegraphics on input line 436.
 Package epstopdf Info: Output file is already uptodate.
 
-<comparison_bars_relative-eps-converted-to.pdf, id=74, 856.19875pt x 400.49625p
-t>
-File: comparison_bars_relative-eps-converted-to.pdf Graphic file (type pdf)
- <use comparison_bars_relative-eps-converted-to.pdf>
-Package pdftex.def Info: comparison_bars_relative-eps-converted-to.pdf used on 
-input line 453.
-(pdftex.def)             Requested size: 240.0pt x 112.2604pt.
+<router_opt-eps-converted-to.pdf, id=72, 589.20125pt x 257.96375pt>
+File: router_opt-eps-converted-to.pdf Graphic file (type pdf)
 
-Overfull \hbox (6.4695pt too wide) in paragraph at lines 458--459
-[]\T1/aer/m/n/9 The graphs show that com-bin-ing the tim-ing with the bound-
- []
+<use router_opt-eps-converted-to.pdf>
+Package pdftex.def Info: router_opt-eps-converted-to.pdf used on input line 436
+.
+(pdftex.def)             Requested size: 240.0pt x 105.07698pt.
+Package epstopdf Info: Source file: <router_opt_fmax.eps>
+(epstopdf)                    date: 2014-11-16 14:23:14
+(epstopdf)                    size: 1856775 bytes
+(epstopdf)             Output file: <router_opt_fmax-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-16 14:47:06
+(epstopdf)                    size: 14756 bytes
+(epstopdf)             Command: <epstopdf --outfile=router_opt_fmax-eps-convert
+ed-to.pdf router_opt_fmax.eps>
+(epstopdf)             \includegraphics on input line 445.
+Package epstopdf Info: Output file is already uptodate.
+
+<router_opt_fmax-eps-converted-to.pdf, id=73, 591.20876pt x 292.09125pt>
+File: router_opt_fmax-eps-converted-to.pdf Graphic file (type pdf)
+
+<use router_opt_fmax-eps-converted-to.pdf>
+Package pdftex.def Info: router_opt_fmax-eps-converted-to.pdf used on input lin
+e 445.
+(pdftex.def)             Requested size: 240.0pt x 118.57263pt.
+
+
+LaTeX Warning: Reference `sec:JaveedSection' on page \thepage  undefined on inp
+ut line 456.
 
 [7 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperf
-inal/FPGAPaper/minW_constant_sweep_log-eps-converted-to.pdf> <C:/cygwin64/home/
-Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/areade
-lay_constant_sweep_log-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr
--verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/bb-eps-converted-to.pd
-f>]
-Package epstopdf Info: Source file: <standard_minW.eps>
-(epstopdf)                    date: 2013-09-21 14:59:06
-(epstopdf)                    size: 73361 bytes
-(epstopdf)             Output file: <standard_minW-eps-converted-to.pdf>
-(epstopdf)                    date: 2013-09-21 15:02:40
-(epstopdf)                    size: 25194 bytes
-(epstopdf)             Command: <epstopdf --outfile=standard_minW-eps-converted
--to.pdf standard_minW.eps>
-(epstopdf)             \includegraphics on input line 481.
-Package epstopdf Info: Output file is already uptodate.
- <standard_minW-eps-converted-to.pdf, id=88, 776.9025pt x 448.67625pt>
-File: standard_minW-eps-converted-to.pdf Graphic file (type pdf)
-
-<use standard_minW-eps-converted-to.pdf>
-Package pdftex.def Info: standard_minW-eps-converted-to.pdf used on input line 
-481.
-(pdftex.def)             Requested size: 240.0pt x 138.60211pt.
-Package epstopdf Info: Source file: <standard_crit_path.eps>
-(epstopdf)                    date: 2013-09-21 14:59:38
-(epstopdf)                    size: 81042 bytes
-(epstopdf)             Output file: <standard_crit_path-eps-converted-to.pdf>
-(epstopdf)                    date: 2013-09-21 15:02:40
-(epstopdf)                    size: 33581 bytes
-(epstopdf)             Command: <epstopdf --outfile=standard_crit_path-eps-conv
-erted-to.pdf standard_crit_path.eps>
-(epstopdf)             \includegraphics on input line 488.
-Package epstopdf Info: Output file is already uptodate.
-
-<standard_crit_path-eps-converted-to.pdf, id=89, 778.91pt x 434.62375pt>
-File: standard_crit_path-eps-converted-to.pdf Graphic file (type pdf)
-
-<use standard_crit_path-eps-converted-to.pdf>
-Package pdftex.def Info: standard_crit_path-eps-converted-to.pdf used on input 
-line 488.
-(pdftex.def)             Requested size: 240.0pt x 133.91624pt.
-
-Overfull \hbox (14.76929pt too wide) in paragraph at lines 512--525
-[][] 
- []
-
-[8 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperf
-inal/FPGAPaper/comparison_minW-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Ja
-veed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/comparison_bar
-s_relative-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-
-routing/doc/journal/fpgapaperfinal/FPGAPaper/standard_minW-eps-converted-to.pdf
-> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfi
-nal/FPGAPaper/standard_crit_path-eps-converted-to.pdf>]
-Package epstopdf Info: Source file: <numberofcrossingwires.eps>
-(epstopdf)                    date: 2013-12-09 17:14:26
-(epstopdf)                    size: 53659 bytes
-(epstopdf)             Output file: <numberofcrossingwires-eps-converted-to.pdf
->
-(epstopdf)                    date: 2013-12-09 17:14:30
-(epstopdf)                    size: 19419 bytes
-(epstopdf)             Command: <epstopdf --outfile=numberofcrossingwires-eps-c
-onverted-to.pdf numberofcrossingwires.eps>
-(epstopdf)             \includegraphics on input line 542.
-Package epstopdf Info: Output file is already uptodate.
-
-<numberofcrossingwires-eps-converted-to.pdf, id=105, 621.32124pt x 331.2375pt>
-File: numberofcrossingwires-eps-converted-to.pdf Graphic file (type pdf)
-
-<use numberofcrossingwires-eps-converted-to.pdf>
-Package pdftex.def Info: numberofcrossingwires-eps-converted-to.pdf used on inp
-ut line 542.
-(pdftex.def)             Requested size: 240.0pt x 127.94885pt.
-Package epstopdf Info: Source file: <delays_crit_path.eps>
-(epstopdf)                    date: 2013-09-21 15:11:26
-(epstopdf)                    size: 115603 bytes
-(epstopdf)             Output file: <delays_crit_path-eps-converted-to.pdf>
-(epstopdf)                    date: 2013-09-21 15:12:28
-(epstopdf)                    size: 50025 bytes
-(epstopdf)             Command: <epstopdf --outfile=delays_crit_path-eps-conver
-ted-to.pdf delays_crit_path.eps>
-(epstopdf)             \includegraphics on input line 556.
-Package epstopdf Info: Output file is already uptodate.
-
-<delays_crit_path-eps-converted-to.pdf, id=106, 820.06375pt x 487.8225pt>
-File: delays_crit_path-eps-converted-to.pdf Graphic file (type pdf)
-
-<use delays_crit_path-eps-converted-to.pdf>
-Package pdftex.def Info: delays_crit_path-eps-converted-to.pdf used on input li
-ne 556.
-(pdftex.def)             Requested size: 240.0pt x 142.76752pt.
-
-Overfull \hbox (14.76929pt too wide) in paragraph at lines 562--575
-[][] 
- []
-
-
-Overfull \hbox (14.76929pt too wide) in paragraph at lines 580--593
-[][] 
- []
-
-
-Overfull \hbox (14.76929pt too wide) in paragraph at lines 598--611
-[][] 
- []
-
-[9 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperf
-inal/FPGAPaper/numberofcrossingwires-eps-converted-to.pdf> <C:/cygwin64/home/Eh
-san/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/delays_c
-rit_path-eps-converted-to.pdf>]
+inal/FPGAPaper/bb-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-veri
+log-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/comparison_minW-eps-convert
+ed-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fp
+gapaperfinal/FPGAPaper/router_opt-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan
+/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/router_opt_
+fmax-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <cuts_minW.eps>
 (epstopdf)                    date: 2013-09-21 15:18:46
 (epstopdf)                    size: 87410 bytes
@@ -781,14 +632,14 @@ Package epstopdf Info: Source file: <cuts_minW.eps>
 (epstopdf)                    size: 38824 bytes
 (epstopdf)             Command: <epstopdf --outfile=cuts_minW-eps-converted-to.
 pdf cuts_minW.eps>
-(epstopdf)             \includegraphics on input line 629.
+(epstopdf)             \includegraphics on input line 469.
 Package epstopdf Info: Output file is already uptodate.
 
-<cuts_minW-eps-converted-to.pdf, id=116, 798.985pt x 410.53375pt>
+<cuts_minW-eps-converted-to.pdf, id=90, 798.985pt x 410.53375pt>
 File: cuts_minW-eps-converted-to.pdf Graphic file (type pdf)
 
 <use cuts_minW-eps-converted-to.pdf>
-Package pdftex.def Info: cuts_minW-eps-converted-to.pdf used on input line 629.
+Package pdftex.def Info: cuts_minW-eps-converted-to.pdf used on input line 469.
 
 (pdftex.def)             Requested size: 240.0pt x 123.31767pt.
 Package epstopdf Info: Source file: <cuts_crit_path.eps>
@@ -799,45 +650,158 @@ Package epstopdf Info: Source file: <cuts_crit_path.eps>
 (epstopdf)                    size: 39484 bytes
 (epstopdf)             Command: <epstopdf --outfile=cuts_crit_path-eps-converte
 d-to.pdf cuts_crit_path.eps>
-(epstopdf)             \includegraphics on input line 636.
+(epstopdf)             \includegraphics on input line 476.
 Package epstopdf Info: Output file is already uptodate.
 
-<cuts_crit_path-eps-converted-to.pdf, id=117, 793.96625pt x 407.5225pt>
+<cuts_crit_path-eps-converted-to.pdf, id=91, 793.96625pt x 407.5225pt>
 File: cuts_crit_path-eps-converted-to.pdf Graphic file (type pdf)
 
 <use cuts_crit_path-eps-converted-to.pdf>
 Package pdftex.def Info: cuts_crit_path-eps-converted-to.pdf used on input line
- 636.
+ 476.
 (pdftex.def)             Requested size: 240.0pt x 123.1842pt.
+Package epstopdf Info: Source file: <minChW.eps>
+(epstopdf)                    date: 2014-11-16 15:17:00
+(epstopdf)                    size: 2201702 bytes
+(epstopdf)             Output file: <minChW-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-16 15:17:22
+(epstopdf)                    size: 12779 bytes
+(epstopdf)             Command: <epstopdf --outfile=minChW-eps-converted-to.pdf
+ minChW.eps>
+(epstopdf)             \includegraphics on input line 491.
+Package epstopdf Info: Output file is already uptodate.
 
-Overfull \hbox (14.76929pt too wide) in paragraph at lines 660--673
-[][] 
- []
+<minChW-eps-converted-to.pdf, id=92, 611.28375pt x 335.2525pt>
+File: minChW-eps-converted-to.pdf Graphic file (type pdf)
+
+<use minChW-eps-converted-to.pdf>
+Package pdftex.def Info: minChW-eps-converted-to.pdf used on input line 491.
+(pdftex.def)             Requested size: 240.0pt x 131.6227pt.
+Package epstopdf Info: Source file: <standard_crit_path_new.eps>
+(epstopdf)                    date: 2014-11-16 16:06:13
+(epstopdf)                    size: 1857310 bytes
+(epstopdf)             Output file: <standard_crit_path_new-eps-converted-to.pd
+f>
+(epstopdf)                    date: 2014-11-16 16:06:36
+(epstopdf)                    size: 9451 bytes
+(epstopdf)             Command: <epstopdf --outfile=standard_crit_path_new-eps-
+converted-to.pdf standard_crit_path_new.eps>
+(epstopdf)             \includegraphics on input line 500.
+Package epstopdf Info: Output file is already uptodate.
+
+<standard_crit_path_new-eps-converted-to.pdf, id=93, 569.12625pt x 303.1325pt>
+File: standard_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
+
+<use standard_crit_path_new-eps-converted-to.pdf>
+Package pdftex.def Info: standard_crit_path_new-eps-converted-to.pdf used on in
+put line 500.
+(pdftex.def)             Requested size: 240.0pt x 127.83282pt.
+ [8 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaper
+final/FPGAPaper/cuts_minW-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/
+vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/cuts_crit_path-eps-
+converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/jou
+rnal/fpgapaperfinal/FPGAPaper/minChW-eps-converted-to.pdf> <C:/cygwin64/home/Eh
+san/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/standard
+_crit_path_new-eps-converted-to.pdf>]
+Package epstopdf Info: Source file: <numberofcrossingwires_new.eps>
+(epstopdf)                    date: 2014-11-16 17:21:15
+(epstopdf)                    size: 2008516 bytes
+(epstopdf)             Output file: <numberofcrossingwires_new-eps-converted-to
+.pdf>
+(epstopdf)                    date: 2014-11-16 17:21:41
+(epstopdf)                    size: 11570 bytes
+(epstopdf)             Command: <epstopdf --outfile=numberofcrossingwires_new-e
+ps-converted-to.pdf numberofcrossingwires_new.eps>
+(epstopdf)             \includegraphics on input line 519.
+Package epstopdf Info: Output file is already uptodate.
+
+<numberofcrossingwires_new-eps-converted-to.pdf, id=109, 636.3775pt x 294.09875
+pt>
+File: numberofcrossingwires_new-eps-converted-to.pdf Graphic file (type pdf)
+ <use numberofcrossingwires_new-eps-converted-to.pdf>
+Package pdftex.def Info: numberofcrossingwires_new-eps-converted-to.pdf used on
+ input line 519.
+(pdftex.def)             Requested size: 240.0pt x 110.91052pt.
+Package epstopdf Info: Source file: <delays_crit_path_new.eps>
+(epstopdf)                    date: 2014-11-16 17:43:55
+(epstopdf)                    size: 1862208 bytes
+(epstopdf)             Output file: <delays_crit_path_new-eps-converted-to.pdf>
+
+(epstopdf)                    date: 2014-11-16 17:44:11
+(epstopdf)                    size: 16784 bytes
+(epstopdf)             Command: <epstopdf --outfile=delays_crit_path_new-eps-co
+nverted-to.pdf delays_crit_path_new.eps>
+(epstopdf)             \includegraphics on input line 533.
+Package epstopdf Info: Output file is already uptodate.
+
+<delays_crit_path_new-eps-converted-to.pdf, id=110, 571.13374pt x 303.1325pt>
+File: delays_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
+
+<use delays_crit_path_new-eps-converted-to.pdf>
+Package pdftex.def Info: delays_crit_path_new-eps-converted-to.pdf used on inpu
+t line 533.
+(pdftex.def)             Requested size: 240.0pt x 127.37953pt.
+Package epstopdf Info: Source file: <arch_experiments.eps>
+(epstopdf)                    date: 2014-11-16 20:57:00
+(epstopdf)                    size: 3517041 bytes
+(epstopdf)             Output file: <arch_experiments-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-16 20:57:22
+(epstopdf)                    size: 59868 bytes
+(epstopdf)             Command: <epstopdf --outfile=arch_experiments-eps-conver
+ted-to.pdf arch_experiments.eps>
+(epstopdf)             \includegraphics on input line 546.
+Package epstopdf Info: Output file is already uptodate.
+
+<arch_experiments-eps-converted-to.pdf, id=111, 804.00375pt x 407.5225pt>
+File: arch_experiments-eps-converted-to.pdf Graphic file (type pdf)
+
+<use arch_experiments-eps-converted-to.pdf>
+Package pdftex.def Info: arch_experiments-eps-converted-to.pdf used on input li
+ne 546.
+(pdftex.def)             Requested size: 240.0pt x 121.64207pt.
+ [9 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaper
+final/FPGAPaper/numberofcrossingwires_new-eps-converted-to.pdf> <C:/cygwin64/ho
+me/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/del
+ays_crit_path_new-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-veri
+log-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/arch_experiments-eps-conver
+ted-to.pdf>]
+Package epstopdf Info: Source file: <additional_fanins.eps>
+(epstopdf)                    date: 2014-11-17 22:54:23
+(epstopdf)                    size: 2742925 bytes
+(epstopdf)             Output file: <additional_fanins-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-17 22:57:40
+(epstopdf)                    size: 14438 bytes
+(epstopdf)             Command: <epstopdf --outfile=additional_fanins-eps-conve
+rted-to.pdf additional_fanins.eps>
+(epstopdf)             \includegraphics on input line 563.
+Package epstopdf Info: Output file is already uptodate.
+
+<additional_fanins-eps-converted-to.pdf, id=124, 612.2875pt x 417.56pt>
+File: additional_fanins-eps-converted-to.pdf Graphic file (type pdf)
+
+<use additional_fanins-eps-converted-to.pdf>
+Package pdftex.def Info: additional_fanins-eps-converted-to.pdf used on input l
+ine 563.
+(pdftex.def)             Requested size: 240.0pt x 163.66965pt.
+
+Underfull \vbox (badness 6204) has occurred while \output is active []
 
 
-Overfull \hbox (14.76929pt too wide) in paragraph at lines 696--709
-[][] 
- []
-
-
-Overfull \hbox (10.90555pt too wide) in paragraph at lines 716--717
+Overfull \hbox (10.90555pt too wide) in paragraph at lines 571--572
 []\T1/aer/m/n/9 We have ex-tended VPR to model and op-ti-mize for interposer-
  []
 
-[10 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaper
-final/FPGAPaper/cuts_minW-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/
-vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/cuts_crit_path-eps-
-converted-to.pdf>]
-Overfull \hbox (6.22618pt too wide) in paragraph at lines 718--719
+
+Overfull \hbox (6.22618pt too wide) in paragraph at lines 573--574
 []\T1/aer/m/n/9 We de-fined three key ar-chi-tec-ture pa-ram-e-ters for interpo
 ser-
  []
 
 
 (C:\cygwin64\home\Ehsan\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfina
-l\FPGAPaper\fpga2014paper.bbl [11]) [12
-
-]
+l\FPGAPaper\fpga2014paper.bbl [10 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to
+-routing/doc/journal/fpgapaperfinal/FPGAPaper/additional_fanins-eps-converted-t
+o.pdf>]) [11]
 (C:\cygwin64\home\Ehsan\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfina
 l\FPGAPaper\fpga2014paper.aux)
 
@@ -845,10 +809,10 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 3400 strings out of 493921
- 47716 string characters out of 3144876
- 130482 words of memory out of 3000000
- 6587 multiletter control sequences out of 15000+200000
+ 3396 strings out of 493921
+ 47717 string characters out of 3144876
+ 108454 words of memory out of 3000000
+ 6582 multiletter control sequences out of 15000+200000
  60178 words of font info for 76 fonts, out of 3000000 for 9000
  841 hyphenation exceptions out of 8191
  42i,18n,28p,1651b,259s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -868,9 +832,9 @@ nts/type1/urw/helvetic/uhvb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type
 1/urw/helvetic/uhvr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/ti
 mes/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmr8a.
 pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (12 pages, 1492753 bytes).
+Output written on fpga2014paper.pdf (11 pages, 1360686 bytes).
 PDF statistics:
- 184 PDF objects out of 1000 (max. 8388607)
+ 185 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 101 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 106 words of extra memory for PDF output out of 10000 (max. 10000000)
 
