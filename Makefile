@@ -1,5 +1,5 @@
 #Tools
-CXX = g++-4.9
+CXX = /project/trees/gcc_4.8_cilkplus/cilkplus-install/bin/g++ #g++-4.9
 AR = ar
 LEXER_GEN = flex
 PARSER_GEN = bison
@@ -60,7 +60,7 @@ else
 	PROFILE_FLAGS := 
 endif
 
-CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(PROFILE_FLAGS) $(INC_FLAGS) --std=c++11 -fopenmp
+CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(PROFILE_FLAGS) $(INC_FLAGS) --std=c++11 -fopenmp -fcilkplus -lcilkrts
 
 #Objects
 MAIN_SRC = $(SRC_DIR)/main.cpp
