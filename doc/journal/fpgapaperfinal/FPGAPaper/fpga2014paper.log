@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  17 NOV 2014 22:58
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  17 NOV 2014 23:23
 entering extended mode
 **fpga2014paper.tex
 
@@ -766,26 +766,28 @@ ays_crit_path_new-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-veri
 log-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/arch_experiments-eps-conver
 ted-to.pdf>]
 Package epstopdf Info: Source file: <additional_fanins.eps>
-(epstopdf)                    date: 2014-11-17 22:54:23
-(epstopdf)                    size: 2742925 bytes
+(epstopdf)                    date: 2014-11-17 23:05:37
+(epstopdf)                    size: 1526884 bytes
 (epstopdf)             Output file: <additional_fanins-eps-converted-to.pdf>
 (epstopdf)                    date: 2014-11-17 22:57:40
 (epstopdf)                    size: 14438 bytes
 (epstopdf)             Command: <epstopdf --outfile=additional_fanins-eps-conve
 rted-to.pdf additional_fanins.eps>
 (epstopdf)             \includegraphics on input line 563.
-Package epstopdf Info: Output file is already uptodate.
+runsystem(epstopdf --outfile=additional_fanins-eps-converted-to.pdf additional_
+fanins.eps)...executed (allowed).
 
-<additional_fanins-eps-converted-to.pdf, id=124, 612.2875pt x 417.56pt>
+Package epstopdf Info: Result file: <additional_fanins-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-17 23:23:31
+(epstopdf)                    size: 10372 bytes.
+
+<additional_fanins-eps-converted-to.pdf, id=124, 513.92pt x 276.03125pt>
 File: additional_fanins-eps-converted-to.pdf Graphic file (type pdf)
 
 <use additional_fanins-eps-converted-to.pdf>
 Package pdftex.def Info: additional_fanins-eps-converted-to.pdf used on input l
 ine 563.
-(pdftex.def)             Requested size: 240.0pt x 163.66965pt.
-
-Underfull \vbox (badness 6204) has occurred while \output is active []
-
+(pdftex.def)             Requested size: 240.0pt x 128.90916pt.
 
 Overfull \hbox (10.90555pt too wide) in paragraph at lines 571--572
 []\T1/aer/m/n/9 We have ex-tended VPR to model and op-ti-mize for interposer-
@@ -801,7 +803,10 @@ ser-
 (C:\cygwin64\home\Ehsan\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfina
 l\FPGAPaper\fpga2014paper.bbl [10 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to
 -routing/doc/journal/fpgapaperfinal/FPGAPaper/additional_fanins-eps-converted-t
-o.pdf>]) [11]
+o.pdf>]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+) [11]
 (C:\cygwin64\home\Ehsan\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfina
 l\FPGAPaper\fpga2014paper.aux)
 
@@ -832,7 +837,7 @@ nts/type1/urw/helvetic/uhvb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type
 1/urw/helvetic/uhvr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/ti
 mes/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmr8a.
 pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (11 pages, 1360686 bytes).
+Output written on fpga2014paper.pdf (11 pages, 1356634 bytes).
 PDF statistics:
  185 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
