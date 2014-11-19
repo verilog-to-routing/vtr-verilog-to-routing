@@ -6,10 +6,17 @@
 #include "TimingNode.hpp"
 
 #include "SerialTimingAnalyzer.hpp"
+
+//OpenMP Variants
 #include "ParallelLevelizedLockedTimingAnalyzer.hpp"
 #include "ParallelLevelizedBarrierTimingAnalyzer.hpp"
-#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
 #include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
+
+//Cilk variants
+#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
+#include "ParallelDynamicCilkTimingAnalyzer.hpp"
+
+
 #include "vpr_timing_graph_common.hpp"
 
 #define NUM_SERIAL_RUNS 10
@@ -36,7 +43,10 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
-    ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
+    //ParallelLevelizedBarrierTimingAnalyzer parallel_analyzer = ParallelLevelizedBarrierTimingAnalyzer(); 
+    //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
+    ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
+    //ParallelDynamicOpenMPTasksTimingAnalyzer parallel_analyzer = ParallelDynamicOpenMPTasksTimingAnalyzer(); 
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);

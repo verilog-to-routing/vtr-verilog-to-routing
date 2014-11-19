@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <omp.h>
 
 #include "TimingGraph.hpp"
@@ -27,17 +28,13 @@ class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
         void backward_traversal(TimingGraph& timing_graph);
 
         //Parallel worker functions
-        void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
+        void pre_traverse_node(TimingGraph& tg, NodeId node_id);
         void forward_traverse_node(TimingGraph& tg, NodeId node_id);
         void backward_traverse_node(TimingGraph& tg, NodeId node_id);
 
-        void create_locks(TimingGraph& tg);
-        void init_locks();
-        void cleanup_locks();
+        void create_synchronization(TimingGraph& tg);
 
-        std::vector<omp_lock_t> node_arrival_locks_;
-        std::vector<omp_lock_t> node_required_locks_;
-        std::vector<int> node_arrival_inputs_ready_count_;
-        std::vector<int> node_required_outputs_ready_count_;
+        std::vector<std::atomic<int>> node_arrival_inputs_ready_count_;
+        std::vector<std::atomic<int>> node_required_outputs_ready_count_;
 };
 

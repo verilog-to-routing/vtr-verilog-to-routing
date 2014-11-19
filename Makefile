@@ -46,7 +46,7 @@ DEP_FLAGS = -MMD -MP
 
 DEBUG_FLAGS = -g -ggdb3 -g3 -O0 -fno-inline
 
-OPT_FLAGS = -O3
+OPT_FLAGS = -O3 -g
 
 ifneq (,$(findstring debug, $(BUILD_TYPE)))
 	DEBUG_OPT_FLAGS := $(DEBUG_FLAGS)

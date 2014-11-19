@@ -4,6 +4,9 @@
 #include "TimingGraph.hpp"
 
 
+#define PRE_TRAVERSAL_GRAIN_SIZE 1024
+#define MAIN_TRAVERSAL_GRAIN_SIZE 1024 //2*16384
+
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
 void ParallelLevelizedCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
@@ -12,7 +15,7 @@ void ParallelLevelizedCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_g
     //TODO: While forward and backward tranversals work on the same edges
     //and nodes, they work on independant data sets (i.e. arrival time for forward and required time for backward)
     //so they can occur in parallel
-    cilk_spawn forward_traversal(timing_graph);
+    forward_traversal(timing_graph);
     backward_traversal(timing_graph);
 }
 
@@ -28,6 +31,7 @@ void ParallelLevelizedCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_grap
     //We perform a BFS from primary inputs to initialize the timing graph
     for(int level_idx = 0; level_idx < timing_graph.num_levels(); level_idx++) {
         const std::vector<int>& level_ids = timing_graph.level(level_idx);
+//#pragma cilk grainsize=PRE_TRAVERSAL_GRAIN_SIZE
         cilk_for(int i = 0; i < (int) level_ids.size(); i++) {
             pre_traverse_node(timing_graph, level_ids[i], level_idx);
         }
@@ -48,6 +52,7 @@ void ParallelLevelizedCilkTimingAnalyzer::forward_traversal(TimingGraph& timing_
     //We update each node based on its predicessors
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
         const std::vector<int>& level_ids = timing_graph.level(level_idx);
+//#pragma cilk grainsize=MAIN_TRAVERSAL_GRAIN_SIZE
         cilk_for(int i = 0; i < (int) level_ids.size(); i++) {
 
             forward_traverse_node(timing_graph, level_ids[i]);
@@ -61,6 +66,7 @@ void ParallelLevelizedCilkTimingAnalyzer::backward_traversal(TimingGraph& timing
     //  setting the values for the current level based on the one below
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
         const std::vector<int>& level_ids = timing_graph.level(level_idx);
+//#pragma cilk grainsize=MAIN_TRAVERSAL_GRAIN_SIZE
         cilk_for(int i = 0; i < (int) level_ids.size(); i++) {
 
             backward_traverse_node(timing_graph, level_ids[i]);

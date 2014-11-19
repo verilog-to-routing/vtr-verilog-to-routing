@@ -5,15 +5,17 @@
 
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
 
+#define MEMORY_ORDERING std::memory_order_seq_cst
+
 void ParallelDynamicOpenMPTasksTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     //Create synchronization counters and locks
-    create_locks(timing_graph);
-    node_arrival_inputs_ready_count_ = std::vector<int>(timing_graph.num_nodes());
-    node_required_outputs_ready_count_ = std::vector<int>(timing_graph.num_nodes());
+    //create_locks(timing_graph);
+    node_arrival_inputs_ready_count_ = std::vector<std::atomic<int>>(timing_graph.num_nodes());
+    node_required_outputs_ready_count_ = std::vector<std::atomic<int>>(timing_graph.num_nodes());
 #pragma omp parallel
     {
         //Initialize locks
-        init_locks();
+        //init_locks();
 
         //Initialize the timing graph
         pre_traversal(timing_graph);
@@ -24,30 +26,32 @@ void ParallelDynamicOpenMPTasksTimingAnalyzer::calculate_timing(TimingGraph& tim
         }
 #pragma omp taskwait //Wait for traversals to finish
 
-        cleanup_locks();
+        //cleanup_locks();
     }
 }
 
-void ParallelDynamicOpenMPTasksTimingAnalyzer::create_locks(TimingGraph& tg) {
-    node_arrival_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
-    node_required_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
-}
-
-void ParallelDynamicOpenMPTasksTimingAnalyzer::init_locks() {
-#pragma omp for
-    for(int i = 0; i < (int) node_arrival_locks_.size(); i++) {
-        omp_init_lock(&node_arrival_locks_[i]);
-        omp_init_lock(&node_required_locks_[i]);
-    }
-}
-
-void ParallelDynamicOpenMPTasksTimingAnalyzer::cleanup_locks() {
-#pragma omp for
-    for(int i = 0; i < (int) node_arrival_locks_.size(); i++) {
-        omp_destroy_lock(&node_arrival_locks_[i]);
-        omp_destroy_lock(&node_required_locks_[i]);
-    }
-}
+/*
+ *void ParallelDynamicOpenMPTasksTimingAnalyzer::create_locks(TimingGraph& tg) {
+ *    node_arrival_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
+ *    node_required_locks_ = std::vector<omp_lock_t>(tg.num_nodes());
+ *}
+ *
+ *void ParallelDynamicOpenMPTasksTimingAnalyzer::init_locks() {
+ *#pragma omp for
+ *    for(int i = 0; i < (int) node_arrival_locks_.size(); i++) {
+ *        omp_init_lock(&node_arrival_locks_[i]);
+ *        omp_init_lock(&node_required_locks_[i]);
+ *    }
+ *}
+ *
+ *void ParallelDynamicOpenMPTasksTimingAnalyzer::cleanup_locks() {
+ *#pragma omp for
+ *    for(int i = 0; i < (int) node_arrival_locks_.size(); i++) {
+ *        omp_destroy_lock(&node_arrival_locks_[i]);
+ *        omp_destroy_lock(&node_required_locks_[i]);
+ *    }
+ *}
+ */
 
 void ParallelDynamicOpenMPTasksTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
@@ -155,22 +159,22 @@ void ParallelDynamicOpenMPTasksTimingAnalyzer::forward_traverse_node(TimingGraph
 
         const TimingNode& downstream_node = tg.node(downstream_node_id);
 
-#pragma omp atomic //Needs to be atomic since multiple nodes may have edges to the same downstream node
-        node_arrival_inputs_ready_count_[downstream_node_id] += 1;
+        //Atomiclly update ready count
+        //  We use atomic CAS to perform the update.
+        //  This allows us to know if *we* were the ones 
+        //  who did the final update.
+        std::atomic<int>& input_ready_count = node_arrival_inputs_ready_count_[downstream_node_id];
+        int prev_input_ready_count = input_ready_count.load(MEMORY_ORDERING);
+        while(!input_ready_count.compare_exchange_weak(prev_input_ready_count, prev_input_ready_count+1)) {
+            prev_input_ready_count = input_ready_count.load(MEMORY_ORDERING);
+        }
 
-        if(node_arrival_inputs_ready_count_[downstream_node_id] == downstream_node.num_in_edges()) {
-            //We could have several threads pass this condition:
-            //      e.g. T1 incremented count then suspends
-            //           T2 incremented count to equal num_in_edges
-            //           Both T1 and T2 can now trigger this condiditon
-            //We only allow one to proceed and actually lauch the task using a lock.
-            //Hopefully since relatively few threads will be contending for this lock.
-            if(omp_test_lock(&node_arrival_locks_[downstream_node_id])) {
+        //If we reached here we successfully updated the ready count
+        //If the previous value was one less than the number of edges 
+        //We know we were the ones to finally increment it to equal the number of edges
+        if(prev_input_ready_count == downstream_node.num_in_edges() - 1) {
 #pragma omp task shared(tg)
-                forward_traverse_node(tg, downstream_node_id);
-                //Note that we do not release the lock, so any subsequent omp_test_lock()
-                //calls will fail, allowing only a single thread to launch this task.
-            }
+            forward_traverse_node(tg, downstream_node_id);
         }
     }
 }
@@ -212,22 +216,22 @@ void ParallelDynamicOpenMPTasksTimingAnalyzer::backward_traverse_node(TimingGrap
 
         const TimingNode& upstream_node = tg.node(upstream_node_id);
 
-#pragma omp atomic //Needs to be atomic since multiple nodes may have edges to the same downstream node
-        node_required_outputs_ready_count_[upstream_node_id] += 1;
+        //Atomiclly update ready count
+        //  We use atomic CAS to perform the update.
+        //  This allows us to know if *we* were the ones 
+        //  who did the final update (by comparing the prev value).
+        std::atomic<int>& output_ready_count = node_required_outputs_ready_count_[upstream_node_id];
+        int prev_output_ready_count = output_ready_count.load(MEMORY_ORDERING);
+        while(!output_ready_count.compare_exchange_weak(prev_output_ready_count, prev_output_ready_count+1)) {
+            prev_output_ready_count = output_ready_count.load(MEMORY_ORDERING);
+        }
 
-        if(node_required_outputs_ready_count_[upstream_node_id] == upstream_node.num_out_edges()) {
-            //We could have several threads pass this condition:
-            //      e.g. T1 incremented count then suspends
-            //           T2 incremented count to equal num_in_edges
-            //           Both T1 and T2 can now trigger this condiditon
-            //We only allow one to proceed and actually lauch the task using a lock.
-            //Hopefully since relatively few threads will be contending for this lock.
-            if(omp_test_lock(&node_required_locks_[upstream_node_id])) {
+        //If we reached here we successfully updated the ready count
+        //If the previous value was one less than the number of edges 
+        //we know we were the ones to finally increment it to equal the number of edges
+        if(prev_output_ready_count == upstream_node.num_out_edges() - 1) {
 #pragma omp task shared(tg)
-                backward_traverse_node(tg, upstream_node_id);
-                //Note that we do not release the lock, so any subsequent omp_test_lock()
-                //calls will fail, allowing only a single thread to launch this task.
-            }
+            backward_traverse_node(tg, upstream_node_id);
         }
     }
 }

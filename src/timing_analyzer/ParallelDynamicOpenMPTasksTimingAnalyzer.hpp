@@ -1,5 +1,6 @@
 #pragma once
-#include <omp.h>
+
+#include <atomic>
 
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
@@ -35,9 +36,7 @@ class ParallelDynamicOpenMPTasksTimingAnalyzer : public SerialTimingAnalyzer {
         void init_locks();
         void cleanup_locks();
 
-        std::vector<omp_lock_t> node_arrival_locks_;
-        std::vector<omp_lock_t> node_required_locks_;
-        std::vector<int> node_arrival_inputs_ready_count_;
-        std::vector<int> node_required_outputs_ready_count_;
+        std::vector<std::atomic<int>> node_arrival_inputs_ready_count_;
+        std::vector<std::atomic<int>> node_required_outputs_ready_count_;
 };
 
