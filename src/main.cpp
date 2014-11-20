@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <ctime>
 #include <cassert>
+#include <cmath>
+#include <algorithm>
 
 #include "TimingGraph.hpp"
 #include "TimingNode.hpp"
@@ -23,6 +25,8 @@
 #define NUM_PARALLEL_RUNS 10
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
+
+void print_level_histogram(const TimingGraph& tg, int nbuckets);
 
 void print_timing_graph(const TimingGraph& tg);
 
@@ -75,6 +79,9 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_MONOTONIC, &load_end);
     }
     std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
+    std::cout << std::endl;
+
+    print_level_histogram(timing_graph, 50);
     std::cout << std::endl;
 
     //print_timing_graph(timing_graph);
@@ -256,6 +263,55 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
         exit(1);
     } else {
         //std::cout << "Timing verification SUCCEEDED" << std::endl;
+    }
+
+    std::cout.flags(saved_flags);
+    std::cout.precision(prec);
+    std::cout.width(width);
+}
+
+
+void print_level_histogram(const TimingGraph& tg, int nbuckets) {
+    int num_levels = tg.num_levels();
+
+    int levels_per_bucket = ceil((float) num_levels / nbuckets);
+
+
+    std::vector<float> buckets(nbuckets);
+
+    for(int i = 0; i < num_levels; i++) {
+        int ibucket = i / levels_per_bucket;
+
+        buckets[ibucket] += tg.level(i).size();
+    }
+
+    for(int i = 0; i < nbuckets; i++) {
+        buckets[i] /= levels_per_bucket;
+    }
+
+    //Print the histogram
+
+    std::ios_base::fmtflags saved_flags = std::cout.flags();
+    std::streamsize prec = std::cout.precision();
+    std::streamsize width = std::cout.width();
+
+    std::streamsize int_width = ceil(log10(num_levels));
+    std::streamsize float_prec = 1;
+    
+    float max_bucket = *std::max_element(buckets.begin(), buckets.end());
+
+    int num_histo_chars = 60;
+
+    std::cout << "Levels Avg_width" << std::endl;
+    for(int i = 0; i < nbuckets; i++) {
+        std::cout << std::setw(int_width) << i*levels_per_bucket << ":" << std::setw(int_width) << (i+1)*levels_per_bucket - 1;
+        std::cout << " " <<  std::scientific << std::setprecision(float_prec) << buckets[i];
+        std::cout << " ";
+
+        for(int j = 0; j < num_histo_chars*(buckets[i]/max_bucket); j++) {
+            std::cout << "*";
+        }
+        std::cout << std::endl;
     }
 
     std::cout.flags(saved_flags);
