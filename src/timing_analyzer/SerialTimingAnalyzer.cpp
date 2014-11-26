@@ -11,10 +11,8 @@ void SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
 
 void SerialTimingAnalyzer::reset_timing(TimingGraph& timing_graph) {
     for(int node_id = 0; node_id < timing_graph.num_nodes(); node_id++) {
-        TimingNode& node = timing_graph.node(node_id);
-
-        node.set_arrival_time(Time(NAN));
-        node.set_required_time(Time(NAN));
+        timing_graph.set_node_arr_time(node_id, Time(NAN));
+        timing_graph.set_node_req_time(node_id, Time(NAN));
     }
 }
 
@@ -56,70 +54,64 @@ void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
 }
 
 void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
-    TimingNode& node = tg.node(node_id);
     if(level_idx == 0) { //Primary Input
         //Initialize with zero arrival time
-        node.set_arrival_time(Time(0));
+        tg.set_node_arr_time(node_id, Time(0));
     }
 
-    if(node.num_out_edges() == 0) { //Primary Output
+    if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
 
         //Initialize required time
         //FIXME Currently assuming:
         //   * A single clock
         //   * At fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        node.set_required_time(Time(DEFAULT_CLOCK_PERIOD));
+        tg.set_node_req_time(node_id, Time(DEFAULT_CLOCK_PERIOD));
     }
 }
 
 void SerialTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
-    TimingNode& to_node = tg.node(node_id);
+    //From upstream sources to current node
 
     float new_arrival_time = NAN;
-    for(int edge_idx = 0; edge_idx < to_node.num_in_edges(); edge_idx++) {
-        EdgeId edge_id = to_node.in_edge_id(edge_idx);
-        const TimingEdge& edge = tg.edge(edge_id);
-        float edge_delay = edge.delay().value();
+    for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
+        EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
+        float edge_delay = tg.edge_delay(edge_id).value();
 
-        int from_node_id = edge.from_node_id();
-
-        const TimingNode& from_node = tg.node(from_node_id);
+        int src_node_id = tg.edge_src_node(edge_id);
 
         //TODO: Generalize this to support a more general Time class (e.g. vector of timing corners)
-        float from_arrival_time = from_node.arrival_time().value();
+        float src_arrival_time = tg.node_arr_time(src_node_id).value();
 
         if(edge_idx == 0) {
-            new_arrival_time = from_arrival_time + edge_delay;
+            new_arrival_time = src_arrival_time + edge_delay;
         } else {
-            new_arrival_time = std::max(new_arrival_time, from_arrival_time + edge_delay);
+            new_arrival_time = std::max(new_arrival_time, src_arrival_time + edge_delay);
         }
 
     }
-    to_node.set_arrival_time(Time(new_arrival_time));
+    tg.set_node_arr_time(node_id, Time(new_arrival_time));
 }
 
 void SerialTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
-    TimingNode& node = tg.node(node_id);
-    float required_time = node.required_time().value();
+    //From downstream sinks to current node
+    float required_time = tg.node_req_time(node_id).value();
 
-    for(int edge_idx = 0; edge_idx < node.num_out_edges(); edge_idx++) {
-        EdgeId edge_id = node.out_edge_id(edge_idx);
-        const TimingEdge& edge = tg.edge(edge_id);
+    for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
+        EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
-        int to_node_id = edge.to_node_id();
-        const TimingNode& to_node = tg.node(to_node_id);
+        int sink_node_id = tg.edge_sink_node(edge_id);
 
         //TODO: Generalize this to support a general Time class (e.g. vector of corners or statistical etc.)
-        float to_required_time = to_node.required_time().value();
-        float edge_delay = edge.delay().value();
+        float sink_required_time = tg.node_req_time(sink_node_id).value();
+        float edge_delay = tg.edge_delay(edge_id).value();
 
         if(isnan(required_time)) {
-            required_time = to_required_time - edge_delay;
+            required_time = sink_required_time - edge_delay;
         } else {
-            required_time = std::min(required_time, to_required_time - edge_delay);
+            required_time = std::min(required_time, sink_required_time - edge_delay);
         }
 
     }
-    node.set_required_time(Time(required_time));
+    tg.set_node_req_time(node_id, Time(required_time));
 }

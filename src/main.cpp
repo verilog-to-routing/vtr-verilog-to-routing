@@ -10,13 +10,17 @@
 #include "SerialTimingAnalyzer.hpp"
 
 //OpenMP Variants
-#include "ParallelLevelizedLockedTimingAnalyzer.hpp"
-#include "ParallelLevelizedBarrierTimingAnalyzer.hpp"
-#include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
+/*
+ *#include "ParallelLevelizedLockedTimingAnalyzer.hpp"
+ *#include "ParallelLevelizedBarrierTimingAnalyzer.hpp"
+ *#include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
+ */
 
 //Cilk variants
-#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
-#include "ParallelDynamicCilkTimingAnalyzer.hpp"
+/*
+ *#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
+ *#include "ParallelDynamicCilkTimingAnalyzer.hpp"
+ */
 
 
 #include "vpr_timing_graph_common.hpp"
@@ -49,7 +53,7 @@ int main(int argc, char** argv) {
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
     //ParallelLevelizedBarrierTimingAnalyzer parallel_analyzer = ParallelLevelizedBarrierTimingAnalyzer(); 
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
-    ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
+    //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
     //ParallelDynamicOpenMPTasksTimingAnalyzer parallel_analyzer = ParallelDynamicOpenMPTasksTimingAnalyzer(); 
 
     {
@@ -128,40 +132,42 @@ int main(int argc, char** argv) {
     float parallel_analysis_time = 0;
     float parallel_analysis_time_avg = 0;
     float parallel_verify_time = 0;
-    {
-        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
-        TimingAnalyzer& timing_analyzer = parallel_analyzer;
-
-        
-        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
-            //Analyze
-            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
-
-            timing_analyzer.calculate_timing(timing_graph);
-
-            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-            parallel_analysis_time += time_sec(analyze_start, analyze_end);
-
-            std::cout << ".";
-            std::cout.flush();
-
-            //Verify
-            clock_gettime(CLOCK_MONOTONIC, &verify_start);
-
-            verify_timing_graph(timing_graph, expected_arr_req_times);
-
-            clock_gettime(CLOCK_MONOTONIC, &verify_end);
-            parallel_verify_time += time_sec(verify_start, verify_end);
-            
-            //Reset
-            timing_analyzer.reset_timing(timing_graph);
-        }
-        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
-        std::cout << std::endl;
-        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << "s" << std::endl;
-        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
-        std::cout << std::endl;
-    }
+/*
+ *    {
+ *        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
+ *        TimingAnalyzer& timing_analyzer = parallel_analyzer;
+ *
+ *        
+ *        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
+ *            //Analyze
+ *            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
+ *
+ *            timing_analyzer.calculate_timing(timing_graph);
+ *
+ *            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
+ *            parallel_analysis_time += time_sec(analyze_start, analyze_end);
+ *
+ *            std::cout << ".";
+ *            std::cout.flush();
+ *
+ *            //Verify
+ *            clock_gettime(CLOCK_MONOTONIC, &verify_start);
+ *
+ *            verify_timing_graph(timing_graph, expected_arr_req_times);
+ *
+ *            clock_gettime(CLOCK_MONOTONIC, &verify_end);
+ *            parallel_verify_time += time_sec(verify_start, verify_end);
+ *            
+ *            //Reset
+ *            timing_analyzer.reset_timing(timing_graph);
+ *        }
+ *        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
+ *        std::cout << std::endl;
+ *        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << "s" << std::endl;
+ *        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
+ *        std::cout << std::endl;
+ *    }
+ */
 
 
 
@@ -177,16 +183,15 @@ int main(int argc, char** argv) {
 
 void print_timing_graph(const TimingGraph& tg) {
     for(NodeId node_id = 0; node_id < tg.num_nodes(); node_id++) {
-        const TimingNode& node = tg.node(node_id);
-        std::cout << "Node: " << node_id << " Out Edges: " << node.num_out_edges() << std::endl;
-        for(int out_edge_idx = 0; out_edge_idx < node.num_out_edges(); out_edge_idx++) {
-            EdgeId edge_id = node.out_edge_id(out_edge_idx);
-            const TimingEdge& edge = tg.edge(edge_id);
-            assert(edge.from_node_id() == node_id);
+        std::cout << "Node: " << " Out Edges: " << tg.num_node_out_edges(node_id) << std::endl;
+        for(int out_edge_idx = 0; out_edge_idx < tg.num_node_out_edges(node_id); out_edge_idx++) {
+            EdgeId edge_id = tg.node_out_edge(node_id, out_edge_idx);
+            NodeId from_node_id = tg.edge_src_node(edge_id);
+            assert(from_node_id == node_id);
 
-            NodeId to_node_id = edge.to_node_id();
+            NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-            std::cout << "\tEdge to node: " << to_node_id << " Delay: " << edge.delay().value() << std::endl;
+            std::cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << " Delay: " << tg.edge_delay(edge_id).value() << std::endl;
         }
     }
 }
@@ -226,10 +231,8 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
 
     bool error = false;
     for(int node_id = 0; node_id < (int) expected_arr_req_times.size(); node_id++) {
-        const TimingNode& node = tg.node(node_id);
-        
-        float arr_time = node.arrival_time().value();
-        float req_time = node.required_time().value();
+        float arr_time = tg.node_arr_time(node_id).value();
+        float req_time = tg.node_req_time(node_id).value();
 
         //Check arrival
         float arr_abs_err = fabs(arr_time - expected_arr_req_times[node_id].T_arr);

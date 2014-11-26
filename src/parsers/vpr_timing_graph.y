@@ -117,15 +117,7 @@ extern char* yytext;
 %%
 
 finish: timing_graph                        {
-                                                //Add references for back edges (i.e. fan-in) to nodes in timing graph now that all nodes have been created.
-                                                for(EdgeId edge_id = 0; edge_id < timing_graph.num_edges(); edge_id++) {
-                                                    const TimingEdge& edge = timing_graph.edge(edge_id);
-                                                    
-                                                    NodeId node_id = edge.to_node_id();
-                                                    TimingNode& node = timing_graph.node(node_id);
-
-                                                    node.add_in_edge_id(edge_id);
-                                                }
+                                                timing_graph.fill_back_edges();
                                             }
 
 timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\n", $1);*/}
