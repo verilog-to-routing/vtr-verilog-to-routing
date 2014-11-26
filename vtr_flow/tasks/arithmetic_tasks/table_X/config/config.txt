@@ -4,10 +4,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/arithmetic/table_X/verilog
+circuits_dir=benchmarks/arithmetic/generated_circuits/table_X/verilog
 
 # Path to directory of architectures to use
-archs_dir=benchmarks/arithmetic/arch
+archs_dir=arch/timing
 
 # Add circuits to list to sweep
 circuit_list_add=arm_core.v
@@ -27,13 +27,16 @@ circuit_list_add=stereovision1.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_N8_gate_boost_0.2V_22nm.xml
+arch_list_add=k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
-#arch_list_add=k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
+arch_list_add=k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
+arch_list_add=k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
 
 # Parse info and how to parse
-parse_file=benchmarks/arithmetic/nCLB_and_crit_delay.parserconf
+parse_file=vpr_chain.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt
 
-script_params=-lut_size 6 -keep_intermediate_files -min_hard_adder_size 12
+
+script_params=-lut_size 6 -routing_failure_predictor off

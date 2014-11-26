@@ -4,10 +4,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/arithmetic/FIR_filters/verilog/fir-gen
+circuits_dir=benchmarks/arithmetic/generated_circuits/FIR_filters/verilog
 
 # Path to directory of architectures to use
-# archs_dir=benchmarks/arithmetic/arch/40x40
+# archs_dir=benchmarks/arithmetic/arch/
 archs_dir=arch/timing
 
 
@@ -103,21 +103,17 @@ circuit_list_add=fir_nopipe_52.v
 
 
 # Add architectures to list to sweep
-# arch_list_add=k6_N8_gate_boost_0.2V_22nm.xml
-# arch_list_add=k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
-
 arch_list_add=k6_N8_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
-# arch_list_add=k6_N8_lookahead_chain_gate_boost_0.2V_22nm_higher_Fs.xml
 arch_list_add=k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
 
 # Parse info and how to parse
-parse_file=benchmarks/arithmetic/everything.parserconf
+parse_file=vpr_chain.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt
 
-script_params=-lut_size 6 -keep_intermediate_files
-# -routing_failure_predictor off
+
+script_params=-lut_size 6 -routing_failure_predictor off
