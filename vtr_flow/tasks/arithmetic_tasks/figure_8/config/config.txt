@@ -7,7 +7,7 @@
 circuits_dir=benchmarks/arithmetic/generated_circuits/figure_8/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/timing/fixed_size
 
 # Add circuits to list to sweep
 
