@@ -1,4 +1,5 @@
 #include <cassert>
+#include <map>
 
 #include "TimingGraph.hpp"
 
@@ -64,4 +65,138 @@ void TimingGraph::fill_back_edges() {
             node_in_edges_[sink_node].push_back(edge_id);
         }
     }
+}
+
+void TimingGraph::contiguize_level_edges() {
+    //Make all edges in a level be contiguous in memory
+    std::cout << "Re-allocating edges so levels are in contiguous memory" << std::endl;
+
+    //Collect levels for edges
+    std::vector<std::vector<EdgeId>> edge_levels;
+    for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
+        edge_levels.push_back(std::vector<EdgeId>());
+        for(auto node_id : node_levels_[level_idx]) {
+            for(int i = 0; i < num_node_out_edges(node_id); i++) {
+                EdgeId edge_id = node_out_edge(node_id, i);
+
+                edge_levels[level_idx].push_back(edge_id);
+            }
+        }
+    }
+
+    //Save a map from old edge_id to new edge_id, will be used to update node refs
+    std::map<EdgeId,EdgeId> old_edge_to_new_edge;
+    int cnt = 0;
+    for(std::vector<EdgeId>& edge_level : edge_levels) {
+        for(EdgeId orig_edge_id : edge_level) {
+            old_edge_to_new_edge[orig_edge_id] = cnt; 
+            cnt++;
+        }
+    }
+
+    /*
+     * Re-allocate edges to be contiguous in memory
+     */
+
+    //Save the old values while we write the new ones
+    std::vector<NodeId> old_edge_sink_nodes_;
+    std::vector<NodeId> old_edge_src_nodes_;
+    std::vector<Time> old_edge_delays_;
+
+    //Swap them
+    std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
+    std::swap(old_edge_src_nodes_, edge_src_nodes_);
+    std::swap(old_edge_delays_, edge_delays_);
+
+    //Update values
+    for(auto& edge_level : edge_levels) {
+        for(auto& orig_edge_id : edge_level) {
+            //Write edges in the new contiguous order
+            edge_sink_nodes_.push_back(old_edge_sink_nodes_[orig_edge_id]);
+            edge_src_nodes_.push_back(old_edge_src_nodes_[orig_edge_id]);
+            edge_delays_.push_back(old_edge_delays_[orig_edge_id]);
+        }
+    }
+
+    /*
+     * Update edge refs in nodes
+     */
+    for(int i = 0; i < num_nodes(); i++) {
+        for(size_t j = 0; j < node_out_edges_[i].size(); j++) {
+            EdgeId old_edge_id = node_out_edges_[i][j];
+            node_out_edges_[i][j] = old_edge_to_new_edge[old_edge_id];
+        }
+        for(size_t j = 0; j < node_in_edges_[i].size(); j++) {
+            EdgeId old_edge_id = node_in_edges_[i][j];
+            node_in_edges_[i][j] = old_edge_to_new_edge[old_edge_id];
+        }
+    }
+}
+
+std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
+    //Make all nodes in a level be contiguous in memory
+    std::cout << "Re-allocating nodes so levels are in contiguous memory" << std::endl;
+
+    /*
+     * Build a map of the old and new node ids to update edges
+     * and node levels later
+     */
+    std::map<NodeId,NodeId> old_node_to_new_node;
+    int cnt = 0;
+    for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
+        for(NodeId node_id : node_levels_[level_idx]) {
+            old_node_to_new_node[node_id] = cnt;
+            cnt++;
+        }
+    }
+
+
+    /*
+     * Re-allocate nodes so levels are in contiguous memory
+     */
+    std::vector<TN_Type> old_node_types;
+    std::vector<std::vector<EdgeId>> old_node_out_edges;
+    std::vector<std::vector<EdgeId>> old_node_in_edges;
+    std::vector<Time> old_node_arr_times;
+    std::vector<Time> old_node_req_times;
+
+    //Swap the values
+    std::swap(old_node_types, node_types_);
+    std::swap(old_node_out_edges, node_out_edges_);
+    std::swap(old_node_in_edges, node_in_edges_);
+    std::swap(old_node_arr_times, node_arr_times_);
+    std::swap(old_node_req_times, node_req_times_);
+
+    //Update the values
+    for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
+        for(NodeId old_node_id : node_levels_[level_idx]) {
+            node_types_.push_back(old_node_types[old_node_id]);
+            node_out_edges_.push_back(old_node_out_edges[old_node_id]);
+            node_in_edges_.push_back(old_node_in_edges[old_node_id]);
+            node_arr_times_.push_back(old_node_arr_times[old_node_id]);
+            node_req_times_.push_back(old_node_req_times[old_node_id]);
+        }
+    }
+
+    /*
+     * Update old references to node_ids with thier new values
+     */
+    //The node levels
+    for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
+        for(size_t i = 0; i < node_levels_[level_idx].size(); i++) {
+            NodeId old_node_id = node_levels_[level_idx][i];
+            node_levels_[level_idx][i] = old_node_to_new_node[old_node_id];
+        }
+    }
+
+    //The Edges
+    for(int i = 0; i < num_edges(); i++) {
+        NodeId old_sink_node = edge_sink_nodes_[i];
+        NodeId old_src_node = edge_src_nodes_[i];
+
+        edge_sink_nodes_[i] = old_node_to_new_node[old_sink_node];
+        edge_src_nodes_[i] = old_node_to_new_node[old_src_node];
+    }
+
+    return old_node_to_new_node;
 }

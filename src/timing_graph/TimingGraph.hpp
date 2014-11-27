@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include <iostream>
 #include <iomanip>
 
@@ -50,6 +51,8 @@ class TimingGraph {
         void set_num_levels(const NodeId nlevels) { node_levels_ = std::vector<std::vector<NodeId>>(nlevels); }
         void add_level(const NodeId level_id, const std::vector<NodeId>& level_node_ids) {node_levels_[level_id] = level_node_ids;}
         void fill_back_edges();
+        void contiguize_level_edges();
+        std::map<NodeId,NodeId> contiguize_level_nodes();
 
     private:
         /*

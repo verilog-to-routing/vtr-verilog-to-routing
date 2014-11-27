@@ -26,19 +26,27 @@ void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
      *   - Initialize required times on primary outputs
      */
     //We perform a BFS from primary inputs to initialize the timing graph
+    //std::cout << "Pre Traversal: " << std::endl;
     for(int level_idx = 0; level_idx < timing_graph.num_levels(); level_idx++) {
+        //std::cout << "Level " << level_idx << ": ";
         for(int node_id : timing_graph.level(level_idx)) {
+            //std::cout << node_id << " ";
             pre_traverse_node(timing_graph, node_id, level_idx);
         }
+        //std::cout << std::endl;
     }
 }
 
 void SerialTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
+    //std::cout << "Fwd Traversal: " << std::endl;
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
+        //std::cout << "Level " << level_idx << ": ";
         for(NodeId node_id : timing_graph.level(level_idx)) {
+            //std::cout << node_id << " ";
             forward_traverse_node(timing_graph, node_id);
         }
+        //std::cout << std::endl;
     }
 }
     
@@ -46,10 +54,14 @@ void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //Backward traversal (required times)
     //  Since we only store edges in the forward direction we calculate required times by
     //  setting the values for the current level based on the one below
+    //std::cout << "Bck Traversal: " << std::endl;
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
+        //std::cout << "Level " << level_idx << ": ";
         for(NodeId node_id : timing_graph.level(level_idx)) {
+            //std::cout << node_id << " ";
             backward_traverse_node(timing_graph, node_id);
         }
+        //std::cout << std::endl;
     }
 }
 
