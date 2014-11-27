@@ -3,6 +3,9 @@
 #include "TimingAnalyzer.hpp"
 #include "timing_graph_fwd.hpp"
 
+
+#define DEFAULT_CLOCK_PERIOD 1.0e-9
+
 class SerialTimingAnalyzer : public TimingAnalyzer {
     public: 
         virtual void calculate_timing(TimingGraph& timing_graph);

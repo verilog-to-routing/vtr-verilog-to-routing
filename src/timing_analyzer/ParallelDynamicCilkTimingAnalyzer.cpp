@@ -1,8 +1,6 @@
 #include "ParallelDynamicCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
-#define DEFAULT_CLOCK_PERIOD 1.0e-9
-
 #define MEMORY_ORDERING std::memory_order_seq_cst
 
 void ParallelDynamicCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {

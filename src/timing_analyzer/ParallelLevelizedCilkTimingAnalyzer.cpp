@@ -3,12 +3,6 @@
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
-
-#define PRE_TRAVERSAL_GRAIN_SIZE 1024
-#define MAIN_TRAVERSAL_GRAIN_SIZE 1024 //2*16384
-
-#define DEFAULT_CLOCK_PERIOD 1.0e-9
-
 void ParallelLevelizedCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival

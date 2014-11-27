@@ -3,8 +3,6 @@
 
 #include <omp.h>
 
-#define DEFAULT_CLOCK_PERIOD 1.0e-9
-
 void ParallelLevelizedOpenMPTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
