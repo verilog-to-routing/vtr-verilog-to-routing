@@ -189,6 +189,12 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
         }
     }
 
+    //The primary outputs
+    for(size_t i = 0; i < primary_outputs_.size(); i++) {
+        NodeId old_node_id = primary_outputs_[i];
+        primary_outputs_[i] = old_node_to_new_node[old_node_id];
+    }
+
     //The Edges
     for(int i = 0; i < num_edges(); i++) {
         NodeId old_sink_node = edge_sink_nodes_[i];

@@ -6,9 +6,7 @@
 
 
 class ParallelLevelizedCilkTimingAnalyzer : public SerialTimingAnalyzer {
-    public: 
-        void calculate_timing(TimingGraph& timing_graph) override;
-
+        //Use the same basic functions for the different traversals
     private:
         /*
          * Setup the timing graph.
@@ -26,10 +24,6 @@ class ParallelLevelizedCilkTimingAnalyzer : public SerialTimingAnalyzer {
          */
         void backward_traversal(TimingGraph& timing_graph);
 
-        //Parallel worker functions
-        void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
-        void forward_traverse_node(TimingGraph& tg, NodeId node_id);
-        void backward_traverse_node(TimingGraph& tg, NodeId node_id);
-
+        //Use the same per-node worker functions as the serial case
 };
 

@@ -11,17 +11,15 @@
 #include "SerialTimingAnalyzer.hpp"
 
 //OpenMP Variants
+#include "ParallelLevelizedOpenMPTimingAnalyzer.hpp"
 /*
  *#include "ParallelLevelizedLockedTimingAnalyzer.hpp"
- *#include "ParallelLevelizedBarrierTimingAnalyzer.hpp"
  *#include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
  */
 
 //Cilk variants
-/*
- *#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
- *#include "ParallelDynamicCilkTimingAnalyzer.hpp"
- */
+#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
+#include "ParallelDynamicCilkTimingAnalyzer.hpp"
 
 
 #include "vpr_timing_graph_common.hpp"
@@ -53,10 +51,9 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
-    //ParallelLevelizedBarrierTimingAnalyzer parallel_analyzer = ParallelLevelizedBarrierTimingAnalyzer(); 
-    //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
+    //ParallelLevelizedOpenMPTimingAnalyzer parallel_analyzer = ParallelLevelizedOpenMPTimingAnalyzer(); 
+    ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
     //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
-    //ParallelDynamicOpenMPTasksTimingAnalyzer parallel_analyzer = ParallelDynamicOpenMPTasksTimingAnalyzer(); 
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
@@ -145,42 +142,40 @@ int main(int argc, char** argv) {
     float parallel_analysis_time = 0;
     float parallel_analysis_time_avg = 0;
     float parallel_verify_time = 0;
-/*
- *    {
- *        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
- *        TimingAnalyzer& timing_analyzer = parallel_analyzer;
- *
- *        
- *        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
- *            //Analyze
- *            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
- *
- *            timing_analyzer.calculate_timing(timing_graph);
- *
- *            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
- *            parallel_analysis_time += time_sec(analyze_start, analyze_end);
- *
- *            std::cout << ".";
- *            std::cout.flush();
- *
- *            //Verify
- *            clock_gettime(CLOCK_MONOTONIC, &verify_start);
- *
- *            verify_timing_graph(timing_graph, expected_arr_req_times);
- *
- *            clock_gettime(CLOCK_MONOTONIC, &verify_end);
- *            parallel_verify_time += time_sec(verify_start, verify_end);
- *            
- *            //Reset
- *            timing_analyzer.reset_timing(timing_graph);
- *        }
- *        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
- *        std::cout << std::endl;
- *        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << "s" << std::endl;
- *        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
- *        std::cout << std::endl;
- *    }
- */
+    {
+        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
+        TimingAnalyzer& timing_analyzer = parallel_analyzer;
+
+        
+        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
+            //Analyze
+            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
+
+            timing_analyzer.calculate_timing(timing_graph);
+
+            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
+            parallel_analysis_time += time_sec(analyze_start, analyze_end);
+
+            std::cout << ".";
+            std::cout.flush();
+
+            //Verify
+            clock_gettime(CLOCK_MONOTONIC, &verify_start);
+
+            verify_timing_graph(timing_graph, expected_arr_req_times);
+
+            clock_gettime(CLOCK_MONOTONIC, &verify_end);
+            parallel_verify_time += time_sec(verify_start, verify_end);
+            
+            //Reset
+            timing_analyzer.reset_timing(timing_graph);
+        }
+        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
+        std::cout << std::endl;
+        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << "s" << std::endl;
+        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
+        std::cout << std::endl;
+    }
 
 
 
@@ -267,10 +262,10 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
         float req_rel_err = relative_error(req_time, vpr_req_time);
         if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
             error = true;
-            std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Arr: " << std::setw(num_width) << vpr_req_time << std::endl;
+            std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
             std::cout << "\tERROR Calculated required time was nan and didn't match VPR." << std::endl;
         } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
-            std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Arr: " << std::setw(num_width) << vpr_req_time << std::endl;
+            std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
             std::cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err << ", " << std::setw(num_width) << req_rel_err << std::endl;
             error = true;
         }

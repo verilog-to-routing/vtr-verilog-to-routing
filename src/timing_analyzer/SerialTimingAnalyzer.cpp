@@ -44,8 +44,6 @@ void SerialTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     
 void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //Backward traversal (required times)
-    //  Since we only store edges in the forward direction we calculate required times by
-    //  setting the values for the current level based on the one below
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
         for(NodeId node_id : timing_graph.level(level_idx)) {
             backward_traverse_node(timing_graph, node_id);
@@ -100,7 +98,6 @@ void SerialTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_i
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
         int sink_node_id = tg.edge_sink_node(edge_id);
 
-        //TODO: Generalize this to support a general Time class (e.g. vector of corners or statistical etc.)
         const Time& sink_req_time = tg.node_req_time(sink_node_id);
         const Time& edge_delay = tg.edge_delay(edge_id);
 

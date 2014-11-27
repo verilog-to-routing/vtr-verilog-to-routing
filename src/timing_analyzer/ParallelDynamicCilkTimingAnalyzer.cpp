@@ -38,8 +38,8 @@ void ParallelDynamicCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph)
     //We perform a BFS from primary inputs to initialize the timing graph
     const std::vector<int>& level_ids = timing_graph.level(0);
     cilk_for(int i = 0; i < (int) level_ids.size(); i++) {
-        TimingNode& node = timing_graph.node(level_ids[i]);
-        node.set_arrival_time(Time(0));
+        NodeId node_id = level_ids[i];
+        timing_graph.set_node_arr_time(node_id, Time(0));
     }
 
     cilk_for(NodeId node_id = 0; node_id < (int) timing_graph.num_nodes(); node_id++) {
@@ -79,64 +79,36 @@ void ParallelDynamicCilkTimingAnalyzer::backward_traversal(TimingGraph& timing_g
 }
 
 void ParallelDynamicCilkTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id) {
-    TimingNode& node = tg.node(node_id);
-    if(node.arrival_time().value() == 0) {
+    if(tg.node_arr_time(node_id) == Time(0)) {
         return;
     }
 
-    if(node.num_out_edges() == 0) { //Primary Output
+    if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
 
         //Initialize required time
         //FIXME Currently assuming:
         //   * A single clock
         //   * At fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        node.set_required_time(Time(DEFAULT_CLOCK_PERIOD));
+        tg.set_node_req_time(node_id, Time(DEFAULT_CLOCK_PERIOD));
     }
 }
 
 void ParallelDynamicCilkTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
-    //The from nodes were updated by the previous level update, so they are only accessed
-    //read only.
-    //Since only a single thread updates to_node, we don't need any locks
-    TimingNode& to_node = tg.node(node_id);
-
-    float new_arrival_time = NAN;
-    for(int edge_idx = 0; edge_idx < to_node.num_in_edges(); edge_idx++) {
-        EdgeId edge_id = to_node.in_edge_id(edge_idx);
-        const TimingEdge& edge = tg.edge(edge_id);
-        float edge_delay = edge.delay().value();
-
-        int from_node_id = edge.from_node_id();
-
-        const TimingNode& from_node = tg.node(from_node_id);
-
-        //TODO: Generalize this to support a more general Time class (e.g. vector of timing corners)
-        float from_arrival_time = from_node.arrival_time().value();
-
-        if(edge_idx == 0) {
-            new_arrival_time = from_arrival_time + edge_delay;
-        } else {
-            new_arrival_time = std::max(new_arrival_time, from_arrival_time + edge_delay);
-        }
-
-    }
-    to_node.set_arrival_time(Time(new_arrival_time));
+    //From upstream sources to current node
+    SerialTimingAnalyzer::forward_traverse_node(tg, node_id);
 
     //Update ready counts of downstream nodes, and launch any that are up to date
-    for(int edge_idx = 0; edge_idx < to_node.num_out_edges(); edge_idx++) {
-        EdgeId edge_id = to_node.out_edge_id(edge_idx);
-        const TimingEdge& edge = tg.edge(edge_id);
+    for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
+        EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
-        int downstream_node_id = edge.to_node_id();
-
-        const TimingNode& downstream_node = tg.node(downstream_node_id);
+        NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
         //Atomiclly update ready count
         //  We use atomic CAS to perform the update.
         //  This allows us to know if *we* were the ones 
         //  who did the final update.
-        std::atomic<int>& input_ready_count = node_arrival_inputs_ready_count_[downstream_node_id];
+        std::atomic<int>& input_ready_count = node_arrival_inputs_ready_count_[sink_node_id];
         int prev_input_ready_count = input_ready_count.load(MEMORY_ORDERING);
         while(!input_ready_count.compare_exchange_weak(prev_input_ready_count, prev_input_ready_count+1)) {
             prev_input_ready_count = input_ready_count.load(MEMORY_ORDERING);
@@ -145,54 +117,27 @@ void ParallelDynamicCilkTimingAnalyzer::forward_traverse_node(TimingGraph& tg, N
         //If we reached here we successfully updated the ready count
         //If the previous value was one less than the number of edges 
         //We know we were the ones to finally increment it to equal the number of edges
-        if(prev_input_ready_count == downstream_node.num_in_edges() - 1) {
-            forward_traverse_node(tg, downstream_node_id);
+        if(prev_input_ready_count == tg.num_node_in_edges(sink_node_id) - 1) {
+            forward_traverse_node(tg, sink_node_id);
         }
     }
 }
 
 void ParallelDynamicCilkTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
-    //Only one thread ever updates node so we don't need to synchronize access to it
-    //
-    //The downstream (to_node) was updated on the previous level (i.e. is read-only), 
-    //so we don't need to worry about synchronizing access to it.
-    TimingNode& node = tg.node(node_id);
-    float required_time = node.required_time().value();
-
-    for(int edge_idx = 0; edge_idx < node.num_out_edges(); edge_idx++) {
-        EdgeId edge_id = node.out_edge_id(edge_idx);
-        const TimingEdge& edge = tg.edge(edge_id);
-
-        int to_node_id = edge.to_node_id();
-        const TimingNode& to_node = tg.node(to_node_id);
-
-        //TODO: Generalize this to support a general Time class (e.g. vector of corners or statistical etc.)
-        float to_required_time = to_node.required_time().value();
-        float edge_delay = edge.delay().value();
-
-        if(isnan(required_time)) {
-            required_time = to_required_time - edge_delay;
-        } else {
-            required_time = std::min(required_time, to_required_time - edge_delay);
-        }
-
-    }
-    node.set_required_time(Time(required_time));
+    //From downstream sinks to current node
+    SerialTimingAnalyzer::backward_traverse_node(tg, node_id);
 
     //Update ready counts of upstream nodes, and launch any that are up to date
-    for(int edge_idx = 0; edge_idx < node.num_in_edges(); edge_idx++) {
-        EdgeId edge_id = node.in_edge_id(edge_idx);
-        const TimingEdge& edge = tg.edge(edge_id);
+    for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
+        EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
 
-        int upstream_node_id = edge.from_node_id();
-
-        const TimingNode& upstream_node = tg.node(upstream_node_id);
+        int src_node_id = tg.edge_src_node(edge_id);
 
         //Atomiclly update ready count
         //  We use atomic CAS to perform the update.
         //  This allows us to know if *we* were the ones 
         //  who did the final update (by comparing the prev value).
-        std::atomic<int>& output_ready_count = node_required_outputs_ready_count_[upstream_node_id];
+        std::atomic<int>& output_ready_count = node_required_outputs_ready_count_[src_node_id];
         int prev_output_ready_count = output_ready_count.load(MEMORY_ORDERING);
         while(!output_ready_count.compare_exchange_weak(prev_output_ready_count, prev_output_ready_count+1)) {
             prev_output_ready_count = output_ready_count.load(MEMORY_ORDERING);
@@ -201,8 +146,8 @@ void ParallelDynamicCilkTimingAnalyzer::backward_traverse_node(TimingGraph& tg, 
         //If we reached here we successfully updated the ready count
         //If the previous value was one less than the number of edges 
         //we know we were the ones to finally increment it to equal the number of edges
-        if(prev_output_ready_count == upstream_node.num_out_edges() - 1) {
-            backward_traverse_node(tg, upstream_node_id);
+        if(prev_output_ready_count == tg.num_node_out_edges(src_node_id) - 1) {
+            backward_traverse_node(tg, src_node_id);
         }
     }
 }

@@ -26,9 +26,15 @@ class Time {
             time_ -= rhs.time_;
             return *this;
         }
+
+        friend bool operator==(const Time& lhs, const Time& rhs);
     private:
         float time_;
 };
+
+inline bool operator==(const Time& lhs, const Time& rhs) {
+    return lhs.time_ == rhs.time_;
+}
 
 inline Time operator+(Time lhs, const Time& rhs) {
     return lhs += rhs;

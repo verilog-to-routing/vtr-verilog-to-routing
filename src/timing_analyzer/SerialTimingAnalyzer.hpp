@@ -5,25 +5,25 @@
 
 class SerialTimingAnalyzer : public TimingAnalyzer {
     public: 
-        void calculate_timing(TimingGraph& timing_graph);
-        void reset_timing(TimingGraph& timing_graph);
+        virtual void calculate_timing(TimingGraph& timing_graph);
+        virtual void reset_timing(TimingGraph& timing_graph);
 
-    private:
+    protected:
         /*
          * Setup the timing graph.
          *   Includes propogating clock domains and clock skews to clock pins
          */
-        void pre_traversal(TimingGraph& timing_graph);
+        virtual void pre_traversal(TimingGraph& timing_graph);
 
         /*
          * Propogate arrival times
          */
-        void forward_traversal(TimingGraph& timing_graph);
+        virtual void forward_traversal(TimingGraph& timing_graph);
 
         /*
          * Propogate required times
          */
-        void backward_traversal(TimingGraph& timing_graph);
+        virtual void backward_traversal(TimingGraph& timing_graph);
         
         //Per node worker functions
         void pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx);
