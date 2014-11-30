@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  30 NOV 2014 10:29
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  30 NOV 2014 10:45
 entering extended mode
 **fpga2014paper.tex
 
@@ -387,23 +387,28 @@ Package pdftex.def Info: fpga-eps-converted-to.pdf used on input line 219.
  [3 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaper
 final/FPGAPaper/fpga-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <architecture_params.eps>
-(epstopdf)                    date: 2014-11-09 19:22:13
-(epstopdf)                    size: 4924657 bytes
+(epstopdf)                    date: 2014-11-30 10:44:22
+(epstopdf)                    size: 4992347 bytes
 (epstopdf)             Output file: <architecture_params-eps-converted-to.pdf>
 (epstopdf)                    date: 2014-11-09 19:32:20
 (epstopdf)                    size: 28831 bytes
 (epstopdf)             Command: <epstopdf --outfile=architecture_params-eps-con
 verted-to.pdf architecture_params.eps>
 (epstopdf)             \includegraphics on input line 250.
-Package epstopdf Info: Output file is already uptodate.
+runsystem(epstopdf --outfile=architecture_params-eps-converted-to.pdf architect
+ure_params.eps)...executed (allowed).
 
-<architecture_params-eps-converted-to.pdf, id=29, 754.82pt x 607.26875pt>
+Package epstopdf Info: Result file: <architecture_params-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-30 10:45:24
+(epstopdf)                    size: 33356 bytes.
+
+<architecture_params-eps-converted-to.pdf, id=29, 782.925pt x 594.22pt>
 File: architecture_params-eps-converted-to.pdf Graphic file (type pdf)
 
 <use architecture_params-eps-converted-to.pdf>
 Package pdftex.def Info: architecture_params-eps-converted-to.pdf used on input
  line 250.
-(pdftex.def)             Requested size: 240.0pt x 193.07904pt.
+(pdftex.def)             Requested size: 240.0pt x 182.14807pt.
 Package epstopdf Info: Source file: <a.eps>
 (epstopdf)                    date: 2014-11-14 00:21:38
 (epstopdf)                    size: 1416928 bytes
@@ -623,15 +628,12 @@ Package epstopdf Info: Source file: <arch_experiments3.eps>
 (epstopdf)                    date: 2014-11-30 10:27:56
 (epstopdf)                    size: 4464503 bytes
 (epstopdf)             Output file: <arch_experiments3-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-30 10:29:16
+(epstopdf)                    size: 67172 bytes
 (epstopdf)             Command: <epstopdf --outfile=arch_experiments3-eps-conve
 rted-to.pdf arch_experiments3.eps>
 (epstopdf)             \includegraphics on input line 473.
-runsystem(epstopdf --outfile=arch_experiments3-eps-converted-to.pdf arch_experi
-ments3.eps)...executed (allowed).
-
-Package epstopdf Info: Result file: <arch_experiments3-eps-converted-to.pdf>
-(epstopdf)                    date: 2014-11-30 10:29:16
-(epstopdf)                    size: 67172 bytes.
+Package epstopdf Info: Output file is already uptodate.
 
 <arch_experiments3-eps-converted-to.pdf, id=91, 865.2325pt x 479.7925pt>
 File: arch_experiments3-eps-converted-to.pdf Graphic file (type pdf)
@@ -832,7 +834,7 @@ es (x86)/MiKTeX 2.9/fonts/type1/urw/helvetic/uhvr8a.pfb><C:/Program Files (x86)
 /MiKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9
 /fonts/type1/urw/times/utmr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type
 1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (11 pages, 1374516 bytes).
+Output written on fpga2014paper.pdf (11 pages, 1379050 bytes).
 PDF statistics:
  186 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
