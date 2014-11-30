@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  24 NOV 2014 23:50
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  30 NOV 2014 10:29
 entering extended mode
 **fpga2014paper.tex
 
@@ -619,24 +619,27 @@ nverted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journ
 al/fpgapaperfinal/FPGAPaper/router_opt-eps-converted-to.pdf> <C:/cygwin64/home/
 Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/router
 _opt_fmax-eps-converted-to.pdf>]
-Package epstopdf Info: Source file: <arch_experiments2.eps>
-(epstopdf)                    date: 2014-11-23 19:32:59
-(epstopdf)                    size: 4641685 bytes
-(epstopdf)             Output file: <arch_experiments2-eps-converted-to.pdf>
-(epstopdf)                    date: 2014-11-23 19:33:19
-(epstopdf)                    size: 63644 bytes
-(epstopdf)             Command: <epstopdf --outfile=arch_experiments2-eps-conve
-rted-to.pdf arch_experiments2.eps>
+Package epstopdf Info: Source file: <arch_experiments3.eps>
+(epstopdf)                    date: 2014-11-30 10:27:56
+(epstopdf)                    size: 4464503 bytes
+(epstopdf)             Output file: <arch_experiments3-eps-converted-to.pdf>
+(epstopdf)             Command: <epstopdf --outfile=arch_experiments3-eps-conve
+rted-to.pdf arch_experiments3.eps>
 (epstopdf)             \includegraphics on input line 473.
-Package epstopdf Info: Output file is already uptodate.
+runsystem(epstopdf --outfile=arch_experiments3-eps-converted-to.pdf arch_experi
+ments3.eps)...executed (allowed).
 
-<arch_experiments2-eps-converted-to.pdf, id=91, 859.21pt x 502.87875pt>
-File: arch_experiments2-eps-converted-to.pdf Graphic file (type pdf)
+Package epstopdf Info: Result file: <arch_experiments3-eps-converted-to.pdf>
+(epstopdf)                    date: 2014-11-30 10:29:16
+(epstopdf)                    size: 67172 bytes.
 
-<use arch_experiments2-eps-converted-to.pdf>
-Package pdftex.def Info: arch_experiments2-eps-converted-to.pdf used on input l
+<arch_experiments3-eps-converted-to.pdf, id=91, 865.2325pt x 479.7925pt>
+File: arch_experiments3-eps-converted-to.pdf Graphic file (type pdf)
+
+<use arch_experiments3-eps-converted-to.pdf>
+Package pdftex.def Info: arch_experiments3-eps-converted-to.pdf used on input l
 ine 473.
-(pdftex.def)             Requested size: 240.0pt x 140.46745pt.
+(pdftex.def)             Requested size: 240.0pt x 133.08176pt.
 Package epstopdf Info: Source file: <additional_fanins.eps>
 (epstopdf)                    date: 2014-11-23 17:35:49
 (epstopdf)                    size: 1441082 bytes
@@ -662,7 +665,7 @@ ans-
  []
 
 [8 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperf
-inal/FPGAPaper/arch_experiments2-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/
+inal/FPGAPaper/arch_experiments3-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/
 Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/additional_f
 anins-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <minChW.eps>
@@ -794,7 +797,7 @@ ser-
  []
 
 
-Underfull \vbox (badness 10000) has occurred while \output is active []
+Underfull \vbox (badness 4403) has occurred while \output is active []
 
  [10 <C:/cygwin64/home/Ehsan/Javeed/vtr-verilog-to-routing/doc/journal/fpgapape
 rfinal/FPGAPaper/cuts_minW-eps-converted-to.pdf> <C:/cygwin64/home/Ehsan/Javeed
@@ -829,7 +832,7 @@ es (x86)/MiKTeX 2.9/fonts/type1/urw/helvetic/uhvr8a.pfb><C:/Program Files (x86)
 /MiKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9
 /fonts/type1/urw/times/utmr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type
 1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (11 pages, 1370811 bytes).
+Output written on fpga2014paper.pdf (11 pages, 1374516 bytes).
 PDF statistics:
  186 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
