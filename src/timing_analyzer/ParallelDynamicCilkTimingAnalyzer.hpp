@@ -8,7 +8,7 @@
 
 class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
-        void calculate_timing(TimingGraph& timing_graph) override;
+        std::vector<float> calculate_timing(TimingGraph& timing_graph) override;
 
     private:
         /*

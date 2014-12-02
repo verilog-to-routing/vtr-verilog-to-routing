@@ -3,20 +3,11 @@
 
 #define MEMORY_ORDERING std::memory_order_seq_cst
 
-void ParallelDynamicCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+std::vector<float> ParallelDynamicCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     //Create synchronization counters and locks
     create_synchronization(timing_graph);
     
-    {
-        //Initialize the timing graph
-        pre_traversal(timing_graph);
-    }
-
-    {
-        //Traverse the timing graph
-        cilk_spawn forward_traversal(timing_graph);
-        backward_traversal(timing_graph);
-    }
+    return SerialTimingAnalyzer::calculate_timing(timing_graph);
 }
 
 void ParallelDynamicCilkTimingAnalyzer::create_synchronization(TimingGraph& tg) {

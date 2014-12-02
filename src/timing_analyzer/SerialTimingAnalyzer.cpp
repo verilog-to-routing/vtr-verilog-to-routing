@@ -1,12 +1,38 @@
+#include <fstream>
 #include "SerialTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
-#define DEFAULT_CLOCK_PERIOD 1.0e-9
+#include "sta_util.hpp"
 
-void SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+std::vector<float> SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+    struct timespec start_times[3];
+    struct timespec end_times[3];
+
+#ifdef SAVE_LEVEL_TIMES
+    fwd_start_ = std::vector<struct timespec>(timing_graph.num_levels());
+    fwd_end_ = std::vector<struct timespec>(timing_graph.num_levels());
+    bck_start_ = std::vector<struct timespec>(timing_graph.num_levels());
+    bck_end_ = std::vector<struct timespec>(timing_graph.num_levels());
+#endif
+
+    clock_gettime(CLOCK_MONOTONIC, &start_times[0]);
     pre_traversal(timing_graph);
+    clock_gettime(CLOCK_MONOTONIC, &end_times[0]);
+
+    clock_gettime(CLOCK_MONOTONIC, &start_times[1]);
     forward_traversal(timing_graph);
+    clock_gettime(CLOCK_MONOTONIC, &end_times[1]);
+
+    clock_gettime(CLOCK_MONOTONIC, &start_times[2]);
     backward_traversal(timing_graph);
+    clock_gettime(CLOCK_MONOTONIC, &end_times[2]);
+
+    std::vector<float> traversal_times(3);
+    traversal_times[0] = time_sec(start_times[0], end_times[0]);
+    traversal_times[1] = time_sec(start_times[1], end_times[1]);
+    traversal_times[2] = time_sec(start_times[2], end_times[2]);
+
+    return traversal_times;
 }
 
 void SerialTimingAnalyzer::reset_timing(TimingGraph& timing_graph) {
@@ -25,34 +51,43 @@ void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
      *   - Propogating clock delay to all clock pins
      *   - Initialize required times on primary outputs
      */
-    //We perform a BFS from primary inputs to initialize the timing graph
-    for(int level_idx = 0; level_idx < timing_graph.num_levels(); level_idx++) {
-        for(int node_id : timing_graph.level(level_idx)) {
-            pre_traverse_node(timing_graph, node_id, level_idx);
-        }
+    for(int node_id = 0; node_id < timing_graph.num_nodes(); node_id++) {
+        pre_traverse_node(timing_graph, node_id);
     }
 }
 
 void SerialTimingAnalyzer::forward_traversal(TimingGraph& timing_graph) {
     //Forward traversal (arrival times)
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
+#ifdef SAVE_LEVEL_TIMES
+        clock_gettime(CLOCK_MONOTONIC, &fwd_start_[level_idx]);
+#endif
         for(NodeId node_id : timing_graph.level(level_idx)) {
             forward_traverse_node(timing_graph, node_id);
         }
+#ifdef SAVE_LEVEL_TIMES
+        clock_gettime(CLOCK_MONOTONIC, &fwd_end_[level_idx]);
+#endif
     }
 }
     
 void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
     //Backward traversal (required times)
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
+#ifdef SAVE_LEVEL_TIMES
+        clock_gettime(CLOCK_MONOTONIC, &bck_start_[level_idx]);
+#endif
         for(NodeId node_id : timing_graph.level(level_idx)) {
             backward_traverse_node(timing_graph, node_id);
         }
+#ifdef SAVE_LEVEL_TIMES
+        clock_gettime(CLOCK_MONOTONIC, &bck_end_[level_idx]);
+#endif
     }
 }
 
-void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id, int level_idx) {
-    if(level_idx == 0) { //Primary Input
+void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id) {
+    if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
         tg.set_node_arr_time(node_id, Time(0));
     }
@@ -109,4 +144,14 @@ void SerialTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_i
 
     }
     tg.set_node_req_time(node_id, Time(req_time));
+}
+
+void SerialTimingAnalyzer::save_level_times(TimingGraph& timing_graph, std::string filename) {
+#ifdef SAVE_LEVEL_TIMES
+    std::ofstream f(filename.c_str());
+    f << "Level," << "Width," << "Fwd_Time," << "Bck_Time" << std::endl;
+    for(int i = 0; i < timing_graph.num_levels(); i++) {
+        f << i << "," << timing_graph.level(i).size() << "," << time_sec(fwd_start_[i], fwd_end_[i]) << "," << time_sec(bck_start_[i], bck_end_[i]) << std::endl;
+    }
+#endif
 }

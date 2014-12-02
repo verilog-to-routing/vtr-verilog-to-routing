@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <map>
 
+#include "sta_util.hpp"
+
 #include "TimingGraph.hpp"
 #include "TimingNode.hpp"
 
@@ -12,24 +14,25 @@
 
 //OpenMP Variants
 #include "ParallelLevelizedOpenMPTimingAnalyzer.hpp"
-/*
- *#include "ParallelLevelizedLockedTimingAnalyzer.hpp"
- *#include "ParallelDynamicOpenMPTasksTimingAnalyzer.hpp"
- */
 
 //Cilk variants
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
 #include "ParallelDynamicCilkTimingAnalyzer.hpp"
 
 
+//Illegal versions used for upper-bound speed-up estimates
+#include "ParallelUnlevelizedCilkTimingAnalyzer.hpp"
+
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 10
-#define NUM_PARALLEL_RUNS 10
+#define NUM_SERIAL_RUNS 100
+#define NUM_PARALLEL_RUNS NUM_SERIAL_RUNS
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
 
 void print_level_histogram(const TimingGraph& tg, int nbuckets);
+void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets);
+void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets);
 
 void print_timing_graph(const TimingGraph& tg);
 
@@ -53,6 +56,9 @@ int main(int argc, char** argv) {
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
     //ParallelLevelizedOpenMPTimingAnalyzer parallel_analyzer = ParallelLevelizedOpenMPTimingAnalyzer(); 
     ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
+    //ParallelLevelizedReduceCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedReduceCilkTimingAnalyzer(); 
+    //ParallelUnlevelizedMapCilkTimingAnalyzer parallel_analyzer = ParallelUnlevelizedMapCilkTimingAnalyzer(); 
+    //ParallelUnlevelizedCilkTimingAnalyzer parallel_analyzer = ParallelUnlevelizedCilkTimingAnalyzer(); 
     //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
 
     {
@@ -95,27 +101,35 @@ int main(int argc, char** argv) {
     std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
     std::cout << std::endl;
 
-    print_level_histogram(timing_graph, 50);
+    int n_histo_bins = 40;
+    print_level_histogram(timing_graph, n_histo_bins);
+    print_node_fanin_histogram(timing_graph, n_histo_bins);
+    print_node_fanout_histogram(timing_graph, n_histo_bins);
     std::cout << std::endl;
 
     //print_timing_graph(timing_graph);
 
     float serial_analysis_time = 0.;
+    float serial_pretraverse_time = 0.;
+    float serial_fwdtraverse_time = 0.;
+    float serial_bcktraverse_time = 0.;
     float serial_analysis_time_avg = 0.;
+    float serial_pretraverse_time_avg = 0.;
+    float serial_fwdtraverse_time_avg = 0.;
+    float serial_bcktraverse_time_avg = 0.;
     float serial_verify_time = 0.;
     {
         std::cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << std::endl;
-        TimingAnalyzer& timing_analyzer = serial_analyzer;
-
         
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
-            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
-            timing_analyzer.calculate_timing(timing_graph);
+            std::vector<float> traversal_times = serial_analyzer.calculate_timing(timing_graph);
 
-            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-            serial_analysis_time += time_sec(analyze_start, analyze_end);
+            serial_analysis_time += traversal_times[0] + traversal_times[1] + traversal_times[2];
+            serial_pretraverse_time += traversal_times[0];
+            serial_fwdtraverse_time += traversal_times[1];
+            serial_bcktraverse_time += traversal_times[2];
 
             std::cout << ".";
             std::cout.flush();
@@ -128,33 +142,53 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);
 
+            if(i == NUM_SERIAL_RUNS-1) {
+                serial_analyzer.save_level_times(timing_graph, "serial_level_times.csv");
+            }
+
             //Reset
-            timing_analyzer.reset_timing(timing_graph);
+            serial_analyzer.reset_timing(timing_graph);
         }
         serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
+        serial_pretraverse_time_avg = serial_pretraverse_time / NUM_SERIAL_RUNS;
+        serial_fwdtraverse_time_avg = serial_fwdtraverse_time / NUM_SERIAL_RUNS;
+        serial_bcktraverse_time_avg = serial_bcktraverse_time / NUM_SERIAL_RUNS;
 
         std::cout << std::endl;
-        std::cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << "s" << std::endl;
+        std::cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << " s" << std::endl;
+        std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_pretraverse_time_avg << " s";
+        std::cout << " (" << std::setprecision(2) << serial_pretraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
+        std::cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_fwdtraverse_time_avg << " s";
+        std::cout << " (" << std::setprecision(2) << serial_fwdtraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
+        std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_bcktraverse_time_avg << " s";
+        std::cout << " (" << std::setprecision(2) << serial_bcktraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
         std::cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
         std::cout << std::endl;
     }
 
     float parallel_analysis_time = 0;
+    float parallel_pretraverse_time = 0.;
+    float parallel_fwdtraverse_time = 0.;
+    float parallel_bcktraverse_time = 0.;
     float parallel_analysis_time_avg = 0;
+    float parallel_pretraverse_time_avg = 0.;
+    float parallel_fwdtraverse_time_avg = 0.;
+    float parallel_bcktraverse_time_avg = 0.;
     float parallel_verify_time = 0;
     {
         std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
-        TimingAnalyzer& timing_analyzer = parallel_analyzer;
-
         
         for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
             //Analyze
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
-            timing_analyzer.calculate_timing(timing_graph);
+            std::vector<float> traversal_times = parallel_analyzer.calculate_timing(timing_graph);
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_end);
             parallel_analysis_time += time_sec(analyze_start, analyze_end);
+            parallel_pretraverse_time += traversal_times[0];
+            parallel_fwdtraverse_time += traversal_times[1];
+            parallel_bcktraverse_time += traversal_times[2];
 
             std::cout << ".";
             std::cout.flush();
@@ -167,12 +201,24 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             parallel_verify_time += time_sec(verify_start, verify_end);
             
+            if(i == NUM_PARALLEL_RUNS-1) {
+                parallel_analyzer.save_level_times(timing_graph, "parallel_level_times.csv");
+            }
             //Reset
-            timing_analyzer.reset_timing(timing_graph);
+            parallel_analyzer.reset_timing(timing_graph);
         }
         parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
+        parallel_pretraverse_time_avg = parallel_pretraverse_time / NUM_PARALLEL_RUNS;
+        parallel_fwdtraverse_time_avg = parallel_fwdtraverse_time / NUM_PARALLEL_RUNS;
+        parallel_bcktraverse_time_avg = parallel_bcktraverse_time / NUM_PARALLEL_RUNS;
         std::cout << std::endl;
-        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << "s" << std::endl;
+        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << parallel_analysis_time_avg << " s" << std::endl;
+        std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_pretraverse_time_avg << " s";
+        std::cout << " (" << std::setprecision(2) << parallel_pretraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
+        std::cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_fwdtraverse_time_avg << " s";
+        std::cout << " (" << std::setprecision(2) << parallel_fwdtraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
+        std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_bcktraverse_time_avg << " s";
+        std::cout << " (" << std::setprecision(2) << parallel_bcktraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
         std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
         std::cout << std::endl;
     }
@@ -180,6 +226,9 @@ int main(int argc, char** argv) {
 
 
     std::cout << "Parallel Speed-Up: " << std::fixed << serial_analysis_time_avg / parallel_analysis_time_avg << "x" << std::endl;
+    std::cout << "\tPre-traversal: " << std::fixed << serial_pretraverse_time_avg / parallel_pretraverse_time_avg << "x" << std::endl;
+    std::cout << "\tFwd-traversal: " << std::fixed << serial_fwdtraverse_time_avg / parallel_fwdtraverse_time_avg << "x" << std::endl;
+    std::cout << "\tBck-traversal: " << std::fixed << serial_bcktraverse_time_avg / parallel_bcktraverse_time_avg << "x" << std::endl;
     std::cout << std::endl;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
@@ -202,13 +251,6 @@ void print_timing_graph(const TimingGraph& tg) {
             std::cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << " Delay: " << tg.edge_delay(edge_id).value() << std::endl;
         }
     }
-}
-
-float time_sec(struct timespec start, struct timespec end) {
-    float time = end.tv_sec - start.tv_sec;
-
-    time += (end.tv_nsec - start.tv_nsec) * 1e-9;
-    return time;
 }
 
 #define RELATIVE_EPSILON 1.e-5
@@ -285,49 +327,36 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
 
 
 void print_level_histogram(const TimingGraph& tg, int nbuckets) {
-    int num_levels = tg.num_levels();
+    std::cout << "Levels Width Histogram" << std::endl;
 
-    int levels_per_bucket = ceil((float) num_levels / nbuckets);
-
-
-    std::vector<float> buckets(nbuckets);
-
-    for(int i = 0; i < num_levels; i++) {
-        int ibucket = i / levels_per_bucket;
-
-        buckets[ibucket] += tg.level(i).size();
+    std::vector<float> level_widths;
+    for(int i = 0; i < tg.num_levels(); i++) {
+        level_widths.push_back(tg.level(i).size());
     }
-
-    for(int i = 0; i < nbuckets; i++) {
-        buckets[i] /= levels_per_bucket;
-    }
-
-    //Print the histogram
-
-    std::ios_base::fmtflags saved_flags = std::cout.flags();
-    std::streamsize prec = std::cout.precision();
-    std::streamsize width = std::cout.width();
-
-    std::streamsize int_width = ceil(log10(num_levels));
-    std::streamsize float_prec = 1;
-    
-    float max_bucket = *std::max_element(buckets.begin(), buckets.end());
-
-    int num_histo_chars = 60;
-
-    std::cout << "Levels Avg_width" << std::endl;
-    for(int i = 0; i < nbuckets; i++) {
-        std::cout << std::setw(int_width) << i*levels_per_bucket << ":" << std::setw(int_width) << (i+1)*levels_per_bucket - 1;
-        std::cout << " " <<  std::scientific << std::setprecision(float_prec) << buckets[i];
-        std::cout << " ";
-
-        for(int j = 0; j < num_histo_chars*(buckets[i]/max_bucket); j++) {
-            std::cout << "*";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout.flags(saved_flags);
-    std::cout.precision(prec);
-    std::cout.width(width);
+    print_histogram(level_widths, nbuckets);
 }
+
+void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets) {
+    std::cout << "Node Fan-in Histogram" << std::endl;
+
+    std::vector<float> fanin;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        fanin.push_back(tg.num_node_in_edges(i));
+    }
+
+    std::sort(fanin.begin(), fanin.end(), std::greater<float>());
+    print_histogram(fanin, nbuckets);
+}
+
+void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
+    std::cout << "Node Fan-out Histogram" << std::endl;
+
+    std::vector<float> fanout;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        fanout.push_back(tg.num_node_out_edges(i));
+    }
+
+    std::sort(fanout.begin(), fanout.end(), std::greater<float>());
+    print_histogram(fanout, nbuckets);
+}
+
