@@ -11,7 +11,7 @@
 
 class SerialTimingAnalyzer : public TimingAnalyzer {
     public: 
-        virtual std::vector<float> calculate_timing(TimingGraph& timing_graph);
+        virtual ta_runtime calculate_timing(TimingGraph& timing_graph);
         virtual void reset_timing(TimingGraph& timing_graph);
         virtual void save_level_times(TimingGraph& timing_graph, std::string filename);
 
@@ -45,3 +45,4 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         void backward_traverse_node(TimingGraph& tg, NodeId node_id);
 
 };
+

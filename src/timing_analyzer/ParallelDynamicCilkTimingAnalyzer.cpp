@@ -3,7 +3,9 @@
 
 #define MEMORY_ORDERING std::memory_order_seq_cst
 
-std::vector<float> ParallelDynamicCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+#define DYNAMIC_ALL_LEVELS
+
+ta_runtime ParallelDynamicCilkTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     //Create synchronization counters and locks
     create_synchronization(timing_graph);
     
@@ -25,14 +27,14 @@ void ParallelDynamicCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph)
      *   - Initialize required times on primary outputs
      */
     //We perform a BFS from primary inputs to initialize the timing graph
-    const std::vector<int>& level_ids = timing_graph.level(0);
-    cilk_for(int i = 0; i < (int) level_ids.size(); i++) {
-        NodeId node_id = level_ids[i];
-        timing_graph.set_node_arr_time(node_id, Time(0));
+    const std::vector<int>& primary_inputs = timing_graph.level(0);
+    cilk_for(int i = 0; i < (int) primary_inputs.size(); i++) {
+        SerialTimingAnalyzer::pre_traverse_node(timing_graph, primary_inputs[i]);
     }
 
-    cilk_for(NodeId node_id = 0; node_id < (int) timing_graph.num_nodes(); node_id++) {
-        pre_traverse_node(timing_graph, node_id);
+    const std::vector<int>& primary_outputs = timing_graph.primary_outputs();
+    cilk_for(int i = 0; i < (int) primary_outputs.size(); i++) {
+        SerialTimingAnalyzer::pre_traverse_node(timing_graph, primary_outputs[i]);
     }
 }
 
@@ -47,8 +49,7 @@ void ParallelDynamicCilkTimingAnalyzer::forward_traversal(TimingGraph& timing_gr
     //These tasks will then dynamically launch a task for any downstream node is 'ready' (i.e. has its upstream nodes fully updated)
     const std::vector<int>& level_ids = timing_graph.level(1);
     cilk_for(int i = 0; i < (int) level_ids.size(); i++) {
-        NodeId node_id = level_ids[i];
-        forward_traverse_node(timing_graph, node_id);
+        forward_traverse_node(timing_graph, level_ids[i]);
     }
 }
     
@@ -64,22 +65,6 @@ void ParallelDynamicCilkTimingAnalyzer::backward_traversal(TimingGraph& timing_g
     const std::vector<NodeId>& primary_outputs = timing_graph.primary_outputs();
     cilk_for(int i = 0; i < (int) primary_outputs.size(); i++) {
         backward_traverse_node(timing_graph, primary_outputs[i]);
-    }
-}
-
-void ParallelDynamicCilkTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id) {
-    if(tg.node_arr_time(node_id) == Time(0)) {
-        return;
-    }
-
-    if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
-
-        //Initialize required time
-        //FIXME Currently assuming:
-        //   * A single clock
-        //   * At fixed frequency
-        //   * Non-propogated (i.e. no clock delay/skew)
-        tg.set_node_req_time(node_id, Time(DEFAULT_CLOCK_PERIOD));
     }
 }
 
@@ -107,7 +92,11 @@ void ParallelDynamicCilkTimingAnalyzer::forward_traverse_node(TimingGraph& tg, N
         //If the previous value was one less than the number of edges 
         //We know we were the ones to finally increment it to equal the number of edges
         if(prev_input_ready_count == tg.num_node_in_edges(sink_node_id) - 1) {
+#ifdef DYNAMIC_ALL_LEVELS
+            cilk_spawn forward_traverse_node(tg, sink_node_id);
+#else
             forward_traverse_node(tg, sink_node_id);
+#endif
         }
     }
 }
@@ -136,7 +125,11 @@ void ParallelDynamicCilkTimingAnalyzer::backward_traverse_node(TimingGraph& tg, 
         //If the previous value was one less than the number of edges 
         //we know we were the ones to finally increment it to equal the number of edges
         if(prev_output_ready_count == tg.num_node_out_edges(src_node_id) - 1) {
+#ifdef DYNAMIC_ALL_LEVELS
+            cilk_spawn backward_traverse_node(tg, src_node_id);
+#else
             backward_traverse_node(tg, src_node_id);
+#endif
         }
     }
 }

@@ -4,7 +4,7 @@
 
 #include "sta_util.hpp"
 
-std::vector<float> SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
+ta_runtime SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_graph) {
     struct timespec start_times[3];
     struct timespec end_times[3];
 
@@ -27,10 +27,10 @@ std::vector<float> SerialTimingAnalyzer::calculate_timing(TimingGraph& timing_gr
     backward_traversal(timing_graph);
     clock_gettime(CLOCK_MONOTONIC, &end_times[2]);
 
-    std::vector<float> traversal_times(3);
-    traversal_times[0] = time_sec(start_times[0], end_times[0]);
-    traversal_times[1] = time_sec(start_times[1], end_times[1]);
-    traversal_times[2] = time_sec(start_times[2], end_times[2]);
+    ta_runtime traversal_times;
+    traversal_times.pre_traversal = time_sec(start_times[0], end_times[0]);
+    traversal_times.fwd_traversal = time_sec(start_times[1], end_times[1]);
+    traversal_times.bck_traversal = time_sec(start_times[2], end_times[2]);
 
     return traversal_times;
 }
@@ -51,8 +51,19 @@ void SerialTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
      *   - Propogating clock delay to all clock pins
      *   - Initialize required times on primary outputs
      */
-    for(int node_id = 0; node_id < timing_graph.num_nodes(); node_id++) {
-        pre_traverse_node(timing_graph, node_id);
+    /*
+     *for(int node_id = 0; node_id < timing_graph.num_nodes(); node_id++) {
+     *    pre_traverse_node(timing_graph, node_id);
+     *}
+     */
+    const std::vector<NodeId>& primary_inputs = timing_graph.level(0);
+    for(size_t i = 0; i < primary_inputs.size(); i++) {
+        pre_traverse_node(timing_graph, primary_inputs[i]);
+    }
+
+    const std::vector<NodeId>& primary_outputs = timing_graph.primary_outputs();
+    for(size_t i = 0; i < primary_outputs.size(); i++) {
+        pre_traverse_node(timing_graph, primary_outputs[i]);
     }
 }
 

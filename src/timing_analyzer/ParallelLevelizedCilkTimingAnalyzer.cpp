@@ -5,8 +5,8 @@
 #include "sta_util.hpp"
 
 #define NODE_STEP 1
-#define PARALLEL_MIN_FWD_LEVEL 150
-#define PARALLEL_MIN_BCK_LEVEL 2500
+#define PARALLEL_MIN_FWD_LEVEL 0
+#define PARALLEL_MIN_BCK_LEVEL 0
 
 void ParallelLevelizedCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
@@ -42,6 +42,7 @@ void ParallelLevelizedCilkTimingAnalyzer::forward_traversal(TimingGraph& timing_
 #ifdef SAVE_LEVEL_TIMES
         clock_gettime(CLOCK_MONOTONIC, &fwd_start_[level_idx]);
 #endif
+#if PARALLEL_MIN_FWD_LEVEL > 0
         if(level_ids.size() >= PARALLEL_MIN_FWD_LEVEL) {
             cilk_for(int i = 0; i < (int) level_ids.size(); i += NODE_STEP) {
 
@@ -55,6 +56,14 @@ void ParallelLevelizedCilkTimingAnalyzer::forward_traversal(TimingGraph& timing_
             }
 
         }
+#else
+        cilk_for(int i = 0; i < (int) level_ids.size(); i += NODE_STEP) {
+
+            for(int j = 0; j < NODE_STEP && i + j < (int) level_ids.size(); j++) {
+                SerialTimingAnalyzer::forward_traverse_node(timing_graph, level_ids[i + j]);
+            }
+        }
+#endif
 #ifdef SAVE_LEVEL_TIMES
         clock_gettime(CLOCK_MONOTONIC, &fwd_end_[level_idx]);
 #endif
@@ -70,6 +79,7 @@ void ParallelLevelizedCilkTimingAnalyzer::backward_traversal(TimingGraph& timing
 #ifdef SAVE_LEVEL_TIMES
         clock_gettime(CLOCK_MONOTONIC, &bck_start_[level_idx]);
 #endif
+#if PARALLEL_MIN_FWD_LEVEL > 0
         if(level_ids.size() >= PARALLEL_MIN_BCK_LEVEL) {
             cilk_for(int i = 0; i < (int) level_ids.size(); i += NODE_STEP) {
 
@@ -82,6 +92,15 @@ void ParallelLevelizedCilkTimingAnalyzer::backward_traversal(TimingGraph& timing
                 SerialTimingAnalyzer::backward_traverse_node(timing_graph, level_ids[i]);
             }
         }
+#else
+        cilk_for(int i = 0; i < (int) level_ids.size(); i += NODE_STEP) {
+
+            for(int j = 0; j < NODE_STEP && i + j < (int) level_ids.size(); j++) {
+                SerialTimingAnalyzer::backward_traverse_node(timing_graph, level_ids[i + j]);
+            }
+        }
+
+#endif
 #ifdef SAVE_LEVEL_TIMES
         clock_gettime(CLOCK_MONOTONIC, &bck_end_[level_idx]);
 #endif

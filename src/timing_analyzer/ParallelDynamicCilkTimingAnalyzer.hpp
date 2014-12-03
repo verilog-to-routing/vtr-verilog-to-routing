@@ -8,7 +8,7 @@
 
 class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
-        std::vector<float> calculate_timing(TimingGraph& timing_graph) override;
+        ta_runtime calculate_timing(TimingGraph& timing_graph) override;
 
     private:
         /*
@@ -28,7 +28,6 @@ class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
         void backward_traversal(TimingGraph& timing_graph) override;
 
         //Parallel worker functions
-        void pre_traverse_node(TimingGraph& tg, NodeId node_id);
         void forward_traverse_node(TimingGraph& tg, NodeId node_id);
         void backward_traverse_node(TimingGraph& tg, NodeId node_id);
 

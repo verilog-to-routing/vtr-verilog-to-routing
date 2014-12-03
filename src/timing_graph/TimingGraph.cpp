@@ -157,8 +157,13 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
     std::vector<TN_Type> old_node_types;
     std::vector<std::vector<EdgeId>> old_node_out_edges;
     std::vector<std::vector<EdgeId>> old_node_in_edges;
+#ifdef ARR_REQ_ALIGN
+    std::vector<Time, aligned_allocator<Time, ARR_REQ_ALIGN>> old_node_arr_times;
+    std::vector<Time, aligned_allocator<Time, ARR_REQ_ALIGN>> old_node_req_times;
+#else
     std::vector<Time> old_node_arr_times;
     std::vector<Time> old_node_req_times;
+#endif
 
     //Swap the values
     std::swap(old_node_types, node_types_);

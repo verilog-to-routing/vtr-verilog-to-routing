@@ -12,6 +12,10 @@
 #include "TimingNode.hpp"
 #include "TimingEdge.hpp"
 
+#include "aligned_allocator.hpp"
+
+//#define ARR_REQ_ALIGN 0
+
 
 class TimingGraph {
     public:
@@ -63,8 +67,14 @@ class TimingGraph {
         std::vector<TN_Type> node_types_;
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
+
+#ifdef ARR_REQ_ALIGN
+        std::vector<Time, aligned_allocator<Time, ARR_REQ_ALIGN>> node_arr_times_;
+        std::vector<Time, aligned_allocator<Time, ARR_REQ_ALIGN>> node_req_times_;
+#else
         std::vector<Time> node_arr_times_;
         std::vector<Time> node_req_times_;
+#endif
 
         //Edge data
         std::vector<NodeId> edge_sink_nodes_;

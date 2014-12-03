@@ -46,7 +46,7 @@ DEP_FLAGS = -MMD -MP
 
 DEBUG_FLAGS = -g -ggdb3 -g3 -O0 -fno-inline
 
-OPT_FLAGS = -O3 -g #-ftree-vectorizer-verbose=2
+OPT_FLAGS = -O3 -g -ftree-vectorizer-verbose=0 -march=native #-fno-tree-vectorize #-ftree-vectorize -march=native
 
 ifneq (,$(findstring debug, $(BUILD_TYPE)))
 	DEBUG_OPT_FLAGS := $(DEBUG_FLAGS)
@@ -83,7 +83,7 @@ SRC_INC_FLAGS = $(foreach inc_dir, $(DIRS), $(patsubst %, -I%, $(inc_dir)))
 #Need to include obj dir since it includes any generated source/header files
 INC_FLAGS = -I$(SRC_DIR) -I$(BUILD_DIR) $(SRC_INC_FLAGS) 
 
-CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(PROFILE_FLAGS) $(INC_FLAGS) --std=c++11 -fopenmp -fcilkplus -lcilkrts
+CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(PROFILE_FLAGS) $(INC_FLAGS) $(EXTRA_FLAGS) --std=c++11 -fopenmp -fcilkplus -lcilkrts
 
 #Dependancies
 DEP = $(OBJECTS_EXE:.o=.d)
