@@ -183,7 +183,14 @@ tnode: node_id tnode_type pin_blk domain_skew_iodelay num_out_edges {
                                                                       $$.out_edges = new std::vector<edge_t>();
                                                                       $$.out_edges->reserve($5);
                                                                     }
-    | tnode tedge { $$.out_edges->push_back($2); }
+    | tnode tedge { 
+                    //Edges may be broken by VPR to remove
+                    //combinational loops and marked with an invalid 'to_node'
+                    //We skip these edges
+                    if($2.to_node != -1) {
+                        $$.out_edges->push_back($2); 
+                    }
+                  }
     ;
 
 node_id: int_number TAB {$$ = $1;}
