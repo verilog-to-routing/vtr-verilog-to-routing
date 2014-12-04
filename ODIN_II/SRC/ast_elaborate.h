@@ -23,7 +23,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 int simplify_ast();
 void optimize_for_tree();
-void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[], int idx[]);
+void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[]);
 void copy_tree(ast_node_t *node, ast_node_t *new_node);
 void complete_node(ast_node_t *node, ast_node_t *new_node);
 void record_expression(ast_node_t *node, char *array[]);
@@ -43,6 +43,7 @@ void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p);
 void free_single_node(ast_node_t *node);
 void reduce_assignment_expression();
 void find_assign_node(ast_node_t *t, ast_node_t *list[]);
+ast_node_t *find_top_module();
 
 typedef struct exp_node
 {
@@ -50,7 +51,7 @@ typedef struct exp_node
 	{
 		char operation;
 		int data;
-		char variable[10];
+		char variable[1024];
 	}type;
 	int id;
 	int flag;
@@ -99,3 +100,6 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag, int modu
 int check_mult_bracket(int list[], int num_bracket);
 void change_bit_size(ast_node_t *node, int module_num, long long size);
 void search_var_declare_list(ast_node_t *top, char *name, long long size);
+void check_intermediate_variable(ast_node_t *node, int *mark);
+void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark);
+int check_index(ast_node_t *parent, ast_node_t *for_node);

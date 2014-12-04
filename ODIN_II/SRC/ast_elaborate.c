@@ -65,6 +65,8 @@ int simplify_ast()
 	/* find multiply or divide operation that can be replaced with shift operation */
 	shift_operation();
 
+	//ast_node_t *top = find_top_module();
+
 	return 1;
 }
 
@@ -80,7 +82,6 @@ void optimize_for_tree()
 
 	ast_node_t *list_for_node[N] = {0};
 	ast_node_t *list_parent[N] = {0};
-	int idx[N] = {0};
 
 	find_most_unique_count(); // find out the most unique_count prepared for new AST nodes
 
@@ -89,25 +90,31 @@ void optimize_for_tree()
 	{
 		top = ast_modules[i];
 		/* search the tree looking for FOR node */
-		search_for_node(top, list_for_node, list_parent, idx);
+		search_for_node(top, list_for_node, list_parent);
 
 		/* simplify every FOR node */
 		for (j = 0; j < num_for; j++)
 		{
 			int initial, terminal;
+			int idx;
 			char *expression[Max_size];
 			char *infix_expression[Max_size];
 			char *postfix_expression[Max_size];
 			char node_write[10][20];
 			char *value_string;
+			int mark_variable = 0;
+			int *flash_variable = &mark_variable;
+			ast_node_t *temp_parent_node; //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
+			idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again
 			for (k = 0; k < Max_size; k++) //initial *expression[], *infix_expression[], *postfix_expression[]
 			{
 				expression[k] = NULL;
 				infix_expression[k] = NULL;
 				postfix_expression[k] = NULL;
 			}
+			temp_parent_node = (ast_node_t*)malloc(sizeof(ast_node_t));
 			memset(node_write, 0, sizeof(node_write));
 			v_name = (char*)malloc(sizeof(list_for_node[j]->children[0]->children[0]->types.identifier)+1);
 			sprintf(v_name, "%s", list_for_node[j]->children[0]->children[0]->types.identifier);
@@ -122,7 +129,7 @@ void optimize_for_tree()
 			{
 				T  = (ast_node_t*)malloc(sizeof(ast_node_t));
 				copy_tree((list_for_node[j])->children[3], T);
-				add_child_to_node(list_parent[j], T);
+				add_child_to_node(temp_parent_node, T);
 				value_string = (char*)malloc(sizeof(int));
 				sprintf(value_string, "%lld", v_value);
 				modify_expression(expression, infix_expression, value_string);
@@ -132,9 +139,16 @@ void optimize_for_tree()
 				memset(postfix_expression, 0, Max_size);
 
 			}
-
-			reallocate_node(list_parent[j], idx[j]);
-			remove_intermediate_variable(list_parent[j], node_write);
+			check_intermediate_variable(temp_parent_node, flash_variable);
+			if (mark_variable == 0) //there are no intermediate variables involved in operations so just keep the last branch from the node
+				keep_all_branch(temp_parent_node, list_parent[j], idx);
+			else
+			{
+				remove_intermediate_variable(temp_parent_node, node_write);
+				keep_all_branch(temp_parent_node, list_parent[j], idx);
+			}
+			reallocate_node(list_parent[j], idx);
+			free(temp_parent_node);
 			free(v_name);
 		}
 	}
@@ -144,14 +158,14 @@ void optimize_for_tree()
  * (function: search_for_node)
  * search the tree looking for FOR node
  *-------------------------------------------------------------------------*/
-void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[], int idx[])
+void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[])
 {
 	int i, j;
 	if ((root == NULL)||(root->num_children == 0))
 		return;
 
 	for(i = 0; i < root->num_children; i++)
-		search_for_node(root->children[i], list_for_node, list_parent, idx);
+		search_for_node(root->children[i], list_for_node, list_parent);
 
 	for (j = 0; j < root->num_children; j++)
 	{
@@ -163,7 +177,6 @@ void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *
 			{
 				list_for_node[num_for] = root->children[j];
 				list_parent[num_for] = root;
-				idx[num_for] = j;
 				num_for++;
 			}
 		}
@@ -346,7 +359,7 @@ void translate_expression(char *exp[], char *post_exp[])
     {
       case '+':
       case '-':
-        if (*pop.mem[pop.top] == '*' || *pop.mem[pop.top] == '/')
+	if ((pop.top != -1) && (*pop.mem[pop.top] == '*' || *pop.mem[pop.top] == '/'))
         {
 	  while (pop.top >= 0)
           {
@@ -381,6 +394,7 @@ void translate_expression(char *exp[], char *post_exp[])
  *-------------------------------------------------------------------------*/
 void check_and_replace(ast_node_t *node, char *p[])
 {
+	//char *point = NULL;
 	switch(node->type)
 	{
 		case IDENTIFIERS:
@@ -388,13 +402,11 @@ void check_and_replace(ast_node_t *node, char *p[])
 				break;
 
 		case BLOCKING_STATEMENT:
-			//p[count++] = '=';
-			sprintf(p[count++], "%s", "=");
+			p[count++] = (char*)"=";
 			break;
 
 		case NON_BLOCKING_STATEMENT:
-			//p[count++] = "<=";
-			sprintf(p[count++], "%s", "<=");
+			p[count++] = (char*)"<=";
 			break;
 
 		case NUMBERS:
@@ -405,20 +417,16 @@ void check_and_replace(ast_node_t *node, char *p[])
 			switch(node->types.operation.op)
 			{
 				case ADD:
-					//p[count++] = '+';
-					sprintf(p[count++], "%s", "+");
+					p[count++] = (char*)"+";
 					break;
 				case MINUS:
-					//p[count++] = '-';
-					sprintf(p[count++], "%s", "-");
+					p[count++] = (char*)"-";
 					break;
 				case MULTIPLY:
-					//p[count++] = '*';
-					sprintf(p[count++], "%s", "*");
+					p[count++] = (char*)"*";
 					break;
 				case DIVIDE:
-					//p[count++] = '/';
-					sprintf(p[count++], "%s", "/");
+					p[count++] = (char*)"/";
 					break;
 
 				default:
@@ -580,8 +588,8 @@ void reallocate_node(ast_node_t *node, int idx)
 
 	for (i = idx; i < node->num_children; i++)
 		node->children[i] = node->children[i+1];
-
 	node->num_children = node->num_children - 1;
+
 }
 
 /*---------------------------------------------------------------------------
@@ -854,7 +862,7 @@ void reduce_enode_list()
 	{
 		if (temp == head)
 		{
-			if ((temp->type.data == 0) && (temp->next->priority == 2))
+			if ((temp->type.data == 0) && (temp->next->priority == 2) && (temp->next->type.operation == '+'))
 			{
 				head = temp->next->next;
 				free(temp->next);
@@ -2032,10 +2040,67 @@ void search_var_declare_list(ast_node_t *node, char *name, long long size)
 
 }
 
+/*---------------------------------------------------------------------------
+ * (function: check_intermediate_variable)
+ * check if there are intermediate variables
+ *-------------------------------------------------------------------------*/
+void check_intermediate_variable(ast_node_t *node, int *mark)
+{
+	int i;
 
+	if (node == NULL)
+			return;
+	else
+	{
+		if (node->is_read_write == 1 || node->is_read_write == 2)
+		{
+			*mark = 1;
+			return;
+		}
+		else
+			for (i = 0; i < node->num_children; i++)
+				check_intermediate_variable(node->children[i], mark);
+	}
+}
 
+/*---------------------------------------------------------------------------
+ * (function: keep_all_branch)
+ * keep all the branches and allocate them to the parent node of the FOR node
+ *-------------------------------------------------------------------------*/
+void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark)
+{
+	int i, j;
+	int index = mark;
+	for (i = 0; i < temp_node->num_children; i++)
+	{
+		for_parent->children = (ast_node_t**)realloc(for_parent->children, sizeof(ast_node_t*)*(for_parent->num_children+1));
+		for_parent->num_children ++;
+		if (temp_node->children[i] != NULL)
+		{
+			for (j = for_parent->num_children - 1; j > index; j--)
+				for_parent->children[j] = for_parent->children[j-1];
+			for_parent->children[index+1] = temp_node->children[i];
+			index++;
+		}
+	}
+}
 
+/*---------------------------------------------------------------------------
+ * (function: check_index)
+ * find out the index of the FOR node belonging to the parent node
+ *-------------------------------------------------------------------------*/
+int check_index(ast_node_t *parent, ast_node_t *node)
+{
+	int index = -1;
+	int i;
+	for (i = 0; i < parent->num_children; i++)
+	{
+		if (parent->children[i] == node)
+			index = i;
+	}
 
+	return index;
+}
 
 
 
