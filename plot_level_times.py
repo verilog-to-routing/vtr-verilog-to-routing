@@ -132,9 +132,13 @@ def main():
     #ax[3].set_xlim(right=len(data[args.csv_files[0]]["Level"]))
     ax[3].legend(loc='best')
 
+    #ax[0].set_xscale('log')
+    #ax[1].set_xscale('log')
+    #ax[2].set_xscale('log')
+    #ax[3].set_xscale('log')
     plt.tight_layout()
     if args.f:
-        plt.save(args.f)
+        plt.savefig(args.f, dpi=300)
     else:
         plt.show()
 
