@@ -15,6 +15,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         virtual void reset_timing(TimingGraph& timing_graph);
         virtual void save_level_times(TimingGraph& timing_graph, std::string filename);
 
+        virtual bool is_correct() { return true; }
 #ifdef SAVE_LEVEL_TIMES
     protected:
         std::vector<struct timespec> fwd_start_;

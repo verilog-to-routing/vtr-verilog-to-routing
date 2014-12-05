@@ -1,5 +1,5 @@
 #Tools
-CXX = /project/trees/gcc_4.8_cilkplus/cilkplus-install/bin/g++ #g++-4.9
+CXX = /project/trees/gcc_4.9_cilkplus/cilkplus-install/bin/g++ #g++-4.9
 AR = ar
 LEXER_GEN = flex
 PARSER_GEN = bison
@@ -81,7 +81,9 @@ OBJECTS_EXE = $(MAIN_OBJ) $(OBJECTS_LIB)
 SRC_INC_FLAGS = $(foreach inc_dir, $(DIRS), $(patsubst %, -I%, $(inc_dir)))
 
 #Need to include obj dir since it includes any generated source/header files
-INC_FLAGS = -I$(SRC_DIR) -I$(BUILD_DIR) $(SRC_INC_FLAGS) 
+INC_FLAGS = -I$(SRC_DIR) -I$(BUILD_DIR) $(SRC_INC_FLAGS)
+
+EXTRA_FLAGS= -DTIME_VEC_WIDTH=1
 
 CFLAGS = $(DEP_FLAGS) $(WARN_FLAGS) $(DEBUG_OPT_FLAGS) $(PROFILE_FLAGS) $(INC_FLAGS) $(EXTRA_FLAGS) --std=c++11 -fopenmp -fcilkplus -lcilkrts
 

@@ -6,6 +6,8 @@
 
 //This implementation ignores dependancies to get a best case iteration time
 class ParallelNoDependancyCilkTimingAnalyzer : public SerialTimingAnalyzer {
+    public:
+        bool is_correct() override { return false; }
         //Use the same basic functions for the different traversals
     private:
         /*

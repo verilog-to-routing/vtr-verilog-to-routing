@@ -25,7 +25,7 @@
 
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 1
+#define NUM_SERIAL_RUNS 10
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
@@ -54,11 +54,11 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
-    //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
+    ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
 
     //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer(); 
     //ParallelLevelizedOpenMPTimingAnalyzer parallel_analyzer = ParallelLevelizedOpenMPTimingAnalyzer(); 
-    ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
+    //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
@@ -142,7 +142,9 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-            verify_timing_graph(timing_graph, expected_arr_req_times);
+            if(serial_analyzer.is_correct()) {
+                verify_timing_graph(timing_graph, expected_arr_req_times);
+            }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);
@@ -160,6 +162,9 @@ int main(int argc, char** argv) {
         serial_bcktraverse_time_avg = serial_bcktraverse_time / NUM_SERIAL_RUNS;
 
         std::cout << std::endl;
+        if(!serial_analyzer.is_correct()) {
+            std::cout << "Skipped correctness verification" << std::endl; 
+        }
         std::cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << " s" << std::endl;
         std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_pretraverse_time_avg << " s";
         std::cout << " (" << std::setprecision(2) << serial_pretraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
@@ -201,7 +206,9 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-            verify_timing_graph(timing_graph, expected_arr_req_times);
+            if (parallel_analyzer.is_correct()) {
+                verify_timing_graph(timing_graph, expected_arr_req_times);
+            }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             parallel_verify_time += time_sec(verify_start, verify_end);
@@ -217,6 +224,9 @@ int main(int argc, char** argv) {
         parallel_fwdtraverse_time_avg = parallel_fwdtraverse_time / NUM_PARALLEL_RUNS;
         parallel_bcktraverse_time_avg = parallel_bcktraverse_time / NUM_PARALLEL_RUNS;
         std::cout << std::endl;
+        if(!parallel_analyzer.is_correct()) {
+            std::cout << "Skipped correctness verification" << std::endl; 
+        }
         std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << std::setprecision(6) << std::setw(6) << parallel_analysis_time_avg << " s" << std::endl;
         std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_pretraverse_time_avg << " s";
         std::cout << " (" << std::setprecision(2) << parallel_pretraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;

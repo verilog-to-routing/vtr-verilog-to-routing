@@ -5,8 +5,8 @@
 #include "sta_util.hpp"
 
 #define NODE_STEP 1
-#define PARALLEL_MIN_FWD_LEVEL 0
-#define PARALLEL_MIN_BCK_LEVEL 0
+//#define PARALLEL_MIN_FWD_LEVEL 150
+//#define PARALLEL_MIN_BCK_LEVEL 2500
 
 void ParallelLevelizedCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
@@ -42,7 +42,7 @@ void ParallelLevelizedCilkTimingAnalyzer::forward_traversal(TimingGraph& timing_
 #ifdef SAVE_LEVEL_TIMES
         clock_gettime(CLOCK_MONOTONIC, &fwd_start_[level_idx]);
 #endif
-#if PARALLEL_MIN_FWD_LEVEL > 0
+#ifdef PARALLEL_MIN_FWD_LEVEL
         if(level_ids.size() >= PARALLEL_MIN_FWD_LEVEL) {
             cilk_for(int i = 0; i < (int) level_ids.size(); i += NODE_STEP) {
 
@@ -79,7 +79,7 @@ void ParallelLevelizedCilkTimingAnalyzer::backward_traversal(TimingGraph& timing
 #ifdef SAVE_LEVEL_TIMES
         clock_gettime(CLOCK_MONOTONIC, &bck_start_[level_idx]);
 #endif
-#if PARALLEL_MIN_FWD_LEVEL > 0
+#ifdef PARALLEL_MIN_FWD_LEVEL
         if(level_ids.size() >= PARALLEL_MIN_BCK_LEVEL) {
             cilk_for(int i = 0; i < (int) level_ids.size(); i += NODE_STEP) {
 
