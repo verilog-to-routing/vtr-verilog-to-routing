@@ -1,3 +1,9 @@
 This is BibTeX, Version 0.99dThe top-level auxiliary file: fpga2014paper.aux
-The style file: abbrv.bst
-Database file #1: fpga2014paper.bib
+The style file: IEEEtran.bst
+Database file #1: IEEEabrv.bib
+Database file #2: ./fpga2014paper.bib
+-- IEEEtran.bst version 1.13 (2008/09/30) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+
+Done.
