@@ -260,14 +260,13 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 						<direct name="direct1" input="lut5.in" output="lutpure.in">
 						</direct>
 						<direct name="direct2" input="lutpure.out" output="lut5.out">
+						  <pack_pattern name="ble5" in_port="lutpure.out" out_port="lut5.out"/>
 						</direct>
 					</interconnect>
 				</mode>
 				<mode name="arith">
 					<pb_type name="lut4" blif_model=".names" num_pb="2" class="lut">
 						<input name="in" num_pins="4" port_class="lut_in"/>
-						<!-- I average out the delays because VPR does not to LUT balancing
-						-->
 						<output name="out" num_pins="1" port_class="lut_out"/>
 						<delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
 							   1.45353e-10
@@ -305,7 +304,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 						</direct>
 						<direct name="addercout" input="adder.cout" output="lut5.cout">
 							<pack_pattern name="chain" in_port="adder.cout" out_port="lut5.cout"/>
-						</direct>
+						</direct>				
 						<direct name="addersumout" input="adder.sumout" output="lut5.out">
 							<delay_constant max="2.2e-11" in_port="adder.sumout" out_port="lut5.out" />
 							<pack_pattern name="chain" in_port="adder.sumout" out_port="lut5.out"/>
@@ -368,13 +367,13 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 				  <delay_constant max="1.33594e-11" in_port="lut5[0:0].out" out_port="ff[0:0].D" /> 
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[0:0].D" />
 				  <pack_pattern name="ble5" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
-				  <pack_pattern name="chain" in_port="lut5[0:0].out" out_port="ff.D"/>
+				  <pack_pattern name="chain" in_port="lut5[0:0].out" out_port="ff[0:0].D"/>
 				</mux>
 				<mux name="mux2b" input="lut5[1:1].out ble6.in_C" output="ff[1:1].D">
 				  <delay_constant max="1.33594e-11" in_port="lut5[1:1].out" out_port="ff[1:1].D" />
 				  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff[1:1].D" />
 				  <pack_pattern name="ble5" in_port="lut5[1:1].out" out_port="ff[1:1].D"/>
-				  <pack_pattern name="chain" in_port="lut5[1:1].out" out_port="ff.D"/>
+				  <pack_pattern name="chain" in_port="lut5[1:1].out" out_port="ff[1:1].D"/>
 				</mux>
 
 					<!-- BLE output (local) -->                  
