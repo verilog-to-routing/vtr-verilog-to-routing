@@ -93,38 +93,51 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {IV-C}2}Effectiveness of Router Optimizations}{7}}
 \@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Router runtime with original and updated lookahead function.}}{7}}
 \newlabel{fig:lookahead_runtime}{{9}{7}}
-\citation{xilinx7series}
 \@writefile{toc}{\contentsline {section}{\numberline {V}Adding Partitioning to the CAD Flow}{8}}
 \newlabel{sec:CADflow}{{V}{8}}
-\@writefile{toc}{\contentsline {section}{\numberline {VI}Architecture Results}{8}}
-\newlabel{resultsSection}{{VI}{8}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-A}}Routing-Interposer Interface}{8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {V-A}}CAD Flow Variations}{8}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}1}Partitioner Stage}{8}}
 \@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Impact of new vs. original router lookahead on the critical path delay.}}{8}}
 \newlabel{fig:lookahead_fmax}{{10}{8}}
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Impact of routing-interposer interface flexibility on minimum channel width and circuit speed.}}{8}}
-\newlabel{fig:all_arch_experiments}{{11}{8}}
-\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Adding up to 8 extra fanins to interposer wire muxes helps reduce minimum channel width.}}{9}}
-\newlabel{fig:additional_fanins}{{12}{9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-B}}Interposer Wiring Capacity (\% wires cut)}{9}}
-\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{9}}
-\newlabel{fig:standard_minW}{{13}{9}}
-\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{9}}
-\newlabel{fig:standard_crit}{{14}{9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-C}}Circuit Speed vs. Interposer Delay}{9}}
-\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 2 dice and $1ns$ of \textit  {delay increase}.}}{10}}
-\newlabel{fig:crossingwires}{{15}{10}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-D}}Impact of Number of Dice}{10}}
-\newlabel{num_dice_impact}{{\unhbox \voidb@x \hbox {VI-D}}{10}}
-\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit  {delay increase}.}}{10}}
-\newlabel{fig:delays_crit}{{16}{10}}
-\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{10}}
-\newlabel{fig:cuts_minW}{{17}{10}}
-\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{10}}
-\newlabel{fig:cuts_crit}{{18}{10}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-E}}Impact of Aspect Ratio}{10}}
-\newlabel{aspect_ratio_impact}{{\unhbox \voidb@x \hbox {VI-E}}{10}}
-\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusions and Future Work}{10}}
-\newlabel{conclusionSection}{{VII}{10}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Possible ways to add partitioning to the VPR CAD flow.}}{8}}
+\newlabel{fig:partitioning_cad_flow}{{11}{8}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}2}Partitioning Tool}{8}}
+\newlabel{eq:balance_constraint}{{11}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}3}Hypergraph to Graph Transformation}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces (a) Star and (b) clique graph topologies.}}{9}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{9}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{9}}
+\newlabel{fig:star_clique}{{12}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces The hypergraph to graph transformation with (a) the star topology, and (b) the clique topology.}}{9}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{9}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{9}}
+\newlabel{fig:hyperedge_to_graph}{{13}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Hypergraph cut size achieved by Metis with different hyperedge models and weightings. n is the number of vertices on a hyperedge.}}{10}}
+\newlabel{fig:graph_topology_cutsize}{{14}{10}}
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Architecture Results}{10}}
+\newlabel{resultsSection}{{VI}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-A}}Routing-Interposer Interface}{10}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Impact of routing-interposer interface flexibility on minimum channel width and circuit speed.}}{10}}
+\newlabel{fig:all_arch_experiments}{{15}{10}}
+\citation{xilinx7series}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Adding up to 8 extra fanins to interposer wire muxes helps reduce minimum channel width.}}{11}}
+\newlabel{fig:additional_fanins}{{16}{11}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-B}}Interposer Wiring Capacity (\% wires cut)}{11}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{11}}
+\newlabel{fig:standard_minW}{{17}{11}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{11}}
+\newlabel{fig:standard_crit}{{18}{11}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 2 dice and $1ns$ of \textit  {delay increase}.}}{12}}
+\newlabel{fig:crossingwires}{{19}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-C}}Circuit Speed vs. Interposer Delay}{12}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit  {delay increase}.}}{12}}
+\newlabel{fig:delays_crit}{{20}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-D}}Impact of Number of Dice}{12}}
+\newlabel{num_dice_impact}{{\unhbox \voidb@x \hbox {VI-D}}{12}}
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{12}}
+\newlabel{fig:cuts_minW}{{21}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-E}}Impact of Aspect Ratio}{12}}
+\newlabel{aspect_ratio_impact}{{\unhbox \voidb@x \hbox {VI-E}}{12}}
 \citation{hMetis}
 \bibstyle{IEEEtran}
 \bibdata{IEEEabrv,./fpga2014paper}
@@ -141,9 +154,13 @@
 \bibcite{unidirectional}{11}
 \bibcite{lewis2005stratix}{12}
 \bibcite{betz1999architecture}{13}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit  {delay increase}.}}{13}}
+\newlabel{fig:cuts_crit}{{22}{13}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusions and Future Work}{13}}
+\newlabel{conclusionSection}{{VII}{13}}
+\@writefile{toc}{\contentsline {section}{References}{13}}
 \bibcite{hahn2014cad}{14}
 \bibcite{timing2000}{15}
 \bibcite{icann}{16}
 \bibcite{vtr2012}{17}
 \bibcite{hMetis}{18}
-\@writefile{toc}{\contentsline {section}{References}{11}}

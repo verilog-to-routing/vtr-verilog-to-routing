@@ -20,13 +20,15 @@
 % manually specify the path to it like:
 % \documentclass[journal]{../sty/IEEEtran}
 
-
+\usepackage[cmex10]{amsmath}
 \usepackage{graphicx}
+\usepackage{mathtools}
 \usepackage{subfigure}
 \usepackage{epstopdf}
 \usepackage{enumitem}
 \usepackage{cite}
-\usepackage[cmex10]{amsmath}
+
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
 
 % correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
@@ -433,9 +435,7 @@ The new router lookahead changes the priority of the routes discovered by the ro
 %---------------------------------------------------------------
 %---------------------------------------------------------------
 %---------------------------------------------------------------
-\section{Adding Partitioning to the CAD Flow}
-\label{sec:CADflow}
-TODO: Javeed
+\input{partitioning.tex}
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
@@ -524,11 +524,10 @@ To investigate the impact of the interposer delay (\textit{delay increase}), we 
 
 Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires cut} for 4 different values of \textit{delay increase}. The penalty in critical path delay is significant, ranging between $1$ and $3.7$ times the interposer \textit{delay increase}, when compared to the case where the interposer adds no delay. Note that the 0\% wires cut with a 0 ns \textit{delay increase} in Figure \ref{fig:delays_crit} corresponds to a traditional monolithic FPGA. The speed of an interposer-based FPGA is strongly correlated to \textit{delay increase}: a $0.5ns$ interposer delay increases the critical path delay by 4\%, while a $1ns$ interposer delay increases critical path delay by approximately 12\% vs. a monolithic FPGA. But once again, the critical path delay shows little correlation to the \textit{\% wires cut}.
 
-
 %   - Impact of # of cutlines
 \subsection{Impact of Number of Dice}
 \label{num_dice_impact}
-TODO: Javeed\\
+TODO: Javeed
 To examine the impact of the number of die used to construct an interposer-based FPGA, we varied the number of cuts from 1 to 3 (which varies the number of die from 2 to 4).  In these experiments, the \textit{delay increase} was kept constant at $1ns$. 
 
 As shown in Figure \ref{fig:cuts_minW}, the number of cuts does have an impact on the minimum channel width, but not a very large or constant one. At 80\% of wires cut the experiments with 2 and 3 cuts had the minimum channel width only 8\% and 10\%, respectively, greater than the scenario with only 1 cut. At lower values of \textit{\% wires cut} the difference was even smaller.
