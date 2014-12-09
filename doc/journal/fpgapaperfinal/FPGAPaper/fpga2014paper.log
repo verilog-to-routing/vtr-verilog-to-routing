@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 14:26
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 14:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -868,7 +868,7 @@ ine 473.
 (pdftex.def)             Requested size: 252.0pt x 119.56953pt.
 
 
-LaTeX Warning: File `minChW.eps' not found on input line 490.
+LaTeX Warning: File `minChW.eps' not found on input line 491.
 
 Package epstopdf Info: Source file: <minChW.eps>
 (epstopdf)             Output file: <minChW-eps-converted-to.pdf>
@@ -876,18 +876,18 @@ Package epstopdf Info: Source file: <minChW.eps>
 (epstopdf)                    size: 12867 bytes
 (epstopdf)             Command: <repstopdf --outfile=minChW-eps-converted-to.pd
 f minChW.eps>
-(epstopdf)             \includegraphics on input line 490.
+(epstopdf)             \includegraphics on input line 491.
 Package epstopdf Info: Output file is already uptodate.
 <minChW-eps-converted-to.pdf, id=184, 602.25pt x 329.23pt>
 File: minChW-eps-converted-to.pdf Graphic file (type pdf)
 
 <use minChW-eps-converted-to.pdf>
-Package pdftex.def Info: minChW-eps-converted-to.pdf used on input line 490.
+Package pdftex.def Info: minChW-eps-converted-to.pdf used on input line 491.
 (pdftex.def)             Requested size: 252.0pt x 137.75821pt.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 491.
+(Font)              <8> on input line 492.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 491.
+(Font)              <6> on input line 492.
  [12 <./arch_experiments3-eps-converted-to.pdf> <./additional_fanins-eps-conver
 ted-to.pdf>]
 Package epstopdf Info: Source file: <standard_crit_path_new.eps>
@@ -899,7 +899,7 @@ f>
 (epstopdf)                    size: 10408 bytes
 (epstopdf)             Command: <repstopdf --outfile=standard_crit_path_new-eps
 -converted-to.pdf standard_crit_path_new.eps>
-(epstopdf)             \includegraphics on input line 499.
+(epstopdf)             \includegraphics on input line 500.
 Package epstopdf Info: Output file is already uptodate.
 
 <standard_crit_path_new-eps-converted-to.pdf, id=194, 554.07pt x 291.0875pt>
@@ -907,7 +907,7 @@ File: standard_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
 
 <use standard_crit_path_new-eps-converted-to.pdf>
 Package pdftex.def Info: standard_crit_path_new-eps-converted-to.pdf used on in
-put line 499.
+put line 500.
 (pdftex.def)             Requested size: 252.0pt x 132.39171pt.
 Package epstopdf Info: Source file: <numberofcrossingwires_new.eps>
 (epstopdf)                    date: 2014-12-06 12:37:24
@@ -918,7 +918,7 @@ Package epstopdf Info: Source file: <numberofcrossingwires_new.eps>
 (epstopdf)                    size: 12890 bytes
 (epstopdf)             Command: <repstopdf --outfile=numberofcrossingwires_new-
 eps-converted-to.pdf numberofcrossingwires_new.eps>
-(epstopdf)             \includegraphics on input line 508.
+(epstopdf)             \includegraphics on input line 509.
 Package epstopdf Info: Output file is already uptodate.
 
 <numberofcrossingwires_new-eps-converted-to.pdf, id=195, 621.32124pt x 288.0762
@@ -926,7 +926,7 @@ Package epstopdf Info: Output file is already uptodate.
 File: numberofcrossingwires_new-eps-converted-to.pdf Graphic file (type pdf)
  <use numberofcrossingwires_new-eps-converted-to.pdf>
 Package pdftex.def Info: numberofcrossingwires_new-eps-converted-to.pdf used on
- input line 508.
+ input line 509.
 (pdftex.def)             Requested size: 252.0pt x 116.83727pt.
 Package epstopdf Info: Source file: <delays_crit_path_new.eps>
 (epstopdf)                    date: 2014-12-06 12:37:24
@@ -937,7 +937,7 @@ Package epstopdf Info: Source file: <delays_crit_path_new.eps>
 (epstopdf)                    size: 18507 bytes
 (epstopdf)             Command: <repstopdf --outfile=delays_crit_path_new-eps-c
 onverted-to.pdf delays_crit_path_new.eps>
-(epstopdf)             \includegraphics on input line 518.
+(epstopdf)             \includegraphics on input line 520.
 Package epstopdf Info: Output file is already uptodate.
 
 <delays_crit_path_new-eps-converted-to.pdf, id=196, 551.05875pt x 293.095pt>
@@ -945,7 +945,7 @@ File: delays_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
 
 <use delays_crit_path_new-eps-converted-to.pdf>
 Package pdftex.def Info: delays_crit_path_new-eps-converted-to.pdf used on inpu
-t line 518.
+t line 520.
 (pdftex.def)             Requested size: 252.0pt x 134.03374pt.
 
 Underfull \vbox (badness 1354) has occurred while \output is active []
@@ -961,7 +961,7 @@ Package epstopdf Info: Source file: <wires_cut_4part.eps>
 (epstopdf)                    size: 7347 bytes
 (epstopdf)             Command: <repstopdf --outfile=wires_cut_4part-eps-conver
 ted-to.pdf wires_cut_4part.eps>
-(epstopdf)             \includegraphics on input line 534.
+(epstopdf)             \includegraphics on input line 538.
 Package epstopdf Info: Output file is already uptodate.
 
 <wires_cut_4part-eps-converted-to.pdf, id=215, 361.35pt x 252.945pt>
@@ -969,22 +969,22 @@ File: wires_cut_4part-eps-converted-to.pdf Graphic file (type pdf)
 
 <use wires_cut_4part-eps-converted-to.pdf>
 Package pdftex.def Info: wires_cut_4part-eps-converted-to.pdf used on input lin
-e 534.
+e 538.
 (pdftex.def)             Requested size: 252.0pt x 176.4003pt.
 
 <square_fpga.pdf, id=216, 224.84pt x 223.83624pt>
 File: square_fpga.pdf Graphic file (type pdf)
  <use square_fpga.pdf>
-Package pdftex.def Info: square_fpga.pdf used on input line 551.
+Package pdftex.def Info: square_fpga.pdf used on input line 555.
 (pdftex.def)             Requested size: 142.90561pt x 142.26378pt.
 
 <tall_fpga.pdf, id=217, 99.37125pt x 348.30125pt>
 File: tall_fpga.pdf Graphic file (type pdf)
  <use tall_fpga.pdf>
-Package pdftex.def Info: tall_fpga.pdf used on input line 552.
+Package pdftex.def Info: tall_fpga.pdf used on input line 556.
 (pdftex.def)             Requested size: 40.5878pt x 142.26378pt.
 
-Underfull \hbox (badness 2096) in paragraph at lines 584--585
+Underfull \hbox (badness 2096) in paragraph at lines 586--587
 []\OT1/ptm/m/n/10 We have ex-tended VPR to model and op-ti-mize for
  []
 
@@ -995,10 +995,10 @@ pdfTeX warning: pdflatex (file ./tall_fpga.pdf): PDF inclusion: multiple pdfs w
 ith page group included in a single page
 >] (./fpga2014paper.bbl) [15] (./fpga2014paper.aux) ) 
 Here is how much of TeX's memory you used:
- 4134 strings out of 495020
- 66554 string characters out of 6181324
- 129696 words of memory out of 5000000
- 7264 multiletter control sequences out of 15000+600000
+ 4135 strings out of 495020
+ 66581 string characters out of 6181324
+ 130713 words of memory out of 5000000
+ 7265 multiletter control sequences out of 15000+600000
  39904 words of font info for 73 fonts, out of 8000000 for 9000
  17 hyphenation exceptions out of 8191
  42i,11n,27p,1651b,260s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1016,7 +1016,7 @@ t/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts
 /type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/time
 s/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><
 /usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (15 pages, 1347921 bytes).
+Output written on fpga2014paper.pdf (15 pages, 1348516 bytes).
 PDF statistics:
  297 PDF objects out of 1000 (max. 8388607)
  193 compressed objects within 2 object streams
