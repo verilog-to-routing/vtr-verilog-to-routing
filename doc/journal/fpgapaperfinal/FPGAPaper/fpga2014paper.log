@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 12:56
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 13:16
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -972,41 +972,54 @@ Package pdftex.def Info: wires_cut_4part-eps-converted-to.pdf used on input lin
 e 534.
 (pdftex.def)             Requested size: 252.0pt x 176.4003pt.
 
-Underfull \hbox (badness 2096) in paragraph at lines 576--577
+<square_fpga.pdf, id=216, 224.84pt x 223.83624pt>
+File: square_fpga.pdf Graphic file (type pdf)
+ <use square_fpga.pdf>
+Package pdftex.def Info: square_fpga.pdf used on input line 551.
+(pdftex.def)             Requested size: 142.90561pt x 142.26378pt.
+
+<tall_fpga.pdf, id=217, 99.37125pt x 348.30125pt>
+File: tall_fpga.pdf Graphic file (type pdf)
+ <use tall_fpga.pdf>
+Package pdftex.def Info: tall_fpga.pdf used on input line 552.
+(pdftex.def)             Requested size: 40.5878pt x 142.26378pt.
+
+Underfull \hbox (badness 2096) in paragraph at lines 584--585
 []\OT1/ptm/m/n/10 We have ex-tended VPR to model and op-ti-mize for
  []
 
+[14 <./wires_cut_4part-eps-converted-to.pdf> <./square_fpga.pdf> <./tall_fpga.p
+df
 
-Underfull \vbox (badness 2426) has occurred while \output is active []
-
- [14 <./wires_cut_4part-eps-converted-to.pdf>] (./fpga2014paper.bbl) [15]
-(./fpga2014paper.aux) ) 
+pdfTeX warning: pdflatex (file ./tall_fpga.pdf): PDF inclusion: multiple pdfs w
+ith page group included in a single page
+>] (./fpga2014paper.bbl) [15] (./fpga2014paper.aux) ) 
 Here is how much of TeX's memory you used:
- 4123 strings out of 495020
- 66359 string characters out of 6181324
- 128686 words of memory out of 5000000
- 7255 multiletter control sequences out of 15000+600000
+ 4134 strings out of 495020
+ 66554 string characters out of 6181324
+ 129696 words of memory out of 5000000
+ 7264 multiletter control sequences out of 15000+600000
  39904 words of font info for 73 fonts, out of 8000000 for 9000
  17 hyphenation exceptions out of 8191
  42i,11n,27p,1651b,260s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.e
-nc}</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></u
-sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/sha
-re/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
-blic/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/ams
-fonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/
-cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></
-usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/
-fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (15 pages, 1317805 bytes).
+{/usr/share/texlive/texmf-
+dist/fonts/enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts
+/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmm
+i7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb>
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/s
+hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/tex
+live/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dis
+t/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts
+/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/time
+s/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><
+/usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on fpga2014paper.pdf (15 pages, 1347976 bytes).
 PDF statistics:
- 274 PDF objects out of 1000 (max. 8388607)
- 176 compressed objects within 2 object streams
+ 297 PDF objects out of 1000 (max. 8388607)
+ 193 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 161 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 171 words of extra memory for PDF output out of 10000 (max. 10000000)
 
