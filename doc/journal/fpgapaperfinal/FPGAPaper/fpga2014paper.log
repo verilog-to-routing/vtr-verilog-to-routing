@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 13:16
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 14:26
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1016,7 +1016,7 @@ t/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts
 /type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/time
 s/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><
 /usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (15 pages, 1347976 bytes).
+Output written on fpga2014paper.pdf (15 pages, 1347921 bytes).
 PDF statistics:
  297 PDF objects out of 1000 (max. 8388607)
  193 compressed objects within 2 object streams
