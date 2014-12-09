@@ -395,7 +395,7 @@ To obtain the \textit{critical path delay} the circuits were run with a low stre
 
 \subsubsection{Effectiveness of Placer Optimizations}
 \label{sec:effectiveness_of_placer_enhancements}
-Enabling the enhancements described in Section~\ref{cad_enh_placer_subsection} improves the minimum routable channel width and circuit speed. As shown in Figure~\ref{fig:comparison_minW}, for architectures with low \textit{\% wires cut} (high interposer capacity), the placer optimizations are only marginally beneficial compared to the original VPR placer since the interposer wires are not scarce; but as more wires are cut and we reach the realistic interposer capacity of commercial FPGAs, the placer optimizations provide higher and higher reduction in minimum channel width. When 80\% of wires are cut, the placer optimizations result in 11.3\% reduction in minimum channel width.
+Enabling the enhancements described in Section~\ref{cad_enh_placer_subsection} improves both the minimum routable channel width and circuit speed. As shown in Figure~\ref{fig:comparison_minW}, for architectures with low \textit{\% wires cut} (high interposer capacity), the placer optimizations have only a marginal benefit on routability compared to the original VPR placer since the interposer wires are not scarce, but as more wires are cut and we reach the realistic interposer capacity of commercial FPGAs, the placer optimizations provide higher and higher reductions in minimum channel width. When 80\% of wires are cut, the placer optimizations result in 11.3\% reduction in minimum channel width.
 
 \begin{figure}[!htbp]
 \centering
@@ -404,7 +404,7 @@ Enabling the enhancements described in Section~\ref{cad_enh_placer_subsection} i
 \label{fig:comparison_minW}
 \end{figure}
 
-The optimizations also help the placer to place related entities on the same die to reduce the number of inter-die signal crossings and hence increase circuit speed. At 80\% wires cut, the placer optimizations result in 8.4\% higher circuit speed.
+The optimizations also guide the placer to keep related entities on the same die to reduce the number of inter-die signal crossings and hence increase circuit speed. This speed improvement is fairly consistent across a wide range of \% wires cut, averaging 12.5\% higher circuit speed.
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{placer_opt_fmax.eps}
