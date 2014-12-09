@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  8 DEC 2014 22:52
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  9 DEC 2014 12:56
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -982,10 +982,10 @@ Underfull \vbox (badness 2426) has occurred while \output is active []
  [14 <./wires_cut_4part-eps-converted-to.pdf>] (./fpga2014paper.bbl) [15]
 (./fpga2014paper.aux) ) 
 Here is how much of TeX's memory you used:
- 4121 strings out of 495020
- 66302 string characters out of 6181324
- 128678 words of memory out of 5000000
- 7253 multiletter control sequences out of 15000+600000
+ 4123 strings out of 495020
+ 66359 string characters out of 6181324
+ 128686 words of memory out of 5000000
+ 7255 multiletter control sequences out of 15000+600000
  39904 words of font info for 73 fonts, out of 8000000 for 9000
  17 hyphenation exceptions out of 8191
  42i,11n,27p,1651b,260s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1003,7 +1003,7 @@ cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></
 usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texl
 ive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/
 fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (15 pages, 1317283 bytes).
+Output written on fpga2014paper.pdf (15 pages, 1317805 bytes).
 PDF statistics:
  274 PDF objects out of 1000 (max. 8388607)
  176 compressed objects within 2 object streams

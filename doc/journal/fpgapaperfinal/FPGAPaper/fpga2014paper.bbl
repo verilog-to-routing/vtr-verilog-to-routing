@@ -124,9 +124,19 @@ J.~Rose, J.~Luu, C.~Yu, O.~Densmore, J.~Goeders, A.~Somerville, K.~Kent,
   for {FPGA}s from {V}erilog to {R}outing,'' in \emph{ACM/SIGDA Int. Symposium
   on Field-Programmable Gate Arrays}, 2012, pp. 77--86.
 
+\bibitem{karypis1998multilevelmetis}
+G.~Karypis and V.~Kumar, ``Multilevel k-way partitioning scheme for irregular
+  graphs,'' \emph{Journal of Parallel and Distributed computing}, vol.~48,
+  no.~1, pp. 96--129, 1998.
+
+\bibitem{karypis1999multilevelhmetis}
+G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar, ``Multilevel hypergraph
+  partitioning: applications in vlsi domain,'' \emph{Very Large Scale
+  Integration (VLSI) Systems, IEEE Transactions on}, vol.~7, no.~1, pp. 69--79,
+  1999.
+
 \bibitem{hMetis}
-G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar, ``{Multilevel Hypergraph
-  Partitioning: Applications in VLSI Domain},'' \emph{IEEE Trans. on VLSI},
-  vol.~7, no.~1, pp. 69--79, 1999.
+------, ``{Multilevel Hypergraph Partitioning: Applications in VLSI Domain},''
+  \emph{IEEE Trans. on VLSI}, vol.~7, no.~1, pp. 69--79, 1999.
 
 \end{thebibliography}
