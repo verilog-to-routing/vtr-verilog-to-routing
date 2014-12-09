@@ -480,6 +480,7 @@ Clearly using bidirectional interposer wires with fanin transfer and fanout tran
 
 %   - Channel width vs % wires cut
 \subsection{Interposer Wiring Capacity (\% wires cut)}
+\label{sec:resultsWiringCapacity}
 
 To analyze the impact of the number of cut wires we ran experiments varying only this parameter while leaving the other parameters constant. We use \textit{number of cuts} $= 1$ (corresponding to two dice), \textit{increased delay} $= 1ns$, \textit{bidirectional interposer wires = on}, \textit{fanin transfer = on}, and \textit{fanout transfer = on}.
 
@@ -513,6 +514,7 @@ Figure \ref{fig:crossingwires} provides an alternative way to visualize the rela
 %   - Delay vs % wires cut & wire delay
 \subsection{Circuit Speed vs. Interposer Delay}
 
+
 \begin{figure}[!b]
 \centering
 \includegraphics[width=\linewidth]{delays_crit_path_new.eps}
@@ -527,24 +529,26 @@ Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires c
 %   - Impact of # of cutlines
 \subsection{Impact of Number of Dice}
 \label{num_dice_impact}
-To examine the impact of the number of dice used to construct an interposer-based FPGA, we measured the minimum channel width for an FPGA device with four dice, varying the fraction of wires cut. We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the best architecture parameters from this section (TODO JAVEED -- spell them out?). The results, shown in Figure \ref{fig:wires_cut_4part}, show the same trend as Figure \ref{fig:wires_cut}.
+To examine the impact of the number of dice used to construct an interposer-based FPGA, we compare the minimum channel width for FPGA systems composed of four dice and two dice, respectively, while varying the fraction of wires cut at the interposer boundaries. We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the same interposer routing architecture parameters as Section \ref{sec:resultsWiringCapacity}. 
+As Figure \ref{fig:wires_cut_4part} shows, four-die systems perform almost as well in routability as two-die systems until the \textit{\% wires cut} exceeds 80\%, at which point routability is worse for the four-die system. 
+TODO JAVEED -- add extra line to graph, make sure same circuits for all points.
 
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{wires_cut_4part.eps}
-\caption{Impact of partitioning-based CAD flow on routability for a range of architectures with 4 dice. TODO JAVEED -- LU32 90\% result is missing}
+\caption{Impact of number of dice on routability. TODO JAVEED -- LU32 90\% result is missing}
 \label{fig:wires_cut_4part}
 \end{figure}
 
-TODO JAVEED -- show critical path delay? (it's uninteresting)
+Systems with more dice are slower, on average the critical path delay is xx\% higher for a four-die system than a two-die system. This speed difference is not significantly affected by the \textit{\% wires cut}.
+ TODO JAVEED -- figure out critical path delay %.
 
 
 
 %   - Impact of aspect ratio
 \subsection{Impact of Aspect Ratio}
 \label{aspect_ratio_impact}
-TODO: Javeed
-We investigated the implications of the device aspect ratio on routability for the four-partition case. In particular, we compared a device with a square interposer (four rectangular dice) to a device with a rectangular interposer (four square dice.) We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the best architecture parameters from this section. The results are shown in Table \ref{table:squares}.
+It is easier to manufacture silicon dice that have an aspect ratio near 1 (i.e. square). Commercial FPGAs are laid out with identical columns, and hence combine multiple identical FPGA dice in \textit{one dimension} on an interposer \cite{xilinxTSV}. As Figure \ref{fig:square_tall} shows, we can make \textit{either} the FPGA dice square, or the interposer square, but not both. Table \ref{table:squares} compares the routability of these two options for the four-die case: a square interposer (four rectangular dice) or a rectangular interposer (four square dice.) We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the same routing architecture parameters as Section \ref{sec:resultsWiringCapacity}. 
 
 \begin{figure}[!htbp]
 \centering
@@ -566,15 +570,13 @@ LU8PEEng & 156 & 126 \\ \hline
 mkDelayWorker32B & 96 & 194 \\ \hline
 mcml & 196 & 496 \\ \hline
 LU32PEEng & 256 & 264 \\ \hline
-geomean & 140.7481367 & 251.805728 \\ \hline
+geomean & 141 & 252 \\ \hline
 \end{tabular}
 \caption{Minimum channel width for square interposer and square dice configurations.}
 \label{table:squares}
 \end{table}
 
-The square interposer configuration performs significantly better than the square dice configuration.
-
-TODO JAVEED -- Vaughn commented that we should talk about which is easier to manufacture. I think the square dice device would actually be easier to manufacture, because the more complex dice will fit well on a round wafer. Isn't it fine for the interposer to be non-square?
+The square interposer configuration performs significantly better than the square dice configuration. A square interposer results in cutlines that are closer together, and hence more logic blocks are near a cutline. On the other hand, a square interposer (composed of rectangular FPGA dice) has more vertical routing channels, giving it a higher absolute number of wires between FPGA dice. The second effect is the more important one, leading to much better routability for a square interposer.
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
