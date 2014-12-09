@@ -13,16 +13,16 @@ The overall CAD flow, including the partitioning steps, is shown in Figure \ref{
 \label{fig:partitioning_cad_flow}
 \end{figure}
 
-\subsubsection{Partitioner Stage}
+\subsubsection{Partitioner Stage}\label{sec:partitioner_stage}
 As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. In this flow the partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new legality constraint.
 
 The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly) to a separate FPGA die. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can to pass the partition information to the placement stage as well. The post-packing placement constraints can be derived from the primitive block partitioning, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
 
 \begin{enumerate}
-  \item Partitioning the primitive netlist to guide the packer, leaving the placer unconstrained.
-  \item Partitioning the primitive netlist to guide the packer, and constraining the placer based on constraints derived from partitioning, as described above.
-  \item Leaving the packer unconstrained, and partitioning the function block (clustered) netlist to guide the placer.
   \item Leaving both the packer and the placer unconstrained. This is the base flow that does not use partitioning, as described in Section \ref{cadSection}.
+  \item Partitioning the primitive netlist to guide the packer, leaving the placer unconstrained.
+  \item Leaving the packer unconstrained, and partitioning the function block (clustered) netlist to guide the placer.
+  \item Partitioning the primitive netlist to guide the packer, and constraining the placer based on constraints derived from partitioning, as described above.
 \end{enumerate}
 
 \subsubsection{Partitioning Tool}
@@ -47,7 +47,7 @@ We refer to this type of per-block set of constraints as heterogeneous balance c
 
 The latest public version of hMetis does not support heterogeneous balance constraints, thourgh Metis does. Metis was used in our CAD flow. However, as discussed earlier, the circuit netlist is most naturally represented as a hypergraph, and so it needs to be transformed to a graph before Metis can process it.
 
-\subsubsection{Hypergraph to Graph Transformation}
+\subsubsection{Hypergraph to Graph Transformation}\label{sec:hypergraph_to_graph}
 We transformed the circuit netlist hypergraph to a graph in the following way:
 \begin{enumerate}
 \item For each hyperedge of the circuit netlist hypergraph, we generated a graph (the \emph{per-net subgraph}).
@@ -89,4 +89,60 @@ The performance of the clique topology is significantly worse than that of the s
 
 For both topologies, the $1/n$ edge weight scheme gives the smallest cut size on average. This can be explained intuitively in terms of the total edge weight over all edges of the graph. The star $1$ (constant) edge weight scheme assigns a total weight of $n$ to each net, which heavily weights high-fanout nets. In contrast, the star $1/n$ scheme assigns the same total weight of $1$ to each net. The star $1/n^2$ scheme penalizes high-fanout nets relative to lower-fanout nets. Since we seek to minimize the hyperedge cut, it makes intuitive sense to weight all hyperedges equally, and the star $1/n$ scheme achieves this.
 
-To validate the choice of hyperedge cutsize as a proxy for circuit routability, we ran the partitioning CAD flow for each graph topology and edge weight scheme, across several circuits. We use an unbalance of $5\%$, split the clustered netlist into two partitions (constraining only the placer), cut $80\%$ of the wires crossing the interposer, and impose a $1ns$ delay penalty for wires crossing the interposer. To accommodate unbalance in the placement engine, we increase the size of the grid of complex blocks that make up the FPGA device. Relative to the minimum device size required for placement (without partitioning constraints), we add $10\%$ to the complex block grid width and $10\%$ to the grid height. Figure ?? shows the geometric mean of the minimum channel width required for a successful route, for each of the graph topology and edge weight combinations.
+To validate the choice of hyperedge cutsize as a proxy for circuit routability, we ran the partitioning CAD flow for each graph topology and edge weight scheme, across several circuits. We use an unbalance of $5\%$, split the clustered netlist into two partitions (constraining only the placer), cut $80\%$ of the wires crossing the interposer, and impose a $1ns$ delay penalty for wires crossing the interposer. To accommodate unbalance in the placement engine, we increase the size of the grid of complex blocks that make up the FPGA device. Relative to the minimum device size required for placement (without partitioning constraints), we add $10\%$ to the complex block grid width and $10\%$ to the grid height. Figure \ref{fig:graph_topology_mcw} shows the geometric mean of the minimum channel width required for a successful route, for each of the graph topology and edge weight combinations.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{graph_topology_mcw.eps}
+\caption{Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge.}
+\label{fig:graph_topology_mcw}
+\end{figure}
+
+The star topology with 1/n edge weights achieves the best minimum channel width, confirming that hyperedge cutsize is a good proxy for routability. Consequently, we use this scheme in all future results in this paper. Unlike routability, we found that the post-routing critical path delay was not strongly impacted by the hypergraph conversion scheme used.
+
+\subsubsection{Partitioner Stage Results}\label{sec:partitioner_stage_results}
+We compare the performance of the four CAD flow variations described in Section \ref{sec:partitioner_stage} on the 8 largest VTR benchmarks. We again use an unbalance of $5\%$ and split the clustered netlist into two partitions (constraining the packer and/or the placer, as required by the flow under test). The interposer parameters (\% wires cut = $80\%$ and delay increase = 1 ns) and bloat factor ($10\%$ in each dimension) are the same as in Section \ref{sec:hypergraph_to_graph}. Figure \ref{fig:flows_mcw} shows the minimum routable channel width for each partitioning CAD flow variation.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{vpr_flows_mcw.eps}
+\caption{Minimum channel width achieved by VPR with the different partitioning flows.}
+\label{fig:flows_mcw}
+\end{figure}
+
+On average, the best minimum channel width was obtained when constraining both packing and placement. However, constraining packing alone performed significantly better than constraining placement alone. This shows that the VPR packer strongly benefits from partitioning constraints when targeting an interposer-based architecture, likely because it forbids the packing of primitives that are not naturally related into one function block. Interestingly, other recent work targeting conventional FPGAs has shown that using a partitioner to guide packing benefits routability [Wenyi Feng, et al, “Rent’s Rule Based Packing for Routability Optimization,” FPGA 2014 ]. On the other hand, The VPR placement algorithm with the enhancements described in Section 4 sees only a modest routability benefit from the partitioning constraints.
+
+For the same set of circuits, we computed the critical path delay at a channel width equal to 1.3x the minimum. The results are shown in Figure \ref{fig:flows_crit_path}.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{vpr_flows_crit_path.eps}
+\caption{Critical path delay achieved by VPR with the different partitioning flows.}
+\label{fig:flows_crit_path}
+\end{figure}
+
+On average, the critical path delay did not vary significantly between the different partitioning CAD flows, but it appears that partitioning before packing may slightly improve circuit speed, while enforcing these partitioning constraints during placement may slightly reduce circuit speed.
+
+Considering both routability and delay, the best CAD flow constrained both packing and placement with the partitioning result and this is the flow we use in the remainder of this paper.
+
+\subsubsection{\% wires cut}
+To see how well the CAD flow works for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of [] for FPGAs where more than half the wires are cut at interposer boundaries. It is slightly worse than the traditionally FPGA CAD flow even for an architecture with 0\% of the wires cut, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{wires_cut.eps}
+\caption{Impact of partitioning-based CAD flow on routability for a range of architectures.}
+\label{fig:wires_cut}
+\end{figure}
+
+\subsubsection{Bloating of the Clustered Netlist due to Partitioning Constraints}
+The additional constraints on the packer imposed by partitioning may result in a less dense packing. Figure \ref{fig:packing_bloat} compares the number of complex blocks in the partitioning-constrained and unconstrained clustered netlists.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{packing_bloat.eps}
+\caption{Packing bloat.}
+\label{fig:packing_bloat}
+\end{figure}
+
+On average, the packing-constrained netlist contained $3.2\%$ more complex blocks than the unconstrained netlist. The LU8PEEng and LU32PEEng circuits were the most affected by this packing bloat. In those circuits, we found that the packing bloat was due almost entirely to poor packing of memory blocks; an interesting area for future work would be to augment the partitioner to understand that some RAM primitives are best kept together in one partition.

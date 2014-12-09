@@ -527,32 +527,46 @@ Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires c
 %   - Impact of # of cutlines
 \subsection{Impact of Number of Dice}
 \label{num_dice_impact}
-TODO: Javeed
-To examine the impact of the number of die used to construct an interposer-based FPGA, we varied the number of cuts from 1 to 3 (which varies the number of die from 2 to 4).  In these experiments, the \textit{delay increase} was kept constant at $1ns$. 
-
-As shown in Figure \ref{fig:cuts_minW}, the number of cuts does have an impact on the minimum channel width, but not a very large or constant one. At 80\% of wires cut the experiments with 2 and 3 cuts had the minimum channel width only 8\% and 10\%, respectively, greater than the scenario with only 1 cut. At lower values of \textit{\% wires cut} the difference was even smaller.
-
-Figure \ref{fig:cuts_crit} shows that the number of dice in an interposer-based FPGA impacts circuit speed significantly, as the critical path delay rises significantly as systems have more cuts. Recall that a monolithic FPGA has a geometric average critical path delay of $23.7ns$ for our test architecture. With \textit{number of cuts} $= 1$ the critical path delay increases by 3 to 4 ns, while with \textit{number of cuts} $= 2$ the critical path delay increases by 5 to 6 ns. With \textit{number of cuts} $= 3$, the critical path delay is typically 7 ns higher than that of a monolithic FPGA.
+To examine the impact of the number of dice used to construct an interposer-based FPGA, we measured the minimum channel width for an FPGA device with four dice, varying the fraction of wires cut. We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the best architecture parameters from this section (TODO JAVEED -- spell them out?). The results, shown in Figure \ref{fig:wires_cut_4part}, show the same trend as Figure \ref{fig:wires_cut}.
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{cuts_minW.eps}
-\caption{Minimum channel width vs. \textit{\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit{delay increase}.}
-\label{fig:cuts_minW}
+\includegraphics[width=\linewidth]{wires_cut_4part.eps}
+\caption{Impact of partitioning-based CAD flow on routability for a range of architectures with 4 dice. TODO JAVEED -- LU32 90\% result is missing}
+\label{fig:wires_cut_4part}
 \end{figure}
 
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{cuts_crit_path.eps}
-\caption{Critical path delay vs. \textit{\% wires cut} for 1, 2 and 3 cuts and $1ns$ of \textit{delay increase}.}
-\label{fig:cuts_crit}
-\end{figure}
+TODO JAVEED -- show critical path delay? (it's uninteresting)
+
 
 
 %   - Impact of aspect ratio
 \subsection{Impact of Aspect Ratio}
 \label{aspect_ratio_impact}
 TODO: Javeed
+We investigated the implications of the device aspect ratio on routability for the four-partition case. In particular, we compared a device with a square interposer (four rectangular dice) to a device with a rectangular interposer (four square dice.) We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the best architecture parameters from this section. The results are shown in Table \ref{table:squares}.
+
+\begin{table}[!htbp]
+\centering
+\begin{tabular}{|l|r|r|}
+\hline
+ & Square Interposer & Square Dice \\ \hline \hline
+bgm & 102 & 306 \\ \hline
+stereovision0 & 86 & 256 \\ \hline
+stereovision1 & 166 & 256 \\ \hline
+LU8PEEng & 156 & 126 \\ \hline
+mkDelayWorker32B & 96 & 194 \\ \hline
+mcml & 196 & 496 \\ \hline
+LU32PEEng & 256 & 264 \\ \hline
+geomean & 140.7481367 & 251.805728 \\ \hline
+\end{tabular}
+\caption{Minimum channel width for square interposer and square dice configurations.}
+\label{table:squares}
+\end{table}
+
+The square interposer configuration performs significantly better than the square dice configuration.
+
+TODO JAVEED -- Vaughn commented that we should talk about which is easier to manufacture. I think the square dice device would actually be easier to manufacture, because the more complex dice will fit well on a round wafer. Isn't it fine for the interposer to be non-square?
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
