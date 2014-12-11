@@ -10,6 +10,11 @@ Soft logic blocks use 50% depopulated crossbars
 
 Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
 
+# min width transistors 47.73 per ripple bit + 9 for 2-to-1 mux
+Each 2-to-1 mux for adder adds 22ps delay and 9 MWTAs
+
+Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
+
 -->
   
   <architecture>
@@ -76,7 +81,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.256"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.973e-11"/>
-			<area grid_logic_tile_area="13472"/> <!-- non frac is 12055 -->
+			<area grid_logic_tile_area="14475.68"/> <!-- non frac is 12055, frac soft is 13472 + 16 (adder + mux + mux SRAM) -->
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>

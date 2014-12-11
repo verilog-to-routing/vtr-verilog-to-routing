@@ -76,7 +76,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.256"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.973e-11"/>
-			<area grid_logic_tile_area="13472"/> <!-- non frac is 12055 -->
+			<area grid_logic_tile_area="14715.68"/> <!-- non frac is 12055, frac soft is 13472 + 16 (adder + adder mux&SRAM + input selection mux&SRAM) -->
 			<chan_width_distr>
 				<io width="1.000000"/>
 				<x distr="uniform" peak="1.000000"/>
