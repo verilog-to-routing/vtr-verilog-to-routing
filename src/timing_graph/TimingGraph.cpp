@@ -101,7 +101,11 @@ void TimingGraph::contiguize_level_edges() {
     //Save the old values while we write the new ones
     std::vector<NodeId> old_edge_sink_nodes_;
     std::vector<NodeId> old_edge_src_nodes_;
+#ifdef TIME_MEM_ALIGN
+    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_edge_delays_;
+#else
     std::vector<Time> old_edge_delays_;
+#endif
 
     //Swap them
     std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
@@ -157,9 +161,9 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
     std::vector<TN_Type> old_node_types;
     std::vector<std::vector<EdgeId>> old_node_out_edges;
     std::vector<std::vector<EdgeId>> old_node_in_edges;
-#ifdef ARR_REQ_ALIGN
-    std::vector<Time, aligned_allocator<Time, ARR_REQ_ALIGN>> old_node_arr_times;
-    std::vector<Time, aligned_allocator<Time, ARR_REQ_ALIGN>> old_node_req_times;
+#ifdef TIME_MEM_ALIGN
+    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_arr_times;
+    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_req_times;
 #else
     std::vector<Time> old_node_arr_times;
     std::vector<Time> old_node_req_times;

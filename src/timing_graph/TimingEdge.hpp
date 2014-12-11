@@ -16,8 +16,8 @@ class TimingEdge {
         void set_delay(Time delay_val) {delay_ = delay_val;}
 
     private:
+        Time delay_;
         int to_node_;
         int from_node_;
-        Time delay_;
 };
 

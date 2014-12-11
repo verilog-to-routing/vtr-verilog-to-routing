@@ -3,140 +3,232 @@
 #include <cmath>
 #include <array>
 #include <iosfwd>
+#include <x86intrin.h>
 
 //#define TIME_PAD_CACHE_LINE
 #define CACHE_LINE_SIZE_BYTES 64 //x86 uses 64-byte cache-lines, check with 'getconf LEVEL1_DCACHE_LINESIZE' on linux commandline for other architectures
 
 //#define TIME_VEC_WIDTH 32
 
+//#define SIMD_INTRINSICS
+
+/*
+ * What alignment is required?
+ */
+#if TIME_VEC_WIDTH > 8
+//Required for aligned access with AVX
+#define TIME_MEM_ALIGN 8*sizeof(float) 
+
+#elif TIME_VEC_WIDTH >= 4
+//Required for aligned access with SSE
+#define TIME_MEM_ALIGN 4*sizeof(float) 
+
+#endif //TIME_VEC_WIDTH
+
+/*
+ * Do we want to use hand coded SIMD rather than
+ * compiler inferred?
+ */
+#ifdef SIMD_INTRINSICS
+#if TIME_VEC_WIDTH >= 8
+#define USE_AVX
+static_assert(TIME_VEC_WIDTH % 8 == 0, "TIME_VEC_WIDTH must be evenly divisible by 8 when using AVX!");
+
+#elif TIME_VEC_WIDTH >= 4
+#define USE_SSE
+static_assert(TIME_VEC_WIDTH % 4 == 0, "TIME_VEC_WIDTH must be evenly divisible by 4 when using SSE!");
+
+#elif TIME_VEC_WIDTH > 1
+//static_assert(false, "Unsupported time vec width!");
+#endif //TIME_VEC_WIDTH
+
+#endif //SIMD_INTRINSICS
+
 class Time {
     public:
         //Initialize from constant float types
+        Time(): Time(NAN) {}
+        explicit Time(const double time) { set_value(time); }
+
 #if TIME_VEC_WIDTH > 1
-        Time() {
-            for(size_t i = 0; i < time_.size(); i++) {
-                time_[i] = NAN;
-            }
+#ifdef USE_AVX
+     /*
+      *AVX
+      */
+    void set_value(float time) {
+        for(size_t i = 0; i < TIME_VEC_WIDTH/8; i++) {
+            __m256 result = _mm256_set1_ps(time);
+            _mm256_store_ps(&time_[i*8], result);
+        }
+    }
+
+
+    void max(const Time& other) { 
+        for(size_t i = 0; i < TIME_VEC_WIDTH/8; i++) {
+            __m256 a = _mm256_load_ps(&time_[i*8]);
+            __m256 b = _mm256_load_ps(&other.time_[i*8]);
+            __m256 result = _mm256_max_ps(a, b);
+            _mm256_store_ps(&time_[i*8], result);
+        }
+    }
+
+    void min(const Time& other) { 
+        for(size_t i = 0; i < TIME_VEC_WIDTH/8; i++) {
+            __m256 a = _mm256_load_ps(&time_[i*8]);
+            __m256 b = _mm256_load_ps(&other.time_[i*8]);
+            __m256 result = _mm256_min_ps(a, b);
+            _mm256_store_ps(&time_[i*8], result);
+        }
+    }
+
+    Time& operator+=(const Time& rhs) {
+        for(size_t i = 0; i < TIME_VEC_WIDTH/8; i++) {
+            __m256 a = _mm256_load_ps(&time_[i*8]);
+            __m256 b = _mm256_load_ps(&rhs.time_[i*8]);
+            __m256 result = _mm256_add_ps(a, b);
+            _mm256_store_ps(&time_[i*8], result);
         }
 
-        explicit Time(const double time) {
-            for(size_t i = 0; i < time_.size(); i++) {
-                time_[i] = time;
-            }
-        }
-#else
-        //Use initializer lists for the single time case
-        Time(): time_(NAN) { }
+        return *this;
+    }
 
-        explicit Time(const double time): time_(time) { }
-#endif
-
-        float value() const {
-#if TIME_VEC_WIDTH > 1
-            return time_[0];
-#else
-            return time_;
-#endif
-        }
-        void set_value(float time) {
-#if TIME_VEC_WIDTH > 1
-            for(size_t i = 0; i < time_.size(); i++) {
-                time_[i] = time;
-            }
-#else
-            time_ = time;
-#endif
+    Time& operator-=(const Time& rhs) {
+        for(size_t i = 0; i < TIME_VEC_WIDTH/8; i++) {
+            __m256 a = _mm256_load_ps(&time_[i*8]);
+            __m256 b = _mm256_load_ps(&rhs.time_[i*8]);
+            __m256 result = _mm256_sub_ps(a, b);
+            _mm256_store_ps(&time_[i*8], result);
         }
 
-        void max(const Time& other) { 
-#if TIME_VEC_WIDTH > 1
-            for(size_t i = 0; i < time_.size(); i++) {
-                //Use conditional so compiler will vectorize
-                time_[i] = (time_[i] > other.time_[i]) ? time_[i] : other.time_[i];
-            }
-#else
-            time_ = std::max(time_, other.time_);
-#endif
+        return *this;
+    }
+#elif defined(USE_SSE) //USE_SSE
+     /*
+      *SSE
+      */
+    void set_value(float time) {
+        for(size_t i = 0; i < TIME_VEC_WIDTH/4; i++) {
+            __m128 result = _mm_set1_ps(time);
+            _mm_store_ps(&time_[i*4], result);
+        }
+    }
+
+
+    void max(const Time& other) { 
+        for(size_t i = 0; i < TIME_VEC_WIDTH/4; i++) {
+            __m128 a = _mm_load_ps(&time_[i*4]);
+            __m128 b = _mm_load_ps(&other.time_[i*4]);
+            __m128 result = _mm_max_ps(a, b);
+            _mm_store_ps(&time_[i*4], result);
+        }
+    }
+
+    void min(const Time& other) { 
+        for(size_t i = 0; i < TIME_VEC_WIDTH/4; i++) {
+            __m128 a = _mm_load_ps(&time_[i*4]);
+            __m128 b = _mm_load_ps(&other.time_[i*4]);
+            __m128 result = _mm_min_ps(a, b);
+            _mm_store_ps(&time_[i*4], result);
+        }
+    }
+
+    Time& operator+=(const Time& rhs) {
+        for(size_t i = 0; i < TIME_VEC_WIDTH/4; i++) {
+            __m128 a = _mm_load_ps(&time_[i*4]);
+            __m128 b = _mm_load_ps(&rhs.time_[i*4]);
+            __m128 result = _mm_add_ps(a, b);
+            _mm_store_ps(&time_[i*4], result);
         }
 
-        void min(const Time& other) { 
-#if TIME_VEC_WIDTH > 1
-            for(size_t i = 0; i < time_.size(); i++) {
-                //Use conditional so compiler will vectorize
-                time_[i] = (time_[i] < other.time_[i]) ? time_[i] : other.time_[i];
-            }
-#else
-            time_ = std::min(time_, other.time_);
-#endif
+        return *this;
+    }
+
+    Time& operator-=(const Time& rhs) {
+        for(size_t i = 0; i < TIME_VEC_WIDTH/4; i++) {
+            __m128 a = _mm_load_ps(&time_[i*4]);
+            __m128 b = _mm_load_ps(&rhs.time_[i*4]);
+            __m128 result = _mm_sub_ps(a, b);
+            _mm_store_ps(&time_[i*4], result);
         }
 
-        bool valid() const {
-#if TIME_VEC_WIDTH > 1
-            bool is_valid = true;
-            for(size_t i = 0; i < time_.size(); i++) {
-                is_valid &= !isnan(time_[i]);
-            }
-            return is_valid; 
-#else
-            return !isnan(time_);
-#endif
+        return *this;
+    }
+
+#else //i.e. not def SIMD_INTRINSICS
+    /*
+     * Serial / inferred SIMD
+     */
+    void set_value(float time) {
+        for(size_t i = 0; i < time_.size(); i++) {
+            time_[i] = time;
+        }
+    }
+
+    void max(const Time& other)  { 
+        for(size_t i = 0; i < time_.size(); i++) {
+            //Use conditional so compiler will vectorize
+            time_[i] = (time_[i] > other.time_[i]) ? time_[i] : other.time_[i];
+        }
+    }
+
+    void min(const Time& other)  { 
+        for(size_t i = 0; i < time_.size(); i++) {
+            //Use conditional so compiler will vectorize
+            time_[i] = (time_[i] < other.time_[i]) ? time_[i] : other.time_[i];
+        }
+    }
+
+    Time& operator+=(const Time& rhs) {
+        for(size_t i = 0; i < time_.size(); i++) {
+            time_[i] += rhs.time_[i];
         }
 
-        Time& operator+=(const Time& rhs) {
-#if TIME_VEC_WIDTH > 1
-            for(size_t i = 0; i < time_.size(); i++) {
-                time_[i] += rhs.time_[i];
-            }
-#else
-                time_ += rhs.time_;
-#endif
-            return *this;
+        return *this;
+    }
+
+    Time& operator-=(const Time& rhs) {
+        for(size_t i = 0; i < time_.size(); i++) {
+            time_[i] -= rhs.time_[i];
         }
 
-        Time& operator-=(const Time& rhs) {
-#if TIME_VEC_WIDTH > 1
-            for(size_t i = 0; i < time_.size(); i++) {
-                time_[i] -= rhs.time_[i];
-            }
-#else
-            time_ -= rhs.time_;
-#endif
-            return *this;
+        return *this;
+    }
+#endif //SIMD_INTRINSICS
+    float value() const { return time_[0]; }
+    bool valid() const {
+        bool result = true;
+        for(size_t i = 0; i < time_.size(); i++) {
+            result &= !isnan(time_[i]); 
         }
+        return result;
+    }
+#else //Scalar case
+    float value() const { return time_; }
+    void set_value(float time) { time_ = time; }
+    bool valid() const { return !isnan(time_); }
+
+    void max(const Time& other) { time_ = std::max(time_, other.time_); }
+    void min(const Time& other) { time_ = std::min(time_, other.time_); }
+    Time& operator+=(const Time& rhs) { time_ += rhs.time_; return *this; }
+    Time& operator-=(const Time& rhs) { time_ -= rhs.time_; return *this; }
+
+#endif //TIME_VEC_WIDTH
 
         friend bool operator==(const Time& lhs, const Time& rhs);
+
     private:
 #if TIME_VEC_WIDTH > 1
+        //std::array<float, TIME_VEC_WIDTH> time_;
+        //AVX requies 32 byte alignment
+#ifdef TIME_MEM_ALIGN
+        alignas(TIME_MEM_ALIGN) std::array<float, TIME_VEC_WIDTH> time_;
+#else
         std::array<float, TIME_VEC_WIDTH> time_;
+#endif
 #else
         float time_;
 #endif
 
-#ifdef TIME_PAD_CACHE_LINE
-        //Pad out to the cache line size
-        std::array<float, CACHE_LINE_SIZE_BYTES/sizeof(float) - (sizeof(time_)) > pad;
-#endif
 };
 
-inline bool operator==(const Time& lhs, const Time& rhs) {
-#if TIME_VEC_WIDTH > 1
-    bool is_equal = true;
-    for(size_t i = 0; i < lhs.time_.size(); i++) {
-        is_equal &= (lhs.time_[i] == rhs.time_[i]);
-    }
-    return is_equal;
-#else
-    return (lhs.time_ == rhs.time_);
-#endif
-}
-
-inline Time operator+(Time lhs, const Time& rhs) {
-    return lhs += rhs;
-}
-
-inline Time operator-(Time lhs, const Time& rhs) {
-    return lhs -= rhs;
-}
-
-std::ostream& operator<<(std::ostream& os, const Time& time);
-
+#include "Time.inl"

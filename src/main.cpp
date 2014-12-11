@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <array>
 
 #include "sta_util.hpp"
 
@@ -25,7 +26,7 @@
 
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 10
+#define NUM_SERIAL_RUNS 100
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
@@ -44,10 +45,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+
     struct timespec prog_start, load_start, analyze_start, verify_start;
     struct timespec prog_end, load_end, analyze_end, verify_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
+
+    std::cout << "Time class size: " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << std::endl;
+    std::cout << "Time alignof = " << alignof(Time) << std::endl;
 
     TimingGraph timing_graph;
     std::vector<node_arr_req_t> orig_expected_arr_req_times;
@@ -57,8 +62,8 @@ int main(int argc, char** argv) {
     ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
 
     //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer(); 
-    //ParallelLevelizedOpenMPTimingAnalyzer parallel_analyzer = ParallelLevelizedOpenMPTimingAnalyzer(); 
     //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
+    //ParallelLevelizedOpenMPTimingAnalyzer parallel_analyzer = ParallelLevelizedOpenMPTimingAnalyzer(); 
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
@@ -99,8 +104,6 @@ int main(int argc, char** argv) {
     }
     std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
     std::cout << std::endl;
-
-    std::cout << "Time class size: " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << std::endl;
 
     int n_histo_bins = 40;
     print_level_histogram(timing_graph, n_histo_bins);
