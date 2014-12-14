@@ -80,7 +80,9 @@ The parameters of graph topology and edge weight were evaluated by generating th
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{graph_topology_cutsize.eps}
+%\includegraphics[width=\linewidth]{graph_topology_cutsize.eps}
+%\input{graph_topology_cutsize.tex}
+\input{graph_topology_cutsize}
 \caption{Hypergraph cut size achieved by Metis with different hyperedge models and weightings. n is the number of vertices on a hyperedge.}
 \label{fig:graph_topology_cutsize}
 \end{figure}
@@ -93,7 +95,8 @@ To validate the choice of hyperedge cutsize as a proxy for circuit routability, 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{graph_topology_mcw.eps}
+\input{graph_topology_mcw}
+%\includegraphics[width=\linewidth]{graph_topology_mcw.eps}
 \caption{Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge.}
 \label{fig:graph_topology_mcw}
 \end{figure}
@@ -105,7 +108,8 @@ We compare the performance of the four CAD flow variations described in Section 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{vpr_flows_mcw.eps}
+%\includegraphics[width=\linewidth]{vpr_flows_mcw.eps}
+\input{vpr_flows_mcw}
 \caption{Minimum channel width achieved by VPR with the different partitioning flows.}
 \label{fig:flows_mcw}
 \end{figure}
@@ -116,7 +120,7 @@ For the same set of circuits, we computed the critical path delay at a channel w
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{vpr_flows_crit_path.eps}
+\input{vpr_flows_crit_path}
 \caption{Critical path delay achieved by VPR with the different partitioning flows.}
 \label{fig:flows_crit_path}
 \end{figure}
@@ -130,7 +134,7 @@ To see how well the CAD flow works for a range of interposer architectures, we v
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{wires_cut.eps}
+\input{wires_cut}
 \caption{Impact of partitioning-based CAD flow on routability for a range of architectures.}
 \label{fig:wires_cut}
 \end{figure}
@@ -140,8 +144,8 @@ The additional constraints on the packer imposed by partitioning may result in a
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{packing_bloat.eps}
-\caption{Packing bloat.}
+\input{packing_bloat}
+\caption{The number of blocks in the clustered netlist with and without partitioning constraints. This is a measure of packing bloat.}
 \label{fig:packing_bloat}
 \end{figure}
 

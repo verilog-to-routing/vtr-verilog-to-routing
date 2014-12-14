@@ -1,0 +1,113 @@
+% GNUPLOT: LaTeX picture with Postscript
+\begingroup
+  \makeatletter
+  \providecommand\color[2][]{%
+    \GenericError{(gnuplot) \space\space\space\@spaces}{%
+      Package color not loaded in conjunction with
+      terminal option `colourtext'%
+    }{See the gnuplot documentation for explanation.%
+    }{Either use 'blacktext' in gnuplot or load the package
+      color.sty in LaTeX.}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\includegraphics[2][]{%
+    \GenericError{(gnuplot) \space\space\space\@spaces}{%
+      Package graphicx or graphics not loaded%
+    }{See the gnuplot documentation for explanation.%
+    }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+    \renewcommand\includegraphics[2][]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \@ifundefined{ifGPcolor}{%
+    \newif\ifGPcolor
+    \GPcolortrue
+  }{}%
+  \@ifundefined{ifGPblacktext}{%
+    \newif\ifGPblacktext
+    \GPblacktexttrue
+  }{}%
+  % define a \g@addto@macro without @ in the name:
+  \let\gplgaddtomacro\g@addto@macro
+  % define empty templates for all commands taking text:
+  \gdef\gplbacktext{}%
+  \gdef\gplfronttext{}%
+  \makeatother
+  \ifGPblacktext
+    % no textcolor at all
+    \def\colorrgb#1{}%
+    \def\colorgray#1{}%
+  \else
+    % gray or color?
+    \ifGPcolor
+      \def\colorrgb#1{\color[rgb]{#1}}%
+      \def\colorgray#1{\color[gray]{#1}}%
+      \expandafter\def\csname LTw\endcsname{\color{white}}%
+      \expandafter\def\csname LTb\endcsname{\color{black}}%
+      \expandafter\def\csname LTa\endcsname{\color{black}}%
+      \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+      \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+      \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+      \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+      \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+      \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+      \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+      \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+      \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+    \else
+      % gray
+      \def\colorrgb#1{\color{black}}%
+      \def\colorgray#1{\color[gray]{#1}}%
+      \expandafter\def\csname LTw\endcsname{\color{white}}%
+      \expandafter\def\csname LTb\endcsname{\color{black}}%
+      \expandafter\def\csname LTa\endcsname{\color{black}}%
+      \expandafter\def\csname LT0\endcsname{\color{black}}%
+      \expandafter\def\csname LT1\endcsname{\color{black}}%
+      \expandafter\def\csname LT2\endcsname{\color{black}}%
+      \expandafter\def\csname LT3\endcsname{\color{black}}%
+      \expandafter\def\csname LT4\endcsname{\color{black}}%
+      \expandafter\def\csname LT5\endcsname{\color{black}}%
+      \expandafter\def\csname LT6\endcsname{\color{black}}%
+      \expandafter\def\csname LT7\endcsname{\color{black}}%
+      \expandafter\def\csname LT8\endcsname{\color{black}}%
+    \fi
+  \fi
+  \setlength{\unitlength}{0.0500bp}%
+  \begin{picture}(5040.00,3600.00)%
+    \gplgaddtomacro\gplbacktext{%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,680){\makebox(0,0)[r]{\strut{}\footnotesize{160}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,1155){\makebox(0,0)[r]{\strut{}\footnotesize{180}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,1629){\makebox(0,0)[r]{\strut{}\footnotesize{200}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,2104){\makebox(0,0)[r]{\strut{}\footnotesize{220}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,2578){\makebox(0,0)[r]{\strut{}\footnotesize{240}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,3053){\makebox(0,0)[r]{\strut{}\footnotesize{260}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(474,3527){\makebox(0,0)[r]{\strut{}\footnotesize{280}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(944,521){\rotatebox{45}{\makebox(0,0)[r]{\strut{}\footnotesize{clique $1$}}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(1669,521){\rotatebox{45}{\makebox(0,0)[r]{\strut{}\footnotesize{clique $1/n$}}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(2394,521){\rotatebox{45}{\makebox(0,0)[r]{\strut{}\footnotesize{clique $1/n^2$}}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(3119,521){\rotatebox{45}{\makebox(0,0)[r]{\strut{}\footnotesize{star $1$}}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(3844,521){\rotatebox{45}{\makebox(0,0)[r]{\strut{}\footnotesize{star $1/n$}}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(4569,521){\rotatebox{45}{\makebox(0,0)[r]{\strut{}\footnotesize{star $1/n^2$}}}}%
+      \csname LTb\endcsname%
+      \put(48,2103){\rotatebox{-270}{\makebox(0,0){\strut{}\footnotesize{\textbf{Minimum Channel Width}}}}}%
+      \put(2756,42){\makebox(0,0){\strut{}\footnotesize{\textbf{Graph Topology}}}}%
+    }%
+    \gplgaddtomacro\gplfronttext{%
+    }%
+    \gplbacktext
+    \put(0,0){\includegraphics{graph_topology_mcw}}%
+    \gplfronttext
+  \end{picture}%
+\endgroup
