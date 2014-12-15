@@ -1,20 +1,22 @@
 \relax 
 \citation{xilinxTSVperformance}
+\citation{3dhandbook}
 \citation{3dfpga1995}
 \citation{3dfpga}
 \citation{3dfpga1995}
 \citation{3dfpga}
 \citation{xilinxTSV}
 \citation{xilinxTSV}
-\citation{xilinxWP}
-\citation{xilinx7series}
 \@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}}
 \newlabel{introSection}{{I}{1}}
+\citation{interposer2014}
 \citation{xilinx7series}
 \citation{stratixV}
+\citation{virtexultrascale}
 \citation{xilinxTSVperformance}
 \citation{yieldmodel}
 \citation{xilinxTSV}
+\citation{xilinxWP}
 \citation{xilinxTSV}
 \citation{xilinxWP}
 \citation{xilinxWP}
@@ -28,19 +30,18 @@
 \citation{luu2014vtr}
 \citation{betz1997vpr}
 \citation{xilinxTSV}
-\citation{unidirectional,lewis2005stratix}
 \@writefile{toc}{\contentsline {section}{\numberline {III}Architecture Models}{3}}
 \newlabel{archSection}{{III}{3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-A}}Number of Cuts}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-B}}\% Wires Cut}{3}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces A sample two-die / 1-cutline architecture containing both logic blocks and RAM blocks.}}{3}}
 \newlabel{fig:fpga}{{2}{3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-B}}\% Wires Cut}{3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-C}}Increased Delay}{3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-D}}Interposer-Routing Interface}{3}}
 \newlabel{sec:interposer-routing-interface}{{\unhbox \voidb@x \hbox {III-D}}{3}}
+\citation{unidirectional,lewis2005stratix}
 \citation{betz1999architecture}
 \citation{hahn2014cad}
-\citation{timing2000}
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces For a channel width of 4 and 75\% wires cut, only 1 interposer wire exists (in green) and 3 interposer wires are cut (in the red). (a)\nobreakspace  {}Fan-in Transfer for Interposer Wires allows red routing wires in die 1 to drive a mux that allows them to cross the interposer layer. (b)\nobreakspace  {}Fan-out Transfer for Interposer Wires allows the output of the interposer wire to drive wires in other tracks in die 2.}}{4}}
 \newlabel{fig:architecture_params}{{3}{4}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-E}}Implementation}{4}}
@@ -50,37 +51,38 @@
 \@writefile{lof}{\contentsline {subfigure}{\numberline{(c)}{\ignorespaces {}}}{4}}
 \@writefile{lof}{\contentsline {subfigure}{\numberline{(d)}{\ignorespaces {}}}{4}}
 \newlabel{fig:rrgraph_ops}{{4}{4}}
-\@writefile{toc}{\contentsline {section}{\numberline {IV}CAD Enhancements}{4}}
-\newlabel{cadSection}{{IV}{4}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {IV-A}}Placer Optimization}{4}}
-\newlabel{cad_enh_placer_subsection}{{\unhbox \voidb@x \hbox {IV-A}}{4}}
+\citation{timing2000}
 \citation{betz1997vpr}
 \citation{icann}
-\citation{hahn2014cad}
 \@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces VPR Graphical User Interface. (a) Full chip view. (b) Connectivity at the cutline. Due to the limited signal capacity of the interposer, some vertical routing wires are left dangling.}}{5}}
 \@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{5}}
 \@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{5}}
 \newlabel{fig:vpr_interposer_gui}{{5}{5}}
+\@writefile{toc}{\contentsline {section}{\numberline {IV}CAD Enhancements}{5}}
+\newlabel{cadSection}{{IV}{5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {IV-A}}Placer Optimization}{5}}
+\newlabel{cad_enh_placer_subsection}{{\unhbox \voidb@x \hbox {IV-A}}{5}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {IV-A}1}Placer Timing Cost}{5}}
 \newlabel{eq:timing_eq_full}{{1}{5}}
 \newlabel{eq:timing_cost}{{2}{5}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {IV-A}2}Placer Wiring Cost}{5}}
 \newlabel{eq:bbcost}{{3}{5}}
-\newlabel{eq:total_wiring}{{4}{5}}
+\citation{hahn2014cad}
 \citation{hahn2014cad}
 \citation{betz1999architecture}
-\citation{luu2014vtr}
+\newlabel{eq:total_wiring}{{4}{6}}
 \newlabel{eq:cost2}{{5}{6}}
 \newlabel{eq:cprime}{{6}{6}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Illustration of three different scenarios for the wiring cost. The dashed green box shows a case where \textit  {(a)} it crosses the interposer, the dotted black box shows a case where \textit  {(b)} it barely crosses the cutline, and the solid blue one shows a case where \textit  {(c)} the bounding box does not span the cutline.}}{6}}
-\newlabel{fig:bb_illustration}{{6}{6}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {IV-B}}Router Optimization}{6}}
 \newlabel{sec:router_optimizations}{{\unhbox \voidb@x \hbox {IV-B}}{6}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Illustration of three different scenarios for the wiring cost. The dashed green box shows a case where \textit  {(a)} it crosses the interposer, the dotted black box shows a case where \textit  {(b)} it barely crosses the cutline, and the solid blue one shows a case where \textit  {(c)} the bounding box does not span the cutline.}}{6}}
+\newlabel{fig:bb_illustration}{{6}{6}}
 \newlabel{eq:routing_cost}{{7}{6}}
 \newlabel{eq:lookahead_cost}{{8}{6}}
 \newlabel{eq:expected_routing_cost}{{9}{6}}
-\newlabel{eq:tdelay}{{10}{6}}
+\citation{luu2014vtr}
 \citation{vtr2012}
+\newlabel{eq:tdelay}{{10}{7}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {IV-C}}Effectiveness of the Enhancements}{7}}
 \newlabel{sec:CADeffect}{{\unhbox \voidb@x \hbox {IV-C}}{7}}
 \newlabel{sec:effectiveness_of_placer_enhancements}{{\unhbox \voidb@x \hbox {IV-C}1}{7}}
@@ -93,17 +95,17 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {IV-C}2}Effectiveness of Router Optimizations}{7}}
 \@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Router runtime with original and updated lookahead function.}}{7}}
 \newlabel{fig:lookahead_runtime}{{9}{7}}
-\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Impact of new vs. original router lookahead on the critical path delay.}}{7}}
-\newlabel{fig:lookahead_fmax}{{10}{7}}
 \@writefile{toc}{\contentsline {section}{\numberline {V}Adding Partitioning to the CAD Flow}{7}}
 \newlabel{sec:CADflow}{{V}{7}}
 \citation{karypis1998multilevelmetis}
 \citation{karypis1999multilevelhmetis}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {V-A}}CAD Flow Variations}{8}}
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Possible ways to add partitioning to the VPR CAD flow.}}{8}}
-\newlabel{fig:partitioning_cad_flow}{{11}{8}}
 \newlabel{sec:partitioner_stage}{{\unhbox \voidb@x \hbox {V-A}1}{8}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}1}Partitioner Stage}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Impact of new vs. original router lookahead on the critical path delay.}}{8}}
+\newlabel{fig:lookahead_fmax}{{10}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Possible ways to add partitioning to the VPR CAD flow.}}{8}}
+\newlabel{fig:partitioning_cad_flow}{{11}{8}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}2}Partitioning Tool}{8}}
 \newlabel{eq:balance_constraint}{{11}{8}}
 \newlabel{sec:hypergraph_to_graph}{{\unhbox \voidb@x \hbox {V-A}3}{9}}
@@ -124,9 +126,9 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}4}Partitioner Stage Results}{10}}
 \@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Minimum channel width achieved by VPR with the different partitioning flows.}}{10}}
 \newlabel{fig:flows_mcw}{{16}{10}}
-\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Critical path delay achieved by VPR with the different partitioning flows.}}{10}}
-\newlabel{fig:flows_crit_path}{{17}{10}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}5}\% wires cut}{11}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}5}\% wires cut}{10}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Critical path delay achieved by VPR with the different partitioning flows.}}{11}}
+\newlabel{fig:flows_crit_path}{{17}{11}}
 \@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Impact of partitioning-based CAD flow on routability for a range of architectures.}}{11}}
 \newlabel{fig:wires_cut}{{18}{11}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}6}Bloating of the Clustered Netlist due to Partitioning Constraints}{11}}
@@ -135,58 +137,59 @@
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Architecture Results}{11}}
 \newlabel{resultsSection}{{VI}{11}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-A}}Routing-Interposer Interface}{11}}
-\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Impact of routing-interposer interface flexibility on minimum channel width and circuit speed.}}{11}}
-\newlabel{fig:all_arch_experiments}{{20}{11}}
 \citation{xilinx7series}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Impact of routing-interposer interface flexibility on minimum channel width and circuit speed.}}{12}}
+\newlabel{fig:all_arch_experiments}{{20}{12}}
 \@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces Adding up to 8 extra fanins to interposer wire muxes helps reduce minimum channel width.}}{12}}
 \newlabel{fig:additional_fanins}{{21}{12}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-B}}Interposer Wiring Capacity (\% wires cut)}{12}}
 \newlabel{sec:resultsWiringCapacity}{{\unhbox \voidb@x \hbox {VI-B}}{12}}
-\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{12}}
-\newlabel{fig:standard_minW}{{22}{12}}
-\citation{xilinxTSV}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{13}}
+\newlabel{fig:standard_minW}{{22}{13}}
 \@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{13}}
 \newlabel{fig:standard_crit}{{23}{13}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-C}}Circuit Speed vs. Interposer Delay}{13}}
 \@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 2 dice and $1ns$ of \textit  {delay increase}.}}{13}}
 \newlabel{fig:crossingwires}{{24}{13}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-C}}Circuit Speed vs. Interposer Delay}{13}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-D}}Impact of Number of Dice}{13}}
 \newlabel{num_dice_impact}{{\unhbox \voidb@x \hbox {VI-D}}{13}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-E}}Impact of Aspect Ratio}{13}}
-\newlabel{aspect_ratio_impact}{{\unhbox \voidb@x \hbox {VI-E}}{13}}
 \@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit  {delay increase}.}}{13}}
 \newlabel{fig:delays_crit}{{25}{13}}
-\citation{hMetis}
+\citation{xilinxTSV}
 \@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces Impact of number of dice on routability. TODO JAVEED -- LU32 90\% result is missing}}{14}}
 \newlabel{fig:wires_cut_4part}{{26}{14}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-E}}Impact of Aspect Ratio}{14}}
+\newlabel{aspect_ratio_impact}{{\unhbox \voidb@x \hbox {VI-E}}{14}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Minimum channel width for square interposer and square dice configurations.}}{14}}
+\newlabel{table:squares}{{I}{14}}
 \@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces Devices with (a) a square interposer and (b) square dice.}}{14}}
 \@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{14}}
 \@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{14}}
 \newlabel{fig:square_tall}{{27}{14}}
-\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Minimum channel width for square interposer and square dice configurations.}}{14}}
-\newlabel{table:squares}{{I}{14}}
-\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusions and Future Work}{14}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{14}}
 \newlabel{conclusionSection}{{VII}{14}}
 \bibstyle{IEEEtran}
 \bibdata{IEEEabrv,./fpga2014paper}
 \bibcite{xilinxTSVperformance}{1}
-\bibcite{3dfpga1995}{2}
-\bibcite{3dfpga}{3}
-\bibcite{xilinxTSV}{4}
-\bibcite{xilinxWP}{5}
-\bibcite{xilinx7series}{6}
-\bibcite{stratixV}{7}
-\bibcite{yieldmodel}{8}
-\bibcite{luu2014vtr}{9}
-\bibcite{betz1997vpr}{10}
-\bibcite{unidirectional}{11}
-\bibcite{lewis2005stratix}{12}
-\bibcite{betz1999architecture}{13}
-\bibcite{hahn2014cad}{14}
-\bibcite{timing2000}{15}
-\bibcite{icann}{16}
-\bibcite{vtr2012}{17}
-\bibcite{karypis1998multilevelmetis}{18}
-\bibcite{karypis1999multilevelhmetis}{19}
-\bibcite{hMetis}{20}
+\bibcite{3dhandbook}{2}
+\bibcite{3dfpga1995}{3}
+\bibcite{3dfpga}{4}
+\bibcite{xilinxTSV}{5}
+\bibcite{interposer2014}{6}
+\bibcite{xilinx7series}{7}
+\bibcite{stratixV}{8}
+\bibcite{virtexultrascale}{9}
+\bibcite{yieldmodel}{10}
+\bibcite{xilinxWP}{11}
+\bibcite{luu2014vtr}{12}
+\bibcite{betz1997vpr}{13}
+\bibcite{unidirectional}{14}
+\bibcite{lewis2005stratix}{15}
+\bibcite{betz1999architecture}{16}
+\bibcite{hahn2014cad}{17}
+\bibcite{timing2000}{18}
+\bibcite{icann}{19}
+\bibcite{vtr2012}{20}
+\bibcite{karypis1998multilevelmetis}{21}
+\bibcite{karypis1999multilevelhmetis}{22}
 \@writefile{toc}{\contentsline {section}{References}{15}}

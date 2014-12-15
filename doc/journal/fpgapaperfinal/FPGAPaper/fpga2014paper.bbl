@@ -27,6 +27,11 @@ K.~Namhoon, D.~Wu, D.~Kim, A.~Rahman, and P.~Wu, ``{Interposer Design
   Interposer using Through Silicon Via (TSV)},'' in \emph{IEEE Electronic
   Components and Technology Conference (ECTC)}, 2011, pp. 1160--1167.
 
+\bibitem{3dhandbook}
+P.~Garrou, M.~Koyanagi, and P.~Ramm, \emph{{Handbook of 3D Integration: Volume
+  3 - 3D Process Technology}}.\hskip 1em plus 0.5em minus 0.4em\relax John
+  Wiley and Sons, 2014.
+
 \bibitem{3dfpga1995}
 M.~Alexander, J.~Cohoon, J.~Colflesh, J.~Karro, and G.~Robins,
   ``{Three-Dimensional Field-Programmable Gate Arrays},'' in \emph{IEEE Int.
@@ -44,16 +49,14 @@ R.~Chaware, K.~Nagarajan, and S.~Ramalingam, ``{Assembly and Reliability
   65nm Passive Interposer},'' in \emph{IEEE Electronic Components and
   Technology Conference (ECTC)}, 2012, pp. 279--283.
 
-\bibitem{xilinxWP}
-\BIBentryALTinterwordspacing
-Xilinx, ``{X}ilinx {S}tacked {S}ilicon {I}nterconnect {T}echnology {D}elivers
-  {B}reakthrough {FPGA} {C}apacity, {B}andwidth, and {P}ower {E}fficiency,''
-  \emph{www.xilinx.com}, 2012. [Online]. Available: \url{www.xilinx.com}
-\BIBentrySTDinterwordspacing
+\bibitem{interposer2014}
+A.~Hahn~Pereira and V.~Betz, ``{CAD and Architecture for Interposer-Based
+  Multi-FPGA Systems},'' in \emph{ACM/SIGDA Int. Symposium on
+  Field-Programmable Gate Arrays}, 2014, pp. 75--84.
 
 \bibitem{xilinx7series}
 \BIBentryALTinterwordspacing
-------, ``{7 Series FPGA Overview},'' \emph{www.xilinx.com}, 2013. [Online].
+Xilinx, ``{7 Series FPGA Overview},'' \emph{www.xilinx.com}, 2013. [Online].
   Available: \url{www.xilinx.com}
 \BIBentrySTDinterwordspacing
 
@@ -63,10 +66,23 @@ Altera, ``{Stratix V Device Overview},'' \emph{www.altera.com}, 2013. [Online].
   Available: \url{www.altera.com}
 \BIBentrySTDinterwordspacing
 
+\bibitem{virtexultrascale}
+\BIBentryALTinterwordspacing
+Xilinx, ``{UltraScale Architecture and Product Overview},''
+  \emph{www.xilinx.com}, 2014. [Online]. Available: \url{www.xilinx.com}
+\BIBentrySTDinterwordspacing
+
 \bibitem{yieldmodel}
 J.~Cunningham, ``{The Use and Evaluation of Yield Models in Integrated Circuit
   Manufacturing},'' \emph{IEEE Trans. on Semiconductor Manufacturing}, vol.~3,
   no.~2, pp. 60--71, 1990.
+
+\bibitem{xilinxWP}
+\BIBentryALTinterwordspacing
+Xilinx, ``{X}ilinx {S}tacked {S}ilicon {I}nterconnect {T}echnology {D}elivers
+  {B}reakthrough {FPGA} {C}apacity, {B}andwidth, and {P}ower {E}fficiency,''
+  \emph{www.xilinx.com}, 2012. [Online]. Available: \url{www.xilinx.com}
+\BIBentrySTDinterwordspacing
 
 \bibitem{luu2014vtr}
 J.~Luu, J.~Goeders, M.~Wainberg, A.~Somerville, T.~Yu, K.~Nasartschuk, M.~Nasr,
@@ -98,8 +114,8 @@ V.~Betz, J.~Rose, and A.~Marquardt, \emph{{A}rchitecture and {CAD} for
   Academic Publishers, 1999.
 
 \bibitem{hahn2014cad}
-A.~Hahn~Pereira and V.~Betz, ``Cad and routing architecture for
-  interposer-based multi-fpga systems,'' in \emph{Proceedings of the 2014
+A.~Hahn~Pereira and V.~Betz, ``{CAD and Routing Architecture for
+  Interposer-Based Multi-FPGA Systems},'' in \emph{Proceedings of the 2014
   ACM/SIGDA international symposium on Field-programmable gate arrays}.\hskip
   1em plus 0.5em minus 0.4em\relax ACM, 2014, pp. 75--84.
 
@@ -134,9 +150,5 @@ G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar, ``Multilevel hypergraph
   partitioning: applications in vlsi domain,'' \emph{Very Large Scale
   Integration (VLSI) Systems, IEEE Transactions on}, vol.~7, no.~1, pp. 69--79,
   1999.
-
-\bibitem{hMetis}
-------, ``{Multilevel Hypergraph Partitioning: Applications in VLSI Domain},''
-  \emph{IEEE Trans. on VLSI}, vol.~7, no.~1, pp. 69--79, 1999.
 
 \end{thebibliography}
