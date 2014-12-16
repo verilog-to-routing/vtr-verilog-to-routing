@@ -41,7 +41,7 @@ In our architecture, each FPGA die is identical, and therefore each die has the 
 \end{equation}
 where $P1_i$ denotes the set of all blocks of type $i$ in partition 1.
 
-We refer to this type of per-block set of constraints as heterogeneous balance constraints. Note that there are complex legality constraints governing which LUTs and FFs can be packed into legal logic blocks, as well as which multipliers can be packed into legal DSP blocks [ref AAPack]. As the partitioner is not aware of these constraints, flow 3 above (which runs the partitioner after function block packing) will be able to more precisely balance resource use across partitions.
+We refer to this type of per-block set of constraints as heterogeneous balance constraints. Note that there are complex legality constraints governing which LUTs and FFs can be packed into legal logic blocks, as well as which multipliers can be packed into legal DSP blocks~\cite{luu2014vtr}. As the partitioner is not aware of these constraints, flow 3 above (which runs the partitioner after function block packing) will be able to more precisely balance resource use across partitions.
 
 The latest public version of hMetis does not support heterogeneous balance constraints, thourgh Metis does. Metis was used in our CAD flow. However, as discussed earlier, the circuit netlist is most naturally represented as a hypergraph, and so it needs to be transformed to a graph before Metis can process it.
 

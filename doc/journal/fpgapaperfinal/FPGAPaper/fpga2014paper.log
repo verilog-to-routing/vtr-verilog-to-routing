@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  16 DEC 2014 07:46
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  16 DEC 2014 07:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -840,17 +840,12 @@ Package epstopdf Info: Source file: <wires_cut.eps>
 (epstopdf)                    date: 2014-12-16 07:46:08
 (epstopdf)                    size: 18649 bytes
 (epstopdf)             Output file: <wires_cut-eps-converted-to.pdf>
-(epstopdf)                    date: 2014-12-15 19:41:40
-(epstopdf)                    size: 3180 bytes
+(epstopdf)                    date: 2014-12-16 07:46:21
+(epstopdf)                    size: 3187 bytes
 (epstopdf)             Command: <repstopdf --outfile=wires_cut-eps-converted-to
 .pdf wires_cut.eps>
 (epstopdf)             \includegraphics on input line 124.
-runsystem(repstopdf --outfile=wires_cut-eps-converted-to.pdf wires_cut.eps)...e
-xecuted safely (allowed).
-
-Package epstopdf Info: Result file: <wires_cut-eps-converted-to.pdf>
-(epstopdf)                    date: 2014-12-16 07:46:21
-(epstopdf)                    size: 3187 bytes.
+Package epstopdf Info: Output file is already uptodate.
 
 <wires_cut-eps-converted-to.pdf, id=161, 252.945pt x 180.675pt>
 File: wires_cut-eps-converted-to.pdf Graphic file (type pdf)
@@ -1057,22 +1052,26 @@ Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--536
 File: square_fpga.pdf Graphic file (type pdf)
  <use square_fpga.pdf>
 Package pdftex.def Info: square_fpga.pdf used on input line 547.
-(pdftex.def)             Requested size: 138.39085pt x 142.26378pt.
+(pdftex.def)             Requested size: 83.02861pt x 85.35826pt.
 
 <tall_fpga.pdf, id=207, 82.3075pt x 299.1175pt>
 File: tall_fpga.pdf Graphic file (type pdf)
  <use tall_fpga.pdf>
 Package pdftex.def Info: tall_fpga.pdf used on input line 548.
-(pdftex.def)             Requested size: 73.09142pt x 265.60666pt.
- [14 <./wires_cut_4part-eps-converted-to.pdf> <./crit_path_4part-eps-converted-
-to.pdf> <./square_fpga.pdf> <./tall_fpga.pdf
+(pdftex.def)             Requested size: 36.54318pt x 132.80312pt.
+
+Underfull \hbox (badness 2096) in paragraph at lines 578--579
+[]\OT1/ptm/m/n/10 We have ex-tended VPR to model and op-ti-mize for
+ []
+
+[14 <./wires_cut_4part-eps-converted-to.pdf> <./crit_path_4part-eps-converted-t
+o.pdf> <./square_fpga.pdf> <./tall_fpga.pdf
 
 pdfTeX warning: pdflatex (file ./tall_fpga.pdf): PDF inclusion: multiple pdfs w
 ith page group included in a single page
 >]
-Underfull \hbox (badness 2096) in paragraph at lines 578--579
-[]\OT1/ptm/m/n/10 We have ex-tended VPR to model and op-ti-mize for
- []
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
 
 (./fpga2014paper.bbl [15]) [16
 
@@ -1100,7 +1099,7 @@ y7.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/te
 xmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/
 type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (16 pages, 1399839 bytes).
+Output written on fpga2014paper.pdf (16 pages, 1399816 bytes).
 PDF statistics:
  291 PDF objects out of 1000 (max. 8388607)
  191 compressed objects within 2 object streams
