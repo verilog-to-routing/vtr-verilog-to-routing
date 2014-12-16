@@ -76,7 +76,14 @@ Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two 
 \label{fig:hyperedge_to_graph}
 \end{figure}
 
-The parameters of graph topology and edge weight were evaluated by generating the total primitive netlist graph and running it through the Metis partitioner to generate two partitions. The results of the different schemes were ranked based on the hyperedge cutsize, which is the number of hyperedges crossing the cutline, as illustrated in Figure ??. The hyperedge cutsize is a proxy for the routability of the circuit, as the cutsize is the number of nets that cross the interposer boundary. To compute the hyperedge cutsize, we applied the partitioning result (which assigns each vertex to a partition number) to the original untransformed hypergraph, and counted the number of hyperedges whose vertices were spread across different partitions. We computed the hyperedge cutsize for every combination of graph topology and graph edge weight scheme, across several circuits. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
+The parameters of graph topology and edge weight were evaluated by generating the total primitive netlist graph and running it through the Metis partitioner to generate two partitions. The results of the different schemes were ranked based on the hyperedge cutsize, which is the number of hyperedges crossing the cutline, as illustrated in Figure \ref{fig:hyperedge_cutline}. The hyperedge cutsize is a proxy for the routability of the circuit, as the cutsize is the number of nets that cross the interposer boundary. To compute the hyperedge cutsize, we applied the partitioning result (which assigns each vertex to a partition number) to the original untransformed hypergraph, and counted the number of hyperedges whose vertices were spread across different partitions. We computed the hyperedge cutsize for every combination of graph topology and graph edge weight scheme, across several circuits. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{hyperedge_cutline.pdf}
+\caption{A graph with six vertices and three hyperedges partitioned into two halves. As there are two hyperedges crossing the cutline, the hyperedge cutsize is 2.}
+\label{fig:hyperedge_cutline}
+\end{figure}
 
 \begin{figure}[!htbp]
 \centering
