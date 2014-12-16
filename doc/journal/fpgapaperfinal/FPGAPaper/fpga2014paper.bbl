@@ -25,7 +25,7 @@
 K.~Namhoon, D.~Wu, D.~Kim, A.~Rahman, and P.~Wu, ``{Interposer Design
   Optimization for High Frequency Signal Transmission in Passive and Active
   Interposer using Through Silicon Via (TSV)},'' in \emph{IEEE Electronic
-  Components and Technology Conference (ECTC)}, 2011, pp. 1160--1167.
+  Components and Technology Conf.}, 2011, pp. 1160--1167.
 
 \bibitem{3dhandbook}
 P.~Garrou, M.~Koyanagi, and P.~Ramm, \emph{{Handbook of 3D Integration: Volume
@@ -35,24 +35,22 @@ P.~Garrou, M.~Koyanagi, and P.~Ramm, \emph{{Handbook of 3D Integration: Volume
 \bibitem{3dfpga1995}
 M.~Alexander, J.~Cohoon, J.~Colflesh, J.~Karro, and G.~Robins,
   ``{Three-Dimensional Field-Programmable Gate Arrays},'' in \emph{IEEE Int.
-  ASIC Conference and Exhibit}, 1995, pp. 253--256.
+  ASIC Conf. and Exhibit}, 1995, pp. 253--256.
 
 \bibitem{3dfpga}
 M.~L., A.~El~Gamal, Y.~Lu, and S.~Wong, ``Performance {B}enefits of
-  {M}onolithically {S}tacked 3-{D} {FPGA},'' \emph{IEEE Trans. on
-  Computer-Aided Design of Integrated Circuits and Systems}, vol.~26, no.~2,
-  pp. 216--229, 2007.
+  {M}onolithically {S}tacked 3-{D} {FPGA},'' \emph{IEEE Trans. on CAD},
+  vol.~26, no.~2, pp. 216--229, 2007.
 
 \bibitem{xilinxTSV}
 R.~Chaware, K.~Nagarajan, and S.~Ramalingam, ``{Assembly and Reliability
   Challenges in 3{D} Integration of 28nm {FPGA} Die on a Large High Density
   65nm Passive Interposer},'' in \emph{IEEE Electronic Components and
-  Technology Conference (ECTC)}, 2012, pp. 279--283.
+  Technology Conf.}, 2012, pp. 279--283.
 
 \bibitem{interposer2014}
 A.~Hahn~Pereira and V.~Betz, ``{CAD and Architecture for Interposer-Based
-  Multi-FPGA Systems},'' in \emph{ACM/SIGDA Int. Symposium on
-  Field-Programmable Gate Arrays}, 2014, pp. 75--84.
+  Multi-FPGA Systems},'' in \emph{ACM Int. Symp. on FPGAs}, 2014, pp. 75--84.
 
 \bibitem{xilinx7series}
 \BIBentryALTinterwordspacing
@@ -85,16 +83,14 @@ Xilinx, ``{X}ilinx {S}tacked {S}ilicon {I}nterconnect {T}echnology {D}elivers
 \BIBentrySTDinterwordspacing
 
 \bibitem{luu2014vtr}
-J.~Luu, J.~Goeders, M.~Wainberg, A.~Somerville, T.~Yu, K.~Nasartschuk, M.~Nasr,
-  S.~Wang, T.~Liu, N.~Ahmed \emph{et~al.}, ``{VTR} 7.0: {N}ext generation
-  architecture and {CAD} system for {FPGA}s,'' \emph{ACM Transactions on
-  Reconfigurable Technology and Systems (TRETS)}, vol.~7, no.~2, p.~6, 2014.
+J.~Luu \emph{et~al.}, ``{VTR} 7.0: {N}ext generation architecture and {CAD}
+  system for {FPGA}s,'' \emph{ACM Trans. on Reconfigurable Technology and
+  Systems}, vol.~7, no.~2, p.~6, 2014.
 
 \bibitem{betz1997vpr}
 V.~Betz and J.~Rose, ``{VPR: A New Packing, Placement and Routing Tool for FPGA
-  Research},'' in \emph{Int. Workshp on Field-Programmable Logic and
-  Applications}.\hskip 1em plus 0.5em minus 0.4em\relax Springer, 1997, pp.
-  213--222.
+  Research},'' in \emph{Int. Workshop on Field-Programmable Logic and
+  Applications}, 1997, pp. 213--222.
 
 \bibitem{unidirectional}
 G.~Lemieux, E.~Lee, M.~Tom, and A.~Yu, ``{Directional and Single-Driver Wires
@@ -102,43 +98,28 @@ G.~Lemieux, E.~Lee, M.~Tom, and A.~Yu, ``{Directional and Single-Driver Wires
   Technology}, 2004, pp. 41--48.
 
 \bibitem{lewis2005stratix}
-D.~Lewis, E.~Ahmed, G.~Baeckler, V.~Betz, M.~Bourgeault, D.~Cashman,
-  D.~Galloway, M.~Hutton, C.~Lane, A.~Lee \emph{et~al.}, ``{T}he {S}tratix {II}
-  logic and routing architecture,'' in \emph{Proceedings of the 2005 ACM/SIGDA
-  13th international symposium on Field-programmable gate arrays}.\hskip 1em
-  plus 0.5em minus 0.4em\relax ACM, 2005, pp. 14--20.
+D.~Lewis, E.~Ahmed, G.~Baeckler, V.~Betz, M.~Bourgeault \emph{et~al.}, ``{T}he
+  {S}tratix {II} logic and routing architecture,'' in \emph{ACM Int. Symp. on
+  FPGAs}, 2005, pp. 14--20.
 
 \bibitem{betz1999architecture}
 V.~Betz, J.~Rose, and A.~Marquardt, \emph{{A}rchitecture and {CAD} for
   deep-submicron {FPGA}s}.\hskip 1em plus 0.5em minus 0.4em\relax Kluwer
   Academic Publishers, 1999.
 
-\bibitem{hahn2014cad}
-A.~Hahn~Pereira and V.~Betz, ``{CAD and Routing Architecture for
-  Interposer-Based Multi-FPGA Systems},'' in \emph{Proceedings of the 2014
-  ACM/SIGDA international symposium on Field-programmable gate arrays}.\hskip
-  1em plus 0.5em minus 0.4em\relax ACM, 2014, pp. 75--84.
-
 \bibitem{timing2000}
-\BIBentryALTinterwordspacing
 A.~Marquardt, V.~Betz, and J.~Rose, ``{T}iming-{D}riven {P}lacement for
-  {FPGA}s,'' in \emph{ACM/SIGDA Int. Symp. on Field Programmable Gate Arrays},
-  2000, pp. 203--213. [Online]. Available:
-  \url{http://doi.acm.org/10.1145/329166.329208}
-\BIBentrySTDinterwordspacing
+  {FPGA}s,'' in \emph{ACM Int. Symp. on FPGAs}, 2000, pp. 203--213.
 
 \bibitem{icann}
-\BIBentryALTinterwordspacing
 C.~Cheng, ``{RISA: Accurate and Efficient Placement Routability Modeling},'' in
-  \emph{IEEE/ACM Int. Conf. on Computer-Aided Design}, 1994, pp. 690--695.
-  [Online]. Available: \url{http://dl.acm.org/citation.cfm?id=191326.191632}
-\BIBentrySTDinterwordspacing
+  \emph{IEEE/ACM Int. Conf. on CAD}, 1994, pp. 690--695.
 
 \bibitem{vtr2012}
 J.~Rose, J.~Luu, C.~Yu, O.~Densmore, J.~Goeders, A.~Somerville, K.~Kent,
   P.~Jamieson, and J.~Anderson, ``The {VTR} {P}roject: {A}rchitecture and {CAD}
-  for {FPGA}s from {V}erilog to {R}outing,'' in \emph{ACM/SIGDA Int. Symposium
-  on Field-Programmable Gate Arrays}, 2012, pp. 77--86.
+  for {FPGA}s from {V}erilog to {R}outing,'' in \emph{ACM Int. Symposium on
+  FPGAs}, 2012, pp. 77--86.
 
 \bibitem{karypis1998multilevelmetis}
 G.~Karypis and V.~Kumar, ``Multilevel k-way partitioning scheme for irregular
@@ -146,21 +127,18 @@ G.~Karypis and V.~Kumar, ``Multilevel k-way partitioning scheme for irregular
   no.~1, pp. 96--129, 1998.
 
 \bibitem{karypis1999multilevelhmetis}
-G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar, ``Multilevel hypergraph
-  partitioning: applications in vlsi domain,'' \emph{Very Large Scale
-  Integration (VLSI) Systems, IEEE Transactions on}, vol.~7, no.~1, pp. 69--79,
-  1999.
+G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar, ``{Multilevel Hypergraph
+  Partitioning: Applications in VLSI Domain},'' \emph{IEEE Trans. on VLSI},
+  vol.~7, no.~1, pp. 69--79, 1999.
 
 \bibitem{karypismanual}
-G.~Karypis, ``A software package for partitioning unstructured graphs,
-  partitioning meshes, and computing fill-reducing orderings of sparse
-  matrices,'' \emph{University of Minnesota, Department of Computer Science and
-  Engineering, Army HPC Research Center, Minneapolis, MN}, 2013.
+G.~Karypis, ``{A Software package for Partitioning Unstructured Graphs,
+  Partitioning Meshes, and Computing Fill-Reducing Orderings of Sparse
+  Matrices},'' \emph{University of Minnesota}, 2013.
 
 \bibitem{feng2014rent}
-W.~Feng, J.~Greene, K.~Vorwerk, V.~Pevzner, and A.~Kundu, ``Rent's rule based
-  fpga packing for routability optimization,'' in \emph{Proceedings of the 2014
-  ACM/SIGDA international symposium on Field-programmable gate arrays}.\hskip
-  1em plus 0.5em minus 0.4em\relax ACM, 2014, pp. 31--34.
+W.~Feng, J.~Greene, K.~Vorwerk, V.~Pevzner, and A.~Kundu, ``{Rent's Rule Based
+  FPGA Packing for Routability Optimization},'' in \emph{ACM Int. Symp. on
+  FPGAs}, 2014, pp. 31--34.
 
 \end{thebibliography}

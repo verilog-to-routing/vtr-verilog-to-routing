@@ -1,12 +1,5 @@
-This is BibTeX, Version 0.99d (TeX Live 2015/dev/Debian)
-Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
-The top-level auxiliary file: fpga2014paper.aux
+This is BibTeX, Version 0.99dThe top-level auxiliary file: fpga2014paper.aux
 The style file: IEEEtran.bst
-Reallocated singl_function (elt_size=4) to 100 items from 50.
-Reallocated singl_function (elt_size=4) to 100 items from 50.
-Reallocated singl_function (elt_size=4) to 100 items from 50.
-Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
-Reallocated singl_function (elt_size=4) to 100 items from 50.
 Database file #1: IEEEabrv.bib
 Database file #2: ./fpga2014paper.bib
 -- IEEEtran.bst version 1.13 (2008/09/30) by Michael Shell.
@@ -14,44 +7,3 @@ Database file #2: ./fpga2014paper.bib
 -- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
 
 Done.
-You've used 24 entries,
-            4039 wiz_defined-function locations,
-            1335 strings with 19497 characters,
-and the built_in function-call counts, 18056 in all, are:
-= -- 1399
-> -- 463
-< -- 135
-+ -- 251
-- -- 85
-* -- 862
-:= -- 2702
-add.period$ -- 52
-call.type$ -- 24
-change.case$ -- 22
-chr.to.int$ -- 324
-cite$ -- 24
-duplicate$ -- 1293
-empty$ -- 1559
-format.name$ -- 102
-if$ -- 4186
-int.to.chr$ -- 0
-int.to.str$ -- 24
-missing$ -- 232
-newline$ -- 107
-num.names$ -- 24
-pop$ -- 573
-preamble$ -- 1
-purify$ -- 0
-quote$ -- 2
-skip$ -- 1404
-stack$ -- 0
-substring$ -- 779
-swap$ -- 1004
-text.length$ -- 27
-text.prefix$ -- 0
-top$ -- 5
-type$ -- 24
-warning$ -- 0
-while$ -- 84
-width$ -- 26
-write$ -- 257
