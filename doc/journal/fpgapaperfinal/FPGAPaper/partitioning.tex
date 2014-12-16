@@ -39,7 +39,7 @@ In our architecture, each FPGA die is identical, and therefore each die has the 
 \begin{equation}
 \forall i, \abs*{ \frac{| P1_i |}{|P1_i \cup P2_i |} - 0.5} < unbalance
 \end{equation}
-where $P1_i$ denotes the set of all blocks of type $i$ in partition 1.
+where $P1_i$ is the set of all blocks of type $i$ in partition 1.
 
 We refer to this type of per-block set of constraints as heterogeneous balance constraints. Note that there are complex legality constraints governing which LUTs and FFs can be packed into legal logic blocks, as well as which multipliers can be packed into legal DSP blocks~\cite{luu2014vtr}. As the partitioner is not aware of these constraints, flow 3 above (which runs the partitioner after function block packing) will be able to more precisely balance resource use across partitions.
 
@@ -119,7 +119,7 @@ We compare the performance of the four CAD flow variations described in Section 
 \label{fig:flows_mcw}
 \end{figure}
 
-On average, the best minimum channel width was obtained when constraining both packing and placement. However, constraining packing alone performed significantly better than constraining placement alone. This shows that the VPR packer strongly benefits from partitioning constraints when targeting an interposer-based architecture, likely because it forbids the packing of primitives that are not naturally related into one function block. Interestingly, other recent work targeting conventional FPGAs has shown that using a partitioner to guide packing benefits routability [Wenyi Feng, et al, “Rent’s Rule Based Packing for Routability Optimization,” FPGA 2014 ]. On the other hand, The VPR placement algorithm with the enhancements described in Section 4 sees only a modest routability benefit from the partitioning constraints.
+On average, the best minimum channel width was obtained when constraining both packing and placement. However, constraining packing alone performed significantly better than constraining placement alone. This shows that the VPR packer strongly benefits from partitioning constraints when targeting an interposer-based architecture, likely because it forbids the packing of primitives that are not naturally related into one function block. Interestingly, other recent work targeting conventional FPGAs has shown that using a partitioner to guide packing benefits routability\cite{feng2014rent}. On the other hand, The VPR placement algorithm with the enhancements described in Section 4 sees only a modest routability benefit from the partitioning constraints.
 
 For the same set of circuits, we computed the critical path delay at a channel width equal to 1.3x the minimum. The results are shown in Figure \ref{fig:flows_crit_path}.
 

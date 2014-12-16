@@ -157,4 +157,10 @@ G.~Karypis, ``A software package for partitioning unstructured graphs,
   matrices,'' \emph{University of Minnesota, Department of Computer Science and
   Engineering, Army HPC Research Center, Minneapolis, MN}, 2013.
 
+\bibitem{feng2014rent}
+W.~Feng, J.~Greene, K.~Vorwerk, V.~Pevzner, and A.~Kundu, ``Rent's rule based
+  fpga packing for routability optimization,'' in \emph{Proceedings of the 2014
+  ACM/SIGDA international symposium on Field-programmable gate arrays}.\hskip
+  1em plus 0.5em minus 0.4em\relax ACM, 2014, pp. 31--34.
+
 \end{thebibliography}
