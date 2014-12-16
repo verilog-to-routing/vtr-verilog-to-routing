@@ -1,0 +1,125 @@
+% GNUPLOT: LaTeX picture with Postscript
+\begingroup
+  \makeatletter
+  \providecommand\color[2][]{%
+    \GenericError{(gnuplot) \space\space\space\@spaces}{%
+      Package color not loaded in conjunction with
+      terminal option `colourtext'%
+    }{See the gnuplot documentation for explanation.%
+    }{Either use 'blacktext' in gnuplot or load the package
+      color.sty in LaTeX.}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\includegraphics[2][]{%
+    \GenericError{(gnuplot) \space\space\space\@spaces}{%
+      Package graphicx or graphics not loaded%
+    }{See the gnuplot documentation for explanation.%
+    }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+    \renewcommand\includegraphics[2][]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \@ifundefined{ifGPcolor}{%
+    \newif\ifGPcolor
+    \GPcolortrue
+  }{}%
+  \@ifundefined{ifGPblacktext}{%
+    \newif\ifGPblacktext
+    \GPblacktexttrue
+  }{}%
+  % define a \g@addto@macro without @ in the name:
+  \let\gplgaddtomacro\g@addto@macro
+  % define empty templates for all commands taking text:
+  \gdef\gplbacktext{}%
+  \gdef\gplfronttext{}%
+  \makeatother
+  \ifGPblacktext
+    % no textcolor at all
+    \def\colorrgb#1{}%
+    \def\colorgray#1{}%
+  \else
+    % gray or color?
+    \ifGPcolor
+      \def\colorrgb#1{\color[rgb]{#1}}%
+      \def\colorgray#1{\color[gray]{#1}}%
+      \expandafter\def\csname LTw\endcsname{\color{white}}%
+      \expandafter\def\csname LTb\endcsname{\color{black}}%
+      \expandafter\def\csname LTa\endcsname{\color{black}}%
+      \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+      \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+      \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+      \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+      \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+      \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+      \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+      \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+      \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+    \else
+      % gray
+      \def\colorrgb#1{\color{black}}%
+      \def\colorgray#1{\color[gray]{#1}}%
+      \expandafter\def\csname LTw\endcsname{\color{white}}%
+      \expandafter\def\csname LTb\endcsname{\color{black}}%
+      \expandafter\def\csname LTa\endcsname{\color{black}}%
+      \expandafter\def\csname LT0\endcsname{\color{black}}%
+      \expandafter\def\csname LT1\endcsname{\color{black}}%
+      \expandafter\def\csname LT2\endcsname{\color{black}}%
+      \expandafter\def\csname LT3\endcsname{\color{black}}%
+      \expandafter\def\csname LT4\endcsname{\color{black}}%
+      \expandafter\def\csname LT5\endcsname{\color{black}}%
+      \expandafter\def\csname LT6\endcsname{\color{black}}%
+      \expandafter\def\csname LT7\endcsname{\color{black}}%
+      \expandafter\def\csname LT8\endcsname{\color{black}}%
+    \fi
+  \fi
+  \setlength{\unitlength}{0.0500bp}%
+  \begin{picture}(5040.00,3600.00)%
+    \gplgaddtomacro\gplbacktext{%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,375){\makebox(0,0)[r]{\strut{}\footnotesize{24}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,864){\makebox(0,0)[r]{\strut{}\footnotesize{26}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,1353){\makebox(0,0)[r]{\strut{}\footnotesize{28}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,1843){\makebox(0,0)[r]{\strut{}\footnotesize{30}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,2332){\makebox(0,0)[r]{\strut{}\footnotesize{32}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,2821){\makebox(0,0)[r]{\strut{}\footnotesize{34}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(402,3310){\makebox(0,0)[r]{\strut{}\footnotesize{36}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(501,252){\makebox(0,0){\strut{}\footnotesize{0}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(993,252){\makebox(0,0){\strut{}\footnotesize{10}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(1485,252){\makebox(0,0){\strut{}\footnotesize{20}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(1978,252){\makebox(0,0){\strut{}\footnotesize{30}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(2470,252){\makebox(0,0){\strut{}\footnotesize{40}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(2962,252){\makebox(0,0){\strut{}\footnotesize{50}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(3454,252){\makebox(0,0){\strut{}\footnotesize{60}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(3947,252){\makebox(0,0){\strut{}\footnotesize{70}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(4439,252){\makebox(0,0){\strut{}\footnotesize{80}}}%
+      \colorrgb{0.61,0.61,0.61}%
+      \put(4931,252){\makebox(0,0){\strut{}\footnotesize{90}}}%
+      \csname LTb\endcsname%
+      \put(48,1842){\rotatebox{-270}{\makebox(0,0){\strut{}\footnotesize{\textbf{Critical Path Delay}}}}}%
+      \put(2716,42){\makebox(0,0){\strut{}\footnotesize{\textbf{\% wires cut}}}}%
+    }%
+    \gplgaddtomacro\gplfronttext{%
+      \csname LTb\endcsname%
+      \put(780,3459){\makebox(0,0)[l]{\strut{}\footnotesize{2 Partitions}}}%
+      \csname LTb\endcsname%
+      \put(2247,3459){\makebox(0,0)[l]{\strut{}\footnotesize{4 Partitions}}}%
+    }%
+    \gplbacktext
+    \put(0,0){\includegraphics{crit_path_4part}}%
+    \gplfronttext
+  \end{picture}%
+\endgroup
