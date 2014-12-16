@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  16 DEC 2014 08:17
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  16 DEC 2014 08:31
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -692,17 +692,17 @@ File: clique-eps-converted-to.pdf Graphic file (type pdf)
 Package pdftex.def Info: clique-eps-converted-to.pdf used on input line 60.
 (pdftex.def)             Requested size: 113.39923pt x 105.96599pt.
 
-<hg2g_star.pdf, id=101, 542.025pt x 406.51875pt>
+<hg2g_star.pdf, id=101, 548.0475pt x 427.5975pt>
 File: hg2g_star.pdf Graphic file (type pdf)
  <use hg2g_star.pdf>
 Package pdftex.def Info: hg2g_star.pdf used on input line 71.
-(pdftex.def)             Requested size: 113.39923pt x 85.04889pt.
+(pdftex.def)             Requested size: 113.39923pt x 88.47362pt.
 
-<hg2g_clique.pdf, id=102, 542.025pt x 406.51875pt>
+<hg2g_clique.pdf, id=102, 550.055pt x 425.59pt>
 File: hg2g_clique.pdf Graphic file (type pdf)
  <use hg2g_clique.pdf>
 Package pdftex.def Info: hg2g_clique.pdf used on input line 72.
-(pdftex.def)             Requested size: 113.39923pt x 85.04889pt.
+(pdftex.def)             Requested size: 113.39923pt x 87.74005pt.
 
 <hyperedge_cutline.pdf, id=103, 652.4375pt x 258.9675pt>
 File: hyperedge_cutline.pdf Graphic file (type pdf)
@@ -1092,7 +1092,7 @@ y7.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/te
 xmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/
 type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (16 pages, 1400804 bytes).
+Output written on fpga2014paper.pdf (16 pages, 1400645 bytes).
 PDF statistics:
  291 PDF objects out of 1000 (max. 8388607)
  191 compressed objects within 2 object streams
