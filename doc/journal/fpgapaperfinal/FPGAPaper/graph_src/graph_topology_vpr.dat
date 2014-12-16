@@ -1,0 +1,7 @@
+#type	min chan w	crit path d
+1 "\\footnotesize{clique $1$}" 268.9023036 20.28158349
+2 "\\footnotesize{clique $1/n$}" 194.2653315 19.72822862
+3 "\\footnotesize{clique $1/n^2$}" 182.2094865 20.92367681
+4 "\\footnotesize{star $1$}" 182.7401216 17.9708388
+5 "\\footnotesize{star $1/n$}" 167.3199541 18.9562563
+6 "\\footnotesize{star $1/n^2$}" 183.4577988 19.23454541

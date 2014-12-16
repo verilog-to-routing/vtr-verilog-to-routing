@@ -1,0 +1,10 @@
+# circuit	no partitioning	partitioning after packing	partitioning before packing	partitioning before+after packing
+1 "\\footnotesize{bgm}"	25.639		30.7802	     24.9615		24.8919
+2 "\\footnotesize{stereovision0}"		6.40739	     7.3254		5.56856	6.83537
+3 "\\footnotesize{stereovision1}"		7.59355	     7.68582		7.26443	6.39343
+4 "\\footnotesize{LU8PEEng}"		110.357	     110.615		111.816	109.792
+5 "\\footnotesize{mkDelayWorker32B}"	10.6873	     11.7516		8.88836	10.6595
+6 "\\footnotesize{stereovision2}"		21.0512	     21.4343		15.6279	15.5324
+7 "\\footnotesize{mcml}"			78.5424	     84.9454		82.6654	79.653
+8 "\\footnotesize{LU32PEEng}"		108.822	     112.628		113.179	114.438
+9 "\\footnotesize{geomean}"			17.12138909  18.64407335	15.86018113	16.63306574

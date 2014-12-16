@@ -1,0 +1,10 @@
+#circuit	no packing constraints	packing constraints
+"\\footnotesize{bgm}"	3152	   3158
+"\\footnotesize{stereovision0}"	   1250	1257
+"\\footnotesize{stereovision1}"	   1216	1222
+"\\footnotesize{LU8PEEng}"	   2295	2478
+"\\footnotesize{mkDelayWorker32B}" 1550	1568
+"\\footnotesize{stereovision2}"	   2935	2947
+"\\footnotesize{mcml}"		   6840	6856
+"\\footnotesize{LU32PEEng}"	   7251	8380
+"\\footnotesize{geomean}		   2656.597668	2741.543345

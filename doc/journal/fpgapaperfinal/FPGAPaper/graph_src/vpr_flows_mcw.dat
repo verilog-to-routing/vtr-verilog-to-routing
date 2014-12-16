@@ -1,0 +1,10 @@
+#circuit	no partitioning	partitioning after packing	partitioning before packing	partitioning before+after packing
+1 "\\footnotesize{bgm}"	186	236	102	106
+2 "\\footnotesize{stereovision0}"	146	156	136	96
+3 "\\footnotesize{stereovision1}"	186	172	172	174
+4 "\\footnotesize{LU8PEEng}"	226	206	126	136
+5 "\\footnotesize{mkDelayWorker32B}"	156	156	106	94
+6 "\\footnotesize{stereovision2}"	356	336	158	158
+7 "\\footnotesize{mcml}"	206	188	180	226
+8 "\\footnotesize{LU32PEEng}"	416	396	226	140
+9 "\\footnotesize{geomean}"	177.8780486	182.6885688	126.0865575	117.749378

@@ -1,0 +1,8 @@
+graph G {
+src -- dst1
+src -- dst2
+src -- dst3
+dst1 -- dst2
+dst1 -- dst3
+dst2 -- dst3
+}
