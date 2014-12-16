@@ -151,4 +151,10 @@ G.~Karypis, R.~Aggarwal, V.~Kumar, and S.~Shekhar, ``Multilevel hypergraph
   Integration (VLSI) Systems, IEEE Transactions on}, vol.~7, no.~1, pp. 69--79,
   1999.
 
+\bibitem{karypismanual}
+G.~Karypis, ``A software package for partitioning unstructured graphs,
+  partitioning meshes, and computing fill-reducing orderings of sparse
+  matrices,'' \emph{University of Minnesota, Department of Computer Science and
+  Engineering, Army HPC Research Center, Minneapolis, MN}, 2013.
+
 \end{thebibliography}
