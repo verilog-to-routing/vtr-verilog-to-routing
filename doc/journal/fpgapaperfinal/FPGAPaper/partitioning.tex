@@ -12,9 +12,7 @@ The overall CAD flow, including the partitioning steps, is shown in Figure \ref{
 \end{figure}
 
 \subsubsection{Partitioner Stage}\label{sec:partitioner_stage}
-As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. In this flow the partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new legality constraint.
-
-The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly) to a separate FPGA die. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can to pass the partition information to the placement stage as well. The post-packing placement constraints can be derived from the primitive block partitioning, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
+As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. The partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new constraint. The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly) to a separate FPGA die. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can also pass the partition information to the placement stage. The post-packing placement constraints can be derived from the primitive block partitioning constraints, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
 
 \begin{enumerate}
   \item Leaving both the packer and the placer unconstrained. This is the base flow that does not use partitioning, as described in Section \ref{cadSection}.
@@ -24,7 +22,7 @@ The second possible way to incorporate partitioning is after packing, where part
 \end{enumerate}
 
 \subsubsection{Partitioning Tool}
-Two well-known freely available graph partitioning tools are Metis~\cite{karypis1998multilevelmetis} and hMetis~\cite{karypis1999multilevelhmetis}. Metis operates on graphs, while hMetis operates on hypergraphs -- a hypergraph is a generalization of a graph, where each edge can connect any number of vertices. It is most natural to represent a circuit netlist as a hypergraph, where the vertices are netlist pins (or blocks) and the hyperedges are the nets joining the pins. Based on that criterion alone, hMetis is the most appropriate choice of partitioner. However, there are other issues to consider for the circuit netlist partitioning use case.
+Two well-known freely available graph partitioning tools are Metis~\cite{karypis1998multilevelmetis} and hMetis~\cite{karypis1999multilevelhmetis}. Metis operates on graphs, while hMetis operates on hypergraphs -- a hypergraph is a generalization of a graph, where each edge can connect any number of vertices. It is most natural to represent a circuit netlist as a hypergraph, where the vertices are netlist pins (or blocks) and the hyperedges are the nets joining the pins. Based on that criterion alone, hMetis would be the most appropriate choice of partitioner. However, there are other important criteria to consider for our use case.
 
 Graph partitioning algorithms generate partitions of a circuit while satisfying ``balance constraints''. The balance constraints exist to drive the algorithm away from the trivial partitioning solution where all vertices are in the same partition, leaving all other partitions empty. An example of a basic balance constraint is one which requires an equal number of vertices in each partition. Generally such a perfect balance overly restricts the solution, so some fractional ``unbalance'' is allowed; in this work we use $0.05$ ($5\%$). For two partitions, $P1$ and $P2$, this translates to~\cite{karypismanual}
 
@@ -34,7 +32,7 @@ Graph partitioning algorithms generate partitions of a circuit while satisfying 
 
 To derive an appropriate balance constraint for our use case, consider that FPGA circuit netlists may contain different block types such as LUTs, registers, RAM slices, and multipliers, among others. The basic balance constraint of (\ref{eq:balance_constraint}), applied to the two partition case with only LUTs and multipliers would ensure that the total block count (sum of the LUT count + multiplier count) in each partition is roughly balanced.
 
-In our architecture, each FPGA die is identical, and therefore each die has the same number of resources as every other die. However, the number of available instances of each block type is not equal -- there are usually more LUTs than multipliers, for example. The problem with the simple balance constraint in the case of multiple block types is that the capacity of each partition is not taken into account on a per-block-type basis. It is therefore possible to generate partitions that cannot be realized because the number of resources of each type is not balanced across partitions, even though the total number of resources is balanced. For example, there is nothing preventing the partitioner from moving all LUTs to partition 1 and all multipliers to partition 2, which would not be physically realizable because partition 1 may not have enough LUTs to implement the desired partitioning (and the LUTs in partition 2 would be completely unused.) A technique is to enforce a balance constraint on each type of block, $i$:
+The problem with (\ref{eq:balance_constraint}) in the case of multiple block types is that the capacity of each partition is not taken into account on a per-block-type basis. It is therefore possible to generate partitions that cannot be realized because the number of resources of each type is not balanced across partitions, even though the total number of resources is balanced. For example, there is nothing preventing the partitioner from moving all LUTs to partition 1 and all multipliers to partition 2, which would not be physically realizable because partition 1 may not have enough LUTs to implement the desired partitioning (and no LUTs in partition 2 would be used.) One solution is to enforce a balance constraint on each block type, $i$:
 
 \begin{equation}
 \forall i, \abs*{ \frac{| P1_i |}{|P1_i \cup P2_i |} - 0.5} < unbalance
@@ -43,7 +41,7 @@ where $P1_i$ is the set of all blocks of type $i$ in partition 1.
 
 We refer to this type of per-block set of constraints as heterogeneous balance constraints. Note that there are complex legality constraints governing which LUTs and FFs can be packed into legal logic blocks, as well as which multipliers can be packed into legal DSP blocks~\cite{luu2014vtr}. As the partitioner is not aware of these constraints, flow 3 above (which runs the partitioner after function block packing) will be able to more precisely balance resource use across partitions.
 
-The latest public version of hMetis does not support heterogeneous balance constraints, thourgh Metis does. Metis was used in our CAD flow. However, as discussed earlier, the circuit netlist is most naturally represented as a hypergraph, and so it needs to be transformed to a graph before Metis can process it.
+The latest public version of hMetis does not support heterogeneous balance constraints, though Metis does. Metis was used in our CAD flow. However, as discussed earlier, the circuit netlist is most naturally represented as a hypergraph, and so it needs to be transformed to a graph before Metis can process it.
 
 \subsubsection{Hypergraph to Graph Transformation}\label{sec:hypergraph_to_graph}
 We transformed the circuit netlist hypergraph to a graph in the following way:
@@ -52,7 +50,7 @@ We transformed the circuit netlist hypergraph to a graph in the following way:
 \item We combined all of the per-net subgraphs, summing the edge weights for edges appearing in more than one per-net subgraph, to generate the total netlist graph.
 \end{enumerate}
 
-We explored several ways to generate the per-net subgraphs. The two parameters in this operation are the graph topology and the edge weight scheme. We considered two subgraph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}.
+We explored several ways to generate the per-net subgraphs. The two parameters in this operation are the graph topology and the edge weight scheme. We considered two subgraph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$.
 
 \begin{figure}[!htbp]
 \centering
@@ -62,9 +60,9 @@ We explored several ways to generate the per-net subgraphs. The two parameters i
 \label{fig:star_clique}
 \end{figure}
 
-We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$. Note that the vertices in the generated total netlist graph are the same as the vertices in the original circuit netlist hypergraph.
 
-Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two nets is transformed into its component subgraphs.
+
+Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two nets is transformed into its component subgraphs. TODO JAVEED: Maybe just show star 1/n from start to finish.
 
 \begin{figure}[!htbp]
 \centering
@@ -102,7 +100,7 @@ To validate the choice of hyperedge cutsize as a proxy for circuit routability, 
 \centering
 \input{graph_topology_mcw}
 %\includegraphics[width=\linewidth]{graph_topology_mcw.eps}
-\caption{Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge.}
+\caption{Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge. TODO JAVEED: Which circuits?}
 \label{fig:graph_topology_mcw}
 \end{figure}
 
