@@ -38,7 +38,7 @@ DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++11
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++0x
 
 UNAME := $(shell uname)
 # determine build env
