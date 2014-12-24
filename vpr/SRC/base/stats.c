@@ -31,7 +31,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		float R_minW_nmos, float R_minW_pmos,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		boolean timing_analysis_enabled,
-		float **net_delay, t_slack * slacks) {
+		float **net_delay, t_slack * slacks, const t_timing_inf &timing_inf) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
@@ -81,7 +81,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 
 			load_timing_graph_net_delays(net_delay);
 
-			do_timing_analysis(slacks, FALSE, TRUE);
+			do_timing_analysis(slacks, timing_inf, FALSE, TRUE);
 
 			if (getEchoEnabled()) {
 				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
@@ -91,7 +91,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 			}
 
 			print_slack(slacks->slack, TRUE, getOutputFileName(E_SLACK_FILE));
-			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE));
+			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
 
 			print_timing_stats();
 		}

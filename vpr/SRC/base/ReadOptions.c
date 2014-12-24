@@ -42,6 +42,7 @@ static char **ReadBaseCostType(INP char **Args,
 		OUTP enum e_base_cost_type *BaseCostType);
 static char **ReadRouteType(INP char **Args, OUTP enum e_route_type *Type);
 static char **ReadString(INP char **Args, OUTP char **Val);
+static char **ReadChar(INP char **Args, OUTP char *Val);
 
 /******** Globally Accessible Function ********/
 /* Determines whether timing analysis should be on or off. 
@@ -95,7 +96,6 @@ boolean IsPostSynthesisEnabled(INP t_options *Options) {
   }
   return FALSE;
 }
-
 
 void setAllEchoFileEnabled(boolean value) {
 	int i;
@@ -351,6 +351,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_ROUTE:
 	case OT_PLACE:
 		return Args;
+    case OT_SLACK_DEFINITION:
+        return ReadChar(Args, &Options->SlackDefinition);
 	case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
 		return ReadFloat(Args, &Options->constant_net_delay);
 	case OT_FAST:
@@ -1043,4 +1045,14 @@ ReadString(INP char **Args, OUTP char **Val) {
 	return ++Args;
 }
 
+static char **
+ReadChar(INP char **Args, OUTP char *Val) {
+    if (NULL == *Args) {
+        Error(*Args);
+    }
+
+    *Val = (*Args)[0];
+
+    return ++Args;
+}
 

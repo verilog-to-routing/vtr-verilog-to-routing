@@ -87,7 +87,6 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 	boolean done;
 	boolean add_truth_table;
 	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
-	clock_t begin, end;
     int error_count = 0;
 
 	blif = fopen(blif_file, "r");
@@ -100,20 +99,7 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 
 	/* doall = 0 means do a counting pass, doall = 1 means allocate and load data structures */
 	for (doall = 0; doall <= 1; doall++) {
-		begin = clock();
-
 		init_parse(doall, read_activity_file);
-
-		end = clock();
-#ifdef CLOCKS_PER_SEC
-		vpr_printf_info("Loop for doall = %d, init_parse took %g seconds.\n",
-				doall, (float) (end - begin) / CLOCKS_PER_SEC);
-#else
-		vpr_printf_info("Loop for doall = %d, init_parse took %g seconds.\n", doall,
-				(float)(end - begin) / CLK_PER_SEC);
-#endif
-
-		begin = clock();
 		done = FALSE;
 		add_truth_table = FALSE;
 		model_lines = 0;
@@ -122,16 +108,6 @@ static void read_blif(char *blif_file, boolean sweep_hanging_nets_and_inputs,
 					outpad_model, logic_model, latch_model, user_models);
 		}
 		rewind(blif); /* Start at beginning of file again */
-
-		end = clock();
-#ifdef CLOCKS_PER_SEC
-		vpr_printf_info("Loop for doall = %d took %g seconds.\n", doall,
-				(float) (end - begin) / CLOCKS_PER_SEC);
-#else
-		vpr_printf_info("Loop for doall = %d took %g seconds.\n", doall,
-				(float)(end - begin) / CLK_PER_SEC);
-#endif
-
 	}
 
 	/*checks how well the hash function is performing*/

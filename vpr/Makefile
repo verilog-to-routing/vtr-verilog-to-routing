@@ -32,13 +32,13 @@ OTHER_DIR := $(OTHER_DIR) \
 	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g 
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++0x
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++11
 
 UNAME := $(shell uname)
 # determine build env

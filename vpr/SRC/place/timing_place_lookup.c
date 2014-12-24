@@ -1104,11 +1104,8 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 			original_num_nets, original_num_blocks, original_vnet);
 
     clock_t end = clock();
-#ifdef CLOCKS_PER_SEC
+
     float time = (float) (end - begin) / CLOCKS_PER_SEC;
-#else
-    float time = (float) (end - begin) / CLK_PER_SEC;
-#endif
 	vpr_printf_info("Placement delay look-up took %g seconds\n", time);
 }
 

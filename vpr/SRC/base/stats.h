@@ -3,7 +3,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 		float R_minW_nmos, float R_minW_pmos,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		boolean timing_analysis_enabled,
-		float **net_delay, t_slack * slacks);
+		float **net_delay, t_slack * slacks, const t_timing_inf &timing_inf);
 
 void print_wirelen_prob_dist(void);
 

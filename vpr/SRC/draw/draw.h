@@ -5,7 +5,7 @@
 #include "graphics.h"
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
-		boolean crit_path_button_enabled);
+		boolean crit_path_button_enabled, const t_timing_inf &timing_inf);
 
 void alloc_draw_structs(void);
 

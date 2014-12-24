@@ -399,7 +399,9 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 	}
 	power_low = i_ds * g_power_tech->Vdd;
 
-	if (!over_range) {
+    if (over_range) {
+        return power_low;
+    } else {
 		power_find_nmos_leakage(nmos_high, &lower, &upper, v_ds);
 		if (lower->v_ds == v_ds || !upper) {
 			i_ds = lower->i_ds;
@@ -409,11 +411,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 			i_ds = (1 - perc_upper) * lower->i_ds + perc_upper * upper->i_ds;
 		}
 		power_high = i_ds * g_power_tech->Vdd;
-	}
 
-	if (over_range) {
-		return power_low;
-	} else {
 		float perc_upper = (size - nmos_low->nmos_size)
 				/ (nmos_high->nmos_size - nmos_low->nmos_size);
 		return power_high * perc_upper + power_low * (1 - perc_upper);
@@ -643,7 +641,9 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 	}
 	v_out_low = in_prob_avg * v_out_max + (1 - in_prob_avg) * v_out_min;
 
-	if (!over_range) {
+    if (over_range) {
+        return v_out_low;
+    } else {
 		mux_volt_inf_high = &mux_nmos_inf_upper->mux_voltage_inf[num_inputs];
 		power_find_mux_volt_inf(&lower, &upper, mux_volt_inf_high, v_in);
 		if (lower->v_in == v_in || !upper) {
@@ -658,11 +658,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 					+ perc_upper * upper->v_out_max;
 		}
 		v_out_high = in_prob_avg * v_out_max + (1 - in_prob_avg) * v_out_min;
-	}
 
-	if (over_range) {
-		return v_out_low;
-	} else {
 		float perc_upper =
 				(transistor_size - mux_nmos_inf_lower->nmos_size)
 						/ (mux_nmos_inf_upper->nmos_size

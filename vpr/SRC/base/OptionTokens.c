@@ -18,6 +18,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "gen_postsynthesis_netlist", OT_GENERATE_POST_SYNTHESIS_NETLIST }, 
 		{ "timing_analysis", OT_TIMING_ANALYSIS }, 
 		{ "timing_analyze_only_with_net_delay", OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY },
+        { "slack_definition", OT_SLACK_DEFINITION },
 		{ "init_t", OT_INIT_T }, 
 		{ "alpha_t", OT_ALPHA_T }, 
 		{ "exit_t", OT_EXIT_T }, 

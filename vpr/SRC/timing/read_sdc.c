@@ -263,6 +263,8 @@ void read_sdc(t_timing_inf timing_inf) {
     //Frees sdc_commands and children
     sdc_parse_cleanup(); 
 
+    fclose(sdc);
+
 	return;
 }
 
@@ -655,7 +657,9 @@ static void use_default_timing_constraints(void) {
 		/* Create one constrained clock with period 0... */
 		g_sdc->domain_constraint = (float **) alloc_matrix(0, 0, 0, 0, sizeof(float));
 		g_sdc->domain_constraint[0][0] = 0.;
-				
+		
+        vpr_printf_info("\n");
+
 		if (g_sdc->num_constrained_clocks == 0) {
 			/* We need to create a virtual clock to constrain I/Os on. */
 			g_sdc->num_constrained_clocks = 1;
@@ -663,20 +667,20 @@ static void use_default_timing_constraints(void) {
 			g_sdc->constrained_clocks[0].name = my_strdup("virtual_io_clock");
 			g_sdc->constrained_clocks[0].is_netlist_clock = FALSE;
 
-			vpr_printf_info("\n");
+            /* Constrain all I/Os on the virtual clock, with I/O delay 0. */
+            count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
+
 			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
 			vpr_printf_info("Optimize this virtual clock to run as fast as possible.\n");
 		} else {
-			vpr_printf_info("\n");
+            /* Constrain all I/Os on the single netlist clock, with I/O delay 0. */
+            count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
+
 			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
 			vpr_printf_info("Optimize this clock to run as fast as possible.\n");
 		}
-		
-		/* Constrain all I/Os on the single constrained clock (whether real or virtual), with I/O delay 0. */
-		count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
-
 	} else { /* Multiclock circuit */
 
 		/* Constrain all I/Os on a separate virtual clock. Cut paths between all netlist

@@ -183,15 +183,10 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
 bool check_my_atof_2D(INP int max_i, INP int max_j,
 		INP char *instring, OUTP int * num_entries){
 
-	int i, j, entry_count;
-	char* cur;
-	bool in_str;
-
 	/* Check if max_i * max_j matches number of entries in instring */
-	cur = instring;
-	i = j = 0;
-	in_str = FALSE;
-	entry_count = 0;
+	char *cur = instring;
+	bool in_str = FALSE;
+	int entry_count = 0;
 
 	/* First count number of entries in instring */
 	while (*cur != '\0'){

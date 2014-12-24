@@ -22,6 +22,7 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch);
 
 void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	vpr_printf_info("Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
+    vpr_printf_info("Slack definition: %c\n", vpr_setup.Timing.slack_definition);
 
 	vpr_printf_info("Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile);
 	vpr_printf_info("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile);

@@ -16,6 +16,8 @@
 using namespace std;
 
 #include "vpr_api.h"
+#include "util.h" /* for CLOCKS_PER_SEC */
+#include "path_delay.h" /* for timing_analysis_runtime */
 
 /**
  * VPR program
@@ -29,6 +31,7 @@ using namespace std;
  * 3.  Place-and-route and timing analysis
  * 4.  Clean up
  */
+
 int main(int argc, char **argv) {
 	t_options Options;
 	t_arch Arch;
@@ -36,6 +39,7 @@ int main(int argc, char **argv) {
 	clock_t entire_flow_begin,entire_flow_end;
 
 	entire_flow_begin = clock();
+
 	try{
 		/* Read options, architecture, and circuit netlist */
 		vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
@@ -60,14 +64,10 @@ int main(int argc, char **argv) {
 		}
 	
 		entire_flow_end = clock();
-	
-		#ifdef CLOCKS_PER_SEC
-			vpr_printf_info("The entire flow of VPR took %g seconds.\n", 
-					(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
-		#else
-			vpr_printf_info("The entire flow of VPR took %g seconds.\n", 
-					(float)(entire_flow_end - entire_flow_begin) / CLK_PER_SEC);
-		#endif
+
+        vpr_printf_info("Timing analysis took %g seconds.\n", float(timing_analysis_runtime) / CLOCKS_PER_SEC);
+		vpr_printf_info("The entire flow of VPR took %g seconds.\n", 
+				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
 		/* free data structures */
 		vpr_free_all(Arch, Options, vpr_setup);

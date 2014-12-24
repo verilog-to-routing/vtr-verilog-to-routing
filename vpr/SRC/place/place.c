@@ -285,14 +285,14 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay);
+	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
 	int num_connections, t_slack * slacks, float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
-	float * place_delay_value, float ** net_delay);
+    float * place_delay_value, float ** net_delay, const t_timing_inf &timing_inf);
 
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
@@ -361,11 +361,11 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_constant_net_delay(net_delay, place_delay_value);
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, TRUE);
+		do_timing_analysis(slacks, timing_inf, FALSE, TRUE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
-				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH));
+				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH), timing_inf);
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS))
 				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS));
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS))
@@ -377,7 +377,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		load_constant_net_delay(net_delay, 0);
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, TRUE);
+		do_timing_analysis(slacks, timing_inf, FALSE, TRUE);
 
 #endif
 
@@ -435,7 +435,7 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, FALSE);
+		do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
 		load_criticalities(slacks, crit_exponent);
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
@@ -522,7 +522,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
-	update_screen(MAJOR, msg, PLACEMENT, FALSE);
+	update_screen(MAJOR, msg, PLACEMENT, FALSE, timing_inf);
 
 
 	/* Outer loop of the simmulated annealing begins */
@@ -535,12 +535,12 @@ void try_place(struct s_placer_opts placer_opts,
 
 		outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, num_connections, slacks, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y, &delay_cost,
-			&place_delay_value, net_delay);
+			&place_delay_value, net_delay, timing_inf);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -620,7 +620,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
-		update_screen(MINOR, msg, PLACEMENT, FALSE);
+		update_screen(MINOR, msg, PLACEMENT, FALSE, timing_inf);
 		update_rlim(&rlim, success_rat);
 
 		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
@@ -640,7 +640,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
 
 	t = 0; /* freeze out */
 
@@ -649,7 +649,7 @@ void try_place(struct s_placer_opts placer_opts,
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, num_connections, slacks, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y, &delay_cost,
-			&place_delay_value, net_delay);
+			&place_delay_value, net_delay, timing_inf);
 
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
@@ -703,7 +703,7 @@ void try_place(struct s_placer_opts placer_opts,
 		 *the same values that the placer is using*/
 		load_timing_graph_net_delays(net_delay);
 
-		do_timing_analysis(slacks, FALSE, FALSE);
+		do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
@@ -715,7 +715,7 @@ void try_place(struct s_placer_opts placer_opts,
 			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
 			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))
-				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH));
+				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH), timing_inf);
 		}
 
 		/* Print critical path delay. */
@@ -728,7 +728,7 @@ void try_place(struct s_placer_opts placer_opts,
 			cost, bb_cost, timing_cost, width_fac);
 	vpr_printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
 			cost, bb_cost, timing_cost, delay_cost);
-	update_screen(MAJOR, msg, PLACEMENT, FALSE);
+	update_screen(MAJOR, msg, PLACEMENT, FALSE, timing_inf);
 	 
 	// Print out swap statistics
 	total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
@@ -764,7 +764,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay) {
+	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf) {
 
 	if (placer_opts.place_algorithm != NET_TIMING_DRIVEN_PLACE
 			&& placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
@@ -786,7 +786,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 		 *because it accesses point_to_point_delay array */
 
 		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, FALSE, FALSE);
+		do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
 		load_criticalities(slacks, crit_exponent);
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
@@ -807,7 +807,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	int num_connections, t_slack * slacks, float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
-	float * place_delay_value, float ** net_delay) {
+	float * place_delay_value, float ** net_delay, const t_timing_inf &timing_inf) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -871,7 +871,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				 * criticalities; then update the timing cost since it will change.
 				 */
 				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, FALSE, FALSE);
+				do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
 				load_criticalities(slacks, crit_exponent);
 				comp_td_costs(timing_cost, delay_cost);
 			}

@@ -20,17 +20,15 @@ using namespace std;
 
 #include <assert.h>
 
-#include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
 #include "graphics.h"
 #include "path_delay.h"
 #include "draw.h"
 #include "read_xml_arch_file.h"
-#include "util.h"
-#include "draw_types.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
+#include "create_button.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
@@ -58,7 +56,7 @@ using namespace std;
 static void toggle_nets(void (*drawscreen)(void));
 static void toggle_rr(void (*drawscreen)(void));
 static void toggle_congestion(void (*drawscreen)(void));
-static void highlight_crit_path(void (*drawscreen_ptr)(void));
+static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf &timing_inf);
 
 static void drawscreen(void);
 static void redraw_screen(void);
@@ -155,7 +153,7 @@ void init_graphics_state(boolean show_graphics_val, int gr_automode_val,
 }
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
-		boolean crit_path_button_enabled) {
+		boolean crit_path_button_enabled, const t_timing_inf &timing_inf) {
 
 	/* Updates the screen if the user has requested graphics.  The priority  *
 	 * value controls whether or not the Proceed button must be clicked to   *
@@ -178,7 +176,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
-				create_button("Congestion", "Crit. Path", highlight_crit_path);
+				create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);
 			}
 		} 
 		else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
@@ -197,7 +195,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
-				create_button("Congestion", "Crit. Path", highlight_crit_path);
+				create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);
 			}
 		}
 	}
@@ -247,11 +245,7 @@ static void drawscreen() {
 #ifdef WIN32
 	drawscreen_end = clock();
 
-	#ifdef CLOCKS_PER_SEC /* This macro has to do with the version of compiler being used */
-		printf("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
-	#else
-		printf("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLK_PER_SEC);
-	#endif
+	printf("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
 
 #else /* X11 */
 	struct timeval end;
@@ -412,7 +406,7 @@ void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
+static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf &timing_inf) {
 
 	/* Highlights all the blocks and nets on the critical path. */
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -433,7 +427,7 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
 		return;
 	}
 
-	critical_path_head = allocate_and_load_critical_path();
+	critical_path_head = allocate_and_load_critical_path(timing_inf);
 	critical_path_node = critical_path_head;
 	num_nets_seen = 0;
 
@@ -2693,7 +2687,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	int opin_grid_x, opin_grid_y, opin_pin_num;
 	int ipin_grid_x, ipin_grid_y, ipin_pin_num;
 	int width_offset, height_offset;
-	boolean found;
+	bool found;
 	float x1, x2, y1, y2;
 	float xend, yend;
 	enum e_side iside, pin_side;
@@ -2716,7 +2710,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	opin_pin_num = rr_node[opin_node].get_ptc_num();
 	type = grid[opin_grid_x][opin_grid_y].type;
 	
-	found = FALSE;
+	found = false;
 	for (int width = 0; width < type->width && !found; ++width) {
 		for (int height = 0; height < type->height && !found; ++height) {
 			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
@@ -2725,7 +2719,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 					width_offset = width;
 					height_offset = height;
 					pin_side = iside;
-					found = TRUE;
+					found = true;
 				}
 			}
 		}

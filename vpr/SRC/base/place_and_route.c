@@ -87,11 +87,9 @@ boolean place_and_route(enum e_operation operation,
 				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
 		print_place(place_file, net_file, arch_file);
 		end = clock();
-#ifdef CLOCKS_PER_SEC
+
 		vpr_printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
-#else
-		vpr_printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
-#endif
+
 	}
 	begin = clock();
 	post_place_sync(num_blocks, block);
@@ -164,7 +162,7 @@ boolean place_and_route(enum e_operation operation,
 					det_routing_arch->R_minW_pmos,
 					det_routing_arch->directionality,
 					det_routing_arch->wire_to_rr_ipin_switch,
-					timing_inf.timing_analysis_enabled, net_delay, slacks);
+					timing_inf.timing_analysis_enabled, net_delay, slacks, timing_inf);
 
 			print_route(route_file);
 
@@ -176,7 +174,7 @@ boolean place_and_route(enum e_operation operation,
 		}
 
 		init_draw_coords(max_pins_per_clb);
-		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
+		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 		
 		if (timing_inf.timing_analysis_enabled) {
 			assert(slacks->slack);
@@ -213,11 +211,9 @@ boolean place_and_route(enum e_operation operation,
 	free_blk_pin_from_port_pin();
 
 	end = clock();
-#ifdef CLOCKS_PER_SEC
+
 	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
-#else
-	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
-#endif
+
 
 	/*WMF: cleaning up memory usage */
 
@@ -536,7 +532,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
 			det_routing_arch->R_minW_pmos, det_routing_arch->directionality,
 			det_routing_arch->wire_to_rr_ipin_switch,
-			timing_inf.timing_analysis_enabled, net_delay, slacks);
+			timing_inf.timing_analysis_enabled, net_delay, slacks, timing_inf);
 
 	print_route(route_file);
 
@@ -546,7 +542,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	init_draw_coords(max_pins_per_clb);
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
-	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
+	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 
 	if (timing_inf.timing_analysis_enabled) {
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {

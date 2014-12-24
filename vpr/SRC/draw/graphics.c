@@ -2,15 +2,21 @@
 * Easygl Version 3.0                                                       *
 * Written by Vaughn Betz at the University of Toronto, Department of       *
 * Electrical and Computer Engineering, with additions by Paul Leventis     *
-* and William Chow of Altera, Guy Lemieux of the University of Brish       *
-* Columbia, Long Yu (Mike) Wang of the University of Toronto, and          *
-* Matthew J.P. Walker of the University of Toronto                         *
+* and William Chow of Altera, Guy Lemieux of the University of British     *
+* Columbia, and Long Yu (Mike) Wang, Matthew J.P. Walker and Michael       *
+* Wainberg of the University of Toronto.                                   *
 * All rights reserved by U of T, etc.                                      *
 *                                                                          *
 * You may freely use this graphics interface for non-commercial purposes   *
 * as long as you leave the author info above in it.                        *
 *                                                                          *
 * Revision History:                                                        *
+*                                                                          *
+* V3.0.1 December 2014 (Michael Wainberg)                                  *
+* - converted create_button to variadic template (moved to                 *
+*   create_button.h) to allow additional arguments to be passed to button  *
+*   callbacks                                                              *
+* - converted button array to std::vector, simplifying button bookkeeping  *
 *                                                                          *
 * V3.0 May 2014 - June 2014 (Matthew J.P. Walker)                          *
 * - continued integration with c++                                         *
@@ -197,7 +203,6 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <string>
 #include <iostream>
 #include <algorithm>
@@ -210,6 +215,7 @@ using namespace std;
 
 #ifndef NO_GRAPHICS  // Strip everything out and just put in stubs if NO_GRAPHICS defined
 
+#include "create_button.h"
 
 #if defined(X11) || defined(WIN32)
 
@@ -246,28 +252,10 @@ using namespace std;
 
 #define PI				3.141592654
 
-#define BUTTON_TEXT_LEN	100
 #define BUFSIZE			1000
 
 #define ZOOM_FACTOR  1.6667 /* For zooming on the graphics */
 #endif
-
-#ifdef X11
-
-/*********************************************
- * X-Windows Specific Preprocessor Directives *
- *********************************************/
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xos.h>
-#include <X11/Xatom.h>
-#include <X11/Xft/Xft.h>
-
-/* Uncomment the line below if your X11 header files don't define XPointer */
-/* typedef char *XPointer;                                                 */
-
-#endif /* X11 Preprocessor Directives */
 
 #ifdef WIN32
 
@@ -276,13 +264,6 @@ using namespace std;
  *************************************************************/
 
 #pragma warning(disable : 4996)   // Turn off annoying warnings about strcmp.
-
-#ifndef UNICODE
- #define UNICODE // force windows api into unicode (usually UTF-16) mode.
-#endif
-
-#include <windows.h>
-#include <WindowsX.h>
 
 /* Using large values of pixel limits in order to preserve the slope of diagonal 
  * lines when their endpoints are clipped (one at a time) to these pixel limits.
@@ -344,6 +325,13 @@ typedef XftFont* font_ptr;
 #endif
 
 #ifdef WIN32
+
+#ifndef UNICODE
+#define UNICODE // force windows api into unicode (usually UTF-16) mode.
+#endif
+#include <windows.h>
+#include <WindowsX.h>
+
 
 /*************************************************************
  * WIN32 Structure Definitions                               *
@@ -409,59 +397,6 @@ typedef enum {
 	SCREEN = 0,
 	POSTSCRIPT = 1
 } t_display_type;
-
-
-/* Indicates if this button displays text, a polygon or is just a separator.
- */
-typedef enum {
-	BUTTON_TEXT = 0,
-	BUTTON_POLY,
-	BUTTON_SEPARATOR
-} t_button_type;
-
-
-/* Structure used to define the buttons on the right hand side of the main window (menu region).
- * width, height: button size, in pixels.
- * xleft, ytop: coordinates, in pixels, of the top-left corner of the button relative to its
- *    containing (menu) window.
- * fcn: a callback function that is called when the button is pressed. This function takes one 
- *    argument, a function pointer to the routine that can draw the graphics area (user routine).
- * win, hwnd:  X11 and Win32 data pointer to the window, respectively.
- * button_type: indicates if this button displays text, a polygon or is just a separator.
- * text: the text to display if this is a text button.
- * poly: the polygon (up to 3 points right now) to display if this is a polygon button
- * is_pressed: has the button been pressed, and is currently executing its callback?
- * is_enabled: can you press this button right now? Visually will look "pushed in" when
- *      not enabled, and won't respond to clicks.
- */
-typedef struct {
-	int width;
-	int height;
-	int xleft;
-	int ytop;
-	void(*fcn) (void(*drawscreen) (void));
-#ifdef X11
-	Window win;
-	XftDraw* draw;
-#else
-	HWND hwnd;
-#endif
-	t_button_type type;
-	char text[BUTTON_TEXT_LEN];
-	int poly[3][2];
-	bool ispressed;
-	bool enabled;
-} t_button;
-
-
-/* Structure used to store all the buttons created in the menu region.
- * button: array of pointers to all the buttons created [0..num_buttons-1]
- * num_buttons: number of menu buttons created
- */
-typedef struct {
-	t_button *button;
-	int num_buttons;
-} t_button_state;
 
 /**
  * This is a class that caches fonts. It separates out unrotated and rotated fonts,
@@ -612,14 +547,16 @@ typedef struct {
 } t_panning_state;
 
 /*********************************************************************
+ *        Global variables.
+ *********************************************************************/
+
+std::vector<t_button> buttons;
+
+/*********************************************************************
  *        File scope variables.              *
  *********************************************************************/
 
 static t_gl_state gl_state;
-
-// Stores all the menu buttons created. Initialize the button pointer 
-// and num_buttons for safety.
-static t_button_state button_state = {NULL, 0};
 
 // Contains all coordinates useful for graphics transformation
 static t_transform_coordinates trans_coord;
@@ -729,9 +666,6 @@ static t_win32_state win32_state = {false, WINDOW_DEACTIVATED, -1};
  *       Common Subroutine Declarations      *
  *********************************************/
 
-static void *my_malloc(int ibytes);
-static void *my_realloc(void *memblk, int ibytes);
-
 /* translation from screen coordinates to the world coordinates *
  * used by the client program.                                  */
 static float xscrn_to_world(int x);
@@ -780,10 +714,7 @@ static void handle_zoom_out (float x, float y, void (*drawscreen) (void));
 static void zoom_fit (void (*drawscreen) (void));
 static void adjustwin (void (*drawscreen) (void)); 
 static void postscript (void (*drawscreen) (void));
-static void proceed (void (*drawscreen) (void));
 static void quit (void (*drawscreen) (void)); 
-static void map_button (int bnum); 
-static void unmap_button (int bnum);
 
 #ifdef X11
 
@@ -880,7 +811,7 @@ COLORREF convert_to_win_color(const t_color& src);
 
 
 /* safer malloc */
-static void *my_malloc(int ibytes) {
+void *safe_malloc(int ibytes) {
 	void *mem;
 	
 	mem = (void*)malloc(ibytes);
@@ -893,17 +824,17 @@ static void *my_malloc(int ibytes) {
 }
 
 
-/* safer realloc */
-static void *my_realloc(void *memblk, int ibytes) {
-	void *mem;
-	
-	mem = (void*)realloc(memblk, ibytes);
-	if (mem == NULL) {
-		printf("memory allocation failed!");
-		exit(-1);
-	}
+/* safer calloc */
+void *safe_calloc(int ibytes) {
+    void *mem;
 
-	return mem;
+    mem = (void*)calloc(1, ibytes);
+    if (mem == NULL) {
+        printf("memory allocation failed!");
+        exit(-1);
+    }
+
+    return mem;
 }
 
 
@@ -1351,10 +1282,10 @@ static void setpoly (int bnum, int xc, int yc, int r, float theta)
 {
 	int i;
 	
-	button_state.button[bnum].type = BUTTON_POLY;
+	buttons[bnum].type = BUTTON_POLY;
 	for (i=0;i<3;i++) {
-		button_state.button[bnum].poly[i][0] = (int) (xc + r*cos(theta) + 0.5);
-		button_state.button[bnum].poly[i][1] = (int) (yc + r*sin(theta) + 0.5);
+		buttons[bnum].poly[i][0] = (int) (xc + r*cos(theta) + 0.5);
+		buttons[bnum].poly[i][1] = (int) (yc + r*sin(theta) + 0.5);
 		theta += (float)(2*PI/3);
 	}
 }
@@ -1362,42 +1293,42 @@ static void setpoly (int bnum, int xc, int yc, int r, float theta)
 
 
 /* Maps a button onto the screen and set it up for input, etc.        */
-static void map_button (int bnum) 
+void map_button (int bnum) 
 {
-	button_state.button[bnum].ispressed = 0;
+	buttons[bnum].ispressed = 0;
 
-	if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
+	if (buttons[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
-		button_state.button[bnum].win = XCreateSimpleWindow(
+		buttons[bnum].win = XCreateSimpleWindow(
 			x11_state.display,x11_state.menu,
-			button_state.button[bnum].xleft,
-			button_state.button[bnum].ytop,
-			button_state.button[bnum].width,
-			button_state.button[bnum].height, 0,
+			buttons[bnum].xleft,
+			buttons[bnum].ytop,
+			buttons[bnum].width,
+			buttons[bnum].height, 0,
 			predef_colors[WHITE].as_rgb_int(),
 			predef_colors[LIGHTGREY].as_rgb_int()
 		);
 
-		XMapWindow (x11_state.display, button_state.button[bnum].win);
-		XSelectInput (x11_state.display, button_state.button[bnum].win, ButtonPressMask);
-		button_state.button[bnum].draw = XftDrawCreate(
+		XMapWindow (x11_state.display, buttons[bnum].win);
+		XSelectInput (x11_state.display, buttons[bnum].win, ButtonPressMask);
+		buttons[bnum].draw = XftDrawCreate(
 			x11_state.display,
-			button_state.button[bnum].win,
+			buttons[bnum].win,
 			x11_state.visual_info.visual,
 			x11_state.colormap_to_use
 		);
 #else
 		wchar_t* WIN32_wchar_button_text = new wchar_t[BUTTON_TEXT_LEN];
-			MultiByteToWideChar(CP_UTF8, 0, button_state.button[bnum].text, -1,
+			MultiByteToWideChar(CP_UTF8, 0, buttons[bnum].text, -1,
 				WIN32_wchar_button_text, BUTTON_TEXT_LEN);
-		button_state.button[bnum].hwnd = CreateWindowW(
+		buttons[bnum].hwnd = CreateWindowW(
 			L"button",
 			WIN32_wchar_button_text,
 			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-			button_state.button[bnum].xleft,
-			button_state.button[bnum].ytop,
-			button_state.button[bnum].width,
-			button_state.button[bnum].height,
+			buttons[bnum].xleft,
+			buttons[bnum].ytop,
+			buttons[bnum].width,
+			buttons[bnum].height,
 			win32_state.hButtonsWnd, (HMENU)(200+bnum),
 			(HINSTANCE) GetWindowLong(win32_state.hMainWnd, GWL_HINSTANCE),
 			NULL
@@ -1413,9 +1344,9 @@ static void map_button (int bnum)
 	}
 	else {   // Separator, not a button.
 #ifdef X11
-		button_state.button[bnum].win = -1;
+		buttons[bnum].win = -1;
 #else // WIN32
-		button_state.button[bnum].hwnd = NULL;
+		buttons[bnum].hwnd = NULL;
 		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hButtonsWnd))
@@ -1425,15 +1356,15 @@ static void map_button (int bnum)
 }
 
 
-static void unmap_button (int bnum) 
+void unmap_button (int bnum) 
 {
 	/* Unmaps (removes) a button from the screen.        */
-	if (button_state.button[bnum].type != BUTTON_SEPARATOR) {
+	if (buttons[bnum].type != BUTTON_SEPARATOR) {
 #ifdef X11
-		XUnmapWindow (x11_state.display, button_state.button[bnum].win);
-		XftDrawDestroy(button_state.button[bnum].draw);
+		XUnmapWindow (x11_state.display, buttons[bnum].win);
+		XftDrawDestroy(buttons[bnum].draw);
 #else
-		if(!DestroyWindow(button_state.button[bnum].hwnd))
+		if(!DestroyWindow(HWND(buttons[bnum].hwnd)))
 			WIN32_DRAW_ERROR();
 		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
 			WIN32_DRAW_ERROR();
@@ -1441,83 +1372,6 @@ static void unmap_button (int bnum)
 			WIN32_DRAW_ERROR();
 #endif
 	}
-}
-
-
-/* Creates a new button below the button containing prev_button_text.       *
-* The text and button function are set according to button_text and        *
-* button_func, respectively.                                               */
-void create_button (const char *prev_button_text , const char *button_text, 
-					void (*button_func) (void (*drawscreen) (void))) 
-{
-	int i, bnum, space, bheight;
-	t_button_type button_type = BUTTON_TEXT;
-
-	
-	space = 8;
-	
-	/* Only allow new buttons that are text or separator (not poly) types.                  
-    * They can also only go after buttons that are text buttons.
-    */
-	
-	bnum = -1;
-      
-	for (i=0; i < button_state.num_buttons;i++) {
-		if (button_state.button[i].type == BUTTON_TEXT && 
-			strcmp (button_state.button[i].text, prev_button_text) == 0) {
-			bnum = i + 1;
-			break;
-		}
-	}
-	
-	if (bnum == -1) {
-		printf ("Error in create_button:  button with text %s not found.\n",
-			prev_button_text);
-		exit (1);
-	}
-	
-	button_state.button = (t_button *) my_realloc (button_state.button, 
-												   (button_state.num_buttons+1) * sizeof (t_button));
-	/* NB:  Requirement that you specify the button that this button goes under *
-	* guarantees that button[num_buttons-2] exists and is a text button.       */
-	
-   /* Special string to make a separator. */
-	if (!strncmp(button_text, "---", 3)) {
-		bheight = 2;
-		button_type = BUTTON_SEPARATOR;
-	}
-	else
-		bheight = 26;
-
-	for (i=button_state.num_buttons;i>bnum;i--) {
-		button_state.button[i].xleft = button_state.button[i-1].xleft;
-		button_state.button[i].ytop = button_state.button[i-1].ytop + bheight + space;
-		button_state.button[i].height = button_state.button[i-1].height;
-		button_state.button[i].width = button_state.button[i-1].width;
-		button_state.button[i].type = button_state.button[i-1].type;
-		strcpy (button_state.button[i].text, button_state.button[i-1].text);
-		button_state.button[i].fcn = button_state.button[i-1].fcn;
-		button_state.button[i].ispressed = button_state.button[i-1].ispressed;
-		button_state.button[i].enabled = button_state.button[i-1].enabled;
-		unmap_button (i-1);
-	}
-
-	i = bnum;
-	button_state.button[i].xleft = 6;
-	button_state.button[i].ytop = button_state.button[i-1].ytop + button_state.button[i-1].height 
-									+ space;
-	button_state.button[i].height = bheight;
-	button_state.button[i].width = 90;
-	button_state.button[i].type = button_type;
-	strncpy (button_state.button[i].text, button_text, BUTTON_TEXT_LEN);
-	button_state.button[i].fcn = button_func;
-	button_state.button[i].ispressed = false;
-	button_state.button[i].enabled = true;
-
-	button_state.num_buttons++;
-
-	for (; i < button_state.num_buttons; i++)
-		map_button (i);
 }
 
 
@@ -1529,9 +1383,9 @@ destroy_button (const char *button_text)
 	
 	bnum = -1;
 	space = 8;
-	for (i = 0; i < button_state.num_buttons; i++) {
-		if (button_state.button[i].type == BUTTON_TEXT && 
-			strcmp (button_state.button[i].text, button_text) == 0) {
+	for (i = 0; i < int(buttons.size()); i++) {
+		if (buttons[i].type == BUTTON_TEXT && 
+			strcmp (buttons[i].text, button_text) == 0) {
 			bnum = i;
 			break;
 		}
@@ -1543,28 +1397,26 @@ destroy_button (const char *button_text)
 		exit (1);
 	}
 
-	bheight = button_state.button[bnum].height;
+	bheight = buttons[bnum].height;
 
-	for (i=bnum+1;i<button_state.num_buttons;i++) {
-		button_state.button[i-1].xleft = button_state.button[i].xleft;
-		button_state.button[i-1].ytop = button_state.button[i].ytop - bheight - space;
-		button_state.button[i-1].height = button_state.button[i].height;
-		button_state.button[i-1].width = button_state.button[i].width;
-		button_state.button[i-1].type = button_state.button[i].type;
-		strcpy (button_state.button[i-1].text, button_state.button[i].text);
-		button_state.button[i-1].fcn = button_state.button[i].fcn;
-		button_state.button[i-1].ispressed = button_state.button[i].ispressed;
-		button_state.button[i-1].enabled = button_state.button[i].enabled;
+	for (i=bnum+1;i<int(buttons.size());i++) {
+		buttons[i-1].xleft = buttons[i].xleft;
+		buttons[i-1].ytop = buttons[i].ytop - bheight - space;
+		buttons[i-1].height = buttons[i].height;
+		buttons[i-1].width = buttons[i].width;
+		buttons[i-1].type = buttons[i].type;
+		strcpy (buttons[i-1].text, buttons[i].text);
+		buttons[i-1].fcn = buttons[i].fcn;
+        buttons[i-1].isproceed = buttons[i].isproceed;
+		buttons[i-1].ispressed = buttons[i].ispressed;
+		buttons[i-1].enabled = buttons[i].enabled;
 		unmap_button (i);
 	}
 	unmap_button(bnum);
 
-	button_state.button = (t_button *) my_realloc (button_state.button, 
-												   (button_state.num_buttons-1) * sizeof (t_button));
+    buttons.resize(buttons.size() - 1);
 
-	button_state.num_buttons--;
-
-	for (i=bnum; i<button_state.num_buttons;i++) 
+	for (i=bnum; i<int(buttons.size());i++) 
 		map_button (i);
 }
 
@@ -3026,7 +2878,7 @@ postscript (void (*drawscreen) (void))
 }
 
 
-static void 
+void 
 proceed (void (*drawscreen) (void)) 
 {
 	(void)drawscreen; // suppress unused warning
@@ -3053,12 +2905,10 @@ close_graphics (void)
 
 	gl_state.font_info.clear();
 
-	for (int i = 0; i < button_state.num_buttons; ++i) {
+	for (int i = 0; i < int(buttons.size()); ++i) {
 		unmap_button(i);
 	}
-	free(button_state.button);
-	button_state.button = NULL;
-	button_state.num_buttons = 0;
+    buttons.clear();
 
 #ifdef X11
 	XFreeGC(x11_state.display,x11_state.gc_normal);
@@ -3298,7 +3148,7 @@ build_default_menu (void)
 	XMapWindow (x11_state.display, x11_state.menu);
 #endif
 	
-	button_state.button = (t_button *) my_malloc (NUM_STANDARD_BUTTONS * sizeof (t_button));
+    buttons.resize(NUM_STANDARD_BUTTONS);
 	
 	/* Now do the arrow buttons */
 	bwid = 28;
@@ -3306,55 +3156,55 @@ build_default_menu (void)
 	y1 = 10;
 	xcen = 51;
 	x1 = xcen - bwid/2; 
-	button_state.button[0].xleft = x1;
-	button_state.button[0].ytop = y1;
+	buttons[0].xleft = x1;
+	buttons[0].ytop = y1;
 #ifdef X11
 	setpoly (0, bwid/2, bwid/2, bwid/3, -PI/2.); /* Up */
 #else
-	button_state.button[0].type = BUTTON_TEXT;
+	buttons[0].type = BUTTON_TEXT;
 #endif
-	strcpy(button_state.button[0].text, "U");
-	button_state.button[0].fcn = translate_up;
+	strcpy(buttons[0].text, "U");
+    buttons[0].fcn = translate_up;
 	
 	y1 += bwid + space;
 	x1 = xcen - 3*bwid/2 - space;
-	button_state.button[1].xleft = x1;
-	button_state.button[1].ytop = y1;
+	buttons[1].xleft = x1;
+	buttons[1].ytop = y1;
 #ifdef X11
 	setpoly (1, bwid/2, bwid/2, bwid/3, PI);  /* Left */
 #else
-	button_state.button[1].type = BUTTON_TEXT;
+	buttons[1].type = BUTTON_TEXT;
 #endif
-	strcpy(button_state.button[1].text, "L");
-	button_state.button[1].fcn = translate_left;
+	strcpy(buttons[1].text, "L");
+    buttons[1].fcn = translate_left;
 	
 	x1 = xcen + bwid/2 + space;
-	button_state.button[2].xleft = x1;
-	button_state.button[2].ytop = y1;
+	buttons[2].xleft = x1;
+	buttons[2].ytop = y1;
 #ifdef X11
 	setpoly (2, bwid/2, bwid/2, bwid/3, 0);  /* Right */
 #else
-	button_state.button[2].type = BUTTON_TEXT;
+	buttons[2].type = BUTTON_TEXT;
 #endif
-	strcpy(button_state.button[2].text, "R");
-	button_state.button[2].fcn = translate_right;
+	strcpy(buttons[2].text, "R");
+    buttons[2].fcn = translate_right;
 	
 	y1 += bwid + space;
 	x1 = xcen - bwid/2;
-	button_state.button[3].xleft = x1;
-	button_state.button[3].ytop = y1;
+	buttons[3].xleft = x1;
+	buttons[3].ytop = y1;
 #ifdef X11
 	setpoly (3, bwid/2, bwid/2, bwid/3, +PI/2.);  /* Down */
 #else
-	button_state.button[3].type = BUTTON_TEXT;
+	buttons[3].type = BUTTON_TEXT;
 #endif
-	strcpy(button_state.button[3].text, "D");
-	button_state.button[3].fcn = translate_down;
+	strcpy(buttons[3].text, "D");
+    buttons[3].fcn = translate_down;
 	
 	for (i = 0; i < NUM_ARROW_BUTTONS; i++) {
-		button_state.button[i].width = bwid;
-		button_state.button[i].height = bwid;
-		button_state.button[i].enabled = 1;
+		buttons[i].width = bwid;
+		buttons[i].height = bwid;
+		buttons[i].enabled = 1;
 	} 
 	
 	/* Rectangular buttons */
@@ -3365,43 +3215,46 @@ build_default_menu (void)
 	bheight = 26;
 	x1 = xcen - bwid/2;
 	for (i = NUM_ARROW_BUTTONS; i < NUM_STANDARD_BUTTONS; i++) {
-		button_state.button[i].xleft = x1;
-		button_state.button[i].ytop = y1;
-		button_state.button[i].type = BUTTON_TEXT;
-		button_state.button[i].width = bwid;
-		button_state.button[i].enabled = 1;
+		buttons[i].xleft = x1;
+		buttons[i].ytop = y1;
+		buttons[i].type = BUTTON_TEXT;
+		buttons[i].width = bwid;
+		buttons[i].enabled = 1;
 		if (i != SEPARATOR_BUTTON_INDEX) {
-			button_state.button[i].height = bheight;
+			buttons[i].height = bheight;
 			y1 += bheight + space;
 		}
 		else {
-			button_state.button[i].height = 2;
-			button_state.button[i].type = BUTTON_SEPARATOR;
+			buttons[i].height = 2;
+			buttons[i].type = BUTTON_SEPARATOR;
 			y1 += 2 + space;
 		}
 	}
 
-	strcpy (button_state.button[4].text,"Zoom In");
-	strcpy (button_state.button[5].text,"Zoom Out");
-	strcpy (button_state.button[6].text,"Zoom Fit");
-	strcpy (button_state.button[7].text,"Window");
-	strcpy (button_state.button[8].text,"---1");
-	strcpy (button_state.button[9].text,"PostScript");
-	strcpy (button_state.button[10].text,"Proceed");
-	strcpy (button_state.button[11].text,"Exit");
+	strcpy (buttons[4].text,"Zoom In");
+	strcpy (buttons[5].text,"Zoom Out");
+	strcpy (buttons[6].text,"Zoom Fit");
+	strcpy (buttons[7].text,"Window");
+	strcpy (buttons[8].text,"---1");
+	strcpy (buttons[9].text,"PostScript");
+	strcpy (buttons[10].text,"Proceed");
+	strcpy (buttons[11].text,"Exit");
 	
-	button_state.button[4].fcn = zoom_in;
-	button_state.button[5].fcn = zoom_out;
-	button_state.button[6].fcn = zoom_fit;
-	button_state.button[7].fcn = adjustwin;  // see 'adjustButton' below in WIN32 section
-	button_state.button[8].fcn = NULL;
-	button_state.button[9].fcn = postscript;
-	button_state.button[10].fcn = proceed;
-	button_state.button[11].fcn = quit;
+    buttons[4].fcn = zoom_in;
+    buttons[5].fcn = zoom_out;
+    buttons[6].fcn = zoom_fit;
+    buttons[7].fcn = adjustwin;  // see 'adjustButton' below in WIN32 section
+    buttons[8].fcn = nullptr;
+    buttons[9].fcn = postscript;
+    buttons[10].fcn = proceed;
+    buttons[11].fcn = quit;
+
+    for (i = 0; i < NUM_STANDARD_BUTTONS; i++)
+        buttons[i].isproceed = false;
+    buttons[10].isproceed = true;
 	
 	for (i = 0; i < NUM_STANDARD_BUTTONS; i++) 
 		map_button (i);
-	button_state.num_buttons = NUM_STANDARD_BUTTONS;
 
 #ifdef WIN32
 	win32_state.adjustButton = 7;
@@ -3462,7 +3315,7 @@ do_font_loading(int pointsize, float degrees) {
 		exit(1);
 	}
 #elif WIN32
-	LOGFONT *lf = retval = (LOGFONT*)my_malloc(sizeof(LOGFONT));
+	LOGFONT *lf = retval = (LOGFONT*)safe_malloc(sizeof(LOGFONT));
 	ZeroMemory(lf, sizeof(LOGFONT));
 	// lfHeight specifies the desired height of characters in logical units.
 	// A positive value of lfHeight will request a font that is appropriate
@@ -3548,10 +3401,10 @@ void set_keypress_input (bool enable) {
 
 void enable_or_disable_button (int ibutton, bool enabled) {
 
-   if (button_state.button[ibutton].type != BUTTON_SEPARATOR) {
-      button_state.button[ibutton].enabled = enabled;
+   if (buttons[ibutton].type != BUTTON_SEPARATOR) {
+      buttons[ibutton].enabled = enabled;
 #ifdef WIN32
-      EnableWindow(button_state.button[ibutton].hwnd, button_state.button[ibutton].enabled);
+      EnableWindow(HWND(buttons[ibutton].hwnd), buttons[ibutton].enabled);
 #else  // X11
       x11_drawbut(ibutton);
       XFlush(x11_state.display);
@@ -3594,16 +3447,16 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 	
 	bnum = -1;
 	
-	for (i=4;i<button_state.num_buttons;i++) {
-		if (button_state.button[i].type == BUTTON_TEXT && 
-			strcmp (button_state.button[i].text, button_name) == 0) {
+	for (i=4;i<int(buttons.size());i++) {
+		if (buttons[i].type == BUTTON_TEXT && 
+			strcmp (buttons[i].text, button_name) == 0) {
 			bnum = i;
 			break;
 		}
 	}
 
 	if (bnum != -1) {
-		strncpy (button_state.button[i].text, new_button_text, BUTTON_TEXT_LEN);
+		strncpy (buttons[i].text, new_button_text, BUTTON_TEXT_LEN);
 #ifdef X11
 		x11_drawbut (i);
 #else // Win32
@@ -3611,7 +3464,7 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 		MultiByteToWideChar(CP_UTF8, 0, new_button_text, -1,
 			WIN32_wchar_button_text, BUTTON_TEXT_LEN);
 
-		SetWindowTextW(button_state.button[bnum].hwnd, WIN32_wchar_button_text);
+		SetWindowTextW(HWND(buttons[bnum].hwnd), WIN32_wchar_button_text);
 
 		delete[] WIN32_wchar_button_text;
 #endif
@@ -3814,7 +3667,7 @@ static void x11_init_graphics (const char *window_name)
 	
    // Need a non-const name to pass to XStringListTo... 
    // (even though X11 won't change it).
-   char *window_name_copy = (char *) my_malloc (BUFSIZE * sizeof (char));
+   char *window_name_copy = (char *) safe_malloc (BUFSIZE * sizeof (char));
    strncpy (window_name_copy, window_name, BUFSIZE);
    XStringListToTextProperty(&window_name_copy, 1, &windowName);
    free (window_name_copy);
@@ -3970,14 +3823,14 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 #ifdef VERBOSE 
 				printf("Button number is %d\n",bnum);
 #endif
-				if (button_state.button[bnum].enabled) {
-					button_state.button[bnum].ispressed = 1;
+				if (buttons[bnum].enabled) {
+					buttons[bnum].ispressed = 1;
 					x11_drawbut(bnum);
 					XFlush(x11_state.display);  /* Flash the button */
-					button_state.button[bnum].fcn (drawscreen);
-					button_state.button[bnum].ispressed = 0;
+					buttons[bnum].fcn (drawscreen);
+					buttons[bnum].ispressed = 0;
 					x11_drawbut(bnum);
-					if (button_state.button[bnum].fcn == proceed) {
+					if (buttons[bnum].isproceed) {
 						x11_turn_on_off(OFF);
 						flushinput ();
 						return;  /* Rather clumsy way of returning *
@@ -4117,14 +3970,14 @@ static void x11_drawbut (int bnum)
 	int width, height, thick, i, ispressed;
 	XPoint mypoly[6];
 
-	width = button_state.button[bnum].width;
-	height = button_state.button[bnum].height;
+	width = buttons[bnum].width;
+	height = buttons[bnum].height;
 
-	if (button_state.button[bnum].type == BUTTON_SEPARATOR) {
+	if (buttons[bnum].type == BUTTON_SEPARATOR) {
 		int x,y;
 
-		x = button_state.button[bnum].xleft;
-		y = button_state.button[bnum].ytop;
+		x = buttons[bnum].xleft;
+		y = buttons[bnum].ytop;
 		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[WHITE].as_rgb_int());
 		XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, x, y+1, x+width, y+1);
 		XSetForeground(x11_state.display, x11_state.gc_menus,predef_colors[BLACK].as_rgb_int());
@@ -4132,7 +3985,7 @@ static void x11_drawbut (int bnum)
 		return;
 	}
 
-	ispressed = button_state.button[bnum].ispressed;
+	ispressed = buttons[bnum].ispressed;
 	thick = 2;
 	/* Draw top and left edges of 3D box. */
 	if (ispressed) {
@@ -4157,7 +4010,7 @@ static void x11_drawbut (int bnum)
 	mypoly[4].y = thick;
 	mypoly[5].x = thick;
 	mypoly[5].y = height-thick;
-	XFillPolygon(x11_state.display,button_state.button[bnum].win,x11_state.gc_menus,mypoly,6,Convex,
+	XFillPolygon(x11_state.display,buttons[bnum].win,x11_state.gc_menus,mypoly,6,Convex,
 		CoordModeOrigin);
 	
 	/* Draw bottom and right edges of 3D box. */
@@ -4179,7 +4032,7 @@ static void x11_drawbut (int bnum)
 	mypoly[4].y = height-thick;
 	mypoly[5].x = thick;
 	mypoly[5].y = height-thick;
-	XFillPolygon(x11_state.display,button_state.button[bnum].win,x11_state.gc_menus,mypoly,6,Convex,
+	XFillPolygon(x11_state.display,buttons[bnum].win,x11_state.gc_menus,mypoly,6,Convex,
 		CoordModeOrigin);
 	
 	/* Draw background */
@@ -4194,25 +4047,25 @@ static void x11_drawbut (int bnum)
 	}
 	
 	/* Give x,y of top corner and width and height */
-	XFillRectangle (x11_state.display,button_state.button[bnum].win,x11_state.gc_menus,thick,thick,
+	XFillRectangle (x11_state.display,buttons[bnum].win,x11_state.gc_menus,thick,thick,
 		width-2*thick, height-2*thick);
 	
 	/* Draw polygon, if there is one */
-	if (button_state.button[bnum].type == BUTTON_POLY) {
+	if (buttons[bnum].type == BUTTON_POLY) {
 		for (i=0;i<3;i++) {
-			mypoly[i].x = button_state.button[bnum].poly[i][0];
-			mypoly[i].y = button_state.button[bnum].poly[i][1];
+			mypoly[i].x = buttons[bnum].poly[i][0];
+			mypoly[i].y = buttons[bnum].poly[i][1];
 		}
 		XSetForeground(x11_state.display, x11_state.gc_menus,
 			predef_colors[BLACK].as_rgb_int()
 		);
-		XFillPolygon(x11_state.display,button_state.button[bnum].win,
+		XFillPolygon(x11_state.display,buttons[bnum].win,
 					 x11_state.gc_menus,mypoly,3,Convex,CoordModeOrigin);
 	}
 	
 	/* Draw text, if there is any */
-	if (button_state.button[bnum].type == BUTTON_TEXT) {
-		if (button_state.button[bnum].enabled) {
+	if (buttons[bnum].type == BUTTON_TEXT) {
+		if (buttons[bnum].enabled) {
 			XSetForeground(x11_state.display, x11_state.gc_menus,
 				predef_colors[BLACK].as_rgb_int()
 			);
@@ -4221,8 +4074,8 @@ static void x11_drawbut (int bnum)
 				predef_colors[DARKGREY].as_rgb_int()
 			);
 		}
-		menutext(button_state.button[bnum].draw,button_state.button[bnum].width/2,
-			button_state.button[bnum].height/2,button_state.button[bnum].text);
+		menutext(buttons[bnum].draw,buttons[bnum].width/2,
+			buttons[bnum].height/2,buttons[bnum].text);
 	}
 }
 
@@ -4231,8 +4084,8 @@ static int x11_which_button (Window win)
 {
 	int i;
 	
-	for (i=0;i<button_state.num_buttons;i++) {
-		if (button_state.button[i].win == win)
+	for (i=0;i<int(buttons.size());i++) {
+		if (buttons[i].win == win)
 			return(i);
 	}
 	printf("Error:  Unknown button ID in which_button.\n");
@@ -4247,8 +4100,8 @@ static void x11_turn_on_off (int pressed)
 {
 	int i;
 	
-	for (i=0;i<button_state.num_buttons;i++) {
-		button_state.button[i].ispressed = pressed;
+	for (i=0;i<int(buttons.size());i++) {
+		buttons[i].ispressed = pressed;
 		x11_drawbut(i);
 	}
 }
@@ -4268,7 +4121,7 @@ static void x11_drawmenu(void)
 	XDrawLine(x11_state.display, x11_state.menu, x11_state.gc_menus, MWIDTH-1, 
 			  trans_coord.top_height, MWIDTH-1, 0);
 	
-	for (i=0;i<button_state.num_buttons;i++)  {
+	for (i=0;i<int(buttons.size());i++)  {
 		x11_drawbut(i);
 	}
 }
@@ -4702,14 +4555,14 @@ static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam
 			int adjustx[2], adjusty[2];
 			
 			win32_state.windowAdjustFlag = WINDOW_DEACTIVATED;
-			button_state.button[win32_state.adjustButton].ispressed = 0;
-			SendMessage(button_state.button[win32_state.adjustButton].hwnd, BM_SETSTATE, 0, 0);
+			buttons[win32_state.adjustButton].ispressed = 0;
+			SendMessage(HWND(buttons[win32_state.adjustButton].hwnd), BM_SETSTATE, 0, 0);
 							
-			for (i=0; i<button_state.num_buttons; i++) {
-				if (button_state.button[i].type != BUTTON_SEPARATOR
-					 && button_state.button[i].enabled) 
+			for (i=0; i<int(buttons.size()); i++) {
+				if (buttons[i].type != BUTTON_SEPARATOR
+					 && buttons[i].enabled) 
 				{
-					if(!EnableWindow (button_state.button[i].hwnd, TRUE))
+					if(!EnableWindow (HWND(buttons[i].hwnd), TRUE))
 						WIN32_DRAW_ERROR();
 				}
 			}
@@ -4889,14 +4742,14 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_COMMAND:
 			if (win32_state.windowAdjustFlag == WINDOW_DEACTIVATED) {
-				button_state.button[LOWORD(wParam) - 200].fcn(win32_invalidate_screen);
+				buttons[LOWORD(wParam) - 200].fcn(win32_invalidate_screen);
 				if (win32_state.windowAdjustFlag != WINDOW_DEACTIVATED) {
 					win32_state.adjustButton = LOWORD(wParam) - 200;
-					button_state.button[win32_state.adjustButton].ispressed = 1;
-					for (i=0; i<button_state.num_buttons; i++) {
-						EnableWindow(button_state.button[i].hwnd, FALSE);
-						SendMessage(button_state.button[i].hwnd, BM_SETSTATE, 
-									button_state.button[i].ispressed, 0);
+					buttons[win32_state.adjustButton].ispressed = 1;
+					for (i=0; i<int(buttons.size()); i++) {
+						EnableWindow(HWND(buttons[i].hwnd), FALSE);
+						SendMessage(HWND(buttons[i].hwnd), BM_SETSTATE, 
+									buttons[i].ispressed, 0);
 					}
 				}
 			}
@@ -4942,13 +4795,13 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(!LineTo(hdc, rect.right-1, rect.top))
 				WIN32_DRAW_ERROR();
 
-			for (i=0; i < button_state.num_buttons; i++) {
-				if(button_state.button[i].type == BUTTON_SEPARATOR) {
+			for (i=0; i < int(buttons.size()); i++) {
+				if(buttons[i].type == BUTTON_SEPARATOR) {
 					int x, y, w;
 
-					x = button_state.button[i].xleft;
-					y = button_state.button[i].ytop;
-					w = button_state.button[i].width;
+					x = buttons[i].xleft;
+					y = buttons[i].ytop;
+					w = buttons[i].width;
 
 					if(!MoveToEx (hdc, x, y, NULL))
 						WIN32_DRAW_ERROR();
@@ -4969,7 +4822,7 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return 0;
 		
 		case WM_DESTROY:
-			for (i=0; i<button_state.num_buttons; i++) {
+			for (i=0; i<int(buttons.size()); i++) {
 			}
 			if(!DeleteObject(hBrush))
 				WIN32_DELETE_ERROR();
@@ -5273,6 +5126,18 @@ void win32_fillcurve(t_point *points,
  * but of course graphics won't do anything.
  */
 
+#include "create_button.h"
+
+std::vector<t_button> buttons;
+
+void proceed(void(*drawscreen) (void)) { }
+
+void map_button(int bnum) { }
+void unmap_button(int bnum) { }
+
+void *safe_malloc(int ibytes) { return NULL; }
+void *safe_calloc(int ibytes) { return NULL; }
+
 #include "graphics.h"
 
 void event_loop (void (*act_on_mousebutton) (float x, float y, t_event_buttonPressed button_info),
@@ -5334,9 +5199,6 @@ void drawtext (float xc, float yc, const char* text, float boundx, float boundy)
 void clearscreen (void) { }
 
 t_bound_box get_visible_world() { return t_bound_box(0,0,0,0); }
-
-void create_button (const char *prev_button_text , const char *button_text,
-					void (*button_func) (void (*drawscreen) (void))) { }
 
 void destroy_button (const char *button_text) { }
 

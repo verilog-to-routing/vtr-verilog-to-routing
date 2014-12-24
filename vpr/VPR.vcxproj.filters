@@ -55,11 +55,11 @@
     <Filter Include="Source Files\power">
       <UniqueIdentifier>{1d2574d7-c4aa-4e8e-9778-d94875ddc535}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\draw">
-      <UniqueIdentifier>{f46e6de7-808a-4594-9775-c9669e9e476b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\draw">
       <UniqueIdentifier>{7bcefa9e-4706-46f2-bf1a-018243afdec4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\draw">
+      <UniqueIdentifier>{f46e6de7-808a-4594-9775-c9669e9e476b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -290,6 +290,9 @@
     </ClCompile>
     <ClCompile Include="SRC\route\cb_metrics.c">
       <Filter>Source Files\route</Filter>
+    </ClCompile>
+    <ClCompile Include="SRC\draw\create_button.h">
+      <Filter>Header Files\draw</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

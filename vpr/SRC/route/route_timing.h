@@ -1,6 +1,6 @@
 boolean try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally,
-		boolean timing_analysis_enabled);
+        boolean timing_analysis_enabled, const t_timing_inf &timing_inf);
 boolean try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
 		float* pin_criticality, int* sink_order,

@@ -25,6 +25,7 @@ struct s_options {
 	boolean TimingAnalysis;
 	boolean CreateEchoFile;
 	boolean Generate_Post_Synthesis_Netlist;
+    char SlackDefinition;
 	/* Clustering options */
 	boolean global_clocks;
 	int cluster_size;

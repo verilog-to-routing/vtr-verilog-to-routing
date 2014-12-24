@@ -240,16 +240,6 @@ void close_graphics (void);
 /* Changes the status bar message to the UTF-8 string msg. */
 void update_message (const char *msg);
 
-/* Creates a button on the menu bar below the button with text (UTF-8)
- * prev_button_text.  The button will have text (UTF-8) button_text,
- * and when clicked will call function button_func.
- * button_func is a function that accepts a void function as
- * an argument; this argument is set to the drawscreen routine
- * as passed into the event loop.
- */
-void create_button (const char *prev_button_text , const char *button_text, 
-			void (*button_func) (void (*drawscreen) (void))); 
-
 /* Destroys the button with the given text; i.e. removes it from
  * the display.
  */

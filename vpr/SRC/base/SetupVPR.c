@@ -294,6 +294,15 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 	} else {
 		Timing->SDCFile = (char*) my_strdup(Options.SDCFile);
 	}
+
+    if (Options.SlackDefinition != '\0') {
+        Timing->slack_definition = Options.SlackDefinition;
+        assert(Timing->slack_definition == 'R' || Timing->slack_definition == 'I' ||
+               Timing->slack_definition == 'S' || Timing->slack_definition == 'G' ||
+               Timing->slack_definition == 'C' || Timing->slack_definition == 'N');
+    } else {
+        Timing->slack_definition = 'R'; // default
+    }
 }
 
 /* This loads up VPR's arch_switch_inf data by combining the switches from 

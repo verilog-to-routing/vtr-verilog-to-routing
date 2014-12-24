@@ -374,7 +374,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	if (timing_driven) {
 		slacks = alloc_and_load_pre_packing_timing_graph(block_delay,
 				inter_cluster_net_delay, arch->models, timing_inf);
-		do_timing_analysis(slacks, TRUE, FALSE);
+		do_timing_analysis(slacks, timing_inf, TRUE, FALSE);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))

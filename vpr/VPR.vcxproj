@@ -89,15 +89,16 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;_CONSOLE;CREATE_ECHO_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>true</SmallerTypeCheck>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <StructMemberAlignment>16Bytes</StructMemberAlignment>
       <FloatingPointModel>Strict</FloatingPointModel>
-      <BrowseInformation>true</BrowseInformation>
+      <BrowseInformation>false</BrowseInformation>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <DisableSpecificWarnings>4100; 4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4100; 4127;4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -107,12 +108,13 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\libcommon_c\pcre;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\draw;SRC\base;..\libcommon_c++\SRC\TFH_FabricHandlers;..\libcommon_c++\SRC\TCH_CircuitHandlers;..\libcommon_c++\SRC\TNO_NetObjects;..\libcommon_c++\SRC\TPO_PhysicalObjects;..\libcommon_c++\SRC\TLO_LogicalObjects;..\libcommon_c++\SRC\TGS_GeometricShapes;..\libcommon_c++\SRC\TGO_GeometricObjects;..\libcommon_c++\SRC\TIO_InputOutputHandlers;..\libcommon_c++\SRC\TC_Common;..\libcommon_c\pcre\SRC</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libarchfpga\include;SRC\util;SRC\timing;SRC\route;SRC\place;SRC\power;SRC\pack;SRC\draw;SRC\base;..\libsdc_parse\src;..\liblog\src</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -121,9 +123,10 @@
       <FloatingPointModel>Strict</FloatingPointModel>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4100; 4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4100; 4127;4244; 4305;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -136,6 +139,7 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -186,6 +190,7 @@
     <ClCompile Include="SRC\base\rr_node.c" />
     <ClCompile Include="SRC\base\verilog_writer.c" />
     <ClCompile Include="SRC\base\vpr_api.c" />
+    <ClCompile Include="SRC\draw\create_button.h" />
     <ClCompile Include="SRC\draw\draw.c" />
     <ClCompile Include="SRC\draw\draw_global.c" />
     <ClCompile Include="SRC\draw\draw_types.c" />

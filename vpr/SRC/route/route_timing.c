@@ -72,7 +72,7 @@ struct more_sinks_than {
 
 boolean try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
-		boolean timing_analysis_enabled) {
+		boolean timing_analysis_enabled, const t_timing_inf &timing_inf) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
@@ -134,7 +134,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		}
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
-			bool is_routable = try_timing_driven_route_net(
+			boolean is_routable = try_timing_driven_route_net(
 				sorted_nets[i],
 				itry,
 				pres_fac,
@@ -151,11 +151,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		}
 
 		clock_t end = clock();
-		#ifdef CLOCKS_PER_SEC
-			float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
-		#else
-			float time = static_cast<float>(end - begin) / CLK_PER_SEC;
-		#endif
+		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
 
 		if (itry == 1) {
 			/* Early exit code for cases where it is obvious that a successful route will not be found 
@@ -251,7 +247,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			if (timing_analysis_enabled) {
 				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, FALSE, FALSE);
+				do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
 				float critical_path_delay = get_critical_path_delay();
                 vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
@@ -285,7 +281,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			load_timing_graph_net_delays(net_delay);
 
-			do_timing_analysis(slacks, FALSE, FALSE);
+			do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
 
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the
@@ -478,7 +474,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 			(<0.01) get criticality 0 and are ignored entirely, and everything
 			else becomes a bit less critical. This effect becomes more pronounced if
 			max_criticality is set lower. */
-			assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+			// assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
 			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
 			/* Take pin criticality to some power (1 by default). */
