@@ -1,4 +1,4 @@
-set terminal epslatex size 3.5in,2.5in color 3 solid
+set terminal epslatex size 3.5in,2.0in color 3 solid
 set xtics nomirror out rotate by 45 offset character 0,-1 right
 set ytics nomirror out# offset character -14,0
 set style line 2 linetype 1 linecolor rgb '#9c9c9c'

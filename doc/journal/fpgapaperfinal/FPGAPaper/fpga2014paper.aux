@@ -126,6 +126,7 @@
 \newlabel{fig:graph_topology_cutsize}{{15}{9}}
 \citation{feng2014rent}
 \citation{interposer2014}
+\citation{interposer2014}
 \@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge. TODO JAVEED: Which circuits?}}{10}}
 \newlabel{fig:graph_topology_mcw}{{16}{10}}
 \newlabel{sec:partitioner_stage_results}{{\unhbox \voidb@x \hbox {V-A}4}{10}}
@@ -135,10 +136,9 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Critical path delay achieved by VPR for each partitioning flow.}}{10}}
 \newlabel{fig:flows_crit_path}{{18}{10}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}5}\% wires cut}{10}}
-\citation{interposer2014}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}6}Bloating of the Clustered Netlist due to Partitioning Constraints}{10}}
 \@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces Impact of partitioning-based CAD flow on routability for a range of architectures.}}{11}}
 \newlabel{fig:wires_cut}{{19}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {V-A}6}Bloating of the Clustered Netlist due to Partitioning Constraints}{11}}
 \@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces The number of blocks in the clustered netlist with and without partitioning constraints. This is a measure of packing bloat.}}{11}}
 \newlabel{fig:packing_bloat}{{20}{11}}
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Architecture Results}{11}}
@@ -153,9 +153,9 @@
 \newlabel{sec:resultsWiringCapacity}{{\unhbox \voidb@x \hbox {VI-B}}{12}}
 \@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Minimum channel width vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{12}}
 \newlabel{fig:standard_minW}{{23}{12}}
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{12}}
+\newlabel{fig:standard_crit}{{24}{12}}
 \citation{xilinxTSV}
-\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Critical path delay vs. \textit  {\% wires cut} for 2 dice and $1ns$ of \textit  {delay increase}.}}{13}}
-\newlabel{fig:standard_crit}{{24}{13}}
 \@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces Geometric mean of required intra-die minimum channel width vs. geometric mean of the number of wires crossing the interposer for 2 dice and $1ns$ of \textit  {delay increase}.}}{13}}
 \newlabel{fig:crossingwires}{{25}{13}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-C}}Circuit Speed vs. Interposer Delay}{13}}
@@ -165,18 +165,10 @@
 \newlabel{fig:delays_crit}{{26}{13}}
 \@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces Impact of number of dice on routability. TODO JAVEED -- LU32 90\% result is missing}}{13}}
 \newlabel{fig:wires_cut_4part}{{27}{13}}
-\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces Impact of number of dice on critical path delay. TODO JAVEED -- LU32 90\% result is missing}}{14}}
-\newlabel{fig:crit_path_4part}{{28}{14}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-E}}Impact of Aspect Ratio}{14}}
-\newlabel{aspect_ratio_impact}{{\unhbox \voidb@x \hbox {VI-E}}{14}}
-\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces Devices with (a) a square interposer and (b) square dice.}}{14}}
-\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{14}}
-\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{14}}
-\newlabel{fig:square_tall}{{29}{14}}
-\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Square interposer and square dice minimum channel widths}}{14}}
-\newlabel{table:squares}{{I}{14}}
-\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{14}}
-\newlabel{conclusionSection}{{VII}{14}}
+\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces Impact of number of dice on critical path delay. TODO JAVEED -- LU32 90\% result is missing}}{13}}
+\newlabel{fig:crit_path_4part}{{28}{13}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {VI-E}}Impact of Aspect Ratio}{13}}
+\newlabel{aspect_ratio_impact}{{\unhbox \voidb@x \hbox {VI-E}}{13}}
 \bibstyle{IEEEtran}
 \bibdata{IEEEabrv,./fpga2014paper}
 \bibcite{xilinxTSVperformance}{1}
@@ -192,6 +184,15 @@
 \bibcite{xilinxWP}{11}
 \bibcite{luu2014vtr}{12}
 \bibcite{betz1997vpr}{13}
+\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces Devices with (a) a square interposer and (b) square dice.}}{14}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {}}}{14}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {}}}{14}}
+\newlabel{fig:square_tall}{{29}{14}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Square interposer and square dice minimum channel widths}}{14}}
+\newlabel{table:squares}{{I}{14}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{14}}
+\newlabel{conclusionSection}{{VII}{14}}
+\@writefile{toc}{\contentsline {section}{References}{14}}
 \bibcite{unidirectional}{14}
 \bibcite{lewis2005stratix}{15}
 \bibcite{betz1999architecture}{16}
@@ -202,4 +203,3 @@
 \bibcite{karypis1999multilevelhmetis}{21}
 \bibcite{karypismanual}{22}
 \bibcite{feng2014rent}{23}
-\@writefile{toc}{\contentsline {section}{References}{15}}

@@ -1,4 +1,4 @@
-set terminal epslatex size 3.5in,2.5in color 3
+set terminal epslatex size 3.5in,1.5in color 3
 set boxwidth 0.5
 set xtics nomirror out rotate by 45 offset character 0,-1 right
 set ytics nomirror axis out offset character -2,0

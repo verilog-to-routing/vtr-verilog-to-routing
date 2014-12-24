@@ -1,4 +1,4 @@
-set terminal epslatex size 3.5in,2.5in color 3
+set terminal epslatex size 3.5in,1.5in color 3
 set xtics nomirror out
 set ytics nomirror out
 set style line 3 linetype 1 linecolor rgb '#9c9c9c'
