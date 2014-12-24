@@ -33,7 +33,7 @@ public:
 	PowerCallibSize(float size, float power_) :
 			transistor_size(size), power(power_), factor(0.) {
 	}
-	const bool operator<(const PowerCallibSize & rhs) {
+	bool operator<(const PowerCallibSize & rhs) {
 		return transistor_size < rhs.transistor_size;
 	}
 };
