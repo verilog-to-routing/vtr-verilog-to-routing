@@ -1229,12 +1229,12 @@ yydestruct (yymsg, yytype, yyvaluep)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
 
-  switch (yytype)
+  /*switch (yytype)
     {
 
       default:
 	break;
-    }
+    }*/
 }
 
 

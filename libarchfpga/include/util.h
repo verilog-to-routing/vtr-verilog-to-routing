@@ -26,6 +26,13 @@ typedef int boolean;
 #define ERRTAG "ERROR:\t"
 #define WARNTAG "WARNING:\t"
 
+#include <time.h>
+#ifndef CLOCKS_PER_SEC
+    #ifndef CLK_PER_SEC
+        #error Neither CLOCKS_PER_SEC nor CLK_PER_SEC is defined.
+    #endif
+    #define CLOCKS_PER_SEC CLK_PER_SEC
+#endif
 
 enum e_vpr_error {
 	VPR_ERROR_UNKNOWN = 0, 

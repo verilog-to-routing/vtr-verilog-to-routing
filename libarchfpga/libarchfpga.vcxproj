@@ -57,9 +57,8 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAsManaged>
       </CompileAsManaged>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>../liblog/src</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
@@ -84,7 +83,7 @@
       <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;../liblog/src</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
