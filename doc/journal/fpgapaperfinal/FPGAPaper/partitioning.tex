@@ -70,7 +70,7 @@ Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two 
 \label{fig:hyperedge_to_graph}
 \end{figure}
 
-The number of hyperedges crossing the cutline is referred to as the \emph{hyperedge cutsize}, as illustrated in Figure \ref{fig:hyperedge_cutline}. The hyperedge cutsize is a measure of the routability of the circuit, as it equals the number of nets that cross the interposer boundary. Using the Metis partitioner to generate graph partitions (which assigns each vertex to a partition number) and applying the partitioning result to the original untransformed hypergraph, we computed the hyperedge cutsize for every hyperedge model, across several circuits. We used the results, shown in Figure \ref{fig:graph_topology_cutsize}, to select the ``best'' hyperedge model.
+To select the best hyperedge model, we used the Metis partitioner to generate graph partitions (which assign each vertex to a partition number) and applied the partitioning result to the original untransformed hypergraph. To rank the different models, we computed the \emph{hyperedge cutsize} for every hyperedge model, across several circuits. The hyperedge cutsize is the number of hyperedges crossing the cutline, as illustrated in Figure \ref{fig:hyperedge_cutline}. As it equals the number of nets that cross the interposer boundary, it is a measure of circuit routability. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
 
 \begin{figure}[!htbp]
 \centering
