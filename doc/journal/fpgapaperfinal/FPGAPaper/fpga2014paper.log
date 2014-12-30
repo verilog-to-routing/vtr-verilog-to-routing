@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.12.6)  30 DEC 2014 09:05
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.12.6)  30 DEC 2014 09:13
 entering extended mode
 **fpga2014paper.tex
 
@@ -979,7 +979,7 @@ Package epstopdf Info: Source file: <delays_crit_path_new.eps>
 (epstopdf)                    size: 18493 bytes
 (epstopdf)             Command: <epstopdf --outfile=delays_crit_path_new-eps-co
 nverted-to.pdf delays_crit_path_new.eps>
-(epstopdf)             \includegraphics on input line 492.
+(epstopdf)             \includegraphics on input line 489.
 Package epstopdf Info: Output file is already uptodate.
 
 <delays_crit_path_new-eps-converted-to.pdf, id=177, 551.05875pt x 293.095pt>
@@ -987,9 +987,13 @@ File: delays_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
 
 <use delays_crit_path_new-eps-converted-to.pdf>
 Package pdftex.def Info: delays_crit_path_new-eps-converted-to.pdf used on inpu
-t line 492.
+t line 489.
 (pdftex.def)             Requested size: 252.0pt x 134.03374pt.
-
+ [12 <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAP
+aper/minChW-eps-converted-to.pdf> <D:/ece2500/Javeed/vtr-verilog-to-routing/doc
+/journal/fpgapaperfinal/FPGAPaper/numberofcrossingwires_new-eps-converted-to.pd
+f> <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPap
+er/delays_crit_path_new-eps-converted-to.pdf>]
 (D:\ece2500\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfinal\FPGAPaper\
 wires_cut_4part.tex
 Package epstopdf Info: Source file: <wires_cut_4part.eps>
@@ -1003,7 +1007,7 @@ ed-to.pdf wires_cut_4part.eps>
 (epstopdf)             \includegraphics on input line 126.
 Package epstopdf Info: Output file is already uptodate.
 
-<wires_cut_4part-eps-converted-to.pdf, id=178, 252.945pt x 108.405pt>
+<wires_cut_4part-eps-converted-to.pdf, id=190, 252.945pt x 108.405pt>
 File: wires_cut_4part-eps-converted-to.pdf Graphic file (type pdf)
 
 <use wires_cut_4part-eps-converted-to.pdf>
@@ -1011,7 +1015,7 @@ Package pdftex.def Info: wires_cut_4part-eps-converted-to.pdf used on input lin
 e 126.
 (pdftex.def)             Requested size: 252.94438pt x 108.40472pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 128--506
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 128--507
  [][] 
  []
 
@@ -1029,7 +1033,7 @@ ed-to.pdf crit_path_4part.eps>
 (epstopdf)             \includegraphics on input line 122.
 Package epstopdf Info: Output file is already uptodate.
 
-<crit_path_4part-eps-converted-to.pdf, id=179, 252.945pt x 108.405pt>
+<crit_path_4part-eps-converted-to.pdf, id=191, 252.945pt x 108.405pt>
 File: crit_path_4part-eps-converted-to.pdf Graphic file (type pdf)
 
 <use crit_path_4part-eps-converted-to.pdf>
@@ -1037,31 +1041,27 @@ Package pdftex.def Info: crit_path_4part-eps-converted-to.pdf used on input lin
 e 122.
 (pdftex.def)             Requested size: 252.94438pt x 108.40472pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--514
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--515
  [][] 
  []
 
-[12 <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPa
-per/minChW-eps-converted-to.pdf> <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/
-journal/fpgapaperfinal/FPGAPaper/numberofcrossingwires_new-eps-converted-to.pdf
->] <square_fpga.pdf, id=189, 214.8025pt x 220.825pt>
+<square_fpga.pdf, id=192, 214.8025pt x 220.825pt>
 File: square_fpga.pdf Graphic file (type pdf)
  <use square_fpga.pdf>
-Package pdftex.def Info: square_fpga.pdf used on input line 525.
+Package pdftex.def Info: square_fpga.pdf used on input line 526.
 (pdftex.def)             Requested size: 83.02861pt x 85.35826pt.
 
-<tall_fpga.pdf, id=190, 82.3075pt x 299.1175pt>
+<tall_fpga.pdf, id=193, 82.3075pt x 299.1175pt>
 File: tall_fpga.pdf Graphic file (type pdf)
  <use tall_fpga.pdf>
-Package pdftex.def Info: tall_fpga.pdf used on input line 526.
+Package pdftex.def Info: tall_fpga.pdf used on input line 527.
 (pdftex.def)             Requested size: 36.54318pt x 132.80312pt.
  [13 <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAP
-aper/delays_crit_path_new-eps-converted-to.pdf> <D:/ece2500/Javeed/vtr-verilog-
-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/wires_cut_4part-eps-converted-t
-o.pdf> <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPG
-APaper/crit_path_4part-eps-converted-to.pdf> <D:/ece2500/Javeed/vtr-verilog-to-
-routing/doc/journal/fpgapaperfinal/FPGAPaper/square_fpga.pdf> <D:/ece2500/Javee
-d/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPaper/tall_fpga.pdf
+aper/wires_cut_4part-eps-converted-to.pdf> <D:/ece2500/Javeed/vtr-verilog-to-ro
+uting/doc/journal/fpgapaperfinal/FPGAPaper/crit_path_4part-eps-converted-to.pdf
+> <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapaperfinal/FPGAPape
+r/square_fpga.pdf> <D:/ece2500/Javeed/vtr-verilog-to-routing/doc/journal/fpgapa
+perfinal/FPGAPaper/tall_fpga.pdf
 
 pdfTeX warning: pdflatex (file D:/ece2500/Javeed/vtr-verilog-to-routing/doc/jou
 rnal/fpgapaperfinal/FPGAPaper/tall_fpga.pdf): PDF inclusion: multiple pdfs with
@@ -1070,7 +1070,11 @@ rnal/fpgapaperfinal/FPGAPaper/tall_fpga.pdf): PDF inclusion: multiple pdfs with
 (D:\ece2500\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfinal\FPGAPaper\
 fpga2014paper.bbl) [14]
 (D:\ece2500\Javeed\vtr-verilog-to-routing\doc\journal\fpgapaperfinal\FPGAPaper\
-fpga2014paper.aux) ) 
+fpga2014paper.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
 Here is how much of TeX's memory you used:
  4195 strings out of 493921
  69613 string characters out of 3144876
@@ -1079,23 +1083,22 @@ Here is how much of TeX's memory you used:
  41011 words of font info for 74 fonts, out of 3000000 for 9000
  844 hyphenation exceptions out of 8191
  42i,11n,27p,1651b,293s stack positions out of 5000i,500n,10000p,200000b,50000s
-{C:/Program Files (x86)/MiKTeX 2.9/fonts/enc/dvips/fontname
-/8r.enc}<C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmex1
-0.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.
-pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi5.pfb
-><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C
-:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/P
-rogram Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Prog
-ram Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Program 
-Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Program File
-s (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Program Files (x
-86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Program Files (x86
-)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Program Files (x86)/M
-iKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/f
-onts/type1/urw/times/utmbi8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1
-/urw/times/utmr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/
-utmri8a.pfb>
-Output written on fpga2014paper.pdf (14 pages, 1399110 bytes).
+{C:/Program Files (x86)/MiKTeX 2.9/fonts/enc/dvips/fontname/8r.enc}<C:/Progra
+m Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/Program 
+Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Program Fi
+les (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi5.pfb><C:/Program Files
+ (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Program Files (x
+86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Program Files (x86)
+/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Program Files (x86)/Mi
+KTeX 2.9/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Program Files (x86)/MiKTeX
+ 2.9/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Program Files (x86)/MiKTeX 2.9
+/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Program Files (x86)/MiKTeX 2.9/fon
+ts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts
+/type1/public/amsfonts/cm/cmsy7.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/ty
+pe1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/tim
+es/utmbi8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmr8a.
+pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmri8a.pfb>
+Output written on fpga2014paper.pdf (14 pages, 1399127 bytes).
 PDF statistics:
  274 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)

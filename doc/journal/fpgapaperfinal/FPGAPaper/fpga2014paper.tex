@@ -483,16 +483,17 @@ The critical path delay, depicted in Figure~\ref{fig:delays_crit}, on the other 
 
 %   - Delay vs % wires cut & wire delay
 \subsection{Circuit Speed vs. Interposer Delay}
-To investigate the impact of the interposer delay (\textit{delay increase}), we keep all other interposer parameters constant and sweep the \textit{delay increase} from 0 to 1.5 \textit{ns}. We use \textit{number of cuts} $= 1$ (i.e. two dice), \textit{bidirectional interposer wires = on}, \textit{fanin transfer = on}, and \textit{fanout transfer = on}.
 
-Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires cut} for 4 different values of \textit{delay increase}. The penalty in critical path delay is significant, ranging between $1$ and $3.7$ times the interposer \textit{delay increase}, when compared to the case where the interposer adds no delay. Note that the 0\% wires cut with a 0 ns \textit{delay increase} in Figure \ref{fig:delays_crit} corresponds to a traditional monolithic FPGA. The speed of an interposer-based FPGA is strongly correlated to \textit{delay increase}: a $0.5ns$ interposer delay increases the critical path delay by 4\%, while a $1ns$ interposer delay increases critical path delay by approximately 12\% vs. a monolithic FPGA. But once again, the critical path delay shows little correlation to the \textit{\% wires cut}.
-
-\begin{figure}[!htbp]
+\begin{figure}[!b]
 \centering
 \includegraphics[width=\linewidth]{delays_crit_path_new.eps}
 \caption{Critical path delay vs. \textit{\% wires cut} for 2 dice and $0.0$, $0.5$, $1.0$ and $1.5ns$ of \textit{delay increase}.}
 \label{fig:delays_crit}
 \end{figure}
+
+To investigate the impact of the interposer delay (\textit{delay increase}), we keep all other interposer parameters constant and sweep the \textit{delay increase} from 0 to 1.5 \textit{ns}. We use \textit{number of cuts} $= 1$ (i.e. two dice), \textit{bidirectional interposer wires = on}, \textit{fanin transfer = on}, and \textit{fanout transfer = on}.
+
+Figure \ref{fig:delays_crit} shows critical path delay versus \textit{\% wires cut} for 4 different values of \textit{delay increase}. The penalty in critical path delay is significant, ranging between $1$ and $3.7$ times the interposer \textit{delay increase}, when compared to the case where the interposer adds no delay. Note that the 0\% wires cut with a 0 ns \textit{delay increase} in Figure \ref{fig:delays_crit} corresponds to a traditional monolithic FPGA. The speed of an interposer-based FPGA is strongly correlated to \textit{delay increase}: a $0.5ns$ interposer delay increases the critical path delay by 4\%, while a $1ns$ interposer delay increases critical path delay by approximately 12\% vs. a monolithic FPGA. But once again, the critical path delay shows little correlation to the \textit{\% wires cut}.
 
 %   - Impact of # of cutlines
 \subsection{Impact of Number of Dice}
