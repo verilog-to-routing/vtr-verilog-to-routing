@@ -121,7 +121,7 @@ Another major advantage of interposer-based FPGAs comes at the beginning of a ne
 
 When the process matures and the defect density decreases this yield advantage drops. Consider a mature process with defect density of $0.1/cm^2$. The yield for a $6cm^2$ die is $55\%$ and the yield for a $1.5cm^2$ die is $86\%$. Hence the number of single die FPGAs created from a $730cm^2$ silicon wafer would be $66.9$ and the number of interposer-based FPGAs created would be $104.6$. While the interposer-based FPGA still has a yield advantage it might not lead to a major cost advantage when the cost of the interposer and assembling the die to it are included. For the large, state-of-the-art FPGAs that are built early in a process cycle and heavily used for prototyping, however, there is clearly a compelling cost advantage to an interposer-based solution.
 
-\subsection{Virtex-7 Interposer-based FPGAs}
+\subsection{Virtex Interposer-based FPGAs}
 \label{virtex7section}
 
 The Xilinx 2.5D FPGAs from the Virtex-7 and Virtex Ultrascale families are currently the only commercially available silicon interposer-based FPGAs~\cite{xilinxWP}. As described in Section~\ref{archSection} we are studying the impact of several key interposer parameters on the performance of the multi-die system, including (i) the percentage of the wiring normally present between rows of the FPGA which is cut when crossing between dice, and (ii) the extra delay (vs. a normal connection between adjacent rows) added when one must traverse the interposer.  To locate where Virtex-7 lies in this architecture space, we combined published information on the implementation of Xilinx's interposer-based FPGAs~\cite{xilinxTSV} with a detailed analysis of the~\textit{XC7V2000T} FPGA routing resources visible in the \textit{Vivado Device View}.
@@ -308,13 +308,13 @@ where
 \setlength{\arraycolsep}{0.0em}
 \begin{equation}
 \label{eq:cprime}
-C' = \frac{ratio\_wires\_cut}{avg\_chany\_W(n)}
+C' = \frac{ratio\_wires\_cut}{W_{chany}}
 \end{equation}
 \setlength{\arraycolsep}{5pt}
 
-\textit{bbHeight(n)} is the height of the bounding box of the net \textit{n} and $ratio\_wires\_cut$ is the ratio of wires cut at the cutline. This formulation of $C'$ ensures that the new cost term is of roughly the same magnitude as $wire\_cost_{orig}$ in (\ref{eq:bbcost}) and that it is weighted more heavily for interposer architectures in which the wiring between dice is more scarce.
+\textit{bbHeight(n)} is the height of the bounding box of the net \textit{n} and $ratio\_wires\_cut$ is the ratio of wires cut at the cutline. This formulation of $C'$ ensures that the new cost term is of roughly the same magnitude as $Cost_{W\_orig}$ in (\ref{eq:bbcost}) and that it is weighted more heavily for interposer architectures in which the wiring between dice is more scarce.
 
-This cost function performs better than several others as shown in \cite{interposer2014}, and we believe the key to the good performance of this cost functions is that \textit{cut\_cost} produces gradual gains as bounding boxes crossing the cutline shrink to be closer and closer to being captured entirely on one side of the cutline. Consider for example the 3 bounding boxes shown in Figure \ref{fig:bb_illustration}. Note that bounding box (a) and (b) both cross the cutline, but (b) is penalized less by (\ref{eq:cost2}) because bounding box (b) is mostly on the lower side of the cutline; it is more likely that later placement changes will result in the bounding box moving entirely below the cutline, reducing interposer wiring demand. Cost function (\ref{eq:cost2}) penalizes bounding box (a) more than (b) and (b) more than (c) to guide placement to gradually move bounding boxes to one side or the other of a cutline.
+This cost function performs better than several others as shown in \cite{interposer2014}, and we believe the key to the good performance of this cost functions is that $Cost_{cut}$ produces gradual gains as bounding boxes crossing the cutline shrink to be closer and closer to being captured entirely on one side of the cutline. Consider for example the 3 bounding boxes shown in Figure \ref{fig:bb_illustration}. Note that bounding box (a) and (b) both cross the cutline, but (b) is penalized less by (\ref{eq:cost2}) because bounding box (b) is mostly on the lower side of the cutline; it is more likely that later placement changes will result in the bounding box moving entirely below the cutline, reducing interposer wiring demand. Cost function (\ref{eq:cost2}) penalizes bounding box (a) more than (b) and (b) more than (c) to guide placement to gradually move bounding boxes to one side or the other of a cutline.
 
 \begin{figure}[!h]
 \centering
@@ -388,7 +388,7 @@ Enabling the enhancements described in Section~\ref{cad_enh_placer_subsection} i
 \label{fig:comparison_minW}
 \end{figure}
 
-The optimizations also guide the placer to keep related entities on the same die to reduce the number of inter-die signal crossings and hence increase circuit speed. This speed improvement is fairly consistent across a wide range of \% wires cut, averaging 12.5\% higher circuit speed.
+The optimizations also guide the placer to keep related entities on the same die to reduce the number of inter-die signal crossings and hence increase circuit speed. This speed improvement is fairly consistent across a wide range of \%~wires~cut, averaging 12.5\% higher circuit speed.
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{placer_opt_fmax.eps}
