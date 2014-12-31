@@ -60,7 +60,7 @@ We explored several ways to generate the per-net subgraphs. The two parameters i
 
 
 
-Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two nets is transformed into its component subgraphs. TODO JAVEED: Maybe just show star 1/n from start to finish.
+Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two nets is transformed into its component subgraphs.
 
 \begin{figure}[!htbp]
 \centering
@@ -70,7 +70,7 @@ Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two 
 \label{fig:hyperedge_to_graph}
 \end{figure}
 
-To select the best hyperedge model, we used the Metis partitioner to generate graph partitions (which assign each vertex to a partition number) and applied the partitioning result to the original untransformed hypergraph. To rank the different models, we computed the \emph{hyperedge cutsize} for every hyperedge model, across several circuits. The hyperedge cutsize is the number of hyperedges crossing the cutline, as illustrated in Figure \ref{fig:hyperedge_cutline}. As it equals the number of nets that cross the interposer boundary, it is a measure of circuit routability. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
+To select the best hyperedge model, we used the Metis partitioner to generate graph partitions (which assign each vertex to a partition number) and applied the partitioning result to the original untransformed hypergraph. To rank the different models, we computed the \emph{hyperedge cutsize} for every hyperedge model, across the same circuits as in Section \ref{sec:CADeffect}. The hyperedge cutsize is the number of hyperedges crossing the cutline, as illustrated in Figure \ref{fig:hyperedge_cutline}. As it equals the number of nets that cross the interposer boundary, it is a measure of circuit routability. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
 
 \begin{figure}[!htbp]
 \centering
@@ -98,7 +98,7 @@ To validate the choice of hyperedge cutsize as a proxy for circuit routability, 
 \centering
 \input{graph_topology_mcw}
 %\includegraphics[width=\linewidth]{graph_topology_mcw.eps}
-\caption{Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge. TODO JAVEED: Which circuits?}
+\caption{Minimum channel width achieved by VPR with different hyperedge models and weightings. n is the number of vertices on a hyperedge.}
 \label{fig:graph_topology_mcw}
 \end{figure}
 
