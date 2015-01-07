@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  6 JAN 2015 20:55
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  7 JAN 2015 07:50
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1006,11 +1006,11 @@ pdfTeX warning: pdflatex (file ./tall_fpga.pdf): PDF inclusion: multiple pdfs w
 ith page group included in a single page
 >] (./fpga2014paper.bbl) [14] (./fpga2014paper.aux) ) 
 Here is how much of TeX's memory you used:
- 4202 strings out of 495020
- 67403 string characters out of 6181324
- 132149 words of memory out of 5000000
- 7300 multiletter control sequences out of 15000+600000
- 41011 words of font info for 74 fonts, out of 8000000 for 9000
+ 4204 strings out of 495020
+ 67422 string characters out of 6181324
+ 133149 words of memory out of 5000000
+ 7301 multiletter control sequences out of 15000+600000
+ 42596 words of font info for 76 fonts, out of 8000000 for 9000
  17 hyphenation exceptions out of 8191
  42i,11n,27p,1651b,293s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-
@@ -1028,7 +1028,7 @@ type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/u
 rw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8
 a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/sha
 re/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (14 pages, 1367293 bytes).
+Output written on fpga2014paper.pdf (14 pages, 1367392 bytes).
 PDF statistics:
  277 PDF objects out of 1000 (max. 8388607)
  183 compressed objects within 2 object streams

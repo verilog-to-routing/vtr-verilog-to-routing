@@ -136,10 +136,10 @@ To see how well the CAD flow works for a range of interposer architectures, we v
 \begin{figure}[!htbp]
 \centering
 \input{wires_cut}
-\caption{Impact of partitioning-based CAD flow on routability for a range of architectures. The best flow from~\cite{interposer2014} does not succeed at 90\% wires cut.}
+\caption{Impact of partitioning-based CAD flow on routability for a range of architectures.\protect\footnotemark}
 \label{fig:wires_cut}
 \end{figure}
-
+\footnotetext{The best flow from~\cite{interposer2014} does not provide data at 90\% wires cut.}
 \subsubsection{Bloating of the Clustered Netlist due to Partitioning Constraints}
 The additional constraints on the packer imposed by partitioning may result in a less dense packing. Figure \ref{fig:packing_bloat} compares the number of complex blocks in the partitioning-constrained and unconstrained clustered netlists.
 
