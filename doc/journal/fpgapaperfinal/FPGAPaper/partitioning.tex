@@ -14,7 +14,7 @@ The overall CAD flow, including the partitioning steps, is shown in Figure \ref{
 \subsubsection{Partitioner Stage}\label{sec:partitioner_stage}
 As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. The partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new constraint. The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly) to a separate FPGA die. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can also pass the partition information to the placement stage. The post-packing placement constraints can be derived from the primitive block partitioning constraints, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
 
-\begin{enumerate}
+\begin{enumerate}[label=(\roman*)]
   \item Leaving both the packer and the placer unconstrained. This is the base flow that does not use partitioning, as described in Section \ref{cadSection}.
   \item Partitioning the primitive netlist to guide the packer, leaving the placer unconstrained.
   \item Leaving the packer unconstrained, and partitioning the function block (clustered) netlist to guide the placer.
@@ -43,7 +43,7 @@ The current version of hMetis does not support heterogeneous balance constraints
 
 \subsubsection{Hypergraph to Graph Transformation}\label{sec:hypergraph_to_graph}
 We transformed the circuit netlist hypergraph to a graph in the following way:
-\begin{enumerate}
+\begin{enumerate}[label=(\roman*)]
 \item For each hyperedge of the circuit netlist hypergraph, we generated a graph (the \emph{per-net subgraph}).
 \item We combined all of the per-net subgraphs, summing the edge weights for edges appearing in more than one per-net subgraph, to generate the total netlist graph.
 \end{enumerate}
