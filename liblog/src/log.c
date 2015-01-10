@@ -82,8 +82,8 @@ void log_print_error(const char* filename, unsigned int line_num, const char* me
 	log_error++;
 
 	check_init();
-	printf("Error %d: ", log_error);
-	vprintf(message, args);
+	fprintf(stderr, "Error %d: ", log_error);
+	vfprintf(stderr, message, args);
 	va_end(args);
 
 	va_start(args, message); /* Must reset variable arguments so that they can be read again */

@@ -321,7 +321,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	while (final == -1) {
 
 		vpr_printf_info("\n");
-		vpr_printf_info("Using low: %d, high: %d, current: %d\n", low, high, current);
+		vpr_printf_info("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
 		fflush(stdout);
 
 		/* Check if the channel width is huge to avoid overflow.  Assume the *

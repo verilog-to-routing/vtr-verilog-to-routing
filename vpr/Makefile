@@ -95,7 +95,10 @@ libarchfpga:
 libsdc_parse:
 	@ cd ../libsdc_parse && make VERBOSITY=0
 
-libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse
+liblog:
+	@ cd ../liblog && make liblog.a
+
+libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse liblog
 	@ cp ../libarchfpga/libarchfpga.a $@
 	@ cp ../libsdc_parse/libsdc_parse.a .
 	@#Ugly. Extract libsdc_parse.a into OBJ/libsdc_parse
@@ -126,6 +129,8 @@ clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
 	cd ../libarchfpga && make clean
 	cd ../libsdc_parse && make clean
+	cd ../liblog && make clean
+	rm -f $(OBJ_DIR)/libsdc_parse/*
 
 clean_coverage: clean
 	rm -rf ./usr
