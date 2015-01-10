@@ -56,7 +56,7 @@ typedef struct s_pb_stats {
 	int num_child_blocks_in_pb;
 
 	int tie_break_high_fanout_net; /* If no marked candidate molecules, use this high fanout net to determine the next candidate atom */
-	boolean explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
+	bool explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
 	std::vector<t_pack_molecule *> *transitive_fanout_candidates;
 
 	/* [0..g_atoms_nlist.net.size()-1].  How many pins of each g_atoms_nlist.net are contained in the *
@@ -227,11 +227,11 @@ struct t_lb_router_data {
 	/* Saved nets */
 	vector <t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic block nets and their connections */
 	
-	map <int, boolean> *atoms_added;		/* map that records which atoms are added to cluster router */
+	map <int, bool> *atoms_added;		/* map that records which atoms are added to cluster router */
 
 	/* Logical-to-physical mapping info */
 	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block rr node instance */
-	boolean is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
+	bool is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
 	
 	/* Stores state info during Pathfinder iterative routing */
 	t_explored_node_tb *explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and traceback info for nodes */
@@ -251,7 +251,7 @@ struct t_lb_router_data {
 		lb_rr_node_stats = NULL;	
 		intra_lb_nets = NULL;
 		saved_lb_nets = NULL;
-		is_routed = FALSE;
+		is_routed = false;
 		lb_type = NULL;
 		atoms_added = NULL;
 		explored_node_tb = NULL;

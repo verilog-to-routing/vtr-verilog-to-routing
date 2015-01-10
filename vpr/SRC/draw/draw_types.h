@@ -102,7 +102,7 @@ struct t_draw_state {
 	e_draw_rr_toggle draw_rr_toggle;
 	int max_sub_blk_lvl;
 	int show_blk_internal;
-	boolean show_graphics;
+	bool show_graphics;
 	int gr_automode;
 	e_route_type draw_route_type;
 	char default_message[BUFSIZE];

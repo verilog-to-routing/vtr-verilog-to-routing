@@ -15,7 +15,7 @@ t_draw_state::t_draw_state() :
 	draw_rr_toggle(DRAW_NO_RR),
 	max_sub_blk_lvl(0),
 	show_blk_internal(0),
-	show_graphics(FALSE),
+	show_graphics(false),
 	gr_automode(0),
 	draw_route_type(GLOBAL),
 	net_color(NULL),

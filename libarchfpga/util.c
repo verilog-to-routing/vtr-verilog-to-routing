@@ -755,19 +755,19 @@ float my_frand(void) {
 	return (fval);
 }
 
-boolean file_exists(const char * filename) {
+bool file_exists(const char * filename) {
 	FILE * file;
 
 	if (filename == NULL ) {
-		return FALSE;
+		return false;
 	}
 
 	file = fopen(filename, "r");
 	if (file) {
 		fclose(file);
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 int ipow(int base, int exp) {
@@ -855,15 +855,15 @@ void vvpr_throw(enum e_vpr_error type,
 /* Date:July 17th, 2013								
  * Author: Daniel Chen								
  * Purpose: Checks the file extension of an file to ensure 
- *			correct file format. Returns TRUE if format is 
- *			correct, and FALSE otherwise.
+ *			correct file format. Returns true if format is 
+ *			correct, and false otherwise.
  * Note:	This is probably a fragile check, but at least 
  *			should prevent common problems such as swapping
  *			architecture file and blif file on the VPR 
  *			command line. 
  */
 
-boolean check_file_name_extension(INP const char* file_name, 
+bool check_file_name_extension(INP const char* file_name, 
 								INP const char* file_extension){
 	const char* str;
 	int len_extension;
@@ -871,10 +871,10 @@ boolean check_file_name_extension(INP const char* file_name,
 	len_extension = strlen(file_extension);
 	str = strstr(file_name, file_extension);
 	if(str == NULL || (*(str + len_extension) != '\0')){
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
 /*

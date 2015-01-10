@@ -110,7 +110,7 @@ extern int yylex(void);
    enum yytokentype {
      CMD_CREATE_CLOCK = 258,
      CMD_SET_CLOCK_GROUPS = 259,
-     CMD_SET_FALSE_PATH = 260,
+     CMD_SET_false_PATH = 260,
      CMD_SET_MAX_DELAY = 261,
      CMD_SET_MULTICYCLE_PATH = 262,
      CMD_SET_INPUT_DELAY = 263,
@@ -511,7 +511,7 @@ static const yytype_uint8 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "CMD_CREATE_CLOCK",
-  "CMD_SET_CLOCK_GROUPS", "CMD_SET_FALSE_PATH", "CMD_SET_MAX_DELAY",
+  "CMD_SET_CLOCK_GROUPS", "CMD_SET_false_PATH", "CMD_SET_MAX_DELAY",
   "CMD_SET_MULTICYCLE_PATH", "CMD_SET_INPUT_DELAY", "CMD_SET_OUTPUT_DELAY",
   "CMD_GET_PORTS", "CMD_GET_CLOCKS", "ARG_PERIOD", "ARG_WAVEFORM",
   "ARG_NAME", "ARG_EXCLUSIVE", "ARG_GROUP", "ARG_FROM", "ARG_TO",

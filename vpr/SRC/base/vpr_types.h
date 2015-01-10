@@ -227,7 +227,7 @@ typedef struct s_pack_molecule {
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
 	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
 	t_logical_block **logical_block_ptrs; /* [0..num_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
-	boolean valid; /* Whether or not this molecule is still valid */
+	bool valid; /* Whether or not this molecule is still valid */
 
 	int num_blocks; /* number of logical blocks of molecule */
 	int root; /* root index of molecule, logical_block_ptrs[root] is ptr to root logical block */
@@ -353,7 +353,7 @@ typedef struct s_clock {
 	/* Stores information on clocks given timing constraints.
 	 Used in SDC parsing and timing analysis. */
 	char * name;
-	boolean is_netlist_clock; /* Is this a netlist or virtual (external) clock? */
+	bool is_netlist_clock; /* Is this a netlist or virtual (external) clock? */
 	int fanout;
 } t_clock;
 
@@ -586,7 +586,7 @@ typedef struct s_legal_pos {
  z: occupancy coordinate
  pb: Physical block representing the clustering of this CLB
  pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB
- is_fixed: TRUE if this block's position is fixed by the user and shouldn't be moved during annealing
+ is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
  */
 struct s_block {
 	char *name;
@@ -628,10 +628,10 @@ struct s_packer_opts {
 	char *blif_file_name;
 	char *sdc_file_name;
 	char *output_file;
-	boolean global_clocks;
-	boolean hill_climbing_flag;
-	boolean sweep_hanging_nets_and_inputs;
-	boolean timing_driven;
+	bool global_clocks;
+	bool hill_climbing_flag;
+	bool sweep_hanging_nets_and_inputs;
+	bool timing_driven;
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;
 	float beta;
@@ -639,12 +639,12 @@ struct s_packer_opts {
 	float block_delay;
 	float intra_cluster_net_delay;
 	float inter_cluster_net_delay;
-	boolean auto_compute_inter_cluster_net_delay;
-	boolean skip_clustering;
-	boolean allow_unrelated_clustering;
-	boolean allow_early_exit;
-	boolean connection_driven;
-	boolean doPacking;
+	bool auto_compute_inter_cluster_net_delay;
+	bool skip_clustering;
+	bool allow_unrelated_clustering;
+	bool allow_early_exit;
+	bool connection_driven;
+	bool doPacking;
 	enum e_packer_algorithm packer_algorithm;
 	float aspect;
 };
@@ -689,7 +689,7 @@ struct s_annealing_sched {
  * td_place_exp_first: exponent that is used on the timing_driven criticlity *
  *               it is the value that the exponent starts at.                *
  * td_place_exp_last: value that the criticality exponent will be at the end *
- * doPlacement: TRUE if placement is supposed to be done in the CAD flow, FALSE otherwise */
+ * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
 
 enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE
@@ -705,12 +705,12 @@ struct s_placer_opts {
 	char *pad_loc_file;
 	enum pfreq place_freq;
 	int recompute_crit_iter;
-	boolean enable_timing_computations;
+	bool enable_timing_computations;
 	int inner_loop_recompute_divider;
 	float td_place_exp_first;
 	int seed;
 	float td_place_exp_last;
-	boolean doPlacement;
+	bool doPlacement;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -752,7 +752,7 @@ struct s_placer_opts {
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
  *                  criticality_exp (then clip to max_criticality).         
- * doRouting: True if routing is supposed to be done, FALSE otherwise	    *
+ * doRouting: true if routing is supposed to be done, false otherwise	    *
  * routing_failure_predictor: sets the configuration to be used by the	    *
  * routing failure predictor, how aggressive the threshold used to judge
  * and abort routings deemed unroutable */
@@ -783,16 +783,16 @@ struct s_router_opts {
 	int bb_factor;
 	enum e_route_type route_type;
 	int fixed_channel_width;
-	boolean trim_empty_channels;
-	boolean trim_obs_channels;
+	bool trim_empty_channels;
+	bool trim_obs_channels;
 	enum e_router_algorithm router_algorithm;
 	enum e_base_cost_type base_cost_type;
 	float astar_fac;
 	float max_criticality;
 	float criticality_exp;
-	boolean verify_binary_search;
-	boolean full_stats;
-	boolean doRouting;
+	bool verify_binary_search;
+	bool full_stats;
+	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 };
 
@@ -845,10 +845,10 @@ enum e_direction {
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *
  * start:  index at which a segment starts in channel 0.                    *
- * longline:  TRUE if this segment spans the entire channel.                *
- * sb:  [0..length]:  TRUE for every channel intersection, relative to the  *
+ * longline:  true if this segment spans the entire channel.                *
+ * sb:  [0..length]:  true for every channel intersection, relative to the  *
  *      segment start, at which there is a switch box.                      *
- * cb:  [0..length-1]:  TRUE for every logic block along the segment at     *
+ * cb:  [0..length-1]:  true for every logic block along the segment at     *
  *      which there is a connection box.                                    *
  * arch_wire_switch: Index of the switch type that connects other wires     *
  *                   *to* this segment. Note that this index is in relation *
@@ -870,14 +870,14 @@ enum e_direction {
 typedef struct s_seg_details {
 	int length;
 	int start;
-	boolean longline;
-	boolean *sb;
-	boolean *cb;
+	bool longline;
+	bool *sb;
+	bool *cb;
 	short arch_wire_switch;
 	short arch_opin_switch;
 	float Rmetal;
 	float Cmetal;
-	boolean twisted;
+	bool twisted;
 	enum e_direction direction; /* UDSD by AY */
 	enum e_drivers drivers; /* UDSD by AY */
 	int group_start;
@@ -951,7 +951,7 @@ enum e_cost_indices {
 
 /* Power estimation options */
 struct s_power_opts {
-	boolean do_power; /* Perform power estimation? */
+	bool do_power; /* Perform power estimation? */
 };
 
 /* Channel width data */
@@ -975,7 +975,7 @@ struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
 /* Store settings for VPR */
 typedef struct s_vpr_setup {
-	boolean TimingEnabled; /* Is VPR timing enabled */
+	bool TimingEnabled; /* Is VPR timing enabled */
 	struct s_file_name_opts FileNameOpts; /* File names */
 	enum e_operation Operation; /* run VPR or do analysis only */
 	t_model * user_models; /* blif models defined by the user */
@@ -989,8 +989,8 @@ typedef struct s_vpr_setup {
 	t_segment_inf * Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
 	float constant_net_delay; /* timing information when place and route not run */
-	boolean ShowGraphics; /* option to show graphics */
-	boolean gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
+	bool ShowGraphics; /* option to show graphics */
+	bool gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
 } t_vpr_setup;

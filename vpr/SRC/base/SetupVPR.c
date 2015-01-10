@@ -19,19 +19,19 @@ using namespace std;
 
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation);
-static void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
+static void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 		INP t_arch Arch, INP char *net_file,
 		OUTP struct s_packer_opts *PackerOpts);
-static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
+static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 		OUTP struct s_placer_opts *PlacerOpts);
 static void SetupAnnealSched(INP t_options Options,
 		OUTP struct s_annealing_sched *AnnealSched);
-static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
+static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		OUTP struct s_router_opts *RouterOpts);
 static void SetupRoutingArch(INP t_arch Arch,
 		OUTP struct s_det_routing_arch *RoutingArch);
 static void SetupTiming(INP t_options Options, INP t_arch Arch,
-		INP boolean TimingEnabled, INP enum e_operation Operation,
+		INP bool TimingEnabled, INP enum e_operation Operation,
 		INP struct s_placer_opts PlacerOpts,
 		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing);
 static void SetupSwitches(INP t_arch Arch,
@@ -42,8 +42,8 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
-		INP boolean readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
+void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
+		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
 		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
 		OUTP t_model ** user_models, OUTP t_model ** library_models,
 		OUTP struct s_packer_opts *PackerOpts,
@@ -53,7 +53,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_det_routing_arch *RoutingArch,
 		OUTP vector <t_lb_type_rr_node> **PackerRRGraphs,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
+		OUTP bool * ShowGraphics, OUTP int *GraphPause,
 		t_power_opts * PowerOpts) {
 	int i, j, len;
 
@@ -172,7 +172,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
-	if (readArchFile == TRUE) {
+	if (readArchFile == true) {
 		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
 				&num_types);
 	}
@@ -255,11 +255,11 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		*GraphPause = Options->GraphPause;
 	}
 #ifdef NO_GRAPHICS
-	*ShowGraphics = FALSE; /* DEFAULT */
+	*ShowGraphics = false; /* DEFAULT */
 #else /* NO_GRAPHICS */
-	*ShowGraphics = TRUE; /* DEFAULT */
+	*ShowGraphics = true; /* DEFAULT */
 	if (Options->Count[OT_NODISP]) {
-		*ShowGraphics = FALSE;
+		*ShowGraphics = false;
 	}
 #endif /* NO_GRAPHICS */
 
@@ -271,14 +271,14 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 }
 
 static void SetupTiming(INP t_options Options, INP t_arch Arch,
-		INP boolean TimingEnabled, INP enum e_operation Operation,
+		INP bool TimingEnabled, INP enum e_operation Operation,
 		INP struct s_placer_opts PlacerOpts,
 		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing) {
 
 	/* Don't do anything if they don't want timing */
-	if (FALSE == TimingEnabled) {
+	if (false == TimingEnabled) {
 		memset(Timing, 0, sizeof(t_timing_inf));
-		Timing->timing_analysis_enabled = FALSE;
+		Timing->timing_analysis_enabled = false;
 		return;
 	}
 
@@ -385,7 +385,7 @@ static void SetupSwitches(INP t_arch Arch,
 		/* The wire to ipin switch for all types. Curently all types
 		 * must share ipin switch. Some of the timing code would
 		 * need to be changed otherwise. */
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = TRUE;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = true;
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
@@ -411,7 +411,7 @@ static void SetupSwitches(INP t_arch Arch,
 	}
 
 	/* Delayless switch for connecting sinks and sources with their pins. */
-	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
+	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = true;
 	g_arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
 	g_arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
 	g_arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
@@ -434,7 +434,7 @@ static void SetupSwitches(INP t_arch Arch,
 	}
 
 	/* Delayless switch for connecting sinks and sources with their pins. */
-	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = TRUE;
+	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = true;
 	g_arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
 	g_arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
 	g_arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
@@ -448,7 +448,7 @@ static void SetupSwitches(INP t_arch Arch,
 		/* The wire to ipin switch for all types. Curently all types
 		 * must share ipin switch. Some of the timing code would
 		 * need to be changed otherwise. */
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = TRUE;
+		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = true;
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
@@ -480,7 +480,7 @@ static void SetupRoutingArch(INP t_arch Arch,
 		RoutingArch->directionality = Arch.Segments[0].directionality;
 }
 
-static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
+static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		OUTP struct s_router_opts *RouterOpts) {
 	RouterOpts->astar_fac = 1.2; /* DEFAULT */
 	if (Options.Count[OT_ASTAR_FAC]) {
@@ -523,14 +523,14 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 		RouterOpts->route_type = Options.RouteType;
 	}
 
-	RouterOpts->full_stats = FALSE; /* DEFAULT */
+	RouterOpts->full_stats = false; /* DEFAULT */
 	if (Options.Count[OT_FULL_STATS]) {
-		RouterOpts->full_stats = TRUE;
+		RouterOpts->full_stats = true;
 	}
 
-	RouterOpts->verify_binary_search = FALSE; /* DEFAULT */
+	RouterOpts->verify_binary_search = false; /* DEFAULT */
 	if (Options.Count[OT_VERIFY_BINARY_SEARCH]) {
-		RouterOpts->verify_binary_search = TRUE;
+		RouterOpts->verify_binary_search = true;
 	}
 
 	/* Depends on RouteOpts->route_type */
@@ -550,11 +550,11 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 		RouterOpts->fixed_channel_width = Options.RouteChanWidth;
 	}
 
-	RouterOpts->trim_empty_channels = FALSE; /* DEFAULT */
+	RouterOpts->trim_empty_channels = false; /* DEFAULT */
 	if (Options.Count[OT_TRIM_EMPTY_CHAN]) {
 		RouterOpts->trim_empty_channels = Options.TrimEmptyChan;
 	}
-	RouterOpts->trim_obs_channels = FALSE; /* DEFAULT */
+	RouterOpts->trim_obs_channels = false; /* DEFAULT */
 	if (Options.Count[OT_TRIM_OBS_CHAN]) {
 		RouterOpts->trim_obs_channels = Options.TrimObsChan;
 	}
@@ -610,13 +610,13 @@ static void SetupRouterOpts(INP t_options Options, INP boolean TimingEnabled,
 		RouterOpts->bend_cost = Options.bend_cost;
 	}
 
-	RouterOpts->doRouting = FALSE;
+	RouterOpts->doRouting = false;
 	if (Options.Count[OT_ROUTE]) {
-		RouterOpts->doRouting = TRUE;
+		RouterOpts->doRouting = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
 		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
-			RouterOpts->doRouting = TRUE;
+			RouterOpts->doRouting = true;
 	}
 
 	/* Andre: Default value for the predictor is SAFE */
@@ -670,7 +670,7 @@ static void SetupAnnealSched(INP t_options Options,
 /* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.  
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
-void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
+void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 		INP t_arch Arch, INP char *net_file,
 		OUTP struct s_packer_opts *PackerOpts) {
 
@@ -683,45 +683,45 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 
 	PackerOpts->blif_file_name = Options.BlifFile;
 
-	PackerOpts->doPacking = FALSE; /* DEFAULT */
+	PackerOpts->doPacking = false; /* DEFAULT */
 	if (Options.Count[OT_PACK]) {
-		PackerOpts->doPacking = TRUE;
+		PackerOpts->doPacking = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
 		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
-			PackerOpts->doPacking = TRUE;
+			PackerOpts->doPacking = true;
 	}
 
-	PackerOpts->global_clocks = TRUE; /* DEFAULT */
+	PackerOpts->global_clocks = true; /* DEFAULT */
 	if (Options.Count[OT_GLOBAL_CLOCKS]) {
 		PackerOpts->global_clocks = Options.global_clocks;
 	}
 
-	PackerOpts->hill_climbing_flag = FALSE; /* DEFAULT */
+	PackerOpts->hill_climbing_flag = false; /* DEFAULT */
 	if (Options.Count[OT_HILL_CLIMBING_FLAG]) {
 		PackerOpts->hill_climbing_flag = Options.hill_climbing_flag;
 	}
 
-	PackerOpts->sweep_hanging_nets_and_inputs = TRUE;
+	PackerOpts->sweep_hanging_nets_and_inputs = true;
 	if (Options.Count[OT_SWEEP_HANGING_NETS_AND_INPUTS]) {
 		PackerOpts->sweep_hanging_nets_and_inputs =
 				Options.sweep_hanging_nets_and_inputs;
 	}
 
-	PackerOpts->skip_clustering = FALSE; /* DEFAULT */
+	PackerOpts->skip_clustering = false; /* DEFAULT */
 	if (Options.Count[OT_SKIP_CLUSTERING]) {
-		PackerOpts->skip_clustering = TRUE;
+		PackerOpts->skip_clustering = true;
 	}
-	PackerOpts->allow_unrelated_clustering = TRUE; /* DEFAULT */
+	PackerOpts->allow_unrelated_clustering = true; /* DEFAULT */
 	if (Options.Count[OT_ALLOW_UNRELATED_CLUSTERING]) {
 		PackerOpts->allow_unrelated_clustering =
 				Options.allow_unrelated_clustering;
 	}
-	PackerOpts->allow_early_exit = FALSE; /* DEFAULT */
+	PackerOpts->allow_early_exit = false; /* DEFAULT */
 	if (Options.Count[OT_ALLOW_EARLY_EXIT]) {
 		PackerOpts->allow_early_exit = Options.allow_early_exit;
 	}
-	PackerOpts->connection_driven = TRUE; /* DEFAULT */
+	PackerOpts->connection_driven = true; /* DEFAULT */
 	if (Options.Count[OT_CONNECTION_DRIVEN_CLUSTERING]) {
 		PackerOpts->connection_driven = Options.connection_driven;
 	}
@@ -758,10 +758,10 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PackerOpts->intra_cluster_net_delay = Options.intra_cluster_net_delay;
 	}
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
-	PackerOpts->auto_compute_inter_cluster_net_delay = TRUE;
+	PackerOpts->auto_compute_inter_cluster_net_delay = true;
 	if (Options.Count[OT_INTER_CLUSTER_NET_DELAY]) {
 		PackerOpts->inter_cluster_net_delay = Options.inter_cluster_net_delay;
-		PackerOpts->auto_compute_inter_cluster_net_delay = FALSE;
+		PackerOpts->auto_compute_inter_cluster_net_delay = false;
 	}
 
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
@@ -772,7 +772,7 @@ void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,
  * such as checking for conflicting params is assumed to be done beforehand */
-static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
+static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 		OUTP struct s_placer_opts *PlacerOpts) {
 	PlacerOpts->block_dist = 1; /* DEFAULT */
 	if (Options.Count[OT_BLOCK_DIST]) {
@@ -836,10 +836,10 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 	}
 
 	/* Depends on PlacerOpts->place_algorithm */
-	PlacerOpts->enable_timing_computations = FALSE; /* DEFAULT */
+	PlacerOpts->enable_timing_computations = false; /* DEFAULT */
 	if ((PlacerOpts->place_algorithm == PATH_TIMING_DRIVEN_PLACE)
 			|| (PlacerOpts->place_algorithm == NET_TIMING_DRIVEN_PLACE)) {
-		PlacerOpts->enable_timing_computations = TRUE; /* DEFAULT */
+		PlacerOpts->enable_timing_computations = true; /* DEFAULT */
 	}
 	if (Options.Count[OT_ENABLE_TIMING_COMPUTATIONS]) {
 		PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
@@ -851,15 +851,15 @@ static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,
 		PlacerOpts->place_freq = PLACE_ONCE;
 	}
 
-	PlacerOpts->doPlacement = FALSE; /* DEFAULT */
+	PlacerOpts->doPlacement = false; /* DEFAULT */
 	if (Options.Count[OT_PLACE]) {
-		PlacerOpts->doPlacement = TRUE;
+		PlacerOpts->doPlacement = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
 		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
-			PlacerOpts->doPlacement = TRUE;
+			PlacerOpts->doPlacement = true;
 	}
-	if (PlacerOpts->doPlacement == FALSE) {
+	if (PlacerOpts->doPlacement == false) {
 		PlacerOpts->place_freq = PLACE_NEVER;
 	}
 
@@ -877,9 +877,9 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 		t_arch * Arch) {
 
 	if (Options.Count[OT_POWER]) {
-		power_opts->do_power = TRUE;
+		power_opts->do_power = true;
 	} else {
-		power_opts->do_power = FALSE;
+		power_opts->do_power = false;
 	}
 
 	if (power_opts->do_power) {

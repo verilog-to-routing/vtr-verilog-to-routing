@@ -30,7 +30,7 @@
 
 /************************* FUNCTION DECLARATIONS ********************/
 void power_tech_init(char * cmos_tech_behavior_filepath);
-boolean power_find_transistor_info(t_transistor_size_inf ** lower,
+bool power_find_transistor_info(t_transistor_size_inf ** lower,
 		t_transistor_size_inf ** upper, e_tx_type type, float size);
 void power_find_mux_volt_inf(t_power_mux_volt_pair ** lower,
 		t_power_mux_volt_pair ** upper, t_power_mux_volt_inf * volt_inf,

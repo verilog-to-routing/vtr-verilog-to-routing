@@ -256,7 +256,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, FALSE,
+			directs, num_directs, false,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warning_count);
@@ -266,11 +266,11 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
-boolean try_route(int width_fac, struct s_router_opts router_opts,
+bool try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
 		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
-		boolean * Fc_clipped, t_direct_inf *directs, int num_directs) {
+		bool * Fc_clipped, t_direct_inf *directs, int num_directs) {
 
 	/* Attempts a routing via an iterated maze router algorithm.  Width_fac *
 	 * specifies the relative width of the channels, while the members of   *
@@ -307,7 +307,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, FALSE, 
+			directs, num_directs, false, 
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warning_count);
@@ -316,7 +316,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 
 	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
-	boolean success = TRUE;
+	bool success = true;
 
 	/* Allocate and load additional rr_graph information needed only by the router. */
 	alloc_and_load_rr_node_route_structs();
@@ -339,7 +339,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 	return (success);
 }
 
-boolean feasible_routing(void) {
+bool feasible_routing(void) {
 
 	/* This routine checks to see if this is a resource-feasible routing.      *
 	 * That is, are all rr_node capacity limitations respected?  It assumes    *
@@ -349,11 +349,11 @@ boolean feasible_routing(void) {
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
-			return (FALSE);
+			return (false);
 		}
 	}
 
-	return (TRUE);
+	return (true);
 }
 
 void pathfinder_update_one_cost(struct s_trace *route_segment_start,
@@ -987,8 +987,8 @@ static void add_to_heap(struct s_heap *hptr) {
 }
 
 /*WMF: peeking accessor :) */
-boolean is_empty_heap(void) {
-	return (boolean)(heap_tail == 1);
+bool is_empty_heap(void) {
+	return (bool)(heap_tail == 1);
 }
 
 struct s_heap *
@@ -1154,8 +1154,8 @@ void print_route(char *route_file) {
 	fprintf(fp, "Array size: %d x %d logic blocks.\n", nx, ny);
 	fprintf(fp, "\nRouting:");
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		if (g_clbs_nlist.net[inet].is_global == FALSE) {
-			if (g_clbs_nlist.net[inet].num_sinks() == FALSE) {
+		if (g_clbs_nlist.net[inet].is_global == false) {
+			if (g_clbs_nlist.net[inet].num_sinks() == false) {
 				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, g_clbs_nlist.net[inet].name);
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
@@ -1262,7 +1262,7 @@ void print_route(char *route_file) {
 }
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
-void reserve_locally_used_opins(float pres_fac, float acc_fac, boolean rip_up_local_opins,
+void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
 		t_ivec ** clb_opins_used_locally) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 

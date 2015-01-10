@@ -540,7 +540,7 @@ void find_pin_index_at_model_scope(
 
 	// iterate over the ports.
 	while(port != NULL) {
-		if(search_inputs ? port->is_clock == FALSE : true) {
+		if(search_inputs ? port->is_clock == false : true) {
 			int iport = port->index;
 			// iterate over the pins on that port
 			// printf("looking at port %d\n", iport);
@@ -804,7 +804,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 				t_model_ports* model_ports = model->inputs;
 				// iterate over the input ports
 				while(model_ports != NULL) {
-					if(model_ports->is_clock == FALSE) {
+					if(model_ports->is_clock == false) {
 						int iport = model_ports->index;
 						// iterate over the pins on that port
 						for (int ipin = 0; ipin < model_ports->size; ipin++) {

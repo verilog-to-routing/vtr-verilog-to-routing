@@ -53,7 +53,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node);
 
 static void discover_all_forced_connections(INOUTP t_pb_graph_node *pb_graph_node);
-static boolean is_forced_connection(INP t_pb_graph_pin *pb_graph_pin);
+static bool is_forced_connection(INP t_pb_graph_pin *pb_graph_pin);
 
 
 /* Identify all pin class information for complex block
@@ -572,16 +572,16 @@ static void discover_all_forced_connections(INOUTP t_pb_graph_node *pb_graph_nod
 /**
  * Given an output pin, determine if it connects to only one input pin and nothing else. 
  */
-static boolean is_forced_connection(INP t_pb_graph_pin *pb_graph_pin) {
+static bool is_forced_connection(INP t_pb_graph_pin *pb_graph_pin) {
 	if(pb_graph_pin->num_output_edges > 1) {
-		return FALSE;
+		return false;
 	}
 	if(pb_graph_pin->num_output_edges == 0) {
 		if(pb_graph_pin->parent_node->pb_type->num_modes == 0) {
 			/* Check that this pin belongs to a primitive */
-			return TRUE;
+			return true;
 		} else {
-			return FALSE;
+			return false;
 		}
 	}
 	return is_forced_connection(pb_graph_pin->output_edges[0]->output_pins[0]);

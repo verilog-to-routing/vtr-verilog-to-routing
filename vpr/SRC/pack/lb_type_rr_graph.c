@@ -301,7 +301,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 		/* alloc and load input pins that connect to sinks */
 		for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
-			boolean port_equivalent = FALSE;
+			bool port_equivalent = false;
 			int sink_index = OPEN;
 			for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 				/* load intermediate indices */
@@ -319,10 +319,10 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
 				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-				if(port_equivalent != TRUE || sink_index == OPEN) {
+				if(port_equivalent != true || sink_index == OPEN) {
 					/* Create new sink for input to primitive */
 					t_lb_type_rr_node new_sink;					
-					if(port_equivalent == TRUE) {
+					if(port_equivalent == true) {
 						new_sink.capacity = pb_pin->port->num_pins;
 					} else {
 						new_sink.capacity = 1;
@@ -387,7 +387,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 		/* alloc and load clock pins that connect to sinks */
 		for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
-			boolean port_equivalent = FALSE;
+			bool port_equivalent = false;
 			int sink_index = OPEN;
 			for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 				/* load intermediate indices */
@@ -405,10 +405,10 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
 				lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-				if(port_equivalent != TRUE || sink_index == OPEN) {
+				if(port_equivalent != true || sink_index == OPEN) {
 					/* Create new sink for clock to primitive */
 					t_lb_type_rr_node new_sink;					
-					if(port_equivalent == TRUE) {
+					if(port_equivalent == true) {
 						new_sink.capacity = pb_pin->port->num_pins;
 					} else {
 						new_sink.capacity = 1;

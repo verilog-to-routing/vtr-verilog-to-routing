@@ -9,18 +9,18 @@
 #include "SetupVPR.h"
 
 /******** Function Prototypes ********/
-static void CheckSwitches(INP t_arch Arch, INP boolean TimingEnabled);
+static void CheckSwitches(INP t_arch Arch, INP bool TimingEnabled);
 
 static void CheckSegments(INP t_arch Arch);
 
 /******** Function Implementations ********/
 
-void CheckArch(INP t_arch Arch, INP boolean TimingEnabled) {
+void CheckArch(INP t_arch Arch, INP bool TimingEnabled) {
 	CheckSwitches(Arch, TimingEnabled);
 	CheckSegments(Arch);
 }
 
-static void CheckSwitches(INP t_arch Arch, INP boolean TimingEnabled) {
+static void CheckSwitches(INP t_arch Arch, INP bool TimingEnabled) {
 	struct s_arch_switch_inf *CurSwitch;
 	int i;
 	int ipin_cblock_switch_index = UNDEFINED;
@@ -81,7 +81,7 @@ static void CheckSegments(INP t_arch Arch) {
 	CurSeg = Arch.Segments;
 	for (i = 0; i < Arch.num_segments; i++) {
 		if (CurSeg[i].directionality == UNI_DIRECTIONAL
-				&& CurSeg[i].longline == TRUE) {
+				&& CurSeg[i].longline == true) {
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0, 
 					"Long lines not supported for unidirectional architectures.\n"
 					"Refer to segmentlist of '%s'\n",get_arch_file_name());

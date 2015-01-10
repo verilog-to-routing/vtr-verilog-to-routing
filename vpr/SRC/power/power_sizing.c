@@ -53,7 +53,7 @@ static double power_count_transistors_trans_gate(float size);
 static double power_count_transistors_levr();
 static double power_MTAs(float size);
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
-		boolean pin_is_an_input);
+		bool pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
 static double power_transistors_per_tile(t_arch * arch);
 static void power_size_pb(void);
@@ -290,7 +290,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 
 	double tc_children_max = 0;
 	double tc_interc_max = 0;
-	boolean ignore_interc = FALSE;
+	bool ignore_interc = false;
 
 	t_pb_type * pb_type = pb_node->pb_type;
 
@@ -313,7 +313,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 				 * For the routing algorithms it is completely connected; however,
 				 * this interconnect does not exist in FPGA hardware and should
 				 * be ignored for power calculations. */
-				ignore_interc = TRUE;
+				ignore_interc = true;
 			}
 
 			/* Count Interconnect Transistors */
@@ -526,7 +526,7 @@ static void power_size_pb(void) {
 static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 	int port_idx, pin_idx;
 	int mode_idx, type_idx, pb_idx;
-	boolean size_buffers_and_wires = TRUE;
+	bool size_buffers_and_wires = true;
 
 	if (!power_method_is_transistor_level(
 			pb_node->pb_type->pb_type_power->estimation_method)
@@ -561,12 +561,12 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 		 * For the routing algorithms it is completely connected; however,
 		 * this interconnect does not exist in FPGA hardware and should
 		 * be ignored for power calculations. */
-		size_buffers_and_wires = FALSE;
+		size_buffers_and_wires = false;
 	}
 
 	if (!power_method_is_transistor_level(
 			pb_node->pb_type->pb_type_power->estimation_method)) {
-		size_buffers_and_wires = FALSE;
+		size_buffers_and_wires = false;
 	}
 
 	/* Size all local buffers and wires */
@@ -575,7 +575,7 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 			for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
 					pin_idx++) {
 				power_size_pin_buffers_and_wires(
-						&pb_node->input_pins[port_idx][pin_idx], TRUE);
+						&pb_node->input_pins[port_idx][pin_idx], true);
 			}
 		}
 
@@ -583,7 +583,7 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 			for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
 					pin_idx++) {
 				power_size_pin_buffers_and_wires(
-						&pb_node->output_pins[port_idx][pin_idx], FALSE);
+						&pb_node->output_pins[port_idx][pin_idx], false);
 			}
 		}
 
@@ -591,7 +591,7 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 			for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
 					pin_idx++) {
 				power_size_pin_buffers_and_wires(
-						&pb_node->clock_pins[port_idx][pin_idx], TRUE);
+						&pb_node->clock_pins[port_idx][pin_idx], true);
 			}
 		}
 	}
@@ -642,11 +642,11 @@ static void power_size_pin_to_interconnect(t_interconnect * interc,
 }
 
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
-		boolean pin_is_an_input) {
+		bool pin_is_an_input) {
 	int edge_idx;
 	int list_cnt;
 	t_interconnect ** list;
-	boolean found;
+	bool found;
 	int i;
 
 	float C_load;
@@ -661,7 +661,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 
 	float this_pb_interc_sidelength = 0;
 	float parent_pb_interc_sidelength = 0;
-	boolean top_level_pb;
+	bool top_level_pb;
 
 	t_pb_type * this_pb_type = pin->parent_node->pb_type;
 
@@ -674,10 +674,10 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 			power_transistor_area(
 					pin->parent_node->pb_node_power->transistor_cnt_interc));
 	if (pin->parent_node->parent_pb_graph_node == NULL) {
-		top_level_pb = TRUE;
+		top_level_pb = true;
 		parent_pb_interc_sidelength = 0.;
 	} else {
-		top_level_pb = FALSE;
+		top_level_pb = false;
 		parent_pb_interc_sidelength =
 				sqrt(
 						power_transistor_area(
@@ -703,10 +703,10 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 	list_cnt = 0;
 	for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
 		/* Check if its already in the list */
-		found = FALSE;
+		found = false;
 		for (i = 0; i < list_cnt; i++) {
 			if (list[i] == pin->output_edges[edge_idx]->interconnect) {
-				found = TRUE;
+				found = true;
 				break;
 			}
 		}

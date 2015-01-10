@@ -26,11 +26,11 @@ static void get_channel_occupancy_stats(void);
 
 /************************* Subroutine definitions ****************************/
 
-void routing_stats(boolean full_stats, enum e_route_type route_type,
+void routing_stats(bool full_stats, enum e_route_type route_type,
 		int num_rr_switch, t_segment_inf * segment_inf, int num_segment,
 		float R_minW_nmos, float R_minW_pmos,
 		enum e_directionality directionality, int wire_to_ipin_switch,
-		boolean timing_analysis_enabled,
+		bool timing_analysis_enabled,
 		float **net_delay, t_slack * slacks, const t_timing_inf &timing_inf) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
@@ -81,7 +81,7 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 
 			load_timing_graph_net_delays(net_delay);
 
-			do_timing_analysis(slacks, timing_inf, FALSE, TRUE);
+			do_timing_analysis(slacks, timing_inf, false, true);
 
 			if (getEchoEnabled()) {
 				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
@@ -90,14 +90,14 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 					print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
 			}
 
-			print_slack(slacks->slack, TRUE, getOutputFileName(E_SLACK_FILE));
+			print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
 			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
 
 			print_timing_stats();
 		}
 	}
 
-	if (full_stats == TRUE)
+	if (full_stats == true)
 		print_wirelen_prob_dist();
 }
 
@@ -123,7 +123,7 @@ void get_length_and_bends_stats(void) {
 	num_clb_opins_reserved = 0;
 
 	for (inet = 0, l = g_clbs_nlist.net.size(); inet < l; inet++) {
-		if (g_clbs_nlist.net[inet].is_global == FALSE && g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+		if (g_clbs_nlist.net[inet].is_global == false && g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			total_bends += bends;
@@ -342,7 +342,7 @@ void print_wirelen_prob_dist(void) {
 	norm_fac = 0.;
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		if (g_clbs_nlist.net[inet].is_global == FALSE && g_clbs_nlist.net[inet].num_sinks() != 0) {
+		if (g_clbs_nlist.net[inet].is_global == false && g_clbs_nlist.net[inet].num_sinks() != 0) {
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
@@ -433,7 +433,7 @@ void print_lambda(void) {
 				if (type->class_inf[iclass].type == RECEIVER) {
 					inet = block[bnum].nets[ipin];
 					if (inet != OPEN) /* Pin is connected? */
-						if (g_clbs_nlist.net[inet].is_global == FALSE) /* Not a global clock */
+						if (g_clbs_nlist.net[inet].is_global == false) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}
@@ -450,7 +450,7 @@ int count_netlist_clocks(void) {
 
 	int iblock, i, clock_net;
 	char * name;
-	boolean found;
+	bool found;
 	int num_clocks = 0;
 	char ** clock_names = NULL;
 
@@ -460,10 +460,10 @@ int count_netlist_clocks(void) {
 			assert(clock_net != OPEN);
 			name = logical_block[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
-			found = FALSE;
+			found = false;
 			for (i = 0; !found && i < num_clocks; i++) {
 				if (strcmp(clock_names[i], name) == 0) {
-					found = TRUE;
+					found = true;
 				}
 			}
 			if (!found) {

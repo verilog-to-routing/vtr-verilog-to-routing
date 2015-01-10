@@ -9,7 +9,7 @@ typedef struct s_pb_graph_edge_comparator{
 	s_pb_graph_edge* parent_edge;
 }t_pb_graph_edge_comparator;
 
-void alloc_and_load_all_pb_graphs(boolean load_power_structures);
+void alloc_and_load_all_pb_graphs(bool load_power_structures);
 void echo_pb_graph(char * filename);
 void free_all_pb_graph_nodes(void);
 t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
@@ -18,7 +18,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 		INP const char * port_string,
 		OUTP int ** num_ptrs,
 		OUTP int * num_sets,
-		INP boolean is_input_to_interc,
-		INP boolean interconnect_error_check);
+		INP bool is_input_to_interc,
+		INP bool interconnect_error_check);
 #endif
 

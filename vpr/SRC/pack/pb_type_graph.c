@@ -41,17 +41,17 @@ static struct s_linked_vptr *num_edges_head;
 static int check_pb_graph(void);
 static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
 		INP t_pb_graph_node *parent_pb_graph_node, INP t_pb_type *pb_type,
-		INP int index, boolean load_power_structures);
+		INP int index, bool load_power_structures);
 
 static void alloc_and_load_mode_interconnect(
 		INOUTP t_pb_graph_node *pb_graph_parent_node,
 		INOUTP t_pb_graph_node **pb_graph_children_nodes,
-		INP const t_mode * mode, boolean load_power_structures);
+		INP const t_mode * mode, bool load_power_structures);
 
-static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
+static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		INP const t_pb_graph_node *pb_graph_parent_node,
 		INP t_pb_graph_node **pb_graph_children_nodes,
-		INP boolean interconnect_error_check, INP boolean is_input_to_interc,
+		INP bool interconnect_error_check, INP bool is_input_to_interc,
 		INP const t_token *tokens, INOUTP int *token_index,
 		INOUTP int *num_pins, OUTP t_pb_graph_pin ***pb_graph_pins);
 
@@ -96,13 +96,13 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
 				const struct s_pb_graph_edge_comparator & edge2);
-static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
+static bool check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
 	INP int i_pin, INOUTP map<int, int>& edges_map, OUTP int* line_num);
 
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
  */
-void alloc_and_load_all_pb_graphs(boolean load_power_structures) {
+void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
 	int i, errors;
 	edges_head = NULL;
@@ -200,7 +200,7 @@ static int check_pb_graph(void) {
 
 static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
 		INP t_pb_graph_node *parent_pb_graph_node, INP t_pb_type *pb_type,
-		INP int index, boolean load_power_structures) {
+		INP int index, bool load_power_structures) {
 
 	int i, j, k, i_input, i_output, i_clockport;
 
@@ -547,7 +547,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 			 }
 			 */
 
-			interconnect->interconnect_power->port_info_initialized = TRUE;
+			interconnect->interconnect_power->port_info_initialized = true;
 		}
 
 		interc_pins->input_pins = (t_pb_graph_pin***) my_calloc(num_input_sets,
@@ -604,7 +604,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 			 interconnect->mux_arch->levels);
 			 }*/
 
-			interconnect->interconnect_power->port_info_initialized = TRUE;
+			interconnect->interconnect_power->port_info_initialized = true;
 		}
 
 		/* Input Pins */
@@ -655,7 +655,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 static void alloc_and_load_mode_interconnect(
 		INOUTP t_pb_graph_node *pb_graph_parent_node,
 		INOUTP t_pb_graph_node **pb_graph_children_nodes,
-		INP const t_mode * mode, boolean load_power_structures) {
+		INP const t_mode * mode, bool load_power_structures) {
 
 	int i, j;
 	int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
@@ -676,13 +676,13 @@ static void alloc_and_load_mode_interconnect(
 				mode->interconnect[i].line_num, pb_graph_parent_node,
 				pb_graph_children_nodes, mode->interconnect[i].input_string,
 				&num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
-				TRUE, TRUE);
+				true, true);
 
 		output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(
 				mode->interconnect[i].line_num, pb_graph_parent_node,
 				pb_graph_children_nodes, mode->interconnect[i].output_string,
 				&num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
-				FALSE, TRUE);
+				false, true);
 
 		if (load_power_structures) {
 			alloc_and_load_interconnect_pins(
@@ -750,19 +750,19 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 		INP const t_pb_graph_node *pb_graph_parent_node,
 		INP t_pb_graph_node **pb_graph_children_nodes,
 		INP const char * port_string, OUTP int ** num_ptrs, OUTP int * num_sets,
-		INP boolean is_input_to_interc, INP boolean interconnect_error_check) {
+		INP bool is_input_to_interc, INP bool interconnect_error_check) {
 
 	t_token * tokens;
 	int num_tokens, curr_set;
 	int i;
-	boolean in_squig_bracket, success;
+	bool in_squig_bracket, success;
 
 	t_pb_graph_pin ***pb_graph_pins;
 
 	num_tokens = 0;
 	tokens = GetTokensFromString(port_string, &num_tokens);
 	*num_sets = 0;
-	in_squig_bracket = FALSE;
+	in_squig_bracket = false;
 
 	/* count the number of sets available */
 	for (i = 0; i < num_tokens; i++) {
@@ -772,14 +772,14 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"{ inside { in port %s\n", port_string);
 			}
-			in_squig_bracket = TRUE;
+			in_squig_bracket = true;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if (!in_squig_bracket) {
 				(*num_sets)++;
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No matching '{' for '}' in port %s\n", port_string);
 			}
-			in_squig_bracket = FALSE;
+			in_squig_bracket = false;
 		} else if (tokens[i].type == TOKEN_DOT) {
 			if (!in_squig_bracket) {
 				(*num_sets)++;
@@ -805,7 +805,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"{ inside { in port %s\n", port_string);
 			}
-			in_squig_bracket = TRUE;
+			in_squig_bracket = true;
 		} else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
 			if ((*num_ptrs)[curr_set] == 0) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
@@ -816,7 +816,7 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
 					"No matching '{' for '}' in port %s\n", port_string);
 			}
-			in_squig_bracket = FALSE;
+			in_squig_bracket = false;
 		} else if (tokens[i].type == TOKEN_STRING) {
 
 			success = realloc_and_load_pb_graph_pin_ptrs_at_var(line_num,
@@ -855,7 +855,7 @@ static void alloc_and_load_complete_interc_edges(
 	int i_edge;
 	struct s_linked_vptr *cur;
 
-	assert(interconnect->infer_annotations == FALSE);
+	assert(interconnect->infer_annotations == false);
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
 	in_count = out_count = 0;
@@ -1009,7 +1009,7 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 	t_pb_graph_edge *edges;
 	struct s_linked_vptr *cur;
 
-	assert(interconnect->infer_annotations == FALSE);
+	assert(interconnect->infer_annotations == false);
 
 	/* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
 	if (num_output_sets != 1) {
@@ -1085,10 +1085,10 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
  * tokens: array of tokens to scan
  * num_pins: current number of pins in pb_graph_pin array 
  */
-static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
+static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		INP const t_pb_graph_node *pb_graph_parent_node,
 		INP t_pb_graph_node **pb_graph_children_nodes,
-		INP boolean interconnect_error_check, INP boolean is_input_to_interc,
+		INP bool interconnect_error_check, INP bool is_input_to_interc,
 		INP const t_token *tokens, INOUTP int *token_index,
 		INOUTP int *num_pins, OUTP t_pb_graph_pin ***pb_graph_pins) {
 
@@ -1100,7 +1100,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	char *port_name;
 	t_port *iport;
 	int add_or_subtract_pb, add_or_subtract_pin;
-	boolean found;
+	bool found;
 	t_mode *mode = NULL;
 
 	assert(tokens[*token_index].type == TOKEN_STRING);
@@ -1114,38 +1114,38 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	pin_msb = pin_lsb = OPEN;
 
 	/* parse pb */
-	found = FALSE;
+	found = false;
 	if (0 == strcmp(pb_graph_parent_node->pb_type->name, tokens[*token_index].data)) {
 		//Parent pb_type
 		pb_node_array = pb_graph_parent_node;
 		max_pb_node_array = 1;
 		pb_msb = pb_lsb = 0;
-		found = TRUE;
+		found = true;
 		(*token_index)++;
 		if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-				return FALSE; //clb[abc
+				return false; //clb[abc
 			}
 			pb_msb = my_atoi(tokens[*token_index].data); 
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 				if (!checkTokenType(tokens[*token_index],
 						TOKEN_CLOSE_SQUARE_BRACKET)) {
-					return FALSE; //clb[9abc
+					return false; //clb[9abc
 				}
 				pb_lsb = pb_msb;
 				(*token_index)++;
 			} else {
 				(*token_index)++;
 				if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-					return FALSE; //clb[9:abc
+					return false; //clb[9:abc
 				}
 				pb_lsb = my_atoi(tokens[*token_index].data);
 				(*token_index)++;
 				if (!checkTokenType(tokens[*token_index],
 						TOKEN_CLOSE_SQUARE_BRACKET)) {
-					return FALSE; //clb[9:0abc
+					return false; //clb[9:0abc
 				}
 				(*token_index)++;
 			}
@@ -1175,33 +1175,33 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			if (0 == strcmp(mode->pb_type_children[i].name,	tokens[*token_index].data)) {
 				pb_node_array = pb_graph_children_nodes[i];
 				max_pb_node_array = mode->pb_type_children[i].num_pb;
-				found = TRUE;
+				found = true;
 				(*token_index)++;
 
 				if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
 					(*token_index)++;
 					if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-						return FALSE;
+						return false;
 					}
 					pb_msb = my_atoi(tokens[*token_index].data);
 					(*token_index)++;
 					if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 						if (!checkTokenType(tokens[*token_index],
 								TOKEN_CLOSE_SQUARE_BRACKET)) {
-							return FALSE;
+							return false;
 						}
 						pb_lsb = pb_msb;
 						(*token_index)++;
 					} else {
 						(*token_index)++;
 						if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-							return FALSE;
+							return false;
 						}
 						pb_lsb = my_atoi(tokens[*token_index].data);
 						(*token_index)++;
 						if (!checkTokenType(tokens[*token_index],
 								TOKEN_CLOSE_SQUARE_BRACKET)) {
-							return FALSE;
+							return false;
 						}
 						(*token_index)++;
 					}
@@ -1227,14 +1227,14 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			tokens[*token_index].data, mode->name);
 	}
 
-	found = FALSE;
+	found = false;
 
 	if (!checkTokenType(tokens[*token_index], TOKEN_DOT)) {
-		return FALSE; //clb[9:0]123
+		return false; //clb[9:0]123
 	}
 	(*token_index)++;
 	if (!checkTokenType(tokens[*token_index], TOKEN_STRING)) {
-		return FALSE; //clb[9:0].123
+		return false; //clb[9:0].123
 	}
 
 	/* parse ports and port pins of pb */
@@ -1251,27 +1251,27 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
 		(*token_index)++;
 		if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-			return FALSE;
+			return false;
 		}
 		pin_msb = my_atoi(tokens[*token_index].data);
 		(*token_index)++;
 		if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 			if (!checkTokenType(tokens[*token_index],
 					TOKEN_CLOSE_SQUARE_BRACKET)) {
-				return FALSE;
+				return false;
 			}
 			pin_lsb = pin_msb;
 			(*token_index)++;
 		} else {
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-				return FALSE;
+				return false;
 			}
 			pin_lsb = my_atoi(tokens[*token_index].data);
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index],
 					TOKEN_CLOSE_SQUARE_BRACKET)) {
-				return FALSE;
+				return false;
 			}
 			(*token_index)++;
 		}
@@ -1317,7 +1317,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			iport =
 					(*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j]->port;
 			if (!iport) {
-				return FALSE;
+				return false;
 			}
 
 			/* Error checking before assignment */
@@ -1360,7 +1360,7 @@ static boolean realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 
 	assert((abs(pb_msb - pb_lsb) + 1) * (abs(pin_msb - pin_lsb) + 1) == i * j);
 
-	return TRUE;
+	return true;
 }
 
 static t_pb_graph_pin * get_pb_graph_pin_from_name(INP const char * port_name,
@@ -1460,7 +1460,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 								type->pb_graph_head->child_pb_graph_nodes[0],
 								type->pin_loc_assignments[width][height][side][pin],
 								&num_pb_graph_node_pins,
-								&num_pb_graph_node_sets, FALSE, FALSE);
+								&num_pb_graph_node_sets, false, false);
 						assert(num_pb_graph_node_sets == 1);
 
 						for (int pin_index = 0; pin_index < num_pb_graph_node_pins[0]; ++pin_index) {
@@ -1669,7 +1669,7 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 				if(!check_input_pins_equivalence(&pb_graph_node->input_pins[i][j],
 					j, logic_equivalent_pins_map, &line_num)){
 						vpr_printf_warning(__FILE__, __LINE__,
-							"[LINE %d] False logically-equivalent pin %s[%d].%s[%d].\n",
+							"[LINE %d] false logically-equivalent pin %s[%d].%s[%d].\n",
 							line_num, pb_graph_node->pb_type->name,
 							pb_graph_node->placement_index,
 							pb_graph_node->input_pins[i][j].port->name,
@@ -1772,12 +1772,12 @@ static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
  *			pin of an logically-equivalent port, we use its outgoing edges
  *			to compare with the rest of the pins in the port. 
  */
-static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
+static bool check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
 	INP int i_pin, INOUTP map<int, int>& logic_equivalent_pins_map, OUTP int* line_num){
 
 	int i, j, edge_count;
 	t_pb_graph_edge* cur_edge; 
-	boolean pins_equivalent = TRUE;
+	bool pins_equivalent = true;
 
 	if(i_pin == 0){
 		assert(logic_equivalent_pins_map.empty());
@@ -1797,7 +1797,7 @@ static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin,
 				if(logic_equivalent_pins_map.find(cur_edge->output_pins[j]->pin_count_in_cluster) == 
 					logic_equivalent_pins_map.end()){
 					// Could not find the outpin that cur_pin connects to
-					pins_equivalent = FALSE;
+					pins_equivalent = false;
 				}
 			}
 			edge_count ++;
@@ -1807,7 +1807,7 @@ static boolean check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin,
 	if(edge_count != (int)logic_equivalent_pins_map.size()){
 	// The number of outgoing edges for each pin of an logically-equivalent
 	// port should be exactly the same
-		pins_equivalent = FALSE;
+		pins_equivalent = false;
 	}
 
 	return pins_equivalent;

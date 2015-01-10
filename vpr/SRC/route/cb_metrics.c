@@ -223,10 +223,10 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 		/* many CLBs are adjacent to eachother, so connections from one CLB	
 		*  will share the channel segment with its neighbor. We'd like to take this into	
 		*  account for the applicable metrics. */
-		both_sides = TRUE;
+		both_sides = true;
 	} else {
 		/* other blocks (i.e. IO, RAM, etc) are not as frequent as CLBs */
-		both_sides = FALSE;
+		both_sides = false;
 	}
 
 	/* get the metrics */

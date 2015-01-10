@@ -32,7 +32,7 @@ void CheckSetup(INP enum e_operation Operation,
 				"This is allowed, but strange, and circuit speed will suffer.\n");
 	}
 
-	if ((FALSE == Timing.timing_analysis_enabled)
+	if ((false == Timing.timing_analysis_enabled)
 			&& ((PlacerOpts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
 					|| (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE))) {
 
@@ -48,12 +48,12 @@ void CheckSetup(INP enum e_operation Operation,
 
 	if (RouterOpts.doRouting) {
 		if ((TIMING_DRIVEN == RouterOpts.router_algorithm)
-				&& (FALSE == Timing.timing_analysis_enabled)) {
+				&& (false == Timing.timing_analysis_enabled)) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"Cannot perform timing-driven routing when timing analysis is disabled.\n");
 		}
 
-		if ((FALSE == Timing.timing_analysis_enabled)
+		if ((false == Timing.timing_analysis_enabled)
 				&& (DEMAND_ONLY != RouterOpts.base_cost_type)) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"base_cost_type must be demand_only when timing analysis is disabled.\n");
@@ -61,7 +61,7 @@ void CheckSetup(INP enum e_operation Operation,
 	}
 
 	if ((TIMING_ANALYSIS_ONLY == Operation)
-			&& (FALSE == Timing.timing_analysis_enabled)) {
+			&& (false == Timing.timing_analysis_enabled)) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"-timing_analyze_only_with_net_delay option requires that timing analysis not be disabled.\n");
 	}
@@ -78,7 +78,7 @@ void CheckSetup(INP enum e_operation Operation,
 
 	for (i = 0; i < RoutingArch.num_segment; ++i) {
 		Tmp = Segments[i].arch_opin_switch;
-		if (FALSE == g_arch_switch_inf[Tmp].buffered) {
+		if (false == g_arch_switch_inf[Tmp].buffered) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
 		}

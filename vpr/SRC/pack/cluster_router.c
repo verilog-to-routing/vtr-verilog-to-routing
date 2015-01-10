@@ -4,7 +4,7 @@
   Global Inputs: Architecture and netlist
   Input arguments: clustering info for one cluster (t_pb info)
   Working data set: t_routing_data contains intermediate work
-  Output: Routable? True/False.  If true, store/return the routed solution.
+  Output: Routable? true/false.  If true, store/return the routed solution.
 
   Routing algorithm used is Pathfinder.
 
@@ -74,7 +74,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 
 
 static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op);
-static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data);
+static bool is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data);
 static void add_source_to_rt(t_lb_router_data *router_data, int inet);
 static void expand_rt(t_lb_router_data *router_data, int inet, reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int irt_net);
 static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *explored_node_tb, 
@@ -82,7 +82,7 @@ static void expand_rt_rec(t_lb_trace *rt, int prev_index, t_explored_node_tb *ex
 static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node, 
 	reservable_pq<t_expansion_node, vector <t_expansion_node>, compare_expansion_node> &pq, int net_fanout);
 static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explored_node_tb, int irt_net);
-static boolean is_route_success(t_lb_router_data *router_data);
+static bool is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data *router_data);
 static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data);
@@ -112,7 +112,7 @@ t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_t
 	router_data->lb_rr_node_stats = new t_lb_rr_node_stats[size];
 	router_data->explored_node_tb = new t_explored_node_tb[size];
 	router_data->intra_lb_nets = new vector<t_intra_lb_net>;
-	router_data->atoms_added = new map<int, boolean>;
+	router_data->atoms_added = new map<int, bool>;
 	router_data->lb_type = type;
 
 	return router_data;
@@ -146,23 +146,23 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
-	map <int, boolean> & atoms_added = *router_data->atoms_added;
+	map <int, bool> & atoms_added = *router_data->atoms_added;
 
 	pb = logical_block[iatom].pb;
 	
 	if(atoms_added.count(iatom) > 0) {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s [%d] added twice to router\n", logical_block[iatom].name, iatom);
 	}
-	atoms_added[iatom] = TRUE;
+	atoms_added[iatom] = true;
 
-	set_reset_pb_modes(router_data, pb, TRUE);
+	set_reset_pb_modes(router_data, pb, true);
 
 	model = logical_block[iatom].model;
 	
 	/* Add inputs to route tree sources/targets */	
 	model_ports = model->inputs;
 	while(model_ports != NULL) {
-		if(model_ports->is_clock == FALSE) {
+		if(model_ports->is_clock == false) {
 			iport = model_ports->index;
 			for (int ipin = 0; ipin < model_ports->size; ipin++) {
 				inet = logical_block[iatom].input_nets[iport][ipin];
@@ -190,7 +190,7 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 	/* Add clock to route tree sources/targets */	
 	model_ports = model->inputs;
 	while(model_ports != NULL) {
-		if(model_ports->is_clock == TRUE) {
+		if(model_ports->is_clock == true) {
 			iport = model_ports->index;
 			assert(iport == 0);
 			for (int ipin = 0; ipin < model_ports->size; ipin++) {
@@ -211,7 +211,7 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
-	map <int, boolean> & atoms_added = *router_data->atoms_added;
+	map <int, bool> & atoms_added = *router_data->atoms_added;
 
 	
 	if(atoms_added.count(iatom) == 0) {
@@ -220,14 +220,14 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 
 	pb = logical_block[iatom].pb;
 	
-	set_reset_pb_modes(router_data, pb, FALSE);
+	set_reset_pb_modes(router_data, pb, false);
 		
 	model = logical_block[iatom].model;
 	
 	/* Remove inputs from route tree sources/targets */	
 	model_ports = model->inputs;
 	while(model_ports != NULL) {
-		if(model_ports->is_clock == FALSE) {
+		if(model_ports->is_clock == false) {
 			iport = model_ports->index;
 			for (int ipin = 0; ipin < model_ports->size; ipin++) {
 				inet = logical_block[iatom].input_nets[iport][ipin];
@@ -255,7 +255,7 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	/* Remove clock from route tree sources/targets */	
 	model_ports = model->inputs;
 	while(model_ports != NULL) {
-		if(model_ports->is_clock == TRUE) {
+		if(model_ports->is_clock == true) {
 			iport = model_ports->index;
 			assert(iport == 0);
 			for (int ipin = 0; ipin < model_ports->size; ipin++) {
@@ -272,9 +272,9 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 	atoms_added.erase(iatom);
 }
 
-/* Set/Reset mode of rr nodes to the pb used.  If set == TRUE, then set all modes of the rr nodes affected by pb to the mode of the pb.
+/* Set/Reset mode of rr nodes to the pb used.  If set == true, then set all modes of the rr nodes affected by pb to the mode of the pb.
    Set all modes related to pb to 0 otherwise */
-void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP boolean set) {
+void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP bool set) {
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
 	int mode = pb->mode;
@@ -287,13 +287,13 @@ void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP 
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 			inode = pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-			router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
+			router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : 0;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 			inode = pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
-			router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
+			router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : 0;
 		}
 	}
 
@@ -307,7 +307,7 @@ void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP 
 				for(int iport = 0; iport < child_pb_graph_node->num_output_ports; iport++) {
 					for(int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
 						inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-						router_data->lb_rr_node_stats[inode].mode = (set == TRUE) ? mode : 0;
+						router_data->lb_rr_node_stats[inode].mode = (set == true) ? mode : 0;
 					}
 				}
 			}
@@ -318,11 +318,11 @@ void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP 
 /* Attempt to route routing driver/targets on the current architecture 
    Follows pathfinder negotiated congestion algorithm
 */
-boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
+bool try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
-	boolean is_routed = FALSE;
-	boolean is_impossible = FALSE;
+	bool is_routed = false;
+	bool is_impossible = false;
 	t_expansion_node exp_node;
 
 	/* Stores state info during route */
@@ -343,12 +343,12 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 	/*	Iteratively remove congestion until a successful route is found.  
 		Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinately */
 	router_data->pres_con_fac = router_data->params.pres_fac;
-	for(int iter = 0; iter < router_data->params.max_iterations && is_routed == FALSE && is_impossible == FALSE; iter++) {
+	for(int iter = 0; iter < router_data->params.max_iterations && is_routed == false && is_impossible == false; iter++) {
 		unsigned int inet;
 		/* Iterate across all nets internal to logic block */
-		for(inet = 0; inet < lb_nets.size() && is_impossible == FALSE; inet++) {
+		for(inet = 0; inet < lb_nets.size() && is_impossible == false; inet++) {
 			int idx = inet;
-			if (is_skip_route_net(lb_nets[idx].rt_tree, router_data) == TRUE) {
+			if (is_skip_route_net(lb_nets[idx].rt_tree, router_data) == true) {
 				continue;
 			}
 			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_REMOVE);
@@ -357,14 +357,14 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			add_source_to_rt(router_data, idx);
 
 			/* Route each sink of net */
-			for(unsigned int itarget = 1; itarget < lb_nets[idx].terminals.size() && is_impossible == FALSE; itarget++) {
+			for(unsigned int itarget = 1; itarget < lb_nets[idx].terminals.size() && is_impossible == false; itarget++) {
 				pq.clear();
 				/* Get lowest cost next node, repeat until a path is found or if it is impossible to route */
 				expand_rt(router_data, idx, pq, idx);
 				do {
 					if(pq.empty()) {
 						/* No connection possible */
-						is_impossible = TRUE;
+						is_impossible = true;
 					} else {
 						exp_node = pq.top();
 						pq.pop();
@@ -381,7 +381,7 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 							}
 						}
 					}
-				} while(exp_node.node_index != lb_nets[idx].terminals[itarget] && is_impossible == FALSE);
+				} while(exp_node.node_index != lb_nets[idx].terminals[itarget] && is_impossible == false);
 
 				if(exp_node.node_index == lb_nets[idx].terminals[itarget]) {
 					/* Net terminal is routed, add this to the route tree, clear data structures, and keep going */
@@ -401,12 +401,12 @@ boolean try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			
 			commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT);
 		}
-		if(is_impossible == FALSE) {
+		if(is_impossible == false) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
 			vpr_printf_info("Routing net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
-			is_routed = FALSE;
+			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
 	}
@@ -525,7 +525,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	t_type_ptr lb_type = router_data->lb_type;
-	boolean found = FALSE;
+	bool found = false;
 	unsigned int ipos;
 	int inet;
 	t_pb *pb;
@@ -538,7 +538,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 
 	/* Determine net */
 	if(model_port->dir == IN_PORT) {
-		if(model_port->is_clock == TRUE) {
+		if(model_port->is_clock == true) {
 			inet = logical_block[iatom].clock_net;
 		} else {
 			inet = logical_block[iatom].input_nets[iport][ipin];
@@ -558,11 +558,11 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 	*/
 	for(ipos = 0; ipos < lb_nets.size(); ipos++) {
 		if(lb_nets[ipos].atom_net_index == inet) {
-			found = TRUE;
+			found = true;
 			break;
 		}
 	}
-	if(found == FALSE) {
+	if(found == false) {
 		struct t_intra_lb_net new_net;
 		new_net.atom_net_index = inet;
 		ipos = lb_nets.size();
@@ -638,7 +638,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	t_type_ptr lb_type = router_data->lb_type;
-	boolean found = FALSE;
+	bool found = false;
 	unsigned int ipos;
 	int inet;
 	t_pb *pb;
@@ -651,7 +651,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 
 	/* Determine net */
 	if(model_port->dir == IN_PORT) {
-		if(model_port->is_clock == TRUE) {
+		if(model_port->is_clock == true) {
 			inet = logical_block[iatom].clock_net;
 		} else {
 			inet = logical_block[iatom].input_nets[iport][ipin];
@@ -671,11 +671,11 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 	*/
 	for(ipos = 0; ipos < lb_nets.size(); ipos++) {
 		if(lb_nets[ipos].atom_net_index == inet) {
-			found = TRUE;
+			found = true;
 			break;
 		}
 	}
-	assert(found == TRUE);
+	assert(found == true);
 	assert(lb_nets[ipos].atom_net_index == inet);
 	
 	if(model_port->dir == OUT_PORT) {
@@ -702,14 +702,14 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, int iato
 		pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
 		assert(lb_type_graph[pin_index].type == LB_SINK);
 			
-		found = FALSE;
+		found = false;
 		for(iterm = 0; iterm < lb_nets[ipos].terminals.size(); iterm++) {
 			if(lb_nets[ipos].terminals[iterm] == pin_index) {
-				found = TRUE;
+				found = true;
 				break;
 			}
 		}
-		assert(found == TRUE);
+		assert(found == true);
 		assert(lb_nets[ipos].terminals[iterm] == pin_index);
 		assert(iterm > 0);
 		
@@ -780,7 +780,7 @@ static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_co
 }
 
 /* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
-static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) {
+static bool is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) {
 	t_lb_rr_node_stats *lb_rr_node_stats;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	int inode;
@@ -788,7 +788,7 @@ static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) 
 	lb_rr_node_stats = router_data->lb_rr_node_stats;
 	
 	if (rt == NULL) {
-		return FALSE; /* Net is not routed, therefore must route net */
+		return false; /* Net is not routed, therefore must route net */
 	}
 
 	inode = rt->current_node;
@@ -796,18 +796,18 @@ static boolean is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data) 
 	/* Determine if node is overused */
 	if (lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
 		/* Conflict between this net and another net at this node, reroute net */
-		return FALSE;
+		return false;
 	}
 
 	/* Recursively check that rest of route tree does not have a conflict */
 	for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-		if (is_skip_route_net(&rt->next_nodes[i], router_data) == FALSE) {
-			return FALSE;
+		if (is_skip_route_net(&rt->next_nodes[i], router_data) == false) {
+			return false;
 		}
 	}
 
 	/* No conflict, this net's current route is legal, skip routing this net */
-	return TRUE;
+	return true;
 }
 
 
@@ -947,16 +947,16 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 }
 
 /* Determine if a completed route is valid.  A successful route has no congestion (ie. no routing resource is used by two nets). */
-static boolean is_route_success(t_lb_router_data *router_data) {
+static bool is_route_success(t_lb_router_data *router_data) {
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 
 	for(unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
 		if(router_data->lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
-			return FALSE;
+			return false;
 		}
 	}
 
-	return TRUE;
+	return true;
 }
 
 /* Given a route tree and an index of a node on the route tree, return a pointer to the trace corresponding to that index */

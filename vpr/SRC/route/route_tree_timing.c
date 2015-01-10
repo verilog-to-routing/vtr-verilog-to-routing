@@ -166,7 +166,7 @@ init_route_tree_to_source(int inet) {
 	rt_root->u.child_list = NULL;
 	rt_root->parent_node = NULL;
 	rt_root->parent_switch = OPEN;
-	rt_root->re_expand = TRUE;
+	rt_root->re_expand = true;
 
 	inode = net_rr_terminals[inet][0]; /* Net source */
 
@@ -253,10 +253,10 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 #define NO_ROUTE_THROUGHS 1	/* Can't route through unused CLB outputs */
 	no_route_throughs = 1;
 	if (no_route_throughs == 1)
-		sink_rt_node->re_expand = FALSE;
+		sink_rt_node->re_expand = false;
 	else {
 		if (remaining_connections_to_sink == 0) { /* Usual case */
-			sink_rt_node->re_expand = TRUE;
+			sink_rt_node->re_expand = true;
 		}
 
 		/* Weird case.  This net connects several times to the same SINK.  Thus I   *
@@ -264,7 +264,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		 * connections, since I need to reach it again via another path.            */
 
 		else {
-			sink_rt_node->re_expand = FALSE;
+			sink_rt_node->re_expand = false;
 		}
 	}
 
@@ -290,7 +290,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->u.child_list = linked_rt_edge;
 		rt_node->inode = inode;
 
-		if (g_rr_switch_inf[iswitch].buffered == FALSE)
+		if (g_rr_switch_inf[iswitch].buffered == false)
 			C_downstream += rr_node[inode].C;
 		else
 			C_downstream = rr_node[inode].C;
@@ -300,15 +300,15 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 		if (no_route_throughs == 1)
 			if (rr_node[inode].type == IPIN)
-				rt_node->re_expand = FALSE;
+				rt_node->re_expand = false;
 			else
-				rt_node->re_expand = TRUE;
+				rt_node->re_expand = true;
 
 		else {
 			if (remaining_connections_to_sink == 0) { /* Normal case */
-				rt_node->re_expand = TRUE;
+				rt_node->re_expand = true;
 			} else { /* This is the IPIN before a multiply-connected SINK */
-				rt_node->re_expand = FALSE;
+				rt_node->re_expand = false;
 
 				/* Reset flag so wire segments get reused */
 
@@ -357,7 +357,7 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 
 	R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R;
 
-	if (g_rr_switch_inf[iswitch].buffered == FALSE)
+	if (g_rr_switch_inf[iswitch].buffered == false)
 		R_upstream += parent_rt_node->R_upstream;
 
 	rt_node->R_upstream = R_upstream;
@@ -408,7 +408,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	parent_rt_node = rt_node->parent_node;
 	iswitch = rt_node->parent_switch;
 
-	while (parent_rt_node != NULL && g_rr_switch_inf[iswitch].buffered == FALSE) {
+	while (parent_rt_node != NULL && g_rr_switch_inf[iswitch].buffered == false) {
 		rt_node = parent_rt_node;
 		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;

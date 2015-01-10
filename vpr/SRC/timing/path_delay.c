@@ -178,7 +178,7 @@ of the driver tnode. */
 static t_slack * alloc_slacks(void);
 
 static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_clock_domain, float criticality_denom,
-    boolean update_slack, boolean is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf);
+    bool update_slack, bool is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf);
 
 static void alloc_and_load_tnodes(const t_timing_inf &timing_inf);
 
@@ -188,14 +188,14 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 static void alloc_timing_stats(void);
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
-	boolean is_prepacked, boolean is_final_analysis, long * max_critical_input_paths_ptr, 
+	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
     long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
 
 #ifdef PATH_COUNTING
 static void do_path_counting(float criticality_denom);
 #endif
 
-static float find_least_slack(boolean is_prepacked, t_pb ***pin_id_to_pb_mapping);
+static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping);
 
 static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		INOUTP int *inode, INP t_timing_inf timing_inf);
@@ -207,17 +207,17 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
 
 static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
 
-static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping);
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping);
 
-static char * find_tnode_net_name(int inode, boolean is_prepacked, t_pb*** pin_id_to_pb_mapping);
+static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping);
 
-static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked, int **lookup_tnode_from_pin_id);
+static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id);
 
 static inline int get_tnode_index(t_tnode * node);
 
-static inline boolean has_valid_T_arr(int inode);
+static inline bool has_valid_T_arr(int inode);
 
-static inline boolean has_valid_T_req(int inode);
+static inline bool has_valid_T_req(int inode);
 
 static int find_clock(char * net_name);
 
@@ -253,7 +253,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
 	int num_sinks;
 	t_slack * slacks = NULL;
-	boolean do_process_constraints = FALSE;
+	bool do_process_constraints = false;
 	int ** lookup_tnode_from_pin_id;
 	t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
@@ -279,12 +279,12 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf);
-		do_process_constraints = TRUE;
+		do_process_constraints = true;
 	}
 
 	lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
 		
-	load_clock_domain_and_clock_and_io_delay(FALSE, lookup_tnode_from_pin_id, pin_id_to_pb_mapping);
+	load_clock_domain_and_clock_and_io_delay(false, lookup_tnode_from_pin_id, pin_id_to_pb_mapping);
 
 	if (do_process_constraints) 
 		process_constraints();
@@ -313,7 +313,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	
 	int num_sinks;
 	t_slack * slacks = NULL;
-	boolean do_process_constraints = FALSE;
+	bool do_process_constraints = false;
 	int **lookup_tnode_from_pin_id;
 	t_pb***pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
@@ -346,10 +346,10 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
 		read_sdc(timing_inf);
-		do_process_constraints = TRUE;
+		do_process_constraints = true;
 	}
 	
-	load_clock_domain_and_clock_and_io_delay(TRUE, lookup_tnode_from_pin_id, pin_id_to_pb_mapping);
+	load_clock_domain_and_clock_and_io_delay(true, lookup_tnode_from_pin_id, pin_id_to_pb_mapping);
 
 	if (do_process_constraints) 
 		process_constraints();
@@ -463,7 +463,7 @@ void free_timing_stats(void) {
 	f_timing_stats = NULL;
 }
 
-void print_slack(float ** slack, boolean slack_is_normalized, const char *fname) {
+void print_slack(float ** slack, bool slack_is_normalized, const char *fname) {
 
 	/* Prints slacks into a file. */
 
@@ -884,7 +884,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					assert(tnode[i].out_edges[count].to_node != OPEN);
 
 					if (g_atoms_nlist.net[intra_lb_route[i_pin_id].atom_net_idx].is_const_gen
-							== TRUE && tnode[i].type == TN_PRIMITIVE_OPIN) {
+							== true && tnode[i].type == TN_PRIMITIVE_OPIN) {
 						tnode[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						tnode[i].type = TN_CONSTANT_GEN_SOURCE;
 					}
@@ -1076,7 +1076,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			j = 0;
 			model_port = model->inputs;
 			while (model_port) {
-				if (model_port->is_clock == FALSE) {
+				if (model_port->is_clock == false) {
 					for (k = 0; k < model_port->size; k++) {
 						if (logical_block[i].input_nets[j][k] != OPEN) {
 							num_tnodes += incr;
@@ -1163,7 +1163,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			model_port = model->outputs;
 			while (model_port) {
                 logical_block[i].output_net_tnodes[j] = (t_tnode **)my_calloc( model_port->size, sizeof(t_tnode*));
-				if (model_port->is_clock == FALSE) {
+				if (model_port->is_clock == false) {
                     for (k = 0; k < model_port->size; k++) {
                         if (logical_block[i].output_nets[j][k] != OPEN) {
                             tnode[inode].prepacked_data->model_pin = k;
@@ -1246,7 +1246,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			j = 0;
 			model_port = model->inputs;
 			while (model_port) {
-				if (model_port->is_clock == FALSE) {
+				if (model_port->is_clock == false) {
 					logical_block[i].input_net_tnodes[j] = (t_tnode **)my_calloc(
 							model_port->size, sizeof(t_tnode*));
 					for (k = 0; k < model_port->size; k++) {
@@ -1607,7 +1607,7 @@ static void process_constraints(void) {
 		num_edges, iedge, to_node, icf, ifc, iff;
 	t_tedge * tedge;
 	float constraint;
-	boolean * constraint_used = (boolean *) my_malloc(g_sdc->num_constrained_clocks * sizeof(boolean));
+	bool * constraint_used = (bool *) my_malloc(g_sdc->num_constrained_clocks * sizeof(bool));
 
 	for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
 		/* We're going to use arrival time to flag which nodes we've reached, 
@@ -1620,7 +1620,7 @@ static void process_constraints(void) {
 
 		/* Reset all constraint_used entries. */
 		for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
-			constraint_used[sink_clock_domain] = FALSE;
+			constraint_used[sink_clock_domain] = false;
 		}
 
 		/* Set arrival times for each top-level tnode on this clock domain. */
@@ -1644,7 +1644,7 @@ static void process_constraints(void) {
 						to true for this tnode's clock domain (if it has a valid one). */
 						sink_clock_domain = tnode[inode].clock_domain;
 						if (sink_clock_domain != -1) {
-							constraint_used[sink_clock_domain] = TRUE;
+							constraint_used[sink_clock_domain] = true;
 						}
 					} else {
 						/* Set arrival time to a valid value (0.) for each tnode in this tnode's fanout. */
@@ -1721,7 +1721,7 @@ static void alloc_timing_stats(void) {
 	}
 }
 
-void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, boolean is_prepacked, boolean is_final_analysis) {
+void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool is_prepacked, bool is_final_analysis) {
 
 /*  Performs timing analysis on the circuit.  Before this routine is called, t_slack * slacks 
 	must have been allocated, and the circuit must have been converted into a timing graph.
@@ -1783,7 +1783,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, boolea
 	in the file-scope variable f_timing_stats. 
 
 	Is_prepacked flags whether to calculate normalized costs for the clusterer (normalized_slack, 
-	normalized_Tarr, normalized_total_critical_paths). Setting this to FALSE saves time in post-
+	normalized_Tarr, normalized_total_critical_paths). Setting this to false saves time in post-
 	packed timing analyses.
 
 	Is_final_analysis flags whether this is the final, analysis pass.  If it is, the analyser will 
@@ -1842,7 +1842,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, boolea
 	float max_path_criticality = HUGE_NEGATIVE_FLOAT /* used to normalize path_criticalities */;
 #endif
 
-	boolean update_slack = (boolean) (is_final_analysis || getEchoEnabled());
+	bool update_slack = (is_final_analysis || getEchoEnabled());
 								 /* Only update slack values if we need to print it, i.e.
 								 for the final output file (is_final_analysis) or echo files. */
 
@@ -1861,7 +1861,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, boolea
     /* Denominator of criticality for slack_definition == 'S' || slack_definition == 'G' -
     max of all arrival times and all constraints. */
 
-    update_slack = boolean(timing_inf.slack_definition == 'S' || timing_inf.slack_definition == 'G');
+    update_slack = bool(timing_inf.slack_definition == 'S' || timing_inf.slack_definition == 'G');
 	/* Update slack values for certain slack definitions where they are needed to compute timing criticalities. */
 
 	/* Reset all values which need to be reset once per 
@@ -2021,7 +2021,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, boolea
     timing_analysis_runtime += end - begin;
 }
 
-static float find_least_slack(boolean is_prepacked, t_pb ***pin_id_to_pb_mapping) {
+static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 	/* Perform a simplified version of do_timing_analysis_for_constraint 
 	to compute only the smallest slack in the design. 
     USED ONLY WHEN slack_definition == 'I'! */
@@ -2112,14 +2112,14 @@ static float find_least_slack(boolean is_prepacked, t_pb ***pin_id_to_pb_mapping
 								continue; 
 							}
 				
-							boolean found = FALSE;
+							bool found = false;
 							t_tedge *tedge = tnode[inode].out_edges;
 							for (int iedge = 0; iedge < num_edges && !found; iedge++) { 
 								int to_node = tedge[iedge].to_node;
 								if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
 								if(tnode[to_node].T_req < HUGE_POSITIVE_FLOAT) {
-									found = TRUE;
+									found = true;
 								}
 							}
 							if (!found) {
@@ -2148,7 +2148,7 @@ static float find_least_slack(boolean is_prepacked, t_pb ***pin_id_to_pb_mapping
 }
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
-	boolean is_prepacked, boolean is_final_analysis, long * max_critical_input_paths_ptr, 
+	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
 	long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
 	
 	/* Performs a single forward and backward traversal for the domain pair 
@@ -2170,7 +2170,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 	t_tedge * tedge;
 	int num_dangling_nodes;
-	boolean found;
+	bool found;
 	long max_critical_input_paths = 0, max_critical_output_paths = 0;
 
     /* If not passed in, alloc and load pin_id_to_pb_mapping (and make sure to free later). */
@@ -2443,14 +2443,14 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				}
 				
 				/* Case 2 */
-				found = FALSE;
+				found = false;
 				tedge = tnode[inode].out_edges;
 				for (iedge = 0; iedge < num_edges && !found; iedge++) { 
 					to_node = tedge[iedge].to_node;
 					if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 					
 					if (tnode[to_node].T_req < HUGE_POSITIVE_FLOAT) {
-					    found = TRUE;
+					    found = true;
 					}
 				}
 				if (!found) {
@@ -2621,7 +2621,7 @@ static void do_path_counting(float criticality_denom) {
 #endif
 
 static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_clock_domain, float criticality_denom,
-    boolean update_slack, boolean is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf) {
+    bool update_slack, bool is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf) {
 
 	/* Updates the slack and criticality of each sink pin, or equivalently 
 	each edge, of each net. Go through the list of nets. If the net's 
@@ -2629,7 +2629,7 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
 	take the minimum of the slack/criticality for this traversal and the 
 	existing values. Since the criticality_denom can vary greatly between 
 	traversals, we have to update slack and criticality separately. 
-	Only update slack if we need to print it later (update_slack == TRUE). 
+	Only update slack if we need to print it later (update_slack == true). 
 	
 	Note: there is a correspondence in indexing between out_edges and the 
 	net data structure: out_edges[iedge] = net[inet].node_block[iedge + 1]
@@ -2839,10 +2839,10 @@ t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_inf) {
 		}
 
 		/* Do a timing analysis for this clock domain pair only. 
-		Set is_prepacked to FALSE since we don't care about the clusterer's normalized values. 
-		Set is_final_analysis to FALSE to get actual, rather than relaxed, slacks.
-		Set max critical input/output paths to NULL since they aren't used unless is_prepacked is TRUE. */
-		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, FALSE, FALSE, NULL, NULL, NULL, timing_inf);
+		Set is_prepacked to false since we don't care about the clusterer's normalized values. 
+		Set is_final_analysis to false to get actual, rather than relaxed, slacks.
+		Set max critical input/output paths to NULL since they aren't used unless is_prepacked is true. */
+		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, NULL, NULL, NULL, timing_inf);
 	}
 
 	/* Start at the source (level-0) tnode with the least slack (T_req-T_arr). 
@@ -2941,7 +2941,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 		(*timing_nets).size());
 	load_timing_graph_net_delays(net_delay);
 	
-	do_timing_analysis(slacks, timing_inf, FALSE, TRUE);
+	do_timing_analysis(slacks, timing_inf, false, true);
 
 	if (getEchoEnabled()) {
 		if(isEchoFileEnabled(E_ECHO_CRITICAL_PATH))
@@ -2949,7 +2949,7 @@ void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
 		if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
 			print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
 		if(isEchoFileEnabled(E_ECHO_SLACK))
-			print_slack(slacks->slack, TRUE, getEchoFileName(E_ECHO_SLACK));
+			print_slack(slacks->slack, true, getEchoFileName(E_ECHO_SLACK));
 		if(isEchoFileEnabled(E_ECHO_NET_DELAY))
 			print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
 	}
@@ -2991,7 +2991,7 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 #endif
 
 
-static void load_clock_domain_and_clock_and_io_delay(boolean is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping) {
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping) {
 /* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
 The clock domain of each clock is its index in g_sdc->constrained_clocks.
 We do this by matching each clock input pad (TN_INPAD_SOURCE), or internal clock 
@@ -3123,7 +3123,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 	}
 }
 
-static char * find_tnode_net_name(int inode, boolean is_prepacked, t_pb*** pin_id_to_pb_mapping) {
+static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
 	int logic_block; /* Name chosen not to conflict with the array logical_block */
@@ -3181,7 +3181,7 @@ static char * find_tnode_net_name(int inode, boolean is_prepacked, t_pb*** pin_i
 	}
 }
 
-static t_tnode * find_ff_clock_tnode(int inode, boolean is_prepacked, int **lookup_tnode_from_pin_id) {
+static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id) {
 	/* Finds the TN_FF_CLOCK tnode on the same flipflop as an TN_FF_SOURCE or TN_FF_SINK tnode. */
 	
 	int logic_block; /* Name chosen not to conflict with the array logical_block */
@@ -3270,20 +3270,20 @@ static inline int get_tnode_index(t_tnode * node) {
 	return node - tnode;
 }
 
-static inline boolean has_valid_T_arr(int inode) {
+static inline bool has_valid_T_arr(int inode) {
 	/* Has this tnode's arrival time been changed from its original value of HUGE_NEGATIVE_FLOAT? */
-	return (boolean) (tnode[inode].T_arr > HUGE_NEGATIVE_FLOAT + 1);
+	return (bool) (tnode[inode].T_arr > HUGE_NEGATIVE_FLOAT + 1);
 }
 
-static inline boolean has_valid_T_req(int inode) {
+static inline bool has_valid_T_req(int inode) {
 	/* Has this tnode's required time been changed from its original value of HUGE_POSITIVE_FLOAT? */
-	return (boolean) (tnode[inode].T_req < HUGE_POSITIVE_FLOAT - 1);
+	return (bool) (tnode[inode].T_req < HUGE_POSITIVE_FLOAT - 1);
 }
 
 #ifndef PATH_COUNTING
-boolean has_valid_normalized_T_arr(int inode) {
+bool has_valid_normalized_T_arr(int inode) {
 	/* Has this tnode's normalized_T_arr been changed from its original value of HUGE_NEGATIVE_FLOAT? */
-	return (boolean) (tnode[inode].prepacked_data->normalized_T_arr > HUGE_NEGATIVE_FLOAT + 1);
+	return (bool) (tnode[inode].prepacked_data->normalized_T_arr > HUGE_NEGATIVE_FLOAT + 1);
 }
 #endif
 
@@ -3318,7 +3318,7 @@ void print_timing_stats(void) {
 		num_netlist_clocks_with_intra_domain_paths = 0;
 	float geomean_period = 1., least_slack_in_design = HUGE_POSITIVE_FLOAT, critical_path_delay = UNDEFINED;
 	double fanout_weighted_geomean_period = 0.;
-	boolean found;
+	bool found;
 
 	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
 	 the limiting factor on critical path delay, so print that instead, with a special message. */
@@ -3424,7 +3424,7 @@ void print_timing_stats(void) {
 	
 		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
 		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. */
-		found = FALSE;
+		found = false;
 		for (clock_domain = 0; clock_domain < g_sdc->num_constrained_clocks; clock_domain++) {
 			if (g_sdc->domain_constraint[clock_domain][clock_domain] > NEGATIVE_EPSILON && g_sdc->constrained_clocks[clock_domain].is_netlist_clock) {
 				geomean_period *= f_timing_stats->cpd[clock_domain][clock_domain];
@@ -3432,7 +3432,7 @@ void print_timing_stats(void) {
 				fanout_weighted_geomean_period += log((double) f_timing_stats->cpd[clock_domain][clock_domain])*(double)fanout;
 				total_fanout += fanout;
 				num_netlist_clocks_with_intra_domain_paths++;
-				found = TRUE;
+				found = true;
 			}
 		}
 		if (found) { /* Only print these if we found at least one clock domain with intra-domain paths. */

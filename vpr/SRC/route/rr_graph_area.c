@@ -100,7 +100,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 	/* corresponding to IPINs will be 0.           */
 
-	boolean * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
+	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
 	float *shared_buffer_trans; /* [0..max_nx,ny)] */
 	float *unsharable_switch_trans, *sharable_switch_trans; /* [0..num_switch-1] */
 
@@ -142,7 +142,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
 
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
+	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
 	shared_buffer_trans = (float *) my_calloc(maxlen, sizeof(float));
 
 	unsharable_switch_trans = alloc_and_load_unsharable_switch_trans(num_switch,
@@ -204,8 +204,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
 
-					if (cblock_counted[iseg] == FALSE) {
-						cblock_counted[iseg] = TRUE;
+					if (cblock_counted[iseg] == false) {
+						cblock_counted[iseg] = true;
 						ntrans_sharing += trans_track_to_cblock_buf;
 						ntrans_no_sharing += trans_track_to_cblock_buf;
 					}
@@ -233,7 +233,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 				for (i = rr_node[from_node].get_xlow(); i <= rr_node[from_node].get_xhigh();
 						i++)
-					cblock_counted[i] = FALSE;
+					cblock_counted[i] = false;
 
 			} else { /* CHANY */
 				for (j = rr_node[from_node].get_ylow() - 1;
@@ -244,7 +244,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 				for (j = rr_node[from_node].get_ylow(); j <= rr_node[from_node].get_yhigh();
 						j++)
-					cblock_counted[j] = FALSE;
+					cblock_counted[j] = false;
 
 			}
 			break;
@@ -299,7 +299,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 void count_unidir_routing_transistors(t_segment_inf * segment_inf, 
 		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
 		const float trans_sram_bit) {
-	boolean * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
+	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
 	int *num_inputs_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
 
 	/* corresponding to IPINs will be 0.           */
@@ -314,8 +314,8 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	   a single mux. We should count this mux only once as we look at the outgoing
 	   switches of all rr nodes. Thus we keep track of which muxes we have already
 	   counted via the variable below. */
-	boolean *chan_node_switch_done;
-	chan_node_switch_done = (boolean *) my_calloc(num_rr_nodes, sizeof(boolean));
+	bool *chan_node_switch_done;
+	chan_node_switch_done = (bool *) my_calloc(num_rr_nodes, sizeof(bool));
 
 	/* The variable below is an accumulator variable that will add up all the   *
 	 * transistors in the routing.  Make double so that it doesn't stop         *
@@ -348,7 +348,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
+	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
 	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
@@ -394,7 +394,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 						} else {
 							ntrans += g_rr_switch_inf[switch_index].buf_size;
 						}
-						chan_node_switch_done[to_node] = TRUE;
+						chan_node_switch_done[to_node] = true;
 					}
 					
 					break;
@@ -405,8 +405,8 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 							num_inputs_to_cblock[to_node]);
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
 
-					if (cblock_counted[iseg] == FALSE) {
-						cblock_counted[iseg] = TRUE;
+					if (cblock_counted[iseg] == false) {
+						cblock_counted[iseg] = true;
 						ntrans += trans_track_to_cblock_buf;
 					}
 					break;
@@ -425,12 +425,12 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			/* Reset some flags */
 			if (from_rr_type == CHANX) {
 				for (i = rr_node[from_node].get_xlow(); i <= rr_node[from_node].get_xhigh(); i++)
-					cblock_counted[i] = FALSE;
+					cblock_counted[i] = false;
 
 			} else { /* CHANY */
 				for (j = rr_node[from_node].get_ylow(); j <= rr_node[from_node].get_yhigh();
 						j++)
-					cblock_counted[j] = FALSE;
+					cblock_counted[j] = false;
 
 			}
 			break;
@@ -512,7 +512,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 
 	for (i = 0; i < num_switch; i++) {
 
-		if (g_rr_switch_inf[i].buffered == FALSE) {
+		if (g_rr_switch_inf[i].buffered == false) {
 			Rpass = g_rr_switch_inf[i].R;
 		} else { /* Buffer.  Set Rpass = Rbuf = 1/2 Rtotal. */
 			Rpass = g_rr_switch_inf[i].R / 2.;
@@ -542,7 +542,7 @@ alloc_and_load_sharable_switch_trans(int num_switch, float trans_sram_bit,
 
 	for (i = 0; i < num_switch; i++) {
 
-		if (g_rr_switch_inf[i].buffered == FALSE) {
+		if (g_rr_switch_inf[i].buffered == false) {
 			sharable_switch_trans[i] = 0.;
 		} else { /* Buffer.  Set Rbuf = Rpass = 1/2 Rtotal. */
 			Rbuf = g_rr_switch_inf[i].R / 2.;

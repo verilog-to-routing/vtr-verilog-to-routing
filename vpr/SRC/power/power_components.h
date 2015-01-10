@@ -93,8 +93,8 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 		t_interconnect_pins * interc_pins, int iblk);
 void power_usage_mux_multilevel(t_power_usage * power_usage,
 		t_mux_arch * mux_arch, float * in_prob, float * in_dens,
-		int selected_input, boolean output_level_restored, float period);
+		int selected_input, bool output_level_restored, float period);
 void power_usage_buffer(t_power_usage * power_usage, float size, float in_prob,
-		float in_dens, boolean level_restored, float period);
+		float in_dens, bool level_restored, float period);
 
 #endif

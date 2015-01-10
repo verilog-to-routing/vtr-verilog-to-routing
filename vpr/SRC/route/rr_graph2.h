@@ -3,9 +3,9 @@
 
 /************** Global variables shared only by the rr_* modules. ************/
 
-extern boolean *rr_edge_done; /* [0..num_rr_nodes-1].  Used to keep track  *
+extern bool *rr_edge_done; /* [0..num_rr_nodes-1].  Used to keep track  *
  * of whether or not a node has been put in  *
- * an edge list yet. TRUE if a node is already listed in the edges array *
+ * an edge list yet. true if a node is already listed in the edges array *
  * that's being constructed. Ensure that there are no duplicate edges.   */
 
 /******************* Types shared by rr_graph2 functions *********************/
@@ -41,16 +41,16 @@ t_seg_details *alloc_and_load_seg_details(
 		INP int max_len,
 		INP int num_seg_types,
 		INP t_segment_inf *segment_inf,
-		INP boolean use_full_seg_groups,
-		INP boolean is_global_graph,
+		INP bool use_full_seg_groups,
+		INP bool is_global_graph,
 		INP enum e_directionality directionality,
 		OUTP int *num_seg_details = 0);
 
 void alloc_and_load_chan_details( 
 		INP int L_nx, INP int L_ny,
 		INP t_chan_width *nodes_per_chan,
-		INP boolean trim_empty_channels,
-		INP boolean trim_obs_channels,
+		INP bool trim_empty_channels,
+		INP bool trim_obs_channels,
 		INP int num_seg_details,
 		INP const t_seg_details *seg_details,
 		OUTP t_chan_details **chan_details_x,
@@ -64,8 +64,8 @@ t_chan_details *init_chan_details(
 void obstruct_chan_details( 
 		INP int L_nx, INP int L_ny,
 		INP t_chan_width *nodes_per_chan,
-		INP boolean trim_empty_channels,
-		INP boolean trim_obs_channels,
+		INP bool trim_empty_channels,
+		INP bool trim_obs_channels,
 		INOUTP t_chan_details *chan_details_x,
 		INOUTP t_chan_details *chan_details_y);
 void adjust_chan_details(
@@ -100,14 +100,14 @@ int get_seg_end(INP t_seg_details *seg_details,
 		INP int chan_num,
 		INP int seg_max);
 
-boolean is_cblock(
+bool is_cblock(
 		INP int chan,
 		INP int seg,
 		INP int track,
 		INP t_seg_details *seg_details,
 		INP enum e_directionality directionality);
 
-boolean is_sblock(
+bool is_sblock(
 		INP int chan,
 		INP int wire_seg,
 		INP int sb_seg,
@@ -121,7 +121,7 @@ int get_bidir_opin_connections(
 		INP struct s_linked_edge **edge_list,
 		INP int ******opin_to_track_map,
 		INP int Fc,
-		INP boolean *L_rr_edge_done,
+		INP bool *L_rr_edge_done,
 		INP t_ivec ***L_rr_node_indices,
 		INP t_seg_details *seg_details);
 
@@ -134,11 +134,11 @@ int get_unidir_opin_connections(
 		INP t_seg_details *seg_details,
 		INOUTP t_linked_edge **edge_list_ptr,
 		INOUTP int **Fc_ofs,
-		INOUTP boolean *L_rr_edge_done,
+		INOUTP bool *L_rr_edge_done,
 		INP int max_len,
 		INP int max_chan_width,
 		INP t_ivec ***L_rr_node_indices,
-		OUTP boolean *Fc_clipped);
+		OUTP bool *Fc_clipped);
 
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
@@ -165,7 +165,7 @@ int get_track_to_tracks(
 		INP t_chan_details *to_chan_details,
 		INP enum e_directionality directionality,
 		INP t_ivec ***L_rr_node_indices,
-		INOUTP boolean *L_rr_edge_done,
+		INOUTP bool *L_rr_edge_done,
 		INP struct s_ivec ***switch_block_conn);
 
 short ******alloc_sblock_pattern_lookup(

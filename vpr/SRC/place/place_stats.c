@@ -46,7 +46,7 @@ print_relative_pos_distr(void)
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
 	{
-		if (g_clbs_nlist.net[inet].is_global == FALSE)
+		if (g_clbs_nlist.net[inet].is_global == false)
 		{
 
 			src_x = block[g_clbs_nlist.net[inet].pins[0].block].x;

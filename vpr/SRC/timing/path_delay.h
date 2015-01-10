@@ -37,7 +37,7 @@ t_linked_int *allocate_and_load_critical_path(const t_timing_inf &timing_inf);
 
 void load_timing_graph_net_delays(float **net_delay);
 
-void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, boolean is_prepacked, boolean is_final_analysis);
+void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool is_prepacked, bool is_final_analysis);
 
 void free_timing_graph(t_slack * slacks);
 
@@ -45,7 +45,7 @@ void free_timing_stats(void);
 
 void print_timing_graph(const char *fname);
 
-void print_slack(float ** slack, boolean slack_is_normalized, const char *fname);
+void print_slack(float ** slack, bool slack_is_normalized, const char *fname);
 
 void print_criticality(t_slack * slacks, const char *fname);
 
@@ -56,7 +56,7 @@ void print_path_criticality(float ** path_criticality, const char *fname);
 #else
 void print_clustering_timing_info(const char *fname);
 
-boolean has_valid_normalized_T_arr(int inode);
+bool has_valid_normalized_T_arr(int inode);
 #endif
 
 void print_timing_stats(void);

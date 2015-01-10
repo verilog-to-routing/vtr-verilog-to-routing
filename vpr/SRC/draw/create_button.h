@@ -22,6 +22,14 @@
 /* Uncomment the line below if your X11 header files don't define XPointer */
 /* typedef char *XPointer;                                                 */
 
+#endif
+
+#ifdef WIN32
+#ifndef UNICODE
+#define UNICODE // force windows api into unicode (usually UTF-16) mode.
+#endif
+#include <windows.h>
+#include <WindowsX.h>
 #endif /* X11 Preprocessor Directives */
 
 /* Indicates if this button displays text, a polygon or is just a separator.
@@ -56,14 +64,9 @@ struct t_button {
 #ifdef X11
     Window win;
     XftDraw* draw;
-#else
-// TODO this is hacky - should actually include windows.h 
-// to get access to HWND, but doing so would cause a namespace collision
-// between Windows' boolean and VPR's boolean.  Solution: replace boolean
-// with bool in VPR, then remove all casts to HWND in graphics.c.
-#define HWND void *
+#endif
+#ifdef WIN32
     HWND hwnd;
-#undef HWND
 #endif
     t_button_type type;
     char text[BUTTON_TEXT_LEN];
@@ -89,8 +92,9 @@ void *safe_calloc(int ibytes);
    which calls the callback function button_func when pressed.
    button_func takes a void function drawscreen as its first argument, 
    which performs screen redrawing.  button_func may optionally take
-   additional arguments, which are passed to create_button as the
-   variadic argument "Args&... args". */
+   additional arguments, which are passed to create_button through the
+   variadic argument "Args&... args".  See draw.c for examples.
+   */
 template<class... Args>
 void create_button(const char *prev_button_text, const char *button_text,
     void(*button_func)(void(*drawscreen)(void), Args&...), Args&... args)

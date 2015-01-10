@@ -4,8 +4,8 @@
 
 
 void SetupVPR(INP t_options *Options,
-		INP boolean TimingEnabled,
-		INP boolean readArchFile,
+		INP bool TimingEnabled,
+		INP bool readArchFile,
 		OUTP struct s_file_name_opts *FileNameOpts,
 		INOUTP t_arch * Arch,
 		OUTP enum e_operation *Operation,
@@ -19,7 +19,7 @@ void SetupVPR(INP t_options *Options,
 		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
 		OUTP t_segment_inf ** Segments,
 		OUTP t_timing_inf * Timing,
-		OUTP boolean * ShowGraphics,
+		OUTP bool * ShowGraphics,
 		OUTP int *GraphPause,
 		OUTP t_power_opts * power_opts);
 
@@ -33,10 +33,10 @@ void CheckSetup(INP enum e_operation Operation,
 		INP t_chan_width_dist Chans);
 
 void CheckArch(INP t_arch Arch,
-		INP boolean TimingEnabled);
+		INP bool TimingEnabled);
 
 void CheckOptions(INP t_options Options,
-		INP boolean TimingEnabled);
+		INP bool TimingEnabled);
 
 void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup);
 void printClusteredNetlistStats(void);

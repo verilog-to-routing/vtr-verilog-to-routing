@@ -30,13 +30,13 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	int icblock, isblock, iseg_low, iseg_high;
 	float Cin, Cout;
 	t_rr_type from_rr_type, to_rr_type;
-	boolean * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
+	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
 	float *buffer_Cin; /* [0..max(nx,ny)] */
-	boolean buffered;
+	bool buffered;
 	float *Couts_to_add; /* UDSD */
 
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
+	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) my_calloc(maxlen, sizeof(float));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
@@ -99,9 +99,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						   Such a buffer exists at every segment of the wire at which
 						   at least one logic block input connects. */
 						icblock = seg_index_of_cblock(from_rr_type, to_node);
-						if (cblock_counted[icblock] == FALSE) {
+						if (cblock_counted[icblock] == false) {
 							rr_node[inode].C += C_ipin_cblock;
-							cblock_counted[icblock] = TRUE;
+							cblock_counted[icblock] = true;
 						}
 					} else {
 						/* No track buffer. Simply add the capacitance onto the wire */
@@ -119,7 +119,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			 * to_node = rr_node[inode].edges[iedge];
 			 * if (rr_node[to_node].type == IPIN) {
 			 * icblock = seg_index_of_cblock (from_rr_type, to_node);
-			 * cblock_counted[icblock] = FALSE;
+			 * cblock_counted[icblock] = false;
 			 * }
 			 * }     */
 
@@ -132,7 +132,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			}
 
 			for (icblock = iseg_low; icblock <= iseg_high; icblock++) {
-				cblock_counted[icblock] = FALSE;
+				cblock_counted[icblock] = false;
 			}
 
 			for (isblock = iseg_low - 1; isblock <= iseg_high; isblock++) {

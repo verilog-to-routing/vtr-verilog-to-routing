@@ -265,7 +265,7 @@ struct s_power_commonly_used {
 /* 1-to-1 data structure with t_rr_node
  */
 struct s_rr_node_power {
-	boolean visited; /* When traversing netlist, need to track whether the node has been processed */
+	bool visited; /* When traversing netlist, need to track whether the node has been processed */
 	float * in_dens; /* Switching density of inputs */
 	float * in_prob; /* Static probability of inputs */
 	short num_inputs; /* Number of inputs */
@@ -293,7 +293,7 @@ struct s_mux_node {
 	t_mux_node * children; /* Multiplexers that drive the inputs [0..num_inputs-1] */
 	int starting_pin_idx; /* Applicable to level 0 only, the overall mux primary input index */
 	int level; /* Level in the full multilevel mux - 0 = primary inputs to mux */
-	boolean level_restorer; /* Whether the output of this mux is level restored */
+	bool level_restorer; /* Whether the output of this mux is level restored */
 };
 
 /************************* GLOBALS **********************************/
@@ -307,11 +307,11 @@ extern t_net_power * clb_net_power;
 /************************* FUNCTION DECLARATIONS ********************/
 
 /* Call before using power module */
-boolean power_init(char * power_out_filepath,
+bool power_init(char * power_out_filepath,
 		char * cmos_tech_behavior_filepath, t_arch * arch,
 		t_det_routing_arch * routing_arch);
 
-boolean power_uninit(void);
+bool power_uninit(void);
 
 /* Top-Level Function */
 e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,

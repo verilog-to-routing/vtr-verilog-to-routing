@@ -49,7 +49,7 @@ t_type_ptr FILL_TYPE = NULL;
 int nx = 0;
 int ny = 0;
 
-/* TRUE if this is a global clb pin -- an input pin to which the netlist can *
+/* true if this is a global clb pin -- an input pin to which the netlist can *
  * connect global signals, but which does not connect into the normal        *
  * routing via muxes etc.  Marking pins like this (only clocks in my work)   *
  * stops them from screwing up the input switch pattern in the rr_graph      *

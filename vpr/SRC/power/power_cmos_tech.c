@@ -99,24 +99,24 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 	}
 	cur = ezxml_parse_file(cmos_tech_behavior_filepath);
 
-	prop = FindProperty(cur, "file", TRUE);
+	prop = FindProperty(cur, "file", true);
 	ezxml_set_attr(cur, "file", NULL);
 
-	prop = FindProperty(cur, "size", TRUE);
+	prop = FindProperty(cur, "size", true);
 	g_power_tech->tech_size = atof(prop);
 	ezxml_set_attr(cur, "size", NULL);
 
-	child = FindElement(cur, "operating_point", TRUE);
-	g_power_tech->temperature = GetFloatProperty(child, "temperature", TRUE, 0);
-	g_power_tech->Vdd = GetFloatProperty(child, "Vdd", TRUE, 0);
+	child = FindElement(cur, "operating_point", true);
+	g_power_tech->temperature = GetFloatProperty(child, "temperature", true, 0);
+	g_power_tech->Vdd = GetFloatProperty(child, "Vdd", true, 0);
 	FreeNode(child);
 
-	child = FindElement(cur, "p_to_n", TRUE);
-	g_power_tech->PN_ratio = GetFloatProperty(child, "ratio", TRUE, 0);
+	child = FindElement(cur, "p_to_n", true);
+	g_power_tech->PN_ratio = GetFloatProperty(child, "ratio", true, 0);
 	FreeNode(child);
 
 	/* Transistor Information */
-	child = FindFirstElement(cur, "transistor", TRUE);
+	child = FindFirstElement(cur, "transistor", true);
 	process_tech_xml_load_transistor_info(child);
 
 	prev = child;
@@ -127,24 +127,24 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 	FreeNode(child);
 
 	/* Multiplexer Voltage Information */
-	child = FindElement(cur, "multiplexers", TRUE);
+	child = FindElement(cur, "multiplexers", true);
 	power_tech_xml_load_multiplexer_info(child);
 	FreeNode(child);
 
 	/* Vds Leakage Information */
-	child = FindElement(cur, "nmos_leakages", TRUE);
+	child = FindElement(cur, "nmos_leakages", true);
 	power_tech_xml_load_nmos_st_leakages(child);
 	FreeNode(child);
 
 	/* Buffer SC Info */
 	/*
-	 child = FindElement(cur, "buffer_sc", TRUE);
+	 child = FindElement(cur, "buffer_sc", true);
 	 power_tech_xml_load_sc(child);
 	 FreeNode(child);
 	 */
 
 	/* Components */
-	child = FindElement(cur, "components", TRUE);
+	child = FindElement(cur, "components", true);
 	power_tech_xml_load_components(child);
 	FreeNode(child);
 
@@ -159,17 +159,17 @@ static void power_tech_xml_load_component(ezxml_t parent,
 	string component_name(name);
 	*component = new PowerSpicedComponent(component_name, usage_fn);
 
-	cur = FindElement(parent, name, TRUE);
+	cur = FindElement(parent, name, true);
 
-	child = FindFirstElement(cur, "inputs", TRUE);
+	child = FindFirstElement(cur, "inputs", true);
 	while (child) {
-		int num_inputs = GetIntProperty(child, "num_inputs", TRUE, 0);
+		int num_inputs = GetIntProperty(child, "num_inputs", true, 0);
 
-		gc = FindFirstElement(child, "size", TRUE);
+		gc = FindFirstElement(child, "size", true);
 		while (gc) {
 			float transistor_size = GetFloatProperty(gc, "transistor_size",
-					TRUE, 0.);
-			float power = GetFloatProperty(gc, "power", TRUE, 0.);
+					true, 0.);
+			float power = GetFloatProperty(gc, "power", true, 0.);
 			(*component)->add_data_point(num_inputs, transistor_size, power);
 
 			prev = gc;
@@ -227,27 +227,27 @@ static void power_tech_xml_load_sc(ezxml_t parent) {
 	g_power_tech->buffer_size_inf = (t_power_buffer_size_inf*) my_calloc(
 			g_power_tech->max_buffer_size + 1, sizeof(t_power_buffer_size_inf));
 
-	child = FindFirstElement(parent, "stages", TRUE);
+	child = FindFirstElement(parent, "stages", true);
 	i = 1;
 	while (child) {
 		t_power_buffer_size_inf * size_inf = &g_power_tech->buffer_size_inf[i];
 
-		GetIntProperty(child, "num_stages", TRUE, 1);
+		GetIntProperty(child, "num_stages", true, 1);
 
 		/* For the given # of stages, find the records for the strength of each stage */
 		size_inf->num_strengths = CountChildren(child, "strength", 1);
 		size_inf->strength_inf = (t_power_buffer_strength_inf*) my_calloc(
 				size_inf->num_strengths, sizeof(t_power_buffer_strength_inf));
 
-		gc = FindFirstElement(child, "strength", TRUE);
+		gc = FindFirstElement(child, "strength", true);
 		j = 0;
 		while (gc) {
 			t_power_buffer_strength_inf * strength_inf =
 			&size_inf->strength_inf[j];
 
 			/* Get the short circuit factor for a buffer with no level restorer at the input */
-			strength_inf->stage_gain = GetFloatProperty(gc, "gain", TRUE, 0.0);
-			strength_inf->sc_no_levr = GetFloatProperty(gc, "sc_nolevr", TRUE,
+			strength_inf->stage_gain = GetFloatProperty(gc, "gain", true, 0.0);
+			strength_inf->sc_no_levr = GetFloatProperty(gc, "sc_nolevr", true,
 					0.0);
 
 			/* Get the short circuit factor for buffers with level restorers at the input */
@@ -256,15 +256,15 @@ static void power_tech_xml_load_sc(ezxml_t parent) {
 					strength_inf->num_levr_entries,
 					sizeof(t_power_buffer_sc_levr_inf));
 
-			ggc = FindFirstElement(gc, "input_cap", TRUE);
+			ggc = FindFirstElement(gc, "input_cap", true);
 			k = 0;
 			while (ggc) {
 				t_power_buffer_sc_levr_inf * levr_inf =
 				&strength_inf->sc_levr_inf[k];
 
 				/* Short circuit factor is depdent on size of mux that drives the buffer */
-				levr_inf->mux_size = GetIntProperty(ggc, "mux_size", TRUE, 0);
-				levr_inf->sc_levr = GetFloatProperty(ggc, "sc_levr", TRUE, 0.0);
+				levr_inf->mux_size = GetIntProperty(ggc, "mux_size", true, 0);
+				levr_inf->sc_levr = GetFloatProperty(ggc, "sc_levr", true, 0.0);
 
 				prev = ggc;
 				ggc = ggc->next;
@@ -302,25 +302,25 @@ static void power_tech_xml_load_nmos_st_leakages(ezxml_t parent) {
 	g_power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) my_calloc(
 			num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
 
-	me = FindFirstElement(parent, "nmos", TRUE);
+	me = FindFirstElement(parent, "nmos", true);
 	nmos_idx = 0;
 	while (me) {
 		t_power_nmos_leakage_inf * nmos_info =
 				&g_power_tech->nmos_leakage_info[nmos_idx];
-		nmos_info->nmos_size = GetFloatProperty(me, "size", TRUE, 0.);
+		nmos_info->nmos_size = GetFloatProperty(me, "size", true, 0.);
 
 		num_leakage_pairs = CountChildren(me, "nmos_leakage", 1);
 		nmos_info->num_leakage_pairs = num_leakage_pairs;
 		nmos_info->leakage_pairs = (t_power_nmos_leakage_pair*) my_calloc(
 				num_leakage_pairs, sizeof(t_power_nmos_leakage_pair));
 
-		child = FindFirstElement(me, "nmos_leakage", TRUE);
+		child = FindFirstElement(me, "nmos_leakage", true);
 		i = 0;
 		while (child) {
 			nmos_info->leakage_pairs[i].v_ds = GetFloatProperty(child, "Vds",
-					TRUE, 0.0);
+					true, 0.0);
 			nmos_info->leakage_pairs[i].i_ds = GetFloatProperty(child, "Ids",
-					TRUE, 0.0);
+					true, 0.0);
 
 			prev = child;
 			child = child->next;
@@ -352,11 +352,11 @@ static void power_tech_xml_load_multiplexer_info(ezxml_t parent) {
 	g_power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) my_calloc(
 			num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
 
-	me = FindFirstElement(parent, "nmos", TRUE);
+	me = FindFirstElement(parent, "nmos", true);
 	nmos_idx = 0;
 	while (me) {
 		t_power_nmos_mux_inf * nmos_inf = &g_power_tech->nmos_mux_info[nmos_idx];
-		nmos_inf->nmos_size = GetFloatProperty(me, "size", TRUE, 0.0);
+		nmos_inf->nmos_size = GetFloatProperty(me, "size", true, 0.0);
 //		ezxml_set_attr(me, "size", NULL);
 
 		/* Process all multiplexer sizes */
@@ -369,12 +369,12 @@ static void power_tech_xml_load_multiplexer_info(ezxml_t parent) {
 		nmos_inf->mux_voltage_inf = (t_power_mux_volt_inf*) my_calloc(
 				nmos_inf->max_mux_sl_size + 1, sizeof(t_power_mux_volt_inf));
 
-		child = FindFirstElement(me, "multiplexer", TRUE);
+		child = FindFirstElement(me, "multiplexer", true);
 		i = 1;
 		while (child) {
 			int num_voltages;
 
-			assert(i == GetFloatProperty(child, "size", TRUE, 0));
+			assert(i == GetFloatProperty(child, "size", true, 0));
 
 			/* For each mux size, process all of the Vin levels */
 			num_voltages = CountChildren(child, "voltages", 1);
@@ -384,16 +384,16 @@ static void power_tech_xml_load_multiplexer_info(ezxml_t parent) {
 					(t_power_mux_volt_pair*) my_calloc(num_voltages,
 							sizeof(t_power_mux_volt_pair));
 
-			gc = FindFirstElement(child, "voltages", TRUE);
+			gc = FindFirstElement(child, "voltages", true);
 			j = 0;
 			while (gc) {
 				/* For each mux size, and Vin level, get the min/max V_out */
 				nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_in =
-						GetFloatProperty(gc, "in", TRUE, 0.0);
+						GetFloatProperty(gc, "in", true, 0.0);
 				nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_min =
-						GetFloatProperty(gc, "out_min", TRUE, 0.0);
+						GetFloatProperty(gc, "out_min", true, 0.0);
 				nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_max =
-						GetFloatProperty(gc, "out_max", TRUE, 0.0);
+						GetFloatProperty(gc, "out_max", true, 0.0);
 
 				prev = gc;
 				gc = gc->next;
@@ -429,7 +429,7 @@ static void process_tech_xml_load_transistor_info(ezxml_t parent) {
 	int i;
 
 	/* Get transistor type: NMOS or PMOS */
-	prop = FindProperty(parent, "type", TRUE);
+	prop = FindProperty(parent, "type", true);
 	trans_inf = NULL;
 	if (strcmp(prop, "nmos") == 0) {
 		trans_inf = &g_power_tech->NMOS_inf;
@@ -444,21 +444,21 @@ static void process_tech_xml_load_transistor_info(ezxml_t parent) {
 	trans_inf->long_trans_inf = (t_transistor_size_inf*) my_malloc(
 			sizeof(t_transistor_size_inf));
 
-	child = FindElement(parent, "long_size", TRUE);
-	assert(GetIntProperty(child, "L", TRUE, 0) == 2);
-	trans_inf->long_trans_inf->size = GetFloatProperty(child, "W", TRUE, 0);
+	child = FindElement(parent, "long_size", true);
+	assert(GetIntProperty(child, "L", true, 0) == 2);
+	trans_inf->long_trans_inf->size = GetFloatProperty(child, "W", true, 0);
 
-	grandchild = FindElement(child, "leakage_current", TRUE);
+	grandchild = FindElement(child, "leakage_current", true);
 	trans_inf->long_trans_inf->leakage_subthreshold = GetFloatProperty(
-			grandchild, "subthreshold", TRUE, 0);
+			grandchild, "subthreshold", true, 0);
 	FreeNode(grandchild);
 
-	grandchild = FindElement(child, "capacitance", TRUE);
-	trans_inf->long_trans_inf->C_g = GetFloatProperty(grandchild, "C_g", TRUE,
+	grandchild = FindElement(child, "capacitance", true);
+	trans_inf->long_trans_inf->C_g = GetFloatProperty(grandchild, "C_g", true,
 			0);
-	trans_inf->long_trans_inf->C_d = GetFloatProperty(grandchild, "C_d", TRUE,
+	trans_inf->long_trans_inf->C_d = GetFloatProperty(grandchild, "C_d", true,
 			0);
-	trans_inf->long_trans_inf->C_s = GetFloatProperty(grandchild, "C_s", TRUE,
+	trans_inf->long_trans_inf->C_s = GetFloatProperty(grandchild, "C_s", true,
 			0);
 	FreeNode(grandchild);
 
@@ -468,28 +468,28 @@ static void process_tech_xml_load_transistor_info(ezxml_t parent) {
 			trans_inf->num_size_entries, sizeof(t_transistor_size_inf));
 	FreeNode(child);
 
-	child = FindFirstElement(parent, "size", TRUE);
+	child = FindFirstElement(parent, "size", true);
 	i = 0;
 	while (child) {
-		assert(GetIntProperty(child, "L", TRUE, 0) == 1);
+		assert(GetIntProperty(child, "L", true, 0) == 1);
 
-		trans_inf->size_inf[i].size = GetFloatProperty(child, "W", TRUE, 0);
+		trans_inf->size_inf[i].size = GetFloatProperty(child, "W", true, 0);
 
 		/* Get leakage currents */
-		grandchild = FindElement(child, "leakage_current", TRUE);
+		grandchild = FindElement(child, "leakage_current", true);
 		trans_inf->size_inf[i].leakage_subthreshold = GetFloatProperty(
-				grandchild, "subthreshold", TRUE, 0);
+				grandchild, "subthreshold", true, 0);
 		trans_inf->size_inf[i].leakage_gate = GetFloatProperty(grandchild,
-				"gate", TRUE, 0);
+				"gate", true, 0);
 		FreeNode(grandchild);
 
 		/* Get node capacitances */
-		grandchild = FindElement(child, "capacitance", TRUE);
-		trans_inf->size_inf[i].C_g = GetFloatProperty(grandchild, "C_g", TRUE,
+		grandchild = FindElement(child, "capacitance", true);
+		trans_inf->size_inf[i].C_g = GetFloatProperty(grandchild, "C_g", true,
 				0);
-		trans_inf->size_inf[i].C_s = GetFloatProperty(grandchild, "C_s", TRUE,
+		trans_inf->size_inf[i].C_s = GetFloatProperty(grandchild, "C_s", true,
 				0);
-		trans_inf->size_inf[i].C_d = GetFloatProperty(grandchild, "C_d", TRUE,
+		trans_inf->size_inf[i].C_d = GetFloatProperty(grandchild, "C_d", true,
 				0);
 		FreeNode(grandchild);
 
@@ -507,14 +507,14 @@ static void process_tech_xml_load_transistor_info(ezxml_t parent) {
  * - type: The transistor type to search for
  * - size: The transistor size to search for (size = W/L)
  */
-boolean power_find_transistor_info(t_transistor_size_inf ** lower,
+bool power_find_transistor_info(t_transistor_size_inf ** lower,
 		t_transistor_size_inf ** upper, e_tx_type type, float size) {
 	char msg[1024];
 	t_transistor_size_inf key;
 	t_transistor_size_inf * found;
 	t_transistor_inf * trans_info;
 	float min_size, max_size;
-	boolean error = FALSE;
+	bool error = false;
 
 	key.size = size;
 
@@ -532,7 +532,7 @@ boolean power_find_transistor_info(t_transistor_size_inf ** lower,
 	if (trans_info->size_inf == NULL) {
 		power_log_msg(POWER_LOG_ERROR,
 				"No transistor information exists.  Cannot determine transistor properties.");
-		error = TRUE;
+		error = true;
 		return error;
 	}
 

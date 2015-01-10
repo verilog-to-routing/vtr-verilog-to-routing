@@ -240,9 +240,9 @@ static void alloc_net(void) {
 		/* FIXME: We *really* shouldn't be allocating write-once copies */
 		len = strlen("TEMP_NET");
 		clb_net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
-		clb_net[i].is_routed = FALSE;
-		clb_net[i].is_fixed = FALSE;
-		clb_net[i].is_global = FALSE;
+		clb_net[i].is_routed = false;
+		clb_net[i].is_fixed = false;
+		clb_net[i].is_global = false;
 		strcpy(clb_net[NET_USED].name, "TEMP_NET");
 
 		clb_net[i].num_sinks = (BLOCK_COUNT - 1);
@@ -265,9 +265,9 @@ static void alloc_vnet(){
 	for(i = 0; i < NET_COUNT; i++){
 		len = strlen("TEMP_NET");
 		g_clbs_nlist.net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
-		g_clbs_nlist.net[i].is_routed = FALSE;
-		g_clbs_nlist.net[i].is_fixed = FALSE;
-		g_clbs_nlist.net[i].is_global = FALSE;
+		g_clbs_nlist.net[i].is_routed = false;
+		g_clbs_nlist.net[i].is_fixed = false;
+		g_clbs_nlist.net[i].is_global = false;
 		strcpy(g_clbs_nlist.net[NET_USED].name, "TEMP_NET");
 	
 		g_clbs_nlist.net[i].pins.resize(BLOCK_COUNT);
@@ -519,7 +519,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
                         to worry about special cases such as carry chains, since we do
                         delay estimation between the most numerous pins on the block,
                         which should not be carry chain pins. */
-			TRUE, 
+			true, 
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warnings);

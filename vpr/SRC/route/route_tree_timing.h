@@ -38,9 +38,9 @@ typedef struct s_rt_node t_rt_node;
  *          node on the free list.                                           *
  * parent_node:  Pointer to the rt_node that is this node's parent (used to  *
  *               make bottom to top traversals).                             *
- * re_expand:  (really boolean).  Should this node be put on the heap as     *
+ * re_expand:  (really bool).  Should this node be put on the heap as     *
  *             part of the partial routing to act as a source for subsequent *
- *             connections?  TRUE->yes, FALSE-> no.                          *
+ *             connections?  true->yes, false-> no.                          *
  * parent_switch:  Index of the switch type driving this node (by its        *
  *                 parent).                                                  *
  * inode:  index (ID) of the rr_node that corresponds to this rt_node.       *

@@ -326,13 +326,6 @@ typedef XftFont* font_ptr;
 
 #ifdef WIN32
 
-#ifndef UNICODE
-#define UNICODE // force windows api into unicode (usually UTF-16) mode.
-#endif
-#include <windows.h>
-#include <WindowsX.h>
-
-
 /*************************************************************
  * WIN32 Structure Definitions                               *
  *************************************************************/
@@ -1336,7 +1329,7 @@ void map_button (int bnum)
 
 		delete[] WIN32_wchar_button_text;
 
-		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
+		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, true))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hButtonsWnd))
 			WIN32_DRAW_ERROR();
@@ -1347,7 +1340,7 @@ void map_button (int bnum)
 		buttons[bnum].win = -1;
 #else // WIN32
 		buttons[bnum].hwnd = NULL;
-		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
+		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, true))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hButtonsWnd))
 			WIN32_DRAW_ERROR();
@@ -1364,9 +1357,9 @@ void unmap_button (int bnum)
 		XUnmapWindow (x11_state.display, buttons[bnum].win);
 		XftDrawDestroy(buttons[bnum].draw);
 #else
-		if(!DestroyWindow(HWND(buttons[bnum].hwnd)))
+		if(!DestroyWindow(buttons[bnum].hwnd))
 			WIN32_DRAW_ERROR();
-		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
+		if(!InvalidateRect(win32_state.hButtonsWnd, NULL, true))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hButtonsWnd))
 			WIN32_DRAW_ERROR();
@@ -2511,7 +2504,7 @@ draw_message (void)
 			gl_state.statusMessage
 		);
 #else
-		if(!InvalidateRect(win32_state.hStatusWnd, NULL, TRUE))
+		if(!InvalidateRect(win32_state.hStatusWnd, NULL, true))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hStatusWnd))
 			WIN32_DRAW_ERROR();
@@ -3258,7 +3251,7 @@ build_default_menu (void)
 
 #ifdef WIN32
 	win32_state.adjustButton = 7;
-	if(!InvalidateRect(win32_state.hButtonsWnd, NULL, TRUE))
+	if(!InvalidateRect(win32_state.hButtonsWnd, NULL, true))
 		WIN32_DRAW_ERROR();
 	if(!UpdateWindow(win32_state.hButtonsWnd))
 		WIN32_DRAW_ERROR();
@@ -3404,7 +3397,7 @@ void enable_or_disable_button (int ibutton, bool enabled) {
    if (buttons[ibutton].type != BUTTON_SEPARATOR) {
       buttons[ibutton].enabled = enabled;
 #ifdef WIN32
-      EnableWindow(HWND(buttons[ibutton].hwnd), buttons[ibutton].enabled);
+      EnableWindow(buttons[ibutton].hwnd, buttons[ibutton].enabled);
 #else  // X11
       x11_drawbut(ibutton);
       XFlush(x11_state.display);
@@ -3464,7 +3457,7 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 		MultiByteToWideChar(CP_UTF8, 0, new_button_text, -1,
 			WIN32_wchar_button_text, BUTTON_TEXT_LEN);
 
-		SetWindowTextW(HWND(buttons[bnum].hwnd), WIN32_wchar_button_text);
+		SetWindowTextW(buttons[bnum].hwnd, WIN32_wchar_button_text);
 
 		delete[] WIN32_wchar_button_text;
 #endif
@@ -3919,7 +3912,7 @@ static void x11_build_textarea (void)
 }
 
 
-/* Returns True if the event passed in is an exposure event. Note that 
+/* Returns true if the event passed in is an exposure event. Note that 
  * the bool type returned by this function is defined in Xlib.h.         
  */
 static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dummy) 
@@ -3927,10 +3920,10 @@ static Bool x11_test_if_exposed (Display *disp, XEvent *event_ptr, XPointer dumm
 	(void)disp;  // suppress unused warning
 	(void)dummy; // suppress unused warning
 	if (event_ptr->type == Expose) {
-		return (True);
+		return (true);
 	}
 	
-	return (False);
+	return (false);
 }
 
 
@@ -4317,13 +4310,13 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 			/* Resize the children windows */
 			if(!MoveWindow(win32_state.hGraphicsWnd, 1, 1, trans_coord.top_width - MWIDTH - 1,
-							trans_coord.top_height - T_AREA_HEIGHT - 1, TRUE))
+							trans_coord.top_height - T_AREA_HEIGHT - 1, true))
 				WIN32_DRAW_ERROR();
 			if(!MoveWindow(win32_state.hStatusWnd, 0, trans_coord.top_height - T_AREA_HEIGHT,
-							trans_coord.top_width - MWIDTH, T_AREA_HEIGHT, TRUE))
+							trans_coord.top_width - MWIDTH, T_AREA_HEIGHT, true))
 				WIN32_DRAW_ERROR();
 			if(!MoveWindow(win32_state.hButtonsWnd, trans_coord.top_width - MWIDTH, 0, MWIDTH,
-							trans_coord.top_height, TRUE))
+							trans_coord.top_height, true))
 				WIN32_DRAW_ERROR();
 		
 			return 0;
@@ -4556,13 +4549,13 @@ static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam
 			
 			win32_state.windowAdjustFlag = WINDOW_DEACTIVATED;
 			buttons[win32_state.adjustButton].ispressed = 0;
-			SendMessage(HWND(buttons[win32_state.adjustButton].hwnd), BM_SETSTATE, 0, 0);
+			SendMessage(buttons[win32_state.adjustButton].hwnd, BM_SETSTATE, 0, 0);
 							
 			for (i=0; i<int(buttons.size()); i++) {
 				if (buttons[i].type != BUTTON_SEPARATOR
 					 && buttons[i].enabled) 
 				{
-					if(!EnableWindow (HWND(buttons[i].hwnd), TRUE))
+					if(!EnableWindow (buttons[i].hwnd, true))
 						WIN32_DRAW_ERROR();
 				}
 			}
@@ -4631,9 +4624,9 @@ win32_GraphicsWND_handle_WM_MOUSEMOVE(LPARAM lParam, int &X, int &Y, RECT &oldAd
 			win32_state.adjustRect.top = Y;
 			win32_state.adjustRect.bottom = HIWORD(lParam);
 		}
-		if(!InvalidateRect(win32_state.hGraphicsWnd, &oldAdjustRect, FALSE))
+		if(!InvalidateRect(win32_state.hGraphicsWnd, &oldAdjustRect, false))
 			WIN32_DRAW_ERROR();
-		if(!InvalidateRect(win32_state.hGraphicsWnd, &win32_state.adjustRect, FALSE))
+		if(!InvalidateRect(win32_state.hGraphicsWnd, &win32_state.adjustRect, false))
 			WIN32_DRAW_ERROR();
 		if(!UpdateWindow(win32_state.hGraphicsWnd))
 			WIN32_DRAW_ERROR();
@@ -4747,8 +4740,8 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					win32_state.adjustButton = LOWORD(wParam) - 200;
 					buttons[win32_state.adjustButton].ispressed = 1;
 					for (i=0; i<int(buttons.size()); i++) {
-						EnableWindow(HWND(buttons[i].hwnd), FALSE);
-						SendMessage(HWND(buttons[i].hwnd), BM_SETSTATE, 
+						EnableWindow(buttons[i].hwnd, false);
+						SendMessage(buttons[i].hwnd, BM_SETSTATE, 
 									buttons[i].ispressed, 0);
 					}
 				}
@@ -4886,7 +4879,7 @@ static void win32_invalidate_screen(void)
 {
 /* Tells the graphics engine to redraw the graphics display since information has changed */
 
-	if(!InvalidateRect(win32_state.hGraphicsWnd, NULL, FALSE))
+	if(!InvalidateRect(win32_state.hGraphicsWnd, NULL, false))
 		WIN32_DRAW_ERROR();
 	if(!UpdateWindow(win32_state.hGraphicsWnd))
 		WIN32_DRAW_ERROR();

@@ -234,7 +234,7 @@ static t_type_ptr find_type_col(INP int x) {
 	int i, j;
 	int start, repeat;
 	float rel;
-	boolean match;
+	bool match;
 	int priority, num_loc;
 	t_type_ptr column_type;
 
@@ -249,7 +249,7 @@ static t_type_ptr find_type_col(INP int x) {
 		num_loc = type_descriptors[i].num_grid_loc_def;
 		for (j = 0; j < num_loc; j++) {
 			if (priority < type_descriptors[i].grid_loc_def[j].priority) {
-				match = FALSE;
+				match = false;
 				if (type_descriptors[i].grid_loc_def[j].grid_loc_type
 						== COL_REPEAT) {
 					start = type_descriptors[i].grid_loc_def[j].start_col;
@@ -258,17 +258,17 @@ static t_type_ptr find_type_col(INP int x) {
 						start += (nx + 1);
 					}
 					if (x == start) {
-						match = TRUE;
+						match = true;
 					} else if (repeat > 0 && x > start && start > 0) {
 						if ((x - start) % repeat == 0) {
-							match = TRUE;
+							match = true;
 						}
 					}
 				} else if (type_descriptors[i].grid_loc_def[j].grid_loc_type
 						== COL_REL) {
 					rel = type_descriptors[i].grid_loc_def[j].col_rel;
 					if (nint(rel * nx) == x) {
-						match = TRUE;
+						match = true;
 					}
 				}
 				if (match) {

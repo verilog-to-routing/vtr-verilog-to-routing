@@ -569,7 +569,7 @@ static yyconst flex_int16_t yy_chk[254] =
       179,  179,  179
     } ;
 
-/* Table of booleans, true if rule could match eol. */
+/* Table of bools, true if rule could match eol. */
 static yyconst flex_int32_t yy_rule_can_match_eol[29] =
     {   0,
 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -917,7 +917,7 @@ YY_RULE_SETUP
 case 8:
 YY_RULE_SETUP
 #line 36 "src/sdc_parse.l"
-{ return CMD_SET_FALSE_PATH; }
+{ return CMD_SET_false_PATH; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP

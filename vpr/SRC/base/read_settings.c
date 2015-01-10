@@ -60,7 +60,7 @@ int read_settings_file(char * file_name, char *** outv)
 	Cur = ezxml_parse_file(file_name);
 	assert(*outv == NULL);
 	assert(! strcmp("settings",Cur->name));
-	Cur = FindElement(Cur, "arguments", FALSE);
+	Cur = FindElement(Cur, "arguments", false);
 
 	count = process_settings(Cur, *outv);
 

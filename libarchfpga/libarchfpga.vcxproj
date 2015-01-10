@@ -96,6 +96,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\arch_types.h" />
+    <ClInclude Include="include\cad_types.h" />
     <ClInclude Include="include\ezxml.h" />
     <ClInclude Include="include\logic_types.h" />
     <ClInclude Include="include\physical_types.h" />

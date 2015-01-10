@@ -164,18 +164,18 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 	}
 }
 
-boolean is_opin(int ipin, t_type_ptr type) {
+bool is_opin(int ipin, t_type_ptr type) {
 
-	/* Returns TRUE if this clb pin is an output, FALSE otherwise. */
+	/* Returns true if this clb pin is an output, false otherwise. */
 
 	int iclass;
 
 	iclass = type->pin_class[ipin];
 
 	if (type->class_inf[iclass].type == DRIVER)
-		return (TRUE);
+		return (true);
 	else
-		return (FALSE);
+		return (false);
 }
 
 
@@ -294,23 +294,23 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
 /**
  * given a primitive type and a logical block, is the mapping legal
  */
-boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
+bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 
 	t_model_ports *port;
 	int i, j;
-	boolean second_pass;
+	bool second_pass;
 
 	if (cur_pb_type == NULL) {
-		return FALSE;
+		return false;
 	}
 
 	/* check if ports are big enough */
 	port = logical_block[iblk].model->inputs;
-	second_pass = FALSE;
+	second_pass = false;
 	while (port || !second_pass) {
 		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
 		if (!port) {
-			second_pass = TRUE;
+			second_pass = true;
 			port = logical_block[iblk].model->outputs;
 		}
 		for (i = 0; i < cur_pb_type->num_ports; i++) {
@@ -318,17 +318,17 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 				for (j = cur_pb_type->ports[i].num_pins; j < port->size; j++) {
 					if (port->dir == IN_PORT && !port->is_clock) {
 						if (logical_block[iblk].input_nets[port->index][j] != OPEN) {
-							return FALSE;
+							return false;
 						}
 					} else if (port->dir == OUT_PORT) {
 						if (logical_block[iblk].output_nets[port->index][j] != OPEN) {
-							return FALSE;
+							return false;
 						}
 					} else {
 						assert(port->dir == IN_PORT && port->is_clock);
 						assert(j == 0);
 						if (logical_block[iblk].clock_net != OPEN) {
-							return FALSE;
+							return false;
 						}
 					}
 				}
@@ -340,14 +340,14 @@ boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 					|| (logical_block[iblk].model->outputs != NULL
 							&& second_pass)) {
 				/* physical port not found */
-				return FALSE;
+				return false;
 			}
 		}
 		if (port) {
 			port = port->next;
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -359,7 +359,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 	int i;
 
 	if(model_port->dir == IN_PORT) {
-		if(model_port->is_clock == FALSE) {
+		if(model_port->is_clock == false) {
 			for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 				if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
 					if(pb_graph_node->num_input_pins[i] > model_pin) {
@@ -666,7 +666,7 @@ int num_ext_inputs_logical_block(int iblk) {
 	ext_inps = 0;
 	port = logical_block[iblk].model->inputs;
 	while (port) {
-		if (port->is_clock == FALSE) {
+		if (port->is_clock == false) {
 			for (ipin = 0; ipin < port->size; ipin++) {
 				if (logical_block[iblk].input_nets[port->index][ipin] != OPEN) {
 					ext_inps++;
@@ -750,7 +750,7 @@ void free_pb(t_pb *pb) {
 			revalid_molecule = logical_block[pb->logical_block].packed_molecules;
 			while (revalid_molecule != NULL) {
 				cur_molecule = (t_pack_molecule*)revalid_molecule->data_vptr;
-				if (cur_molecule->valid == FALSE) {
+				if (cur_molecule->valid == false) {
 					for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
 						if (cur_molecule->logical_block_ptrs[i] != NULL) {
 							if (cur_molecule->logical_block_ptrs[i]->clb_index != OPEN) {
@@ -760,7 +760,7 @@ void free_pb(t_pb *pb) {
 					}
 					/* All logical blocks are open for this molecule, place back in queue */
 					if (i == get_array_size_of_molecule(cur_molecule)) {
-						cur_molecule->valid = TRUE;	
+						cur_molecule->valid = true;	
 					}
 				}
 				revalid_molecule = revalid_molecule->next;

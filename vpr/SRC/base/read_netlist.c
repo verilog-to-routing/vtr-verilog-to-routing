@@ -101,11 +101,11 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	CheckElement(Top, "block");
 
 	/* Check top-level netlist attributes */
-	Prop = FindProperty(Top, "name", TRUE);
+	Prop = FindProperty(Top, "name", true);
 	vpr_printf_info("Netlist generated from file '%s'.\n", Prop);
 	ezxml_set_attr(Top, "name", NULL);
 
-	Prop = FindProperty(Top, "instance", TRUE);
+	Prop = FindProperty(Top, "instance", true);
 	if (strcmp(Prop, "FPGA_packed_netlist[0]") != 0) {
 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Top->line,
 				"Expected instance to be \"FPGA_packed_netlist[0]\", found %s.",
@@ -114,14 +114,14 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	ezxml_set_attr(Top, "instance", NULL);
 
 	/* Parse top-level netlist I/Os */
-	Cur = FindElement(Top, "inputs", TRUE);
+	Cur = FindElement(Top, "inputs", true);
 	circuit_inputs = GetNodeTokens(Cur);
 	FreeNode(Cur);
-	Cur = FindElement(Top, "outputs", TRUE);
+	Cur = FindElement(Top, "outputs", true);
 	circuit_outputs = GetNodeTokens(Cur);
 	FreeNode(Cur);
 
-	Cur = FindElement(Top, "clocks", TRUE);
+	Cur = FindElement(Top, "clocks", true);
 	CountTokensInString(Cur->txt, &Count, &Len);
 	if (Count > 0) {
 		circuit_clocks = GetNodeTokens(Cur);
@@ -238,7 +238,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 		INP struct s_hash **logical_block_hash) {
 
 	const char *Prop;
-	boolean found;
+	bool found;
 	int num_tokens = 0;
 	t_token *tokens;
 	int i;
@@ -247,12 +247,12 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	/* parse cb attributes */
 	cb[index].pb = (t_pb*) my_calloc(1, sizeof(t_pb));
 
-	Prop = FindProperty(Parent, "name", TRUE);
+	Prop = FindProperty(Parent, "name", true);
 	cb[index].name = my_strdup(Prop);
 	cb[index].pb->name = my_strdup(Prop);
 	ezxml_set_attr(Parent, "name", NULL);
 
-	Prop = FindProperty(Parent, "instance", TRUE);
+	Prop = FindProperty(Parent, "instance", true);
 	tokens = GetTokensFromString(Prop, &num_tokens);
 	ezxml_set_attr(Parent, "instance", NULL);
 	if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
@@ -264,12 +264,12 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 				Prop, Parent->name);
 	}
 	assert(my_atoi(tokens[2].data) == index);
-	found = FALSE;
+	found = false;
 	for (i = 0; i < num_types; i++) {
 		if (strcmp(type_descriptors[i].name, tokens[0].data) == 0) {
 			cb[index].type = &type_descriptors[i];
 			pb_type = cb[index].type->pb_type;
-			found = TRUE;
+			found = true;
 			break;
 		}
 	}
@@ -284,14 +284,14 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
 	
-	Prop = FindProperty(Parent, "mode", TRUE);
+	Prop = FindProperty(Parent, "mode", true);
 	ezxml_set_attr(Parent, "mode", NULL);
 
-	found = FALSE;
+	found = false;
 	for (i = 0; i < pb_type->num_modes; i++) {
 		if (strcmp(Prop, pb_type->modes[i].name) == 0) {
 			cb[index].pb->mode = i;
-			found = TRUE;
+			found = true;
 		}
 	}
 	if (!found) {
@@ -326,19 +326,19 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 	const char *Prop;
 	const char *instance_type;
 	int i, j, pb_index;
-	boolean found;
+	bool found;
 	const t_pb_type *pb_type;
 	t_token *tokens;
 	int num_tokens;
 	struct s_hash *temp_hash;
 
-	Cur = FindElement(Parent, "inputs", TRUE);
+	Cur = FindElement(Parent, "inputs", true);
 	processPorts(Cur, pb, pb_route, vpack_net_hash);
 	FreeNode(Cur);
-	Cur = FindElement(Parent, "outputs", TRUE);
+	Cur = FindElement(Parent, "outputs", true);
 	processPorts(Cur, pb, pb_route, vpack_net_hash);
 	FreeNode(Cur);
-	Cur = FindElement(Parent, "clocks", TRUE);
+	Cur = FindElement(Parent, "clocks", true);
 	processPorts(Cur, pb, pb_route, vpack_net_hash);
 	FreeNode(Cur);
 	pb_type = pb->pb_graph_node->pb_type;
@@ -375,7 +375,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 			if (0 == strcmp(Cur->name, "block")) {
 				CheckElement(Cur, "block");
 
-				instance_type = FindProperty(Cur, "instance", TRUE);
+				instance_type = FindProperty(Cur, "instance", true);
 				tokens = GetTokensFromString(instance_type, &num_tokens);
 				ezxml_set_attr(Cur, "instance", NULL);
 				if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
@@ -387,7 +387,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 							instance_type, Cur->name);
 				}
 
-				found = FALSE;
+				found = false;
 				pb_index = OPEN;
 				for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children;
 						i++) {
@@ -411,7 +411,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 						}
 						pb->child_pbs[i][pb_index].pb_graph_node =
 								&pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
-						found = TRUE;
+						found = true;
 						break;
 					}
 				}
@@ -420,7 +420,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 							"Unknown pb type %s.\n", instance_type);
 				}
 
-				Prop = FindProperty(Cur, "name", TRUE);
+				Prop = FindProperty(Cur, "name", true);
 				ezxml_set_attr(Cur, "name", NULL);
 				if (0 != strcmp(Prop, "open")) {
 					pb->child_pbs[i][pb_index].name = my_strdup(Prop);
@@ -428,12 +428,12 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 					/* Parse all pbs and CB internal nets*/
 					pb->child_pbs[i][pb_index].logical_block = OPEN;
 
-					Prop = FindProperty(Cur, "mode", FALSE);
+					Prop = FindProperty(Cur, "mode", false);
 					if (Prop) {
 						ezxml_set_attr(Cur, "mode", NULL);
 					}
 					pb->child_pbs[i][pb_index].mode = 0;
-					found = FALSE;
+					found = false;
 					for (j = 0;
 							j
 									< pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes;
@@ -442,7 +442,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 								pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
 								== 0) {
 							pb->child_pbs[i][pb_index].mode = j;
-							found = TRUE;
+							found = true;
 						}
 					}
 					if (!found
@@ -460,15 +460,15 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 					/* physical block has no used primitives but it may have used routing */
 					pb->child_pbs[i][pb_index].name = NULL;
 					pb->child_pbs[i][pb_index].logical_block = OPEN;
-					lookahead = FindElement(Cur, "outputs", FALSE);
+					lookahead = FindElement(Cur, "outputs", false);
 					if (lookahead != NULL) {
-						lookahead = FindFirstElement(lookahead, "port", TRUE);
-						Prop = FindProperty(Cur, "mode", FALSE);
+						lookahead = FindFirstElement(lookahead, "port", true);
+						Prop = FindProperty(Cur, "mode", false);
 						if (Prop) {
 							ezxml_set_attr(Cur, "mode", NULL);
 						}
 						pb->child_pbs[i][pb_index].mode = 0;
-						found = FALSE;
+						found = false;
 						for (j = 0;
 								j
 										< pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes;
@@ -477,7 +477,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 									pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
 									== 0) {
 								pb->child_pbs[i][pb_index].mode = j;
-								found = TRUE;
+								found = true;
 							}
 						}
 						if (!found
@@ -531,9 +531,9 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 				curr_net->count * sizeof(int));
 		nlist[curr_net->index].node_block_pin = (int *) my_malloc(
 				curr_net->count * sizeof(int));
-		nlist[curr_net->index].is_routed = FALSE;
-		nlist[curr_net->index].is_fixed = FALSE;
-		nlist[curr_net->index].is_global = FALSE;
+		nlist[curr_net->index].is_routed = false;
+		nlist[curr_net->index].is_fixed = false;
+		nlist[curr_net->index].is_global = false;
 		for (i = 0; i < curr_net->count; i++) {
 			nlist[curr_net->index].node_block[i] = OPEN;
 			nlist[curr_net->index].node_block_pin[i] = OPEN;
@@ -575,23 +575,23 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 	t_pb_graph_pin *** pin_node;
 	int *num_ptrs, num_sets;
 	struct s_hash *temp_hash;
-	boolean found;
+	bool found;
 
 	Cur = Parent->child;
 	while (Cur) {
 		if (0 == strcmp(Cur->name, "port")) {
 			CheckElement(Cur, "port");
 
-			Prop = FindProperty(Cur, "name", TRUE);
+			Prop = FindProperty(Cur, "name", true);
 			ezxml_set_attr(Cur, "name", NULL);
 
 			in_port = out_port = clock_port = 0;
-			found = FALSE;
+			found = false;
 			for (i = 0; i < pb->pb_graph_node->pb_type->num_ports; i++) {
 				if (0
 						== strcmp(pb->pb_graph_node->pb_type->ports[i].name,
 								Prop)) {
-					found = TRUE;
+					found = true;
 					break;
 				}
 				if (pb->pb_graph_node->pb_type->ports[i].is_clock
@@ -677,8 +677,8 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 										pb->pb_graph_node->pb_type->parent_mode->interconnect[0].line_num,
 										pb->pb_graph_node->parent_pb_graph_node,
 										pb->pb_graph_node->parent_pb_graph_node->child_pb_graph_nodes[pb->parent_pb->mode],
-										port_name, &num_ptrs, &num_sets, TRUE,
-										TRUE);
+										port_name, &num_ptrs, &num_sets, true,
+										true);
 						assert(num_sets == 1 && num_ptrs[0] == 1);
 						if (0 == strcmp(Parent->name, "inputs"))
 							rr_node_index =
@@ -687,12 +687,12 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 							rr_node_index =
 									pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
 						pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
-						found = FALSE;
+						found = false;
 						for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
 							if (0
 									== strcmp(interconnect_name,
 											pin_node[0][0]->output_edges[j]->interconnect->name)) {
-								found = TRUE;
+								found = true;
 								break;
 							}
 						}
@@ -741,18 +741,18 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 										pb->pb_graph_node->pb_type->modes[pb->mode].interconnect->line_num,
 										pb->pb_graph_node,
 										pb->pb_graph_node->child_pb_graph_nodes[pb->mode],
-										port_name, &num_ptrs, &num_sets, TRUE,
-										TRUE);
+										port_name, &num_ptrs, &num_sets, true,
+										true);
 						assert(num_sets == 1 && num_ptrs[0] == 1);
 						rr_node_index =
 								pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 						pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
-						found = FALSE;
+						found = false;
 						for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
 							if (0
 									== strcmp(interconnect_name,
 											pin_node[0][0]->output_edges[j]->interconnect->name)) {
-								found = TRUE;
+								found = true;
 								break;
 							}
 						}
@@ -924,8 +924,8 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* Error check global and non global signals */
 	for (i = 0; i < *ext_ncount; i++) {
 		for (j = 1; j <= (*ext_nets)[i].num_sinks; j++) {
-			boolean is_global_net =
-					static_cast<boolean>((*ext_nets)[i].is_global);
+			bool is_global_net =
+					static_cast<bool>((*ext_nets)[i].is_global);
 			if (block_list[(*ext_nets)[i].node_block[j]].type->is_global_pin[(*ext_nets)[i].node_block_pin[j]]
 					!= is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
@@ -935,7 +935,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		}
 		for (j = 0; j < num_tokens; j++) {
 			if (strcmp(circuit_clocks[j], (*ext_nets)[i].name) == 0) {
-				assert((*ext_nets)[i].is_global == TRUE); /* above code should have caught this case, if not, then bug in code */
+				assert((*ext_nets)[i].is_global == true); /* above code should have caught this case, if not, then bug in code */
 			}
 		}
 	}
@@ -958,7 +958,7 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_pb_route *pb_route,
 		INOUTP struct s_net nlist[]) {
 	int i, j;
 	t_pb_type *pb_type;
-	boolean const_gen;
+	bool const_gen;
 	if (pb->pb_graph_node->pb_type->blif_model == NULL) {
 		for (i = 0;
 				i
@@ -974,37 +974,37 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_pb_route *pb_route,
 			}
 		}
 	} else if (strcmp(pb->pb_graph_node->pb_type->name, "inpad") != 0) {
-		const_gen = TRUE;
-		for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == TRUE;
+		const_gen = true;
+		for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true;
 				i++) {
 			for (j = 0;
 					j < pb->pb_graph_node->num_input_pins[i]
-							&& const_gen == TRUE; j++) {
+							&& const_gen == true; j++) {
 				if (pb_route[pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster].atom_net_idx
 						!= OPEN) {
-					const_gen = FALSE;
+					const_gen = false;
 				}
 			}
 		}
-		for (i = 0; i < pb->pb_graph_node->num_clock_ports && const_gen == TRUE;
+		for (i = 0; i < pb->pb_graph_node->num_clock_ports && const_gen == true;
 				i++) {
 			for (j = 0;
 					j < pb->pb_graph_node->num_clock_pins[i]
-							&& const_gen == TRUE; j++) {
+							&& const_gen == true; j++) {
 				if (pb_route[pb->pb_graph_node->clock_pins[i][j].pin_count_in_cluster].atom_net_idx
 						!= OPEN) {
-					const_gen = FALSE;
+					const_gen = false;
 				}
 			}
 		}
-		if (const_gen == TRUE) {
+		if (const_gen == true) {
 			vpr_printf_info("%s is a constant generator.\n", pb->name);
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
 					if (pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
 						nlist[pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx].is_const_gen =
-								TRUE;
+								true;
 					}
 				}
 			}

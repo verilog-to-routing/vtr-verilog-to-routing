@@ -16,7 +16,7 @@ using namespace std;
 /************************** Subroutines local to this module ****************/
 
 static void get_switch_type(
-		boolean is_from_sb, boolean is_to_sb,
+		bool is_from_sb, bool is_to_sb,
 		short from_node_switch, short to_node_switch, short switch_types[2]);
 
 static void load_chan_rr_indices(
@@ -29,20 +29,20 @@ static int get_bidir_track_to_chan_seg(
 		INP struct s_ivec conn_tracks,
 		INP t_ivec *** L_rr_node_indices, INP int to_chan, INP int to_seg,
 		INP int to_sb, INP t_rr_type to_type, INP t_seg_details * seg_details,
-		INP boolean from_is_sblock, INP int from_switch,
-		INOUTP boolean * L_rr_edge_done,
+		INP bool from_is_sblock, INP int from_switch,
+		INOUTP bool * L_rr_edge_done,
 		INP enum e_directionality directionality,
 		INOUTP struct s_linked_edge **edge_list);
 
 static int get_unidir_track_to_chan_seg(
-		INP boolean is_end_sb,
+		INP bool is_end_sb,
 		INP int from_track, INP int to_chan, INP int to_seg, INP int to_sb,
 		INP t_rr_type to_type, INP int max_chan_width, INP int L_nx,
 		INP int L_ny, INP enum e_side from_side, INP enum e_side to_side,
 		INP int Fs_per_side, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP t_ivec *** L_rr_node_indices,
-		INP t_seg_details * seg_details, INOUTP boolean * L_rr_edge_done,
-		OUTP boolean * Fs_clipped, INOUTP struct s_linked_edge **edge_list);
+		INP t_seg_details * seg_details, INOUTP bool * L_rr_edge_done,
+		OUTP bool * Fs_clipped, INOUTP struct s_linked_edge **edge_list);
 
 static int vpr_to_phy_track(
 		INP int itrack, INP int chan_num, INP int seg_num,
@@ -51,7 +51,7 @@ static int vpr_to_phy_track(
 
 static int *get_seg_track_counts(
 		INP int num_sets, INP int num_seg_types,
-		INP t_segment_inf * segment_inf, INP boolean use_full_seg_groups);
+		INP t_segment_inf * segment_inf, INP bool use_full_seg_groups);
 
 static int *label_wire_muxes(
 		INP int chan_num, INP int seg_num,
@@ -95,7 +95,7 @@ static int find_label_of_track(
 static int *get_seg_track_counts(
 		INP int num_sets, INP int num_seg_types,
 		INP t_segment_inf * segment_inf, 
-		INP boolean use_full_seg_groups) {
+		INP bool use_full_seg_groups) {
 
 	int *result;
 	double *demand;
@@ -163,7 +163,7 @@ static int *get_seg_track_counts(
 t_seg_details *alloc_and_load_seg_details(
 		INOUTP int *max_chan_width, INP int max_len,
 		INP int num_seg_types, INP t_segment_inf * segment_inf,
-		INP boolean use_full_seg_groups, INP boolean is_global_graph,
+		INP bool use_full_seg_groups, INP bool is_global_graph,
 		INP enum e_directionality directionality,
 		OUTP int * num_seg_details) {
 
@@ -181,7 +181,7 @@ t_seg_details *alloc_and_load_seg_details(
 	int group_start, first_track;
 	int *sets_per_seg_type = NULL;
 	t_seg_details *seg_details = NULL;
-	boolean longline;
+	bool longline;
 
 	/* Unidir tracks are assigned in pairs, and bidir tracks individually */
 	if (directionality == BI_DIRECTIONAL) {
@@ -263,11 +263,11 @@ t_seg_details *alloc_and_load_seg_details(
 
 			/* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
 			 * since this is a property of a detailed route. */
-			seg_details[cur_track].cb = (boolean *) my_malloc(length * sizeof(boolean));
-			seg_details[cur_track].sb = (boolean *) my_malloc((length + 1) * sizeof(boolean));
+			seg_details[cur_track].cb = (bool *) my_malloc(length * sizeof(bool));
+			seg_details[cur_track].sb = (bool *) my_malloc((length + 1) * sizeof(bool));
 			for (j = 0; j < length; ++j) {
 				if (is_global_graph) {
-					seg_details[cur_track].cb[j] = TRUE;
+					seg_details[cur_track].cb[j] = true;
 				} else {
 					index = j;
 
@@ -288,7 +288,7 @@ t_seg_details *alloc_and_load_seg_details(
 			}
 			for (j = 0; j < (length + 1); ++j) {
 				if (is_global_graph) {
-					seg_details[cur_track].sb[j] = TRUE;
+					seg_details[cur_track].sb[j] = true;
 				} else {
 					index = j;
 
@@ -354,8 +354,8 @@ t_seg_details *alloc_and_load_seg_details(
 void alloc_and_load_chan_details( 
 		INP int L_nx, INP int L_ny,
 		INP t_chan_width* nodes_per_chan,
-		INP boolean trim_empty_channels,
-		INP boolean trim_obs_channels,
+		INP bool trim_empty_channels,
+		INP bool trim_obs_channels,
 		INP int num_seg_details,
 		INP const t_seg_details* seg_details,
 		OUTP t_chan_details** chan_details_x,
@@ -414,8 +414,8 @@ t_chan_details* init_chan_details(
 				}
 
 				int length = seg_details[i].length;
-				p_seg_details[i].cb = (boolean*)my_malloc(length * sizeof(boolean));
-				p_seg_details[i].sb = (boolean*)my_malloc((length + 1) * sizeof(boolean));
+				p_seg_details[i].cb = (bool*)my_malloc(length * sizeof(bool));
+				p_seg_details[i].sb = (bool*)my_malloc((length + 1) * sizeof(bool));
 				for (int j = 0; j < length; ++j) {
 					p_seg_details[i].cb[j] = seg_details[i].cb[j];
 				}
@@ -455,8 +455,8 @@ t_chan_details* init_chan_details(
 void obstruct_chan_details(
 		INP int L_nx, INP int L_ny,
 		INP t_chan_width* nodes_per_chan,
-		INP boolean trim_empty_channels,
-		INP boolean trim_obs_channels,
+		INP bool trim_empty_channels,
+		INP bool trim_obs_channels,
 		INOUTP t_chan_details* chan_details_x,
 		INOUTP t_chan_details* chan_details_y) {
 
@@ -656,7 +656,7 @@ int get_seg_start(
 	} else {
 
 		seg_start = 1;
-		if (FALSE == seg_details[itrack].longline) {
+		if (false == seg_details[itrack].longline) {
 
 			int length = seg_details[itrack].length;
 			int start = seg_details[itrack].start;
@@ -722,7 +722,7 @@ int get_bidir_opin_connections(
 		INP int i, INP int j, INP int ipin,
 		INP struct s_linked_edge **edge_list, 
 		INP int ******opin_to_track_map,
-		INP int Fc, INP boolean * L_rr_edge_done,
+		INP int Fc, INP bool * L_rr_edge_done,
 		INP t_ivec *** L_rr_node_indices, INP t_seg_details * seg_details) {
 
 	int iside, num_conn, tr_i, tr_j, chan, seg;
@@ -763,7 +763,7 @@ int get_bidir_opin_connections(
 			continue;
 		}
 
-		is_connected_track = FALSE;
+		is_connected_track = false;
 
 		/* Itterate of the opin to track connections */
 		for (iconn = 0; iconn < Fc; ++iconn) {
@@ -771,7 +771,7 @@ int get_bidir_opin_connections(
 
 			/* Skip unconnected connections */
 			if (OPEN == to_track || is_connected_track) {
-				is_connected_track = TRUE;
+				is_connected_track = true;
 				assert( OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][iside][0]);
 				continue;
 			}
@@ -784,7 +784,7 @@ int get_bidir_opin_connections(
 
 				*edge_list = insert_in_edge_list(*edge_list, to_node,
 						to_switch);
-				L_rr_edge_done[to_node] = TRUE;
+				L_rr_edge_done[to_node] = true;
 				++num_conn;
 			}
 		}
@@ -798,9 +798,9 @@ int get_unidir_opin_connections(
 		INP int chan, INP int seg, INP int Fc,
 		INP t_rr_type chan_type, INP t_seg_details * seg_details,
 		INOUTP t_linked_edge ** edge_list_ptr, INOUTP int **Fc_ofs,
-		INOUTP boolean * L_rr_edge_done, INP int max_len,
+		INOUTP bool * L_rr_edge_done, INP int max_len,
 		INP int max_chan_width, INP t_ivec *** L_rr_node_indices,
-		OUTP boolean * Fc_clipped) {
+		OUTP bool * Fc_clipped) {
 
 	/* Gets a linked list of Fc nodes to connect to in given
 	 * chan seg.  Fc_ofs is used for the for the opin staggering
@@ -815,7 +815,7 @@ int get_unidir_opin_connections(
 	int x, y;
 	int num_edges;
 
-	*Fc_clipped = FALSE;
+	*Fc_clipped = false;
 
 	/* Fc is assigned in pairs so check it is even. */
 	assert(Fc % 2 == 0);
@@ -832,7 +832,7 @@ int get_unidir_opin_connections(
 
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
-		*Fc_clipped = TRUE;
+		*Fc_clipped = true;
 		Fc = 2 * min(num_inc_muxes, num_dec_muxes);
 	}
 
@@ -855,14 +855,14 @@ int get_unidir_opin_connections(
 				L_rr_node_indices);
 
 		/* Add to the list. */
-		if (FALSE == L_rr_edge_done[inc_inode_index]) {
-			L_rr_edge_done[inc_inode_index] = TRUE;
+		if (false == L_rr_edge_done[inc_inode_index]) {
+			L_rr_edge_done[inc_inode_index] = true;
 			*edge_list_ptr = insert_in_edge_list(*edge_list_ptr, inc_inode_index,
 					seg_details[inc_track].arch_opin_switch);
 			++num_edges;
 		}
-		if (FALSE == L_rr_edge_done[dec_inode_index]) {
-			L_rr_edge_done[dec_inode_index] = TRUE;
+		if (false == L_rr_edge_done[dec_inode_index]) {
+			L_rr_edge_done[dec_inode_index] = true;
 			*edge_list_ptr = insert_in_edge_list(*edge_list_ptr, dec_inode_index,
 					seg_details[dec_track].arch_opin_switch);
 			++num_edges;
@@ -881,7 +881,7 @@ int get_unidir_opin_connections(
 	return num_edges;
 }
 
-boolean is_cblock(INP int chan, INP int seg, INP int track,
+bool is_cblock(INP int chan, INP int seg, INP int track,
 		INP t_seg_details * seg_details,
 		INP enum e_directionality directionality) {
 
@@ -1569,7 +1569,7 @@ int get_track_to_tracks(
 		INP t_seg_details * to_seg_details,
 		INP t_chan_details * to_chan_details,
 		INP enum e_directionality directionality,
-		INP t_ivec *** L_rr_node_indices, INOUTP boolean * L_rr_edge_done,
+		INP t_ivec *** L_rr_node_indices, INOUTP bool * L_rr_edge_done,
 		INP struct s_ivec ***switch_block_conn) {
 
 	int num_conn;
@@ -1577,7 +1577,7 @@ int get_track_to_tracks(
 	int to_chan, to_sb;
 	int start, end;
 	struct s_ivec conn_tracks;
-	boolean from_is_sblock, is_behind, Fs_clipped;
+	bool from_is_sblock, is_behind, Fs_clipped;
 	enum e_side from_side_a, from_side_b, to_side;
 
 	assert(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
@@ -1598,20 +1598,20 @@ int get_track_to_tracks(
 
 	/* Figure out if the to_wire is connecting to a SB 
 	 * that is behind it. */
-	is_behind = FALSE;
+	is_behind = false;
 	if (to_type == from_type) {
 		/* If inline, check that they only are trying
 		 * to connect at endpoints. */
 		assert((to_seg == (from_end + 1)) || (to_seg == (from_seg - 1)));
 		if (to_seg > from_end) {
-			is_behind = TRUE;
+			is_behind = true;
 		}
 	} else {
 		/* If bending, check that they are adjacent to
 		 * our channel. */
 		assert((to_seg == from_chan) || (to_seg == (from_chan + 1)));
 		if (to_seg > from_chan) {
-			is_behind = TRUE;
+			is_behind = true;
 		}
 	}
 
@@ -1644,7 +1644,7 @@ int get_track_to_tracks(
 				from_seg_details, directionality);
 		/* end of wire must be an sblock */
 		if (from_sb == from_end || from_sb == from_first) {
-			from_is_sblock = TRUE; /* Endpoints always default to true */
+			from_is_sblock = true; /* Endpoints always default to true */
 		}
 
 		/* to_chan is the current segment if different directions,
@@ -1681,7 +1681,7 @@ int get_track_to_tracks(
 				if ((from_is_sblock)
 						&& (DEC_DIRECTION == from_seg_details[from_track].direction)) {
 					num_conn += get_unidir_track_to_chan_seg(
-							(boolean)(from_sb == from_first), from_track, to_chan,
+							(bool)(from_sb == from_first), from_track, to_chan,
 							to_seg, to_sb, to_type, max_chan_width, nx, ny,
 							from_side_a, to_side, Fs_per_side, opin_mux_size,
 							sblock_pattern, L_rr_node_indices, to_seg_details,
@@ -1707,7 +1707,7 @@ int get_track_to_tracks(
 				if ((from_is_sblock)
 						&& (INC_DIRECTION == from_seg_details[from_track].direction)) {
 					num_conn += get_unidir_track_to_chan_seg(
-							(boolean)(from_sb == from_end), from_track, to_chan,
+							(bool)(from_sb == from_end), from_track, to_chan,
 							to_seg, to_sb, to_type, max_chan_width, nx, ny, 
 							from_side_b, to_side, Fs_per_side, opin_mux_size, 
 							sblock_pattern, L_rr_node_indices, to_seg_details, 
@@ -1724,13 +1724,13 @@ static int get_bidir_track_to_chan_seg(
 		INP struct s_ivec conn_tracks,
 		INP t_ivec *** L_rr_node_indices, INP int to_chan, INP int to_seg,
 		INP int to_sb, INP t_rr_type to_type, INP t_seg_details * seg_details,
-		INP boolean from_is_sblock, INP int from_switch,
-		INOUTP boolean * L_rr_edge_done,
+		INP bool from_is_sblock, INP int from_switch,
+		INOUTP bool * L_rr_edge_done,
 		INP enum e_directionality directionality,
 		INOUTP struct s_linked_edge **edge_list) {
 
 	int iconn, to_track, to_node, to_switch, num_conn, to_x, to_y, i;
-	boolean to_is_sblock;
+	bool to_is_sblock;
 	short switch_types[2];
 
 	/* x, y coords for get_rr_node lookups */
@@ -1774,7 +1774,7 @@ static int get_bidir_track_to_chan_seg(
 			*edge_list = insert_in_edge_list(*edge_list, to_node,
 					switch_types[i]);
 			/* Mark the edge as now done */
-			L_rr_edge_done[to_node] = TRUE;
+			L_rr_edge_done[to_node] = true;
 			++num_conn;
 		}
 	}
@@ -1783,14 +1783,14 @@ static int get_bidir_track_to_chan_seg(
 }
 
 static int get_unidir_track_to_chan_seg(
-		INP boolean is_end_sb,
+		INP bool is_end_sb,
 		INP int from_track, INP int to_chan, INP int to_seg, INP int to_sb,
 		INP t_rr_type to_type, INP int max_chan_width, INP int L_nx,
 		INP int L_ny, INP enum e_side from_side, INP enum e_side to_side,
 		INP int Fs_per_side, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP t_ivec *** L_rr_node_indices,
-		INP t_seg_details * seg_details, INOUTP boolean * L_rr_edge_done,
-		OUTP boolean * Fs_clipped, INOUTP struct s_linked_edge **edge_list) {
+		INP t_seg_details * seg_details, INOUTP bool * L_rr_edge_done,
+		OUTP bool * Fs_clipped, INOUTP struct s_linked_edge **edge_list) {
 
 	int num_labels = 0;
 	int *mux_labels = NULL;
@@ -1807,15 +1807,15 @@ static int get_unidir_track_to_chan_seg(
 		to_dir = INC_DIRECTION;
 	}
 
-	*Fs_clipped = FALSE;
+	*Fs_clipped = false;
 
 	/* SBs go from (0, 0) to (nx, ny) */
-	boolean is_corner = (boolean)(((sb_x < 1) || (sb_x >= L_nx))
+	bool is_corner =(((sb_x < 1) || (sb_x >= L_nx))
 			&& ((sb_y < 1) || (sb_y >= L_ny)));
-	boolean is_fringe = (boolean)((FALSE == is_corner)
+	bool is_fringe =((false == is_corner)
 			&& ((sb_x < 1) || (sb_y < 1) || (sb_x >= L_nx) || (sb_y >= L_ny)));
-	boolean is_core = (boolean)((FALSE == is_corner) && (FALSE == is_fringe));
-	boolean is_straight = (boolean)((from_side == RIGHT && to_side == LEFT)
+	bool is_core =((false == is_corner) && (false == is_fringe));
+	bool is_straight =((from_side == RIGHT && to_side == LEFT)
 			|| (from_side == LEFT && to_side == RIGHT)
 			|| (from_side == TOP && to_side == BOTTOM)
 			|| (from_side == BOTTOM && to_side == TOP));
@@ -1844,7 +1844,7 @@ static int get_unidir_track_to_chan_seg(
 
 	/* Check if Fs demand was too high. */
 	if (Fs_per_side > num_labels) {
-		*Fs_clipped = TRUE;
+		*Fs_clipped = true;
 	}
 
 	/* Handle Fs > 3 by assigning consecutive muxes. */
@@ -1870,7 +1870,7 @@ static int get_unidir_track_to_chan_seg(
 				continue;
 
 			/* Add edge to list. */
-			L_rr_edge_done[to_node] = TRUE;
+			L_rr_edge_done[to_node] = true;
 			*edge_list = insert_in_edge_list(*edge_list, to_node, seg_details[to_track].arch_wire_switch);
 			++count;
 		}
@@ -1883,7 +1883,7 @@ static int get_unidir_track_to_chan_seg(
 	return count;
 }
 
-boolean is_sblock(INP int chan, INP int wire_seg, INP int sb_seg, INP int track,
+bool is_sblock(INP int chan, INP int wire_seg, INP int sb_seg, INP int track,
 		INP t_seg_details * seg_details,
 		INP enum e_directionality directionality) {
 
@@ -1913,7 +1913,7 @@ boolean is_sblock(INP int chan, INP int wire_seg, INP int sb_seg, INP int track,
 }
 
 static void get_switch_type(
-		boolean is_from_sblock, boolean is_to_sblock,
+		bool is_from_sblock, bool is_to_sblock,
 		short from_node_switch, short to_node_switch, short switch_types[2]) {
 	/* This routine looks at whether the from_node and to_node want a switch,  *
 	 * and what type of switch is used to connect *to* each type of node       *
@@ -1924,30 +1924,30 @@ static void get_switch_type(
 	 * because one topology (a buffer in the forward direction and a pass      *
 	 * transistor in the backward direction) results in *two* switches.        */
 
-	boolean forward_pass_trans;
-	boolean backward_pass_trans;
+	bool forward_pass_trans;
+	bool backward_pass_trans;
 	int used, min_switch, max_switch;
 
 	switch_types[0] = OPEN; /* No switch */
 	switch_types[1] = OPEN;
 	used = 0;
-	forward_pass_trans = FALSE;
-	backward_pass_trans = FALSE;
+	forward_pass_trans = false;
+	backward_pass_trans = false;
 
 	/* Connect forward if we are a sblock */
 	if (is_from_sblock) {
 		switch_types[used] = to_node_switch;
-		if (FALSE == g_arch_switch_inf[to_node_switch].buffered) {
-			forward_pass_trans = TRUE;
+		if (false == g_arch_switch_inf[to_node_switch].buffered) {
+			forward_pass_trans = true;
 		}
 		++used;
 	}
 
 	/* Check for pass_trans coming backwards */
 	if (is_to_sblock) {
-		if (FALSE == g_arch_switch_inf[from_node_switch].buffered) {
+		if (false == g_arch_switch_inf[from_node_switch].buffered) {
 			switch_types[used] = from_node_switch;
-			backward_pass_trans = TRUE;
+			backward_pass_trans = true;
 			++used;
 		}
 	}
@@ -2138,11 +2138,11 @@ void load_sblock_pattern_lookup(
 
 	/* SB's range from (0, 0) to (nx, ny) */
 	/* First find all four sides' incoming wires */
-	boolean x_edge = (boolean)((i < 1) || (i >= nx));
-	boolean y_edge = (boolean)((j < 1) || (j >= ny));
+	bool x_edge =((i < 1) || (i >= nx));
+	bool y_edge =((j < 1) || (j >= ny));
 
-	boolean is_corner_sblock = (boolean)(x_edge && y_edge);
-	boolean is_core_sblock = (boolean)(!x_edge && !y_edge);
+	bool is_corner_sblock =(x_edge && y_edge);
+	bool is_core_sblock =(!x_edge && !y_edge);
 
 	int *wire_mux_on_track[4];
 	int *incoming_wire_label[4];
@@ -2161,26 +2161,26 @@ void load_sblock_pattern_lookup(
 
 		/* Skip the side and leave the zero'd value if the
 		 * channel segment doesn't exist. */
-		boolean skip = TRUE;
+		bool skip = true;
 		switch (side) {
 		case TOP:
 			if (j < ny) {
-				skip = FALSE;
+				skip = false;
 			}
 			break;
 		case RIGHT:
 			if (i < nx) {
-				skip = FALSE;
+				skip = false;
 			}
 			break;
 		case BOTTOM:
 			if (j > 0) {
-				skip = FALSE;
+				skip = false;
 			}
 			break;
 		case LEFT:
 			if (i > 0) {
-				skip = FALSE;
+				skip = false;
 			}
 			break;
 		}
@@ -2189,8 +2189,8 @@ void load_sblock_pattern_lookup(
 		}
 
 		/* Figure out the channel and segment for a certain direction */
-		boolean vert = (boolean) ((side == TOP) || (side == BOTTOM));
-		boolean pos_dir = (boolean) ((side == TOP) || (side == RIGHT));
+		bool vert = ((side == TOP) || (side == BOTTOM));
+		bool pos_dir = ((side == TOP) || (side == RIGHT));
 		int chan_len = (vert ? ny : nx);
 		int chan = (vert ? i : j);
 		int sb_seg = (vert ? j : i);
@@ -2484,7 +2484,7 @@ static int *label_wire_muxes(
 
 	int itrack, start, end, num_labels, pass;
 	int *labels = NULL;
-	boolean is_endpoint;
+	bool is_endpoint;
 
 	/* COUNT pass then a LOAD pass */
 	num_labels = 0;
@@ -2511,9 +2511,9 @@ static int *label_wire_muxes(
 			}
 
 			/* Determine if we are a wire startpoint */
-			is_endpoint = (boolean)(seg_num == start);
+			is_endpoint =(seg_num == start);
 			if (DEC_DIRECTION == seg_details[itrack].direction) {
-				is_endpoint = (boolean)(seg_num == end);
+				is_endpoint =(seg_num == end);
 			}
 
 			/* Count the labels and load if LOAD pass */
@@ -2542,7 +2542,7 @@ static int *label_incoming_wires(
 
 	int itrack, start, end, i, num_passing, num_ending, pass;
 	int *labels;
-	boolean sblock_exists, is_endpoint;
+	bool sblock_exists, is_endpoint;
 
 	/* Alloc the list of labels for the tracks */
 	labels = (int *) my_malloc(max_chan_width * sizeof(int));
@@ -2565,9 +2565,9 @@ static int *label_incoming_wires(
 				end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
 
 				/* Determine if we are a wire endpoint */
-				is_endpoint = (boolean)(seg_num == end);
+				is_endpoint =(seg_num == end);
 				if (DEC_DIRECTION == seg_details[itrack].direction) {
-					is_endpoint = (boolean)(seg_num == start);
+					is_endpoint =(seg_num == start);
 				}
 
 				/* Determine if we have a sblock on the wire */
@@ -2586,7 +2586,7 @@ static int *label_incoming_wires(
 					/* On second pass, load the passing wire labels. They
 					 * will follow after the ending wire labels. */
 				case 1:
-					if ((FALSE == is_endpoint) && sblock_exists) {
+					if ((false == is_endpoint) && sblock_exists) {
 						labels[itrack] = num_ending + num_passing;
 						++num_passing;
 					}

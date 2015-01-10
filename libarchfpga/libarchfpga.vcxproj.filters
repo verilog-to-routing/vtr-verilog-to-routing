@@ -35,6 +35,9 @@
     <ClInclude Include="include\ReadLine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\cad_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ezxml.c">

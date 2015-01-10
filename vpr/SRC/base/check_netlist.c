@@ -82,9 +82,9 @@ void check_netlist() {
 	 */
 	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
 		if (strcmp(g_clbs_nlist.net[i].name, "vcc") == 0) {
-			g_clbs_nlist.net[i].is_global = TRUE;
+			g_clbs_nlist.net[i].is_global = true;
 		} else if (strcmp(g_clbs_nlist.net[i].name, "gnd") == 0) {
-			g_clbs_nlist.net[i].is_global = TRUE;
+			g_clbs_nlist.net[i].is_global = true;
 		}
 	}
 }
@@ -110,7 +110,7 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 
 		node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
 
-		boolean is_global_net = static_cast<boolean>(g_clbs_nlist.net[inet].is_global);
+		bool is_global_net = static_cast<bool>(g_clbs_nlist.net[inet].is_global);
 		if (block[iblk].type->is_global_pin[node_block_pin]
 				!= is_global_net && block[iblk].type != IO_TYPE) {
 

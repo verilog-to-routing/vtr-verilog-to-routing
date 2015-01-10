@@ -15,12 +15,12 @@ using namespace std;
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, int inet);
-static void check_sink(int inode, int inet, boolean * pin_done);
+static void check_sink(int inode, int inet, bool * pin_done);
 static void check_switch(struct s_trace *tptr, int num_switch);
-static boolean check_adjacent(int from_node, int to_node);
+static bool check_adjacent(int from_node, int to_node);
 static int pin_and_chan_adjacent(int pin_node, int chan_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
-static void reset_flags(int inet, boolean * connected_to_route);
+static void reset_flags(int inet, bool * connected_to_route);
 static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally);
 static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
 		enum e_route_type route_type);
@@ -38,10 +38,10 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	int max_pins, inode, prev_node;
 	unsigned int inet, ipin;
-	boolean valid, connects;
-	boolean * connected_to_route; /* [0 .. num_rr_nodes-1] */
+	bool valid, connects;
+	bool * connected_to_route; /* [0 .. num_rr_nodes-1] */
 	struct s_trace *tptr;
-	boolean * pin_done;
+	bool * pin_done;
 
 	vpr_printf_info("\n");
 	vpr_printf_info("Checking to ensure routing is legal...\n");
@@ -52,20 +52,20 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	recompute_occupancy_from_scratch(clb_opins_used_locally);
 	valid = feasible_routing();
-	if (valid == FALSE) {
+	if (valid == false) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 			"Error in check_route -- routing resources are overused.\n");
 	}
 
 	check_locally_used_clb_opins(clb_opins_used_locally, route_type);
 
-	connected_to_route = (boolean *) my_calloc(num_rr_nodes, sizeof(boolean));
+	connected_to_route = (bool *) my_calloc(num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
 		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].pins.size());
 
-	pin_done = (boolean *) my_malloc(max_pins * sizeof(boolean));
+	pin_done = (bool *) my_malloc(max_pins * sizeof(bool));
 
 	/* Now check that all nets are indeed connected. */
 
@@ -75,7 +75,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			continue;
 
 		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++)
-			pin_done[ipin] = FALSE;
+			pin_done[ipin] = false;
 
 		/* Check the SOURCE of the net. */
 
@@ -88,10 +88,10 @@ void check_route(enum e_route_type route_type, int num_switches,
 		inode = tptr->index;
 		check_node_and_range(inode, route_type);
 		check_switch(tptr, num_switches);
-		connected_to_route[inode] = TRUE; /* Mark as in path. */
+		connected_to_route[inode] = true; /* Mark as in path. */
 
 		check_source(inode, inet);
-		pin_done[0] = TRUE;
+		pin_done[0] = true;
 
 		prev_node = inode;
 		tptr = tptr->next;
@@ -104,7 +104,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			check_switch(tptr, num_switches);
 
 			if (rr_node[prev_node].type == SINK) {
-				if (connected_to_route[inode] == FALSE) {
+				if (connected_to_route[inode] == false) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_route: node %d does not link into existing routing for net %d.\n", inode, inet);
 				}
@@ -126,7 +126,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 						"in check_route: net %d routing is not a tree.\n", inet);
 				}
 
-				connected_to_route[inode] = TRUE; /* Mark as in path. */
+				connected_to_route[inode] = true; /* Mark as in path. */
 
 				if (rr_node[inode].type == SINK)
 					check_sink(inode, inet, pin_done);
@@ -142,7 +142,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 		}
 
 		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-			if (pin_done[ipin] == FALSE) {
+			if (pin_done[ipin] == false) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
 					"in check_route: net %d does not connect to pin %d.\n", inet, ipin);
 			}
@@ -158,7 +158,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 	vpr_printf_info("\n");
 }
 
-static void check_sink(int inode, int inet, boolean * pin_done) {
+static void check_sink(int inode, int inet, bool * pin_done) {
 
 	/* Checks that this SINK node is one of the terminals of inet, and marks   *
 	 * the appropriate pin as being reached.                                   */
@@ -185,9 +185,9 @@ static void check_sink(int inode, int inet, boolean * pin_done) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *
 					 * update pin_done for a pin that hasn't been reached yet.                 */
 
-					if (pin_done[ipin] == FALSE) {
+					if (pin_done[ipin] == false) {
 						ifound++;
-						pin_done[ipin] = TRUE;
+						pin_done[ipin] = true;
 					}
 				}
 			}
@@ -274,7 +274,7 @@ static void check_switch(struct s_trace *tptr, int num_switch) {
 	}
 }
 
-static void reset_flags(int inet, boolean * connected_to_route) {
+static void reset_flags(int inet, bool * connected_to_route) {
 
 	/* This routine resets the flags of all the channel segments contained *
 	 * in the traceback of net inet to 0.  This allows us to check the     * 
@@ -288,15 +288,15 @@ static void reset_flags(int inet, boolean * connected_to_route) {
 
 	while (tptr != NULL) {
 		inode = tptr->index;
-		connected_to_route[inode] = FALSE; /* Not in routed path now. */
+		connected_to_route[inode] = false; /* Not in routed path now. */
 		tptr = tptr->next;
 	}
 }
 
-static boolean check_adjacent(int from_node, int to_node) {
+static bool check_adjacent(int from_node, int to_node) {
 
 	/* This routine checks if the rr_node to_node is reachable from from_node.   *
-	 * It returns TRUE if is reachable and FALSE if it is not.  Check_node has   *
+	 * It returns true if is reachable and false if it is not.  Check_node has   *
 	 * already been used to verify that both nodes are valid rr_nodes, so only   *
 	 * adjacency is checked here.                                                
 	 * Special case: direct OPIN to IPIN connections need not be adjacent.  These
@@ -306,21 +306,21 @@ static boolean check_adjacent(int from_node, int to_node) {
 
 	int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
 	int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh, iconn;
-	boolean reached;
+	bool reached;
 	t_rr_type from_type, to_type;
 	t_type_ptr from_grid_type, to_grid_type;
 
-	reached = FALSE;
+	reached = false;
 
 	for (iconn = 0; iconn < rr_node[from_node].get_num_edges(); iconn++) {
 		if (rr_node[from_node].edges[iconn] == to_node) {
-			reached = TRUE;
+			reached = true;
 			break;
 		}
 	}
 
 	if (!reached)
-		return (FALSE);
+		return (false);
 
 	/* Now we know the rr graph says these two nodes are adjacent.  Double  *
 	 * check that this makes sense, to verify the rr graph.                 */
@@ -366,7 +366,7 @@ static boolean check_adjacent(int from_node, int to_node) {
 			num_adj += pin_and_chan_adjacent(from_node, to_node);
 		} else {
 			assert(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
-			return TRUE; /* Special case, direct OPIN to IPIN connections need not be adjacent */
+			return true; /* Special case, direct OPIN to IPIN connections need not be adjacent */
 		}
 
 		break;
@@ -455,13 +455,13 @@ static boolean check_adjacent(int from_node, int to_node) {
 	}
 
 	if (num_adj == 1)
-		return (TRUE);
+		return (true);
 	else if (num_adj == 0)
-		return (FALSE);
+		return (false);
 	
 	vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 		"in check_adjacent: num_adj = %d. Expected 0 or 1.\n", num_adj);
-	return FALSE; //Should not reach here once thrown
+	return false; //Should not reach here once thrown
 }
 
 static int chanx_chany_adjacent(int chanx_node, int chany_node) {

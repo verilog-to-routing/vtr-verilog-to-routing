@@ -178,10 +178,10 @@ void vpr_init(INP int argc, INP char **argv,
 		setEchoEnabled(IsEchoEnabled(options));
 		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
 		vpr_setup->constant_net_delay = options->constant_net_delay;
-		vpr_setup->gen_netlist_as_blif = (boolean) (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
+		vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
 		/* Read in arch and circuit */
-		SetupVPR(options, vpr_setup->TimingEnabled, TRUE, &vpr_setup->FileNameOpts,
+		SetupVPR(options, vpr_setup->TimingEnabled, true, &vpr_setup->FileNameOpts,
 				arch, &vpr_setup->Operation, &vpr_setup->user_models,
 				&vpr_setup->library_models, &vpr_setup->PackerOpts,
 				&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
@@ -281,10 +281,10 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				freeGrid();
 
 				/* Test if netlist fits in grid */
-				boolean fit = TRUE;
+				bool fit = true;
 				for (int i = 0; i < num_types; ++i) {
 					if (num_blocks_type[i] > num_instances_type[i]) {
-						fit = FALSE;
+						fit = false;
 						break;
 					}
 				}
@@ -545,8 +545,8 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 		int iclass = FILL_TYPE->pin_class[ipin];
 		e_pin_type pin_type = FILL_TYPE->class_inf[iclass].type;
 		int Fc = FILL_TYPE->Fc[ipin];
-		boolean is_fractional = FILL_TYPE->is_Fc_frac[ipin];
-		boolean is_full_flex = FILL_TYPE->is_Fc_full_flex[ipin];
+		bool is_fractional = FILL_TYPE->is_Fc_frac[ipin];
+		bool is_full_flex = FILL_TYPE->is_Fc_full_flex[ipin];
 
 		if (pin_type == DRIVER){
 			if (is_full_flex){
@@ -610,7 +610,7 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 	}
 }
 
-boolean vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch) {
+bool vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch) {
 
 	/* Startup X graphics */
 	init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
@@ -621,7 +621,7 @@ boolean vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch) {
 	}
 
 	/* Do placement and routing */
-	boolean success = place_and_route(vpr_setup->Operation, vpr_setup->PlacerOpts,
+	bool success = place_and_route(vpr_setup->Operation, vpr_setup->PlacerOpts,
 			vpr_setup->FileNameOpts.PlaceFile, vpr_setup->FileNameOpts.NetFile,
 			vpr_setup->FileNameOpts.ArchFile, vpr_setup->FileNameOpts.RouteFile,
 			vpr_setup->AnnealSched, vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
@@ -996,8 +996,8 @@ void vpr_read_options(INP int argc, INP char **argv, OUTP t_options * options) {
 }
 
 /* Read in arch and circuit */
-void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
-		INP boolean readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
+void vpr_setup_vpr(INP t_options *Options, INP bool TimingEnabled,
+		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
 		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
 		OUTP t_model ** user_models, OUTP t_model ** library_models,
 		OUTP struct s_packer_opts *PackerOpts,
@@ -1007,7 +1007,7 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
 		OUTP struct s_det_routing_arch *RoutingArch,
 		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
 		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP boolean * ShowGraphics, OUTP int *GraphPause,
+		OUTP bool * ShowGraphics, OUTP int *GraphPause,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			Operation, user_models, library_models, PackerOpts, PlacerOpts,
@@ -1015,10 +1015,10 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */
-void vpr_check_options(INP t_options Options, INP boolean TimingEnabled) {
+void vpr_check_options(INP t_options Options, INP bool TimingEnabled) {
 	CheckOptions(Options, TimingEnabled);
 }
-void vpr_check_arch(INP t_arch Arch, INP boolean TimingEnabled) {
+void vpr_check_arch(INP t_arch Arch, INP bool TimingEnabled) {
 	CheckArch(Arch, TimingEnabled);
 }
 /* Verify settings don't conflict or otherwise not make sense */
@@ -1033,8 +1033,8 @@ void vpr_check_setup(INP enum e_operation Operation,
 }
 /* Read blif file and sweep unused components */
 void vpr_read_and_process_blif(INP char *blif_file,
-		INP boolean sweep_hanging_nets_and_inputs, INP t_model *user_models,
-		INP t_model *library_models, boolean read_activity_file,
+		INP bool sweep_hanging_nets_and_inputs, INP t_model *user_models,
+		INP t_model *library_models, bool read_activity_file,
 		char * activity_file) {
 	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
@@ -1098,7 +1098,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	vpr_printf_info("Initializing power module\n");
 
 	/* Initialize the power module */
-	boolean power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
+	bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
 			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
 		vpr_printf_error(__FILE__, __LINE__,

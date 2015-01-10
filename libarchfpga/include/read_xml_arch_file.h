@@ -17,7 +17,7 @@ extern "C" {
 
 /* function declarations */
 void
-XmlReadArch( INP const char *ArchFile, INP boolean timing_enabled,
+XmlReadArch( INP const char *ArchFile, INP bool timing_enabled,
 		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
 		OUTP int *NumTypes);
 void

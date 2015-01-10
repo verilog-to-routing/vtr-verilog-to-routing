@@ -39,7 +39,7 @@
    enum yytokentype {
      CMD_CREATE_CLOCK = 258,
      CMD_SET_CLOCK_GROUPS = 259,
-     CMD_SET_FALSE_PATH = 260,
+     CMD_SET_false_PATH = 260,
      CMD_SET_MAX_DELAY = 261,
      CMD_SET_MULTICYCLE_PATH = 262,
      CMD_SET_INPUT_DELAY = 263,

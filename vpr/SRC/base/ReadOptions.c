@@ -10,11 +10,11 @@ using namespace std;
 #include "read_settings.h"
 #include "globals.h"
 
-static boolean EchoEnabled;
+static bool EchoEnabled;
 
-static boolean Generate_PostSynthesis_Netlist;
+static bool Generate_PostSynthesis_Netlist;
 
-static boolean *echoFileEnabled = NULL;
+static bool *echoFileEnabled = NULL;
 static char **echoFileNames = NULL;
 
 static char **outputFileNames = NULL;
@@ -27,7 +27,7 @@ static char **ProcessOption(INP char **Args, INOUTP t_options * Options);
 static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id);
 static char **ReadFloat(INP char **Args, OUTP float *Val);
 static char **ReadInt(INP char **Args, OUTP int *Val);
-static char **ReadOnOff(INP char **Args, OUTP boolean * Val);
+static char **ReadOnOff(INP char **Args, OUTP bool * Val);
 static char **ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type);
 static char **ReadFixPins(INP char **Args, OUTP char **PinFile);
 static char **ReadPlaceAlgorithm(INP char **Args,
@@ -48,31 +48,31 @@ static char **ReadChar(INP char **Args, OUTP char *Val);
 /* Determines whether timing analysis should be on or off. 
  Unless otherwise specified, always default to timing.
  */
-boolean IsTimingEnabled(INP t_options *Options) {
+bool IsTimingEnabled(INP t_options *Options) {
 	/* First priority to the '--timing_analysis' flag */
 	if (Options->Count[OT_TIMING_ANALYSIS]) {
 		return Options->TimingAnalysis;
 	}
-	return TRUE;
+	return true;
 }
 
 /* Determines whether file echo should be on or off. 
  Unless otherwise specified, always default to on.
  */
-boolean IsEchoEnabled(INP t_options *Options) {
+bool IsEchoEnabled(INP t_options *Options) {
 	/* First priority to the '--echo_file' flag */
 	if (Options->Count[OT_CREATE_ECHO_FILE]) {
 		return Options->CreateEchoFile;
 	}
-	return FALSE;
+	return false;
 }
 
 
-boolean getEchoEnabled(void) {
+bool getEchoEnabled(void) {
 	return EchoEnabled;
 }
 
-void setEchoEnabled(boolean echo_enabled) {
+void setEchoEnabled(bool echo_enabled) {
 	/* enable echo outputs */
 	EchoEnabled = echo_enabled;
 	if(echoFileEnabled == NULL) {
@@ -81,30 +81,30 @@ void setEchoEnabled(boolean echo_enabled) {
 	}
 }
 
-boolean GetPostSynthesisOption(void){
+bool GetPostSynthesisOption(void){
   return Generate_PostSynthesis_Netlist;
 }
 
-void SetPostSynthesisOption(boolean post_synthesis_enabled){
+void SetPostSynthesisOption(bool post_synthesis_enabled){
   Generate_PostSynthesis_Netlist = post_synthesis_enabled;
 }
 
-boolean IsPostSynthesisEnabled(INP t_options *Options) {
+bool IsPostSynthesisEnabled(INP t_options *Options) {
   /* First priority to the '--generate_postsynthesis_netlist' flag */
   if (Options->Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
     return Options->Generate_Post_Synthesis_Netlist;
   }
-  return FALSE;
+  return false;
 }
 
-void setAllEchoFileEnabled(boolean value) {
+void setAllEchoFileEnabled(bool value) {
 	int i;
 	for(i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
 		echoFileEnabled[i] = value;
 	}
 }
 
-void setEchoFileEnabled(enum e_echo_files echo_option, boolean value) {
+void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
 	echoFileEnabled[(int)echo_option] = value;
 }
 
@@ -115,9 +115,9 @@ void setEchoFileName(enum e_echo_files echo_option, const char *name) {
 	echoFileNames[(int)echo_option] = my_strdup(name);
 }
 
-boolean isEchoFileEnabled(enum e_echo_files echo_option) {
+bool isEchoFileEnabled(enum e_echo_files echo_option) {
 	if(echoFileEnabled == NULL) {
-		return FALSE;
+		return false;
 	} else {
 		return echoFileEnabled[(int)echo_option];
 	}
@@ -127,10 +127,10 @@ char *getEchoFileName(enum e_echo_files echo_option) {
 }
 
 void alloc_and_load_echo_file_info() {
-	echoFileEnabled = (boolean*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(boolean));
+	echoFileEnabled = (bool*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
 	echoFileNames = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
 
-	setAllEchoFileEnabled(TRUE);
+	setAllEchoFileEnabled(true);
 
 	setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "initial_placement_timing_graph.echo");
@@ -987,7 +987,7 @@ ReadFixPins(INP char **Args, OUTP char **PinFile) {
 }
 
 static char **
-ReadOnOff(INP char **Args, OUTP boolean * Val) {
+ReadOnOff(INP char **Args, OUTP bool * Val) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -995,10 +995,10 @@ ReadOnOff(INP char **Args, OUTP boolean * Val) {
 	Args = ReadToken(Args, &Token);
 	switch (Token) {
 	case OT_ON:
-		*Val = TRUE;
+		*Val = true;
 		break;
 	case OT_OFF:
-		*Val = FALSE;
+		*Val = false;
 		break;
 	default:
 		Error(*PrevArgs);

@@ -22,18 +22,18 @@ struct s_options {
 	/* General options */
 	int GraphPause;
 	float constant_net_delay;
-	boolean TimingAnalysis;
-	boolean CreateEchoFile;
-	boolean Generate_Post_Synthesis_Netlist;
+	bool TimingAnalysis;
+	bool CreateEchoFile;
+	bool Generate_Post_Synthesis_Netlist;
     char SlackDefinition;
 	/* Clustering options */
-	boolean global_clocks;
+	bool global_clocks;
 	int cluster_size;
 	int inputs_per_cluster;
 	int lut_size;
-	boolean hill_climbing_flag;
-	boolean sweep_hanging_nets_and_inputs;
-	boolean timing_driven;
+	bool hill_climbing_flag;
+	bool sweep_hanging_nets_and_inputs;
+	bool timing_driven;
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;
 	float beta;
@@ -41,10 +41,10 @@ struct s_options {
 	float block_delay;
 	float intra_cluster_net_delay;
 	float inter_cluster_net_delay;
-	boolean skip_clustering;
-	boolean allow_unrelated_clustering;
-	boolean allow_early_exit;
-	boolean connection_driven;
+	bool skip_clustering;
+	bool allow_unrelated_clustering;
+	bool allow_early_exit;
+	bool connection_driven;
 	enum e_packer_algorithm packer_algorithm;
 
 	/* Placement options */
@@ -57,7 +57,7 @@ struct s_options {
 	float place_cost_exp;
 	int PlaceChanWidth;
 	char *PinFile;
-	boolean ShowPlaceTiming;
+	bool ShowPlaceTiming;
 	int block_dist;
 
 	/* Timing-driven placement options only */
@@ -77,8 +77,8 @@ struct s_options {
 	float bend_cost;
 	enum e_route_type RouteType;
 	int RouteChanWidth;
-	boolean TrimEmptyChan;
-	boolean TrimObsChan;
+	bool TrimEmptyChan;
+	bool TrimObsChan;
 	enum e_router_algorithm RouterAlgorithm;
 	enum e_base_cost_type base_cost_type;
 
@@ -89,12 +89,12 @@ struct s_options {
 	float placer_cost_constant;
 	int constant_type;
 	/* architecture experiments */
-	boolean allow_chanx_interposer_connections;
-	boolean transfer_interposer_fanins;
-	boolean allow_additional_interposer_fanins;
+	bool allow_chanx_interposer_connections;
+	bool transfer_interposer_fanins;
+	bool allow_additional_interposer_fanins;
 	int  pct_of_interposer_nodes_each_chany_can_drive;
-	boolean transfer_interposer_fanouts;
-	boolean allow_additional_interposer_fanouts;
+	bool transfer_interposer_fanouts;
+	bool allow_additional_interposer_fanouts;
 	int  pct_of_chany_wires_an_interposer_node_can_drive;
 #endif
 
@@ -168,14 +168,14 @@ void ReadOptions(INP int argc,
 		INP char **argv,
 		OUTP t_options * Options);
 
-boolean getEchoEnabled(void);
-void setEchoEnabled(boolean echo_enabled);
+bool getEchoEnabled(void);
+void setEchoEnabled(bool echo_enabled);
 
-void setAllEchoFileEnabled(boolean value);
-void setEchoFileEnabled(enum e_echo_files echo_option, boolean value);
+void setAllEchoFileEnabled(bool value);
+void setEchoFileEnabled(enum e_echo_files echo_option, bool value);
 void setEchoFileName(enum e_echo_files echo_option, const char *name);
 
-boolean isEchoFileEnabled(enum e_echo_files echo_option);
+bool isEchoFileEnabled(enum e_echo_files echo_option);
 char *getEchoFileName(enum e_echo_files echo_option);
 
 void alloc_and_load_echo_file_info();
@@ -186,11 +186,11 @@ char *getOutputFileName(enum e_output_files ename);
 void alloc_and_load_output_file_names(const char* default_name);
 void free_output_file_names();
 
-boolean IsTimingEnabled(INP t_options *Options);
-boolean IsEchoEnabled(INP t_options *Options);
+bool IsTimingEnabled(INP t_options *Options);
+bool IsEchoEnabled(INP t_options *Options);
 
-boolean GetPostSynthesisOption(void);
-void SetPostSynthesisOption(boolean post_synthesis_enabled);
+bool GetPostSynthesisOption(void);
+void SetPostSynthesisOption(bool post_synthesis_enabled);
 
-boolean IsPostSynthesisEnabled(INP t_options *Options);
+bool IsPostSynthesisEnabled(INP t_options *Options);
 #endif

@@ -12,7 +12,7 @@
 
 /*********************** Subroutines local to this module *******************/
 
-static boolean rr_node_is_global_clb_ipin(int inode);
+static bool rr_node_is_global_clb_ipin(int inode);
 
 static void check_pass_transistors(int from_node);
 
@@ -29,7 +29,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 	short switch_type;
 	t_rr_type rr_type, to_rr_type;
 	enum e_route_type route_type;
-	boolean is_fringe_warning_sent;
+	bool is_fringe_warning_sent;
 	t_type_ptr type;
 
 	route_type = DETAILED;
@@ -123,7 +123,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 	/* I built a list of how many edges went to everything in the code above -- *
 	 * now I check that everything is reachable.                                */
-	is_fringe_warning_sent = FALSE;
+	is_fringe_warning_sent = false;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_type = rr_node[inode].type;
@@ -131,9 +131,9 @@ void check_rr_graph(INP t_graph_type graph_type,
 		if (rr_type != SOURCE) {
 			if (total_edges_to_node[inode] < 1
 					&& !rr_node_is_global_clb_ipin(inode)) {
-				boolean is_fringe;
-				boolean is_wire;
-				boolean is_chain = FALSE;
+				bool is_fringe;
+				bool is_wire;
+				bool is_chain = false;
 
 				/* A global CLB input pin will not have any edges, and neither will  *
 				 * a SOURCE or the start of a carry-chain.  Anything else is an error.                             
@@ -143,15 +143,15 @@ void check_rr_graph(INP t_graph_type graph_type,
 				if(rr_type == IPIN) {
 					type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
 					if(Fc_in[type->index][rr_node[inode].get_ptc_num()] == 0) {
-						is_chain = TRUE;
+						is_chain = true;
 					}
 				}
 
-				is_fringe = (boolean)((rr_node[inode].get_xlow() == 1)
+				is_fringe =((rr_node[inode].get_xlow() == 1)
 						|| (rr_node[inode].get_ylow() == 1)
 						|| (rr_node[inode].get_xhigh() == L_nx)
 						|| (rr_node[inode].get_yhigh() == L_ny));
-				is_wire = (boolean)(rr_node[inode].type == CHANX
+				is_wire =(rr_node[inode].type == CHANX
 						|| rr_node[inode].type == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
@@ -162,7 +162,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 						"in check_rr_graph: fringe node %d has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
 						inode);
-					is_fringe_warning_sent = TRUE;
+					is_fringe_warning_sent = true;
 				}
 			}
 		}
@@ -181,9 +181,9 @@ void check_rr_graph(INP t_graph_type graph_type,
 	free(switch_types_from_current_to_node);
 }
 
-static boolean rr_node_is_global_clb_ipin(int inode) {
+static bool rr_node_is_global_clb_ipin(int inode) {
 
-	/* Returns TRUE if inode refers to a global CLB input pin node.   */
+	/* Returns true if inode refers to a global CLB input pin node.   */
 
 	int ipin;
 	t_type_ptr type;
@@ -191,11 +191,11 @@ static boolean rr_node_is_global_clb_ipin(int inode) {
 	type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
 
 	if (rr_node[inode].type != IPIN)
-		return (FALSE);
+		return (false);
 
 	ipin = rr_node[inode].get_ptc_num();
 
-	return (type->is_global_pin[ipin]);
+	return type->is_global_pin[ipin];
 }
 
 void check_node(int inode, enum e_route_type route_type) {
@@ -451,7 +451,7 @@ static void check_pass_transistors(int from_node) {
 	int from_edge, to_node, to_edge, from_num_edges, to_num_edges;
 	t_rr_type from_rr_type, to_rr_type;
 	short from_switch_type;
-	boolean trans_matched;
+	bool trans_matched;
 
 	from_rr_type = rr_node[from_node].type;
 	if (from_rr_type != CHANX && from_rr_type != CHANY)
@@ -476,17 +476,17 @@ static void check_pass_transistors(int from_node) {
 		 * from_node.                                                            */
 
 		to_num_edges = rr_node[to_node].get_num_edges();
-		trans_matched = FALSE;
+		trans_matched = false;
 
 		for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
 			if (rr_node[to_node].edges[to_edge] == from_node
 					&& rr_node[to_node].switches[to_edge] == from_switch_type) {
-				trans_matched = TRUE;
+				trans_matched = true;
 				break;
 			}
 		}
 
-		if (trans_matched == FALSE) {
+		if (trans_matched == false) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_pass_transistors:\n"
 				"connection from node %d to node %d uses a pass transistor (switch type %d)\n"

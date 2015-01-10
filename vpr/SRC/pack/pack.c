@@ -19,11 +19,11 @@ using namespace std;
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static boolean *alloc_and_load_is_clock(boolean global_clocks);
+static bool *alloc_and_load_is_clock(bool global_clocks);
 
 void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
-	boolean *is_clock;
+	bool *is_clock;
 	int num_models;
 	t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
@@ -72,7 +72,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	 echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
 	 }else; */
 
-	if (packer_opts->skip_clustering == FALSE) {
+	if (packer_opts->skip_clustering == false) {
 		do_clustering(arch, list_of_pack_molecules, num_models,
 				packer_opts->global_clocks, is_clock,
 				packer_opts->hill_climbing_flag, packer_opts->output_file,
@@ -130,18 +130,18 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	return Tdel_switch + R_switch * Cout_switch;
 }
 
-boolean *alloc_and_load_is_clock(boolean global_clocks) {
+bool *alloc_and_load_is_clock(bool global_clocks) {
 
 	/* Looks through all the logical_block to find and mark all the clocks, by setting *
 	 * the corresponding entry in is_clock to true.  global_clocks is used     *
 	 * only for an error check.                                                */
 
 	int num_clocks, bnum, clock_net;
-	boolean * is_clock;
+	bool * is_clock;
 
 	num_clocks = 0;
 
-	is_clock = (boolean *) my_calloc(g_atoms_nlist.net.size(), sizeof(boolean));
+	is_clock = (bool *) my_calloc(g_atoms_nlist.net.size(), sizeof(bool));
 
 	/* Want to identify all the clock nets.  */
 
@@ -149,15 +149,15 @@ boolean *alloc_and_load_is_clock(boolean global_clocks) {
 		if (logical_block[bnum].type == VPACK_LATCH) {
 			clock_net = logical_block[bnum].clock_net;
 			assert(clock_net != OPEN);
-			if (is_clock[clock_net] == FALSE) {
-				is_clock[clock_net] = TRUE;
+			if (is_clock[clock_net] == false) {
+				is_clock[clock_net] = true;
 				num_clocks++;
 			}
 		} else {
 			if (logical_block[bnum].clock_net != OPEN) {
 				clock_net = logical_block[bnum].clock_net;
-				if (is_clock[clock_net] == FALSE) {
-					is_clock[clock_net] = TRUE;
+				if (is_clock[clock_net] == false) {
+					is_clock[clock_net] = true;
 					num_clocks++;
 				}
 			}

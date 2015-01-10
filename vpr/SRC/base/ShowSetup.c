@@ -225,8 +225,8 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf_info("%d\n", RouterOpts.fixed_channel_width);
 		}
 
-		vpr_printf_info("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "TRUE" : "FALSE"));
-		vpr_printf_info("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "TRUE" : "FALSE"));
+		vpr_printf_info("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
+		vpr_printf_info("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
 		vpr_printf_info("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
 		vpr_printf_info("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
 		vpr_printf_info("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
@@ -286,8 +286,8 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 			vpr_printf_info("%d\n", RouterOpts.fixed_channel_width);
 		}
 
-		vpr_printf_info("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "TRUE" : "FALSE"));
-		vpr_printf_info("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "TRUE" : "FALSE"));
+		vpr_printf_info("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
+		vpr_printf_info("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
 		vpr_printf_info("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
 		vpr_printf_info("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
 		vpr_printf_info("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
@@ -396,8 +396,8 @@ static void ShowPlacerOpts(INP t_options Options,
 
 static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 
-	vpr_printf_info("PackerOpts.allow_early_exit: %s", (PackerOpts.allow_early_exit ? "TRUE\n" : "FALSE\n"));
-	vpr_printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "TRUE\n" : "FALSE\n"));
+	vpr_printf_info("PackerOpts.allow_early_exit: %s", (PackerOpts.allow_early_exit ? "true\n" : "false\n"));
+	vpr_printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
 	vpr_printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
 	vpr_printf_info("PackerOpts.aspect: %f\n", PackerOpts.aspect);
 	vpr_printf_info("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
@@ -416,14 +416,14 @@ static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 	default:
 		vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown packer cluster_seed_type\n");
 	}
-	vpr_printf_info("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "TRUE\n" : "FALSE\n"));
-	vpr_printf_info("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "TRUE\n" : "FALSE\n"));
-	vpr_printf_info("PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "TRUE\n" : "FALSE\n"));
+	vpr_printf_info("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
+	vpr_printf_info("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
+	vpr_printf_info("PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "true\n" : "false\n"));
 	vpr_printf_info("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
 	vpr_printf_info("PackerOpts.intra_cluster_net_delay: %f\n", PackerOpts.intra_cluster_net_delay);
 	vpr_printf_info("PackerOpts.recompute_timing_after: %d\n", PackerOpts.recompute_timing_after);
-	vpr_printf_info("PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "TRUE\n" : "FALSE\n"));
-	vpr_printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "TRUE\n" : "FALSE\n"));
+	vpr_printf_info("PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "true\n" : "false\n"));
+	vpr_printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
 	vpr_printf_info("\n");
 }
 

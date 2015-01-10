@@ -1234,7 +1234,7 @@ static char *find_clock_name(void)
   for(j=0 ; j<g_clbs_nlist.net.size() ; j++)/*Doing this to find the clock name in the design and storing it in clock_,*/
     {
       /* TODO fix this Hack: Currently detect if a g_clbs_nlist is a clock using global and not vcc/gnd, need better way */
-      if(g_clbs_nlist.net[j].is_global == TRUE && strcmp(g_clbs_nlist.net[j].name, "gnd") != 0 
+      if(g_clbs_nlist.net[j].is_global == true && strcmp(g_clbs_nlist.net[j].name, "gnd") != 0 
 		  && strcmp(g_clbs_nlist.net[j].name, "vcc") != 0)
 	{
 	  clock_in_the_design = g_clbs_nlist.net[j].name;

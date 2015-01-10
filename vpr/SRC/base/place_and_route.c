@@ -33,7 +33,7 @@ using namespace std;
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		char *place_file, char *net_file, char *arch_file, char *route_file,
-		boolean full_stats, boolean verify_binary_search,
+		bool full_stats, bool verify_binary_search,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -49,7 +49,7 @@ void free_pb_data(t_pb *pb);
 
 /************************* Subroutine Definitions ****************************/
 
-boolean place_and_route(enum e_operation operation,
+bool place_and_route(enum e_operation operation,
 		struct s_placer_opts placer_opts, char *place_file, char *net_file,
 		char *arch_file, char *route_file,
 		struct s_annealing_sched annealing_sched,
@@ -62,7 +62,7 @@ boolean place_and_route(enum e_operation operation,
 	/* This routine controls the overall placement and routing of a circuit. */
 	char msg[BUFSIZE];
 
-	boolean success = FALSE;
+	bool success = false;
 	t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
@@ -106,7 +106,7 @@ boolean place_and_route(enum e_operation operation,
 			    segment_inf, timing_inf, chan_width_dist,
 			    directs, num_directs);
 		}
-		return(TRUE);
+		return(true);
 	}
 
 	/* If channel width not fixed, use binary search to find min W */
@@ -116,7 +116,7 @@ boolean place_and_route(enum e_operation operation,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
 				models, directs, num_directs);
-		success = (g_solution_inf.channel_width > 0 ? TRUE : FALSE);
+		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
 		g_solution_inf.channel_width = width_fac;
 		if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
@@ -135,7 +135,7 @@ boolean place_and_route(enum e_operation operation,
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
 		float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-		boolean Fc_clipped = FALSE;
+		bool Fc_clipped = false;
 		success = try_route(width_fac, router_opts, det_routing_arch,
 				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
 				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
@@ -145,7 +145,7 @@ boolean place_and_route(enum e_operation operation,
 					"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
 		}
 
-		if (success == FALSE) {
+		if (success == false) {
 			vpr_printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
 		}
@@ -229,7 +229,7 @@ boolean place_and_route(enum e_operation operation,
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		char *place_file, char *net_file, char *arch_file, char *route_file,
-		boolean full_stats, boolean verify_binary_search,
+		bool full_stats, bool verify_binary_search,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -243,7 +243,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	struct s_trace **best_routing; /* Saves the best routing found so far. */
 	int current, low, high, final;
 	int max_pins_per_clb, i;
-	boolean success, prev_success, prev2_success, Fc_clipped = FALSE;
+	bool success, prev_success, prev2_success, Fc_clipped = false;
 	char msg[BUFSIZE];
 	float **net_delay = NULL;
 	t_slack * slacks = NULL;
@@ -359,10 +359,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		attempt_count++;
 		fflush(stdout);
 #if 1
-		if (success && (Fc_clipped == FALSE)) {
+		if (success && (Fc_clipped == false)) {
 #else
 			if (success
-					&& (Fc_clipped == FALSE
+					&& (Fc_clipped == false
 							|| det_routing_arch->Fc_type == FRACTIONAL))
 			{
 #endif
@@ -401,7 +401,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		} else { /* last route not successful */
 			if (success && Fc_clipped) {
 				vpr_printf_info("Routing rejected, Fc_output was too high.\n");
-				success = FALSE;
+				success = false;
 			}
 			low = current;
 			if (high != -1) {
@@ -441,9 +441,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		vpr_printf_info("\n");
 		vpr_printf_info("Verifying that binary search found min channel width...\n");
 
-		prev_success = TRUE; /* Actually final - 1 failed, but this makes router */
+		prev_success = true; /* Actually final - 1 failed, but this makes router */
 		/* try final-2 and final-3 even if both fail: safer */
-		prev2_success = TRUE;
+		prev2_success = true;
 
 		current = final - 2;
 
@@ -465,7 +465,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					segment_inf, timing_inf, net_delay, slacks,
 					chan_width_dist, clb_opins_used_locally, &Fc_clipped, directs, num_directs);
 
-			if (success && Fc_clipped == FALSE) {
+			if (success && Fc_clipped == false) {
 				final = current;
 				save_routing(best_routing, clb_opins_used_locally,
 						saved_clb_opins_used_locally);
@@ -511,7 +511,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, FALSE, 
+			directs, num_directs, false, 
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warnings);

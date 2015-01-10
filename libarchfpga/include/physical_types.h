@@ -136,7 +136,7 @@ typedef struct s_grid_loc_def {
 /* Data type definitions */
 /*   Grid info */
 struct s_clb_grid {
-	boolean IsAuto;
+	bool IsAuto;
 	float Aspect;
 	int W;
 	int H;
@@ -152,7 +152,7 @@ struct s_clock_arch {
 
 /* Architecture information for a single clock */
 struct s_clock_network {
-	boolean autosize_buffer; /* autosize clock buffers */
+	bool autosize_buffer; /* autosize clock buffers */
 	float buffer_size; /* if not autosized, the clock buffer size */
 	float C_wire; /* Wire capacitance (per meter) */
 
@@ -202,7 +202,7 @@ typedef struct s_class t_class;
  * T_ipin_cblock: Delay through an input pin connection box (from a         *
  *                   routing track to a logic block input pin).             */
 typedef struct s_timing_inf {
-	boolean timing_analysis_enabled;
+	bool timing_analysis_enabled;
 	float C_ipin_cblock;
 	float T_ipin_cblock;
 	char * SDCFile; 
@@ -228,10 +228,10 @@ struct s_port {
 	char* name;
 	t_model_ports *model_port;
 	enum PORTS type;
-	boolean is_clock;
-	boolean is_non_clock_global;
+	bool is_clock;
+	bool is_non_clock_global;
 	int num_pins;
-	boolean equivalent;
+	bool equivalent;
 	struct s_pb_type *parent_pb_type;
 	char * port_class;
 
@@ -291,7 +291,7 @@ struct s_interconnect {
 
 	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
 	int num_annotations;
-	boolean infer_annotations;
+	bool infer_annotations;
 
 	int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
@@ -311,7 +311,7 @@ struct s_interconnect_power {
 	/* These are not necessarily power-related; however, at the moment
 	 * only power estimation uses them
 	 */
-	boolean port_info_initialized;
+	bool port_info_initialized;
 	int num_input_ports;
 	int num_output_ports;
 	int num_pins_per_port;
@@ -384,7 +384,7 @@ struct s_pb_graph_pin {
 	int scratch_pad; /* temporary data structure useful to store traversal info */
 
 	/* timing information */
-	enum e_pb_graph_pin_type type; /* Is a sequential logic element (TRUE), inpad/outpad (TRUE), or neither (FALSE) */
+	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
 	float tsu_tco; /* For sequential logic elements, this is the setup time (if input) or clock-to-q time (if output) */
 	struct s_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
 	float *pin_timing_del_max; /* primitive ipin to opin timing */
@@ -399,7 +399,7 @@ struct s_pb_graph_pin {
 	struct s_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primtive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
 	int *num_connectable_primtive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
-	boolean is_forced_connection; /* This output pin connects to one and only one input pin */
+	bool is_forced_connection; /* This output pin connects to one and only one input pin */
 
 	t_pb_graph_pin_power * pin_power;
 };
@@ -446,11 +446,11 @@ struct s_port_power {
 	float buffer_size;
 
 	/* Pin-Toggle Power Properties */
-	boolean pin_toggle_initialized;
+	bool pin_toggle_initialized;
 	float energy_per_toggle;
 	t_port * scaled_by_port;
 	int scaled_by_port_pin_idx;
-	boolean reverse_scaled; /* Scale by (1-prob) */
+	bool reverse_scaled; /* Scale by (1-prob) */
 };
 
 struct s_pb_graph_node;
@@ -481,7 +481,7 @@ struct s_pb_graph_edge {
 	char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
 	int *pack_pattern_indices; /*[0..num_pack_patterns(of_edge)-1]*/
 	int num_pack_patterns;
-	boolean infer_pattern; /*If TRUE, infer pattern based on patterns connected to it*/
+	bool infer_pattern; /*If true, infer pattern based on patterns connected to it*/
 
 };
 typedef struct s_pb_graph_edge t_pb_graph_edge;
@@ -605,8 +605,8 @@ struct s_pb_type_power {
  class_inf: Information of each logically-equivalent class
  pin_class: The class a pin belongs to
  is_global_pin: Whether or not a pin is global (hence not routed)
- is_Fc_frac: True if Fc fractional, else Fc absolute
- is_Fc_out_full_flex: True means opins will connect to all available segments
+ is_Fc_frac: true if Fc fractional, else Fc absolute
+ is_Fc_out_full_flex: true means opins will connect to all available segments
  pb_type: Internal subblocks and routing information for this physical block
  pb_graph_head: Head of DAG of pb_types_nodes and their edges
 
@@ -636,10 +636,10 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	struct s_class *class_inf; /* [0..num_class-1] */
 	int *pin_class; /* [0..num_pins-1] */
 
-	boolean *is_global_pin; /* [0..num_pins-1] */
+	bool *is_global_pin; /* [0..num_pins-1] */
 
-	boolean *is_Fc_frac; /* [0..num_pins-1] */
-	boolean *is_Fc_full_flex; /* [0..num_pins-1] */
+	bool *is_Fc_frac; /* [0..num_pins-1] */
+	bool *is_Fc_full_flex; /* [0..num_pins-1] */
 	float *Fc; /* [0..num_pins-1] */
 
 	/* Clustering info */
@@ -729,13 +729,13 @@ typedef struct s_segment_inf {
 	short arch_opin_switch;
 	float frac_cb;
 	float frac_sb;
-	boolean longline;
+	bool longline;
 	float Rmetal;
 	float Cmetal;
 	enum e_directionality directionality;
-	boolean *cb;
+	bool *cb;
 	int cb_len;
-	boolean *sb;
+	bool *sb;
 	int sb_len;
 	//float Cmetal_per_m; /* Wire capacitance (per meter) */
 } t_segment_inf;
@@ -757,7 +757,7 @@ typedef struct s_segment_inf {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 typedef struct s_arch_switch_inf {
-	boolean buffered;
+	bool buffered;
 	float R;
 	float Cin;
 	float Cout;
@@ -769,7 +769,7 @@ typedef struct s_arch_switch_inf {
 	float power_buffer_size;
 
 	s_arch_switch_inf(){
-		buffered = FALSE;
+		buffered = false;
 		R = 0;
 		Cin = 0;
 		Cout = 0;
@@ -796,7 +796,7 @@ typedef struct s_arch_switch_inf {
  * buf_size:  The area of the buffer. If set to zero, area should be         *
  *            calculated from R                                              */
 typedef struct s_rr_switch_inf {
-	boolean buffered;
+	bool buffered;
 	float R;
 	float Cin;
 	float Cout;
@@ -808,7 +808,7 @@ typedef struct s_rr_switch_inf {
 	float power_buffer_size;
 
 	s_rr_switch_inf(){
-		buffered = FALSE;
+		buffered = false;
 		R = 0;
 		Cin = 0;
 		Cout = 0;

@@ -23,8 +23,8 @@ typedef struct s_model_ports {
 	char *name; /* name of this port */
 	int size; /* maximum number of pins */
 	int min_size; /* minimum number of pins */
-	boolean is_clock; /* clock? */
-	boolean is_non_clock_global; /* not a clock but is a special, global, control signal (eg global asynchronous reset, etc) */
+	bool is_clock; /* clock? */
+	bool is_non_clock_global; /* not a clock but is a special, global, control signal (eg global asynchronous reset, etc) */
 	struct s_model_ports *next; /* next port */
 
 	int index; /* indexing for array look-up */

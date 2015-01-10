@@ -35,7 +35,7 @@ std::vector<std::vector<int> > detect_timing_graph_combinational_loops();
 
 std::vector<std::vector<int> > identify_strongly_connected_components(size_t min_size);
 
-void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean* tnode_instack, 
+void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tnode_instack, 
                    std::stack<int>& tnode_stack, std::vector<std::vector<int> >& tnode_sccs,
                    size_t min_size, int inode);
 
@@ -384,7 +384,7 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
             vpr_printf_warning(__FILE__, __LINE__, "Disconnecting timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
 
             //Mark the original target node as a combinational loop breakpoint
-            tnode[i_to_tnode].is_comb_loop_breakpoint = TRUE; 
+            tnode[i_to_tnode].is_comb_loop_breakpoint = true; 
 
             //Mark the edge as invalid
             tnode[i_first_tnode].out_edges[i_edge].to_node = DO_NOT_ANALYSE;
@@ -420,13 +420,13 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
     //Allocate book-keeping information
     int* tnode_indexes = (int*) my_calloc(num_tnodes, sizeof(int));
     int* tnode_lowlinks = (int*) my_calloc(num_tnodes, sizeof(int));
-    boolean* tnode_instack = (boolean*) my_calloc(num_tnodes, sizeof(boolean));
+    bool* tnode_instack = (bool*) my_calloc(num_tnodes, sizeof(bool));
 
     //Initialize everything to unvisited
     for(i = 0; i < num_tnodes; i++) {
         tnode_indexes[i] = -1;
         tnode_lowlinks[i] = -1;
-        tnode_instack[i] = FALSE;
+        tnode_instack[i] = false;
     }
 
     //The stack of nodes
@@ -447,7 +447,7 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
     return tnode_sccs;
 }
 
-void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean* tnode_instack, 
+void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tnode_instack, 
                    std::stack<int>& tnode_stack, std::vector<std::vector<int> >& tnode_sccs,
                    size_t min_size, int inode) {
     int iedge; //Index for out-going edges of the current node (inode)
@@ -461,7 +461,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean*
 
     //Add it to the stack
     tnode_stack.push(inode);
-    tnode_instack[inode] = TRUE;
+    tnode_instack[inode] = true;
 
     //Fanout of inode
     for(iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
@@ -499,7 +499,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, boolean*
         do {
             iscc_element = tnode_stack.top();
             tnode_stack.pop();
-            tnode_instack[iscc_element] = FALSE;
+            tnode_instack[iscc_element] = false;
             scc.push_back(iscc_element); //Add to the SCC
          } while(iscc_element != inode);
 

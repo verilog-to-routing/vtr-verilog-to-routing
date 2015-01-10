@@ -23,7 +23,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	const char *cur;
 	t_token * tokens;
 	int i, in_string_index, prev_in_string_index;
-	boolean has_null;
+	bool has_null;
 	enum e_token_type cur_token_type, new_token_type;
 
 	*num_tokens = i = 0;
@@ -57,7 +57,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	/* populate tokens */
 	i = 0;
 	in_string_index = 0;
-	has_null = TRUE;
+	has_null = true;
 	prev_in_string_index = 0;
 	cur_token_type = TOKEN_NULL;
 
@@ -70,13 +70,13 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 			if (!has_null) {
 				tokens[i - 1].data[in_string_index - prev_in_string_index] =
 						'\0'; /* NULL the end of the data string */
-				has_null = TRUE;
+				has_null = true;
 			}
 			if (new_token_type != TOKEN_NULL) {
 				tokens[i].type = new_token_type;
 				tokens[i].data = my_strdup(inString + in_string_index);
 				prev_in_string_index = in_string_index;
-				has_null = FALSE;
+				has_null = false;
 				i++;
 			}
 			cur_token_type = new_token_type;
@@ -127,11 +127,11 @@ enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
 	}
 }
 
-boolean checkTokenType(INP t_token token, OUTP enum e_token_type token_type) {
+bool checkTokenType(INP t_token token, OUTP enum e_token_type token_type) {
 	if (token.type != token_type) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
@@ -185,23 +185,23 @@ bool check_my_atof_2D(INP int max_i, INP int max_j,
 
 	/* Check if max_i * max_j matches number of entries in instring */
 	char *cur = instring;
-	bool in_str = FALSE;
+	bool in_str = false;
 	int entry_count = 0;
 
 	/* First count number of entries in instring */
 	while (*cur != '\0'){
 		if(!IsWhitespace(*cur) && !in_str){
-			in_str = TRUE;
+			in_str = true;
 			entry_count ++;
 		}
 		else if(IsWhitespace(*cur)){
-			in_str = FALSE;
+			in_str = false;
 		}
 		cur++;
 	}
 	*num_entries = entry_count;
 	
-	if(max_i * max_j != entry_count) return FALSE;
-	return TRUE;
+	if(max_i * max_j != entry_count) return false;
+	return true;
 }
 

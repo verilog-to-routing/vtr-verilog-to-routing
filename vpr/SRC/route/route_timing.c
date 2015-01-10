@@ -70,13 +70,13 @@ struct more_sinks_than {
 
 /************************ Subroutine definitions *****************************/
 
-boolean try_timing_driven_route(struct s_router_opts router_opts,
+bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
-		boolean timing_analysis_enabled, const t_timing_inf &timing_inf) {
+		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
-	 * Returns TRUE if the routing succeeds, FALSE otherwise.                    */
+	 * Returns true if the routing succeeds, false otherwise.                    */
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -105,7 +105,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	auto historical_overuse_ratio = vector<double>(router_opts.max_router_iterations + 1);
 	
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		if (g_clbs_nlist.net[inet].is_global == FALSE) {
+		if (g_clbs_nlist.net[inet].is_global == false) {
 			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
 			}
@@ -129,12 +129,12 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-			g_clbs_nlist.net[inet].is_routed = FALSE;
-			g_clbs_nlist.net[inet].is_fixed = FALSE;
+			g_clbs_nlist.net[inet].is_routed = false;
+			g_clbs_nlist.net[inet].is_fixed = false;
 		}
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
-			boolean is_routable = try_timing_driven_route_net(
+			bool is_routable = try_timing_driven_route_net(
 				sorted_nets[i],
 				itry,
 				pres_fac,
@@ -146,7 +146,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				slacks
 			);
 			if (!is_routable) {
-				return (FALSE);
+				return (false);
 			}
 		}
 
@@ -168,7 +168,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			}
 
 			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-				if (g_clbs_nlist.net[inet].is_global == FALSE
+				if (g_clbs_nlist.net[inet].is_global == false
 						&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 					int bends, wirelength, segments;
 					get_num_bends_and_length(inet, &bends, &wirelength, &segments);
@@ -182,7 +182,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
 				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
-				return FALSE;
+				return false;
 			}
 			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
 			vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
@@ -192,13 +192,13 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
 		   to them are reserved for that purpose. */
 
-		boolean rip_up_local_opins = (itry == 1 ? FALSE : TRUE);
+		bool rip_up_local_opins = (itry == 1 ? false : true);
 		reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins, clb_opins_used_locally);
 
 		/* Pathfinder guys quit after finding a feasible route. I may want to keep 
 		   going longer, trying to improve timing.  Think about this some. */
 
-		boolean success = feasible_routing();
+		bool success = feasible_routing();
 
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
@@ -237,7 +237,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				expected_successful_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
 				if (expected_successful_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
 					vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_successful_route_iter);
-					return (FALSE);
+					return (false);
 				}
 			}
 		}
@@ -247,7 +247,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			if (timing_analysis_enabled) {
 				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
+				do_timing_analysis(slacks, timing_inf, false, false);
 				float critical_path_delay = get_critical_path_delay();
                 vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
@@ -260,7 +260,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
-			return (TRUE);
+			return (true);
 		}
 
 		if (itry == 1) {
@@ -281,7 +281,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 
 			load_timing_graph_net_delays(net_delay);
 
-			do_timing_analysis(slacks, timing_inf, FALSE, FALSE);
+			do_timing_analysis(slacks, timing_inf, false, false);
 
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the
@@ -309,22 +309,22 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 	}
 
 	vpr_printf_info("Routing failed.\n");
-	return (FALSE);
+	return (false);
 }
 
-boolean try_timing_driven_route_net(int inet, int itry, float pres_fac, 
+bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
 		float* pin_criticality, int* sink_order,
 		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks) {
 
-	boolean is_routed = FALSE;
+	bool is_routed = false;
 
 	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
-		is_routed = TRUE;
+		is_routed = true;
 	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
-		is_routed = TRUE;
-	} else if (should_route_net(inet) == FALSE) {
-		is_routed = TRUE;
+		is_routed = true;
+	} else if (should_route_net(inet) == false) {
+		is_routed = true;
 	} else{
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
@@ -335,8 +335,8 @@ boolean try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			g_clbs_nlist.net[inet].is_routed = TRUE;
-			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = TRUE;
+			g_clbs_nlist.net[inet].is_routed = true;
+			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = true;
 		} else {
 			vpr_printf_info("Routing failed.\n");
 		}
@@ -419,7 +419,7 @@ static int get_max_pins_per_net(void) {
 
 	max_pins_per_net = 0;
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		if (g_clbs_nlist.net[inet].is_global == FALSE) {
+		if (g_clbs_nlist.net[inet].is_global == false) {
 			max_pins_per_net = max(max_pins_per_net,
 					(int) g_clbs_nlist.net[inet].pins.size());
 		}
@@ -428,14 +428,14 @@ static int get_max_pins_per_net(void) {
 	return (max_pins_per_net);
 }
 
-boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
+bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		float *pin_criticality, int *sink_order,
 		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks) {
 
-	/* Returns TRUE as long is found some way to hook up this net, even if that *
+	/* Returns true as long is found some way to hook up this net, even if that *
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
-	 * to route this net, even ignoring congestion, it returns FALSE.  In this  *
+	 * to route this net, even ignoring congestion, it returns false.  In this  *
 	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
 	 * give each net a dummy criticality of 0.									*/
 
@@ -509,7 +509,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 		if (itarget > 1 && itry > 5) {
 			/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
 			assert(rr_node[rt_root->inode].type == SOURCE);
-			rt_root->re_expand = FALSE;
+			rt_root->re_expand = false;
 		}
 
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
@@ -522,7 +522,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 					   inet, g_clbs_nlist.net[inet].name, itarget);
 			reset_path_costs();
 			free_route_tree(rt_root);
-			return (FALSE);
+			return (false);
 		}
 
 		inode = current->index;
@@ -567,7 +567,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 						 inet, g_clbs_nlist.net[inet].name, itarget);
 				reset_path_costs();
 				free_route_tree(rt_root);
-				return (FALSE);
+				return (false);
 			}
 
 			inode = current->index;
@@ -595,7 +595,7 @@ boolean timing_driven_route_net(int inet, int itry, float pres_fac, float max_cr
 
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
 	free_route_tree(rt_root);
-	return (TRUE);
+	return (true);
 }
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
@@ -1012,7 +1012,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	int rlim = 1;
 	int inode;
 	float area;
-	boolean success;
+	bool success;
 	t_linked_rt_edge *linked_rt_edge;
 	t_rt_node * child_node;
 
@@ -1037,13 +1037,13 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		return rlim;
 	}
 
-	success = FALSE;
+	success = false;
 	/* determine quickly a feasible bin radius to route sink for high fanout nets 
 	 this is necessary to prevent super long runtimes for high fanout nets; in best case, a reduction in complexity from O(N^2logN) to O(NlogN) (Swartz fast router)
 	 */
 	linked_rt_edge = rt_node->u.child_list;
-	while (success == FALSE && linked_rt_edge != NULL) {
-		while (linked_rt_edge != NULL && success == FALSE) {
+	while (success == false && linked_rt_edge != NULL) {
+		while (linked_rt_edge != NULL && success == false) {
 			child_node = linked_rt_edge->child;
 			inode = child_node->inode;
 			if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
@@ -1051,13 +1051,13 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 						&& rr_node[inode].get_xhigh() >= target_x - rlim
 						&& rr_node[inode].get_ylow() <= target_y + rlim
 						&& rr_node[inode].get_yhigh() >= target_y - rlim) {
-					success = TRUE;
+					success = true;
 				}
 			}
 			linked_rt_edge = linked_rt_edge->next;
 		}
 
-		if (success == FALSE) {
+		if (success == false) {
 			if (rlim > max(nx + 2, ny + 2)) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					 "VPR internal error, net %s has paths that are not found in traceback.\n", g_clbs_nlist.net[inet].name);
@@ -1081,9 +1081,9 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 					&& rr_node[inode].get_xhigh() >= target_x - rlim
 					&& rr_node[inode].get_ylow() <= target_y + rlim
 					&& rr_node[inode].get_yhigh() >= target_y - rlim) {
-				child_node->re_expand = TRUE;
+				child_node->re_expand = true;
 			} else {
-				child_node->re_expand = FALSE;
+				child_node->re_expand = false;
 			}
 		}
 		linked_rt_edge = linked_rt_edge->next;
@@ -1140,7 +1140,7 @@ static bool should_route_net(int inet) {
 
 	if (tptr == NULL) {
 		/* No routing yet. */
-		return TRUE;
+		return true;
 	} 
 
 	for (;;) {
@@ -1149,7 +1149,7 @@ static bool should_route_net(int inet) {
 		int capacity = rr_node[inode].get_capacity();
 
 		if (occ > capacity) {
-			return TRUE; /* overuse detected */
+			return true; /* overuse detected */
 		}
 
 		if (rr_node[inode].type == SINK) {
@@ -1162,7 +1162,7 @@ static bool should_route_net(int inet) {
 
 	} /* End while loop -- did an entire traceback. */
 
-	return FALSE; /* Current route has no overuse */
+	return false; /* Current route has no overuse */
 }
 
 

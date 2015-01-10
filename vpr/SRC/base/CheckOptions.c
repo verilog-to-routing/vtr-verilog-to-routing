@@ -8,15 +8,15 @@
 
 /* Checks that options don't conflict and that 
  * options aren't specified that may conflict */
-void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
-	boolean TimingPlacer;
-	boolean TimingRouter;
-	boolean default_flow;
+void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
+	bool TimingPlacer;
+	bool TimingRouter;
+	bool default_flow;
 
 	const struct s_TokenPair *Cur;
 	enum e_OptionBaseToken Yes;
 
-	default_flow = (boolean) (Options.Count[OT_ROUTE] == 0
+	default_flow = (Options.Count[OT_ROUTE] == 0
 			&& Options.Count[OT_PLACE] == 0 && Options.Count[OT_PACK] == 0
 			&& Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY] == 0);
 
@@ -49,21 +49,21 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 	}
 
 	/* If placing and timing is enabled, default to a timing placer */
-	TimingPlacer = (boolean)((Options.Count[OT_PLACE] || default_flow) && TimingEnabled);
+	TimingPlacer =((Options.Count[OT_PLACE] || default_flow) && TimingEnabled);
 	if (Options.Count[OT_PLACE_ALGORITHM] > 0) {
 		if ((PATH_TIMING_DRIVEN_PLACE != Options.PlaceAlgorithm)
 				&& (NET_TIMING_DRIVEN_PLACE != Options.PlaceAlgorithm)) {
 			/* Turn off the timing placer if they request a different placer */
-			TimingPlacer = FALSE;
+			TimingPlacer = false;
 		}
 	}
 
 	/* If routing and timing is enabled, default to a timing router */
-	TimingRouter = (boolean)((Options.Count[OT_ROUTE] || default_flow) && TimingEnabled);
+	TimingRouter =((Options.Count[OT_ROUTE] || default_flow) && TimingEnabled);
 	if (Options.Count[OT_ROUTER_ALGORITHM] > 0) {
 		if (TIMING_DRIVEN != Options.RouterAlgorithm) {
 			/* Turn off the timing router if they request a different router */
-			TimingRouter = FALSE;
+			TimingRouter = false;
 		}
 	}
 
@@ -131,7 +131,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 		Yes = OT_TD_PLACE_EXP_LAST;
 	}
 	/* Make sure if place is off none of those options were given */
-	if ((FALSE == TimingPlacer) && (Yes < OT_BASE_UNKNOWN)) {
+	if ((false == TimingPlacer) && (Yes < OT_BASE_UNKNOWN)) {
 		Cur = OptionBaseTokenList;
 		while (Cur->Str) {
 			if (Yes == Cur->Enum) {
@@ -190,7 +190,7 @@ void CheckOptions(INP t_options Options, INP boolean TimingEnabled) {
 		Yes = OT_CRITICALITY_EXP;
 	}
 	/* Make sure if timing router is off none of those options were given */
-	if ((FALSE == TimingRouter) && (Yes < OT_BASE_UNKNOWN)) {
+	if ((false == TimingRouter) && (Yes < OT_BASE_UNKNOWN)) {
 		Cur = OptionBaseTokenList;
 		while (Cur->Str) {
 			if (Yes == Cur->Enum) {

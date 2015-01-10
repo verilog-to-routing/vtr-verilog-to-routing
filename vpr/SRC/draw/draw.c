@@ -78,7 +78,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
 static void draw_pin_to_pin(int opin, int ipin);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
-						   boolean buffered);
+						   bool buffered);
 static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 									 int to_track, short switch_type);
 static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
@@ -137,7 +137,7 @@ void draw_shifted_line(int inode)
 	setcolor(savecolor);
 }
 
-void init_graphics_state(boolean show_graphics_val, int gr_automode_val,
+void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 		enum e_route_type route_type) 
 {	
 	/* Call accessor functions to retrieve global variables. */
@@ -153,7 +153,7 @@ void init_graphics_state(boolean show_graphics_val, int gr_automode_val,
 }
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
-		boolean crit_path_button_enabled, const t_timing_inf &timing_inf) {
+		bool crit_path_button_enabled, const t_timing_inf &timing_inf) {
 
 	/* Updates the screen if the user has requested graphics.  The priority  *
 	 * value controls whether or not the Proceed button must be clicked to   *
@@ -1642,7 +1642,7 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 
 
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
-		boolean buffered) {
+		bool buffered) {
 
 	/* Draws a buffer (triangle) or pass transistor (circle) on the edge        *
 	 * connecting from to to, depending on the status of buffered.  The drawing *
@@ -2518,7 +2518,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	/* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
 	 * CHANY).  The connection is made to the nearest end of the track instead   *
 	 * of perpundicular to the track to symbolize a single-drive connection.     *
-	 * If mark_conn is TRUE, draw a box where the pin connects to the track      *
+	 * If mark_conn is true, draw a box where the pin connects to the track      *
 	 * (useful for drawing  the rr graph)                                        */
 
 	/* TODO: Fix this for global routing, currently for detailed only */
@@ -2736,7 +2736,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	ipin_pin_num = rr_node[ipin_node].get_ptc_num();
 	type = grid[ipin_grid_x][ipin_grid_y].type;
 	
-	found = FALSE;
+	found = false;
 	for (int width = 0; width < type->width && !found; ++width) {
 		for (int height = 0; height < type->height && !found; ++height) {
 			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
@@ -2745,7 +2745,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 					width_offset = width;
 					height_offset = height;
 					pin_side = iside;
-					found = TRUE;
+					found = true;
 				}
 			}
 		}

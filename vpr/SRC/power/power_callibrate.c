@@ -94,7 +94,7 @@ void power_print_spice_comparison(void) {
 //	 prob[j] = 0.5;
 //	 }
 //	 power_usage_mux_multilevel(&mux_power_usage,
-//	 power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE,
+//	 power_get_mux_arch(mux_sizes[i]), prob, dens, 0, false,
 //	 power_callib_period);
 //	 fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
 //	 (mux_power_usage.dynamic + mux_power_usage.leakage)
@@ -119,7 +119,7 @@ void power_print_spice_comparison(void) {
 //		}
 //	}
 //	 power_usage_mux_multilevel(&mux_power_usage,
-//	 power_get_mux_arch(mux_sizes[i]), prob, dens, 0, FALSE,
+//	 power_get_mux_arch(mux_sizes[i]), prob, dens, 0, false,
 //	 power_callib_period);
 //	 fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
 //	 (mux_power_usage.dynamic + mux_power_usage.leakage)
@@ -128,7 +128,7 @@ void power_print_spice_comparison(void) {
 //
 //	 fprintf(g_power_output->out, "Energy of Buffer (High Activity)\n");
 //	 for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-//	 power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, FALSE,
+//	 power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, false,
 //	 power_callib_period);
 //	 fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
@@ -137,7 +137,7 @@ void power_print_spice_comparison(void) {
 //
 //	 fprintf(g_power_output->out, "Energy of Buffer (No Activity)\n");
 //	 for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
-//	 power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, FALSE,
+//	 power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, false,
 //	 power_callib_period);
 //	 fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
@@ -175,7 +175,7 @@ void power_print_spice_comparison(void) {
 		float p[6] = { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 };
 		float d[6] = { 1, 1, 1, 1, 1, 1 };
 		power_usage_mux_multilevel(&power_usage_mux, power_get_mux_arch(6, 1.0),
-				p, d, 0, TRUE, g_solution_inf.T_crit);
+				p, d, 0, true, g_solution_inf.T_crit);
 
 		power_add_usage(&sub_power_usage, &power_usage_mux);
 
@@ -239,11 +239,11 @@ void power_print_spice_comparison(void) {
 //	 }
 //
 //	 power_usage_mux_multilevel(&sub_power_usage,
-//	 power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE,
+//	 power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, true,
 //	 power_callib_period);
 //	 power_add_usage(&sb_power_usage, &sub_power_usage);
 //
-//	 power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 0.5, 2, TRUE,
+//	 power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 0.5, 2, true,
 //	 power_callib_period);
 //	 power_add_usage(&sb_power_usage, &sub_power_usage);
 //
@@ -272,11 +272,11 @@ void power_print_spice_comparison(void) {
 //	 }
 //
 //	 power_usage_mux_multilevel(&sub_power_usage,
-//	 power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, TRUE,
+//	 power_get_mux_arch(sb_mux_sizes[i]), prob, dens, 0, true,
 //	 power_callib_period);
 //	 power_add_usage(&sb_power_usage, &sub_power_usage);
 //
-//	 power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 1, 0, TRUE,
+//	 power_usage_buffer(&sub_power_usage, sb_buffer_sizes[i], 1, 0, true,
 //	 power_callib_period);
 //	 power_add_usage(&sb_power_usage, &sub_power_usage);
 //
@@ -301,7 +301,7 @@ float power_usage_buf_for_callibration(int num_inputs, float transistor_size) {
 
 	assert(num_inputs == 1);
 
-	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, FALSE,
+	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, false,
 			power_callib_period);
 
 	return power_sum_usage(&power_usage);
@@ -313,7 +313,7 @@ float power_usage_buf_levr_for_callibration(int num_inputs,
 
 	assert(num_inputs == 1);
 
-	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, TRUE,
+	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, true,
 			power_callib_period);
 
 	return power_sum_usage(&power_usage);
@@ -333,7 +333,7 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
 
 	power_usage_mux_multilevel(&power_usage,
 			power_get_mux_arch(num_inputs, transistor_size), prob, dens, 0,
-			FALSE, power_callib_period);
+			false, power_callib_period);
 
 	free(dens);
 	free(prob);

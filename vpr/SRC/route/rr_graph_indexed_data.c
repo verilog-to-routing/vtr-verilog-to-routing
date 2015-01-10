@@ -322,10 +322,10 @@ static void load_rr_indexed_data_T_values(int index_start,
 				avg_switch_T += g_rr_switch_inf[switch_index].Tdel;
 
 				/* make sure all wire switches leaving this track segment have the same 'buffered' value */
-				if (buffered == UNDEFINED){
-					buffered = (boolean)g_rr_switch_inf[switch_index].buffered;
+				if (buffered == UNDEFINED) {
+					buffered = g_rr_switch_inf[switch_index].buffered;
 				} else {
-					if (buffered != (boolean)g_rr_switch_inf[switch_index].buffered){
+					if (buffered != short(g_rr_switch_inf[switch_index].buffered)) {
 						vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
 							"Expecting all wire-to-wire switches of a given track segment to have same 'buffered' property\n");
 					}

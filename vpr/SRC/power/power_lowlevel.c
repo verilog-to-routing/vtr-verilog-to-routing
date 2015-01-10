@@ -235,7 +235,7 @@ static void power_calc_transistor_capacitance(float *C_d, float *C_s,
 		float *C_g, e_tx_type transistor_type, float size) {
 	t_transistor_size_inf * tx_info_lower;
 	t_transistor_size_inf * tx_info_upper;
-	boolean error;
+	bool error;
 
 	/* Initialize to 0 */
 	*C_d = 0.;
@@ -282,7 +282,7 @@ static void power_calc_transistor_capacitance(float *C_d, float *C_s,
 static float power_calc_leakage_st(e_tx_type transistor_type, float size) {
 	t_transistor_size_inf * tx_info_lower;
 	t_transistor_size_inf * tx_info_upper;
-	boolean error;
+	bool error;
 	float current;
 
 	error = power_find_transistor_info(&tx_info_lower, &tx_info_upper,
@@ -317,7 +317,7 @@ static float power_calc_leakage_st(e_tx_type transistor_type, float size) {
 static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
 	t_transistor_size_inf * tx_info_lower;
 	t_transistor_size_inf * tx_info_upper;
-	boolean error;
+	bool error;
 	float current;
 
 	error = power_find_transistor_info(&tx_info_lower, &tx_info_upper,
@@ -492,7 +492,7 @@ void power_usage_MUX2_transmission(t_power_usage * power_usage, float size,
 void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 		float * out_prob, float * out_dens, float * v_out, int num_inputs,
 		int selected_idx, float * in_prob, float * in_dens, float * v_in,
-		float transistor_size, boolean v_out_restored, float period) {
+		float transistor_size, bool v_out_restored, float period) {
 	int input_idx;
 	float v_in_selected;
 	float in_prob_avg;
@@ -775,7 +775,7 @@ void power_usage_level_restorer(t_power_usage * power_usage,
  */
 // Not used anymore
 #if 0
-float power_calc_buffer_sc(int stages, float gain, boolean level_restorer,
+float power_calc_buffer_sc(int stages, float gain, bool level_restorer,
 		int input_mux_size) {
 
 	t_power_buffer_size_inf * size_inf;

@@ -10,7 +10,7 @@
 /* Finds child element with given name and returns it. Errors out if
  * more than one instance exists. */
 ezxml_t FindElement(INP ezxml_t Parent, INP const char *Name,
-		INP boolean Required) {
+		INP bool Required) {
 	ezxml_t Cur;
 
 	/* Find the first node of correct name */
@@ -33,7 +33,7 @@ ezxml_t FindElement(INP ezxml_t Parent, INP const char *Name,
 }
 /* Finds child element with given name and returns it. */
 ezxml_t FindFirstElement(INP ezxml_t Parent, INP const char *Name,
-		INP boolean Required) {
+		INP bool Required) {
 	ezxml_t Cur;
 
 	/* Find the first node of correct name */
@@ -94,21 +94,21 @@ void FreeNode(INOUTP ezxml_t Node) {
 	ezxml_remove(Node);
 }
 
-/* Returns TRUE if character is whatspace between tokens */
-boolean IsWhitespace(char c) {
+/* Returns true if character is whatspace between tokens */
+bool IsWhitespace(char c) {
 	switch (c) {
 	case ' ':
 	case '\t':
 	case '\r':
 	case '\n':
-		return TRUE;
+		return true;
 	default:
-		return FALSE;
+		return false;
 	}
 }
 
 const char *
-FindProperty(INP ezxml_t Parent, INP const char *Name, INP boolean Required) {
+FindProperty(INP ezxml_t Parent, INP const char *Name, INP bool Required) {
 	const char *Res;
 
 	Res = ezxml_attr(Parent, Name);
@@ -124,13 +124,13 @@ FindProperty(INP ezxml_t Parent, INP const char *Name, INP boolean Required) {
 /* Count tokens and length in all the Text children nodes of current node. */
 extern void CountTokensInString(INP const char *Str, OUTP int *Num,
 		OUTP int *Len) {
-	boolean InToken;
+	bool InToken;
 	*Num = 0;
 	*Len = 0;
-	InToken = FALSE;
+	InToken = false;
 	while (*Str) {
 		if (IsWhitespace(*Str)) {
-			InToken = FALSE;
+			InToken = false;
 		}
 
 		else
@@ -140,7 +140,7 @@ extern void CountTokensInString(INP const char *Str, OUTP int *Num,
 				++(*Num);
 			}
 			++(*Len);
-			InToken = TRUE;
+			InToken = true;
 		}
 		++Str; /* Advance pointer */
 	}
@@ -152,7 +152,7 @@ extern char **
 GetNodeTokens(INP ezxml_t Node) {
 	int Count, Len;
 	char *Cur, *Dst;
-	boolean InToken;
+	bool InToken;
 	char **Tokens;
 
 	/* Count the tokens and find length of token data */
@@ -173,14 +173,14 @@ GetNodeTokens(INP ezxml_t Node) {
 
 	/* Copy data to tokens */
 	Cur = Node->txt;
-	InToken = FALSE;
+	InToken = false;
 	while (*Cur) {
 		if (IsWhitespace(*Cur)) {
 			if (InToken) {
 				*Dst = '\0';
 				++Dst;
 			}
-			InToken = FALSE;
+			InToken = false;
 		}
 
 		else {
@@ -190,7 +190,7 @@ GetNodeTokens(INP ezxml_t Node) {
 			}
 			*Dst = *Cur;
 			++Dst;
-			InToken = TRUE;
+			InToken = true;
 		}
 		++Cur;
 	}
@@ -211,7 +211,7 @@ extern char **
 LookaheadNodeTokens(INP ezxml_t Node) {
 	int Count, Len;
 	char *Cur, *Dst;
-	boolean InToken;
+	bool InToken;
 	char **Tokens;
 
 	/* Count the tokens and find length of token data */
@@ -232,14 +232,14 @@ LookaheadNodeTokens(INP ezxml_t Node) {
 
 	/* Copy data to tokens */
 	Cur = Node->txt;
-	InToken = FALSE;
+	InToken = false;
 	while (*Cur) {
 		if (IsWhitespace(*Cur)) {
 			if (InToken) {
 				*Dst = '\0';
 				++Dst;
 			}
-			InToken = FALSE;
+			InToken = false;
 		}
 
 		else {
@@ -249,7 +249,7 @@ LookaheadNodeTokens(INP ezxml_t Node) {
 			}
 			*Dst = *Cur;
 			++Dst;
-			InToken = TRUE;
+			InToken = true;
 		}
 		++Cur;
 	}
@@ -266,7 +266,7 @@ LookaheadNodeTokens(INP ezxml_t Node) {
 /* Find integer attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
 extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
-		INP boolean Required, INP int default_value) {
+		INP bool Required, INP int default_value) {
 	const char * Prop;
 	int property_value;
 
@@ -282,7 +282,7 @@ extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
 /* Find floating-point attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
 extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
-		INP boolean Required, INP float default_value) {
+		INP bool Required, INP float default_value) {
 
 	const char * Prop;
 	float property_value;
@@ -296,26 +296,26 @@ extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
 	return property_value;
 }
 
-/* Find boolean attribute matching Name in XML tag Parent and return it if exists.  
+/* Find bool attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern boolean GetBooleanProperty(INP ezxml_t Parent, INP char *Name,
-		INP boolean Required, INP boolean default_value) {
+extern bool GetboolProperty(INP ezxml_t Parent, INP char *Name,
+		INP bool Required, INP bool default_value) {
 
 	const char * Prop;
-	boolean property_value;
+	bool property_value;
 
 	property_value = default_value;
 	Prop = FindProperty(Parent, Name, Required);
 	if (Prop) {
-		if ((strcmp(Prop, "false") == 0) || (strcmp(Prop, "FALSE") == 0)
-				|| (strcmp(Prop, "False") == 0)) {
-			property_value = FALSE;
-		} else if ((strcmp(Prop, "true") == 0) || (strcmp(Prop, "TRUE") == 0)
-				|| (strcmp(Prop, "True") == 0)) {
-			property_value = TRUE;
+		if ((strcmp(Prop, "false") == 0) || (strcmp(Prop, "false") == 0)
+				|| (strcmp(Prop, "false") == 0)) {
+			property_value = false;
+		} else if ((strcmp(Prop, "true") == 0) || (strcmp(Prop, "true") == 0)
+				|| (strcmp(Prop, "true") == 0)) {
+			property_value = true;
 		} else {			
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
-				"Unknown value %s for boolean attribute %s in %s", Prop, Name, Parent->name);
+				"Unknown value %s for bool attribute %s in %s", Prop, Name, Parent->name);
 		}
 		ezxml_set_attr(Parent, Name, NULL);
 	}

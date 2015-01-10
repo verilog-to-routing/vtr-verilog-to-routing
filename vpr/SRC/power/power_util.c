@@ -114,7 +114,7 @@ float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
  * - mux_node:
  * - selected_input_pin: The input index to the multi-level mux that is chosen
  */
-boolean mux_find_selector_values(int * selector_values, t_mux_node * mux_node,
+bool mux_find_selector_values(int * selector_values, t_mux_node * mux_node,
 		int selected_input_pin) {
 	if (mux_node->level == 0) {
 		if ((selected_input_pin >= mux_node->starting_pin_idx)
@@ -122,7 +122,7 @@ boolean mux_find_selector_values(int * selector_values, t_mux_node * mux_node,
 						<= (mux_node->starting_pin_idx + mux_node->num_inputs))) {
 			selector_values[mux_node->level] = selected_input_pin
 					- mux_node->starting_pin_idx;
-			return TRUE;
+			return true;
 		}
 	} else {
 		int input_idx;
@@ -130,11 +130,11 @@ boolean mux_find_selector_values(int * selector_values, t_mux_node * mux_node,
 			if (mux_find_selector_values(selector_values,
 					&mux_node->children[input_idx], selected_input_pin)) {
 				selector_values[mux_node->level] = input_idx;
-				return TRUE;
+				return true;
 			}
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 static void log_msg(t_log * log_ptr, char * msg) {
@@ -277,7 +277,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	char ** terms;
 	char * buffer;
 	char * str_loc;
-	boolean on_set;
+	bool on_set;
 	t_linked_vptr * list_ptr;
 	int num_terms;
 	int term_idx;
@@ -322,10 +322,10 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 
 	/* Find out if the truth table provides the ON-set or OFF-set */
 	str_loc = strtok(NULL, " \t");
-	on_set = TRUE;
+	on_set = true;
 	if (str_loc[0] == '1') {
 	} else if (str_loc[0] == '0') {
-		on_set = FALSE;
+		on_set = false;
 	} else {
 		assert(0);
 	}
@@ -374,12 +374,12 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 
 		/* Loop through truth table terms */
 		for (term_idx = 0; term_idx < num_terms; term_idx++) {
-			boolean match = TRUE;
+			bool match = true;
 
 			for (bit_idx = 0; bit_idx < LUT_size; bit_idx++) {
 				if ((terms[term_idx][bit_idx] != '-')
 						&& (terms[term_idx][bit_idx] != binary_str[bit_idx])) {
-					match = FALSE;
+					match = false;
 					break;
 				}
 			}
@@ -571,34 +571,34 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node * node,
 	}
 }
 
-boolean power_method_is_transistor_level(
+bool power_method_is_transistor_level(
 		e_power_estimation_method estimation_method) {
 	switch (estimation_method) {
 	case POWER_METHOD_AUTO_SIZES:
 	case POWER_METHOD_SPECIFY_SIZES:
-		return TRUE;
+		return true;
 	default:
-		return FALSE;
+		return false;
 	}
 }
 
-boolean power_method_is_recursive(e_power_estimation_method method) {
+bool power_method_is_recursive(e_power_estimation_method method) {
 	switch (method) {
 	case POWER_METHOD_IGNORE:
 	case POWER_METHOD_TOGGLE_PINS:
 	case POWER_METHOD_C_INTERNAL:
 	case POWER_METHOD_ABSOLUTE:
-		return FALSE;
+		return false;
 	case POWER_METHOD_AUTO_SIZES:
 	case POWER_METHOD_SPECIFY_SIZES:
 	case POWER_METHOD_SUM_OF_CHILDREN:
-		return TRUE;
+		return true;
 	case POWER_METHOD_UNDEFINED:
 	default:
 		assert(0);
 	}
 
 // to get rid of warning
-	return FALSE;
+	return false;
 }
 

@@ -46,7 +46,7 @@ void power_usage_wire(t_power_usage * power_usage, float capacitance,
 void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 		float * out_prob, float * out_dens, float * V_out, int num_inputs,
 		int selected_idx, float * in_prob, float * in_dens, float * v_in,
-		float transistor_size, boolean v_out_restored, float period);
+		float transistor_size, bool v_out_restored, float period);
 
 void power_usage_MUX2_transmission(t_power_usage * power_usage, float size,
 		float * in_dens, float * in_prob, float sel_dens, float out_dens,
@@ -67,7 +67,7 @@ float power_calc_pb_switching_from_c_internal(t_pb * pb,
 float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 		float in_prob_avg);
 
-/*float power_calc_buffer_sc(int stages, float gain, boolean level_restored,
+/*float power_calc_buffer_sc(int stages, float gain, bool level_restored,
  int input_mux_size);*/
 
 float power_calc_node_switching(float capacitance, float density, float period);

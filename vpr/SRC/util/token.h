@@ -29,7 +29,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens);
 
 void freeTokens(INP t_token *tokens, INP int num_tokens);
 
-boolean checkTokenType(INP t_token token, OUTP enum e_token_type token_type);
+bool checkTokenType(INP t_token token, OUTP enum e_token_type token_type);
 
 void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j, INP char *instring);
 

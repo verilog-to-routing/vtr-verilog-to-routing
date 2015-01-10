@@ -7,14 +7,6 @@
 #include <math.h>
 #include <map>
 
-#ifndef TRUE                    /* Some compilers predefine TRUE, FALSE */
-typedef enum {
-	FALSE, TRUE
-} boolean;
-#else
-typedef int boolean;
-#endif
-
 /* Parameter tags for preprocessor to strip */
 #define INP
 #define OUTP
@@ -163,9 +155,9 @@ char *my_strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
 
 FILE* my_fopen(const char *fname, const char *flag, int prompt);
 char *my_fgets(char *buf, int max_size, FILE * fp);
-boolean file_exists(const char * filename);
+bool file_exists(const char * filename);
 
-boolean check_file_name_extension(INP const char* file_name, 
+bool check_file_name_extension(INP const char* file_name, 
 								INP const char* file_extension);
 
 int get_file_line_number_of_last_opened_file();

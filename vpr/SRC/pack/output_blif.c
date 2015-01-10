@@ -115,7 +115,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				/* LUTs receive special handling because a LUT has logically equivalent inputs.
 					The intra-logic block router may have taken advantage of logical equivalence so we need to unscramble the inputs when we output the LUT logic.
 				*/
-				assert(pb_type->ports[i].is_clock == FALSE);
+				assert(pb_type->ports[i].is_clock == false);
 				for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
 					if (logical_block[ilogical_block].input_nets[0][j] != OPEN) {
 						int k;
@@ -169,7 +169,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		assert(pb_type->num_ports == 3);
 		for (int i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == IN_PORT
-					&& pb_type->ports[i].is_clock == FALSE) {
+					&& pb_type->ports[i].is_clock == false) {
 				assert(pb_type->ports[i].num_pins == 1);
 				assert(logical_block[ilogical_block].input_nets[0][0] != OPEN);
 				int node_index =
@@ -179,7 +179,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				assert(pb_type->ports[i].num_pins == 1);
 				fprintf(fpout, "%s re ", g_atoms_nlist.net[logical_block[ilogical_block].output_nets[0][0]].name);
 			} else if (pb_type->ports[i].type == IN_PORT
-					&& pb_type->ports[i].is_clock == TRUE) {
+					&& pb_type->ports[i].is_clock == true) {
 				assert(pb_type->ports[i].num_pins == 1);
 				assert(logical_block[ilogical_block].clock_net != OPEN);
 				int node_index = pb_graph_node->clock_pins[0][0].pin_count_in_cluster;
@@ -207,7 +207,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		
 		while (port != NULL) {
 			for (int i = 0; i < port->size; i++) {
-				if (port->is_clock == TRUE) {
+				if (port->is_clock == true) {
 					assert(port->index == 0);
 					assert(port->size == 1);
 					if (logical_block[ilogical_block].clock_pin_name != NULL) {

@@ -6,7 +6,7 @@
 
 void print_tabs(FILE * fpout, int num_tab);
 
-boolean is_opin(int ipin, t_type_ptr type);
+bool is_opin(int ipin, t_type_ptr type);
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 
 void get_class_range_for_block(INP int iblk, OUTP int *class_low,
@@ -22,7 +22,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
-boolean primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
+bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pin, bool is_input_pin, bool is_in_global_net);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin);
