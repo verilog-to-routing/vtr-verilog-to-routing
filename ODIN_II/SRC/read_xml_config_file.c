@@ -63,18 +63,18 @@ void read_config_file(char *file_name)
 	CheckElement(doc, "config");
 
 	/* Process the verilog files */
-	next = FindElement(doc, "verilog_files", (boolean)TRUE);
+	next = FindElement(doc, "verilog_files", true);
 	read_verilog_files(next, &configuration);
 	FreeNode(next);
 
 	/* Process the output */
-	next = FindElement(doc, "output", (boolean)TRUE);
+	next = FindElement(doc, "output", true);
 	read_outputs(next, &configuration);
 	FreeNode(next);
 
 	/* Process the optimizations */
 	set_default_optimization_settings(&configuration);
-	next = FindElement(doc, "optimizations", (boolean)FALSE);
+	next = FindElement(doc, "optimizations", false);
 	if (next)
 	{
 		read_optimizations(next, &configuration);
@@ -82,7 +82,7 @@ void read_config_file(char *file_name)
 	}
 
 	/* Process the debug switches */
-	next = FindElement(doc, "debug_outputs", (boolean)TRUE);
+	next = FindElement(doc, "debug_outputs", true);
 	read_debug_switches(next, &configuration);
 	FreeNode(next);
 
@@ -241,7 +241,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 	child = ezxml_child(a_node, "multiply");
 	if (child != NULL)
 	{
-		prop = FindProperty(child, "size", (boolean)FALSE);
+		prop = FindProperty(child, "size", false);
 		if (prop != NULL)
 		{
 			config->min_hard_multiplier = atoi(prop);
@@ -250,7 +250,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		else /* Default: No minimum hard multiply size */
 			config->min_hard_multiplier = 0;
 		
-		prop = FindProperty(child, "padding", (boolean)FALSE);
+		prop = FindProperty(child, "padding", false);
 		if (prop != NULL)
 		{
 			config->mult_padding = atoi(prop);
@@ -259,7 +259,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		else /* Default: Pad to hbpad pins */
 			config->mult_padding = -1;
 
-		prop = FindProperty(child, "fixed", (boolean)FALSE);
+		prop = FindProperty(child, "fixed", false);
 		if (prop != NULL)
 		{
 			config->fixed_hard_multiplier = atoi(prop);
@@ -268,7 +268,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		else /* Default: No fixed hard multiply size */
 			config->fixed_hard_multiplier = 0;
 
-		prop = FindProperty(child, "fracture", (boolean)FALSE);
+		prop = FindProperty(child, "fracture", false);
 		if (prop != NULL)
 		{
 			config->split_hard_multiplier = atoi(prop);
@@ -282,7 +282,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 	child = ezxml_child(a_node, "memory");
 	if (child != NULL)
 	{
-		prop = FindProperty(child, "split_memory_width", (boolean)FALSE);
+		prop = FindProperty(child, "split_memory_width", false);
 		if (prop != NULL)
 		{
 			config->split_memory_width = atoi(prop);
@@ -291,7 +291,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 		else /* Default: Do not split memory width! */
 			config->split_memory_width = 0;
 		
-		prop = FindProperty(child, "split_memory_depth", (boolean)FALSE);
+		prop = FindProperty(child, "split_memory_depth", false);
 		if (prop != NULL)
 		{
 			if (strcmp(prop, "min") == 0)
@@ -311,7 +311,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 	child = ezxml_child(a_node, "adder");
 		if (child != NULL)
 		{
-			prop = FindProperty(child, "size", (boolean)FALSE);
+			prop = FindProperty(child, "size", false);
 			if (prop != NULL)
 			{
 				config->min_hard_adder = atoi(prop);
@@ -320,7 +320,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			else /* Default: No minimum hard adder size */
 				config->min_hard_adder = 0;
 
-			prop = FindProperty(child, "threshold_size", (boolean)FALSE);
+			prop = FindProperty(child, "threshold_size", false);
 			if (prop != NULL)
 			{
 				config->min_threshold_adder = atoi(prop);
@@ -329,7 +329,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			else /* Default: No minimum hard adder size */
 				config->min_threshold_adder = 0;
 
-			prop = FindProperty(child, "padding", (boolean)FALSE);
+			prop = FindProperty(child, "padding", false);
 			if (prop != NULL)
 			{
 				config->add_padding = atoi(prop);
@@ -338,7 +338,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			else /* Default: Pad to hbpad pins */
 				config->add_padding = -1;
 
-			prop = FindProperty(child, "fixed", (boolean)FALSE);
+			prop = FindProperty(child, "fixed", false);
 			if (prop != NULL)
 			{
 				config->fixed_hard_adder = atoi(prop);
@@ -347,7 +347,7 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 			else /* Default: Fixed hard adder size */
 				config->fixed_hard_adder = 1;
 
-			prop = FindProperty(child, "fracture", (boolean)FALSE);
+			prop = FindProperty(child, "fracture", false);
 			if (prop != NULL)
 			{
 				config->split_hard_adder = atoi(prop);

@@ -97,10 +97,10 @@ int main(int argc, char **argv)
 		#ifdef VPR5
 		t_clocks ClockDetails = { 0 };
 		t_power PowerDetails = { 0 };
-		XmlReadArch(global_args.arch_file, (boolean)FALSE, &Arch, &type_descriptors, &num_types, &ClockDetails, &PowerDetails);
+		XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types, &ClockDetails, &PowerDetails);
 		#endif
 		#ifdef VPR6
-		XmlReadArch(global_args.arch_file, (boolean)FALSE, &Arch, &type_descriptors, &num_types);
+		XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
 		#endif
 	}
 
