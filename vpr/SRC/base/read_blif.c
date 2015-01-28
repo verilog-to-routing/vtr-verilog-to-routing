@@ -97,7 +97,12 @@ static void read_blif(char *blif_file, bool sweep_hanging_nets_and_inputs,
 			&logic_model, &latch_model);
 
 	/* doall = false means do a counting pass, doall = true means allocate and load data structures */
-    for (bool doall : { false, true }) {
+#if 0
+    for (bool doall : { false, true }) { // not supported before g++ 4.6
+#else
+	for (int doall_int = 0; doall_int <= 1; doall_int++) {
+		bool doall = bool(doall_int);
+#endif
 		init_parse(doall, read_activity_file);
 		done = false;
 		add_truth_table = false;
