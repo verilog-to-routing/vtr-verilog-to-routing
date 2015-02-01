@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.12.6)  7 JAN 2015 23:39
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.12.6)  1 FEB 2015 13:05
 entering extended mode
 **fpga2014paper.tex
 
@@ -571,15 +571,12 @@ Package epstopdf Info: Source file: <placer_opt_minChW_2.eps>
 (epstopdf)                    date: 2015-01-07 23:34:25
 (epstopdf)                    size: 2761241 bytes
 (epstopdf)             Output file: <placer_opt_minChW_2-eps-converted-to.pdf>
+(epstopdf)                    date: 2015-01-07 23:39:07
+(epstopdf)                    size: 24538 bytes
 (epstopdf)             Command: <epstopdf --outfile=placer_opt_minChW_2-eps-con
 verted-to.pdf placer_opt_minChW_2.eps>
 (epstopdf)             \includegraphics on input line 386.
-runsystem(epstopdf --outfile=placer_opt_minChW_2-eps-converted-to.pdf placer_op
-t_minChW_2.eps)...executed (allowed).
-
-Package epstopdf Info: Result file: <placer_opt_minChW_2-eps-converted-to.pdf>
-(epstopdf)                    date: 2015-01-07 23:39:07
-(epstopdf)                    size: 24538 bytes.
+Package epstopdf Info: Output file is already uptodate.
 
 <placer_opt_minChW_2-eps-converted-to.pdf, id=71, 811.03pt x 317.185pt>
 File: placer_opt_minChW_2-eps-converted-to.pdf Graphic file (type pdf)
@@ -919,15 +916,12 @@ Package epstopdf Info: Source file: <additional_fanins_2.eps>
 (epstopdf)                    date: 2015-01-07 23:32:53
 (epstopdf)                    size: 1394594 bytes
 (epstopdf)             Output file: <additional_fanins_2-eps-converted-to.pdf>
+(epstopdf)                    date: 2015-01-07 23:39:10
+(epstopdf)                    size: 11428 bytes
 (epstopdf)             Command: <epstopdf --outfile=additional_fanins_2-eps-con
 verted-to.pdf additional_fanins_2.eps>
 (epstopdf)             \includegraphics on input line 450.
-runsystem(epstopdf --outfile=additional_fanins_2-eps-converted-to.pdf additiona
-l_fanins_2.eps)...executed (allowed).
-
-Package epstopdf Info: Result file: <additional_fanins_2-eps-converted-to.pdf>
-(epstopdf)                    date: 2015-01-07 23:39:10
-(epstopdf)                    size: 11428 bytes.
+Package epstopdf Info: Output file is already uptodate.
 
 <additional_fanins_2-eps-converted-to.pdf, id=165, 527.9725pt x 244.915pt>
 File: additional_fanins_2-eps-converted-to.pdf Graphic file (type pdf)
@@ -944,15 +938,12 @@ Package epstopdf Info: Source file: <minChW_2.eps>
 (epstopdf)                    date: 2015-01-07 23:36:46
 (epstopdf)                    size: 1989720 bytes
 (epstopdf)             Output file: <minChW_2-eps-converted-to.pdf>
+(epstopdf)                    date: 2015-01-07 23:39:14
+(epstopdf)                    size: 14046 bytes
 (epstopdf)             Command: <epstopdf --outfile=minChW_2-eps-converted-to.p
 df minChW_2.eps>
 (epstopdf)             \includegraphics on input line 468.
-runsystem(epstopdf --outfile=minChW_2-eps-converted-to.pdf minChW_2.eps)...exec
-uted (allowed).
-
-Package epstopdf Info: Result file: <minChW_2-eps-converted-to.pdf>
-(epstopdf)                    date: 2015-01-07 23:39:14
-(epstopdf)                    size: 14046 bytes.
+Package epstopdf Info: Output file is already uptodate.
 
 <minChW_2-eps-converted-to.pdf, id=175, 588.1975pt x 314.17375pt>
 File: minChW_2-eps-converted-to.pdf Graphic file (type pdf)
@@ -965,16 +956,12 @@ Package epstopdf Info: Source file: <numberofcrossingwires_new_2.eps>
 (epstopdf)                    size: 1855480 bytes
 (epstopdf)             Output file: <numberofcrossingwires_new_2-eps-converted-
 to.pdf>
+(epstopdf)                    date: 2015-01-07 23:39:18
+(epstopdf)                    size: 13628 bytes
 (epstopdf)             Command: <epstopdf --outfile=numberofcrossingwires_new_2
 -eps-converted-to.pdf numberofcrossingwires_new_2.eps>
 (epstopdf)             \includegraphics on input line 477.
-runsystem(epstopdf --outfile=numberofcrossingwires_new_2-eps-converted-to.pdf n
-umberofcrossingwires_new_2.eps)...executed (allowed).
-
-Package epstopdf Info: Result file: <numberofcrossingwires_new_2-eps-converted-
-to.pdf>
-(epstopdf)                    date: 2015-01-07 23:39:18
-(epstopdf)                    size: 13628 bytes.
+Package epstopdf Info: Output file is already uptodate.
 
 <numberofcrossingwires_new_2-eps-converted-to.pdf, id=176, 614.295pt x 281.05pt
 >
@@ -1108,7 +1095,7 @@ iKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/f
 onts/type1/urw/times/utmbi8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1
 /urw/times/utmr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/
 utmri8a.pfb>
-Output written on fpga2014paper.pdf (14 pages, 1402838 bytes).
+Output written on fpga2014paper.pdf (14 pages, 1402851 bytes).
 PDF statistics:
  274 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
