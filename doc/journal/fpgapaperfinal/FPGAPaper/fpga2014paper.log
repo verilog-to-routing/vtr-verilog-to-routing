@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  3 MAR 2015 16:34
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  3 MAR 2015 16:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -863,6 +863,12 @@ File: arch_experiments4-eps-converted-to.pdf Graphic file (type pdf)
 Package pdftex.def Info: arch_experiments4-eps-converted-to.pdf used on input l
 ine 433.
 (pdftex.def)             Requested size: 252.0pt x 148.16309pt.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[11 <./packing_bloat-eps-converted-to.pdf> <./arch_experiments4-eps-converted-t
+o.pdf>]
 Package epstopdf Info: Source file: <additional_fanins_2.eps>
 (epstopdf)                    date: 2015-03-03 16:19:53
 (epstopdf)                    size: 1394594 bytes
@@ -874,7 +880,7 @@ nverted-to.pdf additional_fanins_2.eps>
 (epstopdf)             \includegraphics on input line 450.
 Package epstopdf Info: Output file is already uptodate.
 
-<additional_fanins_2-eps-converted-to.pdf, id=164, 527.9725pt x 244.915pt>
+<additional_fanins_2-eps-converted-to.pdf, id=172, 527.9725pt x 244.915pt>
 File: additional_fanins_2-eps-converted-to.pdf Graphic file (type pdf)
 
 <use additional_fanins_2-eps-converted-to.pdf>
@@ -882,11 +888,6 @@ Package pdftex.def Info: additional_fanins_2-eps-converted-to.pdf used on input
  line 450.
 (pdftex.def)             Requested size: 252.0pt x 116.89638pt.
 
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-[11 <./packing_bloat-eps-converted-to.pdf> <./arch_experiments4-eps-converted-t
-o.pdf>]
 
 LaTeX Warning: File `minChW_2.eps' not found on input line 468.
 
@@ -1009,7 +1010,11 @@ ll_fpga.pdf
 
 pdfTeX warning: pdflatex (file ./tall_fpga.pdf): PDF inclusion: multiple pdfs w
 ith page group included in a single page
->] (./fpga2014paper.bbl) [14] (./fpga2014paper.aux) ) 
+>]
+Underfull \vbox (badness 6658) has occurred while \output is active []
+
+
+(./fpga2014paper.bbl) [14] (./fpga2014paper.aux) ) 
 Here is how much of TeX's memory you used:
  4204 strings out of 495020
  67462 string characters out of 6181324
@@ -1018,22 +1023,22 @@ Here is how much of TeX's memory you used:
  42596 words of font info for 76 fonts, out of 8000000 for 9000
  17 hyphenation exceptions out of 8191
  42i,11n,27p,1681b,293s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texlive/texmf-
-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/pub
-lic/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
-sfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts
-/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmm
-i7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/s
-hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/tex
-live/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/
-fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/u
-rw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8
-a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/sha
-re/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (14 pages, 1372710 bytes).
+{/usr/share/texlive/texmf-dis
+t/fonts/enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/public
+/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfo
+nts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm
+/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.
+pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></u
+sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texliv
+e/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-
+dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/
+times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.p
+fb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/
+texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on fpga2014paper.pdf (14 pages, 1372851 bytes).
 PDF statistics:
  277 PDF objects out of 1000 (max. 8388607)
  183 compressed objects within 2 object streams

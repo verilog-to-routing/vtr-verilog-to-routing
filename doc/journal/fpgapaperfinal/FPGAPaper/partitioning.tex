@@ -47,7 +47,7 @@ We transformed the circuit netlist hypergraph to a graph in the following way:
 \item We combined all of the per-net subgraphs, summing the edge weights for edges appearing in more than one per-net subgraph, to generate the total netlist graph.
 \end{enumerate}
 
-We explored several ways to generate the per-net subgraphs. The two parameters in this operation are the graph topology and the edge weight scheme. We considered two graph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the originating hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$. We use \emph{hyperedge model} to refer to the combination of graph topology and edge weight scheme.
+We explored several ways to generate the per-net subgraphs. The two parameters in this operation are the graph topology and the edge weight scheme. We considered two graph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the originating hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$.  Our intuition is that assigning lower edge weight to high-fanout nets may be beneficial, and we selected the edge weights accordingly. We use \emph{hyperedge model} to refer to the combination of graph topology and edge weight scheme.
 
 \begin{figure}[!htbp]
 \centering
