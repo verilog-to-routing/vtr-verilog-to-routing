@@ -2,7 +2,6 @@
 \label{sec:CADflow}
 Given that the number of signals that can cross the interposer between FPGA dice is considerably more limited than within an FPGA, using a partitioner to divide the circuit into one partition per die is a promising CAD flow.
 
-\subsection{CAD Flow Variations}
 The overall CAD flow, including the partitioning steps, is shown in Figure \ref{fig:partitioning_cad_flow}.
 \begin{figure}[!htbp]
 \centering
@@ -11,7 +10,7 @@ The overall CAD flow, including the partitioning steps, is shown in Figure \ref{
 \label{fig:partitioning_cad_flow}
 \end{figure}
 
-\subsubsection{Partitioner Stage}\label{sec:partitioner_stage}
+\subsection{Partitioner Stage}\label{sec:partitioner_stage}
 As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. The partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new constraint. The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly) to a separate FPGA die. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can also pass the partition information to the placement stage. The post-packing placement constraints can be derived from the primitive block partitioning constraints, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
 
 \begin{enumerate}[label=(\roman*)]
@@ -21,7 +20,7 @@ As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of cir
   \item Partitioning the primitive netlist to guide the packer, and, as described above, passing these constraints to the placer.
 \end{enumerate}
 
-\subsubsection{Partitioning Tool}
+\subsection{Partitioning Tool}
 Two well-known freely available graph partitioning tools are Metis~\cite{karypis1998multilevelmetis} and hMetis~\cite{karypis1999multilevelhmetis}. Metis operates on graphs, while hMetis operates on hypergraphs -- a hypergraph is a generalization of a graph, where each edge can connect any number of vertices. It is most natural to represent a circuit netlist as a hypergraph, where the vertices are netlist pins (or blocks) and the hyperedges are the nets joining the pins. Owing to the natural hypergraph representation, hMetis would be the most appropriate choice of partitioner. However, there are other issues to consider for our use case.
 
 Graph partitioning algorithms assign vertices to partitions while satisfying ``balance constraints''. The balance constraints exist to drive the algorithm away from the trivial partitioning solution where all vertices are in the same partition, leaving all other partitions empty. An example of a basic balance constraint is one which requires an equal number of vertices in each partition. Generally such a perfect balance overly restricts the solution, so some fractional ``unbalance'' is allowed; in this work we use $0.05$ ($5\%$). For two partitions, $P1$ and $P2$, this translates to~\cite{karypismanual}
@@ -41,7 +40,7 @@ where $P1_i$ is the set of all blocks of type $i$ in partition 1. We refer to th
 
 The current version of hMetis does not support heterogeneous balance constraints, though Metis does. Metis was used in our CAD flow. However, as the circuit netlist is naturally represented as a hypergraph, it needs to be transformed to a graph before Metis can process it.
 
-\subsubsection{Hypergraph to Graph Transformation}\label{sec:hypergraph_to_graph}
+\subsection{Hypergraph to Graph Transformation}\label{sec:hypergraph_to_graph}
 We transformed the circuit netlist hypergraph to a graph in the following way:
 \begin{enumerate}[label=(\roman*)]
 \item For each hyperedge of the circuit netlist hypergraph, we generated a graph (the \emph{per-net subgraph}).
@@ -104,7 +103,7 @@ To validate the choice of hyperedge cutsize as a proxy for circuit routability, 
 
 The star topology with 1/n edge weights achieves the best minimum channel width, confirming that hyperedge cutsize is a good proxy for routability. Consequently, we use this model in all future results in this paper. Unlike routability, we found that the post-routing critical path delay was not strongly impacted by the hypergraph model used.
 
-\subsubsection{Partitioner Stage Results}\label{sec:partitioner_stage_results}
+\subsection{Partitioner Stage Results}\label{sec:partitioner_stage_results}
 We compare the performance of the four CAD flow variations described in Section \ref{sec:partitioner_stage} on the 8 largest VTR benchmarks. We again use an unbalance of $5\%$ and split the clustered netlist into two partitions (constraining the packer and/or the placer, as required by the flow under test). The interposer parameters (\% wires cut = $80\%$ and delay increase = 1 ns) and bloat factor ($10\%$ in each dimension) are the same as in Section \ref{sec:hypergraph_to_graph}. Figure \ref{fig:flows_mcw} shows the minimum routable channel width for each partitioning CAD flow variation.
 
 \begin{figure}[!htbp]
@@ -130,7 +129,7 @@ On average, the critical path delay did not vary significantly between the diffe
 
 Considering both routability and delay, the best CAD flow used the partitioning result to constrain both packing and placement, and we use that flow in the remainder of this paper.
 
-\subsubsection{\% wires cut}
+\subsection{\% wires cut}
 To see how well the CAD flow works for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of~\cite{interposer2014} for FPGAs where more than half the wires are cut at interposer boundaries. It is slightly worse than the traditional FPGA CAD flow even for an architecture with 0\% of the wires cut, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.
 
 \begin{figure}[!htbp]
@@ -140,7 +139,7 @@ To see how well the CAD flow works for a range of interposer architectures, we v
 \label{fig:wires_cut}
 \end{figure}
 \footnotetext{The best flow from~\cite{interposer2014} does not provide data at 90\% wires cut.}
-\subsubsection{Bloating of the Clustered Netlist due to Partitioning Constraints}
+\subsection{Bloating of the Clustered Netlist due to Partitioning Constraints}
 The additional constraints on the packer imposed by partitioning may result in a less dense packing. Figure \ref{fig:packing_bloat} compares the number of complex blocks in the partitioning-constrained and unconstrained clustered netlists.
 
 \begin{figure}[!htbp]
