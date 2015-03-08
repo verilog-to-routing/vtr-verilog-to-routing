@@ -271,7 +271,7 @@ N_{crossed}(i,j) \times delay\_increase
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
-where $N_{crossed}(i,j)$ is the number of times this path has to cross the interposer to go from $(x_i,y_i)$ to $(x_j,y_j)$ and $delay\_increase$ is the timing penalty of crossing the interposer.
+where $N_{crossed}(i,j)$ is the minimum number of times this path has to cross the interposer to go from $(x_i,y_i)$ to $(x_j,y_j)$ and $delay\_increase$ is the timing penalty of crossing the interposer.
 
 %   - Wiring / cut cost
 \subsubsection{Placer Wiring Cost}
@@ -452,7 +452,7 @@ The \textit{fanin transfer} and \textit{fanout transfer} options ensure that no 
 \label{fig:additional_fanins}
 \end{figure}
 
-Clearly using bidirectional interposer wires with fanin transfer and fanout transfer is very beneficial, so we use these parameters in all future experiments. Adding additional fanin beyond transferring the fanin of cut wires is only a small further benefit so we use additional fanin=0 in subsequent sections. Adding these additional multiplexers will have a very small impact on die size as 10,000 muxes per cut would be typical in a large FPGA~\cite{xilinx7series} which is a very small fraction of the several million routing multiplexers in a large FPGA die.
+Clearly using bidirectional interposer wires with fanin transfer and fanout transfer is very beneficial, so we use these parameters in all future experiments. Adding additional fanin beyond transferring the fanin of cut wires is only a small further benefit so we use additional fanin=0 in subsequent sections. Adding these additional multiplexers and making the interposer drivers tri-statable causes less than a 0.1\% die area increase as 10,000 muxes per cut would be typical in a large FPGA~\cite{xilinx7series} which is a very small fraction of the several million routing multiplexers in a large FPGA die.
 
 
 %   - Channel width vs % wires cut
@@ -465,7 +465,7 @@ Figure~\ref{fig:standard_minW} shows the graph of minimum channel width versus \
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{minChW_2.eps}
+\includegraphics[width=\linewidth]{MinChW_3.eps}
 \caption{Minimum channel width vs. \textit{\% wires cut} for 2 dice and $1ns$ of \textit{delay increase}.}
 \label{fig:standard_minW}
 \end{figure}
