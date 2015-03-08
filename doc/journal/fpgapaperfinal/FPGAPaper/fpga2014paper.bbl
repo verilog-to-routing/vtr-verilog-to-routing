@@ -52,6 +52,10 @@ R.~Chaware, K.~Nagarajan, and S.~Ramalingam, ``{Assembly and Reliability
 A.~Hahn~Pereira and V.~Betz, ``{CAD and Architecture for Interposer-Based
   Multi-FPGA Systems},'' in \emph{ACM Int. Symp. on FPGAs}, 2014, pp. 75--84.
 
+\bibitem{arden2010morethan}
+W.~Arden, M.~Brillou{\"e}t, P.~Cogez, M.~Graef, B.~Huizing, and R.~Mahnkopf,
+  ``More {Than} {M}oore {W}hite {P}aper,'' \emph{ITRS}, 2010.
+
 \bibitem{xilinx7series}
 \BIBentryALTinterwordspacing
 Xilinx, ``{7 Series FPGA Overview},'' \emph{www.xilinx.com}, 2013. [Online].
