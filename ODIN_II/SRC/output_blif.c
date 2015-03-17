@@ -447,14 +447,17 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
 			nnet_t *net = node->input_pins[i]->net;
 			if (net && net->driver_pin)
-			{
-				if ((net->driver_pin->node->type == MULTIPLY) ||
+			{	
+				if (net->driver_pin->name != NULL)
+				{
+					if ((net->driver_pin->node->type == MULTIPLY) ||
 					(net->driver_pin->node->type == HARD_IP) ||
 					(net->driver_pin->node->type == MEMORY) ||
 					(net->driver_pin->node->type == ADD) ||
 					(net->driver_pin->node->type == MINUS) )
-				{
-					fprintf(out, " %s", net->driver_pin->name);
+					{
+						fprintf(out, " %s", net->driver_pin->name);
+					}				
 				}
 				else
 				{
@@ -620,15 +623,18 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 		/* printout all the port hookups */
 		for (i = 0; i < node->num_input_pins; i++)
 		{
-			/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
-			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
-			if ((node->input_pins[i]->net->driver_pin->node->type == MULTIPLY) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == HARD_IP) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == MEMORY) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == ADD) ||
-			    (node->input_pins[i]->net->driver_pin->node->type == MINUS))
+			if (node->input_pins[i]->net->driver_pin->name != NULL)
 			{
-				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
+				/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
+				/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
+				if ((node->input_pins[i]->net->driver_pin->node->type == MULTIPLY) ||
+			    	   (node->input_pins[i]->net->driver_pin->node->type == HARD_IP) ||
+			    	   (node->input_pins[i]->net->driver_pin->node->type == MEMORY) ||
+			    	   (node->input_pins[i]->net->driver_pin->node->type == ADD) ||
+			    	   (node->input_pins[i]->net->driver_pin->node->type == MINUS))
+				{
+					fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
+				}
 			}
 			else
 			{
@@ -744,13 +750,16 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 			}
 			else
 			{
-				if ((net->driver_pin->node->type == MULTIPLY) ||
-				    (net->driver_pin->node->type == HARD_IP) ||
-				    (net->driver_pin->node->type == MEMORY) ||
-				    (net->driver_pin->node->type == ADD) ||
-				    (net->driver_pin->node->type == MINUS))
+				if (net->driver_pin->name != NULL)
 				{
-					fprintf(out, " %s", net->driver_pin->name);
+					if ((net->driver_pin->node->type == MULTIPLY) ||
+				    	(net->driver_pin->node->type == HARD_IP) ||
+				    	(net->driver_pin->node->type == MEMORY) ||
+				    	(net->driver_pin->node->type == ADD) ||
+				    	(net->driver_pin->node->type == MINUS))
+					{
+						fprintf(out, " %s", net->driver_pin->name);
+					}
 				}
 				else
 				{
