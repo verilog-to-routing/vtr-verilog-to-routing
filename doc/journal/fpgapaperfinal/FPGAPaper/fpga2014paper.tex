@@ -73,8 +73,7 @@
 
 % As a general rule, do not put math, special symbols or citations in the abstract or keywords.
 \begin{abstract}
-Multiple FPGA dice can be connected through a silicon interposer to form a larger system than one monolithic die can accommodate. Such systems are now commercially available but many open questions remain concerning their key architecture parameters and efficiency, as the signal count between dice is reduced and the signal delay between dice is increased compared to a monolithic FPGA.
-We create a new version of VPR to target interposer-based FPGAs and investigate modifications to placement and routing and the incorporation of partitioning into the flow to improve results. Our best CAD flow reduces the routing demand for interposer FPGAs with realistic amounts of connectivity between dice by 47\% and improves the circuit speed by 13\% on average. Architecture modifications to add routing flexibility when crossing the interposer are very beneficial and improve routability by a further 11\%. With these CAD and architecture enhancements, we find that if an interposer supplies (between dice) 40\% of the routing capacity that the normal (within-die) FPGA routing channels supply, there is negligible impact on circuit routability. Smaller interposer routing capacities do impact routability however: minimum channel width increases by 10\% and 70\% when an interposer supplies only 20\% and 10\% of the within-die routing, respectively. The interposer also impacts delay, increasing circuit delay by 11\% on average for a 1 ns interposer signal delay and a two-die system. 
+Large FPGA systems with multiple dice connected by a silicon interposer are now commercially available. However, many questions remain concerning their key architecture parameters and efficiency, as the signal count between dice is reduced and the delay between dice is increased compared to a monolithic FPGA. We modify VPR to target interposer-based FPGAs and investigate placement and routing changes and incorporating partitioning into the flow to improve results. Our best CAD flow reduces the routing demand for interposer FPGAs with realistic connectivity between dice by 47\% and improves the circuit speed by 13\% on average. Architecture modifications to add routing flexibility when crossing the interposer are very beneficial and improve routability by a further 11\%. With these CAD and architecture enhancements, we find that if an interposer supplies (between dice) 20\% of the routing capacity that the normal (within-die) FPGA routing channels supply, there is only a modest impact on circuit routability. Smaller interposer routing capacities do impact routability however: minimum channel width increases by 70\% when an interposer supplies only 10\% of the within-die routing. The interposer also impacts delay, increasing circuit delay by 11\% on average for a 1 ns interposer signal delay and a two-die system.
 \end{abstract}
 
 % Note that keywords are not normally used for peerreview papers.
@@ -569,6 +568,8 @@ This work was supported by Brazil's Ci\^{e}ncia sem Fronteiras scholarship and t
 \bibliographystyle{IEEEtran}
 % argument is your BibTeX string definitions and bibliography database(s)
 \bibliography{IEEEabrv,./fpga2014paper}
+
+\input{difference_from_prior.tex}
 
 % that's all folks
 \end{document}
