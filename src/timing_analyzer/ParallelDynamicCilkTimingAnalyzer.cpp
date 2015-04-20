@@ -1,6 +1,8 @@
 #include "ParallelDynamicCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
+#if 0 //Currently disabled since gcc > 4.8 can't inline atomic.load() for some reason...
+
 #define MEMORY_ORDERING std::memory_order_seq_cst
 
 #define DYNAMIC_ALL_LEVELS
@@ -133,3 +135,5 @@ void ParallelDynamicCilkTimingAnalyzer::backward_traverse_node(TimingGraph& tg, 
         }
     }
 }
+
+#endif

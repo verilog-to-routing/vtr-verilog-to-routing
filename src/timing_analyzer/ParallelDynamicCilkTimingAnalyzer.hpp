@@ -6,6 +6,8 @@
 #include "SerialTimingAnalyzer.hpp"
 
 
+#if 0 //Currently disabled since gcc > 4.8 can't inline atomic.load() for some reason...
+
 class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
     public: 
         ta_runtime calculate_timing(TimingGraph& timing_graph) override;
@@ -37,3 +39,4 @@ class ParallelDynamicCilkTimingAnalyzer : public SerialTimingAnalyzer {
         std::vector<std::atomic<int>> node_required_outputs_ready_count_;
 };
 
+#endif

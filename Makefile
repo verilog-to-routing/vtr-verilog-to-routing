@@ -1,5 +1,5 @@
 #Tools
-CXX = /project/trees/gcc_4.8_cilkplus/cilkplus-install/bin/g++
+CXX = g++-5 #/project/trees/gcc_4.8_cilkplus/cilkplus-install/bin/g++
 AR = ar
 LEXER_GEN = flex
 PARSER_GEN = bison
