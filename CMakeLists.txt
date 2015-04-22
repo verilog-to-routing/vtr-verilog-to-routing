@@ -2,24 +2,30 @@ cmake_minimum_required(VERSION 2.8)
 
 project("libtatum")
 
-set(tatum_sta_srcs 
-    src/main.cpp)
-set(libtatum_srcs 
-    src/base/sta_util.cpp
+set(EXEC_NAME tatum_sta)
+set(EXEC_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/tatum_sta)
 
-    src/timing_analyzer/SerialTimingAnalyzer.cpp
-    src/timing_analyzer/ParallelLevelizedCilkTimingAnalyzer.cpp
-    src/timing_analyzer/ParallelNoDependancyCilkTimingAnalyzer.cpp
-    src/timing_analyzer/ParallelLevelizedOpenMPTimingAnalyzer.cpp
-    src/timing_analyzer/ParallelDynamicCilkTimingAnalyzer.cpp
+set(LIB_NAME tatum)
+set(LIB_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/libtatum)
 
-    src/timing_graph/TimingGraph.cpp
-    src/timing_graph/TimingNode.cpp)
+set(EXEC_SRCS
+    ${EXEC_SRC_DIR}/main.cpp)
+set(LIB_SRCS
+    ${LIB_SRC_DIR}/base/sta_util.cpp
+    ${LIB_SRC_DIR}/timing_analyzer/SerialTimingAnalyzer.cpp
+    ${LIB_SRC_DIR}/timing_analyzer/ParallelLevelizedCilkTimingAnalyzer.cpp
+    ${LIB_SRC_DIR}/timing_analyzer/ParallelNoDependancyCilkTimingAnalyzer.cpp
+    ${LIB_SRC_DIR}/timing_analyzer/ParallelLevelizedOpenMPTimingAnalyzer.cpp
+    ${LIB_SRC_DIR}/timing_analyzer/ParallelDynamicCilkTimingAnalyzer.cpp
+    ${LIB_SRC_DIR}/timing_graph/TimingGraph.cpp
+    ${LIB_SRC_DIR}/timing_graph/TimingNode.cpp)
 
-include_directories(src/base
-                    src/parsers
-                    src/timing_analyzer
-                    src/timing_graph)
+include_directories(${EXEC_SRC_DIR}
+                    ${EXEC_SRC_DIR}/parsers
+                    ${LIB_SRC_DIR}
+                    ${LIB_SRC_DIR}/base
+                    ${LIB_SRC_DIR}/timing_analyzer
+                    ${LIB_SRC_DIR}/timing_graph)
 add_definitions(-DTIME_VEC_WIDTH=1)
 
 
@@ -27,16 +33,19 @@ add_definitions(-DTIME_VEC_WIDTH=1)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gen_files)
-flex_target(VPR_timing_graph_lexer src/parsers/vpr_timing_graph.l ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.lex.cpp)
-bison_target(VPR_timing_graph_parser src/parsers/vpr_timing_graph.y ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp COMILE_FLAGS "-d")
-add_flex_bison_dependency(VPR_timing_graph_lexer VPR_timing_graph_parser) 
+flex_target(vpr_timing_graph_lexer src/tatum_sta/parsers/vpr_timing_graph.l ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.lex.cpp)
+bison_target(vpr_timing_graph_parser src/tatum_sta/parsers/vpr_timing_graph.y ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp)
+add_flex_bison_dependency(vpr_timing_graph_lexer vpr_timing_graph_parser) 
+
+#Library 
+add_library(${LIB_NAME} ${LIB_SRCS})
 
 #Executable
-add_executable(tatum_sta 
-                ${tatum_sta_srcs} 
-                ${libtatum_srcs}
-                ${FLEX_VPR_timing_graph_lexer_OUTPUTS} 
-                ${BISON_VPR_timing_graph_parser_OUTPUTS})
+add_executable(${EXEC_NAME}
+               ${EXEC_SRCS}
+               ${FLEX_vpr_timing_graph_lexer_OUTPUTS} 
+               ${BISON_vpr_timing_graph_parser_OUTPUTS})
+target_link_libraries(${EXEC_NAME} ${LIB_NAME})
 
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
