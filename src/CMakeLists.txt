@@ -101,14 +101,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 #
 set(LIB_NAME tatum)
 set(EXEC_NAME tatum_sta)
-include_directories(${CMAKE_SOURCE_DIR}/src/libtatum
-                    ${CMAKE_SOURCE_DIR}/src/libtatum/base
-                    ${CMAKE_SOURCE_DIR}/src/libtatum/timing_analyzer
-                    ${CMAKE_SOURCE_DIR}/src/libtatum/timing_graph
+include_directories(${CMAKE_SOURCE_DIR}/libtatum
+                    ${CMAKE_SOURCE_DIR}/libtatum/base
+                    ${CMAKE_SOURCE_DIR}/libtatum/timing_analyzer
+                    ${CMAKE_SOURCE_DIR}/libtatum/timing_graph
                     )
 
 #Required compiler defines. TODO: remove these...
 add_definitions(-DTIME_VEC_WIDTH=1)
 
-add_subdirectory(src/tatum_sta)
-add_subdirectory(src/libtatum)
+add_subdirectory(tatum_sta)
+add_subdirectory(libtatum)
