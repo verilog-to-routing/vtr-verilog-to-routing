@@ -13,11 +13,6 @@ project("libtatum")
 #
 #
 
-#Library name
-#set(LIB_NAME tatum)
-#Main library source directory
-set(LIB_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/libtatum)
-
 #Source files for the library
 set(LIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/base/sta_util.cpp
