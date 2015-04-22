@@ -68,12 +68,12 @@ LIB_SRC = $(foreach dir, $(DIRS), $(wildcard $(dir)/*.cpp))
 LIB_OBJ := $(foreach src, $(LIB_SRC), $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(src)))
 
 LEXER_SRC = $(foreach dir, $(DIRS), $(wildcard $(dir)/*.l))
-LEXER_GEN_SRC = $(patsubst $(SRC_DIR)/%.l, $(BUILD_DIR)/%.lex.c, $(LEXER_SRC))
-LEXER_GEN_OBJ = $(LEXER_GEN_SRC:.c=.o)
+LEXER_GEN_SRC = $(patsubst $(SRC_DIR)/%.l, $(BUILD_DIR)/%.lex.cpp, $(LEXER_SRC))
+LEXER_GEN_OBJ = $(LEXER_GEN_SRC:.cpp=.o)
 
 PARSER_SRC = $(foreach dir, $(DIRS), $(wildcard $(dir)/*.y))
-PARSER_GEN_SRC = $(patsubst $(SRC_DIR)/%.y, $(BUILD_DIR)/%.parse.c, $(PARSER_SRC))
-PARSER_GEN_OBJ = $(PARSER_GEN_SRC:.c=.o)
+PARSER_GEN_SRC = $(patsubst $(SRC_DIR)/%.y, $(BUILD_DIR)/%.parse.cpp, $(PARSER_SRC))
+PARSER_GEN_OBJ = $(PARSER_GEN_SRC:.cpp=.o)
 
 OBJECTS_LIB = $(LIB_OBJ) $(LEXER_GEN_OBJ) $(PARSER_GEN_OBJ)
 OBJECTS_EXE = $(MAIN_OBJ) $(OBJECTS_LIB)
@@ -111,21 +111,21 @@ $(STATIC_LIB): $(OBJECTS_LIB)
 	@$(vecho) "Linking static library: $@"
 	$(AT) $(AR) rcs $@ $(OBJECTS_LIB)
 
-$(BUILD_DIR)/%.lex.c: $(SRC_DIR)/%.l
+$(BUILD_DIR)/%.lex.cpp: $(SRC_DIR)/%.l
 	@$(vecho) "Generating Lexer $< ..."
 	@mkdir -p $(@D)
 	$(AT) $(LEXER_GEN) -o $@ $<
 
-$(BUILD_DIR)/%.parse.c $(BUILD_DIR)/%.parse.h: $(SRC_DIR)/%.y
+$(BUILD_DIR)/%.parse.cpp $(BUILD_DIR)/%.parse.hpp: $(SRC_DIR)/%.y
 	@$(vecho) "Generating Parser $< ..."
 	@mkdir -p $(@D)
-	$(AT) $(PARSER_GEN) -d $< -o $(BUILD_DIR)/$*.parse.c 
+	$(AT) $(PARSER_GEN) -d $< -o $(BUILD_DIR)/$*.parse.cpp 
 
-$(BUILD_DIR)/%.lex.o: $(BUILD_DIR)/%.lex.c $(BUILD_DIR)/%.parse.h
+$(BUILD_DIR)/%.lex.o: $(BUILD_DIR)/%.lex.cpp $(BUILD_DIR)/%.parse.hpp
 	@$(vecho) "Compiling Lexer $< ..."
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.parse.o: $(BUILD_DIR)/%.parse.c
+$(BUILD_DIR)/%.parse.o: $(BUILD_DIR)/%.parse.cpp
 	@$(vecho) "Compiling Parser $< ..."
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@
 
