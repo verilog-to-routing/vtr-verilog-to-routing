@@ -8,6 +8,7 @@ sta_test
 
 #Generated files
 build/
+build_cmake/
 *.echo
 *.blif
 *.xml
