@@ -69,7 +69,6 @@ struct more_sinks_than {
 };
 
 /************************ Subroutine definitions *****************************/
-
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
 		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
@@ -453,7 +452,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
 	free_traceback(inet);
 	
-	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { 
+	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 		if (!slacks) {
 			/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
 			compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
@@ -505,6 +504,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 				rt_root);
+		
 
 		if (itarget > 1 && itry > 5) {
 			/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
@@ -554,6 +554,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 				if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
+
 				timing_driven_expand_neighbours(current, inet, itry, bend_cost,
 						target_criticality, target_node, astar_fac,
 						highfanout_rlim);
@@ -669,8 +670,9 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
 					|| rr_node[to_node].get_yhigh() < target_y - highfanout_rlim
-					|| rr_node[to_node].get_ylow() > target_y + highfanout_rlim)
+					|| rr_node[to_node].get_ylow() > target_y + highfanout_rlim){
 				continue; /* Node is outside high fanout bin. */
+			}
 		}
 
 		/* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
@@ -1005,7 +1007,8 @@ static void update_rr_base_costs(int inet, float largest_criticality) {
 	}
 }
 
-/* Nets that have high fanout can take a very long time to route.  Each sink should be routed contained within a bin instead of the entire bounding box to speed things up */
+/* Nets that have high fanout can take a very long time to route. Routing for sinks that are part of high-fanout nets should be
+   done within a rectangular 'bin' centered around a target (as opposed to the entire net bounding box) the size of which is returned by this function. */
 static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node) {
 	int target_x, target_y;
@@ -1016,8 +1019,8 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	t_linked_rt_edge *linked_rt_edge;
 	t_rt_node * child_node;
 
-	target_x = rr_node[target_node].get_xlow();
-	target_y = rr_node[target_node].get_ylow();
+	target_x = rr_node[target_node].get_xhigh();
+	target_y = rr_node[target_node].get_yhigh();
 
 	if (g_clbs_nlist.net[inet].num_sinks() < HIGH_FANOUT_NET_LIM) {
 		/* This algorithm only applies to high fanout nets */
