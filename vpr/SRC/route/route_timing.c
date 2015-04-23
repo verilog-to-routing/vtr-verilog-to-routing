@@ -134,8 +134,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
-				4370,
-				//sorted_nets[i],
+				sorted_nets[i],
 				itry,
 				pres_fac,
 				router_opts,
@@ -145,7 +144,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				net_delay,
 				slacks
 			);
-			//assert(false);
 			if (!is_routable) {
 				return (false);
 			}
@@ -660,7 +658,6 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
-
 
 		if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
 				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
