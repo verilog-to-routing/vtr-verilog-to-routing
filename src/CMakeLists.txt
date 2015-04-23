@@ -8,6 +8,14 @@ project("tatum")
 #
 #
 
+#Set the default build type if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING 
+        "Choose the type of build: None, Debug, Release, RelWithDebInfo, MinSizeRel"
+        FORCE)
+endif()
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
 include(CheckCXXSymbolExists)
@@ -92,11 +100,13 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     "-Wmissing-declarations"    #Warn if a global function is defined with no delcaration in a header file
     "-Wmissing-include-dirs"    #Warn if a user include directory is missing
     "-Wredundant-decls"         #Warn if there are overlapping declarations
-    #"-Wsign-conversion"         #Warn if a conversion may change the sign
     "-Wswitch-default"          #Warn if a switch has no default
     "-Wundef"                   #Warn if #if() preprocessor refers to an undefined directive
     "-Wunused-variable"         #Warn about variables that are not used
     "-Wno-unused-parameter"     #Don't worry about unused function parameters
+    #GCC-like optional
+    #"-Wsign-conversion"         #Warn if a conversion may change the sign
+    #"-Wpadded"                  #Will warn if additional padding is introduced to a struct/class. Turn on if optimizing class memory layouts
     )
 
 #Check and see if the compiler supports the various warning flags,
@@ -111,6 +121,8 @@ endforeach(flag)
 
 #Apply the warning flags to all build types
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
+
+#message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 #
 #
