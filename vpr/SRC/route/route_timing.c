@@ -134,7 +134,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
-				sorted_nets[i],
+				4370,
+				//sorted_nets[i],
 				itry,
 				pres_fac,
 				router_opts,
@@ -144,6 +145,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				net_delay,
 				slacks
 			);
+			//assert(false);
 			if (!is_routable) {
 				return (false);
 			}
@@ -505,7 +507,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 				rt_root);
 		
-
 		if (itarget > 1 && itry > 5) {
 			/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
 			assert(rr_node[rt_root->inode].type == SOURCE);
@@ -659,6 +660,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
+
 
 		if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
 				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
@@ -1011,7 +1013,7 @@ static void update_rr_base_costs(int inet, float largest_criticality) {
    done within a rectangular 'bin' centered around a target (as opposed to the entire net bounding box) the size of which is returned by this function. */
 static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node) {
-	int target_x, target_y;
+	int target_xlow, target_ylow, target_xhigh, target_yhigh;
 	int rlim = 1;
 	int inode;
 	float area;
@@ -1019,8 +1021,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	t_linked_rt_edge *linked_rt_edge;
 	t_rt_node * child_node;
 
-	target_x = rr_node[target_node].get_xhigh();
-	target_y = rr_node[target_node].get_yhigh();
+	target_xlow = rr_node[target_node].get_xlow();
+	target_ylow = rr_node[target_node].get_ylow();
+	target_xhigh = rr_node[target_node].get_xhigh();
+	target_yhigh = rr_node[target_node].get_yhigh();
 
 	if (g_clbs_nlist.net[inet].num_sinks() < HIGH_FANOUT_NET_LIM) {
 		/* This algorithm only applies to high fanout nets */
@@ -1050,10 +1054,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 			child_node = linked_rt_edge->child;
 			inode = child_node->inode;
 			if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
-				if (rr_node[inode].get_xlow() <= target_x + rlim
-						&& rr_node[inode].get_xhigh() >= target_x - rlim
-						&& rr_node[inode].get_ylow() <= target_y + rlim
-						&& rr_node[inode].get_yhigh() >= target_y - rlim) {
+				if (rr_node[inode].get_xlow() <= target_xhigh + rlim
+						&& rr_node[inode].get_xhigh() >= target_xhigh - rlim
+						&& rr_node[inode].get_ylow() <= target_yhigh + rlim
+						&& rr_node[inode].get_yhigh() >= target_yhigh - rlim) {
 					success = true;
 				}
 			}
@@ -1074,16 +1078,20 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		linked_rt_edge = rt_node->u.child_list;
 	}
 
+	/* adjust rlim to account for width/height of block containing the target sink */
+	int target_span = max( target_xhigh - target_xlow, target_yhigh - target_ylow );
+	rlim += target_span;
+
 	/* redetermine expansion based on rlim */
 	linked_rt_edge = rt_node->u.child_list;
 	while (linked_rt_edge != NULL) {
 		child_node = linked_rt_edge->child;
 		inode = child_node->inode;
 		if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
-			if (rr_node[inode].get_xlow() <= target_x + rlim
-					&& rr_node[inode].get_xhigh() >= target_x - rlim
-					&& rr_node[inode].get_ylow() <= target_y + rlim
-					&& rr_node[inode].get_yhigh() >= target_y - rlim) {
+			if (rr_node[inode].get_xlow() <= target_xhigh + rlim
+					&& rr_node[inode].get_xhigh() >= target_xhigh - rlim
+					&& rr_node[inode].get_ylow() <= target_yhigh + rlim
+					&& rr_node[inode].get_yhigh() >= target_yhigh - rlim) {
 				child_node->re_expand = true;
 			} else {
 				child_node->re_expand = false;
