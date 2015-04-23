@@ -42,15 +42,17 @@ find_package(FLEX REQUIRED)
 
 #The flex/bison code is not warning clean so we need to suppress some warnings
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
-if(COMPILER_SUPPORTS_-Wredundant-decls)
-    #Flex/bison generates code with redundant declarations
-    set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} -Wno-redundant-decls")
-endif()
-if(COMPILER_SUPPORTS_-Wswitch-default)
-    #Flex/bison generates switch statments w/o default cases
-    set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} -Wno-switch-default")
-endif()
-
+set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
+    "-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
+    "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
+    )
+foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
+    if(COMPILER_SUPPORTS_${flag})
+        #Flag supported, so enable it
+        set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
+    endif()
+endforeach(flag)
 
 #
 #

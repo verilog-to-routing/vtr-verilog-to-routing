@@ -10,6 +10,7 @@ project("tatum")
 
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
+include(CheckCXXSymbolExists)
 
 #
 # We require c++11 support
@@ -29,30 +30,47 @@ endif()
 #  This is required for the analyzer to run in parallel mode
 #  As of April 2015 the following compilers have full support 
 #  for Cilk Plus:
-#    * GCC 5+ (Note: GCC 4.9 has partial support, but doesn't support the cilk_for keyword)
+#    * GCC 5+ (Note: GCC 4.9 has only partial support, it does support the cilk_for keyword)
 #    * Intel
 #
-CHECK_CXX_COMPILER_FLAG("-fcilkplus" COMPILER_SUPPORTS_CILK)
-CHECK_CXX_COMPILER_FLAG("-lcilkrts" COMPILER_SUPPORTS_CILK_RTS)
-if(COMPILER_SUPPORTS_CILK AND COMPILER_SUPPORTS_CILK_RTS)
+CHECK_CXX_COMPILER_FLAG("-fcilkplus" COMPILER_SUPPORTS_CILK_FLAG)
+CHECK_CXX_COMPILER_FLAG("-lcilkrts" COMPILER_SUPPORTS_CILK_RTS_FLAG)
+if(COMPILER_SUPPORTS_CILK_FLAG AND COMPILER_SUPPORTS_CILK_RTS_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcilkplus -lcilkrts")
-    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has Cilk Plus support. Build will support parallel execution.")
+    #Check for cilk_for support, since some compilers like gcc 4.9 
+    #supports cilk but not cilk_for
+    CHECK_CXX_SOURCE_COMPILES("#include <cilk/cilk.h>
+                               int main(int argc, char** argv) {
+                                   int cnt = 0;
+                                   cilk_for(int i = 0; i < 10; i++) {
+                                       cnt++;
+                                   }
+                               }" COMPILER_SUPPORTS_CILK_FOR)
+    if(COMPILER_SUPPORTS_CILK_FOR)
+        message(STATUS "Build will support parallel execution. The compiler ${CMAKE_CXX_COMPILER} has Cilk Plus support (including cilk_for).")
+    else()
+        #Remove the cilk flags since we aren't usig it
+        string(REPLACE "-fcilkplus" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+        string(REPLACE "-lcilkrts" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+        message(STATUS "Build will support only serial execution. The compiler ${CMAKE_CXX_COMPILER} has Cilk Plus support, but NO cilk_for keyword. ")
+    endif()
 else()
-    message(WARNING "The compiler ${CMAKE_CXX_COMPILER} has no Cilk Plus support. Build will support only serial execution.")
+    message(STATUS "Build will support only serial execution. The compiler ${CMAKE_CXX_COMPILER} has no Cilk Plus support.")
 endif()
+#message(STATUS "CMAKE_CXX_FLAGS: " ${CMAKE_CXX_FLAGS})
 
 #
 # Debug/Opt flags
 #
 #Support for optimization that don't interfere with debugging?
-CHECK_CXX_COMPILER_FLAG("-Og" COMPILER_SUPPORTS_Og)
-if(COMPILER_SUPPORTS_Og)
+CHECK_CXX_COMPILER_FLAG("-Og" COMPILER_SUPPORTS_-Og)
+if(COMPILER_SUPPORTS_-Og)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
 endif()
 
 #Support for including non-inlined versions of inlined functions (useful for interactive debugging)
-CHECK_CXX_COMPILER_FLAG("-fkeep-inline-functions" COMPILER_SUPPORTS_KEEP_INLINE)
-if(COMPILER_SUPPORTS_KEEP_INLINE)
+CHECK_CXX_COMPILER_FLAG("-fkeep-inline-functions" COMPILER_SUPPORTS_-fkeep-inline-functions)
+if(COMPILER_SUPPORTS_-fkeep-inline-functions)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fkeep-inline-functions")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fkeep-inline-functions")
 endif()
@@ -77,8 +95,8 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     #"-Wsign-conversion"         #Warn if a conversion may change the sign
     "-Wswitch-default"          #Warn if a switch has no default
     "-Wundef"                   #Warn if #if() preprocessor refers to an undefined directive
-    "-Wno-unused"               #Disable warning on unused parameters
     "-Wunused-variable"         #Warn about variables that are not used
+    "-Wno-unused-parameter"     #Don't worry about unused function parameters
     )
 
 #Check and see if the compiler supports the various warning flags,

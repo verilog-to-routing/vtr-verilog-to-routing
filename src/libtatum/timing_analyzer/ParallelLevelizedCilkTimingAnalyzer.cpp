@@ -1,4 +1,4 @@
-#include <cilk/cilk.h>
+#include "cilk_safe.hpp"
 
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"

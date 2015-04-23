@@ -1,5 +1,4 @@
-#include <cilk/cilk.h>
-#include <cilk/reducer_max.h>
+#include <cilk_safe.hpp>
 
 #include "ParallelNoDependancyCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
