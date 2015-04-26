@@ -162,7 +162,7 @@ We add the following parameters to VPR: \textit{number of cuts}, \textit{\% wire
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.65\linewidth]{fpga.eps}
+\includegraphics[width=0.6\linewidth]{fpga.eps}
 \caption{A sample two-die / 1-cutline architecture containing both logic blocks and RAM blocks.}
 \label{fig:fpga}
 \end{figure}
@@ -193,7 +193,7 @@ Dominant routing architectures in modern FPGAs use unidirectional wires~\cite{un
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{architecture_params.eps}
+\includegraphics[width=0.75\linewidth]{architecture_params.eps}
 \caption{For a channel width of 4 and 75\% wires cut, only 1 interposer wire exists (in green) and 3 interposer wires are cut (in the red). (a)~Fan-in Transfer for Interposer Wires allows red routing wires in die 1  to drive a mux that allows them to cross the interposer layer. (b)~Fan-out Transfer for Interposer Wires allows the output of the interposer wire to drive wires in other tracks in die 2.}
 \label{fig:architecture_params}
 \end{figure}
@@ -212,19 +212,20 @@ Third, the Routing Resource Graph (\textit{rrgraph}) must be modified. The rrgra
 
 Previous work by Pereira et al \cite{interposer2014} modeled the interposer indirectly: they did not introduce new rrnodes in the rrgraph to represent the interposer wires. Rather, they found the rrnodes that cross a cutline. Then they either removed all outgoing edges of these rrnodes (if the routing node was part of the \textit{\% wires cut}), or, they increased the switch delay of the rrnode fan-outs (if the wire was not cut) to account for the additional interposer delay.
 
-While this is a reasonable method to model such architectures, it makes it difficult to experiment with different routing-interposer interfaces such as placing input muxes for interposer wires. Therefore, we modify the rrgraph differently to more accurately reflect the interposer layer directly:
+While this is a reasonable method to model such architectures, it makes it difficult to experiment with different routing-interposer interfaces such as placing input muxes for interposer wires. Therefore, we modify the rrgraph differently to more accurately reflect the interposer layer directly.
 
 \begin{figure}[!t]
-\subfigure[]{\includegraphics[width=0.24\linewidth]{a.eps}}
-\subfigure[]{\includegraphics[width=0.24\linewidth]{b.eps}}
-\subfigure[]{\includegraphics[width=0.24\linewidth]{a_prime.eps}}
-\subfigure[]{\includegraphics[width=0.24\linewidth]{b_prime.eps}}
+\subfigure[]{\includegraphics[width=0.17\linewidth]{a.eps}}
+\subfigure[]{\includegraphics[width=0.17\linewidth]{b.eps}}
+\subfigure[]{\includegraphics[width=0.17\linewidth]{a_prime.eps}}
+\subfigure[]{\includegraphics[width=0.17\linewidth]{b_prime.eps}}
 \caption{(a) Regular routing wire connectivity. (b) Replacing the long wire with two wires and connecting them via an interposer wire. (c) rrgraph for regular connectivity. (d) rrgraph after modifications.}
 \label{fig:rrgraph_ops}
 \end{figure}
 
 \begin{figure*}[!thpb]
-\subfigure[]{\includegraphics[width=0.6\textwidth]{gui_1.eps}}
+\centering
+\subfigure[]{\includegraphics[width=0.5\textwidth]{gui_1.eps}}
 \subfigure[]{\includegraphics[width=0.4\textwidth]{gui_2.eps}}
 \caption{VPR Graphical User Interface. (a) Full chip view. (b) Connectivity at the cutline. Due to the limited signal capacity of the interposer, some vertical routing wires are left dangling.}
 \label{fig:vpr_interposer_gui}
@@ -518,15 +519,7 @@ As shown in \ref{fig:crit_path_4part}, systems with more dice are slower; on ave
 %   - Impact of aspect ratio
 \subsection{Impact of Aspect Ratio}
 \label{aspect_ratio_impact}
-It is easier to manufacture silicon dice that have an aspect ratio near 1 (i.e. square). Commercial FPGAs are laid out with identical columns, and hence combine multiple identical FPGA dice in \textit{one dimension} on an interposer \cite{xilinxTSV}. As Figure \ref{fig:square_tall} shows, we can make \textit{either} the FPGA dice square, or the interposer square, but not both. Table \ref{table:squares} compares the routability of these two options for the four-die case: a square interposer (four rectangular dice) or a rectangular interposer (four square dice.) We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the same routing architecture parameters as Section \ref{sec:resultsWiringCapacity}. 
-
-\begin{figure}[!htbp]
-\centering
-\subfigure[]{\includegraphics[height = 3cm]{square_fpga.pdf}}
-\subfigure[]{\includegraphics[height = 4.6675cm]{tall_fpga.pdf}}
-\caption{Devices with (a) a square interposer and (b) square dice.}
-\label{fig:square_tall}
-\end{figure}
+It is easier to manufacture silicon dice that have an aspect ratio near 1 (i.e. square). Commercial FPGAs are laid out with identical columns, and hence combine multiple identical FPGA dice in \textit{one dimension} on an interposer \cite{xilinxTSV}. We can make \textit{either} the FPGA dice square, or the interposer square, but not both. Table \ref{table:squares} compares the routability of these two options for the four-die case. We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the same routing architecture parameters as Section \ref{sec:resultsWiringCapacity}. 
 
 \begin{table}[!htbp]
 \centering
@@ -546,7 +539,7 @@ geomean & 141 & 252 \\ \hline
 \label{table:squares}
 \end{table}
 
-The square interposer configuration performs significantly better than the square dice configuration. A square interposer results in cutlines that are closer together, and hence more logic blocks are near a cutline. On the other hand, a square interposer (composed of rectangular FPGA dice) has more vertical routing channels, giving it a higher absolute number of wires between FPGA dice. The second effect is the more important one, leading to much better routability for a square interposer.
+Compared to square dice, a square interposer (composed of rectangular FPGA dice) results in cutlines that are closer together, and hence more logic blocks are near a cutline. On the other hand, a square interposer has more vertical routing channels, giving it a higher absolute number of wires between FPGA dice. The second effect is the more important one, leading to much better routability for a square interposer than for square dice.
 
 %---------------------------------------------------------------
 %---------------------------------------------------------------
@@ -559,7 +552,7 @@ We defined four key architecture parameters for interposer-based FPGAs, and used
 
 The \textit{critical path delay} is not strongly influenced by the \textit{\% wires cut} but is strongly influenced by the interposer delay and the number of cuts. On average we find that a 1 ns interposer delay causes an 11\% delay increase in a two-die system vs. a monolithic FPGA. Increasing the number of dice in an interposer-based FPGA only moderately impacts the \textit{minimum channel width}, but does lead to a larger \textit{critical path delay}. The aspect ratio of the interposer-based FPGA is an important architectural parameter; a square interposer containing rectangular FPGA dice has the best routability.
 
-Overall we find the results for interposer-based FPGAs to be very positive. While an interposer can only provide a fraction of the signal count between dice that one would have across cutline within a die, the system still has excellent routability so long as the interposer signal count is not pushed to very low values; below 20\% of the within-die routing in our experiments. We have also found that modifications to the CAD flow and routing architecture to exploit interposer-based FPGAs have been very productive. As this is a new area we believe more routability and timing enhancements are likely with further research; for example, a timing-driven partitioner may reduce the delay impact of the interposer.
+Overall we find the results for interposer-based FPGAs to be very positive. While an interposer can only provide a fraction of the signal count between dice that one would have within a die, the system still has excellent routability so long as the interposer signal count is not pushed to very low values; below 20\% of the within-die routing in our experiments. We have also found that modifications to the CAD flow and routing architecture to exploit interposer-based FPGAs have been very productive. As this is a new area, we believe more routability and timing enhancements can be achieved with further research; for example, a timing-driven partitioner may reduce the delay impact of the interposer.
 
 % use section* for acknowledgement
 \section*{Acknowledgment}

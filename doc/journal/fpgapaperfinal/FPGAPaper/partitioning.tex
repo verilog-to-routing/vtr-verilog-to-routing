@@ -11,7 +11,7 @@ The overall CAD flow, including the partitioning steps, is shown in Figure \ref{
 \end{figure}
 
 \subsection{Partitioner Stage}\label{sec:partitioner_stage}
-As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. The partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new constraint. The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly) to a separate FPGA die. Our use of random assignment is sub-optimal for systems with more than two dice, and an interesting area for future work is to explore keeping strongly connected partitions in adjacent dice. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can also pass the partition information to the placement stage. The post-packing placement constraints can be derived from the primitive block partitioning constraints, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
+As shown in Figure \ref{fig:partitioning_cad_flow}, we explore the effect of circuit partitioning at two different stages of the CAD flow. The first possibility is to partition the netlist of primitive elements (LUTs, FFs, RAM slices, etc.) before packing into the larger function blocks such as logic blocks and (32 kb) RAM blocks. The partitioning constraints must be respected by the packer; it must not pack two primitives assigned to different partitions (dice) into the same function block. We updated the VPR clustering algorithm to respect this new constraint. The second possible way to incorporate partitioning is after packing, where partitioning is applied to the function block (cluster-level) netlist. Each partition is then assigned (randomly, though this is not optimal) to a separate FPGA die. The partitioning constraints must then be respected by the placer; it is free to move function blocks around within a die, but not across interposer cutlines. These two partitioning flow options can be combined -- if partitioning is applied before packing, one can also pass the partition information to the placement stage. The post-packing placement constraints can be derived from the primitive block partitioning constraints, with the valid placement region for a given function block being equal to the intersection of the valid placement regions of the primitives packed into that function (clustered) block. There are, therefore, four possible partitioning flows:
 
 \begin{enumerate}[label=(\roman*)]
   \item Leaving both the packer and the placer unconstrained. This is the base flow that does not use partitioning, as described in Section \ref{cadSection}.
@@ -29,7 +29,7 @@ Graph partitioning algorithms assign vertices to partitions while satisfying ``b
 \frac{|P1|}{|P1 \cup P2|} \in [0.5 - unbalance, 0.5 + unbalance]
 \end{equation}
 
-To derive an appropriate balance constraint for our use case, consider that FPGA circuit netlists may contain different block types such as LUTs, registers, RAM slices, and multipliers, among others. The basic balance constraint of (\ref{eq:balance_constraint}), applied to a netlist with only LUTs and multipliers, would ensure that the total block count (sum of the LUT count + multiplier count) in each partition is roughly balanced. The problem with (\ref{eq:balance_constraint}) in the case of multiple block types is that the capacity, per block type, of each partition is not taken into account. It is therefore possible to generate partitions that cannot be realized because the number of resources of each type is not balanced across partitions, even though the total number of resources is balanced. For example, there is nothing preventing the partitioner from moving all LUTs to partition 1 and all multipliers to partition 2, which may not be realizable given the per-block-type capacity of each partition.
+To derive an appropriate balance constraint for our use case, consider that FPGA circuit netlists may contain different block types such as LUTs, registers, RAM slices, and multipliers, among others. The basic balance constraint of (\ref{eq:balance_constraint}), applied to a netlist with different block types, would ensure that the total block count (over all blocks, regardless of type) in each partition is roughly balanced. The problem with (\ref{eq:balance_constraint}) in the case of multiple block types is that the capacity, per block type, of each partition is not taken into account. It is therefore possible to generate partitions that cannot be realized -- for example, there is nothing preventing the partitioner from moving all LUTs to partition 1 and all multipliers to partition 2, which may not be realizable given the per-block-type capacity of each partition.
 
 One solution is to enforce a balance constraint on each block type, $i$:
 
@@ -47,12 +47,12 @@ We transformed the circuit netlist hypergraph to a graph in the following way:
 \item We combined all of the per-net subgraphs, summing the edge weights for edges appearing in more than one per-net subgraph, to generate the total netlist graph.
 \end{enumerate}
 
-We explored several ways to generate the per-net subgraphs. The two parameters in this operation are the graph topology and the edge weight scheme. We considered two graph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the originating hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$.  Our intuition is that assigning lower edge weight to high-fanout nets may be beneficial, and we selected the edge weights accordingly. We use \emph{hyperedge model} to refer to the combination of graph topology and edge weight scheme.
+We explored several ways to generate the per-net subgraphs, varying the graph topology and the edge weight scheme. We considered two graph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the originating hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$.  Our intuition is that assigning lower edge weight to high-fanout nets may be beneficial, and we selected the edge weights accordingly. We refer to the combination of graph topology and edge weight scheme as the \emph{hyperedge model}.
 
 \begin{figure}[!htbp]
 \centering
-\subfigure[]{\includegraphics[width=0.45\linewidth]{star.eps}}
-\subfigure[]{\includegraphics[width=0.45\linewidth]{clique.eps}}
+\subfigure[]{\includegraphics[width=0.35\linewidth]{star.eps}}
+\subfigure[]{\includegraphics[width=0.35\linewidth]{clique.eps}}
 \caption{(a) Star and (b) clique graph topologies.}
 \label{fig:star_clique}
 \end{figure}
@@ -63,17 +63,17 @@ Figure \ref{fig:hyperedge_to_graph} shows how a netlist of three blocks and two 
 
 \begin{figure}[!htbp]
 \centering
-\subfigure[]{\includegraphics[width=0.45\linewidth]{hg2g_star.pdf}}
-\subfigure[]{\includegraphics[width=0.45\linewidth]{hg2g_clique.pdf}}
+\subfigure[]{\includegraphics[width=0.4\linewidth]{hg2g_star.pdf}}
+\subfigure[]{\includegraphics[width=0.4\linewidth]{hg2g_clique.pdf}}
 \caption{The hypergraph to graph transformation with (a) the star topology, and (b) the clique topology.}
 \label{fig:hyperedge_to_graph}
 \end{figure}
 
-To select the best hyperedge model, we used the Metis partitioner to generate graph partitions (which assign each vertex to a partition number) and applied the partitioning result to the original untransformed hypergraph. To rank the different models, we computed the \emph{hyperedge cutsize} for every hyperedge model, across the same circuits as in Section \ref{sec:CADeffect}. The hyperedge cutsize is the number of hyperedges crossing the cutline, as illustrated in Figure \ref{fig:hyperedge_cutline}. As it equals the number of nets that cross the interposer boundary, it is a measure of circuit routability. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
+To select the best hyperedge model, we used the Metis partitioner to generate graph partitions and applied the partitioning result to the original untransformed hypergraph. We used the \emph{hyperedge cutsize} to rank the different hyperedge models, across the same circuits as in Section \ref{sec:CADeffect}. The hyperedge cutsize is the number of hyperedges (nets) crossing the cutline, as illustrated in Figure \ref{fig:hyperedge_cutline}, and it measures circuit routability. The results are shown in Figure \ref{fig:graph_topology_cutsize}.
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{hyperedge_cutline.pdf}
+\includegraphics[width=0.75\linewidth]{hyperedge_cutline.pdf}
 \caption{A graph with six vertices, three hyperedges, and two partitions. As there are two hyperedges crossing the cutline, the hyperedge cutsize is 2.}
 \label{fig:hyperedge_cutline}
 \end{figure}
@@ -130,7 +130,7 @@ On average, the critical path delay did not vary significantly between the diffe
 Considering both routability and delay, the best CAD flow used the partitioning result to constrain both packing and placement, and we use that flow in the remainder of this paper.
 
 \subsection{\% wires cut}
-To see how well the CAD flow works for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of~\cite{interposer2014} for FPGAs where more than half the wires are cut at interposer boundaries. It is slightly worse than the traditional FPGA CAD flow even for an architecture with 0\% of the wires cut, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.
+To evaluate the CAD flow performance for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of~\cite{interposer2014} for FPGAs where more than half the wires are cut at interposer boundaries. It is slightly worse than the traditional FPGA CAD flow even for an architecture with 0\% of the wires cut, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.
 
 \begin{figure}[!htbp]
 \centering
