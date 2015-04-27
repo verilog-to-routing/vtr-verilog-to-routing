@@ -18,7 +18,6 @@ message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
-#include(CheckCXXSymbolExists)
 
 #
 # We require c++11 support
@@ -57,7 +56,7 @@ if(COMPILER_SUPPORTS_CILK_FLAG AND COMPILER_SUPPORTS_CILK_RTS_FLAG)
     if(COMPILER_SUPPORTS_CILK_FOR)
         message(STATUS "Build will support parallel execution. The compiler ${CMAKE_CXX_COMPILER} has Cilk Plus support (including cilk_for).")
     else()
-        #Remove the cilk flags since we aren't usig it
+        #Remove the cilk flags since we aren't using it
         string(REPLACE "-fcilkplus" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
         string(REPLACE "-lcilkrts" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
         message(STATUS "Build will support only serial execution. The compiler ${CMAKE_CXX_COMPILER} has Cilk Plus support, but NO cilk_for keyword. ")
@@ -73,7 +72,7 @@ endif()
 #Support for optimization that don't interfere with debugging?
 CHECK_CXX_COMPILER_FLAG("-Og" COMPILER_SUPPORTS_-Og)
 if(COMPILER_SUPPORTS_-Og)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 endif()
 
 #Support for including non-inlined versions of inlined functions (useful for interactive debugging)

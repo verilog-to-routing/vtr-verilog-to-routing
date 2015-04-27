@@ -101,7 +101,7 @@ void SerialTimingAnalyzer::backward_traversal(TimingGraph& timing_graph) {
 void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id) {
     if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
-        tg.add_node_arr_time(node_id, TimingTag(Time(0), node_id, tg.node_clock_domain(node_id)));
+        tg.add_node_arr_tag(node_id, Time(0), tg.node_clock_domain(node_id), node_id);
     }
 
     if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
@@ -111,14 +111,14 @@ void SerialTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id) {
         //   * A single clock
         //   * At fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        tg.add_node_req_time(node_id, TimingTag(Time(DEFAULT_CLOCK_PERIOD), node_id, tg.node_clock_domain(node_id)));
+        tg.add_node_req_tag(node_id, Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id);
     }
 }
 
 void SerialTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id) {
     //From upstream sources to current node
 
-    std::vector<TimingTag> arr_tags;
+    TimingTags& arr_tags = tg.node_arr_tags(node_id);
     for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
 
@@ -126,68 +126,43 @@ void SerialTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id
 
         const Time& edge_delay = tg.edge_delay(edge_id);
 
-        for(const TimingTag& src_arr_tag : tg.node_arr_times(src_node_id)) {
+        const TimingTags& src_arr_tags = tg.node_arr_tags(src_node_id);
 
-            //Tags match if both launching node and domain are the same
-            auto pred = [src_arr_tag](const TimingTag& tag) {
-                return tag.clock_domain() == src_arr_tag.clock_domain();
-            };
+        for(TagId src_tag_idx = 0; src_tag_idx < src_arr_tags.num_tags(); src_tag_idx++) {
+            DomainId src_clk_domain = src_arr_tags.clock_domain(src_tag_idx);
+            NodeId src_launch_node = src_arr_tags.launch_node(src_tag_idx);
 
-            //Check if we already have a valid arrival time for this clock domain at this node
-            auto iter = std::find_if(arr_tags.begin(), arr_tags.end(), pred);
-
-            if (iter == arr_tags.end()) {
-                //This must be the first time we've seen this tag at the current node
-                //Save it
-                arr_tags.push_back(src_arr_tag + edge_delay); 
-
-            } else {
-                //Found a matching tag, take the maximum arrival
-                TimingTag& curr_arr_tag = *iter;
-
-                //Take the max
-                curr_arr_tag.max(src_arr_tag + edge_delay);
-            }
+            //Take maximum arrival time
+            arr_tags.max_tag(src_arr_tags.time(src_tag_idx) + edge_delay, src_clk_domain, src_launch_node);
         }
     }
-    tg.set_node_arr_times(node_id, arr_tags);
 }
 
 void SerialTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_id) {
     //From downstream sinks to current node
 
-    std::vector<TimingTag> req_tags;
+    //We must use the req_tags by reference so we don't accidentally wipe-out any
+    //set required times on primary outputs
+    TimingTags& req_tags = tg.node_req_tags(node_id);
 
+    //Each back-edge from down stream node
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+
         int sink_node_id = tg.edge_sink_node(edge_id);
+
         const Time& edge_delay = tg.edge_delay(edge_id);
 
-        for(const TimingTag& sink_req_tag : tg.node_req_times(sink_node_id)) {
+        const TimingTags& sink_req_tags = tg.node_req_tags(sink_node_id);
 
-            auto pred = [sink_req_tag](const TimingTag& tag) {
-                return tag.clock_domain() == sink_req_tag.clock_domain();
-            };
+        for(TagId sink_tag_idx = 0; sink_tag_idx < sink_req_tags.num_tags(); sink_tag_idx++) {
+            DomainId sink_clk_domain = sink_req_tags.clock_domain(sink_tag_idx);
+            NodeId sink_launch_node = sink_req_tags.launch_node(sink_tag_idx);
 
-            //Check if we already have a valid required time for this clock domain at this node
-            auto iter = std::find_if(req_tags.begin(), req_tags.end(), pred);
-
-            if (iter == req_tags.end()) {
-                //This must be the first time we've seen this tag at the current node
-                //Save it
-                req_tags.push_back(sink_req_tag - edge_delay); 
-
-            } else {
-                //Found a matching tag, take the maximum arrival
-                TimingTag& curr_req_tag = *iter;
-
-                //Take the max
-                curr_req_tag.min(sink_req_tag - edge_delay);
-            }
+            //Take minimum required time
+            req_tags.min_tag(sink_req_tags.time(sink_tag_idx) - edge_delay, sink_clk_domain, sink_launch_node);
         }
-
     }
-    tg.set_node_req_times(node_id, req_tags);
 }
 
 void SerialTimingAnalyzer::save_level_times(TimingGraph& timing_graph, std::string filename) {

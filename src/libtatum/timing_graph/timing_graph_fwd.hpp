@@ -11,5 +11,5 @@ typedef int NodeId;
 typedef int EdgeId;
 typedef int DomainId;
 
-#define INVALID_CLK_DOMAIN -1
+#define INVALID_CLOCK_DOMAIN -1
 

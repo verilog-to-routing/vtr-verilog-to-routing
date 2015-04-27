@@ -4,6 +4,16 @@
 #include "TimingGraph.hpp"
 
 
+void TimingGraph::add_node_arr_tag(NodeId id, const Time& new_time, 
+                                   const DomainId new_clock_domain, 
+                                   const NodeId new_launch_node) { 
+    node_arr_tags_[id].add_tag(new_time, new_clock_domain, new_launch_node); 
+}
+void TimingGraph::add_node_req_tag(NodeId id, const Time& new_time, 
+                                   const DomainId new_clock_domain, 
+                                   const NodeId new_launch_node) { 
+    node_req_tags_[id].add_tag(new_time, new_clock_domain, new_launch_node); 
+}
 
 NodeId TimingGraph::add_node(const TimingNode& new_node) {
     //Type
@@ -34,17 +44,15 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     node_in_edges_.push_back(std::move(in_edges));
 
     //Arrival/Required Times
-    //node_arr_times_.push_back(TimingTag(new_node.arrival_time(), -1, INVALID_CLK_DOMAIN));
-    //node_req_times_.push_back(TimingTag(new_node.required_time(), -1, INVALID_CLK_DOMAIN));
-    node_arr_times_.resize(node_types_.size());
-    node_req_times_.resize(node_types_.size());
+    node_arr_tags_.resize(node_types_.size());
+    node_req_tags_.resize(node_types_.size());
     
     //Verify sizes
     assert(node_types_.size() == node_clock_domains_.size());
     assert(node_types_.size() == node_out_edges_.size());
     assert(node_types_.size() == node_in_edges_.size());
-    assert(node_types_.size() == node_arr_times_.size());
-    assert(node_types_.size() == node_req_times_.size());
+    assert(node_types_.size() == node_arr_tags_.size());
+    assert(node_types_.size() == node_req_tags_.size());
 
     //Return the ID of the added node
     return node_types_.size() - 1;
@@ -171,16 +179,16 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
     std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_arr_times;
     std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_req_times;
 #else
-    std::vector<std::vector<TimingTag>> old_node_arr_times;
-    std::vector<std::vector<TimingTag>> old_node_req_times;
+    std::vector<TimingTags> old_node_arr_times;
+    std::vector<TimingTags> old_node_req_times;
 #endif
 
     //Swap the values
     std::swap(old_node_types, node_types_);
     std::swap(old_node_out_edges, node_out_edges_);
     std::swap(old_node_in_edges, node_in_edges_);
-    std::swap(old_node_arr_times, node_arr_times_);
-    std::swap(old_node_req_times, node_req_times_);
+    std::swap(old_node_arr_times, node_arr_tags_);
+    std::swap(old_node_req_times, node_req_tags_);
 
     //Update the values
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
@@ -188,8 +196,8 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
             node_types_.push_back(old_node_types[old_node_id]);
             node_out_edges_.push_back(old_node_out_edges[old_node_id]);
             node_in_edges_.push_back(old_node_in_edges[old_node_id]);
-            node_arr_times_.push_back(old_node_arr_times[old_node_id]);
-            node_req_times_.push_back(old_node_req_times[old_node_id]);
+            node_arr_tags_.push_back(old_node_arr_times[old_node_id]);
+            node_req_tags_.push_back(old_node_req_times[old_node_id]);
         }
     }
 

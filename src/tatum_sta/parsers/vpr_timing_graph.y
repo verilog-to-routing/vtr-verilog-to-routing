@@ -214,7 +214,7 @@ pin_blk: int_number TAB int_number TAB { $$.ipin = $1; $$.iblk = $3; }
 
 domain_skew_iodelay: int_number TAB number TAB TAB { $$.domain = $1; $$.skew = $3; $$.iodelay = NAN; }
     | int_number TAB TAB number TAB { $$.domain = $1; $$.skew = NAN; $$.iodelay = $4; }
-    | TAB TAB TAB TAB { $$.domain = INVALID_CLK_DOMAIN; $$.skew = NAN; $$.iodelay = NAN; }
+    | TAB TAB TAB TAB { $$.domain = INVALID_CLOCK_DOMAIN; $$.skew = NAN; $$.iodelay = NAN; }
     ;
 
 num_out_edges: int_number {$$ = $1;}

@@ -29,7 +29,7 @@ std::istream& operator>>(std::istream& os, TN_Type& type);
 
 class TimingNode {
     public:
-        TimingNode(): type_(TN_Type::UNKOWN), clock_domain_(INVALID_CLK_DOMAIN) {}
+        TimingNode(): type_(TN_Type::UNKOWN), clock_domain_(INVALID_CLOCK_DOMAIN) {}
         TimingNode(TN_Type new_type, DomainId clk_domain): type_(new_type), clock_domain_(clk_domain) {}
 
         int num_out_edges() const { return out_edge_ids_.size(); }
