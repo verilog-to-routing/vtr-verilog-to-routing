@@ -18,7 +18,7 @@ enum class TN_Type {
 	FF_SINK, //Sink (D) pin of flip-flop 
 	FF_SOURCE, //Source (Q) pin of flip-flop 
 	FF_CLOCK, //Clock pin of flip-flop 
-    CLOCK_SOURCE, //An on-chip clock generator such as a pll 
+    CLOCK_SOURCE, //A clock generator such as a PLL 
     CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE 
 	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0 
     UNKOWN //Unrecognized type, this is almost certainly an error
@@ -29,8 +29,8 @@ std::istream& operator>>(std::istream& os, TN_Type& type);
 
 class TimingNode {
     public:
-        TimingNode(): type_(TN_Type::UNKOWN) {}
-        TimingNode(TN_Type new_type): type_(new_type) {}
+        TimingNode(): type_(TN_Type::UNKOWN), clock_domain_(INVALID_CLK_DOMAIN) {}
+        TimingNode(TN_Type new_type, DomainId clk_domain): type_(new_type), clock_domain_(clk_domain) {}
 
         int num_out_edges() const { return out_edge_ids_.size(); }
         int num_in_edges() const { return in_edge_ids_.size(); }
@@ -42,6 +42,7 @@ class TimingNode {
         void add_in_edge_id(EdgeId edge_id) { in_edge_ids_.push_back(edge_id); }
 
         TN_Type type() const { return type_; }
+        DomainId clock_domain() const { return clock_domain_; }
 
         Time arrival_time() const { return T_arr_; }
         void set_arrival_time(Time new_arrival_time) { T_arr_ = new_arrival_time; }
@@ -55,6 +56,7 @@ class TimingNode {
         Time T_clock_delay_; //Clock arrival time at this node, only valid for FF types
 
         TN_Type type_;
+        DomainId clock_domain_;
 
         std::vector<EdgeId> in_edge_ids_; //Timing edges driving this node
         std::vector<EdgeId> out_edge_ids_; //Timing edges driven by this node

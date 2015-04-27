@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
-    ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
+    //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
 
     //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer(); 
     //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer(); 
@@ -172,75 +172,77 @@ int main(int argc, char** argv) {
         std::cout << std::endl;
     }
 
-    float parallel_analysis_time = 0;
-    float parallel_pretraverse_time = 0.;
-    float parallel_fwdtraverse_time = 0.;
-    float parallel_bcktraverse_time = 0.;
-    float parallel_analysis_time_avg = 0;
-    float parallel_pretraverse_time_avg = 0.;
-    float parallel_fwdtraverse_time_avg = 0.;
-    float parallel_bcktraverse_time_avg = 0.;
-    float parallel_verify_time = 0;
-    {
-        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
-        
-        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
-            //Analyze
-            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
-
-            ta_runtime traversal_times = parallel_analyzer.calculate_timing(timing_graph);
-
-            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-            parallel_pretraverse_time += traversal_times.pre_traversal;
-            parallel_fwdtraverse_time += traversal_times.fwd_traversal;
-            parallel_bcktraverse_time += traversal_times.bck_traversal;
-            parallel_analysis_time += time_sec(analyze_start, analyze_end);
-
-            std::cout << ".";
-            std::cout.flush();
-
-            //Verify
-            clock_gettime(CLOCK_MONOTONIC, &verify_start);
-
-            if (parallel_analyzer.is_correct()) {
-                verify_timing_graph(timing_graph, expected_arr_req_times);
-            }
-
-            clock_gettime(CLOCK_MONOTONIC, &verify_end);
-            parallel_verify_time += time_sec(verify_start, verify_end);
-            
-            if(i == NUM_PARALLEL_RUNS-1) {
-                parallel_analyzer.save_level_times(timing_graph, "parallel_level_times.csv");
-            }
-            //Reset
-            parallel_analyzer.reset_timing(timing_graph);
-        }
-        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
-        parallel_pretraverse_time_avg = parallel_pretraverse_time / NUM_PARALLEL_RUNS;
-        parallel_fwdtraverse_time_avg = parallel_fwdtraverse_time / NUM_PARALLEL_RUNS;
-        parallel_bcktraverse_time_avg = parallel_bcktraverse_time / NUM_PARALLEL_RUNS;
-        std::cout << std::endl;
-        if(!parallel_analyzer.is_correct()) {
-            std::cout << "Skipped correctness verification" << std::endl; 
-        }
-        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << std::setprecision(6) << std::setw(6) << parallel_analysis_time_avg << " s" << std::endl;
-        std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_pretraverse_time_avg << " s";
-        std::cout << " (" << std::setprecision(2) << parallel_pretraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
-        std::cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_fwdtraverse_time_avg << " s";
-        std::cout << " (" << std::setprecision(2) << parallel_fwdtraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
-        std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_bcktraverse_time_avg << " s";
-        std::cout << " (" << std::setprecision(2) << parallel_bcktraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
-        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
-        std::cout << std::endl;
-    }
-
-
-
-    std::cout << "Parallel Speed-Up: " << std::fixed << serial_analysis_time_avg / parallel_analysis_time_avg << "x" << std::endl;
-    std::cout << "\tPre-traversal: " << std::fixed << serial_pretraverse_time_avg / parallel_pretraverse_time_avg << "x" << std::endl;
-    std::cout << "\tFwd-traversal: " << std::fixed << serial_fwdtraverse_time_avg / parallel_fwdtraverse_time_avg << "x" << std::endl;
-    std::cout << "\tBck-traversal: " << std::fixed << serial_bcktraverse_time_avg / parallel_bcktraverse_time_avg << "x" << std::endl;
-    std::cout << std::endl;
+/*
+ *    float parallel_analysis_time = 0;
+ *    float parallel_pretraverse_time = 0.;
+ *    float parallel_fwdtraverse_time = 0.;
+ *    float parallel_bcktraverse_time = 0.;
+ *    float parallel_analysis_time_avg = 0;
+ *    float parallel_pretraverse_time_avg = 0.;
+ *    float parallel_fwdtraverse_time_avg = 0.;
+ *    float parallel_bcktraverse_time_avg = 0.;
+ *    float parallel_verify_time = 0;
+ *    {
+ *        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
+ *        
+ *        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
+ *            //Analyze
+ *            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
+ *
+ *            ta_runtime traversal_times = parallel_analyzer.calculate_timing(timing_graph);
+ *
+ *            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
+ *            parallel_pretraverse_time += traversal_times.pre_traversal;
+ *            parallel_fwdtraverse_time += traversal_times.fwd_traversal;
+ *            parallel_bcktraverse_time += traversal_times.bck_traversal;
+ *            parallel_analysis_time += time_sec(analyze_start, analyze_end);
+ *
+ *            std::cout << ".";
+ *            std::cout.flush();
+ *
+ *            //Verify
+ *            clock_gettime(CLOCK_MONOTONIC, &verify_start);
+ *
+ *            if (parallel_analyzer.is_correct()) {
+ *                verify_timing_graph(timing_graph, expected_arr_req_times);
+ *            }
+ *
+ *            clock_gettime(CLOCK_MONOTONIC, &verify_end);
+ *            parallel_verify_time += time_sec(verify_start, verify_end);
+ *            
+ *            if(i == NUM_PARALLEL_RUNS-1) {
+ *                parallel_analyzer.save_level_times(timing_graph, "parallel_level_times.csv");
+ *            }
+ *            //Reset
+ *            parallel_analyzer.reset_timing(timing_graph);
+ *        }
+ *        parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
+ *        parallel_pretraverse_time_avg = parallel_pretraverse_time / NUM_PARALLEL_RUNS;
+ *        parallel_fwdtraverse_time_avg = parallel_fwdtraverse_time / NUM_PARALLEL_RUNS;
+ *        parallel_bcktraverse_time_avg = parallel_bcktraverse_time / NUM_PARALLEL_RUNS;
+ *        std::cout << std::endl;
+ *        if(!parallel_analyzer.is_correct()) {
+ *            std::cout << "Skipped correctness verification" << std::endl; 
+ *        }
+ *        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << std::setprecision(6) << std::setw(6) << parallel_analysis_time_avg << " s" << std::endl;
+ *        std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_pretraverse_time_avg << " s";
+ *        std::cout << " (" << std::setprecision(2) << parallel_pretraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
+ *        std::cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_fwdtraverse_time_avg << " s";
+ *        std::cout << " (" << std::setprecision(2) << parallel_fwdtraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
+ *        std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_bcktraverse_time_avg << " s";
+ *        std::cout << " (" << std::setprecision(2) << parallel_bcktraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
+ *        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
+ *        std::cout << std::endl;
+ *    }
+ *
+ *
+ *
+ *    std::cout << "Parallel Speed-Up: " << std::fixed << serial_analysis_time_avg / parallel_analysis_time_avg << "x" << std::endl;
+ *    std::cout << "\tPre-traversal: " << std::fixed << serial_pretraverse_time_avg / parallel_pretraverse_time_avg << "x" << std::endl;
+ *    std::cout << "\tFwd-traversal: " << std::fixed << serial_fwdtraverse_time_avg / parallel_fwdtraverse_time_avg << "x" << std::endl;
+ *    std::cout << "\tBck-traversal: " << std::fixed << serial_bcktraverse_time_avg / parallel_bcktraverse_time_avg << "x" << std::endl;
+ *    std::cout << std::endl;
+ */
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 
@@ -265,8 +267,10 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
 
     bool error = false;
     for(int node_id = 0; node_id < (int) expected_arr_req_times.size(); node_id++) {
-        float arr_time = tg.node_arr_time(node_id).value();
-        float req_time = tg.node_req_time(node_id).value();
+        const std::vector<TimingTag>& arr_tags = tg.node_arr_times(node_id);
+        const std::vector<TimingTag>& req_tags = tg.node_req_times(node_id);
+        float arr_time = arr_tags[0].value().value();
+        float req_time = req_tags[0].value().value();
         float vpr_arr_time = expected_arr_req_times[node_id].T_arr;
         float vpr_req_time = expected_arr_req_times[node_id].T_req;
 

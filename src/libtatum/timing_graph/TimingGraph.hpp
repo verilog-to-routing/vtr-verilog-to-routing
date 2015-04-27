@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <forward_list>
 #include <iostream>
 #include <iomanip>
 
@@ -11,6 +12,7 @@
 
 #include "TimingNode.hpp"
 #include "TimingEdge.hpp"
+#include "TimingTag.hpp"
 
 #include "aligned_allocator.hpp"
 
@@ -18,16 +20,21 @@ class TimingGraph {
     public:
         //Node accessors
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
+        DomainId node_clock_domain(NodeId id) const { return node_clock_domains_[id]; }
         int num_node_out_edges(NodeId id) const { return node_out_edges_[id].size(); }
         int num_node_in_edges(NodeId id) const { return node_in_edges_[id].size(); }
         EdgeId node_out_edge(NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
         EdgeId node_in_edge(NodeId node_id, int edge_idx) const { return node_in_edges_[node_id][edge_idx]; }
-        Time node_arr_time(NodeId id) const { return node_arr_times_[id]; }
-        Time node_req_time(NodeId id) const { return node_req_times_[id]; }
+        const std::vector<TimingTag>& node_arr_times(NodeId id) const { return node_arr_times_[id]; }
+        const std::vector<TimingTag>& node_req_times(NodeId id) const { return node_req_times_[id]; }
 
         //Node modifiers
-        void set_node_arr_time(NodeId id, Time time) { node_arr_times_[id] = time; }
-        void set_node_req_time(NodeId id, Time time) { node_req_times_[id] = time; }
+        void set_node_arr_times(NodeId id, const std::vector<TimingTag>& tags) { node_arr_times_[id] = tags; }
+        void set_node_req_times(NodeId id, const std::vector<TimingTag>& tags) { node_req_times_[id] = tags; }
+        void add_node_arr_time(NodeId id, const TimingTag& tags) { node_arr_times_[id].push_back(tags); }
+        void add_node_req_time(NodeId id, const TimingTag& tags) { node_req_times_[id].push_back(tags); }
+        void reset_node_arr_times(NodeId id) { node_arr_times_[id].clear(); }
+        void reset_node_req_times(NodeId id) { node_req_times_[id].clear(); }
 
         //Edge accessors
         NodeId edge_sink_node(EdgeId id) const { return edge_sink_nodes_[id]; }
@@ -62,6 +69,7 @@ class TimingGraph {
          */
         //Node data
         std::vector<TN_Type> node_types_;
+        std::vector<DomainId> node_clock_domains_;
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
 
@@ -69,8 +77,8 @@ class TimingGraph {
         std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> node_arr_times_;
         std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> node_req_times_;
 #else
-        std::vector<Time> node_arr_times_;
-        std::vector<Time> node_req_times_;
+        std::vector<std::vector<TimingTag>> node_arr_times_;
+        std::vector<std::vector<TimingTag>> node_req_times_;
 #endif
 
         //Edge data

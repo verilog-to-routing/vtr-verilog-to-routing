@@ -7,6 +7,9 @@
 #define NODE_STEP 1
 //#define PARALLEL_MIN_FWD_LEVEL 150
 //#define PARALLEL_MIN_BCK_LEVEL 2500
+//
+
+#if 0
 
 void ParallelLevelizedCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
@@ -110,7 +113,7 @@ void ParallelLevelizedCilkTimingAnalyzer::backward_traversal(TimingGraph& timing
 void ParallelLevelizedCilkTimingAnalyzer::pre_traverse_node(TimingGraph& tg, NodeId node_id) {
     if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
-        tg.set_node_arr_time(node_id, Time(0));
+        tg.set_node_arr_time(node_id, TimingTag(Time(0), node_id, tg.node_clock_domain(node_id)));
     }
 
     if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
@@ -120,7 +123,9 @@ void ParallelLevelizedCilkTimingAnalyzer::pre_traverse_node(TimingGraph& tg, Nod
         //   * A single clock
         //   * At fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        tg.set_node_req_time(node_id, Time(DEFAULT_CLOCK_PERIOD));
+        tg.set_node_req_time(node_id, TimingTag(Time(DEFAULT_CLOCK_PERIOD), node_id, tg.node_clock_domain(node_id));
     }
 
 }
+
+#endif //0

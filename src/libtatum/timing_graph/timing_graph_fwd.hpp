@@ -9,4 +9,7 @@ class TimingEdge;
 
 typedef int NodeId;
 typedef int EdgeId;
+typedef int DomainId;
+
+#define INVALID_CLK_DOMAIN -1
 

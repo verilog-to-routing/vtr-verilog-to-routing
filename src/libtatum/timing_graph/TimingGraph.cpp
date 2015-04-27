@@ -10,6 +10,9 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     TN_Type new_node_type = new_node.type();
     node_types_.push_back(new_node.type());
 
+    //Domain
+    node_clock_domains_.push_back(new_node.clock_domain());  
+
     //Save primary outputs as we build the graph
     if(new_node_type == TN_Type::OUTPAD_SINK ||
        new_node_type == TN_Type::FF_SINK) {
@@ -31,10 +34,13 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     node_in_edges_.push_back(std::move(in_edges));
 
     //Arrival/Required Times
-    node_arr_times_.push_back(new_node.arrival_time());
-    node_req_times_.push_back(new_node.required_time());
+    //node_arr_times_.push_back(TimingTag(new_node.arrival_time(), -1, INVALID_CLK_DOMAIN));
+    //node_req_times_.push_back(TimingTag(new_node.required_time(), -1, INVALID_CLK_DOMAIN));
+    node_arr_times_.resize(node_types_.size());
+    node_req_times_.resize(node_types_.size());
     
     //Verify sizes
+    assert(node_types_.size() == node_clock_domains_.size());
     assert(node_types_.size() == node_out_edges_.size());
     assert(node_types_.size() == node_in_edges_.size());
     assert(node_types_.size() == node_arr_times_.size());
@@ -165,8 +171,8 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
     std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_arr_times;
     std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_req_times;
 #else
-    std::vector<Time> old_node_arr_times;
-    std::vector<Time> old_node_req_times;
+    std::vector<std::vector<TimingTag>> old_node_arr_times;
+    std::vector<std::vector<TimingTag>> old_node_req_times;
 #endif
 
     //Swap the values

@@ -6,6 +6,7 @@
 #include <string>
 #include <cmath>
 #include <vector>
+#include <iostream>
 
 #include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
@@ -17,6 +18,9 @@ int yyerror(const TimingGraph& tg, const std::vector<node_arr_req_t>& arr_req_ti
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
+
+using std::endl;
+using std::cout;
 
 
 %}
@@ -123,7 +127,7 @@ finish: timing_graph                        {
 timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\n", $1);*/}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
-                                                TimingNode node($2.type);
+                                                TimingNode node($2.type, $2.domain);
 
                                                 for(auto& edge_val : *($2.out_edges)) {
                                                     TimingEdge edge;
@@ -147,9 +151,17 @@ timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\
                                                 assert(timing_graph.num_nodes() - 1 == $2.node_id);
 
                                                 /*
-                                                 *printf("Node %d, Type %s, ipin %d, iblk %d, domain %d, skew %f, iodelay %f, edges %zu\n", 
-                                                 *    $2.node_id, $2.type, $2.ipin, $2.iblk, $2.domain, $2.skew, $2.iodelay, $2.out_edges->size()); 
+                                                 *cout << "Node " << $2.node_id << ", ";
+                                                 *cout << "Type " << $2.type << ", ";
+                                                 *cout << "ipin " << $2.ipin << ", ";
+                                                 *cout << "iblk " << $2.iblk << ", ";
+                                                 *cout << "domain " << $2.domain << ", ";
+                                                 *cout << "skew " << $2.skew << ", ";
+                                                 *cout << "iodelay " << $2.iodelay << ", ";
+                                                 *cout << "edges " << $2.out_edges->size();
+                                                 *cout << endl;
                                                  */
+
                                             }
     | timing_graph num_tnode_levels         {
                                                 timing_graph.set_num_levels($2); 
@@ -202,7 +214,7 @@ pin_blk: int_number TAB int_number TAB { $$.ipin = $1; $$.iblk = $3; }
 
 domain_skew_iodelay: int_number TAB number TAB TAB { $$.domain = $1; $$.skew = $3; $$.iodelay = NAN; }
     | int_number TAB TAB number TAB { $$.domain = $1; $$.skew = NAN; $$.iodelay = $4; }
-    | TAB TAB TAB TAB { $$.domain = -1; $$.skew = NAN; $$.iodelay = NAN; }
+    | TAB TAB TAB TAB { $$.domain = INVALID_CLK_DOMAIN; $$.skew = NAN; $$.iodelay = NAN; }
     ;
 
 num_out_edges: int_number {$$ = $1;}
