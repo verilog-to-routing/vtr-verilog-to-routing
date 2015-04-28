@@ -1,52 +1,65 @@
 #pragma once
-#include <array>
+#include <forward_list>
 #include <algorithm>
 #include <cassert>
+
+#include <mutex>
+
+//Fix to break boost pool's dependance
+//on boost threading -> boost system -> boost date time
+#define BOOST_THREAD_MUTEX_HPP
+namespace boost {
+    using std::mutex;
+}
+#include <boost/pool/pool_alloc.hpp>
 
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
 
-typedef int TagId;
-
-#define INVALID_TAG_ID -1
-#define NUM_FLAT_TAGS 1
+//Forward declaration
+class TimingTag;
 
 class TimingTags {
+        typedef std::forward_list<TimingTag, boost::fast_pool_allocator<TimingTag>> TagList;
     public:
         //Getters
-        TagId num_tags() const;
-        const Time& time(TagId tag_id) const;
-        DomainId clock_domain(TagId tag_id) const;
-        NodeId launch_node(TagId tag_id) const;
-
-        //Setters
-        void set_time(TagId tag_id, const Time& new_time);
-        void set_clock_domain(TagId tag_id, const DomainId new_clock_domain);
-        void set_launch_node(TagId tag_id, const NodeId new_launch_node);
+        size_t num_tags() const { return num_tags_; };
+        TagList::iterator find_tag_by_clock_domain(DomainId domain_id);
+        TagList::iterator begin() { return tags_.begin(); };
+        TagList::iterator end() { return tags_.end(); };
+        TagList::const_iterator begin() const { return tags_.begin(); };
+        TagList::const_iterator end() const { return tags_.end(); };
 
         //Modifiers
         void add_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void set_tag(TagId tag_id, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
         void max_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
         void min_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
         void clear();
 
 
     private:
-        TagId find_clock_domain_tag(DomainId domain_id);
+        int num_tags_;
+        TagList tags_;
 
-        //Struct of arrays layout
+};
 
-        //In the general case we expect very few tags per node
-        //as a memory layout optimization if we have fewer than 
-        //NUM_FLAT_TAGS, those tags are stored in the object
-        //those beyond are stored in externally allocated memory
-        TagId num_tags_;
-        std::array<Time,NUM_FLAT_TAGS> local_times_;
-        std::array<DomainId,NUM_FLAT_TAGS> local_clock_domains_;
-        std::array<NodeId,NUM_FLAT_TAGS> local_launch_nodes_;
+class TimingTag {
+    public:
+        TimingTag(const Time& time_val, DomainId domain, NodeId node)
+            : time_(time_val)
+            , clock_domain_(domain)
+            , launch_node_(node) {}
 
-        std::vector<Time> external_times_;
-        std::vector<DomainId> external_clock_domains_;
-        std::vector<NodeId> external_launch_nodes_;
+        const Time& time() const { return time_; }
+        DomainId clock_domain() const { return clock_domain_; };
+        NodeId launch_node() const { return launch_node_; };
+
+        //Setters
+        void set_time(const Time& new_time) { time_ = new_time; };
+        void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; };
+        void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
+    private:
+        Time time_;
+        DomainId clock_domain_;
+        NodeId launch_node_;
 };

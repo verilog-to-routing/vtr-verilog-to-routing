@@ -128,13 +128,19 @@ void SerialTimingAnalyzer::forward_traverse_node(TimingGraph& tg, NodeId node_id
 
         const TimingTags& src_arr_tags = tg.node_arr_tags(src_node_id);
 
-        for(TagId src_tag_idx = 0; src_tag_idx < src_arr_tags.num_tags(); src_tag_idx++) {
-            DomainId src_clk_domain = src_arr_tags.clock_domain(src_tag_idx);
-            NodeId src_launch_node = src_arr_tags.launch_node(src_tag_idx);
-
-            //Take maximum arrival time
-            arr_tags.max_tag(src_arr_tags.time(src_tag_idx) + edge_delay, src_clk_domain, src_launch_node);
+        for(const TimingTag& src_tag : src_arr_tags) {
+            arr_tags.max_tag(src_tag.time() + edge_delay, src_tag.clock_domain(), src_tag.launch_node());
         }
+
+/*
+ *        for(TagId src_tag_idx = 0; src_tag_idx < src_arr_tags.num_tags(); src_tag_idx++) {
+ *            DomainId src_clk_domain = src_arr_tags.clock_domain(src_tag_idx);
+ *            NodeId src_launch_node = src_arr_tags.launch_node(src_tag_idx);
+ *
+ *            //Take maximum arrival time
+ *            arr_tags.max_tag(src_arr_tags.time(src_tag_idx) + edge_delay, src_clk_domain, src_launch_node);
+ *        }
+ */
     }
 }
 
@@ -155,13 +161,19 @@ void SerialTimingAnalyzer::backward_traverse_node(TimingGraph& tg, NodeId node_i
 
         const TimingTags& sink_req_tags = tg.node_req_tags(sink_node_id);
 
-        for(TagId sink_tag_idx = 0; sink_tag_idx < sink_req_tags.num_tags(); sink_tag_idx++) {
-            DomainId sink_clk_domain = sink_req_tags.clock_domain(sink_tag_idx);
-            NodeId sink_launch_node = sink_req_tags.launch_node(sink_tag_idx);
-
-            //Take minimum required time
-            req_tags.min_tag(sink_req_tags.time(sink_tag_idx) - edge_delay, sink_clk_domain, sink_launch_node);
+        for(const TimingTag& sink_tag : sink_req_tags) {
+            req_tags.min_tag(sink_tag.time() - edge_delay, sink_tag.clock_domain(), sink_tag.launch_node());
         }
+
+/*
+ *        for(TagId sink_tag_idx = 0; sink_tag_idx < sink_req_tags.num_tags(); sink_tag_idx++) {
+ *            DomainId sink_clk_domain = sink_req_tags.clock_domain(sink_tag_idx);
+ *            NodeId sink_launch_node = sink_req_tags.launch_node(sink_tag_idx);
+ *
+ *            //Take minimum required time
+ *            req_tags.min_tag(sink_req_tags.time(sink_tag_idx) - edge_delay, sink_clk_domain, sink_launch_node);
+ *        }
+ */
     }
 }
 

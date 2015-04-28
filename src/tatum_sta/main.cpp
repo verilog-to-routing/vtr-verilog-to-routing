@@ -284,7 +284,7 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
                 std::cout << "\tERROR Found no arrival-time tag, but VPR arrival time was " << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << std::endl;
             }
         } else {
-            float arr_time = arr_tags.time(0).value();
+            float arr_time = arr_tags.begin()->time().value();
             float arr_abs_err = fabs(arr_time - vpr_arr_time);
             float arr_rel_err = relative_error(arr_time, vpr_arr_time);
             if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
@@ -306,7 +306,7 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
                 std::cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width) << vpr_req_time << " (expected NAN)" << std::endl;
             }
         } else {
-            float req_time = req_tags.time(0).value();
+            float req_time = req_tags.begin()->time().value();
             float req_abs_err = fabs(req_time - vpr_req_time);
             float req_rel_err = relative_error(req_time, vpr_req_time);
             if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {

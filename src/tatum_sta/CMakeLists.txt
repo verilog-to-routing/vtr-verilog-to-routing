@@ -81,4 +81,6 @@ add_executable(${EXEC_NAME}
 
 #Executable links to the library
 target_link_libraries(${EXEC_NAME} ${LIB_NAME})
+#target_link_libraries(${EXEC_NAME} "boost_system")
+#target_link_libraries(${EXEC_NAME} "boost_date_time")
 
