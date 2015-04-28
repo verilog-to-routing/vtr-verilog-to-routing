@@ -75,23 +75,13 @@ class TimingGraph {
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
 
-#ifdef TIME_MEM_ALIGN
-        std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> node_arr_times_;
-        std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> node_req_times_;
-#else
         std::vector<TimingTags> node_arr_tags_;
         std::vector<TimingTags> node_req_tags_;
-#endif
 
         //Edge data
         std::vector<NodeId> edge_sink_nodes_;
         std::vector<NodeId> edge_src_nodes_;
-#ifdef TIME_MEM_ALIGN
-        std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> edge_delays_;
-#else
         std::vector<Time> edge_delays_;
-#endif
-
 
         std::vector<std::vector<NodeId>> node_levels_;
         std::vector<NodeId> primary_outputs_;

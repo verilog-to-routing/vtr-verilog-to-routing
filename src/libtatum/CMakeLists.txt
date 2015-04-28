@@ -16,6 +16,7 @@ project("libtatum")
 #Source files for the library
 set(LIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/base/sta_util.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/base/TimingTags.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/SerialTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelLevelizedCilkTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelNoDependancyCilkTimingAnalyzer.cpp
