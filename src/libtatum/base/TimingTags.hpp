@@ -1,49 +1,14 @@
 #pragma once
-#include <forward_list>
 #include <algorithm>
 #include <cassert>
 
-#include <mutex>
-
-//Fix to break boost pool's dependance
-//on boost threading -> boost system -> boost date time
-#define BOOST_THREAD_MUTEX_HPP
-namespace boost {
-    using std::mutex;
-}
-#include <boost/pool/pool_alloc.hpp>
+#include <boost/intrusive/slist.hpp>
 
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
 
 //Forward declaration
-class TimingTag;
-
-class TimingTags {
-        typedef std::forward_list<TimingTag, boost::fast_pool_allocator<TimingTag>> TagList;
-    public:
-        //Getters
-        size_t num_tags() const { return num_tags_; };
-        TagList::iterator find_tag_by_clock_domain(DomainId domain_id);
-        TagList::iterator begin() { return tags_.begin(); };
-        TagList::iterator end() { return tags_.end(); };
-        TagList::const_iterator begin() const { return tags_.begin(); };
-        TagList::const_iterator end() const { return tags_.end(); };
-
-        //Modifiers
-        void add_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void max_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void min_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void clear();
-
-
-    private:
-        int num_tags_;
-        TagList tags_;
-
-};
-
-class TimingTag {
+class TimingTag : public boost::intrusive::slist_base_hook<> {
     public:
         TimingTag(const Time& time_val, DomainId domain, NodeId node)
             : time_(time_val)
@@ -63,3 +28,27 @@ class TimingTag {
         DomainId clock_domain_;
         NodeId launch_node_;
 };
+
+class TimingTags {
+        typedef boost::intrusive::slist<TimingTag> TagList;
+    public:
+        //Getters
+        size_t num_tags() const { return tags_.size(); };
+        TagList::iterator find_tag_by_clock_domain(DomainId domain_id);
+        TagList::iterator begin() { return tags_.begin(); };
+        TagList::iterator end() { return tags_.end(); };
+        TagList::const_iterator begin() const { return tags_.begin(); };
+        TagList::const_iterator end() const { return tags_.end(); };
+
+        //Modifiers
+        void add_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void max_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void min_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void clear();
+
+
+    private:
+        TagList tags_;
+
+};
+

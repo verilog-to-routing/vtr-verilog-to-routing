@@ -13,9 +13,6 @@
 
 #include "SerialTimingAnalyzer.hpp"
 
-//OpenMP Variants
-#include "ParallelLevelizedOpenMPTimingAnalyzer.hpp"
-
 //Cilk variants
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
 #include "ParallelDynamicCilkTimingAnalyzer.hpp"
@@ -30,7 +27,7 @@
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 #define OPTIMIZE_NODE_EDGE_ORDER
 
-void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
+void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>& expected_arr_req_times);
 
 
 int main(int argc, char** argv) {
@@ -102,7 +99,7 @@ int main(int argc, char** argv) {
     std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
     std::cout << std::endl;
 
-    int n_histo_bins = 40;
+    int n_histo_bins = 20;
     print_level_histogram(timing_graph, n_histo_bins);
     print_node_fanin_histogram(timing_graph, n_histo_bins);
     print_node_fanout_histogram(timing_graph, n_histo_bins);
@@ -143,7 +140,7 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(serial_analyzer.is_correct()) {
-                verify_timing_graph(timing_graph, expected_arr_req_times);
+                verify_analyzer(serial_analyzer, expected_arr_req_times);
             }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
@@ -154,7 +151,7 @@ int main(int argc, char** argv) {
             }
 
             //Reset
-            serial_analyzer.reset_timing(timing_graph);
+            serial_analyzer.reset_timing();
         }
         serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
         serial_pretraverse_time_avg = serial_pretraverse_time / NUM_SERIAL_RUNS;
@@ -258,7 +255,9 @@ int main(int argc, char** argv) {
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
 
-void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times) {
+void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>& expected_arr_req_times) {
+    assert(expected_arr_req_times.size() > 0);
+
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
     std::ios_base::fmtflags saved_flags = std::cout.flags();
     std::streamsize prec = std::cout.precision();
@@ -271,8 +270,8 @@ void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& exp
 
     bool error = false;
     for(int node_id = 0; node_id < (int) expected_arr_req_times.size(); node_id++) {
-        const TimingTags& arr_tags = tg.node_arr_tags(node_id);
-        const TimingTags& req_tags = tg.node_req_tags(node_id);
+        const TimingTags& arr_tags = analyzer.arrival_tags(node_id);
+        const TimingTags& req_tags = analyzer.required_tags(node_id);
         float vpr_arr_time = expected_arr_req_times[node_id].T_arr;
         float vpr_req_time = expected_arr_req_times[node_id].T_req;
 

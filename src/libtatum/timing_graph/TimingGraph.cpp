@@ -4,17 +4,6 @@
 #include "TimingGraph.hpp"
 
 
-void TimingGraph::add_node_arr_tag(NodeId id, const Time& new_time, 
-                                   const DomainId new_clock_domain, 
-                                   const NodeId new_launch_node) { 
-    node_arr_tags_[id].add_tag(new_time, new_clock_domain, new_launch_node); 
-}
-void TimingGraph::add_node_req_tag(NodeId id, const Time& new_time, 
-                                   const DomainId new_clock_domain, 
-                                   const NodeId new_launch_node) { 
-    node_req_tags_[id].add_tag(new_time, new_clock_domain, new_launch_node); 
-}
-
 NodeId TimingGraph::add_node(const TimingNode& new_node) {
     //Type
     TN_Type new_node_type = new_node.type();
@@ -43,16 +32,10 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     std::vector<EdgeId> in_edges = std::vector<EdgeId>();
     node_in_edges_.push_back(std::move(in_edges));
 
-    //Arrival/Required Times
-    node_arr_tags_.resize(node_types_.size());
-    node_req_tags_.resize(node_types_.size());
-    
     //Verify sizes
     assert(node_types_.size() == node_clock_domains_.size());
     assert(node_types_.size() == node_out_edges_.size());
     assert(node_types_.size() == node_in_edges_.size());
-    assert(node_types_.size() == node_arr_tags_.size());
-    assert(node_types_.size() == node_req_tags_.size());
 
     //Return the ID of the added node
     return node_types_.size() - 1;

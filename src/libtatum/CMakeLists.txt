@@ -20,7 +20,6 @@ set(LIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/SerialTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelLevelizedCilkTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelNoDependancyCilkTimingAnalyzer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelLevelizedOpenMPTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelDynamicCilkTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingGraph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingNode.cpp)

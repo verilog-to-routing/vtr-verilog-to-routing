@@ -1,4 +1,9 @@
+#include <boost/pool/object_pool.hpp>
+
 #include "TimingTags.hpp"
+
+//Global
+boost::object_pool<TimingTag> tag_pool; //Memory pool for allocating tags
 
 //Modifiers
 void TimingTags::add_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
@@ -8,8 +13,8 @@ void TimingTags::add_tag(const Time& new_time, const DomainId new_clock_domain, 
         return;
     }
 
-    tags_.emplace_front(new_time, new_clock_domain, new_launch_node);
-    num_tags_++; //We manually track the size since forward list has no .size()
+    tags_.push_front(*(tag_pool.construct(TimingTag(new_time, new_clock_domain, new_launch_node))));
+    //tags_.push_front(*(new TimingTag(new_time, new_clock_domain, new_launch_node)));
 }
 
 void TimingTags::max_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
@@ -51,7 +56,7 @@ void TimingTags::min_tag(const Time& new_time, const DomainId new_clock_domain, 
 }
 
 void TimingTags::clear() {
-    tags_.clear();
+    //pass
 }
 
 TimingTags::TagList::iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
