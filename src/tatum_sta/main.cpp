@@ -26,9 +26,9 @@
 
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 3
+#define NUM_SERIAL_RUNS 100
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 void verify_timing_graph(const TimingGraph& tg, std::vector<node_arr_req_t>& expected_arr_req_times);
 

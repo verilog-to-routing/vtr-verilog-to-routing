@@ -30,6 +30,8 @@ set(LIB_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph)
 
 
+#set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/SerialTimingAnalyzer.cpp
+                            #PROPERTIES COMPILE_FLAGS "-fno-inline")
 
 #Include directories
 include_directories(${LIB_INCLUDE_DIRS})
