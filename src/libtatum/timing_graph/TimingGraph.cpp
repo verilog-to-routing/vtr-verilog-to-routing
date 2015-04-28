@@ -173,31 +173,23 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
      * Re-allocate nodes so levels are in contiguous memory
      */
     std::vector<TN_Type> old_node_types;
+    std::vector<DomainId> old_node_clock_domains;
     std::vector<std::vector<EdgeId>> old_node_out_edges;
     std::vector<std::vector<EdgeId>> old_node_in_edges;
-#ifdef TIME_MEM_ALIGN
-    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_arr_times;
-    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_node_req_times;
-#else
-    std::vector<TimingTags> old_node_arr_times;
-    std::vector<TimingTags> old_node_req_times;
-#endif
 
     //Swap the values
     std::swap(old_node_types, node_types_);
+    std::swap(old_node_clock_domains, node_clock_domains_);
     std::swap(old_node_out_edges, node_out_edges_);
     std::swap(old_node_in_edges, node_in_edges_);
-    std::swap(old_node_arr_times, node_arr_tags_);
-    std::swap(old_node_req_times, node_req_tags_);
 
     //Update the values
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
         for(NodeId old_node_id : node_levels_[level_idx]) {
             node_types_.push_back(old_node_types[old_node_id]);
+            node_clock_domains_.push_back(old_node_clock_domains[old_node_id]);
             node_out_edges_.push_back(old_node_out_edges[old_node_id]);
             node_in_edges_.push_back(old_node_in_edges[old_node_id]);
-            node_arr_tags_.push_back(old_node_arr_times[old_node_id]);
-            node_req_tags_.push_back(old_node_req_times[old_node_id]);
         }
     }
 
