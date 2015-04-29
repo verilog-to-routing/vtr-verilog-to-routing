@@ -1,45 +1,71 @@
 #pragma once
 #include <algorithm>
 #include <cassert>
+#include <iterator>
 
 #include <boost/intrusive/slist.hpp>
 #include <boost/pool/object_pool.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
-
-typedef boost::intrusive::link_mode<boost::intrusive::normal_link> normal_link;
-class TimingTag : public boost::intrusive::slist_base_hook<normal_link> {
+class TimingTag {
     public:
+        TimingTag()
+            : next_(nullptr)
+            , time_(NAN)
+            , clock_domain_(INVALID_CLOCK_DOMAIN)
+            , launch_node_(-1) {}
         TimingTag(const Time& time_val, DomainId domain, NodeId node)
-            : time_(time_val)
+            : next_(nullptr)
+            , time_(time_val)
             , clock_domain_(domain)
             , launch_node_(node) {}
 
         const Time& time() const { return time_; }
         DomainId clock_domain() const { return clock_domain_; };
         NodeId launch_node() const { return launch_node_; };
+        TimingTag* next() const { return next_; }
 
         //Setters
         void set_time(const Time& new_time) { time_ = new_time; };
         void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; };
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
+        void set_next(TimingTag* new_next) { next_ = new_next; }
     private:
+        TimingTag* next_;
         Time time_;
         DomainId clock_domain_;
         NodeId launch_node_;
 };
 
+template <class Value>
+class TimingTagIter : public boost::iterator_facade<TimingTagIter<Value>, Value, boost::forward_traversal_tag> {
+    private:
+        Value* p;
+    public:
+        TimingTagIter(): p(nullptr) {}
+        explicit TimingTagIter(Value* tag): p(tag) {}
+    private:
+        friend class boost::iterator_core_access;
+
+        void increment() { p = p->next(); }
+        bool equal(TimingTagIter<Value> const& other) const { return p == other.p; }
+        Value& dereference() const { return *p; }
+};
+
+typedef TimingTagIter<TimingTag> TimingTagIterator;
+typedef TimingTagIter<TimingTag const> TimingTagConstIterator;
+
 class TimingTags {
-        typedef boost::intrusive::slist<TimingTag> TagList;
     public:
         //Getters
-        size_t num_tags() const { return tags_.size(); };
-        TagList::iterator find_tag_by_clock_domain(DomainId domain_id);
-        TagList::iterator begin() { return tags_.begin(); };
-        TagList::iterator end() { return tags_.end(); };
-        TagList::const_iterator begin() const { return tags_.begin(); };
-        TagList::const_iterator end() const { return tags_.end(); };
+        const size_t num_tags() const { return num_tags_; };
+        TimingTagIterator find_tag_by_clock_domain(DomainId domain_id);
+        TimingTagIterator begin() { return (num_tags_ > 0) ? TimingTagIterator(&head_tag_) : end(); };
+        TimingTagIterator end() { return TimingTagIterator(nullptr); };
+        TimingTagConstIterator begin() const { return (num_tags_ > 0) ? TimingTagConstIterator(&head_tag_) : end(); };
+        TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
         //Modifiers
         void add_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
@@ -49,6 +75,8 @@ class TimingTags {
 
 
     private:
-        TagList tags_;
+        int num_tags_;
+        TimingTag head_tag_;
 };
+
 

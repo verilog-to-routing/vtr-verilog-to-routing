@@ -42,8 +42,14 @@ int main(int argc, char** argv) {
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
-    std::cout << "Time class size: " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << std::endl;
-    std::cout << "Time alignof = " << alignof(Time) << std::endl;
+    std::cout << "Time class sizeof  = " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << std::endl;
+    std::cout << "Time class alignof = " << alignof(Time) << std::endl;
+
+    std::cout << "TimingTag class sizeof  = " << sizeof(TimingTag) << " bytes." << TIME_VEC_WIDTH << std::endl;
+    std::cout << "TimingTag class alignof = " << alignof(TimingTag) << " bytes." << std::endl;
+
+    std::cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << TIME_VEC_WIDTH << std::endl;
+    std::cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << std::endl;
 
     TimingGraph timing_graph;
     std::vector<node_arr_req_t> orig_expected_arr_req_times;

@@ -11,17 +11,27 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         return;
     }
 
-    //Make sure the pool is the correct size
-    assert(tag_pool.get_requested_size() == sizeof(TimingTag));
+    if(num_tags_ == 0) {
+        //Store it as the head
+        head_tag_ = TimingTag(new_time, new_clock_domain, new_launch_node);
+    } else {
+        //Store it in a linked list from head
 
-    TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
+        //Allocate form a central storage pool
+        assert(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
+        TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
 
-    tags_.push_front(*tag);
+        //Insert one-after head in O(1) time
+        TimingTag* next_tag = head_tag_.next(); //Save next link (may be nullptr)
+        head_tag_.set_next(tag); //Tag is now second in list
+        tag->set_next(next_tag); //Attach tail
+    }
+    num_tags_++;
 }
 
 void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
-    TagList::iterator iter = find_tag_by_clock_domain(new_clock_domain);
-    if(iter == tags_.end()) { 
+    TimingTagIterator iter = find_tag_by_clock_domain(new_clock_domain);
+    if(iter == end()) { 
         //First time we've seen this domain
         add_tag(tag_pool, new_time, new_clock_domain, new_launch_node);
     } else {
@@ -39,8 +49,8 @@ void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
 }
 
 void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
-    TagList::iterator iter = find_tag_by_clock_domain(new_clock_domain);
-    if(iter == tags_.end()) { 
+    TimingTagIterator iter = find_tag_by_clock_domain(new_clock_domain);
+    if(iter == end()) { 
         //First time we've seen this domain
         add_tag(tag_pool, new_time, new_clock_domain, new_launch_node);
     } else {
@@ -58,12 +68,13 @@ void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
 }
 
 void TimingTags::clear() {
-    tags_.clear();
+    num_tags_ = 0;
 }
 
-TimingTags::TagList::iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
-    auto pred = [domain_id](TimingTag tag){
+TimingTagIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
+    auto pred = [domain_id](const TimingTag& tag){
         return tag.clock_domain() == domain_id;
     };
-    return std::find_if(tags_.begin(), tags_.end(), pred);
+
+    return std::find_if(begin(), end(), pred);
 }
