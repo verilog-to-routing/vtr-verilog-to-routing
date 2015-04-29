@@ -11,7 +11,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         return;
     }
 
-    if(num_tags_ < head_tags_.max_size()) {
+    if(num_tags_ < (int) head_tags_.max_size()) {
         //Store it as a head tag
         head_tags_[num_tags_] = TimingTag(new_time, new_clock_domain, new_launch_node);
         if(num_tags_ != 0) {

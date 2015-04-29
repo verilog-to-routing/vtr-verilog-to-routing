@@ -154,9 +154,9 @@ int main(int argc, char** argv) {
 
             if(i == NUM_SERIAL_RUNS-1) {
                 serial_analyzer.save_level_times(timing_graph, "serial_level_times.csv");
+            } else {
+                serial_analyzer.reset_timing();
             }
-
-            serial_analyzer.reset_timing();
         }
         serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
         serial_pretraverse_time_avg = serial_pretraverse_time / NUM_SERIAL_RUNS;
@@ -173,6 +173,9 @@ int main(int argc, char** argv) {
         std::cout << " (" << std::setprecision(2) << serial_bcktraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
         std::cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
         std::cout << std::endl;
+
+        //Tag stats
+        print_timing_tags_histogram(timing_graph, serial_analyzer, 10);
     }
 
 /*

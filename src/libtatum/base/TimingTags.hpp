@@ -65,7 +65,7 @@ typedef TimingTagIter<TimingTag const> TimingTagConstIterator;
 class TimingTags {
     public:
         //Getters
-        const size_t num_tags() const { return num_tags_; };
+        size_t num_tags() const { return num_tags_; };
         TimingTagIterator find_tag_by_clock_domain(DomainId domain_id);
         TimingTagIterator begin() { return (num_tags_ > 0) ? TimingTagIterator(&head_tags_[0]) : end(); };
         TimingTagIterator end() { return TimingTagIterator(nullptr); };

@@ -5,6 +5,10 @@
 #include <cassert>
 #include "sta_util.hpp"
 
+
+using std::cout;
+using std::endl;
+
 float time_sec(struct timespec start, struct timespec end) {
     float time = end.tv_sec - start.tv_sec;
 
@@ -111,12 +115,41 @@ void print_timing_graph(const TimingGraph& tg) {
         std::cout << "Node: " << node_id << " Type: " << tg.node_type(node_id) <<  " Out Edges: " << tg.num_node_out_edges(node_id) << std::endl;
         for(int out_edge_idx = 0; out_edge_idx < tg.num_node_out_edges(node_id); out_edge_idx++) {
             EdgeId edge_id = tg.node_out_edge(node_id, out_edge_idx);
-            NodeId from_node_id = tg.edge_src_node(edge_id);
-            assert(from_node_id == node_id);
+            assert(tg.edge_src_node(edge_id) == node_id);
 
             NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
             std::cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << " Delay: " << tg.edge_delay(edge_id).value() << std::endl;
         }
+    }
+}
+
+void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& analyzer, int nbuckets) {
+    const int int_width = 8;
+    const int flt_width = 2;
+     
+    std::cout << "Node Arrival Tag Count Histogram:" << std::endl;
+    std::map<int,int> arr_tag_cnts;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        arr_tag_cnts[analyzer.arrival_tags(i).num_tags()]++;
+    }
+
+    auto totaler = [](int total, const std::map<int,int>::value_type& kv) {
+        return total + kv.second; 
+    };
+
+    int total_arr_tags = std::accumulate(arr_tag_cnts.begin(), arr_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : arr_tag_cnts) {
+        cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_arr_tags << ")" << endl;
+    }
+
+    cout << "Node Required Tag Count Histogram:" << endl;
+    std::map<int,int> req_tag_cnts;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        req_tag_cnts[analyzer.required_tags(i).num_tags()]++;
+    }
+    int total_req_tags = std::accumulate(req_tag_cnts.begin(), req_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : req_tag_cnts) {
+        cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_req_tags << ")" << endl;
     }
 }
