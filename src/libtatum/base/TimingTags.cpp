@@ -2,11 +2,9 @@
 
 #include "TimingTags.hpp"
 
-//Global
-boost::object_pool<TimingTag> tag_pool; //Memory pool for allocating tags
 
 //Modifiers
-void TimingTags::add_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::add_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
     if(new_clock_domain == INVALID_CLOCK_DOMAIN) {
@@ -17,11 +15,11 @@ void TimingTags::add_tag(const Time& new_time, const DomainId new_clock_domain, 
     //tags_.push_front(*(new TimingTag(new_time, new_clock_domain, new_launch_node)));
 }
 
-void TimingTags::max_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::max_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
     TagList::iterator iter = find_tag_by_clock_domain(new_clock_domain);
     if(iter == tags_.end()) { 
         //First time we've seen this domain
-        add_tag(new_time, new_clock_domain, new_launch_node);
+        add_tag(tag_pool, new_time, new_clock_domain, new_launch_node);
     } else {
         TimingTag& matched_tag = *iter;
 
@@ -36,11 +34,11 @@ void TimingTags::max_tag(const Time& new_time, const DomainId new_clock_domain, 
     }
 }
 
-void TimingTags::min_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::min_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
     TagList::iterator iter = find_tag_by_clock_domain(new_clock_domain);
     if(iter == tags_.end()) { 
         //First time we've seen this domain
-        add_tag(new_time, new_clock_domain, new_launch_node);
+        add_tag(tag_pool, new_time, new_clock_domain, new_launch_node);
     } else {
         TimingTag& matched_tag = *iter;
 
@@ -56,7 +54,7 @@ void TimingTags::min_tag(const Time& new_time, const DomainId new_clock_domain, 
 }
 
 void TimingTags::clear() {
-    //pass
+    tags_.clear();
 }
 
 TimingTags::TagList::iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {

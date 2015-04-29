@@ -35,9 +35,13 @@ ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_grap
     return traversal_times;
 }
 
-void SerialTimingAnalyzer::reset_timing() {
-    arr_tags_.clear();
-    req_tags_.clear();
+SerialTimingAnalyzer::~SerialTimingAnalyzer() {
+    for(TimingTags& tags : arr_tags_) {
+        tags.clear();
+    }
+    for(TimingTags& tags : req_tags_) {
+        tags.clear();
+    }
 }
 
 void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph) {
@@ -98,7 +102,7 @@ void SerialTimingAnalyzer::backward_traversal(const TimingGraph& timing_graph) {
 void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
-        arr_tags_[node_id].add_tag(Time(0), tg.node_clock_domain(node_id), node_id);
+        arr_tags_[node_id].add_tag(tag_pool_, Time(0), tg.node_clock_domain(node_id), node_id);
     }
 
     if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
@@ -108,7 +112,7 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //   * A single clock
         //   * At fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        req_tags_[node_id].add_tag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id);
+        req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id);
     }
 }
 
@@ -126,7 +130,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
         const TimingTags& src_arr_tags = arr_tags_[src_node_id];
 
         for(const TimingTag& src_tag : src_arr_tags) {
-            arr_tags.max_tag(src_tag.time() + edge_delay, src_tag.clock_domain(), src_tag.launch_node());
+            arr_tags.max_tag(tag_pool_, src_tag.time() + edge_delay, src_tag.clock_domain(), src_tag.launch_node());
         }
     }
 }
@@ -149,7 +153,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
         const TimingTags& sink_req_tags = req_tags_[sink_node_id];
 
         for(const TimingTag& sink_tag : sink_req_tags) {
-            req_tags.min_tag(sink_tag.time() - edge_delay, sink_tag.clock_domain(), sink_tag.launch_node());
+            req_tags.min_tag(tag_pool_, sink_tag.time() - edge_delay, sink_tag.clock_domain(), sink_tag.launch_node());
         }
     }
 }

@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include <boost/intrusive/slist.hpp>
+#include <boost/pool/object_pool.hpp>
 
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
@@ -41,9 +42,9 @@ class TimingTags {
         TagList::const_iterator end() const { return tags_.end(); };
 
         //Modifiers
-        void add_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void max_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void min_tag(const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void add_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void max_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void min_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
         void clear();
 
 

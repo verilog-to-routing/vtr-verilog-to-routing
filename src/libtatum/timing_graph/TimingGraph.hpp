@@ -61,11 +61,6 @@ class TimingGraph {
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
 
-        /*
-         *std::vector<TimingTags> node_arr_tags_;
-         *std::vector<TimingTags> node_req_tags_;
-         */
-
         //Edge data
         std::vector<NodeId> edge_sink_nodes_;
         std::vector<NodeId> edge_src_nodes_;

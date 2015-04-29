@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <boost/pool/object_pool.hpp>
+
 #include "TimingAnalyzer.hpp"
 #include "timing_graph_fwd.hpp"
 #include "TimingTags.hpp"
@@ -12,9 +14,9 @@
 
 class SerialTimingAnalyzer : public TimingAnalyzer {
     public: 
+        ~SerialTimingAnalyzer();
         ta_runtime calculate_timing(const TimingGraph& timing_graph) override;
         virtual void save_level_times(const TimingGraph& timing_graph, std::string filename);
-        virtual void reset_timing();
 
         virtual bool is_correct() { return true; }
 
@@ -55,5 +57,8 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         std::vector<TimingTags> arr_tags_;
         std::vector<TimingTags> req_tags_;
 
+        //Global
+        typedef boost::object_pool<TimingTag> TagPool;
+        TagPool tag_pool_; //Memory pool for allocating tags
 };
 

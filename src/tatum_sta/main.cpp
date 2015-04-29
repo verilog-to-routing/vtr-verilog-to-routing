@@ -49,7 +49,6 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> orig_expected_arr_req_times;
     std::vector<node_arr_req_t> expected_arr_req_times;
 
-    SerialTimingAnalyzer serial_analyzer = SerialTimingAnalyzer();
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
 
     //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer(); 
@@ -121,6 +120,7 @@ int main(int argc, char** argv) {
         
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
+            SerialTimingAnalyzer serial_analyzer;
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
@@ -149,9 +149,6 @@ int main(int argc, char** argv) {
             if(i == NUM_SERIAL_RUNS-1) {
                 serial_analyzer.save_level_times(timing_graph, "serial_level_times.csv");
             }
-
-            //Reset
-            serial_analyzer.reset_timing();
         }
         serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
         serial_pretraverse_time_avg = serial_pretraverse_time / NUM_SERIAL_RUNS;
@@ -159,9 +156,6 @@ int main(int argc, char** argv) {
         serial_bcktraverse_time_avg = serial_bcktraverse_time / NUM_SERIAL_RUNS;
 
         std::cout << std::endl;
-        if(!serial_analyzer.is_correct()) {
-            std::cout << "Skipped correctness verification" << std::endl; 
-        }
         std::cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << " s" << std::endl;
         std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_pretraverse_time_avg << " s";
         std::cout << " (" << std::setprecision(2) << serial_pretraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
