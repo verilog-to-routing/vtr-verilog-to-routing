@@ -11,21 +11,28 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         return;
     }
 
-    if(num_tags_ == 0) {
-        //Store it as the head
-        head_tag_ = TimingTag(new_time, new_clock_domain, new_launch_node);
+    if(num_tags_ < head_tags_.max_size()) {
+        //Store it as a head tag
+        head_tags_[num_tags_] = TimingTag(new_time, new_clock_domain, new_launch_node);
+        if(num_tags_ != 0) {
+            //Link from previous if it exists
+            head_tags_[num_tags_-1].set_next(&head_tags_[num_tags_]);
+        }
     } else {
-        //Store it in a linked list from head
+        //Store it in a linked list from head tags
 
         //Allocate form a central storage pool
         assert(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
         TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
 
-        //Insert one-after head in O(1) time
-        TimingTag* next_tag = head_tag_.next(); //Save next link (may be nullptr)
-        head_tag_.set_next(tag); //Tag is now second in list
-        tag->set_next(next_tag); //Attach tail
+        //Insert one-after the last head in O(1) time
+        //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
+        //per node
+        TimingTag* next_tag = head_tags_[head_tags_.max_size()-1].next(); //Save next link (may be nullptr)
+        head_tags_[head_tags_.max_size()-1].set_next(tag); //Tag is now in the list
+        tag->set_next(next_tag); //Attach tail of the list
     }
+    //Tag has been added
     num_tags_++;
 }
 
@@ -68,6 +75,9 @@ void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
 }
 
 void TimingTags::clear() {
+    //Note that we do not clean up the tag linked list!
+    //Since these are allocated in a memory pool they will be freed by
+    //the owner of the pool (typically the analyzer that is calling us)
     num_tags_ = 0;
 }
 

@@ -12,7 +12,6 @@ ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_grap
     //Pre-allocate data sturctures
     arr_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
     req_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
-    tag_pool_.set_next_size(timing_graph.num_nodes());
 
     struct timespec start_times[4];
     struct timespec end_times[4];
