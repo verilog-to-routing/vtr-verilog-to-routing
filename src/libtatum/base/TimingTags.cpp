@@ -4,18 +4,22 @@
 
 
 //Modifiers
-void TimingTags::add_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
     if(new_clock_domain == INVALID_CLOCK_DOMAIN) {
         return;
     }
 
-    tags_.push_front(*(tag_pool.construct(TimingTag(new_time, new_clock_domain, new_launch_node))));
-    //tags_.push_front(*(new TimingTag(new_time, new_clock_domain, new_launch_node)));
+    //Make sure the pool is the correct size
+    assert(tag_pool.get_requested_size() == sizeof(TimingTag));
+
+    TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
+
+    tags_.push_front(*tag);
 }
 
-void TimingTags::max_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
     TagList::iterator iter = find_tag_by_clock_domain(new_clock_domain);
     if(iter == tags_.end()) { 
         //First time we've seen this domain
@@ -34,7 +38,7 @@ void TimingTags::max_tag(boost::object_pool<TimingTag>& tag_pool, const Time& ne
     }
 }
 
-void TimingTags::min_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
     TagList::iterator iter = find_tag_by_clock_domain(new_clock_domain);
     if(iter == tags_.end()) { 
         //First time we've seen this domain

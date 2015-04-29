@@ -8,8 +8,8 @@
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
 
-//Forward declaration
-class TimingTag : public boost::intrusive::slist_base_hook<> {
+typedef boost::intrusive::link_mode<boost::intrusive::normal_link> normal_link;
+class TimingTag : public boost::intrusive::slist_base_hook<normal_link> {
     public:
         TimingTag(const Time& time_val, DomainId domain, NodeId node)
             : time_(time_val)
@@ -42,14 +42,13 @@ class TimingTags {
         TagList::const_iterator end() const { return tags_.end(); };
 
         //Modifiers
-        void add_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void max_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void min_tag(boost::object_pool<TimingTag>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void add_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void max_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void min_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
         void clear();
 
 
     private:
         TagList tags_;
-
 };
 

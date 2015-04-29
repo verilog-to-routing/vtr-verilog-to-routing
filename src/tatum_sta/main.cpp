@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
     std::vector<node_arr_req_t> orig_expected_arr_req_times;
     std::vector<node_arr_req_t> expected_arr_req_times;
 
+    SerialTimingAnalyzer serial_analyzer;
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
 
     //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer(); 
@@ -86,7 +87,7 @@ int main(int argc, char** argv) {
         //Re-build the expected_arr_req_times to reflect the new node orderings
         expected_arr_req_times = std::vector<node_arr_req_t>(orig_expected_arr_req_times.size());
         for(size_t i = 0; i < orig_expected_arr_req_times.size(); i++) {
-            NodeId new_id = vpr_node_map[i];    
+            NodeId new_id = vpr_node_map[i];
             expected_arr_req_times[new_id] = orig_expected_arr_req_times[i];
         }
 #else
@@ -120,7 +121,6 @@ int main(int argc, char** argv) {
         
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
-            SerialTimingAnalyzer serial_analyzer;
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
@@ -149,6 +149,8 @@ int main(int argc, char** argv) {
             if(i == NUM_SERIAL_RUNS-1) {
                 serial_analyzer.save_level_times(timing_graph, "serial_level_times.csv");
             }
+
+            serial_analyzer.reset_timing();
         }
         serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
         serial_pretraverse_time_avg = serial_pretraverse_time / NUM_SERIAL_RUNS;

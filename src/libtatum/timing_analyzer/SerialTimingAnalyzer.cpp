@@ -4,8 +4,16 @@
 #include "TimingGraph.hpp"
 
 #include "sta_util.hpp"
+SerialTimingAnalyzer::SerialTimingAnalyzer() 
+    : tag_pool_(sizeof(TimingTag))
+    {}
 
 ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_graph) {
+    //Pre-allocate data sturctures
+    arr_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
+    req_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
+    tag_pool_.set_next_size(timing_graph.num_nodes());
+
     struct timespec start_times[4];
     struct timespec end_times[4];
 
@@ -35,20 +43,16 @@ ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_grap
     return traversal_times;
 }
 
-SerialTimingAnalyzer::~SerialTimingAnalyzer() {
-    for(TimingTags& tags : arr_tags_) {
-        tags.clear();
-    }
-    for(TimingTags& tags : req_tags_) {
-        tags.clear();
-    }
+void SerialTimingAnalyzer::reset_timing() {
+    //Drop references to the tags
+    arr_tags_.clear();
+    req_tags_.clear();
+
+    //Release the memory allocated to tags
+    tag_pool_.purge_memory();
 }
 
 void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph) {
-
-    //Pre-Allocate data structures
-    arr_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
-    req_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
 
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
