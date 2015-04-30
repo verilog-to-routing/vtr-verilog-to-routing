@@ -4,7 +4,6 @@
 #include <functional>
 
 
-#include <boost/intrusive/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "assert.hpp"
