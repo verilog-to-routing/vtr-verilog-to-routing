@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
-#include <cassert>
 #include <iterator>
+
 
 #include <boost/intrusive/slist.hpp>
 #include <boost/pool/object_pool.hpp>

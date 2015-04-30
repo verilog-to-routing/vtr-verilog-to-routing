@@ -37,9 +37,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    BOOST_ASSERT_MSG(false, "ERROR!");
-
-
     struct timespec prog_start, load_start, analyze_start, verify_start;
     struct timespec prog_end, load_end, analyze_end, verify_end;
 
@@ -175,6 +172,9 @@ int main(int argc, char** argv) {
         std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_bcktraverse_time_avg << " s";
         std::cout << " (" << std::setprecision(2) << serial_bcktraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
         std::cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
+        if((int) expected_arr_req_times.size() != timing_graph.num_nodes()) {
+            std::cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << std::endl; 
+        }
         std::cout << std::endl;
 
         //Tag stats
@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 
-    std::cout << "Total time: " << time_sec(prog_start, prog_end) << " sec" << std::endl;
+    std::cout << std::endl << "Total time: " << time_sec(prog_start, prog_end) << " sec" << std::endl;
 
     return 0;
 }
@@ -264,9 +264,6 @@ int main(int argc, char** argv) {
 #define ABSOLUTE_EPSILON 1.e-13
 
 void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>& expected_arr_req_times) {
-    ASSERT_MSG(0, "No arrival required times to verify against!");
-    ASSERT_MSG(expected_arr_req_times.size() > 0, "No arrival required times to verify against!");
-
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
     std::ios_base::fmtflags saved_flags = std::cout.flags();
     std::streamsize prec = std::cout.precision();

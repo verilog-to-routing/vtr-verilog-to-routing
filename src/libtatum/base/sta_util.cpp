@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <cassert>
+#include "assert.hpp"
 #include "sta_util.hpp"
 
 
@@ -115,7 +115,7 @@ void print_timing_graph(const TimingGraph& tg) {
         std::cout << "Node: " << node_id << " Type: " << tg.node_type(node_id) <<  " Out Edges: " << tg.num_node_out_edges(node_id) << std::endl;
         for(int out_edge_idx = 0; out_edge_idx < tg.num_node_out_edges(node_id); out_edge_idx++) {
             EdgeId edge_id = tg.node_out_edge(node_id, out_edge_idx);
-            assert(tg.edge_src_node(edge_id) == node_id);
+            ASSERT(tg.edge_src_node(edge_id) == node_id);
 
             NodeId sink_node_id = tg.edge_sink_node(edge_id);
 

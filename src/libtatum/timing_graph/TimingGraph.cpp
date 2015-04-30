@@ -1,5 +1,6 @@
-#include <cassert>
 #include <map>
+
+#include "assert.hpp"
 
 #include "TimingGraph.hpp"
 
@@ -33,9 +34,9 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     node_in_edges_.push_back(std::move(in_edges));
 
     //Verify sizes
-    assert(node_types_.size() == node_clock_domains_.size());
-    assert(node_types_.size() == node_out_edges_.size());
-    assert(node_types_.size() == node_in_edges_.size());
+    ASSERT(node_types_.size() == node_clock_domains_.size());
+    ASSERT(node_types_.size() == node_out_edges_.size());
+    ASSERT(node_types_.size() == node_in_edges_.size());
 
     //Return the ID of the added node
     return node_types_.size() - 1;
@@ -46,8 +47,8 @@ EdgeId TimingGraph::add_edge(const TimingEdge& new_edge) {
     edge_src_nodes_.push_back(new_edge.from_node_id());
     edge_delays_.push_back(new_edge.delay());
 
-    assert(edge_sink_nodes_.size() == edge_src_nodes_.size());
-    assert(edge_sink_nodes_.size() == edge_delays_.size());
+    ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
+    ASSERT(edge_sink_nodes_.size() == edge_delays_.size());
 
     //Return the edge id of the added edge
     return edge_delays_.size() - 1;

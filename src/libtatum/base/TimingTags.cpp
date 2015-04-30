@@ -1,3 +1,5 @@
+#include "assert.hpp"
+
 #include <boost/pool/object_pool.hpp>
 
 #include "TimingTags.hpp"
@@ -23,8 +25,8 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         //Store it in a linked list from head tags
 
         //Allocate form a central storage pool
-        assert(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-        TimingTag* tag = new TimingTag(new_time, new_clock_domain, new_launch_node);
+        ASSERT(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
+        TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
 
         //Insert one-after the last head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
@@ -35,8 +37,8 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
     }
 #else
     //Allocate form a central storage pool
-    assert(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-    TimingTag* tag = new TimingTag(new_time, new_clock_domain, new_launch_node);
+    ASSERT(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
+    TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
 
     if(head_tags_ == nullptr) {
         head_tags_ = tag;
@@ -66,7 +68,7 @@ void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
             //New value is larger
             //Update max
             matched_tag.set_time(new_time);
-            assert(matched_tag.clock_domain() == new_clock_domain); //Domain must be the same
+            ASSERT(matched_tag.clock_domain() == new_clock_domain); //Domain must be the same
             matched_tag.set_launch_node(new_launch_node);
         }
     }
@@ -85,7 +87,7 @@ void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
             //New value is smaller
             //Update min
             matched_tag.set_time(new_time);
-            assert(matched_tag.clock_domain() == new_clock_domain); //Domain must be the same
+            ASSERT(matched_tag.clock_domain() == new_clock_domain); //Domain must be the same
             matched_tag.set_launch_node(new_launch_node);
         }
     }

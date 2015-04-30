@@ -1,13 +1,13 @@
 %{
 
 #include <stdio.h>
-#include <cassert>
 #include <cstring>
 #include <string>
 #include <cmath>
 #include <vector>
 #include <iostream>
 
+#include "assert.hpp"
 #include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
 #include "TimingNode.hpp"
@@ -143,12 +143,12 @@ timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\
 
                                                 //Add the node only after we have attached the out-going edges
                                                 NodeId node_id = timing_graph.add_node(node);
-                                                assert(node_id == $2.node_id);
+                                                ASSERT(node_id == $2.node_id);
 
                                                 if(timing_graph.num_nodes() % 1000000 == 0) {
                                                     std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
                                                 }
-                                                assert(timing_graph.num_nodes() - 1 == $2.node_id);
+                                                ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
 
                                                 /*
                                                  *cout << "Node " << $2.node_id << ", ";
