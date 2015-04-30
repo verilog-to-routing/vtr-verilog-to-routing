@@ -2,8 +2,7 @@
 
 #include <string>
 
-#include <boost/pool/pool.hpp>
-
+#include "memory_pool.hpp"
 #include "TimingAnalyzer.hpp"
 #include "timing_graph_fwd.hpp"
 #include "TimingTags.hpp"
@@ -58,7 +57,6 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         std::vector<TimingTags> arr_tags_;
         std::vector<TimingTags> req_tags_;
 
-        typedef boost::pool<> TagPool;
-        TagPool tag_pool_; //Memory pool for allocating tags
+        MemoryPool tag_pool_; //Memory pool for allocating tags
 };
 

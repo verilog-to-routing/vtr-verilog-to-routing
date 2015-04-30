@@ -1,7 +1,5 @@
 #include "assert.hpp"
 
-#include <boost/pool/object_pool.hpp>
-
 #include "TimingTags.hpp"
 /*
  * TimingTag implementation
@@ -18,7 +16,7 @@ void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
  */
 
 //Modifiers
-void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+void TimingTags::add_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
     if(base_tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
@@ -37,7 +35,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Ti
         //Store it in a linked list from head tags
 
         //Allocate form a central storage pool
-        ASSERT(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
+        VERIFY(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
         TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, base_tag);
 
         //Insert one-after the last head in O(1) time
@@ -49,7 +47,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Ti
     }
 #else
     //Allocate form a central storage pool
-    ASSERT(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
+    VERIFY(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
     TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, base_tag);
 
     if(head_tags_ == nullptr) {
@@ -67,7 +65,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Ti
     num_tags_++;
 }
 
-void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
@@ -84,7 +82,7 @@ void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const Ti
     }
 }
 
-void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+void TimingTags::min_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain

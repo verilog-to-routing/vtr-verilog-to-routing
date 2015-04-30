@@ -5,10 +5,10 @@
 
 
 #include <boost/intrusive/slist.hpp>
-#include <boost/pool/object_pool.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "assert.hpp"
+#include "memory_pool.hpp"
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
 
@@ -86,9 +86,9 @@ class TimingTags {
         TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
         //Modifiers
-        void add_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& src_tag);
-        void max_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& src_tag);
-        void min_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void add_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void min_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
         void clear();
 
 

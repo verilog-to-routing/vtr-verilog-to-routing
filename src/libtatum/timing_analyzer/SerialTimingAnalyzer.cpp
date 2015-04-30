@@ -5,7 +5,7 @@
 
 #include "sta_util.hpp"
 SerialTimingAnalyzer::SerialTimingAnalyzer() 
-    : tag_pool_(sizeof(TimingTag))
+    : tag_pool_(sizeof(TimingTag)) //Need to give the size of the object to allocate
     {}
 
 ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_graph) {
