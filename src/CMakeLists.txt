@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project("tatum")
 
+
+message(STATUS "CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
 #
 #
 # Determine compiler configuration
@@ -15,6 +17,13 @@ if(NOT CMAKE_BUILD_TYPE)
         FORCE)
 endif()
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+#Remove the DNDEBUG macro that cmake defines by default for release types.
+#We want assertions to stay on in release
+set(NDEBUG_REGEX "[/-]D *NDEBUG")
+foreach(flags_to_scrub CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELWITHDEBINFO MAKE_CXX_FLAGS_MINSIZEREL)
+    string(REGEX REPLACE ${NDEBUG_REGEX} "" "${flags_to_scrub}" "${${flags_to_scrub}}")
+endforeach()
 
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
@@ -116,7 +125,7 @@ foreach(flag ${WARN_FLAGS_TO_CHECK})
         #Flag supported, so enable it
         set(WARN_FLAGS "${WARN_FLAGS} ${flag}")
     endif()
-endforeach(flag)
+endforeach()
 
 #Apply the warning flags to all build types
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")

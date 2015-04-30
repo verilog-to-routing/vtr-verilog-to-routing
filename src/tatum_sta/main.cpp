@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <ctime>
-#include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <map>
 #include <array>
+
+#include "assert.hpp"
 
 #include "sta_util.hpp"
 
@@ -35,6 +36,8 @@ int main(int argc, char** argv) {
         std::cout << "Usage: " << argv[0] << " tg_echo_file" << std::endl;
         return 1;
     }
+
+    BOOST_ASSERT_MSG(false, "ERROR!");
 
 
     struct timespec prog_start, load_start, analyze_start, verify_start;
@@ -261,7 +264,8 @@ int main(int argc, char** argv) {
 #define ABSOLUTE_EPSILON 1.e-13
 
 void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>& expected_arr_req_times) {
-    assert(expected_arr_req_times.size() > 0);
+    ASSERT_MSG(0, "No arrival required times to verify against!");
+    ASSERT_MSG(expected_arr_req_times.size() > 0, "No arrival required times to verify against!");
 
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
     std::ios_base::fmtflags saved_flags = std::cout.flags();
