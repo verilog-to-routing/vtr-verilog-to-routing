@@ -14,7 +14,7 @@ project("libtatum")
 #
 
 #Source files for the library
-set(LIB_SRCS
+set(LIB_TATUM_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/base/sta_util.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base/TimingTags.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base/assert.cpp
@@ -25,12 +25,12 @@ set(LIB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingGraph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingNode.cpp)
 
-set(LIB_INCLUDE_DIRS
+set(LIB_TATUM_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/base
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph)
 
-if(NOT BOOST_ROOT)
+if(NOT TATUM_USE_SYSTEM_BOOST)
     #Unless overriden default to the local copy of boost
     set(BOOST_ROOT libs/boost_minimal)
     set(Boost_NO_SYSTEM_PATHS ON)
@@ -45,7 +45,7 @@ message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 
 
 #Include directories
-include_directories(${LIB_INCLUDE_DIRS})
+include_directories(${LIB_TATUM_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS}) #Treat boost as a system header to suppress warnings
 
 #Required compiler defines. TODO: remove these...
@@ -58,4 +58,4 @@ add_definitions(-DTIME_VEC_WIDTH=1)
 #
 
 #Define the library 
-add_library(${LIB_NAME} ${LIB_SRCS})
+add_library(${LIB_NAME} ${LIB_TATUM_SRCS})

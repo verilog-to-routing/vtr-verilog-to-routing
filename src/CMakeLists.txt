@@ -81,7 +81,8 @@ endif()
 #Support for optimization that don't interfere with debugging?
 CHECK_CXX_COMPILER_FLAG("-Og" COMPILER_SUPPORTS_-Og)
 if(COMPILER_SUPPORTS_-Og)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+    #Currently disable, Og still causes some variables to be optimized away
+    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
 endif()
 
 #Support for including non-inlined versions of inlined functions (useful for interactive debugging)
