@@ -3,20 +3,32 @@
 #include <boost/pool/object_pool.hpp>
 
 #include "TimingTags.hpp"
+/*
+ * TimingTag implementation
+ */
+void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
+    //NOTE: leave next alone, since we want to keep the linked list intact
+    set_time(new_time);
+    ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
+    set_launch_node(base_tag.launch_node());
+}
 
+/*
+ * TimingTags implementation
+ */
 
 //Modifiers
-void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
+void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
-    if(new_clock_domain == INVALID_CLOCK_DOMAIN) {
+    if(base_tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
         return;
     }
 
 #if NUM_FLAT_TAGS >= 1
     if(num_tags_ < (int) head_tags_.max_size()) {
         //Store it as a head tag
-        head_tags_[num_tags_] = TimingTag(new_time, new_clock_domain, new_launch_node);
+        head_tags_[num_tags_] = TimingTag(new_time, base_tag);
         if(num_tags_ != 0) {
             //Link from previous if it exists
             head_tags_[num_tags_-1].set_next(&head_tags_[num_tags_]);
@@ -26,7 +38,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
 
         //Allocate form a central storage pool
         ASSERT(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-        TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
+        TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, base_tag);
 
         //Insert one-after the last head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
@@ -38,16 +50,16 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
 #else
     //Allocate form a central storage pool
     ASSERT(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-    TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
+    TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, base_tag);
 
     if(head_tags_ == nullptr) {
         head_tags_ = tag;
     } else {
-        //Insert one-after the last head in O(1) time
+        //Insert as the head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
         //per node
-        TimingTag* next_tag = head_tags_->next(); //Save next link (may be nullptr)
-        head_tags_->set_next(tag); //Tag is now in the list
+        TimingTag* next_tag = head_tags_; //Save next link (may be nullptr)
+        head_tags_ = tag; //Tag is now in the list
         tag->set_next(next_tag); //Attach tail of the list
     }
 #endif
@@ -55,11 +67,11 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
     num_tags_++;
 }
 
-void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
-    TimingTagIterator iter = find_tag_by_clock_domain(new_clock_domain);
+void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
-        add_tag(tag_pool, new_time, new_clock_domain, new_launch_node);
+        add_tag(tag_pool, new_time, base_tag);
     } else {
         TimingTag& matched_tag = *iter;
 
@@ -67,18 +79,16 @@ void TimingTags::max_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         if(new_time.value() > matched_tag.time().value()) {
             //New value is larger
             //Update max
-            matched_tag.set_time(new_time);
-            ASSERT(matched_tag.clock_domain() == new_clock_domain); //Domain must be the same
-            matched_tag.set_launch_node(new_launch_node);
+            matched_tag.update(new_time, base_tag);
         }
     }
 }
 
-void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node) {
-    TimingTagIterator iter = find_tag_by_clock_domain(new_clock_domain);
+void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
-        add_tag(tag_pool, new_time, new_clock_domain, new_launch_node);
+        add_tag(tag_pool, new_time, base_tag);
     } else {
         TimingTag& matched_tag = *iter;
 
@@ -86,9 +96,7 @@ void TimingTags::min_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         if(new_time.value() < matched_tag.time().value()) {
             //New value is smaller
             //Update min
-            matched_tag.set_time(new_time);
-            ASSERT(matched_tag.clock_domain() == new_clock_domain); //Domain must be the same
-            matched_tag.set_launch_node(new_launch_node);
+            matched_tag.update(new_time, base_tag);
         }
     }
 }
@@ -98,12 +106,17 @@ void TimingTags::clear() {
     //Since these are allocated in a memory pool they will be freed by
     //the owner of the pool (typically the analyzer that is calling us)
     num_tags_ = 0;
+
+#if NUM_FLAT_TAGS == 0
+    //If we are using an un-flattend linked list
+    //we must reset the head pointer
+    head_tags_ = nullptr;
+#endif
 }
 
 TimingTagIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
-    auto pred = [domain_id](const TimingTag& tag){
+    auto pred = [domain_id](const TimingTag& tag) {
         return tag.clock_domain() == domain_id;
     };
-
     return std::find_if(begin(), end(), pred);
 }

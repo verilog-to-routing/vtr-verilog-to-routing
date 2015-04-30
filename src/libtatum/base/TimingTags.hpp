@@ -1,17 +1,19 @@
 #pragma once
 #include <algorithm>
 #include <iterator>
+#include <functional>
 
 
 #include <boost/intrusive/slist.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
+#include "assert.hpp"
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"
 
 //How many timing tag objects should be flattened into the TimingTags class?
-//  This typically helps cache locality, 1 tends to perform best
+//  A value of 1 tends to help cache locality and performs best
 #define NUM_FLAT_TAGS 1
 
 class TimingTag {
@@ -26,7 +28,11 @@ class TimingTag {
             , time_(time_val)
             , clock_domain_(domain)
             , launch_node_(node) {}
-
+        TimingTag(const Time& time_val, const TimingTag& base_tag)
+            : next_(nullptr)
+            , time_(time_val)
+            , clock_domain_(base_tag.clock_domain())
+            , launch_node_(base_tag.launch_node()) {}
         const Time& time() const { return time_; }
         DomainId clock_domain() const { return clock_domain_; };
         NodeId launch_node() const { return launch_node_; };
@@ -37,9 +43,10 @@ class TimingTag {
         void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; };
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
         void set_next(TimingTag* new_next) { next_ = new_next; }
+        void update(const Time& new_time, const TimingTag& base_tag);
 
     private:
-        TimingTag* next_;
+        TimingTag* next_; //Next element in linked list
         Time time_;
         DomainId clock_domain_;
         NodeId launch_node_;
@@ -79,9 +86,9 @@ class TimingTags {
         TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
         //Modifiers
-        void add_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void max_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
-        void min_tag(boost::pool<>& tag_pool, const Time& new_time, const DomainId new_clock_domain, const NodeId new_launch_node);
+        void add_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void max_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void min_tag(boost::pool<>& tag_pool, const Time& new_time, const TimingTag& src_tag);
         void clear();
 
 
