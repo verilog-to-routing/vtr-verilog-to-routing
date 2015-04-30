@@ -37,6 +37,7 @@ class TimingTag {
         void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; };
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
         void set_next(TimingTag* new_next) { next_ = new_next; }
+
     private:
         TimingTag* next_;
         Time time_;
@@ -67,9 +68,14 @@ class TimingTags {
         //Getters
         size_t num_tags() const { return num_tags_; };
         TimingTagIterator find_tag_by_clock_domain(DomainId domain_id);
+#if NUM_FLAT_TAGS >= 1
         TimingTagIterator begin() { return (num_tags_ > 0) ? TimingTagIterator(&head_tags_[0]) : end(); };
-        TimingTagIterator end() { return TimingTagIterator(nullptr); };
         TimingTagConstIterator begin() const { return (num_tags_ > 0) ? TimingTagConstIterator(&head_tags_[0]) : end(); };
+#else
+        TimingTagIterator begin() { return TimingTagIterator(head_tags_); };
+        TimingTagConstIterator begin() const { return TimingTagConstIterator(head_tags_); };
+#endif
+        TimingTagIterator end() { return TimingTagIterator(nullptr); };
         TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
         //Modifiers
@@ -82,12 +88,16 @@ class TimingTags {
     private:
         int num_tags_;
 
+#if NUM_FLAT_TAGS >= 1
         //The first NUM_FLAT_TAGS tags are stored directly as members
         //of this object. Any additional tags are stored in a dynamically
         //allocated linked list.
         //Note that despite being an array, each element of head_tags_ is
         //hooked into the linked list
         std::array<TimingTag, NUM_FLAT_TAGS> head_tags_;
+#else
+        TimingTag* head_tags_;
+#endif
 };
 
 

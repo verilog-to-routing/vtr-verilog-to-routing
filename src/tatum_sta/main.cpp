@@ -45,10 +45,10 @@ int main(int argc, char** argv) {
     std::cout << "Time class sizeof  = " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << std::endl;
     std::cout << "Time class alignof = " << alignof(Time) << std::endl;
 
-    std::cout << "TimingTag class sizeof  = " << sizeof(TimingTag) << " bytes." << TIME_VEC_WIDTH << std::endl;
+    std::cout << "TimingTag class sizeof  = " << sizeof(TimingTag) << " bytes." << std::endl;
     std::cout << "TimingTag class alignof = " << alignof(TimingTag) << " bytes." << std::endl;
 
-    std::cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << TIME_VEC_WIDTH << std::endl;
+    std::cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << std::endl;
     std::cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << std::endl;
 
     TimingGraph timing_graph;

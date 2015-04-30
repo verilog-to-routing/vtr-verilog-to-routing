@@ -11,6 +11,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         return;
     }
 
+#if NUM_FLAT_TAGS >= 1
     if(num_tags_ < (int) head_tags_.max_size()) {
         //Store it as a head tag
         head_tags_[num_tags_] = TimingTag(new_time, new_clock_domain, new_launch_node);
@@ -23,7 +24,7 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
 
         //Allocate form a central storage pool
         assert(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-        TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, new_clock_domain, new_launch_node);
+        TimingTag* tag = new TimingTag(new_time, new_clock_domain, new_launch_node);
 
         //Insert one-after the last head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
@@ -32,6 +33,22 @@ void TimingTags::add_tag(boost::pool<>& tag_pool, const Time& new_time, const Do
         head_tags_[head_tags_.max_size()-1].set_next(tag); //Tag is now in the list
         tag->set_next(next_tag); //Attach tail of the list
     }
+#else
+    //Allocate form a central storage pool
+    assert(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
+    TimingTag* tag = new TimingTag(new_time, new_clock_domain, new_launch_node);
+
+    if(head_tags_ == nullptr) {
+        head_tags_ = tag;
+    } else {
+        //Insert one-after the last head in O(1) time
+        //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
+        //per node
+        TimingTag* next_tag = head_tags_->next(); //Save next link (may be nullptr)
+        head_tags_->set_next(tag); //Tag is now in the list
+        tag->set_next(next_tag); //Attach tail of the list
+    }
+#endif
     //Tag has been added
     num_tags_++;
 }
