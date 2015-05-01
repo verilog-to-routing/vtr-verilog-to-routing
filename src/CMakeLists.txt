@@ -18,8 +18,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+#We want assertions to stay on in release.
 #Remove the DNDEBUG macro that cmake defines by default for release types.
-#We want assertions to stay on in release
 set(NDEBUG_REGEX "[/-]D *NDEBUG")
 foreach(flags_to_scrub CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELWITHDEBINFO MAKE_CXX_FLAGS_MINSIZEREL)
     string(REGEX REPLACE ${NDEBUG_REGEX} "" "${flags_to_scrub}" "${${flags_to_scrub}}")

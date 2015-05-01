@@ -7,8 +7,7 @@ sta
 sta_test
 
 #Generated files
-build/
-build_cmake/
+build*/
 *.echo
 *.blif
 *.xml
@@ -18,6 +17,9 @@ build_cmake/
 core
 massif.out*
 *.log
+
+#YCM
+.ycm_extra_conf.py
 
 #gprof
 gmon.out
@@ -43,6 +45,7 @@ Session.vim
 *.net
 *.place
 *.route
+*.echo
 
 
 #
