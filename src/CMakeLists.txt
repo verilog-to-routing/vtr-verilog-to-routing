@@ -133,6 +133,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
+
+if(NOT TATUM_USE_SYSTEM_BOOST)
+    #Unless overriden default to the local copy of boost
+    set(BOOST_ROOT libs/boost_minimal)
+    set(Boost_NO_SYSTEM_PATHS ON)
+endif()
+find_package(Boost 1.54 REQUIRED)
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS}) #Treat boost as a system header to suppress warnings
+message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+
 #
 #
 # Sub-projects

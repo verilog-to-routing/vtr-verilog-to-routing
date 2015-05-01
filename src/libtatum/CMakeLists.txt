@@ -30,14 +30,6 @@ set(LIB_TATUM_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph)
 
-if(NOT TATUM_USE_SYSTEM_BOOST)
-    #Unless overriden default to the local copy of boost
-    set(BOOST_ROOT ../libs/boost_minimal)
-    set(Boost_NO_SYSTEM_PATHS ON)
-endif()
-find_package(Boost 1.54 REQUIRED)
-message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-
 #set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/SerialTimingAnalyzer.cpp
                             #PROPERTIES COMPILE_FLAGS "-fno-inline")
 #set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/base/TimingTags.cpp
@@ -46,7 +38,6 @@ message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 
 #Include directories
 include_directories(${LIB_TATUM_INCLUDE_DIRS})
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS}) #Treat boost as a system header to suppress warnings
 
 #Required compiler defines. TODO: remove these...
 add_definitions(-DTIME_VEC_WIDTH=1)
