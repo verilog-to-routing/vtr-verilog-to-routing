@@ -32,7 +32,7 @@ set(LIB_TATUM_INCLUDE_DIRS
 
 if(NOT TATUM_USE_SYSTEM_BOOST)
     #Unless overriden default to the local copy of boost
-    set(BOOST_ROOT libs/boost_minimal)
+    set(BOOST_ROOT ../libs/boost_minimal)
     set(Boost_NO_SYSTEM_PATHS ON)
 endif()
 find_package(Boost 1.54 REQUIRED)
