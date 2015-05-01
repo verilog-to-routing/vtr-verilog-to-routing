@@ -14,13 +14,17 @@
 #include "TimingEdge.hpp"
 #include "Time.hpp"
 
-int yyerror(const TimingGraph& tg, const std::vector<node_arr_req_t>& arr_req_times, const char *msg);
+int yyerror(const TimingGraph& tg, const domain_arr_req_t& arr_req_times, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
 
 using std::endl;
 using std::cout;
+
+int arr_req_cnt = 0;
+int from_clock_domain = -1;
+int to_clock_domain = -1;
 
 
 %}
@@ -36,12 +40,13 @@ using std::cout;
     timing_graph_level_t timingGraphLevelVal;
     node_t nodeVal;
     TN_Type nodeTypeVal;
+    domain_header_t domain_header;
 }
 
 /* Verbose error reporting */
 %error-verbose
 %parse-param{TimingGraph& timing_graph}
-%parse-param{std::vector<node_arr_req_t>& arr_req_times}
+%parse-param{domain_arr_req_t& arr_req_times}
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
@@ -52,6 +57,8 @@ using std::cout;
 %token NODES                  "Nodes:"
 %token NET_DRIVER_TNODE_HEADER "Net #\tNet_to_driver_tnode"
 %token NODE_ARR_REQ_HEADER    "node_req_arr_header"
+%token SRC_DOMAIN             "SRC_Domain:"
+%token SINK_DOMAIN            "SINK_Domain:"
 
 %token TN_INPAD_SOURCE        "TN_INPAD_SOURCE"
 %token TN_INPAD_OPIN          "TN_INPAD_OPIN"
@@ -114,6 +121,9 @@ using std::cout;
 %type <floatVal> t_arr_req
 %type <timingGraphLevelVal> timing_graph_level
 %type <nodeVal> tnode
+%type <intVal> src_domain
+%type <intVal> sink_domain
+%type <domain_header> domain_header
 
 
 /* Top level rule */
@@ -124,7 +134,7 @@ finish: timing_graph                        {
                                                 timing_graph.fill_back_edges();
                                             }
 
-timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\n", $1);*/}
+timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1);}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
                                                 TimingNode node($2.type, $2.domain);
@@ -172,11 +182,26 @@ timing_graph: num_tnodes                    {/*printf("Timing Graph of %d nodes\
                                                 /*printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids->size()); */
                                             }
     | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
-    | timing_graph NODE_ARR_REQ_HEADER EOL  {/*printf("Nodes ARR REQ Header\n");*/}
-    | timing_graph node_arr_req_time        { 
+    | timing_graph NODE_ARR_REQ_HEADER EOL  {printf("Loading Arr & Req Times\n");}
+    | timing_graph domain_header EOL        {
+                                                printf("Clock Domain SRC->SINK: %d -> %d\n", $2.src_domain, $2.sink_domain); 
+                                                from_clock_domain = $2.src_domain; 
+                                                to_clock_domain = $2.sink_domain;
+
+                                                int num_domains = std::max({(int) arr_req_times.size(), from_clock_domain + 1, to_clock_domain + 1});
                                                 
-                                                arr_req_times.push_back($2); 
-                                                if(arr_req_times.size() % 1000000 == 0) {
+                                                //Resize the storage
+                                                arr_req_times.resize(num_domains); //From
+                                                for(int i = 0; i < (int) arr_req_times.size(); i++) {
+                                                    arr_req_times[i].resize(arr_req_times.size()); //To
+                                                }
+                                            }
+    | timing_graph node_arr_req_time        { 
+                                                VERIFY(from_clock_domain >= 0); 
+                                                VERIFY(to_clock_domain >= 0); 
+                                                arr_req_times[from_clock_domain][to_clock_domain].push_back($2); 
+                                                arr_req_cnt++;
+                                                if(arr_req_cnt % 1000000 == 0) {
                                                     std::cout << "Loaded " << arr_req_times.size() / 1e6 << "M arr/req times..." << std::endl;
                                                 }
                                             }
@@ -254,6 +279,11 @@ timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {$$.level = 
     | timing_graph_level TAB int_number   {$$.node_ids->push_back($3);}
     ;
 
+domain_header: src_domain TAB sink_domain {$$.src_domain = $1; $$.sink_domain = $3;}
+src_domain: SRC_DOMAIN int_number {$$ = $2;}
+sink_domain: SINK_DOMAIN int_number {$$ = $2;}
+
+
 node_arr_req_time: int_number t_arr_req t_arr_req EOL {$$.node_id = $1; $$.T_arr = $2; $$.T_req = $3;}
 
 t_arr_req: TAB number { $$ = $2; }
@@ -274,7 +304,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const TimingGraph& tg, const std::vector<node_arr_req_t>& arr_req_times, const char *msg) {
+int yyerror(const TimingGraph& tg, const domain_arr_req_t& arr_req_times, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

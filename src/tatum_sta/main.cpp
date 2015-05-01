@@ -28,7 +28,7 @@
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 #define OPTIMIZE_NODE_EDGE_ORDER
 
-void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>& expected_arr_req_times);
+void verify_analyzer(const TimingAnalyzer& analyzer, const domain_arr_req_t& expected_arr_req_times);
 
 
 int main(int argc, char** argv) {
@@ -52,8 +52,8 @@ int main(int argc, char** argv) {
     std::cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << std::endl;
 
     TimingGraph timing_graph;
-    std::vector<node_arr_req_t> orig_expected_arr_req_times;
-    std::vector<node_arr_req_t> expected_arr_req_times;
+    domain_arr_req_t orig_expected_arr_req_times;
+    domain_arr_req_t expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer;
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
@@ -91,10 +91,22 @@ int main(int argc, char** argv) {
         std::map<NodeId,NodeId> vpr_node_map = timing_graph.contiguize_level_nodes();
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
-        expected_arr_req_times = std::vector<node_arr_req_t>(orig_expected_arr_req_times.size());
-        for(size_t i = 0; i < orig_expected_arr_req_times.size(); i++) {
-            NodeId new_id = vpr_node_map[i];
-            expected_arr_req_times[new_id] = orig_expected_arr_req_times[i];
+        expected_arr_req_times = domain_arr_req_t();
+        for(int i = 0; i < (int) orig_expected_arr_req_times.size(); i++) {
+            expected_arr_req_times.push_back(std::vector<std::vector<node_arr_req_t>>());
+            for(int j = 0; j < (int) orig_expected_arr_req_times.size(); j++) {
+                expected_arr_req_times[i].push_back(std::vector<node_arr_req_t>(vpr_node_map.size()));
+            }
+        }
+
+        for(int src_domain = 0; src_domain < (int) orig_expected_arr_req_times.size(); src_domain++) {
+            for(int sink_domain = 0; sink_domain < (int) orig_expected_arr_req_times.size(); sink_domain++) {
+                //For every clock domain pair
+                for(size_t i = 0; i < orig_expected_arr_req_times[src_domain][sink_domain].size(); i++) {
+                    NodeId new_id = vpr_node_map[i];
+                    expected_arr_req_times[src_domain][sink_domain][new_id] = orig_expected_arr_req_times[src_domain][sink_domain][i];
+                }
+            }
         }
 #else
         expected_arr_req_times = orig_expected_arr_req_times;
@@ -263,7 +275,7 @@ int main(int argc, char** argv) {
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
 
-void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>& expected_arr_req_times) {
+void verify_analyzer(const TimingAnalyzer& analyzer, const domain_arr_req_t& expected_arr_req_times) {
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
     std::ios_base::fmtflags saved_flags = std::cout.flags();
     std::streamsize prec = std::cout.precision();
@@ -275,53 +287,57 @@ void verify_analyzer(const TimingAnalyzer& analyzer, std::vector<node_arr_req_t>
     std::cout << std::setw(10);
 
     bool error = false;
-    for(int node_id = 0; node_id < (int) expected_arr_req_times.size(); node_id++) {
-        const TimingTags& arr_tags = analyzer.arrival_tags(node_id);
-        const TimingTags& req_tags = analyzer.required_tags(node_id);
-        float vpr_arr_time = expected_arr_req_times[node_id].T_arr;
-        float vpr_req_time = expected_arr_req_times[node_id].T_req;
+    for(int src_domain = 0; src_domain < (int) expected_arr_req_times.size(); src_domain++) {
+        for(int sink_domain = 0; sink_domain < (int) expected_arr_req_times.size(); sink_domain++) {
+            for(int node_id = 0; node_id < (int) expected_arr_req_times.size(); node_id++) {
+                const TimingTags& arr_tags = analyzer.arrival_tags(node_id);
+                const TimingTags& req_tags = analyzer.required_tags(node_id);
+                float vpr_arr_time = expected_arr_req_times[src_domain][sink_domain][node_id].T_arr;
+                float vpr_req_time = expected_arr_req_times[src_domain][sink_domain][node_id].T_req;
 
-        //Check arrival
-        if(arr_tags.num_tags() == 0) {
-            if(!isnan(vpr_arr_time)) {
-                error = true;
-                std::cout << "Node: " << node_id << std::endl;
-                std::cout << "\tERROR Found no arrival-time tag, but VPR arrival time was " << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << std::endl;
-            }
-        } else {
-            float arr_time = arr_tags.begin()->time().value();
-            float arr_abs_err = fabs(arr_time - vpr_arr_time);
-            float arr_rel_err = relative_error(arr_time, vpr_arr_time);
-            if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
-                error = true;
-                std::cout << "Node: " << node_id << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << std::endl;
-                std::cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << std::endl;
+                //Check arrival
+                if(arr_tags.num_tags() == 0) {
+                    if(!isnan(vpr_arr_time)) {
+                        error = true;
+                        std::cout << "Node: " << node_id << std::endl;
+                        std::cout << "\tERROR Found no arrival-time tag, but VPR arrival time was " << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << std::endl;
+                    }
+                } else {
+                    float arr_time = arr_tags.begin()->time().value();
+                    float arr_abs_err = fabs(arr_time - vpr_arr_time);
+                    float arr_rel_err = relative_error(arr_time, vpr_arr_time);
+                    if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
+                        error = true;
+                        std::cout << "Node: " << node_id << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << std::endl;
+                        std::cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << std::endl;
 
-            } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
-                std::cout << "Node: " << node_id << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << std::endl;
-                std::cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err << ", " << std::setw(num_width) << arr_rel_err << std::endl;
-                error = true;
-            }
-        }
-        
-        if(req_tags.num_tags() == 0) {
-            if(!isnan(vpr_req_time)) {
-                error = true;
-                std::cout << "Node: " << node_id << std::endl;
-                std::cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width) << vpr_req_time << " (expected NAN)" << std::endl;
-            }
-        } else {
-            float req_time = req_tags.begin()->time().value();
-            float req_abs_err = fabs(req_time - vpr_req_time);
-            float req_rel_err = relative_error(req_time, vpr_req_time);
-            if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
-                error = true;
-                std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
-                std::cout << "\tERROR Calculated required time was nan and didn't match VPR." << std::endl;
-            } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
-                std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
-                std::cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err << ", " << std::setw(num_width) << req_rel_err << std::endl;
-                error = true;
+                    } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
+                        std::cout << "Node: " << node_id << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << std::endl;
+                        std::cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err << ", " << std::setw(num_width) << arr_rel_err << std::endl;
+                        error = true;
+                    }
+                }
+                
+                if(req_tags.num_tags() == 0) {
+                    if(!isnan(vpr_req_time)) {
+                        error = true;
+                        std::cout << "Node: " << node_id << std::endl;
+                        std::cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width) << vpr_req_time << " (expected NAN)" << std::endl;
+                    }
+                } else {
+                    float req_time = req_tags.begin()->time().value();
+                    float req_abs_err = fabs(req_time - vpr_req_time);
+                    float req_rel_err = relative_error(req_time, vpr_req_time);
+                    if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
+                        error = true;
+                        std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
+                        std::cout << "\tERROR Calculated required time was nan and didn't match VPR." << std::endl;
+                    } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
+                        std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
+                        std::cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err << ", " << std::setw(num_width) << req_rel_err << std::endl;
+                        error = true;
+                    }
+                }
             }
         }
     }

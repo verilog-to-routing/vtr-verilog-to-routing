@@ -42,6 +42,8 @@ Num_nodes:                      { return NUM_LEVEL_NODES; }
 Nodes:                          { return NODES; }
 "Net #\tNet_to_driver_tnode"    { return NET_DRIVER_TNODE_HEADER; }
 "Node #\t\tT_arr\t\tT_req"      { return NODE_ARR_REQ_HEADER; }
+"SRC_Domain:"                   { return SRC_DOMAIN; }
+"SINK_Domain:"                  { return SINK_DOMAIN; }
 
 TN_INPAD_SOURCE                 { return TN_INPAD_SOURCE; }
 TN_INPAD_OPIN                   { return TN_INPAD_OPIN; }

@@ -46,7 +46,13 @@ typedef struct node_s {
     std::vector<edge_t>* out_edges;
 } node_t;
 
+typedef struct domain_header_s {
+    int src_domain;
+    int sink_domain;
+} domain_header_t;
 
-extern int yyparse(TimingGraph& tg, std::vector<node_arr_req_t>& arr_req_times);
+typedef std::vector<std::vector<std::vector<node_arr_req_t>>> domain_arr_req_t;
+
+extern int yyparse(TimingGraph& tg, domain_arr_req_t& arr_req_times);
 extern FILE *yyin;
 
