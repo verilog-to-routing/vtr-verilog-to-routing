@@ -147,7 +147,11 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 		temp_hash = insert_in_hash_table(logical_block_hash,
 				logical_block[i].name, i);
 		logical_block[i].pb = NULL;
-		assert(temp_hash->count == 1);
+		if(temp_hash->count != 1) {
+			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+					"Found duplicate block in netlist file named: %s.\n",
+					logical_block[i].name);
+        }
 	}
 
 	/* Prcoess netlist */
