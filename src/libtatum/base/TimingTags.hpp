@@ -74,6 +74,7 @@ class TimingTags {
         //Getters
         size_t num_tags() const { return num_tags_; };
         TimingTagIterator find_tag_by_clock_domain(DomainId domain_id);
+        TimingTagConstIterator find_tag_by_clock_domain(DomainId domain_id) const;
 #if NUM_FLAT_TAGS >= 1
         TimingTagIterator begin() { return (num_tags_ > 0) ? TimingTagIterator(&head_tags_[0]) : end(); };
         TimingTagConstIterator begin() const { return (num_tags_ > 0) ? TimingTagConstIterator(&head_tags_[0]) : end(); };

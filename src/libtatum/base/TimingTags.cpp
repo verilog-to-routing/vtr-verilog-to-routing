@@ -118,3 +118,10 @@ TimingTagIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
     };
     return std::find_if(begin(), end(), pred);
 }
+
+TimingTagConstIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) const {
+    auto pred = [domain_id](const TimingTag& tag) {
+        return tag.clock_domain() == domain_id;
+    };
+    return std::find_if(begin(), end(), pred);
+}

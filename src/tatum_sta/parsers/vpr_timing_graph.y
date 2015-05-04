@@ -14,7 +14,7 @@
 #include "TimingEdge.hpp"
 #include "Time.hpp"
 
-int yyerror(const TimingGraph& tg, const domain_arr_req_t& arr_req_times, const char *msg);
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -23,8 +23,8 @@ using std::endl;
 using std::cout;
 
 int arr_req_cnt = 0;
-int from_clock_domain = -1;
-int to_clock_domain = -1;
+int from_clock_domain = 0;
+int to_clock_domain = 0;
 
 
 %}
@@ -46,7 +46,7 @@ int to_clock_domain = -1;
 /* Verbose error reporting */
 %error-verbose
 %parse-param{TimingGraph& timing_graph}
-%parse-param{domain_arr_req_t& arr_req_times}
+%parse-param{VprArrReqTimes& arr_req_times}
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
@@ -134,7 +134,7 @@ finish: timing_graph                        {
                                                 timing_graph.fill_back_edges();
                                             }
 
-timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1);}
+timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1);}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
                                                 TimingNode node($2.type, $2.domain);
@@ -182,27 +182,27 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                                 /*printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids->size()); */
                                             }
     | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
-    | timing_graph NODE_ARR_REQ_HEADER EOL  {printf("Loading Arr & Req Times\n");}
+    | timing_graph NODE_ARR_REQ_HEADER EOL  {
+                                                printf("Loading Arr & Req Times\n");
+                                            }
     | timing_graph domain_header EOL        {
                                                 printf("Clock Domain SRC->SINK: %d -> %d\n", $2.src_domain, $2.sink_domain); 
                                                 from_clock_domain = $2.src_domain; 
                                                 to_clock_domain = $2.sink_domain;
 
-                                                int num_domains = std::max({(int) arr_req_times.size(), from_clock_domain + 1, to_clock_domain + 1});
-                                                
-                                                //Resize the storage
-                                                arr_req_times.resize(num_domains); //From
-                                                for(int i = 0; i < (int) arr_req_times.size(); i++) {
-                                                    arr_req_times[i].resize(arr_req_times.size()); //To
-                                                }
                                             }
     | timing_graph node_arr_req_time        { 
                                                 VERIFY(from_clock_domain >= 0); 
                                                 VERIFY(to_clock_domain >= 0); 
-                                                arr_req_times[from_clock_domain][to_clock_domain].push_back($2); 
+                                                if($2.node_id == 132) {
+                                                    printf("Found 132\n");
+                                                }
+                                                arr_req_times.add_arr_time(from_clock_domain, $2.node_id, $2.T_arr);
+                                                arr_req_times.add_req_time(to_clock_domain, $2.node_id, $2.T_req);
+
                                                 arr_req_cnt++;
                                                 if(arr_req_cnt % 1000000 == 0) {
-                                                    std::cout << "Loaded " << arr_req_times.size() / 1e6 << "M arr/req times..." << std::endl;
+                                                    std::cout << "Loaded " << arr_req_cnt / 1e6 << "M arr/req times..." << std::endl;
                                                 }
                                             }
     | timing_graph EOL                      {
@@ -304,7 +304,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const TimingGraph& tg, const domain_arr_req_t& arr_req_times, const char *msg) {
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

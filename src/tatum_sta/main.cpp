@@ -24,16 +24,19 @@
 
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 100
+#define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-#define OPTIMIZE_NODE_EDGE_ORDER
+//#define OPTIMIZE_NODE_EDGE_ORDER
 
-void verify_analyzer(const TimingAnalyzer& analyzer, const domain_arr_req_t& expected_arr_req_times);
+int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times);
+
+using std::cout;
+using std::endl;
 
 
 int main(int argc, char** argv) {
     if(argc != 2) {
-        std::cout << "Usage: " << argv[0] << " tg_echo_file" << std::endl;
+        cout << "Usage: " << argv[0] << " tg_echo_file" << endl;
         return 1;
     }
 
@@ -42,18 +45,18 @@ int main(int argc, char** argv) {
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
-    std::cout << "Time class sizeof  = " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << std::endl;
-    std::cout << "Time class alignof = " << alignof(Time) << std::endl;
+    cout << "Time class sizeof  = " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << endl;
+    cout << "Time class alignof = " << alignof(Time) << endl;
 
-    std::cout << "TimingTag class sizeof  = " << sizeof(TimingTag) << " bytes." << std::endl;
-    std::cout << "TimingTag class alignof = " << alignof(TimingTag) << " bytes." << std::endl;
+    cout << "TimingTag class sizeof  = " << sizeof(TimingTag) << " bytes." << endl;
+    cout << "TimingTag class alignof = " << alignof(TimingTag) << " bytes." << endl;
 
-    std::cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << std::endl;
-    std::cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << std::endl;
+    cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << endl;
+    cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
 
     TimingGraph timing_graph;
-    domain_arr_req_t orig_expected_arr_req_times;
-    domain_arr_req_t expected_arr_req_times;
+    VprArrReqTimes orig_expected_arr_req_times;
+    VprArrReqTimes expected_arr_req_times;
 
     SerialTimingAnalyzer serial_analyzer;
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer(); 
@@ -69,22 +72,24 @@ int main(int argc, char** argv) {
         if(yyin != NULL) {
             int error = yyparse(timing_graph, orig_expected_arr_req_times);
             if(error) {
-                std::cout << "Parse Error" << std::endl;
+                cout << "Parse Error" << endl;
                 fclose(yyin);
                 return 1;
             }
             fclose(yyin);
         } else {
-            std::cout << "Could not open file " << argv[1] << std::endl;
+            cout << "Could not open file " << argv[1] << endl;
             return 1;
         }
 
 
 
-        std::cout << "Timing Graph Stats:" << std::endl;
-        std::cout << "  Nodes : " << timing_graph.num_nodes() << std::endl;
-        std::cout << "  Levels: " << timing_graph.num_levels() << std::endl;
-        std::cout << std::endl;
+        cout << "Timing Graph Stats:" << endl;
+        cout << "  Nodes : " << timing_graph.num_nodes() << endl;
+        cout << "  Levels: " << timing_graph.num_levels() << endl;
+        cout << "Num Clocks: " << orig_expected_arr_req_times.get_num_clocks() << endl;
+
+        cout << endl;
 
 #ifdef OPTIMIZE_NODE_EDGE_ORDER
         timing_graph.contiguize_level_edges();
@@ -114,14 +119,14 @@ int main(int argc, char** argv) {
 
         clock_gettime(CLOCK_MONOTONIC, &load_end);
     }
-    std::cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << std::endl;
-    std::cout << std::endl;
+    cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
+    cout << endl;
 
     int n_histo_bins = 20;
     print_level_histogram(timing_graph, n_histo_bins);
     print_node_fanin_histogram(timing_graph, n_histo_bins);
     print_node_fanout_histogram(timing_graph, n_histo_bins);
-    std::cout << std::endl;
+    cout << endl;
 
     //print_timing_graph(timing_graph);
 
@@ -134,8 +139,9 @@ int main(int argc, char** argv) {
     float serial_fwdtraverse_time_avg = 0.;
     float serial_bcktraverse_time_avg = 0.;
     float serial_verify_time = 0.;
+    int serial_arr_req_verified = 0;
     {
-        std::cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << std::endl;
+        cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
         
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
@@ -151,14 +157,14 @@ int main(int argc, char** argv) {
             serial_fwdtraverse_time += traversal_times.fwd_traversal;
             serial_bcktraverse_time += traversal_times.bck_traversal;
 
-            std::cout << ".";
-            std::cout.flush();
+            cout << ".";
+            cout.flush();
 
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(serial_analyzer.is_correct()) {
-                verify_analyzer(serial_analyzer, expected_arr_req_times);
+                serial_arr_req_verified = verify_analyzer(serial_analyzer, expected_arr_req_times);
             }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
@@ -175,19 +181,21 @@ int main(int argc, char** argv) {
         serial_fwdtraverse_time_avg = serial_fwdtraverse_time / NUM_SERIAL_RUNS;
         serial_bcktraverse_time_avg = serial_bcktraverse_time / NUM_SERIAL_RUNS;
 
-        std::cout << std::endl;
-        std::cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << " s" << std::endl;
-        std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_pretraverse_time_avg << " s";
-        std::cout << " (" << std::setprecision(2) << serial_pretraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
-        std::cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_fwdtraverse_time_avg << " s";
-        std::cout << " (" << std::setprecision(2) << serial_fwdtraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
-        std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_bcktraverse_time_avg << " s";
-        std::cout << " (" << std::setprecision(2) << serial_bcktraverse_time_avg/serial_analysis_time_avg << ")" << std::endl;
-        std::cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
-        if((int) expected_arr_req_times.size() != timing_graph.num_nodes()) {
-            std::cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << std::endl; 
+        cout << endl;
+        cout << "Serial Analysis took " << serial_analysis_time << " sec, AVG: " << serial_analysis_time_avg << " s" << endl;
+        cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_pretraverse_time_avg << " s";
+        cout << " (" << std::setprecision(2) << serial_pretraverse_time_avg/serial_analysis_time_avg << ")" << endl;
+        cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_fwdtraverse_time_avg << " s";
+        cout << " (" << std::setprecision(2) << serial_fwdtraverse_time_avg/serial_analysis_time_avg << ")" << endl;
+        cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_bcktraverse_time_avg << " s";
+        cout << " (" << std::setprecision(2) << serial_bcktraverse_time_avg/serial_analysis_time_avg << ")" << endl;
+        cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << endl;
+        if(serial_arr_req_verified != 2*timing_graph.num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
+            cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl; 
+        } else {
+            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph.num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
         }
-        std::cout << std::endl;
+        cout << endl;
 
         //Tag stats
         print_timing_tags_histogram(timing_graph, serial_analyzer, 10);
@@ -204,7 +212,7 @@ int main(int argc, char** argv) {
  *    float parallel_bcktraverse_time_avg = 0.;
  *    float parallel_verify_time = 0;
  *    {
- *        std::cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << std::endl;
+ *        cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;
  *        
  *        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
  *            //Analyze
@@ -218,8 +226,8 @@ int main(int argc, char** argv) {
  *            parallel_bcktraverse_time += traversal_times.bck_traversal;
  *            parallel_analysis_time += time_sec(analyze_start, analyze_end);
  *
- *            std::cout << ".";
- *            std::cout.flush();
+ *            cout << ".";
+ *            cout.flush();
  *
  *            //Verify
  *            clock_gettime(CLOCK_MONOTONIC, &verify_start);
@@ -241,33 +249,33 @@ int main(int argc, char** argv) {
  *        parallel_pretraverse_time_avg = parallel_pretraverse_time / NUM_PARALLEL_RUNS;
  *        parallel_fwdtraverse_time_avg = parallel_fwdtraverse_time / NUM_PARALLEL_RUNS;
  *        parallel_bcktraverse_time_avg = parallel_bcktraverse_time / NUM_PARALLEL_RUNS;
- *        std::cout << std::endl;
+ *        cout << endl;
  *        if(!parallel_analyzer.is_correct()) {
- *            std::cout << "Skipped correctness verification" << std::endl; 
+ *            cout << "Skipped correctness verification" << endl; 
  *        }
- *        std::cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << std::setprecision(6) << std::setw(6) << parallel_analysis_time_avg << " s" << std::endl;
- *        std::cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_pretraverse_time_avg << " s";
- *        std::cout << " (" << std::setprecision(2) << parallel_pretraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
- *        std::cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_fwdtraverse_time_avg << " s";
- *        std::cout << " (" << std::setprecision(2) << parallel_fwdtraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
- *        std::cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_bcktraverse_time_avg << " s";
- *        std::cout << " (" << std::setprecision(2) << parallel_bcktraverse_time_avg/parallel_analysis_time_avg << ")" << std::endl;
- *        std::cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << std::endl;
- *        std::cout << std::endl;
+ *        cout << "Parallel Analysis took " << parallel_analysis_time << " sec, AVG: " << std::setprecision(6) << std::setw(6) << parallel_analysis_time_avg << " s" << endl;
+ *        cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_pretraverse_time_avg << " s";
+ *        cout << " (" << std::setprecision(2) << parallel_pretraverse_time_avg/parallel_analysis_time_avg << ")" << endl;
+ *        cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_fwdtraverse_time_avg << " s";
+ *        cout << " (" << std::setprecision(2) << parallel_fwdtraverse_time_avg/parallel_analysis_time_avg << ")" << endl;
+ *        cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_bcktraverse_time_avg << " s";
+ *        cout << " (" << std::setprecision(2) << parallel_bcktraverse_time_avg/parallel_analysis_time_avg << ")" << endl;
+ *        cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << endl;
+ *        cout << endl;
  *    }
  *
  *
  *
- *    std::cout << "Parallel Speed-Up: " << std::fixed << serial_analysis_time_avg / parallel_analysis_time_avg << "x" << std::endl;
- *    std::cout << "\tPre-traversal: " << std::fixed << serial_pretraverse_time_avg / parallel_pretraverse_time_avg << "x" << std::endl;
- *    std::cout << "\tFwd-traversal: " << std::fixed << serial_fwdtraverse_time_avg / parallel_fwdtraverse_time_avg << "x" << std::endl;
- *    std::cout << "\tBck-traversal: " << std::fixed << serial_bcktraverse_time_avg / parallel_bcktraverse_time_avg << "x" << std::endl;
- *    std::cout << std::endl;
+ *    cout << "Parallel Speed-Up: " << std::fixed << serial_analysis_time_avg / parallel_analysis_time_avg << "x" << endl;
+ *    cout << "\tPre-traversal: " << std::fixed << serial_pretraverse_time_avg / parallel_pretraverse_time_avg << "x" << endl;
+ *    cout << "\tFwd-traversal: " << std::fixed << serial_fwdtraverse_time_avg / parallel_fwdtraverse_time_avg << "x" << endl;
+ *    cout << "\tBck-traversal: " << std::fixed << serial_bcktraverse_time_avg / parallel_bcktraverse_time_avg << "x" << endl;
+ *    cout << endl;
  */
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 
-    std::cout << std::endl << "Total time: " << time_sec(prog_start, prog_end) << " sec" << std::endl;
+    cout << endl << "Total time: " << time_sec(prog_start, prog_end) << " sec" << endl;
 
     return 0;
 }
@@ -275,83 +283,88 @@ int main(int argc, char** argv) {
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
 
-void verify_analyzer(const TimingAnalyzer& analyzer, const domain_arr_req_t& expected_arr_req_times) {
-    //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
-    std::ios_base::fmtflags saved_flags = std::cout.flags();
-    std::streamsize prec = std::cout.precision();
-    std::streamsize width = std::cout.width();
+int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times) {
+    //cout << "Verifying Calculated Timing Against VPR" << endl;
+    std::ios_base::fmtflags saved_flags = cout.flags();
+    std::streamsize prec = cout.precision();
+    std::streamsize width = cout.width();
 
     std::streamsize num_width = 10;
-    std::cout.precision(3);
-    std::cout << std::scientific;
-    std::cout << std::setw(10);
-
+    cout.precision(3);
+    cout << std::scientific;
+    cout << std::setw(10);
+    int arr_reqs_verified = 0;
     bool error = false;
-    for(int src_domain = 0; src_domain < (int) expected_arr_req_times.size(); src_domain++) {
-        for(int sink_domain = 0; sink_domain < (int) expected_arr_req_times.size(); sink_domain++) {
-            for(int node_id = 0; node_id < (int) expected_arr_req_times.size(); node_id++) {
-                const TimingTags& arr_tags = analyzer.arrival_tags(node_id);
-                const TimingTags& req_tags = analyzer.required_tags(node_id);
-                float vpr_arr_time = expected_arr_req_times[src_domain][sink_domain][node_id].T_arr;
-                float vpr_req_time = expected_arr_req_times[src_domain][sink_domain][node_id].T_req;
+    for(int domain = 0; domain < expected_arr_req_times.get_num_clocks(); domain++) {
+        for(int node_id = 0; node_id < (int) expected_arr_req_times.get_num_nodes(); node_id++) {
+            //cout << "Verifying node: " << node_id << " Launch: " << src_domain << " Capture: " << sink_domain << endl;
+            const TimingTags& arr_tags = analyzer.arrival_tags(node_id);
+            const TimingTags& req_tags = analyzer.required_tags(node_id);
+            float vpr_arr_time = expected_arr_req_times.get_arr_time(domain, node_id);
+            float vpr_req_time = expected_arr_req_times.get_req_time(domain, node_id);
 
-                //Check arrival
-                if(arr_tags.num_tags() == 0) {
-                    if(!isnan(vpr_arr_time)) {
-                        error = true;
-                        std::cout << "Node: " << node_id << std::endl;
-                        std::cout << "\tERROR Found no arrival-time tag, but VPR arrival time was " << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << std::endl;
-                    }
-                } else {
-                    float arr_time = arr_tags.begin()->time().value();
-                    float arr_abs_err = fabs(arr_time - vpr_arr_time);
-                    float arr_rel_err = relative_error(arr_time, vpr_arr_time);
-                    if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
-                        error = true;
-                        std::cout << "Node: " << node_id << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << std::endl;
-                        std::cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << std::endl;
-
-                    } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
-                        std::cout << "Node: " << node_id << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << std::endl;
-                        std::cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err << ", " << std::setw(num_width) << arr_rel_err << std::endl;
-                        error = true;
-                    }
+            //Check arrival
+            TimingTagConstIterator arr_tag_iter = arr_tags.find_tag_by_clock_domain(domain);
+            if(arr_tag_iter == arr_tags.end()) {
+                if(!isnan(vpr_arr_time)) {
+                    error = true;
+                    cout << "Node: " << node_id << " Src Clk: " << domain << endl;
+                    cout << "\tERROR Found no arrival-time tag, but VPR arrival time was " << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << endl;
                 }
-                
-                if(req_tags.num_tags() == 0) {
-                    if(!isnan(vpr_req_time)) {
-                        error = true;
-                        std::cout << "Node: " << node_id << std::endl;
-                        std::cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width) << vpr_req_time << " (expected NAN)" << std::endl;
-                    }
-                } else {
-                    float req_time = req_tags.begin()->time().value();
-                    float req_abs_err = fabs(req_time - vpr_req_time);
-                    float req_rel_err = relative_error(req_time, vpr_req_time);
-                    if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
-                        error = true;
-                        std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
-                        std::cout << "\tERROR Calculated required time was nan and didn't match VPR." << std::endl;
-                    } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
-                        std::cout << "Node: " << node_id << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << std::endl;
-                        std::cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err << ", " << std::setw(num_width) << req_rel_err << std::endl;
-                        error = true;
-                    }
+            } else {
+                float arr_time = arr_tag_iter->time().value();
+                float arr_abs_err = fabs(arr_time - vpr_arr_time);
+                float arr_rel_err = relative_error(arr_time, vpr_arr_time);
+                if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
+                    error = true;
+                    cout << "Node: " << node_id << " Src Clk: " << domain << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+                    cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << endl;
+
+                } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
+                    cout << "Node: " << node_id << " Src Clk: " << domain << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+                    cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err << ", " << std::setw(num_width) << arr_rel_err << endl;
+                    error = true;
                 }
             }
+            arr_reqs_verified ++;
+
+            //Check Required time
+            TimingTagConstIterator req_tag_iter = req_tags.find_tag_by_clock_domain(domain);
+            if(req_tag_iter == req_tags.end()) {
+                if(!isnan(vpr_req_time)) {
+                    error = true;
+                    cout << "Node: " << node_id << " Sink Clk: " << domain  << endl;
+                    cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width) << vpr_req_time << " (expected NAN)" << endl;
+                }
+            } else {
+                float req_time = req_tag_iter->time().value();
+                float req_abs_err = fabs(req_time - vpr_req_time);
+                float req_rel_err = relative_error(req_time, vpr_req_time);
+                if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
+                    error = true;
+                    cout << "Node: " << node_id << " Sink Clk: " << domain  << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+                    cout << "\tERROR Calculated required time was nan and didn't match VPR." << endl;
+                } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
+                    cout << "Node: " << node_id << " Sink Clk: " << domain  << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+                    cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err << ", " << std::setw(num_width) << req_rel_err << endl;
+                    error = true;
+                }
+            }
+            arr_reqs_verified++;
         }
     }
 
     if(error) {
-        std::cout << "Timing verification FAILED!" << std::endl;
+        cout << "Timing verification FAILED!" << endl;
         exit(1);
     } else {
-        //std::cout << "Timing verification SUCCEEDED" << std::endl;
+        //cout << "Timing verification SUCCEEDED" << endl;
     }
 
-    std::cout.flags(saved_flags);
-    std::cout.precision(prec);
-    std::cout.width(width);
+    cout.flags(saved_flags);
+    cout.precision(prec);
+    cout.width(width);
+    return arr_reqs_verified;
 }
 
 
