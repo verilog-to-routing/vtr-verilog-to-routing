@@ -194,9 +194,6 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
     | timing_graph node_arr_req_time        { 
                                                 VERIFY(from_clock_domain >= 0); 
                                                 VERIFY(to_clock_domain >= 0); 
-                                                if($2.node_id == 132) {
-                                                    printf("Found 132\n");
-                                                }
                                                 arr_req_times.add_arr_time(from_clock_domain, $2.node_id, $2.T_arr);
                                                 arr_req_times.add_req_time(to_clock_domain, $2.node_id, $2.T_req);
 
