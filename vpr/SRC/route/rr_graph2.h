@@ -1,6 +1,8 @@
 #ifndef RR_GRAPH2_H
 #define RR_GRAPH2_H
 
+#include "build_switchblocks.h"
+
 /************** Global variables shared only by the rr_* modules. ************/
 
 extern bool *rr_edge_done; /* [0..num_rr_nodes-1].  Used to keep track  *
@@ -166,7 +168,8 @@ int get_track_to_tracks(
 		INP enum e_directionality directionality,
 		INP t_ivec ***L_rr_node_indices,
 		INOUTP bool *L_rr_edge_done,
-		INP struct s_ivec ***switch_block_conn);
+		INP struct s_ivec ***switch_block_conn,
+		INP t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
 		INP int L_nx, INP int L_ny,
