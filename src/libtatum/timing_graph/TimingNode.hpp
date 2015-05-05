@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <omp.h>
 
 #include "timing_graph_fwd.hpp"
 #include "Time.hpp"

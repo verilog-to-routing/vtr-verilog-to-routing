@@ -1,6 +1,4 @@
 #pragma once
-#include <omp.h>
-
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
 
