@@ -28,11 +28,8 @@
 #ifndef VPR_TYPES_H
 #define VPR_TYPES_H
 
-#include "arch_types.h"
-
-#include <algorithm>
-#include <map>
 #include <vector>
+#include "arch_types.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -820,6 +817,7 @@ struct s_det_routing_arch {
 	enum e_directionality directionality; /* UDSD by AY */
 	int Fs;
 	enum e_switch_block_type switch_block_type;
+	std::vector<t_switchblock_inf> switchblocks;
 	int num_segment;
 
 	short global_route_switch;
@@ -865,7 +863,9 @@ enum e_direction {
  * (UDSD by AY) direction: The direction of a routing track.                *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to  *
  *                       the track?                                         *
- * index: index of the segment type used for this track.                    */
+ * index: index of the segment type used for this track.                    *
+ * type_name_ptr: pointer to name of the segment type this track belongs    *
+ *                to. points to the appropriate name in s_segment_inf       */               
 
 typedef struct s_seg_details {
 	int length;
@@ -886,6 +886,7 @@ typedef struct s_seg_details {
 	int seg_end;
 	int index;
 	float Cmetal_per_m; /* Used for power */
+	const char *type_name_ptr;
 } t_seg_details;
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */

@@ -44,12 +44,14 @@
 #include <assert.h>
 #include <map>
 #include <string>
+#include <sstream>
 #include "util.h"
 #include "arch_types.h"
 #include "ReadLine.h"
 #include "ezxml.h"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
+#include "parse_switchblocks.h"
 
 using namespace std;
 
@@ -123,6 +125,8 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
 		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
 		INP bool timing_enabled);
+static void ProcessSwitchblocks(INOUTP ezxml_t Parent, OUTP vector<t_switchblock_inf> *switchblocks,
+				INP t_arch_switch_inf *switches, INP int num_switches);
 static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP bool * list,
 		INP int len);
 static void ProcessPower( INOUTP ezxml_t parent,
@@ -2030,6 +2034,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 		INP bool timing_enabled) {
 	const char *Prop;
 	ezxml_t Cur;
+	bool custom_switch_block = false;
 
 	ProcessSizingTimingIpinCblock(Node, arch, timing_enabled);
 
@@ -2052,13 +2057,16 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 		arch->SBType = UNIVERSAL;
 	} else if (strcmp(Prop, "subset") == 0) {
 		arch->SBType = SUBSET;
+	} else if (strcmp(Prop, "custom") == 0) {
+		arch->SBType = CUSTOM;
+		custom_switch_block = true;
 	} else {
 		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Cur->line,
 				"Unknown property %s for switch block type x\n", Prop);
 	}
 	ezxml_set_attr(Cur, "type", NULL);
 
-	arch->Fs = GetIntProperty(Cur, "fs", true, 3);
+	arch->Fs = GetIntProperty(Cur, "fs", !custom_switch_block, 3);
 
 	FreeNode(Cur);
 }
@@ -2870,6 +2878,12 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 			arch->Switches, arch->num_switches, timing_enabled);
 	FreeNode(Next);
 
+	/* Process switchblocks. This depends on switches */
+	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
+	Next = FindElement(Cur, "switchblocklist", switchblocklist_required);
+	ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
+	FreeNode(Next);
+
 	/* Process directs */
 	Next = FindElement(Cur, "directlist", false);
 	if (Next) {
@@ -2955,6 +2969,19 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 	/* Load the segments. */
 	for (i = 0; i < *NumSegs; ++i) {
 		Node = ezxml_child(Parent, "segment");
+
+		/* Get segment name */
+		tmp = FindProperty(Node, "name", false);
+		if (tmp) {
+			(*Segs)[i].name = my_strdup(tmp);
+		} else {
+			/* set name to default: "unnamed_segment_<segment_index>" */
+			stringstream ss;
+			ss << "unnamed_segment_" << i;
+			tmp = ss.str().c_str();
+			(*Segs)[i].name = my_strdup(tmp);
+		}
+		ezxml_set_attr(Node, "name", NULL);
 
 		/* Get segment length */
 		length = 1; /* DEFAULT */
@@ -3089,6 +3116,112 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		FreeNode(Node);
 	}
 }
+
+/* Processes the switchblocklist section from the xml architecture file. 
+   See vpr/SRC/route/build_switchblocks.c for a detailed description of this 
+   switch block format */
+static void ProcessSwitchblocks(INOUTP ezxml_t Parent, OUTP vector<t_switchblock_inf> *switchblocks,
+				INP t_arch_switch_inf *switches, INP int num_switches){
+
+	ezxml_t Node;
+	ezxml_t SubElem;
+	const char *tmp;
+
+	/* get the number of switchblocks */
+	int num_switchblocks = CountChildren(Parent, "switchblock", 1);
+	switchblocks->reserve(num_switchblocks);
+
+	/* read-in all switchblock data */
+	for (int i_sb = 0; i_sb < num_switchblocks; i_sb++){
+		/* use a temp variable which will be assigned to switchblocks later */
+		t_switchblock_inf sb;
+
+		Node = ezxml_child(Parent, "switchblock");
+
+		/* get name */
+		tmp = FindProperty(Node, "name", true);
+		if (tmp){
+			sb.name = tmp;
+		}
+		ezxml_set_attr(Node, "name", NULL);
+
+		/* get type */
+		tmp = FindProperty(Node, "type", true);
+		if (tmp){
+			if (0 == strcmp(tmp, "bidir")){
+				sb.directionality = BI_DIRECTIONAL;
+			} else if (0 == strcmp(tmp, "unidir")){
+				sb.directionality = UNI_DIRECTIONAL;
+			} else {
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, "Unsopported switchblock type: %s\n", tmp);
+			}
+		}
+		ezxml_set_attr(Node, "type", NULL);
+
+		/* get switch type */
+		SubElem = ezxml_child(Node, "switch_type");
+		tmp = FindProperty(SubElem, "name", true);
+		if (tmp){
+			sb.switch_name = tmp;
+
+			/* figure out the corresponding switch index in the 'switches' array */
+			int switch_index = UNDEFINED;
+			for (int iswitch = 0; iswitch < num_switches; iswitch++){
+				const char *switch_name = switches[iswitch].name;
+
+				if ( strcmp(switch_name, tmp) == 0 ){
+					switch_index = iswitch;
+					break;
+				}
+			}
+			if (switch_index == UNDEFINED){
+				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Could not find index of switch (%s) in list of read-in switches\n", tmp);
+			}
+			sb.switch_index = switch_index;
+		}
+		ezxml_set_attr(SubElem, "name", NULL);
+		FreeNode(SubElem);
+
+		/* get the switchblock location */
+		SubElem = ezxml_child(Node, "switchblock_location");
+		tmp = FindProperty(SubElem, "type", true);
+		if (tmp){
+			if (strcmp(tmp, "EVERYWHERE") == 0){
+				sb.location = E_EVERYWHERE;
+			} else if (strcmp(tmp, "PERIMETER") == 0){
+				sb.location = E_PERIMETER;
+			} else if (strcmp(tmp, "CORE") == 0){
+				sb.location = E_CORE;
+			} else if (strcmp(tmp, "CORNER") == 0){
+				sb.location = E_CORNER;
+			} else if (strcmp(tmp, "FRINGE") == 0){
+				sb.location = E_FRINGE;
+			} else {
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line, "unrecognized switchblock location: %s\n", tmp);
+			}
+		}
+		ezxml_set_attr(SubElem, "type", NULL);
+		FreeNode(SubElem);
+
+		/* get switchblock permutation functions */
+		SubElem = ezxml_child(Node, "switchfuncs");
+		read_sb_switchfuncs(SubElem, &(sb));
+		FreeNode(SubElem);
+		
+		read_sb_wireconns(Node, &(sb));
+
+		/* assign the sb to the switchblocks vector */		
+		switchblocks->push_back(sb);
+
+		/* run error checks on switch blocks */
+		check_switchblock(&sb);
+
+		FreeNode(Node);
+	}
+
+	return;
+}
+
 
 static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP bool * list,
 		INP int len) {

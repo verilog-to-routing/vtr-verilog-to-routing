@@ -476,8 +476,12 @@ static void SetupRoutingArch(INP t_arch Arch,
 	RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
 	RoutingArch->Fs = Arch.Fs;
 	RoutingArch->directionality = BI_DIRECTIONAL;
-	if (Arch.Segments)
+	if (Arch.Segments){
 		RoutingArch->directionality = Arch.Segments[0].directionality;
+	}
+
+	/* copy over the switch block information */
+	RoutingArch->switchblocks = Arch.switchblocks;
 }
 
 static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
