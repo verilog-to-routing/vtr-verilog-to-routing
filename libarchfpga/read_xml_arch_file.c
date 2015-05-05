@@ -2880,9 +2880,12 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 
 	/* Process switchblocks. This depends on switches */
 	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
+	printf("switchblocklist required: %d\n", switchblocklist_required);
 	Next = FindElement(Cur, "switchblocklist", switchblocklist_required);
-	ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
-	FreeNode(Next);
+	if (Next){
+		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
+		FreeNode(Next);
+	}
 
 	/* Process directs */
 	Next = FindElement(Cur, "directlist", false);
