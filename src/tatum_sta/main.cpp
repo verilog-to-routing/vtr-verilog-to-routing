@@ -1,9 +1,9 @@
-#include <stdio.h>
 #include <ctime>
 #include <cmath>
 #include <algorithm>
 #include <map>
 #include <array>
+#include <iostream>
 
 #include "assert.hpp"
 
