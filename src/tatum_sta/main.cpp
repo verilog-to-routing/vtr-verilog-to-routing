@@ -26,7 +26,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times);
 
@@ -96,21 +96,15 @@ int main(int argc, char** argv) {
         std::map<NodeId,NodeId> vpr_node_map = timing_graph.contiguize_level_nodes();
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
-        expected_arr_req_times = domain_arr_req_t();
-        for(int i = 0; i < (int) orig_expected_arr_req_times.size(); i++) {
-            expected_arr_req_times.push_back(std::vector<std::vector<node_arr_req_t>>());
-            for(int j = 0; j < (int) orig_expected_arr_req_times.size(); j++) {
-                expected_arr_req_times[i].push_back(std::vector<node_arr_req_t>(vpr_node_map.size()));
-            }
-        }
+        expected_arr_req_times = VprArrReqTimes();
+        expected_arr_req_times.set_num_nodes(orig_expected_arr_req_times.get_num_nodes());
 
-        for(int src_domain = 0; src_domain < (int) orig_expected_arr_req_times.size(); src_domain++) {
-            for(int sink_domain = 0; sink_domain < (int) orig_expected_arr_req_times.size(); sink_domain++) {
-                //For every clock domain pair
-                for(size_t i = 0; i < orig_expected_arr_req_times[src_domain][sink_domain].size(); i++) {
-                    NodeId new_id = vpr_node_map[i];
-                    expected_arr_req_times[src_domain][sink_domain][new_id] = orig_expected_arr_req_times[src_domain][sink_domain][i];
-                }
+        for(int src_domain = 0; src_domain < (int) orig_expected_arr_req_times.get_num_clocks(); src_domain++) {
+            //For every clock domain pair
+            for(int i = 0; i < orig_expected_arr_req_times.get_num_nodes(); i++) {
+                NodeId new_id = vpr_node_map[i];
+                expected_arr_req_times.add_arr_time(src_domain, new_id, orig_expected_arr_req_times.get_arr_time(src_domain, i));
+                expected_arr_req_times.add_req_time(src_domain, new_id, orig_expected_arr_req_times.get_req_time(src_domain, i));
             }
         }
 #else
