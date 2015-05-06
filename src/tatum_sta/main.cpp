@@ -26,7 +26,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-#define OPTIMIZE_NODE_EDGE_ORDER
+//#define OPTIMIZE_NODE_EDGE_ORDER
 
 int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times);
 
@@ -122,7 +122,9 @@ int main(int argc, char** argv) {
     print_node_fanout_histogram(timing_graph, n_histo_bins);
     cout << endl;
 
-    //print_timing_graph(timing_graph);
+    cout << "Timing Graph" << endl;
+    print_timing_graph(timing_graph);
+    cout << endl;
 
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;

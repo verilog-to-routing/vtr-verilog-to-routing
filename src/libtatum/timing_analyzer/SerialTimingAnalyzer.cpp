@@ -105,7 +105,7 @@ void SerialTimingAnalyzer::backward_traversal(const TimingGraph& timing_graph) {
 void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
-        arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id));
+        arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::DATA));
     }
 
     if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
@@ -114,7 +114,7 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //FIXME Currently assuming:
         //   * All clocks at fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id));
+        req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
     }
 }
 

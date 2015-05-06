@@ -21,6 +21,7 @@ class TimingGraph {
         //Node accessors
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
         DomainId node_clock_domain(NodeId id) const { return node_clock_domains_[id]; }
+        BlockId node_logical_block(NodeId id) const { return node_logical_blocks_[id]; }
         int num_node_out_edges(NodeId id) const { return node_out_edges_[id].size(); }
         int num_node_in_edges(NodeId id) const { return node_in_edges_[id].size(); }
         EdgeId node_out_edge(NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
@@ -47,6 +48,8 @@ class TimingGraph {
         void set_num_levels(const NodeId nlevels) { node_levels_ = std::vector<std::vector<NodeId>>(nlevels); }
         void add_level(const NodeId level_id, const std::vector<NodeId>& level_node_ids) {node_levels_[level_id] = level_node_ids;}
         void fill_back_edges();
+        void add_launch_capture_edges();
+        void levelize();
         void contiguize_level_edges();
         std::map<NodeId,NodeId> contiguize_level_nodes();
 
@@ -60,6 +63,10 @@ class TimingGraph {
         std::vector<DomainId> node_clock_domains_;
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
+
+        //Reverse mapping to logical blocks
+        //TODO: this is a temporary cludge - remove later!
+        std::vector<BlockId> node_logical_blocks_; 
 
         //Edge data
         std::vector<NodeId> edge_sink_nodes_;

@@ -131,20 +131,18 @@ int to_clock_domain = 0;
 %%
 
 finish: timing_graph                        {
+                                                timing_graph.add_launch_capture_edges();
                                                 timing_graph.fill_back_edges();
+                                                /*timing_graph.levelize();*/
                                             }
 
 timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1);}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
-                                                TimingNode node($2.type, $2.domain);
+                                                TimingNode node($2.type, $2.domain, $2.iblk);
 
                                                 for(auto& edge_val : *($2.out_edges)) {
-                                                    TimingEdge edge;
-
-                                                    edge.set_from_node_id($2.node_id);
-                                                    edge.set_to_node_id(edge_val.to_node);
-                                                    edge.set_delay(Time(edge_val.delay));
+                                                    TimingEdge edge(Time(edge_val.delay), $2.node_id, edge_val.to_node);
 
                                                     EdgeId edge_id = timing_graph.add_edge(edge);
 

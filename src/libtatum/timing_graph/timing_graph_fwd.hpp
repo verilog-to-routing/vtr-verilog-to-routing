@@ -8,6 +8,7 @@ class TimingNode;
 class TimingEdge;
 
 typedef int NodeId;
+typedef int BlockId;
 typedef int EdgeId;
 typedef int DomainId;
 

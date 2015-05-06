@@ -28,8 +28,13 @@ std::istream& operator>>(std::istream& os, TN_Type& type);
 
 class TimingNode {
     public:
-        TimingNode(): type_(TN_Type::UNKOWN), clock_domain_(INVALID_CLOCK_DOMAIN) {}
-        TimingNode(TN_Type new_type, DomainId clk_domain): type_(new_type), clock_domain_(clk_domain) {}
+        TimingNode()
+            : type_(TN_Type::UNKOWN)
+            , clock_domain_(INVALID_CLOCK_DOMAIN) {}
+        TimingNode(TN_Type new_type, DomainId clk_domain, BlockId blk_id)
+            : type_(new_type)
+            , clock_domain_(clk_domain) 
+            , logical_block_(blk_id) {}
 
         int num_out_edges() const { return out_edge_ids_.size(); }
         int num_in_edges() const { return in_edge_ids_.size(); }
@@ -42,6 +47,7 @@ class TimingNode {
 
         TN_Type type() const { return type_; }
         DomainId clock_domain() const { return clock_domain_; }
+        BlockId logical_block() const { return logical_block_; }
 
         Time arrival_time() const { return T_arr_; }
         void set_arrival_time(Time new_arrival_time) { T_arr_ = new_arrival_time; }
@@ -56,6 +62,7 @@ class TimingNode {
 
         TN_Type type_;
         DomainId clock_domain_;
+        BlockId logical_block_;
 
         std::vector<EdgeId> in_edge_ids_; //Timing edges driving this node
         std::vector<EdgeId> out_edge_ids_; //Timing edges driven by this node
