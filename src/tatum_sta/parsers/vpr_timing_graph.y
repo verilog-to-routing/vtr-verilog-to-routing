@@ -133,7 +133,7 @@ int to_clock_domain = 0;
 finish: timing_graph                        {
                                                 timing_graph.add_launch_capture_edges();
                                                 timing_graph.fill_back_edges();
-                                                /*timing_graph.levelize();*/
+                                                timing_graph.levelize();
                                             }
 
 timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1);}

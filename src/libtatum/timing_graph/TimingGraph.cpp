@@ -125,7 +125,70 @@ void TimingGraph::add_launch_capture_edges() {
 }
 
 void TimingGraph::levelize() {
-    VERIFY(0);
+    //Levelizes the timing graph
+    //This over-writes any previous levelization if it exists
+
+    //Clear the previous levelization
+    node_levels_.clear();
+    primary_outputs_.clear();
+
+    //Allocate space for the first level
+    node_levels_.resize(1);
+
+    //Copy the number of input edges per-node
+    //These will be decremented to know when a node is done
+    //
+    //Also initialize the first level (nodes with no fanin)
+    std::vector<int> node_fanin_remaining(num_nodes());
+    for(NodeId node_id = 0; node_id < num_nodes(); node_id++) {
+        int node_fanin = num_node_in_edges(node_id);
+        node_fanin_remaining[node_id] = node_fanin;
+
+        if(node_fanin == 0) {
+            //Add a primary input
+            node_levels_[0].push_back(node_id); 
+        }
+    }
+
+    //Walk the graph from primary inputs (no fanin) to generate a topological sort
+    //
+    //We inspect the output edges of each node and decrement the fanin count of the
+    //target node.  Once the fanin count for a node reaches zero it can be added
+    //to the level.
+    int level_id = 0;
+    bool inserted_node_in_level = true;
+    while(inserted_node_in_level) { //If nothing was inserted we are finished
+        inserted_node_in_level = false;
+
+        for(const NodeId node_id : node_levels_[level_id]) {
+            //Inspect the fanout
+            for(int edge_idx = 0; edge_idx < num_node_out_edges(node_id); edge_idx++) {
+                EdgeId edge_id = node_out_edge(node_id, edge_idx);
+                NodeId sink_node = edge_sink_node(edge_id);
+
+                //Decrement the fanin count
+                ASSERT(node_fanin_remaining[sink_node] > 0);
+                node_fanin_remaining[sink_node]--;
+
+                //Add to the next level if all fanin has been seen
+                if(node_fanin_remaining[sink_node] == 0) {
+                    //Ensure there is space by allocating the next level if required
+                    node_levels_.resize(level_id+2); 
+
+                    //Add the node
+                    node_levels_[level_id+1].push_back(sink_node);
+
+                    inserted_node_in_level = true;
+                }
+            }
+
+            //Also track the primary outputs
+            if(num_node_out_edges(node_id) == 0) {
+                primary_outputs_.push_back(node_id);
+            }
+        }
+        level_id++; 
+    }
 }
 
 void TimingGraph::contiguize_level_edges() {
