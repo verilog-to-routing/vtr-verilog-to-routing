@@ -4,7 +4,7 @@
 #include "TimingGraph.hpp"
 
 #include "sta_util.hpp"
-SerialTimingAnalyzer::SerialTimingAnalyzer() 
+SerialTimingAnalyzer::SerialTimingAnalyzer()
     : tag_pool_(sizeof(TimingTag)) //Need to give the size of the object to allocate
     {}
 
@@ -87,7 +87,7 @@ void SerialTimingAnalyzer::forward_traversal(const TimingGraph& timing_graph) {
 #endif
     }
 }
-    
+
 void SerialTimingAnalyzer::backward_traversal(const TimingGraph& timing_graph) {
     //Backward traversal (required times)
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
@@ -136,13 +136,17 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
         const TimingTags& src_arr_tags = arr_tags_[src_node_id];
 
         for(const TimingTag& src_tag : src_arr_tags) {
-            if(src_tag.type() == TagType::CLOCK && tg.node_type(node_id) == TN_Type::FF_SOURCE) {
-                //Launch edge, begin data propagation
+            if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
+                //The only input to a FF_SOURCE should be the the clock
+                //network, so we expect only CLOCK tags
+                ASSERT(src_tag.type() == TagType::CLOCK);
+
+                //FF Launch edge, begin data propagation
                 TimingTag launch_tag = src_tag;
-                launch_tag.set_type(TagType::DATA); 
+                launch_tag.set_type(TagType::DATA);
                 launch_tag.set_launch_node(src_node_id);
 
-                //Mark propogated launch time
+                //Mark propagated launch time
                 arr_tags.max_tag(tag_pool_, launch_tag.time() + edge_delay, launch_tag);
 
             } else {
@@ -151,7 +155,10 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
             }
 
 
-            if (src_tag.type() == TagType::CLOCK && tg.node_type(node_id) == TN_Type::FF_SINK) {
+            //Mark the propagated required time if this is a capture FF
+            if (tg.node_type(node_id) == TN_Type::FF_SINK && src_tag.type() == TagType::CLOCK) {
+                ASSERT(src_tag.type() == TagType::CLOCK);
+
                 //Capture Edge
                 TimingTag capture_tag = src_tag;
                 capture_tag.set_type(TagType::DATA);
