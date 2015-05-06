@@ -37,30 +37,30 @@ void print_histogram(const std::vector<float>& values, int nbuckets) {
     float max_bucket_val = *std::max_element(buckets.begin(), buckets.end());
 
     //Print the histogram
-    std::ios_base::fmtflags saved_flags = std::cout.flags();
-    std::streamsize prec = std::cout.precision();
-    std::streamsize width = std::cout.width();
+    std::ios_base::fmtflags saved_flags = cout.flags();
+    std::streamsize prec = cout.precision();
+    std::streamsize width = cout.width();
 
     std::streamsize int_width = ceil(log10(values.size()));
     std::streamsize float_prec = 1;
 
     int histo_char_width = 60;
 
-    //std::cout << "\t" << std::endl;
+    //cout << "\t" << endl;
     for(int i = 0; i < nbuckets; i++) {
-        std::cout << std::setw(int_width) << i*values_per_bucket << ":" << std::setw(int_width) << (i+1)*values_per_bucket - 1;
-        std::cout << " " <<  std::scientific << std::setprecision(float_prec) << buckets[i];
-        std::cout << " ";
+        cout << std::setw(int_width) << i*values_per_bucket << ":" << std::setw(int_width) << (i+1)*values_per_bucket - 1;
+        cout << " " <<  std::scientific << std::setprecision(float_prec) << buckets[i];
+        cout << " ";
 
         for(int j = 0; j < histo_char_width*(buckets[i]/max_bucket_val); j++) {
-            std::cout << "*";
+            cout << "*";
         }
-        std::cout << std::endl;
+        cout << endl;
     }
 
-    std::cout.flags(saved_flags);
-    std::cout.precision(prec);
-    std::cout.width(width);
+    cout.flags(saved_flags);
+    cout.precision(prec);
+    cout.width(width);
 }
 
 float relative_error(float A, float B) {
@@ -76,7 +76,7 @@ float relative_error(float A, float B) {
 }
 
 void print_level_histogram(const TimingGraph& tg, int nbuckets) {
-    std::cout << "Levels Width Histogram" << std::endl;
+    cout << "Levels Width Histogram" << endl;
 
     std::vector<float> level_widths;
     for(int i = 0; i < tg.num_levels(); i++) {
@@ -86,7 +86,7 @@ void print_level_histogram(const TimingGraph& tg, int nbuckets) {
 }
 
 void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets) {
-    std::cout << "Node Fan-in Histogram" << std::endl;
+    cout << "Node Fan-in Histogram" << endl;
 
     std::vector<float> fanin;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
@@ -98,7 +98,7 @@ void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets) {
 }
 
 void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
-    std::cout << "Node Fan-out Histogram" << std::endl;
+    cout << "Node Fan-out Histogram" << endl;
 
     std::vector<float> fanout;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
@@ -112,14 +112,14 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
 
 void print_timing_graph(const TimingGraph& tg) {
     for(NodeId node_id = 0; node_id < tg.num_nodes(); node_id++) {
-        std::cout << "Node: " << node_id << " Type: " << tg.node_type(node_id) <<  " Out Edges: " << tg.num_node_out_edges(node_id) << std::endl;
+        cout << "Node: " << node_id << " Type: " << tg.node_type(node_id) <<  " Out Edges: " << tg.num_node_out_edges(node_id) << endl;
         for(int out_edge_idx = 0; out_edge_idx < tg.num_node_out_edges(node_id); out_edge_idx++) {
             EdgeId edge_id = tg.node_out_edge(node_id, out_edge_idx);
             ASSERT(tg.edge_src_node(edge_id) == node_id);
 
             NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-            std::cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << " Delay: " << tg.edge_delay(edge_id).value() << std::endl;
+            cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << " Delay: " << tg.edge_delay(edge_id).value() << endl;
         }
     }
 }
@@ -142,7 +142,7 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
     const int int_width = 8;
     const int flt_width = 2;
      
-    std::cout << "Node Arrival Tag Count Histogram:" << std::endl;
+    cout << "Node Arrival Tag Count Histogram:" << endl;
     std::map<int,int> arr_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
         arr_tag_cnts[analyzer.arrival_tags(i).num_tags()]++;
