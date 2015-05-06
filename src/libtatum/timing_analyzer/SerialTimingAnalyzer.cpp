@@ -66,6 +66,7 @@ void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph) {
         pre_traverse_node(timing_graph, primary_inputs[i]);
     }
 
+    //TODO: remove primary_ outputs() if not needed?
     const std::vector<NodeId>& primary_outputs = timing_graph.primary_outputs();
     for(size_t i = 0; i < primary_outputs.size(); i++) {
         pre_traverse_node(timing_graph, primary_outputs[i]);
@@ -105,7 +106,8 @@ void SerialTimingAnalyzer::backward_traversal(const TimingGraph& timing_graph) {
 void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
-        arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+        //FIXME: currently assume all primary inputs define clocks!
+        arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
     }
 
     if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
@@ -114,7 +116,9 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //FIXME Currently assuming:
         //   * All clocks at fixed frequency
         //   * Non-propogated (i.e. no clock delay/skew)
-        req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+        if(tg.node_type(node_id) != TN_Type::FF_SINK) {
+            req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+        }
     }
 }
 
@@ -132,7 +136,31 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
         const TimingTags& src_arr_tags = arr_tags_[src_node_id];
 
         for(const TimingTag& src_tag : src_arr_tags) {
-            arr_tags.max_tag(tag_pool_, src_tag.time() + edge_delay, src_tag);
+            if(src_tag.type() == TagType::CLOCK && tg.node_type(node_id) == TN_Type::FF_SOURCE) {
+                //Launch edge, begin data propagation
+                TimingTag launch_tag = src_tag;
+                launch_tag.set_type(TagType::DATA); 
+                launch_tag.set_launch_node(src_node_id);
+
+                //Mark propogated launch time
+                arr_tags.max_tag(tag_pool_, launch_tag.time() + edge_delay, launch_tag);
+
+            } else {
+                //Standard propogation
+                arr_tags.max_tag(tag_pool_, src_tag.time() + edge_delay, src_tag);
+            }
+
+
+            if (src_tag.type() == TagType::CLOCK && tg.node_type(node_id) == TN_Type::FF_SINK) {
+                //Capture Edge
+                TimingTag capture_tag = src_tag;
+                capture_tag.set_type(TagType::DATA);
+                capture_tag.set_launch_node(node_id);
+
+                //Mark propogated required time
+                TimingTags& req_tag = req_tags_[node_id];
+                req_tag.add_tag(tag_pool_, capture_tag.time() + Time(DEFAULT_CLOCK_PERIOD), capture_tag);
+            }
         }
     }
 }

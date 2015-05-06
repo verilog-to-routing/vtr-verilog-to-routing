@@ -158,17 +158,15 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                                 }
                                                 ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
 
-                                                /*
-                                                 *cout << "Node " << $2.node_id << ", ";
-                                                 *cout << "Type " << $2.type << ", ";
-                                                 *cout << "ipin " << $2.ipin << ", ";
-                                                 *cout << "iblk " << $2.iblk << ", ";
-                                                 *cout << "domain " << $2.domain << ", ";
-                                                 *cout << "skew " << $2.skew << ", ";
-                                                 *cout << "iodelay " << $2.iodelay << ", ";
-                                                 *cout << "edges " << $2.out_edges->size();
-                                                 *cout << endl;
-                                                 */
+                                                cout << "Node " << $2.node_id << ", ";
+                                                cout << "Type " << $2.type << ", ";
+                                                cout << "ipin " << $2.ipin << ", ";
+                                                cout << "iblk " << $2.iblk << ", ";
+                                                cout << "domain " << $2.domain << ", ";
+                                                cout << "skew " << $2.skew << ", ";
+                                                cout << "iodelay " << $2.iodelay << ", ";
+                                                cout << "edges " << $2.out_edges->size();
+                                                cout << endl;
 
                                             }
     | timing_graph num_tnode_levels         {
