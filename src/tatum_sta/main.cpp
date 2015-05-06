@@ -126,6 +126,10 @@ int main(int argc, char** argv) {
     print_timing_graph(timing_graph);
     cout << endl;
 
+    cout << "Levelization" << endl;
+    print_levelization(timing_graph);
+    cout << endl;
+
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;

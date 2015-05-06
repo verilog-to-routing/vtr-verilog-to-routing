@@ -124,6 +124,20 @@ void print_timing_graph(const TimingGraph& tg) {
     }
 }
 
+void print_levelization(const TimingGraph& tg) {
+    cout << "Num Levels: " << tg.num_levels() << endl;
+    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+        const auto& level = tg.level(ilevel);
+        cout << "Level " << ilevel << ": " << level.size() << " nodes" << endl;
+        cout << "\t";
+        for(auto node_id : level) {
+            cout << node_id << " ";
+        }
+        cout << endl;
+    }
+}
+
+
 void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& analyzer, int nbuckets) {
     const int int_width = 8;
     const int flt_width = 2;
