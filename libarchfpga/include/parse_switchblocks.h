@@ -79,7 +79,7 @@ typedef std::map< Switchblock_Lookup, std::vector< t_to_track_inf > > t_sb_conne
 void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb );
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( INP ezxml_t Node, INOUTP t_switchblock_inf *sb );
+void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, INP ezxml_t Node, INOUTP t_switchblock_inf *sb );
 
 /* checks for correctness of switch block read-in from the XML architecture file */
 void check_switchblock( INP t_switchblock_inf *sb );

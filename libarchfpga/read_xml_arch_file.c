@@ -2880,7 +2880,6 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 
 	/* Process switchblocks. This depends on switches */
 	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
-	printf("switchblocklist required: %d\n", switchblocklist_required);
 	Next = FindElement(Cur, "switchblocklist", switchblocklist_required);
 	if (Next){
 		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
@@ -3161,30 +3160,6 @@ static void ProcessSwitchblocks(INOUTP ezxml_t Parent, OUTP vector<t_switchblock
 		}
 		ezxml_set_attr(Node, "type", NULL);
 
-		/* get switch type */
-		SubElem = ezxml_child(Node, "switch_type");
-		tmp = FindProperty(SubElem, "name", true);
-		if (tmp){
-			sb.switch_name = tmp;
-
-			/* figure out the corresponding switch index in the 'switches' array */
-			int switch_index = UNDEFINED;
-			for (int iswitch = 0; iswitch < num_switches; iswitch++){
-				const char *switch_name = switches[iswitch].name;
-
-				if ( strcmp(switch_name, tmp) == 0 ){
-					switch_index = iswitch;
-					break;
-				}
-			}
-			if (switch_index == UNDEFINED){
-				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Could not find index of switch (%s) in list of read-in switches\n", tmp);
-			}
-			sb.switch_index = switch_index;
-		}
-		ezxml_set_attr(SubElem, "name", NULL);
-		FreeNode(SubElem);
-
 		/* get the switchblock location */
 		SubElem = ezxml_child(Node, "switchblock_location");
 		tmp = FindProperty(SubElem, "type", true);
@@ -3211,7 +3186,7 @@ static void ProcessSwitchblocks(INOUTP ezxml_t Parent, OUTP vector<t_switchblock
 		read_sb_switchfuncs(SubElem, &(sb));
 		FreeNode(SubElem);
 		
-		read_sb_wireconns(Node, &(sb));
+		read_sb_wireconns(switches, num_switches, Node, &(sb));
 
 		/* assign the sb to the switchblocks vector */		
 		switchblocks->push_back(sb);

@@ -141,7 +141,7 @@ static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, c
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
+void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 	
 	/* Make sure that Node is a switchblock */
 	CheckElement(Node, "switchblock");
@@ -180,6 +180,28 @@ void read_sb_wireconns( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 		char_prop = FindProperty(SubElem, "TP", true);
 		parse_comma_separated_wire_points(char_prop, &(wc.to_point));
 		ezxml_set_attr(SubElem, "TP", NULL);
+
+		/* get switch type */
+		char_prop = FindProperty(SubElem, "switch", true);
+		if (char_prop){
+			wc.switch_name = char_prop;
+
+			/* figure out the corresponding switch index in the 'switches' array */
+			int switch_index = UNDEFINED;
+			for (int iswitch = 0; iswitch < num_switches; iswitch++){
+				const char *switch_name = switches[iswitch].name;
+
+				if ( strcmp(switch_name, char_prop) == 0 ){
+					switch_index = iswitch;
+					break;
+				}
+			}
+			if (switch_index == UNDEFINED){
+				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Could not find index of switch (%s) in list of read-in switches\n", char_prop);
+			}
+			wc.switch_index = switch_index;
+		}
+		ezxml_set_attr(SubElem, "switch", NULL);
 
 		sb->wireconns.push_back(wc);
 		FreeNode(SubElem);

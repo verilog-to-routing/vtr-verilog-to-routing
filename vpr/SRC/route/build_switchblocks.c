@@ -996,7 +996,7 @@ static void compute_track_connections(INP int x_coord, INP int y_coord, INP enum
 			   sb connections map */	
 			t_to_track_inf to_track_inf;
 			to_track_inf.to_track = to_track;
-			to_track_inf.switch_ind = sb->switch_index;
+			to_track_inf.switch_ind = wireconn_ptr->switch_index;
 			/* and now, finally, add this switchblock connection to the switchblock connections map */
 			(*sb_conns)[sb_conn].push_back(to_track_inf);
 			/* If bidir architecture, implement the reverse connection as well */

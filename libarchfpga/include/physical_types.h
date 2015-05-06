@@ -867,6 +867,9 @@ typedef struct s_wireconn_inf{
 	std::vector<std::string> to_type;		/* to these wire types */
 	std::vector<int> from_point;			/* indices of wire points belonging to from_type */
 	std::vector<int> to_point;			/* indices of wire points belong to to_type (each 'from_point' connects to every 'to_point' */
+
+	std::string switch_name;			/* name of switch used to connect these wire types together -- must match entry in s_switch_inf */
+	short switch_index;				/* index of switch in the s_arch_switch_inf array */
 } t_wireconn_inf;
 
 /* represents a connection between two sides of a switchblock */
@@ -916,8 +919,6 @@ typedef struct s_switchblock_inf{
 	std::string name;			/* the name of this switchblock */
 	e_sb_location location;			/* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
 	e_directionality directionality;	/* the directionality of this switchblock (unidir/bidir) */
-	std::string switch_name;		/* name of switch this switchblock uses -- must match entry in s_switch_inf */
-	short switch_index;			/* index of switch in the s_arch_switch_inf array */
 
 	t_permutation_map permutation_map;	/* map holding the permutation functions attributed to this switchblock */
 
