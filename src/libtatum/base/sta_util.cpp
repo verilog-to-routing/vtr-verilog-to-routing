@@ -141,7 +141,7 @@ void print_levelization(const TimingGraph& tg) {
 void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& analyzer, int nbuckets) {
     const int int_width = 8;
     const int flt_width = 2;
-     
+
     cout << "Node Arrival Tag Count Histogram:" << endl;
     std::map<int,int> arr_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
@@ -149,7 +149,7 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
     }
 
     auto totaler = [](int total, const std::map<int,int>::value_type& kv) {
-        return total + kv.second; 
+        return total + kv.second;
     };
 
     int total_arr_tags = std::accumulate(arr_tag_cnts.begin(), arr_tag_cnts.end(), 0, totaler);
@@ -167,3 +167,19 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
         cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_req_tags << ")" << endl;
     }
 }
+
+void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer) {
+    cout << std::scientific;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        for(const TimingTag& tag : analyzer.arrival_tags(i)) {
+            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Arr: " << tag.time().value() << endl;
+        }
+    }
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        for(const TimingTag& tag : analyzer.required_tags(i)) {
+            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Req: " << tag.time().value() << endl;
+        }
+    }
+}
+
+

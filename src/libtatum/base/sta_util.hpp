@@ -16,3 +16,5 @@ void print_timing_graph(const TimingGraph& tg);
 void print_levelization(const TimingGraph& tg);
 
 void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& analyzer, int nbuckets);
+
+void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer);

@@ -199,6 +199,7 @@ int main(int argc, char** argv) {
 
         //Tag stats
         print_timing_tags_histogram(timing_graph, serial_analyzer, 10);
+        print_timing_tags(timing_graph, serial_analyzer);
     }
 
 /*
