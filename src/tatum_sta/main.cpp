@@ -309,8 +309,9 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
             if(arr_tag_iter == arr_tags.end()) {
                 if(!isnan(vpr_arr_time)) {
                     error = true;
-                    cout << "Node: " << node_id << " Src Clk: " << domain << endl;
-                    cout << "\tERROR Found no arrival-time tag, but VPR arrival time was " << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << endl;
+                    cout << "Node: " << node_id << " Clk: " << domain << endl;
+                    cout << "\tERROR Found no arrival-time tag, but VPR arrival time was ";
+                    cout << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << endl;
                 }
             } else {
                 float arr_time = arr_tag_iter->time().value();
@@ -318,13 +319,24 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                 float arr_rel_err = relative_error(arr_time, vpr_arr_time);
                 if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
                     error = true;
-                    cout << "Node: " << node_id << " Src Clk: " << domain << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+                    cout << "Node: " << node_id << " Clk: " << domain << " Calc_Arr: ";
+                    cout << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
                     cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << endl;
+                } else if (!isnan(arr_time) && isnan(vpr_arr_time)) {
+                    error = true;
+                    cout << "Node: " << node_id << " Clk: " << domain;
+                    cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
+                    cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+                    cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
 
                 } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
-                    cout << "Node: " << node_id << " Src Clk: " << domain << " Calc_Arr: " << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
-                    cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err << ", " << std::setw(num_width) << arr_rel_err << endl;
                     error = true;
+                    cout << "Node: " << node_id << " Clk: " << domain << " Calc_Arr: ";
+                    cout << std::setw(num_width) << arr_time << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+                    cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err;
+                    cout << ", " << std::setw(num_width) << arr_rel_err << endl;
+                } else {
+                    VERIFY(arr_rel_err < RELATIVE_EPSILON || arr_abs_err < ABSOLUTE_EPSILON);
                 }
             }
             arr_reqs_verified ++;
@@ -334,8 +346,9 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
             if(req_tag_iter == req_tags.end()) {
                 if(!isnan(vpr_req_time)) {
                     error = true;
-                    cout << "Node: " << node_id << " Sink Clk: " << domain  << endl;
-                    cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width) << vpr_req_time << " (expected NAN)" << endl;
+                    cout << "Node: " << node_id << " Clk: " << domain  << endl;
+                    cout << "\tERROR Found no required-time tag, but VPR required time was " << std::setw(num_width);
+                    cout << vpr_req_time << " (expected NAN)" << endl;
                 }
             } else {
                 float req_time = req_tag_iter->time().value();
@@ -343,12 +356,24 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                 float req_rel_err = relative_error(req_time, vpr_req_time);
                 if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
                     error = true;
-                    cout << "Node: " << node_id << " Sink Clk: " << domain  << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+                    cout << "Node: " << node_id << " Clk: " << domain  << " Calc_Req: ";
+                    cout << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
                     cout << "\tERROR Calculated required time was nan and didn't match VPR." << endl;
-                } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
-                    cout << "Node: " << node_id << " Sink Clk: " << domain  << " Calc_Req: " << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
-                    cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err << ", " << std::setw(num_width) << req_rel_err << endl;
+                } else if (!isnan(req_time) && isnan(vpr_req_time)) {
                     error = true;
+                    cout << "Node: " << node_id << " Clk: " << domain << " Calc_Arr: ";
+                    cout << " Calc_Arr: " << std::setw(num_width) << req_time;
+                    cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+                    cout << "\tERROR Calculated required time was not nan but VPR expected nan." << endl;
+
+                } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
+                    error = true;
+                    cout << "Node: " << node_id << " Clk: " << domain  << " Calc_Req: ";
+                    cout << std::setw(num_width) << req_time << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+                    cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err;
+                    cout << ", " << std::setw(num_width) << req_rel_err << endl;
+                } else {
+                    VERIFY(req_rel_err < RELATIVE_EPSILON || req_abs_err < ABSOLUTE_EPSILON);
                 }
             }
             arr_reqs_verified++;
