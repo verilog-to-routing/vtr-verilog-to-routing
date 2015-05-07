@@ -38,7 +38,7 @@ One solution is to enforce a balance constraint on each block type, $i$:
 \end{equation}
 where $P1_i$ is the set of all blocks of type $i$ in partition 1. We refer to this type of per-block set of constraints as heterogeneous balance constraints. Note that there are complex legality constraints governing which LUTs and FFs can be packed into legal logic blocks, as well as which multipliers can be packed into legal DSP blocks~\cite{luu2014vtr}. As the partitioner is not aware of these constraints, flow 3 above (which runs the partitioner after function block packing) will be able to more precisely balance resource use across partitions.
 
-The current version of hMetis does not support heterogeneous balance constraints, though Metis does. Metis was used in our CAD flow. However, as the circuit netlist is naturally represented as a hypergraph, it needs to be transformed to a graph before Metis can process it.
+The current version of hMetis does not support heterogeneous balance constraints, though Metis does, so we use Metis in our CAD flow. However, as the circuit netlist is naturally represented as a hypergraph, it needs to be transformed to a graph before Metis can process it.
 
 \subsection{Hypergraph to Graph Transformation}\label{sec:hypergraph_to_graph}
 We transformed the circuit netlist hypergraph to a graph in the following way:

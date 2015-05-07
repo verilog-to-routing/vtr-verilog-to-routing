@@ -341,16 +341,16 @@ Given this cost function, the router's lookahead algorithm determines the total 
 \setlength{\arraycolsep}{0.0em}
 \begin{multline}
 \label{eq:lookahead_cost}
-Cost_{Total}(r) = \sum_{\forall l \in RT(i,r)} Cost(l) + \alpha \times ExpectedCost(r,j)
+Cost_{Total}(r) = \sum_{\forall l \in RT(i,r)} Cost(l) + \alpha \times ExpectCost(r,j)
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
-where \textit{RT(i,r)} is the set of all routing nodes used so far from \textit{i} to \textit{r} and $\alpha$ is a constant number that determines the aggressiveness of the directed search. $\alpha$ is 1.2 by default in VPR. VPR's original $ExpectedCost(n,j)$ function is~\cite{betz1999architecture}: 
+where \textit{RT(i,r)} is the set of all routing nodes used so far from \textit{i} to \textit{r} and $\alpha$ is a constant number that determines the aggressiveness of the directed search. $\alpha$ is 1.2 by default in VPR. VPR's original $ExpectCost(n,j)$ function is~\cite{betz1999architecture}: 
 
 \setlength{\arraycolsep}{0.0em}
 \begin{multline}
 \label{eq:expected_routing_cost}
-ExpectedCost(r,j) = Criticality_{fac} \times T_{delay} + \\(1 - Criticality_{fac}) \times ExpectedCongestionCost(r,j)
+ExpectCost(r,j) = Criticality_{fac} \times T_{delay} + \\(1 - Criticality_{fac}) \times ExpectCongestionCost(r,j)
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
@@ -358,11 +358,11 @@ $T_{delay}$ is an estimate of the delay that the router predicts it will see on 
 
 \begin{multline}
 \label{eq:tdelay}
-T^\prime_{delay} = T_{delay} + T_{interposer} \times ExpectedInterposerHops
+T^\prime_{delay} = T_{delay} + T_{interposer} \times ExpectInterposerHops
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
-We modify $ExpectedCongestionCost(r,j)$ in (\ref{eq:expected_routing_cost}) in a similar way to account for the new interposer routing nodes. 
+We modify $ExpectCongestionCost(r,j)$ in (\ref{eq:expected_routing_cost}) in a similar way to account for the new interposer routing nodes. 
 
 The interposer-aware router lookahead makes routing decisions more quickly given the large delay difference of a path that crosses the interposer as opposed to a path that doesn't.
 
@@ -439,7 +439,7 @@ Figure~\ref{fig:all_arch_experiments} shows that using bidirectional interposer 
 
 Adding multiplexers in front of interposer wires allows dangling routing wires to connect to interposer wires (\textit{``fanin transfer"}) and adding extra load on the output of the interposer wires (\textit{``fanout transfer"}) allows the interposer wire to drive dangling wires on the other side of the cut. Therefore these modifications provide higher flexibility to better utilize interposer wires. Figure~\ref{fig:all_arch_experiments} shows that enabling these two options alone without using bidirectional interposer wires (column \textit{c} in Figure~\ref{fig:all_arch_experiments}) reduces minimum channel width by 3\% and reduces critical path delay by 1\%. 
 
-Moreover, better performance can be achieved if either of these two options is used together with bidirectional interposer wires. Enabling \textit{fanout transfer} with bidirectional interposer wires (column \textit{d} in Figure~\ref{fig:all_arch_experiments}) reduces the minimum channel width by 9\% and critical path delay by 0.7\%. Enabling \textit{fanin transfer} with bidirectional interposer wires (column \textit{e} in Figure~\ref{fig:all_arch_experiments}) has an even stronger impact and reduces the minimum channel width by 10\% and critical path delay by 0.7\%. This signifies that added flexibility to drive an interposer wire is more important for routability compared to adding flexibility of having an interposer wire drive multiple vertical routing wires on the other side of the cut.
+Moreover, better performance can be achieved if either of these two options is used together with bidirectional interposer wires. Enabling \textit{fanout transfer} with bidirectional interposer wires (column \textit{d} in Figure~\ref{fig:all_arch_experiments}) reduces the minimum channel width by 9\% and critical path delay by 0.7\%. Enabling \textit{fanin transfer} with bidirectional interposer wires (column \textit{e} in Figure~\ref{fig:all_arch_experiments}) has an even stronger impact and reduces the minimum channel width by 10\% and critical path delay by 0.7\%. This signifies that added flexibility to drive an interposer wire is more important for routability than added flexibility allowing an interposer wire to drive multiple vertical routing wires on the other side of the cut.
 
 Enabling all of these architecture modifications simultaneously (column \textit{f} in Figure~\ref{fig:all_arch_experiments}) provides the highest level of flexibility for the router and achieves 11.2\% reduction in minimum channel width and 1.3\% reduction in critical path delay. These models show that interposer-based FPGAs significantly benefit from hardware that provides a flexible routing-interposer interface. It is important both to make the interposer wires easier to access with additional routing switches \textit{and} to make them bidirectional to accommodate asymmetric routing demand.
 
