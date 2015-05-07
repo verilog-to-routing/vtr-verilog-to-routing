@@ -78,7 +78,7 @@ Large FPGA systems with multiple dice connected by a silicon interposer are now 
 
 % Note that keywords are not normally used for peerreview papers.
 \begin{IEEEkeywords}
-Algorithms, FPGA, Silicon interposer, 2.5D ICs, CAD. 
+FPGA, Silicon interposer, 2.5D ICs, CAD. 
 \end{IEEEkeywords}
 
 
@@ -116,9 +116,9 @@ Interposer-based FPGAs allow systems larger than a single die, making a "More th
 
 The improvement in the capacity of 2.5D FPGAs over conventional ones is very significant. Xilinx's largest 28 nm interposer-based FPGA contains 4 FPGA dice and 1.954 million logic cells~\cite{xilinx7series}, while the largest non-interposer Virtex-7 die has 979k logic cells and Altera's largest 28 nm FPGA has 952k logic elements~\cite{stratixV}. Even though all these FPGAs use a 28 nm process, silicon interposer technology allows the creation of FPGAs with twice the resources possible on even an extremely large single die. Xilinx's latest (Virtex UltraScale, 20 nm) line of FPGAs makes even more aggressive use of interposers; the largest monolithic FPGA in this family contains 941k logic cells, while the four largest capacity FPGAs are all built with silicon interposers and span a range from 1.25 to 4.43 million logic cells~\cite{virtexultrascale}.
 
-Another major advantage of interposer-based FPGAs comes at the beginning of a new manufacturing process, when the defect density is high~\cite{xilinxTSVperformance}. To illustrate this impact consider a new process in which the defect density is 1/$cm^2$ (a reasonable value early in the process lifecycle) and the die area is $6cm^2$, which roughly matches the size of the largest member of a high-end FPGA family such as Virtex 7. Using the Poisson Yield Model~\cite{yieldmodel}, the yield is only $0.25\%$ of dice. If instead the chip is composed of four $1.5cm^2$ dice, the yield is $22\%$. This means that a 12 inch silicon wafer with $730cm^2$ of area would produce on average $0.3$ working $6cm^2$ dice, while the same wafer would produce on average $107$ working $1.5cm^2$ dice. Therefore, as a $6cm^2$ chip would be composed of four $1.5cm^2$ dice, the wafer would yield $26.75$ systems on average, as the "assembly yield" of placing these four die on an interposer is very high~\cite{xilinxTSV}. Hence the number of interposer-based FPGAs created from the same silicon wafer would be almost $100\times$ greater than a monolithic FPGA of the same size, greatly impacting not only cost but also the availability of such a large FPGA.
+Another major advantage of interposer-based FPGAs comes at the beginning of a new manufacturing process, when the defect density is high~\cite{xilinxTSVperformance}. To illustrate this impact consider a new process in which the defect density is 1/$cm^2$ and the die area is $6cm^2$, roughly matching the size of the largest member of a high-end FPGA family such as Virtex 7. Using the Poisson Yield Model~\cite{yieldmodel}, the yield is only $0.25\%$ of dice. If instead the chip is composed of four $1.5cm^2$ dice, the yield is $22\%$. This means that a 12 inch silicon wafer with $730cm^2$ of area would produce on average $0.3$ working $6cm^2$ dice, while the same wafer would produce on average $107$ working $1.5cm^2$ dice. Therefore, as a $6cm^2$ chip would be composed of four $1.5cm^2$ dice, the wafer would yield $26.75$ systems on average, as the "assembly yield" of placing these four die on an interposer is very high~\cite{xilinxTSV}. Hence the number of interposer-based FPGAs created from the same silicon wafer would be almost $100\times$ greater than a monolithic FPGA of the same size, greatly impacting not only cost but also the availability of such a large FPGA.
 
-When the process matures and the defect density decreases this yield advantage drops. Consider a mature process with defect density of $0.1/cm^2$. The yield for a $6cm^2$ die is $55\%$ and the yield for a $1.5cm^2$ die is $86\%$. Hence the number of single die FPGAs created from a $730cm^2$ silicon wafer would be $66.9$ and the number of interposer-based FPGAs created would be $104.6$. While the interposer-based FPGA still has a yield advantage it might not lead to a major cost advantage when the cost of the interposer and assembling the die to it are included. For the large, state-of-the-art FPGAs that are built early in a process cycle and heavily used for prototyping, however, there is clearly a compelling cost advantage to an interposer-based solution.
+When the process matures and the defect density decreases this yield advantage drops. Consider a mature process with defect density of $0.1/cm^2$. The yield for a $6cm^2$ die is $55\%$ and the yield for a $1.5cm^2$ die is $86\%$. Hence the number of single die FPGAs created from a $730cm^2$ silicon wafer would be $66.9$ and the number of interposer-based FPGAs created would be $104.6$. While the interposer-based FPGA still has a yield advantage it might not lead to a major cost advantage when the cost of the interposer and die assembly costs are included. For the large, state-of-the-art FPGAs that are built early in a process cycle and heavily used for prototyping, however, there is clearly a compelling cost advantage to an interposer-based solution.
 
 \subsection{Virtex Interposer-based FPGAs}
 \label{virtex7section}
@@ -140,9 +140,9 @@ The Xilinx 2.5D FPGAs from the Virtex-7 and Virtex Ultrascale families are curre
 %  -> But results in longer signal travel
 %  -> Net result: more delay, reduced connectivity
 
-The \textit{XC7V2000T} is composed of four identical dice arranged such that the vertical routing crosses between the dice. Each horizontal edge of each die has 280 groups of 48 length-12 wires crossing the interposer, which sums to a total of 13440 wires between dice. There are also 40 clock wires crossing the interposer. The average vertical routing channel in this FPGA contains 210 wires and there are approximately 280 vertical channels, resulting in approximately 58800 vertical wires crossing a horizontal cutline within a die. Hence the number of wires which cross the interposer is about 23\% of the total number of within-die vertical wires.
+The \textit{XC7V2000T} is composed of four identical dice arranged such that the vertical routing crosses between the dice. Each horizontal edge of each die has 280 groups of 48 length-12 wires crossing the interposer, for a total of 13440 wires between dice. There are also 40 clock wires crossing the interposer. The average vertical routing channel in this FPGA contains 210 wires and there are approximately 280 vertical channels, resulting in approximately 58800 vertical wires crossing a horizontal cutline within a die. Hence the number of wires which cross the interposer is about 23\% of the total number of within-die vertical wires.
 
-The 28 nm dice are connected to the 65 nm silicon interposer through microbumps with a 45$\mu$m pitch. Hence the area occupied by microbumps at one edge of one die is 13440 $\times$ (45$\mu$m)\textsuperscript{2} $=$ 27mm\textsuperscript{2}. If we assume each die is $7 \times 12 mm$, as presented by Chaware et al. in \cite{xilinxTSV}, the bumps have to be spread out near the edge and need to go as far as $2.25mm$ away from the edge of the die. This greater distance from the border increase the length of the inter-die connections, and along with the presence of the micro-bumps and their capacitance, leads to an increased delay for these crossing wires vs. that of a typical on-die routing wire. Chaware et al. state that the latency to cross the interposer is approximately $1ns$. For comparison, a typical medium length 28 nm FPGA routing wire (e.g. spanning four logic blocks) has a delay of approximately 125 ps, while a longer wire (e.g. spanning 12 logic blocks) has a delay of approximately 250 ps.
+The 28 nm dice are connected to the 65 nm silicon interposer through microbumps with a 45$\mu$m pitch. Hence the area occupied by microbumps at one edge of one die is 13440 $\times$ (45$\mu$m)\textsuperscript{2} $=$ 27mm\textsuperscript{2}. If we assume each die is $7 \times 12 mm$, as presented by Chaware et al. in \cite{xilinxTSV}, the bumps have to be spread out near the edge and need to go as far as $2.25mm$ away from the edge of the die. This greater distance from the border increases the length of the inter-die connections, and along with the presence of the micro-bumps and their capacitance, leads to an increased delay for these crossing wires vs. that of a typical on-die routing wire. Chaware et al. state that the latency to cross the interposer is approximately $1ns$. For comparison, a typical medium length 28 nm FPGA routing wire (e.g. spanning four logic blocks) has a delay of approximately 125 ps, while a longer wire (e.g. spanning 12 logic blocks) has a delay of approximately 250 ps.
 
 Overall, these interposer FPGAs have increased delay and reduced connectivity between dice, with approximately $23\%$ of the usual number of vertical wires between dice and approximately $1ns$ of increased delay to cross the interposer.
 
@@ -225,7 +225,7 @@ While this is a reasonable method to model such architectures, it makes it diffi
 
 \begin{figure*}[!thpb]
 \centering
-\subfigure[]{\includegraphics[width=0.5\textwidth]{gui_1.eps}}
+\subfigure[]{\includegraphics[width=0.45\textwidth]{gui_1.eps}}
 \subfigure[]{\includegraphics[width=0.4\textwidth]{gui_2.eps}}
 \caption{VPR Graphical User Interface. (a) Full chip view. (b) Connectivity at the cutline. Due to the limited signal capacity of the interposer, some vertical routing wires are left dangling.}
 \label{fig:vpr_interposer_gui}
@@ -341,7 +341,7 @@ Given this cost function, the router's lookahead algorithm determines the total 
 \setlength{\arraycolsep}{0.0em}
 \begin{multline}
 \label{eq:lookahead_cost}
-Cost_{Total}(r) = \sum_{\forall l \in RT(i,r)} Cost(l) + \alpha \times ExpectCost(r,j)
+Cost_{Tot}(r) = \sum_{\forall l \in RT(i,r)} Cost(l) + \alpha \times ExpectCost(r,j)
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
@@ -350,15 +350,15 @@ where \textit{RT(i,r)} is the set of all routing nodes used so far from \textit{
 \setlength{\arraycolsep}{0.0em}
 \begin{multline}
 \label{eq:expected_routing_cost}
-ExpectCost(r,j) = Criticality_{fac} \times T_{delay} + \\(1 - Criticality_{fac}) \times ExpectCongestionCost(r,j)
+ExpectCost(r,j) = Criticality_{fac} \times T_{del} + \\(1 - Criticality_{fac}) \times ExpectCongestionCost(r,j)
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
-$T_{delay}$ is an estimate of the delay that the router predicts it will see on the route from \textit{r} to \textit{j}. Since (\ref{eq:expected_routing_cost}) assumes a homogeneous FPGA, $T_{delay}$ does not include the additional delay some routes experience by going through the interposer. Thus, for interposer-based architectures, we replace $T_{delay}$ in (\ref{eq:expected_routing_cost}) with $T^\prime_{delay}$ to include the delay of expected interposer hops from \textit{r} to \textit{j}.
+$T_{del}$ is an estimate of the delay that the router predicts it will see on the route from \textit{r} to \textit{j}. Since (\ref{eq:expected_routing_cost}) assumes a homogeneous FPGA, $T_{del}$ does not include the additional delay some routes experience by going through the interposer. Thus, for interposer-based architectures, we replace $T_{del}$ in (\ref{eq:expected_routing_cost}) with $T^\prime_{del}$ to include the delay of expected interposer hops from \textit{r} to \textit{j}.
 
 \begin{multline}
 \label{eq:tdelay}
-T^\prime_{delay} = T_{delay} + T_{interposer} \times ExpectInterposerHops
+T^\prime_{del} = T_{del} + T_{interpose} \times ExpectInterposeHops
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
@@ -519,7 +519,15 @@ As shown in \ref{fig:crit_path_4part}, systems with more dice are slower; on ave
 %   - Impact of aspect ratio
 \subsection{Impact of Aspect Ratio}
 \label{aspect_ratio_impact}
-It is easier to manufacture silicon dice that have an aspect ratio near 1 (i.e. square). Commercial FPGAs are laid out with identical columns, and hence combine multiple identical FPGA dice in \textit{one dimension} on an interposer \cite{xilinxTSV}. We can make \textit{either} the FPGA dice square, or the interposer square, but not both. Table \ref{table:squares} compares the routability of these two options for the four-die case. We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the same routing architecture parameters as Section \ref{sec:resultsWiringCapacity}. 
+It is easier to manufacture silicon dice that have an aspect ratio near 1 (i.e. square). Commercial FPGAs are laid out with identical columns, and hence combine multiple identical FPGA dice in \textit{one dimension} on an interposer \cite{xilinxTSV}. As Figure~\ref{fig:square_tall} shows, we can make \textit{either} the FPGA dice square, or the interposer square, but not both. Table \ref{table:squares} compares the routability of these two options for the four-die case. We used the best CAD flow from Section \ref{sec:partitioner_stage_results} and the same routing architecture parameters as Section \ref{sec:resultsWiringCapacity}. 
+
+\begin{figure}[!htbp]
+\centering
+\subfigure[]{\includegraphics[height = 2.3cm]{square_fpga.pdf}}
+\subfigure[]{\includegraphics[height = 3.6cm]{tall_fpga.pdf}}
+\caption{Devices with (a) a square interposer and (b) square dice.}
+\label{fig:square_tall}
+\end{figure}
 
 \begin{table}[!htbp]
 \centering
@@ -574,9 +582,9 @@ This work was supported by Brazil's Ci\^{e}ncia sem Fronteiras scholarship and t
 \begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{apereira}}]{Andre Hahn Pereira} is currently pursuing his B.Sc degree in ECE at the University of S\~{a}o Paulo. He was an exchange student at the University of Toronto from September 2012 until August 2013.
 \end{IEEEbiography}
 
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{vbetz}}]{Vaughn Betz}(S'88--M'91) received the B.Sc degree in EE from the University of Manitoba in 1991, the MS degree in ECE from the University of Illinois at Urbana-Champaign in 1993, and the PhD degree in ECE from the University of Toronto in 1998.
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{vbetz}}]{Vaughn Betz}(S'88--M'91) received the B.Sc(EE) from the University of Manitoba in 1991, the MS(ECE) from the University of Illinois at Urbana-Champaign in 1993, and the PhD(ECE) from the University of Toronto in 1998.
 
-Dr. Betz was a co-founder of Right Track CAD in 1998 and VP of Engineering until its acquisition by Altera in 2000. He was at Altera from 2000 to 2011, ultimately as Senior Director of Software Engineering. He joined the University of Toronto as an Associate Professor in 2011, where his research covers FPGA architecture, CAD and FPGA-based computation.
+Dr. Betz co-founded Right Track CAD, which was acquired by Altera in 2000. He was at Altera from 2000 to 2011, ultimately as Senior Director of Software Engineering. He is now an Associate Professor at the University of Toronto and researchs FPGA architecture, CAD and FPGA-based computation.
 \end{IEEEbiography}
 
 % ----------------------------------

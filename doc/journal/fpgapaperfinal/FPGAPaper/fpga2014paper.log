@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.3-1.40.12 (MiKTeX 2.9) (preloaded format=pdflatex 2012.5.15)  7 MAY 2015 09:51
+This is pdfTeX, Version 3.1415926-2.3-1.40.12 (MiKTeX 2.9) (preloaded format=pdflatex 2012.5.15)  7 MAY 2015 10:29
 entering extended mode
 **fpga2014paper
 
@@ -491,7 +491,7 @@ File: gui_1-eps-converted-to.pdf Graphic file (type pdf)
 
 <use gui_1-eps-converted-to.pdf>
 Package pdftex.def Info: gui_1-eps-converted-to.pdf used on input line 228.
-(pdftex.def)             Requested size: 258.0pt x 233.47514pt.
+(pdftex.def)             Requested size: 232.19843pt x 210.1167pt.
 Package epstopdf Info: Source file: <gui_2.eps>
 (epstopdf)                    date: 2014-12-09 10:49:04
 (epstopdf)                    size: 5530762 bytes
@@ -547,16 +547,8 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [5 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/gui_
 1-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/
-interposer_tvlsi/gui_2-eps-converted-to.pdf>]
-Overfull \hbox (3.88959pt too wide) detected at line 345
- []$[]  \OML/cmm/m/it/10 Cost[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 r\OT1/cmr/m/n/
-10 ) = [] \OML/cmm/m/it/10 Cost\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 l\OT1/cmr/m/n/
-10 ) + \OML/cmm/m/it/10  \OMS/cmsy/m/n/10  \OML/cmm/m/it/10 ExpectCost\OT1/cm
-r/m/n/10 (\OML/cmm/m/it/10 r; j\OT1/cmr/m/n/10 )$ []  
- []
-
-[6 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/bb_n
-ew-eps-converted-to.pdf>]
+interposer_tvlsi/gui_2-eps-converted-to.pdf>] [6 <C:/Users/Owner/Documents/Prof
+essor/research/vtr/paper/interposer_tvlsi/bb_new-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <placer_opt_minChW_2.eps>
 (epstopdf)                    date: 2015-01-28 17:24:30
 (epstopdf)                    size: 2761241 bytes
@@ -685,16 +677,18 @@ File: hg2g_clique.pdf Graphic file (type pdf)
  <use hg2g_clique.pdf>
 Package pdftex.def Info: hg2g_clique.pdf used on input line 67.
 (pdftex.def)             Requested size: 100.79846pt x 77.9861pt.
-
-<hyperedge_cutline.pdf, id=95, 652.4375pt x 258.9675pt>
+ [8 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/sta
+r-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/
+interposer_tvlsi/clique-eps-converted-to.pdf> <C:/Users/Owner/Documents/Profess
+or/research/vtr/paper/interposer_tvlsi/hg2g_star.pdf> <C:/Users/Owner/Documents
+/Professor/research/vtr/paper/interposer_tvlsi/hg2g_clique.pdf>]
+<hyperedge_cutline.pdf, id=125, 652.4375pt x 258.9675pt>
 File: hyperedge_cutline.pdf Graphic file (type pdf)
 
 <use hyperedge_cutline.pdf>
 Package pdftex.def Info: hyperedge_cutline.pdf used on input line 76.
 (pdftex.def)             Requested size: 189.0pt x 75.0196pt.
- [8 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/sta
-r-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/
-interposer_tvlsi/clique-eps-converted-to.pdf>]
+
 (C:\Users\Owner\Documents\Professor\research\vtr\paper\interposer_tvlsi\graph_t
 opology_cutsize.tex
 LaTeX Font Info:    External font `cmex10' loaded for size
@@ -713,7 +707,7 @@ converted-to.pdf graph_topology_cutsize.eps>
 (epstopdf)             \includegraphics on input line 116.
 Package epstopdf Info: Output file is already uptodate.
 
-<graph_topology_cutsize-eps-converted-to.pdf, id=105, 252.945pt x 108.405pt>
+<graph_topology_cutsize-eps-converted-to.pdf, id=126, 252.945pt x 108.405pt>
 File: graph_topology_cutsize-eps-converted-to.pdf Graphic file (type pdf)
 
 <use graph_topology_cutsize-eps-converted-to.pdf>
@@ -745,7 +739,7 @@ erted-to.pdf graph_topology_mcw.eps>
 (epstopdf)             \includegraphics on input line 110.
 Package epstopdf Info: Output file is already uptodate.
 
-<graph_topology_mcw-eps-converted-to.pdf, id=106, 252.945pt x 108.405pt>
+<graph_topology_mcw-eps-converted-to.pdf, id=127, 252.945pt x 108.405pt>
 File: graph_topology_mcw-eps-converted-to.pdf Graphic file (type pdf)
 
 <use graph_topology_mcw-eps-converted-to.pdf>
@@ -770,7 +764,7 @@ Package epstopdf Info: Source file: <vpr_flows_mcw.eps>
 -to.pdf vpr_flows_mcw.eps>
 (epstopdf)             \includegraphics on input line 130.
 Package epstopdf Info: Output file is already uptodate.
- <vpr_flows_mcw-eps-converted-to.pdf, id=107, 252.945pt x 144.54pt>
+ <vpr_flows_mcw-eps-converted-to.pdf, id=128, 252.945pt x 144.54pt>
 File: vpr_flows_mcw-eps-converted-to.pdf Graphic file (type pdf)
 
 <use vpr_flows_mcw-eps-converted-to.pdf>
@@ -782,13 +776,12 @@ Overfull \hbox (0.93823pt too wide) in paragraph at lines 132--113
  [][] 
  []
 
-[9 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/hg2g
-_star.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tv
-lsi/hg2g_clique.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/int
-erposer_tvlsi/hyperedge_cutline.pdf> <C:/Users/Owner/Documents/Professor/resear
-ch/vtr/paper/interposer_tvlsi/graph_topology_cutsize-eps-converted-to.pdf> <C:/
-Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/graph_topol
-ogy_mcw-eps-converted-to.pdf>]
+[9 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/hype
+redge_cutline.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/inter
+poser_tvlsi/graph_topology_cutsize-eps-converted-to.pdf> <C:/Users/Owner/Docume
+nts/Professor/research/vtr/paper/interposer_tvlsi/graph_topology_mcw-eps-conver
+ted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_t
+vlsi/vpr_flows_mcw-eps-converted-to.pdf>]
 (C:\Users\Owner\Documents\Professor\research\vtr\paper\interposer_tvlsi\vpr_flo
 ws_crit_path.tex
 Package epstopdf Info: Source file: <vpr_flows_crit_path.eps>
@@ -802,7 +795,7 @@ verted-to.pdf vpr_flows_crit_path.eps>
 (epstopdf)             \includegraphics on input line 126.
 Package epstopdf Info: Output file is already uptodate.
 
-<vpr_flows_crit_path-eps-converted-to.pdf, id=150, 252.945pt x 144.54pt>
+<vpr_flows_crit_path-eps-converted-to.pdf, id=153, 252.945pt x 144.54pt>
 File: vpr_flows_crit_path-eps-converted-to.pdf Graphic file (type pdf)
 
 <use vpr_flows_crit_path-eps-converted-to.pdf>
@@ -827,7 +820,7 @@ Package epstopdf Info: Source file: <wires_cut.eps>
 pdf wires_cut.eps>
 (epstopdf)             \includegraphics on input line 124.
 Package epstopdf Info: Output file is already uptodate.
- <wires_cut-eps-converted-to.pdf, id=151, 252.945pt x 108.405pt>
+ <wires_cut-eps-converted-to.pdf, id=154, 252.945pt x 108.405pt>
 File: wires_cut-eps-converted-to.pdf Graphic file (type pdf)
 
 <use wires_cut-eps-converted-to.pdf>
@@ -852,7 +845,7 @@ Package epstopdf Info: Source file: <packing_bloat.eps>
 -to.pdf packing_bloat.eps>
 (epstopdf)             \includegraphics on input line 122.
 Package epstopdf Info: Output file is already uptodate.
- <packing_bloat-eps-converted-to.pdf, id=152, 252.945pt x 144.54pt>
+ <packing_bloat-eps-converted-to.pdf, id=155, 252.945pt x 144.54pt>
 File: packing_bloat-eps-converted-to.pdf Graphic file (type pdf)
 
 <use packing_bloat-eps-converted-to.pdf>
@@ -865,11 +858,10 @@ Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--148
  []
 
 ) [10 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/v
-pr_flows_mcw-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research
-/vtr/paper/interposer_tvlsi/vpr_flows_crit_path-eps-converted-to.pdf> <C:/Users
-/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/wires_cut-eps-co
-nverted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/paper/interpos
-er_tvlsi/packing_bloat-eps-converted-to.pdf>]
+pr_flows_crit_path-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/re
+search/vtr/paper/interposer_tvlsi/wires_cut-eps-converted-to.pdf> <C:/Users/Own
+er/Documents/Professor/research/vtr/paper/interposer_tvlsi/packing_bloat-eps-co
+nverted-to.pdf>]
 Package epstopdf Info: Source file: <arch_experiments4.eps>
 (epstopdf)                    date: 2014-12-15 13:45:47
 (epstopdf)                    size: 4208610 bytes
@@ -881,7 +873,7 @@ rted-to.pdf arch_experiments4.eps>
 (epstopdf)             \includegraphics on input line 433.
 Package epstopdf Info: Output file is already uptodate.
 
-<arch_experiments4-eps-converted-to.pdf, id=165, 816.04875pt x 479.7925pt>
+<arch_experiments4-eps-converted-to.pdf, id=166, 816.04875pt x 479.7925pt>
 File: arch_experiments4-eps-converted-to.pdf Graphic file (type pdf)
 
 <use arch_experiments4-eps-converted-to.pdf>
@@ -899,16 +891,13 @@ verted-to.pdf additional_fanins_2.eps>
 (epstopdf)             \includegraphics on input line 450.
 Package epstopdf Info: Output file is already uptodate.
 
-<additional_fanins_2-eps-converted-to.pdf, id=166, 527.9725pt x 244.915pt>
+<additional_fanins_2-eps-converted-to.pdf, id=167, 527.9725pt x 244.915pt>
 File: additional_fanins_2-eps-converted-to.pdf Graphic file (type pdf)
 
 <use additional_fanins_2-eps-converted-to.pdf>
 Package pdftex.def Info: additional_fanins_2-eps-converted-to.pdf used on input
  line 450.
 (pdftex.def)             Requested size: 252.0pt x 116.89638pt.
- [11 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/ar
-ch_experiments4-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/resea
-rch/vtr/paper/interposer_tvlsi/additional_fanins_2-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <MinChW_3.eps>
 (epstopdf)                    date: 2015-04-11 15:18:32
 (epstopdf)                    size: 1781245 bytes
@@ -920,12 +909,15 @@ df MinChW_3.eps>
 (epstopdf)             \includegraphics on input line 468.
 Package epstopdf Info: Output file is already uptodate.
 
-<MinChW_3-eps-converted-to.pdf, id=177, 585.18625pt x 283.0575pt>
+<MinChW_3-eps-converted-to.pdf, id=168, 585.18625pt x 283.0575pt>
 File: MinChW_3-eps-converted-to.pdf Graphic file (type pdf)
 
 <use MinChW_3-eps-converted-to.pdf>
 Package pdftex.def Info: MinChW_3-eps-converted-to.pdf used on input line 468.
 (pdftex.def)             Requested size: 252.0pt x 121.89374pt.
+ [11 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/ar
+ch_experiments4-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/resea
+rch/vtr/paper/interposer_tvlsi/additional_fanins_2-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <numberofcrossingwires_new_2.eps>
 (epstopdf)                    date: 2015-01-28 17:24:29
 (epstopdf)                    size: 1855480 bytes
@@ -938,7 +930,7 @@ to.pdf>
 (epstopdf)             \includegraphics on input line 477.
 Package epstopdf Info: Output file is already uptodate.
 
-<numberofcrossingwires_new_2-eps-converted-to.pdf, id=178, 614.295pt x 281.05pt
+<numberofcrossingwires_new_2-eps-converted-to.pdf, id=179, 614.295pt x 281.05pt
 >
 File: numberofcrossingwires_new_2-eps-converted-to.pdf Graphic file (type pdf)
  <use numberofcrossingwires_new_2-eps-converted-to.pdf>
@@ -957,18 +949,14 @@ nverted-to.pdf delays_crit_path_new.eps>
 (epstopdf)             \includegraphics on input line 489.
 Package epstopdf Info: Output file is already uptodate.
 
-<delays_crit_path_new-eps-converted-to.pdf, id=179, 551.05875pt x 293.095pt>
+<delays_crit_path_new-eps-converted-to.pdf, id=180, 551.05875pt x 293.095pt>
 File: delays_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
 
 <use delays_crit_path_new-eps-converted-to.pdf>
 Package pdftex.def Info: delays_crit_path_new-eps-converted-to.pdf used on inpu
 t line 489.
 (pdftex.def)             Requested size: 252.0pt x 134.03374pt.
- [12 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/Mi
-nChW_3-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/p
-aper/interposer_tvlsi/numberofcrossingwires_new_2-eps-converted-to.pdf> <C:/Use
-rs/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/delays_crit_pa
-th_new-eps-converted-to.pdf>]
+
 (C:\Users\Owner\Documents\Professor\research\vtr\paper\interposer_tvlsi\wires_c
 ut_4part.tex
 Package epstopdf Info: Source file: <wires_cut_4part.eps>
@@ -982,7 +970,7 @@ ed-to.pdf wires_cut_4part.eps>
 (epstopdf)             \includegraphics on input line 128.
 Package epstopdf Info: Output file is already uptodate.
 
-<wires_cut_4part-eps-converted-to.pdf, id=193, 252.945pt x 108.405pt>
+<wires_cut_4part-eps-converted-to.pdf, id=181, 252.945pt x 108.405pt>
 File: wires_cut_4part-eps-converted-to.pdf Graphic file (type pdf)
 
 <use wires_cut_4part-eps-converted-to.pdf>
@@ -1008,7 +996,7 @@ ed-to.pdf crit_path_4part.eps>
 (epstopdf)             \includegraphics on input line 122.
 Package epstopdf Info: Output file is already uptodate.
 
-<crit_path_4part-eps-converted-to.pdf, id=194, 252.945pt x 108.405pt>
+<crit_path_4part-eps-converted-to.pdf, id=182, 252.945pt x 108.405pt>
 File: crit_path_4part-eps-converted-to.pdf Graphic file (type pdf)
 
 <use crit_path_4part-eps-converted-to.pdf>
@@ -1020,9 +1008,28 @@ Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--515
  [][] 
  []
 
-[13 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/wir
-es_cut_4part-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research
-/vtr/paper/interposer_tvlsi/crit_path_4part-eps-converted-to.pdf>]
+[12 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/Min
+ChW_3-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/research/vtr/pa
+per/interposer_tvlsi/numberofcrossingwires_new_2-eps-converted-to.pdf> <C:/User
+s/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/delays_crit_pat
+h_new-eps-converted-to.pdf>] <square_fpga.pdf, id=196, 214.8025pt x 220.825pt>
+File: square_fpga.pdf Graphic file (type pdf)
+
+<use square_fpga.pdf>
+Package pdftex.def Info: square_fpga.pdf used on input line 526.
+(pdftex.def)             Requested size: 63.65462pt x 65.44142pt.
+ <tall_fpga.pdf, id=197, 82.3075pt x 299.1175pt>
+File: tall_fpga.pdf Graphic file (type pdf)
+
+<use tall_fpga.pdf>
+Package pdftex.def Info: tall_fpga.pdf used on input line 527.
+(pdftex.def)             Requested size: 28.18512pt x 102.43008pt.
+ [13 <C:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/wi
+res_cut_4part-eps-converted-to.pdf> <C:/Users/Owner/Documents/Professor/researc
+h/vtr/paper/interposer_tvlsi/crit_path_4part-eps-converted-to.pdf> <C:/Users/Ow
+ner/Documents/Professor/research/vtr/paper/interposer_tvlsi/square_fpga.pdf> <C
+:/Users/Owner/Documents/Professor/research/vtr/paper/interposer_tvlsi/tall_fpga
+.pdf>]
 (C:\Users\Owner\Documents\Professor\research\vtr\paper\interposer_tvlsi\fpga201
 4paper.bbl
 Underfull \hbox (badness 1769) in paragraph at lines 56--58
@@ -1030,45 +1037,45 @@ Underfull \hbox (badness 1769) in paragraph at lines 56--58
 and
  []
 
-) <enasiri.jpg, id=204, 799.98875pt x 721.69624pt>
+) <enasiri.jpg, id=227, 799.98875pt x 721.69624pt>
 File: enasiri.jpg Graphic file (type jpg)
  <use enasiri.jpg>
-Package pdftex.def Info: enasiri.jpg used on input line 568.
+Package pdftex.def Info: enasiri.jpg used on input line 576.
 (pdftex.def)             Requested size: 72.26442pt x 65.19212pt.
 File: enasiri.jpg Graphic file (type jpg)
 
 <use enasiri.jpg>
-Package pdftex.def Info: enasiri.jpg used on input line 568.
+Package pdftex.def Info: enasiri.jpg used on input line 576.
 (pdftex.def)             Requested size: 72.26442pt x 65.19212pt.
- <javeed.jpg, id=207, 180.675pt x 180.675pt>
+ <javeed.jpg, id=230, 180.675pt x 180.675pt>
 File: javeed.jpg Graphic file (type jpg)
  <use javeed.jpg>
-Package pdftex.def Info: javeed.jpg used on input line 571.
+Package pdftex.def Info: javeed.jpg used on input line 579.
 (pdftex.def)             Requested size: 72.2687pt x 72.2687pt.
 File: javeed.jpg Graphic file (type jpg)
 
 <use javeed.jpg>
-Package pdftex.def Info: javeed.jpg used on input line 571.
+Package pdftex.def Info: javeed.jpg used on input line 579.
 (pdftex.def)             Requested size: 72.2687pt x 72.2687pt.
- <apereira.jpg, id=210, 1581.91pt x 1469.49pt>
+ <apereira.jpg, id=233, 1581.91pt x 1469.49pt>
 File: apereira.jpg Graphic file (type jpg)
 
 <use apereira.jpg>
-Package pdftex.def Info: apereira.jpg used on input line 574.
+Package pdftex.def Info: apereira.jpg used on input line 582.
 (pdftex.def)             Requested size: 72.26909pt x 67.13321pt.
 File: apereira.jpg Graphic file (type jpg)
  <use apereira.jpg>
-Package pdftex.def Info: apereira.jpg used on input line 574.
+Package pdftex.def Info: apereira.jpg used on input line 582.
 (pdftex.def)             Requested size: 72.26909pt x 67.13321pt.
- <vbetz.jpg, id=213, 48.18pt x 60.225pt>
+ <vbetz.jpg, id=236, 48.18pt x 60.225pt>
 File: vbetz.jpg Graphic file (type jpg)
 
 <use vbetz.jpg>
-Package pdftex.def Info: vbetz.jpg used on input line 577.
+Package pdftex.def Info: vbetz.jpg used on input line 585.
 (pdftex.def)             Requested size: 72.26978pt x 90.33725pt.
 File: vbetz.jpg Graphic file (type jpg)
  <use vbetz.jpg>
-Package pdftex.def Info: vbetz.jpg used on input line 577.
+Package pdftex.def Info: vbetz.jpg used on input line 585.
 (pdftex.def)             Requested size: 72.26978pt x 90.33725pt.
 
 (C:\Users\Owner\Documents\Professor\research\vtr\paper\interposer_tvlsi\differe
@@ -1080,34 +1087,37 @@ search/vtr/paper/interposer_tvlsi/vbetz.jpg>]) [15
 
 ]
 (C:\Users\Owner\Documents\Professor\research\vtr\paper\interposer_tvlsi\fpga201
-4paper.aux) ) 
+4paper.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
 Here is how much of TeX's memory you used:
- 4176 strings out of 494045
- 69434 string characters out of 3145969
- 132102 words of memory out of 3000000
- 7348 multiletter control sequences out of 15000+200000
+ 4187 strings out of 494045
+ 69629 string characters out of 3145969
+ 132112 words of memory out of 3000000
+ 7357 multiletter control sequences out of 15000+200000
  42596 words of font info for 76 fonts, out of 3000000 for 9000
  718 hyphenation exceptions out of 8191
  42i,11n,38p,1647b,335s stack positions out of 5000i,500n,10000p,200000b,50000s
-{C:/Program Files (x86)/MiKTeX 2.9/fonts/enc/dvips/fontname/8r.enc
-}<C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmex10.pfb><
-C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:
-/Program Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi5.pfb><C:/Pr
-ogram Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Progr
-am Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Program 
-Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Program Fil
-es (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Program Files (
-x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Program Files (x86)
-/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Program Files (x86)/MiK
-TeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Program Files (x86)/MiKTe
-X 2.9/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Program Files (x86)/MiKTeX 2
-.9/fonts/type1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/ty
-pe1/urw/times/utmbi8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/ti
-mes/utmr8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmri8a
-.pfb>
-Output written on fpga2014paper.pdf (15 pages, 1939192 bytes).
+{C:/Program Files (x86)/MiKTeX 2.9/fonts/enc/dvips/fontname/8r.enc}<C:/Progra
+m Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/Program 
+Files (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Program Fi
+les (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi5.pfb><C:/Program Files
+ (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Program Files (x
+86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Program Files (x86)
+/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Program Files (x86)/Mi
+KTeX 2.9/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Program Files (x86)/MiKTeX
+ 2.9/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Program Files (x86)/MiKTeX 2.9
+/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Program Files (x86)/MiKTeX 2.9/fon
+ts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts
+/type1/public/amsfonts/cm/cmsy7.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/ty
+pe1/urw/times/utmb8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/tim
+es/utmbi8a.pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmr8a.
+pfb><C:/Program Files (x86)/MiKTeX 2.9/fonts/type1/urw/times/utmri8a.pfb>
+Output written on fpga2014paper.pdf (15 pages, 1971371 bytes).
 PDF statistics:
- 274 PDF objects out of 1000 (max. 8388607)
+ 297 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 229 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 239 words of extra memory for PDF output out of 10000 (max. 10000000)
 
