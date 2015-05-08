@@ -34,7 +34,7 @@
 \t                              { return TAB; }
 
 num_tnodes:                     { return NUM_TNODES; }
-"Node #\tType\t\tipin\tiblk\tDomain\tSkew\tI/O Delay\t# edges\tto_node     Tdel" { return TGRAPH_HEADER; }
+"Node #\tType\t\tipin\tiblk\tDomain\tis_clk_src\tSkew\tI/O Delay\t# edges\tto_node     Tdel" { return TGRAPH_HEADER; }
 
 num_tnode_levels:               { return NUM_TNODE_LEVELS; }
 Level:                          { return LEVEL; }

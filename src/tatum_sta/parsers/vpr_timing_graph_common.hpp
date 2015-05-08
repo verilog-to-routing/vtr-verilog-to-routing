@@ -38,6 +38,7 @@ typedef struct node_s {
     int ipin;
     int iblk;
     int domain;
+    int is_clk_src;
     float skew;
     float iodelay;
     std::vector<edge_t>* out_edges;

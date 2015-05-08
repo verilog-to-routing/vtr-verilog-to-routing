@@ -113,7 +113,6 @@ int to_clock_domain = 0;
 %type <strVal> TN_CLOCK_OPIN         
 %type <strVal> TN_CONSTANT_GEN_SOURCE
 
-%type <domainSkewIodelayVal> domain_skew_iodelay
 %type <edgeVal> tedge
 %type <nodeArrReqVal> node_arr_req_time
 %type <floatVal> t_arr_req
@@ -123,6 +122,7 @@ int to_clock_domain = 0;
 %type <intVal> sink_domain
 %type <domain_header> domain_header
 
+%type <intVal> is_clk_src
 %type <floatVal> io_delay
 %type <floatVal> skew
 %type <intVal> domain
@@ -143,7 +143,7 @@ finish: timing_graph                        {
 timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1);}
     | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
     | timing_graph tnode                    { 
-                                                TimingNode node($2.type, $2.domain, $2.iblk);
+                                                TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
 
                                                 for(auto& edge_val : *($2.out_edges)) {
                                                     TimingEdge edge(Time(edge_val.delay), $2.node_id, edge_val.to_node);
@@ -162,15 +162,18 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                                 }
                                                 ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
 
-                                                cout << "Node " << $2.node_id << ", ";
-                                                cout << "Type " << $2.type << ", ";
-                                                cout << "ipin " << $2.ipin << ", ";
-                                                cout << "iblk " << $2.iblk << ", ";
-                                                cout << "domain " << $2.domain << ", ";
-                                                cout << "skew " << $2.skew << ", ";
-                                                cout << "iodelay " << $2.iodelay << ", ";
-                                                cout << "edges " << $2.out_edges->size();
-                                                cout << endl;
+                                                /*
+                                                 *cout << "Node " << $2.node_id << ", ";
+                                                 *cout << "Type " << $2.type << ", ";
+                                                 *cout << "ipin " << $2.ipin << ", ";
+                                                 *cout << "iblk " << $2.iblk << ", ";
+                                                 *cout << "domain " << $2.domain << ", ";
+                                                 *cout << "is_clk_src " << $2.is_clk_src << ", ";
+                                                 *cout << "skew " << $2.skew << ", ";
+                                                 *cout << "iodelay " << $2.iodelay << ", ";
+                                                 *cout << "edges " << $2.out_edges->size();
+                                                 *cout << endl;
+                                                 */
 
                                             }
     | timing_graph num_tnode_levels         {
@@ -206,16 +209,17 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                             }
     ;
 
-tnode: node_id tnode_type ipin iblk domain_skew_iodelay num_out_edges { 
+tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edges { 
                                                                       $$.node_id = $1;
                                                                       $$.type = $2;
                                                                       $$.ipin = $3;
                                                                       $$.iblk = $4;
-                                                                      $$.domain = $5.domain;
-                                                                      $$.skew = $5.skew;
-                                                                      $$.iodelay = $5.iodelay;
+                                                                      $$.domain = $5;
+                                                                      $$.is_clk_src = $6;
+                                                                      $$.skew = $7;
+                                                                      $$.iodelay = $8;
                                                                       $$.out_edges = new std::vector<edge_t>();
-                                                                      $$.out_edges->reserve($6);
+                                                                      $$.out_edges->reserve($9);
                                                                     }
     | tnode tedge { 
                     //Edges may be broken by VPR to remove
@@ -228,10 +232,6 @@ tnode: node_id tnode_type ipin iblk domain_skew_iodelay num_out_edges {
     ;
 
 node_id: int_number TAB {$$ = $1;}
-    ;
-
-domain_skew_iodelay: domain skew io_delay { $$.domain = $1; $$.skew = $2; $$.iodelay = $3; }
-    | domain skew io_delay TAB { $$.domain = $1; $$.skew = $2; $$.iodelay = $3; }
     ;
 
 num_out_edges: int_number {$$ = $1;}
@@ -287,6 +287,9 @@ io_delay: TAB {$$ = NAN; }
 
 skew: TAB {$$ = NAN; }
     | number TAB { $$ = $1; }
+
+is_clk_src: TAB {$$ = 0;}
+    | int_number TAB {$$ = $1;}
 
 domain: TAB {$$ = INVALID_CLOCK_DOMAIN; }
     | int_number TAB { $$ = $1; }
