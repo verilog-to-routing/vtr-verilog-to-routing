@@ -123,6 +123,9 @@ int to_clock_domain = 0;
 %type <intVal> sink_domain
 %type <domain_header> domain_header
 
+%type <floatVal> io_delay
+%type <floatVal> skew
+%type <intVal> domain
 %type <intVal> ipin
 %type <intVal> iblk
 
@@ -227,9 +230,8 @@ tnode: node_id tnode_type ipin iblk domain_skew_iodelay num_out_edges {
 node_id: int_number TAB {$$ = $1;}
     ;
 
-domain_skew_iodelay: int_number TAB number TAB TAB { $$.domain = $1; $$.skew = $3; $$.iodelay = NAN; }
-    | int_number TAB TAB number TAB { $$.domain = $1; $$.skew = NAN; $$.iodelay = $4; }
-    | TAB TAB TAB TAB { $$.domain = INVALID_CLOCK_DOMAIN; $$.skew = NAN; $$.iodelay = NAN; }
+domain_skew_iodelay: domain skew io_delay { $$.domain = $1; $$.skew = $2; $$.iodelay = $3; }
+    | domain skew io_delay TAB { $$.domain = $1; $$.skew = $2; $$.iodelay = $3; }
     ;
 
 num_out_edges: int_number {$$ = $1;}
@@ -279,6 +281,15 @@ node_arr_req_time: int_number t_arr_req t_arr_req EOL {$$.node_id = $1; $$.T_arr
 t_arr_req: TAB number { $$ = $2; }
     | TAB TAB '-' { $$ = NAN; }
     ;
+
+io_delay: TAB {$$ = NAN; }
+    | number TAB { $$ = $1; }
+
+skew: TAB {$$ = NAN; }
+    | number TAB { $$ = $1; }
+
+domain: TAB {$$ = INVALID_CLOCK_DOMAIN; }
+    | int_number TAB { $$ = $1; }
 
 iblk: TAB { $$ = -1; }
     | int_number TAB { $$ = $1; }
