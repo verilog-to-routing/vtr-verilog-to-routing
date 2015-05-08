@@ -12,7 +12,12 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
 
     //Domain
     node_clock_domains_.push_back(new_node.clock_domain());  
+
+    //Logical block
     node_logical_blocks_.push_back(new_node.logical_block());
+
+    //Clock source
+    node_is_clock_source_.push_back(new_node.is_clock_source());
 
     //Save primary outputs as we build the graph
     if(new_node_type == TN_Type::OUTPAD_SINK ||

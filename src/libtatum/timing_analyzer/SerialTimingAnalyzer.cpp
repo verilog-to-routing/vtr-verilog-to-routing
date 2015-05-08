@@ -106,8 +106,12 @@ void SerialTimingAnalyzer::backward_traversal(const TimingGraph& timing_graph) {
 void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
         //Initialize with zero arrival time
-        //FIXME: currently assume all primary inputs define clocks!
-        arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
+        //TODO: use real timing constraints!
+        if(tg.node_is_clock_source(node_id)) {
+            arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
+        } else {
+            arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+        }
     }
 
     if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
@@ -140,11 +144,18 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
 
         for(const TimingTag& src_tag : src_arr_tags) {
             if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
+                //This is a clock to data launch edge
+                //Mark the data arrival (launch) time at this launch FF
+
                 //The only input to a FF_SOURCE should be the the clock
                 //network, so we expect only CLOCK tags
                 ASSERT(src_tag.type() == TagType::CLOCK);
 
                 //FF Launch edge, begin data propagation
+                //
+                //We convert the clock arrival time to a
+                //data arrival time at this node (since the clock arrival
+                //launches the data)
                 TimingTag launch_tag = src_tag;
                 launch_tag.set_type(TagType::DATA);
                 launch_tag.set_launch_node(src_node_id);
@@ -152,14 +163,11 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
                 //Mark propagated launch time
                 arr_tags.max_tag(tag_pool_, launch_tag.time() + edge_delay, launch_tag);
 
-            } else {
-                //Standard propogation
-                arr_tags.max_tag(tag_pool_, src_tag.time() + edge_delay, src_tag);
-            }
+            } else if (tg.node_type(node_id) == TN_Type::FF_SINK && src_tag.type() == TagType::CLOCK) {
+                //This is a clock to data capture edge
+                //Mark the propagated required time if this is a capture FF
 
-
-            //Mark the propagated required time if this is a capture FF
-            if (tg.node_type(node_id) == TN_Type::FF_SINK && src_tag.type() == TagType::CLOCK) {
+                //Must be a clock tag
                 ASSERT(src_tag.type() == TagType::CLOCK);
 
                 //Capture Edge
@@ -169,7 +177,11 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
 
                 //Mark propogated required time
                 TimingTags& req_tag = req_tags_[node_id];
+                //TODO: use real timing constraints!
                 req_tag.add_tag(tag_pool_, capture_tag.time() + Time(DEFAULT_CLOCK_PERIOD), capture_tag);
+            } else {
+                //Standard propogation
+                arr_tags.max_tag(tag_pool_, src_tag.time() + edge_delay, src_tag);
             }
         }
     }
@@ -177,6 +189,12 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
 
 void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //From downstream sinks to current node
+
+    //We don't propogate required times past FF_CLOCK nodes,
+    //since anything upstream is part of the clock network
+    if(tg.node_type(node_id) == TN_Type::FF_CLOCK) {
+        return;
+    }
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags

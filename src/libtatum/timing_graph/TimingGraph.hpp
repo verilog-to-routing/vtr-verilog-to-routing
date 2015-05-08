@@ -22,6 +22,7 @@ class TimingGraph {
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
         DomainId node_clock_domain(NodeId id) const { return node_clock_domains_[id]; }
         BlockId node_logical_block(NodeId id) const { return node_logical_blocks_[id]; }
+        bool node_is_clock_source(NodeId id) const { return node_is_clock_source_[id]; }
         int num_node_out_edges(NodeId id) const { return node_out_edges_[id].size(); }
         int num_node_in_edges(NodeId id) const { return node_in_edges_[id].size(); }
         EdgeId node_out_edge(NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
@@ -63,6 +64,7 @@ class TimingGraph {
         std::vector<DomainId> node_clock_domains_;
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
+        std::vector<bool> node_is_clock_source_;
 
         //Reverse mapping to logical blocks
         //TODO: this is a temporary cludge - remove later!
