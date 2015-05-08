@@ -33,7 +33,6 @@ int to_clock_domain = 0;
     char* strVal;
     double floatVal;
     int intVal;
-    pin_blk_t pinBlkVal;
     domain_skew_iodelay_t domainSkewIodelayVal;
     edge_t edgeVal;
     node_arr_req_t nodeArrReqVal;
@@ -114,7 +113,6 @@ int to_clock_domain = 0;
 %type <strVal> TN_CLOCK_OPIN         
 %type <strVal> TN_CONSTANT_GEN_SOURCE
 
-%type <pinBlkVal> pin_blk
 %type <domainSkewIodelayVal> domain_skew_iodelay
 %type <edgeVal> tedge
 %type <nodeArrReqVal> node_arr_req_time
@@ -124,6 +122,9 @@ int to_clock_domain = 0;
 %type <intVal> src_domain
 %type <intVal> sink_domain
 %type <domain_header> domain_header
+
+%type <intVal> ipin
+%type <intVal> iblk
 
 
 /* Top level rule */
@@ -202,16 +203,16 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                             }
     ;
 
-tnode: node_id tnode_type pin_blk domain_skew_iodelay num_out_edges { 
+tnode: node_id tnode_type ipin iblk domain_skew_iodelay num_out_edges { 
                                                                       $$.node_id = $1;
                                                                       $$.type = $2;
-                                                                      $$.ipin = $3.ipin;
-                                                                      $$.iblk = $3.iblk;
-                                                                      $$.domain = $4.domain;
-                                                                      $$.skew = $4.skew;
-                                                                      $$.iodelay = $4.iodelay;
+                                                                      $$.ipin = $3;
+                                                                      $$.iblk = $4;
+                                                                      $$.domain = $5.domain;
+                                                                      $$.skew = $5.skew;
+                                                                      $$.iodelay = $5.iodelay;
                                                                       $$.out_edges = new std::vector<edge_t>();
-                                                                      $$.out_edges->reserve($5);
+                                                                      $$.out_edges->reserve($6);
                                                                     }
     | tnode tedge { 
                     //Edges may be broken by VPR to remove
@@ -224,10 +225,6 @@ tnode: node_id tnode_type pin_blk domain_skew_iodelay num_out_edges {
     ;
 
 node_id: int_number TAB {$$ = $1;}
-    ;
-
-pin_blk: int_number TAB int_number TAB { $$.ipin = $1; $$.iblk = $3; }
-    | TAB int_number TAB { $$.ipin = -1; $$.iblk = $2; }
     ;
 
 domain_skew_iodelay: int_number TAB number TAB TAB { $$.domain = $1; $$.skew = $3; $$.iodelay = NAN; }
@@ -283,6 +280,11 @@ t_arr_req: TAB number { $$ = $2; }
     | TAB TAB '-' { $$ = NAN; }
     ;
 
+iblk: TAB { $$ = -1; }
+    | int_number TAB { $$ = $1; }
+
+ipin: TAB { $$ = -1; }
+    | int_number TAB { $$ = $1; }
 
 number: float_number { $$ = $1; }
     | int_number { $$ = $1; }

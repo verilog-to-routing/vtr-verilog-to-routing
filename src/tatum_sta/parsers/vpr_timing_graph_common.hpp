@@ -8,11 +8,6 @@
 class TimingGraph; //Forward Declaration
 
 
-typedef struct ipin_iblk_s {
-    int ipin;
-    int iblk;
-} pin_blk_t;
-
 typedef struct domain_skew_iodelay_s {
     int domain;
     float skew;
