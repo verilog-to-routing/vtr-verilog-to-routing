@@ -125,7 +125,10 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
 void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //From upstream sources to current node
 
+    //We must use the tags by reference so we don't accidentally wipe-out any
+    //existing tags
     TimingTags& arr_tags = arr_tags_[node_id];
+
     for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
 
@@ -175,8 +178,8 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
 void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //From downstream sinks to current node
 
-    //We must use the req_tags by reference so we don't accidentally wipe-out any
-    //set required times on primary outputs
+    //We must use the tags by reference so we don't accidentally wipe-out any
+    //existing tags
     TimingTags& req_tags = req_tags_[node_id];
 
     //Each back-edge from down stream node
