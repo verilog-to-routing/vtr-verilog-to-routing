@@ -11,7 +11,7 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     node_types_.push_back(new_node.type());
 
     //Domain
-    node_clock_domains_.push_back(new_node.clock_domain());  
+    node_clock_domains_.push_back(new_node.clock_domain());
 
     //Logical block
     node_logical_blocks_.push_back(new_node.logical_block());
@@ -33,7 +33,7 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
         out_edges.emplace_back(edge_id);
     }
     node_out_edges_.push_back(std::move(out_edges));
-    
+
     //In edges
     //  these get filled in later, after all nodes have been added
     std::vector<EdgeId> in_edges = std::vector<EdgeId>();
@@ -96,7 +96,7 @@ void TimingGraph::add_launch_capture_edges() {
             logical_block_FF_sources[node_logical_block(node_id)].push_back(node_id);
         } else if (node_type(node_id) == TN_Type::FF_SINK) {
             logical_block_FF_sinks[node_logical_block(node_id)].push_back(node_id);
-        } 
+        }
     }
 
     //Loop through each FF_CLOCK and add edges to FF_SINKs and FF_SOURCEs
@@ -151,7 +151,7 @@ void TimingGraph::levelize() {
 
         if(node_fanin == 0) {
             //Add a primary input
-            node_levels_[0].push_back(node_id); 
+            node_levels_[0].push_back(node_id);
         }
     }
 
@@ -178,7 +178,7 @@ void TimingGraph::levelize() {
                 //Add to the next level if all fanin has been seen
                 if(node_fanin_remaining[sink_node] == 0) {
                     //Ensure there is space by allocating the next level if required
-                    node_levels_.resize(level_id+2); 
+                    node_levels_.resize(level_id+2);
 
                     //Add the node
                     node_levels_[level_id+1].push_back(sink_node);
@@ -192,7 +192,7 @@ void TimingGraph::levelize() {
                 primary_outputs_.push_back(node_id);
             }
         }
-        level_id++; 
+        level_id++;
     }
 }
 
@@ -218,7 +218,7 @@ void TimingGraph::contiguize_level_edges() {
     int cnt = 0;
     for(std::vector<EdgeId>& edge_level : edge_levels) {
         for(EdgeId orig_edge_id : edge_level) {
-            old_edge_to_new_edge[orig_edge_id] = cnt; 
+            old_edge_to_new_edge[orig_edge_id] = cnt;
             cnt++;
         }
     }
