@@ -2,6 +2,17 @@
 
 #include "TimingTags.hpp"
 /*
+ * TagType implementation
+ */
+std::ostream& operator<<(std::ostream& os, const TagType tag_type) {
+    if(tag_type == TagType::CLOCK) os << "CLOCK";
+    else if (tag_type == TagType::DATA) os << "DATA";
+    else if (tag_type == TagType::UNKOWN) os << "UNKOWN";
+    else VERIFY(0);
+    return os;
+}
+
+/*
  * TimingTag implementation
  */
 void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {

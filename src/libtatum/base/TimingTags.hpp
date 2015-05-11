@@ -22,6 +22,8 @@ enum class TagType {
     UNKOWN //This tag is invalid/default intialized.  Usually indicates an error if encountered in a real design.
 };
 
+std::ostream& operator<<(std::ostream& os, const TagType tag_type);
+
 class TimingTag {
     public:
         TimingTag()
