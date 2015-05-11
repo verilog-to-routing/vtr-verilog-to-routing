@@ -266,7 +266,7 @@ void TimingGraph::contiguize_level_edges() {
     }
 }
 
-std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
+std::vector<NodeId> TimingGraph::contiguize_level_nodes() {
     //Make all nodes in a level be contiguous in memory
     std::cout << "Re-allocating nodes so levels are in contiguous memory" << std::endl;
 
@@ -274,7 +274,7 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
      * Build a map of the old and new node ids to update edges
      * and node levels later
      */
-    std::map<NodeId,NodeId> old_node_to_new_node;
+    std::vector<NodeId> old_node_to_new_node(num_nodes(), -1);
     int cnt = 0;
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
         for(NodeId node_id : node_levels_[level_idx]) {
@@ -291,12 +291,14 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
     std::vector<DomainId> old_node_clock_domains;
     std::vector<std::vector<EdgeId>> old_node_out_edges;
     std::vector<std::vector<EdgeId>> old_node_in_edges;
+    std::vector<bool> old_node_is_clock_source;
 
     //Swap the values
     std::swap(old_node_types, node_types_);
     std::swap(old_node_clock_domains, node_clock_domains_);
     std::swap(old_node_out_edges, node_out_edges_);
     std::swap(old_node_in_edges, node_in_edges_);
+    std::swap(old_node_is_clock_source, node_is_clock_source_);
 
     //Update the values
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
@@ -305,6 +307,7 @@ std::map<NodeId,NodeId> TimingGraph::contiguize_level_nodes() {
             node_clock_domains_.push_back(old_node_clock_domains[old_node_id]);
             node_out_edges_.push_back(old_node_out_edges[old_node_id]);
             node_in_edges_.push_back(old_node_in_edges[old_node_id]);
+            node_is_clock_source_.push_back(old_node_is_clock_source[old_node_id]);
         }
     }
 

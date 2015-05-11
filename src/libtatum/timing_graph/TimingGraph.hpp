@@ -52,7 +52,7 @@ class TimingGraph {
         void add_launch_capture_edges();
         void levelize();
         void contiguize_level_edges();
-        std::map<NodeId,NodeId> contiguize_level_nodes();
+        std::vector<NodeId> contiguize_level_nodes();
 
     private:
         /*

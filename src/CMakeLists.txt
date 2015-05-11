@@ -12,7 +12,7 @@ message(STATUS "CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
 
 #Set the default build type if not specified
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING 
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
         "Choose the type of build: None, Debug, Release, RelWithDebInfo, MinSizeRel"
         FORCE)
 endif()
@@ -44,7 +44,7 @@ endif()
 #
 # Determine if the compiler has Cilk Plus support
 #  This is required for the analyzer to run in parallel mode
-#  As of April 2015 the following compilers have full support 
+#  As of April 2015 the following compilers have full support
 #  for Cilk Plus:
 #    * GCC 5+ (Note: GCC 4.9 has only partial support, it does support the cilk_for keyword)
 #    * Intel
@@ -53,7 +53,7 @@ CHECK_CXX_COMPILER_FLAG("-fcilkplus" COMPILER_SUPPORTS_CILK_FLAG)
 CHECK_CXX_COMPILER_FLAG("-lcilkrts" COMPILER_SUPPORTS_CILK_RTS_FLAG)
 if(COMPILER_SUPPORTS_CILK_FLAG AND COMPILER_SUPPORTS_CILK_RTS_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcilkplus -lcilkrts")
-    #Check for cilk_for support, since some compilers like gcc 4.9 
+    #Check for cilk_for support, since some compilers like gcc 4.9
     #supports cilk but not cilk_for
     CHECK_CXX_SOURCE_COMPILES("#include <cilk/cilk.h>
                                int main(int argc, char** argv) {

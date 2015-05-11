@@ -27,7 +27,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes);
 
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
 
 #ifdef OPTIMIZE_NODE_EDGE_ORDER
         timing_graph.contiguize_level_edges();
-        std::map<NodeId,NodeId> vpr_node_map = timing_graph.contiguize_level_nodes();
+        std::vector<NodeId> vpr_node_map = timing_graph.contiguize_level_nodes();
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
         expected_arr_req_times = VprArrReqTimes();
