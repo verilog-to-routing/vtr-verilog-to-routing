@@ -46,6 +46,7 @@ static_assert(TIME_VEC_WIDTH % 4 == 0, "TIME_VEC_WIDTH must be evenly divisible 
 
 class Time {
     public:
+        typedef float scalar_type;
         //Initialize from constant float types
         Time(): Time(NAN) {}
         explicit Time(const double time) { set_value(time); }
@@ -55,7 +56,7 @@ class Time {
      /*
       *AVX
       */
-    void set_value(float time) {
+    void set_value(scalar_type time) {
         for(size_t i = 0; i < TIME_VEC_WIDTH/8; i++) {
             __m256 result = _mm256_set1_ps(time);
             _mm256_store_ps(&time_[i*8], result);
@@ -106,7 +107,7 @@ class Time {
      /*
       *SSE
       */
-    void set_value(float time) {
+    void set_value(scalar_type time) {
         for(size_t i = 0; i < TIME_VEC_WIDTH/4; i++) {
             __m128 result = _mm_set1_ps(time);
             _mm_store_ps(&time_[i*4], result);
@@ -158,7 +159,7 @@ class Time {
     /*
      * Serial / inferred SIMD
      */
-    void set_value(float time) {
+    void set_value(scalar_type time) {
         for(size_t i = 0; i < time_.size(); i++) {
             time_[i] = time;
         }
@@ -194,7 +195,7 @@ class Time {
         return *this;
     }
 #endif //SIMD_INTRINSICS
-    float value() const { return time_[0]; }
+    scalar_type value() const { return time_[0]; }
     bool valid() const {
         bool result = true;
         for(size_t i = 0; i < time_.size(); i++) {
@@ -203,8 +204,8 @@ class Time {
         return result;
     }
 #else //Scalar case
-    float value() const { return time_; }
-    void set_value(float time) { time_ = time; }
+    scalar_type value() const { return time_; }
+    void set_value(scalar_type time) { time_ = time; }
     bool valid() const { return !isnan(time_); }
 
     void max(const Time& other) { time_ = std::max(time_, other.time_); }
@@ -218,15 +219,15 @@ class Time {
 
     private:
 #if TIME_VEC_WIDTH > 1
-        //std::array<float, TIME_VEC_WIDTH> time_;
+        //std::array<scalar_type, TIME_VEC_WIDTH> time_;
         //AVX requies 32 byte alignment
 #ifdef TIME_MEM_ALIGN
-        alignas(TIME_MEM_ALIGN) std::array<float, TIME_VEC_WIDTH> time_;
+        alignas(TIME_MEM_ALIGN) std::array<scalar_type, TIME_VEC_WIDTH> time_;
 #else
-        std::array<float, TIME_VEC_WIDTH> time_;
+        std::array<scalar_type, TIME_VEC_WIDTH> time_;
 #endif
 #else
-        float time_;
+        scalar_type time_;
 #endif
 
 };
