@@ -238,7 +238,7 @@ num_out_edges: int_number {$$ = $1;}
     ;
 
 tedge: TAB int_number TAB number EOL { $$.to_node = $2; $$.delay = $4; }
-    | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB float_number EOL { $$.to_node = $12; $$.delay = $14; }
+    | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.to_node = $12; $$.delay = $14; }
     ;
 
 tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; } 
