@@ -162,6 +162,8 @@ int main(int argc, char** argv) {
             cout << ".";
             cout.flush();
 
+            //print_timing_tags(timing_graph, serial_analyzer);
+
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
@@ -201,7 +203,6 @@ int main(int argc, char** argv) {
 
         //Tag stats
         print_timing_tags_histogram(timing_graph, serial_analyzer, 10);
-        print_timing_tags(timing_graph, serial_analyzer);
     }
 
 /*
@@ -287,6 +288,7 @@ int main(int argc, char** argv) {
 #define ABSOLUTE_EPSILON 1.e-13
 
 int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times) {
+
     //cout << "Verifying Calculated Timing Against VPR" << endl;
     std::ios_base::fmtflags saved_flags = cout.flags();
     std::streamsize prec = cout.precision();

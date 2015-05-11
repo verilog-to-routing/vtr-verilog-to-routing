@@ -3,6 +3,7 @@
 #include "SerialTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
+
 #include "sta_util.hpp"
 SerialTimingAnalyzer::SerialTimingAnalyzer()
     : tag_pool_(sizeof(TimingTag)) //Need to give the size of the object to allocate
@@ -119,7 +120,11 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //Initialize required time
         //FIXME Currently assuming:
         //   * All clocks at fixed frequency
-        //   * Non-propogated (i.e. no clock delay/skew)
+        
+        //FF_SINK's have their required time set by the clock network, so we don't
+        //need to set them explicitly here.
+        //
+        //Everything else gets the standard constraint
         if(tg.node_type(node_id) != TN_Type::FF_SINK) {
             req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
         }
@@ -127,7 +132,7 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
 }
 
 void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
-    //From upstream sources to current node
+    //Pull from upstream sources to current node
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
@@ -188,11 +193,13 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
 }
 
 void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
-    //From downstream sinks to current node
+    //Pull from downstream sinks to current node
 
-    //We don't propogate required times past FF_CLOCK nodes,
+    TN_Type node_type = tg.node_type(node_id);
+
+    //We don't propagate required times past FF_CLOCK nodes,
     //since anything upstream is part of the clock network
-    if(tg.node_type(node_id) == TN_Type::FF_CLOCK) {
+    if(node_type == TN_Type::FF_CLOCK) {
         return;
     }
 
