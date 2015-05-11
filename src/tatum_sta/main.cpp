@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <array>
 #include <iostream>
 
@@ -28,7 +29,7 @@
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 //#define OPTIMIZE_NODE_EDGE_ORDER
 
-int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times);
+int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes);
 
 using std::cout;
 using std::endl;
@@ -57,6 +58,7 @@ int main(int argc, char** argv) {
     TimingGraph timing_graph;
     VprArrReqTimes orig_expected_arr_req_times;
     VprArrReqTimes expected_arr_req_times;
+    std::set<NodeId> const_gen_fanout_nodes;
 
     SerialTimingAnalyzer serial_analyzer;
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer();
@@ -112,6 +114,8 @@ int main(int argc, char** argv) {
 #endif
 
         clock_gettime(CLOCK_MONOTONIC, &load_end);
+
+        const_gen_fanout_nodes = identify_constant_gen_fanout(timing_graph);
     }
     cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
@@ -168,7 +172,7 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(serial_analyzer.is_correct()) {
-                serial_arr_req_verified = verify_analyzer(serial_analyzer, expected_arr_req_times);
+                serial_arr_req_verified = verify_analyzer(serial_analyzer, expected_arr_req_times, const_gen_fanout_nodes);
             }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
@@ -287,7 +291,7 @@ int main(int argc, char** argv) {
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
 
-int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times) {
+int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes) {
 
     //cout << "Verifying Calculated Timing Against VPR" << endl;
     std::ios_base::fmtflags saved_flags = cout.flags();
@@ -342,6 +346,7 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                     cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err;
                     cout << ", " << std::setw(num_width) << arr_rel_err << endl;
                 } else {
+                    VERIFY(!isnan(arr_rel_err) && !isnan(arr_abs_err));
                     VERIFY(arr_rel_err < RELATIVE_EPSILON || arr_abs_err < ABSOLUTE_EPSILON);
                 }
             }
@@ -367,11 +372,22 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                     cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
                     cout << "\tERROR Calculated required time was nan and didn't match VPR." << endl;
                 } else if (!isnan(req_time) && isnan(vpr_req_time)) {
-                    error = true;
-                    cout << "Node: " << node_id << " Clk: " << domain;
-                    cout << " Calc_Req: " << std::setw(num_width) << req_time;
-                    cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
-                    cout << "\tERROR Calculated required time was not nan but VPR expected nan." << endl;
+                    if (const_gen_fanout_nodes.count(node_id)) {
+                        //VPR doesn't propagate required times along paths sourced by constant generators
+                        //but we do, so ignore such errors
+#if 0
+                        cout << "Node: " << node_id << " Clk: " << domain;
+                        cout << " Calc_Req: " << std::setw(num_width) << req_time;
+                        cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+                        cout << "\tOK since " << node_id << " in fanout of Constant Generator" << endl;
+#endif
+                    } else {
+                        error = true;
+                        cout << "Node: " << node_id << " Clk: " << domain;
+                        cout << " Calc_Req: " << std::setw(num_width) << req_time;
+                        cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+                        cout << "\tERROR Calculated required time was not nan but VPR expected nan." << endl;
+                    }
 
                 } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
                     error = true;
@@ -381,6 +397,7 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                     cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err;
                     cout << ", " << std::setw(num_width) << req_rel_err << endl;
                 } else {
+                    VERIFY(!isnan(req_rel_err) && !isnan(req_abs_err));
                     VERIFY(req_rel_err < RELATIVE_EPSILON || req_abs_err < ABSOLUTE_EPSILON);
                 }
             }

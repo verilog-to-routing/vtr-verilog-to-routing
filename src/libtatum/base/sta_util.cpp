@@ -8,6 +8,7 @@
 
 using std::cout;
 using std::endl;
+void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes);
 
 float time_sec(struct timespec start, struct timespec end) {
     float time = end.tv_sec - start.tv_sec;
@@ -187,3 +188,24 @@ void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer) {
 }
 
 
+std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg) {
+    //Walk the timing graph and identify nodes that are in the fanout of a constant generator
+    std::set<NodeId> const_gen_fanout_nodes;
+    for(NodeId node_id : tg.primary_inputs()) {
+        if(tg.node_type(node_id) == TN_Type::CONSTANT_GEN_SOURCE) {
+            identify_constant_gen_fanout_helper(tg, node_id, const_gen_fanout_nodes); 
+        }
+    }
+    return const_gen_fanout_nodes;
+}
+
+void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes) {
+    if(const_gen_fanout_nodes.count(node_id) == 0) {
+        //Haven't seen this node before
+        const_gen_fanout_nodes.insert(node_id);
+        for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
+            EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+            identify_constant_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), const_gen_fanout_nodes);
+        }
+    }
+}

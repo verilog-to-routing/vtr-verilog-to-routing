@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
@@ -18,3 +19,5 @@ void print_levelization(const TimingGraph& tg);
 void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& analyzer, int nbuckets);
 
 void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer);
+
+std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg);
