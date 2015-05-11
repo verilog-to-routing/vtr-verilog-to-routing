@@ -121,7 +121,7 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //Initialize required time
         //FIXME Currently assuming:
         //   * All clocks at fixed frequency
-        
+
         //FF_SINK's have their required time set by the clock network, so we don't
         //need to set them explicitly here.
         //
