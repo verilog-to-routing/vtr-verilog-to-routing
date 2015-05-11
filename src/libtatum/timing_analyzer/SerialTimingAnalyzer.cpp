@@ -3,6 +3,9 @@
 #include "SerialTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 
+#include <iostream>
+using std::cout;
+using std::endl;
 
 #include "sta_util.hpp"
 SerialTimingAnalyzer::SerialTimingAnalyzer()
@@ -62,15 +65,13 @@ void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph) {
      *   - Propogating clock delay to all clock pins
      *   - Initialize required times on primary outputs
      */
-    const std::vector<NodeId>& primary_inputs = timing_graph.level(0);
-    for(size_t i = 0; i < primary_inputs.size(); i++) {
-        pre_traverse_node(timing_graph, primary_inputs[i]);
+    for(NodeId node_id : timing_graph.primary_inputs()) {
+        pre_traverse_node(timing_graph, node_id);
     }
 
     //TODO: remove primary_ outputs() if not needed?
-    const std::vector<NodeId>& primary_outputs = timing_graph.primary_outputs();
-    for(size_t i = 0; i < primary_outputs.size(); i++) {
-        pre_traverse_node(timing_graph, primary_outputs[i]);
+    for(NodeId node_id : timing_graph.primary_outputs()) {
+        pre_traverse_node(timing_graph, node_id);
     }
 }
 

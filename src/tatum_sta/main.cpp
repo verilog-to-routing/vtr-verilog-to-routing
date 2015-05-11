@@ -126,15 +126,17 @@ int main(int argc, char** argv) {
     print_node_fanout_histogram(timing_graph, n_histo_bins);
     cout << endl;
 
-/*
- *    cout << "Timing Graph" << endl;
- *    print_timing_graph(timing_graph);
- *    cout << endl;
- *
- *    cout << "Levelization" << endl;
- *    print_levelization(timing_graph);
- *    cout << endl;
- */
+    /*
+     *cout << "Timing Graph" << endl;
+     *print_timing_graph(timing_graph);
+     *cout << endl;
+     */
+
+    /*
+     *cout << "Levelization" << endl;
+     *print_levelization(timing_graph);
+     *cout << endl;
+     */
 
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
@@ -321,6 +323,10 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                     cout << "\tERROR Found no arrival-time tag, but VPR arrival time was ";
                     cout << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << endl;
                 }
+            } else if(arr_tag_iter->type() == TagType::CLOCK && isnan(vpr_arr_time)) {
+                //VPR does not analyze the clock network explicitly
+                //So it is OK if it is NAN
+                //PASS
             } else {
                 float arr_time = arr_tag_iter->time().value();
                 float arr_abs_err = fabs(arr_time - vpr_arr_time);
@@ -337,6 +343,7 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                     cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
                     cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
                     cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
+                    //cout << "\t\tTag Type was: " << arr_tag_iter->type() << endl;
 
                 } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
                     error = true;
