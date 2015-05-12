@@ -53,7 +53,6 @@ class TimingGraph {
         void levelize();
         void contiguize_level_edges();
         std::vector<NodeId> contiguize_level_nodes();
-
     private:
         /*
          * For improved memory locality, we use a Struct of Arrays (SoA)
@@ -68,7 +67,7 @@ class TimingGraph {
 
         //Reverse mapping to logical blocks
         //TODO: this is a temporary cludge - remove later!
-        std::vector<BlockId> node_logical_blocks_; 
+        std::vector<BlockId> node_logical_blocks_;
 
         //Edge data
         std::vector<NodeId> edge_sink_nodes_;
@@ -78,11 +77,4 @@ class TimingGraph {
         //Auxilary info
         std::vector<std::vector<NodeId>> node_levels_;
         std::vector<NodeId> primary_outputs_;
-
-        //Reverse lookups to map node id's and edge id's to
-        //the original versions created.
-        //These are populated if contiguize_level_edges()
-        //or contiguize_level_nodes() are called
-        std::vector<NodeId> orig_node_id_map_;
-        std::vector<EdgeId> orig_edge_id_map_;
 };
