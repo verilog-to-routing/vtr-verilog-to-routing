@@ -19,6 +19,8 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     //Clock source
     node_is_clock_source_.push_back(new_node.is_clock_source());
 
+    NodeId node_id = node_types_.size() - 1;
+
     //Save primary outputs as we build the graph
     if(new_node_type == TN_Type::OUTPAD_SINK ||
        new_node_type == TN_Type::FF_SINK) {
@@ -39,13 +41,20 @@ NodeId TimingGraph::add_node(const TimingNode& new_node) {
     std::vector<EdgeId> in_edges = std::vector<EdgeId>();
     node_in_edges_.push_back(std::move(in_edges));
 
+    //Orig Node ID map
+    //This defaults to the current index
+    orig_node_id_map_.push_back(node_id);
+
     //Verify sizes
     ASSERT(node_types_.size() == node_clock_domains_.size());
     ASSERT(node_types_.size() == node_out_edges_.size());
     ASSERT(node_types_.size() == node_in_edges_.size());
 
+    //Verify that the index mapping is correct
+    ASSERT(orig_node_id_map_[node_id] == node_id);
+
     //Return the ID of the added node
-    return node_types_.size() - 1;
+    return node_id;
 }
 
 EdgeId TimingGraph::add_edge(const TimingEdge& new_edge) {
@@ -53,11 +62,19 @@ EdgeId TimingGraph::add_edge(const TimingEdge& new_edge) {
     edge_src_nodes_.push_back(new_edge.from_node_id());
     edge_delays_.push_back(new_edge.delay());
 
+    EdgeId edge_id = edge_sink_nodes_.size() - 1;
+
+    //Orig Edge ID map
+    //Defaults to the current index
+    orig_edge_id_map_.push_back(edge_id);
     ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
     ASSERT(edge_sink_nodes_.size() == edge_delays_.size());
 
+    //Verify inex mapping is correct
+    ASSERT(orig_edge_id_map_[edge_id] == edge_id);
+
     //Return the edge id of the added edge
-    return edge_delays_.size() - 1;
+    return edge_id;
 }
 
 void TimingGraph::fill_back_edges() {
@@ -214,11 +231,11 @@ void TimingGraph::contiguize_level_edges() {
     }
 
     //Save a map from old edge_id to new edge_id, will be used to update node refs
-    std::map<EdgeId,EdgeId> old_edge_to_new_edge;
+    orig_edge_id_map_ = std::vector<NodeId>(num_edges(), -1);
     int cnt = 0;
     for(std::vector<EdgeId>& edge_level : edge_levels) {
         for(EdgeId orig_edge_id : edge_level) {
-            old_edge_to_new_edge[orig_edge_id] = cnt;
+            orig_edge_id_map_[orig_edge_id] = cnt;
             cnt++;
         }
     }
@@ -257,11 +274,11 @@ void TimingGraph::contiguize_level_edges() {
     for(int i = 0; i < num_nodes(); i++) {
         for(size_t j = 0; j < node_out_edges_[i].size(); j++) {
             EdgeId old_edge_id = node_out_edges_[i][j];
-            node_out_edges_[i][j] = old_edge_to_new_edge[old_edge_id];
+            node_out_edges_[i][j] = orig_edge_id_map_[old_edge_id];
         }
         for(size_t j = 0; j < node_in_edges_[i].size(); j++) {
             EdgeId old_edge_id = node_in_edges_[i][j];
-            node_in_edges_[i][j] = old_edge_to_new_edge[old_edge_id];
+            node_in_edges_[i][j] = orig_edge_id_map_[old_edge_id];
         }
     }
 }
@@ -274,11 +291,11 @@ std::vector<NodeId> TimingGraph::contiguize_level_nodes() {
      * Build a map of the old and new node ids to update edges
      * and node levels later
      */
-    std::vector<NodeId> old_node_to_new_node(num_nodes(), -1);
+    orig_node_id_map_ = std::vector<NodeId>(num_nodes(), -1);
     int cnt = 0;
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
         for(NodeId node_id : node_levels_[level_idx]) {
-            old_node_to_new_node[node_id] = cnt;
+            orig_node_id_map_[node_id] = cnt;
             cnt++;
         }
     }
@@ -318,14 +335,14 @@ std::vector<NodeId> TimingGraph::contiguize_level_nodes() {
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
         for(size_t i = 0; i < node_levels_[level_idx].size(); i++) {
             NodeId old_node_id = node_levels_[level_idx][i];
-            node_levels_[level_idx][i] = old_node_to_new_node[old_node_id];
+            node_levels_[level_idx][i] = orig_node_id_map_[old_node_id];
         }
     }
 
     //The primary outputs
     for(size_t i = 0; i < primary_outputs_.size(); i++) {
         NodeId old_node_id = primary_outputs_[i];
-        primary_outputs_[i] = old_node_to_new_node[old_node_id];
+        primary_outputs_[i] = orig_node_id_map_[old_node_id];
     }
 
     //The Edges
@@ -333,9 +350,9 @@ std::vector<NodeId> TimingGraph::contiguize_level_nodes() {
         NodeId old_sink_node = edge_sink_nodes_[i];
         NodeId old_src_node = edge_src_nodes_[i];
 
-        edge_sink_nodes_[i] = old_node_to_new_node[old_sink_node];
-        edge_src_nodes_[i] = old_node_to_new_node[old_src_node];
+        edge_sink_nodes_[i] = orig_node_id_map_[old_sink_node];
+        edge_src_nodes_[i] = orig_node_id_map_[old_src_node];
     }
 
-    return old_node_to_new_node;
+    return orig_node_id_map_;
 }

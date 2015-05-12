@@ -75,6 +75,14 @@ class TimingGraph {
         std::vector<NodeId> edge_src_nodes_;
         std::vector<Time> edge_delays_;
 
+        //Auxilary info
         std::vector<std::vector<NodeId>> node_levels_;
         std::vector<NodeId> primary_outputs_;
+
+        //Reverse lookups to map node id's and edge id's to
+        //the original versions created.
+        //These are populated if contiguize_level_edges()
+        //or contiguize_level_nodes() are called
+        std::vector<NodeId> orig_node_id_map_;
+        std::vector<EdgeId> orig_edge_id_map_;
 };
