@@ -110,9 +110,11 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //Initialize with zero arrival time
         //TODO: use real timing constraints!
         if(tg.node_is_clock_source(node_id)) {
-            arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
+            arr_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
         } else {
-            arr_tags_[node_id].add_tag(tag_pool_, Time(0), TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+            arr_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::DATA));
         }
     }
 
@@ -127,7 +129,8 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //
         //Everything else gets the standard constraint
         if(tg.node_type(node_id) != TN_Type::FF_SINK) {
-            req_tags_[node_id].add_tag(tag_pool_, Time(DEFAULT_CLOCK_PERIOD), TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+            req_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
         }
     }
 }

@@ -76,6 +76,10 @@ void TimingTags::add_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
     num_tags_++;
 }
 
+void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& base_tag) {
+    add_tag(tag_pool, base_tag.time(), base_tag);
+}
+
 void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 

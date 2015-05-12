@@ -104,6 +104,7 @@ class TimingTags {
 
         //Modifiers
         void add_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void add_tag(MemoryPool& tag_pool, const TimingTag& src_tag);
         void max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
         void min_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
         void clear();
