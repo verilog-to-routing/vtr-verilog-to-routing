@@ -6,8 +6,8 @@
 
 
 //Forward Declarations
-class TimingGraph; 
-class TimingConstraints; 
+class TimingGraph;
+class TimingConstraints;
 
 
 typedef struct domain_skew_iodelay_s {
@@ -50,7 +50,6 @@ struct domain_header_t {
     int src_domain;
     int sink_domain;
 };
-
 
 class VprArrReqTimes {
     public:

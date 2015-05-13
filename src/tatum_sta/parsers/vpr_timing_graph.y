@@ -10,6 +10,7 @@
 #include "assert.hpp"
 #include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
+#include "TimingConstraints.hpp"
 #include "TimingNode.hpp"
 #include "TimingEdge.hpp"
 #include "Time.hpp"
@@ -102,22 +103,22 @@ int to_clock_domain = 0;
 %type <intVal> num_tnode_levels
 
 %type <nodeTypeVal> tnode_type
-%type <strVal> TN_INPAD_SOURCE       
-%type <strVal> TN_INPAD_OPIN         
-%type <strVal> TN_OUTPAD_IPIN        
-%type <strVal> TN_OUTPAD_SINK        
-%type <strVal> TN_CB_IPIN            
-%type <strVal> TN_CB_OPIN            
-%type <strVal> TN_INTERMEDIATE_NODE  
-%type <strVal> TN_PRIMITIVE_IPIN     
-%type <strVal> TN_PRIMITIVE_OPIN     
-%type <strVal> TN_FF_IPIN            
-%type <strVal> TN_FF_OPIN            
-%type <strVal> TN_FF_SINK            
-%type <strVal> TN_FF_SOURCE          
-%type <strVal> TN_FF_CLOCK           
-%type <strVal> TN_CLOCK_SOURCE       
-%type <strVal> TN_CLOCK_OPIN         
+%type <strVal> TN_INPAD_SOURCE
+%type <strVal> TN_INPAD_OPIN
+%type <strVal> TN_OUTPAD_IPIN
+%type <strVal> TN_OUTPAD_SINK
+%type <strVal> TN_CB_IPIN
+%type <strVal> TN_CB_OPIN
+%type <strVal> TN_INTERMEDIATE_NODE
+%type <strVal> TN_PRIMITIVE_IPIN
+%type <strVal> TN_PRIMITIVE_OPIN
+%type <strVal> TN_FF_IPIN
+%type <strVal> TN_FF_OPIN
+%type <strVal> TN_FF_SINK
+%type <strVal> TN_FF_SOURCE
+%type <strVal> TN_FF_CLOCK
+%type <strVal> TN_CLOCK_SOURCE
+%type <strVal> TN_CLOCK_OPIN
 %type <strVal> TN_CONSTANT_GEN_SOURCE
 
 %type <edgeVal> tedge
@@ -139,18 +140,18 @@ int to_clock_domain = 0;
 
 
 /* Top level rule */
-%start finish 
+%start finish
 %%
 
-finish: timing_graph                        {
+finish: timing_graph timing_constraints EOL {
                                                 timing_graph.add_launch_capture_edges();
                                                 timing_graph.fill_back_edges();
                                                 timing_graph.levelize();
                                             }
 
-timing_graph: num_tnodes                    {printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1);}
-    | timing_graph TGRAPH_HEADER            {/*printf("Timing Graph file Header\n");*/}
-    | timing_graph tnode                    { 
+timing_graph: num_tnodes                    { printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1); }
+    | timing_graph TGRAPH_HEADER EOL        { printf("Timing Graph file Header\n"); }
+    | timing_graph tnode                    {
                                                 TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
 
                                                 for(auto& edge_val : *($2.out_edges)) {
@@ -185,7 +186,7 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
 
                                             }
     | timing_graph num_tnode_levels         {
-                                                timing_graph.set_num_levels($2); 
+                                                timing_graph.set_num_levels($2);
                                                 /*printf("Timing Graph Levels %d\n", $2);*/
                                             }
     | timing_graph timing_graph_level EOL   {
@@ -197,14 +198,14 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                                 printf("Loading Arr & Req Times\n");
                                             }
     | timing_graph domain_header EOL        {
-                                                printf("Clock Domain SRC->SINK: %d -> %d\n", $2.src_domain, $2.sink_domain); 
-                                                from_clock_domain = $2.src_domain; 
+                                                printf("Clock Domain SRC->SINK: %d -> %d\n", $2.src_domain, $2.sink_domain);
+                                                from_clock_domain = $2.src_domain;
                                                 to_clock_domain = $2.sink_domain;
 
                                             }
-    | timing_graph node_arr_req_time        { 
-                                                VERIFY(from_clock_domain >= 0); 
-                                                VERIFY(to_clock_domain >= 0); 
+    | timing_graph node_arr_req_time        {
+                                                VERIFY(from_clock_domain >= 0);
+                                                VERIFY(to_clock_domain >= 0);
                                                 arr_req_times.add_arr_time(from_clock_domain, $2.node_id, $2.T_arr);
                                                 arr_req_times.add_req_time(to_clock_domain, $2.node_id, $2.T_req);
 
@@ -213,10 +214,9 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                                     std::cout << "Loaded " << arr_req_cnt / 1e6 << "M arr/req times..." << std::endl;
                                                 }
                                             }
-    | timing_graph timing_constraints       { }
-    | timing_graph EOL                      { }
+    | timing_graph EOL {}
 
-tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edges { 
+tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edges {
                                                                       $$.node_id = $1;
                                                                       $$.type = $2;
                                                                       $$.ipin = $3;
@@ -228,12 +228,12 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                       $$.out_edges = new std::vector<edge_t>();
                                                                       $$.out_edges->reserve($9);
                                                                     }
-    | tnode tedge { 
+    | tnode tedge {
                     //Edges may be broken by VPR to remove
                     //combinational loops and marked with an invalid 'to_node'
                     //We skip these edges
                     if($2.to_node != -1) {
-                        $$.out_edges->push_back($2); 
+                        $$.out_edges->push_back($2);
                     }
                   }
 
@@ -244,22 +244,22 @@ num_out_edges: int_number {$$ = $1;}
 tedge: TAB int_number TAB number EOL { $$.to_node = $2; $$.delay = $4; }
     | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.to_node = $12; $$.delay = $14; }
 
-tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; } 
-    | TN_INPAD_OPIN TAB             { $$ = TN_Type::INPAD_OPIN; } 
-    | TN_OUTPAD_IPIN TAB            { $$ = TN_Type::OUTPAD_IPIN; } 
-    | TN_OUTPAD_SINK TAB            { $$ = TN_Type::OUTPAD_SINK; } 
-    | TN_CB_IPIN TAB                { $$ = TN_Type::UNKOWN; } 
-    | TN_CB_OPIN TAB                { $$ = TN_Type::UNKOWN; } 
-    | TN_INTERMEDIATE_NODE TAB      { $$ = TN_Type::UNKOWN; } 
-    | TN_PRIMITIVE_IPIN TAB         { $$ = TN_Type::PRIMITIVE_IPIN; } 
-    | TN_PRIMITIVE_OPIN TAB         { $$ = TN_Type::PRIMITIVE_OPIN; } 
-    | TN_FF_IPIN TAB                { $$ = TN_Type::FF_IPIN; } 
-    | TN_FF_OPIN TAB                { $$ = TN_Type::FF_OPIN; } 
-    | TN_FF_SINK TAB                { $$ = TN_Type::FF_SINK; } 
-    | TN_FF_SOURCE TAB              { $$ = TN_Type::FF_SOURCE; } 
-    | TN_FF_CLOCK TAB               { $$ = TN_Type::FF_CLOCK; } 
-    | TN_CLOCK_SOURCE TAB           { $$ = TN_Type::CLOCK_SOURCE; } 
-    | TN_CLOCK_OPIN TAB             { $$ = TN_Type::CLOCK_OPIN; } 
+tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; }
+    | TN_INPAD_OPIN TAB             { $$ = TN_Type::INPAD_OPIN; }
+    | TN_OUTPAD_IPIN TAB            { $$ = TN_Type::OUTPAD_IPIN; }
+    | TN_OUTPAD_SINK TAB            { $$ = TN_Type::OUTPAD_SINK; }
+    | TN_CB_IPIN TAB                { $$ = TN_Type::UNKOWN; }
+    | TN_CB_OPIN TAB                { $$ = TN_Type::UNKOWN; }
+    | TN_INTERMEDIATE_NODE TAB      { $$ = TN_Type::UNKOWN; }
+    | TN_PRIMITIVE_IPIN TAB         { $$ = TN_Type::PRIMITIVE_IPIN; }
+    | TN_PRIMITIVE_OPIN TAB         { $$ = TN_Type::PRIMITIVE_OPIN; }
+    | TN_FF_IPIN TAB                { $$ = TN_Type::FF_IPIN; }
+    | TN_FF_OPIN TAB                { $$ = TN_Type::FF_OPIN; }
+    | TN_FF_SINK TAB                { $$ = TN_Type::FF_SINK; }
+    | TN_FF_SOURCE TAB              { $$ = TN_Type::FF_SOURCE; }
+    | TN_FF_CLOCK TAB               { $$ = TN_Type::FF_CLOCK; }
+    | TN_CLOCK_SOURCE TAB           { $$ = TN_Type::CLOCK_SOURCE; }
+    | TN_CLOCK_OPIN TAB             { $$ = TN_Type::CLOCK_OPIN; }
     | TN_CONSTANT_GEN_SOURCE TAB    { $$ = TN_Type::CONSTANT_GEN_SOURCE; }
 
 num_tnodes: NUM_TNODES int_number {$$ = $2; }
@@ -306,20 +306,19 @@ iblk: TAB { $$ = -1; }
 
 ipin: TAB { $$ = -1; }
     | int_number TAB { $$ = $1; }
-
 /*
  * Timing Constraints
  */
-timing_constraints: clock_constraints {}
-    | timing_constraints input_constraints {}
-    | timing_constraints output_constraints {}
+timing_constraints: clock_constraints input_constraints output_constraints {}
 
 /*
  * Clock Constraints
  */
 clock_constraints: CLOCK_CONSTRAINTS_HEADER EOL {}
     | clock_constraints CLOCK_CONSTRAINTS_COLS EOL {}
-    | clock_constraints src_domain sink_domain constraint EOL {}
+    | clock_constraints clock_constraint {}
+
+clock_constraint: src_domain sink_domain constraint EOL { timing_constraints.add_clock_constraint($1, $2, $3); }
 
 src_domain: int_number TAB { $$ = $1; }
 sink_domain: int_number TAB { $$ = $1; }
@@ -330,14 +329,16 @@ constraint: number { $$ = $1; }
  */
 input_constraints: INPUT_CONSTRAINTS_HEADER EOL {}
     | input_constraints INPUT_CONSTRAINTS_COLS EOL {}
-    | input_constraints node_id constraint EOL {}
+    | input_constraints input_constraint {}
+input_constraint: node_id constraint EOL { timing_constraints.add_input_constraint($1, $2); }
 
 /*
  * Output Constraints
  */
 output_constraints: OUTPUT_CONSTRAINTS_HEADER EOL {}
     | output_constraints OUTPUT_CONSTRAINTS_COLS EOL {}
-    | output_constraints node_id constraint EOL {}
+    | output_constraints output_constraint {}
+output_constraint: node_id constraint EOL { timing_constraints.add_output_constraint($1, $2); }
 
 /*
  * Basic values
