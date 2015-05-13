@@ -5,7 +5,9 @@
 #include <cmath>
 
 
-class TimingGraph; //Forward Declaration
+//Forward Declarations
+class TimingGraph; 
+class TimingConstraints; 
 
 
 typedef struct domain_skew_iodelay_s {
@@ -101,6 +103,6 @@ class VprArrReqTimes {
 
 };
 
-extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times);
+extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times, TimingConstraints& tc);
 extern FILE *yyin;
 

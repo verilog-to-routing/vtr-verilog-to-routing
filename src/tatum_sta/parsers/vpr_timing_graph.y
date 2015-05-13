@@ -14,7 +14,7 @@
 #include "TimingEdge.hpp"
 #include "Time.hpp"
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const char *msg);
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -46,6 +46,7 @@ int to_clock_domain = 0;
 %error-verbose
 %parse-param{TimingGraph& timing_graph}
 %parse-param{VprArrReqTimes& arr_req_times}
+%parse-param{TimingConstraints& timing_constraints}
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
@@ -58,6 +59,12 @@ int to_clock_domain = 0;
 %token NODE_ARR_REQ_HEADER    "node_req_arr_header"
 %token SRC_DOMAIN             "SRC_Domain:"
 %token SINK_DOMAIN            "SINK_Domain:"
+%token CLOCK_CONSTRAINTS_HEADER "Clock Constraints"
+%token INPUT_CONSTRAINTS_HEADER "Input Constraints"
+%token OUTPUT_CONSTRAINTS_HEADER "Output Constraints"
+%token CLOCK_CONSTRAINTS_COLS "Src_Clk\tSink_Clk\tConstraint"
+%token INPUT_CONSTRAINTS_COLS "tnode_id\tinput_delay"
+%token OUTPUT_CONSTRAINTS_COLS "tnode_id\toutput_delay"
 
 %token TN_INPAD_SOURCE        "TN_INPAD_SOURCE"
 %token TN_INPAD_OPIN          "TN_INPAD_OPIN"
@@ -121,6 +128,7 @@ int to_clock_domain = 0;
 %type <intVal> src_domain
 %type <intVal> sink_domain
 %type <domain_header> domain_header
+%type <floatVal> constraint
 
 %type <intVal> is_clk_src
 %type <floatVal> io_delay
@@ -205,9 +213,8 @@ timing_graph: num_tnodes                    {printf("Loading Timing Graph with %
                                                     std::cout << "Loaded " << arr_req_cnt / 1e6 << "M arr/req times..." << std::endl;
                                                 }
                                             }
-    | timing_graph EOL                      {
-                                            }
-    ;
+    | timing_graph timing_constraints       { }
+    | timing_graph EOL                      { }
 
 tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edges { 
                                                                       $$.node_id = $1;
@@ -229,17 +236,13 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                         $$.out_edges->push_back($2); 
                     }
                   }
-    ;
 
 node_id: int_number TAB {$$ = $1;}
-    ;
 
 num_out_edges: int_number {$$ = $1;}
-    ;
 
 tedge: TAB int_number TAB number EOL { $$.to_node = $2; $$.delay = $4; }
     | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.to_node = $12; $$.delay = $14; }
-    ;
 
 tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; } 
     | TN_INPAD_OPIN TAB             { $$ = TN_Type::INPAD_OPIN; } 
@@ -258,29 +261,33 @@ tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; }
     | TN_CLOCK_SOURCE TAB           { $$ = TN_Type::CLOCK_SOURCE; } 
     | TN_CLOCK_OPIN TAB             { $$ = TN_Type::CLOCK_OPIN; } 
     | TN_CONSTANT_GEN_SOURCE TAB    { $$ = TN_Type::CONSTANT_GEN_SOURCE; }
-    ;
 
 num_tnodes: NUM_TNODES int_number {$$ = $2; }
-    ;
+
+/*
+ * Timing Graph Levels
+ */
 
 num_tnode_levels: NUM_TNODE_LEVELS int_number {$$ = $2; }
-    ;
 
 timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {$$.level = $2; $$.node_ids = new std::vector<int>(); $$.node_ids->reserve($4);}
     | timing_graph_level NODES {}
     | timing_graph_level TAB int_number   {$$.node_ids->push_back($3);}
-    ;
 
-domain_header: src_domain TAB sink_domain {$$.src_domain = $1; $$.sink_domain = $3;}
-src_domain: SRC_DOMAIN int_number {$$ = $2;}
-sink_domain: SINK_DOMAIN int_number {$$ = $2;}
 
+/*
+ * Arrival/Required time
+ */
+domain_header: SRC_DOMAIN int_number TAB SINK_DOMAIN int_number {$$.src_domain = $2; $$.sink_domain = $5;}
 
 node_arr_req_time: int_number t_arr_req t_arr_req EOL {$$.node_id = $1; $$.T_arr = $2; $$.T_req = $3;}
 
 t_arr_req: TAB number { $$ = $2; }
     | TAB TAB '-' { $$ = NAN; }
-    ;
+
+/*
+ * Node de-tabbed column values
+ */
 
 io_delay: TAB {$$ = NAN; }
     | number TAB { $$ = $1; }
@@ -300,20 +307,52 @@ iblk: TAB { $$ = -1; }
 ipin: TAB { $$ = -1; }
     | int_number TAB { $$ = $1; }
 
+/*
+ * Timing Constraints
+ */
+timing_constraints: clock_constraints {}
+    | timing_constraints input_constraints {}
+    | timing_constraints output_constraints {}
+
+/*
+ * Clock Constraints
+ */
+clock_constraints: CLOCK_CONSTRAINTS_HEADER EOL {}
+    | clock_constraints CLOCK_CONSTRAINTS_COLS EOL {}
+    | clock_constraints src_domain sink_domain constraint EOL {}
+
+src_domain: int_number TAB { $$ = $1; }
+sink_domain: int_number TAB { $$ = $1; }
+constraint: number { $$ = $1; }
+
+/*
+ * Input Constraints
+ */
+input_constraints: INPUT_CONSTRAINTS_HEADER EOL {}
+    | input_constraints INPUT_CONSTRAINTS_COLS EOL {}
+    | input_constraints node_id constraint EOL {}
+
+/*
+ * Output Constraints
+ */
+output_constraints: OUTPUT_CONSTRAINTS_HEADER EOL {}
+    | output_constraints OUTPUT_CONSTRAINTS_COLS EOL {}
+    | output_constraints node_id constraint EOL {}
+
+/*
+ * Basic values
+ */
 number: float_number { $$ = $1; }
     | int_number { $$ = $1; }
-    ;
 
 float_number: FLOAT_NUMBER { $$ = $1; }
-    ;
 
 int_number: INT_NUMBER { $$ = $1; }
-    ;
 
 %%
 
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const char *msg) {
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

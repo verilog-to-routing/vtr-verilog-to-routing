@@ -35,6 +35,12 @@
 
 num_tnodes:                     { return NUM_TNODES; }
 "Node #\tType\t\tipin\tiblk\tDomain\tis_clk_src\tSkew\tI/O Delay\t# edges\tto_node     Tdel" { return TGRAPH_HEADER; }
+"Clock Constraints"             { return CLOCK_CONSTRAINTS_HEADER; }
+"Input Constraints"             { return INPUT_CONSTRAINTS_HEADER; }
+"Output Constraints"             { return OUTPUT_CONSTRAINTS_HEADER; }
+"Src_Clk\tSink_Clk\tConstraint" { return CLOCK_CONSTRAINTS_COLS; }
+"tnode_id\tinput_delay"         { return INPUT_CONSTRAINTS_COLS; }
+"tnode_id\toutput_delay"        { return OUTPUT_CONSTRAINTS_COLS; }
 
 num_tnode_levels:               { return NUM_TNODE_LEVELS; }
 Level:                          { return LEVEL; }

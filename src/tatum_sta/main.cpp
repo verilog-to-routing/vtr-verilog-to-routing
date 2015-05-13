@@ -11,6 +11,7 @@
 #include "sta_util.hpp"
 
 #include "TimingGraph.hpp"
+#include "TimingConstraints.hpp"
 #include "TimingNode.hpp"
 
 #include "SerialTimingAnalyzer.hpp"
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
 
     TimingGraph timing_graph;
+    TimingConstraints timing_constraints;
     VprArrReqTimes orig_expected_arr_req_times;
     VprArrReqTimes expected_arr_req_times;
     std::set<NodeId> const_gen_fanout_nodes;
@@ -72,7 +74,7 @@ int main(int argc, char** argv) {
 
         yyin = fopen(argv[1], "r");
         if(yyin != NULL) {
-            int error = yyparse(timing_graph, orig_expected_arr_req_times);
+            int error = yyparse(timing_graph, orig_expected_arr_req_times, timing_constraints);
             if(error) {
                 cout << "Parse Error" << endl;
                 fclose(yyin);
