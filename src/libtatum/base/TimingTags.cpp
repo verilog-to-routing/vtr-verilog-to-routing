@@ -35,6 +35,8 @@ void TimingTag::update_req(const Time& new_req_time, const TimingTag& base_tag) 
 
 //Modifiers
 void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
+    ASSERT_MSG(tag.next() == nullptr, "Attempted to add new timing tag which is already part of a Linked List");
+
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
     if(tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
@@ -85,7 +87,7 @@ void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
 
 void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
-    if(iter == end()) { 
+    if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
         add_tag(tag_pool, tag);
@@ -103,7 +105,7 @@ void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
 
 void TimingTags::min_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
-    if(iter == end()) { 
+    if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(Time(NAN), new_time, base_tag);
         add_tag(tag_pool, tag);
