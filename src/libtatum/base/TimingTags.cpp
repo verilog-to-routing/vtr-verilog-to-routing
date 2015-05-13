@@ -85,7 +85,7 @@ void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
     num_tags_++;
 }
 
-void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+void TimingTags::max_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -103,7 +103,7 @@ void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
     }
 }
 
-void TimingTags::min_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain

@@ -171,7 +171,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
                 launch_tag.set_launch_node(src_node_id);
 
                 //Mark propagated launch time
-                arr_tags.max_tag(tag_pool_, launch_tag.arr_time() + edge_delay, launch_tag);
+                arr_tags.max_arr(tag_pool_, launch_tag.arr_time() + edge_delay, launch_tag);
 
             } else if (tg.node_type(node_id) == TN_Type::FF_SINK && src_tag.type() == TagType::CLOCK) {
                 //This is a clock to data capture edge
@@ -193,7 +193,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
                 req_tag.add_tag(tag_pool_, capture_tag);
             } else {
                 //Standard propogation
-                arr_tags.max_tag(tag_pool_, src_tag.arr_time() + edge_delay, src_tag);
+                arr_tags.max_arr(tag_pool_, src_tag.arr_time() + edge_delay, src_tag);
             }
         }
     }
@@ -225,7 +225,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
         const TimingTags& sink_req_tags = req_tags_[sink_node_id];
 
         for(const TimingTag& sink_tag : sink_req_tags) {
-            req_tags.min_tag(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
+            req_tags.min_req(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
         }
     }
 }
