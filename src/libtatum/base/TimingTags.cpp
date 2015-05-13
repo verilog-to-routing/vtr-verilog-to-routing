@@ -95,8 +95,8 @@ void TimingTags::max_arr(MemoryPool& tag_pool, const Time& new_time, const Timin
         TimingTag& matched_tag = *iter;
 
         //Need to max with existing value
-        if(new_time.value() > matched_tag.arr_time().value()) {
-            //New value is larger
+        if(!matched_tag.arr_time().valid() || new_time.value() > matched_tag.arr_time().value()) {
+            //New value is larger, or no previous valid value existed
             //Update max
             matched_tag.update_arr(new_time, base_tag);
         }
