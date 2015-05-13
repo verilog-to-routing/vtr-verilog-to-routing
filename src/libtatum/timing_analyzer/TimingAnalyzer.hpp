@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "timing_graph_fwd.hpp"
+#include "timing_constraints_fwd.hpp"
 
 class TimingTags;
 
@@ -9,7 +10,7 @@ struct ta_runtime;
 
 class TimingAnalyzer {
     public:
-        virtual ta_runtime calculate_timing(const TimingGraph& timing_graph) = 0;
+        virtual ta_runtime calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) = 0;
 
         virtual const TimingTags& tags(NodeId node_id) const = 0;
 };

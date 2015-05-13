@@ -2,7 +2,7 @@
 
 #include "ParallelNoDependancyCilkTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
-
+#if 0
 void ParallelNoDependancyCilkTimingAnalyzer::pre_traversal(TimingGraph& timing_graph) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
@@ -40,3 +40,4 @@ void ParallelNoDependancyCilkTimingAnalyzer::backward_traversal(TimingGraph& tim
         SerialTimingAnalyzer::backward_traverse_node(timing_graph, i);
     }
 }
+#endif

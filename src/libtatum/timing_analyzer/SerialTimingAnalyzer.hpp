@@ -5,6 +5,7 @@
 #include "memory_pool.hpp"
 #include "TimingAnalyzer.hpp"
 #include "timing_graph_fwd.hpp"
+#include "timing_constraints_fwd.hpp"
 #include "TimingTags.hpp"
 
 #define DEFAULT_CLOCK_PERIOD 1.0e-9
@@ -14,7 +15,7 @@
 class SerialTimingAnalyzer : public TimingAnalyzer {
     public:
         SerialTimingAnalyzer();
-        ta_runtime calculate_timing(const TimingGraph& timing_graph) override;
+        ta_runtime calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
         void reset_timing();
         virtual void save_level_times(const TimingGraph& timing_graph, std::string filename);
 
@@ -34,12 +35,12 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
          * Setup the timing graph.
          *   Includes propogating clock domains and clock skews to clock pins
          */
-        virtual void pre_traversal(const TimingGraph& timing_graph);
+        virtual void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         /*
          * Propogate arrival times
          */
-        virtual void forward_traversal(const TimingGraph& timing_graph);
+        virtual void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         /*
          * Propogate required times
@@ -47,8 +48,8 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         virtual void backward_traversal(const TimingGraph& timing_graph);
 
         //Per node worker functions
-        void pre_traverse_node(const TimingGraph& tg, const NodeId node_id);
-        void forward_traverse_node(const TimingGraph& tg, const NodeId node_id);
+        void pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        void forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
         std::vector<TimingTags> tags_;

@@ -28,7 +28,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-#define OPTIMIZE_NODE_EDGE_ORDER
+//#define OPTIMIZE_NODE_EDGE_ORDER
 
 int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes);
 
@@ -111,6 +111,9 @@ int main(int argc, char** argv) {
                 expected_arr_req_times.add_req_time(src_domain, new_id, orig_expected_arr_req_times.get_req_time(src_domain, i));
             }
         }
+
+        //Adjust the timing constraints
+        timing_constraints.remap_nodes(vpr_node_map);
 #else
         expected_arr_req_times = orig_expected_arr_req_times;
 #endif
@@ -121,6 +124,8 @@ int main(int argc, char** argv) {
     }
     cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
+
+    timing_constraints.print();
 
     int n_histo_bins = 20;
     print_level_histogram(timing_graph, n_histo_bins);
@@ -158,7 +163,7 @@ int main(int argc, char** argv) {
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
-            ta_runtime traversal_times = serial_analyzer.calculate_timing(timing_graph);
+            ta_runtime traversal_times = serial_analyzer.calculate_timing(timing_graph, timing_constraints);
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_end);
 
