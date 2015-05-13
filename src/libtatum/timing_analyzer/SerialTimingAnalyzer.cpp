@@ -111,10 +111,10 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //TODO: use real timing constraints!
         if(tg.node_is_clock_source(node_id)) {
             arr_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
+                    TimingTag(Time(0), Time(NAN), tg.node_clock_domain(node_id), node_id, TagType::CLOCK));
         } else {
             arr_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(0), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+                    TimingTag(Time(0), Time(NAN), tg.node_clock_domain(node_id), node_id, TagType::DATA));
         }
     }
 
@@ -130,7 +130,7 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
         //Everything else gets the standard constraint
         if(tg.node_type(node_id) != TN_Type::FF_SINK) {
             req_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
+                    TimingTag(Time(NAN), Time(DEFAULT_CLOCK_PERIOD), tg.node_clock_domain(node_id), node_id, TagType::DATA));
         }
     }
 }
@@ -170,7 +170,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
                 launch_tag.set_launch_node(src_node_id);
 
                 //Mark propagated launch time
-                arr_tags.max_tag(tag_pool_, launch_tag.time() + edge_delay, launch_tag);
+                arr_tags.max_tag(tag_pool_, launch_tag.arr_time() + edge_delay, launch_tag);
 
             } else if (tg.node_type(node_id) == TN_Type::FF_SINK && src_tag.type() == TagType::CLOCK) {
                 //This is a clock to data capture edge
@@ -183,14 +183,16 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
                 TimingTag capture_tag = src_tag;
                 capture_tag.set_type(TagType::DATA);
                 capture_tag.set_launch_node(node_id);
+                capture_tag.set_arr_time(Time(NAN));
+                capture_tag.set_req_time(src_tag.arr_time() + Time(DEFAULT_CLOCK_PERIOD));
 
                 //Mark propogated required time
                 TimingTags& req_tag = req_tags_[node_id];
                 //TODO: use real timing constraints!
-                req_tag.add_tag(tag_pool_, capture_tag.time() + Time(DEFAULT_CLOCK_PERIOD), capture_tag);
+                req_tag.add_tag(tag_pool_, capture_tag);
             } else {
                 //Standard propogation
-                arr_tags.max_tag(tag_pool_, src_tag.time() + edge_delay, src_tag);
+                arr_tags.max_tag(tag_pool_, src_tag.arr_time() + edge_delay, src_tag);
             }
         }
     }
@@ -222,7 +224,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
         const TimingTags& sink_req_tags = req_tags_[sink_node_id];
 
         for(const TimingTag& sink_tag : sink_req_tags) {
-            req_tags.min_tag(tag_pool_, sink_tag.time() - edge_delay, sink_tag);
+            req_tags.min_tag(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
         }
     }
 }
@@ -243,21 +245,4 @@ const TimingTags& SerialTimingAnalyzer::arrival_tags(NodeId node_id) const {
 
 const TimingTags& SerialTimingAnalyzer::required_tags(NodeId node_id) const {
     return req_tags_[node_id];
-}
-
-void SerialTimingAnalyzer::dump(const TimingGraph& tg) {
-    std::cout << "Analyzer Dump: " << std::endl;
-    for(int node_id = 0; node_id < (int) tg.num_nodes(); node_id++) {
-        std::cout << "Node: " << node_id << " Type: " << tg.node_type(node_id) << std::endl;
-        int i = 0;
-        for(const TimingTag& tag : arrival_tags(node_id)) {
-            std::cout << "\t" << "Arr Tag " << i << ": " << tag.time().value() << std::endl;
-            i++;
-        }
-        int j = 0;
-        for(const TimingTag& tag : required_tags(node_id)) {
-            std::cout << "\t" << "Req Tag " << j << ": " << tag.time().value() << std::endl;
-            j++;
-        }
-    }
 }

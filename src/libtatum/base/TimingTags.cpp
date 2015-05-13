@@ -15,11 +15,18 @@ std::ostream& operator<<(std::ostream& os, const TagType tag_type) {
 /*
  * TimingTag implementation
  */
-void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
+void TimingTag::update_arr(const Time& new_arr_time, const TimingTag& base_tag) {
     //NOTE: leave next alone, since we want to keep the linked list intact
-    set_time(new_time);
     ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
+    set_arr_time(new_arr_time);
     set_launch_node(base_tag.launch_node());
+}
+
+void TimingTag::update_req(const Time& new_req_time, const TimingTag& base_tag) {
+    //NOTE: leave next alone, since we want to keep the linked list intact
+    //      leave launch_node alone, since it is set by arrival only
+    ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
+    set_req_time(new_req_time);
 }
 
 /*
@@ -27,17 +34,17 @@ void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
  */
 
 //Modifiers
-void TimingTags::add_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
-    if(base_tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
+    if(tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
         return;
     }
 
 #if NUM_FLAT_TAGS >= 1
     if(num_tags_ < (int) head_tags_.max_size()) {
         //Store it as a head tag
-        head_tags_[num_tags_] = TimingTag(new_time, base_tag);
+        head_tags_[num_tags_] = tag;
         if(num_tags_ != 0) {
             //Link from previous if it exists
             head_tags_[num_tags_-1].set_next(&head_tags_[num_tags_]);
@@ -47,52 +54,50 @@ void TimingTags::add_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
 
         //Allocate form a central storage pool
         VERIFY(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-        TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, base_tag);
+        TimingTag* new_tag = new(tag_pool.malloc()) TimingTag(tag);
 
         //Insert one-after the last head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
         //per node
         TimingTag* next_tag = head_tags_[head_tags_.max_size()-1].next(); //Save next link (may be nullptr)
-        head_tags_[head_tags_.max_size()-1].set_next(tag); //Tag is now in the list
-        tag->set_next(next_tag); //Attach tail of the list
+        head_tags_[head_tags_.max_size()-1].set_next(new_tag); //Tag is now in the list
+        new_tag->set_next(next_tag); //Attach tail of the list
     }
 #else
     //Allocate form a central storage pool
     VERIFY(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-    TimingTag* tag = new(tag_pool.malloc()) TimingTag(new_time, base_tag);
+    TimingTag* new_tag = new(tag_pool.malloc()) TimingTag(tag);
 
     if(head_tags_ == nullptr) {
-        head_tags_ = tag;
+        head_tags_ = new_tag;
     } else {
         //Insert as the head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
         //per node
         TimingTag* next_tag = head_tags_; //Save next link (may be nullptr)
-        head_tags_ = tag; //Tag is now in the list
-        tag->set_next(next_tag); //Attach tail of the list
+        head_tags_ = new_tag; //Tag is now in the list
+        new_tag->set_next(next_tag); //Attach tail of the list
     }
 #endif
     //Tag has been added
     num_tags_++;
 }
 
-void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& base_tag) {
-    add_tag(tag_pool, base_tag.time(), base_tag);
-}
-
 void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
-        add_tag(tag_pool, new_time, base_tag);
+        TimingTag tag = base_tag;
+        tag.set_arr_time(new_time);
+        add_tag(tag_pool, tag);
     } else {
         TimingTag& matched_tag = *iter;
 
         //Need to max with existing value
-        if(new_time.value() > matched_tag.time().value()) {
+        if(new_time.value() > matched_tag.arr_time().value()) {
             //New value is larger
             //Update max
-            matched_tag.update(new_time, base_tag);
+            matched_tag.update_arr(new_time, base_tag);
         }
     }
 }
@@ -101,15 +106,17 @@ void TimingTags::min_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
-        add_tag(tag_pool, new_time, base_tag);
+        TimingTag tag = base_tag;
+        tag.set_req_time(new_time);
+        add_tag(tag_pool, tag);
     } else {
         TimingTag& matched_tag = *iter;
 
         //Need to min with existing value
-        if(new_time.value() < matched_tag.time().value()) {
+        if(new_time.value() < matched_tag.req_time().value()) {
             //New value is smaller
             //Update min
-            matched_tag.update(new_time, base_tag);
+            matched_tag.update_req(new_time, base_tag);
         }
     }
 }

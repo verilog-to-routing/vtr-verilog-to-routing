@@ -23,8 +23,6 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         const TimingTags& arrival_tags(NodeId node_id) const override;
         const TimingTags& required_tags(NodeId node_id) const override;
 
-        void dump(const TimingGraph& tg);
-
 #ifdef SAVE_LEVEL_TIMES
     protected:
         std::vector<struct timespec> fwd_start_;

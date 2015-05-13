@@ -328,7 +328,7 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                 //So it is OK if it is NAN
                 //PASS
             } else {
-                float arr_time = arr_tag_iter->time().value();
+                float arr_time = arr_tag_iter->arr_time().value();
                 float arr_abs_err = fabs(arr_time - vpr_arr_time);
                 float arr_rel_err = relative_error(arr_time, vpr_arr_time);
                 if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
@@ -369,7 +369,7 @@ int verify_analyzer(const TimingAnalyzer& analyzer, const VprArrReqTimes& expect
                     cout << vpr_req_time << " (expected NAN)" << endl;
                 }
             } else {
-                float req_time = req_tag_iter->time().value();
+                float req_time = req_tag_iter->req_time().value();
                 float req_abs_err = fabs(req_time - vpr_req_time);
                 float req_rel_err = relative_error(req_time, vpr_req_time);
                 if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {

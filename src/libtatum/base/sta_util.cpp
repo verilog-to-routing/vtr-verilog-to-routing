@@ -177,12 +177,12 @@ void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer) {
     cout << std::scientific;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
         for(const TimingTag& tag : analyzer.arrival_tags(i)) {
-            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Arr: " << tag.time().value() << endl;
+            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Arr: " << tag.arr_time().value() << endl;
         }
     }
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
         for(const TimingTag& tag : analyzer.required_tags(i)) {
-            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Req: " << tag.time().value() << endl;
+            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Req: " << tag.req_time().value() << endl;
         }
     }
 }
