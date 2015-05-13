@@ -23,6 +23,7 @@ set(LIB_TATUM_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelNoDependancyCilkTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzer/ParallelDynamicCilkTimingAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingGraph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingConstraints.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingNode.cpp)
 
 set(LIB_TATUM_INCLUDE_DIRS

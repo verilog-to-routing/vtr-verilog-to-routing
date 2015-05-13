@@ -150,7 +150,7 @@ finish: timing_graph timing_constraints EOL {
                                             }
 
 timing_graph: num_tnodes                    { printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1); }
-    | timing_graph TGRAPH_HEADER EOL        { printf("Timing Graph file Header\n"); }
+    | timing_graph TGRAPH_HEADER EOL        { /*printf("Timing Graph file Header\n");*/ }
     | timing_graph tnode                    {
                                                 TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
 

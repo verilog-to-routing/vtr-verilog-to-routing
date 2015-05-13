@@ -65,8 +65,8 @@ endforeach(flag)
 flex_target(vpr_timing_graph_lexer ${LEXER_SRC} 
             ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.lex.cpp)
 bison_target(vpr_timing_graph_parser ${PARSER_SRC} 
-            ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp
-            VERBOSE ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.log)
+            ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp)
+            #VERBOSE ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.log)
 #Capture lexer/parser dependance
 add_flex_bison_dependency(vpr_timing_graph_lexer vpr_timing_graph_parser) 
 #Apply suppression flags to the relevant files, must come after flex/bision 
