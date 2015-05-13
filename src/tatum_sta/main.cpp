@@ -27,7 +27,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes);
 
