@@ -1,11 +1,8 @@
 /*
 See vpr/SRC/route/build_switchblocks.c for a detailed description of how the new
-switch block format works.
+switch block format works and what files are involved.
 
  
-The contents of this file assist in parsing switch block descriptions specified
-in the XML architecture file.
-
 A large chunk of this file is dedicated to helping parse the initial switchblock
 specificaiton in the XML arch file, providing error checking, etc.
 
@@ -30,6 +27,7 @@ specified by the switch block permutation functions into their numeric counterpa
 
 using namespace std;
 
+
 /**** Enums ****/
 /* Used to identify the type of symbolic formula object */
 typedef enum e_formula_obj{
@@ -40,6 +38,7 @@ typedef enum e_formula_obj{
 	E_FML_NUM_FORMULA_OBJS
 } t_formula_obj;
 
+
 /* Used to identify an operator in a formula */ 
 typedef enum e_operator{
 	E_OP_UNDEFINED = 0,
@@ -49,6 +48,7 @@ typedef enum e_operator{
 	E_OP_DIV,
 	E_OP_NUM_OPS
 } t_operator;
+
 
 /**** Class Definitions ****/
 /* This class is used to represent an object in a formula, such as 
@@ -162,13 +162,11 @@ void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, I
 		/* get from type */
 		char_prop = FindProperty(SubElem, "FT", true);
 		parse_comma_separated_wire_types(char_prop, &wc.from_type);
-		//wc.from_type = char_prop;
 		ezxml_set_attr(SubElem, "FT", NULL);
 
 		/* get to type */
 		char_prop = FindProperty(SubElem, "TT", true);
 		parse_comma_separated_wire_types(char_prop, &wc.to_type);
-		//wc.to_type = char_prop;
 		ezxml_set_attr(SubElem, "TT", NULL);
 
 		/* get the source wire point */
@@ -210,6 +208,7 @@ void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, I
 	return;
 }
 
+
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
 static void parse_comma_separated_wire_types(INP const char *ch, INOUTP vector<string> *wire_types_vec){
@@ -242,6 +241,7 @@ static void parse_comma_separated_wire_types(INP const char *ch, INOUTP vector<s
 		ch_start = ind + 1;
 	}
 }
+
 
 /* parses the wirepoints specified in the comma-separated 'ch' char array into the vector wire_points_vec */
 static void parse_comma_separated_wire_points(INP const char *ch, INOUTP vector<int> *wire_points_vec){
@@ -283,6 +283,7 @@ static void parse_comma_separated_wire_points(INP const char *ch, INOUTP vector<
 
 	return;
 }
+
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
    <switchfuncs> */
@@ -396,12 +397,10 @@ void check_switchblock( INP t_switchblock_inf *sb ){
 }
 
 
-/* checks for correctness of a unidir switchblock. hard exit if error found (to be changed to throw later) */
+/* checks for correctness of a unidirectional switchblock. hard exit if error found (to be changed to throw later) */
 static void check_unidir_switchblock( INP t_switchblock_inf *sb ){
 
-	/* Check that the destination wire points are always the starting points.
-	   Actually this would be legal with tri-stated switches but for now we require
-	   that wires be driven at the starting point */
+	/* Check that the destination wire points are always the starting points */
 	vector<t_wireconn_inf> &wireconns = sb->wireconns;
 	int num_wireconns = (int)wireconns.size();
 	for (int iconn = 0; iconn < num_wireconns; iconn++){
@@ -412,9 +411,9 @@ static void check_unidir_switchblock( INP t_switchblock_inf *sb ){
 }
 
 
-/* checks for correctness of a bidir switchblock. hard exit if error found (to be changed to throw later) */
+/* checks for correctness of a bidirectional switchblock */
 static void check_bidir_switchblock( INP t_permutation_map *permutation_map ){
-	/* check that if side1->side2 is specified, then side2->side1 is not, as it is implicit */
+	/**** check that if side1->side2 is specified, then side2->side1 is not, as it is implicit ****/
 
 	/* variable used to index into the permutation map */
 	Connect_SB_Sides conn;
@@ -464,6 +463,7 @@ int get_sb_formula_result( INP const char* formula, INP const s_formula_data &my
 
 	/* parse based on whether formula is piece-wise or not */
 	if ( is_piecewise_formula(formula) ){
+		//EXPERIMENTAL
 		result = parse_piecewise_formula( formula, mydata );
 	} else {
 		result = parse_formula( formula, mydata );
@@ -490,7 +490,20 @@ static int parse_formula( INP const char *formula, INP const s_formula_data &myd
 }
 
 
-/* returns integer result according to specified piece-wise formula and data */
+/* EXPERIMENTAL:
+   
+   returns integer result according to specified piece-wise formula and data. the piecewise 
+   notation specifies different formulas that should be evaluated based on the index of 
+   the incoming track in 'mydata'. for example the formula 
+
+       {0:(W/2)} t-1; {(W/2):W} t+1;
+
+   indicates that the function "t-1" should be evaluated if the incoming track index falls 
+   within the range [0,W/2) and that "t+1" should be evaluated if it falls within the 
+   [W/2,W) range. The piece-wise format is:
+   
+       {start_0:end_0} formula_0; ... {start_i;end_i} formula_i; ... 
+*/
 static int parse_piecewise_formula( INP const char *formula, INP const s_formula_data &mydata ){
 	int result = -1;
 	int str_ind = 0;
@@ -504,7 +517,7 @@ static int parse_piecewise_formula( INP const char *formula, INP const s_formula
 	string pw_formula(formula);
 	str_size = pw_formula.size();
 
-	if (pw_formula.at(str_ind) != '{'){
+	if (pw_formula[str_ind] != '{'){
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n");
 	}
 	
@@ -571,13 +584,15 @@ static int parse_piecewise_formula( INP const char *formula, INP const s_formula
 	goto_next_char(&str_ind, pw_formula, ';');
 	tmp_ind_count = str_ind - tmp_ind_start;			/* formula is between } and ; */
 	substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
+
+	/* now parse the formula corresponding to the appropriate piece-wise range */
 	result = parse_formula(substr.c_str(), mydata);
 
 	return result;
 }
 
 
-/* increments str_ind until it reaches specified char is formula. returns true if character was found, false otherwise */
+/* increments str_ind until it reaches specified char in formula. returns true if character was found, false otherwise */
 static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, char ch){
 	bool result = true;
 	int str_size = pw_formula.size();	
@@ -587,13 +602,13 @@ static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, c
 
 	do{
 		(*str_ind)++;
-		if ( pw_formula.at(*str_ind) == ch ){
+		if ( pw_formula[*str_ind] == ch ){
 			/* found the next requested character */
 			break;
 		}
 
 	} while ((*str_ind) != str_size-1);
-	if ((*str_ind) == str_size-1 && pw_formula.at(*str_ind) != ch){
+	if ((*str_ind) == str_size-1 && pw_formula[*str_ind] != ch){
 		result = false;
 	}
 	return result;
@@ -871,13 +886,13 @@ static int parse_rpn_vector( INOUTP vector<Formula_Object> &rpn_vec ){
 	int result = -1;
 
 	/* first entry should always be a number */
-	if (E_FML_NUMBER != rpn_vec.at(0).type){
+	if (E_FML_NUMBER != rpn_vec[0].type){
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_rpn_vector: first entry is not a number\n");
 	}
 
 	if (rpn_vec.size() == 1){
 		/* if the vector size is 1 then we just have a number (which was verified above) */
-		result = rpn_vec.at(0).data.num;
+		result = rpn_vec[0].data.num;
 	} else {
 		/* have numbers and operators */
 		Formula_Object fobj;
@@ -891,12 +906,12 @@ static int parse_rpn_vector( INOUTP vector<Formula_Object> &rpn_vec ){
 				if (ivec == (int)rpn_vec.size()){
 					vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_rpn_vector(): found multiple numbers in switchblock formula, but no operator\n");
 				}
-			} while ( E_FML_OPERATOR != rpn_vec.at(ivec).type );
+			} while ( E_FML_OPERATOR != rpn_vec[ivec].type );
 
 			/* now we apply the selected operation to the two previous entries */
 			/* the result is stored in the object that used to be the operation */
-			rpn_vec.at(ivec).data.num = apply_rpn_op( rpn_vec.at(ivec-2), rpn_vec.at(ivec-1), rpn_vec.at(ivec) );
-			rpn_vec.at(ivec).type = E_FML_NUMBER;
+			rpn_vec[ivec].data.num = apply_rpn_op( rpn_vec[ivec-2], rpn_vec[ivec-1], rpn_vec[ivec] );
+			rpn_vec[ivec].type = E_FML_NUMBER;
 
 			/* remove the previous two entries from the vector */
 			rpn_vec.erase(rpn_vec.begin() + ivec - 2, rpn_vec.begin() + ivec - 0);
@@ -904,7 +919,7 @@ static int parse_rpn_vector( INOUTP vector<Formula_Object> &rpn_vec ){
 
 			/* if we're down to one element, we are done */
 			if (1 == rpn_vec.size()){
-				result = rpn_vec.at(ivec).data.num;
+				result = rpn_vec[ivec].data.num;
 				rpn_vec.erase(rpn_vec.begin() + ivec);
 			}
 		}
@@ -976,60 +991,6 @@ static bool is_piecewise_formula( INP const char *formula ){
 	} else {
 		result = false;
 	}
-	return result;
-}
-
-
-ostream& operator<<(std::ostream &os, const Switchblock_Lookup &obj){
-	os << "[x: " << obj.x_coord << ", y: " << obj.y_coord << ", from_side: " << obj.from_side << ", to_side: " << obj.to_side << ", from_track: " << obj.track_num << "]";
-	return os;
-}
-
-
-/* Overload < operator for Switchblock_Lookup class */
-bool Switchblock_Lookup::operator < (const Switchblock_Lookup &obj) const {
-	bool result;
-
-	/* This is ugly, but it implements a hierarchy of inequality. For instance, if x1 < x2 then
-	   obj1 < obj2. But if x1==x2 then we have to check y1 and y2, and so on */
-	if (x_coord < obj.x_coord){
-		result = true;
-	} else {
-		if (x_coord == obj.x_coord){
-			if (y_coord < obj.y_coord){
-				result = true;
-			} else {
-				if (y_coord == obj.y_coord){
-					if (from_side < obj.from_side){
-						result = true;
-					} else {
-						if (from_side == obj.from_side){
-							if (to_side < obj.to_side){
-								result = true;
-							} else {
-								if (to_side == obj.to_side){
-									if (track_num < obj.track_num){
-										result = true;
-									} else {
-										result = false;
-									}
-								} else {
-									result = false;
-								}
-							}
-						} else {
-							result = false;
-						}
-					}
-				} else {
-					result = false;
-				}
-			}
-		} else {
-			result = false;
-		}
-	}
-	
 	return result;
 }
 

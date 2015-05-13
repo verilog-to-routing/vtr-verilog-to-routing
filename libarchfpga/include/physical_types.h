@@ -112,7 +112,7 @@ enum e_power_estimation_method_ {
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
-/* Specifies what part of the FPGA a switchblock should be built in (i.e. perimeter, core, everywhere) */
+/* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
 enum e_sb_location{
 	E_PERIMETER = 0,
 	E_CORNER,
@@ -861,7 +861,7 @@ typedef struct s_direct_inf {
 } t_direct_inf;
 
 
-/* Used to list information about two segment types that connect together through a switchblock */
+/* Used to list information about a set of track segments that should connect through a switchblock */
 typedef struct s_wireconn_inf{
 	std::vector<std::string> from_type;		/* connect from these wire types */
 	std::vector<std::string> to_type;		/* to these wire types */
@@ -911,10 +911,10 @@ public:
 	}
 };
 
-/* we use a map to index into the permutation functions used to connect from one side to another */
+/* Use a map to index into the string permutation functions used to connect from one side to another */
 typedef std::map< Connect_SB_Sides, std::vector<std::string> > t_permutation_map;
 
-/* Lists all information about switchblocks */
+/* Lists all information about a particular switch block specified in the architecture file */
 typedef struct s_switchblock_inf{
 	std::string name;			/* the name of this switchblock */
 	e_sb_location location;			/* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
@@ -924,6 +924,56 @@ typedef struct s_switchblock_inf{
 
 	std::vector<t_wireconn_inf> wireconns;	/* list of wire types/groups this SB will connect */
 } t_switchblock_inf;
+
+/* Holds the coordinates of a switch block source connection. Used to index into a 
+   map which specifies which destination track segments this source track should
+   connect to */
+class Switchblock_Lookup{
+public:
+	int x_coord;		/* x coordinate of switchblock connection */
+	int y_coord;		/* y coordinate of switchblock connection */
+	e_side from_side;	/* source side of switchblock connection */
+	e_side to_side;		/* destination side of switchblock connection */
+	int from_track;		/* index of the source track segment within the corresponding channel segment */
+
+	/* Empty constructor initializes everything to 0 */
+	Switchblock_Lookup(){
+		x_coord = y_coord = from_track = -1;
+	}
+
+	/* Constructor for initializing member variables */
+	Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to, int set_track){
+		this->set_coords(set_x, set_y, set_from, set_to, set_track);
+	}
+
+	/* Function for setting the segment coordinates */
+	void set_coords(int set_x, int set_y, e_side set_from, e_side set_to, int set_track){
+		x_coord = set_x;
+		y_coord = set_y;
+		from_side = set_from;
+		to_side = set_to;
+		from_track = set_track;
+	}
+
+	/* Overload < operator which is used by std::map */
+	bool operator < (const Switchblock_Lookup &obj) const;
+};
+
+/* contains the index of the destination track segment within a channel
+   and the index of the switch used to connect to it */
+typedef struct s_to_track_inf{
+	int to_track;
+	short switch_ind;	
+} t_to_track_inf;
+
+/* Switchblock connections are made as [x][y][from_side][to_side][from_track_ind].
+   The Switchblock_Lookup class specifies these dimensions.
+   Furthermore, a source_track at a given 5-d coordinate may connect to multiple destination tracks so the value
+   of the map is a vector of destination tracks.
+   A matrix specifying connections for all switchblocks in an FPGA would be very large, and probably sparse,
+   so we use a map to take advantage of the sparsity. */
+typedef std::map< Switchblock_Lookup, std::vector< t_to_track_inf > > t_sb_connection_map;	//TODO switch to unordered map
+
 
 /*   Detailed routing architecture */
 typedef struct s_arch t_arch;
