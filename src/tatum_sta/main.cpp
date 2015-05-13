@@ -308,6 +308,9 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
     bool error = false;
     for(int domain = 0; domain < expected_arr_req_times.get_num_clocks(); domain++) {
 
+        int arrival_nodes_checked = 0; //Count number of nodes checked
+        int required_nodes_checked = 0; //Count number of nodes checked
+
         //Arrival check by level
         for(int ilevel = 0; ilevel <tg.num_levels(); ilevel++) {
             for(NodeId node_id : tg.level(ilevel)) {
@@ -359,12 +362,16 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                     }
                 }
                 arr_reqs_verified ++;
+                arrival_nodes_checked++;
             }
         }
+        //Since we walk our version of the graph make sure we see the same number of nodes as VPR
+        VERIFY(arrival_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
 
         //Required check by level (in reverser)
-        for(int ilevel = tg.num_levels() - 1; ilevel > 0; ilevel--) {
+        for(int ilevel = tg.num_levels() - 1; ilevel >= 0; ilevel--) {
             for(NodeId node_id : tg.level(ilevel)) {
+
                 const TimingTags& req_tags = analyzer.required_tags(node_id);
                 float vpr_req_time = expected_arr_req_times.get_req_time(domain, node_id);
                 //Check Required time
@@ -417,8 +424,10 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                     }
                 }
                 arr_reqs_verified++;
+                required_nodes_checked++;
             }
         }
+        VERIFY(required_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
     }
 
     if(error) {
