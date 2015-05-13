@@ -113,8 +113,8 @@ void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const Timin
         TimingTag& matched_tag = *iter;
 
         //Need to min with existing value
-        if(new_time.value() < matched_tag.req_time().value()) {
-            //New value is smaller
+        if(!matched_tag.req_time().valid() || new_time.value() < matched_tag.req_time().value()) {
+            //New value is smaller, or no previous valid value existed
             //Update min
             matched_tag.update_req(new_time, base_tag);
         }

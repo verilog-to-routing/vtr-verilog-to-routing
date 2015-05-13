@@ -313,26 +313,27 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
 
         //Arrival check by level
         for(int ilevel = 0; ilevel <tg.num_levels(); ilevel++) {
+            //cout << "LEVEL " << ilevel << endl;
             for(NodeId node_id : tg.level(ilevel)) {
                 //cout << "Verifying node: " << node_id << " Launch: " << src_domain << " Capture: " << sink_domain << endl;
-                const TimingTags& arr_tags = analyzer.arrival_tags(node_id);
+                const TimingTags& node_tags = analyzer.tags(node_id);
                 float vpr_arr_time = expected_arr_req_times.get_arr_time(domain, node_id);
 
                 //Check arrival
-                TimingTagConstIterator arr_tag_iter = arr_tags.find_tag_by_clock_domain(domain);
-                if(arr_tag_iter == arr_tags.end()) {
+                TimingTagConstIterator tag_iter = node_tags.find_tag_by_clock_domain(domain);
+                if(tag_iter == node_tags.end()) {
                     if(!isnan(vpr_arr_time)) {
                         error = true;
                         cout << "Node: " << node_id << " Clk: " << domain << endl;
                         cout << "\tERROR Found no arrival-time tag, but VPR arrival time was ";
                         cout << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << endl;
                     }
-                } else if(arr_tag_iter->type() == TagType::CLOCK && isnan(vpr_arr_time)) {
+                } else if(tag_iter->type() == TagType::CLOCK && isnan(vpr_arr_time)) {
                     //VPR does not analyze the clock network explicitly
                     //So it is OK if it is NAN
                     //PASS
                 } else {
-                    float arr_time = arr_tag_iter->arr_time().value();
+                    float arr_time = tag_iter->arr_time().value();
                     float arr_abs_err = fabs(arr_time - vpr_arr_time);
                     float arr_rel_err = relative_error(arr_time, vpr_arr_time);
                     if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
@@ -347,8 +348,8 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
                         cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
                         cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
-                        //cout << "\t\tTag Type was: " << arr_tag_iter->type() << endl;
-
+                    } else if (isnan(arr_time) && isnan(vpr_arr_time)) {
+                        //They agree, pass
                     } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
                         error = true;
                         cout << "Node: " << node_id << " Clk: " << domain;
@@ -368,15 +369,15 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
         //Since we walk our version of the graph make sure we see the same number of nodes as VPR
         VERIFY(arrival_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
 
-        //Required check by level (in reverser)
+        //Required check by level (in reverse)
         for(int ilevel = tg.num_levels() - 1; ilevel >= 0; ilevel--) {
             for(NodeId node_id : tg.level(ilevel)) {
 
-                const TimingTags& req_tags = analyzer.required_tags(node_id);
+                const TimingTags& node_tags = analyzer.tags(node_id);
                 float vpr_req_time = expected_arr_req_times.get_req_time(domain, node_id);
                 //Check Required time
-                TimingTagConstIterator req_tag_iter = req_tags.find_tag_by_clock_domain(domain);
-                if(req_tag_iter == req_tags.end()) {
+                TimingTagConstIterator tag_iter = node_tags.find_tag_by_clock_domain(domain);
+                if(tag_iter == node_tags.end()) {
                     if(!isnan(vpr_req_time)) {
                         error = true;
                         cout << "Node: " << node_id << " Clk: " << domain  << endl;
@@ -384,7 +385,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         cout << vpr_req_time << " (expected NAN)" << endl;
                     }
                 } else {
-                    float req_time = req_tag_iter->req_time().value();
+                    float req_time = tag_iter->req_time().value();
                     float req_abs_err = fabs(req_time - vpr_req_time);
                     float req_rel_err = relative_error(req_time, vpr_req_time);
                     if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
@@ -411,6 +412,8 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                             cout << "\tERROR Calculated required time was not nan but VPR expected nan." << endl;
                         }
 
+                    } else if (isnan(req_time) && isnan(vpr_req_time)) {
+                        //They agree, pass
                     } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {
                         error = true;
                         cout << "Node: " << node_id << " Clk: " << domain;

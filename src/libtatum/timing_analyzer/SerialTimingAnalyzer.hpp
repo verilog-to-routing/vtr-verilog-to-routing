@@ -12,7 +12,7 @@
 //#define SAVE_LEVEL_TIMES
 
 class SerialTimingAnalyzer : public TimingAnalyzer {
-    public: 
+    public:
         SerialTimingAnalyzer();
         ta_runtime calculate_timing(const TimingGraph& timing_graph) override;
         void reset_timing();
@@ -20,8 +20,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
 
         virtual bool is_correct() { return true; }
 
-        const TimingTags& arrival_tags(NodeId node_id) const override;
-        const TimingTags& required_tags(NodeId node_id) const override;
+        const TimingTags& tags(NodeId node_id) const override;
 
 #ifdef SAVE_LEVEL_TIMES
     protected:
@@ -46,14 +45,13 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
          * Propogate required times
          */
         virtual void backward_traversal(const TimingGraph& timing_graph);
-        
+
         //Per node worker functions
         void pre_traverse_node(const TimingGraph& tg, const NodeId node_id);
         void forward_traverse_node(const TimingGraph& tg, const NodeId node_id);
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
-        std::vector<TimingTags> arr_tags_;
-        std::vector<TimingTags> req_tags_;
+        std::vector<TimingTags> tags_;
 
         MemoryPool tag_pool_; //Memory pool for allocating tags
 };

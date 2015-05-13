@@ -147,10 +147,10 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
     const int int_width = 8;
     const int flt_width = 2;
 
-    cout << "Node Arrival Tag Count Histogram:" << endl;
+    cout << "Node Tag Count Histogram:" << endl;
     std::map<int,int> arr_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        arr_tag_cnts[analyzer.arrival_tags(i).num_tags()]++;
+        arr_tag_cnts[analyzer.tags(i).num_tags()]++;
     }
 
     auto totaler = [](int total, const std::map<int,int>::value_type& kv) {
@@ -162,27 +162,17 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
         cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_arr_tags << ")" << endl;
     }
 
-    cout << "Node Required Tag Count Histogram:" << endl;
-    std::map<int,int> req_tag_cnts;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        req_tag_cnts[analyzer.required_tags(i).num_tags()]++;
-    }
-    int total_req_tags = std::accumulate(req_tag_cnts.begin(), req_tag_cnts.end(), 0, totaler);
-    for(const auto& kv : req_tag_cnts) {
-        cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_req_tags << ")" << endl;
-    }
 }
 
 void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer) {
     cout << std::scientific;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        for(const TimingTag& tag : analyzer.arrival_tags(i)) {
-            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Arr: " << tag.arr_time().value() << endl;
-        }
-    }
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        for(const TimingTag& tag : analyzer.required_tags(i)) {
-            cout << "Node " << i << ": clk: " << tag.clock_domain() << " Req: " << tag.req_time().value() << endl;
+        for(const TimingTag& tag : analyzer.tags(i)) {
+            cout << "Node " << i;
+            cout << " clk: " << tag.clock_domain();
+            cout << " Arr: " << tag.arr_time().value();
+            cout << " Req: " << tag.req_time().value();
+            cout << endl;
         }
     }
 }
@@ -193,7 +183,7 @@ std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg) {
     std::set<NodeId> const_gen_fanout_nodes;
     for(NodeId node_id : tg.primary_inputs()) {
         if(tg.node_type(node_id) == TN_Type::CONSTANT_GEN_SOURCE) {
-            identify_constant_gen_fanout_helper(tg, node_id, const_gen_fanout_nodes); 
+            identify_constant_gen_fanout_helper(tg, node_id, const_gen_fanout_nodes);
         }
     }
     return const_gen_fanout_nodes;
