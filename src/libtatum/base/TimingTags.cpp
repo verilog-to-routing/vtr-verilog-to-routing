@@ -87,8 +87,7 @@ void TimingTags::max_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
-        TimingTag tag = base_tag;
-        tag.set_arr_time(new_time);
+        TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
         add_tag(tag_pool, tag);
     } else {
         TimingTag& matched_tag = *iter;
@@ -106,8 +105,7 @@ void TimingTags::min_tag(MemoryPool& tag_pool, const Time& new_time, const Timin
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) { 
         //First time we've seen this domain
-        TimingTag tag = base_tag;
-        tag.set_req_time(new_time);
+        TimingTag tag = TimingTag(Time(NAN), new_time, base_tag);
         add_tag(tag_pool, tag);
     } else {
         TimingTag& matched_tag = *iter;

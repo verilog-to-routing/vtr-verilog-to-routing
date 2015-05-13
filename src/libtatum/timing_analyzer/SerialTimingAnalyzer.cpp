@@ -8,6 +8,7 @@ using std::cout;
 using std::endl;
 
 #include "sta_util.hpp"
+
 SerialTimingAnalyzer::SerialTimingAnalyzer()
     : tag_pool_(sizeof(TimingTag)) //Need to give the size of the object to allocate
     {}
@@ -137,7 +138,6 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const NodeId
 
 void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //Pull from upstream sources to current node
-
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
     TimingTags& arr_tags = arr_tags_[node_id];
@@ -152,6 +152,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const No
         const TimingTags& src_arr_tags = arr_tags_[src_node_id];
 
         for(const TimingTag& src_tag : src_arr_tags) {
+
             if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
                 //This is a clock to data launch edge
                 //Mark the data arrival (launch) time at this launch FF
