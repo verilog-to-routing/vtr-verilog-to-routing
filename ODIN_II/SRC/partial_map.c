@@ -89,7 +89,6 @@ void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist
 			depth_first_traverse_parital_map(netlist->top_input_nodes[i], marker_value, netlist);
 		}
 	}
-	
 	/* now traverse the ground and vcc pins  */
 	depth_first_traverse_parital_map(netlist->gnd_node, marker_value, netlist);
 	depth_first_traverse_parital_map(netlist->vcc_node, marker_value, netlist);
@@ -128,22 +127,9 @@ void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, n
 					continue;
 
 				next_node = next_net->fanout_pins[j]->node;
-				
-				/*if (netlist->top_output_nodes[j]->input_pins[0]->net->driver_pin == NULL)
-				{
-				netlist->top_output_nodes[j]->input_pins[0]->net->driver_pin = node->output_pins[i]->net->driver_pin;
-				netlist->top_output_nodes[j]->input_pins[0]->net->driver_pin->node->name = node->output_pins[i]->name;
-				netlist->top_output_nodes[j]->input_pins[0]->net->driver_pin->node = node->output_pins[i]->node;
-				}
-				netlist->top_output_nodes[i]->input_pins[0]->net->driver_pin->node->name = node->output_pins[i]->name;
-				netlist->top_output_nodes[i]->input_pins[0]->net->driver_pin = node->output_pins[i]->net->driver_pin;*/
-				
 				if (next_node == NULL)
-				{
-					netlist->top_output_nodes[i]->input_pins[0]->net->driver_pin = node->output_pins[i]->net->driver_pin;
-					netlist->top_output_nodes[i]->input_pins[0]->net->driver_pin->node->name = node->output_pins[i]->name;
 					continue;
-				}
+
 				/* recursive call point */
 				depth_first_traverse_parital_map(next_node, traverse_mark_number, netlist);
 			}
