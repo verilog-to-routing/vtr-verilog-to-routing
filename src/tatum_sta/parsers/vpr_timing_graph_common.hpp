@@ -61,7 +61,10 @@ class VprArrReqTimes {
                 //Don't over-write real values with NAN
                 return;
             }
-            arr[clock_id][node_id] = val;
+            if(isnan(curr_val) || curr_val < val) {
+                //Max
+                arr[clock_id][node_id] = val;
+            }
         }
 
         void add_req_time(int clock_id, int node_id, float val) {
@@ -71,7 +74,10 @@ class VprArrReqTimes {
                 //Don't over-write real values with NAN
                 return;
             }
-            req[clock_id][node_id] = val;
+            if(isnan(curr_val) || val < curr_val) {
+                //Min
+                req[clock_id][node_id] = val;
+            }
         }
 
         float get_arr_time(int clock_id, int node_id) const {
