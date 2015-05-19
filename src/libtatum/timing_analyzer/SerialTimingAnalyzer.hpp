@@ -21,7 +21,8 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
 
         virtual bool is_correct() { return true; }
 
-        const TimingTags& tags(NodeId node_id) const override;
+        const TimingTags& data_tags(const NodeId node_id) const override;
+        const TimingTags& clock_tags(const NodeId node_id) const override;
 
 #ifdef SAVE_LEVEL_TIMES
     protected:
@@ -52,7 +53,8 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         void forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
-        std::vector<TimingTags> tags_;
+        std::vector<TimingTags> data_tags_;
+        std::vector<TimingTags> clock_tags_;
 
         MemoryPool tag_pool_; //Memory pool for allocating tags
 };

@@ -207,7 +207,7 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                 VERIFY(from_clock_domain >= 0);
                                                 VERIFY(to_clock_domain >= 0);
                                                 arr_req_times.add_arr_time(from_clock_domain, $2.node_id, $2.T_arr);
-                                                arr_req_times.add_req_time(to_clock_domain, $2.node_id, $2.T_req);
+                                                arr_req_times.add_req_time(from_clock_domain, $2.node_id, $2.T_req);
 
                                                 arr_req_cnt++;
                                                 if(arr_req_cnt % 1000000 == 0) {

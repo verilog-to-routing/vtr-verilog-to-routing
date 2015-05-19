@@ -147,31 +147,49 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
     const int int_width = 8;
     const int flt_width = 2;
 
-    cout << "Node Tag Count Histogram:" << endl;
-    std::map<int,int> arr_tag_cnts;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        arr_tag_cnts[analyzer.tags(i).num_tags()]++;
-    }
-
     auto totaler = [](int total, const std::map<int,int>::value_type& kv) {
         return total + kv.second;
     };
 
-    int total_arr_tags = std::accumulate(arr_tag_cnts.begin(), arr_tag_cnts.end(), 0, totaler);
-    for(const auto& kv : arr_tag_cnts) {
-        cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_arr_tags << ")" << endl;
+    cout << "Node Data Tag Count Histogram:" << endl;
+    std::map<int,int> data_tag_cnts;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        data_tag_cnts[analyzer.data_tags(i).num_tags()]++;
     }
 
+    int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : data_tag_cnts) {
+        cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_data_tags << ")" << endl;
+    }
+
+    cout << "Node clock Tag Count Histogram:" << endl;
+    std::map<int,int> clock_tag_cnts;
+    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+        clock_tag_cnts[analyzer.clock_tags(i).num_tags()]++;
+    }
+
+    int total_clock_tags = std::accumulate(clock_tag_cnts.begin(), clock_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : clock_tag_cnts) {
+        cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_tags << ")" << endl;
+    }
 }
 
 void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer) {
     cout << std::scientific;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        for(const TimingTag& tag : analyzer.tags(i)) {
-            cout << "Node " << i;
-            cout << " clk: " << tag.clock_domain();
-            cout << " Arr: " << tag.arr_time().value();
-            cout << " Req: " << tag.req_time().value();
+        cout << "Node " << i;
+        for(const TimingTag& tag : analyzer.data_tags(i)) {
+            cout << " Data: ";
+            cout << "  clk: " << tag.clock_domain();
+            cout << "  Arr: " << tag.arr_time().value();
+            cout << "  Req: " << tag.req_time().value();
+            cout << endl;
+        }
+        for(const TimingTag& tag : analyzer.clock_tags(i)) {
+            cout << " Clock: ";
+            cout << "  clk: " << tag.clock_domain();
+            cout << "  Arr: " << tag.arr_time().value();
+            cout << "  Req: " << tag.req_time().value();
             cout << endl;
         }
     }

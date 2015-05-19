@@ -10,7 +10,7 @@ using std::endl;
 
 #include "sta_util.hpp"
 
-//#define FWD_TRAVERSE_DEBUG
+#define FWD_TRAVERSE_DEBUG
 //#define BCK_TRAVERSE_DEBUG
 
 SerialTimingAnalyzer::SerialTimingAnalyzer()
@@ -19,7 +19,8 @@ SerialTimingAnalyzer::SerialTimingAnalyzer()
 
 ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     //Pre-allocate data sturctures
-    tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
+    data_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
+    clock_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
 
     struct timespec start_times[4];
     struct timespec end_times[4];
@@ -52,7 +53,8 @@ ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_grap
 
 void SerialTimingAnalyzer::reset_timing() {
     //Drop references to the tags
-    tags_.clear();
+    data_tags_.clear();
+    clock_tags_.clear();
 
     //Release the memory allocated to tags
     tag_pool_.purge_memory();
@@ -113,18 +115,20 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const Timing
         //Initialize with zero arrival time
         //TODO: use real timing constraints!
 
-        ASSERT_MSG(tags_[node_id].num_tags() == 0, "Primary input already has timing tags");
-
-        //Figure out if we are a clock source
-        TagType type = TagType::DATA;
-        if(tg.node_is_clock_source(node_id)) {
-            type = TagType::CLOCK;
-        }
 
         float input_constraint = tc.input_constraint(node_id);
 
-        tags_[node_id].add_tag(tag_pool_,
-                TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id, type));
+        //Figure out if we are a clock source
+        if(tg.node_is_clock_source(node_id)) {
+            ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
+            clock_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+        } else {
+            ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
+            data_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+
+        }
     }
 /*
  *
@@ -154,13 +158,14 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const Timing
 
 void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
 #ifdef FWD_TRAVERSE_DEBUG
-    cout << "FWD Traversing Node: " << node_id << endl;
+    cout << "FWD Traversing Node: " << node_id << " (" << tg.node_type(node_id) << ")" << endl;
 #endif
 
     //Pull from upstream sources to current node
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
-    TimingTags& node_tags = tags_[node_id];
+    TimingTags& node_data_tags = data_tags_[node_id];
+    TimingTags& node_clock_tags = clock_tags_[node_id];
 
     for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
@@ -169,91 +174,118 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
 
         const Time& edge_delay = tg.edge_delay(edge_id);
 
-        const TimingTags& src_tags = tags_[src_node_id];
-
-        for(const TimingTag& src_tag : src_tags) {
 #ifdef FWD_TRAVERSE_DEBUG
-            cout << "\tSRC - Node: " << src_node_id;
-            cout << " CLK: " << src_tag.clock_domain();
-            cout << " Type: " << src_tag.type();
-            cout << " Arr: " << src_tag.arr_time();
-            cout << " Edge_Delay: " << edge_delay;
-            cout << " Edge_Arrival: " << src_tag.arr_time() + edge_delay;
-            cout << endl;
+            cout << "\tSRC Node: " << src_node_id << endl;;
 #endif
-
-            if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
-                //This is a clock to data launch edge
-                //Mark the data arrival (launch) time at this launch FF
-
-                //The only input to a FF_SOURCE should be the the clock
-                //network, so we expect only CLOCK tags
-                ASSERT(src_tag.type() == TagType::CLOCK);
-
-                //FF Launch edge, begin data propagation
-                //
-                //We convert the clock arrival time to a
-                //data arrival time at this node (since the clock arrival
-                //launches the data)
-                TimingTag launch_tag = src_tag;
-                launch_tag.set_type(TagType::DATA);
-                launch_tag.set_launch_node(src_node_id);
-
-                //Mark propagated launch time
-                node_tags.max_arr(tag_pool_, launch_tag.arr_time() + edge_delay, launch_tag);
-
-            } else if (tg.node_type(node_id) == TN_Type::FF_SINK && src_tag.type() == TagType::CLOCK) {
-                //This is a clock to data capture edge
-                //Mark the propagated required time if this is a capture FF
-
-                //Must be a clock tag
-                ASSERT(src_tag.type() == TagType::CLOCK);
-
-
-                //Mark propogated required time
-                //TODO: use real timing constraints!
-                //TODO: Should be max_req?
-                node_tags.min_req(tag_pool_, src_tag.arr_time() + Time(DEFAULT_CLOCK_PERIOD), src_tag);
-
-                //Capture Edge
-                //TimingTag capture_tag = src_tag;
-                //capture_tag.set_type(TagType::DATA);
-                //capture_tag.set_launch_node(node_id);
-                //capture_tag.set_arr_time(Time(NAN));
-                //capture_tag.set_req_time(src_tag.arr_time() + Time(DEFAULT_CLOCK_PERIOD));
-
-                //TODO: Check condition, no tags yet?
-                //node_tags.add_tag(tag_pool_, capture_tag);
-            } else {
-                //Standard propogation
-                node_tags.max_arr(tag_pool_, src_tag.arr_time() + edge_delay, src_tag);
-            }
+        /*
+         * Clock tags
+         */
+        if(tg.node_type(src_node_id) != TN_Type::FF_SOURCE) {
+            //Do not propagate clock tags from an FF Source,
+            //the clock arrival there will have been converted to a
+            //data tag
+            const TimingTags& src_clk_tags = clock_tags_[src_node_id];
+            for(const TimingTag& src_clk_tag : src_clk_tags) {
 #ifdef FWD_TRAVERSE_DEBUG
-            for(const auto& tag : node_tags) {
-                cout << "\t\t";
-                cout << "CLK: " << tag.clock_domain();
-                cout << " Arr: " << tag.arr_time();
-                cout << " Req: " << tag.req_time();
+                cout << "\t\tCLOCK_TAG -";
+                cout << " CLK: " << src_clk_tag.clock_domain();
+                cout << " Arr: " << src_clk_tag.arr_time();
+                cout << " Edge_Delay: " << edge_delay;
+                cout << " Edge_Arrival: " << src_clk_tag.arr_time() + edge_delay;
                 cout << endl;
-            }
 #endif
+                //Standard propagation through the clock network
+                node_clock_tags.max_arr(tag_pool_, src_clk_tag.arr_time() + edge_delay, src_clk_tag);
+
+                if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
+                    //This is a clock to data launch edge
+                    //Mark the data arrival (launch) time at this FF
+
+                    //FF Launch edge, begin data propagation
+                    //
+                    //We convert the clock arrival time to a
+                    //data arrival time at this node (since the clock arrival
+                    //launches the data)
+                    TimingTag launch_tag = src_clk_tag;
+                    launch_tag.set_launch_node(src_node_id);
+                    ASSERT(launch_tag.next() == nullptr);
+
+                    //Mark propagated launch time as a DATA tag
+                    node_data_tags.max_arr(tag_pool_, launch_tag.arr_time() + edge_delay, launch_tag);
+                }
+            }
         }
 
+        /*
+         * Data tags
+         */
+
+        const TimingTags& src_data_tags = data_tags_[src_node_id];
+
+        for(const TimingTag& src_data_tag : src_data_tags) {
+#ifdef FWD_TRAVERSE_DEBUG
+            cout << "\t\tDATA_TAG -";
+            cout << " CLK: " << src_data_tag.clock_domain();
+            cout << " Arr: " << src_data_tag.arr_time();
+            cout << " Edge_Delay: " << edge_delay;
+            cout << " Edge_Arrival: " << src_data_tag.arr_time() + edge_delay;
+            cout << endl;
+#endif
+            //Standard data-path propagation
+            node_data_tags.max_arr(tag_pool_, src_data_tag.arr_time() + edge_delay, src_data_tag);
+        }
+
+        /*
+         * Calculate required times
+         */
         if(tg.node_type(node_id) == TN_Type::OUTPAD_SINK) {
             //Determine the required time for outputs
             float output_constraint = tc.output_constraint(node_id);
             DomainId node_domain = tg.node_clock_domain(node_id);
-            for(const TimingTag& tag : node_tags) {
-                float clock_constraint = tc.clock_constraint(tag.clock_domain(), node_domain);
-
-                //FIXME We need to ensure the required time falls on the correct clock?
+            for(const TimingTag& data_tag : node_data_tags) {
+                float clock_constraint = tc.clock_constraint(data_tag.clock_domain(), node_domain);
 
                 //We subtract the output delay from the clock constraint so that the
                 //required time gaurentees output_constraint time of off-chip propagation
-                node_tags.min_req(tag_pool_, Time(clock_constraint - output_constraint), tag);
+                node_data_tags.min_req(tag_pool_, Time(clock_constraint - output_constraint), data_tag);
+            }
+        } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
+            //Determine the required time at this FF
+            //
+            //We need to generate a required time for each clock domain for which there is a data
+            //arrival time at this node, while considering all possible clocks that could drive
+            //this node (i.e. take the most restrictive constraint accross all clock tags at this
+            //node)
+            for(TimingTag& node_data_tag : node_data_tags) {
+                for(const TimingTag& node_clock_tag : node_clock_tags) {
+                    float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(), node_clock_tag.clock_domain());
+
+                    //FIXME Performance: We know the tag, so we don't need to search through the tags
+                    node_data_tags.min_req(tag_pool_, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                }
             }
         }
     }
+
+#ifdef FWD_TRAVERSE_DEBUG
+    cout << "\tResulting Tags:" << endl;
+    for(const auto& node_clk_tag : node_clock_tags) {
+        cout << "\t\t";
+        cout << "CLOCK_TAG -";
+        cout << " CLK: " << node_clk_tag.clock_domain();
+        cout << " Arr: " << node_clk_tag.arr_time();
+        cout << " Req: " << node_clk_tag.req_time();
+        cout << endl;
+    }
+    for(const auto& node_data_tag : node_data_tags) {
+        cout << "\t\t";
+        cout << "DATA_TAG -";
+        cout << " CLK: " << node_data_tag.clock_domain();
+        cout << " Arr: " << node_data_tag.arr_time();
+        cout << " Req: " << node_data_tag.req_time();
+        cout << endl;
+    }
+#endif
 }
 
 void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
@@ -273,7 +305,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
-    TimingTags& node_tags = tags_[node_id];
+    TimingTags& node_data_tags = data_tags_[node_id];
 
     //Each back-edge from down stream node
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
@@ -283,9 +315,9 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
 
         const Time& edge_delay = tg.edge_delay(edge_id);
 
-        const TimingTags& sink_tags = tags_[sink_node_id];
+        const TimingTags& sink_data_tags = data_tags_[sink_node_id];
 
-        for(const TimingTag& sink_tag : sink_tags) {
+        for(const TimingTag& sink_tag : sink_data_tags) {
 #ifdef BCK_TRAVERSE_DEBUG
             cout << "\tSINK - Node: " << sink_node_id;
             cout << " CLK: " << sink_tag.clock_domain();
@@ -296,7 +328,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
             cout << endl;
 #endif
 
-            node_tags.min_req(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
+            node_data_tags.min_req(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
 
 #ifdef BCK_TRAVERSE_DEBUG
             for(const auto& tag : node_tags) {
@@ -321,6 +353,9 @@ void SerialTimingAnalyzer::save_level_times(const TimingGraph& timing_graph, std
 #endif
 }
 
-const TimingTags& SerialTimingAnalyzer::tags(NodeId node_id) const {
-    return tags_[node_id];
+const TimingTags& SerialTimingAnalyzer::data_tags(const NodeId node_id) const {
+    return data_tags_[node_id];
+}
+const TimingTags& SerialTimingAnalyzer::clock_tags(const NodeId node_id) const {
+    return clock_tags_[node_id];
 }

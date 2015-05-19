@@ -12,7 +12,8 @@ class TimingAnalyzer {
     public:
         virtual ta_runtime calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) = 0;
 
-        virtual const TimingTags& tags(NodeId node_id) const = 0;
+        virtual const TimingTags& data_tags(NodeId node_id) const = 0;
+        virtual const TimingTags& clock_tags(NodeId node_id) const = 0;
 };
 
 struct ta_runtime {
