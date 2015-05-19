@@ -129,9 +129,11 @@ int main(int argc, char** argv) {
     cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
 
-    timing_constraints.print();
+    /*
+     *timing_constraints.print();
+     */
 
-    int n_histo_bins = 20;
+    int n_histo_bins = 10;
     print_level_histogram(timing_graph, n_histo_bins);
     print_node_fanin_histogram(timing_graph, n_histo_bins);
     print_node_fanout_histogram(timing_graph, n_histo_bins);
