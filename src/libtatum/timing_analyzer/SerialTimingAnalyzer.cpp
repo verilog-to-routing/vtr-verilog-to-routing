@@ -124,17 +124,22 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const Timing
         ASSERT(node_type == TN_Type::INPAD_SOURCE);
 
         //A standard primary input
-        float input_constraint = tc.input_constraint(node_id);
+
+        //VPR applies input delays to the arc from INPAD_SOURCE to INPAD_OPIN
+        //so we do not need to account for it directly in the arrival time of INPAD_SOURCES
+        //
+        //TODO: The initial arrival should correspond to the rising edge of the clock associated
+        //      with the input
 
         //Figure out if we are an input which defines a clock
         if(tg.node_is_clock_source(node_id)) {
             ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
             clock_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+                    TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
         } else {
             ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
             data_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+                    TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
 
         }
     }
@@ -224,14 +229,13 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
          */
         if(tg.node_type(node_id) == TN_Type::OUTPAD_SINK) {
             //Determine the required time for outputs
-            float output_constraint = tc.output_constraint(node_id);
             DomainId node_domain = tg.node_clock_domain(node_id);
             for(const TimingTag& data_tag : node_data_tags) {
                 float clock_constraint = tc.clock_constraint(data_tag.clock_domain(), node_domain);
 
-                //We subtract the output delay from the clock constraint so that the
-                //required time gaurentees output_constraint time of off-chip propagation
-                node_data_tags.min_req(tag_pool_, Time(clock_constraint - output_constraint), data_tag);
+                //The output delay is assumed to be on the edge from the OUTPAD_IPIN to OUTPAD_SINK
+                //so we do not need to account for it here
+                node_data_tags.min_req(tag_pool_, Time(clock_constraint), data_tag);
             }
         } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
             //Determine the required time at this FF
