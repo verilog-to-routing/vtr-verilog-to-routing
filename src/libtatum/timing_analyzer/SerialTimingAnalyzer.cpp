@@ -67,15 +67,8 @@ void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph, const 
      * and required times.
      * Steps performed include:
      *   - Initialize arrival times on primary inputs
-     *   - Propogating clock delay to all clock pins
-     *   - Initialize required times on primary outputs
      */
     for(NodeId node_id : timing_graph.primary_inputs()) {
-        pre_traverse_node(timing_graph, timing_constraints, node_id);
-    }
-
-    //TODO: remove primary_ outputs() if not needed?
-    for(NodeId node_id : timing_graph.primary_outputs()) {
         pre_traverse_node(timing_graph, timing_constraints, node_id);
     }
 }
@@ -111,65 +104,40 @@ void SerialTimingAnalyzer::backward_traversal(const TimingGraph& timing_graph) {
 }
 
 void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
-    if(tg.num_node_in_edges(node_id) == 0) { //Primary Input
-        //Initialize with zero arrival time
-        //TODO: use real timing constraints!
+    //Primary Input
+    ASSERT(tg.num_node_in_edges(node_id) == 0);
 
-        TN_Type node_type = tg.node_type(node_id);
+    TN_Type node_type = tg.node_type(node_id);
 
-        if(node_type == TN_Type::CONSTANT_GEN_SOURCE) {
-            //Pass, we don't propagate any tags from constant generators,
-            //since they do not effect they dynamic timing behaviour of the
-            //system
+    if(node_type == TN_Type::CONSTANT_GEN_SOURCE) {
+        //Pass, we don't propagate any tags from constant generators,
+        //since they do not effect they dynamic timing behaviour of the
+        //system
 
-        } else if(node_type == TN_Type::CLOCK_SOURCE) {
-            //TODO: use real rise edge time!
+    } else if(node_type == TN_Type::CLOCK_SOURCE) {
+        //TODO: use real rise edge time!
+        ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Clock source already has clock tags");
+        clock_tags_[node_id].add_tag(tag_pool_,
+                TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
+
+    } else {
+        ASSERT(node_type == TN_Type::INPAD_SOURCE);
+
+        //A standard primary input
+        float input_constraint = tc.input_constraint(node_id);
+
+        //Figure out if we are an input which defines a clock
+        if(tg.node_is_clock_source(node_id)) {
+            ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
             clock_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
-
+                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
         } else {
-            ASSERT(node_type == TN_Type::INPAD_SOURCE);
+            ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
+            data_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
 
-            //A standard primary input
-            float input_constraint = tc.input_constraint(node_id);
-
-            //Figure out if we are an input which defines a clock
-            if(tg.node_is_clock_source(node_id)) {
-                ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
-                clock_tags_[node_id].add_tag(tag_pool_,
-                        TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
-            } else {
-                ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
-                data_tags_[node_id].add_tag(tag_pool_,
-                        TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
-
-            }
         }
     }
-/*
- *
- *    if(tg.num_node_out_edges(node_id) == 0) { //Primary Output
- *        ASSERT_MSG(tags_[node_id].num_tags() == 0, "Primary output already has timing tags");
- *
- *        //Initialize required time
- *        //FIXME Currently assuming:
- *        //   * All clocks at fixed frequency
- *
- *        //FF_SINK's have their required time set by the clock network, so we don't
- *        //need to set them explicitly here.
- *        //
- *        //Everything else gets the standard constraint
- *        if(tg.node_type(node_id) != TN_Type::FF_SINK) {
- *            DomainId output_domain = tg.node_clock_domain(node_id);
- *            float output_constraint = tc.output_constraint(node_id);
- *            //This is not the correct way to look-up the output clock constraint
- *            //TODO FIXME
- *            float period_constraint = tc.clock_constraint(output_domain, output_domain);
- *            tags_[node_id].add_tag(tag_pool_,
- *                    TimingTag(Time(NAN), Time(period_constraint - output_constraint), output_domain, node_id, TagType::DATA));
- *        }
- *    }
- */
 }
 
 void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
