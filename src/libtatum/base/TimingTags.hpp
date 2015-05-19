@@ -111,6 +111,7 @@ class TimingTags {
         void add_tag(MemoryPool& tag_pool, const TimingTag& src_tag);
         void max_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
         void min_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
+        void min_req_tag(TimingTag& matched_tag, const Time& new_time, const TimingTag& base_tag);
         void clear();
 
 

@@ -248,7 +248,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
                         float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(), node_clock_tag.clock_domain());
 
                         //FIXME Performance: We know the tag, so we don't need to search through the tags
-                        node_data_tags.min_req(tag_pool_, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                        node_data_tags.min_req_tag(node_data_tag, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
                     }
                 }
             }

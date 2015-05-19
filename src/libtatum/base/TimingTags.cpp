@@ -110,14 +110,18 @@ void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const Timin
         TimingTag tag = TimingTag(Time(NAN), new_time, base_tag);
         add_tag(tag_pool, tag);
     } else {
-        TimingTag& matched_tag = *iter;
+        min_req_tag(*iter, new_time, base_tag);
+    }
+}
 
-        //Need to min with existing value
-        if(!matched_tag.req_time().valid() || new_time.value() < matched_tag.req_time().value()) {
-            //New value is smaller, or no previous valid value existed
-            //Update min
-            matched_tag.update_req(new_time, base_tag);
-        }
+void TimingTags::min_req_tag(TimingTag& matched_tag, const Time& new_time, const TimingTag& base_tag) {
+    ASSERT(matched_tag.clock_domain() == base_tag.clock_domain());
+
+    //Need to min with existing value
+    if(!matched_tag.req_time().valid() || new_time.value() < matched_tag.req_time().value()) {
+        //New value is smaller, or no previous valid value existed
+        //Update min
+        matched_tag.update_req(new_time, base_tag);
     }
 }
 

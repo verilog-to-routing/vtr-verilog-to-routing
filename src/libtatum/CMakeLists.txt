@@ -49,5 +49,5 @@ add_definitions(-DTIME_VEC_WIDTH=1)
 #
 #
 
-#Define the library 
+#Define the library
 add_library(${LIB_NAME} ${LIB_TATUM_SRCS})
