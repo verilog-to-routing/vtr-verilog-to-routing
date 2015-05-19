@@ -21,3 +21,4 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
 void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer);
 
 std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg);
+std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg);

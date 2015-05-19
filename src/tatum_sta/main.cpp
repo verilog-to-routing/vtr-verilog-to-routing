@@ -30,12 +30,12 @@
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 //#define OPTIMIZE_NODE_EDGE_ORDER
 
-int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes);
-bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId node_id, int domain, std::streamsize num_width);
-bool verify_req_tag(TimingTagConstIterator tag_iter, float vpr_req_time, NodeId node_id, int domain, std::set<NodeId> const_gen_fanout_nodes, std::streamsize num_width);
-
 using std::cout;
 using std::endl;
+
+int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes);
+bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
+bool verify_req_tag(TimingTagConstIterator tag_iter, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width);
 
 
 int main(int argc, char** argv) {
@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
     VprArrReqTimes orig_expected_arr_req_times;
     VprArrReqTimes expected_arr_req_times;
     std::set<NodeId> const_gen_fanout_nodes;
+    std::set<NodeId> clock_gen_fanout_nodes;
 
     SerialTimingAnalyzer serial_analyzer;
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer();
@@ -123,6 +124,7 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
         const_gen_fanout_nodes = identify_constant_gen_fanout(timing_graph);
+        clock_gen_fanout_nodes = identify_clock_gen_fanout(timing_graph);
     }
     cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
@@ -177,13 +179,13 @@ int main(int argc, char** argv) {
             cout << ".";
             cout.flush();
 
-            print_timing_tags(timing_graph, serial_analyzer);
+            //print_timing_tags(timing_graph, serial_analyzer);
 
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(serial_analyzer.is_correct()) {
-                serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer, expected_arr_req_times, const_gen_fanout_nodes);
+                serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer, expected_arr_req_times, const_gen_fanout_nodes, clock_gen_fanout_nodes );
             }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
@@ -302,7 +304,7 @@ int main(int argc, char** argv) {
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
 
-int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, std::set<NodeId> const_gen_fanout_nodes) {
+int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
 
     //cout << "Verifying Calculated Timing Against VPR" << endl;
     std::ios_base::fmtflags saved_flags = cout.flags();
@@ -341,7 +343,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         const TimingTags& node_clock_tags = analyzer.clock_tags(node_id);
                         TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_data_tags.end()) {
-                            error |= verify_arr_tag(clock_tag_iter, vpr_arr_time, node_id, domain, num_width);
+                            error |= verify_arr_tag(clock_tag_iter, vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
 
                         } else if(!isnan(vpr_arr_time)) {
                             error = true;
@@ -353,7 +355,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         }
                     }
                 } else {
-                    error |= verify_arr_tag(data_tag_iter, vpr_arr_time, node_id, domain, num_width);
+                    error |= verify_arr_tag(data_tag_iter, vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
                 }
                 arr_reqs_verified ++;
                 arrival_nodes_checked++;
@@ -412,7 +414,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
 }
 
 
-bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId node_id, int domain, std::streamsize num_width) {
+bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width) {
     bool error = false;
     float arr_time = tag_iter->arr_time().value();
     float arr_abs_err = fabs(arr_time - vpr_arr_time);
@@ -424,11 +426,21 @@ bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId 
         cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
         cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << endl;
     } else if (!isnan(arr_time) && isnan(vpr_arr_time)) {
-        error = true;
-        cout << "Node: " << node_id << " Clk: " << domain;
-        cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
-        cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
-        cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
+        if(clock_gen_fanout_nodes.count(node_id)) {
+#if 0
+            cout << "Node: " << node_id << " Clk: " << domain;
+            cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
+            cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+            cout << "\tOK since " << node_id << " in fanout of Clock Generator" << endl;
+#endif
+
+        } else {
+            error = true;
+            cout << "Node: " << node_id << " Clk: " << domain;
+            cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
+            cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
+            cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
+        }
     } else if (isnan(arr_time) && isnan(vpr_arr_time)) {
         //They agree, pass
     } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
@@ -445,7 +457,7 @@ bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId 
     return error;
 }
 
-bool verify_req_tag(TimingTagConstIterator tag_iter, float vpr_req_time, NodeId node_id, int domain, std::set<NodeId> const_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_req_tag(TimingTagConstIterator tag_iter, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width) {
     bool error = false;
     float req_time = tag_iter->req_time().value();
     float req_abs_err = fabs(req_time - vpr_req_time);

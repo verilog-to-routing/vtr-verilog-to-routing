@@ -10,7 +10,7 @@ using std::endl;
 
 #include "sta_util.hpp"
 
-#define FWD_TRAVERSE_DEBUG
+//#define FWD_TRAVERSE_DEBUG
 //#define BCK_TRAVERSE_DEBUG
 
 SerialTimingAnalyzer::SerialTimingAnalyzer()
@@ -115,16 +115,25 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const Timing
         //Initialize with zero arrival time
         //TODO: use real timing constraints!
 
-        if(tg.node_type(node_id) == TN_Type::CONSTANT_GEN_SOURCE) {
+        TN_Type node_type = tg.node_type(node_id);
+
+        if(node_type == TN_Type::CONSTANT_GEN_SOURCE) {
             //Pass, we don't propagate any tags from constant generators,
             //since they do not effect they dynamic timing behaviour of the
             //system
 
+        } else if(node_type == TN_Type::CLOCK_SOURCE) {
+            //TODO: use real rise edge time!
+            clock_tags_[node_id].add_tag(tag_pool_,
+                    TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
+
         } else {
+            ASSERT(node_type == TN_Type::INPAD_SOURCE);
+
             //A standard primary input
             float input_constraint = tc.input_constraint(node_id);
 
-            //Figure out if we are a clock source
+            //Figure out if we are an input which defines a clock
             if(tg.node_is_clock_source(node_id)) {
                 ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
                 clock_tags_[node_id].add_tag(tag_pool_,
@@ -267,10 +276,12 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
             //FIXME Only need to generate req tags for clocks with known arrival times
             for(TimingTag& node_data_tag : node_data_tags) {
                 for(const TimingTag& node_clock_tag : node_clock_tags) {
-                    float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(), node_clock_tag.clock_domain());
+                    if(node_data_tag.arr_time().valid()) {
+                        float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(), node_clock_tag.clock_domain());
 
-                    //FIXME Performance: We know the tag, so we don't need to search through the tags
-                    node_data_tags.min_req(tag_pool_, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                        //FIXME Performance: We know the tag, so we don't need to search through the tags
+                        node_data_tags.min_req(tag_pool_, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                    }
                 }
             }
         }
@@ -301,7 +312,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
     //Pull from downstream sinks to current node
 
 #ifdef BCK_TRAVERSE_DEBUG
-    cout << "BCK Traversing Node: " << node_id << endl;
+    cout << "BCK Traversing Node: " << node_id << " (" << tg.node_type(node_id) << ")" << endl;
 #endif
 
     TN_Type node_type = tg.node_type(node_id);
@@ -326,30 +337,63 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
 
         const TimingTags& sink_data_tags = data_tags_[sink_node_id];
 
+#ifdef BCK_TRAVERSE_DEBUG
+            cout << "\tSINK Node: " << sink_node_id << endl;;
+#endif
+
         for(const TimingTag& sink_tag : sink_data_tags) {
 #ifdef BCK_TRAVERSE_DEBUG
-            cout << "\tSINK - Node: " << sink_node_id;
+            cout << "\t\t";
+            cout << "DATA_TAG -";
             cout << " CLK: " << sink_tag.clock_domain();
-            cout << " Type: " << sink_tag.type();
             cout << " Req: " << sink_tag.req_time();
             cout << " Edge_Delay: " << edge_delay;
-            cout << " Edge_Arrival: " << sink_tag.arr_time() + edge_delay;
+            cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
             cout << endl;
 #endif
-
-            node_data_tags.min_req(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
+            //We only take the min if we have a valid arrival time
+            //TODO: avoid double searching!
+            TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
+            if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
+                node_data_tags.min_req(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
+            }
+        }
 
 #ifdef BCK_TRAVERSE_DEBUG
-            for(const auto& tag : node_tags) {
-                cout << "\t\t";
-                cout << "CLK: " << tag.clock_domain();
-                cout << " Arr: " << tag.arr_time();
-                cout << " Req: " << tag.req_time();
-                cout << endl;
-            }
-#endif
+        const TimingTags& sink_clock_tags = clock_tags_[sink_node_id];
+        for(const TimingTag& sink_tag : sink_clock_tags) {
+            cout << "\t\t";
+            cout << "CLOCK_TAG -";
+            cout << " CLK: " << sink_tag.clock_domain();
+            cout << " Req: " << sink_tag.req_time();
+            //cout << " Edge_Delay: " << edge_delay;
+            //cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
+            cout << endl;
+
         }
+#endif
     }
+
+#ifdef BCK_TRAVERSE_DEBUG
+    const TimingTags& node_clock_tags = clock_tags_[node_id];
+    cout << "\tResulting Tags:" << endl;
+    for(const auto& node_data_tag : node_data_tags) {
+        cout << "\t\t";
+        cout << "DATA_TAG -";
+        cout << " CLK: " << node_data_tag.clock_domain();
+        cout << " Arr: " << node_data_tag.arr_time();
+        cout << " Req: " << node_data_tag.req_time();
+        cout << endl;
+    }
+    for(const auto& node_clk_tag : node_clock_tags) {
+        cout << "\t\t";
+        cout << "CLOCK_TAG -";
+        cout << " CLK: " << node_clk_tag.clock_domain();
+        cout << " Arr: " << node_clk_tag.arr_time();
+        cout << " Req: " << node_clk_tag.req_time();
+        cout << endl;
+    }
+#endif
 }
 
 void SerialTimingAnalyzer::save_level_times(const TimingGraph& timing_graph, std::string filename) {

@@ -9,6 +9,7 @@
 using std::cout;
 using std::endl;
 void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes);
+void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& clock_gen_fanout_nodes);
 
 float time_sec(struct timespec start, struct timespec end) {
     float time = end.tv_sec - start.tv_sec;
@@ -216,4 +217,26 @@ void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId nod
             identify_constant_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), const_gen_fanout_nodes);
         }
     }
+}
+
+std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg) {
+    std::set<NodeId> clock_gen_fanout_nodes;
+    for(NodeId node_id : tg.primary_inputs()) {
+        if(tg.node_type(node_id) == TN_Type::CLOCK_SOURCE) {
+            identify_clock_gen_fanout_helper(tg, node_id, clock_gen_fanout_nodes);
+        }
+    }
+    return clock_gen_fanout_nodes;
+}
+
+void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& clock_gen_fanout_nodes) {
+    if(clock_gen_fanout_nodes.count(node_id) == 0) {
+        //Haven't seen this node before
+        clock_gen_fanout_nodes.insert(node_id);
+        for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
+            EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+            identify_clock_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), clock_gen_fanout_nodes);
+        }
+    }
+
 }
