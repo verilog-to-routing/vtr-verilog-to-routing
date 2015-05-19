@@ -115,19 +115,26 @@ void SerialTimingAnalyzer::pre_traverse_node(const TimingGraph& tg, const Timing
         //Initialize with zero arrival time
         //TODO: use real timing constraints!
 
+        if(tg.node_type(node_id) == TN_Type::CONSTANT_GEN_SOURCE) {
+            //Pass, we don't propagate any tags from constant generators,
+            //since they do not effect they dynamic timing behaviour of the
+            //system
 
-        float input_constraint = tc.input_constraint(node_id);
-
-        //Figure out if we are a clock source
-        if(tg.node_is_clock_source(node_id)) {
-            ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
-            clock_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
         } else {
-            ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
-            data_tags_[node_id].add_tag(tag_pool_,
-                    TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+            //A standard primary input
+            float input_constraint = tc.input_constraint(node_id);
 
+            //Figure out if we are a clock source
+            if(tg.node_is_clock_source(node_id)) {
+                ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
+                clock_tags_[node_id].add_tag(tag_pool_,
+                        TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+            } else {
+                ASSERT_MSG(clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
+                data_tags_[node_id].add_tag(tag_pool_,
+                        TimingTag(Time(input_constraint), Time(NAN), tg.node_clock_domain(node_id), node_id));
+
+            }
         }
     }
 /*
@@ -256,6 +263,8 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
             //arrival time at this node, while considering all possible clocks that could drive
             //this node (i.e. take the most restrictive constraint accross all clock tags at this
             //node)
+
+            //FIXME Only need to generate req tags for clocks with known arrival times
             for(TimingTag& node_data_tag : node_data_tags) {
                 for(const TimingTag& node_clock_tag : node_clock_tags) {
                     float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(), node_clock_tag.clock_domain());
