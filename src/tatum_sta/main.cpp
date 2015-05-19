@@ -28,7 +28,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 using std::cout;
 using std::endl;

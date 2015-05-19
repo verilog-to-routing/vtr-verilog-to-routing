@@ -47,8 +47,18 @@ void TimingConstraints::add_output_constraint(const NodeId node_id, const float 
 }
 
 void TimingConstraints::remap_nodes(const std::vector<NodeId>& node_map) {
-    //TODO: implement me!
-    ASSERT_MSG(0, "Not implemented");
+    std::map<NodeId,float> remapped_input_constraints;
+    std::map<NodeId,float> remapped_output_constraints;
+
+    for(auto kv : input_constraints_) {
+        remapped_input_constraints[node_map[kv.first]] = kv.second;
+    }
+    for(auto kv : output_constraints_) {
+        remapped_output_constraints[node_map[kv.first]] = kv.second;
+    }
+
+    std::swap(input_constraints_, remapped_input_constraints);
+    std::swap(output_constraints_, remapped_output_constraints);
 }
 
 void TimingConstraints::print() {
