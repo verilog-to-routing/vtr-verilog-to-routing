@@ -28,20 +28,20 @@ float TimingConstraints::output_constraint(NodeId node_id) const {
 }
 
 void TimingConstraints::add_clock_constraint(const DomainId src_domain, const DomainId sink_domain, const float constraint) {
-    std::cout << "SRC: " << src_domain << " SINK: " << sink_domain << " Constraint: " << constraint << std::endl;
+    //std::cout << "SRC: " << src_domain << " SINK: " << sink_domain << " Constraint: " << constraint << std::endl;
     auto key = std::make_pair(src_domain, sink_domain);
     auto iter = clock_constraints_.insert(std::make_pair(key, constraint));
     ASSERT_MSG(iter.second, "Attempted to insert duplicate entry");
 }
 
 void TimingConstraints::add_input_constraint(const NodeId node_id, const float constraint) {
-    std:: cout << "Node: " << node_id << " Input_Constraint: " << constraint << std::endl;
+    //std:: cout << "Node: " << node_id << " Input_Constraint: " << constraint << std::endl;
     auto iter = input_constraints_.insert(std::make_pair(node_id, constraint));
     ASSERT_MSG(iter.second, "Attempted to insert duplicate entry");
 }
 
 void TimingConstraints::add_output_constraint(const NodeId node_id, const float constraint) {
-    std::cout << "Node: " << node_id << " Output_Constraint: " << constraint << std::endl;
+    //std::cout << "Node: " << node_id << " Output_Constraint: " << constraint << std::endl;
     auto iter = output_constraints_.insert(std::make_pair(node_id, constraint));
     ASSERT_MSG(iter.second, "Attempted to insert duplicate entry");
 }
