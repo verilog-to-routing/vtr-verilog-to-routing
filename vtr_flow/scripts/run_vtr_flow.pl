@@ -73,6 +73,7 @@ my $keep_intermediate_files = 0;
 my $has_memory              = 1;
 my $timing_driven           = "on";
 my $min_chan_width          = -1; 
+my $max_router_iterations   = 50;
 my $lut_size                = -1;
 my $vpr_cluster_seed_type   = "";
 my $routing_failure_predictor = "safe";
@@ -106,6 +107,9 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-vpr_route_chan_width" ) {
 		$min_chan_width = shift(@ARGV);
 	}
+    elsif ( $token eq "-vpr_max_router_iterations" ) {
+        $max_router_iterations = shift(@ARGV);
+    }
 	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
 	}
@@ -457,8 +461,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	}
 	if ( $min_chan_width < 0 ) {
 		$q = &system_with_timeout(
-			$vpr_path,                    "vpr.out",
-			$timeout,                     $temp_dir,
+            $vpr_path, "vpr.out", 
+            $timeout, $temp_dir,
 			$architecture_file_name,      "$benchmark_name",
 			"--blif_file",				  "$prevpr_output_file_name",
 			"--timing_analysis",          "$timing_driven",
@@ -469,6 +473,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--seed",			 		  "$seed",
 			"--nodisp"
 		);
+    
 		if ( $timing_driven eq "on" ) {
 			# Critical path delay is nonsensical at minimum channel width because congestion constraints completely dominate the cost function.
 			# Additional channel width needs to be added so that there is a reasonable trade-off between delay and area
@@ -507,8 +512,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--route",
 					"--blif_file",           "$prevpr_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
+                    "--max_router_iterations", "$max_router_iterations",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
-					"--max_router_iterations", "100",
 					"--nodisp",              @vpr_power_args,
 					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 					"--sdc_file",			 "$sdc_file_path"
@@ -525,6 +530,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--timing_analysis",          "$timing_driven",
 			"--timing_driven_clustering", "$timing_driven",
 			"--route_chan_width",         "$min_chan_width",
+            "--max_router_iterations",    "$max_router_iterations",
 			"--nodisp",                   "--cluster_seed_type",
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
