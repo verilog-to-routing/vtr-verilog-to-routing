@@ -28,7 +28,7 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
