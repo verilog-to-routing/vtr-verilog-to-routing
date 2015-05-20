@@ -92,7 +92,6 @@ class VprArrReqTimes {
         }
         int get_num_clocks() const { return (int) arr.size(); }
         int get_num_nodes() const { return (int) num_nodes; }
-    private:
         void resize(int clock_id) {
             while(clock_id >= (int) arr.size()) {
                 arr.push_back(std::vector<float>(num_nodes, NAN));
@@ -101,6 +100,7 @@ class VprArrReqTimes {
             VERIFY(arr.size() == req.size());
             VERIFY(clock_id < (int) arr.size());
         }
+    private:
 
         int num_nodes;
         std::vector<std::vector<float>> arr;

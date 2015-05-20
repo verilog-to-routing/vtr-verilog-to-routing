@@ -34,8 +34,8 @@ using std::cout;
 using std::endl;
 
 int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes);
-bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
-bool verify_req_tag(TimingTagConstIterator tag_iter, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width);
+bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
+bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width);
 
 
 int main(int argc, char** argv) {
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
             cout << ".";
             cout.flush();
 
-            //print_timing_tags(timing_graph, serial_analyzer);
+            print_timing_tags(timing_graph, serial_analyzer);
 
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
@@ -319,6 +319,10 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
     cout << std::setw(10);
     int arr_reqs_verified = 0;
     bool error = false;
+
+    /*
+     * Check from VPR to Tatum results
+     */
     for(int domain = 0; domain < expected_arr_req_times.get_num_clocks(); domain++) {
 
         int arrival_nodes_checked = 0; //Count number of nodes checked
@@ -345,7 +349,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         const TimingTags& node_clock_tags = analyzer.clock_tags(node_id);
                         TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_data_tags.end()) {
-                            error |= verify_arr_tag(clock_tag_iter, vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
+                            error |= verify_arr_tag(clock_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
 
                         } else if(!isnan(vpr_arr_time)) {
                             error = true;
@@ -357,7 +361,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         }
                     }
                 } else {
-                    error |= verify_arr_tag(data_tag_iter, vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
+                    error |= verify_arr_tag(data_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
                 }
                 arr_reqs_verified ++;
                 arrival_nodes_checked++;
@@ -383,7 +387,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         const TimingTags& node_clock_tags = analyzer.clock_tags(node_id);
                         TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_data_tags.end()) {
-                            error |= verify_req_tag(clock_tag_iter, vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
+                            error |= verify_req_tag(clock_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
                         } else if(!isnan(vpr_req_time)) {
                             error = true;
                             cout << "Node: " << node_id << " Clk: " << domain  << endl;
@@ -392,7 +396,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                         }
                     }
                 } else {
-                    error |= verify_req_tag(data_tag_iter, vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
+                    error |= verify_req_tag(data_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
 
                 }
                 arr_reqs_verified++;
@@ -400,6 +404,28 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
             }
         }
         VERIFY(required_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
+    }
+
+    /*
+     * Check from Tatum to VPR
+     */
+    
+    //Check by level
+    for(int ilevel = 0; ilevel <tg.num_levels(); ilevel++) {
+        //cout << "LEVEL " << ilevel << endl;
+        for(NodeId node_id : tg.level(ilevel)) {
+            for(const TimingTag& data_tag : analyzer.data_tags(node_id)) {
+                //Arrival
+                float arr_time = data_tag.arr_time().value();
+                float vpr_arr_time = expected_arr_req_times.get_arr_time(data_tag.clock_domain(), node_id);
+                verify_arr_tag(arr_time, vpr_arr_time, node_id, data_tag.clock_domain(), clock_gen_fanout_nodes, num_width);
+
+                //Required
+                float req_time = data_tag.req_time().value();
+                float vpr_req_time = expected_arr_req_times.get_req_time(data_tag.clock_domain(), node_id);
+                verify_req_tag(req_time, vpr_req_time, node_id, data_tag.clock_domain(), const_gen_fanout_nodes, num_width);
+            }
+        }
     }
 
     if(error) {
@@ -416,9 +442,8 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
 }
 
 
-bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width) {
     bool error = false;
-    float arr_time = tag_iter->arr_time().value();
     float arr_abs_err = fabs(arr_time - vpr_arr_time);
     float arr_rel_err = relative_error(arr_time, vpr_arr_time);
     if(isnan(arr_time) && isnan(arr_time) != isnan(vpr_arr_time)) {
@@ -459,9 +484,8 @@ bool verify_arr_tag(TimingTagConstIterator tag_iter, float vpr_arr_time, NodeId 
     return error;
 }
 
-bool verify_req_tag(TimingTagConstIterator tag_iter, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width) {
     bool error = false;
-    float req_time = tag_iter->req_time().value();
     float req_abs_err = fabs(req_time - vpr_req_time);
     float req_rel_err = relative_error(req_time, vpr_req_time);
     if(isnan(req_time) && isnan(req_time) != isnan(vpr_req_time)) {
