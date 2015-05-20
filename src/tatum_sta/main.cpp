@@ -28,8 +28,12 @@
 
 #define NUM_SERIAL_RUNS 5
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
-#define OPTIMIZE_NODE_EDGE_ORDER
+//#define OPTIMIZE_NODE_EDGE_ORDER
 
+//Currently don't check for differences in the other direction (from us to VPR),
+//since we do a single traversal we generate extra ancillary timing tags which
+//will not match VPR
+//#define CHECK_TATUM_TO_VPR_DIFFERENCES
 using std::cout;
 using std::endl;
 
@@ -307,6 +311,7 @@ int main(int argc, char** argv) {
 #define ABSOLUTE_EPSILON 1.e-13
 
 int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
+    //expected_arr_req_times.print();
 
     //cout << "Verifying Calculated Timing Against VPR" << endl;
     std::ios_base::fmtflags saved_flags = cout.flags();
@@ -323,7 +328,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
     /*
      * Check from VPR to Tatum results
      */
-    for(int domain = 0; domain < expected_arr_req_times.get_num_clocks(); domain++) {
+    for(DomainId domain : expected_arr_req_times.clocks()) {
 
         int arrival_nodes_checked = 0; //Count number of nodes checked
         int required_nodes_checked = 0; //Count number of nodes checked
@@ -409,8 +414,10 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
     /*
      * Check from Tatum to VPR
      */
-    
+
     //Check by level
+//#ifdef CHECK_TATUM_TO_VPR_DIFFERENCES
+#if 0
     for(int ilevel = 0; ilevel <tg.num_levels(); ilevel++) {
         //cout << "LEVEL " << ilevel << endl;
         for(NodeId node_id : tg.level(ilevel)) {
@@ -427,6 +434,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
             }
         }
     }
+#endif
 
     if(error) {
         cout << "Timing verification FAILED!" << endl;
@@ -454,13 +462,8 @@ bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int doma
         cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << endl;
     } else if (!isnan(arr_time) && isnan(vpr_arr_time)) {
         if(clock_gen_fanout_nodes.count(node_id)) {
-#if 0
-            cout << "Node: " << node_id << " Clk: " << domain;
-            cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
-            cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
-            cout << "\tOK since " << node_id << " in fanout of Clock Generator" << endl;
-#endif
-
+            //Pass, clock gen fanout can be NAN in VPR but have a value here,
+            //since (unlike VPR) we explictly track clock arrivals as tags
         } else {
             error = true;
             cout << "Node: " << node_id << " Clk: " << domain;

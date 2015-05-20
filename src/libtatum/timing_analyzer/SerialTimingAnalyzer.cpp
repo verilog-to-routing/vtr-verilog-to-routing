@@ -171,7 +171,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
          */
         if(tg.node_type(src_node_id) != TN_Type::FF_SOURCE) {
             //Do not propagate clock tags from an FF Source,
-            //the clock arrival there will have been converted to a
+            //the clock arrival there will have already been converted to a
             //data tag
             const TimingTags& src_clk_tags = clock_tags_[src_node_id];
             for(const TimingTag& src_clk_tag : src_clk_tags) {
@@ -231,11 +231,16 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
             //Determine the required time for outputs
             DomainId node_domain = tg.node_clock_domain(node_id);
             for(const TimingTag& data_tag : node_data_tags) {
-                float clock_constraint = tc.clock_constraint(data_tag.clock_domain(), node_domain);
+                //Should we be analyzing paths between these two domains?
+                if(tc.should_analyze(data_tag.clock_domain(), node_domain)) {
+                    //Only some clock domain paths should be analyzed
 
-                //The output delay is assumed to be on the edge from the OUTPAD_IPIN to OUTPAD_SINK
-                //so we do not need to account for it here
-                node_data_tags.min_req(tag_pool_, Time(clock_constraint), data_tag);
+                    float clock_constraint = tc.clock_constraint(data_tag.clock_domain(), node_domain);
+
+                    //The output delay is assumed to be on the edge from the OUTPAD_IPIN to OUTPAD_SINK
+                    //so we do not need to account for it here
+                    node_data_tags.min_req(tag_pool_, Time(clock_constraint), data_tag);
+                }
             }
         } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
             //Determine the required time at this FF
@@ -248,11 +253,19 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
             //FIXME Only need to generate req tags for clocks with known arrival times
             for(TimingTag& node_data_tag : node_data_tags) {
                 for(const TimingTag& node_clock_tag : node_clock_tags) {
-                    if(node_data_tag.arr_time().valid()) {
-                        float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(), node_clock_tag.clock_domain());
+                    //Should we be analyzing paths between these two domains?
+                    if(tc.should_analyze(node_data_tag.clock_domain(), node_clock_tag.clock_domain())) {
 
-                        //FIXME Performance: We know the tag, so we don't need to search through the tags
-                        node_data_tags.min_req_tag(node_data_tag, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                        //We only set a required time if the source domain actually reaches this sink
+                        //domain.  This is indicated by having a valid arrival time.
+                        if(node_data_tag.arr_time().valid()) {
+                            float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(),
+                                                                         node_clock_tag.clock_domain());
+
+                            node_data_tags.min_req_tag(node_data_tag,
+                                                       node_clock_tag.arr_time() + Time(clock_constraint),
+                                                       node_data_tag);
+                        }
                     }
                 }
             }

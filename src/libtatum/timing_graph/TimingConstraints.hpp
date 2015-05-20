@@ -7,6 +7,7 @@
 class TimingConstraints {
     public:
         //Getters
+        bool should_analyze(DomainId src_domain, DomainId sink_domain) const;
         float clock_constraint(DomainId src_domain, DomainId sink_domain) const;
         float input_constraint(NodeId node_id) const;
         float output_constraint(NodeId node_id) const;

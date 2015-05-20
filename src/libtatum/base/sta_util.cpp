@@ -176,24 +176,29 @@ void print_timing_tags_histogram(const TimingGraph& tg, SerialTimingAnalyzer& an
 }
 
 void print_timing_tags(const TimingGraph& tg, SerialTimingAnalyzer& analyzer) {
+    cout << endl;
     cout << std::scientific;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        cout << "Node: " << i << endl;;
-        for(const TimingTag& tag : analyzer.data_tags(i)) {
-            cout << "\tData: ";
-            cout << "  clk: " << tag.clock_domain();
-            cout << "  Arr: " << tag.arr_time().value();
-            cout << "  Req: " << tag.req_time().value();
-            cout << endl;
-        }
-        for(const TimingTag& tag : analyzer.clock_tags(i)) {
-            cout << "\tClock: ";
-            cout << "  clk: " << tag.clock_domain();
-            cout << "  Arr: " << tag.arr_time().value();
-            cout << "  Req: " << tag.req_time().value();
-            cout << endl;
+    for(int level_idx = 0; level_idx < tg.num_levels(); level_idx++) {
+        cout << "Level: " << level_idx << endl;
+        for(NodeId node_id : tg.level(level_idx)) {
+            cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << endl;;
+            for(const TimingTag& tag : analyzer.data_tags(node_id)) {
+                cout << "\tData: ";
+                cout << "  clk: " << tag.clock_domain();
+                cout << "  Arr: " << tag.arr_time().value();
+                cout << "  Req: " << tag.req_time().value();
+                cout << endl;
+            }
+            for(const TimingTag& tag : analyzer.clock_tags(node_id)) {
+                cout << "\tClock: ";
+                cout << "  clk: " << tag.clock_domain();
+                cout << "  Arr: " << tag.arr_time().value();
+                cout << "  Req: " << tag.req_time().value();
+                cout << endl;
+            }
         }
     }
+    cout << endl;
 }
 
 

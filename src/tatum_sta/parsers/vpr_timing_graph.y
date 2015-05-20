@@ -319,9 +319,6 @@ clock_constraints: CLOCK_CONSTRAINTS_HEADER EOL {}
     | clock_constraints clock_constraint {}
 
 clock_constraint: src_domain sink_domain constraint EOL {
-                    //Resize arr/req times to match largest clock domain found
-                    arr_req_times.resize(std::max($1, $2));
-
                     if($3 != -1.0) {
                         //-1 is used to signal invalid constraints that should
                         //not be analyzed
