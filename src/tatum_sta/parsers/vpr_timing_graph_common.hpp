@@ -123,8 +123,8 @@ class VprArrReqTimes {
 
                 std::cout << "Clock " << clock_id << std::endl;
                 for(int i = 0; i < num_nodes; i++) {
-                    std::cout << "Arr: " << arr_iter.second[i]; 
-                    std::cout << " Req: " << req_iter->second[i]; 
+                    std::cout << "Arr: " << arr_iter.second[i];
+                    std::cout << " Req: " << req_iter->second[i];
                     std::cout << std::endl;
                 }
             }

@@ -191,7 +191,9 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(serial_analyzer.is_correct()) {
-                serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer, expected_arr_req_times, const_gen_fanout_nodes, clock_gen_fanout_nodes );
+                serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
+                                                          expected_arr_req_times, const_gen_fanout_nodes,
+                                                          clock_gen_fanout_nodes );
             }
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
