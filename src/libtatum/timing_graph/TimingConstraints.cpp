@@ -6,6 +6,10 @@
 using std::cout;
 using std::endl;
 
+bool TimingConstraints::should_analyze(DomainId src_domain, DomainId sink_domain) const {
+    return clock_constraints_.count(std::make_pair(src_domain, sink_domain));
+}
+
 float TimingConstraints::clock_constraint(DomainId src_domain, DomainId sink_domain) const {
     auto iter = clock_constraints_.find(std::make_pair(src_domain, sink_domain));
     ASSERT_MSG(iter != clock_constraints_.end(), "Could not find clock constraint");

@@ -1,7 +1,9 @@
 #pragma once
 #include "assert.hpp"
 
+#include <iostream>
 #include <vector>
+#include <map>
 #include <cmath>
 
 
@@ -56,6 +58,7 @@ class VprArrReqTimes {
         void set_num_nodes(int nnodes) { num_nodes = nnodes; }
         void add_arr_time(int clock_id, int node_id, float val) {
             resize(clock_id);
+            VERIFY(arr.find(clock_id) != arr.end());
             float curr_val = arr[clock_id][node_id];
             if(!isnan(curr_val) && isnan(val)) {
                 //Don't over-write real values with NAN
@@ -69,6 +72,7 @@ class VprArrReqTimes {
 
         void add_req_time(int clock_id, int node_id, float val) {
             resize(clock_id);
+            VERIFY(req.find(clock_id) != req.end());
             float curr_val = req[clock_id][node_id];
             if(!isnan(curr_val) && isnan(val)) {
                 //Don't over-write real values with NAN
@@ -81,30 +85,55 @@ class VprArrReqTimes {
         }
 
         float get_arr_time(int clock_id, int node_id) const {
-            VERIFY(clock_id < (int) arr.size());
-            VERIFY(node_id  < (int) arr[clock_id].size());
-            return arr[clock_id][node_id];
+            auto arr_iter = arr.find(clock_id);
+            VERIFY(arr_iter != arr.end());
+            VERIFY(node_id  < (int) arr_iter->second.size());
+            return arr_iter->second[node_id];
         }
+
         float get_req_time(int clock_id, int node_id) const {
-            VERIFY(clock_id < (int) req.size());
-            VERIFY(node_id  < (int) req[clock_id].size());
-            return req[clock_id][node_id];
+            auto req_iter = req.find(clock_id);
+            VERIFY(req_iter != req.end());
+            VERIFY(node_id  < (int) req_iter->second.size());
+            return req_iter->second[node_id];
         }
+
         int get_num_clocks() const { return (int) arr.size(); }
-        int get_num_nodes() const { return (int) num_nodes; }
-        void resize(int clock_id) {
-            while(clock_id >= (int) arr.size()) {
-                arr.push_back(std::vector<float>(num_nodes, NAN));
-                req.push_back(std::vector<float>(num_nodes, NAN));
+        std::vector<int> clocks() const {
+            std::vector<int> clocks_to_return;
+            for(auto kv : arr) {
+                clocks_to_return.push_back(kv.first);
             }
-            VERIFY(arr.size() == req.size());
-            VERIFY(clock_id < (int) arr.size());
+            return clocks_to_return;
+        }
+
+        int get_num_nodes() const { return (int) num_nodes; }
+
+        void resize(int clock_id) {
+            if(arr.find(clock_id) == arr.end()) {
+                arr[clock_id] = std::vector<float>(num_nodes, NAN);
+                req[clock_id] = std::vector<float>(num_nodes, NAN);
+            }
+        }
+
+        void print() const {
+            for(auto arr_iter : arr) {
+                int clock_id = arr_iter.first;
+                auto req_iter = req.find(clock_id);
+
+                std::cout << "Clock " << clock_id << std::endl;
+                for(int i = 0; i < num_nodes; i++) {
+                    std::cout << "Arr: " << arr_iter.second[i]; 
+                    std::cout << " Req: " << req_iter->second[i]; 
+                    std::cout << std::endl;
+                }
+            }
         }
     private:
 
         int num_nodes;
-        std::vector<std::vector<float>> arr;
-        std::vector<std::vector<float>> req;
+        std::map<int,std::vector<float>> arr;
+        std::map<int,std::vector<float>> req;
 
 };
 
