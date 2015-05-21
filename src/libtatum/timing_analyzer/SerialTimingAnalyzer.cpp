@@ -340,7 +340,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
             //TODO: avoid double searching!
             TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
             if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
-                node_data_tags.min_req(tag_pool_, sink_tag.req_time() - edge_delay, sink_tag);
+                node_data_tags.min_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);
             }
         }
 
