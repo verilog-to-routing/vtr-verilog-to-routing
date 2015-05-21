@@ -6,6 +6,8 @@
 #include <array>
 #include <iostream>
 
+#include <valgrind/callgrind.h>
+
 #include "assert.hpp"
 
 #include "sta_util.hpp"
@@ -168,12 +170,17 @@ int main(int argc, char** argv) {
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
 
+        CALLGRIND_START_INSTRUMENTATION;
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
+            CALLGRIND_TOGGLE_COLLECT;
+
             ta_runtime traversal_times = serial_analyzer.calculate_timing(timing_graph, timing_constraints);
+
+            CALLGRIND_TOGGLE_COLLECT;
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_end);
 
@@ -205,6 +212,8 @@ int main(int argc, char** argv) {
                 serial_analyzer.reset_timing();
             }
         }
+        CALLGRIND_STOP_INSTRUMENTATION;
+
         serial_analysis_time_avg = serial_analysis_time / NUM_SERIAL_RUNS;
         serial_pretraverse_time_avg = serial_pretraverse_time / NUM_SERIAL_RUNS;
         serial_fwdtraverse_time_avg = serial_fwdtraverse_time / NUM_SERIAL_RUNS;
