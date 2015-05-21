@@ -18,6 +18,7 @@
 #								values: odin, abc, script, vpr. Default value is
 #								vpr.
 # 	-keep_intermediate_files: Do not delete the intermediate files.
+#   -keep_result_files: Do not delete the result files (.net, .place, .route)
 #
 #   -temp_dir <dir>: Directory used for all temporary files
 ###################################################################################
@@ -52,6 +53,7 @@ sub expand_user_path;
 sub file_find_and_replace;
 sub xml_find_LUT_Kvalue;
 sub xml_find_mem_size;
+sub find_and_move_newest;
 
 my $temp_dir = "./temp";
 
@@ -69,7 +71,9 @@ my $token;
 my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
+my $specific_vpr_stage      = "";
 my $keep_intermediate_files = 0;
+my $keep_result_files       = 0;
 my $has_memory              = 1;
 my $timing_driven           = "on";
 my $min_chan_width          = -1; 
@@ -95,9 +99,21 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-ending_stage" ) {
 		$ending_stage = stage_index( shift(@ARGV) );
 	}
+    elsif ( $token eq "-specific_vpr_stage" ) {
+        $specific_vpr_stage = shift(@ARGV);
+        if ($specific_vpr_stage eq "pack" or $specific_vpr_stage eq "place" or $specific_vpr_stage eq "route") {
+            $specific_vpr_stage = "--" . $specific_vpr_stage;
+        }
+        else {
+            $specific_vpr_stage = "";
+        }
+    }
 	elsif ( $token eq "-keep_intermediate_files" ) {
 		$keep_intermediate_files = 1;
 	}
+    elsif ( $token eq "-keep_result_files" ) {
+        $keep_result_files = 1;
+    }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
 	}
@@ -205,16 +221,7 @@ if ( !-e $sdc_file_path ) {
 	my $sdc_file_path;
 }
 
-my $vpr_path;
-if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) {
-	$vpr_path = "$vtr_flow_path/../vpr/vpr";
-	( -r $vpr_path or -r "${vpr_path}.exe" )
-	  or die "Cannot find vpr exectuable ($vpr_path)";
-}
-
-my $odin2_path;
-my $odin_config_file_name;
-my $odin_config_file_path;
+my $vpr_path; if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) { $vpr_path = "$vtr_flow_path/../vpr/vpr"; ( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)"; } my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
 if (    $stage_idx_odin >= $starting_stage
 	and $stage_idx_odin <= $ending_stage )
 {
@@ -310,7 +317,7 @@ my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
 
-#system "cp $abc_rc_path $temp_dir";
+#system"cp $abc_rc_path $temp_dir";
 #system "cp $architecture_path $temp_dir";
 #system "cp $circuit_path $temp_dir/$benchmark_name" . file_ext_for_stage($starting_stage - 1);
 #system "cp $odin2_base_config"
@@ -521,7 +528,16 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
 		}
 	}
+# specified channel width
 	else {
+        # move the most recent necessary result files to temp directory for specific vpr stage
+        if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
+            my $found_prev = &find_and_move_newest("$benchmark_name", "net");
+            if ($found_prev and $specific_vpr_stage eq "--route") {
+                &find_and_move_newest("$benchmark_name", "place");
+            }
+        }
+
 		$q = &system_with_timeout(
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
@@ -534,7 +550,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--nodisp",                   "--cluster_seed_type",
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
-			"--sdc_file",				  "$sdc_file_path"
+			"--sdc_file",				  "$sdc_file_path",
+            $specific_vpr_stage
 		);
 	}
 	  					
@@ -556,11 +573,13 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		{
 			system "rm -f $prevpr_output_file_name";
 			system "rm -f ${temp_dir}*.xml";
-			system "rm -f ${temp_dir}*.net";
-			system "rm -f ${temp_dir}*.place";
-			system "rm -f ${temp_dir}*.route";
 			system "rm -f ${temp_dir}*.sdf";
 			system "rm -f ${temp_dir}*.v";
+            if (! $keep_result_files) {
+                system "rm -f ${temp_dir}*.net";
+                system "rm -f ${temp_dir}*.place";
+                system "rm -f ${temp_dir}*.route";
+            }
 			if ($do_power) {
 				system "rm -f $ace_output_act_path";
 			}
@@ -650,6 +669,10 @@ sub system_with_timeout {
 		# This must be an exec call and there most be no special shell characters
 		# like redirects so that perl will use execvp and $pid will actually be
 		# that of vpr so we can kill it later.
+
+        # first strip out empty
+        @VPRARGS = grep { $_ ne ''} @VPRARGS;
+
 		print "\n$_[0] @VPRARGS\n";
 		exec $_[0], @VPRARGS;
 	}
@@ -890,4 +913,20 @@ sub xml_find_mem_size {
 	}
 
 	return xml_find_mem_size_recursive($memory_pb);
+}
+
+sub find_and_move_newest {
+    my $benchmark_name = shift();
+    my $file_type = shift();
+
+    my $found_prev = system("$vtr_flow_path/scripts/mover.sh \"*$benchmark_name*/*.$file_type\" ../../../ $temp_dir");
+    # cannot find previous version, disregard specific vpr stage argument
+    if ($found_prev ne 0) {
+        print "$file_type file not found, disregarding specific vpr stage\n";
+        $specific_vpr_stage = "";
+        return 0;
+    }
+
+    # negate bash exit truth for perl
+    return 1;
 }
