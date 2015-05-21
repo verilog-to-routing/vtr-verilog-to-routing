@@ -17,20 +17,12 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         SerialTimingAnalyzer();
         ta_runtime calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
         void reset_timing();
-        virtual void save_level_times(const TimingGraph& timing_graph, std::string filename);
 
         virtual bool is_correct() { return true; }
 
         const TimingTags& data_tags(const NodeId node_id) const override;
         const TimingTags& clock_tags(const NodeId node_id) const override;
 
-#ifdef SAVE_LEVEL_TIMES
-    protected:
-        std::vector<struct timespec> fwd_start_;
-        std::vector<struct timespec> fwd_end_;
-        std::vector<struct timespec> bck_start_;
-        std::vector<struct timespec> bck_end_;
-#endif
     protected:
         /*
          * Setup the timing graph.

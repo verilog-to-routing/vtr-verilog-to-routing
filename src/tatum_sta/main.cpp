@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
             serial_verify_time += time_sec(verify_start, verify_end);
 
             if(i == NUM_SERIAL_RUNS-1) {
-                serial_analyzer.save_level_times(timing_graph, "serial_level_times.csv");
+                //Pass
             } else {
                 serial_analyzer.reset_timing();
             }
