@@ -232,7 +232,6 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
             //this node (i.e. take the most restrictive constraint accross all clock tags at this
             //node)
 
-            //FIXME Only need to generate req tags for clocks with known arrival times
             for(TimingTag& node_data_tag : node_data_tags) {
                 for(const TimingTag& node_clock_tag : node_clock_tags) {
                     //Should we be analyzing paths between these two domains?
@@ -244,7 +243,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
                             float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(),
                                                                          node_clock_tag.clock_domain());
 
-                            node_data_tag.min_req( node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                            node_data_tag.min_req(node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
                         }
                     }
                 }
