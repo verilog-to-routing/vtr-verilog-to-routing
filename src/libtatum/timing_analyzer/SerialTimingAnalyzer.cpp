@@ -166,7 +166,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
                 cout << endl;
 #endif
                 //Standard propagation through the clock network
-                update_arr_tags(node_clock_tags, edge_delay, src_clk_tag);
+                update_arr_tags(node_clock_tags, src_clk_tag, edge_delay);
 
                 if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
                     //This is a clock to data launch edge
@@ -182,7 +182,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
                     ASSERT(launch_tag.next() == nullptr);
 
                     //Mark propagated launch time as a DATA tag
-                    update_arr_tags(node_data_tags, edge_delay, launch_tag);
+                    update_arr_tags(node_data_tags, launch_tag, edge_delay);
                 }
             }
         }
@@ -203,7 +203,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
             cout << endl;
 #endif
             //Standard data-path propagation
-            update_arr_tags(node_data_tags, edge_delay, src_data_tag);
+            update_arr_tags(node_data_tags, src_data_tag, edge_delay);
         }
 
         /*
@@ -366,18 +366,18 @@ const TimingTags& SerialTimingAnalyzer::clock_tags(const NodeId node_id) const {
     return clock_tags_[node_id];
 }
 
-void SerialTimingAnalyzer::update_arr_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag) {
+void SerialTimingAnalyzer::update_arr_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay) {
     //TODO: this currently performs setup analaysis, it should really be implemented in a
     //dervied analyzers, e.g. SerialSetupTimingAnalyzer
     node_tags.max_arr(tag_pool_, base_tag.arr_time() + edge_delay, base_tag);
 }
 
-void SerialTimingAnalyzer::update_req_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag) {
+void SerialTimingAnalyzer::update_req_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay) {
     //TODO: this currently performs setup analaysis, it should really be implemented in a
     //dervied analyzers, e.g. SerialSetupTimingAnalyzer
     node_tags.min_req(tag_pool_, base_tag.req_time() - edge_delay, base_tag);
 }
 
-void SerialTimingAnalyzer::update_req_tag(TimingTag& tag, const Time& edge_delay, const TimingTag& base_tag) {
+void SerialTimingAnalyzer::update_req_tag(TimingTag& tag, const TimingTag& base_tag, const Time& edge_delay) {
     tag.min_req(base_tag.req_time() - edge_delay, base_tag);
 }

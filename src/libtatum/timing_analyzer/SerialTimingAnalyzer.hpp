@@ -46,9 +46,9 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
         //Tag updaters
-        void update_req_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag);
-        void update_arr_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag);
-        void update_req_tag(TimingTag& tag, const Time& edge_delay, const TimingTag& base_tag);
+        void update_req_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
+        void update_arr_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
+        void update_req_tag(TimingTag& tag, const TimingTag& base_tag, const Time& edge_delay);
 
         std::vector<TimingTags> data_tags_;
         std::vector<TimingTags> clock_tags_;
