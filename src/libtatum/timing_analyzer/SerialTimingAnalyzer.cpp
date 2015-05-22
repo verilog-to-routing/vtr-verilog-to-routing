@@ -244,9 +244,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
                             float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(),
                                                                          node_clock_tag.clock_domain());
 
-                            node_data_tags.min_req_tag(node_data_tag,
-                                                       node_clock_tag.arr_time() + Time(clock_constraint),
-                                                       node_data_tag);
+                            node_data_tag.min_req( node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
                         }
                     }
                 }
@@ -319,10 +317,9 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
             cout << endl;
 #endif
             //We only take the min if we have a valid arrival time
-            //TODO: avoid double searching!
             TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
             if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
-                node_data_tags.min_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);
+                matched_tag_iter->min_req(sink_tag.req_time() - edge_delay, sink_tag);
             }
         }
 
@@ -380,4 +377,8 @@ void SerialTimingAnalyzer::update_req_tags(TimingTags& node_tags, const Time& ed
     //TODO: this currently performs setup analaysis, it should really be implemented in a
     //dervied analyzers, e.g. SerialSetupTimingAnalyzer
     node_tags.min_req(tag_pool_, base_tag.req_time() - edge_delay, base_tag);
+}
+
+void SerialTimingAnalyzer::update_req_tag(TimingTag& tag, const Time& edge_delay, const TimingTag& base_tag) {
+    tag.min_req(base_tag.req_time() - edge_delay, base_tag);
 }

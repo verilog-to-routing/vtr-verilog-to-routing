@@ -43,6 +43,9 @@ class TimingTag {
         void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; };
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
         void set_next(TimingTag* new_next) { next_ = new_next; }
+
+        void min_req(const Time& new_req_time, const TimingTag& base_tag);
+        void max_arr(const Time& new_arr_time, const TimingTag& base_tag);
         void update_arr(const Time& new_arr_time, const TimingTag& base_tag);
         void update_req(const Time& new_req_time, const TimingTag& base_tag);
 

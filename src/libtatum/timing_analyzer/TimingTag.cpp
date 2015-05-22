@@ -19,3 +19,12 @@ void TimingTag::update_req(const Time& new_req_time, const TimingTag& base_tag) 
     set_req_time(new_req_time);
 }
 
+
+void TimingTag::min_req(const Time& new_req_time, const TimingTag& base_tag) {
+    //Need to min with existing value
+    if(!req_time().valid() || new_req_time.value() < req_time().value()) {
+        //New value is smaller, or no previous valid value existed
+        //Update min
+        update_req(new_req_time, base_tag);
+    }
+}

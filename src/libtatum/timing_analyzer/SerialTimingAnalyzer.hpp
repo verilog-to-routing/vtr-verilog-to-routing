@@ -48,6 +48,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         //Tag updaters
         void update_req_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag);
         void update_arr_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag);
+        void update_req_tag(TimingTag& tag, const Time& edge_delay, const TimingTag& base_tag);
 
         std::vector<TimingTags> data_tags_;
         std::vector<TimingTags> clock_tags_;
