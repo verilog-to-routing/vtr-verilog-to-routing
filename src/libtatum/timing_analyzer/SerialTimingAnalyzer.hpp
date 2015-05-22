@@ -28,22 +28,26 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
          * Setup the timing graph.
          *   Includes propogating clock domains and clock skews to clock pins
          */
-        virtual void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         /*
          * Propogate arrival times
          */
-        virtual void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         /*
          * Propogate required times
          */
-        virtual void backward_traversal(const TimingGraph& timing_graph);
+        void backward_traversal(const TimingGraph& timing_graph);
 
         //Per node worker functions
         void pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
+
+        //Tag updaters
+        void update_req_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag);
+        void update_arr_tags(TimingTags& node_tags, const Time& edge_delay, const TimingTag& base_tag);
 
         std::vector<TimingTags> data_tags_;
         std::vector<TimingTags> clock_tags_;
