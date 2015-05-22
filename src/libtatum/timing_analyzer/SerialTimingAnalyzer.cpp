@@ -221,7 +221,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
 
                     //The output delay is assumed to be on the edge from the OUTPAD_IPIN to OUTPAD_SINK
                     //so we do not need to account for it here
-                    node_data_tags.min_req(tag_pool_, Time(clock_constraint), data_tag);
+                    update_req_outpad_sink(node_data_tags, Time(clock_constraint), data_tag);
                 }
             }
         } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
@@ -243,7 +243,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
                             float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(),
                                                                          node_clock_tag.clock_domain());
 
-                            node_data_tag.min_req(node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                            update_req_tag_ff_sink(node_data_tag, node_clock_tag, Time(clock_constraint), node_data_tag);
                         }
                     }
                 }
@@ -378,6 +378,10 @@ void SerialTimingAnalyzer::update_req_tags(TimingTags& node_tags, const TimingTa
     node_tags.min_req(tag_pool_, base_tag.req_time() - edge_delay, base_tag);
 }
 
-void SerialTimingAnalyzer::update_req_tag(TimingTag& tag, const TimingTag& base_tag, const Time& edge_delay) {
-    tag.min_req(base_tag.req_time() - edge_delay, base_tag);
+void SerialTimingAnalyzer::update_req_outpad_sink(TimingTags& node_tags, const Time& req_time, const TimingTag& info_tag) {
+    node_tags.min_req(tag_pool_, req_time, info_tag);
+}
+
+void SerialTimingAnalyzer::update_req_tag_ff_sink(TimingTag& tag, const TimingTag& base_tag, const Time& constraint, const TimingTag& info_tag) {
+    tag.min_req(base_tag.arr_time() + constraint, info_tag);
 }

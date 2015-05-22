@@ -4,7 +4,7 @@
 
 #include "memory_pool.hpp"
 #include "TimingAnalyzer.hpp"
-#include "timing_graph_fwd.hpp"
+#include "TimingGraph.hpp"
 #include "timing_constraints_fwd.hpp"
 #include "TimingTags.hpp"
 
@@ -46,9 +46,11 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
         //Tag updaters
-        void update_req_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
         void update_arr_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
-        void update_req_tag(TimingTag& tag, const TimingTag& base_tag, const Time& edge_delay);
+        void update_req_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
+        //TODO: Find a cleaner way to handle these special case required time updates
+        void update_req_outpad_sink(TimingTags& node_tags, const Time& req_time, const TimingTag& info_tag);
+        void update_req_tag_ff_sink(TimingTag& tag, const TimingTag& base_tag, const Time& constraint, const TimingTag& info_tag);
 
         std::vector<TimingTags> data_tags_;
         std::vector<TimingTags> clock_tags_;
