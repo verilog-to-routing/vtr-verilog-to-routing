@@ -1,6 +1,7 @@
 #!/bin/bash
 # moves the newest file matching expression recursively from specified directory to destination
 # mover.sh EXPRESSION SEARCH_FROM DESTINATION
+# Author: Johnson Zhong
 hits=$(find $2 -wholename "$1")
 
 if [ -z "$hits" ]; then

@@ -17,6 +17,14 @@
 #   -ending_stage <stage>: End the VTR flow at the specified stage. Acceptable
 #								values: odin, abc, script, vpr. Default value is
 #								vpr.
+#   -specific_vpr_stage <stage>: Perform only this stage of VPR. Acceptable
+#                               values: pack, place, route. Default is empty,
+#                               which means to perform all. Note that specifying
+#                               the routing stage requires a channel width
+#                               to also be specified. To have any time saving
+#                               effect, previous result files must be kept as the
+#                               most recent necessary ones will be moved to the
+#                               current run directory. (use inside tasks only)
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #   -keep_result_files: Do not delete the result files (.net, .place, .route)
 #

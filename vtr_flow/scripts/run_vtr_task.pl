@@ -275,6 +275,16 @@ sub run_single_task {
 		  "Cannot find script for task $task ($script).  Looked for $task_dir/config/$script or $vtr_flow_path/scripts/$script";
 	}
 
+    # Check architectures
+    foreach my $arch (@archs) {
+        (-f "$archs_dir/$arch") or die "Architecture file not found ($archs_dir/$arch)";
+    }
+
+    # Check circuits
+    foreach my $circuit (@circuits) {
+        (-f "$circuits_dir/$circuit") or die "Circuit file not found ($circuits_dir/$circuit)";
+    }
+
 	# Check CMOS tech behavior
 	if ( $cmos_tech_path ne "" ) {
 		$cmos_tech_path = expand_user_path($cmos_tech_path);
