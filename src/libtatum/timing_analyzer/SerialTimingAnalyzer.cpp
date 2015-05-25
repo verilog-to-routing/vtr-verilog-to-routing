@@ -47,17 +47,12 @@ ta_runtime SerialTimingAnalyzer::calculate_timing() {
 }
 
 void SerialTimingAnalyzer::reset_timing() {
-    //Drop references to the tags
-    data_tags_.clear();
-    clock_tags_.clear();
-
     //Release the memory allocated to tags
     tag_pool_.purge_memory();
 
     //Re-allocate tags
     data_tags_ = std::vector<TimingTags>(tg_.num_nodes());
     clock_tags_ = std::vector<TimingTags>(tg_.num_nodes());
-    
 }
 
 void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
@@ -308,7 +303,7 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
     //Each back-edge from down stream node
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
-        
+
         backward_traverse_edge(tg, node_id, edge_id);
     }
 
