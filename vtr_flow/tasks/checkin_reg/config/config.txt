@@ -16,7 +16,10 @@ circuit_list_add=diffeq1.v
 arch_list_add=k6_N10_mem32K_40nm.xml
 
 # Parse info and how to parse
+#parse_file=vpr_memory.txt # for tracking memory usage
 parse_file=vpr_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements.txt 
+
+#script_params=-track_memory_usage

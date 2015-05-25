@@ -27,6 +27,7 @@
 #                               current run directory. (use inside tasks only)
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #   -keep_result_files: Do not delete the result files (.net, .place, .route)
+#   -track_memory_usage: Print out memory usage for each stage (NOT fully portable)
 #
 #   -temp_dir <dir>: Directory used for all temporary files
 ###################################################################################
@@ -97,6 +98,10 @@ my $seed					= 1;
 my $min_hard_mult_size		= 3;
 my $min_hard_adder_size		= 1;
 
+my $track_memory_usage      = 0;
+my $memory_tracker          = "/usr/bin/time";
+my @memory_tracker_args     = ("-v");
+
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
 		$sdc_file_path = expand_user_path( shift(@ARGV) );
@@ -121,6 +126,9 @@ while ( $token = shift(@ARGV) ) {
 	}
     elsif ( $token eq "-keep_result_files" ) {
         $keep_result_files = 1;
+    }
+    elsif ( $token eq "-track_memory_usage" ) {
+        $track_memory_usage = 1;
     }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
@@ -650,6 +658,12 @@ sub system_with_timeout {
 
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
+    # Use a memory tracker to call executable if checking for memory usage
+    if ($track_memory_usage) {
+        my $program = shift @_;
+        unshift @_, $memory_tracker;
+        splice @_, 4, 0, @memory_tracker_args, $program;
+    }
 	( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
 	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
 
