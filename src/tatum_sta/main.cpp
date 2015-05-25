@@ -5,6 +5,7 @@
 #include <set>
 #include <array>
 #include <iostream>
+#include <memory>
 
 #include <valgrind/callgrind.h>
 
@@ -16,6 +17,7 @@
 #include "TimingConstraints.hpp"
 #include "TimingNode.hpp"
 
+#include "SetupTimingAnalyzer.hpp"
 #include "SerialTimingAnalyzer.hpp"
 
 //Cilk variants
@@ -39,7 +41,7 @@
 using std::cout;
 using std::endl;
 
-int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes);
+int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<SetupTimingAnalyzer> analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes);
 bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
 bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width);
 
@@ -71,7 +73,6 @@ int main(int argc, char** argv) {
     std::set<NodeId> const_gen_fanout_nodes;
     std::set<NodeId> clock_gen_fanout_nodes;
 
-    SerialTimingAnalyzer serial_analyzer;
     //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer();
 
     //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer();
@@ -157,6 +158,7 @@ int main(int argc, char** argv) {
      *cout << endl;
      */
 
+    std::shared_ptr<SetupTimingAnalyzer> serial_analyzer = std::make_shared<SerialTimingAnalyzer>(timing_graph, timing_constraints);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;
@@ -178,7 +180,7 @@ int main(int argc, char** argv) {
 
             CALLGRIND_TOGGLE_COLLECT;
 
-            ta_runtime traversal_times = serial_analyzer.calculate_timing(timing_graph, timing_constraints);
+            ta_runtime traversal_times = serial_analyzer->calculate_timing();
 
             CALLGRIND_TOGGLE_COLLECT;
 
@@ -197,20 +199,12 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-            if(serial_analyzer.is_correct()) {
-                serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
-                                                          expected_arr_req_times, const_gen_fanout_nodes,
-                                                          clock_gen_fanout_nodes );
-            }
+            serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
+                                                      expected_arr_req_times, const_gen_fanout_nodes,
+                                                      clock_gen_fanout_nodes );
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);
-
-            if(i == NUM_SERIAL_RUNS-1) {
-                //Pass
-            } else {
-                serial_analyzer.reset_timing();
-            }
         }
         CALLGRIND_STOP_INSTRUMENTATION;
 
@@ -321,7 +315,7 @@ int main(int argc, char** argv) {
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
 
-int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
+int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<SetupTimingAnalyzer> analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
     //expected_arr_req_times.print();
 
     //cout << "Verifying Calculated Timing Against VPR" << endl;
@@ -349,7 +343,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
             //cout << "LEVEL " << ilevel << endl;
             for(NodeId node_id : tg.level(ilevel)) {
                 //cout << "Verifying node: " << node_id << " Launch: " << src_domain << " Capture: " << sink_domain << endl;
-                const TimingTags& node_data_tags = analyzer.data_tags(node_id);
+                const TimingTags& node_data_tags = analyzer->setup_data_tags(node_id);
                 float vpr_arr_time = expected_arr_req_times.get_arr_time(domain, node_id);
 
                 //Check arrival
@@ -362,7 +356,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
                     if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
-                        const TimingTags& node_clock_tags = analyzer.clock_tags(node_id);
+                        const TimingTags& node_clock_tags = analyzer->setup_clock_tags(node_id);
                         TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_data_tags.end()) {
                             error |= verify_arr_tag(clock_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
@@ -390,7 +384,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
         for(int ilevel = tg.num_levels() - 1; ilevel >= 0; ilevel--) {
             for(NodeId node_id : tg.level(ilevel)) {
 
-                const TimingTags& node_data_tags = analyzer.data_tags(node_id);
+                const TimingTags& node_data_tags = analyzer->setup_data_tags(node_id);
                 float vpr_req_time = expected_arr_req_times.get_req_time(domain, node_id);
                 //Check Required time
                 TimingTagConstIterator data_tag_iter = node_data_tags.find_tag_by_clock_domain(domain);
@@ -400,7 +394,7 @@ int verify_analyzer(const TimingGraph& tg, const TimingAnalyzer& analyzer, const
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
                     if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
-                        const TimingTags& node_clock_tags = analyzer.clock_tags(node_id);
+                        const TimingTags& node_clock_tags = analyzer->setup_clock_tags(node_id);
                         TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_data_tags.end()) {
                             error |= verify_req_tag(clock_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);

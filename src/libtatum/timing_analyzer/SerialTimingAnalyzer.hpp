@@ -3,7 +3,7 @@
 #include <string>
 
 #include "memory_pool.hpp"
-#include "TimingAnalyzer.hpp"
+#include "SetupTimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 #include "timing_constraints_fwd.hpp"
 #include "TimingTags.hpp"
@@ -12,16 +12,14 @@
 
 //#define SAVE_LEVEL_TIMES
 
-class SerialTimingAnalyzer : public TimingAnalyzer {
+class SerialTimingAnalyzer : public SetupTimingAnalyzer {
     public:
-        SerialTimingAnalyzer();
-        ta_runtime calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
-        void reset_timing();
+        SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        ta_runtime calculate_timing() override;
+        void reset_timing() override;
 
-        virtual bool is_correct() { return true; }
-
-        const TimingTags& data_tags(const NodeId node_id) const override;
-        const TimingTags& clock_tags(const NodeId node_id) const override;
+        const TimingTags& setup_data_tags(const NodeId node_id) const override;
+        const TimingTags& setup_clock_tags(const NodeId node_id) const override;
 
     protected:
         /*

@@ -10,10 +10,16 @@ struct ta_runtime;
 
 class TimingAnalyzer {
     public:
-        virtual ta_runtime calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) = 0;
+        TimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints)
+            : tg_(timing_graph)
+            , tc_(timing_constraints) {}
 
-        virtual const TimingTags& data_tags(NodeId node_id) const = 0;
-        virtual const TimingTags& clock_tags(NodeId node_id) const = 0;
+        virtual ta_runtime calculate_timing() = 0;
+        virtual void reset_timing() = 0;
+
+    protected:
+        const TimingGraph& tg_;
+        const TimingConstraints& tc_;
 };
 
 struct ta_runtime {

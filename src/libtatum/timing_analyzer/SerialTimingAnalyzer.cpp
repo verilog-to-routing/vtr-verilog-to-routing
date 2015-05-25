@@ -13,28 +13,29 @@ using std::endl;
 //#define FWD_TRAVERSE_DEBUG
 //#define BCK_TRAVERSE_DEBUG
 
-SerialTimingAnalyzer::SerialTimingAnalyzer()
-    : tag_pool_(sizeof(TimingTag)) //Need to give the size of the object to allocate
-    {}
+SerialTimingAnalyzer::SerialTimingAnalyzer(const TimingGraph& tg, const TimingConstraints& tc)
+    : SetupTimingAnalyzer(tg, tc)
+    //Need to give the size of the object to allocate
+    , tag_pool_(sizeof(TimingTag)) {
+}
 
-ta_runtime SerialTimingAnalyzer::calculate_timing(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
-    //Pre-allocate data sturctures
-    data_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
-    clock_tags_ = std::vector<TimingTags>(timing_graph.num_nodes());
+ta_runtime SerialTimingAnalyzer::calculate_timing() {
+    //No incremental support yet!
+    reset_timing();
 
     struct timespec start_times[4];
     struct timespec end_times[4];
 
     clock_gettime(CLOCK_MONOTONIC, &start_times[0]);
-    pre_traversal(timing_graph, timing_constraints);
+    pre_traversal(tg_, tc_);
     clock_gettime(CLOCK_MONOTONIC, &end_times[0]);
 
     clock_gettime(CLOCK_MONOTONIC, &start_times[1]);
-    forward_traversal(timing_graph, timing_constraints);
+    forward_traversal(tg_, tc_);
     clock_gettime(CLOCK_MONOTONIC, &end_times[1]);
 
     clock_gettime(CLOCK_MONOTONIC, &start_times[2]);
-    backward_traversal(timing_graph);
+    backward_traversal(tg_);
     clock_gettime(CLOCK_MONOTONIC, &end_times[2]);
 
     ta_runtime traversal_times;
@@ -52,10 +53,14 @@ void SerialTimingAnalyzer::reset_timing() {
 
     //Release the memory allocated to tags
     tag_pool_.purge_memory();
+
+    //Re-allocate tags
+    data_tags_ = std::vector<TimingTags>(tg_.num_nodes());
+    clock_tags_ = std::vector<TimingTags>(tg_.num_nodes());
+    
 }
 
 void SerialTimingAnalyzer::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
-
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
      * and required times.
@@ -378,10 +383,10 @@ void SerialTimingAnalyzer::backward_traverse_edge(const TimingGraph& tg, const N
 
 }
 
-const TimingTags& SerialTimingAnalyzer::data_tags(const NodeId node_id) const {
+const TimingTags& SerialTimingAnalyzer::setup_data_tags(const NodeId node_id) const {
     return data_tags_[node_id];
 }
-const TimingTags& SerialTimingAnalyzer::clock_tags(const NodeId node_id) const {
+const TimingTags& SerialTimingAnalyzer::setup_clock_tags(const NodeId node_id) const {
     return clock_tags_[node_id];
 }
 
