@@ -300,54 +300,11 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
         return;
     }
 
-    //We must use the tags by reference so we don't accidentally wipe-out any
-    //existing tags
-    TimingTags& node_data_tags = data_tags_[node_id];
-
     //Each back-edge from down stream node
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
-
-        int sink_node_id = tg.edge_sink_node(edge_id);
-
-        const Time& edge_delay = tg.edge_delay(edge_id);
-
-        const TimingTags& sink_data_tags = data_tags_[sink_node_id];
-
-#ifdef BCK_TRAVERSE_DEBUG
-            cout << "\tSINK Node: " << sink_node_id << endl;;
-#endif
-
-        for(const TimingTag& sink_tag : sink_data_tags) {
-#ifdef BCK_TRAVERSE_DEBUG
-            cout << "\t\t";
-            cout << "DATA_TAG -";
-            cout << " CLK: " << sink_tag.clock_domain();
-            cout << " Req: " << sink_tag.req_time();
-            cout << " Edge_Delay: " << edge_delay;
-            cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
-            cout << endl;
-#endif
-            //We only take the min if we have a valid arrival time
-            TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
-            if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
-                matched_tag_iter->min_req(sink_tag.req_time() - edge_delay, sink_tag);
-            }
-        }
-
-#ifdef BCK_TRAVERSE_DEBUG
-        const TimingTags& sink_clock_tags = clock_tags_[sink_node_id];
-        for(const TimingTag& sink_tag : sink_clock_tags) {
-            cout << "\t\t";
-            cout << "CLOCK_TAG -";
-            cout << " CLK: " << sink_tag.clock_domain();
-            cout << " Req: " << sink_tag.req_time();
-            //cout << " Edge_Delay: " << edge_delay;
-            //cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
-            cout << endl;
-
-        }
-#endif
+        
+        backward_traverse_edge(tg, node_id, edge_id);
     }
 
 #ifdef BCK_TRAVERSE_DEBUG
@@ -370,6 +327,55 @@ void SerialTimingAnalyzer::backward_traverse_node(const TimingGraph& tg, const N
         cout << endl;
     }
 #endif
+}
+
+void SerialTimingAnalyzer::backward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id) {
+    //We must use the tags by reference so we don't accidentally wipe-out any
+    //existing tags
+    TimingTags& node_data_tags = data_tags_[node_id];
+
+    //Pulling values from downstream sink node
+    int sink_node_id = tg.edge_sink_node(edge_id);
+
+    const Time& edge_delay = tg.edge_delay(edge_id);
+
+    const TimingTags& sink_data_tags = data_tags_[sink_node_id];
+
+#ifdef BCK_TRAVERSE_DEBUG
+        cout << "\tSINK Node: " << sink_node_id << endl;;
+#endif
+
+    for(const TimingTag& sink_tag : sink_data_tags) {
+#ifdef BCK_TRAVERSE_DEBUG
+        cout << "\t\t";
+        cout << "DATA_TAG -";
+        cout << " CLK: " << sink_tag.clock_domain();
+        cout << " Req: " << sink_tag.req_time();
+        cout << " Edge_Delay: " << edge_delay;
+        cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
+        cout << endl;
+#endif
+        //We only take the min if we have a valid arrival time
+        TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
+        if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
+            matched_tag_iter->min_req(sink_tag.req_time() - edge_delay, sink_tag);
+        }
+    }
+
+#ifdef BCK_TRAVERSE_DEBUG
+    const TimingTags& sink_clock_tags = clock_tags_[sink_node_id];
+    for(const TimingTag& sink_tag : sink_clock_tags) {
+        cout << "\t\t";
+        cout << "CLOCK_TAG -";
+        cout << " CLK: " << sink_tag.clock_domain();
+        cout << " Req: " << sink_tag.req_time();
+        //cout << " Edge_Delay: " << edge_delay;
+        //cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
+        cout << endl;
+
+    }
+#endif
+
 }
 
 const TimingTags& SerialTimingAnalyzer::data_tags(const NodeId node_id) const {

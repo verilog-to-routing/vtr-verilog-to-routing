@@ -48,6 +48,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer {
         //Per edge worker functions
         void forward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id);
         void forward_traverse_node_set_constraints(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        void backward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id);
 
         //Tag updaters
         void update_arr_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
