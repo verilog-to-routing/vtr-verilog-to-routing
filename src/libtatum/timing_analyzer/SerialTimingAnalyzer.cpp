@@ -146,7 +146,7 @@ void SerialTimingAnalyzer::forward_traverse_node(const TimingGraph& tg, const Ti
         const Time& edge_delay = tg.edge_delay(edge_id);
 
 #ifdef FWD_TRAVERSE_DEBUG
-            cout << "\tSRC Node: " << src_node_id << endl;;
+            cout << "\tSRC Node: " << src_node_id << endl;
 #endif
         /*
          * Clock tags
