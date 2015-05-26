@@ -152,7 +152,9 @@ set(LIB_NAME tatum)
 set(EXEC_NAME tatum_sta)
 include_directories(${CMAKE_SOURCE_DIR}/libtatum
                     ${CMAKE_SOURCE_DIR}/libtatum/base
-                    ${CMAKE_SOURCE_DIR}/libtatum/timing_analyzer
+                    ${CMAKE_SOURCE_DIR}/libtatum/timing_analyzers
+                    ${CMAKE_SOURCE_DIR}/libtatum/timing_traversals
+                    ${CMAKE_SOURCE_DIR}/libtatum/timing_tags
                     ${CMAKE_SOURCE_DIR}/libtatum/timing_graph
                     )
 

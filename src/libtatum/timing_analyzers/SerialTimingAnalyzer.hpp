@@ -3,9 +3,7 @@
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"
 #include "sta_util.hpp"
-
-//#define FWD_TRAVERSE_DEBUG
-//#define BCK_TRAVERSE_DEBUG
+#include "TimingTag.hpp"
 
 template<class AnalysisType>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType> {
@@ -146,6 +144,8 @@ void SerialTimingAnalyzer<AnalysisType>::backward_traverse_node(const TimingGrap
 
     //We don't propagate required times past FF_CLOCK nodes,
     //since anything upstream is part of the clock network
+    //
+    //TODO: if performing optimization on a clock network this may actually be useful
     if(node_type == TN_Type::FF_CLOCK) {
         return;
     }

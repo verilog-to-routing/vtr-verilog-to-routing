@@ -225,7 +225,8 @@ int main(int argc, char** argv) {
         cout << endl;
 
         //Tag stats
-        print_timing_tags_histogram(timing_graph, serial_analyzer);
+        print_setup_tags_histogram(timing_graph, serial_analyzer);
+        print_hold_tags_histogram(timing_graph, serial_analyzer);
     }
 
 /*
