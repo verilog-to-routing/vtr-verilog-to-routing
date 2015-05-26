@@ -8,18 +8,12 @@ class TimingTags;
 
 struct ta_runtime;
 
-class TimingAnalyzer {
-    public:
-        TimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints)
-            : tg_(timing_graph)
-            , tc_(timing_constraints) {}
 
+template<class AnalysisType>
+class TimingAnalyzer : public AnalysisType {
+    public:
         virtual ta_runtime calculate_timing() = 0;
         virtual void reset_timing() = 0;
-
-    protected:
-        const TimingGraph& tg_;
-        const TimingConstraints& tc_;
 };
 
 struct ta_runtime {

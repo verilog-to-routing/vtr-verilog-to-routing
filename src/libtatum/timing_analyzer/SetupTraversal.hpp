@@ -3,17 +3,19 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
+#include "Traversal.hpp"
 
-template<class Base>
+template<class Base = Traversal>
 class SetupTraversal : public Base {
+    public:
+        const TimingTags& setup_data_tags(NodeId node_id) const { return setup_data_tags_[node_id]; }
+        const TimingTags& setup_clock_tags(NodeId node_id) const { return setup_clock_tags_[node_id]; }
     protected:
         void initialize_traversal(const TimingGraph& tg);
         void pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id);
         void forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id);
-        const TimingTags& get_setup_data_tag(NodeId node_id) const { return setup_data_tags_[node_id]; }
-        const TimingTags& get_setup_clock_tag(NodeId node_id) const { return setup_clock_tags_[node_id]; }
 
         std::vector<TimingTags> setup_data_tags_;
         std::vector<TimingTags> setup_clock_tags_;
@@ -22,12 +24,15 @@ class SetupTraversal : public Base {
 template<class Base>
 void SetupTraversal<Base>::initialize_traversal(const TimingGraph& tg) {
     Base::initialize_traversal(tg);
+
     setup_data_tags_ = std::vector<TimingTags>(tg.num_nodes());
     setup_clock_tags_ = std::vector<TimingTags>(tg.num_nodes());
 }
 
 template<class Base>
 void SetupTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+    Base::pre_traverse_node(tag_pool, tg, tc, node_id);
+
     //Primary Input
     ASSERT(tg.num_node_in_edges(node_id) == 0);
 
@@ -84,7 +89,7 @@ void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Tim
     const Time& edge_delay = tg.edge_delay(edge_id);
 
 #ifdef FWD_TRAVERSE_DEBUG
-        cout << "\tSRC Node: " << src_node_id << endl;
+        std::cout << "\tSRC Node: " << src_node_id << std::endl;
 #endif
 
     /*
@@ -97,12 +102,12 @@ void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Tim
         const TimingTags& src_clk_tags = setup_clock_tags_[src_node_id];
         for(const TimingTag& src_clk_tag : src_clk_tags) {
 #ifdef FWD_TRAVERSE_DEBUG
-            cout << "\t\tCLOCK_TAG -";
-            cout << " CLK: " << src_clk_tag.clock_domain();
-            cout << " Arr: " << src_clk_tag.arr_time();
-            cout << " Edge_Delay: " << edge_delay;
-            cout << " Edge_Arrival: " << src_clk_tag.arr_time() + edge_delay;
-            cout << endl;
+            std::cout << "\t\tCLOCK_TAG -";
+            std::cout << " CLK: " << src_clk_tag.clock_domain();
+            std::cout << " Arr: " << src_clk_tag.arr_time();
+            std::cout << " Edge_Delay: " << edge_delay;
+            std::cout << " Edge_Arrival: " << src_clk_tag.arr_time() + edge_delay;
+            std::cout << std::endl;
 #endif
             //Standard propagation through the clock network
             node_clock_tags.max_arr(tag_pool, src_clk_tag.arr_time() + edge_delay, src_clk_tag);
@@ -134,12 +139,12 @@ void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Tim
 
     for(const TimingTag& src_data_tag : src_data_tags) {
 #ifdef FWD_TRAVERSE_DEBUG
-        cout << "\t\tDATA_TAG -";
-        cout << " CLK: " << src_data_tag.clock_domain();
-        cout << " Arr: " << src_data_tag.arr_time();
-        cout << " Edge_Delay: " << edge_delay;
-        cout << " Edge_Arrival: " << src_data_tag.arr_time() + edge_delay;
-        cout << endl;
+        std::cout << "\t\tDATA_TAG -";
+        std::cout << " CLK: " << src_data_tag.clock_domain();
+        std::cout << " Arr: " << src_data_tag.arr_time();
+        std::cout << " Edge_Delay: " << edge_delay;
+        std::cout << " Edge_Arrival: " << src_data_tag.arr_time() + edge_delay;
+        std::cout << std::endl;
 #endif
         //Standard data-path propagation
         node_data_tags.max_arr(tag_pool, src_data_tag.arr_time() + edge_delay, src_data_tag);
@@ -213,18 +218,18 @@ void SetupTraversal<Base>::backward_traverse_edge(const TimingGraph& tg, const N
     const TimingTags& sink_data_tags = setup_data_tags_[sink_node_id];
 
 #ifdef BCK_TRAVERSE_DEBUG
-        cout << "\tSINK Node: " << sink_node_id << endl;;
+        std::cout << "\tSINK Node: " << sink_node_id << std::endl;;
 #endif
 
     for(const TimingTag& sink_tag : sink_data_tags) {
 #ifdef BCK_TRAVERSE_DEBUG
-        cout << "\t\t";
-        cout << "DATA_TAG -";
-        cout << " CLK: " << sink_tag.clock_domain();
-        cout << " Req: " << sink_tag.req_time();
-        cout << " Edge_Delay: " << edge_delay;
-        cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
-        cout << endl;
+        std::cout << "\t\t";
+        std::cout << "DATA_TAG -";
+        std::cout << " CLK: " << sink_tag.clock_domain();
+        std::cout << " Req: " << sink_tag.req_time();
+        std::cout << " Edge_Delay: " << edge_delay;
+        std::cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
+        std::cout << std::endl;
 #endif
         //We only take the min if we have a valid arrival time
         TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
@@ -236,13 +241,13 @@ void SetupTraversal<Base>::backward_traverse_edge(const TimingGraph& tg, const N
 #ifdef BCK_TRAVERSE_DEBUG
     const TimingTags& sink_clock_tags = setup_clock_tags_[sink_node_id];
     for(const TimingTag& sink_tag : sink_clock_tags) {
-        cout << "\t\t";
-        cout << "CLOCK_TAG -";
-        cout << " CLK: " << sink_tag.clock_domain();
-        cout << " Req: " << sink_tag.req_time();
-        //cout << " Edge_Delay: " << edge_delay;
-        //cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
-        cout << endl;
+        std::cout << "\t\t";
+        std::cout << "CLOCK_TAG -";
+        std::cout << " CLK: " << sink_tag.clock_domain();
+        std::cout << " Req: " << sink_tag.req_time();
+        //std::cout << " Edge_Delay: " << edge_delay;
+        //std::cout << " Edge_Required: " << sink_tag.arr_time() - edge_delay;
+        std::cout << std::endl;
 
     }
 #endif

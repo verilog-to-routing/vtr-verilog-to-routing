@@ -3,25 +3,18 @@
 #include <string>
 
 #include "memory_pool.hpp"
-#include "SetupTimingAnalyzer.hpp"
+
+#include "TimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
 #include "timing_constraints_fwd.hpp"
 #include "TimingTags.hpp"
 
-#define DEFAULT_CLOCK_PERIOD 1.0e-9
-
-//#define SAVE_LEVEL_TIMES
-
-template<class TraversalType>
-class SerialTimingAnalyzer : public SetupTimingAnalyzer,
-                             public TraversalType {
+template<class AnalysisType>
+class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType> {
     public:
         SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
         ta_runtime calculate_timing() override;
         void reset_timing() override;
-
-        const TimingTags& setup_data_tags(const NodeId node_id) const override;
-        const TimingTags& setup_clock_tags(const NodeId node_id) const override;
 
     protected:
         /*
@@ -45,13 +38,9 @@ class SerialTimingAnalyzer : public SetupTimingAnalyzer,
         void forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
-        //Tag updaters
-        void update_arr_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
-        void update_req_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay);
-        //TODO: Find a cleaner way to handle these special case required time updates
-        void update_req_outpad_sink(TimingTags& node_tags, const Time& req_time, const TimingTag& info_tag);
-        void update_req_tag_ff_sink(TimingTag& tag, const TimingTag& base_tag, const Time& constraint, const TimingTag& info_tag);
 
+        const TimingGraph& tg_;
+        const TimingConstraints& tc_;
         MemoryPool tag_pool_; //Memory pool for allocating tags
 };
 
@@ -70,15 +59,16 @@ using std::endl;
 //#define FWD_TRAVERSE_DEBUG
 //#define BCK_TRAVERSE_DEBUG
 
-template<class TraversalType>
-SerialTimingAnalyzer<TraversalType>::SerialTimingAnalyzer(const TimingGraph& tg, const TimingConstraints& tc)
-    : SetupTimingAnalyzer(tg, tc)
+template<class AnalysisType>
+SerialTimingAnalyzer<AnalysisType>::SerialTimingAnalyzer(const TimingGraph& tg, const TimingConstraints& tc)
+    : tg_(tg)
+    , tc_(tc)
     //Need to give the size of the object to allocate
     , tag_pool_(sizeof(TimingTag)) {
 }
 
-template<class TraversalType>
-ta_runtime SerialTimingAnalyzer<TraversalType>::calculate_timing() {
+template<class AnalysisType>
+ta_runtime SerialTimingAnalyzer<AnalysisType>::calculate_timing() {
     //No incremental support yet!
     reset_timing();
 
@@ -105,12 +95,12 @@ ta_runtime SerialTimingAnalyzer<TraversalType>::calculate_timing() {
     return traversal_times;
 }
 
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::reset_timing() {
+template<class AnalysisType>
+void SerialTimingAnalyzer<AnalysisType>::reset_timing() {
     //Release the memory allocated to tags
     tag_pool_.purge_memory();
 
-    TraversalType::initialize_traversal(tg_);
+    AnalysisType::initialize_traversal(tg_);
 /*
  *
  *    //Re-allocate tags
@@ -119,8 +109,8 @@ void SerialTimingAnalyzer<TraversalType>::reset_timing() {
  */
 }
 
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+template<class AnalysisType>
+void SerialTimingAnalyzer<AnalysisType>::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
      * and required times.
@@ -128,12 +118,12 @@ void SerialTimingAnalyzer<TraversalType>::pre_traversal(const TimingGraph& timin
      *   - Initialize arrival times on primary inputs
      */
     for(NodeId node_id : timing_graph.primary_inputs()) {
-        TraversalType::pre_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
+        AnalysisType::pre_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
     }
 }
 
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+template<class AnalysisType>
+void SerialTimingAnalyzer<AnalysisType>::forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     //Forward traversal (arrival times)
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
         for(NodeId node_id : timing_graph.level(level_idx)) {
@@ -142,8 +132,8 @@ void SerialTimingAnalyzer<TraversalType>::forward_traversal(const TimingGraph& t
     }
 }
 
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::backward_traversal(const TimingGraph& timing_graph) {
+template<class AnalysisType>
+void SerialTimingAnalyzer<AnalysisType>::backward_traversal(const TimingGraph& timing_graph) {
     //Backward traversal (required times)
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
         for(NodeId node_id : timing_graph.level(level_idx)) {
@@ -152,8 +142,8 @@ void SerialTimingAnalyzer<TraversalType>::backward_traversal(const TimingGraph& 
     }
 }
 
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class AnalysisType>
+void SerialTimingAnalyzer<AnalysisType>::forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
 #ifdef FWD_TRAVERSE_DEBUG
     cout << "FWD Traversing Node: " << node_id << " (" << tg.node_type(node_id) << ")" << endl;
 #endif
@@ -162,10 +152,10 @@ void SerialTimingAnalyzer<TraversalType>::forward_traverse_node(const TimingGrap
     for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
 
-        TraversalType::forward_traverse_edge(tag_pool_, tg, node_id, edge_id);
+        AnalysisType::forward_traverse_edge(tag_pool_, tg, node_id, edge_id);
     }
 
-    TraversalType::forward_traverse_finalize_node(tag_pool_, tg, tc, node_id);
+    AnalysisType::forward_traverse_finalize_node(tag_pool_, tg, tc, node_id);
 
 #ifdef FWD_TRAVERSE_DEBUG
     cout << "\tResulting Tags:" << endl;
@@ -188,8 +178,8 @@ void SerialTimingAnalyzer<TraversalType>::forward_traverse_node(const TimingGrap
 #endif
 }
 
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
+template<class AnalysisType>
+void SerialTimingAnalyzer<AnalysisType>::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //Pull from downstream sinks to current node
 
 #ifdef BCK_TRAVERSE_DEBUG
@@ -208,7 +198,7 @@ void SerialTimingAnalyzer<TraversalType>::backward_traverse_node(const TimingGra
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
-        TraversalType::backward_traverse_edge(tg, node_id, edge_id);
+        AnalysisType::backward_traverse_edge(tg, node_id, edge_id);
     }
 
 #ifdef BCK_TRAVERSE_DEBUG
@@ -233,36 +223,3 @@ void SerialTimingAnalyzer<TraversalType>::backward_traverse_node(const TimingGra
 #endif
 }
 
-template<class TraversalType>
-const TimingTags& SerialTimingAnalyzer<TraversalType>::setup_data_tags(const NodeId node_id) const {
-    return TraversalType::get_setup_data_tag(node_id);
-}
-
-template<class TraversalType>
-const TimingTags& SerialTimingAnalyzer<TraversalType>::setup_clock_tags(const NodeId node_id) const {
-    return TraversalType::get_setup_clock_tag(node_id);
-}
-
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::update_arr_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay) {
-    //TODO: this currently performs setup analaysis, it should really be implemented in a
-    //dervied analyzers, e.g. SerialSetupTimingAnalyzer
-    node_tags.max_arr(tag_pool_, base_tag.arr_time() + edge_delay, base_tag);
-}
-
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::update_req_tags(TimingTags& node_tags, const TimingTag& base_tag, const Time& edge_delay) {
-    //TODO: this currently performs setup analaysis, it should really be implemented in a
-    //dervied analyzers, e.g. SerialSetupTimingAnalyzer
-    node_tags.min_req(tag_pool_, base_tag.req_time() - edge_delay, base_tag);
-}
-
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::update_req_outpad_sink(TimingTags& node_tags, const Time& req_time, const TimingTag& info_tag) {
-    node_tags.min_req(tag_pool_, req_time, info_tag);
-}
-
-template<class TraversalType>
-void SerialTimingAnalyzer<TraversalType>::update_req_tag_ff_sink(TimingTag& tag, const TimingTag& base_tag, const Time& constraint, const TimingTag& info_tag) {
-    tag.min_req(base_tag.arr_time() + constraint, info_tag);
-}
