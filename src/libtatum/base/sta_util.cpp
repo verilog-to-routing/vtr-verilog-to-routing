@@ -196,7 +196,8 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::sh
 
     for(int inode = 0; inode < tg.num_nodes(); inode++) {
         os << "\tnode" << inode;
-        os << "[label=\"{#" << inode;
+        os << "[label=\"";
+        os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         const TimingTags& data_tags = analyzer->setup_data_tags(inode);
         if(data_tags.num_tags() > 0) {
             os << " | DATA_TAGS";
@@ -225,6 +226,16 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::sh
         os << endl;
     }
 
+    //Force drawing to be levelized
+    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+        os << "\t{rank = same;";
+
+        for(NodeId node_id : tg.level(ilevel)) {
+            os << " node" << node_id <<";";
+        }
+        os << "}" << endl;
+    }
+
     for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
         for(NodeId node_id : tg.level(ilevel)) {
             for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
@@ -247,9 +258,11 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::sha
     os << "digraph G {" << endl;
     os << "\tnode[shape=record]" << endl;
 
+    //Declare nodes and annotate tags
     for(int inode = 0; inode < tg.num_nodes(); inode++) {
         os << "\tnode" << inode;
-        os << "[label=\"{#" << inode;
+        os << "[label=\"";
+        os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         const TimingTags& data_tags = analyzer->hold_data_tags(inode);
         if(data_tags.num_tags() > 0) {
             os << " | DATA_TAGS";
@@ -278,6 +291,17 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::sha
         os << endl;
     }
 
+    //Force drawing to be levelized
+    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+        os << "\t{rank = same;";
+
+        for(NodeId node_id : tg.level(ilevel)) {
+            os << " node" << node_id <<";";
+        }
+        os << "}" << endl;
+    }
+
+    //Add edges with delays annoated
     for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
         for(NodeId node_id : tg.level(ilevel)) {
             for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
