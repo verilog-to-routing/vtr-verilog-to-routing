@@ -111,7 +111,7 @@ void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Tim
                 //data arrival time at this node (since the clock arrival
                 //launches the data)
                 TimingTag launch_tag = src_clk_tag;
-                launch_tag.set_launch_node(src_node_id);
+                launch_tag.set_launch_node(node_id); //Data launches from this node
                 ASSERT(launch_tag.next() == nullptr);
 
                 //Mark propagated launch time as a DATA tag
