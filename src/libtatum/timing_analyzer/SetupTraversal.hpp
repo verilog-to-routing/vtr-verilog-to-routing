@@ -8,15 +8,18 @@
 template<class Base = Traversal>
 class SetupTraversal : public Base {
     public:
+        //External tag access
         const TimingTags& setup_data_tags(NodeId node_id) const { return setup_data_tags_[node_id]; }
         const TimingTags& setup_clock_tags(NodeId node_id) const { return setup_clock_tags_[node_id]; }
     protected:
+        //Internal operations for performing setup analysis
         void initialize_traversal(const TimingGraph& tg);
         void pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id);
         void forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id);
 
+        //Tag data structure
         std::vector<TimingTags> setup_data_tags_;
         std::vector<TimingTags> setup_clock_tags_;
 };
@@ -38,13 +41,14 @@ void SetupTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingG
 
     TN_Type node_type = tg.node_type(node_id);
 
+    //Note that we assume that edge counting has set the effective period constraint assuming a
+    //launch edge at time zero.
     if(node_type == TN_Type::CONSTANT_GEN_SOURCE) {
         //Pass, we don't propagate any tags from constant generators,
         //since they do not effect they dynamic timing behaviour of the
         //system
 
     } else if(node_type == TN_Type::CLOCK_SOURCE) {
-        //TODO: use real rise edge time!
         ASSERT_MSG(setup_clock_tags_[node_id].num_tags() == 0, "Clock source already has clock tags");
         setup_clock_tags_[node_id].add_tag(tag_pool,
                 TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
@@ -56,9 +60,6 @@ void SetupTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingG
 
         //VPR applies input delays to the arc from INPAD_SOURCE to INPAD_OPIN
         //so we do not need to account for it directly in the arrival time of INPAD_SOURCES
-        //
-        //TODO: The initial arrival should correspond to the rising edge of the clock associated
-        //      with the input
 
         //Figure out if we are an input which defines a clock
         if(tg.node_is_clock_source(node_id)) {
