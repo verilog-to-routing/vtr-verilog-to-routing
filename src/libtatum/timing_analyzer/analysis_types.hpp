@@ -3,6 +3,9 @@
 
 /*
  * Useful shorthands for the supported analysis types
+ *
+ * Used as template parameters to specify timing analysis
+ * mode for TimingAnalyzer and derived classes
  */
 
 //Setup (max) analysis
