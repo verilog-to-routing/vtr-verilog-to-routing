@@ -3,7 +3,6 @@
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"
 #include "sta_util.hpp"
-#include "TimingTag.hpp"
 
 template<class AnalysisType>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType> {
@@ -83,12 +82,6 @@ void SerialTimingAnalyzer<AnalysisType>::reset_timing() {
     tag_pool_.purge_memory();
 
     AnalysisType::initialize_traversal(tg_);
-/*
- *
- *    //Re-allocate tags
- *    data_tags_ = std::vector<TimingTags>(tg_.num_nodes());
- *    clock_tags_ = std::vector<TimingTags>(tg_.num_nodes());
- */
 }
 
 template<class AnalysisType>

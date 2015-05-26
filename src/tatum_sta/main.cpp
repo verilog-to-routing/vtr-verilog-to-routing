@@ -16,6 +16,7 @@
 
 #include "SerialTimingAnalyzer.hpp"
 #include "analysis_types.hpp"
+#include "TimingTag.hpp"
 
 //Cilk variants
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
