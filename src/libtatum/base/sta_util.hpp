@@ -92,20 +92,21 @@ void print_hold_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Anal
 template<class Analyzer>
 void print_setup_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer) {
     std::cout << std::endl;
+    std::cout << "Setup Tags:" << std::endl;
     std::cout << std::scientific;
     for(int level_idx = 0; level_idx < tg.num_levels(); level_idx++) {
         std::cout << "Level: " << level_idx << std::endl;
         for(NodeId node_id : tg.level(level_idx)) {
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
             for(const TimingTag& tag : analyzer->setup_data_tags(node_id)) {
-                std::cout << "\tSetup - Data: ";
+                std::cout << "\tData : ";
                 std::cout << "  clk: " << tag.clock_domain();
                 std::cout << "  Arr: " << tag.arr_time().value();
                 std::cout << "  Req: " << tag.req_time().value();
                 std::cout << std::endl;
             }
             for(const TimingTag& tag : analyzer->setup_clock_tags(node_id)) {
-                std::cout << "\tSetup - Clock: ";
+                std::cout << "\tClock: ";
                 std::cout << "  clk: " << tag.clock_domain();
                 std::cout << "  Arr: " << tag.arr_time().value();
                 std::cout << "  Req: " << tag.req_time().value();
@@ -119,20 +120,21 @@ void print_setup_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> ana
 template<class Analyzer>
 void print_hold_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer) {
     std::cout << std::endl;
+    std::cout << "Hold Tags:" << std::endl;
     std::cout << std::scientific;
     for(int level_idx = 0; level_idx < tg.num_levels(); level_idx++) {
         std::cout << "Level: " << level_idx << std::endl;
         for(NodeId node_id : tg.level(level_idx)) {
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
             for(const TimingTag& tag : analyzer->hold_data_tags(node_id)) {
-                std::cout << "\tHold - Data: ";
+                std::cout << "\tData : ";
                 std::cout << "  clk: " << tag.clock_domain();
                 std::cout << "  Arr: " << tag.arr_time().value();
                 std::cout << "  Req: " << tag.req_time().value();
                 std::cout << std::endl;
             }
             for(const TimingTag& tag : analyzer->hold_clock_tags(node_id)) {
-                std::cout << "\tHold - Clock: ";
+                std::cout << "\tClock: ";
                 std::cout << "  clk: " << tag.clock_domain();
                 std::cout << "  Arr: " << tag.arr_time().value();
                 std::cout << "  Req: " << tag.req_time().value();

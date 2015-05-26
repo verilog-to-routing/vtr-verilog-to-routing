@@ -25,10 +25,16 @@ class TimingTags {
         TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
         //Modifiers
-        //void add_tag(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
         void add_tag(MemoryPool& tag_pool, const TimingTag& src_tag);
-        void max_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
-        void min_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& src_tag);
+
+        //Setup operations
+        void max_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag);
+        void min_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag);
+
+        //Hold operations
+        void min_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag);
+        void max_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag);
+
         void clear();
 
 

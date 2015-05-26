@@ -64,14 +64,7 @@ void TimingTags::max_arr(MemoryPool& tag_pool, const Time& new_time, const Timin
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
         add_tag(tag_pool, tag);
     } else {
-        TimingTag& matched_tag = *iter;
-
-        //Need to max with existing value
-        if(!matched_tag.arr_time().valid() || new_time.value() > matched_tag.arr_time().value()) {
-            //New value is larger, or no previous valid value existed
-            //Update max
-            matched_tag.update_arr(new_time, base_tag);
-        }
+        iter->max_arr(new_time, base_tag);
     }
 }
 
@@ -83,6 +76,28 @@ void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const Timin
         add_tag(tag_pool, tag);
     } else {
         iter->min_req(new_time, base_tag);
+    }
+}
+
+void TimingTags::min_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    if(iter == end()) {
+        //First time we've seen this domain
+        TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
+        add_tag(tag_pool, tag);
+    } else {
+        iter->min_arr(new_time, base_tag);
+    }
+}
+
+void TimingTags::max_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    if(iter == end()) {
+        //First time we've seen this domain
+        TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
+        add_tag(tag_pool, tag);
+    } else {
+        iter->max_req(new_time, base_tag);
     }
 }
 

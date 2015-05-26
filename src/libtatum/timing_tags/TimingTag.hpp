@@ -46,6 +46,8 @@ class TimingTag {
 
         void min_req(const Time& new_req_time, const TimingTag& base_tag);
         void max_arr(const Time& new_arr_time, const TimingTag& base_tag);
+        void max_req(const Time& new_req_time, const TimingTag& base_tag);
+        void min_arr(const Time& new_arr_time, const TimingTag& base_tag);
         void update_arr(const Time& new_arr_time, const TimingTag& base_tag);
         void update_req(const Time& new_req_time, const TimingTag& base_tag);
 

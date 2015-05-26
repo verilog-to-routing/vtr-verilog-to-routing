@@ -190,7 +190,8 @@ int main(int argc, char** argv) {
             cout << ".";
             cout.flush();
 
-            //print_timing_tags(timing_graph, serial_analyzer);
+            print_setup_tags(timing_graph, serial_analyzer);
+            print_hold_tags(timing_graph, serial_analyzer);
 
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
