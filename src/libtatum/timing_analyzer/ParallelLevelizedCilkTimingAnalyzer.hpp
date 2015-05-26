@@ -3,6 +3,7 @@
 #include "SerialTimingAnalyzer.hpp"
 
 
+#if 0
 class ParallelLevelizedCilkTimingAnalyzer : public SerialTimingAnalyzer {
         //Use the same basic functions for the different traversals
     private:
@@ -27,3 +28,4 @@ class ParallelLevelizedCilkTimingAnalyzer : public SerialTimingAnalyzer {
 
 };
 
+#endif

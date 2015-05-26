@@ -1,9 +1,9 @@
 #pragma once
-#include <omp.h>
 
 #include "TimingGraph.hpp"
 #include "SerialTimingAnalyzer.hpp"
 
+#if 0
 //This implementation ignores dependancies to get a best case iteration time
 class ParallelNoDependancyCilkTimingAnalyzer : public SerialTimingAnalyzer {
     private:
@@ -24,4 +24,4 @@ class ParallelNoDependancyCilkTimingAnalyzer : public SerialTimingAnalyzer {
         void backward_traversal(TimingGraph& timing_graph);
 
 };
-
+#endif

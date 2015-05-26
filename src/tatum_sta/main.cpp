@@ -19,6 +19,8 @@
 
 #include "SetupTimingAnalyzer.hpp"
 #include "SerialTimingAnalyzer.hpp"
+#include "SetupTraversal.hpp"
+#include "Traversal.hpp"
 
 //Cilk variants
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
@@ -158,7 +160,7 @@ int main(int argc, char** argv) {
      *cout << endl;
      */
 
-    std::shared_ptr<SetupTimingAnalyzer> serial_analyzer = std::make_shared<SerialTimingAnalyzer>(timing_graph, timing_constraints);
+    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupTraversal<Traversal>>>(timing_graph, timing_constraints);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;
