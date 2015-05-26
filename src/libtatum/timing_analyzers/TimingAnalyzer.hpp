@@ -3,6 +3,7 @@
 
 #include "timing_graph_fwd.hpp"
 #include "timing_constraints_fwd.hpp"
+#include "analysis_types.hpp"
 
 class TimingTags;
 

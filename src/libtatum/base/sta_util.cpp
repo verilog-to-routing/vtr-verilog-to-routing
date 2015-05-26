@@ -5,9 +5,9 @@
 #include "assert.hpp"
 #include "sta_util.hpp"
 
-
 using std::cout;
 using std::endl;
+
 void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes);
 void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& clock_gen_fanout_nodes);
 
@@ -187,4 +187,110 @@ void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_i
         }
     }
 
+}
+
+void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<SetupHoldAnalysis>> analyzer) {
+    //Write out a dot file of the timing graph
+    os << "digraph G {" << endl;
+    os << "\tnode[shape=record]" << endl;
+
+    for(int inode = 0; inode < tg.num_nodes(); inode++) {
+        os << "\tnode" << inode;
+        os << "[label=\"{#" << inode;
+        const TimingTags& data_tags = analyzer->setup_data_tags(inode);
+        if(data_tags.num_tags() > 0) {
+            os << " | DATA_TAGS";
+            for(const TimingTag& tag : data_tags) {
+                os << " | {";
+                os << "clk: " << tag.clock_domain();
+                os << " arr: " << tag.arr_time().value();
+                os << " req: " << tag.req_time().value();
+                os << " lnch: " << tag.launch_node();
+                os << "}";
+            }
+        }
+        const TimingTags& clock_tags = analyzer->setup_clock_tags(inode);
+        if(clock_tags.num_tags() > 0) {
+            os << " | CLOCK_TAGS";
+            for(const TimingTag& tag : clock_tags) {
+                os << " | {";
+                os << "clk: " << tag.clock_domain();
+                os << " arr: " << tag.arr_time().value();
+                os << " req: " << tag.req_time().value();
+                os << " lnch: " << tag.launch_node();
+                os << "}";
+            }
+        }
+        os << "}\"]";
+        os << endl;
+    }
+
+    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+        for(NodeId node_id : tg.level(ilevel)) {
+            for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
+                EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+
+                NodeId sink_node_id = tg.edge_sink_node(edge_id);
+
+                os << "\tnode" << node_id << " -> node" << sink_node_id;
+                os << " [ label=\"" << tg.edge_delay(edge_id) << "\" ]";
+                os << ";" << endl;
+            }
+        }
+    }
+
+    os << "}" << endl;
+}
+
+void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<SetupHoldAnalysis>> analyzer) {
+    //Write out a dot file of the timing graph
+    os << "digraph G {" << endl;
+    os << "\tnode[shape=record]" << endl;
+
+    for(int inode = 0; inode < tg.num_nodes(); inode++) {
+        os << "\tnode" << inode;
+        os << "[label=\"{#" << inode;
+        const TimingTags& data_tags = analyzer->hold_data_tags(inode);
+        if(data_tags.num_tags() > 0) {
+            os << " | DATA_TAGS";
+            for(const TimingTag& tag : data_tags) {
+                os << " | {";
+                os << "clk: " << tag.clock_domain();
+                os << " arr: " << tag.arr_time().value();
+                os << " req: " << tag.req_time().value();
+                os << " lnch: " << tag.launch_node();
+                os << "}";
+            }
+        }
+        const TimingTags& clock_tags = analyzer->hold_clock_tags(inode);
+        if(clock_tags.num_tags() > 0) {
+            os << " | CLOCK_TAGS";
+            for(const TimingTag& tag : clock_tags) {
+                os << " | {";
+                os << "clk: " << tag.clock_domain();
+                os << " arr: " << tag.arr_time().value();
+                os << " req: " << tag.req_time().value();
+                os << " lnch: " << tag.launch_node();
+                os << "}";
+            }
+        }
+        os << "}\"]";
+        os << endl;
+    }
+
+    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+        for(NodeId node_id : tg.level(ilevel)) {
+            for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
+                EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+
+                NodeId sink_node_id = tg.edge_sink_node(edge_id);
+
+                os << "\tnode" << node_id << " -> node" << sink_node_id;
+                os << " [ label=\"" << tg.edge_delay(edge_id) << "\" ]";
+                os << ";" << endl;
+            }
+        }
+    }
+
+    os << "}" << endl;
 }

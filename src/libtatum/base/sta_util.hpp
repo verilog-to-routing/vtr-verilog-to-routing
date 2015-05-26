@@ -17,6 +17,8 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets);
 void print_timing_graph(const TimingGraph& tg);
 void print_levelization(const TimingGraph& tg);
 
+void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<SetupHoldAnalysis>> analyzer);
+void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<SetupHoldAnalysis>> analyzer);
 
 std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg);
 std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg);
