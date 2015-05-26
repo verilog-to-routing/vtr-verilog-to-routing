@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <memory>
 
 #include <valgrind/callgrind.h>
@@ -230,6 +231,18 @@ int main(int argc, char** argv) {
         print_setup_tags_histogram(timing_graph, serial_analyzer);
         print_hold_tags_histogram(timing_graph, serial_analyzer);
     }
+
+    if(timing_graph.num_nodes() < 1000) {
+        cout << "Writing Anotated Timing Graph Dot File" << endl;
+        std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
+        write_dot_file_setup(tg_setup_dot_file, timing_graph, serial_analyzer);
+
+        std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
+        write_dot_file_hold(tg_hold_dot_file, timing_graph, serial_analyzer);
+    } else {
+        cout << "Skipping writting dot file due to large graph size" << endl;
+    }
+    cout << endl;
 
 /*
  *    float parallel_analysis_time = 0;
