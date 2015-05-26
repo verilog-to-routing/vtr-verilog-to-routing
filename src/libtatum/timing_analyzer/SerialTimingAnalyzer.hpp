@@ -1,13 +1,11 @@
 #pragma once
 
-#include <string>
-
-#include "memory_pool.hpp"
-
 #include "TimingAnalyzer.hpp"
-#include "TimingGraph.hpp"
-#include "timing_constraints_fwd.hpp"
-#include "TimingTags.hpp"
+#include "memory_pool.hpp"
+#include "sta_util.hpp"
+
+//#define FWD_TRAVERSE_DEBUG
+//#define BCK_TRAVERSE_DEBUG
 
 template<class AnalysisType>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType> {
@@ -44,20 +42,6 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType> {
         MemoryPool tag_pool_; //Memory pool for allocating tags
 };
 
-#include <fstream>
-#include <algorithm>
-#include "SerialTimingAnalyzer.hpp"
-#include "TimingGraph.hpp"
-#include "TimingConstraints.cpp"
-
-#include <iostream>
-using std::cout;
-using std::endl;
-
-#include "sta_util.hpp"
-
-//#define FWD_TRAVERSE_DEBUG
-//#define BCK_TRAVERSE_DEBUG
 
 template<class AnalysisType>
 SerialTimingAnalyzer<AnalysisType>::SerialTimingAnalyzer(const TimingGraph& tg, const TimingConstraints& tc)
@@ -144,10 +128,6 @@ void SerialTimingAnalyzer<AnalysisType>::backward_traversal(const TimingGraph& t
 
 template<class AnalysisType>
 void SerialTimingAnalyzer<AnalysisType>::forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
-#ifdef FWD_TRAVERSE_DEBUG
-    cout << "FWD Traversing Node: " << node_id << " (" << tg.node_type(node_id) << ")" << endl;
-#endif
-
     //Pull from upstream sources to current node
     for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
@@ -156,35 +136,11 @@ void SerialTimingAnalyzer<AnalysisType>::forward_traverse_node(const TimingGraph
     }
 
     AnalysisType::forward_traverse_finalize_node(tag_pool_, tg, tc, node_id);
-
-#ifdef FWD_TRAVERSE_DEBUG
-    cout << "\tResulting Tags:" << endl;
-    for(const auto& node_clk_tag : node_clock_tags) {
-        cout << "\t\t";
-        cout << "CLOCK_TAG -";
-        cout << " CLK: " << node_clk_tag.clock_domain();
-        cout << " Arr: " << node_clk_tag.arr_time();
-        cout << " Req: " << node_clk_tag.req_time();
-        cout << endl;
-    }
-    for(const auto& node_data_tag : node_data_tags) {
-        cout << "\t\t";
-        cout << "DATA_TAG -";
-        cout << " CLK: " << node_data_tag.clock_domain();
-        cout << " Arr: " << node_data_tag.arr_time();
-        cout << " Req: " << node_data_tag.req_time();
-        cout << endl;
-    }
-#endif
 }
 
 template<class AnalysisType>
 void SerialTimingAnalyzer<AnalysisType>::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //Pull from downstream sinks to current node
-
-#ifdef BCK_TRAVERSE_DEBUG
-    cout << "BCK Traversing Node: " << node_id << " (" << tg.node_type(node_id) << ")" << endl;
-#endif
 
     TN_Type node_type = tg.node_type(node_id);
 
@@ -200,26 +156,5 @@ void SerialTimingAnalyzer<AnalysisType>::backward_traverse_node(const TimingGrap
 
         AnalysisType::backward_traverse_edge(tg, node_id, edge_id);
     }
-
-#ifdef BCK_TRAVERSE_DEBUG
-    const TimingTags& node_clock_tags = clock_tags_[node_id];
-    cout << "\tResulting Tags:" << endl;
-    for(const auto& node_data_tag : node_data_tags) {
-        cout << "\t\t";
-        cout << "DATA_TAG -";
-        cout << " CLK: " << node_data_tag.clock_domain();
-        cout << " Arr: " << node_data_tag.arr_time();
-        cout << " Req: " << node_data_tag.req_time();
-        cout << endl;
-    }
-    for(const auto& node_clk_tag : node_clock_tags) {
-        cout << "\t\t";
-        cout << "CLOCK_TAG -";
-        cout << " CLK: " << node_clk_tag.clock_domain();
-        cout << " Arr: " << node_clk_tag.arr_time();
-        cout << " Req: " << node_clk_tag.req_time();
-        cout << endl;
-    }
-#endif
 }
 
