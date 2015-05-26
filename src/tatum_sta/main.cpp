@@ -18,8 +18,7 @@
 #include "TimingNode.hpp"
 
 #include "SerialTimingAnalyzer.hpp"
-#include "SetupTraversal.hpp"
-#include "Traversal.hpp"
+#include "analysis_types.hpp"
 
 //Cilk variants
 #include "ParallelLevelizedCilkTimingAnalyzer.hpp"
@@ -298,7 +297,7 @@ int main(int argc, char** argv) {
      *cout << endl;
      */
 
-    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupTraversal<>>>(timing_graph, timing_constraints);
+    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis>>(timing_graph, timing_constraints);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;
@@ -370,8 +369,7 @@ int main(int argc, char** argv) {
         cout << endl;
 
         //Tag stats
-        //TODO: fixme
-        //print_timing_tags_histogram(timing_graph, serial_analyzer, 10);
+        print_timing_tags_histogram(timing_graph, serial_analyzer, 10);
     }
 
 /*

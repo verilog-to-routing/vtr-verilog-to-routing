@@ -31,8 +31,8 @@ void print_timing_tags(const TimingGraph& tg, const std::shared_ptr<TimingAnalyz
  * Templated function implementations
  */
 
-template<class AnalysisType>
-void print_timing_tags_histogram(const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<AnalysisType>> analyzer, int nbuckets) {
+template<class Analyzer>
+void print_timing_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer, int nbuckets) {
     const int int_width = 8;
     const int flt_width = 2;
 
@@ -63,8 +63,8 @@ void print_timing_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Ti
     }
 }
 
-template<class AnalysisType>
-void print_timing_tags(const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<AnalysisType>> analyzer) {
+template<class Analyzer>
+void print_timing_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer) {
     std::cout << std::endl;
     std::cout << std::scientific;
     for(int level_idx = 0; level_idx < tg.num_levels(); level_idx++) {
