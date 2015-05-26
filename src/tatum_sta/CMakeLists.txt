@@ -17,7 +17,9 @@ project("tatum")
 
 #Source files for the demo executable (not generated)
 set(EXEC_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/verify.cpp
+    )
 
 set(LEXER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/parsers/vpr_timing_graph.l)
 set(PARSER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/parsers/vpr_timing_graph.y)

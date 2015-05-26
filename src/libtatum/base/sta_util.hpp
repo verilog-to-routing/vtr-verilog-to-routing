@@ -21,18 +21,12 @@ void print_levelization(const TimingGraph& tg);
 std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg);
 std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg);
 
-template <class AnalysisType>
-void print_timing_tags_histogram(const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<AnalysisType>> analyzer, int nbuckets);
-
-template <class AnalysisType>
-void print_timing_tags(const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer<AnalysisType>> analyzer);
-
 /*
  * Templated function implementations
  */
 
 template<class Analyzer>
-void print_timing_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer, int nbuckets) {
+void print_timing_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer) {
     const int int_width = 8;
     const int flt_width = 2;
 

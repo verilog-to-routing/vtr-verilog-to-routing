@@ -32,3 +32,22 @@ void HoldTraversal<Base>::initialize_traversal(const TimingGraph& tg) {
     hold_clock_tags_ = std::vector<TimingTags>(tg.num_nodes());
 }
 
+template<class Base>
+void HoldTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+    Base::pre_traverse_node(tag_pool, tg, tc, node_id);
+}
+
+template<class Base>
+void HoldTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id) {
+    Base::forward_traverse_edge(tag_pool, tg, node_id, edge_id);
+}
+
+template<class Base>
+void HoldTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+    Base::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
+}
+
+template<class Base>
+void HoldTraversal<Base>::backward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id) {
+    Base::backward_traverse_edge(tg, node_id, edge_id);
+}
