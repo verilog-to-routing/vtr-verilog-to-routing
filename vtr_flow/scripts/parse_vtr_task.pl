@@ -164,13 +164,13 @@ sub parse_single_task {
 	my @folders = readdir(DIR);
 	closedir(DIR);
 	# QOR PARSE CONFIG FILE
-	if ( -e "$task_path/config/$qor_parse_file" ) {
-		$qor_parse_file = "$task_path/config/$qor_parse_file";
-	}
-	elsif ( $qor_parse_file eq "" ) {
+	if ( $qor_parse_file eq "" ) {
 		print "Task $task_name has no QoR parse file specified. Skipping QoR.\n";
 		$parse_qor = 0;
 		$calc_geomean = 0;
+	}
+	elsif ( -e "$task_path/config/$qor_parse_file" ) {
+		$qor_parse_file = "$task_path/config/$qor_parse_file";
 	}
 	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
 		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";
@@ -197,11 +197,13 @@ sub parse_single_task {
 				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $parse_file > $run_path/$arch/$circuit/parse_results.txt"
 			);
 			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results.txt" );
+            # first line is heading
 			my $output = <RESULTS_FILE>;
 			if ($first) {
 				print OUTPUT_FILE "arch\tcircuit\t$output";
 				$first = 0;
 			}
+            # second line is actual value
 			my $output = <RESULTS_FILE>;
 			close(RESULTS_FILE);
 			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
