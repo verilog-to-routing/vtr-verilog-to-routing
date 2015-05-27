@@ -36,7 +36,7 @@ This functionality is split across different files which are described below:
   * rr_graph.c:
     * calls alloc_and_load_switchblock_permutations (from build_switchblocks.c) which creates the t_sb_connection_map
   * rr_graph2.c:
-    * get_track_to_chan_seg is called within the get_track_to_tracks which looks at t_sb_connection_map to create the edges that
+    * get_track_to_chan_seg is called within get_track_to_tracks which looks at t_sb_connection_map to create the edges that
       connect a source track segment into a destination channel segment
 
 
@@ -52,7 +52,7 @@ Ex: for a length-4 wire segment (belonging to some named segment type):
   wire segment point   0-------1-------2-------3-------0
   wire segment group       0       1       2       3
 
-The new switch block format allows a user to specify mathematical permutation functions that perscribe how a set of from_type/from_group/from_point wire segments in one channel segment (the source set) should connect to a set of to_type/to_group/to_point wire segments in an adjacent channel segment (the destination set). This provides for an abstract but very flexible way of specifying different switch block patterns.
+The new switch block format allows a user to specify mathematical permutation functions that prescribe how a set of from_type/from_group/from_point wire segments in one channel segment (the source set) should connect to a set of to_type/to_group/to_point wire segments in an adjacent channel segment (the destination set). This provides for an abstract but very flexible way of specifying different switch block patterns.
 
 An example from the XML VPR architecture file is given below. The 'wireconn' entries define ordered source/destination sets of wire segments that should be connected with the specified permutation functions. A permutation function of 't/2' specifies that the t'th wire segment in the source set should connect to the [(t/2)%W]'th wire segment in the destination set where W is the size, or effective channel width, of the destination set (note that permutation functions are implicitly modulo W so that all functions evaluate to a number that indexes into the destination set). 
 
@@ -61,23 +61,23 @@ An example from the XML VPR architecture file is given below. The 'wireconn' ent
   ...
   <switchblocklist>                                     <-- XML node that defines custom switch blocks
     <switchblock name="my_switchblock" type="unidir">	<-- switch block name/type. type is either unidirectional or bidirectional
-    <switchblock_location type="EVERYWHERE"/>		<-- location to implement switch block (EVERYWHERE/CORE/PERIMETER/CORNER/FRINGE)
+      <switchblock_location type="EVERYWHERE"/>		<-- location to implement switch block (EVERYWHERE/CORE/PERIMETER/CORNER/FRINGE)
       <switchfuncs>					<-- list of permutation functions
         <func type="lr" formula="t+1"/>			<-- left-to-right switch block connection (TODO: change to west-to-east style of notation?)
         <func type="lt" formula="W-t"/>                 <-- formula supports different operators; discussed below
         <func type="lb" formula="W+t-1"/>
         <func type="rt" formula="W+t-1"/>
-        <func type="br" formula="2*W-t-2"/>
+        <func type="br" formula="W-t-2"/>
         <func type="bt" formula="t+1"/>
         <func type="rl" formula="t+1"/>
         <func type="tl" formula="W-t"/>
         <func type="bl" formula="W+t-1"/>
         <func type="tr" formula="W+t-1"/>
-        <func type="rb" formula="2*W-t-2"/>
+        <func type="rb" formula="W-t-2"/>
         <func type="tb" formula="t+1"/>
       </switchfuncs>
-      <wireconn FT="my_seg" TT="my_seg" FP="0,1,2,3" TP="0" switch="my_switch"/>      <-- from_type/to_type/from_point/to_point; also, switch used to connect these wire segments
-      <wireconn FT="another_seg" TT="my_seg" FP="0,1" TP="0" switch="my_switch2"/>    <-- subset of wire segments to connect
+      <wireconn FT="my_seg" TT="my_seg" FP="0,1,2,3" TP="0"/>     <-- from_type/to_type/from_point/to_point
+      <wireconn FT="another_seg" TT="my_seg" FP="0,1" TP="0"/>    <-- subset of wire segments to connect
     </switchblock>
 
     <switchblock name="another_switch_block" type="unidir">
@@ -158,12 +158,12 @@ typedef map< string, map< pair< e_side, int >, int > > t_wirepoint_start_map;
 	by the coordinates ref_x, ref_y) */
 static void determine_wirepoint_starts(INP e_directionality directionality,
 		INP int nx, INP int ny, INP t_chan_details *chan_details_x, 
-		INP t_chan_details *chan_details_y,INP t_track_type_sizes *track_type_sizes, 
+		INP t_chan_details *chan_details_y, INP t_track_type_sizes *track_type_sizes, 
 		INP int nodes_per_chan, OUTP t_wirepoint_start_map *wirepoint_starts);
 
 /* over all connected wire types (i,j), compute the maximum least common multiple of their track lengths, 
    ie max(LCM(L_i, L_J)) */
-static int get_max_lcm( INP vector<t_switchblock_inf> *switchblocks, INP t_track_type_sizes *track_type_sizes);
+static int get_max_lcm(INP vector<t_switchblock_inf> *switchblocks, INP t_track_type_sizes *track_type_sizes);
 
 /* Counts the number of tracks in each track type in the specified channel */
 static void count_track_type_sizes(INP t_seg_details *channel, INP int nodes_per_chan, 
@@ -202,7 +202,7 @@ static void compute_track_connections(INP int x_coord, INP int y_coord, INP enum
 /* ... sb_conn represents the 'coordinates' of the desired switch block connections */
 static void compute_track_wireconn_connections(INP int nx, INP int ny, INP e_directionality directionality, INP int nodes_per_chan,
 		INP t_chan_details *from_chan_details, INP t_chan_details *to_chan_details, INP Switchblock_Lookup sb_conn,
-		INP int from_x, INP int from_y,  INP t_rr_type from_chan_type, INP t_wirepoint_start_map *wirepoint_starts, 
+		INP int from_x, INP int from_y, INP int to_x, INP int to_y, INP t_rr_type from_chan_type, INP t_wirepoint_start_map *wirepoint_starts, 
 		INP t_track_type_sizes *track_type_sizes, INP t_switchblock_inf *sb, INP t_wireconn_inf *wireconn_ptr, 
 		INOUTP t_sb_connection_map *sb_conns);
 
@@ -911,7 +911,7 @@ static void compute_track_connections(INP int x_coord, INP int y_coord, INP enum
 		/* compute the destination track segments to which the source track segment should connect based on the
 		   current wireconn */
 		compute_track_wireconn_connections(nx, ny, directionality, nodes_per_chan, from_chan_details, to_chan_details,
-						sb_conn, from_x, from_y, from_chan_type, wirepoint_starts, track_type_sizes,
+						sb_conn, from_x, from_y, to_x, to_y, from_chan_type, wirepoint_starts, track_type_sizes,
 						sb, wireconn_ptr, sb_conns);
 	}
 
@@ -927,7 +927,7 @@ static void compute_track_connections(INP int x_coord, INP int y_coord, INP enum
    as defined at the top of this file), and the indices of tracks to connect to are relative to these sets */
 static void compute_track_wireconn_connections(INP int nx, INP int ny, INP e_directionality directionality, INP int nodes_per_chan,
 		INP t_chan_details *from_chan_details, INP t_chan_details *to_chan_details, INP Switchblock_Lookup sb_conn,
-		INP int from_x, INP int from_y,  INP t_rr_type from_chan_type, INP t_wirepoint_start_map *wirepoint_starts, 
+		INP int from_x, INP int from_y, INP int to_x, INP int to_y, INP t_rr_type from_chan_type, INP t_wirepoint_start_map *wirepoint_starts, 
 		INP t_track_type_sizes *track_type_sizes, INP t_switchblock_inf *sb, INP t_wireconn_inf *wireconn_ptr, 
 		INOUTP t_sb_connection_map *sb_conns){
 
@@ -1041,7 +1041,7 @@ static void compute_track_wireconn_connections(INP int nx, INP int ny, INP e_dir
 		   sb connections map */	
 		t_to_track_inf to_track_inf;
 		to_track_inf.to_track = to_track;
-		to_track_inf.switch_ind = wireconn_ptr->switch_index;
+		to_track_inf.switch_ind = to_chan_details[to_x][to_y][to_track].arch_wire_switch;
 
 		/* and now, finally, add this switchblock connection to the switchblock connections map */
 		(*sb_conns)[sb_conn].push_back(to_track_inf);

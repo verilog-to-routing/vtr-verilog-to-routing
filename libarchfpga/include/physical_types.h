@@ -712,7 +712,7 @@ enum e_Fc_type {
 
 /* Lists all the important information about a certain segment type.  Only   *
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]  *
- * name: the name of this segment                                            *		//XXX this needs to be allocated & set...
+ * name: the name of this segment                                            *
  * frequency:  ratio of tracks which are of this segment type.               *
  * length:     Length (in clbs) of the segment.                              *
  * arch_wire_switch: Index of the switch type that connects other wires      *
@@ -867,9 +867,6 @@ typedef struct s_wireconn_inf{
 	std::vector<std::string> to_type;		/* to these wire types */
 	std::vector<int> from_point;			/* indices of wire points belonging to from_type */
 	std::vector<int> to_point;			/* indices of wire points belong to to_type (each 'from_point' connects to every 'to_point' */
-
-	std::string switch_name;			/* name of switch used to connect these wire types together -- must match entry in s_switch_inf */
-	short switch_index;				/* index of switch in the s_arch_switch_inf array */
 } t_wireconn_inf;
 
 /* represents a connection between two sides of a switchblock */
