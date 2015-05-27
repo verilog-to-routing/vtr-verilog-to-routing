@@ -71,7 +71,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Anal
     std::cout << "Node Data Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        data_tag_cnts[analyzer->setup_data_tags(i).num_tags()]++;
+        data_tag_cnts[analyzer->hold_data_tags(i).num_tags()]++;
     }
 
     int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
@@ -82,7 +82,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Anal
     std::cout << "Node Clock Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        clock_tag_cnts[analyzer->setup_clock_tags(i).num_tags()]++;
+        clock_tag_cnts[analyzer->hold_clock_tags(i).num_tags()]++;
     }
 
     int total_clock_tags = std::accumulate(clock_tag_cnts.begin(), clock_tag_cnts.end(), 0, totaler);
