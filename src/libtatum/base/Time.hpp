@@ -5,6 +5,10 @@
 #include <iosfwd>
 #include <x86intrin.h>
 
+#ifndef TIME_VEC_WIDTH
+#define TIME_VEC_WIDTH 1
+#endif
+
 //#define TIME_PAD_CACHE_LINE
 #define CACHE_LINE_SIZE_BYTES 64 //x86 uses 64-byte cache-lines, check with 'getconf LEVEL1_DCACHE_LINESIZE' on linux commandline for other architectures
 

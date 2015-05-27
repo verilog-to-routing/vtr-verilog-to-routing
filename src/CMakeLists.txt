@@ -159,7 +159,7 @@ include_directories(${CMAKE_SOURCE_DIR}/libtatum
                     )
 
 #Required compiler defines. TODO: remove these...
-add_definitions(-DTIME_VEC_WIDTH=1)
+#add_definitions(-DTIME_VEC_WIDTH=1)
 
 add_subdirectory(tatum_sta)
 add_subdirectory(libtatum)
