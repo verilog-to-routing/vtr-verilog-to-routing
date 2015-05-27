@@ -169,6 +169,8 @@ int main(int argc, char** argv) {
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
 
+        //To selectively profile using callgrind:
+        //  valgrind --tool=callgrind --collect-atstart=no --instr-atstart=no --cache-sim=yes --cacheuse=yes ./command
         CALLGRIND_START_INSTRUMENTATION;
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
@@ -191,8 +193,8 @@ int main(int argc, char** argv) {
             cout << ".";
             cout.flush();
 
-            print_setup_tags(timing_graph, serial_analyzer);
-            print_hold_tags(timing_graph, serial_analyzer);
+            //print_setup_tags(timing_graph, serial_analyzer);
+            //print_hold_tags(timing_graph, serial_analyzer);
 
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);

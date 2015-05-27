@@ -86,3 +86,5 @@ add_executable(${EXEC_NAME}
 #Executable links to the library
 target_link_libraries(${EXEC_NAME} ${LIB_NAME})
 
+#set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+                            #PROPERTIES COMPILE_FLAGS "-fno-inline")
