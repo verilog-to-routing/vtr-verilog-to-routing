@@ -200,25 +200,25 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::sh
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         const TimingTags& data_tags = analyzer->setup_data_tags(inode);
         if(data_tags.num_tags() > 0) {
-            os << " | DATA_TAGS";
             for(const TimingTag& tag : data_tags) {
                 os << " | {";
-                os << "clk: " << tag.clock_domain();
+                os << "DATA - clk: " << tag.clock_domain();
+                os << " launch: " << tag.launch_node();
+                os << "\\n";
                 os << " arr: " << tag.arr_time().value();
                 os << " req: " << tag.req_time().value();
-                os << " lnch: " << tag.launch_node();
                 os << "}";
             }
         }
         const TimingTags& clock_tags = analyzer->setup_clock_tags(inode);
         if(clock_tags.num_tags() > 0) {
-            os << " | CLOCK_TAGS";
             for(const TimingTag& tag : clock_tags) {
                 os << " | {";
-                os << "clk: " << tag.clock_domain();
+                os << "CLOCK - clk: " << tag.clock_domain();
+                os << " launch: " << tag.launch_node();
+                os << "\\n";
                 os << " arr: " << tag.arr_time().value();
                 os << " req: " << tag.req_time().value();
-                os << " lnch: " << tag.launch_node();
                 os << "}";
             }
         }
@@ -265,25 +265,25 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::sha
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         const TimingTags& data_tags = analyzer->hold_data_tags(inode);
         if(data_tags.num_tags() > 0) {
-            os << " | DATA_TAGS";
             for(const TimingTag& tag : data_tags) {
                 os << " | {";
-                os << "clk: " << tag.clock_domain();
+                os << "DATA - clk: " << tag.clock_domain();
+                os << " launch: " << tag.launch_node();
+                os << "\\n";
                 os << " arr: " << tag.arr_time().value();
                 os << " req: " << tag.req_time().value();
-                os << " lnch: " << tag.launch_node();
                 os << "}";
             }
         }
         const TimingTags& clock_tags = analyzer->hold_clock_tags(inode);
         if(clock_tags.num_tags() > 0) {
-            os << " | CLOCK_TAGS";
             for(const TimingTag& tag : clock_tags) {
                 os << " | {";
-                os << "clk: " << tag.clock_domain();
+                os << "CLOCK - clk: " << tag.clock_domain();
+                os << " launch: " << tag.launch_node();
+                os << "\\n";
                 os << " arr: " << tag.arr_time().value();
                 os << " req: " << tag.req_time().value();
-                os << " lnch: " << tag.launch_node();
                 os << "}";
             }
         }
