@@ -1,12 +1,10 @@
 #include "assert.hpp"
-
-#include "TimingTags.hpp"
 /*
  * TimingTags implementation
  */
 
 //Modifiers
-void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
+inline void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
     ASSERT_MSG(tag.next() == nullptr, "Attempted to add new timing tag which is already part of a Linked List");
 
     //Don't add invalid clock domains
@@ -57,7 +55,7 @@ void TimingTags::add_tag(MemoryPool& tag_pool, const TimingTag& tag) {
     num_tags_++;
 }
 
-void TimingTags::max_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::max_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -68,7 +66,7 @@ void TimingTags::max_arr(MemoryPool& tag_pool, const Time& new_time, const Timin
     }
 }
 
-void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -79,7 +77,7 @@ void TimingTags::min_req(MemoryPool& tag_pool, const Time& new_time, const Timin
     }
 }
 
-void TimingTags::min_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::min_arr(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -90,7 +88,7 @@ void TimingTags::min_arr(MemoryPool& tag_pool, const Time& new_time, const Timin
     }
 }
 
-void TimingTags::max_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::max_req(MemoryPool& tag_pool, const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -101,7 +99,7 @@ void TimingTags::max_req(MemoryPool& tag_pool, const Time& new_time, const Timin
     }
 }
 
-void TimingTags::clear() {
+inline void TimingTags::clear() {
     //Note that we do not clean up the tag linked list!
     //Since these are allocated in a memory pool they will be freed by
     //the owner of the pool (typically the analyzer that is calling us)
@@ -114,14 +112,14 @@ void TimingTags::clear() {
 #endif
 }
 
-TimingTagIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
+inline TimingTagIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
     auto pred = [domain_id](const TimingTag& tag) {
         return tag.clock_domain() == domain_id;
     };
     return std::find_if(begin(), end(), pred);
 }
 
-TimingTagConstIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) const {
+inline TimingTagConstIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) const {
     auto pred = [domain_id](const TimingTag& tag) {
         return tag.clock_domain() == domain_id;
     };

@@ -20,8 +20,8 @@ set(LIB_TATUM_SRCS
     #${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzers/ParallelLevelizedCilkTimingAnalyzer.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzers/ParallelNoDependancyCilkTimingAnalyzer.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzers/ParallelDynamicCilkTimingAnalyzer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_tags/TimingTag.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_tags/TimingTags.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/timing_tags/TimingTag.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/timing_tags/TimingTags.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingGraph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingConstraints.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingNode.cpp)

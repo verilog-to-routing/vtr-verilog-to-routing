@@ -5,30 +5,13 @@
 
 #include "Time.hpp"
 #include "timing_graph_fwd.hpp"
+#include "TimingTagIterator.hpp"
 
 class TimingTag {
     public:
-        TimingTag()
-            : next_(nullptr)
-            , arr_time_(NAN)
-            , req_time_(NAN)
-            , clock_domain_(INVALID_CLOCK_DOMAIN)
-            , launch_node_(-1)
-            {}
-        TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node)
-            : next_(nullptr)
-            , arr_time_(arr_time_val)
-            , req_time_(req_time_val)
-            , clock_domain_(domain)
-            , launch_node_(node)
-            {}
-        TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag)
-            : next_(nullptr)
-            , arr_time_(arr_time_val)
-            , req_time_(req_time_val)
-            , clock_domain_(base_tag.clock_domain())
-            , launch_node_(base_tag.launch_node())
-            {}
+        TimingTag();
+        TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node);
+        TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag);
 
         //Getters
         const Time& arr_time() const { return arr_time_; }
@@ -48,10 +31,11 @@ class TimingTag {
         void max_arr(const Time& new_arr_time, const TimingTag& base_tag);
         void max_req(const Time& new_req_time, const TimingTag& base_tag);
         void min_arr(const Time& new_arr_time, const TimingTag& base_tag);
+
+    private:
         void update_arr(const Time& new_arr_time, const TimingTag& base_tag);
         void update_req(const Time& new_req_time, const TimingTag& base_tag);
 
-    private:
         TimingTag* next_; //Next element in linked list
         Time arr_time_;
         Time req_time_;
@@ -59,20 +43,4 @@ class TimingTag {
         NodeId launch_node_;
 };
 
-template <class Value>
-class TimingTagIter : public boost::iterator_facade<TimingTagIter<Value>, Value, boost::forward_traversal_tag> {
-    private:
-        Value* p;
-    public:
-        TimingTagIter(): p(nullptr) {}
-        explicit TimingTagIter(Value* tag): p(tag) {}
-    private:
-        friend class boost::iterator_core_access;
-
-        void increment() { p = p->next(); }
-        bool equal(TimingTagIter<Value> const& other) const { return p == other.p; }
-        Value& dereference() const { return *p; }
-};
-
-typedef TimingTagIter<TimingTag> TimingTagIterator;
-typedef TimingTagIter<TimingTag const> TimingTagConstIterator;
+#include "TimingTag.inl"
