@@ -324,10 +324,9 @@ clock_constraint: src_domain sink_domain constraint EOL {
                         //not be analyzed
                         timing_constraints.add_setup_clock_constraint($1, $2, $3);
 
-                        //FIXME: using the setup constraint as the hold constraint
-                        //       this is a temporary work around as we have no support
-                        //       for calculating the correct hold constraint yet
-                        timing_constraints.add_hold_clock_constraint($1, $2, $3);
+                        //FIXME: Fixing the hold constraint to zero.  This will ignore any
+                        //       hold multi-cycles
+                        timing_constraints.add_hold_clock_constraint($1, $2, 0.);
                     }
                 }
 
