@@ -1,8 +1,6 @@
 #pragma once
 #include <iosfwd>
 
-#include <boost/iterator/iterator_facade.hpp>
-
 #include "Time.hpp"
 #include "timing_graph_fwd.hpp"
 #include "TimingTagIterator.hpp"
@@ -43,4 +41,5 @@ class TimingTag {
         NodeId launch_node_;
 };
 
+//Implementation
 #include "TimingTag.inl"

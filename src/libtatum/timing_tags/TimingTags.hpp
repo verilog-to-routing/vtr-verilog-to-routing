@@ -53,4 +53,5 @@ class TimingTags {
 #endif
 };
 
+//Implementation
 #include "TimingTags.inl"
