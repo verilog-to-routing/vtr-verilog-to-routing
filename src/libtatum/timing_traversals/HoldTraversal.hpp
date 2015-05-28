@@ -149,7 +149,7 @@ void HoldTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, c
             if(tc.should_analyze(data_tag.clock_domain(), node_domain)) {
                 //Only some clock domain paths should be analyzed
 
-                float clock_constraint = tc.clock_constraint(data_tag.clock_domain(), node_domain);
+                float clock_constraint = tc.hold_clock_constraint(data_tag.clock_domain(), node_domain);
 
                 //The output delay is assumed to be on the edge from the OUTPAD_IPIN to OUTPAD_SINK
                 //so we do not need to account for it here
@@ -172,8 +172,8 @@ void HoldTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, c
                     //We only set a required time if the source domain actually reaches this sink
                     //domain.  This is indicated by having a valid arrival time.
                     if(node_data_tag.arr_time().valid()) {
-                        float clock_constraint = tc.clock_constraint(node_data_tag.clock_domain(),
-                                                                     node_clock_tag.clock_domain());
+                        float clock_constraint = tc.hold_clock_constraint(node_data_tag.clock_domain(),
+                                                                          node_clock_tag.clock_domain());
 
                         node_data_tag.max_req(node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
                     }
