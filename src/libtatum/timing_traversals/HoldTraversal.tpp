@@ -1,13 +1,13 @@
-template<class DelayCalc, class Base>
-void HoldTraversal<DelayCalc, Base>::initialize_traversal(const TimingGraph& tg) {
+template<class Base>
+void HoldTraversal<Base>::initialize_traversal(const TimingGraph& tg) {
     Base::initialize_traversal(tg);
 
     hold_data_tags_ = std::vector<TimingTags>(tg.num_nodes());
     hold_clock_tags_ = std::vector<TimingTags>(tg.num_nodes());
 }
 
-template<class DelayCalc, class Base>
-void HoldTraversal<DelayCalc, Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class Base>
+void HoldTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     Base::pre_traverse_node(tag_pool, tg, tc, node_id);
 
     //Primary Input
@@ -49,8 +49,9 @@ void HoldTraversal<DelayCalc, Base>::pre_traverse_node(MemoryPool& tag_pool, con
     }
 }
 
-template<class DelayCalc, class Base>
-void HoldTraversal<DelayCalc, Base>::forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+template<class Base>
+template<class DelayCalcType>
+void HoldTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
     Base::forward_traverse_edge(tag_pool, tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
@@ -106,8 +107,8 @@ void HoldTraversal<DelayCalc, Base>::forward_traverse_edge(MemoryPool& tag_pool,
     }
 }
 
-template<class DelayCalc, class Base>
-void HoldTraversal<DelayCalc, Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class Base>
+void HoldTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     Base::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
 
     TimingTags& node_data_tags = hold_data_tags_[node_id];
@@ -157,8 +158,9 @@ void HoldTraversal<DelayCalc, Base>::forward_traverse_finalize_node(MemoryPool& 
     }
 }
 
-template<class DelayCalc, class Base>
-void HoldTraversal<DelayCalc, Base>::backward_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+template<class Base>
+template<class DelayCalcType>
+void HoldTraversal<Base>::backward_traverse_edge(const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
     Base::backward_traverse_edge(tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any

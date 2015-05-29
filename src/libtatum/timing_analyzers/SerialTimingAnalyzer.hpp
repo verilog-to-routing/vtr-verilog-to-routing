@@ -3,7 +3,7 @@
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> {
     public:
         SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator);

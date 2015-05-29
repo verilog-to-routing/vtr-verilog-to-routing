@@ -1,4 +1,4 @@
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 SerialTimingAnalyzer<AnalysisType,DelayCalcType>::SerialTimingAnalyzer(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalcType& dc)
     : tg_(tg)
     , tc_(tc)
@@ -7,7 +7,7 @@ SerialTimingAnalyzer<AnalysisType,DelayCalcType>::SerialTimingAnalyzer(const Tim
     , tag_pool_(sizeof(TimingTag))
     {}
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 ta_runtime SerialTimingAnalyzer<AnalysisType,DelayCalcType>::calculate_timing() {
     //No incremental support yet!
     reset_timing();
@@ -35,15 +35,15 @@ ta_runtime SerialTimingAnalyzer<AnalysisType,DelayCalcType>::calculate_timing() 
     return traversal_times;
 }
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::reset_timing() {
     //Release the memory allocated to tags
     tag_pool_.purge_memory();
 
-    AnalysisType<DelayCalcType>::initialize_traversal(tg_);
+    AnalysisType::initialize_traversal(tg_);
 }
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
@@ -52,11 +52,11 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::pre_traversal(const Timin
      *   - Initialize arrival times on primary inputs
      */
     for(NodeId node_id : timing_graph.primary_inputs()) {
-        AnalysisType<DelayCalcType>::pre_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
+        AnalysisType::pre_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
     }
 }
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     //Forward traversal (arrival times)
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
@@ -66,7 +66,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::forward_traversal(const T
     }
 }
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::backward_traversal(const TimingGraph& timing_graph) {
     //Backward traversal (required times)
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
@@ -76,19 +76,19 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::backward_traversal(const 
     }
 }
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Pull from upstream sources to current node
     for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
 
-        AnalysisType<DelayCalcType>::forward_traverse_edge(tag_pool_, tg, dc_, node_id, edge_id);
+        AnalysisType::forward_traverse_edge(tag_pool_, tg, dc_, node_id, edge_id);
     }
 
-    AnalysisType<DelayCalcType>::forward_traverse_finalize_node(tag_pool_, tg, tc, node_id);
+    AnalysisType::forward_traverse_finalize_node(tag_pool_, tg, tc, node_id);
 }
 
-template<template<typename> class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
     //Pull from downstream sinks to current node
 
@@ -106,7 +106,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType>::backward_traverse_node(co
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
-        AnalysisType<DelayCalcType>::backward_traverse_edge(tg, dc_, node_id, edge_id);
+        AnalysisType::backward_traverse_edge(tg, dc_, node_id, edge_id);
     }
 }
 
