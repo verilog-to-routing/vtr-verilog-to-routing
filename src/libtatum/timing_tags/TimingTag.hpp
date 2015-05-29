@@ -3,7 +3,7 @@
 
 #include "Time.hpp"
 #include "timing_graph_fwd.hpp"
-#include "TimingTagIterator.hpp"
+#include "TimingTagIterators.hpp"
 
 class TimingTag {
     public:
