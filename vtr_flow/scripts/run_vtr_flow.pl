@@ -101,6 +101,9 @@ my $min_hard_adder_size		= 1;
 my $track_memory_usage      = 0;
 my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
+my $limit_memory_usage      = -1;
+
+my $abc_quote_addition      = 0;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -129,6 +132,10 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-track_memory_usage" ) {
         $track_memory_usage = 1;
+    }
+    elsif ( $token eq "-limit_memory_usage" ) {
+        $limit_memory_usage = shift(@ARGV);
+        $abc_quote_addition = 1;
     }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
@@ -397,9 +404,12 @@ if (    $starting_stage <= $stage_idx_abc
 	and $ending_stage >= $stage_idx_abc
 	and !$error_code )
 {
-	$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-		"read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats"
-	);
+    my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
+
+    if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
+
+    $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+        $abc_commands);
 
 	if ( -e $abc_output_file_path ) {
 
@@ -664,7 +674,14 @@ sub system_with_timeout {
         unshift @_, $memory_tracker;
         splice @_, 4, 0, @memory_tracker_args, $program;
     }
-	( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
+    if ($limit_memory_usage > 0) {
+        my $program = shift @_;
+        unshift @_, "bash";
+        # flatten array
+        my $params = join(" ", @_[4 .. ($#_)]);
+        splice @_, 4, 1000, "-c", "ulimit -Sv $limit_memory_usage;" . $program . " " . $params; 
+    }
+	# ( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
 	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
 
 	# Save the pid of child process
