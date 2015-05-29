@@ -19,6 +19,7 @@
 #include "analysis_types.hpp"
 #include "TimingTag.hpp"
 #include "TimingGraphDelayCalculator.hpp"
+#include "ConstantDelayCalculator.hpp"
 
 //Cilk variants
 //#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
@@ -155,8 +156,9 @@ int main(int argc, char** argv) {
      */
 
 
-    TimingGraphDelayCalculator delay_calculator;
-    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    //TimingGraphDelayCalculator delay_calculator;
+    ConstantDelayCalculator delay_calculator(Time(1.0));
+    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, ConstantDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;
@@ -200,9 +202,11 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-            serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
-                                                      expected_arr_req_times, const_gen_fanout_nodes,
-                                                      clock_gen_fanout_nodes );
+            /*
+             *serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
+             *                                          expected_arr_req_times, const_gen_fanout_nodes,
+             *                                          clock_gen_fanout_nodes );
+             */
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);

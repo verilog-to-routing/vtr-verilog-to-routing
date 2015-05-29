@@ -25,7 +25,7 @@ std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg);
  */
 
 template<class Analyzer>
-void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<Analyzer> analyzer) {
+void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<Analyzer>& analyzer) {
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
     os << "\tnode[shape=record]" <<std::endl;
@@ -72,6 +72,9 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::sh
         os << "}" <<std::endl;
     }
 
+    //Add edges with delays annoated
+    auto delay_calc = analyzer->delay_calculator();
+
     for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
         for(NodeId node_id : tg.level(ilevel)) {
             for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
@@ -80,7 +83,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const std::sh
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
                 os << "\tnode" << node_id << " -> node" << sink_node_id;
-                os << " [ label=\"" << tg.edge_delay(edge_id) << "\" ]";
+                os << " [ label=\"" << delay_calc.max_edge_delay(tg, edge_id) << "\" ]";
                 os << ";" <<std::endl;
             }
         }
@@ -139,6 +142,8 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::sha
     }
 
     //Add edges with delays annoated
+    auto delay_calc = analyzer->delay_calculator();
+
     for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
         for(NodeId node_id : tg.level(ilevel)) {
             for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
@@ -147,7 +152,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const std::sha
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
                 os << "\tnode" << node_id << " -> node" << sink_node_id;
-                os << " [ label=\"" << tg.edge_delay(edge_id) << "\" ]";
+                os << " [ label=\"" << delay_calc.min_edge_delay(tg, edge_id) << "\" ]";
                 os << ";" <<std::endl;
             }
         }

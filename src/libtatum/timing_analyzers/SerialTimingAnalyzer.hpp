@@ -9,6 +9,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> 
         SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator);
         ta_runtime calculate_timing() override;
         void reset_timing() override;
+        const DelayCalcType& delay_calculator() override { return dc_; }
 
     protected:
         /*

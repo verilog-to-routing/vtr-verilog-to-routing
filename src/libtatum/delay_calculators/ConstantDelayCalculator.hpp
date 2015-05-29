@@ -1,12 +1,12 @@
-#include "Time.hpp"
 #include "DelayCalculator.hpp"
+#include "Time.hpp"
 
 class ConstantDelayCalculator : public DelayCalculator {
     public:
-        ConstantDelayCalculator(Time value = Time(1.)): value_(value_) {}
-        Time min_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return value_; };
-        Time max_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return value_; };
+        ConstantDelayCalculator(Time delay): delay_(delay) {}
+        Time min_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return delay_; }
+        Time max_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return delay_; }
 
     private:
-        Time value_:
-}
+        Time delay_;
+};
