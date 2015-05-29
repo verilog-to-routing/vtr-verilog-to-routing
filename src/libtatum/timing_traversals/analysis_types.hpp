@@ -9,10 +9,15 @@
  */
 
 //Setup (max) analysis
-typedef SetupTraversal<> SetupAnalysis;
+//typedef SetupTraversal<> SetupAnalysis;
+template<class DelayCalc>
+using SetupAnalysis = SetupTraversal<DelayCalc>;
 
 //Hold (min) analysis
-typedef HoldTraversal<> HoldAnalysis;
+//typedef HoldTraversal<> HoldAnalysis;
+template<class DelayCalc>
+using HoldAnalysis = HoldTraversal<DelayCalc>;
 
 //Combined Setup AND Hold analysis
-typedef HoldTraversal<SetupTraversal<>> SetupHoldAnalysis;
+template<class DelayCalc>
+using SetupHoldAnalysis = HoldTraversal<DelayCalc, SetupTraversal<DelayCalc>>;

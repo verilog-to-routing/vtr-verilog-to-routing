@@ -156,6 +156,7 @@ include_directories(${CMAKE_SOURCE_DIR}/libtatum
                     ${CMAKE_SOURCE_DIR}/libtatum/timing_traversals
                     ${CMAKE_SOURCE_DIR}/libtatum/timing_tags
                     ${CMAKE_SOURCE_DIR}/libtatum/timing_graph
+                    ${CMAKE_SOURCE_DIR}/libtatum/delay_calculators
                     )
 
 #Required compiler defines. TODO: remove these...

@@ -18,18 +18,19 @@
 #include "SerialTimingAnalyzer.hpp"
 #include "analysis_types.hpp"
 #include "TimingTag.hpp"
+#include "TimingGraphDelayCalculator.hpp"
 
 //Cilk variants
-#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
-#include "ParallelDynamicCilkTimingAnalyzer.hpp"
+//#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
+//#include "ParallelDynamicCilkTimingAnalyzer.hpp"
 
 
 //Illegal versions used for upper-bound speed-up estimates
-#include "ParallelNoDependancyCilkTimingAnalyzer.hpp"
+//#include "ParallelNoDependancyCilkTimingAnalyzer.hpp"
 
 #include "vpr_timing_graph_common.hpp"
 
-#define NUM_SERIAL_RUNS 5
+#define NUM_SERIAL_RUNS 20
 #define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
 #define OPTIMIZE_NODE_EDGE_ORDER
 
@@ -153,9 +154,9 @@ int main(int argc, char** argv) {
      *cout << endl;
      */
 
-    typedef SetupHoldAnalysis AnalysisMode;
 
-    std::shared_ptr<TimingAnalyzer<AnalysisMode>> serial_analyzer = std::make_shared<SerialTimingAnalyzer<AnalysisMode>>(timing_graph, timing_constraints);
+    TimingGraphDelayCalculator delay_calculator;
+    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;

@@ -1,13 +1,13 @@
-template<class Base>
-void SetupTraversal<Base>::initialize_traversal(const TimingGraph& tg) {
+template<class DelayCalc, class Base>
+void SetupTraversal<DelayCalc, Base>::initialize_traversal(const TimingGraph& tg) {
     Base::initialize_traversal(tg);
 
     setup_data_tags_ = std::vector<TimingTags>(tg.num_nodes());
     setup_clock_tags_ = std::vector<TimingTags>(tg.num_nodes());
 }
 
-template<class Base>
-void SetupTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class DelayCalc, class Base>
+void SetupTraversal<DelayCalc, Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     Base::pre_traverse_node(tag_pool, tg, tc, node_id);
 
     //Primary Input
@@ -49,9 +49,9 @@ void SetupTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingG
     }
 }
 
-template<class Base>
-void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id) {
-    Base::forward_traverse_edge(tag_pool, tg, node_id, edge_id);
+template<class DelayCalc, class Base>
+void SetupTraversal<DelayCalc, Base>::forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+    Base::forward_traverse_edge(tag_pool, tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
@@ -61,7 +61,7 @@ void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Tim
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
 
-    const Time& edge_delay = tg.edge_delay(edge_id);
+    const Time& edge_delay = dc.max_edge_delay(tg, edge_id);
 
     /*
      * Clock tags
@@ -106,8 +106,8 @@ void SetupTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Tim
     }
 }
 
-template<class Base>
-void SetupTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class DelayCalc, class Base>
+void SetupTraversal<DelayCalc, Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     Base::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
 
     TimingTags& node_data_tags = setup_data_tags_[node_id];
@@ -157,9 +157,9 @@ void SetupTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, 
     }
 }
 
-template<class Base>
-void SetupTraversal<Base>::backward_traverse_edge(const TimingGraph& tg, const NodeId node_id, const EdgeId edge_id) {
-    Base::backward_traverse_edge(tg, node_id, edge_id);
+template<class DelayCalc, class Base>
+void SetupTraversal<DelayCalc, Base>::backward_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+    Base::backward_traverse_edge(tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
@@ -168,7 +168,7 @@ void SetupTraversal<Base>::backward_traverse_edge(const TimingGraph& tg, const N
     //Pulling values from downstream sink node
     int sink_node_id = tg.edge_sink_node(edge_id);
 
-    const Time& edge_delay = tg.edge_delay(edge_id);
+    const Time& edge_delay = dc.max_edge_delay(tg, edge_id);
 
     const TimingTags& sink_data_tags = setup_data_tags_[sink_node_id];
 

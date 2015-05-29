@@ -64,23 +64,23 @@ endforeach(flag)
 #
 
 #Generate the lexer and parser
-flex_target(vpr_timing_graph_lexer ${LEXER_SRC} 
+flex_target(vpr_timing_graph_lexer ${LEXER_SRC}
             ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.lex.cpp)
-bison_target(vpr_timing_graph_parser ${PARSER_SRC} 
+bison_target(vpr_timing_graph_parser ${PARSER_SRC}
             ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp)
             #VERBOSE ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.log)
 #Capture lexer/parser dependance
-add_flex_bison_dependency(vpr_timing_graph_lexer vpr_timing_graph_parser) 
-#Apply suppression flags to the relevant files, must come after flex/bision 
+add_flex_bison_dependency(vpr_timing_graph_lexer vpr_timing_graph_parser)
+#Apply suppression flags to the relevant files, must come after flex/bision
 #targets for output vars to be defined
-set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS} 
-                            ${BISON_vpr_timing_graph_parser_OUTPUTS} 
+set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
+                            ${BISON_vpr_timing_graph_parser_OUTPUTS}
                             PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 
 #Define Executable
 add_executable(${EXEC_NAME}
                ${EXEC_SRCS}
-               ${FLEX_vpr_timing_graph_lexer_OUTPUTS} 
+               ${FLEX_vpr_timing_graph_lexer_OUTPUTS}
                ${BISON_vpr_timing_graph_parser_OUTPUTS})
 
 #Executable links to the library
