@@ -10,8 +10,8 @@ class TimingTags;
 struct ta_runtime;
 
 
-template<class AnalysisType>
-class TimingAnalyzer : public AnalysisType {
+template<template<typename> class AnalysisType, class DelayCalcType>
+class TimingAnalyzer : public AnalysisType<DelayCalcType> {
     public:
         virtual ta_runtime calculate_timing() = 0;
         virtual void reset_timing() = 0;
