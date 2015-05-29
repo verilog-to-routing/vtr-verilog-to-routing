@@ -7,7 +7,8 @@ void HoldTraversal<Base>::initialize_traversal(const TimingGraph& tg) {
 }
 
 template<class Base>
-void HoldTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class TagPoolType>
+void HoldTraversal<Base>::pre_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     Base::pre_traverse_node(tag_pool, tg, tc, node_id);
 
     //Primary Input
@@ -50,8 +51,8 @@ void HoldTraversal<Base>::pre_traverse_node(MemoryPool& tag_pool, const TimingGr
 }
 
 template<class Base>
-template<class DelayCalcType>
-void HoldTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
+template<class TagPoolType, class DelayCalcType>
+void HoldTraversal<Base>::forward_traverse_edge(TagPoolType& tag_pool, const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
     Base::forward_traverse_edge(tag_pool, tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
@@ -108,7 +109,8 @@ void HoldTraversal<Base>::forward_traverse_edge(MemoryPool& tag_pool, const Timi
 }
 
 template<class Base>
-void HoldTraversal<Base>::forward_traverse_finalize_node(MemoryPool& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+template<class TagPoolType>
+void HoldTraversal<Base>::forward_traverse_finalize_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     Base::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
 
     TimingTags& node_data_tags = hold_data_tags_[node_id];

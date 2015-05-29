@@ -18,6 +18,7 @@ class TimingAnalyzer : public AnalysisType {
         typedef DelayCalcType delay_calculator_type;
         typedef AnalysisType analysis_type;
 
+        virtual ~TimingAnalyzer() {};
         virtual ta_runtime calculate_timing() = 0;
         virtual void reset_timing() = 0;
 

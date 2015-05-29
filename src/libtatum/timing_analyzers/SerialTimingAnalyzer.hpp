@@ -3,7 +3,7 @@
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"
 
-template<class AnalysisType, class DelayCalcType>
+template<class AnalysisType, class DelayCalcType, class TagPoolType=MemoryPool>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> {
     public:
         SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator);
@@ -15,28 +15,28 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> 
         /*
          * Setup the timing graph.
          */
-        void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        virtual void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         /*
-         * Propogate arrival times
+         * Propagate arrival times
          */
-        void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        virtual void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         /*
-         * Propogate required times
+         * Propagate required times
          */
-        void backward_traversal(const TimingGraph& timing_graph);
+        virtual void backward_traversal(const TimingGraph& timing_graph);
 
         //Per node worker functions
-        void pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
-        void forward_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        void forward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
 
 
+        //Data members
         const TimingGraph& tg_;
         const TimingConstraints& tc_;
         const DelayCalcType& dc_;
-        MemoryPool tag_pool_; //Memory pool for allocating tags
+        TagPoolType tag_pool_; //Memory pool for allocating tags
 };
 
 //Implementation

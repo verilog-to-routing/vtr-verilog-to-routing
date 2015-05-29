@@ -22,7 +22,7 @@
 #include "ConstantDelayCalculator.hpp"
 
 //Cilk variants
-//#include "ParallelLevelizedCilkTimingAnalyzer.hpp"
+#include "ParallelLevelizedTimingAnalyzer.hpp"
 //#include "ParallelDynamicCilkTimingAnalyzer.hpp"
 
 
@@ -32,7 +32,7 @@
 #include "vpr_timing_graph_common.hpp"
 
 #define NUM_SERIAL_RUNS 20
-#define NUM_PARALLEL_RUNS 100 //NUM_SERIAL_RUNS
+#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 #define OPTIMIZE_NODE_EDGE_ORDER
 
 //Currently don't check for differences in the other direction (from us to VPR),
@@ -245,7 +245,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    auto parallel_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     float parallel_analysis_time = 0;
     float parallel_pretraverse_time = 0.;
