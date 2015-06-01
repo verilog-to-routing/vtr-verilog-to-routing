@@ -45,21 +45,13 @@ foreach my $line (@parse_lines) {
 	push(@parse_data, [@name_file_regexp]);	
 }
 
-my $count = 0;
+# attributes to parse become headings
 for my $parse_entry (@parse_data) {
-	$count++;
-	if($count < scalar(@parse_data))
-	{
-		print @$parse_entry[0] . "\t";
-	}
-	else
-	{
-		print @$parse_entry[0];
-	}
+    print @$parse_entry[0] . "\t";
 }
 print "\n";
 
-$count = 0;
+my $count = 0;
 for my $parse_entry (@parse_data) {
 	my $file_to_parse = "@$parse_entry[1]";
 	my $file_to_parse_path =
@@ -76,6 +68,7 @@ for my $parse_entry (@parse_data) {
 			  . " files.  There must be exactly one match.\n";
 		}
 	}
+
 	if ( not -r "$file_to_parse_path" ) {
 		print "-1";
 		print "\t";
@@ -94,7 +87,7 @@ for my $parse_entry (@parse_data) {
 		else {
 			print "-1";
 		}
-		if($count < scalar(@parse_data)) {
+		if($count <= scalar(@parse_data)) {
 			print "\t";
 		}
 	}
