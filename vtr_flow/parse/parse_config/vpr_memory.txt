@@ -1,3 +1,4 @@
+vpr_revision;vpr.out;Revision:\s(.*)
 vpr_status;output.txt;vpr_status=(.*)
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns

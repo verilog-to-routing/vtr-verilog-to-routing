@@ -7,7 +7,7 @@
 
 # Please note that a Mac can run the graphics if the X11 library is installed. 
 
-ENABLE_GRAPHICS = false
+ENABLE_GRAPHICS = true
 # can be true or false
 
 BUILD_TYPE = release
@@ -20,6 +20,10 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 # can be -O0 (no optimization) to -O3 (full optimization), or -Os (optimize space)
 
 #############################################################################################
+
+# build information to expose to program
+BUILD_VERSION := `svnversion`
+BUILD_DATE := `date -R`
 
 CC = $(COMPILER)
 LIB_DIR = -L.
@@ -37,8 +41,9 @@ WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES_
 DEBUG_FLAGS = -g 
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
+DEFINES := -D BUILD_VERSION=\""$(BUILD_VERSION)"\" -D BUILD_DATE=\""$(BUILD_DATE)"\"
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++0x
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) $(DEFINES) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++0x
 
 UNAME := $(shell uname)
 # determine build env
