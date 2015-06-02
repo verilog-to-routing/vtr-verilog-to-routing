@@ -28,6 +28,10 @@
 # 	-keep_intermediate_files: Do not delete the intermediate files.
 #   -keep_result_files: Do not delete the result files (.net, .place, .route)
 #   -track_memory_usage: Print out memory usage for each stage (NOT fully portable)
+#   -limit_memory_usage: Kill benchmark if it is taking up too much memory to avoid
+#                       slow disk swaps.
+#   -timeout: Maximum amount of time to spend on a single stage of a task in seconds;
+#               default is 14 days.
 #
 #   -temp_dir <dir>: Directory used for all temporary files
 ###################################################################################
@@ -102,6 +106,7 @@ my $track_memory_usage      = 0;
 my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
 my $limit_memory_usage      = -1;
+my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
 
 my $abc_quote_addition      = 0;
 
@@ -136,6 +141,9 @@ while ( $token = shift(@ARGV) ) {
     elsif ( $token eq "-limit_memory_usage" ) {
         $limit_memory_usage = shift(@ARGV);
         $abc_quote_addition = 1;
+    }
+    elsif ( $token eq "-timeout" ) {
+        $timeout = shift(@ARGV);
     }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
@@ -222,7 +230,6 @@ if ( !( $temp_dir =~ /.*\/$/ ) ) {
 	$temp_dir = $temp_dir . "/";
 }
 
-my $timeout      = 14 * 24 * 60 * 60;         # 14 day execution timeout
 my $results_path = "${temp_dir}output.txt";
 
 my $error;

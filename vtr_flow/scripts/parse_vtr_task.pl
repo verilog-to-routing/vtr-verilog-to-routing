@@ -36,6 +36,7 @@ sub summarize_qor;
 sub calc_geomean;
 sub check_golden;
 sub expand_user_path;
+sub get_important_file;
 
 # Get Absolute Path of 'vtr_flow
 Cwd::abs_path($0) =~ m/(.*vtr_flow)/;
@@ -115,7 +116,12 @@ if ($calc_geomean) {
 
 sub parse_single_task {
 	my $task_name = shift;
-	my $task_path = "$vtr_flow_path/tasks/$task_name";
+	my $task_path = $task_name;
+	
+    # first see if task_name is the task path
+	if (! -e "$task_path/config/config.txt") {
+	    $task_path = "$vtr_flow_path/tasks/$task_name";
+    }
 
 	open( CONFIG, "<$task_path/config/config.txt" )
 	  or die "Failed to open $task_path/config/config.txt: $!";
@@ -150,18 +156,10 @@ sub parse_single_task {
 	}
 
 	# PARSE CONFIG FILE
-	if ( -e "$task_path/config/$parse_file" ) {
-		$parse_file = "$task_path/config/$parse_file";
-	}
-	elsif ( $parse_file eq "" ) {
+	if ( $parse_file eq "" ) {
 		die "Task $task_name has no parse file specified.\n";
 	}
-	elsif ( -e "$vtr_flow_path/parse/parse_config/$parse_file" ) {
-		$parse_file = "$vtr_flow_path/parse/parse_config/$parse_file";
-	}
-	elsif ( $parse_file !~ /^\/.*/ ) {
-		die "Parse file does not exist ($parse_file)";
-	}
+	$parse_file = get_important_file($task_path, $vtr_flow_path, $parse_file);
 	
 	# Get Max Run #
 	opendir(DIR, $task_path);
@@ -173,15 +171,9 @@ sub parse_single_task {
 		$parse_qor = 0;
 		$calc_geomean = 0;
 	}
-	elsif ( -e "$task_path/config/$qor_parse_file" ) {
-		$qor_parse_file = "$task_path/config/$qor_parse_file";
-	}
-	elsif ( -e "$vtr_flow_path/parse/qor_config/$qor_parse_file" ) {
-		$qor_parse_file = "$vtr_flow_path/parse/qor_config/$qor_parse_file";
-	}
 	else {
-		die "QoR parse file does not exist ($qor_parse_file)";
-	}
+	    $qor_parse_file = get_important_file($task_path, $vtr_flow_path, $qor_parse_file);
+    }
 
     # haven't explicitely specified via -run parameter
     if ($exp_num < 1) {
@@ -611,4 +603,22 @@ sub expand_user_path {
 	my $str = shift;
 	$str =~ s/^~\//$ENV{"HOME"}\//;
 	return $str;
+}
+
+sub get_important_file {
+    my $task_path = shift;
+    my $vtr_flow_path = shift;
+    my $file = shift;
+	if ( -e "$task_path/config/$file" ) {
+		return "$task_path/config/$file";
+	}
+	elsif ( -e "$vtr_flow_path/parse/parse_config/$file" ) {
+		return "$vtr_flow_path/parse/parse_config/$file";
+	}
+	elsif ( -e "$vtr_flow_path/parse/qor_config/$file" ) {
+	    return "$vtr_flow_path/parse/qor_config/$file";
+    }
+	elsif ( $file !~ /^\/.*/ ) {
+		die "Important file does not exist ($file)";
+	}
 }
