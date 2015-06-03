@@ -41,7 +41,7 @@ foreach my $line (@parse_lines) {
 	# Ignore comments
 	if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
 	
-	my @name_file_regexp = split( /;/, $line, 3 );
+	my @name_file_regexp = split( /;/, $line );
 	push(@parse_data, [@name_file_regexp]);	
 }
 
@@ -56,6 +56,10 @@ for my $parse_entry (@parse_data) {
 	my $file_to_parse = "@$parse_entry[1]";
 	my $file_to_parse_path =
 	  File::Spec->catdir( ${parse_path}, ${file_to_parse} );
+	my $default_not_found = "-1";
+	if (scalar @$parse_entry > 3) {
+	    $default_not_found = "@$parse_entry[3]";
+    }
 
 	$count++;	
 	if ( $file_to_parse =~ /\*/ ) {
@@ -70,7 +74,7 @@ for my $parse_entry (@parse_data) {
 	}
 
 	if ( not -r "$file_to_parse_path" ) {
-		print "-1";
+		print $default_not_found;
 		print "\t";
 	}
 	else {
@@ -85,11 +89,10 @@ for my $parse_entry (@parse_data) {
 			print $1;
 		}
 		else {
-			print "-1";
+			print $default_not_found;
 		}
-		if($count <= scalar(@parse_data)) {
-			print "\t";
-		}
+        # tab separation even at end of line to indicate last element
+        print "\t";
 	}
 }
 print "\n";

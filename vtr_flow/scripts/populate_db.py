@@ -8,7 +8,6 @@ import os.path
 import argparse
 import textwrap
 import sqlite3
-import hashlib
 import socket   # for hostname
 import getpass  # for username
 
@@ -38,7 +37,6 @@ def verify_paths(params):
 def update_db(params, db):
     # check if table for task exists; if not then create it
     task_table_name = params.task_table_name
-    #print(task_table_name)
     create_table(params, db, task_table_name)
     # verify that the max runs in the task_dir is >= to the max runs in the database
     def check_runs_match_table(runs):
@@ -54,11 +52,13 @@ consider running with --clean to remake task table".format(row[0], highest_run))
         # else first run, nothing in table yet
 
     def add_run_to_db(params, run):
-        with open(get_result_file(params, run), 'r') as res:
+        resfilename = get_result_file(params, run)
+        with open(resfilename, 'r') as res:
             next(res)  # chomp first header line
             rows_to_add = []
             for line in res:
-                result_params_val = [get_trailing_num(run)]
+                # run number and parsed_date are always recorded
+                result_params_val = [get_trailing_num(run), os.path.getmtime(resfilename)]
                 result_params_val.extend(line.split('\t'))
                 if result_params_val[-1] == '\n':
                     result_params_val.pop()
@@ -97,14 +97,23 @@ def create_table(params, db, task_table_name):
         while len(result_params_sample) < len(result_params):
             result_params_sample.append('')
 
-        # store number of attributes for validation against other runs; INCLUDES RUN COL!
-        setattr(params, 'result_param_num', len(result_params)+1)
+        # store number of attributes for validation against other runs; INCLUDES RUN COL AND PARSED DATE!
+        setattr(params, 'result_param_num', len(result_params)+2)
+
+        # check if table name already exists
+        cursor = db.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='{}'".format(params.task_table_name.strip("[]")))
+        if cursor.fetchone():
+            return
+
 
         # table identifiers cannot be parameterized, so have to use string concatenation
         create_table_command = '''CREATE TABLE IF NOT EXISTS {}('''.format(task_table_name)
 
         # include one item for each result_params
         create_table_command += "{} INTEGER, ".format(params.run_prefix)
+        # time is in seconds since epoch
+        create_table_command += "parsed_date REAL, "
         for p in range(len(result_params)):
             p_schema = result_params[p].strip() + ' '
             if (is_int(result_params_sample[p])):
@@ -114,13 +123,12 @@ def create_table(params, db, task_table_name):
             else:
                 p_schema += "TEXT"
 
-            if p < len(result_params) - 1:
-                p_schema += ", "
-
+            p_schema += ", "
             create_table_command += p_schema
 
+
         # treat with unique keys
-        primary_keys = ", PRIMARY KEY({},".format(params.run_prefix) # run always considered primary key
+        primary_keys = "PRIMARY KEY({},".format(params.run_prefix) # run always considered primary key
         for primary_key in params.key_params:
             if primary_key not in result_params:
                 print("{} does not exist in result file".format(primary_key))
@@ -186,7 +194,7 @@ def parse_args(ns=None):
     params = parser.parse_args(namespace=ns)
     # name of task
     setattr(params, 'task_name', params.task_dir.split('/')[-1])
-    # an 8 digit hash for task directory
+    # path to task
     setattr(params, 'task_path', os.path.abspath(os.path.join(params.task_dir, os.pardir)))
     # table name in the database
     setattr(params, 'task_table_name', get_task_table_name(params))
