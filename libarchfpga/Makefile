@@ -21,7 +21,7 @@ LIB_FLAGS = rcs
 
 EXE = read_arch
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP -std=c++0x
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
@@ -29,7 +29,7 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-SRC = read_xml_arch_file.c read_xml_util.c ezxml.c ReadLine.c util.c physical_types.c parse_switchblocks.c
+SRC = read_xml_arch_file.c read_xml_util.c ezxml.c ReadLine.c util.c parse_switchblocks.c
 OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d

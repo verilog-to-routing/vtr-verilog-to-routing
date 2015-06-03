@@ -26,7 +26,8 @@
 #ifndef PHYSICAL_TYPES_H
 #define PHYSICAL_TYPES_H
 
-#include <map>
+#include <unordered_map>
+#include <functional>
 #include <vector>
 #include <string>
 #include "logic_types.h"
@@ -952,8 +953,29 @@ public:
 		from_track = set_track;
 	}
 
-	/* Overload < operator which is used by std::map */
-	bool operator < (const Switchblock_Lookup &obj) const;
+	/* Overload == operator which is used by std::unordered_map */
+	bool operator == (const Switchblock_Lookup &obj) const{
+		bool result;
+		if (x_coord == obj.x_coord && y_coord == obj.y_coord
+		  && from_side == obj.from_side && to_side == obj.to_side
+		  && from_track == obj.from_track){
+			result = true;
+		} else {
+			result = false;
+		}
+		return result;
+	}
+};
+
+struct s_hash_Switchblock_Lookup{
+	size_t operator()(const Switchblock_Lookup &obj) const{
+		size_t result;
+		result = ((((std::hash<int>()(obj.x_coord) ^ std::hash<int>()(obj.y_coord) << 10) ^
+		       std::hash<int>()((int)obj.from_side) << 20) ^ 
+		       std::hash<int>()((int)obj.to_side) << 30) ^ 
+		       std::hash<int>()(obj.from_track) << 40);
+		return result;
+	}
 };
 
 /* contains the index of the destination track segment within a channel
@@ -967,9 +989,9 @@ typedef struct s_to_track_inf{
    The Switchblock_Lookup class specifies these dimensions.
    Furthermore, a source_track at a given 5-d coordinate may connect to multiple destination tracks so the value
    of the map is a vector of destination tracks.
-   A matrix specifying connections for all switchblocks in an FPGA would be very large, and probably sparse,
-   so we use a map to take advantage of the sparsity. */
-typedef std::map< Switchblock_Lookup, std::vector< t_to_track_inf > > t_sb_connection_map;	//TODO switch to unordered map
+   A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large
+   so we use an unordered map to take advantage of the sparsity. */
+typedef std::unordered_map< Switchblock_Lookup, std::vector< t_to_track_inf >, s_hash_Switchblock_Lookup > t_sb_connection_map;
 
 
 /*   Detailed routing architecture */

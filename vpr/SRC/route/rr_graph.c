@@ -148,24 +148,13 @@ static void build_rr_sinks_sources(
 		INP t_rr_node * L_rr_node, INP t_ivec *** L_rr_node_indices,
 		INP int delayless_switch, INP struct s_grid_tile **L_grid);
 
-static void build_rr_xchan(
-		INP int i, INP int j,
+static void build_rr_chan(
+		INP int i, INP int j, INP t_rr_type chan_type,
 		INP struct s_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
 		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
 		INP int max_chan_width, INP int tracks_per_chan, INP int *opin_mux_size,
 		INP short ******sblock_pattern, INP int Fs_per_side,
 		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y, 
-		INP t_ivec *** L_rr_node_indices,
-		INP bool * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
-		INP int wire_to_ipin_switch, INP enum e_directionality directionality);
-
-static void build_rr_ychan(
-		INP int i, INP int j,
-		INP struct s_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
-		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
-		INP int max_chan_width, INP int tracks_per_chan, INP int *opin_mux_size,
-		INP short ******sblock_pattern, INP int Fs_per_side,
-		INP t_chan_details * chan_details_y, INP t_chan_details * chan_details_x, 
 		INP t_ivec *** L_rr_node_indices,
 		INP bool * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality);
@@ -989,7 +978,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 	for (int i = 0; i <= L_nx; ++i) {
 		for (int j = 0; j <= L_ny; ++j) {
 			if (i > 0) {
-				build_rr_xchan(i, j, track_to_pin_lookup, sb_conn_map, switch_block_conn,
+				build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START, 
 						max_chan_width, chan_width.x_list[j], opin_mux_size,
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -997,11 +986,11 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 						wire_to_ipin_switch, directionality);
 			}
 			if (j > 0) {
-				build_rr_ychan(i, j, track_to_pin_lookup, sb_conn_map, switch_block_conn,
+				build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START + num_seg_types, 
 						max_chan_width, chan_width.y_list[i], opin_mux_size,
-						sblock_pattern, Fs / 3, chan_details_y, chan_details_x,
-						L_rr_node_indices, L_rr_edge_done, L_rr_node,
+						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
+						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
 			}
 		}
@@ -1362,7 +1351,9 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 	}
 }
 
-static void build_rr_xchan(INP int i, INP int j,
+/* Allocates/loads edges for nodes belonging to specified channel segment and initializes
+   node properties such as cost, occupancy and capacity */
+static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_type,
 		INP struct s_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
 		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
 		INP int max_chan_width, INP int tracks_per_chan, INP int *opin_mux_size,
@@ -1372,78 +1363,117 @@ static void build_rr_xchan(INP int i, INP int j,
 		INOUTP bool * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
 		INP int wire_to_ipin_switch, INP enum e_directionality directionality) {
 
-	t_seg_details * seg_details = chan_details_x[i][j];
+	/* this function builds both x and y-directed channel segments, so set up our 
+	   coordinates based on channel type */
+	int seg_coord = x_coord;
+	int chan_coord = y_coord;
+	int seg_dimension = nx;
+	int chan_dimension = ny;
+	t_chan_details *from_chan_details = chan_details_x;
+	t_chan_details *opposite_chan_details = chan_details_y;
+	t_rr_type opposite_chan_type = CHANY;
+	if (chan_type == CHANY){
+		seg_coord = y_coord;
+		chan_coord = x_coord;
+		seg_dimension = ny;
+		chan_dimension = nx;
+		from_chan_details = chan_details_y;
+		opposite_chan_details = chan_details_x;
+		opposite_chan_type = CHANX;
+	}
 
-	/* Loads up all the routing resource nodes in the x-directed channel segments starting at (i,j). */
+	t_seg_details * seg_details = from_chan_details[x_coord][y_coord];
+
+	/* figure out if we're generating switch block edges based on a custom switch block
+	   description */
+	bool custom_switch_block = false;
+	if (sb_conn_map != NULL){
+		assert(sblock_pattern == NULL && switch_block_conn == NULL);
+		custom_switch_block = true;
+	}
+
+	/* Loads up all the routing resource nodes in the current channel segment */
 	for (int track = 0; track < tracks_per_chan; ++track) {
 
 		if (seg_details[track].length == 0)
 			continue;
 
-		int start = get_seg_start(seg_details, track, j, i);
-		int end = get_seg_end(seg_details, track, start, j, nx);
+		int start = get_seg_start(seg_details, track, chan_coord, seg_coord);
+		int end = get_seg_end(seg_details, track, start, chan_coord, seg_dimension);
 
-		if (i > start)
+		if (seg_coord > start)										
 			continue; /* Not the start of this segment. */
 
 		struct s_linked_edge *edge_list = NULL;
 
+		t_seg_details * from_seg_details = chan_details_x[start][y_coord];
+		if (chan_type == CHANY){
+			from_seg_details = chan_details_y[x_coord][start];
+		}
+
 		/* First count number of edges and put the edges in a linked list. */
 		int num_edges = 0;
-		num_edges += get_track_to_pins(start, j, track, tracks_per_chan, &edge_list,
-				L_rr_node_indices, track_to_pin_lookup, seg_details, CHANX, nx,
+		num_edges += get_track_to_pins(start, chan_coord, track, tracks_per_chan, &edge_list,
+				L_rr_node_indices, track_to_pin_lookup, seg_details, chan_type, seg_dimension,
 				wire_to_ipin_switch, directionality);
 
-		if (j > 0) {
-			t_seg_details * from_seg_details = chan_details_x[start][j];
-			t_seg_details * to_seg_details = chan_details_y[start][j];
+		/* get edges going from the current track into channel segments which are perpendicular to it */
+		if (chan_coord > 0) {
+			t_seg_details * to_seg_details = chan_details_y[start][y_coord];
+			if (chan_type == CHANY)
+				to_seg_details = chan_details_x[x_coord][start];
 			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(j, start, track, CHANX, j,
-						CHANY, nx, max_chan_width, opin_mux_size, 
+				num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord,
+						opposite_chan_type, seg_dimension, max_chan_width, opin_mux_size, 
 						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_y, 
+						from_seg_details, to_seg_details, opposite_chan_details, 
 						directionality,	L_rr_node_indices, L_rr_edge_done,
 						 switch_block_conn, sb_conn_map);
 			}
 		}
-		if (j < ny) {
-			t_seg_details * from_seg_details = chan_details_x[start][j];
-			t_seg_details * to_seg_details = chan_details_y[start][j+1];
+		if (chan_coord < chan_dimension) {
+			t_seg_details * to_seg_details = chan_details_y[start][y_coord+1];
+			if (chan_type == CHANY)
+				to_seg_details = chan_details_x[x_coord+1][start];
 			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(j, start, track, CHANX, j + 1,
-						CHANY, nx, max_chan_width, opin_mux_size, 
+				num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord + 1,
+						opposite_chan_type, seg_dimension, max_chan_width, opin_mux_size, 
 						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_y, 
-						directionality,	L_rr_node_indices, L_rr_edge_done, 
-						switch_block_conn, sb_conn_map);
-			}
-		}
-		if (start > 1) {
-			t_seg_details * from_seg_details = chan_details_x[start][j];
-			t_seg_details * to_seg_details = chan_details_x[start-1][j];
-			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(j, start, track, CHANX, start - 1,
-						CHANX, nx, max_chan_width, opin_mux_size,
-						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_x,
-						directionality, L_rr_node_indices, L_rr_edge_done,
-						switch_block_conn, sb_conn_map);
-			}
-		}
-		if (end < nx) {
-			t_seg_details * from_seg_details = chan_details_x[start][j];
-			t_seg_details * to_seg_details = chan_details_x[end+1][j];
-			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(j, start, track, CHANX, end + 1,
-						CHANX, nx, max_chan_width, opin_mux_size, 
-						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_x, 
+						from_seg_details, to_seg_details, opposite_chan_details, 
 						directionality,	L_rr_node_indices, L_rr_edge_done, 
 						switch_block_conn, sb_conn_map);
 			}
 		}
 
-		int node = get_rr_node_index(i, j, CHANX, track, L_rr_node_indices);
+
+		/* walk over the switch blocks along the source track and implement edges from this track to other tracks 
+		   in the same channel (i.e. straight-through connections) */
+		for (int target_seg = start-1; target_seg <= end+1; target_seg++){
+			if (target_seg != start-1 && target_seg != end+1){
+				/* skip straight-through connections from midpoint if non-custom switch block.
+				   currently non-custom switch blocks don't properly describe connections from the mid-point of a wire segment
+				   to other segments in the same channel (i.e. straight-through connections) */
+				if (!custom_switch_block){
+					continue;
+				}
+			}
+			if (target_seg > 0 && target_seg < seg_dimension+1){
+				t_seg_details * to_seg_details = chan_details_x[target_seg][y_coord];
+				if (chan_type == CHANY)
+					to_seg_details = chan_details_y[x_coord][target_seg];
+				if (to_seg_details->length > 0) {
+					num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
+							chan_type, seg_dimension, max_chan_width, opin_mux_size, 
+							Fs_per_side, sblock_pattern, &edge_list, 
+							from_seg_details, to_seg_details, from_chan_details, 
+							directionality,	L_rr_node_indices, L_rr_edge_done, 
+							switch_block_conn, sb_conn_map);
+				}
+			}
+		}
+
+
+		int node = get_rr_node_index(x_coord, y_coord, chan_type, track, L_rr_node_indices);
 		alloc_and_load_edges_and_switches(L_rr_node, node, num_edges,
 				L_rr_edge_done, edge_list);
 
@@ -1458,123 +1488,19 @@ static void build_rr_xchan(INP int i, INP int j,
 		L_rr_node[node].set_occ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
-		L_rr_node[node].set_coordinates(start, j, end, j);
+		if (chan_type == CHANX){
+			L_rr_node[node].set_coordinates(start, y_coord, end, y_coord);
+		} else {
+			assert(chan_type == CHANY);
+			L_rr_node[node].set_coordinates(x_coord, start, x_coord, end);
+		}
 
 		int length = end - start + 1;
 		L_rr_node[node].R = length * seg_details[track].Rmetal;
 		L_rr_node[node].C = length * seg_details[track].Cmetal;
 
 		L_rr_node[node].set_ptc_num(track);
-		L_rr_node[node].type = CHANX;
-		L_rr_node[node].set_direction(seg_details[track].direction);
-		//L_rr_node[node].set_drivers(seg_details[track].drivers);
-	}
-}
-
-static void build_rr_ychan(INP int i, INP int j,
-		INP struct s_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
-		INP struct s_ivec ***switch_block_conn, INP int cost_index_offset,
-		INP int max_chan_width, INP int tracks_per_chan, INP int *opin_mux_size,
-		INP short ******sblock_pattern, INP int Fs_per_side,
-		INP t_chan_details * chan_details_y, INP t_chan_details * chan_details_x,
-		INP t_ivec *** L_rr_node_indices,
-		INP bool * L_rr_edge_done, INOUTP t_rr_node * L_rr_node,
-		INP int wire_to_ipin_switch, INP enum e_directionality directionality) {
-
-	t_seg_details * seg_details = chan_details_y[i][j];
-
-	/* Loads up all the routing resource nodes in the y-directed channel segments starting at (i,j). */
-	for (int track = 0; track < tracks_per_chan; ++track) {
-
-		if (seg_details[track].length == 0)
-			continue;
-
-		int start = get_seg_start(seg_details, track, i, j);
-		int end = get_seg_end(seg_details, track, start, i, ny);
-
-		if (j > start)
-			continue; /* Not the start of this segment. */
-
-		struct s_linked_edge *edge_list = NULL;
-
-		/* First count number of edges and put the edges in a linked list. */
-		int num_edges = 0;
-		num_edges += get_track_to_pins(start, i, track, tracks_per_chan, &edge_list,
-				L_rr_node_indices, track_to_pin_lookup, seg_details, CHANY, ny,
-				wire_to_ipin_switch, directionality);
-
-		if (i > 0) {
-			t_seg_details * from_seg_details = chan_details_y[i][start];
-			t_seg_details * to_seg_details = chan_details_x[i][start];
-			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(i, start, track, CHANY, i,
-						CHANX, ny, max_chan_width, opin_mux_size, 
-						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_x, 
-						directionality, L_rr_node_indices, L_rr_edge_done,
-						switch_block_conn, sb_conn_map);
-			}
-		}
-		if (i < nx) {
-			t_seg_details * from_seg_details = chan_details_y[i][start];
-			t_seg_details * to_seg_details = chan_details_x[i+1][start];
-			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(i, start, track, CHANY, i + 1,
-						CHANX, ny, max_chan_width, opin_mux_size, 
-						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_x, 
-						directionality, L_rr_node_indices, L_rr_edge_done,
-						switch_block_conn, sb_conn_map);
-			}
-		}
-		if (start > 1) {
-			t_seg_details * from_seg_details = chan_details_y[i][start];
-			t_seg_details * to_seg_details = chan_details_y[i][start-1];
-			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(i, start, track, CHANY, start - 1,
-						CHANY, ny, max_chan_width, opin_mux_size,
-						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_y,
-						directionality, L_rr_node_indices, L_rr_edge_done,
-						switch_block_conn, sb_conn_map);
-			}
-		}
-		if (end < ny) {
-			t_seg_details * from_seg_details = chan_details_y[i][start];
-			t_seg_details * to_seg_details = chan_details_y[i][end+1];
-			if (to_seg_details->length > 0) {
-				num_edges += get_track_to_tracks(i, start, track, CHANY, end + 1,
-						CHANY, ny, max_chan_width, opin_mux_size, 
-						Fs_per_side, sblock_pattern, &edge_list, 
-						from_seg_details, to_seg_details, chan_details_y, 
-						directionality, L_rr_node_indices, L_rr_edge_done,
-						switch_block_conn, sb_conn_map);
-			}
-		}
-
-		int node = get_rr_node_index(i, j, CHANY, track, L_rr_node_indices);
-		alloc_and_load_edges_and_switches(L_rr_node, node, num_edges,
-				L_rr_edge_done, edge_list);
-
-		while (edge_list != NULL) {
-			struct s_linked_edge *next_edge = edge_list->next;
-			free(edge_list);
-			edge_list = next_edge;
-		}
-
-		/* Edge arrays have now been built up.  Do everything else.  */
-		L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
-		L_rr_node[node].set_occ( track < tracks_per_chan ? 0 : 1 );
-		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
-
-		L_rr_node[node].set_coordinates(i, start, i, end);
-
-		int length = end - start + 1;
-		L_rr_node[node].R = length * seg_details[track].Rmetal;
-		L_rr_node[node].C = length * seg_details[track].Cmetal;
-
-		L_rr_node[node].set_ptc_num(track);
-		L_rr_node[node].type = CHANY;
+		L_rr_node[node].type = chan_type;
 		L_rr_node[node].set_direction(seg_details[track].direction);
 		//L_rr_node[node].set_drivers(seg_details[track].drivers);
 	}

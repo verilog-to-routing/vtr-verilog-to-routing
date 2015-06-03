@@ -30,7 +30,7 @@ This functionality is split across different files which are described below:
   * physical_types.h (under libarchfpga):
     * defines classes, structs and typedefs for parsing/building switch blocks
   * build_switchblocks.c (this file):
-    * builds t_sb_connection_map sparse array containing target connections for each track in each horizontal/vertical channel segment. //TODO: make it an unordered_map
+    * builds t_sb_connection_map sparse array containing target connections for each track in each horizontal/vertical channel segment.
       'compute_track_connections' is the most important function here -- it computes the set of track segments that a given track at 
       (x, y, from_side, to_side, from_track) should connect to.
   * rr_graph.c:

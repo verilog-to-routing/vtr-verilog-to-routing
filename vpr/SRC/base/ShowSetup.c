@@ -141,6 +141,9 @@ static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch) {
 	case FULL:
 		vpr_printf_info("FULL\n");
 		break;
+	case CUSTOM:
+		vpr_printf_info("CUSTOM\n");
+		break;
 	default:
 		vpr_printf_error(__FILE__, __LINE__, "switch block type\n");
 	}
