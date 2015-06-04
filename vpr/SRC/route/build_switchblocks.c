@@ -821,11 +821,27 @@ static void get_wirepoint_tracks( INP e_directionality directionality, INP int n
 			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "get_wirepoint_tracks(): unknown directionality %d\n", directionality);
 		}
 
+		/* check whether the side/x/y coordinate specifies a switch block at which *all* wire segments terminate/start (i.e. some switch blocks
+		   around the perimeter of the FPGA). in this case only segments with wirepoints == 0 can exist */
+		bool fringe_connection = false;
+		if ((TOP==side && y==0) ||
+		     (RIGHT==side && x==0) ||
+		     (LEFT==side && x==nx) ||
+		     (BOTTOM==side && y==ny)){
+			fringe_connection = true;
+		}
+
 		int increment;
 		/* for each wirepoint */
 		for (int iwp = 0; iwp < (int)points->size(); iwp++){
 
 			int wirepoint = points->at(iwp);
+
+			if (fringe_connection && wirepoint != 0){
+				/* only wire segments with wirepoint == 0 can exist at certain fringe locations like the corners of the FPGA */
+				continue;
+			}
+
 			int wirepoint_start = get_adjusted_wirepoint_start(directionality, wirepoint, side, track_type, 
 					num_type_tracks, type_track_length, first_type_track, last_type_track, distance, dir_adjust, 
 					is_dest, wirepoint_starts);
@@ -836,24 +852,29 @@ static void get_wirepoint_tracks( INP e_directionality directionality, INP int n
 				continue;
 			}
 	
-			/* in a unidirectional arch, connections may only be made to wirepoint 0. in the corners of
+			/* in a unidirectional arch, connections may only be made to wirepoint 0 in the corners of
 			   the FPGA, and some sides of the perimeter tiles, all wires are of wirepoint 0 */
 			if (UNI_DIRECTIONAL == directionality && 
-			    is_dest && 
-			    0 == wirepoint &&
-			    ((TOP==side && y==0) ||
-			     (RIGHT==side && x==0) ||
-			     (LEFT==side && x==nx) ||
-			     (BOTTOM==side && y==ny))){
+			    //is_dest &&
+			    //0 == wirepoint &&
+			    fringe_connection){
 				increment = dir_adjust;
 				wirepoint_start = wirepoint_start - increment*floor((wirepoint_start - first_type_track) / increment);
+				//wirepoint_start = first_type_track + (wirepoint_start % dir_adjust);
 			} else {
 				increment = dir_adjust * type_track_length;
 			}
 
+			bool test = x==0 && y==0 && side==TOP && is_dest;
+
 			for (int itrack = wirepoint_start; itrack <= last_type_track; itrack += increment){
 				tracks->push_back( itrack );
+				if (test){
+					printf("track %d\n", itrack);
+				}
 			}
+			if (test)
+				printf("\n");
 		}
 	}
 	sort(tracks->begin(), tracks->end());
@@ -948,6 +969,13 @@ static void compute_track_wireconn_connections(INP int nx, INP int ny, INP e_dir
 	/* the current track corresponds to a single wirepoint */
 	from_wirepoint = get_wirepoint_of_track(nx, ny, from_chan_type, from_chan_details[from_x][from_y][sb_conn.from_track], 
 	                                        from_seg, sb_conn.from_side);
+	//TODO: maybe insert a check for a fringe SB? and then just force wirepoint to 0...
+	if ((TOP==sb_conn.from_side && sb_conn.y_coord==0) ||		//XXX didn't work???
+	     (RIGHT==sb_conn.from_side && sb_conn.x_coord==0) ||
+	     (LEFT==sb_conn.from_side && sb_conn.x_coord==nx) ||
+	     (BOTTOM==sb_conn.from_side && sb_conn.y_coord==ny)){
+		from_wirepoint = 0;
+	}
 
 	/* there may be multiple destination wirepoints */
 	to_wirepoint = wireconn_ptr->to_point;
