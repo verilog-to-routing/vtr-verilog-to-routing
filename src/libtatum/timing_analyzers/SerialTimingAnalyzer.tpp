@@ -4,14 +4,12 @@ SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::SerialTimingAnalyz
     , tc_(tc)
     , dc_(dc)
     //Need to give the size of the object to allocate
-    , tag_pool_(sizeof(TimingTag))
-    {}
+    , tag_pool_(sizeof(TimingTag)) {
+    AnalysisType::initialize_traversal(tg_);
+}
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 ta_runtime SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_timing() {
-    //No incremental support yet!
-    reset_timing();
-
     struct timespec start_times[4];
     struct timespec end_times[4];
 

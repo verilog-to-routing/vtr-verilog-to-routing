@@ -49,8 +49,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    struct timespec prog_start, load_start, analyze_start, verify_start;
-    struct timespec prog_end, load_end, analyze_end, verify_end;
+    struct timespec prog_start, load_start, analyze_start, verify_start, reset_start;
+    struct timespec prog_end, load_end, analyze_end, verify_end, reset_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
@@ -158,6 +158,7 @@ int main(int argc, char** argv) {
 
     TimingGraphDelayCalculator delay_calculator;
     auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    //auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;
@@ -167,6 +168,7 @@ int main(int argc, char** argv) {
     float serial_fwdtraverse_time_avg = 0.;
     float serial_bcktraverse_time_avg = 0.;
     float serial_verify_time = 0.;
+    float serial_reset_time = 0.;
     int serial_arr_req_verified = 0;
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
@@ -207,6 +209,11 @@ int main(int argc, char** argv) {
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);
+
+            clock_gettime(CLOCK_MONOTONIC, &reset_start);
+            serial_analyzer->reset_timing();
+            clock_gettime(CLOCK_MONOTONIC, &reset_end);
+            serial_reset_time += time_sec(reset_start, reset_end);
         }
         CALLGRIND_STOP_INSTRUMENTATION;
 
@@ -223,12 +230,13 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << serial_fwdtraverse_time_avg/serial_analysis_time_avg << ")" << endl;
         cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_bcktraverse_time_avg << " s";
         cout << " (" << std::setprecision(2) << serial_bcktraverse_time_avg/serial_analysis_time_avg << ")" << endl;
-        cout << "Verifying Serial Analysis took: " << time_sec(verify_start, verify_end) << " sec" << endl;
+        cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
         if(serial_arr_req_verified != 2*timing_graph.num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
         } else {
             cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph.num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
         }
+        cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
     }
 
@@ -246,6 +254,7 @@ int main(int argc, char** argv) {
 
 #if NUM_PARALLEL_RUNS > 0
     auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    //auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     float parallel_analysis_time = 0;
     float parallel_pretraverse_time = 0.;
@@ -256,6 +265,7 @@ int main(int argc, char** argv) {
     float parallel_fwdtraverse_time_avg = 0.;
     float parallel_bcktraverse_time_avg = 0.;
     float parallel_verify_time = 0;
+    float parallel_reset_time = 0;
     int parallel_arr_req_verified = 0;
     {
         cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;
@@ -284,6 +294,11 @@ int main(int argc, char** argv) {
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             parallel_verify_time += time_sec(verify_start, verify_end);
+
+            clock_gettime(CLOCK_MONOTONIC, &reset_start);
+            parallel_analyzer->reset_timing();
+            clock_gettime(CLOCK_MONOTONIC, &reset_end);
+            parallel_reset_time += time_sec(reset_start, reset_end);
         }
         parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
         parallel_pretraverse_time_avg = parallel_pretraverse_time / NUM_PARALLEL_RUNS;
@@ -298,12 +313,13 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << parallel_fwdtraverse_time_avg/parallel_analysis_time_avg << ")" << endl;
         cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_bcktraverse_time_avg << " s";
         cout << " (" << std::setprecision(2) << parallel_bcktraverse_time_avg/parallel_analysis_time_avg << ")" << endl;
-        cout << "Verifying Parallel Analysis took: " << time_sec(verify_start, verify_end) << " sec" << endl;
-    }
-    if(parallel_arr_req_verified != 2*timing_graph.num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
-        cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
-    } else {
-        cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph.num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+        cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
+        if(parallel_arr_req_verified != 2*timing_graph.num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
+            cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
+        } else {
+            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph.num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+        }
+        cout << "Resetting Parallel Analysis took: " << parallel_reset_time << " sec" << endl;
     }
     cout << endl;
 
