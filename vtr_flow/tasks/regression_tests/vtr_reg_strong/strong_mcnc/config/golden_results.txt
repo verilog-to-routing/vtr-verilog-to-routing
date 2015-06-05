@@ -1,2 +1,2 @@
-arch	circuit	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-k6_frac_N10_40nm.xml	diffeq.pre-vpr.blif	success	50	5.21696	1.36	0.87	1.06	0.15	1371	1410	545	61	64	39	-1	-1	
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_frac_N10_40nm.xml	diffeq.pre-vpr.blif	4614M	success	50	5.15929	0.821013	0.529492	0.598553	0.095012	-1	-1	-1	1371	1410	559	61	64	39	-1	-1		

@@ -1,8 +1,8 @@
-arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error
-soft_fpu_arch_timing.xml	bfly.v	success	35.6733 	26.62	187.83	140.23	140.23	25361	25425	18919	6369	193	64	-1	-1	
-soft_fpu_arch_timing.xml	bgm.v	success	37.6093 	143.02	522.6	450.95	450.95	66377	66409	49431	16768	257	32	-1	-1	
-soft_fpu_arch_timing.xml	dscg.v	success	38.7172 	26.65	183.39	151.48	151.48	25157	25221	18475	6322	129	64	-1	-1	
-soft_fpu_arch_timing.xml	fir.v	success	35.0807 	25.45	178.53	112.44	112.44	24583	24615	18325	6185	161	32	-1	-1	
-soft_fpu_arch_timing.xml	mm3.v	success	35.2802 	15.31	101.16	79.2	79.2	18003	18035	13519	4527	193	32	-1	-1	
-soft_fpu_arch_timing.xml	ode.v	success	34.9111 	11.63	64.87	59.72	59.72	14414	14486	10365	3569	130	72	-1	-1	
-soft_fpu_arch_timing.xml	syn2.v	success	38.3599 	32.2	154.88	142.28	142.28	25974	26102	19214	6523	161	128	-1	-1	
+arch	circuit	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+soft_fpu_arch_timing.xml	bfly.v	success	35.143 	11.4874	103.491	26.5549	26.5549	25361	25425	18949	6365	193	64	-1	-1		
+soft_fpu_arch_timing.xml	bgm.v	success	40.5221 	59.9774	524.037	80.3225	80.3225	66377	66409	49461	16754	257	32	-1	-1		
+soft_fpu_arch_timing.xml	dscg.v	success	35.0479 	11.5674	99.9415	25.2895	25.2895	25157	25221	18534	6335	129	64	-1	-1		
+soft_fpu_arch_timing.xml	fir.v	success	34.8541 	11.2044	99.8306	26.4318	26.4318	24583	24615	18390	6190	161	32	-1	-1		
+soft_fpu_arch_timing.xml	mm3.v	success	33.7374 	7.19779	55.8958	17.1819	17.1819	18003	18035	13529	4515	193	32	-1	-1		
+soft_fpu_arch_timing.xml	ode.v	success	33.7792 	4.88933	39.8461	14.5157	14.5157	14414	14486	10356	3560	130	72	-1	-1		
+soft_fpu_arch_timing.xml	syn2.v	success	36.0486 	12.399	106.475	29.2307	29.2307	25974	26102	19255	6525	161	128	-1	-1		
