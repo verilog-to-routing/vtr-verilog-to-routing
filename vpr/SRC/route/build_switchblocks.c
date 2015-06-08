@@ -865,16 +865,9 @@ static void get_wirepoint_tracks( INP e_directionality directionality, INP int n
 				increment = dir_adjust * type_track_length;
 			}
 
-			bool test = x==0 && y==0 && side==TOP && is_dest;
-
 			for (int itrack = wirepoint_start; itrack <= last_type_track; itrack += increment){
 				tracks->push_back( itrack );
-				if (test){
-					printf("track %d\n", itrack);
-				}
 			}
-			if (test)
-				printf("\n");
 		}
 	}
 	sort(tracks->begin(), tracks->end());
@@ -969,8 +962,9 @@ static void compute_track_wireconn_connections(INP int nx, INP int ny, INP e_dir
 	/* the current track corresponds to a single wirepoint */
 	from_wirepoint = get_wirepoint_of_track(nx, ny, from_chan_type, from_chan_details[from_x][from_y][sb_conn.from_track], 
 	                                        from_seg, sb_conn.from_side);
-	//TODO: maybe insert a check for a fringe SB? and then just force wirepoint to 0...
-	if ((TOP==sb_conn.from_side && sb_conn.y_coord==0) ||		//XXX didn't work???
+	/* If we're at a switch block side where *all* wires start/terminate (i.e. around the FPGA perimeter) then
+	   the source wirepoint is 0 no matter what */
+	if ((TOP==sb_conn.from_side && sb_conn.y_coord==0) ||
 	     (RIGHT==sb_conn.from_side && sb_conn.x_coord==0) ||
 	     (LEFT==sb_conn.from_side && sb_conn.x_coord==nx) ||
 	     (BOTTOM==sb_conn.from_side && sb_conn.y_coord==ny)){
