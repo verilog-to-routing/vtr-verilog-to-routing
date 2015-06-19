@@ -70,6 +70,9 @@ select:focus {
 .filter {
 	background-color:#3B3738;
 }
+.filter_val {
+	padding-right:8px;
+}
 .filter_val input[type="text"] {
   padding: 10px;
   background-color:transparent;
@@ -79,7 +82,7 @@ select:focus {
 
 
 .in {
-	height:59%;
+	height:179px;
 }
 .close {
 	font-weight:bold;

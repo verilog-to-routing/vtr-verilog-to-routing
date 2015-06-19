@@ -21,14 +21,16 @@ def main():
     parse_args(params)
     if (params.clean):
         drop_table(params)
-    verify_paths(params)
 
     # operate on database
     db = sqlite3.connect(params.database)
     db.row_factory = sqlite3.Row
 
-    initialize_tracked_columns(params, db)
-    update_db(params, db)
+    while params.task_dir:
+        verify_paths(params)
+        initialize_tracked_columns(params, db)
+        update_db(params, db)
+        load_next_task(params)
 
     db.close()
 
@@ -202,8 +204,13 @@ def parse_args(ns=None):
             usage="%(prog)s <task_dir> [OPTIONS]")
 
     # arguments should either end with _dir or _file for use by other functions
-    parser.add_argument("task_dir", 
-            help="directory (relative or absolute) holding runs")
+    parser.add_argument("task_list", 
+            nargs='+',
+            default=[],
+            help="directories (relative or absolute) holding runs")
+    parser.add_argument("--root_directory",
+            default="",
+            help="where the task paths are relative to (only set if task paths are relative)")
     parser.add_argument("-f", "--result_file", 
             default="parse_results.txt",
             help="result file to look for inside each run; default: %(default)s")
@@ -227,6 +234,36 @@ def parse_args(ns=None):
             default=[],
             help="a list of key parameters that define a unique benchmark; default: %(default)s")
     params = parser.parse_args(namespace=ns)
+
+    # if a task list is given (where each line is the path to a task)
+    if params.root_directory:
+        if params.root_directory[-1] != '/':
+            params.root_directory += '/'
+        params.task_list = [params.root_directory + task for task in params.task_list]
+
+    if os.path.isfile(params.task_list[0]):
+        print("given task list")
+        task_list = []
+        with open(params.task_list[0], 'r') as tl:
+            for line in tl:
+                task_list.append(params.root_directory + line.rstrip())
+            params.task_list = task_list
+
+    # print(params.task_list)
+
+    # load first task
+    load_next_task(params)
+    return params
+
+def load_next_task(params):
+    if not params.task_list:
+        setattr(params, 'task_dir', None)
+        return
+
+    active_task = params.task_list.pop()
+    print("active task:", active_task)
+
+    setattr(params, 'task_dir', active_task)
     # name of task
     setattr(params, 'task_name', params.task_dir.split('/')[-1])
     # path to task
@@ -234,7 +271,6 @@ def parse_args(ns=None):
     # table name in the database
     setattr(params, 'task_table_name', get_task_table_name(params))
     return params
-
 
 # working on the task directory
 def sort_runs(runs):
