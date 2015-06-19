@@ -5,11 +5,15 @@ import sys
 import re
 from subprocess import call
 import os.path
+import shlex
 import argparse
 import textwrap
 import sqlite3
 import socket   # for hostname
 import getpass  # for username
+
+nullval = '-1'
+type_map = {int: "INT", float: "REAL", str: "TEXT"}
 
 # main program sequence
 def main():
@@ -22,6 +26,8 @@ def main():
     # operate on database
     db = sqlite3.connect(params.database)
     db.row_factory = sqlite3.Row
+
+    initialize_tracked_columns(params, db)
     update_db(params, db)
 
     db.close()
@@ -53,26 +59,50 @@ consider running with --clean to remake task table".format(row[0], highest_run))
 
     def add_run_to_db(params, run):
         resfilename = get_result_file(params, run)
+        run_number = get_trailing_num(run)
+        try:
+            parsed_date = os.path.getmtime(resfilename)
+        except OSError:
+            print("file {} not found; skipping".format(resfilename))
+            return
+
+
         with open(resfilename, 'r') as res:
-            next(res)  # chomp first header line
+            # make sure table is compatible with run data by inserting any new columns
+            # always called "run" in table (converted from whatever prefix users use)
+            result_params = ["run", "parsed_date"]
+            result_params.extend(res.readline().split('\t'))
+            if result_params[-1] == '\n':
+                result_params.pop()
+
+            pre_sample_pos = res.tell()
+            result_params_sample = res.readline().split('\t')
+            # go back to presample location for normal line iteration
+            res.seek(pre_sample_pos, os.SEEK_SET)
+
+            # add new column to table
+            for c in range(len(result_params)):
+                if result_params[c] not in params.tracked_columns:
+                    print("ADDING {} as new column".format(result_params[c]))
+                    add_column_to_table(params, db, result_params[c], result_params_sample[c-2]) # -2 accounts for run and parsed date
+
+            # add value rows
             rows_to_add = []
             for line in res:
                 # run number and parsed_date are always recorded
-                result_params_val = [get_trailing_num(run), os.path.getmtime(resfilename)]
+                result_params_val = [run_number, parsed_date]
                 result_params_val.extend(line.split('\t'))
                 if result_params_val[-1] == '\n':
                     result_params_val.pop()
 
-                if len(result_params_val) != params.result_param_num:
-                    print("mismatching parameter number; original: {}\t{}: {}".format(
-                        params.result_param_num, run, len(result_params_val)))
-                    db.rollback()
-                    sys.exit(2)
+                rows_to_add.append(tuple(convert_strictest(param) if param != nullval else None for param in result_params_val))
 
-                rows_to_add.append(tuple(convert_strictest(param) for param in result_params_val))
-
-            param_placeholders = ("?,"*params.result_param_num).rstrip(',')
-            insert_rows_command = "INSERT OR IGNORE INTO {} VALUES ({})".format(params.task_table_name, param_placeholders)
+            param_placeholders = ("?,"*len(result_params)).rstrip(',')
+            # specify columns to insert into since ordering of columns in file may not match table
+            insert_rows_command = "INSERT OR IGNORE INTO {} ({}) VALUES ({})".format(
+                params.task_table_name,
+                ','.join(result_params), 
+                param_placeholders)
             cursor = db.cursor()
             cursor.executemany(insert_rows_command, rows_to_add)
 
@@ -97,8 +127,6 @@ def create_table(params, db, task_table_name):
         while len(result_params_sample) < len(result_params):
             result_params_sample.append('')
 
-        # store number of attributes for validation against other runs; INCLUDES RUN COL AND PARSED DATE!
-        setattr(params, 'result_param_num', len(result_params)+2)
 
         # check if table name already exists
         cursor = db.cursor()
@@ -115,14 +143,7 @@ def create_table(params, db, task_table_name):
         # time is in seconds since epoch
         create_table_command += "parsed_date REAL, "
         for p in range(len(result_params)):
-            p_schema = result_params[p].strip() + ' '
-            if (is_int(result_params_sample[p])):
-                p_schema += "INTEGER"
-            elif (is_float(result_params_sample[p])):
-                p_schema += "REAL"
-            else:
-                p_schema += "TEXT"
-
+            p_schema = result_params[p].strip() + ' ' + type_map.get(type(convert_strictest(result_params_sample[p])), "TEXT")
             p_schema += ", "
             create_table_command += p_schema
 
@@ -144,6 +165,20 @@ def create_table(params, db, task_table_name):
         print(create_table_command)
         cursor = db.cursor()
         cursor.execute(create_table_command)
+
+        # reinitialize tracked columns for newly created table
+        initialize_tracked_columns(params, db)
+
+
+def initialize_tracked_columns(params, db):
+    cursor = db.cursor()
+    cursor.execute("PRAGMA table_info(%s)" % params.task_table_name)
+    column_info = cursor.fetchall()
+    column_names = set()
+    for info in column_info:
+        column_names.add(info[1])
+    setattr(params, 'tracked_columns', column_names)
+
 
 
 # generating program parameters
@@ -225,7 +260,9 @@ def check_result_exists(params, run):
             task_name = params.task_name,
             run_number = get_trailing_num(run))
         print(run, " called ", parsed_call)
-        call(parsed_call.split())
+        parsed_call = shlex.split(parsed_call)
+        parsed_call[0] = os.path.expanduser(parsed_call[0])
+        call(parsed_call)
     else:
         print(run, " OK")
 
@@ -272,6 +309,16 @@ def convert_strictest(s):
             return float(s)
         except ValueError:
             return s
+
+
+def add_column_to_table(params, db, column_name, sample_val):
+    cursor = db.cursor()
+    col_type = type_map.get(type(convert_strictest(sample_val)), "TEXT")
+    cursor.execute("ALTER TABLE {table} ADD COLUMN {col} {type}".format(
+        table=params.task_table_name, col=column_name, type=col_type))
+    params.tracked_columns.add(column_name)
+
+
 
 if __name__ == "__main__":
     main()

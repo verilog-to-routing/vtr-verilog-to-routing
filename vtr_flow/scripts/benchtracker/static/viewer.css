@@ -1,0 +1,173 @@
+body {
+	margin:0;
+	font-family:verdana;
+}
+html {
+	overflow-y:scroll;
+}
+select {
+	color:white;
+    margin-top: 10%;
+    background: transparent;
+    width: 100%;
+    padding: 5px;
+    font-size: 16px;
+    border: 0px solid #ccc;
+    height: 10%;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+select:focus {
+    outline: 0;
+}
+.box_wrapper {
+	height:350px;
+	overflow:hidden;
+	width:20%;
+	display:inline-block;
+	margin-right:-18px;
+	font-size:16px;
+	position:relative;
+}
+.filter_wrapper {
+}
+.selection_box {
+	height:100%;
+	width:100%;
+	overflow-y:scroll;
+	overflow-x:hidden;
+	padding-right: 20px;
+}
+
+.task {
+	display:block;
+	text-decoration: none;
+	text-align:center;
+	line-height:1.5em;
+	cursor:pointer;
+	font-family:verdana;
+}
+.sel_task {
+	font-weight:bold;
+	color:white;
+	background-color:#5A4A3A;
+}
+
+
+.param {
+	padding-left:10px;
+	display:block;
+	line-height:1.5em;
+	cursor:pointer;
+}
+.sel_param {
+	font-weight:bold;
+	background-color:#3B3738;
+}
+
+
+.filter {
+	background-color:#3B3738;
+}
+.filter_val input[type="text"] {
+  padding: 10px;
+  background-color:transparent;
+  border-width:0px;
+  color:white;
+}
+
+
+.in {
+	height:59%;
+}
+.close {
+	font-weight:bold;
+	color:white;
+	top:10px;
+	right:30px;
+	position:absolute;
+	cursor:pointer;
+}
+
+.box_header {
+	text-align:center;
+}
+#selection_bar {
+	width:100%;
+	overflow-y:hidden;
+	overflow-x:auto;
+	font-size:0;
+	background-color:#3B3738;
+}
+#task_select {
+	background-color:white;
+}
+#x_box {
+	background-color:#5A4A3A;
+	color:white;
+}
+#y_box {
+	background-color:#5A4A3A;
+	color:white;
+}
+#add_filter {
+	cursor: pointer;
+	background-color: #EA7B30;
+	text-align:center;
+	width:100px;
+	visibility:hidden;
+}
+#display_canvas {
+	left:0px;
+}
+
+#generate_plot {
+	width:70%;
+	text-align: center
+}
+.attractive_button {
+	background-color:#f9f9f9;
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid #dcdcdc;
+	display:inline-block;
+	cursor:pointer;
+	color:#666666;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 24px;
+	text-decoration:none;
+}
+.attractive_button:hover {
+	background-color:#e9e9e9;
+}
+.attractive_button:active {
+	position:relative;
+	top:1px;
+}
+svg {
+  font: 10px sans-serif;
+}
+
+rect {
+  fill: #ddd;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #fff;
+}
+.line {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) { 
+	.filter_param option, .filter_sel option {
+		background-color: #3B3738;
+	}
+}
