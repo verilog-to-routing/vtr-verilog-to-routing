@@ -2,7 +2,6 @@
 
 from __future__ import print_function, division
 import sys
-import re
 from subprocess import call
 import os.path
 import shlex
@@ -11,6 +10,9 @@ import textwrap
 import sqlite3
 import socket   # for hostname
 import getpass  # for username
+from util import (walk_runs, get_trailing_num, get_result_file, 
+    get_task_table_name, immediate_subdir, natural_sort,
+    is_int, is_float, convert_strictest)
 
 nullval = '-1'
 type_map = {int: "INT", float: "REAL", str: "TEXT"}
@@ -272,20 +274,6 @@ def load_next_task(params):
     setattr(params, 'task_table_name', get_task_table_name(params))
     return params
 
-# working on the task directory
-def sort_runs(runs):
-    natural_sort(runs)
-
-def walk_runs(params, operation, select=sort_runs):
-    """walk the selected run# directories and apply operation on each"""
-    runs = [run for run in immediate_subdir(params.task_dir) if run.startswith(params.run_prefix)]
-    # select how to and which runs to use for a certain range
-    select(runs)
-    if not runs:
-        print("no {}s in {}".format(params.run_prefix, params.task_dir))
-        sys.exit(1)
-    for run in runs:
-        operation(params, run)
 
 
 # walk operations; all take params and run as arguments
@@ -302,58 +290,12 @@ def check_result_exists(params, run):
     else:
         print(run, " OK")
 
-
-    
-# utilities
-def natural_sort(l):
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
-    l.sort(key=alphanum_key)
-
-def get_result_file(params, run):
-    return os.path.join(params.task_dir, run, params.result_file)
-
-def get_task_table_name(params):
-    return '[' + "|".join([params.task_name, socket.gethostname(), getpass.getuser(), params.task_path]) + ']'
-
-def immediate_subdir(root):
-    return [name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))]
-
-def get_trailing_num(s):
-    match = re.search(r'\d+$', s)
-    return int(match.group()) if match else None
-
-def is_type_of(s, convert):
-    try:
-        convert(s)
-        return True
-    except ValueError:
-        return False
-
-def is_int(s):
-    return is_type_of(s, int)
-
-def is_float(s):
-    return is_type_of(s, float)
-
-# try converting to numerical types using the strictest converters first
-def convert_strictest(s):
-    try:
-        return int(s)
-    except ValueError:
-        try:
-            return float(s)
-        except ValueError:
-            return s
-
-
 def add_column_to_table(params, db, column_name, sample_val):
     cursor = db.cursor()
     col_type = type_map.get(type(convert_strictest(sample_val)), "TEXT")
     cursor.execute("ALTER TABLE {table} ADD COLUMN {col} {type}".format(
         table=params.task_table_name, col=column_name, type=col_type))
     params.tracked_columns.add(column_name)
-
 
 
 if __name__ == "__main__":

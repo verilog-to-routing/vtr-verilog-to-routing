@@ -4,9 +4,31 @@ from flask import Flask, jsonify, request, url_for, make_response, render_templa
 import sqlite3
 import interface_db as d
 import urlparse
+import argparse
+import textwrap
 import functools    # need to wrap own decorators to comply with flask views
 
 app = Flask(__name__)
+database = "results.db" # default; changed by argument
+def parse_args(ns=None):
+    """parse arguments from command line and return as namespace object"""
+    parser = argparse.ArgumentParser(
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description=textwrap.dedent("""\
+            serve a central database with benchmark information
+            
+        Generated database:
+            Database should be created by populate_db.py, with each task
+            organized as a table. A task is a collection of related benchmarks
+            that are commonly run together."""),
+            usage="%(prog)s [OPTIONS]")
+
+    parser.add_argument("-d", "--database",
+            default="results.db",
+            help="name of database to store results in; default: %(default)s")
+    params = parser.parse_args(namespace=ns)
+    database = params.database
+    return params
 
 def catch_operation_errors(func):
     @functools.wraps(func)
@@ -24,7 +46,7 @@ def catch_operation_errors(func):
 @app.route('/')
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
-    return jsonify({'tasks':d.list_tasks()})
+    return jsonify({'tasks':d.list_tasks(database)})
 
 @app.route('/param', methods=['GET'])
 @catch_operation_errors
@@ -33,7 +55,7 @@ def get_param_desc():
     param = request.args.get('p')
     mode = request.args.get('m', 'range')   # by default give ranges, overriden if param is text
     try:
-        (param_type, param_val) = d.describe_param(param, mode, tasks)
+        (param_type, param_val) = d.describe_param(param, mode, tasks, database)
     except ValueError:
         return jsonify({'status': 'Unsupported type mode! ({})'.format(mode)})
     return jsonify({'status': 'OK', 
@@ -46,7 +68,7 @@ def get_param_desc():
 @catch_operation_errors
 def get_shared_params():
     tasks = parse_tasks()
-    params = d.describe_tasks(tasks)
+    params = d.describe_tasks(tasks, database)
     return jsonify({'status': 'OK', 'tasks':tasks, 'params': params})
 
 @app.route('/data', methods=['GET'])
@@ -71,7 +93,7 @@ def get_filtered_data():
 
     tasks = parse_tasks()
 
-    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks)
+    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks, database)
     data = [[tuple(row) for row in task] for task in data]
 
     return jsonify({'status': 'OK', 
@@ -81,7 +103,7 @@ def get_filtered_data():
 
 @app.route('/view')
 def get_view():
-    tasks = {task_name: task_context for (task_name, task_context) in [t.split('|',1) for t in d.list_tasks()]}
+    tasks = {task_name: task_context for (task_name, task_context) in [t.split('|',1) for t in d.list_tasks(database)]}
     queried_tasks = parse_tasks()
     x = y = filters = ""
     # only pass other argument values if valid tasks selected
@@ -106,7 +128,7 @@ def not_found(error):
 def parse_tasks():
     tasks = request.args.getlist('t')
     if tasks and tasks[0].isdigit():
-        all_tasks = d.list_tasks()
+        all_tasks = d.list_tasks(database)
         tasks = [all_tasks[int(t)] for t in tasks]
     return tasks
 
@@ -152,4 +174,5 @@ def parse_filters(verbose=False):
 
 
 if __name__ == '__main__':
+    parse_args()
     app.run(debug=True)
