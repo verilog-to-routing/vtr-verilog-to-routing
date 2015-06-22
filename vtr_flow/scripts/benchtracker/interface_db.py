@@ -2,11 +2,13 @@
 
 import sqlite3
 import os.path
+from os import makedirs
 import sys
 import re
 from subprocess import call
 import argparse
 import textwrap
+import csv
 
 def list_tasks(dbname = "results.db"):
     """Return a list of all task names in a database"""
@@ -51,7 +53,7 @@ def retrieve_data(x_param, y_param, filters, tasks, dbname = "results.db"):
     db = connect_db(dbname)
     data = []
 
-    cols_to_select = [x_param, y_param]
+    cols_to_select = [x_param.split()[0], y_param.split()[0]]
 
     # always pass shared primary key information (they define a distinct benchmark)
     primary_keys = []
@@ -94,6 +96,27 @@ def retrieve_data(x_param, y_param, filters, tasks, dbname = "results.db"):
         data.append(cursor.fetchall());
         
     return cols_to_select, data
+
+def export_data_csv(selected_cols, data, tasks, dir = "benchtracker_data"):
+    """
+    Exports retrieved data to a directory containing csv files.
+
+    Each task will be a separate csv file, with their full task table name (with '/' replaced with '.').
+    The first row will be the header for the selected columns, the rest will be values.
+    """
+    if not os.path.exists(dir):
+        makedirs(dir)
+    for t in range(len(tasks)):
+        with open("".join([dir, '/', tasks[t].replace('/','.'), '.csv']), 'w') as csvf:
+            writer = csv.writer(csvf)
+            # header information
+            writer.writerow(selected_cols)
+
+            task_data = data[t]
+            # writerows won't work on sqlite3 rows
+            for row in task_data:
+                writer.writerow(tuple(row))
+
 
 
 def describe_param(param, mode, tasks, dbname = "results.db"):

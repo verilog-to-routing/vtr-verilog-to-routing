@@ -6,10 +6,6 @@
 // 5. save graph
 // 6. fix the offline plotter
 
-//PROBLEM:
-// 1. have to make sure x and y are numbers --> convert string
-// 2. if a filter is overlapping with the x / y axis, then you should remove it from the params list
-
 // Some const
 // if x axis is an element of timeParam, then the default behavior is to gmean everything
 var timeParam = ['run', 'parsed_date'];
@@ -90,6 +86,12 @@ function defaultToGmeanTimePlot() {
 
         simple_plot(raw_data.params, seriesXY, [], xNameMap[i], i, 'taskTitle');
     }
+    d3.select('#chart').append('div').attr('class', 'customizePlotContainer')
+      .append('button').attr('type', 'button').attr('class', 'attractive_button')
+      .attr('id', 'customizePlot').text('customize plot');
+    $('#customizePlot').click(function () {d3.select('#chart').html(''); 
+                                           generate_overlay_selector();});
+
 }
 /*
  * generate the default plot when x is not time
@@ -127,7 +129,7 @@ function defaultToGmeanSubPlot() {
             var newRawData = [];
             var newParams = [];
             for (var i in raw_data.params) {
-                if (raw_data.params[i] != 'circuit' ) {
+                if (raw_data.params[i] != defaultGmean ) {
                     newParams.push(raw_data.params[i]);
                 }
             }
@@ -154,10 +156,11 @@ function defaultToGmeanSubPlot() {
             var t = d3.select('#chart').append('h3').attr('class', 'task_title');
             t.append('span').attr('class', 'h_grey').append('text').text('Task Name: ');
             t.append('span').attr('class', 'h_dark').append('text').text(raw_data.tasks[k]);
+            var s = d3.select('#chart').append('h4').attr('class', 'task_title');
+            s.append('span').attr('class', 'h_grey').append('text').text('Geo Mean Axis: ');
+            s.append('span').attr('class', 'h_dark').append('text').text(defaultGmean);
+
             for (j in newData) {
-                console.log('xNameMap[k]');
-                console.log('k = ', k);
-                console.log(xNameMap[k]);
                 simple_plot(newParams, newData[j], newOverlayList, xNameMap[k], k, 'normalTitle');
             }
         }
@@ -209,22 +212,34 @@ function generate_overlay_selector() {
     for (var i = 2; i < choice.length; i ++ ) {
         //var label = form.append('label').attr('class', 'param_label');
         formGmean.append('input').attr('type', 'checkbox')
-                 .attr('value', choice[i]).attr('id', 'gip-'+choice[i]).attr('index', i-2);
+                 .attr('value', choice[i]).attr('id', 'gip-'+choice[i]).attr('index', i-2).on('change', function(){updateLegendCheckBox(this.id);});
         formGmean.append('label').attr('for', 'gip-'+choice[i]).text(choice[i]).append('br');
     }
 
+    function updateLegendCheckBox(gid) {
+        var oid = gid.substring(4, gid.length);
+        if (d3.select('#'+gid).property('checked')) {
+            $('#oip-'+oid).prop('checked', false);
+            d3.select('#oip-'+oid).attr('disabled', 'on');
+            d3.select('#olabel-'+oid).attr('style', 'color: rgb(188,188,188)');
+        } else {
+            d3.select('#oip-'+oid).attr('disabled', null);
+            d3.select('#olabel-'+oid).attr('style', 'color: rgb(0,0,0)');
+        }
+    }
     // choose overlay axis
+    // TODO: disable the selection by setting the attr value 'disabled' = 'on'
     var formOverlay = selector_overlay_div.append('form').attr('class', 'custom_plot_form').attr("id", "overlay_options").attr('action', '').append("fieldset").attr('width', 600);
     formOverlay.append('legend').style('font-weight', 'bold').text('select legend:');
     for (var i = 2; i < choice.length; i ++ ) {
         //var label = form.append('label').attr('class', 'param_label');
         formOverlay.append('input').attr('type', 'checkbox')
                    .attr('value', choice[i]).attr('id', 'oip-'+choice[i]).attr('index', i-2);
-        formOverlay.append('label').attr('for', 'oip-'+choice[i]).text(choice[i]).append('br');
+        formOverlay.append('label').attr('for', 'oip-'+choice[i]).attr('id', 'olabel-'+choice[i]).text(choice[i]).append('br');
     }
     // add plot button
     d3.select('#get_cus_plot_button')
-      .append('button').attr('type', 'button').attr('id', 'get_customer_plot').text('Get Plot!');
+      .append('button').attr('type', 'button').attr('id', 'get_customer_plot').text('Get Plot !');
     $('#get_customer_plot').click(function () { gmean_list = [];
                                                 var checkbox = formGmean.selectAll('input', '[type="checkbox"]');
                                                 checkbox.each(function () {
@@ -241,11 +256,6 @@ function generate_overlay_selector() {
                                                                                overlay_list.push(d3.select(this).attr('index'));
                                                                            }
                                                                          });
-                                                console.log('>>>>>>>');
-                                                console.log('gmean_list');
-                                                console.log(gmean_list);
-                                                console.log('overlay_list');
-                                                console.log(overlay_list);
                                                 plot_generator();} );
 }
 /*
@@ -371,6 +381,10 @@ function plot_generator() {
         var t = d3.select('#chart').append('h3').attr('class', 'task_title');
         t.append('span').attr('class', 'h_grey').text('Task Name: ');
         t.append('span').attr('class', 'h_dark').text(raw_data.tasks[i]);
+        var s = d3.select('#chart').append('h4').attr('class', 'task_title');
+        s.append('span').attr('class', 'h_grey').text('Geo Mean Axes: ');
+        s.append('span').attr('class', 'h_dark').text(_.map(gmean_list, function(d){return raw_data.params[Number(d)+2];}).join());
+
         for (var k in grouped_series) {
             simple_plot(raw_data.params, grouped_series[k], overlay_list, xNameMap[i], i, 'normalTitle');
         }
@@ -452,6 +466,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         }
         lineInfo.push({values: lineVal, key: k});
     }
+    lineInfo = _.sortBy(lineInfo, 'key');
     // plot
     // width & heigth is the size of the actual plotting area
     var width = plotSize['width'] - plotMargin['left'] - plotMargin['right'];
@@ -554,6 +569,17 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
             .attr('fill', function() {return color(lineInfo[i]['key']);})
             .attr('transform', function(d) {return 'translate(' + x(d['x'])+ ',' + y(d['y']) + ')'; });
     }
+    /* 
+    // TODO: add display coordination function
+    var focus = svg.append('g').attr('class', 'focus').style('display', 'none');
+    focus.append('circle').attr('r', 4.5);
+    focus.append('x', 9).attr('dy', '.35em');
+
+    svg.append('rect').attr('class', 'overlay').attr('width', width).attr('height', height)
+       .on('mouseover', function() {focus.style('display', null);})
+       .on('mouseout', function() {focus.style('display', 'none'); })
+       .on('mousemove', mousemove);
+    */ 
     // .............
     // add legend
     if (lineInfo.length > 1 || lineInfo[0]['key'] != '') {

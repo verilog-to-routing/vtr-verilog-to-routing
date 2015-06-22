@@ -7,9 +7,24 @@ import urlparse
 import argparse
 import textwrap
 import functools    # need to wrap own decorators to comply with flask views
+try:
+    from flask.ext.cors import CORS  # The typical way to import flask-cors
+except ImportError:
+    # Path hack allows examples to be run without installation.
+    import os
+    parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    os.sys.path.insert(0, parentdir)
+
+    from flask.ext.cors import CORS
+
+
 
 app = Flask(__name__)
+CORS(app)
 database = "results.db" # default; changed by argument
+
+
+
 def parse_args(ns=None):
     """parse arguments from command line and return as namespace object"""
     parser = argparse.ArgumentParser(
@@ -175,4 +190,5 @@ def parse_filters(verbose=False):
 
 if __name__ == '__main__':
     parse_args()
-    app.run(debug=True)
+    #app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0')

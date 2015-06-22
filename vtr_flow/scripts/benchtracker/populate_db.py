@@ -78,6 +78,7 @@ consider running with --clean to remake task table".format(row[0], highest_run))
             result_params.extend(res.readline().split('\t'))
             if result_params[-1] == '\n':
                 result_params.pop()
+            result_params = [p.strip() for p in result_params]
 
             pre_sample_pos = res.tell()
             result_params_sample = res.readline().split('\t')
@@ -98,6 +99,16 @@ consider running with --clean to remake task table".format(row[0], highest_run))
                 result_params_val.extend(line.split('\t'))
                 if result_params_val[-1] == '\n':
                     result_params_val.pop()
+                # something must be wrong here
+                if len(result_params_val) > len(result_params):
+                    print("There are {} values for only {} parameters in run {}; \
+                        skipping run".format(len(result_params_val), len(result_params), run_number))
+                    # skip this run
+                    return
+
+                # for when the last column value is the empty string
+                while len(result_params_val) < len(result_params):
+                    result_params_val.append('')
 
                 rows_to_add.append(tuple(convert_strictest(param) if param != nullval else None for param in result_params_val))
 
@@ -109,6 +120,7 @@ consider running with --clean to remake task table".format(row[0], highest_run))
                 param_placeholders)
             cursor = db.cursor()
             cursor.executemany(insert_rows_command, rows_to_add)
+
 
 
     walk_runs(params, add_run_to_db, check_runs_match_table)
@@ -156,7 +168,7 @@ def create_table(params, db, task_table_name):
         primary_keys = "PRIMARY KEY({},".format(params.run_prefix) # run always considered primary key
         for primary_key in params.key_params:
             if primary_key not in result_params:
-                print("{} does not exist in result file".format(primary_key))
+                print("{} does not exist in result file of run 1".format(primary_key))
                 sys.exit(3)
             primary_keys += primary_key
             primary_keys += ','
@@ -182,6 +194,8 @@ def initialize_tracked_columns(params, db):
     for info in column_info:
         column_names.add(info[1])
     setattr(params, 'tracked_columns', column_names)
+    print('tracked params: ', end='')
+    print(params.tracked_columns)
 
 
 

@@ -184,6 +184,9 @@ fieldset {
     position: relative;
     left: 50%;
 }
+.button_container {
+    height: 100;
+}
 .attractive_button {
 	background-color:#444;
 	-moz-border-radius:6px;
@@ -208,8 +211,9 @@ fieldset {
 }
 svg {
   font: 10px sans-serif;
+  overflow-x: auto;
+  overflow-y: auto;
 }
-
 rect {
   fill: #f0f0f0;
 }
