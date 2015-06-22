@@ -222,7 +222,7 @@ def parse_args(ns=None):
     parser.add_argument("-s", "--parse_script",
             default="echo parsed result file not found {run_number} for {task_name}",
             help="bash command string to run if parsed file not found;\
-                use \{run_number\} and \{task_name\} to retrieve run information;\
+                use {run_number} and {task_name} to retrieve run information;\
                 default: %(default)s")
     parser.add_argument("-d", "--database",
             default="results.db",

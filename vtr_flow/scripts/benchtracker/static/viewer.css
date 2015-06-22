@@ -124,20 +124,75 @@ select:focus {
 #display_canvas {
 	left:0px;
 }
-
+.custom_pannel {
+    display: flex;
+}
+.task_title {
+    margin-left: 50;
+}
+.h_grey {
+    color: #999;
+}
+.h_dark {
+    color: #000;
+}
+.custom_plot_selection_box {
+    margin-left: auto;
+    margin-right: auto;
+	overflow:hidden;
+	width:40%;
+	position:relative;
+}
+#gmean_select {
+    float: left;
+    height: 110px;
+}
+#overlay_select {
+    float: left;
+    height: 110px;
+}
+.custom_plot_form {
+    height: 85;
+}
+fieldset {
+    height: 60;
+    overflow-x: auto;
+    overflow-y: auto;
+}
 #generate_plot {
 	width:70%;
 	text-align: center
 }
+#get_cus_plot_button {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100px;
+    height: 110px;
+    float: left;
+}
+#get_customer_plot {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 9;
+    width: 100%;
+    height: 70;
+    float: left;
+}
+#generate_plot {
+    width: 300;
+    height: 50;
+    position: relative;
+    left: 50%;
+}
 .attractive_button {
-	background-color:#f9f9f9;
+	background-color:#444;
 	-moz-border-radius:6px;
 	-webkit-border-radius:6px;
 	border-radius:6px;
 	border:1px solid #dcdcdc;
 	display:inline-block;
 	cursor:pointer;
-	color:#666666;
+	color:#999;
 	font-family:Arial;
 	font-size:15px;
 	font-weight:bold;
@@ -156,7 +211,7 @@ svg {
 }
 
 rect {
-  fill: #ddd;
+  fill: #f0f0f0;
 }
 
 .axis path,
@@ -167,6 +222,16 @@ rect {
 .line {
     fill: none;
     stroke-width: 1.5px;
+}
+.customizePlotContainer {
+    
+}
+#customizePlot {
+    width: 150;
+    height: 50;
+    font-size: 16;
+    position: relative;
+    left: 50%;
 }
 
 @media screen and (-webkit-min-device-pixel-ratio:0) { 
