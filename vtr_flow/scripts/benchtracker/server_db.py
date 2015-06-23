@@ -1,12 +1,14 @@
 #!/usr/bin/python
 # web service, so return only JSON (no HTML)
-from flask import Flask, jsonify, request, url_for, make_response, render_template
+from flask import Flask, jsonify, request, url_for, make_response, render_template, send_file
 import sqlite3
 import interface_db as d
 import urlparse
 import argparse
 import textwrap
 import functools    # need to wrap own decorators to comply with flask views
+import zipfile
+from io import BytesIO
 try:
     from flask.ext.cors import CORS  # The typical way to import flask-cors
 except ImportError:
@@ -45,6 +47,8 @@ def parse_args(ns=None):
     database = params.database
     return params
 
+
+
 def catch_operation_errors(func):
     @functools.wraps(func)
     def task_checker(*args, **kwargs):
@@ -71,8 +75,8 @@ def get_param_desc():
     mode = request.args.get('m', 'range')   # by default give ranges, overriden if param is text
     try:
         (param_type, param_val) = d.describe_param(param, mode, tasks, database)
-    except ValueError:
-        return jsonify({'status': 'Unsupported type mode! ({})'.format(mode)})
+    except ValueError as e:
+        return jsonify({'status': 'Parameter value error: {}'.format(e)})
     return jsonify({'status': 'OK', 
     'tasks':tasks, 
     'param': param,
@@ -89,32 +93,38 @@ def get_shared_params():
 @app.route('/data', methods=['GET'])
 @catch_operation_errors
 def get_filtered_data():
-    # split to get name only in case type is also given
-    x_param = request.args.get('x').split()[0]
-    y_param = request.args.get('y').split()[0]
-    print(x_param, y_param);
+    (exception, payload) = parse_data()
+    if exception:
+        return payload
+    else:
+        (tasks, params, data) = payload
+        return jsonify({'status': 'OK', 
+            'tasks':tasks, 
+            'params':params,
+            'data':data})
 
-    if not x_param:
-        return jsonify({'status': 'Missing x parameter!'}) 
-    if not y_param:
-        return jsonify({'status': 'Missing y parameter!'}) 
 
-    try:
-        (filtered_params, filters) = parse_filters()
-    except IndexError:
-        return jsonify({'status': 'Incomplete filter arguments!'})
-    except ValueError:
-        return jsonify({'status': 'Unsupported filter method!'})
 
-    tasks = parse_tasks()
+@app.route('/csv', methods=['GET'])
+@catch_operation_errors
+def get_csv_data():
+    """Return a zipped archive of csv files for selected tasks"""
+    (exception, payload) = parse_data()
+    if exception:
+        return payload
+    else:
+        (tasks, params, data) = payload
+        memory_file = BytesIO()
+        with zipfile.ZipFile(memory_file, 'a', zipfile.ZIP_DEFLATED) as zf:
+            t = 0
+            for csvf in d.export_data_csv(params, data):
+                zf.writestr("benchmark_results/" + tasks[t].replace('/','.'), csvf.getvalue())
+                t += 1
 
-    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks, database)
-    data = [[tuple(row) for row in task] for task in data]
+        # prepare to send over network
+        memory_file.seek(0)
+        return send_file(memory_file, attachment_filename="benchmark_results.zip", as_attachment=True)
 
-    return jsonify({'status': 'OK', 
-        'tasks':tasks, 
-        'params':params,
-        'data':data})
 
 @app.route('/view')
 def get_view():
@@ -187,8 +197,37 @@ def parse_filters(verbose=False):
 
     return filter_params,filters
 
+def parse_data():
+    """
+    Parses request for data and returns a 2-tuple payload.
+
+    First item is True for an exception occurance, with the 2nd item being the json response for error.
+    Else false for no exception occruance, with second item being a 3-tuple.
+    """
+    # split to get name only in case type is also given
+    x_param = request.args.get('x')
+    y_param = request.args.get('y')
+
+    if not x_param:
+        return (True, jsonify({'status': 'Missing x parameter!'})) 
+    if not y_param:
+        return (True, jsonify({'status': 'Missing y parameter!'})) 
+    x_param = x_param.split()[0]
+    y_param = y_param.split()[0]
+
+    try:
+        (filtered_params, filters) = parse_filters()
+    except IndexError:
+        return (True, jsonify({'status': 'Incomplete filter arguments!'}))
+    except ValueError:
+        return (True, jsonify({'status': 'Unsupported filter method!'}))
+
+    tasks = parse_tasks()
+
+    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks, database)
+    return (False, (tasks, params, data))
+
 
 if __name__ == '__main__':
     parse_args()
-    #app.run(host='0.0.0.0')
     app.run(host='0.0.0.0')

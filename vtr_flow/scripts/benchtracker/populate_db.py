@@ -78,7 +78,7 @@ consider running with --clean to remake task table".format(row[0], highest_run))
             result_params.extend(res.readline().split('\t'))
             if result_params[-1] == '\n':
                 result_params.pop()
-            result_params = [p.strip() for p in result_params]
+            result_params = ["".join(('\"',p.strip(),'\"')) for p in result_params]
 
             pre_sample_pos = res.tell()
             result_params_sample = res.readline().split('\t')
@@ -159,7 +159,7 @@ def create_table(params, db, task_table_name):
         # time is in seconds since epoch
         create_table_command += "parsed_date REAL, "
         for p in range(len(result_params)):
-            p_schema = result_params[p].strip() + ' ' + type_map.get(type(convert_strictest(result_params_sample[p])), "TEXT")
+            p_schema = "".join(('\"',result_params[p].strip(),'\" ', type_map.get(type(convert_strictest(result_params_sample[p])), "TEXT")))
             p_schema += ", "
             create_table_command += p_schema
 
@@ -192,7 +192,7 @@ def initialize_tracked_columns(params, db):
     column_info = cursor.fetchall()
     column_names = set()
     for info in column_info:
-        column_names.add(info[1])
+        column_names.add('\"' + info[1] + '\"')
     setattr(params, 'tracked_columns', column_names)
     print('tracked params: ', end='')
     print(params.tracked_columns)

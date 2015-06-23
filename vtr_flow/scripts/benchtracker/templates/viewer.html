@@ -4,8 +4,10 @@
 	<link rel="stylesheet" type="text/css" href="/static/viewer.css" />
 	<script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script type="text/javascript" src="http://gabelerner.github.io/canvg/rgbcolor.js"></script> 
+    <script type="text/javascript" src="http://gabelerner.github.io/canvg/StackBlur.js"></script>
+    <script type="text/javascript" src="http://gabelerner.github.io/canvg/canvg.js"></script> 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.css" rel="stylesheet" type="text/css"></link>
     <script src="/static/plotter.js"></script>
 	<script src="/static/viewer.js"></script>
@@ -29,23 +31,29 @@
     	<h5 class="box_header">y parameter</h5>
     	<form id="y_param"></form>
     </div> </div>
-    <div class="box_wrapper" id="add_filter"><br><br><br><br><h1>+</h1><br>filter</div>
+    <div class="box_wrapper page_divider" id="add_filter"><br><br><br><br><h1>+</h1><br>filter</div>
 </div>
 
 <div id="display_canvas">
-    <div class='button_container'>
-	    <button class='attractive_button' id="generate_plot">Enter Plotter</button>
+	<div class="options_container">
+    <a class='page_divider divider_options' id="generate_plot">Generate plot</a>
+    <a class='page_divider divider_options' id="generate_csv">Download as CSV</a>
+    <a class='page_divider divider_options' id="get_query">Get query string</a>
     </div>
-    <div class='custom_pannel'>
-        <div class="custom_plot_selection_box" id="gmean_select">
-        </div>
-        <div class="custom_plot_selection_box" id="overlay_select">
-        </div>
-        <div class='custom_plot_selection_box' id='get_cus_plot_button'>
-        </div>
+    <div id="plotter_container">
+	    <a class='page_divider plotter_options' id='customizePlot'>Customize plot</a>
+	    <div class='custom_pannel'>
+	        <div class="custom_plot_selection_box" id="gmean_select">
+	        </div>
+	        <div class="custom_plot_selection_box" id="overlay_select">
+	        </div>
+	        <div class='custom_plot_selection_box' id='get_cus_plot_button'>
+	        </div>
+	    </div>
     </div>
     <div id="chart">
     </div>
+    <canvas id='canvas' width='1000px' height='600px'></canvas>
 </div>
 
 </body>
@@ -75,7 +83,7 @@ report_debug(x_param);
 
 window.onload = function() {
 
-{% if filters %}
+{% if t and filters %}
 	preload_filters();
 {% endif %}
 

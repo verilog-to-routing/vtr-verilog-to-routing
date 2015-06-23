@@ -19,8 +19,8 @@ var gmean_list = [];
 var raw_data = null;
 var gmean_data = null;
 var range = [];
-var plotSize = {'width': 670, 'height': 500};
-var plotMargin = {'left': 100, 'right': 140, 'top': 70, 'bottom': 70};
+var plotSize = {'width': 530, 'height': 500};
+var plotMargin = {'left': 100, 'right': 5, 'top': 70, 'bottom': 70};
 // a list of svg elements in d3 type: used for future plot manipulation
 var chartList = [];
 // xNameMap is only set when value in x axis is string
@@ -42,6 +42,7 @@ function plotter_setup(data) {
     gmean_list = [];
     range = [];
     xNameMap = [];
+    document.getElementById('customizePlot').style.visibility = 'visible';
     d3.select('#generate_plot').html('');
     d3.select('#generate_plot').text('Reset Plotter');
     d3.select('#chart').html('');
@@ -86,10 +87,17 @@ function defaultToGmeanTimePlot() {
 
         simple_plot(raw_data.params, seriesXY, [], xNameMap[i], i, 'taskTitle');
     }
+    /*
     d3.select('#chart').append('div').attr('class', 'customizePlotContainer')
       .append('button').attr('type', 'button').attr('class', 'attractive_button')
       .attr('id', 'customizePlot').text('customize plot');
+    */
+    /*
+    d3.select('#buttonContainer').append('button').attr('type', 'button').attr('class', 'attractive_button')
+      .attr('id', 'customizePlot').text('Customize Plot');
+    */
     $('#customizePlot').click(function () {d3.select('#chart').html(''); 
+                                           document.getElementById('customizePlot').style.visibility = 'hidden';
                                            generate_overlay_selector();});
 
 }
@@ -164,10 +172,17 @@ function defaultToGmeanSubPlot() {
                 simple_plot(newParams, newData[j], newOverlayList, xNameMap[k], k, 'normalTitle');
             }
         }
+        /*
         d3.select('#chart').append('div').attr('class', 'customizePlotContainer')
           .append('button').attr('type', 'button').attr('class', 'attractive_button')
           .attr('id', 'customizePlot').text('customize plot');
+        */
+        /*
+        d3.select('#buttonContainer').append('button').attr('type', 'button').attr('class', 'attractive_button')
+          .attr('id', 'customizePlot').text('Customize Plot');
+        */
         $('#customizePlot').click(function () {d3.select('#chart').html(''); 
+                                               document.getElementById('customizePlot').style.visibility = 'hidden';
                                                generate_overlay_selector();});
     }
 }
@@ -230,7 +245,7 @@ function generate_overlay_selector() {
     // choose overlay axis
     // TODO: disable the selection by setting the attr value 'disabled' = 'on'
     var formOverlay = selector_overlay_div.append('form').attr('class', 'custom_plot_form').attr("id", "overlay_options").attr('action', '').append("fieldset").attr('width', 600);
-    formOverlay.append('legend').style('font-weight', 'bold').text('select legend:');
+    formOverlay.append('legend').style('font-weight', 'bold').text('select line series:');
     for (var i = 2; i < choice.length; i ++ ) {
         //var label = form.append('label').attr('class', 'param_label');
         formOverlay.append('input').attr('type', 'checkbox')
@@ -238,6 +253,7 @@ function generate_overlay_selector() {
         formOverlay.append('label').attr('for', 'oip-'+choice[i]).attr('id', 'olabel-'+choice[i]).text(choice[i]).append('br');
     }
     // add plot button
+    d3.select('#get_cus_plot_button').html('');
     d3.select('#get_cus_plot_button')
       .append('button').attr('type', 'button').attr('id', 'get_customer_plot').text('Get Plot !');
     $('#get_customer_plot').click(function () { gmean_list = [];
@@ -383,8 +399,12 @@ function plot_generator() {
         t.append('span').attr('class', 'h_dark').text(raw_data.tasks[i]);
         var s = d3.select('#chart').append('h4').attr('class', 'task_title');
         s.append('span').attr('class', 'h_grey').text('Geo Mean Axes: ');
-        s.append('span').attr('class', 'h_dark').text(_.map(gmean_list, function(d){return raw_data.params[Number(d)+2];}).join());
-
+        var temp = _.map(gmean_list, function(d){return raw_data.params[Number(d)+2];}).join();
+        if (temp == '') {
+            s.append('span').attr('class', 'h_dark').text('None');
+        } else {
+            s.append('span').attr('class', 'h_dark').text(temp);
+        }
         for (var k in grouped_series) {
             simple_plot(raw_data.params, grouped_series[k], overlay_list, xNameMap[i], i, 'normalTitle');
         }
@@ -511,7 +531,8 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         .on("zoom", zoomed);
     // ...............
     // assemble
-    var svg = d3.select('#chart').append('svg')
+    var chart = d3.select('#chart').append('div').attr('class', 'chart_container');
+    var svg = chart.append('div').attr('class', 'canvas_container').append('svg')
         .attr("width", width + plotMargin['left'] + plotMargin['right'])
         .attr("height", height + plotMargin['top'] + plotMargin['bottom'])
         .attr('shape-rendering', 'geometricPrecision')
@@ -520,7 +541,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     if (xNM.values.length == 0) {
         svg.call(zoom);
     }
-
     var canvas = svg.append("rect")
         .attr("width", width)
         .attr("height", height);
@@ -582,10 +602,14 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     */ 
     // .............
     // add legend
+    // the svg size should be chosen to fit the text
+    var svgWidth = 0;
+    var svgHeight = 0;
+    var svgLegend = chart.append('div').attr('class', 'legend_container').append('svg'); //.attr('width', 130).attr('height', 500);
     if (lineInfo.length > 1 || lineInfo[0]['key'] != '') {
         var legendSize = 14;
         var legendMargin = 8;
-        var legend = svg.selectAll('.legend')
+        var legend = svgLegend.selectAll('.legend')
                         .data(color.domain())   // this step is the key to legend
                         .enter()
                         .append('g')
@@ -593,24 +617,37 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                         .attr('transform', function (d, i) {
                                                var height = legendSize + legendMargin;
                                                //var offset = height * color.domain().length / 2;
-                                               var horz = width + 10;
-                                               var vert = i * height + 20;
+                                               var horz = 10; //width + 10;
+                                               var vert = (i+1) * height + 80;
                                                return 'translate(' + horz + ', ' + vert + ')';
                                            });
         var legendTitle = _.map(overlay_list, function(d) {return '<'+params[Number(d)+2]+'>';});
         for (var i in legendTitle) {
             legendTitle[i] = _.reduce(legendTitle[i].split('_'), function(memo, num){return memo == '' ? num : memo+' '+num;}, '');
         }
-        svg.append('text').attr('x', width + 10).attr('y', 0)
+    
+        var textElement = svgLegend.append('text').attr('x', 10).attr('y', 80)
            .attr('text-anchor', 'left').style('font-size', '12px')
            .style('font-weight', 'bold').text(String(legendTitle));
+           
+        svgWidth = (svgWidth > textElement.node().getBBox().width) ? svgWidth : textElement.node().getBBox().width;
+        svgHeight += textElement.node().getBBox().height;
+
         legend.append('rect')
               .attr('width', legendSize).attr('height', legendSize)
+              .attr('x', 0).attr('y', -5)
               .style('fill', color).style('stroke', color);
         legend.append('text')
               .attr('x', legendSize + legendMargin).attr('y', legendSize - legendMargin)
               .style('font-size', '12px')
               .text(function(d) {return d;});
+        legend.each(function() {
+                        svgWidth = (svgWidth > this.getBBox().width) ? svgWidth : this.getBBox().width;
+                        svgHeight += legendSize+legendMargin; });
+
+        svgLegend.attr('width', svgWidth+10).attr('height', svgHeight+80+legendSize);
+    } else {
+        svgLegend.attr('width', 0).attr('height', 0);
     }
     // .............
     // add title
@@ -636,6 +673,13 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                   .text('  '+series[0][i]+'  ');
         }
     }
+    // ..............
+    // save image
+    //canvg('canvas', d3.select('svg').html());
+    //canvg('canvas', 'file.svg', {ignoreMouse: true, ignoreAnimation: true});
+    //var canvas = document.getElementById('canvas');
+    //var img = canvas.toDataURL('image/png');
+    //document.write('<img src="'+img+'"/>');
     // ..............
     // interaction
     function zoomed() {

@@ -32,6 +32,11 @@ add_filter.addEventListener('click', create_filter_window);
 var gen_plot = document.getElementById('generate_plot');
 gen_plot.addEventListener('click', generate_plot);
 
+var gen_csv = document.getElementById('generate_csv');
+gen_csv.addEventListener('click', download_csv);
+
+var get_query = document.getElementById('get_query');
+get_query.addEventListener('click', copy_data_query);
 
 // cached persistent DOM objects
 var x_param = document.getElementById('x_param');
@@ -57,7 +62,6 @@ function update_params() {
 		report_debug("updated params");
 	}
 	// to assure correct sequence, populate param windows must be called inside the functions that update params
-	report_debug("---------------");
 }
 function clear_param_windows() {
 	while (x_param.firstChild) x_param.removeChild(x_param.firstChild);
@@ -135,30 +139,36 @@ function create_filter_window(selected) {
 	}
 	else {report_debug(selected);}
 
-	report_debug("filter window created");
 	return filter;
+
 }
 
 // actions upon clicking the generate plot button
 function generate_plot() {
-	var data_query = [root_url, '/data?', create_task_query(), '&x='];
-	if (!x_sel) {report_error("x parameter not selected"); return;}
-	if (!y_sel) {report_error("y parameter not selected"); return;}
-	report_debug("x_param: " + x_sel.title);
-	report_debug("y_param: " + y_sel.title);
-	data_query.push(x_sel.title, '&y=', y_sel.title, '&');
-
-	var sel_bar = document.getElementById('selection_bar');
-
-	filters = sel_bar.getElementsByClassName('filter');
-	for (var f = 0, len = filters.length; f < len; ++f) {
-		var filter = parse_filter(filters[f]);		
-		report_debug(filter);
-		data_query.push.apply(data_query, filter);
+	var data_query = create_data_query();
+	if (data_query) {
+		data_query = [root_url, '/data?', data_query].join('');
+	    console.log(">>>>  data query >>>>");
+		report_debug(data_query);
+		$.getJSON(data_query, plotter_setup, false);
 	}
-    console.log(">>>>  data query >>>>");
-	report_debug(data_query.join(''));
-	$.getJSON(data_query.join(''), plotter_setup, false);
+}
+
+function download_csv() {
+	var data_query = create_data_query();
+	if (data_query) {
+		data_query = [root_url, '/csv?', data_query].join('');
+		console.log(">>>>  csv query >>>>");
+		report_debug(data_query);
+		window.location = data_query;
+	}
+}
+
+function copy_data_query() {
+	var data_query = create_data_query();
+	if (data_query) {
+		window.prompt("Copy with Ctrl+c, Enter", data_query);
+	}
 }
 
 // JSON request callbacks
@@ -320,7 +330,7 @@ function parse_filter( filter ) {
 	var parsed_filter = ['fp='];
 	var filtered_param = filter.getElementsByClassName('filter_param');
 	if (filtered_param.length === 0) return [];
-	filtered_param = filtered_param[0].value.split(' ')[0];
+	filtered_param = filtered_param[0].value;
 	parsed_filter.push(filtered_param);
 	
 	var filter_type = filter.getElementsByClassName('filter_sel');
@@ -404,6 +414,23 @@ function create_task_query() {
 		report_debug("task cached");
 	}
 	return task_cached;
+}
+function create_data_query() {
+	var data_query = [create_task_query(), '&x='];
+	if (!x_sel.title) {report_error("x parameter not selected"); return '';}
+	if (!y_sel.title) {report_error("y parameter not selected"); return '';}
+
+	data_query.push(x_sel.title, '&y=', y_sel.title, '&');
+
+	var sel_bar = document.getElementById('selection_bar');
+
+	filters = sel_bar.getElementsByClassName('filter');
+	for (var f = 0, len = filters.length; f < len; ++f) {
+		var filter = parse_filter(filters[f]);		
+		report_debug(filter);
+		data_query.push.apply(data_query, filter);
+	}
+	return data_query.join('');	
 }
 
 function fire_event(element, event) {

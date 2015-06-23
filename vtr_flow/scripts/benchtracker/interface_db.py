@@ -9,6 +9,7 @@ from subprocess import call
 import argparse
 import textwrap
 import csv
+import StringIO
 
 def list_tasks(dbname = "results.db"):
     """Return a list of all task names in a database"""
@@ -24,20 +25,18 @@ def describe_tasks(tasks, dbname = "results.db"):
     cursor = db.cursor()
     if not isinstance(tasks,list):
         tasks = [tasks]
-    parameter_sub = sql_substitute(tasks)
-    query_command = "SELECT sql FROM sqlite_master WHERE type='table' AND name IN ({});".format(parameter_sub)
-    cursor.execute(query_command, tasks)
-    schemas = cursor.fetchall()
+
     # only the shared columns will remain
     shared_params = []
-    for schema in schemas:
-        params = [param.strip() for param in schema[0].split('(')[1].split(')')[0].split(',')]
-        if (params[-1] == 'PRIMARY KEY'):
-            params.pop()
+    for task in tasks:
+        query_command = "pragma table_info([{}])".format(task);
+        cursor.execute(query_command);
+        task_params = [" ".join((row[1], row[2])) for row in cursor.fetchall()]
         if shared_params:
-            shared_params = intersection(shared_params, params)
+            shared_params = intersection(shared_params, task_params)
         else:
-            shared_params = params
+            shared_params = task_params
+        
     return shared_params
     
 
@@ -93,29 +92,45 @@ def retrieve_data(x_param, y_param, filters, tasks, dbname = "results.db"):
         print(select_command)
         cursor = db.cursor()
         cursor.execute(select_command, sql_val_args)
-        data.append(cursor.fetchall());
+        data.append(tuple(tuple(row) for row in cursor.fetchall()));
         
     return cols_to_select, data
 
-def export_data_csv(selected_cols, data, tasks, dir = "benchtracker_data"):
+def export_data_csv(selected_cols, data):
     """
-    Exports retrieved data to a directory containing csv files.
+    Exports retrieved data as in-memory csv files.
 
-    Each task will be a separate csv file, with their full task table name (with '/' replaced with '.').
+    Each task will be a separate csv file, with the naming left to the caller.
     The first row will be the header for the selected columns, the rest will be values.
+    """
+    for task_data in data:
+        csvf = StringIO.StringIO()
+        writer = csv.writer(csvf)
+        # header information
+        writer.writerow(selected_cols)
+
+        for row in task_data:
+            writer.writerow(row)
+        yield csvf
+
+
+def export_data_csv_todisk(selected_cols, data, tasks, dir = "benchtracker_data"):
+    """
+    Exports retrieved data as csv files on export_data_csv_todisk
+
+    Each task is a separate file with their full task name, '/' being replaced by '.'
     """
     if not os.path.exists(dir):
         makedirs(dir)
-    for t in range(len(tasks)):
-        with open("".join([dir, '/', tasks[t].replace('/','.'), '.csv']), 'w') as csvf:
-            writer = csv.writer(csvf)
-            # header information
-            writer.writerow(selected_cols)
-
-            task_data = data[t]
-            # writerows won't work on sqlite3 rows
-            for row in task_data:
-                writer.writerow(tuple(row))
+    t = 0
+    for csvf in export_data_csv(selected_cols, data):
+        with open("".join([dir, '/', tasks[t].replace('/','.'), '.csv']), 'w') as f:
+            csvf.seek(0)
+            buf = csvf.read(1048576) # 1 MB
+            while buf:
+                f.write(buf)
+                buf = csvf.read(1048576)
+            t += 1
 
 
 
