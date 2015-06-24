@@ -141,6 +141,8 @@ Both METIS and hMETIS are well known tools for graph and hypergraph partitioning
 
 This is not satisfying to me at all. If the correct solution is to use hypergraph partitioning with heterogeneous balance constraints, then the authors should make appropriate modifications to hMETIS to produce the appropriate partitioning tool. It is unclear how much relevant information is lost by transforming the hypergraph to a graph, and what the impact on relative CAD metrics (W_min, f_max, etc) would be.
 
+[Javeed: mention hMetis is not open source (emailed person), give results on hmetis vs. metis cut size (with and without balance), and mention the star model should help timing, as timing is a connection / edge, phenomenon, not a net / hyperedge phenomenon.]
+
 
 (2) I disagree with the case for balance constraints
 
@@ -152,11 +154,16 @@ Now, I realize that my example is toy, and I also know that you don’t want 100% 
 
 In summary, I question the motivation to impose balance constraints. It seems like an unbalanced partition (within the parameters that provide reasonable routability) is the right way to go. Taking points (1) and (2) together (and assuming that I am correct—which I may not be), if balance constraints are unneeded, then the case for METIS over hMETIS falls apart, so perhaps hMETIS (with an appropriate objective) is perhaps a better way to go.
 
+[Vaughn: write up utilization argument.
+ Javeed: do the tuned balance / limit ].
+
 ==
 
 At the very end of Section V.F, the authors briefly discuss packing bloat, which “was due almost entirely to poor packing of memory blocks: an interesting area for future work would be to augment the partitioner to understand that some RAM primitives are best kept together in one partition.”
 
 Since I’ve already argued that the paper is somewhat lightweight in terms of technical contribution, perhaps doing a proper investigation of this issue and adding the necessary algorithmic support could bring greater novelty to this paper, rather than leaving it open to future work.
+
+[Vaughn: write beyond the scope].
 
 ==
 
@@ -173,6 +180,8 @@ This leads to a few interdependent questions:
 (2) If the timing-driven router was used, is it justifiable to report W_min values? Should the routability-driven router (enhanced as needed) have been used instead?
 (3) If the routability-driven router was used, how were the cost functions enhanced?
 
+[Vaughn: answer - always use timing driven].
+
 ==
 
 Minor points:
@@ -181,14 +190,22 @@ Section I, third paragraph
 - Don’t use [3] as a word. Either say “Ref. [3]” or “Alexander et al. [3]”
 - et al should be “et al.” (there is a period after al, but not after et)
 
+[Vaughn: fix]
+
 Regarding the placer timing cost described in Section IV.A.1), does the delay term include the multiplexers or just the bumps and the wires through the interposer?
+[Ehsan: modify text.]
 
 Regarding Equation (3), can you give a better explanation of the W_chanx and W_chany terms? I didn’t completely understand them from the short 1-sentence description.
+[Ehsan: change.]
 
 Below Equation (6), I don’t understand the ratio_of_wires_cut metric, especially vis-a-vis Figure 6.
+[Use % wires cut instead].
 
 In Figure 6, the green box and label (a) are nearly impossible to see given the light blue background with white spacing. Please switch to a darker shade of green.
+[Ehsan: fix].
 
 In Equation (1), does the ExpectInterposeHops include the delay of the muxes?
+[Ehsan: explain / fix].
 
 Fig. 23 is somehow redundant, as it is simply a different way to display data that was reported earlier.
+[Vaughn: write up defense of figure].
