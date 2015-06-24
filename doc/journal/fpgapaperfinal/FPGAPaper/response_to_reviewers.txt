@@ -1,29 +1,38 @@
-Associate Editor
-Comments to the Author:
-All the reviewers think this paper tackles a problem of practical interests, and the proposed solution/results are competent. Some major concerns raised by the reviewer is that the authors need to clearly clarify the details of hypergraph partitioning. Other detailed suggestions on the writing, implementations, and etc, please refer to the reviewers' comments.
-
-Reviewer's Comments
-
 Reviewer: 1
-
-SPECIFIC FEEDBACK TO AUTHORS
-This paper describes a method to model an interposer-based FPGA, CAD enhancements for an interposer-based architecture, and a detailed architecture study. The paper is solid architecture work, and presents many detailed and useful results.  That being said, the novelty is a bit low --  the techniques to modify the CAD flow are fairly straightforward, and the results are not all that surprising.   Still, I think the research question is important enough that readers will find useful data here.
-
-The authors have made significant changes to their previously published conference paper including the addition of a partitioning-based flow; in my opinion, this meets the 30% new material requirement.
 
 The paper presents significant space talking about how to transform a hyper graph to a graph using various models.  This has been well studied in the past.  It would be useful to present the proposed techniques in the context of this previous work.  As a start, there are numerous references within reference [22] that should be considered.  Doing so would help the reader understand the novelty of the hypergraph->graph methodology and results.
 
+[Javeed to add survey paper reference and discussion on why we use a non-dummy node star topology]
+
 The partitioning flow does not appear to be timing driven.  Given that, I wonder how meaningful the results in Section VI-C (Circuit speed vs. interposer delay) are.  These results show that the critical path delay is strongly affected by the delay_increase, but any reasonable timing-driven CAD flow would try to keep the critical path on one side of the partition to minimize the number of critical path segments crossing a partition.  Can you comment on this?  Can you at least provide data regarding how many cut crossings are typical on the critical paths?
+
+[Javeed add table on number of cut crossings on critical paths vs. total connections on critical paths.  Also some discussion on timing-driven partitioning -- our star model should help timing, and a timing-driven partitioner might help further but will the challenge of estimating critical paths accurately is hard.  Could reference Mike Hutton paper on APEX 20k timing-driven partitioning.  
+
+Ref is:  Hutton, M., Adibsamii, K. and Leaver, A. “Adaptive Delay Estimation for Partitioning-Driven PLD Placement”, IEEE Trans. VLSI, 11:1, pp. 60-63, 2003.
+
+My summary of the paper is: 
+"A commercial recursive partitioning placement algorithm for the Altera Apex 20K family is described in [92]. Apex has a hierarchical routing architecture, making it well suited to partitioning-based placement. Recursive partitioning is conducted along the natural cut-lines formed by the various hierarchy levels of the routing architecture, as shown in Figure 13. Notice that the sequence of partitions in this algorithm is significantly different than that of ALTOR, showing the large impact an FPGA’s routing architecture has on placement algorithms. This algorithm is made timing-driven by weighting connections with low slack highly during each partitioning phase to encourage partitioning solutions in which such connections can be routed using only fast, lower-hierarchy-level routing. To improve the prediction of the critical path, the delay estimate for each connection is a function both of the known number of hierarchy boundaries the net must traverse due to partitionings at the higher levels of the routing hierarchy, and statistical estimates of how many hierarchy boundaries the connection will cross at future partitioning steps. "]
+
 
 A key result that would help the reader interpret the results would be a table that shows, for each benchmark circuit, the number of signals that cross the partition (independent of the place and route).   It is important to break this down by benchmark circuit.  If one was to build such a device, it would be important to consider the range of cut requirements rather than just the average.  This is especially important considering the results of Figure 23 which suggests that increasing the channel width is not an efficient way to make up for a lack of cut capacity.
 
+[Javeed to get table and add to paper if feasible.  Try to add in same table as critical path one.  Best flow, 2 partitions, cut net count vs. benchmark and cut net per channel vs. benchmark.]
+
 In Figure 7, it was not clear to me why, for 30% of the wires cut, the placer optimizations do worse than the placer without optimizations.  Is this just experimental noise?
+
+[ This is due to experimental noise; the placer optimizations simply appear to be unnecessary for a small % wires cut so we get small random variations of the same magnitude as those due to changing the placement random seed.]
 
 Did you adjust the range windows in VPR to account for the new architecture?
 
+[ No, we did not adjust the range windows.  As the range window initially covers the entire FPGA and gradually shrinks to a box that allows moves only to adjacent blocks of the compatible type, VPR's natural range limit still permits full flexibility in moving across the interposers, even at the end of the anneal.  We agree it is a possible direction for future work to see if altering the move generation functions could save CPU time. ]
+
 Section III-E contains a lot of information about the detailed implementation of the model within VPR.  While this is useful to someone who wants to replicate the results, if it becomes necessary to cut content to address reviewer comments, some of this detail could be omitted without losing much from the paper (the fact that an extra RR_Graph node is created for each crossing is likely not as interesting to most readers, compared to the other experimental results).
 
+[ Ehsan: after we see how long new material makes the paper Ehsan could shorten this section.]
+
 I wasn’t clear on how useful the results in VI-E were.   The experiments in the rest of the paper assumed a square FPGA in VPR (before cutting) so more like Figure 27(a). The alternative in Figure 27b intuitively seems like a bad idea: (a) it is known that highly rectangle FPGAs (more columns than rows) lead to higher channel width, and (b) the number of interposers is lower, which from the rest of the paper we know is a bad idea.  So the fact that Figure 27b gives worse results should not be surprising.  If there is something else to conclude from this table, perhaps it could be highlighted.
+
+[ Ehsan: could shorten if we run out of space. ]
 
 
 Reviewer: 2
