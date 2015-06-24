@@ -90,26 +90,36 @@ In spite of all these feedbacks, I like your paper. Good job
 
 Reviewer: 3
 
-SPECIFIC FEEDBACK TO AUTHORS
-Compared to the conference version of the submission, this is a more thorough study of the performance of interposer-based FPGAs when key parameters are varied. To carry out the study, it adapted and twisted the VPR flow for conventional homogeneous FPGAs a bit. Though it may not be the ideal CAD flow for interposer-based FPGAs, some valuable insights can still be gained from the experiments.
-
 In section IV.A, you should mention that VPR's placer is simulated annealing-based. In particular, the reason you cited in the last paragraph of IV.A is based on the assumption that you are using an iterative improvement-based placer (and not, say, an analytical placer).
+
+[Ehsan: add mention of annealing].
 
 For the discussion about hypergraph to graph transformation in Sec V.C, there were many papers discussing how to set the edge weights in the 90's, please cite them (for example, see the survey paper "Recent directions in netlist partioning: a survey"). In particular, setting the edge weight to 1/(n-1) instead of 1/n is a popular choice since it can model a 2-pin net exactly. So, it makes sense to report the results for 1/(n-1). It looks like your star model picks one node of a net and connect it to other nodes of the net, but the more popular star model in the physical design literature would add a dummy node for each net that connects to all nodes of the net. So please explicitly define your star model in words. And from p.9, it looks like that you also want to distinguish the source of a net from the sinks of a net in the star model, if so, please state that in the definition of your star model.
 
+[Javeed: make explicit and correct text if it says we make all hyperedges the same weight with 1/n (they will vary from 1/2 to 1 in total hyperedge weight).]
+
 p.9, middle of left column said "the star topology clearly differentiates sources from sinks and this appears to give the partitioner an anchor point that pulls all hyperedge fanouts toward the source", you should mention that Metis is an iterative improvement-based partitioner which is related to your reasoning.
 
+[ Javeed: add.]
+
 p.9, left column, 2nd last paragraph, your star 1 edge weight scheme actually assigns a total weight of n-1 (not n) to each net. Similarly, your star 1/n model assigns a total weight of (n-1)/n (not 1) to each net.
+
+[Javeed: fix.]
 
 Some writing issues:
 
 - Sec II.A, 1st paragraph, read "As described in Section III". It is a bit odd since the readers have not read section III at that point.
 
+[Ehsan: take out.]
+
 - The text never refers to Fig.3.
+[Ehsan: add reference]
 
 - There should not be indentation following eqts. (1), (2), (3), (5), (6).
+[Ehsan: fix. Shouldn't start a new paragraph after.]
 
 - Sec. V.E., "It is slightly worse ... even for ..." -> "But it is slightly worse ... for ..."
+[Ehsan: fix.]
 
 Reviewer: 4
 
