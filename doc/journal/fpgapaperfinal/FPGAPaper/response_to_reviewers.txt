@@ -37,16 +37,17 @@ I wasn’t clear on how useful the results in VI-E were.   The experiments in the 
 
 Reviewer: 2
 
-SPECIFIC FEEDBACK TO AUTHORS
-This is a well-written paper. I think, this will allow researchers to perform research on multi-die devices.
-
-I have few simple comments:
-
 1. In section IV A (Placer Optimization), you have assumed that all the FPGA dies are homogeneous. Can you explain a bit about how would you handle heterogeneous dies? For example, there can be 4 dies in a chip and 1 of them is DSP-heavy, another one is Block-RAM heavy and other two are "regular" with lots of different types of logics (some CLB, some DSP, some Block-RAM, some IO etc)
+
+[ The device floorplan could be modified in VPR and the placement and routing engine would automatically adapt to generate legal solutions and optimize within those constraints; this would not require any code changes beyond the architecture file description.  The partitioner would need a modified balance criterion where it targeted not resource-balanced partitions, but instead forbade partitions that deviated too much from the resources available in each portion (die) of the system. This would require source code changes to metis.]
 
 2. Once initial placement is done, can you think of performing some physically knowledgeable optimization techniques? For example, if there are lot of connections between different dies, can you perform some minimization operation on that?
 
+[ We rely on VPR's annealer to perform this minimization.  Many random moves are generated, including those of blocks connected by nets that span the interposer. Our modified cost functions make it visible to VPR that moves which reduce cut size, or produce a placement that has a higher potential to later be perturbed to reduce cut size, are preferable. ]  
+
 3. In section V B (partitioning Tool), you assumed 0.05 (5%) in line 30. What is the rationale behind choosing that number? What happens if we choose some other number like 10% or 15%?
+
+[ We assumed a 5% balance constraint to give the partitioner some flexibility to minimize cut size, but we are forcing the partitions to be within 5% of balanced so that we can implement designs in fairly full FPGAs (e.g. 90% logic utilization).  If we allowed a very loose balance constraint of 10%, then a circuit could be split into 60% and 40% portions, and the interposer system would need to provide enough circuitry in one partition to support 60% of the design logic. This implies the chip would need 120% of the logic (or DSP, or RAM if they are the limiting resource) required by the circuit.  This would limit logic utilization to 83% of the chip (1/1.2), but many FPGA designs go beyond that level of utilization.] 
 
 4. In line 50 of Section V B, are you giving any special consideration to DSP or Block-RAM etc? Or are those treated the same way you treat simple LUTs and Flops?
 
