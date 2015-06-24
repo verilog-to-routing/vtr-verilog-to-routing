@@ -1,0 +1,157 @@
+Associate Editor
+Comments to the Author:
+All the reviewers think this paper tackles a problem of practical interests, and the proposed solution/results are competent. Some major concerns raised by the reviewer is that the authors need to clearly clarify the details of hypergraph partitioning. Other detailed suggestions on the writing, implementations, and etc, please refer to the reviewers' comments.
+
+Reviewer's Comments
+
+Reviewer: 1
+
+SPECIFIC FEEDBACK TO AUTHORS
+This paper describes a method to model an interposer-based FPGA, CAD enhancements for an interposer-based architecture, and a detailed architecture study. The paper is solid architecture work, and presents many detailed and useful results.  That being said, the novelty is a bit low --  the techniques to modify the CAD flow are fairly straightforward, and the results are not all that surprising.   Still, I think the research question is important enough that readers will find useful data here.
+
+The authors have made significant changes to their previously published conference paper including the addition of a partitioning-based flow; in my opinion, this meets the 30% new material requirement.
+
+The paper presents significant space talking about how to transform a hyper graph to a graph using various models.  This has been well studied in the past.  It would be useful to present the proposed techniques in the context of this previous work.  As a start, there are numerous references within reference [22] that should be considered.  Doing so would help the reader understand the novelty of the hypergraph->graph methodology and results.
+
+The partitioning flow does not appear to be timing driven.  Given that, I wonder how meaningful the results in Section VI-C (Circuit speed vs. interposer delay) are.  These results show that the critical path delay is strongly affected by the delay_increase, but any reasonable timing-driven CAD flow would try to keep the critical path on one side of the partition to minimize the number of critical path segments crossing a partition.  Can you comment on this?  Can you at least provide data regarding how many cut crossings are typical on the critical paths?
+
+A key result that would help the reader interpret the results would be a table that shows, for each benchmark circuit, the number of signals that cross the partition (independent of the place and route).   It is important to break this down by benchmark circuit.  If one was to build such a device, it would be important to consider the range of cut requirements rather than just the average.  This is especially important considering the results of Figure 23 which suggests that increasing the channel width is not an efficient way to make up for a lack of cut capacity.
+
+In Figure 7, it was not clear to me why, for 30% of the wires cut, the placer optimizations do worse than the placer without optimizations.  Is this just experimental noise?
+
+Did you adjust the range windows in VPR to account for the new architecture?
+
+Section III-E contains a lot of information about the detailed implementation of the model within VPR.  While this is useful to someone who wants to replicate the results, if it becomes necessary to cut content to address reviewer comments, some of this detail could be omitted without losing much from the paper (the fact that an extra RR_Graph node is created for each crossing is likely not as interesting to most readers, compared to the other experimental results).
+
+I wasn’t clear on how useful the results in VI-E were.   The experiments in the rest of the paper assumed a square FPGA in VPR (before cutting) so more like Figure 27(a). The alternative in Figure 27b intuitively seems like a bad idea: (a) it is known that highly rectangle FPGAs (more columns than rows) lead to higher channel width, and (b) the number of interposers is lower, which from the rest of the paper we know is a bad idea.  So the fact that Figure 27b gives worse results should not be surprising.  If there is something else to conclude from this table, perhaps it could be highlighted.
+
+
+Reviewer: 2
+
+SPECIFIC FEEDBACK TO AUTHORS
+This is a well-written paper. I think, this will allow researchers to perform research on multi-die devices.
+
+I have few simple comments:
+
+1. In section IV A (Placer Optimization), you have assumed that all the FPGA dies are homogeneous. Can you explain a bit about how would you handle heterogeneous dies? For example, there can be 4 dies in a chip and 1 of them is DSP-heavy, another one is Block-RAM heavy and other two are "regular" with lots of different types of logics (some CLB, some DSP, some Block-RAM, some IO etc)
+
+2. Once initial placement is done, can you think of performing some physically knowledgeable optimization techniques? For example, if there are lot of connections between different dies, can you perform some minimization operation on that?
+
+3. In section V B (partitioning Tool), you assumed 0.05 (5%) in line 30. What is the rationale behind choosing that number? What happens if we choose some other number like 10% or 15%?
+
+4. In line 50 of Section V B, are you giving any special consideration to DSP or Block-RAM etc? Or are those treated the same way you treat simple LUTs and Flops?
+
+5. In your work, maximum how many partitions are allowed? Was there any situation where partitioned could not partition the design?
+
+6. In page 13, section E (Impact of Aspect Ratio), can you explain some other different styles?
+Like
+
+  die-1      die-2
+  die-3      die-4
+  die-5      die-6
+  die-7      die-8
+
+7. What is the frequency loss between monolithic design and multi-die design?
+
+8. Any data regarding the runtime comparison of this tool between for a monolithic design and a similar multi-die design? In the FPGA-industry, runtime is a very important issue
+
+9. Any analyze on the power consumption for multi-die designs? Any comparison of power consumption with respect to that of a monolithic design?
+
+
+In spite of all these feedbacks, I like your paper. Good job
+
+
+Reviewer: 3
+
+SPECIFIC FEEDBACK TO AUTHORS
+Compared to the conference version of the submission, this is a more thorough study of the performance of interposer-based FPGAs when key parameters are varied. To carry out the study, it adapted and twisted the VPR flow for conventional homogeneous FPGAs a bit. Though it may not be the ideal CAD flow for interposer-based FPGAs, some valuable insights can still be gained from the experiments.
+
+In section IV.A, you should mention that VPR's placer is simulated annealing-based. In particular, the reason you cited in the last paragraph of IV.A is based on the assumption that you are using an iterative improvement-based placer (and not, say, an analytical placer).
+
+For the discussion about hypergraph to graph transformation in Sec V.C, there were many papers discussing how to set the edge weights in the 90's, please cite them (for example, see the survey paper "Recent directions in netlist partioning: a survey"). In particular, setting the edge weight to 1/(n-1) instead of 1/n is a popular choice since it can model a 2-pin net exactly. So, it makes sense to report the results for 1/(n-1). It looks like your star model picks one node of a net and connect it to other nodes of the net, but the more popular star model in the physical design literature would add a dummy node for each net that connects to all nodes of the net. So please explicitly define your star model in words. And from p.9, it looks like that you also want to distinguish the source of a net from the sinks of a net in the star model, if so, please state that in the definition of your star model.
+
+p.9, middle of left column said "the star topology clearly differentiates sources from sinks and this appears to give the partitioner an anchor point that pulls all hyperedge fanouts toward the source", you should mention that Metis is an iterative improvement-based partitioner which is related to your reasoning.
+
+p.9, left column, 2nd last paragraph, your star 1 edge weight scheme actually assigns a total weight of n-1 (not n) to each net. Similarly, your star 1/n model assigns a total weight of (n-1)/n (not 1) to each net.
+
+Some writing issues:
+
+- Sec II.A, 1st paragraph, read "As described in Section III". It is a bit odd since the readers have not read section III at that point.
+
+- The text never refers to Fig.3.
+
+- There should not be indentation following eqts. (1), (2), (3), (5), (6).
+
+- Sec. V.E., "It is slightly worse ... even for ..." -> "But it is slightly worse ... for ..."
+
+Reviewer: 4
+
+SPECIFIC FEEDBACK TO AUTHORS
+This paper describes a set of extensions to the VPR tool to accommodate multi-FPGA platforms that use silicon interposers. The paper includes both architectural enhancements and modifications to the VPR CAD flow.
+
+The main challenge is that silicon interposers have increased delay and reduced connectivity between dice. Rather than cutting wires at the border of each FPGA, the authors propose to add multiplexers at the interface (Fig. 3). This entails some minor modifications to VPR’s routing resource graph (RRG) at the cut-points. In terms of CAD support, the primary contribution of the paper are new cost functions for the placer and router, and a pre-placement partitioning phase using METIS.
+
+I find the paper to be competent and reasonable, but at the same time, a collection of very small incremental ideas, and lacking in terms of a significant contribution to the field. (Other than a VPR update, which is always welcome because VPR is widely used in FPGA architecture and CAD research).
+
+==
+
+I do have two fairly significant technical quibbles with the paper; although they are somehow interdependent, they can each be taken at face value.
+
+
+(1) The case for METIS over hMETIS is weak
+
+Both METIS and hMETIS are well known tools for graph and hypergraph partitioning, respectively. Since circuits are known to be hypergraphs, the natural inclination would be to use hMETIS; however, the authors argue that METIS is more appropriate because hMETIS does not support heterogeneous balance constraints. Therefore, the authors take great pains to convert the hypergraph to a graph.
+
+This is not satisfying to me at all. If the correct solution is to use hypergraph partitioning with heterogeneous balance constraints, then the authors should make appropriate modifications to hMETIS to produce the appropriate partitioning tool. It is unclear how much relevant information is lost by transforming the hypergraph to a graph, and what the impact on relative CAD metrics (W_min, f_max, etc) would be.
+
+
+(2) I disagree with the case for balance constraints
+
+I do not understand why a good partioning solution is approximately equal among the different dice in an interposer-based FPGA, because doing so intuitively seems as though it would make maximal use of interposer wires, which are both slow and constrained (in terms of general availability).
+
+As a generic example, suppose that I have a two dice, each with 100 CLBs, and the circuit that I am trying to partition has 101 CLBs. Do I really want a 50/51 partition using a large number of interposer wires? I don’t think that I do. If my partition was 100/1 instead, I would probably use just a handful of interposer wires, and the likelihood that the interposer wire is critical (i.e., it is on the f_max path) is fairly low.
+
+Now, I realize that my example is toy, and I also know that you don’t want 100% LUT/CLB utilization (referring to the title of DeHon’s FPGA 1999 paper). So, 100/1 is probably going to be unroutable on the densely used side, by 90/11 or 80/21 may work out well, and would use far fewer interposer wires than 50/51.
+
+In summary, I question the motivation to impose balance constraints. It seems like an unbalanced partition (within the parameters that provide reasonable routability) is the right way to go. Taking points (1) and (2) together (and assuming that I am correct—which I may not be), if balance constraints are unneeded, then the case for METIS over hMETIS falls apart, so perhaps hMETIS (with an appropriate objective) is perhaps a better way to go.
+
+==
+
+At the very end of Section V.F, the authors briefly discuss packing bloat, which “was due almost entirely to poor packing of memory blocks: an interesting area for future work would be to augment the partitioner to understand that some RAM primitives are best kept together in one partition.”
+
+Since I’ve already argued that the paper is somewhat lightweight in terms of technical contribution, perhaps doing a proper investigation of this issue and adding the necessary algorithmic support could bring greater novelty to this paper, rather than leaving it open to future work.
+
+==
+
+In Section VI.E, there is a short study on the impact of FPGA die aspect ratio on the minimum channel width (W_min). I’d like for the authors to clarify this issue a bit, because of my understanding of the way VPR’s routers work.
+
+Firstly, the modifications to the router cost functions described earlier in the paper were for VPR’s timing driven router. To the best of my knowledge, the timing-driven router is very good at reducing critical path delay, but not particular good at minimizing W_min.
+
+VPR also has a routability-driven router which is very good at minimizing W_min, but not particularly effective at reducing critical path delay.
+
+So, to produce Table I, in principle, the routability-driven router should have been chosen; however, if so, then the cost function used by the routability-driven router needs to be modified as well in order to model the interposer and interface at the cut lines.
+
+This leads to a few interdependent questions:
+(1) Which router was used?
+(2) If the timing-driven router was used, is it justifiable to report W_min values? Should the routability-driven router (enhanced as needed) have been used instead?
+(3) If the routability-driven router was used, how were the cost functions enhanced?
+
+==
+
+Minor points:
+
+Section I, third paragraph
+- Don’t use [3] as a word. Either say “Ref. [3]” or “Alexander et al. [3]”
+- et al should be “et al.” (there is a period after al, but not after et)
+
+Regarding the placer timing cost described in Section IV.A.1), does the delay term include the multiplexers or just the bumps and the wires through the interposer?
+
+Regarding Equation (3), can you give a better explanation of the W_chanx and W_chany terms? I didn’t completely understand them from the short 1-sentence description.
+
+Below Equation (6), I don’t understand the ratio_of_wires_cut metric, especially vis-a-vis Figure 6.
+
+In Figure 6, the green box and label (a) are nearly impossible to see given the light blue background with white spacing. Please switch to a darker shade of green.
+
+In Equation (1), does the ExpectInterposeHops include the delay of the muxes?
+
+Fig. 23 is somehow redundant, as it is simply a different way to display data that was reported earlier.
