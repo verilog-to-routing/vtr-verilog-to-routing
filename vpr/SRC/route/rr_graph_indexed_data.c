@@ -295,7 +295,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 	}
 
 	/* Get average C and R values for all the segments of this type in one      *
-	 * channel segment, near the middle of the array.                           */
+	 * channel segment, near the middle of the fpga.                            */
 
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
 		inode = find_average_rr_node_index(nx, ny, rr_type, itrack,
@@ -324,8 +324,12 @@ static void load_rr_indexed_data_T_values(int index_start,
 				/* make sure all wire switches leaving this track segment have the same 'buffered' value */
 				if (buffered == UNDEFINED) {
 					buffered = g_rr_switch_inf[switch_index].buffered;
+					if (buffered == UNDEFINED){
+						vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+							"rr switch at index %d has an UNDEFINED 'buffered' property\n", switch_index);
+					}
 				} else {
-					if (buffered != short(g_rr_switch_inf[switch_index].buffered)) {
+					if (buffered != (short)(g_rr_switch_inf[switch_index].buffered)) {
 						vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
 							"Expecting all wire-to-wire switches of a given track segment to have same 'buffered' property\n");
 					}
@@ -338,13 +342,18 @@ static void load_rr_indexed_data_T_values(int index_start,
 		switch_R_total[cost_index] += avg_switch_R;
 		switch_T_total[cost_index] += avg_switch_T;
 
+		if (buffered == UNDEFINED){
+			/* this segment does not have any outgoing edges to other general routing wires */
+			continue;
+		}
+		
 		/* need to make sure all wire switches of a given wire segment type have the same 'buffered' value */
 		if (switches_buffered[cost_index] == UNDEFINED){
 			switches_buffered[cost_index] = buffered;
 		} else {
 			if (switches_buffered[cost_index] != buffered){
 				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
-					"Expecting all wire-to-wire switches of a given track segment *type* to have same 'buffered' property\n");
+					"Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
 			}
 		}
 	}
@@ -386,3 +395,4 @@ static void load_rr_indexed_data_T_values(int index_start,
 	free(switch_T_total);
 	free(switches_buffered);
 }
+
