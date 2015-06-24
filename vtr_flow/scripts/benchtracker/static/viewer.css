@@ -214,9 +214,6 @@ svg {
   overflow-x: auto;
   overflow-y: auto;
 }
-rect {
-  fill: #f0f0f0;
-}
 
 .axis path,
 .axis line {

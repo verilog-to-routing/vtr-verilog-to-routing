@@ -494,6 +494,15 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // ..............
     // setup axis
     var x = null;
+    if (range[t]['x'][0] == range[t]['x'][1]) {
+        range[t]['x'][0] -= 0.5*range[t]['x'][0];
+        range[t]['x'][1] += 0.5*range[t]['x'][1];
+    }
+    if (range[t]['y'][0] == range[t]['y'][1]) {
+        range[t]['y'][0] -= 0.5*range[t]['y'][0];
+        range[t]['y'][1] += 0.5*range[t]['y'][1];
+    }
+
     if (xNM.values.length == 0) {
         x = d3.scale.linear()
               .domain([range[t]['x'][0] - 0.1*(range[t]['x'][1]-range[t]['x'][0]), range[t]['x'][1] + 0.1*(range[t]['x'][1]-range[t]['x'][0])])
@@ -512,11 +521,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         .scale(x)
         .orient("bottom")
         .tickSize(-height);
-    /*
-    if (xNM.values.length != 0) {
-        xAxis.tickValues([100,120,140,160]);
-    }
-    */
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left")
@@ -541,7 +545,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     if (xNM.values.length == 0) {
         svg.call(zoom);
     }
-    var canvas = svg.append("rect")
+    var canvas = svg.append("rect").attr('fill', '#f0f0f0')
         .attr("width", width)
         .attr("height", height);
 
@@ -569,13 +573,13 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                     .x(function(d) {return x(d['x']);})
                     .y(function(d) {return y(d['y']);});
     var clip = svg.append('svg:clipPath').attr('id', 'clip')
-                  .append('svg:rect').attr('x', 0).attr('y', 0)
+                  .append('svg:rect').attr('fill', '#f0f0f0').attr('x', 0).attr('y', 0)
                   .attr('width', width).attr('height', height);
     var color = d3.scale.category10();
     
     for (var i in lineInfo){
         var svgg = svg.append('g').attr('clip-path', 'url(#clip)');
-        svgg.append('svg:path')
+        svgg.append('svg:path').attr('fill', 'none')
             .datum(lineInfo[i]['values'])
             .attr('class', 'line').attr('d', lineGen)
             .style('stroke', function() {return color(lineInfo[i]['key']);}); // here each key is associated with a color --> for future legend
@@ -673,13 +677,18 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                   .text('  '+series[0][i]+'  ');
         }
     }
+    /*
     // ..............
     // save image
-    //canvg('canvas', d3.select('svg').html());
+    d3.selectAll('path').attr('fill', 'none');
+    d3.select('svg').attr('xmlns', 'http://www.w3.org/2000/svg');
+    canvg('canvas', d3.select('svg').html());
     //canvg('canvas', 'file.svg', {ignoreMouse: true, ignoreAnimation: true});
-    //var canvas = document.getElementById('canvas');
-    //var img = canvas.toDataURL('image/png');
+    var canvas = document.getElementById('canvas');
+    var img = canvas.toDataURL('image/png');
+    d3.select('body').append('div').html('<img src="'+img+'"/>');
     //document.write('<img src="'+img+'"/>');
+    */
     // ..............
     // interaction
     function zoomed() {
