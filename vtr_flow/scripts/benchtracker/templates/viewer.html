@@ -42,6 +42,7 @@
     </div>
     <div id="plotter_container">
 	    <a class='page_divider plotter_options' id='customizePlot'>Customize plot</a>
+        <!--a class='page_divider save_as_png' id='savePlot'>Save as PNG</a-->
 	    <div class='custom_pannel'>
 	        <div class="custom_plot_selection_box" id="gmean_select">
 	        </div>
@@ -49,13 +50,17 @@
 	        </div>
 	        <div class='custom_plot_selection_box' id='get_cus_plot_button'>
 	        </div>
+            <div class='save_plot_box' id='save_plot_button'>
+            </div>
 	    </div>
     </div>
     <div id="chart">
     </div>
-    <canvas id='canvas' width='1000px' height='600px'></canvas>
+    <!--canvas id='canvas' width='1000px' height='600px'></canvas-->
 </div>
-
+<!--temp div for storing image-->
+<div id='temp' style='display:'>
+</div>
 </body>
 
 <script>

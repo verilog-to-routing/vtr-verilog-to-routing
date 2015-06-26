@@ -6,6 +6,10 @@
 // 5. save graph
 // 6. fix the offline plotter
 
+// 7. getBBox() is inconsistent among console log value and the final output value
+// 8. also inconsistent between chrome and firefox
+// 9. probably should calculate bound box after web is fully loaded
+
 // Some const
 // if x axis is an element of timeParam, then the default behavior is to gmean everything
 var timeParam = ['run', 'parsed_date'];
@@ -43,12 +47,14 @@ function plotter_setup(data) {
     range = [];
     xNameMap = [];
     document.getElementById('customizePlot').style.visibility = 'visible';
+    //document.getElementById('savePlot').style.visibility = 'hidden';
     d3.select('#generate_plot').html('');
     d3.select('#generate_plot').text('Reset Plotter');
     d3.select('#chart').html('');
     d3.select('#overlay_select').html('');
     d3.select('#gmean_select').html('');
     d3.select('#get_cus_plot_button').html('');
+    d3.select('#save_plot_button').html('');
     // convert x value to numerical
     indexXString();
     // check is x is run / parsed_date
@@ -98,6 +104,7 @@ function defaultToGmeanTimePlot() {
     */
     $('#customizePlot').click(function () {d3.select('#chart').html(''); 
                                            document.getElementById('customizePlot').style.visibility = 'hidden';
+                                           //document.getElementById('savePlot').style.visibility = 'visible';
                                            generate_overlay_selector();});
 
 }
@@ -183,6 +190,7 @@ function defaultToGmeanSubPlot() {
         */
         $('#customizePlot').click(function () {d3.select('#chart').html(''); 
                                                document.getElementById('customizePlot').style.visibility = 'hidden';
+                                               //document.getElementById('savePlot').style.visibility = 'visible';
                                                generate_overlay_selector();});
     }
 }
@@ -273,6 +281,10 @@ function generate_overlay_selector() {
                                                                            }
                                                                          });
                                                 plot_generator();} );
+    // add save plot button
+    d3.select('#save_plot_button').html('');
+    d3.select('#save_plot_button').append('button').attr('type','button').attr('id', 'save_plot').text('Save as PNG');
+    $('#save_plot').click(savePlot);
 }
 /*
  * if x is originally a int or float, this function does nothing
@@ -474,7 +486,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     for (var k in lineData) {
         var lineVal = [];
         for (var j = 0; j < lineData[k].length; j ++ ){
-            lineVal.push({x: lineData[k][j][0], y: lineData[k][j][1]});
+            lineVal.push({x: Number(lineData[k][j][0]), y: lineData[k][j][1]});
         }
         if (xNM.values.length == 0) {
             lineVal = _.sortBy(lineVal, 'x');
@@ -536,6 +548,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // ...............
     // assemble
     var chart = d3.select('#chart').append('div').attr('class', 'chart_container');
+    //var saveButton = chart.append('button').attr('type', 'button').attr('class', 'save_plot').text('save as png').on('click', savePlot);
     var svg = chart.append('div').attr('class', 'canvas_container').append('svg')
         .attr("width", width + plotMargin['left'] + plotMargin['right'])
         .attr("height", height + plotMargin['top'] + plotMargin['bottom'])
@@ -545,10 +558,11 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     if (xNM.values.length == 0) {
         svg.call(zoom);
     }
-    var canvas = svg.append("rect").attr('fill', '#f0f0f0')
+    var canvas = svg.append("rect")
+        //.attr('class', 'canvas_peripheral')
+        .attr('fill', '#f0f0f0')
         .attr("width", width)
         .attr("height", height);
-
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
@@ -607,9 +621,10 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // .............
     // add legend
     // the svg size should be chosen to fit the text
+    d3.selectAll('svg').style('font','10px sans-serif');
     var svgWidth = 0;
     var svgHeight = 0;
-    var svgLegend = chart.append('div').attr('class', 'legend_container').append('svg'); //.attr('width', 130).attr('height', 500);
+    var svgLegend = chart.append('div').attr('class', 'legend_container').append('svg').attr('class', 'legend_svg'); //.attr('width', 130).attr('height', 500);
     if (lineInfo.length > 1 || lineInfo[0]['key'] != '') {
         var legendSize = 14;
         var legendMargin = 8;
@@ -648,7 +663,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         legend.each(function() {
                         svgWidth = (svgWidth > this.getBBox().width) ? svgWidth : this.getBBox().width;
                         svgHeight += legendSize+legendMargin; });
-
         svgLegend.attr('width', svgWidth+10).attr('height', svgHeight+80+legendSize);
     } else {
         svgLegend.attr('width', 0).attr('height', 0);
@@ -677,22 +691,28 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                   .text('  '+series[0][i]+'  ');
         }
     }
-    /*
-    // ..............
-    // save image
-    d3.selectAll('path').attr('fill', 'none');
-    d3.select('svg').attr('xmlns', 'http://www.w3.org/2000/svg');
-    canvg('canvas', d3.select('svg').html());
-    //canvg('canvas', 'file.svg', {ignoreMouse: true, ignoreAnimation: true});
-    var canvas = document.getElementById('canvas');
-    var img = canvas.toDataURL('image/png');
-    d3.select('body').append('div').html('<img src="'+img+'"/>');
+    // dealing with styling
+    var canvas = svg.append("rect")
+        .attr('class', 'canvas_peripheral')
+        .attr('fill', 'none')
+        .attr("width", width)
+        .attr("height", height);
+
+
+    d3.selectAll('rect.canvas_peripheral').style('stroke', '#000');
+    d3.selectAll('path').style('fill', 'none');
+    d3.selectAll('path.domain').style('stroke', '#fff');
+    d3.selectAll('.axis line').style('stroke', '#fff').style('fill', 'none');
+    d3.selectAll('.axis path').style('stroke', '#fff').style('fill', 'none');
+    d3.selectAll('.line').style('fill', 'none').style('stroke-width','1.5px');
+    //d3.select('body').append('div').html('<img src="'+img+'"/>');
     //document.write('<img src="'+img+'"/>');
-    */
     // ..............
     // interaction
     function zoomed() {
         if (xNM.values.length == 0) {
+            // update styling
+            d3.selectAll('.axis line').style('stroke', '#fff').style('fill','none');
             svg.select(".x.axis").call(xAxis);
             svg.select(".y.axis").call(yAxis);
             svg.selectAll('.line').attr('class', 'line').attr('d', lineGen);
@@ -716,71 +736,48 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
       });
     }
 }
-/*
- * Utility function, called by plot_generator()
- * actually generating plot by calling d3 function
- * params: raw_data.params
- * series: in the format of list of list (list of tuples)
- * overlay_list: a list of index(int)
- */
-/*
-function simple_plot(params, series, overlay_list) {
-    // setup plot name
-    var plot_name = "";
-    for (var i = 2; i < series[0].length; i ++){
-        if ($.inArray(i-2+'', overlay_list) == -1) {
-            plot_name += series[0][i];
-            plot_name += '  ';
+// ..............
+// save image
+function savePlot() {
+//var html = d3.select('svg').attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg').node().parentNode.innerHTML;
+    //var pn = saveButton.node().parentNode;
+    d3.selectAll('.chart_container').each(function () {
+        var html1 = d3.select(this).select('.canvas_container').select('svg')
+                     .attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg')
+                     .node().parentNode.innerHTML;
+        var html2 = d3.select(this).select('.legend_container').select('svg')
+                     .attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg')
+                     .node().parentNode.innerHTML;
+        var html = html2 + html1;
+        var svgWidth = plotSize['width'] + Number(d3.select(this).select('.legend_svg').attr('width'));
+        var svgHeight =plotSize['height'] > Number(d3.select(this).select('.legend_svg').attr('height')) ? plotSize['height'] : Number(d3.select(this).select('.legend_svg').attr('height'));
+        console.log('svg height');
+        console.log(svgHeight);
+        console.log('svg width');
+        console.log(svgWidth);
+        d3.select('#temp').append('svg').attr('width', svgWidth).attr('height', svgHeight)
+          .attr('version',1.1).attr('xmlns', 'http://www.w3.org/2000/svg').html(html);
+        d3.select('#temp').select('.legend_svg').attr('x', plotSize['width']);
+        html = d3.select('#temp').node().innerHTML;
+        var imgsrc = 'data:image/svg+xml;base64,'+btoa(html);
+        //var img = '<img src="'+imgsrc+'"/>';
+        //d3.select('body').append('div').attr('id', 'test-svg-conversion').html(img);
+        d3.select('#temp').append('canvas').attr('width', svgWidth).attr('height', svgHeight);
+        var canvas = document.querySelector('canvas');
+        var context = canvas.getContext('2d');
+        var image = new Image;
+        image.src = imgsrc;
+        image.onload = function() {
+            context.drawImage(image, 0, 0);
+            var canvasdata = canvas.toDataURL('image/png');
+            var pngimg = '<img src="'+canvasdata+'">';
+            var a = document.createElement('a');
+            a.download = 'sample.png';
+            a.href = canvasdata;
+            a.click();
         }
-    }
-    // setup raw_data lines
-    var lineData = data_transform(series, overlay_list, 'overlay');
-    var lineInfo = [];
-    for (k in lineData) {
-        var lineVal = [];
-        for (var j = 0; j < lineData[k].length; j ++ ){
-            lineVal.push({x: lineData[k][j][0], y: lineData[k][j][1]});
-        }
-        lineVal = _.sortBy(lineVal, 'x');
-        lineInfo.push({values: lineVal, key: k});
-    }
-    nv.addGraph(function() {
-       var chart = nv.models.lineChart()
-                            .margin(plotMargin) 
-                            .useInteractiveGuideline(true)
-                            .showLegend(true)
-                            .showYAxis(true)
-                            .showXAxis(true);
-        chart.forceX(range['x']);
-        chart.forceY(range['y']);
-        chartList.push(chart);
-        chart.xAxis.axisLabel(params[0])
-                   .tickFormat(d3.format(',r'));
-        chart.yAxis.axisLabel(params[1])
-                   .tickFormat(d3.format('.02f'));
-        chart.legend.margin({top:30});
-        var svg = d3.select('#chart')
-                    .append('svg').attr('id', plot_name)
-                    .attr('height', plotSize['height']).attr('width', plotSize['width']);
-        
-        //var $svg = $(document.getElementById(plot_name));
-        //$svg.parent().append('<div class="chart-title">' + plot_name + '</div>');
-        
-        //$(svg).parent().append('<div class="chart-title">' + plot_name + '</div>');
-        svg.append("text")
-           .attr("x", plotSize['width']/2)
-           .attr("y", 20)
-           .attr("text-anchor", "middle")
-           .attr("class", "chart-title")
-           .style("font-size", "16px")
-           .text(plot_name);
-        svg.datum(lineInfo).call(chart);
-        nv.utils.windowResize(function() { chart.update(); } );
+
+        d3.select('#temp').html('');
     });
 }
-*/
-// we can choose a slightly more neat method: first group by all the axes
-// that is not overlaid, then do legend plot upon every group. this will
-// not require any recursive function.
-
 

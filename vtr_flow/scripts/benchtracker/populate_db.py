@@ -245,11 +245,12 @@ def parse_args(ns=None):
             action='store_true',
             default=False,
             help="clean (remove) the table for this task; exits afterwards")
-    parser.add_argument("-k","--key_params",
+    parser.add_argument("-k","--key_params", required=True,
             nargs='+',
             default=[],
-            help="a list of key parameters that define a unique benchmark; default: %(default)s")
+            help="the combination of key parameters that defines a unique benchmark;")
     params = parser.parse_args(namespace=ns)
+    params.database = os.path.expanduser(params.database)
 
     # if a task list is given (where each line is the path to a task)
     if params.root_directory:

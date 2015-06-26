@@ -187,7 +187,7 @@ def connect_db(dbname = "results.db"):
     """Attempt a database connection, exiting with 1 if dbname does not exist, else return with db connection"""
     if not os.path.isfile(dbname):
         print("{} does not exist".format(dbname))
-        sys.exit(1)
+        raise IOError(dbname) 
     db = sqlite3.connect(dbname)
     db.row_factory = sqlite3.Row
     return db

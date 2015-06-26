@@ -143,8 +143,13 @@ select:focus {
 #customizePlot {
 	flex:1 0 100%;
 	line-height:2em;
-	visibility: hidden
+	visibility: hidden;
 }
+/*
+#savePlot {
+    visibility: hidden;
+}
+*/
 .custom_pannel {
     display: flex;
     flex:1;
@@ -210,20 +215,28 @@ fieldset {
     overflow-y: auto;
 }
 svg {
+    overflow-x: auto;
+    overflow-y: auto;
+}
+/*
+svg {
   font: 10px sans-serif;
-  overflow-x: auto;
-  overflow-y: auto;
 }
 
-.axis path,
+.axis path {
+  fill: none;
+  stroke: #fff;
+}
 .axis line {
   fill: none;
   stroke: #fff;
 }
+
 .line {
     fill: none;
     stroke-width: 1.5px;
 }
+*/
 .customizePlotContainer {}
 
 
