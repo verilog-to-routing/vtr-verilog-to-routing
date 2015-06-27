@@ -23,8 +23,7 @@ except ImportError:
 
 
 app = Flask(__name__)
-CORS(app)
-database = "results.db" # default; changed by argument
+cors = CORS(app)
 port = 5000
 
 
@@ -101,7 +100,7 @@ def get_param_desc():
     'type': param_type,
     'val': param_val})
 
-@app.route('/tasks/', methods=['GET'])
+@app.route('/params/', methods=['GET'])
 @catch_operation_errors
 def get_shared_params():
     database = parse_db()
@@ -148,6 +147,7 @@ def get_csv_data():
 
 @app.route('/view')
 def get_view():
+    database = parse_db()
     tasks = {task_name: task_context for (task_name, task_context) in [t.split('|',1) for t in d.list_tasks(database)]}
     queried_tasks = parse_tasks()
     x = y = filters = ""
@@ -159,6 +159,7 @@ def get_view():
         
 
     return render_template('viewer.html',
+                            database=database,
                             tasks=tasks,
                             queried_tasks=queried_tasks,
                             queried_x = x,
@@ -172,10 +173,10 @@ def not_found(error):
     return resp
 
 def parse_db():
-    global database
     db = request.args.get('db')
     if db:
-        database = os.path.expanduser(db)
+        return os.path.expanduser(db)
+    # default to the global database
     return database
 
 def parse_tasks():
@@ -259,4 +260,4 @@ def parse_data():
 
 if __name__ == '__main__':
     parse_args()
-    app.run(debug=True, port=port)
+    app.run(host='0.0.0.0', port=port)

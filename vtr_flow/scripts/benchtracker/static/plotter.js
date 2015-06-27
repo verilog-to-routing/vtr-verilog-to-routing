@@ -174,7 +174,6 @@ function defaultToGmeanSubPlot() {
             var s = d3.select('#chart').append('h4').attr('class', 'task_title');
             s.append('span').attr('class', 'h_grey').append('text').text('Geo Mean Axis: ');
             s.append('span').attr('class', 'h_dark').append('text').text(defaultGmean);
-
             for (j in newData) {
                 simple_plot(newParams, newData[j], newOverlayList, xNameMap[k], k, 'normalTitle');
             }
@@ -486,7 +485,11 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     for (var k in lineData) {
         var lineVal = [];
         for (var j = 0; j < lineData[k].length; j ++ ){
-            lineVal.push({x: Number(lineData[k][j][0]), y: lineData[k][j][1]});
+            if (isNaN(Number(lineData[k][j][0]))) {
+                lineVal.push({x: lineData[k][j][0], y: lineData[k][j][1]});
+            } else {
+                lineVal.push({x: Number(lineData[k][j][0]), y: lineData[k][j][1]});
+            }
         }
         if (xNM.values.length == 0) {
             lineVal = _.sortBy(lineVal, 'x');
@@ -496,7 +499,11 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
             lineVal = _.sortBy(lineVal, 'x');
             lineVal = _.map(lineVal, function(d) {return {x: xNM.values[d.x], y: d.y};});
         }
-        lineInfo.push({values: lineVal, key: k});
+        if (isNaN(Number(k))) {
+            lineInfo.push({values: lineVal, key: k});
+        } else {
+            lineInfo.push({values: lineVal, key: Number(k)});
+        }
     }
     lineInfo = _.sortBy(lineInfo, 'key');
     // plot
@@ -514,7 +521,8 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         range[t]['y'][0] -= 0.5*range[t]['y'][0];
         range[t]['y'][1] += 0.5*range[t]['y'][1];
     }
-
+    console.log('xnm values');
+    console.log(xNM.values);
     if (xNM.values.length == 0) {
         x = d3.scale.linear()
               .domain([range[t]['x'][0] - 0.1*(range[t]['x'][1]-range[t]['x'][0]), range[t]['x'][1] + 0.1*(range[t]['x'][1]-range[t]['x'][0])])
@@ -590,7 +598,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                   .append('svg:rect').attr('fill', '#f0f0f0').attr('x', 0).attr('y', 0)
                   .attr('width', width).attr('height', height);
     var color = d3.scale.category10();
-    
     for (var i in lineInfo){
         var svgg = svg.append('g').attr('clip-path', 'url(#clip)');
         svgg.append('svg:path').attr('fill', 'none')
