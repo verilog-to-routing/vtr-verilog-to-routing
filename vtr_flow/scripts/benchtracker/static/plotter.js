@@ -13,6 +13,7 @@
 // Some const
 // if x axis is an element of timeParam, then the default behavior is to gmean everything
 var timeParam = ['run', 'parsed_date'];
+var unixEpoch = ['parsed_date'];
 var defaultGmean = 'circuit';
 // create the actual plot in the display_canvas
 //
@@ -49,7 +50,7 @@ function plotter_setup(data) {
     document.getElementById('customizePlot').style.visibility = 'visible';
     //document.getElementById('savePlot').style.visibility = 'hidden';
     d3.select('#generate_plot').html('');
-    d3.select('#generate_plot').text('Reset Plotter');
+    d3.select('#generate_plot').text('Regenerate Plots');
     d3.select('#chart').html('');
     d3.select('#overlay_select').html('');
     d3.select('#gmean_select').html('');
@@ -252,7 +253,7 @@ function generate_overlay_selector() {
     // choose overlay axis
     // TODO: disable the selection by setting the attr value 'disabled' = 'on'
     var formOverlay = selector_overlay_div.append('form').attr('class', 'custom_plot_form').attr("id", "overlay_options").attr('action', '').append("fieldset").attr('width', 600);
-    formOverlay.append('legend').style('font-weight', 'bold').text('select line series:');
+    formOverlay.append('legend').style('font-weight', 'bold').text('select combined series:');
     for (var i = 2; i < choice.length; i ++ ) {
         //var label = form.append('label').attr('class', 'param_label');
         formOverlay.append('input').attr('type', 'checkbox')
@@ -473,6 +474,24 @@ function data_transform (series, overlay_list, mode) {
         alert('data_transform: unknown mode');
     }
 }
+
+function epochTimeConverter(unixEpochTime, paramX) {
+    // deal with unix epoch time
+    if (unixEpoch.indexOf(paramX) != -1) {
+        var date = new Date(Number(unixEpochTime) * 1000);
+        date = date.toLocaleString().split(' ');
+        date = date[0].substring(0, date[0].length-1);
+        date = date.split('/');
+        date[0] = (date[0].length == 1) ? '0'+date[0] : date[0];
+        date[1] = (date[1].length == 1) ? '0'+date[1] : date[1];
+        date = [date[2], date[0], date[1]];
+        date = _.reduce(date, function(memo, num){return memo == '' ? num : memo+''+num;}, '');
+        unixEpochTime = date;
+    }
+    unixEpochTime = isNaN(Number(unixEpochTime)) ? unixEpochTime : Number(unixEpochTime);
+    return unixEpochTime;
+}
+
 /*
  * generate the real plot
  * using d3.js
@@ -480,17 +499,23 @@ function data_transform (series, overlay_list, mode) {
  */
 function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     //setup data
+    range[t]['x'][0] = epochTimeConverter(range[t]['x'][0], params[0]);
+    range[t]['x'][1] = epochTimeConverter(range[t]['x'][1], params[0]);
+
     var lineData = data_transform(series, overlay_list, 'overlay');
     var lineInfo = [];
     for (var k in lineData) {
         var lineVal = [];
         for (var j = 0; j < lineData[k].length; j ++ ){
+            lineData[k][j][0] = epochTimeConverter(lineData[k][j][0], params[0]);
             if (isNaN(Number(lineData[k][j][0]))) {
                 lineVal.push({x: lineData[k][j][0], y: lineData[k][j][1]});
             } else {
                 lineVal.push({x: Number(lineData[k][j][0]), y: lineData[k][j][1]});
             }
         }
+        console.log('lineVal');
+        console.log(lineVal);
         if (xNM.values.length == 0) {
             lineVal = _.sortBy(lineVal, 'x');
         } else {

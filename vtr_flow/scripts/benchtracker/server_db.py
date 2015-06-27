@@ -172,6 +172,7 @@ def not_found(error):
     resp.status_code = 404
     return resp
 
+# should always be run before all other querying since it determines where to look from
 def parse_db():
     db = request.args.get('db')
     if db:

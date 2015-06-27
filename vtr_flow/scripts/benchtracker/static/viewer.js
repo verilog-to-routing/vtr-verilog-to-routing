@@ -408,6 +408,7 @@ function create_task_query() {
 		if (qs.length > 0) 
 			qs.pop();	// chop last & (mostly harmless)
 
+		qs.push("db=", database);
 		task_cached = qs.join("");
 	}
 	else {
