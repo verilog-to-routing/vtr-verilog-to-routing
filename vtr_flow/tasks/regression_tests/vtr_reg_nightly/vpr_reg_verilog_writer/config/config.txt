@@ -30,4 +30,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-starting_stage vpr -gen_postsynthesis_netlist -routing_failure_predictor safe
+script_params=-starting_stage vpr -gen_postsynthesis_netlist -routing_failure_predictor safe -track_memory_usage

@@ -3,7 +3,7 @@
 ##############################################
 
 # Power
-script_params=-power
+script_params=-power -track_memory_usage
 cmos_tech_behavior=PTM_45nm/45nm.xml
 
 # Path to directory of circuits to use

@@ -47,5 +47,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-no_mem -starting_stage vpr -routing_failure_predictor safe
+script_params=-no_mem -starting_stage vpr -routing_failure_predictor safe -track_memory_usage
 

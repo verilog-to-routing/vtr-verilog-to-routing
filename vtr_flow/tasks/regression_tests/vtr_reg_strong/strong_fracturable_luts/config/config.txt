@@ -27,4 +27,4 @@ qor_parse_file=qor_no_timing.txt
 pass_requirements_file=pass_requirements_no_timing.txt
 
 # Script parameters
-script_params=-no_timing -lut_size 6
+script_params=-no_timing -lut_size 6 -track_memory_usage

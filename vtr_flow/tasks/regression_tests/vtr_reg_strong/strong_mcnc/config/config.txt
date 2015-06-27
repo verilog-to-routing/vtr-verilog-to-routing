@@ -26,5 +26,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-no_mem -starting_stage vpr
+script_params=-no_mem -starting_stage vpr -track_memory_usage
 

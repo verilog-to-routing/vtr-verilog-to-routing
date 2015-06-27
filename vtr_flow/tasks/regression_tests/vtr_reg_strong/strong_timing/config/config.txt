@@ -28,3 +28,4 @@ pass_requirements_file=pass_requirements.txt
 
 # Script parameters
 #script_params=""
+script_params = -track_memory_usage
