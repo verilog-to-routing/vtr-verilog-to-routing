@@ -15,6 +15,8 @@
 var timeParam = ['run', 'parsed_date'];
 var unixEpoch = ['parsed_date'];
 var defaultGmean = 'circuit';
+// the value for invalid y. these will be eliminated by the plotter
+var invalidY = -1;
 // create the actual plot in the display_canvas
 //
 var overlay_list = [];
@@ -30,6 +32,52 @@ var plotMargin = {'left': 100, 'right': 5, 'top': 70, 'bottom': 70};
 var chartList = [];
 // xNameMap is only set when value in x axis is string
 var xNameMap = null;
+
+var formGmean;
+var formOverlay;
+
+// attach event listeners when ready
+$(document).ready(function() {
+
+var custom_panel = document.getElementById("custom_panel");
+
+var customize_plot = document.getElementById("customizePlot");
+customize_plot.addEventListener('click', function () {
+    generate_overlay_selector();
+}, false);
+
+var save_plot = document.getElementById("savePlot");
+save_plot.addEventListener('click', savePlot);
+
+formGmean = document.getElementById("gmean_select").getElementsByTagName("fieldset")[0];
+formOverlay = document.getElementById("overlay_select").getElementsByTagName("fieldset")[0];
+
+var get_custom_plot = document.getElementById("get_custom_plot");
+get_custom_plot.addEventListener('click', function () { 
+    gmean_list = [];
+    //var checkbox = formGmean.getElementsByTagName('input');
+    var checkbox = d3.select('#gmean_select').selectAll('input');
+    checkbox.each(function () {
+                               if (d3.select(this).property('checked')) {
+                                   gmean_list.push(d3.select(this).attr('index'));
+                               }
+                             });
+
+    overlay_list = [];
+    //var checkbox = formOverlay.getElementsByTagName('input');
+    checkbox = d3.select('#overlay_select').selectAll('input');
+    checkbox.each(function () {
+                               if (d3.select(this).property('checked') 
+                                && gmean_list.indexOf(d3.select(this).attr('index')) == -1) {
+                                   overlay_list.push(d3.select(this).attr('index'));
+                               }
+                             });
+    plot_generator();} 
+);
+
+
+});
+
 /*
  * high level function after data is obtained from database interface
  * -- generate the default plots
@@ -48,14 +96,14 @@ function plotter_setup(data) {
     range = [];
     xNameMap = [];
     document.getElementById('customizePlot').style.visibility = 'visible';
-    //document.getElementById('savePlot').style.visibility = 'hidden';
+    document.getElementById('savePlot').style.visibility = 'visible';
     d3.select('#generate_plot').html('');
     d3.select('#generate_plot').text('Regenerate Plots');
     d3.select('#chart').html('');
-    d3.select('#overlay_select').html('');
-    d3.select('#gmean_select').html('');
-    d3.select('#get_cus_plot_button').html('');
-    d3.select('#save_plot_button').html('');
+    // clear up
+    remove_inputs(formGmean);
+    remove_inputs(formOverlay);
+    document.getElementById('custom_panel').style.visibility = 'hidden';
     // convert x value to numerical
     indexXString();
     // check is x is run / parsed_date
@@ -91,22 +139,10 @@ function defaultToGmeanTimePlot() {
         range[i]['x'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
         range[i]['y'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
         findAxisScale(seriesXY, xNameMap[i], i);
-
+        d3.select('#chart').append('div').attr('class', 'task_container').attr('id', 'task_'+i);
         simple_plot(raw_data.params, seriesXY, [], xNameMap[i], i, 'taskTitle');
+        sizingTaskContainer(1, 'task_'+i);
     }
-    /*
-    d3.select('#chart').append('div').attr('class', 'customizePlotContainer')
-      .append('button').attr('type', 'button').attr('class', 'attractive_button')
-      .attr('id', 'customizePlot').text('customize plot');
-    */
-    /*
-    d3.select('#buttonContainer').append('button').attr('type', 'button').attr('class', 'attractive_button')
-      .attr('id', 'customizePlot').text('Customize Plot');
-    */
-    $('#customizePlot').click(function () {d3.select('#chart').html(''); 
-                                           document.getElementById('customizePlot').style.visibility = 'hidden';
-                                           //document.getElementById('savePlot').style.visibility = 'visible';
-                                           generate_overlay_selector();});
 
 }
 /*
@@ -169,29 +205,20 @@ function defaultToGmeanSubPlot() {
             
             newOverlayList = [findMostExpensiveAxis(newRawData, newParams) + ''];
             var newData = data_transform(newRawData, newOverlayList, 'non-overlay');
-            var t = d3.select('#chart').append('h3').attr('class', 'task_title');
+            var c = d3.select('#chart').append('div').attr('class', 'task_container').attr('id', 'task_'+k);
+            var t = c.append('h3').attr('class', 'task_title');
             t.append('span').attr('class', 'h_grey').append('text').text('Task Name: ');
             t.append('span').attr('class', 'h_dark').append('text').text(raw_data.tasks[k]);
-            var s = d3.select('#chart').append('h4').attr('class', 'task_title');
+            var s = c.append('h4').attr('class', 'task_title');
             s.append('span').attr('class', 'h_grey').append('text').text('Geo Mean Axis: ');
             s.append('span').attr('class', 'h_dark').append('text').text(defaultGmean);
+            var count = 0;
             for (j in newData) {
                 simple_plot(newParams, newData[j], newOverlayList, xNameMap[k], k, 'normalTitle');
+                count += 1;
             }
+            sizingTaskContainer(count, 'task_'+k);
         }
-        /*
-        d3.select('#chart').append('div').attr('class', 'customizePlotContainer')
-          .append('button').attr('type', 'button').attr('class', 'attractive_button')
-          .attr('id', 'customizePlot').text('customize plot');
-        */
-        /*
-        d3.select('#buttonContainer').append('button').attr('type', 'button').attr('class', 'attractive_button')
-          .attr('id', 'customizePlot').text('Customize Plot');
-        */
-        $('#customizePlot').click(function () {d3.select('#chart').html(''); 
-                                               document.getElementById('customizePlot').style.visibility = 'hidden';
-                                               //document.getElementById('savePlot').style.visibility = 'visible';
-                                               generate_overlay_selector();});
     }
 }
 /*
@@ -221,22 +248,36 @@ function reduceToGmean(groupedX) {
  * the plot will be generated after button is clicked.
  *  type is to used to decide whether to generate axes of raw data or gmean data
  */
+function remove_inputs(parent) {
+    var inputs = parent.getElementsByTagName('input');
+    var labels = parent.getElementsByTagName('label');
+    var br = parent.getElementsByTagName('br');
+    while (inputs.length) {
+        inputs[0].parentNode.removeChild(inputs[0]);
+        labels[0].parentNode.removeChild(labels[0]);
+        br[0].parentNode.removeChild(br[0]);
+    }
+}
 function generate_overlay_selector() {
-    var selector_overlay_div = d3.select('#overlay_select');
-    var selector_gmean_div = d3.select('#gmean_select');
     // clear up
-    selector_overlay_div.html('');
-    selector_gmean_div.html('');
+    remove_inputs(formGmean);
+    remove_inputs(formOverlay);
+    d3.select('#chart').html('');
     var choice = raw_data.params;
 
     // choose gmean axis
-    var formGmean = selector_gmean_div.append('form').attr('class', 'custom_plot_form').attr("id", "gmean_options").attr('action', '').append("fieldset").attr('width', 600);
-    formGmean.append('legend').style('font-weight', 'bold').text('select geometric mean:');
     for (var i = 2; i < choice.length; i ++ ) {
+        var input = document.createElement('input');
+        var label = document.createElement('label');
+        input.type = 'checkbox';
+        label.textContent = input.value = choice[i];
+        label.htmlFor = input.id = 'gip-' + choice[i];
+        input.setAttribute('index', i - 2);
+        input.addEventListener('change', function(){updateLegendCheckBox(this.id);});
         //var label = form.append('label').attr('class', 'param_label');
-        formGmean.append('input').attr('type', 'checkbox')
-                 .attr('value', choice[i]).attr('id', 'gip-'+choice[i]).attr('index', i-2).on('change', function(){updateLegendCheckBox(this.id);});
-        formGmean.append('label').attr('for', 'gip-'+choice[i]).text(choice[i]).append('br');
+        formGmean.appendChild(input);
+        formGmean.appendChild(label);
+        formGmean.appendChild(document.createElement('br'));
     }
 
     function updateLegendCheckBox(gid) {
@@ -251,40 +292,23 @@ function generate_overlay_selector() {
         }
     }
     // choose overlay axis
-    // TODO: disable the selection by setting the attr value 'disabled' = 'on'
-    var formOverlay = selector_overlay_div.append('form').attr('class', 'custom_plot_form').attr("id", "overlay_options").attr('action', '').append("fieldset").attr('width', 600);
-    formOverlay.append('legend').style('font-weight', 'bold').text('select combined series:');
     for (var i = 2; i < choice.length; i ++ ) {
         //var label = form.append('label').attr('class', 'param_label');
-        formOverlay.append('input').attr('type', 'checkbox')
-                   .attr('value', choice[i]).attr('id', 'oip-'+choice[i]).attr('index', i-2);
-        formOverlay.append('label').attr('for', 'oip-'+choice[i]).attr('id', 'olabel-'+choice[i]).text(choice[i]).append('br');
+        var input = document.createElement('input');
+        var label = document.createElement('label');
+        input.type = 'checkbox';
+        label.textContent = input.value = choice[i];
+        label.htmlFor = input.id = 'oip-' + choice[i];
+        input.setAttribute('index', i - 2);
+        label.id = 'olabel-'+choice[i];
+        //var label = form.append('label').attr('class', 'param_label');
+        formOverlay.appendChild(input);
+        formOverlay.appendChild(label);
+        formOverlay.appendChild(document.createElement('br'));
     }
-    // add plot button
-    d3.select('#get_cus_plot_button').html('');
-    d3.select('#get_cus_plot_button')
-      .append('button').attr('type', 'button').attr('id', 'get_customer_plot').text('Get Plot !');
-    $('#get_customer_plot').click(function () { gmean_list = [];
-                                                var checkbox = formGmean.selectAll('input', '[type="checkbox"]');
-                                                checkbox.each(function () {
-                                                                           if (d3.select(this).property('checked')) {
-                                                                               gmean_list.push(d3.select(this).attr('index'));
-                                                                           }
-                                                                         });
 
-                                                overlay_list = [];
-                                                var checkbox = formOverlay.selectAll('input', '[type="checkbox"]');
-                                                checkbox.each(function () {
-                                                                           if (d3.select(this).property('checked') 
-                                                                            && gmean_list.indexOf(d3.select(this).attr('index')) == -1) {
-                                                                               overlay_list.push(d3.select(this).attr('index'));
-                                                                           }
-                                                                         });
-                                                plot_generator();} );
-    // add save plot button
-    d3.select('#save_plot_button').html('');
-    d3.select('#save_plot_button').append('button').attr('type','button').attr('id', 'save_plot').text('Save as PNG');
-    $('#save_plot').click(savePlot);
+    // make selection pannel visible
+    custom_panel.style.visibility = 'visible';
 }
 /*
  * if x is originally a int or float, this function does nothing
@@ -406,10 +430,11 @@ function plot_generator() {
             findAxisScale(grouped_series[k], xNameMap[i], i);
         }
         // add task name
-        var t = d3.select('#chart').append('h3').attr('class', 'task_title');
+        var c = d3.select('#chart').append('div').attr('class', 'task_container').attr('id', 'task_'+i);
+        var t = c.append('h3').attr('class', 'task_title');
         t.append('span').attr('class', 'h_grey').text('Task Name: ');
         t.append('span').attr('class', 'h_dark').text(raw_data.tasks[i]);
-        var s = d3.select('#chart').append('h4').attr('class', 'task_title');
+        var s = c.append('h4').attr('class', 'task_title');
         s.append('span').attr('class', 'h_grey').text('Geo Mean Axes: ');
         var temp = _.map(gmean_list, function(d){return raw_data.params[Number(d)+2];}).join();
         if (temp == '') {
@@ -417,10 +442,21 @@ function plot_generator() {
         } else {
             s.append('span').attr('class', 'h_dark').text(temp);
         }
+        var count = 0;
         for (var k in grouped_series) {
             simple_plot(raw_data.params, grouped_series[k], overlay_list, xNameMap[i], i, 'normalTitle');
+            count += 1;
         }
+        sizingTaskContainer(count, 'task_'+i);
     }
+
+    // hide customization panel
+    //custom_panel.style.visibility = 'hidden';
+}
+
+function sizingTaskContainer (numPlots, id) {
+    var level = Math.ceil(numPlots / 2);
+    d3.select('#'+id).style('height', level*plotSize['height'] + 180);
 }
 
 /*
@@ -475,21 +511,13 @@ function data_transform (series, overlay_list, mode) {
     }
 }
 
-function epochTimeConverter(unixEpochTime, paramX) {
+function epochTimeConverter(unixEpochTime, paramXY) {
     // deal with unix epoch time
-    if (unixEpoch.indexOf(paramX) != -1) {
-        var date = new Date(Number(unixEpochTime) * 1000);
-        date = date.toLocaleString().split(' ');
-        date = date[0].substring(0, date[0].length-1);
-        date = date.split('/');
-        date[0] = (date[0].length == 1) ? '0'+date[0] : date[0];
-        date[1] = (date[1].length == 1) ? '0'+date[1] : date[1];
-        date = [date[2], date[0], date[1]];
-        date = _.reduce(date, function(memo, num){return memo == '' ? num : memo+''+num;}, '');
-        unixEpochTime = date;
+    var date = unixEpochTime;
+    if (unixEpoch.indexOf(paramXY) != -1) {
+        var date = new Date(Number(date) * 1000);
     }
-    unixEpochTime = isNaN(Number(unixEpochTime)) ? unixEpochTime : Number(unixEpochTime);
-    return unixEpochTime;
+    return date;
 }
 
 /*
@@ -499,38 +527,43 @@ function epochTimeConverter(unixEpochTime, paramX) {
  */
 function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     //setup data
-    range[t]['x'][0] = epochTimeConverter(range[t]['x'][0], params[0]);
-    range[t]['x'][1] = epochTimeConverter(range[t]['x'][1], params[0]);
-
     var lineData = data_transform(series, overlay_list, 'overlay');
+    console.log('///// lineData /////');
+    console.log(lineData);
     var lineInfo = [];
     for (var k in lineData) {
         var lineVal = [];
         for (var j = 0; j < lineData[k].length; j ++ ){
-            lineData[k][j][0] = epochTimeConverter(lineData[k][j][0], params[0]);
+            if (lineData[k][j][1] == invalidY) {
+                continue;
+            }
             if (isNaN(Number(lineData[k][j][0]))) {
                 lineVal.push({x: lineData[k][j][0], y: lineData[k][j][1]});
             } else {
-                lineVal.push({x: Number(lineData[k][j][0]), y: lineData[k][j][1]});
+                lineData[k][j][0] = Number(lineData[k][j][0]);
+                lineVal.push({x: lineData[k][j][0], y: lineData[k][j][1]});
             }
         }
-        console.log('lineVal');
-        console.log(lineVal);
         if (xNM.values.length == 0) {
             lineVal = _.sortBy(lineVal, 'x');
+            // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+            lineVal = _.map(lineVal, function(d) {return {x: epochTimeConverter(d.x, params[0]), y: epochTimeConverter(d.y, params[1])};});
         } else {
             // sort by the order in xNM.values
-            lineVal = _.map(lineVal, function(d) {return {x: xNM.values.indexOf(d.x), y: d.y};} );
+            lineVal = _.map(lineVal, function(d) {return {x: xNM.values.indexOf(d.x), y: epochTimeConverter(d.y,params[1])};} );
             lineVal = _.sortBy(lineVal, 'x');
             lineVal = _.map(lineVal, function(d) {return {x: xNM.values[d.x], y: d.y};});
         }
         if (isNaN(Number(k))) {
             lineInfo.push({values: lineVal, key: k});
         } else {
+            // TODO: this Number() won't work if k is a combination of numerical and non-numerical
             lineInfo.push({values: lineVal, key: Number(k)});
         }
     }
     lineInfo = _.sortBy(lineInfo, 'key');
+    console.log('-=-=-=-=-= lineInfo =-=-=-=-=-=-');
+    console.log(lineInfo);
     // plot
     // width & heigth is the size of the actual plotting area
     var width = plotSize['width'] - plotMargin['left'] - plotMargin['right'];
@@ -546,30 +579,49 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         range[t]['y'][0] -= 0.5*range[t]['y'][0];
         range[t]['y'][1] += 0.5*range[t]['y'][1];
     }
-    console.log('xnm values');
-    console.log(xNM.values);
     if (xNM.values.length == 0) {
-        x = d3.scale.linear()
-              .domain([range[t]['x'][0] - 0.1*(range[t]['x'][1]-range[t]['x'][0]), range[t]['x'][1] + 0.1*(range[t]['x'][1]-range[t]['x'][0])])
-              .range([0, width]);
+        var xAxisRange = [range[t]['x'][0] - 0.1*(range[t]['x'][1]-range[t]['x'][0]), range[t]['x'][1] + 0.1*(range[t]['x'][1]-range[t]['x'][0])];
+        //console.log('--- x axis range (before) ---');
+        //console.log(xAxisRange);
+        xAxisRange[0] = epochTimeConverter(xAxisRange[0], params[0]);
+        xAxisRange[1] = epochTimeConverter(xAxisRange[1], params[0]);
+        //console.log('--- x axis range (after) ---');
+        //console.log(xAxisRange);
+        if (unixEpoch.indexOf(params[0]) == -1) {
+            x = d3.scale.linear()
+                  .domain(xAxisRange)
+                  .range([0, width]);
+        } else {
+            x = d3.time.scale().domain(xAxisRange)
+                  .range([0, width]);
+        }
     } else {
         x = d3.scale.ordinal()
               .domain(xNM.values)
               .rangePoints([0, width], 0.3);
     }
-
-    var y = d3.scale.linear()
-        .domain([range[t]['y'][0] - 0.2*(range[t]['y'][1]-range[t]['y'][0]), range[t]['y'][1] + 0.2*(range[t]['y'][1]-range[t]['y'][0])])
-        .range([height, 0]);
+    var y = null;
+    var yAxisRange = [range[t]['y'][0] - 0.2*(range[t]['y'][1]-range[t]['y'][0]), range[t]['y'][1] + 0.2*(range[t]['y'][1]-range[t]['y'][0])];
+    yAxisRange[0] = epochTimeConverter(yAxisRange[0], params[1]);
+    yAxisRange[1] = epochTimeConverter(yAxisRange[1], params[1]);
+    if (unixEpoch.indexOf(params[1]) == -1) {
+        y = d3.scale.linear()
+            .domain(yAxisRange)
+            .range([height, 0]);
+    } else {
+        y = d3.time.scale().domain(yAxisRange)
+              .range([height, 0]);
+    }
 
     var xAxis = d3.svg.axis()
         .scale(x)
         .orient("bottom")
+        .ticks(10,'s')
         .tickSize(-height);
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left")
-        .ticks(5)
+        .ticks(10, 's')
         .tickSize(-width);
     // ...............
     // behavior
@@ -580,9 +632,8 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         .on("zoom", zoomed);
     // ...............
     // assemble
-    var chart = d3.select('#chart').append('div').attr('class', 'chart_container');
-    //var saveButton = chart.append('button').attr('type', 'button').attr('class', 'save_plot').text('save as png').on('click', savePlot);
-    var svg = chart.append('div').attr('class', 'canvas_container').append('svg')
+    var chart = d3.select('#task_'+t).append('div').attr('class', 'chart_container');
+    var svg = chart.append('svg').attr('class', 'canvas_container')
         .attr("width", width + plotMargin['left'] + plotMargin['right'])
         .attr("height", height + plotMargin['top'] + plotMargin['bottom'])
         .attr('shape-rendering', 'geometricPrecision')
@@ -629,7 +680,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
             .datum(lineInfo[i]['values'])
             .attr('class', 'line').attr('d', lineGen)
             .style('stroke', function() {return color(lineInfo[i]['key']);}); // here each key is associated with a color --> for future legend
-        // TODO: add coordination
         svgg.selectAll('.dots')
             .data(lineInfo[i]['values']) 
             .enter()
@@ -773,8 +823,11 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
 function savePlot() {
 //var html = d3.select('svg').attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg').node().parentNode.innerHTML;
     //var pn = saveButton.node().parentNode;
+    var count = 0;
     d3.selectAll('.chart_container').each(function () {
-        var html1 = d3.select(this).select('.canvas_container').select('svg')
+        console.log('-- count');
+        console.log(count);
+        var html1 = d3.select(this).select('svg')
                      .attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg')
                      .node().parentNode.innerHTML;
         var html2 = d3.select(this).select('.legend_container').select('svg')
@@ -800,13 +853,16 @@ function savePlot() {
         var image = new Image;
         image.src = imgsrc;
         image.onload = function() {
+            count += 1;
             context.drawImage(image, 0, 0);
             var canvasdata = canvas.toDataURL('image/png');
             var pngimg = '<img src="'+canvasdata+'">';
             var a = document.createElement('a');
-            a.download = 'sample.png';
+            a.download = 'plot'+count+'.png';
             a.href = canvasdata;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
         }
 
         d3.select('#temp').html('');

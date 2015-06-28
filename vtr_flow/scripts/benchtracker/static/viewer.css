@@ -140,18 +140,15 @@ select:focus {
 	display:flex;
 	flex-wrap:wrap;
 }
-#customizePlot {
-	flex:1 0 100%;
+.plotter_options {
+	flex:1 0.5 50%;
 	line-height:2em;
-	visibility: hidden;
+	visibility: hidden;	
 }
-/*
-#savePlot {
-    visibility: hidden;
-}
-*/
-.custom_pannel {
+
+#custom_panel {
     display: flex;
+    visibility:hidden;
     flex:1;
 	padding:0 50px;
 }
@@ -169,32 +166,14 @@ select:focus {
 	flex:1 0;
 }
 #gmean_select {
-    float: left;
-    height: 110px;
 }
 #overlay_select {
-    float: left;
-    height: 110px;
 }
 .custom_plot_form {
-    height: 85;
-}
-fieldset {
-    height: 60;
-    overflow-x: auto;
-    overflow-y: auto;
 }
 
-#get_cus_plot_button {
-    flex:0.5;
-}
-#get_customer_plot {
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 9;
-    width: 100%;
-    height: 70;
-    float: left;
+#get_custome_plot {
+	flex:0.5;
 }
 
 .canvas_container {
