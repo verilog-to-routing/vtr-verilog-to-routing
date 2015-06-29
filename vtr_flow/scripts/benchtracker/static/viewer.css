@@ -182,12 +182,13 @@ select:focus {
     float: left;
 }
 .chart_container {
-    width: 670;
+    /*width: 670;*/
+    width: 50%;
     height: 500;
     float:left;
 }
 .legend_container {
-    width: 130;
+    /*width: 130;*/
     height: 500;
     float: left;
     overflow-x: auto;
