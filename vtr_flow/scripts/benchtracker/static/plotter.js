@@ -27,7 +27,7 @@ var gmean_list = [];
 var raw_data = null;
 var gmean_data = null;
 var range = [];
-var plotSize = {'width': 530, 'height': 500};
+var plotSize = {'width': 1060, 'height': 700};
 var plotMargin = {'left': 100, 'right': 5, 'top': 70, 'bottom': 70};
 // a list of svg elements in d3 type: used for future plot manipulation
 var chartList = [];
@@ -470,7 +470,7 @@ function plot_generator() {
 }
 
 function sizingTaskContainer (numPlots, id) {
-    var level = Math.ceil(numPlots / 2);
+    var level = Math.ceil(numPlots);
     d3.select('#'+id).style('height', level*plotSize['height'] + 180);
 }
 
@@ -668,7 +668,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // width & heigth is the size of the actual plotting area
     var width = plotSize['width'] - plotMargin['left'] - plotMargin['right'];
     var height = plotSize['height'] - plotMargin['top'] - plotMargin['bottom'];
-    var origLegWidth = 130;
+    var origLegWidth = 240;
     var plotTitleY = -10;
     // const for legend
     var dataDotRadius = 4;
@@ -679,7 +679,8 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // data
     var lineInfo = prepareData(params, series, overlay_list, xNM, t);
     var ratio = 530 / (530 + 130);
-    var plotWidth = document.getElementById('display_canvas').offsetWidth * ratio / 2;
+    // plot now spans the whole page
+    var plotWidth = document.getElementById('display_canvas').offsetWidth * ratio; //  / 2;
     width = width * (plotWidth / plotSize['width']);
     // ..............
     // axis
@@ -711,10 +712,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         .style("width", plotWidth) //plotSize['width']
         .style("height", plotSize['height'])
         .attr('shape-rendering', 'geometricPrecision');
-    // get the adjusted width of the outer svg
-    //width = svg.node().width.animVal.value;
-    //console.log('--- width ---');
-    //console.log(svg.node().width.animVal);
     var gTransX = plotWidth * (plotMargin['left'] / plotSize['width']);
     var gTransY = plotMargin['top']; 
     svg = svg.append("g")

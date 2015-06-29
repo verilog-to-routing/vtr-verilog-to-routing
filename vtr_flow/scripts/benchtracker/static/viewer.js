@@ -1,7 +1,9 @@
+// "use strict";
 // globals
 var root_url = 'http://' + window.location.href.split('/')[2];
 var tasks = new Set();
-var x_sel = y_sel = "";
+var x_sel = "";
+var y_sel = "";
 var task_cached = "";
 var params = [];
 var labels = [];
@@ -13,9 +15,12 @@ var filter_method_map = {"range":"BETWEEN", "categorical":"IN"};
 jQuery.ajaxSettings.traditional = true; 
 
 
+document.addEventListener('DOMContentLoaded', function() {console.log("ready");}, false);
+// report_debug("READY");
 
 // DOM modifying functions
 $(document).ready(function() {
+
 
 // update all other selection boxes if necessary when tasks are changed
 var task_select = document.getElementById("task_select").getElementsByClassName('task');
@@ -70,8 +75,8 @@ function clear_param_windows() {
 function populate_param_windows() {
 	clear_param_windows();
 
-	for (p of params) {
-		p_pair = p.split(' ');
+	for (var p of params) {
+		var p_pair = p.split(' ');
 		var val = document.createElement('a');
 		val.className = "param";
 		val.title = p;
@@ -92,14 +97,20 @@ function populate_param_windows() {
 		}, false);
 		x_param.appendChild(val);
 	}
-	if (x_sel && (typeof x_sel === "string")) {
-		var x = x_param.querySelector(["a[title='", x_sel, "']"].join(""));
+	if (x_sel) {
+		var x;
+		if (typeof x_sel === "string") x = x_param.querySelector(["a[title='", x_sel, "']"].join(""));
+		else x = x_param.querySelector(["a[title='", x_sel.title, "']"].join(""));
 		if (x) toggle_x(x);
+		else x_sel = undefined;
 	} 
-	if (y_sel && (typeof y_sel === "string")) {
-		var y = y_param.querySelector(["a[title='", y_sel, "']"].join(""));
+	if (y_sel) {
+		var y;
+		if (typeof y_sel === "string") y = y_param.querySelector(["a[title='", y_sel, "']"].join(""));
+		else y = y_param.querySelector(["a[title='", y_sel.title, "']"].join(""));
 		if (y) toggle_y(y);
-	} 	
+		else y_sel = undefined;
+	} 
 	report_debug("populated param windows");
 }
 
@@ -111,7 +122,7 @@ function create_filter_window(selected) {
 
 	// create selection menu
 	var param_texts = [];
-	for (p of params) param_texts.push(p.split(' ')[0]);
+	for (var p of params) param_texts.push(p.split(' ')[0]);
 	var select_param = create_selection(param_texts, params, "--- parameters ---", false);
 	select_param.className = "filter_param";
 	select_param.addEventListener('change', query_param, false);
@@ -167,7 +178,12 @@ function download_csv() {
 function copy_data_query() {
 	var data_query = create_data_query();
 	if (data_query) {
-		window.prompt("Copy with Ctrl+c, Enter", data_query);
+		window.prompt(["Copy with Ctrl+c, Enter\n\
+Prefix with:  ",root_url,
+"\nand one of:\n\
+view? - to see the same selection in the viewer\n\
+csv? - to download the raw data in csv format\n\
+data? - to download the raw data in JSON format"].join(""), data_query);
 	}
 }
 
@@ -403,7 +419,7 @@ function create_selection(texts, values, prompt_text, multiple) {
 function create_task_query() {
 	if (!task_cached) {
 		var qs = ["db=", database, '&'];
-		for (task of tasks) 
+		for (var task of tasks) 
 			qs.push("t=",encodeURIComponent(task),"&");	
 		if (qs.length > 0) 
 			qs.pop();	// chop last & (mostly harmless)
@@ -424,7 +440,7 @@ function create_data_query() {
 
 	var sel_bar = document.getElementById('selection_bar');
 
-	filters = sel_bar.getElementsByClassName('filter');
+	var filters = sel_bar.getElementsByClassName('filter');
 	for (var f = 0, len = filters.length; f < len; ++f) {
 		var filter = parse_filter(filters[f]);		
 		report_debug(filter);

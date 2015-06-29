@@ -25,6 +25,8 @@ except ImportError:
 app = Flask(__name__)
 cors = CORS(app)
 port = 5000
+database = None
+root_directory = None
 
 
 
@@ -44,12 +46,16 @@ def parse_args(ns=None):
     parser.add_argument("-d", "--database",
             default="results.db",
             help="name of database to store results in; default: %(default)s")
+    parser.add_argument("-r", "--root_directory",
+            default="~/benchtracker_data/",
+            help="name of the directory to store databases in; default: %(default)s")
     parser.add_argument("-p", "--port",
             default=5000,
             type=int,
             help="port number to listen on; default: %(default)s")
     params = parser.parse_args(namespace=ns)
-    global database, port
+    global database, port, root_directory
+    root_directory = os.path.expanduser(params.root_directory)
     database = os.path.expanduser(params.database)
     port = params.port
     return params
@@ -90,7 +96,7 @@ def get_param_desc():
     param = request.args.get('p')
     mode = request.args.get('m', 'range')   # by default give ranges, overriden if param is text
     try:
-        (param_type, param_val) = d.describe_param(param, mode, tasks, database)
+        (param_type, param_val) = d.describe_param(param, mode, tasks, real_db(database))
     except ValueError as e:
         return jsonify({'status': 'Parameter value error: {}'.format(e)})
     return jsonify({'status': 'OK', 
@@ -105,7 +111,7 @@ def get_param_desc():
 def get_shared_params():
     database = parse_db()
     tasks = parse_tasks()
-    params = d.describe_tasks(tasks, database)
+    params = d.describe_tasks(tasks, real_db(database))
     return jsonify({'status': 'OK', 'database':database, 'tasks':tasks, 'params': params})
 
 @app.route('/data', methods=['GET'])
@@ -146,9 +152,11 @@ def get_csv_data():
 
 
 @app.route('/view')
+@catch_operation_errors
 def get_view():
     database = parse_db()
-    tasks = {task_name: task_context for (task_name, task_context) in [t.split('|',1) for t in d.list_tasks(database)]}
+    print(real_db(database))
+    tasks = {task_name: task_context for (task_name, task_context) in [t.split('|',1) for t in d.list_tasks(real_db(database))]}
     queried_tasks = parse_tasks()
     x = y = filters = ""
     # only pass other argument values if valid tasks selected
@@ -172,11 +180,15 @@ def not_found(error):
     resp.status_code = 404
     return resp
 
+# library call knows path to database, web viewer doesn't for security reasons
+def real_db(relative_db):
+    return os.path.join(root_directory, relative_db)
+
 # should always be run before all other querying since it determines where to look from
 def parse_db():
     db = request.args.get('db')
     if db:
-        return os.path.expanduser(db)
+        return db
     # default to the global database
     return database
 
@@ -255,7 +267,7 @@ def parse_data():
 
     tasks = parse_tasks()
 
-    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks, database)
+    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks, real_db(database))
     return (False, (database, tasks, params, data))
 
 
