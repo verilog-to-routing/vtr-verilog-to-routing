@@ -1,11 +1,6 @@
-cmake_minimum_required(VERSION 2.8)
-
-project("libtatum")
-
 #
 # Compiler flags come from parent
 #
-
 
 #
 #
@@ -14,31 +9,27 @@ project("libtatum")
 #
 
 #Source files for the library
-set(LIB_TATUM_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/base/sta_util.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/base/assert.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingGraph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingConstraints.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph/TimingNode.cpp)
+file(GLOB_RECURSE LIB_TATUM_SOURCES */*.cpp)
+file(GLOB_RECURSE LIB_TATUM_HEADERS */*.hpp)
 
-set(LIB_TATUM_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/base
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_analyzers
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_tags
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_traversals
-    ${CMAKE_CURRENT_SOURCE_DIR}/timing_graph
-    ${CMAKE_CURRENT_SOURCE_DIR}/delay_calculators
-    )
+#Include directories
+foreach(header ${LIB_TATUM_HEADERS})
+    get_filename_component(incl_dir ${header} DIRECTORY)
+    list(APPEND LIB_TATUM_INCLUDE_DIRS ${incl_dir})
+endforeach()
+#Remove duplicate include directories
+list(REMOVE_DUPLICATES LIB_TATUM_INCLUDE_DIRS)
+
 
 #set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/base/TimingTags.cpp
                             #PROPERTIES COMPILE_FLAGS "-fno-inline")
 
-
-#Include directories
-include_directories(${LIB_TATUM_INCLUDE_DIRS})
-
-#Required compiler defines. TODO: remove these...
-add_definitions(-DTIME_VEC_WIDTH=1)
+#
+# External library dependancies
+#
+find_package(Boost 1.54 REQUIRED)
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS}) #Treat boost as a system header to suppress warnings
+message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 
 #
 #
@@ -47,4 +38,8 @@ add_definitions(-DTIME_VEC_WIDTH=1)
 #
 
 #Define the library
-add_library(${LIB_NAME} ${LIB_TATUM_SRCS})
+add_library(tatum STATIC ${LIB_TATUM_SOURCES} ${LIB_TATUM_HEADERS})
+
+#Export library headers
+target_include_directories(tatum PUBLIC ${LIB_TATUM_INCLUDE_DIRS})
+

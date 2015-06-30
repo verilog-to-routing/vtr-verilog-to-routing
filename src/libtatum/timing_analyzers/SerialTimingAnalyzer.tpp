@@ -26,9 +26,9 @@ ta_runtime SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calcula
     clock_gettime(CLOCK_MONOTONIC, &end_times[2]);
 
     ta_runtime traversal_times;
-    traversal_times.pre_traversal = time_sec(start_times[0], end_times[0]);
-    traversal_times.fwd_traversal = time_sec(start_times[1], end_times[1]);
-    traversal_times.bck_traversal = time_sec(start_times[2], end_times[2]);
+    /*traversal_times.pre_traversal = time_sec(start_times[0], end_times[0]);*/
+    /*traversal_times.fwd_traversal = time_sec(start_times[1], end_times[1]);*/
+    /*traversal_times.bck_traversal = time_sec(start_times[2], end_times[2]);*/
 
     return traversal_times;
 }

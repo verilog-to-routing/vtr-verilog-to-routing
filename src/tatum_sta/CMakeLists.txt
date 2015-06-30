@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-
-project("tatum")
-
 #
 # Compiler flags come from parent
 #
@@ -16,17 +12,19 @@ project("tatum")
 #set(EXEC_NAME tatum_sta)
 
 #Source files for the demo executable (not generated)
-set(EXEC_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/verify.cpp
-    )
+file(GLOB_RECURSE TATUM_STA_SOURCES *.cpp)
+file(GLOB_RECURSE TATUM_STA_HEADERS *.hpp)
 
 set(LEXER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/parsers/vpr_timing_graph.l)
 set(PARSER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/parsers/vpr_timing_graph.y)
 
 #Include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/parsers)
+foreach(header ${TATUM_STA_HEADERS})
+    get_filename_component(incl_dir ${header} DIRECTORY)
+    list(APPEND TATUM_STA_INCLUDE_DIRS ${incl_dir})
+endforeach()
+#Remove duplicate include directories
+list(REMOVE_DUPLICATES TATUM_STA_INCLUDE_DIRS)
 
 
 #
@@ -69,6 +67,7 @@ flex_target(vpr_timing_graph_lexer ${LEXER_SRC}
 bison_target(vpr_timing_graph_parser ${PARSER_SRC}
             ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp)
             #VERBOSE ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.log)
+
 #Capture lexer/parser dependance
 add_flex_bison_dependency(vpr_timing_graph_lexer vpr_timing_graph_parser)
 #Apply suppression flags to the relevant files, must come after flex/bision
@@ -78,13 +77,18 @@ set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
                             PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 
 #Define Executable
-add_executable(${EXEC_NAME}
-               ${EXEC_SRCS}
+add_executable(tatum_sta
+               ${TATUM_STA_SOURCES}
+               ${TATUM_STA_HEADERS}
                ${FLEX_vpr_timing_graph_lexer_OUTPUTS}
                ${BISON_vpr_timing_graph_parser_OUTPUTS})
 
+#Exectuable Includes
+target_include_directories(tatum_sta PRIVATE
+                           ${TATUM_STA_INCLUDE_DIRS})
+
 #Executable links to the library
-target_link_libraries(${EXEC_NAME} ${LIB_NAME})
+target_link_libraries(tatum_sta tatum)
 
 #set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
                             #PROPERTIES COMPILE_FLAGS "-fno-inline")
