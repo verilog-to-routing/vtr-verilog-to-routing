@@ -19,10 +19,11 @@ class TimingAnalyzer : public AnalysisType {
         typedef AnalysisType analysis_type;
 
         virtual ~TimingAnalyzer() {};
-        virtual ta_runtime calculate_timing() = 0;
+        virtual void calculate_timing() = 0;
         virtual void reset_timing() = 0;
 
         virtual const DelayCalcType& delay_calculator() = 0;
+        virtual std::map<std::string, double> profiling_data() = 0;
 };
 
 struct ta_runtime {

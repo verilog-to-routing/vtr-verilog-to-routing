@@ -9,28 +9,25 @@ SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::SerialTimingAnalyz
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-ta_runtime SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_timing() {
-    struct timespec start_times[4];
-    struct timespec end_times[4];
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_timing() {
+    using namespace std::chrono;
 
-    clock_gettime(CLOCK_MONOTONIC, &start_times[0]);
+    auto pre_traversal_start = high_resolution_clock::now();
     pre_traversal(tg_, tc_);
-    clock_gettime(CLOCK_MONOTONIC, &end_times[0]);
+    auto pre_traversal_end = high_resolution_clock::now();
 
-    clock_gettime(CLOCK_MONOTONIC, &start_times[1]);
+    auto fwd_traversal_start = high_resolution_clock::now();
     forward_traversal(tg_, tc_);
-    clock_gettime(CLOCK_MONOTONIC, &end_times[1]);
+    auto fwd_traversal_end = high_resolution_clock::now();
 
-    clock_gettime(CLOCK_MONOTONIC, &start_times[2]);
+    auto bck_traversal_start = high_resolution_clock::now();
     backward_traversal(tg_);
-    clock_gettime(CLOCK_MONOTONIC, &end_times[2]);
+    auto bck_traversal_end = high_resolution_clock::now();
 
-    ta_runtime traversal_times;
-    /*traversal_times.pre_traversal = time_sec(start_times[0], end_times[0]);*/
-    /*traversal_times.fwd_traversal = time_sec(start_times[1], end_times[1]);*/
-    /*traversal_times.bck_traversal = time_sec(start_times[2], end_times[2]);*/
-
-    return traversal_times;
+    //Convert time points to durations and store
+    perf_data_["pre_traversal"] = duration_cast<duration<double>>(pre_traversal_end - pre_traversal_start).count();
+    perf_data_["fwd_traversal"] = duration_cast<duration<double>>(fwd_traversal_end - fwd_traversal_start).count();
+    perf_data_["bck_traversal"] = duration_cast<duration<double>>(bck_traversal_end - bck_traversal_start).count();
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>

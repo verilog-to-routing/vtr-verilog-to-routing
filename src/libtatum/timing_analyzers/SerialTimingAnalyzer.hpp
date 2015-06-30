@@ -7,9 +7,10 @@ template<class AnalysisType, class DelayCalcType, class TagPoolType=MemoryPool>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> {
     public:
         SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator);
-        ta_runtime calculate_timing() override;
+        void calculate_timing() override;
         void reset_timing() override;
         const DelayCalcType& delay_calculator() override { return dc_; }
+        std::map<std::string, double> profiling_data() { return perf_data_; }
 
     protected:
         /*
@@ -37,6 +38,9 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> 
         const TimingConstraints& tc_;
         const DelayCalcType& dc_;
         TagPoolType tag_pool_; //Memory pool for allocating tags
+
+        //Profiling info
+        std::map<std::string, double> perf_data_;
 };
 
 //Implementation

@@ -183,16 +183,17 @@ int main(int argc, char** argv) {
 
             CALLGRIND_TOGGLE_COLLECT;
 
-            ta_runtime traversal_times = serial_analyzer->calculate_timing();
+            serial_analyzer->calculate_timing();
 
             CALLGRIND_TOGGLE_COLLECT;
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_end);
 
             serial_analysis_time += time_sec(analyze_start, analyze_end);
-            serial_pretraverse_time += traversal_times.pre_traversal;
-            serial_fwdtraverse_time += traversal_times.fwd_traversal;
-            serial_bcktraverse_time += traversal_times.bck_traversal;
+            auto prof_data = serial_analyzer->profiling_data();
+            serial_pretraverse_time += prof_data["pre_traversal"];
+            serial_fwdtraverse_time += prof_data["fwd_traversal"];
+            serial_bcktraverse_time += prof_data["bck_traversal"];
 
             cout << ".";
             cout.flush();
@@ -274,12 +275,13 @@ int main(int argc, char** argv) {
             //Analyze
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
-            ta_runtime traversal_times = parallel_analyzer->calculate_timing();
+            parallel_analyzer->calculate_timing();
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-            parallel_pretraverse_time += traversal_times.pre_traversal;
-            parallel_fwdtraverse_time += traversal_times.fwd_traversal;
-            parallel_bcktraverse_time += traversal_times.bck_traversal;
+            auto prof_data = parallel_analyzer->profiling_data();
+            parallel_pretraverse_time += prof_data["pre_traversal"];
+            parallel_fwdtraverse_time += prof_data["fwd_traversal"];
+            parallel_bcktraverse_time += prof_data["bck_traversal"];
             parallel_analysis_time += time_sec(analyze_start, analyze_end);
 
             cout << ".";

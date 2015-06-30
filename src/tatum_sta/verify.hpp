@@ -33,7 +33,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
         int required_nodes_checked = 0; //Count number of nodes checked
 
         //Arrival check by level
-        for(int ilevel = 0; ilevel <tg.num_levels(); ilevel++) {
+        for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
             //std::cout << "LEVEL " << ilevel << std::endl;
             for(NodeId node_id : tg.level(ilevel)) {
                 //std::cout << "Verifying node: " << node_id << " Launch: " << src_domain << " Capture: " << sink_domain << std::endl;
