@@ -151,7 +151,7 @@ void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, I
 	const char *char_prop;
 
 	/* count the number of specified wire connections for this SB */
-	num_wireconns = CountChildren(Node, "wireconn", 1);
+	num_wireconns = CountChildren(Node, "wireconn", 0);
 	sb->wireconns.reserve(num_wireconns);
 
 	for (int i = 0; i < num_wireconns; i++){
@@ -277,7 +277,7 @@ void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 	bool predefined_sb_found = false;
 
 	/* get the number of specified permutation functions */
-	int num_funcs = CountChildren(Node, "func", 1);
+	int num_funcs = CountChildren(Node, "func", 0);
 
 	const char * func_type;
 	const char * func_formula;
@@ -349,7 +349,7 @@ void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 	}
 
 	return;
-} /* read_sb_switchfuncs */
+}
 
 
 /* checks for correctness of switch block read-in from the XML architecture file */
@@ -378,7 +378,7 @@ void check_switchblock( INP t_switchblock_inf *sb ){
 /* checks for correctness of a unidirectional switchblock. hard exit if error found (to be changed to throw later) */
 static void check_unidir_switchblock( INP t_switchblock_inf *sb ){
 
-	/* Check that the destination wire points are always the starting points */
+	/* Check that the destination wire points are always the starting points (i.e. of wire point 0) */
 	vector<t_wireconn_inf> &wireconns = sb->wireconns;
 	int num_wireconns = (int)wireconns.size();
 	for (int iconn = 0; iconn < num_wireconns; iconn++){
