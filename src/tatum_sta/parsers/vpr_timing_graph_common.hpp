@@ -19,7 +19,8 @@ typedef struct domain_skew_iodelay_s {
 } domain_skew_iodelay_t;
 
 typedef struct edge_s {
-    int to_node;
+    int src_node;
+    int sink_node;
     float delay;
 } edge_t;
 
@@ -31,7 +32,7 @@ typedef struct node_arr_req_s {
 
 typedef struct timing_graph_level_s {
     int level;
-    std::vector<int>* node_ids;
+    std::vector<int> node_ids;
 } timing_graph_level_t;
 
 enum class TN_Type; //Forward declaration
@@ -45,13 +46,28 @@ typedef struct node_s {
     int is_clk_src;
     float skew;
     float iodelay;
-    std::vector<edge_t>* out_edges;
+    std::vector<edge_t> out_edges;
 } node_t;
 
 struct domain_header_t {
     int src_domain;
     int sink_domain;
 };
+
+struct union_type {
+    char* strVal;
+    double floatVal;
+    int intVal;
+    domain_skew_iodelay_t domainSkewIodelayVal;
+    edge_t edgeVal;
+    node_arr_req_t nodeArrReqVal;
+    timing_graph_level_t timingGraphLevelVal;
+    node_t nodeVal;
+    TN_Type nodeTypeVal;
+    domain_header_t domain_header;
+};
+
+#define YYSTYPE union_type
 
 class VprArrReqTimes {
     public:

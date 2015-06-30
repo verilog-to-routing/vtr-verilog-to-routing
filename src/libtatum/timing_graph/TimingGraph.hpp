@@ -35,7 +35,7 @@ class TimingGraph {
 
         //Graph accessors
         NodeId num_nodes() const { return node_types_.size(); }
-        EdgeId num_edges() const { return edge_delays_.size(); }
+        EdgeId num_edges() const { return edge_src_nodes_.size(); }
         int num_levels() const { return node_levels_.size(); }
 
         const std::vector<NodeId>& level(NodeId level_id) const { return node_levels_[level_id]; }
@@ -44,15 +44,20 @@ class TimingGraph {
         const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
 
         //Graph modifiers
-        NodeId add_node(const TimingNode& new_node);
-        EdgeId add_edge(const TimingEdge& new_edge);
+        NodeId add_node(const TN_Type type, const DomainId clock_domain, const BlockId block_id, const bool is_clk_src);
+        EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
+
         void set_num_levels(const NodeId nlevels) { node_levels_ = std::vector<std::vector<NodeId>>(nlevels); }
         void add_level(const NodeId level_id, const std::vector<NodeId>& level_node_ids) {node_levels_[level_id] = level_node_ids;}
-        void fill_back_edges();
-        void add_launch_capture_edges();
-        void levelize();
+        void finalize();
         void contiguize_level_edges();
         std::vector<NodeId> contiguize_level_nodes();
+
+    protected:
+        void associate_nodes_with_edges();
+        void add_launch_capture_edges();
+        void levelize();
+
     private:
         /*
          * For improved memory locality, we use a Struct of Arrays (SoA)
@@ -64,14 +69,13 @@ class TimingGraph {
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
         std::vector<bool> node_is_clock_source_;
-
         //Reverse mapping to logical blocks
-        //TODO: this is a temporary cludge - remove later!
+        //TODO: this is a temporary kludge - remove later!
         std::vector<BlockId> node_logical_blocks_;
 
         //Edge data
-        std::vector<NodeId> edge_sink_nodes_;
-        std::vector<NodeId> edge_src_nodes_;
+        std::vector<EdgeId> edge_sink_nodes_;
+        std::vector<EdgeId> edge_src_nodes_;
         std::vector<Time> edge_delays_;
 
         //Auxilary info

@@ -30,18 +30,6 @@ int to_clock_domain = 0;
 
 %}
 
-%union {
-    char* strVal;
-    double floatVal;
-    int intVal;
-    domain_skew_iodelay_t domainSkewIodelayVal;
-    edge_t edgeVal;
-    node_arr_req_t nodeArrReqVal;
-    timing_graph_level_t timingGraphLevelVal;
-    node_t nodeVal;
-    TN_Type nodeTypeVal;
-    domain_header_t domain_header;
-}
 
 /* Verbose error reporting */
 %error-verbose
@@ -144,32 +132,17 @@ int to_clock_domain = 0;
 %%
 
 finish: timing_graph timing_constraints EOL {
-                                                timing_graph.add_launch_capture_edges();
-                                                timing_graph.fill_back_edges();
-                                                timing_graph.levelize();
+                                                /*
+                                                 *timing_graph.add_launch_capture_edges();
+                                                 *timing_graph.fill_back_edges();
+                                                 *timing_graph.levelize();
+                                                 */
+                                                 timing_graph.finalize();
                                             }
 
 timing_graph: num_tnodes                    { printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1); }
     | timing_graph TGRAPH_HEADER EOL        { /*printf("Timing Graph file Header\n");*/ }
     | timing_graph tnode                    {
-                                                TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
-
-                                                for(auto& edge_val : *($2.out_edges)) {
-                                                    TimingEdge edge(Time(edge_val.delay), $2.node_id, edge_val.to_node);
-
-                                                    EdgeId edge_id = timing_graph.add_edge(edge);
-
-                                                    node.add_out_edge_id(edge_id);
-                                                }
-
-                                                //Add the node only after we have attached the out-going edges
-                                                NodeId node_id = timing_graph.add_node(node);
-                                                ASSERT(node_id == $2.node_id);
-
-                                                if(timing_graph.num_nodes() % 1000000 == 0) {
-                                                    std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
-                                                }
-                                                ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
 
                                                 /*
                                                  *cout << "Node " << $2.node_id << ", ";
@@ -180,9 +153,41 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  *cout << "is_clk_src " << $2.is_clk_src << ", ";
                                                  *cout << "skew " << $2.skew << ", ";
                                                  *cout << "iodelay " << $2.iodelay << ", ";
-                                                 *cout << "edges " << $2.out_edges->size();
+                                                 *cout << "edges " << $2.out_edges.size();
                                                  *cout << endl;
                                                  */
+
+                                                NodeId src_node_id = timing_graph.add_node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
+
+                                                for(const auto& edge : $2.out_edges) {
+                                                    /*
+                                                     *cout << "\tEdge " << edge.src_node << " -> " << edge.sink_node << endl;
+                                                     */
+
+                                                    ASSERT(src_node_id == edge.src_node);
+                                                    timing_graph.add_edge(edge.src_node, edge.sink_node);
+
+                                                }
+/*
+ *                                                TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
+ *
+ *                                                for(auto& edge_val : *($2.out_edges)) {
+ *                                                    TimingEdge edge(Time(edge_val.delay), $2.node_id, edge_val.sink_node);
+ *
+ *                                                    EdgeId edge_id = timing_graph.add_edge(edge);
+ *
+ *                                                    node.add_out_edge_id(edge_id);
+ *                                                }
+ *
+ *                                                //Add the node only after we have attached the out-going edges
+ *                                                NodeId node_id = timing_graph.add_node(node);
+ *                                                ASSERT(node_id == $2.node_id);
+ */
+
+                                                if(timing_graph.num_nodes() % 1000000 == 0) {
+                                                    std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
+                                                }
+                                                ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
 
                                             }
     | timing_graph num_tnode_levels         {
@@ -190,8 +195,8 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                 /*printf("Timing Graph Levels %d\n", $2);*/
                                             }
     | timing_graph timing_graph_level EOL   {
-                                                timing_graph.add_level($2.level, *($2.node_ids));
-                                                /*printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids->size()); */
+                                                timing_graph.add_level($2.level, $2.node_ids);
+                                                /*printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids.size()); */
                                             }
     | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
     | timing_graph NODE_ARR_REQ_HEADER EOL  {
@@ -225,15 +230,15 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                       $$.is_clk_src = $6;
                                                                       $$.skew = $7;
                                                                       $$.iodelay = $8;
-                                                                      $$.out_edges = new std::vector<edge_t>();
-                                                                      $$.out_edges->reserve($9);
+                                                                      $$.out_edges.reserve($9);
                                                                     }
     | tnode tedge {
                     //Edges may be broken by VPR to remove
-                    //combinational loops and marked with an invalid 'to_node'
+                    //combinational loops and marked with an invalid 'sink_node'
                     //We skip these edges
-                    if($2.to_node != -1) {
-                        $$.out_edges->push_back($2);
+                    if($2.sink_node != -1) {
+                        $2.src_node = $1.node_id;
+                        $$.out_edges.push_back($2);
                     }
                   }
 
@@ -241,8 +246,8 @@ node_id: int_number TAB {$$ = $1;}
 
 num_out_edges: int_number {$$ = $1;}
 
-tedge: TAB int_number TAB number EOL { $$.to_node = $2; $$.delay = $4; }
-    | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.to_node = $12; $$.delay = $14; }
+tedge: TAB int_number TAB number EOL { $$.sink_node = $2; $$.delay = $4; }
+    | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.sink_node = $12; $$.delay = $14; }
 
 tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; }
     | TN_INPAD_OPIN TAB             { $$ = TN_Type::INPAD_OPIN; }
@@ -270,9 +275,9 @@ num_tnodes: NUM_TNODES int_number {$$ = $2; }
 
 num_tnode_levels: NUM_TNODE_LEVELS int_number {$$ = $2; }
 
-timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {$$.level = $2; $$.node_ids = new std::vector<int>(); $$.node_ids->reserve($4);}
+timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {$$.level = $2; $$.node_ids.reserve($4);}
     | timing_graph_level NODES {}
-    | timing_graph_level TAB int_number   {$$.node_ids->push_back($3);}
+    | timing_graph_level TAB int_number   {$$.node_ids.push_back($3);}
 
 
 /*

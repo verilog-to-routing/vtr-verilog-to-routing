@@ -4,75 +4,75 @@
 
 #include "TimingGraph.hpp"
 
-
-NodeId TimingGraph::add_node(const TimingNode& new_node) {
+NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, const BlockId block_id, const bool is_clk_src) {
     //Type
-    TN_Type new_node_type = new_node.type();
-    node_types_.push_back(new_node.type());
+    node_types_.push_back(type);
 
     //Domain
-    node_clock_domains_.push_back(new_node.clock_domain());
+    node_clock_domains_.push_back(clock_domain);
 
     //Logical block
-    node_logical_blocks_.push_back(new_node.logical_block());
+    node_logical_blocks_.push_back(block_id);
 
     //Clock source
-    node_is_clock_source_.push_back(new_node.is_clock_source());
+    node_is_clock_source_.push_back(is_clk_src);
 
     NodeId node_id = node_types_.size() - 1;
 
     //Save primary outputs as we build the graph
-    if(new_node_type == TN_Type::OUTPAD_SINK ||
-       new_node_type == TN_Type::FF_SINK) {
+    if(type == TN_Type::OUTPAD_SINK ||
+       type == TN_Type::FF_SINK) {
         primary_outputs_.push_back(node_types_.size() - 1);
     }
 
-    //Out edges
-    std::vector<EdgeId> out_edges = std::vector<EdgeId>();
-    out_edges.reserve(new_node.num_out_edges());
-    for(int i = 0; i < new_node.num_out_edges(); i++) {
-        EdgeId edge_id = new_node.out_edge_id(i);
-        out_edges.emplace_back(edge_id);
-    }
-    node_out_edges_.push_back(std::move(out_edges));
-
-    //In edges
-    //  these get filled in later, after all nodes have been added
-    std::vector<EdgeId> in_edges = std::vector<EdgeId>();
-    node_in_edges_.push_back(std::move(in_edges));
-
     //Verify sizes
     ASSERT(node_types_.size() == node_clock_domains_.size());
-    ASSERT(node_types_.size() == node_out_edges_.size());
-    ASSERT(node_types_.size() == node_in_edges_.size());
+    ASSERT(node_types_.size() == node_is_clock_source_.size());
+    ASSERT(node_types_.size() == node_logical_blocks_.size());
 
     //Return the ID of the added node
     return node_id;
 }
 
-EdgeId TimingGraph::add_edge(const TimingEdge& new_edge) {
-    edge_sink_nodes_.push_back(new_edge.to_node_id());
-    edge_src_nodes_.push_back(new_edge.from_node_id());
-    edge_delays_.push_back(new_edge.delay());
-
-    EdgeId edge_id = edge_sink_nodes_.size() - 1;
+EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
+    edge_sink_nodes_.push_back(src_node);
+    edge_src_nodes_.push_back(sink_node);
 
     ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
-    ASSERT(edge_sink_nodes_.size() == edge_delays_.size());
 
     //Return the edge id of the added edge
+    EdgeId edge_id = edge_sink_nodes_.size() - 1;
     return edge_id;
 }
 
-void TimingGraph::fill_back_edges() {
-    //Add reverse/back links for all edges in the timing graph
-    for(int i = 0; i < num_nodes(); i++) {
-        for(EdgeId edge_id : node_out_edges_[i]) {
-            NodeId sink_node = edge_sink_node(edge_id);
+void TimingGraph::finalize() {
+    associate_nodes_with_edges();
+    add_launch_capture_edges();
+}
 
-            //edge_id drives the sink so it is an in edge
-            node_in_edges_[sink_node].push_back(edge_id);
-        }
+void TimingGraph::associate_nodes_with_edges() {
+    /*
+     * When we originally add the edges we did not (yet) know
+     * all the nodes, so we could not update the edges associated
+     * with each source/sink node.
+     *
+     * Now that we've added all the nodes, we can do so.
+     *
+     * We walk through the edges, adding to each node its input/ouput edges.
+     */
+
+
+    //We know how many nodes there are now
+    // so pre-allocate
+    node_out_edges_ = std::vector<std::vector<EdgeId>>(node_types_.size());
+    node_in_edges_ = std::vector<std::vector<EdgeId>>(node_types_.size());
+
+    for(EdgeId edge_id = 0; edge_id < num_edges(); edge_id++) {
+        NodeId src_node_id = edge_src_node(edge_id);
+        NodeId sink_node_id = edge_sink_node(edge_id);
+
+        node_out_edges_[src_node_id].push_back(edge_id);
+        node_in_edges_[sink_node_id].push_back(edge_id);
     }
 }
 
@@ -114,8 +114,7 @@ void TimingGraph::add_launch_capture_edges() {
         if(src_iter != logical_block_FF_sources.end()) {
             //Go through each assoicated source and add an edge to it
             for(NodeId ff_src_node_id : src_iter->second) {
-                //TODO: remove TimingEdge class
-                EdgeId edge_id = add_edge(TimingEdge(Time(0.), ff_clock_node_id, ff_src_node_id));
+                EdgeId edge_id = add_edge(ff_clock_node_id, ff_src_node_id);
                 node_out_edges_[ff_clock_node_id].push_back(edge_id);
             }
         }
@@ -125,8 +124,7 @@ void TimingGraph::add_launch_capture_edges() {
         if(sink_iter != logical_block_FF_sinks.end()) {
             //Go through each assoicated sink and add an edge to it
             for(NodeId ff_sink_node_id : sink_iter->second) {
-                //TODO: remove TimingEdge class
-                EdgeId edge_id = add_edge(TimingEdge(Time(0.), ff_clock_node_id, ff_sink_node_id));
+                EdgeId edge_id = add_edge(ff_clock_node_id, ff_sink_node_id);
                 node_out_edges_[ff_clock_node_id].push_back(edge_id);
             }
         }
@@ -234,16 +232,18 @@ void TimingGraph::contiguize_level_edges() {
     //Save the old values while we write the new ones
     std::vector<NodeId> old_edge_sink_nodes_;
     std::vector<NodeId> old_edge_src_nodes_;
-#ifdef TIME_MEM_ALIGN
-    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_edge_delays_;
-#else
-    std::vector<Time> old_edge_delays_;
-#endif
+/*
+ *#ifdef TIME_MEM_ALIGN
+ *    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_edge_delays_;
+ *#else
+ *    std::vector<Time> old_edge_delays_;
+ *#endif
+ */
 
     //Swap them
     std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
     std::swap(old_edge_src_nodes_, edge_src_nodes_);
-    std::swap(old_edge_delays_, edge_delays_);
+    //std::swap(old_edge_delays_, edge_delays_);
 
     //Update values
     for(auto& edge_level : edge_levels) {
@@ -251,7 +251,7 @@ void TimingGraph::contiguize_level_edges() {
             //Write edges in the new contiguous order
             edge_sink_nodes_.push_back(old_edge_sink_nodes_[orig_edge_id]);
             edge_src_nodes_.push_back(old_edge_src_nodes_[orig_edge_id]);
-            edge_delays_.push_back(old_edge_delays_[orig_edge_id]);
+            //edge_delays_.push_back(old_edge_delays_[orig_edge_id]);
         }
     }
 
