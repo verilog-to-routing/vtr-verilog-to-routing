@@ -33,7 +33,7 @@
 
 #define NUM_SERIAL_RUNS 20
 #define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
@@ -63,12 +63,16 @@ int main(int argc, char** argv) {
     cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << endl;
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
 
+    //Raw outputs of parser
     TimingGraph timing_graph;
     TimingConstraints timing_constraints;
     VprArrReqTimes orig_expected_arr_req_times;
+    std::vector<float> orig_edge_delays;
+
+    //Potentially modified based on parser output
+    VprArrReqTimes expected_arr_req_times;
     std::vector<float> edge_delays;
 
-    VprArrReqTimes expected_arr_req_times;
     std::set<NodeId> const_gen_fanout_nodes;
     std::set<NodeId> clock_gen_fanout_nodes;
 
@@ -83,7 +87,7 @@ int main(int argc, char** argv) {
 
         yyin = fopen(argv[1], "r");
         if(yyin != NULL) {
-            int error = yyparse(timing_graph, orig_expected_arr_req_times, timing_constraints, edge_delays);
+            int error = yyparse(timing_graph, orig_expected_arr_req_times, timing_constraints, orig_edge_delays);
             if(error) {
                 cout << "Parse Error" << endl;
                 fclose(yyin);
@@ -98,7 +102,7 @@ int main(int argc, char** argv) {
         //Fix up the timing graph.
         //VPR doesn't have edges from FF_CLOCKs to FF_SOURCEs and FF_SINKs,
         //but we require them. So post-process the timing graph here to add them.
-        add_ff_clock_to_source_sink_edges(timing_graph, edge_delays);
+        add_ff_clock_to_source_sink_edges(timing_graph, orig_edge_delays);
         //We then need to re-levelize the graph
         timing_graph.levelize();
 
@@ -110,7 +114,17 @@ int main(int argc, char** argv) {
         cout << endl;
 
 #ifdef OPTIMIZE_NODE_EDGE_ORDER
-        timing_graph.contiguize_level_edges();
+        //Re-order edges
+        std::vector<EdgeId> vpr_edge_map = timing_graph.contiguize_level_edges();
+
+        //Adjust the edge delays to reflect the new ordering
+        edge_delays = std::vector<float>(orig_edge_delays.size());
+        for(EdgeId i = 0; i < (EdgeId) orig_edge_delays.size(); i++) {
+            EdgeId new_id = vpr_edge_map[i];
+            edge_delays[new_id] = orig_edge_delays[i];
+        }
+
+        //Re-order nodes
         std::vector<NodeId> vpr_node_map = timing_graph.contiguize_level_nodes();
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
@@ -128,8 +142,10 @@ int main(int argc, char** argv) {
 
         //Adjust the timing constraints
         timing_constraints.remap_nodes(vpr_node_map);
+
 #else
         expected_arr_req_times = orig_expected_arr_req_times;
+        edge_delays = orig_edge_delays;
 #endif
 
         clock_gettime(CLOCK_MONOTONIC, &load_end);
@@ -163,9 +179,13 @@ int main(int argc, char** argv) {
      */
 
 
+    //Create the delay calculator
     PreCalcDelayCalculator delay_calculator(edge_delays);
+
+    //Create the timing analyzer
     auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
-    //auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+
+    //Performance variables
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
     float serial_fwdtraverse_time = 0.;
@@ -219,7 +239,6 @@ int main(int argc, char** argv) {
             serial_verify_time += time_sec(verify_start, verify_end);
 
             if(i < NUM_SERIAL_RUNS-1) {
-                cout << "Resetting run " << i << endl;
                 clock_gettime(CLOCK_MONOTONIC, &reset_start);
                 serial_analyzer->reset_timing();
                 clock_gettime(CLOCK_MONOTONIC, &reset_end);

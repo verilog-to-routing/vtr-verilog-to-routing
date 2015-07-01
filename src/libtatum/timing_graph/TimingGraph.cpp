@@ -129,7 +129,7 @@ void TimingGraph::levelize() {
     }
 }
 
-void TimingGraph::contiguize_level_edges() {
+std::vector<EdgeId> TimingGraph::contiguize_level_edges() {
     //Make all edges in a level be contiguous in memory
     std::cout << "Re-allocating edges so levels are in contiguous memory" << std::endl;
 
@@ -163,13 +163,6 @@ void TimingGraph::contiguize_level_edges() {
     //Save the old values while we write the new ones
     std::vector<NodeId> old_edge_sink_nodes_;
     std::vector<NodeId> old_edge_src_nodes_;
-/*
- *#ifdef TIME_MEM_ALIGN
- *    std::vector<Time, aligned_allocator<Time, TIME_MEM_ALIGN>> old_edge_delays_;
- *#else
- *    std::vector<Time> old_edge_delays_;
- *#endif
- */
 
     //Swap them
     std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
@@ -182,7 +175,6 @@ void TimingGraph::contiguize_level_edges() {
             //Write edges in the new contiguous order
             edge_sink_nodes_.push_back(old_edge_sink_nodes_[orig_edge_id]);
             edge_src_nodes_.push_back(old_edge_src_nodes_[orig_edge_id]);
-            //edge_delays_.push_back(old_edge_delays_[orig_edge_id]);
         }
     }
 
@@ -199,6 +191,8 @@ void TimingGraph::contiguize_level_edges() {
             node_in_edges_[i][j] = orig_edge_id_map[old_edge_id];
         }
     }
+
+    return orig_edge_id_map;
 }
 
 std::vector<NodeId> TimingGraph::contiguize_level_nodes() {

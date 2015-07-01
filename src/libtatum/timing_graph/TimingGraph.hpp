@@ -49,7 +49,7 @@ class TimingGraph {
         void levelize();
         void set_num_levels(const NodeId nlevels) { node_levels_ = std::vector<std::vector<NodeId>>(nlevels); }
         void add_level(const NodeId level_id, const std::vector<NodeId>& level_node_ids) {node_levels_[level_id] = level_node_ids;}
-        void contiguize_level_edges();
+        std::vector<EdgeId> contiguize_level_edges();
         std::vector<NodeId> contiguize_level_nodes();
 
     private:
