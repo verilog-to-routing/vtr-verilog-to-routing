@@ -153,6 +153,6 @@ class VprArrReqTimes {
 
 };
 
-extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times, TimingConstraints& tc);
+extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times, TimingConstraints& tc, std::vector<float>& edge_delays);
 extern FILE *yyin;
 

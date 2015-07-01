@@ -18,7 +18,7 @@
 #include "SerialTimingAnalyzer.hpp"
 #include "analysis_types.hpp"
 #include "TimingTag.hpp"
-#include "TimingGraphDelayCalculator.hpp"
+#include "PreCalcDelayCalculator.hpp"
 #include "ConstantDelayCalculator.hpp"
 
 //Cilk variants
@@ -66,6 +66,8 @@ int main(int argc, char** argv) {
     TimingGraph timing_graph;
     TimingConstraints timing_constraints;
     VprArrReqTimes orig_expected_arr_req_times;
+    std::vector<float> edge_delays;
+
     VprArrReqTimes expected_arr_req_times;
     std::set<NodeId> const_gen_fanout_nodes;
     std::set<NodeId> clock_gen_fanout_nodes;
@@ -81,7 +83,7 @@ int main(int argc, char** argv) {
 
         yyin = fopen(argv[1], "r");
         if(yyin != NULL) {
-            int error = yyparse(timing_graph, orig_expected_arr_req_times, timing_constraints);
+            int error = yyparse(timing_graph, orig_expected_arr_req_times, timing_constraints, edge_delays);
             if(error) {
                 cout << "Parse Error" << endl;
                 fclose(yyin);
@@ -152,8 +154,8 @@ int main(int argc, char** argv) {
     cout << endl;
 
 
-    TimingGraphDelayCalculator delay_calculator;
-    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    PreCalcDelayCalculator delay_calculator(edge_delays);
+    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     //auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
@@ -250,7 +252,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupHoldAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupHoldAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     //auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     float parallel_analysis_time = 0;

@@ -1,7 +1,7 @@
 #include "DelayCalculator.hpp"
 #include "Time.hpp"
 
-class ConstantDelayCalculator : public DelayCalculator {
+class ConstantDelayCalculator {
     public:
         ConstantDelayCalculator(Time delay): delay_(delay) {}
         Time min_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return delay_; }

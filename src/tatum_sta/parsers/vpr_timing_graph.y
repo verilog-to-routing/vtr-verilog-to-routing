@@ -15,7 +15,7 @@
 #include "TimingEdge.hpp"
 #include "Time.hpp"
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const char *msg);
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<float>& edge_delays, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -37,6 +37,7 @@ std::vector<std::vector<edge_t>> node_out_edges;
 %parse-param{TimingGraph& timing_graph}
 %parse-param{VprArrReqTimes& arr_req_times}
 %parse-param{TimingConstraints& timing_constraints}
+%parse-param{std::vector<float>& edge_delays}
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
@@ -141,7 +142,13 @@ finish: timing_graph timing_constraints EOL {
                                                 //Add the edges, now that all nodes have been added
                                                 for(NodeId src_node_id = 0; src_node_id < (int) node_out_edges.size(); src_node_id++) {
                                                     for(const auto& edge : node_out_edges[src_node_id]) {
-                                                        timing_graph.add_edge(edge.src_node, edge.sink_node);
+                                                        EdgeId edge_id = timing_graph.add_edge(edge.src_node, edge.sink_node);
+
+                                                        //Record the edge delay
+                                                        if(edge_id >= (int) edge_delays.size()) {
+                                                            edge_delays.resize(edge_id+1);
+                                                        }
+                                                        edge_delays[edge_id] = edge.delay;
                                                     }
                                                 }
 
@@ -373,7 +380,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const char *msg) {
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<float>& edge_delays, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

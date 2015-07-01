@@ -31,7 +31,6 @@ class TimingGraph {
         //Edge accessors
         NodeId edge_sink_node(EdgeId id) const { return edge_sink_nodes_[id]; }
         NodeId edge_src_node(EdgeId id) const { return edge_src_nodes_[id]; }
-        Time edge_delay(EdgeId id) const { return edge_delays_[id]; }
 
         //Graph accessors
         NodeId num_nodes() const { return node_types_.size(); }
@@ -76,7 +75,6 @@ class TimingGraph {
         //Edge data
         std::vector<EdgeId> edge_sink_nodes_;
         std::vector<EdgeId> edge_src_nodes_;
-        std::vector<Time> edge_delays_;
 
         //Auxilary info
         std::vector<std::vector<NodeId>> node_levels_;
