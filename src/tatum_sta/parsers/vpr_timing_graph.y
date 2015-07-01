@@ -27,7 +27,7 @@ int arr_req_cnt = 0;
 int from_clock_domain = 0;
 int to_clock_domain = 0;
 
-std::vector<std::vector<edge_t>> node_out_edges;
+std::vector<std::vector<edge_t>*> node_out_edges;
 
 %}
 
@@ -38,6 +38,19 @@ std::vector<std::vector<edge_t>> node_out_edges;
 %parse-param{VprArrReqTimes& arr_req_times}
 %parse-param{TimingConstraints& timing_constraints}
 %parse-param{std::vector<float>& edge_delays}
+
+%union {
+    char* strVal;
+    double floatVal;
+    int intVal;
+    domain_skew_iodelay_t domainSkewIodelayVal;
+    edge_t edgeVal;
+    node_arr_req_t nodeArrReqVal;
+    timing_graph_level_t timingGraphLevelVal;
+    node_t nodeVal;
+    TN_Type nodeTypeVal;
+    domain_header_t domain_header;
+};
 
 /* declare constant tokens */
 %token TGRAPH_HEADER          "timing_graph_header"
@@ -141,7 +154,7 @@ finish: timing_graph timing_constraints EOL {
                                                  */
                                                 //Add the edges, now that all nodes have been added
                                                 for(NodeId src_node_id = 0; src_node_id < (int) node_out_edges.size(); src_node_id++) {
-                                                    for(const auto& edge : node_out_edges[src_node_id]) {
+                                                    for(const auto& edge : *node_out_edges[src_node_id]) {
                                                         EdgeId edge_id = timing_graph.add_edge(edge.src_node, edge.sink_node);
 
                                                         //Record the edge delay
@@ -150,6 +163,8 @@ finish: timing_graph timing_constraints EOL {
                                                         }
                                                         edge_delays[edge_id] = edge.delay;
                                                     }
+                                                    //Clean-up
+                                                    delete node_out_edges[src_node_id];
                                                 }
                                             }
 
@@ -201,11 +216,11 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
 
                                             }
     | timing_graph num_tnode_levels         {
-                                                timing_graph.set_num_levels($2);
+                                                /*timing_graph.set_num_levels($2);*/
                                                 /*printf("Timing Graph Levels %d\n", $2);*/
                                             }
     | timing_graph timing_graph_level EOL   {
-                                                timing_graph.add_level($2.level, $2.node_ids);
+                                                /*timing_graph.add_level($2.level, $2.node_ids);*/
                                                 /*printf("TG level %d, Nodes %zu\n", $2.level, $2.node_ids.size()); */
                                             }
     | timing_graph NET_DRIVER_TNODE_HEADER  {/*printf("Net to driver Tnode header\n");*/}
@@ -240,7 +255,8 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                       $$.is_clk_src = $6;
                                                                       $$.skew = $7;
                                                                       $$.iodelay = $8;
-                                                                      $$.out_edges.reserve($9);
+                                                                      $$.out_edges = new std::vector<edge_t>;
+                                                                      $$.out_edges->reserve($9);
                                                                     }
     | tnode tedge {
                     //Edges may be broken by VPR to remove
@@ -248,7 +264,7 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                     //We skip these edges
                     if($2.sink_node != -1) {
                         $2.src_node = $1.node_id;
-                        $$.out_edges.push_back($2);
+                        $$.out_edges->push_back($2);
                     }
                   }
 
@@ -285,9 +301,13 @@ num_tnodes: NUM_TNODES int_number {$$ = $2; }
 
 num_tnode_levels: NUM_TNODE_LEVELS int_number {$$ = $2; }
 
-timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL {$$.level = $2; $$.node_ids.reserve($4);}
+timing_graph_level: LEVEL int_number NUM_LEVEL_NODES int_number EOL { /* $$.level = $2; $$.node_ids->reserve($4); */}
     | timing_graph_level NODES {}
-    | timing_graph_level TAB int_number   {$$.node_ids.push_back($3);}
+    | timing_graph_level TAB int_number   {
+                                            /*
+                                             *$$.node_ids->push_back($3);
+                                             */
+                                          }
 
 
 /*
