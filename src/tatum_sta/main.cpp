@@ -33,7 +33,7 @@
 
 #define NUM_SERIAL_RUNS 20
 #define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
-#define OPTIMIZE_NODE_EDGE_ORDER
+//#define OPTIMIZE_NODE_EDGE_ORDER
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
@@ -143,17 +143,13 @@ int main(int argc, char** argv) {
     print_node_fanout_histogram(timing_graph, n_histo_bins);
     cout << endl;
 
-    /*
-     *cout << "Timing Graph" << endl;
-     *print_timing_graph(timing_graph);
-     *cout << endl;
-     */
+    cout << "Timing Graph" << endl;
+    print_timing_graph(timing_graph);
+    cout << endl;
 
-    /*
-     *cout << "Levelization" << endl;
-     *print_levelization(timing_graph);
-     *cout << endl;
-     */
+    cout << "Levelization" << endl;
+    print_levelization(timing_graph);
+    cout << endl;
 
 
     TimingGraphDelayCalculator delay_calculator;

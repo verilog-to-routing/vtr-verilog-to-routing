@@ -27,6 +27,7 @@ int arr_req_cnt = 0;
 int from_clock_domain = 0;
 int to_clock_domain = 0;
 
+std::vector<std::vector<edge_t>> node_out_edges;
 
 %}
 
@@ -137,7 +138,14 @@ finish: timing_graph timing_constraints EOL {
                                                  *timing_graph.fill_back_edges();
                                                  *timing_graph.levelize();
                                                  */
-                                                 timing_graph.finalize();
+                                                //Add the edges, now that all nodes have been added
+                                                for(NodeId src_node_id = 0; src_node_id < (int) node_out_edges.size(); src_node_id++) {
+                                                    for(const auto& edge : node_out_edges[src_node_id]) {
+                                                        timing_graph.add_edge(edge.src_node, edge.sink_node);
+                                                    }
+                                                }
+
+                                                timing_graph.finalize();
                                             }
 
 timing_graph: num_tnodes                    { printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1); }
@@ -157,17 +165,14 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  *cout << endl;
                                                  */
 
+                                                //Add the node
                                                 NodeId src_node_id = timing_graph.add_node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
 
-                                                for(const auto& edge : $2.out_edges) {
-                                                    /*
-                                                     *cout << "\tEdge " << edge.src_node << " -> " << edge.sink_node << endl;
-                                                     */
+                                                //Save the edges to be added later
+                                                node_out_edges.push_back($2.out_edges);
 
-                                                    ASSERT(src_node_id == edge.src_node);
-                                                    timing_graph.add_edge(edge.src_node, edge.sink_node);
+                                                VERIFY(src_node_id == (int) node_out_edges.size() - 1);
 
-                                                }
 /*
  *                                                TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
  *

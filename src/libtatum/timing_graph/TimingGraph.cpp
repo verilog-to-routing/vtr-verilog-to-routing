@@ -17,6 +17,10 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
     //Clock source
     node_is_clock_source_.push_back(is_clk_src);
 
+    //Edges
+    node_out_edges_.push_back(std::vector<EdgeId>());
+    node_in_edges_.push_back(std::vector<EdgeId>());
+
     NodeId node_id = node_types_.size() - 1;
 
     //Save primary outputs as we build the graph
@@ -35,45 +39,32 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
 }
 
 EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
-    edge_sink_nodes_.push_back(src_node);
-    edge_src_nodes_.push_back(sink_node);
+    //We require that the source/sink node must already be in the graph,
+    //  so we can update them with thier edge references
+    VERIFY(src_node < num_nodes());
+    VERIFY(sink_node < num_nodes());
 
+    //Create the edgge
+    edge_src_nodes_.push_back(src_node);
+    edge_sink_nodes_.push_back(sink_node);
+
+    //Verify
     ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
 
-    //Return the edge id of the added edge
+    //The id of the new edge
     EdgeId edge_id = edge_sink_nodes_.size() - 1;
+
+    //Update the nodes the edge references
+    node_out_edges_[src_node].push_back(edge_id);
+    node_in_edges_[sink_node].push_back(edge_id);
+
+    //Return the edge id of the added edge
     return edge_id;
 }
 
 void TimingGraph::finalize() {
-    associate_nodes_with_edges();
     add_launch_capture_edges();
-}
-
-void TimingGraph::associate_nodes_with_edges() {
-    /*
-     * When we originally add the edges we did not (yet) know
-     * all the nodes, so we could not update the edges associated
-     * with each source/sink node.
-     *
-     * Now that we've added all the nodes, we can do so.
-     *
-     * We walk through the edges, adding to each node its input/ouput edges.
-     */
-
-
-    //We know how many nodes there are now
-    // so pre-allocate
-    node_out_edges_ = std::vector<std::vector<EdgeId>>(node_types_.size());
-    node_in_edges_ = std::vector<std::vector<EdgeId>>(node_types_.size());
-
-    for(EdgeId edge_id = 0; edge_id < num_edges(); edge_id++) {
-        NodeId src_node_id = edge_src_node(edge_id);
-        NodeId sink_node_id = edge_sink_node(edge_id);
-
-        node_out_edges_[src_node_id].push_back(edge_id);
-        node_in_edges_[sink_node_id].push_back(edge_id);
-    }
+    levelize();
 }
 
 void TimingGraph::add_launch_capture_edges() {
@@ -114,8 +105,7 @@ void TimingGraph::add_launch_capture_edges() {
         if(src_iter != logical_block_FF_sources.end()) {
             //Go through each assoicated source and add an edge to it
             for(NodeId ff_src_node_id : src_iter->second) {
-                EdgeId edge_id = add_edge(ff_clock_node_id, ff_src_node_id);
-                node_out_edges_[ff_clock_node_id].push_back(edge_id);
+                add_edge(ff_clock_node_id, ff_src_node_id);
             }
         }
 
@@ -124,8 +114,7 @@ void TimingGraph::add_launch_capture_edges() {
         if(sink_iter != logical_block_FF_sinks.end()) {
             //Go through each assoicated sink and add an edge to it
             for(NodeId ff_sink_node_id : sink_iter->second) {
-                EdgeId edge_id = add_edge(ff_clock_node_id, ff_sink_node_id);
-                node_out_edges_[ff_clock_node_id].push_back(edge_id);
+                add_edge(ff_clock_node_id, ff_sink_node_id);
             }
         }
     }
@@ -135,7 +124,7 @@ void TimingGraph::levelize() {
     //Levelizes the timing graph
     //This over-writes any previous levelization if it exists
 
-    //Clear the previous levelization
+    //Clear any previous levelization
     node_levels_.clear();
     primary_outputs_.clear();
 
@@ -174,7 +163,7 @@ void TimingGraph::levelize() {
                 NodeId sink_node = edge_sink_node(edge_id);
 
                 //Decrement the fanin count
-                ASSERT(node_fanin_remaining[sink_node] > 0);
+                VERIFY(node_fanin_remaining[sink_node] > 0);
                 node_fanin_remaining[sink_node]--;
 
                 //Add to the next level if all fanin has been seen

@@ -125,7 +125,8 @@ void print_timing_graph(const TimingGraph& tg) {
 
             NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-            cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << " Delay: " << tg.edge_delay(edge_id).value() << endl;
+            cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << endl;
+            //<< " Delay: " << tg.edge_delay(edge_id).value() << endl;
         }
     }
 }
