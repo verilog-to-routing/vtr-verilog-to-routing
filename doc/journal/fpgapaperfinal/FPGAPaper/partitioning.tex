@@ -130,7 +130,7 @@ On average, the critical path delay did not vary significantly between the diffe
 Considering both routability and delay, the best CAD flow used the partitioning result to constrain both packing and placement, and we use that flow in the remainder of this paper.
 
 \subsection{\% wires cut}
-To evaluate the CAD flow performance for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of~\cite{interposer2014} for FPGAs where more than half the wires are cut at interposer boundaries. It is slightly worse than the traditional FPGA CAD flow even for an architecture with 0\% of the wires cut, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.
+To evaluate the CAD flow performance for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of~\cite{interposer2014} for FPGAs where more than half the wires are cut at interposer boundaries. \hl{But it is slightly worse than the traditional FPGA CAD flow for an architecture with 0\% of the wires cut}, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.
 
 \begin{figure}[!htbp]
 \centering

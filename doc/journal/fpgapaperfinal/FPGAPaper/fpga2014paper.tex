@@ -28,6 +28,7 @@
 \usepackage{enumitem}
 \usepackage{cite}
 \usepackage{hhline}
+\usepackage{color,soul}
 
 \DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
 
@@ -123,7 +124,7 @@ When the process matures and the defect density decreases this yield advantage d
 \subsection{Virtex Interposer-based FPGAs}
 \label{virtex7section}
 
-The Xilinx 2.5D FPGAs from the Virtex-7 and Virtex Ultrascale families are currently the only commercially available silicon interposer-based FPGAs~\cite{xilinxWP}. As described in Section~\ref{archSection} we are studying the impact of several key interposer parameters on the performance of the multi-die system, including (i) the percentage of the wiring normally present between rows of the FPGA which is cut when crossing between dice, and (ii) the extra delay (vs. a normal connection between adjacent rows) added when one must traverse the interposer.  To locate where Virtex-7 lies in this architecture space, we combined published information on the implementation of Xilinx's interposer-based FPGAs~\cite{xilinxTSV} with a detailed analysis of the~\textit{XC7V2000T} FPGA routing resources visible in the \textit{Vivado Device View}.
+The Xilinx 2.5D FPGAs from the Virtex-7 and Virtex Ultrascale families are currently the only commercially available silicon interposer-based FPGAs~\cite{xilinxWP}. \hl{We are studying} the impact of several key interposer parameters on the performance of the multi-die system, including (i) the percentage of the wiring normally present between rows of the FPGA which is cut when crossing between dice, and (ii) the extra delay (vs. a normal connection between adjacent rows) added when one must traverse the interposer.  To locate where Virtex-7 lies in this architecture space, we combined published information on the implementation of Xilinx's interposer-based FPGAs~\cite{xilinxTSV} with a detailed analysis of the~\textit{XC7V2000T} FPGA routing resources visible in the \textit{Vivado Device View}.
 
 \begin{figure}[!htbp]
 \centering
@@ -182,10 +183,10 @@ In a simple architecture, the vertical routing wires at the edge of an FPGA die 
 
 \begin{enumerate}
 \item Fan-in Transfer for Interposer Wires\\
-For an architecture with \textit{\% wires cut} $=0$, all vertical routing wires have a corresponding interposer wire that connects them to the adjacent die. Practical interposers, however, can only accommodate a fraction of all vertical routing wires. When \textit{fanin transfer} option is \textit{on}, we place a multiplexer at the input of each available interposer wire and connect adjacent ``dangling" vertical routing wires to the multiplexer. This enables additional flexibility in routing by ensuring that \textit{every} vertical routing wire could \textit{potentially} drive an interposer wire through a multiplexer. As an example, if \textit{\% wires cut} $=75\%$, 3 of every 4 interposer wires are cut. Therefore, we place a 4-to-1 mux at the input of the one interposer wire that is not cut, and we connect the 3 vertical routing wires that do not have a corresponding interposer wire to the multiplexer. 
+For an architecture with \textit{\% wires cut} $=0$, all vertical routing wires have a corresponding interposer wire that connects them to the adjacent die. Practical interposers, however, can only accommodate a fraction of all vertical routing wires. \hl{As shown in Figure}~\ref{fig:architecture_params}, when \textit{fanin transfer} option is \textit{on}, we place a multiplexer at the input of each available interposer wire and connect adjacent ``dangling" vertical routing wires to the multiplexer. This enables additional flexibility in routing by ensuring that \textit{every} vertical routing wire could \textit{potentially} drive an interposer wire through a multiplexer. As an example, if \textit{\% wires cut} $=75\%$, 3 of every 4 interposer wires are cut. Therefore, we place a 4-to-1 mux at the input of the one interposer wire that is not cut, and we connect the 3 vertical routing wires that do not have a corresponding interposer wire to the multiplexer. 
 
 \item Fan-out Transfer for Interposer Wires\\
-When \textit{fanout transfer} option is \textit{on}, we allow an interposer wire to drive not only its own corresponding vertical wire at the other side of the cut, but also other ``dangling" vertical routing wires that are not driven by anything because their corresponding interposer wires are cut.
+\hl{As shown in Figure}~\ref{fig:architecture_params}, when \textit{fanout transfer} option is \textit{on}, we allow an interposer wire to drive not only its own corresponding vertical wire at the other side of the cut, but also other ``dangling" vertical routing wires that are not driven by anything because their corresponding interposer wires are cut.
 
 \item Bidirectional Interposer Wires\\
 Dominant routing architectures in modern FPGAs use unidirectional wires~\cite{unidirectional, lewis2005stratix} which can only be driven at one point, normally their start point. When this option is \textit{on}, we allow interposer wires to be driven from one end or the other by adding tri-state buffers at both ends.
@@ -244,7 +245,7 @@ As illustrated in Figure~\ref{fig:vpr_interposer_gui}, no vertical routing wires
 
 \subsection{Placer Optimization}
 \label{cad_enh_placer_subsection}
-Placement is crucial in mitigating the impact of the reduced wiring and increased delay when crossing between dice; a good placement should minimize the number of signals crossing between dice, particularly time-critical ones. VPR uses 2 different costs as the metrics for its placer algorithm: the timing cost and the bounding box (wiring) cost. We modified the placer's bounding box and timing costs to account for the increased latency to cross the interposer and for the reduced wire capacity close to the cutlines, as the wire availability becomes more sparse.
+Placement is crucial in mitigating the impact of the reduced wiring and increased delay when crossing between dice; a good placement should minimize the number of signals crossing between dice, particularly time-critical ones. VPR uses 2 different costs as the metrics for its \hl{simulated annealing} placer algorithm: the timing cost and the bounding box (wiring) cost. We modified the placer's bounding box and timing costs to account for the increased latency to cross the interposer and for the reduced wire capacity close to the cutlines, as the wire availability becomes more sparse.
 
 %   - Delay
 \subsubsection{Placer Timing Cost}
@@ -259,7 +260,7 @@ Criticality(i,j)
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
-where \textit{ij} denotes a connection from block i to block j that exists in the circuit netlist.
+\noindent{\hl{where}} \textit{ij} denotes a connection from block i to block j that exists in the circuit netlist.
 
 This cost function assumes that the FPGA is homogeneous and consequently the delay between 2 points $(x_1,y_1)$ and $(x_2,y_2)$ only depends on $(\Delta x,\Delta y)$. This is obviously not true for interposer-based FPGAs, as the cutlines make them heterogeneous in the \textit{y} direction. To solve this problem and improve the quality of the results, we add an extra term to the delay function:
 
@@ -271,7 +272,7 @@ N_{crossed}(i,j) \times delay\_increase
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 
-where $N_{crossed}(i,j)$ is the minimum number of times this path has to cross the interposer to go from $(x_i,y_i)$ to $(x_j,y_j)$ and $delay\_increase$ is the timing penalty of crossing the interposer.
+\noindent{\hl{where}} $N_{crossed}(i,j)$ is the minimum number of times this path has to cross the interposer to go from $(x_i,y_i)$ to $(x_j,y_j)$ and $delay\_increase$ is the \hl{total timing penalty of crossing the interposer, including delays through muxes, bumps, and interposer wires.}
 
 %   - Wiring / cut cost
 \subsubsection{Placer Wiring Cost}
@@ -285,7 +286,7 @@ Cost_{W\_orig} = \sum_{n=1}^{N_{nets}} q(n) \times [\frac{bb_x(n)}{W_{chanx}} + 
 \setlength{\arraycolsep}{5pt}
 
 
-where $bb_x(n)$ and $bb_y(n)$ are the dimensions of the bounding box of net \textit{n} in the x and y directions, respectively. $W_{chanx}$ and $W_{chany}$ are the average x-directed and y-directed channel widths over this bounding box. Finally, $q(n)$ is a function obtained from \cite{icann} which models the fact that bounding boxes underpredict the required routing for high fanout nets. $q(n)$ slowly increases with the fanout of net \textit{n}.
+\noindent{\hl{where}} $bb_x(n)$ and $bb_y(n)$ are the dimensions of the bounding box of net \textit{n} in the x and y directions, respectively. $W_{chanx}$ and $W_{chany}$ are the average \hl{horizontal and vertical channel widths} over this bounding box. Finally, $q(n)$ is a function obtained from \cite{icann} which models the fact that bounding boxes underpredict the required routing for high fanout nets. $q(n)$ slowly increases with the fanout of net \textit{n}.
 
 VPR's wiring cost also considers the FPGA to be homogeneous, and uses only the number of nets, the size of the net's bounding box and the average number of wires per channel to calculate the cost. Thus, to account for the reduced connectivity near the cutlines we create an extra cost term, $Cost_{cut}$. This new cost is added to (\ref{eq:bbcost}) to create the total wiring cost.
 
@@ -308,11 +309,11 @@ where
 \setlength{\arraycolsep}{0.0em}
 \begin{equation}
 \label{eq:cprime}
-C' = \frac{ratio\_wires\_cut}{W_{chany}}
+C' = \frac{\%~wires~cut}{W_{chany}}
 \end{equation}
 \setlength{\arraycolsep}{5pt}
 
-\textit{bbHeight(n)} is the height of the bounding box of the net \textit{n} and $ratio\_wires\_cut$ is the ratio of wires cut at the cutline. This formulation of $C'$ ensures that the new cost term is of roughly the same magnitude as $Cost_{W\_orig}$ in (\ref{eq:bbcost}) and that it is weighted more heavily for interposer architectures in which the wiring between dice is more scarce.
+\noindent{\hl{and \textit{bbHeight(n)}}} is the height of the bounding box of the net \textit{n}. This formulation of $C'$ ensures that the new cost term is of roughly the same magnitude as $Cost_{W\_orig}$ in (\ref{eq:bbcost}) and that it is weighted more heavily for interposer architectures in which the wiring between dice is more scarce.
 
 This cost function performs better than several others as shown in \cite{interposer2014}, and we believe the key to the good performance of this cost functions is that $Cost_{cut}$ produces gradual gains as bounding boxes crossing the cutline shrink to be closer and closer to being captured entirely on one side of the cutline. Consider for example the 3 bounding boxes shown in Figure \ref{fig:bb_illustration}. Note that bounding box (a) and (b) both cross the cutline, but (b) is penalized less by (\ref{eq:cost2}) because bounding box (b) is mostly on the lower side of the cutline; it is more likely that later placement changes will result in the bounding box moving entirely below the cutline, reducing interposer wiring demand. Cost function (\ref{eq:cost2}) penalizes bounding box (a) more than (b) and (b) more than (c) to guide placement to gradually move bounding boxes to one side or the other of a cutline.
 
@@ -358,7 +359,7 @@ $T_{del}$ is an estimate of the delay that the router predicts it will see on th
 
 \begin{multline}
 \label{eq:tdelay}
-T^\prime_{del} = T_{del} + T_{interpose} \times ExpectInterposeHops
+T^\prime_{del} = T_{del} + T_{interposer} \times NumExpectedInterpHops
 \end{multline}
 \setlength{\arraycolsep}{5pt}
 

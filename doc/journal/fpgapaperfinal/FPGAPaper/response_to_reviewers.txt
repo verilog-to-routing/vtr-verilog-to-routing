@@ -92,7 +92,7 @@ Reviewer: 3
 
 In section IV.A, you should mention that VPR's placer is simulated annealing-based. In particular, the reason you cited in the last paragraph of IV.A is based on the assumption that you are using an iterative improvement-based placer (and not, say, an analytical placer).
 
-[Ehsan: add mention of annealing].
+[Ehsan: add mention of annealing][DONE]
 
 For the discussion about hypergraph to graph transformation in Sec V.C, there were many papers discussing how to set the edge weights in the 90's, please cite them (for example, see the survey paper "Recent directions in netlist partioning: a survey"). In particular, setting the edge weight to 1/(n-1) instead of 1/n is a popular choice since it can model a 2-pin net exactly. So, it makes sense to report the results for 1/(n-1). It looks like your star model picks one node of a net and connect it to other nodes of the net, but the more popular star model in the physical design literature would add a dummy node for each net that connects to all nodes of the net. So please explicitly define your star model in words. And from p.9, it looks like that you also want to distinguish the source of a net from the sinks of a net in the star model, if so, please state that in the definition of your star model.
 
@@ -110,16 +110,16 @@ Some writing issues:
 
 - Sec II.A, 1st paragraph, read "As described in Section III". It is a bit odd since the readers have not read section III at that point.
 
-[Ehsan: take out.]
+[Ehsan: take out.][DONE]
 
 - The text never refers to Fig.3.
-[Ehsan: add reference]
+[Ehsan: add reference][DONE]
 
 - There should not be indentation following eqts. (1), (2), (3), (5), (6).
-[Ehsan: fix. Shouldn't start a new paragraph after.]
+[Ehsan: fix. Shouldn't start a new paragraph after.][DONE]
 
 - Sec. V.E., "It is slightly worse ... even for ..." -> "But it is slightly worse ... for ..."
-[Ehsan: fix.]
+[Ehsan: fix.][DONE]
 
 Reviewer: 4
 
@@ -193,19 +193,20 @@ Section I, third paragraph
 [Vaughn: fix]
 
 Regarding the placer timing cost described in Section IV.A.1), does the delay term include the multiplexers or just the bumps and the wires through the interposer?
-[Ehsan: modify text.]
+[Ehsan: modify text.][DONE]
 
 Regarding Equation (3), can you give a better explanation of the W_chanx and W_chany terms? I didn’t completely understand them from the short 1-sentence description.
-[Ehsan: change.]
+[Ehsan: change.][DONE]
 
 Below Equation (6), I don’t understand the ratio_of_wires_cut metric, especially vis-a-vis Figure 6.
-[Use % wires cut instead].
+[Use % wires cut instead][DONE]
 
 In Figure 6, the green box and label (a) are nearly impossible to see given the light blue background with white spacing. Please switch to a darker shade of green.
-[Ehsan: fix].
+[Ehsan: fix][DONE]
 
 In Equation (1), does the ExpectInterposeHops include the delay of the muxes?
-[Ehsan: explain / fix].
+[Ehsan: explain / fix][DONE: ExpectInterposeHops is not the delay term. It's the number of expected interposer hops which is multiplied by the total delay of each hop. I changed the variable name to: NumExpectedInterpHops]
+
 
 Fig. 23 is somehow redundant, as it is simply a different way to display data that was reported earlier.
 [Vaughn: write up defense of figure].
