@@ -151,8 +151,6 @@ finish: timing_graph timing_constraints EOL {
                                                         edge_delays[edge_id] = edge.delay;
                                                     }
                                                 }
-
-                                                timing_graph.finalize();
                                             }
 
 timing_graph: num_tnodes                    { printf("Loading Timing Graph with %d nodes\n", $1); arr_req_times.set_num_nodes($1); }

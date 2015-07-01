@@ -99,7 +99,6 @@ void SetupTraversal<Base>::forward_traverse_edge(TagPoolType& tag_pool, const Ti
     /*
      * Data tags
      */
-
     const TimingTags& src_data_tags = setup_data_tags_[src_node_id];
 
     for(const TimingTag& src_data_tag : src_data_tags) {

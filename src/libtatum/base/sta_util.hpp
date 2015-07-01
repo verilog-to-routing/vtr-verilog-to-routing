@@ -280,3 +280,5 @@ void print_hold_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> anal
     }
     std::cout << std::endl;
 }
+
+void add_ff_clock_to_source_sink_edges(TimingGraph& timing_graph, std::vector<float>& edge_delays);

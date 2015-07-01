@@ -95,7 +95,12 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-
+        //Fix up the timing graph.
+        //VPR doesn't have edges from FF_CLOCKs to FF_SOURCEs and FF_SINKs,
+        //but we require them. So post-process the timing graph here to add them.
+        add_ff_clock_to_source_sink_edges(timing_graph, edge_delays);
+        //We then need to re-levelize the graph
+        timing_graph.levelize();
 
         cout << "Timing Graph Stats:" << endl;
         cout << "  Nodes : " << timing_graph.num_nodes() << endl;
@@ -145,17 +150,21 @@ int main(int argc, char** argv) {
     print_node_fanout_histogram(timing_graph, n_histo_bins);
     cout << endl;
 
-    cout << "Timing Graph" << endl;
-    print_timing_graph(timing_graph);
-    cout << endl;
+    /*
+     *cout << "Timing Graph" << endl;
+     *print_timing_graph(timing_graph);
+     *cout << endl;
+     */
 
-    cout << "Levelization" << endl;
-    print_levelization(timing_graph);
-    cout << endl;
+    /*
+     *cout << "Levelization" << endl;
+     *print_levelization(timing_graph);
+     *cout << endl;
+     */
 
 
     PreCalcDelayCalculator delay_calculator(edge_delays);
-    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupHoldAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     //auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     float serial_analysis_time = 0.;
     float serial_pretraverse_time = 0.;
@@ -209,10 +218,13 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);
 
-            clock_gettime(CLOCK_MONOTONIC, &reset_start);
-            serial_analyzer->reset_timing();
-            clock_gettime(CLOCK_MONOTONIC, &reset_end);
-            serial_reset_time += time_sec(reset_start, reset_end);
+            if(i < NUM_SERIAL_RUNS-1) {
+                cout << "Resetting run " << i << endl;
+                clock_gettime(CLOCK_MONOTONIC, &reset_start);
+                serial_analyzer->reset_timing();
+                clock_gettime(CLOCK_MONOTONIC, &reset_end);
+                serial_reset_time += time_sec(reset_start, reset_end);
+            }
         }
         CALLGRIND_STOP_INSTRUMENTATION;
 
@@ -244,15 +256,15 @@ int main(int argc, char** argv) {
         std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
         write_dot_file_setup(tg_setup_dot_file, timing_graph, serial_analyzer);
 
-        std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
-        write_dot_file_hold(tg_hold_dot_file, timing_graph, serial_analyzer);
+        //std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
+        //write_dot_file_hold(tg_hold_dot_file, timing_graph, serial_analyzer);
     } else {
         cout << "Skipping writting dot file due to large graph size" << endl;
     }
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupHoldAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     //auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     float parallel_analysis_time = 0;
@@ -295,10 +307,12 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             parallel_verify_time += time_sec(verify_start, verify_end);
 
-            clock_gettime(CLOCK_MONOTONIC, &reset_start);
-            parallel_analyzer->reset_timing();
-            clock_gettime(CLOCK_MONOTONIC, &reset_end);
-            parallel_reset_time += time_sec(reset_start, reset_end);
+            if(i < NUM_PARALLEL_RUNS-1) {
+                clock_gettime(CLOCK_MONOTONIC, &reset_start);
+                parallel_analyzer->reset_timing();
+                clock_gettime(CLOCK_MONOTONIC, &reset_end);
+                parallel_reset_time += time_sec(reset_start, reset_end);
+            }
         }
         parallel_analysis_time_avg = parallel_analysis_time / NUM_PARALLEL_RUNS;
         parallel_pretraverse_time_avg = parallel_pretraverse_time / NUM_PARALLEL_RUNS;
@@ -335,7 +349,7 @@ int main(int argc, char** argv) {
 
     //Tag stats
     print_setup_tags_histogram(timing_graph, serial_analyzer);
-    print_hold_tags_histogram(timing_graph, serial_analyzer);
+    //print_hold_tags_histogram(timing_graph, serial_analyzer);
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 

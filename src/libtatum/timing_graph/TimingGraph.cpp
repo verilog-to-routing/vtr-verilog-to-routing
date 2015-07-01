@@ -62,64 +62,6 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     return edge_id;
 }
 
-void TimingGraph::finalize() {
-    add_launch_capture_edges();
-    levelize();
-}
-
-void TimingGraph::add_launch_capture_edges() {
-    //We represent the dependancies between the clock and data paths
-    //As edges in the graph from FF_CLOCK pins to FF_SOURCES (launch path)
-    //and FF_SINKS (capture path)
-    //
-    //We use the information about the logical blocks associated with each
-    //timing node to infer these edges.  That is, we look for FF_SINKs and FF_SOURCEs
-    //that share the same logical block as an FF_CLOCK.
-    //
-    //TODO: Currently this just works for VPR's timing graph where only one FF_CLOCK exists
-    //      per basic logic block.  This will need to be generalized.
-
-    //Build a map from logical block id to the tnodes we care about
-    std::map<BlockId,std::vector<NodeId>> logical_block_FF_clocks;
-    std::map<BlockId,std::vector<NodeId>> logical_block_FF_sources;
-    std::map<BlockId,std::vector<NodeId>> logical_block_FF_sinks;
-
-    for(NodeId node_id = 0; node_id < num_nodes(); node_id++) {
-        if(node_type(node_id) == TN_Type::FF_CLOCK) {
-            logical_block_FF_clocks[node_logical_block(node_id)].push_back(node_id);
-        } else if (node_type(node_id) == TN_Type::FF_SOURCE) {
-            logical_block_FF_sources[node_logical_block(node_id)].push_back(node_id);
-        } else if (node_type(node_id) == TN_Type::FF_SINK) {
-            logical_block_FF_sinks[node_logical_block(node_id)].push_back(node_id);
-        }
-    }
-
-    //Loop through each FF_CLOCK and add edges to FF_SINKs and FF_SOURCEs
-    for(const auto clock_kv : logical_block_FF_clocks) {
-        BlockId logical_block_id = clock_kv.first;
-        VERIFY(clock_kv.second.size() == 1);
-        NodeId ff_clock_node_id = clock_kv.second[0];
-
-        //Check for FF_SOURCEs associated with this FF_CLOCK pin
-        auto src_iter = logical_block_FF_sources.find(logical_block_id);
-        if(src_iter != logical_block_FF_sources.end()) {
-            //Go through each assoicated source and add an edge to it
-            for(NodeId ff_src_node_id : src_iter->second) {
-                add_edge(ff_clock_node_id, ff_src_node_id);
-            }
-        }
-
-        //Check for FF_SINKs associated with this FF_CLOCK pin
-        auto sink_iter = logical_block_FF_sinks.find(logical_block_id);
-        if(sink_iter != logical_block_FF_sinks.end()) {
-            //Go through each assoicated sink and add an edge to it
-            for(NodeId ff_sink_node_id : sink_iter->second) {
-                add_edge(ff_clock_node_id, ff_sink_node_id);
-            }
-        }
-    }
-}
-
 void TimingGraph::levelize() {
     //Levelizes the timing graph
     //This over-writes any previous levelization if it exists

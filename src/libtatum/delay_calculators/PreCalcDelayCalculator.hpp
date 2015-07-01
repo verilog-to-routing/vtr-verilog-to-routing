@@ -12,8 +12,8 @@ class PreCalcDelayCalculator {
             }
         }
 
-        Time min_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return edge_delays_[edge_id]; };
-        Time max_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { return edge_delays_[edge_id]; };
+        Time min_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { ASSERT(edge_id < (int) edge_delays_.size()); return edge_delays_[edge_id]; };
+        Time max_edge_delay(const TimingGraph& tg, EdgeId edge_id) const { ASSERT(edge_id < (int) edge_delays_.size()); return edge_delays_[edge_id]; };
     private:
         std::vector<Time> edge_delays_;
 };
