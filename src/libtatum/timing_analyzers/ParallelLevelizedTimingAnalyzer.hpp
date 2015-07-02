@@ -1,5 +1,4 @@
 #pragma once
-#include <cilk/cilk_api.h>
 
 #include "timing_graph_fwd.hpp"
 #include "SerialTimingAnalyzer.hpp"

@@ -27,13 +27,16 @@
 
 
 //Illegal versions used for upper-bound speed-up estimates
-//#include "ParallelNoDependancyCilkTimingAnalyzer.hpp"
+#include "ParallelNoDependancyTimingAnalyzer.hpp"
 
 #include "vpr_timing_graph_common.hpp"
 
 #define NUM_SERIAL_RUNS 20
 #define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 #define OPTIMIZE_NODE_EDGE_ORDER
+
+//Do we perform verification checks?
+#define VERIFY_VPR_TO_TATUM
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
@@ -231,9 +234,11 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
+#ifdef VERIFY_VPR_TO_TATUM
             serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
                                                       expected_arr_req_times, const_gen_fanout_nodes,
                                                       clock_gen_fanout_nodes );
+#endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += time_sec(verify_start, verify_end);
@@ -284,7 +289,7 @@ int main(int argc, char** argv) {
 
 #if NUM_PARALLEL_RUNS > 0
     auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
-    //auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, TimingGraphDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    //auto parallel_analyzer = std::make_shared<ParallelNoDependancyTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     float parallel_analysis_time = 0;
     float parallel_pretraverse_time = 0.;
@@ -319,9 +324,11 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
+#ifdef VERIFY_VPR_TO_TATUM
             parallel_arr_req_verified = verify_analyzer(timing_graph, parallel_analyzer,
                                                       expected_arr_req_times, const_gen_fanout_nodes,
                                                       clock_gen_fanout_nodes );
+#endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             parallel_verify_time += time_sec(verify_start, verify_end);
