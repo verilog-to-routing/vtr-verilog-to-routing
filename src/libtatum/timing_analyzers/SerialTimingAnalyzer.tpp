@@ -12,6 +12,8 @@ template<class AnalysisType, class DelayCalcType, class TagPoolType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_timing() {
     using namespace std::chrono;
 
+    auto analysis_start = high_resolution_clock::now();
+
     auto pre_traversal_start = high_resolution_clock::now();
     pre_traversal(tg_, tc_);
     auto pre_traversal_end = high_resolution_clock::now();
@@ -24,7 +26,10 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_tim
     backward_traversal(tg_);
     auto bck_traversal_end = high_resolution_clock::now();
 
+    auto analysis_end = high_resolution_clock::now();
+
     //Convert time points to durations and store
+    perf_data_["analysis"] = duration_cast<duration<double>>(analysis_end - analysis_start).count();
     perf_data_["pre_traversal"] = duration_cast<duration<double>>(pre_traversal_end - pre_traversal_start).count();
     perf_data_["fwd_traversal"] = duration_cast<duration<double>>(fwd_traversal_end - fwd_traversal_start).count();
     perf_data_["bck_traversal"] = duration_cast<duration<double>>(bck_traversal_end - bck_traversal_start).count();
@@ -53,21 +58,39 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::pre_traversal
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+    using namespace std::chrono;
+
     //Forward traversal (arrival times)
     for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
+        auto fwd_level_start = high_resolution_clock::now();
+
         for(NodeId node_id : timing_graph.level(level_idx)) {
             forward_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
         }
+
+        auto fwd_level_end = high_resolution_clock::now();
+        std::stringstream msg;
+        msg << "fwd_level_" << level_idx;
+        perf_data_[msg.str()] = duration_cast<duration<double>>(fwd_level_end - fwd_level_start).count();
     }
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traversal(const TimingGraph& timing_graph) {
+    using namespace std::chrono;
+
     //Backward traversal (required times)
     for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
+        auto bck_level_start = high_resolution_clock::now();
+
         for(NodeId node_id : timing_graph.level(level_idx)) {
             backward_traverse_node(timing_graph, node_id);
         }
+
+        auto bck_level_end = high_resolution_clock::now();
+        std::stringstream msg;
+        msg << "bck_level_" << level_idx;
+        perf_data_[msg.str()] = duration_cast<duration<double>>(bck_level_end - bck_level_start).count();
     }
 }
 

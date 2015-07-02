@@ -1,4 +1,6 @@
 #pragma once
+#include <chrono>
+#include <sstream>
 
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"
@@ -10,8 +12,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> 
         void calculate_timing() override;
         void reset_timing() override;
         const DelayCalcType& delay_calculator() override { return dc_; }
-        std::map<std::string, double> profiling_data() { return perf_data_; }
-
+        std::map<std::string, double> profiling_data() override { return perf_data_; }
     protected:
         /*
          * Setup the timing graph.
