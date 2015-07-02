@@ -7,7 +7,9 @@
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::ParallelLevelizedTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator)
-    : SerialTimingAnalyzer<AnalysisType,DelayCalcType, TagPoolType>(timing_graph, timing_constraints, delay_calculator) {
+    : SerialTimingAnalyzer<AnalysisType,DelayCalcType, TagPoolType>(timing_graph, timing_constraints, delay_calculator)
+    , parallel_threshold_fwd_(0)
+    , parallel_threshold_bck_(0) {
 
     int nworkers = __cilkrts_get_nworkers();
 
@@ -50,10 +52,21 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
 
         const std::vector<NodeId>& level = timing_graph.level(level_idx);
 
-        cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
-            NodeId node_id = level[node_idx];
-            TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
-            this->forward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+        if(level.size() > parallel_threshold_fwd_) {
+            //Parallel
+            cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
+                NodeId node_id = level[node_idx];
+                TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
+                this->forward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+            }
+        } else {
+            //Serial
+            for(int node_idx = 0; node_idx < level.size(); node_idx++) {
+                NodeId node_id = level[node_idx];
+                TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
+                this->forward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+            }
+
         }
 
         auto fwd_level_end = high_resolution_clock::now();
@@ -73,9 +86,18 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
 
         const std::vector<NodeId>& level = timing_graph.level(level_idx);
 
-        cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
-            NodeId node_id = level[node_idx];
-            this->backward_traverse_node(timing_graph, node_id);
+        if(level.size() > parallel_threshold_bck_) {
+            //Parallel
+            cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
+                NodeId node_id = level[node_idx];
+                this->backward_traverse_node(timing_graph, node_id);
+            }
+        } else {
+            //Serial
+            for(int node_idx = 0; node_idx < level.size(); node_idx++) {
+                NodeId node_id = level[node_idx];
+                this->backward_traverse_node(timing_graph, node_id);
+            }
         }
 
         auto bck_level_end = high_resolution_clock::now();

@@ -27,6 +27,9 @@ class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType
         void backward_traversal(const TimingGraph& timing_graph) override;
 
         std::vector<MemoryPool*> tag_pools_;
+
+        int parallel_threshold_fwd_;
+        int parallel_threshold_bck_;
 };
 
 #include "ParallelLevelizedTimingAnalyzer.tpp"
