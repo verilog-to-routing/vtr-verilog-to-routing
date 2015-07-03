@@ -69,10 +69,10 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
     using namespace std::chrono;
 
     //Forward traversal (arrival times)
-    for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
+    for(LevelId level_id = 1; level_id < timing_graph.num_levels(); level_id++) {
         auto fwd_level_start = high_resolution_clock::now();
 
-        const std::vector<NodeId>& level = timing_graph.level(level_idx);
+        const std::vector<NodeId>& level = timing_graph.level(level_id);
 
         if(level.size() > parallel_threshold_fwd_) {
             //Parallel
@@ -83,7 +83,7 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
             }
         } else {
             //Serial
-            for(int node_idx = 0; node_idx < (NodeId) level.size(); node_idx++) {
+            for(int node_idx = 0; node_idx < (int) level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
                 TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
                 this->forward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
@@ -92,9 +92,8 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
         }
 
         auto fwd_level_end = high_resolution_clock::now();
-        std::stringstream msg;
-        msg << "fwd_level_" << level_idx;
-        this->perf_data_[msg.str()] = duration_cast<duration<double>>(fwd_level_end - fwd_level_start).count();
+        std::string key = std::string("fwd_level_") + std::to_string(level_id);
+        this->perf_data_[key] = duration_cast<duration<double>>(fwd_level_end - fwd_level_start).count();
     }
 }
 
@@ -103,10 +102,10 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
     using namespace std::chrono;
 
     //Backward traversal (required times)
-    for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
+    for(LevelId level_id = timing_graph.num_levels() - 2; level_id >= 0; level_id--) {
         auto bck_level_start = high_resolution_clock::now();
 
-        const std::vector<NodeId>& level = timing_graph.level(level_idx);
+        const std::vector<NodeId>& level = timing_graph.level(level_id);
 
         if(level.size() > parallel_threshold_bck_) {
             //Parallel
@@ -123,8 +122,7 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
         }
 
         auto bck_level_end = high_resolution_clock::now();
-        std::stringstream msg;
-        msg << "bck_level_" << level_idx;
-        this->perf_data_[msg.str()] = duration_cast<duration<double>>(bck_level_end - bck_level_start).count();
+        std::string key = std::string("bck_level_") + std::to_string(level_id);
+        this->perf_data_[key] = duration_cast<duration<double>>(bck_level_end - bck_level_start).count();
     }
 }

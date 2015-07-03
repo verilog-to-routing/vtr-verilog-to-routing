@@ -1,6 +1,6 @@
 #pragma once
 #include <chrono>
-#include <sstream>
+#include <string>
 
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"

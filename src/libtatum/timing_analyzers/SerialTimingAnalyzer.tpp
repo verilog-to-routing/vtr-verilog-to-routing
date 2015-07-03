@@ -69,9 +69,8 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_trave
         }
 
         auto fwd_level_end = high_resolution_clock::now();
-        std::stringstream msg;
-        msg << "fwd_level_" << level_idx;
-        perf_data_[msg.str()] = duration_cast<duration<double>>(fwd_level_end - fwd_level_start).count();
+        std::string key = std::string("fwd_level_") + std::to_string(level_idx);
+        perf_data_[key] = duration_cast<duration<double>>(fwd_level_end - fwd_level_start).count();
     }
 }
 
@@ -88,9 +87,8 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_trav
         }
 
         auto bck_level_end = high_resolution_clock::now();
-        std::stringstream msg;
-        msg << "bck_level_" << level_idx;
-        perf_data_[msg.str()] = duration_cast<duration<double>>(bck_level_end - bck_level_start).count();
+        std::string key = std::string("bck_level_") + std::to_string(level_idx);
+        perf_data_[key] = duration_cast<duration<double>>(bck_level_end - bck_level_start).count();
     }
 }
 
