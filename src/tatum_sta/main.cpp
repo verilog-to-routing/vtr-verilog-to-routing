@@ -37,7 +37,7 @@
 #define OPTIMIZE_NODE_EDGE_ORDER
 
 //Do we perform verification checks?
-//#define VERIFY_VPR_TO_TATUM
+#define VERIFY_VPR_TO_TATUM
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
