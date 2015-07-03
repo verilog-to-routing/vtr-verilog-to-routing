@@ -11,6 +11,7 @@ typedef int NodeId;
 typedef int BlockId;
 typedef int EdgeId;
 typedef int DomainId;
+typedef int LevelId;
 
 #define INVALID_CLOCK_DOMAIN -1
 

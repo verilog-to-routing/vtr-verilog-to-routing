@@ -64,7 +64,9 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
 
 void TimingGraph::levelize() {
     //Levelizes the timing graph
-    //This over-writes any previous levelization if it exists
+    //This over-writes any previous levelization if it exists.
+    //
+    //Also records primary outputs
 
     //Clear any previous levelization
     node_levels_.clear();

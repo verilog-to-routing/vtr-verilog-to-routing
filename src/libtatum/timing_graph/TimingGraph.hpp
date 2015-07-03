@@ -35,7 +35,7 @@ class TimingGraph {
         //Graph accessors
         NodeId num_nodes() const { return node_types_.size(); }
         EdgeId num_edges() const { return edge_src_nodes_.size(); }
-        int num_levels() const { return node_levels_.size(); }
+        LevelId num_levels() const { return node_levels_.size(); }
 
         const std::vector<NodeId>& level(NodeId level_id) const { return node_levels_[level_id]; }
 

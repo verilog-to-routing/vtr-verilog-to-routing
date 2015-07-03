@@ -61,15 +61,15 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_trave
     using namespace std::chrono;
 
     //Forward traversal (arrival times)
-    for(int level_idx = 1; level_idx < timing_graph.num_levels(); level_idx++) {
+    for(LevelId level_id = 1; level_id < timing_graph.num_levels(); level_id++) {
         auto fwd_level_start = high_resolution_clock::now();
 
-        for(NodeId node_id : timing_graph.level(level_idx)) {
+        for(NodeId node_id : timing_graph.level(level_id)) {
             forward_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
         }
 
         auto fwd_level_end = high_resolution_clock::now();
-        std::string key = std::string("fwd_level_") + std::to_string(level_idx);
+        std::string key = std::string("fwd_level_") + std::to_string(level_id);
         perf_data_[key] = duration_cast<duration<double>>(fwd_level_end - fwd_level_start).count();
     }
 }
@@ -79,15 +79,15 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_trav
     using namespace std::chrono;
 
     //Backward traversal (required times)
-    for(int level_idx = timing_graph.num_levels() - 2; level_idx >= 0; level_idx--) {
+    for(LevelId level_id = timing_graph.num_levels() - 2; level_id >= 0; level_id--) {
         auto bck_level_start = high_resolution_clock::now();
 
-        for(NodeId node_id : timing_graph.level(level_idx)) {
+        for(NodeId node_id : timing_graph.level(level_id)) {
             backward_traverse_node(timing_graph, node_id);
         }
 
         auto bck_level_end = high_resolution_clock::now();
-        std::string key = std::string("bck_level_") + std::to_string(level_idx);
+        std::string key = std::string("bck_level_") + std::to_string(level_id);
         perf_data_[key] = duration_cast<duration<double>>(bck_level_end - bck_level_start).count();
     }
 }
