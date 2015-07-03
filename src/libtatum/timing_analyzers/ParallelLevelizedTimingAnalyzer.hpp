@@ -28,6 +28,9 @@ class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType
 
         std::vector<MemoryPool*> tag_pools_;
 
+        //Level width thresholds beyond which to execute a parallel traversal
+        //  For very narrow levels the overhead of (finegrained) parallel execution
+        //  outweighs any potential speed-up, so it is faster to (explicitly) run serially
         size_t parallel_threshold_fwd_;
         size_t parallel_threshold_bck_;
 };

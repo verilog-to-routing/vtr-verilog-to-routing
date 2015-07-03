@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys, argparse
 import csv
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -110,7 +111,7 @@ def main():
 
     if args.average:
         plt.plot(fwd_x_avg, fwd_y_avg, c='b', label="Average FWD Speed-Up")
-        plt.plot(bck_x_avg, bck_y_avg, c='g', label="Average FWD Speed-Up")
+        plt.plot(bck_x_avg, bck_y_avg, c='g', label="Average BCK Speed-Up")
 
     plt.xscale("log")
 
@@ -121,6 +122,7 @@ def main():
     plt.ylim(ymin,ymax)
     plt.xlim(xmin,xmax)
 
+    plt.title(os.path.splitext(os.path.basename(args.csv_file))[0])
     plt.xlabel("Level Width")
     plt.ylabel("Parallel Speed-Up")
     plt.legend(loc='upper left')

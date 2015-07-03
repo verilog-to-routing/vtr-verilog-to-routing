@@ -8,33 +8,55 @@
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::ParallelLevelizedTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator)
     : SerialTimingAnalyzer<AnalysisType,DelayCalcType, TagPoolType>(timing_graph, timing_constraints, delay_calculator)
-    , parallel_threshold_fwd_(200)
-    , parallel_threshold_bck_(1000) {
+    //These thresholds control how fine-grained we allow the parallelization
+    //
+    //The ideal values will vary on different machines, however default value
+    // is not set too aggressivley, and should be reasonable on other systems.
+    //
+    //These values were set experimentally on an Intel E5-1620 CPU,
+    // and yeilded the following self-relative parallel speed-ups
+    // compared to a value of 0 (i.e. always run parrallel).
+    //
+    //                  0           400
+    // ====================================
+    // bitcoin          3.17x       3.23x       (+2%)
+    // gaussianblur     2.25x       2.83x       (+25%)
+    //
+    //NOTE:
+    //   The gaussinablur benchmark has a very tall and narrow timing
+    //   graph (i.e. many small levels which parallelize poorly). In
+    //   contrast, bitcoin is relatively short and wide (i.e. parallelizes well)
+    //
+    //The threshold value 400 was choosen to avoid the poor parallelization on small levels,
+    //while not decreasing the amount of useful parallelism on larger levels.
+    , parallel_threshold_fwd_(400)
+    , parallel_threshold_bck_(400) {
 
+    //How many parallel workers (threads) are there?
     int nworkers = __cilkrts_get_nworkers();
 
+    //To avoid contention during tag allocation, we give each worker
+    //a separate tag pool
     for(int i = 0; i < nworkers; i++) {
+        //XXX: Need to dynamically allocate since move constructor is broken
+        //     in boost.pool
         tag_pools_.push_back(new TagPoolType(sizeof(TimingTag)));
     }
 }
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::~ParallelLevelizedTimingAnalyzer() {
+    //Clean-up dynamically alloated tag pools
     for(size_t i = 0; i < tag_pools_.size(); i++) {
+        //Pool destructor frees any allocated memory
         delete tag_pools_[i];
     }
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
-    /*
-     * The pre-traversal sets up the timing graph for propagating arrival
-     * and required times.
-     * Steps performed include:
-     *   - Initialize arrival times on primary inputs
-     */
     const std::vector<NodeId>& primary_inputs = timing_graph.primary_inputs();
 
-    //To little work to overcome parallel overhead
+    //To little work to overcome parallel overhead, just run serially
     for(int node_idx = 0; node_idx < (int) primary_inputs.size(); node_idx++) {
         NodeId node_id = primary_inputs[node_idx];
         AnalysisType::pre_traverse_node(*(this->tag_pools_[0]), timing_graph, timing_constraints, node_id);
