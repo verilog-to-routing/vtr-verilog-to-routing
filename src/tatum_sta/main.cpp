@@ -359,28 +359,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
     //Per-level speed-up
-    cout << "Level Speed-Ups by width:" << endl;
-    std::map<int,std::vector<int>,std::greater<int>> widths_to_levels;
-    for(int ilevel = 0; ilevel < timing_graph.num_levels(); ilevel++) {
-        int width = timing_graph.level(ilevel).size();
-        widths_to_levels[width].push_back(ilevel);
-    }
-
-    std::ofstream of("level_times.csv");
-    of << "Width,Level,serial_fwd,serial_bck,parallel_fwd,parallel_bck"<< endl;
-    for(auto kv : widths_to_levels) {
-        int width = kv.first;
-        for(int ilevel : kv.second) {
-            std::stringstream key_fwd;
-            std::stringstream key_bck;
-            key_fwd << "fwd_level_" << ilevel;
-            key_bck << "bck_level_" << ilevel;
-            of << width << "," << ilevel << ",";
-            of << serial_prof_data[key_fwd.str()] << "," << serial_prof_data[key_bck.str()] << ",";
-            of << parallel_prof_data[key_fwd.str()] << "," << parallel_prof_data[key_bck.str()];
-            of << endl;
-        }
-    }
+    dump_level_times("level_times.csv", timing_graph, serial_prof_data, parallel_prof_data);
 #endif //NUM_PARALLEL_RUNS
 
 

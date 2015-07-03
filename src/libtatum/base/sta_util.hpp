@@ -282,3 +282,4 @@ void print_hold_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> anal
 }
 
 void add_ff_clock_to_source_sink_edges(TimingGraph& timing_graph, std::vector<float>& edge_delays);
+void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data);

@@ -2,6 +2,10 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <map>
+#include <string>
+#include <sstream>
+#include <fstream>
 #include "assert.hpp"
 #include "sta_util.hpp"
 
@@ -378,6 +382,32 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, std::vector<float>& edge
                 //Mark edge as having zero delay
                 edge_delays.push_back(0.);
             }
+        }
+    }
+}
+
+void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data) {
+    //Per-level speed-up
+    cout << "Level Speed-Ups by width:" << endl;
+    std::map<int,std::vector<int>,std::greater<int>> widths_to_levels;
+    for(int ilevel = 0; ilevel < timing_graph.num_levels(); ilevel++) {
+        int width = timing_graph.level(ilevel).size();
+        widths_to_levels[width].push_back(ilevel);
+    }
+
+    std::ofstream of(fname);
+    of << "Width,Level,serial_fwd,serial_bck,parallel_fwd,parallel_bck"<< endl;
+    for(auto kv : widths_to_levels) {
+        int width = kv.first;
+        for(int ilevel : kv.second) {
+            std::stringstream key_fwd;
+            std::stringstream key_bck;
+            key_fwd << "fwd_level_" << ilevel;
+            key_bck << "bck_level_" << ilevel;
+            of << width << "," << ilevel << ",";
+            of << serial_prof_data[key_fwd.str()] << "," << serial_prof_data[key_bck.str()] << ",";
+            of << parallel_prof_data[key_fwd.str()] << "," << parallel_prof_data[key_bck.str()];
+            of << endl;
         }
     }
 }
