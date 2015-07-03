@@ -28,8 +28,8 @@ class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType
 
         std::vector<MemoryPool*> tag_pools_;
 
-        int parallel_threshold_fwd_;
-        int parallel_threshold_bck_;
+        size_t parallel_threshold_fwd_;
+        size_t parallel_threshold_bck_;
 };
 
 #include "ParallelLevelizedTimingAnalyzer.tpp"
