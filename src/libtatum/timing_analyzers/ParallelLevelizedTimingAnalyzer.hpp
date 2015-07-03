@@ -3,7 +3,19 @@
 #include "timing_graph_fwd.hpp"
 #include "SerialTimingAnalyzer.hpp"
 
-
+/*
+ * The ParallelLevelizedTimingAnalyzer implements the TimingAnalyzer interface, providing
+ * a parallel (multi-core) timing analyzer that runs faster than the standard SerialTimingAnalyzer.
+ *
+ * Like the SerialTimingAnalyzer the timing graph is walked in a levelized manner where each
+ * preceeding level is fully evaluated before the next is processed.  However, within each level
+ * nodes are processed in parallel.
+ *
+ * This allows a reasonably parrallelization provided levels are sufficiently wide. If however,
+ * levels are too small this can result in an extremely fine-grained parallelization where the
+ * parallelization overhead overwhelms any potential speed-up.  This poor behaviour is avoided
+ * by evaluating serially levels that not 'sufficiently' large.
+ */
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType=MemoryPool>
 class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType> {
@@ -26,6 +38,7 @@ class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType
          */
         void backward_traversal(const TimingGraph& timing_graph) override;
 
+        //We use multiple tag pools to reduce contention between threads
         std::vector<MemoryPool*> tag_pools_;
 
         //Level width thresholds beyond which to execute a parallel traversal
