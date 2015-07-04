@@ -1,5 +1,5 @@
-#include "SetupTraversal.hpp"
-#include "HoldTraversal.hpp"
+#include "SetupAnalysisMode.hpp"
+#include "HoldAnalysisMode.hpp"
 
 /*
  * Useful shorthands for the supported analysis types
@@ -9,10 +9,10 @@
  */
 
 //Setup (max) analysis
-using SetupAnalysis = SetupTraversal<>;
+using SetupAnalysis = SetupAnalysisMode<>;
 
 //Hold (min) analysis
-using HoldAnalysis = HoldTraversal<>;
+using HoldAnalysis = HoldAnalysisMode<>;
 
 //Combined Setup AND Hold analysis
-using SetupHoldAnalysis = HoldTraversal<SetupTraversal<>>;
+using SetupHoldAnalysis = HoldAnalysisMode<SetupAnalysisMode<>>;

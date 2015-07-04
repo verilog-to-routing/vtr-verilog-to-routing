@@ -3,10 +3,10 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
-#include "Traversal.hpp"
+#include "BaseAnalysisMode.hpp"
 
-template<class Base = Traversal>
-class SetupTraversal : public Base {
+template<class Base = BaseAnalysisMode>
+class SetupAnalysisMode : public Base {
     public:
         //External tag access
         const TimingTags& setup_data_tags(NodeId node_id) const { return setup_data_tags_[node_id]; }
@@ -32,5 +32,7 @@ class SetupTraversal : public Base {
         std::vector<TimingTags> setup_clock_tags_;
 };
 
+
+
 //Implementation
-#include "SetupTraversal.tpp"
+#include "SetupAnalysisMode.tpp"

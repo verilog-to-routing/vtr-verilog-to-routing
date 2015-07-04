@@ -3,10 +3,10 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
-#include "Traversal.hpp"
+#include "BaseAnalysisMode.hpp"
 
-template<class Base = Traversal>
-class HoldTraversal : public Base {
+template<class Base = BaseAnalysisMode>
+class HoldAnalysisMode : public Base {
     public:
         //External tag access
         const TimingTags& hold_data_tags(NodeId node_id) const { return hold_data_tags_[node_id]; }
@@ -33,4 +33,4 @@ class HoldTraversal : public Base {
 };
 
 //Implementation
-#include "HoldTraversal.tpp"
+#include "HoldAnalysisMode.tpp"

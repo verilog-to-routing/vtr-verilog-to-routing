@@ -4,7 +4,12 @@
 #include "timing_constraints_fwd.hpp"
 #include "memory_pool.hpp"
 
-class Traversal {
+/*
+ * Interface required by an analysis mode
+ *
+ * This is a null implementation.
+ */
+class BaseAnalysisMode {
     protected:
         void initialize_traversal(const TimingGraph& tg) {}
 
