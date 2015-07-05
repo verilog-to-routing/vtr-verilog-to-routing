@@ -1,3 +1,9 @@
+We would like to thank the reviewers for their detailed and constructive feedback. We believe we have addressed
+all the reviewer comments (or explained below why we did not implement a suggestion) and believe this
+has made a stronger paper. Significant text changes are highlighted in yellow in the paper, and 
+we summarize the changes made to address each comment or answer any detailed questions in the response
+below.
+
 Reviewer: 1
 
 The paper presents significant space talking about how to transform a hyper graph to a graph using various models.  This has been well studied in the past.  It would be useful to present the proposed techniques in the context of this previous work.  As a start, there are numerous references within reference [22] that should be considered.  Doing so would help the reader understand the novelty of the hypergraph->graph methodology and results.
@@ -47,7 +53,8 @@ Reviewer: 2
 
 3. In section V B (partitioning Tool), you assumed 0.05 (5%) in line 30. What is the rationale behind choosing that number? What happens if we choose some other number like 10% or 15%?
 
-[ We assumed a 5% balance constraint to give the partitioner some flexibility to minimize cut size, while still forcing the partitions to be within 5% of balanced so that we can implement designs in fairly full FPGAs (e.g. 90% logic utilization).  If we allowed a more relaxed balance constraint of 10%, then a circuit could be split into 60% and 40% portions, and a 2-die interposer system would need to provide enough circuitry in one partition to support 60% of the design logic. This implies the interposer system would need 120% (2 x 60%) of the logic (or DSP, or RAM if they are the limiting resource) required by the circuit.  This would limit logic utilization to 83% of the system (1/1.2), but many FPGA designs go beyond that level of utilization.] 
+[ We have added a discussion of why we choose a relatively tight balance constraint of 5% to Section V.B.  
+We assumed a 5% balance constraint to give the partitioner some flexibility to minimize cut size, while still forcing the partitions to be within 5% of balanced so that we can implement designs in fairly full FPGAs (e.g. 90% logic utilization).  If we allowed a more relaxed balance constraint of 10%, then a circuit could be split into 60% and 40% portions, and a 2-die interposer system would need to provide enough circuitry in one partition to support 60% of the design logic. This implies the interposer system would need 120% (2 x 60%) of the logic (or DSP, or RAM if they are the limiting resource) required by the circuit.  This would limit logic utilization to 83% of the system (1/1.2), but many FPGA designs go beyond that level of utilization.] 
 
 [ Javeed: try a balance constraint that reflects the real limits in each die. ]
 
@@ -123,18 +130,6 @@ Some writing issues:
 
 Reviewer: 4
 
-SPECIFIC FEEDBACK TO AUTHORS
-This paper describes a set of extensions to the VPR tool to accommodate multi-FPGA platforms that use silicon interposers. The paper includes both architectural enhancements and modifications to the VPR CAD flow.
-
-The main challenge is that silicon interposers have increased delay and reduced connectivity between dice. Rather than cutting wires at the border of each FPGA, the authors propose to add multiplexers at the interface (Fig. 3). This entails some minor modifications to VPR’s routing resource graph (RRG) at the cut-points. In terms of CAD support, the primary contribution of the paper are new cost functions for the placer and router, and a pre-placement partitioning phase using METIS.
-
-I find the paper to be competent and reasonable, but at the same time, a collection of very small incremental ideas, and lacking in terms of a significant contribution to the field. (Other than a VPR update, which is always welcome because VPR is widely used in FPGA architecture and CAD research).
-
-==
-
-I do have two fairly significant technical quibbles with the paper; although they are somehow interdependent, they can each be taken at face value.
-
-
 (1) The case for METIS over hMETIS is weak
 
 Both METIS and hMETIS are well known tools for graph and hypergraph partitioning, respectively. Since circuits are known to be hypergraphs, the natural inclination would be to use hMETIS; however, the authors argue that METIS is more appropriate because hMETIS does not support heterogeneous balance constraints. Therefore, the authors take great pains to convert the hypergraph to a graph.
@@ -154,7 +149,11 @@ Now, I realize that my example is toy, and I also know that you don’t want 100% 
 
 In summary, I question the motivation to impose balance constraints. It seems like an unbalanced partition (within the parameters that provide reasonable routability) is the right way to go. Taking points (1) and (2) together (and assuming that I am correct—which I may not be), if balance constraints are unneeded, then the case for METIS over hMETIS falls apart, so perhaps hMETIS (with an appropriate objective) is perhaps a better way to go.
 
-[Vaughn: write up utilization argument.
+[ We have added a discussion of why we use a balance constraint to Section V.B.  The basic reason is that interposer-based FPGAs are intended to expand FPGA capacity beyond what is possible, or what yields at a reasonable/economic rate, on a single die.  To make use of this increased capacity, however, one must place a significant fraction of the circuit in each die. Stated another way, we wish to examine the routability of circuits at typical FPGA customer utilization levels, which are usually in the 90% range of the limiting resource (usually logic, RAM, or multipliers).  If one uses 90% of the resources in a two-die interposer system, for example, then a 0.05 unbalance constraint allows a partitioning with 45% of the design in one die and 55% in the other.  0.55 * 0.9 = 0.5, meaning that the more full partition / die uses 50% of the two-dice systems resources, which is 100% of the resources available in that die.  A larger unbalance between partitions would mean that a design that used 90% of the interposer system's resources would have a partition that is infeasible on one of the two dice.
+
+You are correct that if we targeted lower utilization rates for the interposer systems we could relax the balance constraint, and this might help routability. However, we do not feel this is the best point at which to evaluate interposer routability. Designers are accustomed to using most of an FPGA's logic, RAM, etc. capacity and will have the same expectation for interposer-based FPGAs.  Commercial monolithic FPGAs are architected to have a high probability of successful routing at utilizations of 90% and even higher. Partially this is because the routing is cheaper and the function blocks more expensive than was assumed in DeHon's 1999 paper and partly this is because an FPGA is usually selected and integrated into a board before the FPGA design is complete. While designers can estimate logic, RAM and multiplier utlization with reasonable accuracy even before a design is complete, routability estimation is very hard, so it would be difficult to choose a chip before a design was 100% complete.]
+
+
  Javeed: do the tuned balance / limit ].
 
 ==
@@ -163,7 +162,7 @@ At the very end of Section V.F, the authors briefly discuss packing bloat, which
 
 Since I’ve already argued that the paper is somewhat lightweight in terms of technical contribution, perhaps doing a proper investigation of this issue and adding the necessary algorithmic support could bring greater novelty to this paper, rather than leaving it open to future work.
 
-[Vaughn: write beyond the scope].
+[Thank you for your comment. We agree that this is important future work but feel it is beyond the scope of the current paper as we are already at the limit of 14 pages, and the best way to incorporate such "packing aware partitioning hints" is not clear.  We have explored one method of making the partitioner packing-aware, which is to run partitioning after packing; however, this is an inferior CAD flow as the packer benefits more from the partitioning constraints than the partitioner benefits from the packing constraints. We have added text to Section V.F to higlight this. ].
 
 ==
 
@@ -180,7 +179,11 @@ This leads to a few interdependent questions:
 (2) If the timing-driven router was used, is it justifiable to report W_min values? Should the routability-driven router (enhanced as needed) have been used instead?
 (3) If the routability-driven router was used, how were the cost functions enhanced?
 
-[Vaughn: answer - always use timing driven].
+[We used the VPR timing-driven router for all results in this paper, and believe it is the correct choice as it produces a better combination of routability and timing than VPR's routability-driven router, and its algorithm is more scalable to large circuits.
+
+  The timing-driven router in VPR optimizes for both timing and routability (timing is optimized as much as possible, but the cost of congestion grows to eventually swamp the timing terms in congested parts of the design if necessary to achieve routability).  Hence its routability is good; in "Architecture and CAD for Deep Submicron FPGAs" by Betz, Marquardt and Rose, for example, the timing driven router was found to produce circuits with a xx% higher Wmin, but that were yy% faster.  Hence it achieves a superior combination of routability and timing than the routability-driven router, although you are correct that the routability-driven router produces slightly lower absolute channel widths.  A further problem with the routability-driven router in VPR is that its algorithm does not scale as well as the timing-driven router, and hence its runtime will be much higher and likely impractical on the larger circuits we use.  
+
+For these reasons, the timing-driven router in VPR is the default and is normally used to find both the minimum channel width and the achievable timing of circuits; in the recent VTR 7.0 paper for example, only results for the timing-driven VPR router are given as the routability-driven router is not widely used.]
 
 ==
 
@@ -190,12 +193,12 @@ Section I, third paragraph
 - Don’t use [3] as a word. Either say “Ref. [3]” or “Alexander et al. [3]”
 - et al should be “et al.” (there is a period after al, but not after et)
 
-[Vaughn: fix]
+[Thanks you; we have fixed this text.]
 
 Regarding the placer timing cost described in Section IV.A.1), does the delay term include the multiplexers or just the bumps and the wires through the interposer?
 [Ehsan: modify text.][DONE]
 
-Regarding Equation (3), can you give a better explanation of the W_chanx and W_chany terms? I didn’t completely understand them from the short 1-sentence description.
+Regarding Equation (3), can you give a better explanation of t  he W_chanx and W_chany terms? I didn’t completely understand them from the short 1-sentence description.
 [Ehsan: change.][DONE]
 
 Below Equation (6), I don’t understand the ratio_of_wires_cut metric, especially vis-a-vis Figure 6.
@@ -209,4 +212,4 @@ In Equation (1), does the ExpectInterposeHops include the delay of the muxes?
 
 
 Fig. 23 is somehow redundant, as it is simply a different way to display data that was reported earlier.
-[Vaughn: write up defense of figure].
+[You are correct that Fig. 23 is simply a different way to visualize the data of Fig. 22. We prefer to retain the figure however, as it highlights that the interposer wiring capacity becomes the dominant factor in routability when its absolute signal count drops below a certain level. Other figures show the within-die channel width required when one cuts a certain percentage of the normal FPGA wiring across the interposer, while this figure presents the same data as within-die channel width required vs. the absolute (not relative) interposer wiring capacity. We believe this highlights the important fact that the interposer for this FPGA architecture requires about 20 wires per vertical channel at the absolute minimum.]
