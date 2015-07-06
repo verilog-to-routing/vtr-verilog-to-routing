@@ -73,17 +73,17 @@ class TimingGraph {
     public:
         //Node accessors
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
-        DomainId node_clock_domain(NodeId id) const { return node_clock_domains_[id]; }
-        BlockId node_logical_block(NodeId id) const { return node_logical_blocks_[id]; }
-        bool node_is_clock_source(NodeId id) const { return node_is_clock_source_[id]; }
-        int num_node_out_edges(NodeId id) const { return node_out_edges_[id].size(); }
-        int num_node_in_edges(NodeId id) const { return node_in_edges_[id].size(); }
-        EdgeId node_out_edge(NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
-        EdgeId node_in_edge(NodeId node_id, int edge_idx) const { return node_in_edges_[node_id][edge_idx]; }
+        DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
+        BlockId node_logical_block(const NodeId id) const { return node_logical_blocks_[id]; }
+        bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
+        int num_node_out_edges(const NodeId id) const { return node_out_edges_[id].size(); }
+        int num_node_in_edges(const NodeId id) const { return node_in_edges_[id].size(); }
+        EdgeId node_out_edge(const NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
+        EdgeId node_in_edge(const NodeId node_id, int edge_idx) const { return node_in_edges_[node_id][edge_idx]; }
 
         //Edge accessors
-        NodeId edge_sink_node(EdgeId id) const { return edge_sink_nodes_[id]; }
-        NodeId edge_src_node(EdgeId id) const { return edge_src_nodes_[id]; }
+        NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[id]; }
+        NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[id]; }
 
         //Graph accessors
         NodeId num_nodes() const { return node_types_.size(); }
@@ -91,7 +91,7 @@ class TimingGraph {
         LevelId num_levels() const { return node_levels_.size(); }
 
         //Node collection operations
-        const std::vector<NodeId>& level(NodeId level_id) const { return node_levels_[level_id]; }
+        const std::vector<NodeId>& level(const NodeId level_id) const { return node_levels_[level_id]; }
         const std::vector<NodeId>& primary_inputs() const { return node_levels_[0]; }
         const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
 
@@ -115,8 +115,8 @@ class TimingGraph {
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
         std::vector<bool> node_is_clock_source_;
-        //Reverse mapping to logical blocks
-        //TODO: this is a temporary kludge - remove later!
+        //Reverse mapping to logical blocks, used to add FF_CLOCK to FF_SINK/FF_SOURCE edges
+        //FIXME: this is a temporary kludge - remove later!
         std::vector<BlockId> node_logical_blocks_;
 
         //Edge data
