@@ -3,6 +3,8 @@
 #include <set>
 
 #include "TimingGraph.hpp"
+#include "TimingTags.hpp"
+
 #include "vpr_timing_graph_common.hpp"
 
 bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);

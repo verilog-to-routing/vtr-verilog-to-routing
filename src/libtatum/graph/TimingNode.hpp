@@ -3,28 +3,8 @@
 #include <vector>
 
 #include "timing_graph_fwd.hpp"
+#include "TimingGraph.hpp"
 #include "Time.hpp"
-
-enum class TN_Type {
-	INPAD_SOURCE, //Input to an input I/O pad 
-	INPAD_OPIN, //Output from an input I/O pad 
-	OUTPAD_IPIN, //Input to an output I/O pad 
-	OUTPAD_SINK, //Output from an output I/O pad 
-	PRIMITIVE_IPIN, //Input pin to a primitive (e.g. a LUT) 
-	PRIMITIVE_OPIN, //Output pin from a primitive (e.g. a LUT) 
-	FF_IPIN, //Input pin to a flip-flop - goes to FF_SINK 
-	FF_OPIN, //Output pin from a flip-flop - comes from FF_SOURCE 
-	FF_SINK, //Sink (D) pin of flip-flop 
-	FF_SOURCE, //Source (Q) pin of flip-flop 
-	FF_CLOCK, //Clock pin of flip-flop 
-    CLOCK_SOURCE, //A clock generator such as a PLL 
-    CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE 
-	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0 
-    UNKOWN //Unrecognized type, this is almost certainly an error
-};
-
-std::ostream& operator<<(std::ostream& os, const TN_Type type);
-std::istream& operator>>(std::istream& os, TN_Type& type);
 
 class TimingNode {
     public:

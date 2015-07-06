@@ -1,12 +1,15 @@
 #pragma once
 /*
- * Forward declarations for Timing Graph types
+ * Forward declarations for Timing Graph and related types
  */
 
+//The timing graph
 class TimingGraph;
-class TimingNode;
-class TimingEdge;
 
+//Potential node types in the timing graph
+enum class TN_Type;
+
+//Various IDs used by the timing graph
 typedef int NodeId;
 typedef int BlockId;
 typedef int EdgeId;
