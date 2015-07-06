@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 
 #ifdef OPTIMIZE_NODE_EDGE_ORDER
         //Re-order edges
-        std::vector<EdgeId> vpr_edge_map = timing_graph.contiguize_level_edges();
+        std::vector<EdgeId> vpr_edge_map = timing_graph.optimize_edge_layout();
 
         //Adjust the edge delays to reflect the new ordering
         edge_delays = std::vector<float>(orig_edge_delays.size());
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
         }
 
         //Re-order nodes
-        std::vector<NodeId> vpr_node_map = timing_graph.contiguize_level_nodes();
+        std::vector<NodeId> vpr_node_map = timing_graph.optimize_node_layout();
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
         expected_arr_req_times = VprArrReqTimes();

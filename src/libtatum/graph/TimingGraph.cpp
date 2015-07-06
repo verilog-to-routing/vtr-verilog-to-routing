@@ -131,7 +131,7 @@ void TimingGraph::levelize() {
     }
 }
 
-std::vector<EdgeId> TimingGraph::contiguize_level_edges() {
+std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
     //Make all edges in a level be contiguous in memory
     std::cout << "Re-allocating edges so levels are in contiguous memory" << std::endl;
 
@@ -197,7 +197,7 @@ std::vector<EdgeId> TimingGraph::contiguize_level_edges() {
     return orig_edge_id_map;
 }
 
-std::vector<NodeId> TimingGraph::contiguize_level_nodes() {
+std::vector<NodeId> TimingGraph::optimize_node_layout() {
     //Make all nodes in a level be contiguous in memory
     std::cout << "Re-allocating nodes so levels are in contiguous memory" << std::endl;
 

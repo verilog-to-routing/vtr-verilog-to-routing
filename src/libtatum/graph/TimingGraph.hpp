@@ -16,6 +16,59 @@
 
 #include "aligned_allocator.hpp"
 
+/*
+ * The 'TimingGraph' class represents a timing graph.
+ *
+ * Logically the timing graph is a directed graph connecting Primary Inputs (nodes with no
+ * fan-in, e.g. circuit inputs Flip-Flop Q pins) to Primary Outputs (nodes with no fan-out,
+ * e.g. circuit outputs, Flip-Flop D pins), connecting through intermediate nodes (nodes with
+ * both fan-in and fan-out, e.g. combinational logic).
+ *
+ * To make performing the forward/backward traversals through the timing graph easier, we actually
+ * store all edges as bi-directional edges.
+ *
+ * NOTE: We store only the static connectivity and node information in the 'TimingGraph' class.
+ *       Other dynamic information (edge delays, node arrival/required times) is stored seperately.
+ *       This means that most actions opearting on the timing graph (e.g. TimingAnalyzers) only
+ *       require read-only access to the timing graph.
+ *
+ * Accessing Graph Data
+ * ======================
+ * For performance reasons (see Implementation section for details) we store all graph data
+ * in the 'TimingGraph' class, and do not use separate edge/node objects.  To facilitate this,
+ * each node and edge in the graph is given a unique identifier (e.g. NodeId or EdgeId). These
+ * ID's can then be used to access the required data through the appropriate member function.
+ *
+ * Implementation
+ * ================
+ * The 'TimingGraph' class represents the timing graph in a "Struct of Arrays (SoA)" manner,
+ * rather than as an "Array of Structs (AoS)" which would be the more inuitive data layout.
+ *
+ * By using a SoA layout we keep all data for a particular field (e.g. node types) in a contiguous
+ * memory.  Using an AoS layout, while each object (e.g. a TimingNode class) would be contiguous the
+ * various fields accross nodes would NOT be contiguous.  Since we typically perform operations on
+ * particular fields accross nodes the SoA layout performs better.
+ *
+ * The SoA layout also motivates the ID based approach, which allows direct indexing into the required
+ * vector to retrieve data.
+ *
+ * Memory Ordering Optimizations
+ * ===============================
+ * SoA also allows several additional memory layout optimizations.  In particular,  we know the
+ * order that a (serial) timing analyzer will walk the timing graph (i.e. level-by-level, from the
+ * start to end node in each level).
+ *
+ * Using this information we can re-arrange the node and edge data to match this traversal order.
+ * This greatly improves caching behaviour, since pulling in data for one node immediately pulls
+ * in data for the next node/edge to be processed. This exploits both spatial and temporal locality,
+ * and ensures that each cache line pulled into the cache will likely be accessed multiple times before
+ * being evicted.
+ *
+ * Note that performing these optimizations is currently done explicity by calling the optimize_edge_layout()
+ * and optimize_node_layout() member functions.  In the future (particularily if incremental modification
+ * support is added), it may be a good idea apply these modifications automatically as needed.
+ *
+ */
 class TimingGraph {
     public:
         //Node accessors
@@ -37,8 +90,8 @@ class TimingGraph {
         EdgeId num_edges() const { return edge_src_nodes_.size(); }
         LevelId num_levels() const { return node_levels_.size(); }
 
+        //Node collection operations
         const std::vector<NodeId>& level(NodeId level_id) const { return node_levels_[level_id]; }
-
         const std::vector<NodeId>& primary_inputs() const { return node_levels_[0]; }
         const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
 
@@ -46,9 +99,10 @@ class TimingGraph {
         NodeId add_node(const TN_Type type, const DomainId clock_domain, const BlockId block_id, const bool is_clk_src);
         EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
 
+        //Graph-level operations
         void levelize();
-        std::vector<EdgeId> contiguize_level_edges();
-        std::vector<NodeId> contiguize_level_nodes();
+        std::vector<EdgeId> optimize_edge_layout();
+        std::vector<NodeId> optimize_node_layout();
 
     private:
         /*
