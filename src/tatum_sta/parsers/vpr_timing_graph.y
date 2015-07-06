@@ -11,9 +11,6 @@
 #include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
-#include "TimingNode.hpp"
-#include "TimingEdge.hpp"
-#include "Time.hpp"
 
 int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<float>& edge_delays, const char *msg);
 extern int yylex(void);
@@ -192,22 +189,6 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                 node_out_edges.push_back($2.out_edges);
 
                                                 VERIFY(src_node_id == (int) node_out_edges.size() - 1);
-
-/*
- *                                                TimingNode node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
- *
- *                                                for(auto& edge_val : *($2.out_edges)) {
- *                                                    TimingEdge edge(Time(edge_val.delay), $2.node_id, edge_val.sink_node);
- *
- *                                                    EdgeId edge_id = timing_graph.add_edge(edge);
- *
- *                                                    node.add_out_edge_id(edge_id);
- *                                                }
- *
- *                                                //Add the node only after we have attached the out-going edges
- *                                                NodeId node_id = timing_graph.add_node(node);
- *                                                ASSERT(node_id == $2.node_id);
- */
 
                                                 if(timing_graph.num_nodes() % 1000000 == 0) {
                                                     std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;

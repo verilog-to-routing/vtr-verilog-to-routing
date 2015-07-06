@@ -14,7 +14,6 @@
 
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
-#include "TimingNode.hpp"
 
 #include "SerialTimingAnalyzer.hpp"
 #include "analysis_types.hpp"
