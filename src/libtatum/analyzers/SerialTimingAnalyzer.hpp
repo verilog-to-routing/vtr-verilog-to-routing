@@ -19,8 +19,8 @@
  * Implementation
  * ================
  * This analyzer performs timing analysis by performing a levelized walk of the timing graph.
- * By performing the traversal in a levelized manner graph, we know when we process a level
- * that the dependancies for every node in the current level have been met.
+ * By performing the traversal in this manner graph, we know that the current level's
+ * dependancies have already been met.
  *
  * The traversals are performed by calculate_timing() which uses:
  *   pre_traversal(): to initialize arrival times on the PIs
@@ -28,8 +28,8 @@
  *                        PIs to POs, and sets required times on POs.
  *   backward_traversal(): to perform the back traversal propogating required times from POs to PIs
  *
- * The work done at each node are encapsolated in the forward_traverse_node() and
- * backward_traverse_node() functions.  This work will vary depending upon
+ * The work done at each node is encapsolated in the forward_traverse_node() and
+ * backward_traverse_node() functions.  The actual work performed will vary depending upon
  * which mix-in class is specified as the AnalysisType template parameter.
  *
  * Thread-saftey
@@ -37,9 +37,10 @@
  * NOTE: forward_traverse_node() and backward_traverse_node() should be thread-safe,
  *       since they are often re-used by sub-classes with no modification.
  *
- *       In particular, take note that they only modify the current node they are processing
- *       (perform only read access on other nodes). This allows us to avoid using locks in
- *       any parallel analyzers if we process a node in a single thread!
+ *       In particular, take note that they only modify the current node they are processing;
+ *       they only read from their upstream nodes (this can as each node 'pulling' the results
+ *       of its dependancies. . This allows us to avoid using locks in any parallel analyzers 
+ *       provided we process a node in only a single thread!
  *
  * Memory Allocation
  * ===================
