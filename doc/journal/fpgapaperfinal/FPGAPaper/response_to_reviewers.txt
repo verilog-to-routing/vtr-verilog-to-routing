@@ -8,21 +8,21 @@ Reviewer: 1
 
 The paper presents significant space talking about how to transform a hyper graph to a graph using various models.  This has been well studied in the past.  It would be useful to present the proposed techniques in the context of this previous work.  As a start, there are numerous references within reference [22] that should be considered.  Doing so would help the reader understand the novelty of the hypergraph->graph methodology and results.
 
-[Javeed to add survey paper reference and discussion on why we use a non-dummy node star topology]
+[Javeed to add survey paper reference and discussion on why we use a non-dummy node star topology][DONE]
 
 The partitioning flow does not appear to be timing driven.  Given that, I wonder how meaningful the results in Section VI-C (Circuit speed vs. interposer delay) are.  These results show that the critical path delay is strongly affected by the delay_increase, but any reasonable timing-driven CAD flow would try to keep the critical path on one side of the partition to minimize the number of critical path segments crossing a partition.  Can you comment on this?  Can you at least provide data regarding how many cut crossings are typical on the critical paths?
 
-[Javeed add table on number of cut crossings on critical paths vs. total connections on critical paths.  Also some discussion on timing-driven partitioning -- our star model should help timing, and a timing-driven partitioner might help further but will the challenge of estimating critical paths accurately is hard.  Could reference Mike Hutton paper on APEX 20k timing-driven partitioning.  
+[Javeed add table on number of cut crossings on critical paths vs. total connections on critical paths.  Also some discussion on timing-driven partitioning -- our star model should help timing, and a timing-driven partitioner might help further but will the challenge of estimating critical paths accurately is hard.  Could reference Mike Hutton paper on APEX 20k timing-driven partitioning.
 
 Ref is:  Hutton, M., Adibsamii, K. and Leaver, A. “Adaptive Delay Estimation for Partitioning-Driven PLD Placement”, IEEE Trans. VLSI, 11:1, pp. 60-63, 2003.
 
 My summary of the paper is: 
-"A commercial recursive partitioning placement algorithm for the Altera Apex 20K family is described in [92]. Apex has a hierarchical routing architecture, making it well suited to partitioning-based placement. Recursive partitioning is conducted along the natural cut-lines formed by the various hierarchy levels of the routing architecture, as shown in Figure 13. Notice that the sequence of partitions in this algorithm is significantly different than that of ALTOR, showing the large impact an FPGA’s routing architecture has on placement algorithms. This algorithm is made timing-driven by weighting connections with low slack highly during each partitioning phase to encourage partitioning solutions in which such connections can be routed using only fast, lower-hierarchy-level routing. To improve the prediction of the critical path, the delay estimate for each connection is a function both of the known number of hierarchy boundaries the net must traverse due to partitionings at the higher levels of the routing hierarchy, and statistical estimates of how many hierarchy boundaries the connection will cross at future partitioning steps. "]
+"A commercial recursive partitioning placement algorithm for the Altera Apex 20K family is described in [92]. Apex has a hierarchical routing architecture, making it well suited to partitioning-based placement. Recursive partitioning is conducted along the natural cut-lines formed by the various hierarchy levels of the routing architecture, as shown in Figure 13. Notice that the sequence of partitions in this algorithm is significantly different than that of ALTOR, showing the large impact an FPGA’s routing architecture has on placement algorithms. This algorithm is made timing-driven by weighting connections with low slack highly during each partitioning phase to encourage partitioning solutions in which such connections can be routed using only fast, lower-hierarchy-level routing. To improve the prediction of the critical path, the delay estimate for each connection is a function both of the known number of hierarchy boundaries the net must traverse due to partitionings at the higher levels of the routing hierarchy, and statistical estimates of how many hierarchy boundaries the connection will cross at future partitioning steps. "] [DONE]
 
 
 A key result that would help the reader interpret the results would be a table that shows, for each benchmark circuit, the number of signals that cross the partition (independent of the place and route).   It is important to break this down by benchmark circuit.  If one was to build such a device, it would be important to consider the range of cut requirements rather than just the average.  This is especially important considering the results of Figure 23 which suggests that increasing the channel width is not an efficient way to make up for a lack of cut capacity.
 
-[Javeed to get table and add to paper if feasible.  Try to add in same table as critical path one.  Best flow, 2 partitions, cut net count vs. benchmark and cut net per channel vs. benchmark.]
+[Javeed to get table and add to paper if feasible.  Try to add in same table as critical path one.  Best flow, 2 partitions, cut net count vs. benchmark and cut net per channel vs. benchmark.] [DONE, but p&r dependent]
 
 In Figure 7, it was not clear to me why, for 30% of the wires cut, the placer optimizations do worse than the placer without optimizations.  Is this just experimental noise?
 
@@ -56,7 +56,7 @@ Reviewer: 2
 [ We have added a discussion of why we choose a relatively tight balance constraint of 5% to Section V.B.  
 We assumed a 5% balance constraint to give the partitioner some flexibility to minimize cut size, while still forcing the partitions to be within 5% of balanced so that we can implement designs in fairly full FPGAs (e.g. 90% logic utilization).  If we allowed a more relaxed balance constraint of 10%, then a circuit could be split into 60% and 40% portions, and a 2-die interposer system would need to provide enough circuitry in one partition to support 60% of the design logic. This implies the interposer system would need 120% (2 x 60%) of the logic (or DSP, or RAM if they are the limiting resource) required by the circuit.  This would limit logic utilization to 83% of the system (1/1.2), but many FPGA designs go beyond that level of utilization.] 
 
-[ Javeed: try a balance constraint that reflects the real limits in each die. ]
+[ Javeed: try a balance constraint that reflects the real limits in each die. ] [ DONE? Need to respond.]
 
 4. In line 50 of Section V B, are you giving any special consideration to DSP or Block-RAM etc? Or are those treated the same way you treat simple LUTs and Flops?
 
@@ -103,15 +103,15 @@ In section IV.A, you should mention that VPR's placer is simulated annealing-bas
 
 For the discussion about hypergraph to graph transformation in Sec V.C, there were many papers discussing how to set the edge weights in the 90's, please cite them (for example, see the survey paper "Recent directions in netlist partioning: a survey"). In particular, setting the edge weight to 1/(n-1) instead of 1/n is a popular choice since it can model a 2-pin net exactly. So, it makes sense to report the results for 1/(n-1). It looks like your star model picks one node of a net and connect it to other nodes of the net, but the more popular star model in the physical design literature would add a dummy node for each net that connects to all nodes of the net. So please explicitly define your star model in words. And from p.9, it looks like that you also want to distinguish the source of a net from the sinks of a net in the star model, if so, please state that in the definition of your star model.
 
-[Javeed: make explicit and correct text if it says we make all hyperedges the same weight with 1/n (they will vary from 1/2 to 1 in total hyperedge weight).]
+[Javeed: make explicit and correct text if it says we make all hyperedges the same weight with 1/n (they will vary from 1/2 to 1 in total hyperedge weight).] [DONE]
 
 p.9, middle of left column said "the star topology clearly differentiates sources from sinks and this appears to give the partitioner an anchor point that pulls all hyperedge fanouts toward the source", you should mention that Metis is an iterative improvement-based partitioner which is related to your reasoning.
 
-[ Javeed: add.]
+[ Javeed: add.] [DONE]
 
 p.9, left column, 2nd last paragraph, your star 1 edge weight scheme actually assigns a total weight of n-1 (not n) to each net. Similarly, your star 1/n model assigns a total weight of (n-1)/n (not 1) to each net.
 
-[Javeed: fix.]
+[Javeed: fix.] [DONE]
 
 Some writing issues:
 
@@ -136,7 +136,8 @@ Both METIS and hMETIS are well known tools for graph and hypergraph partitioning
 
 This is not satisfying to me at all. If the correct solution is to use hypergraph partitioning with heterogeneous balance constraints, then the authors should make appropriate modifications to hMETIS to produce the appropriate partitioning tool. It is unclear how much relevant information is lost by transforming the hypergraph to a graph, and what the impact on relative CAD metrics (W_min, f_max, etc) would be.
 
-[Javeed: mention hMetis is not open source (emailed person), give results on hmetis vs. metis cut size (with and without balance), and mention the star model should help timing, as timing is a connection / edge, phenomenon, not a net / hyperedge phenomenon.]
+[Javeed: mention hMetis is not open source (emailed person), give results on hmetis vs. metis cut size (with and without balance), and mention the star model should help timing, as timing is a connection / edge, phenomenon, not a net / hyperedge phenomenon.] [DONE]
+The hMetis source code is not freely available. We contacted the authors of hMetis, who stated that an hMetis update is in development and will contain support for heterogeneous balance constraints. Our experiments showed that hMetis performed 30% better on average when compared to Metis on our benchmark circuits, when both were used with homogeneous balance constraints.
 
 
 (2) I disagree with the case for balance constraints
@@ -154,7 +155,7 @@ In summary, I question the motivation to impose balance constraints. It seems li
 You are correct that if we targeted lower utilization rates for the interposer systems we could relax the balance constraint, and this might help routability. However, we do not feel this is the best point at which to evaluate interposer routability. Designers are accustomed to using most of an FPGA's logic, RAM, etc. capacity and will have the same expectation for interposer-based FPGAs.  Commercial monolithic FPGAs are architected to have a high probability of successful routing at utilizations of 90% and even higher. Partially this is because the routing is cheaper and the function blocks more expensive than was assumed in DeHon's 1999 paper and partly this is because an FPGA is usually selected and integrated into a board before the FPGA design is complete. While designers can estimate logic, RAM and multiplier utlization with reasonable accuracy even before a design is complete, routability estimation is very hard, so it would be difficult to choose a chip before a design was 100% complete.]
 
 
- Javeed: do the tuned balance / limit ].
+ Javeed: do the tuned balance / limit ]. [DONE?]
 
 ==
 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  5 JUL 2015 17:13
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2014.12.6)  5 JUL 2015 17:47
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -638,14 +638,14 @@ Package epstopdf Info: Source file: <star.eps>
 (epstopdf)                    size: 3009 bytes
 (epstopdf)             Command: <repstopdf --outfile=star-eps-converted-to.pdf 
 star.eps>
-(epstopdf)             \includegraphics on input line 57.
+(epstopdf)             \includegraphics on input line 56.
 Package epstopdf Info: Output file is already uptodate.
 
 <star-eps-converted-to.pdf, id=92, 183.68625pt x 171.64125pt>
 File: star-eps-converted-to.pdf Graphic file (type pdf)
 
 <use star-eps-converted-to.pdf>
-Package pdftex.def Info: star-eps-converted-to.pdf used on input line 57.
+Package pdftex.def Info: star-eps-converted-to.pdf used on input line 56.
 (pdftex.def)             Requested size: 88.20154pt x 82.41827pt.
 Package epstopdf Info: Source file: <clique.eps>
 (epstopdf)                    date: 2014-12-07 15:58:33
@@ -655,33 +655,33 @@ Package epstopdf Info: Source file: <clique.eps>
 (epstopdf)                    size: 3089 bytes
 (epstopdf)             Command: <repstopdf --outfile=clique-eps-converted-to.pd
 f clique.eps>
-(epstopdf)             \includegraphics on input line 58.
+(epstopdf)             \includegraphics on input line 57.
 Package epstopdf Info: Output file is already uptodate.
 
 <clique-eps-converted-to.pdf, id=93, 183.68625pt x 171.64125pt>
 File: clique-eps-converted-to.pdf Graphic file (type pdf)
 
 <use clique-eps-converted-to.pdf>
-Package pdftex.def Info: clique-eps-converted-to.pdf used on input line 58.
+Package pdftex.def Info: clique-eps-converted-to.pdf used on input line 57.
 (pdftex.def)             Requested size: 88.20154pt x 82.41827pt.
 
 <hg2g_star.pdf, id=94, 548.0475pt x 427.5975pt>
 File: hg2g_star.pdf Graphic file (type pdf)
  <use hg2g_star.pdf>
-Package pdftex.def Info: hg2g_star.pdf used on input line 69.
+Package pdftex.def Info: hg2g_star.pdf used on input line 68.
 (pdftex.def)             Requested size: 100.79846pt x 78.64105pt.
 
 <hg2g_clique.pdf, id=95, 550.055pt x 425.59pt>
 File: hg2g_clique.pdf Graphic file (type pdf)
  <use hg2g_clique.pdf>
-Package pdftex.def Info: hg2g_clique.pdf used on input line 70.
+Package pdftex.def Info: hg2g_clique.pdf used on input line 69.
 (pdftex.def)             Requested size: 100.79846pt x 77.9861pt.
  [8]
 <hyperedge_cutline.pdf, id=99, 652.4375pt x 258.9675pt>
 File: hyperedge_cutline.pdf Graphic file (type pdf)
 
 <use hyperedge_cutline.pdf>
-Package pdftex.def Info: hyperedge_cutline.pdf used on input line 79.
+Package pdftex.def Info: hyperedge_cutline.pdf used on input line 78.
 (pdftex.def)             Requested size: 189.0pt x 75.0196pt.
  (./graph_topology_cutsize.tex
 LaTeX Font Info:    External font `cmex10' loaded for size
@@ -708,7 +708,7 @@ Package pdftex.def Info: graph_topology_cutsize-eps-converted-to.pdf used on in
 put line 116.
 (pdftex.def)             Requested size: 252.94438pt x 108.40472pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 118--89
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 118--88
  [][] 
  []
 
@@ -738,31 +738,7 @@ Package pdftex.def Info: graph_topology_mcw-eps-converted-to.pdf used on input
 line 110.
 (pdftex.def)             Requested size: 252.94438pt x 108.40472pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 112--103
- [][] 
- []
-
-(./vpr_flows_mcw.tex
-Package epstopdf Info: Source file: <vpr_flows_mcw.eps>
-(epstopdf)                    date: 2015-01-06 20:40:09
-(epstopdf)                    size: 24238 bytes
-(epstopdf)             Output file: <vpr_flows_mcw-eps-converted-to.pdf>
-(epstopdf)                    date: 2015-01-06 20:40:12
-(epstopdf)                    size: 10413 bytes
-(epstopdf)             Command: <repstopdf --outfile=vpr_flows_mcw-eps-converte
-d-to.pdf vpr_flows_mcw.eps>
-(epstopdf)             \includegraphics on input line 130.
-Package epstopdf Info: Output file is already uptodate.
-
-<vpr_flows_mcw-eps-converted-to.pdf, id=102, 252.945pt x 144.54pt>
-File: vpr_flows_mcw-eps-converted-to.pdf Graphic file (type pdf)
-
-<use vpr_flows_mcw-eps-converted-to.pdf>
-Package pdftex.def Info: vpr_flows_mcw-eps-converted-to.pdf used on input line 
-130.
-(pdftex.def)             Requested size: 252.94438pt x 144.53963pt.
-)
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 132--116
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 112--102
  [][] 
  []
 
@@ -776,7 +752,31 @@ pdfTeX warning: pdflatex (file ./hg2g_clique.pdf): PDF inclusion: multiple pdfs
 pdfTeX warning: pdflatex (file ./hyperedge_cutline.pdf): PDF inclusion: multipl
 e pdfs with page group included in a single page
 > <./graph_topology_cutsize-eps-converted-to.pdf> <./graph_topology_mcw-eps-con
-verted-to.pdf>] (./vpr_flows_crit_path.tex
+verted-to.pdf>] (./vpr_flows_mcw.tex
+Package epstopdf Info: Source file: <vpr_flows_mcw.eps>
+(epstopdf)                    date: 2015-01-06 20:40:09
+(epstopdf)                    size: 24238 bytes
+(epstopdf)             Output file: <vpr_flows_mcw-eps-converted-to.pdf>
+(epstopdf)                    date: 2015-01-06 20:40:12
+(epstopdf)                    size: 10413 bytes
+(epstopdf)             Command: <repstopdf --outfile=vpr_flows_mcw-eps-converte
+d-to.pdf vpr_flows_mcw.eps>
+(epstopdf)             \includegraphics on input line 130.
+Package epstopdf Info: Output file is already uptodate.
+
+<vpr_flows_mcw-eps-converted-to.pdf, id=150, 252.945pt x 144.54pt>
+File: vpr_flows_mcw-eps-converted-to.pdf Graphic file (type pdf)
+
+<use vpr_flows_mcw-eps-converted-to.pdf>
+Package pdftex.def Info: vpr_flows_mcw-eps-converted-to.pdf used on input line 
+130.
+(pdftex.def)             Requested size: 252.94438pt x 144.53963pt.
+)
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 132--115
+ [][] 
+ []
+
+(./vpr_flows_crit_path.tex
 Package epstopdf Info: Source file: <vpr_flows_crit_path.eps>
 (epstopdf)                    date: 2015-01-06 20:41:49
 (epstopdf)                    size: 23895 bytes
@@ -796,7 +796,7 @@ Package pdftex.def Info: vpr_flows_crit_path-eps-converted-to.pdf used on input
  line 126.
 (pdftex.def)             Requested size: 252.94438pt x 144.53963pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 128--127
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 128--126
  [][] 
  []
 
@@ -820,11 +820,12 @@ Package pdftex.def Info: wires_cut-eps-converted-to.pdf used on input line 124.
 
 (pdftex.def)             Requested size: 252.94438pt x 108.40472pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 126--163
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 126--162
  [][] 
  []
 
-(./packing_bloat.tex
+[10 <./vpr_flows_mcw-eps-converted-to.pdf> <./vpr_flows_crit_path-eps-converted
+-to.pdf> <./wires_cut-eps-converted-to.pdf>] (./packing_bloat.tex
 Package epstopdf Info: Source file: <packing_bloat.eps>
 (epstopdf)                    date: 2014-12-23 16:59:22
 (epstopdf)                    size: 20876 bytes
@@ -836,7 +837,7 @@ d-to.pdf packing_bloat.eps>
 (epstopdf)             \includegraphics on input line 122.
 Package epstopdf Info: Output file is already uptodate.
 
-<packing_bloat-eps-converted-to.pdf, id=153, 252.945pt x 144.54pt>
+<packing_bloat-eps-converted-to.pdf, id=162, 252.945pt x 144.54pt>
 File: packing_bloat-eps-converted-to.pdf Graphic file (type pdf)
 
 <use packing_bloat-eps-converted-to.pdf>
@@ -844,12 +845,11 @@ Package pdftex.def Info: packing_bloat-eps-converted-to.pdf used on input line
 122.
 (pdftex.def)             Requested size: 252.94438pt x 144.53963pt.
 )
-Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--173
+Overfull \hbox (0.93823pt too wide) in paragraph at lines 124--172
  [][] 
  []
 
-) [10 <./vpr_flows_mcw-eps-converted-to.pdf> <./vpr_flows_crit_path-eps-convert
-ed-to.pdf> <./wires_cut-eps-converted-to.pdf>]
+)
 Package epstopdf Info: Source file: <arch_experiments4.eps>
 (epstopdf)                    date: 2014-12-14 13:57:40
 (epstopdf)                    size: 4208610 bytes
@@ -860,8 +860,7 @@ Package epstopdf Info: Source file: <arch_experiments4.eps>
 erted-to.pdf arch_experiments4.eps>
 (epstopdf)             \includegraphics on input line 434.
 Package epstopdf Info: Output file is already uptodate.
-
-<arch_experiments4-eps-converted-to.pdf, id=163, 816.04875pt x 479.7925pt>
+ <arch_experiments4-eps-converted-to.pdf, id=163, 816.04875pt x 479.7925pt>
 File: arch_experiments4-eps-converted-to.pdf Graphic file (type pdf)
 
 <use arch_experiments4-eps-converted-to.pdf>
@@ -928,6 +927,8 @@ File: numberofcrossingwires_new_2-eps-converted-to.pdf Graphic file (type pdf)
 Package pdftex.def Info: numberofcrossingwires_new_2-eps-converted-to.pdf used 
 on input line 478.
 (pdftex.def)             Requested size: 252.0pt x 115.29556pt.
+ [12 <./additional_fanins_2-eps-converted-to.pdf> <./MinChW_3-eps-converted-to.
+pdf> <./numberofcrossingwires_new_2-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <delays_crit_path_new.eps>
 (epstopdf)                    date: 2014-12-06 12:37:24
 (epstopdf)                    size: 1736258 bytes
@@ -940,16 +941,14 @@ onverted-to.pdf delays_crit_path_new.eps>
 (epstopdf)             \includegraphics on input line 490.
 Package epstopdf Info: Output file is already uptodate.
 
-<delays_crit_path_new-eps-converted-to.pdf, id=175, 551.05875pt x 293.095pt>
+<delays_crit_path_new-eps-converted-to.pdf, id=188, 551.05875pt x 293.095pt>
 File: delays_crit_path_new-eps-converted-to.pdf Graphic file (type pdf)
 
 <use delays_crit_path_new-eps-converted-to.pdf>
 Package pdftex.def Info: delays_crit_path_new-eps-converted-to.pdf used on inpu
 t line 490.
 (pdftex.def)             Requested size: 252.0pt x 134.03374pt.
- [12 <./additional_fanins_2-eps-converted-to.pdf> <./MinChW_3-eps-converted-to.
-pdf> <./numberofcrossingwires_new_2-eps-converted-to.pdf>] (./wires_cut_4part.t
-ex
+ (./wires_cut_4part.tex
 Package epstopdf Info: Source file: <wires_cut_4part.eps>
 (epstopdf)                    date: 2014-12-30 18:34:14
 (epstopdf)                    size: 19021 bytes
@@ -1014,11 +1013,7 @@ ll_fpga.pdf
 
 pdfTeX warning: pdflatex (file ./tall_fpga.pdf): PDF inclusion: multiple pdfs w
 ith page group included in a single page
->]
-Underfull \vbox (badness 6658) has occurred while \output is active []
-
-
-(./fpga2014paper.bbl
+>] (./fpga2014paper.bbl
 Underfull \hbox (badness 1769) in paragraph at lines 56--58
 []\OT1/ptm/m/n/8 W. Ar-den, M. Bril-lou[]et, P. Co-gez, M. Graef, B. Huiz-ing, 
 and
@@ -1069,11 +1064,11 @@ PG> <./vbetz.jpg>] (./fpga2014paper.aux) )
 Here is how much of TeX's memory you used:
  4444 strings out of 495020
  70702 string characters out of 6181324
- 158626 words of memory out of 5000000
+ 156813 words of memory out of 5000000
  7524 multiletter control sequences out of 15000+600000
  42909 words of font info for 77 fonts, out of 8000000 for 9000
  17 hyphenation exceptions out of 8191
- 42i,11n,38p,1651b,467s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 42i,11n,38p,1651b,526s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/
 enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
 s/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
@@ -1089,7 +1084,7 @@ c/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/ut
 mb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr
 /share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/
 texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on fpga2014paper.pdf (15 pages, 1953622 bytes).
+Output written on fpga2014paper.pdf (15 pages, 1957790 bytes).
 PDF statistics:
  296 PDF objects out of 1000 (max. 8388607)
  189 compressed objects within 2 object streams
