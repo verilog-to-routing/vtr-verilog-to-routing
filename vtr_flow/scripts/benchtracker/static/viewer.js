@@ -14,13 +14,8 @@ var filter_method_map = {"range":"BETWEEN", "categorical":"IN"};
 // serialize without [] for array parameters
 jQuery.ajaxSettings.traditional = true; 
 
-
-document.addEventListener('DOMContentLoaded', function() {console.log("ready");}, false);
-// report_debug("READY");
-
 // DOM modifying functions
 $(document).ready(function() {
-
 
 // update all other selection boxes if necessary when tasks are changed
 var task_select = document.getElementById("task_select").getElementsByClassName('task');

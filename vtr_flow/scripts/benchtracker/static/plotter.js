@@ -27,15 +27,26 @@ var gmean_list = [];
 var raw_data = null;
 var gmean_data = null;
 var range = [];
-var plotSize = {'width': 1060, 'height': 700};
-var plotMargin = {'left': 100, 'right': 5, 'top': 70, 'bottom': 70};
-// a list of svg elements in d3 type: used for future plot manipulation
-var chartList = [];
 // xNameMap is only set when value in x axis is string
 var xNameMap = null;
 
 var formGmean;
 var formOverlay;
+
+var first_plot = false;
+// all margins are the margins between canvsvg and canvsvg -> rect
+// not between the canvsvg and canvsvg -> g
+var ratio = {canvToWholeWid: 1060/(1060+260),
+             legToWholeWid: 240/(1060+260),
+             wholeHeiToWid: 750/(1060+260),
+             // margin.top / wholeHeight
+             marginTopToWhole: 100/750,
+             marginBotToWhole: 100/750,
+             // margin.left / wholeWidth
+             marginLefToWhole: 150/(1060+260),
+             marginRigToWhole: 10/(1060+260)};
+// display option
+var numPlotsPerRow = 1;
 
 // attach event listeners when ready
 $(document).ready(function() {
@@ -88,6 +99,8 @@ function plotter_setup(data) {
         report_error(data.status);
         return;
     }
+    console.log('--- data ---');
+    console.log(data);
     // initialize
     raw_data = data;
     raw_data.tasks = _.map(raw_data.tasks, function(d){return d.split('|')[0]; });
@@ -117,7 +130,6 @@ function plotter_setup(data) {
     } else {
         // choose the axis with the most distinct values and overlay on it
         defaultToGmeanSubPlot();
-        //generate_overlay_selector('raw');
     }
 }
 /*
@@ -125,6 +137,7 @@ function plotter_setup(data) {
  * methodology: gmean over everything
  */
 function defaultToGmeanTimePlot() {
+    first_plot = true;
     d3.select('#chart').html('');
     // flattenedData = _.flatten(raw_data, true);
     for (var i = 0; i < raw_data.data.length; i++) {
@@ -151,6 +164,7 @@ function defaultToGmeanTimePlot() {
  * methodology: gmean over circuits, overlay on the filter which has the most distinct values
  */
 function defaultToGmeanSubPlot() {
+    first_plot = true;
     // check if circuit is in the filter: 
     // it should be, cuz it is the primary key
     var gmeanIndex = raw_data.params.indexOf(defaultGmean);
@@ -286,6 +300,10 @@ function generate_overlay_selector() {
         formGmean.appendChild(input);
         formGmean.appendChild(label);
         formGmean.appendChild(document.createElement('br'));
+        if (raw_data.params[0] == 'parsed_date' && choice[i] == 'run') {
+            $('#gip-'+choice[i]).prop('checked', true);
+        }
+
     }
 
     function updateLegendCheckBox(gid) {
@@ -384,6 +402,7 @@ function findMostExpensiveAxis(rawData, params) {
  * this function is called after user is in the 'customer plot' mode
  */
 function plot_generator() {
+    first_plot = true;
     // clear up
     d3.select('#chart').html('');
     var series = raw_data.data;
@@ -469,9 +488,21 @@ function plot_generator() {
     //custom_panel.style.visibility = 'hidden';
 }
 
+function scroll_to(element) {
+    console.log("Scrolling to:");
+    console.log(element);
+   $('html, body').animate({
+        scrollTop: $(element).offset().top - 200
+    }, 1000); 
+}
+
 function sizingTaskContainer (numPlots, id) {
-    var level = Math.ceil(numPlots);
-    d3.select('#'+id).style('height', level*plotSize['height'] + 180);
+    var level = Math.ceil(numPlots / numPlotsPerRow);
+    // TODO: should get height of canvas directly
+    var wholeWidth = document.getElementById('display_canvas').offsetWidth / numPlotsPerRow;
+    var wholeHeight = wholeWidth * ratio.wholeHeiToWid;
+    // TODO: should not hard code 180
+    d3.select('#'+id).style('height', level*wholeHeight + 180);
 }
 
 /*
@@ -664,25 +695,39 @@ function setupAxis(params, xNM, t, width, height) {
  *
  */
 function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
-    // const for plot canvas
-    // width & heigth is the size of the actual plotting area
-    var width = plotSize['width'] - plotMargin['left'] - plotMargin['right'];
-    var height = plotSize['height'] - plotMargin['top'] - plotMargin['bottom'];
-    var origLegWidth = 240;
+    // ...............................
+    // setup geometry of plotting area
+    // all geometry values are derived by the width of the whole page
+    var wholeWidth = document.getElementById('display_canvas').offsetWidth / numPlotsPerRow;
+    var wholeHeight = wholeWidth * ratio.wholeHeiToWid;
+    // basically width: whole = canvas + legend + small margin 
+    //           height: whole = canvas = legend
+    var canvWidth = wholeWidth * ratio.canvToWholeWid;
+    var canvHeight = wholeHeight;
+    // width & height is the size of the actual plotting area (i.e.: rect in canvas svg)
+    var width = canvWidth - wholeWidth * (ratio.marginLefToWhole + ratio.marginRigToWhole);
+    var height = canvHeight - wholeHeight * (ratio.marginTopToWhole + ratio.marginBotToWhole);
+    // width and height for legend container
+    var legWidth = wholeWidth * ratio.legToWholeWid;
+    var legHeight = wholeHeight;
+    console.log('---- whole:');
+    console.log('Width: '+wholeWidth+'  Height: '+wholeHeight);
+    console.log('---- canv:');
+    console.log('Width: '+canvWidth+'  Height: '+canvHeight);
+    console.log('---- plot');
+    console.log('Width: '+width+'  Height: '+height);
+    // ................................
+    // small tuning of plot title position
     var plotTitleY = -10;
-    // const for legend
+    // const for legend, unit: px
     var dataDotRadius = 4;
     var legendSize = 14;
     var legendMargin = 8;
     var legendPeriGap = 10;
-    // ..............
+    // .................................
     // data
     var lineInfo = prepareData(params, series, overlay_list, xNM, t);
-    var ratio = 530 / (530 + 130);
-    // plot now spans the whole page
-    var plotWidth = document.getElementById('display_canvas').offsetWidth * ratio; //  / 2;
-    width = width * (plotWidth / plotSize['width']);
-    // ..............
+    // .................................
     // axis
     var xy = setupAxis(params, xNM, t, width, height);
     var x = xy[0];
@@ -698,22 +743,24 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         .orient("left")
         .ticks(10, 's')
         .tickSize(-width);
-    // ...............
+    // ...................................
     // behavior
     var zoom = d3.behavior.zoom()
         .x(x)
         .y(y)
         .scaleExtent([1, 10])
         .on("zoom", zoomed);
-    // ...............
+    // ...................................
     // assembly
     var chart = d3.select('#task_'+t).append('div').attr('class', 'chart_container');
     var svg = chart.append('svg').attr('class', 'canvas_container')
-        .style("width", plotWidth) //plotSize['width']
-        .style("height", plotSize['height'])
+        .style("width", canvWidth) //plotSize['width']
+        .style("height", canvHeight)
         .attr('shape-rendering', 'geometricPrecision');
-    var gTransX = plotWidth * (plotMargin['left'] / plotSize['width']);
-    var gTransY = plotMargin['top']; 
+    var gTransX = wholeWidth * ratio.marginLefToWhole;
+    var gTransY = wholeHeight * ratio.marginTopToWhole; 
+    // NB: the translation on g is not strict. By inspecting the actual generated webpage,
+    // it seems that the translation of (gTransX, gTransY) is eventually falling on rect.
     svg = svg.append("g")
              .attr('transform', 'translate(' + gTransX + ',' + gTransY + ')');
              //.attr("transform", "translate(" + plotMargin['left'] + "," + plotMargin['top'] + ")")
@@ -723,7 +770,6 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     }
     // svg -> g -> rect: background color
     svg.append("rect")
-        //.attr('class', 'canvas_peripheral')
         .attr('fill', '#f0f0f0')
         .attr("width", width)
         .attr("height", height);
@@ -734,12 +780,14 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis);
-    // reassemble x and y axis name, to eliminate underscore
+    // reassemble x and y axis name, with underscore eliminated
     var xParam = _.reduce(params[0].split('_'), function(memo, num) {return memo == '' ? num : memo+' '+num;}, '');
     var yParam = _.reduce(params[1].split('_'), function(memo, num) {return memo == '' ? num : memo+' '+num;}, '');
+    // the hardcoded 30 in "attr('y', height+30)" should be fine. cuz vertical px is irrelevant to window size
     svg.append('text').attr('class', 'x label').attr('text-anchor', 'middle')
        .attr('x', width/2).attr('y', height+30).style('font-size','14px')
        .text(xParam);
+    // TODO: the hardcoded -50 in "attr('y', -50)" may need adjustment
     svg.append('text').attr('class', 'y label').attr('text-anchor', 'middle')
        .attr('x', -height/2).attr('y', -50).attr('dy', '.75em')
        .attr('transform', 'rotate(-90)').style('font-size','14px')
@@ -785,8 +833,11 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // the svg size should be chosen to fit the text
     var svgLegWidth = 0;
     var svgLegHeight = 0;
-    var divWidth = origLegWidth * (plotWidth / plotSize['width']);
-    var svgLegend = chart.append('div').attr('class', 'legend_container').style('width', divWidth).append('svg').attr('class', 'legend_svg');
+    var divLegWidth = wholeWidth * ratio.legToWholeWid;
+    var divLegHeight = wholeHeight * (1 - ratio.marginBotToWhole);
+    var svgLegend = chart.append('div').attr('class', 'legend_container')
+                         .style('width', divLegWidth).style('height', divLegHeight)
+                         .append('svg').attr('class', 'legend_svg');
     // NOTE: has to set font here, or getBBox will return inprecise value due to the unloaded font
     d3.selectAll('svg').style('font', '10px sans-serif');
     if (lineInfo.length > 1 || lineInfo[0]['key'] != '') {
@@ -798,7 +849,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                         .attr('transform', function (d, i) {
                                                var height = legendSize + legendMargin;
                                                var horz = legendPeriGap;
-                                               var vert = (i+1) * height + plotMargin['top'] + legendPeriGap;
+                                               var vert = (i+1) * height + wholeHeight * ratio.marginTopToWhole + legendPeriGap;
                                                return 'translate(' + horz + ', ' + vert + ')';
                                            });
         var legendTitle = _.map(overlay_list, function(d) {return '<'+params[Number(d)+2]+'>';});
@@ -806,7 +857,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
             legendTitle[i] = _.reduce(legendTitle[i].split('_'), function(memo, num){return memo == '' ? num : memo+' '+num;}, '');
         }
     
-        var textElement = svgLegend.append('text').attr('x', legendPeriGap).attr('y', legendPeriGap + plotMargin['top'])
+        var textElement = svgLegend.append('text').attr('x', legendPeriGap).attr('y', legendPeriGap + wholeHeight * ratio.marginTopToWhole)
            .attr('text-anchor', 'left').style('font-size', '12px')
            .style('font-weight', 'bold').text(String(legendTitle));
         // dynamically adjust the svg legend size 
@@ -825,7 +876,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
                         svgLegWidth = (svgLegWidth > this.getBBox().width) ? svgLegWidth : this.getBBox().width;
                         svgLegHeight += legendSize+legendMargin; });
         svgLegWidth += legendPeriGap;
-        svgLegHeight += legendPeriGap + plotMargin['top'] + legendSize;
+        svgLegHeight += legendPeriGap + wholeHeight * ratio.marginTopToWhole + legendSize;
         svgLegend.attr('width', svgLegWidth).attr('height', svgLegHeight);
     } else {
         // no legend at all
@@ -897,6 +948,11 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
         };
       });
     }
+
+    if (first_plot) {
+        scroll_to(svg.node());
+        first_plot = false;
+    }
 }
 // ..............
 // save image
@@ -917,8 +973,9 @@ function savePlot() {
                      .node().parentNode.innerHTML;
         var html = html2 + html1;
         var plotWidth = d3.select(this).select('svg').node().width.animVal.value;
+        var plotHeight = document.getElementById('display_canvas').offsetWidth * ratio.wholeHeiToWid;
         var svgWidth = plotWidth + Number(d3.select(this).select('.legend_svg').attr('width'));
-        var svgHeight =plotSize['height'] > Number(d3.select(this).select('.legend_svg').attr('height')) ? plotSize['height'] : Number(d3.select(this).select('.legend_svg').attr('height'));
+        var svgHeight = plotHeight > Number(d3.select(this).select('.legend_svg').attr('height')) ? plotHeight : Number(d3.select(this).select('.legend_svg').attr('height'));
         d3.select('#temp').append('svg').attr('width', svgWidth).attr('height', svgHeight)
           .attr('version',1.1).attr('xmlns', 'http://www.w3.org/2000/svg').html(html);
         d3.select('#temp').select('.legend_svg').attr('x', plotWidth);

@@ -3,7 +3,7 @@
 from __future__ import print_function, division
 import sys
 from subprocess import call
-import os.path
+import os
 import shlex
 import argparse
 import textwrap
@@ -268,6 +268,9 @@ def parse_args(ns=None):
     if params.root_directory:
         if params.root_directory[-1] != '/':
             params.root_directory += '/'
+        # make directory if it does not exist
+        if not os.path.exists(params.root_directory):
+            os.makedirs(directory)
         params.task_list = [params.root_directory + task for task in params.task_list]
 
     if os.path.isfile(params.task_list[0]):

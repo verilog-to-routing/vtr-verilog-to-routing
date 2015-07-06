@@ -185,19 +185,21 @@ select:focus {
 }
 
 .canvas_container {
+    /*
     width: 1060;
     height: 700;
+    */
     float: left;
 }
 .chart_container {
     /*width: 670;*/
     width: 100%;
-    height: 700;
+    /*height: 700;*/
     float:left;
 }
 .legend_container {
     /*width: 130;*/
-    height: 700;
+    /*height: 700;*/
     float: left;
     overflow-x: auto;
     overflow-y: auto;
