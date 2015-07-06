@@ -143,7 +143,8 @@ def get_csv_data():
         with zipfile.ZipFile(memory_file, 'a', zipfile.ZIP_DEFLATED) as zf:
             t = 0
             for csvf in d.export_data_csv(params, data):
-                zf.writestr("benchmark_results/" + tasks[t].replace('/','.'), csvf.getvalue())
+                # characters the filesystem might complain about (/|) are replaced
+                zf.writestr("benchmark_results/" + tasks[t].replace('/','.').replace('|','__'), csvf.getvalue())
                 t += 1
 
         # prepare to send over network
