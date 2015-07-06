@@ -23,12 +23,6 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
 
     NodeId node_id = node_types_.size() - 1;
 
-    //Save primary outputs as we build the graph
-    if(type == TN_Type::OUTPAD_SINK ||
-       type == TN_Type::FF_SINK) {
-        primary_outputs_.push_back(node_types_.size() - 1);
-    }
-
     //Verify sizes
     ASSERT(node_types_.size() == node_clock_domains_.size());
     ASSERT(node_types_.size() == node_is_clock_source_.size());
