@@ -47,7 +47,10 @@ We transformed the circuit netlist hypergraph to a graph in the following way:
 \item We combined all of the per-net subgraphs, summing the edge weights for edges appearing in more than one per-net subgraph, to generate the total netlist graph.
 \end{enumerate}
 
-We explored several ways to generate the per-net subgraphs, varying the graph topology and the edge weight scheme. We considered two graph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the originating hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$.  Our intuition is that assigning lower edge weight to high-fanout nets may be beneficial, and we selected the edge weights accordingly. We refer to the combination of graph topology and edge weight scheme as the \emph{hyperedge model}.
+We explored several ways to generate the per-net subgraphs, varying the graph topology and the edge weight scheme. We considered two graph topologies, clique and star, as illustrated in Figure \ref{fig:star_clique}. \hl{Ref.\mbox{\cite{hypergraph_to_graph_survey}}
+considers the addition of ``dummy'' nodes to model a hypergraph as a graph, with the objective of obtaining equivalent edge cut weights after partitioning. In our star model, we preferred to designate the net source as the center of the star, rather than introduce a dummy node. This choice was motivated by a desire to optimize timing -- the star topology clearly differentiates sources from sinks, and we expect this to guide the partitioner to keep sources and sinks in the same partition.}
+
+We assigned the same edge weight to every edge of the generated subgraph. Edge weights were computed based on the number of vertices in the originating hyperedge, $n$, and we considered edge weights equal to $1$, $1/n$, and $1/n^2$.  Our intuition is that assigning lower edge weight to high-fanout nets may be beneficial, and we selected the edge weights accordingly. We refer to the combination of graph topology and edge weight scheme as the \emph{hyperedge model}.
 
 \begin{figure}[!htbp]
 \centering
@@ -128,6 +131,28 @@ For the same set of circuits, we computed the critical path delay at a channel w
 On average, the critical path delay did not vary significantly between the different partitioning CAD flows, but it appears that partitioning before packing may slightly improve circuit speed, while enforcing these partitioning constraints during placement may slightly reduce circuit speed.
 
 Considering both routability and delay, the best CAD flow used the partitioning result to constrain both packing and placement, and we use that flow in the remainder of this paper.
+
+\subsection{\hl{Interposer Wire Utilization}}
+\hl{Table \mbox{\ref{table:interposer_wire_utilization}} shows the number of connections on the critical path and how many of those critical connections cross the interposer boundary. It also shows the number of cut nets per vertical channel. This provides a lower bound on the number of wires required in an interposer channel. The data was obtained at 70\% wires cut.}
+\begin{table}[!htbp]
+\centering
+\caption{Interposer wire utilization}
+\begin{tabular}{|l|r|r||r|r|}
+\hline
+ & \multicolumn{2}{c||}{Critical Connections} & \multicolumn{2}{c|}{Cut Nets} \\
+ & Cut & Total & Total & Per Channel \\ \hline
+bgm & 1 & 373 & 622 & 8.89 \\ \hline
+stereovision0 & 3 & 57 & 985 & 25 \\ \hline
+stereovision1 & 1 & 21 & 876 & 21 \\ \hline
+LU8PEEng & 0 & 1661 & 1795 & 20 \\ \hline
+mkDelayWorker32B & 4 & 58 & 771 & 17 \\ \hline
+mcml & 5 & 1443 & 2891 & 28 \\ \hline
+LU32PEEng & 0 & 1664 & 1130 & 5 \\ \hline
+\end{tabular}
+\label{table:interposer_wire_utilization}
+\end{table}
+
+\hl{Though our choice of the star topology benefits timing, our partitioning flow is not timing-driven. We would expect a timing-driven partitioner to reduce the number of cut critical connections, but obtaining good critical path estimates at the partitioning stage is nontrivial\mbox{\cite{hutton}}.}
 
 \subsection{\% wires cut}
 To evaluate the CAD flow performance for a range of interposer architectures, we varied the fraction of wires cut and measured the average minimum channel width over the 8 largest VTR circuits. As shown in Figure \ref{fig:wires_cut}, this new flow is a significant improvement over that of~\cite{interposer2014} for FPGAs where more than half the wires are cut at interposer boundaries. \hl{But it is slightly worse than the traditional FPGA CAD flow for an architecture with 0\% of the wires cut}, which is a monolithic FPGA, presumably because we have restricted the placer's freedom.

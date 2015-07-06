@@ -140,9 +140,25 @@ G.~Karypis, ``{A Software package for Partitioning Unstructured Graphs,
   Partitioning Meshes, and Computing Fill-Reducing Orderings of Sparse
   Matrices},'' \emph{University of Minnesota}, 2013.
 
+\bibitem{hypergraph_to_graph_survey}
+\BIBentryALTinterwordspacing
+E.~Ihler, D.~Wagner, and F.~Wagner, ``Modeling hypergraphs by graphs with the
+  same mincut properties,'' \emph{Inf. Process. Lett.}, vol.~45, no.~4, pp.
+  171--175, Mar. 1993. [Online]. Available:
+  \url{http://dx.doi.org/10.1016/0020-0190(93)90115-P}
+\BIBentrySTDinterwordspacing
+
 \bibitem{feng2014rent}
 W.~Feng, J.~Greene, K.~Vorwerk, V.~Pevzner, and A.~Kundu, ``{Rent's Rule Based
   FPGA Packing for Routability Optimization},'' in \emph{ACM Int. Symp. on
   FPGAs}, 2014, pp. 31--34.
+
+\bibitem{hutton}
+\BIBentryALTinterwordspacing
+M.~Hutton, K.~Adibsamii, and A.~Leaver, ``Adaptive delay estimation for
+  partitioning-driven pld placement,'' \emph{IEEE Trans. Very Large Scale
+  Integr. Syst.}, vol.~11, no.~1, pp. 60--63, Feb. 2003. [Online]. Available:
+  \url{http://dx.doi.org/10.1109/TVLSI.2002.808424}
+\BIBentrySTDinterwordspacing
 
 \end{thebibliography}
