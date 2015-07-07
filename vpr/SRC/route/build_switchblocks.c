@@ -56,7 +56,7 @@ Ex: for a length-4 wire segment (belonging to some named segment type):
 
 The new switch block format allows a user to specify mathematical permutation functions that prescribe how a set of from_type/from_group/from_point wire segments in one channel segment (the source set) should connect to a set of to_type/to_group/to_point wire segments in an adjacent channel segment (the destination set). This provides for an abstract but very flexible way of specifying different switch block patterns.
 
-An example from the XML VPR architecture file is given below. The 'wireconn' entries define ordered source/destination sets of wire segments that should be connected with the specified permutation functions. A permutation function of 't/2' specifies that the t'th wire segment in the source set should connect to the [(t/2)%W]'th wire segment in the destination set where W is the size, or effective channel width, of the destination set (note that permutation functions are implicitly modulo W so that all functions evaluate to a number that indexes into the destination set). 
+An example from the XML VPR architecture file is given below. The 'wireconn' entries define ordered source/destination sets of wire segments that should be connected with the specified permutation functions. The wireconn entries essentially "re-index" the channel so that a permutation function of 't/2' means that the t'th wire segment in the source wireconn set should connect to the [(t/2)%W]'th wire segment in the destination set where W is the size, or effective channel width, of the destination set (note that permutation functions are implicitly modulo W so that all functions evaluate to a number that indexes into the destination set). 
 
   <switch_block type="custom"/>			<-- backwards-compatible with VPR's previous wilton/subset/universal/full specification
   ...
@@ -113,6 +113,7 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 #include "util.h"
+#include <malloc.h>
 
 using namespace std;
 
@@ -268,7 +269,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( INP t_chan_detail
 	t_track_type_sizes track_type_sizes;
 	count_track_type_sizes(chan_details_x[0][0], channel_width, &track_type_sizes);
 	
-#if 1
+#if 0
 	/******** fast switch block computation method; computes a row of switchblocks then stamps it out everywhere ********/
 	/* figure out max(lcm(L_i, L_j)) for all wire lengths belonging to wire types i & j */
 	int max_lcm = get_max_lcm(&switchblocks, &track_type_sizes);
@@ -334,6 +335,12 @@ void free_switchblock_permutations(INOUTP t_sb_connection_map *sb_conns){
 	sb_conns->clear();
 	delete sb_conns;
 	sb_conns = NULL;
+	/* the switch block unordered_map can get quite large and it doesn't seem like the program
+	   is interested in releasing the memory back to the OS after the map is cleared. 
+	   calling malloc_trim forces the program to give unused heap space back to the OS. 
+	   this significantly reduces memory usage during the routing stage when running multiple 
+	   large benchmark circuits in parallel. */
+	malloc_trim(0);
 	return;
 }
 
