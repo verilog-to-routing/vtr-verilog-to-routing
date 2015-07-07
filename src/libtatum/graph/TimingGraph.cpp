@@ -4,15 +4,12 @@
 
 #include "TimingGraph.hpp"
 
-NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, const BlockId block_id, const bool is_clk_src) {
+NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src) {
     //Type
     node_types_.push_back(type);
 
     //Domain
     node_clock_domains_.push_back(clock_domain);
-
-    //Logical block
-    node_logical_blocks_.push_back(block_id);
 
     //Clock source
     node_is_clock_source_.push_back(is_clk_src);
@@ -26,7 +23,6 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
     //Verify sizes
     ASSERT(node_types_.size() == node_clock_domains_.size());
     ASSERT(node_types_.size() == node_is_clock_source_.size());
-    ASSERT(node_types_.size() == node_logical_blocks_.size());
 
     //Return the ID of the added node
     return node_id;

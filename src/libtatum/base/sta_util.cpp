@@ -327,7 +327,7 @@ void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_i
  */
 
 
-void add_ff_clock_to_source_sink_edges(TimingGraph& tg, std::vector<float>& edge_delays) {
+void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockId> node_logical_blocks, std::vector<float>& edge_delays) {
     //We represent the dependancies between the clock and data paths
     //As edges in the graph from FF_CLOCK pins to FF_SOURCES (launch path)
     //and FF_SINKS (capture path)
@@ -345,12 +345,13 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, std::vector<float>& edge
     std::map<BlockId,std::vector<NodeId>> logical_block_FF_sinks;
 
     for(NodeId node_id = 0; node_id < tg.num_nodes(); node_id++) {
+        BlockId blk_id = node_logical_blocks[node_id];
         if(tg.node_type(node_id) == TN_Type::FF_CLOCK) {
-            logical_block_FF_clocks[tg.node_logical_block(node_id)].push_back(node_id);
+            logical_block_FF_clocks[blk_id].push_back(node_id);
         } else if (tg.node_type(node_id) == TN_Type::FF_SOURCE) {
-            logical_block_FF_sources[tg.node_logical_block(node_id)].push_back(node_id);
+            logical_block_FF_sources[blk_id].push_back(node_id);
         } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
-            logical_block_FF_sinks[tg.node_logical_block(node_id)].push_back(node_id);
+            logical_block_FF_sinks[blk_id].push_back(node_id);
         }
     }
 

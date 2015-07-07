@@ -66,7 +66,6 @@ class TimingGraph {
         //Node accessors
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
         DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
-        BlockId node_logical_block(const NodeId id) const { return node_logical_blocks_[id]; }
         bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
         int num_node_out_edges(const NodeId id) const { return node_out_edges_[id].size(); }
         int num_node_in_edges(const NodeId id) const { return node_in_edges_[id].size(); }
@@ -88,7 +87,7 @@ class TimingGraph {
         const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
 
         //Graph modifiers
-        NodeId add_node(const TN_Type type, const DomainId clock_domain, const BlockId block_id, const bool is_clk_src);
+        NodeId add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src);
         EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
 
         //Graph-level operations
@@ -107,9 +106,6 @@ class TimingGraph {
         std::vector<std::vector<EdgeId>> node_out_edges_;
         std::vector<std::vector<EdgeId>> node_in_edges_;
         std::vector<bool> node_is_clock_source_;
-        //Reverse mapping to logical blocks, used to add FF_CLOCK to FF_SINK/FF_SOURCE edges
-        //FIXME: this is a temporary kludge - remove later!
-        std::vector<BlockId> node_logical_blocks_;
 
         //Edge data
         std::vector<EdgeId> edge_sink_nodes_;
@@ -124,20 +120,20 @@ class TimingGraph {
  * Potential types for nodes in the timing graph
  */
 enum class TN_Type {
-	INPAD_SOURCE, //Driver of an input I/O pad 
-	INPAD_OPIN, //Output pin of an input I/O pad 
-	OUTPAD_IPIN, //Input pin of an output I/O pad 
-	OUTPAD_SINK, //Sink of an output I/O pad 
-	PRIMITIVE_IPIN, //Input pin to a primitive (e.g. LUT) 
-	PRIMITIVE_OPIN, //Output pin from a primitive (e.g. LUT) 
-	FF_IPIN, //Input pin to a flip-flop - goes to FF_SINK 
-	FF_OPIN, //Output pin from a flip-flop - comes from FF_SOURCE 
-	FF_SINK, //Sink (D) pin of flip-flop 
-	FF_SOURCE, //Source (Q) pin of flip-flop 
-	FF_CLOCK, //Clock pin of flip-flop 
-    CLOCK_SOURCE, //A clock generator such as a PLL 
-    CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE 
-	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0 
+	INPAD_SOURCE, //Driver of an input I/O pad
+	INPAD_OPIN, //Output pin of an input I/O pad
+	OUTPAD_IPIN, //Input pin of an output I/O pad
+	OUTPAD_SINK, //Sink of an output I/O pad
+	PRIMITIVE_IPIN, //Input pin to a primitive (e.g. LUT)
+	PRIMITIVE_OPIN, //Output pin from a primitive (e.g. LUT)
+	FF_IPIN, //Input pin to a flip-flop - goes to FF_SINK
+	FF_OPIN, //Output pin from a flip-flop - comes from FF_SOURCE
+	FF_SINK, //Sink (D) pin of flip-flop
+	FF_SOURCE, //Source (Q) pin of flip-flop
+	FF_CLOCK, //Clock pin of flip-flop
+    CLOCK_SOURCE, //A clock generator such as a PLL
+    CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE
+	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0
     UNKOWN //Unrecognized type, if encountered this is almost certainly an error
 };
 

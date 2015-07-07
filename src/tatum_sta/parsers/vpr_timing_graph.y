@@ -12,7 +12,7 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<float>& edge_delays, const char *msg);
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<BlockId>& node_logical_blocks, const std::vector<float>& edge_delays, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -34,6 +34,7 @@ std::vector<std::vector<edge_t>*> node_out_edges;
 %parse-param{TimingGraph& timing_graph}
 %parse-param{VprArrReqTimes& arr_req_times}
 %parse-param{TimingConstraints& timing_constraints}
+%parse-param{std::vector<BlockId>& node_logical_blocks}
 %parse-param{std::vector<float>& edge_delays}
 
 %union {
@@ -183,10 +184,11 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  */
 
                                                 //Add the node
-                                                NodeId src_node_id = timing_graph.add_node($2.type, $2.domain, $2.iblk, $2.is_clk_src);
+                                                NodeId src_node_id = timing_graph.add_node($2.type, $2.domain, $2.is_clk_src);
 
                                                 //Save the edges to be added later
                                                 node_out_edges.push_back($2.out_edges);
+                                                node_logical_blocks.push_back($2.iblk);
 
                                                 VERIFY(src_node_id == (int) node_out_edges.size() - 1);
 
@@ -379,7 +381,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<float>& edge_delays, const char *msg) {
+int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<BlockId>& node_logical_blocks, const std::vector<float>& edge_delays, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

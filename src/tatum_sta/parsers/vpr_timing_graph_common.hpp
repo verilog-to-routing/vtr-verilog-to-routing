@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include "timing_graph_fwd.hpp"
 
 
 //Forward Declarations
@@ -155,6 +156,6 @@ class VprArrReqTimes {
 
 };
 
-extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times, TimingConstraints& tc, std::vector<float>& edge_delays);
+extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times, TimingConstraints& tc, std::vector<BlockId>& node_logical_blocks, std::vector<float>& edge_delays);
 extern FILE *yyin;
 
