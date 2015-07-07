@@ -22,11 +22,6 @@
 
 using namespace std;
 
-// Disable the routing predictor for circuits with less that this number of nets.
-// This was experimentally determined, by Matthew Walker, to be the most useful
-// metric, and this is also somewhat larger than largest circuit observed to have
-// inaccurate predictions, thought this is still only affects quite small circuits.
-#define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
 
 
 /******************** Subroutines local to route_timing.c ********************/
@@ -207,38 +202,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		/* Determine when routing is impossible hence should be aborted */
 		if (itry > 5){
 			
-			int routing_predictor_running_average = MAX_SHORT;
-			if(historical_overuse_ratio[1] > 0 && historical_overuse_ratio[itry] > 0) {
-				routing_predictor_running_average = ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE + (historical_overuse_ratio[1] / historical_overuse_ratio[itry]) / 4;
-				if (router_opts.routing_failure_predictor == SAFE) {
-					routing_predictor_running_average *= 1.5;
-				}
-			}
-			if (itry > routing_predictor_running_average
-			 && router_opts.routing_failure_predictor != OFF
-			 && num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) {
-
-				/* linear extrapolation to predict what routing iteration will succeed */
-				int expected_successful_route_iter;
-				int ref_iter;
-				double removal_average = 0;
-
-				ref_iter = itry - routing_predictor_running_average;
-				removal_average = (historical_overuse_ratio[ref_iter] -
-								  historical_overuse_ratio[itry]) / routing_predictor_running_average;
-				if (removal_average <= 0) {
-					/* Negative removal sometimes happens from noise when circuit is very close to routing, therefore sample a larger space */
-					ref_iter = min(1, itry - routing_predictor_running_average - 5);
-					removal_average = (historical_overuse_ratio[ref_iter] -
-						historical_overuse_ratio[itry]) / routing_predictor_running_average;
-				}
-
-				expected_successful_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
-				if (expected_successful_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
-					vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_successful_route_iter);
-					return (false);
-				}
-			}
+			int expected_success_route_iter = predict_success_route_iter(itry, historical_overuse_ratio, router_opts);
+			if (expected_success_route_iter == UNDEFINED) return false;
 		}
 
 
@@ -301,6 +266,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		if (timing_analysis_enabled) {
 			float critical_path_delay = get_critical_path_delay();
             vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+#ifdef CONGESTION_ANALYSIS
+            
+#endif
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}

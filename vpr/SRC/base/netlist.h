@@ -21,10 +21,11 @@ using namespace std;
  *				block is net.pins[0].block and the sink blocks are the remaining pins.
  *				When this is in the g_clb_netlist, it is an index into block[]
  *				When this is is nte g_atoms_netlist, it is an index into logical_block[]
- * block_port:  net.pins[0..pins.size()-1].block_port.
- *				Port index (on a block) to which each net terminal connects. 
- * block_pin:   net.pins[0..pins.size()-1].block_pin. 
- *				Pin index (on a block) to which each net terminal connects. 
+ * block_port:  Port index (on a block) to which each net terminal connects. 
+ *				A port is a named collection of pins.
+ *				Indexes into input_net_tnodes
+ * block_pin:   Pin index (on a block) to which each net terminal connects. 
+ *				
  */
 struct t_net_pin{
 	int block;
@@ -45,13 +46,14 @@ struct t_net_pin{
  * t_net_pin:  [0..pins.size()-1]. Contains the nodes this net connects to.
  */
 struct t_vnet{
+	vector<t_net_pin> pins;
 	char* name;
+	t_net_power * net_power; // Daniel to-do: Take out?
+	// named bitfields (alternative to bitmasks)
 	unsigned int is_routed    : 1;
 	unsigned int is_fixed     : 1;
 	unsigned int is_global    : 1;
 	unsigned int is_const_gen : 1;
-	vector<t_net_pin> pins;
-	t_net_power * net_power; // Daniel to-do: Take out?
 
 	t_vnet(){
 		name = NULL;
