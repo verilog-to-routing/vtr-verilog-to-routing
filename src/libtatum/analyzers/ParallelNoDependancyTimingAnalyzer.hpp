@@ -4,16 +4,16 @@
 #include "ParallelLevelizedTimingAnalyzer.hpp"
 
 /*
- * DO NOT USE!
+ * DO NOT USE! (unless you are sure you know what you are doing)
  *
  * ParallelNoDependancyTimingAnalyzer implements the TimingGraph interface, but does not produce
  * correct results!
  *
- * This analyzer ignores all dependencies between nodes in the timing graph. This will produce
- * incorrect results, and hence should not be used to do any real timing analysis.
+ * This analyzer ignores ALL dependencies between nodes in the timing graph. This will produce
+ * INCORRECT results, and hence should not be used to do any real timing analysis.
  *
  * Its only use, is providing an upper-bound on the achievable parallel speed-up (since it ignores
- * dependancies it should scale better).
+ * dependancies scales better).
  */
 template<class AnalysisType, class DelayCalcType, class TagPoolType=MemoryPool>
 class ParallelNoDependancyTimingAnalyzer : public ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType> {

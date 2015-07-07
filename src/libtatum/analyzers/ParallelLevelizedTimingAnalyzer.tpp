@@ -1,4 +1,3 @@
-#pragma once
 #include "cilk_safe.hpp"
 #include <cilk/cilk_api.h>
 

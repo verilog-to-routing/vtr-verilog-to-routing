@@ -39,7 +39,7 @@
  *
  *       In particular, take note that they only modify the current node they are processing;
  *       they only read from their upstream nodes (this can as each node 'pulling' the results
- *       of its dependancies. . This allows us to avoid using locks in any parallel analyzers 
+ *       of its dependancies. . This allows us to avoid using locks in any parallel analyzers
  *       provided we process a node in only a single thread!
  *
  * Memory Allocation
@@ -90,7 +90,7 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> 
         const DelayCalcType& dc_; //The delay calculator used
         TagPoolType tag_pool_; //Memory pool for allocating tags
 
-        std::map<std::string, double> perf_data_; //Performance profiling info
+        std::map<std::string, double> perf_data_; //Performance profiling info, assumes each data point has a unique string identifier
 };
 
 //Implementation
