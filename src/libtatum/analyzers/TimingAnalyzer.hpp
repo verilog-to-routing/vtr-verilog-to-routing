@@ -59,6 +59,7 @@
  *             a violation. The magnitude of the slack indicates by how much the constraint
  *             is passing/failing.  A value of zero indicates that the constraint is met
  *             exactly.
+ *             TODO: Implement slack calculator
  *
  *
  * Calculating Arrival & Required Times
@@ -193,7 +194,7 @@
 #include "analysis_types.hpp"
 
 /*
- * TimingAnalyzer represents a interface class for all timing analyzers
+ * TimingAnalyzer represents an abstract interface for all timing analyzers.
  *
  * NOTE: Mix-in Classes
  * ====================
@@ -201,6 +202,8 @@
  * the mechanics of performing a traversal of a timing graph (implemented by
  * TimingAnalyzer sub-classes) from the detailed operations required by
  * the different types of analysis (e.g. Setup, Hold) which could be performed.
+ * The mixin classes also define storage for and access to the timing data
+ * they calculate.
  *
  * In a mix-in heirarchy, the mix-in type (in this scenario the AnalysisType
  * template parameter) is inherited from; mixing it into the current class.
@@ -220,8 +223,9 @@ class TimingAnalyzer : public AnalysisType {
 
         virtual ~TimingAnalyzer() {};
 
-        //Calculate timing information (i.e. arrival & required times)
+        //Perform timing analysis to calculate timing information (i.e. arrival & required times)
         virtual void calculate_timing() = 0;
+
         //Clear any old timing values calculated
         virtual void reset_timing() = 0;
 
