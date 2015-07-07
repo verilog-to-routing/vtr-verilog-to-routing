@@ -1,5 +1,6 @@
 template<class Base>
 void HoldAnalysisMode<Base>::initialize_traversal(const TimingGraph& tg) {
+    //Chain to base
     Base::initialize_traversal(tg);
 
     hold_data_tags_ = std::vector<TimingTags>(tg.num_nodes());
@@ -9,6 +10,7 @@ void HoldAnalysisMode<Base>::initialize_traversal(const TimingGraph& tg) {
 template<class Base>
 template<class TagPoolType>
 void HoldAnalysisMode<Base>::pre_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+    //Chain to base
     Base::pre_traverse_node(tag_pool, tg, tc, node_id);
 
     //Primary Input
@@ -25,8 +27,11 @@ void HoldAnalysisMode<Base>::pre_traverse_node(TagPoolType& tag_pool, const Timi
 
     } else if(node_type == TN_Type::CLOCK_SOURCE) {
         ASSERT_MSG(hold_clock_tags_[node_id].num_tags() == 0, "Clock source already has clock tags");
-        hold_clock_tags_[node_id].add_tag(tag_pool,
-                TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
+
+        //Initialize clock tag with zero arrival and invalid required
+        TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
+
+        hold_clock_tags_[node_id].add_tag(tag_pool, clock_tag);
 
     } else {
         ASSERT(node_type == TN_Type::INPAD_SOURCE);
@@ -36,16 +41,18 @@ void HoldAnalysisMode<Base>::pre_traverse_node(TagPoolType& tag_pool, const Timi
         //VPR applies input delays to the arc from INPAD_SOURCE to INPAD_OPIN
         //so we do not need to account for it directly in the arrival time of INPAD_SOURCES
 
+        //Initialize data tag with zero arrival and invalid required
+        TimingTag data_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
+
         //Figure out if we are an input which defines a clock
         if(tg.node_is_clock_source(node_id)) {
             ASSERT_MSG(hold_clock_tags_[node_id].num_tags() == 0, "Primary input already has clock tags");
-            hold_clock_tags_[node_id].add_tag(tag_pool,
-                    TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
+
+            hold_clock_tags_[node_id].add_tag(tag_pool, data_tag);
         } else {
             ASSERT_MSG(hold_clock_tags_[node_id].num_tags() == 0, "Primary input already has data tags");
-            hold_data_tags_[node_id].add_tag(tag_pool,
-                    TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id));
 
+            hold_data_tags_[node_id].add_tag(tag_pool, data_tag);
         }
     }
 }
@@ -53,6 +60,7 @@ void HoldAnalysisMode<Base>::pre_traverse_node(TagPoolType& tag_pool, const Timi
 template<class Base>
 template<class TagPoolType, class DelayCalcType>
 void HoldAnalysisMode<Base>::forward_traverse_edge(TagPoolType& tag_pool, const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
+    //Chain to base
     Base::forward_traverse_edge(tag_pool, tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
@@ -71,7 +79,7 @@ void HoldAnalysisMode<Base>::forward_traverse_edge(TagPoolType& tag_pool, const 
     if(tg.node_type(src_node_id) != TN_Type::FF_SOURCE) {
         //Do not propagate clock tags from an FF Source,
         //the clock arrival there will have already been converted to a
-        //data tag
+        //data tag when the previuos level was processed
         const TimingTags& src_clk_tags = hold_clock_tags_[src_node_id];
         for(const TimingTag& src_clk_tag : src_clk_tags) {
             //Standard propagation through the clock network
@@ -79,9 +87,6 @@ void HoldAnalysisMode<Base>::forward_traverse_edge(TagPoolType& tag_pool, const 
 
             if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
                 //This is a clock to data launch edge
-                //Mark the data arrival (launch) time at this FF
-
-                //FF Launch edge, begin data propagation
                 //
                 //We convert the clock arrival time to a
                 //data arrival time at this node (since the clock arrival
@@ -111,6 +116,7 @@ void HoldAnalysisMode<Base>::forward_traverse_edge(TagPoolType& tag_pool, const 
 template<class Base>
 template<class TagPoolType>
 void HoldAnalysisMode<Base>::forward_traverse_finalize_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+    //Chain to base
     Base::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
 
     TimingTags& node_data_tags = hold_data_tags_[node_id];
@@ -124,7 +130,7 @@ void HoldAnalysisMode<Base>::forward_traverse_finalize_node(TagPoolType& tag_poo
         for(const TimingTag& data_tag : node_data_tags) {
             //Should we be analyzing paths between these two domains?
             if(tc.should_analyze(data_tag.clock_domain(), node_domain)) {
-                //Only some clock domain paths should be analyzed
+                //These clock domains should be analyzed
 
                 float clock_constraint = tc.hold_clock_constraint(data_tag.clock_domain(), node_domain);
 
@@ -163,6 +169,7 @@ void HoldAnalysisMode<Base>::forward_traverse_finalize_node(TagPoolType& tag_poo
 template<class Base>
 template<class DelayCalcType>
 void HoldAnalysisMode<Base>::backward_traverse_edge(const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
+    //Chain to base
     Base::backward_traverse_edge(tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
