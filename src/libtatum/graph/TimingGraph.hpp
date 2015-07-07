@@ -63,10 +63,12 @@
  */
 class TimingGraph {
     public:
-        //Node accessors
+        //Node data accessors
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
         DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
         bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
+
+        //Node edge accessors
         int num_node_out_edges(const NodeId id) const { return node_out_edges_[id].size(); }
         int num_node_in_edges(const NodeId id) const { return node_in_edges_[id].size(); }
         EdgeId node_out_edge(const NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
@@ -81,16 +83,16 @@ class TimingGraph {
         EdgeId num_edges() const { return edge_src_nodes_.size(); }
         LevelId num_levels() const { return node_levels_.size(); }
 
-        //Node collection operations
+        //Node collection accessors
         const std::vector<NodeId>& level(const NodeId level_id) const { return node_levels_[level_id]; }
-        const std::vector<NodeId>& primary_inputs() const { return node_levels_[0]; }
+        const std::vector<NodeId>& primary_inputs() const { return node_levels_[0]; } //After levelizing PIs will be 1st level
         const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
 
         //Graph modifiers
         NodeId add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src);
         EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
 
-        //Graph-level operations
+        //Graph-level modification operations
         void levelize();
         std::vector<EdgeId> optimize_edge_layout();
         std::vector<NodeId> optimize_node_layout();
@@ -101,19 +103,21 @@ class TimingGraph {
          * data layout, rather than Array of Structs (AoS)
          */
         //Node data
-        std::vector<TN_Type> node_types_;
-        std::vector<DomainId> node_clock_domains_;
-        std::vector<std::vector<EdgeId>> node_out_edges_;
-        std::vector<std::vector<EdgeId>> node_in_edges_;
-        std::vector<bool> node_is_clock_source_;
+        std::vector<TN_Type> node_types_; //Type of node [0..num_nodes()-1]
+        std::vector<DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
+        std::vector<std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
+        std::vector<std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
+        std::vector<bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data
-        std::vector<EdgeId> edge_sink_nodes_;
-        std::vector<EdgeId> edge_src_nodes_;
+        std::vector<NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
+        std::vector<NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
 
-        //Auxilary info
-        std::vector<std::vector<NodeId>> node_levels_;
-        std::vector<NodeId> primary_outputs_;
+        //Auxilary graph-level info, filled in by levelize()
+        std::vector<std::vector<NodeId>> node_levels_; //Nodes in each level [0..num_levels()-1]
+        std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
+                                              //NOTE: we track this separetely (unlike Primary Inputs) since these are
+                                              //      scattered through the graph and do not exist on a single level
 };
 
 /*
