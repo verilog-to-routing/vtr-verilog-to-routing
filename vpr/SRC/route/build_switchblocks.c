@@ -269,7 +269,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( INP t_chan_detail
 	t_track_type_sizes track_type_sizes;
 	count_track_type_sizes(chan_details_x[0][0], channel_width, &track_type_sizes);
 	
-#if 0
+#if 1
 	/******** fast switch block computation method; computes a row of switchblocks then stamps it out everywhere ********/
 	/* figure out max(lcm(L_i, L_j)) for all wire lengths belonging to wire types i & j */
 	int max_lcm = get_max_lcm(&switchblocks, &track_type_sizes);
