@@ -6,12 +6,12 @@ more work is needed to get the flow to run.
 For new developers, please do the tutorial in tutorial/NewDeveloperTutorial.txt.
 You will be directed back here once you ramp up.
 
-Our work in VTR follows a classic svn workflow.  The trunk is supposed to be the
-most current stable version of the project.  Developers checkout a local copy of
-the code from the trunk at the start of development then do regular svn updates
-to keep in sync with the trunk.  When a developer has a tested, working change
-to put back into the trunk, he/she performs an "svn commit" operation. Unstable
-code should remain in the developer's local copy.
+Our work in VTR follows a classic centralized repository (svn-like) workflow.
+The 'master' branch is supposed to be the most current stable version of the project.
+Developers checkout a local copy of the code at the start of development, then do
+regular updates (e.g. git pull) to keep in sync with the GitHub master.  When a
+developer has a tested, working change to put back into the trunk, he/she performs a
+"git push" operation. Unstable code should remain in the developer's local copy.
 
 We do regular testing of the trunk using an automatic regression testing
 framework. You can see the state of the trunk here:
