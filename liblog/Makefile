@@ -47,6 +47,7 @@ liblog.a: $(OBJ_DIR)/$(OBJS)
 	 ar rcs $@ $(OBJ_DIR)/$(OBJS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	mkdir -p $(OBJ_DIR)
 	$(CC) $(FLAGS) -c $< -o $@ 
  
 -include $(DEPS)
