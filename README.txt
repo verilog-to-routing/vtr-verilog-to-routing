@@ -23,8 +23,6 @@ IMPORTANT:  Outside of special circumstance, a broken build must be fixed at top
 priority. You break the build if your commit breaks any of the automated
 regression tests.
 
-
-
 ##############################################################################
 # Contributors (Please keep this up-to-date)
 ##############################################################################
