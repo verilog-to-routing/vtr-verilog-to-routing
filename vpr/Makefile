@@ -22,7 +22,7 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 #############################################################################################
 
 # build information to expose to program
-BUILD_VERSION := `svnversion`
+BUILD_VERSION := `git describe --always --long`
 BUILD_DATE := `date -R`
 
 CC = $(COMPILER)
