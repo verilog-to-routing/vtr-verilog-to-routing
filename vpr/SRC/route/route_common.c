@@ -532,6 +532,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	t_rr_type rr_type;
 #endif
 
+	// hptr points to the end of a connection
 	inode = hptr->index;
 
 #ifdef DEBUG
@@ -651,7 +652,7 @@ void mark_ends(int inet) {
 	}
 }
 
-void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
+void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream) {
 
 	/* Puts an rr_node on the heap, if the new cost given is lower than the     *
@@ -663,12 +664,12 @@ void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 
 	struct s_heap *hptr;
 
-	if (cost >= rr_node_route_inf[inode].path_cost)
+	if (total_cost >= rr_node_route_inf[inode].path_cost)
 		return;
 
 	hptr = alloc_heap_data();
 	hptr->index = inode;
-	hptr->cost = cost;
+	hptr->cost = total_cost;
 	hptr->u.prev_node = prev_node;
 	hptr->prev_edge = prev_edge;
 	hptr->backward_path_cost = backward_path_cost;

@@ -267,7 +267,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			float critical_path_delay = get_critical_path_delay();
             vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 #ifdef CONGESTION_ANALYSIS
-            
+            congestion_analysis();
 #endif
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
@@ -408,10 +408,10 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	unsigned int ipin;
 	int num_sinks, itarget, target_pin, target_node, inode;
-	float target_criticality, old_tcost, new_tcost, largest_criticality,
+	float target_criticality, old_total_cost, new_total_cost, largest_criticality,
 		old_back_cost, new_back_cost;
 	t_rt_node *rt_root;
-	struct s_heap *current;
+	
 	struct s_trace *new_route_start_tptr;
 	int highfanout_rlim;
 
@@ -464,6 +464,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	rt_root = init_route_tree_to_source(inet);
 
+	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
 		target_pin = sink_order[itarget];
 		target_node = net_rr_terminals[inet][target_pin];
@@ -479,12 +480,14 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			rt_root->re_expand = false;
 		}
 
+		// reexplore route tree from root to add any new nodes
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
 
-		current = get_heap_head();
+		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
+		struct s_heap* cheapest = get_heap_head();
 
-		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+		if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
 			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 					   inet, g_clbs_nlist.net[inet].name, itarget);
 			reset_path_costs();
@@ -492,18 +495,18 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			return (false);
 		}
 
-		inode = current->index;
+		inode = cheapest->index;
 
 		while (inode != target_node) {
-			old_tcost = rr_node_route_inf[inode].path_cost;
-			new_tcost = current->cost;
+			old_total_cost = rr_node_route_inf[inode].path_cost;
+			new_total_cost = cheapest->cost;
 
-			if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 				old_back_cost = HUGE_POSITIVE_FLOAT;
 			else
 				old_back_cost = rr_node_route_inf[inode].backward_path_cost;
 
-			new_back_cost = current->backward_path_cost;
+			new_back_cost = cheapest->backward_path_cost;
 
 			/* I only re-expand a node if both the "known" backward cost is lower  *
 			 * in the new expansion (this is necessary to prevent loops from       *
@@ -513,24 +516,24 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			 * than one with higher cost.  Test whether or not I should disallow   *
 			 * re-expansion based on a higher total cost.                          */
 
-			if (old_tcost > new_tcost && old_back_cost > new_back_cost) {
-				rr_node_route_inf[inode].prev_node = current->u.prev_node;
-				rr_node_route_inf[inode].prev_edge = current->prev_edge;
-				rr_node_route_inf[inode].path_cost = new_tcost;
+			if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
+				rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
+				rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
+				rr_node_route_inf[inode].path_cost = new_total_cost;
 				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
 
-				if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+				if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
-				timing_driven_expand_neighbours(current, inet, itry, bend_cost,
+				timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
 						target_criticality, target_node, astar_fac,
 						highfanout_rlim);
 			}
 
-			free_heap_data(current);
-			current = get_heap_head();
+			free_heap_data(cheapest);
+			cheapest = get_heap_head();
 
-			if (current == NULL) { /* Impossible routing.  No path for net. */
+			if (cheapest == NULL) { /* Impossible routing.  No path for net. */
 				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 						 inet, g_clbs_nlist.net[inet].name, itarget);
 				reset_path_costs();
@@ -538,7 +541,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 				return (false);
 			}
 
-			inode = current->index;
+			inode = cheapest->index;
 		}
 
 		/* NB:  In the code below I keep two records of the partial routing:  the   *
@@ -550,9 +553,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		 * point.                                                                   */
 
 		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-		new_route_start_tptr = update_traceback(current, inet);
-		rt_node_of_sink[target_pin] = update_route_tree(current);
-		free_heap_data(current);
+		new_route_start_tptr = update_traceback(cheapest, inet);
+		rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+		free_heap_data(cheapest);
 		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
 
 		empty_heap();
