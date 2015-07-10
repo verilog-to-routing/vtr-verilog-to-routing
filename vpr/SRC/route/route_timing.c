@@ -63,6 +63,8 @@ struct more_sinks_than {
 	}
 };
 
+static void congestion_analysis();
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
@@ -277,6 +279,37 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 	vpr_printf_info("Routing failed.\n");
 	return (false);
+}
+
+// at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
+void congestion_analysis() {
+	static const std::vector<const char*> node_typename {
+		"SOURCE"
+		"SINK",
+		"IPIN",
+		"OPIN",
+		"CHANX",
+		"CHANY",
+		"INTRA_CLUSTER_EDGE"
+	};
+	// each type indexes into array which holds the congestion for that type
+	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
+
+	int total_congestion = 0;
+	for(int inode = 0; inode < num_rr_nodes; inode++){
+		const t_rr_node& node = rr_node[inode];
+		int congestion = node.get_occ() - node.get_capacity();
+
+		if(congestion > 0) {
+			total_congestion += congestion;
+			congestion_per_type[node.type] += congestion;
+		}
+	}
+
+	for (int type = SOURCE; type < NUM_RR_TYPES - 1; ++type) {
+		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
+		vpr_printf_info("    %20s: %10.6f %\n", node_typename[type], congestion_percentage); 
+	}
 }
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
