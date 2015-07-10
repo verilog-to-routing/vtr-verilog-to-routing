@@ -790,6 +790,7 @@ struct s_router_opts {
 	float criticality_exp;
 	bool verify_binary_search;
 	bool full_stats;
+	bool congestion_analysis;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 };
@@ -933,11 +934,11 @@ typedef enum e_rr_type {
  * next:    Pointer to the next traceback element in this route.           */
 
 typedef struct s_trace {
+	struct s_trace *next;
 	int index;
-	short iswitch;
 	int iblock;
 	int num_siblings;
-	struct s_trace *next;
+	short iswitch;
 } t_trace;
 
 #define NO_PREVIOUS -1

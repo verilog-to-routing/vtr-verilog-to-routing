@@ -1,0 +1,29 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=../../titan/benchmarks/titan23
+
+# Path to directory of architectures to use
+archs_dir=../../titan/arch
+
+# Add circuits to list to sweep
+circuit_list_add=cholesky_mc_stratixiv_arch_timing.blif
+circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
+circuit_list_add=sparcT1_core_stratixiv_arch_timing.blif
+circuit_list_add=neuron_stratixiv_arch_timing.blif
+
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=titan_bench.txt
+
+# Pass requirements
+# pass_requirements_file=pass_requirements.txt
+
+script_params=-starting_stage vpr -vpr_route_chan_width 300 -vpr_max_router_iterations 300 -keep_result_files -specific_vpr_stage route -congestion_analysis
+

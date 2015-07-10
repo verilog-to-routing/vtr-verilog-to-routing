@@ -532,6 +532,11 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		RouterOpts->full_stats = true;
 	}
 
+	RouterOpts->congestion_analysis = false;
+	if (Options.Count[OT_CONGESTION_ANALYSIS]) {
+		RouterOpts->congestion_analysis = true;
+	}
+
 	RouterOpts->verify_binary_search = false; /* DEFAULT */
 	if (Options.Count[OT_VERIFY_BINARY_SEARCH]) {
 		RouterOpts->verify_binary_search = true;

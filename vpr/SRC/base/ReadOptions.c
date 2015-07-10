@@ -344,6 +344,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->SettingsFile);
 		/* General Options */
 	case OT_NODISP:
+	case OT_CONGESTION_ANALYSIS:
 		return Args;
 	case OT_AUTO:
 		return ReadInt(Args, &Options->GraphPause);
@@ -567,6 +568,7 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			break;
 			/* General Options */
 		case OT_NODISP:
+		case OT_CONGESTION_ANALYSIS:
 			break;
 		case OT_AUTO:
 			dest->GraphPause = src->GraphPause;
