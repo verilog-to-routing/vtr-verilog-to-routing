@@ -40,4 +40,3 @@ Scott Whitty, Michael Wainberg, Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu,
 Long Yu Wang, Matthew J.P. Walker, Amer Hesson, Sheng Zhong, Hanqing Zeng
 
 Companies: Altera Corporation, Texas Instruments
-
