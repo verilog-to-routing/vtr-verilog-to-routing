@@ -710,12 +710,14 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // width and height for legend container
     var legWidth = wholeWidth * ratio.legToWholeWid;
     var legHeight = wholeHeight;
+    /*
     console.log('---- whole:');
     console.log('Width: '+wholeWidth+'  Height: '+wholeHeight);
     console.log('---- canv:');
     console.log('Width: '+canvWidth+'  Height: '+canvHeight);
     console.log('---- plot');
     console.log('Width: '+width+'  Height: '+height);
+    */
     // ................................
     // small tuning of plot title position
     var plotTitleY = -10;
@@ -754,8 +756,8 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     // assembly
     var chart = d3.select('#task_'+t).append('div').attr('class', 'chart_container');
     var svg = chart.append('svg').attr('class', 'canvas_container')
-        .style("width", canvWidth) //plotSize['width']
-        .style("height", canvHeight)
+        .attr("width", canvWidth)
+        .attr("height", canvHeight)
         .attr('shape-rendering', 'geometricPrecision');
     var gTransX = wholeWidth * ratio.marginLefToWhole;
     var gTransY = wholeHeight * ratio.marginTopToWhole; 
@@ -962,8 +964,7 @@ function savePlot() {
     // so I have to put zip.file() inside onload function
     var all = 0;
     d3.selectAll('.chart_container').each(function () {all += 1;});
-    var zipPng = new JSZip();
-    var zipSvg = new JSZip();
+    var zip = new JSZip();
     d3.selectAll('.chart_container').each(function () {
         var html1 = d3.select(this).select('svg')
                      .attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg')
@@ -972,10 +973,14 @@ function savePlot() {
                      .attr('version', 1.1).attr('xmlns', 'http://www.w3.org/2000/svg')
                      .node().parentNode.innerHTML;
         var html = html2 + html1;
-        var plotWidth = d3.select(this).select('svg').node().width.animVal.value;
-        var plotHeight = document.getElementById('display_canvas').offsetWidth * ratio.wholeHeiToWid;
-        var svgWidth = plotWidth + Number(d3.select(this).select('.legend_svg').attr('width'));
-        var svgHeight = plotHeight > Number(d3.select(this).select('.legend_svg').attr('height')) ? plotHeight : Number(d3.select(this).select('.legend_svg').attr('height'));
+
+        var plotWidth = Number(d3.select(this).select('.canvas_container').attr('width'));
+        var plotHeight = Number(d3.select(this).select('.canvas_container').attr('height'));
+        var legendWidth = Number(d3.select(this).select('.legend_svg').attr('width'));
+        var legendHeight = Number(d3.select(this).select('.legend_svg').attr('height'));
+        var svgWidth = plotWidth + legendWidth;
+        var svgHeight = plotHeight > legendHeight ? plotHeight : legendHeight;
+
         d3.select('#temp').append('svg').attr('width', svgWidth).attr('height', svgHeight)
           .attr('version',1.1).attr('xmlns', 'http://www.w3.org/2000/svg').html(html);
         d3.select('#temp').select('.legend_svg').attr('x', plotWidth);
@@ -987,8 +992,6 @@ function savePlot() {
         var imgsrc = 'data:image/svg+xml;base64,'+btoa(html);
         console.log('/// imgsrc ///');
         console.log(imgsrc);
-        //var img = '<img src="'+imgsrc+'"/>';
-        //d3.select('body').append('div').attr('id', 'test-svg-conversion').html(img);
         d3.select('#temp').append('canvas').attr('width', svgWidth).attr('height', svgHeight);
         var canvas = document.querySelector('canvas');
         var context = canvas.getContext('2d');
@@ -1008,13 +1011,11 @@ function savePlot() {
             a.click();
             document.body.removeChild(a);
             */
-            zipPng.file('plotPng-'+count+'.png', canvasdata.substr(canvasdata.indexOf(',')+1), {base64: true});
-            zipSvg.file('plotSvg-'+count+'.svg', btoa(html), {base64: true});
+            zip.file('png/plotPng-'+count+'.png', canvasdata.substr(canvasdata.indexOf(',')+1), {base64: true});
+            zip.file('svg/plotSvg-'+count+'.svg', btoa(html), {base64: true});
             if (count == all) {
-                var contentPng = zipPng.generate({type: 'blob'});
-                var contentSvg = zipSvg.generate({type: 'blob'});
-                saveAs(contentPng, 'plots-png.zip');
-                saveAs(contentSvg, 'plots-svg.zip');
+                var content =  zip.generate({type: 'blob'});
+                saveAs(content, 'plots.zip');
             }
         }
         d3.select('#temp').html('');
