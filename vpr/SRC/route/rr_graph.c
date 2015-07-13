@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -165,7 +166,7 @@ static void remap_rr_node_switch_indices(INP map<int,int> *switch_fanin);
 
 static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switches, INOUTP map<int,int> *switch_fanin);
 
-static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin);
+static int alloc_rr_switch_inf(INP int num_arch_switches, OUTP map<int,int> *switch_fanin);
 
 static void rr_graph_externals(
 		t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
@@ -584,13 +585,13 @@ static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_
 	   with this expanded list of switches. 
 	   To do this we will use an array of maps where each map corresponds to a different arch switch.
 	   So for each arch switch we will use this map to keep track of the different fan-ins that it uses (map key)
-	   and which index in the g_rr_switch inf array this arch switch / fanin combination will be placed in */
+	   and which index in the g_rr_switch_inf array this arch switch / fanin combination will be placed in */
 	map< int, int > *switch_fanin;
 	switch_fanin = new map<int,int>[num_arch_switches];
 
 	/* Determine what the different fan-ins are for each arch switch, and also
 	   how many entries the rr_switch_inf array should have */
-	int num_rr_switches = alloc_rr_switch_inf(switch_fanin);
+	int num_rr_switches = alloc_rr_switch_inf(num_arch_switches, switch_fanin);
 
 	/* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf 
 	   array each version of its fanin has been mapped to */
@@ -619,9 +620,9 @@ static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_
 
 /* Allocates space for the global g_rr_switch_inf variable and returns the 
    number of rr switches that were allocated */
-static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin){
+static int alloc_rr_switch_inf(INP int num_arch_switches, OUTP map<int,int> *switch_fanin){
 
-	int num_rr_switches = 0;
+    int num_rr_switches = 0;
 	for (int inode = 0; inode < num_rr_nodes; inode++){
 		t_rr_node from_node = rr_node[inode];
 		int num_edges = from_node.get_num_edges();
@@ -633,19 +634,10 @@ static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin){
 
 			/* we want to keep track of fan-in only for those switches that actually defined
 			   delays for multiple fan-in values */
-			bool keep_track_of_fanin;
 			if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1){
 				/* if an arch switch has specified delay at an UNDEFINED (-1) index, 
 				   then the switch didn't specify delays for multiple values of fan-in
 				   (and should only have one entry in its Tdel_map */
-				keep_track_of_fanin = false;
-			} else {
-				keep_track_of_fanin = true;
-			}
-
-			if ( !keep_track_of_fanin ){
-				/* want the switch_fanin[switch_index] set to only have a single entry
-				   at index UNDEFINED to indicate that it's not keeping track of fanin */
 				fanin = UNDEFINED;
 			}
 
@@ -658,7 +650,6 @@ static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin){
 			}
 		}
 	}
-
 	/* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
 	g_rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
 
@@ -669,6 +660,7 @@ static int alloc_rr_switch_inf(OUTP map<int,int> *switch_fanin){
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switches, INOUTP map<int,int> *switch_fanin){
 	int i_rr_switch = 0;
+    g_switch_fanin_remap = new map<int, int>[num_arch_switches];
 	for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++){
 		map<int,int>::iterator it;
 		for (it = switch_fanin[i_arch_switch].begin(); it != switch_fanin[i_arch_switch].end(); it++){
@@ -676,6 +668,8 @@ static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switche
 			   combination maps to (within rr_switch_inf) in it->second) */
 			int fanin = it->first;
 			it->second = i_rr_switch;
+            // setup g_switch_fanin_remap, for future swich usage analysis
+            g_switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;            
 
 			/* figure out, by looking at the arch switch's Tdel map, what the delay of the new
 			   rr switch should be */

@@ -210,7 +210,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 
 		if (success) {
-
+   
 			if (timing_analysis_enabled) {
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
@@ -281,6 +281,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	vpr_printf_info("Routing failed.\n");
 	return (false);
 }
+
+
 
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
 void congestion_analysis() {

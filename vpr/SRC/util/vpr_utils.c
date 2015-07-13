@@ -12,7 +12,7 @@ using namespace std;
 #include "place_macro.h"
 #include "string.h"
 #include "pack_types.h"
-
+#include <algorithm>
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -1322,4 +1322,92 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	*idirect_from_blk_pin = temp_idirect_from_blk_pin;
 	*direct_type_from_blk_pin = temp_direct_type_from_blk_pin;
 }
+
+/*
+ * this function is only called by print_switch_usage()
+ * at the point of this function call, every switch type / fanin combination 
+ * has a unique index.
+ * but for switch usage analysis, we need to convert the index back to the
+ * type / fanin combination
+ */
+static int convert_switch_index(int *switch_index, int *fanin) {
+    for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
+        map<int, int>::iterator itr;
+        for (itr = g_switch_fanin_remap[iswitch].begin(); itr != g_switch_fanin_remap[iswitch].end(); itr++) {
+            if (itr->second == *switch_index) {
+                *switch_index = iswitch;
+                *fanin = itr->first;
+                return 0;
+            } 
+        }
+    }
+    *switch_index = -1;
+    *fanin = -1;
+    printf("\n\nerror converting switch index ! \n\n");
+    return -1;
+}
+
+/*
+ * Hanson Zeng:
+ * print out number of usage for every switch (type / fanin combination)
+ * (referring to rr_graph.c: alloc_rr_switch_inf())
+ */
+void print_switch_usage() {
+    map<int, std::vector<int> > *switch_fanin_inf;
+    switch_fanin_inf =  new map<int, std::vector<int> >[g_num_arch_switches];
+
+	for (int inode = 0; inode < num_rr_nodes; inode++){
+		t_rr_node from_node = rr_node[inode];
+		int num_edges = from_node.get_num_edges();
+		for (int iedge = 0; iedge < num_edges; iedge++){
+			//t_rr_node to_node = rr_node[ from_node.edges[iedge] ];
+			int switch_index = from_node.switches[iedge];
+            int fanin = -1;
+            // have to convert the remapped switch_index to the original index
+            int status = convert_switch_index(&switch_index, &fanin);
+            if (status == -1) 
+                return;
+            //if (fanin != -1)
+			//    assert(fanin == to_node.get_fan_in());
+
+			/* we want to keep track of fan-in only for those switches that actually defined
+			   delays for multiple fan-in values */
+			if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1){
+				/* if an arch switch has specified delay at an UNDEFINED (-1) index, 
+				   then the switch didn't specify delays for multiple values of fan-in
+				   (and should only have one entry in its Tdel_map */
+                fanin = UNDEFINED;
+			}
+
+			if (switch_fanin_inf[switch_index].count(fanin) == 0)
+                switch_fanin_inf[switch_index][fanin];
+
+            vector<int> *temp = &switch_fanin_inf[switch_index][fanin];
+            int to_node_index = from_node.edges[iedge];
+            if (find((*temp).begin(), (*temp).end(), to_node_index) == (*temp).end())
+                (*temp).push_back(to_node_index);
+		}
+	}
+    
+    printf("========== switch histogram =========\n");
+    for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
+        printf(">>>>> switch index: %d, name: %s\n", iswitch, g_arch_switch_inf[iswitch].name);
+        int num_fanin = (int)(switch_fanin_inf[iswitch].size());
+        // 4294967295: unsigned version of -1 (invalid size)
+        if (num_fanin == 4294967295)
+            num_fanin = -1;
+        
+        map<int, vector<int> >::iterator itr;
+        for (itr = switch_fanin_inf[iswitch].begin(); itr != switch_fanin_inf[iswitch].end(); itr ++ ) {
+            printf("\t\tnumber of fanin: %d", itr->first);
+            int unique_node_count = switch_fanin_inf[iswitch][itr->first].size();
+            printf("\t\tnumber of this switch on chip: %d\n", unique_node_count);
+        }
+    }
+    printf("=====================================\n");
+    //TODO: need to free vector?
+    delete[] switch_fanin_inf;
+}
+
+
 
