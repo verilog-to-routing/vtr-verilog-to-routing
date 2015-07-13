@@ -285,7 +285,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
 void congestion_analysis() {
 	static const std::vector<const char*> node_typename {
-		"SOURCE"
+		"SOURCE",
 		"SINK",
 		"IPIN",
 		"OPIN",
@@ -307,7 +307,7 @@ void congestion_analysis() {
 		}
 	}
 
-	for (int type = SOURCE; type < NUM_RR_TYPES - 1; ++type) {
+	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
 		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
 		vpr_printf_info("    %20s: %10.6f %\n", node_typename[type], congestion_percentage); 
 	}
