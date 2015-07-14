@@ -139,8 +139,6 @@ bool place_and_route(enum e_operation operation,
 		success = try_route(width_fac, router_opts, det_routing_arch,
 				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
 				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
-        // TODO: make it an option
-        //print_switch_usage();
 
 		if (Fc_clipped) {
 			vpr_printf_warning(__FILE__, __LINE__, 
@@ -213,11 +211,12 @@ bool place_and_route(enum e_operation operation,
 	free_port_pin_from_blk_pin();
 	free_blk_pin_from_port_pin();
 
-	end = clock();
-    print_switch_usage();    
+	end = clock();    
 
 	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
+    if (router_opts.switch_usage_analysis)
+        print_switch_usage();
 
 	/*WMF: cleaning up memory usage */
 
@@ -526,9 +525,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	check_route(router_opts.route_type, g_num_rr_switches,
 			clb_opins_used_locally);
 	get_serial_num();
-
-    // TODO: make it an option
-    //print_switch_usage();
 
 	if (Fc_clipped) {
 		vpr_printf_warning(__FILE__, __LINE__, 

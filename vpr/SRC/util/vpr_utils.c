@@ -1389,7 +1389,7 @@ void print_switch_usage() {
 		}
 	}
     
-    printf("========== switch histogram =========\n");
+    printf("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
         printf(">>>>> switch index: %d, name: %s\n", iswitch, g_arch_switch_inf[iswitch].name);
         int num_fanin = (int)(switch_fanin_inf[iswitch].size());
@@ -1404,7 +1404,7 @@ void print_switch_usage() {
             printf("\t\tnumber of this switch on chip: %d\n", unique_node_count);
         }
     }
-    printf("=====================================\n");
+    printf("\n==================================================\n\n");
     //TODO: need to free vector?
     delete[] switch_fanin_inf;
 }
