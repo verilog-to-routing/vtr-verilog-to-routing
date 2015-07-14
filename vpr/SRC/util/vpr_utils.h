@@ -60,6 +60,6 @@ void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
 
 void print_switch_usage();
-
+//void print_usage_by_wire_length();
 #endif
 
