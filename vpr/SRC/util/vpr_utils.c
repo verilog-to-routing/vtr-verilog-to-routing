@@ -1331,6 +1331,8 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
  * type / fanin combination
  */
 static int convert_switch_index(int *switch_index, int *fanin) {
+    if (*switch_index == -1)
+        return 1;
     for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
         map<int, int>::iterator itr;
         for (itr = g_switch_fanin_remap[iswitch].begin(); itr != g_switch_fanin_remap[iswitch].end(); itr++) {
@@ -1351,44 +1353,53 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  * Hanson Zeng:
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
- */
+ * NOTE: to speed up this function, the most efficient way is to change the rr_node
+ * data structure, which means instead of using a nested loop of 
+ *     for (inode in rr_nodes) {
+ *         for (iedges in edges) {
+ *             get switch type;
+ *             get fanin;
+ *         }
+ *     }
+ * as is done in rr_graph.c: alloc_rr_switch_inf()
+ * we can just use a single loop
+ *     for (inode in rr_nodes) {
+ *         get switch type of inode;
+ *         get fanin of inode;
+ *     }
+ * now since rr_node does not contain the switch type inward to the current node,
+ * we cannot directly apply the single loop method. We have to set up an array of 
+ * inward switch index, and then do the statistics. 
+ */ 
 void print_switch_usage() {
-    map<int, std::vector<int> > *switch_fanin_inf;
-    switch_fanin_inf =  new map<int, std::vector<int> >[g_num_arch_switches];
+    map<int, int> *switch_fanin_inf;
+    switch_fanin_inf = new map<int, int>[g_num_arch_switches];
 
-	for (int inode = 0; inode < num_rr_nodes; inode++){
-		t_rr_node from_node = rr_node[inode];
-		int num_edges = from_node.get_num_edges();
-		for (int iedge = 0; iedge < num_edges; iedge++){
-			//t_rr_node to_node = rr_node[ from_node.edges[iedge] ];
-			int switch_index = from_node.switches[iedge];
-            int fanin = -1;
-            // have to convert the remapped switch_index to the original index
-            int status = convert_switch_index(&switch_index, &fanin);
-            if (status == -1) 
-                return;
-            //if (fanin != -1)
-			//    assert(fanin == to_node.get_fan_in());
-
-			/* we want to keep track of fan-in only for those switches that actually defined
-			   delays for multiple fan-in values */
-			if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1){
-				/* if an arch switch has specified delay at an UNDEFINED (-1) index, 
-				   then the switch didn't specify delays for multiple values of fan-in
-				   (and should only have one entry in its Tdel_map */
-                fanin = UNDEFINED;
-			}
-
-			if (switch_fanin_inf[switch_index].count(fanin) == 0)
-                switch_fanin_inf[switch_index][fanin];
-
-            vector<int> *temp = &switch_fanin_inf[switch_index][fanin];
+    int *inward_switch_index = new int[num_rr_nodes];
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        inward_switch_index[inode] = -1;
+    }
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        t_rr_node from_node = rr_node[inode];
+        int num_edges = from_node.get_num_edges();
+        for (int iedge = 0; iedge < num_edges; iedge++) {
+            int switch_index = from_node.switches[iedge];
             int to_node_index = from_node.edges[iedge];
-            if (find((*temp).begin(), (*temp).end(), to_node_index) == (*temp).end())
-                (*temp).push_back(to_node_index);
-		}
-	}
-    
+            inward_switch_index[to_node_index] = switch_index;
+        }
+    }
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        int fanin = -1;
+        int switch_index = inward_switch_index[inode];
+        int status = convert_switch_index(&switch_index, &fanin);
+        if (status == -1)
+            return;
+        if (switch_index >= 0) {
+            if (switch_fanin_inf[switch_index].count(fanin) == 0)
+                switch_fanin_inf[switch_index][fanin] = 0;
+            switch_fanin_inf[switch_index][fanin] ++;
+        }
+    }
     printf("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
         printf(">>>>> switch index: %d, name: %s\n", iswitch, g_arch_switch_inf[iswitch].name);
@@ -1397,16 +1408,15 @@ void print_switch_usage() {
         if (num_fanin == 4294967295)
             num_fanin = -1;
         
-        map<int, vector<int> >::iterator itr;
+        map<int, int>::iterator itr;
         for (itr = switch_fanin_inf[iswitch].begin(); itr != switch_fanin_inf[iswitch].end(); itr ++ ) {
             printf("\t\tnumber of fanin: %d", itr->first);
-            int unique_node_count = switch_fanin_inf[iswitch][itr->first].size();
-            printf("\t\tnumber of this switch on chip: %d\n", unique_node_count);
+            printf("\t\tnumber of this switch on chip: %d\n", itr->second);
         }
     }
     printf("\n==================================================\n\n");
-    //TODO: need to free vector?
     delete[] switch_fanin_inf;
+    delete[] inward_switch_index;
 }
 
 
