@@ -9,7 +9,7 @@
     <script type="text/javascript" src="http://gabelerner.github.io/canvg/StackBlur.js"></script>
     <script type="text/javascript" src="http://gabelerner.github.io/canvg/canvg.js"></script> 
     <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js'></script>
-    <script type='text/javascript' src='/static/FileSaver.js'></script>
+    <script type='text/javascript' src='/static/FileSaver.min.js'></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.css" rel="stylesheet" type="text/css"></link>
     <script>
     	var database = '{{database}}';
@@ -48,6 +48,8 @@
     <div id="plotter_container">
 	    <a class='page_divider plotter_options' id='customizePlot'>Customize plot</a>
         <a class='page_divider plotter_options' id='savePlot'>Save plots (png, svg)</a>
+        <a class='page_divider plotter_options' id='savePlotData'>Save plotter data</a>
+
 	    <div id='custom_panel'>
 	        <div class="custom_plot_selection_box" id="gmean_select">
 	        	<form class="custom_plot_form" id="gmean_options" action="">
