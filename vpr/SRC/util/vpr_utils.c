@@ -1372,8 +1372,10 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  * inward switch index, and then do the statistics. 
  */ 
 void print_switch_usage() {
-    map<int, int> *switch_fanin_inf;
-    switch_fanin_inf = new map<int, int>[g_num_arch_switches];
+    map<int, int> *switch_fanin_count;
+    map<int, float> *switch_fanin_delay;
+    switch_fanin_count = new map<int, int>[g_num_arch_switches];
+    switch_fanin_delay = new map<int, float>[g_num_arch_switches];
 
     int *inward_switch_index = new int[num_rr_nodes];
     for (int inode = 0; inode < num_rr_nodes; inode++) {
@@ -1391,33 +1393,87 @@ void print_switch_usage() {
     for (int inode = 0; inode < num_rr_nodes; inode++) {
         int fanin = -1;
         int switch_index = inward_switch_index[inode];
+        float Tdel = g_rr_switch_inf[switch_index].Tdel;
         int status = convert_switch_index(&switch_index, &fanin);
+        
         if (status == -1)
             return;
         if (switch_index >= 0) {
-            if (switch_fanin_inf[switch_index].count(fanin) == 0)
-                switch_fanin_inf[switch_index][fanin] = 0;
-            switch_fanin_inf[switch_index][fanin] ++;
+            if (fanin == -1)
+                fanin = rr_node[inode].get_fan_in();
+            if (switch_fanin_count[switch_index].count(fanin) == 0)
+                switch_fanin_count[switch_index][fanin] = 0;
+            switch_fanin_count[switch_index][fanin] ++;
+            switch_fanin_delay[switch_index][fanin] = Tdel;
         }
     }
     printf("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
-        printf(">>>>> switch index: %d, name: %s\n", iswitch, g_arch_switch_inf[iswitch].name);
-        int num_fanin = (int)(switch_fanin_inf[iswitch].size());
+        char *s_name = g_arch_switch_inf[iswitch].name;
+        float s_area = g_arch_switch_inf[iswitch].mux_trans_size;
+        printf(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
+        int num_fanin = (int)(switch_fanin_count[iswitch].size());
         // 4294967295: unsigned version of -1 (invalid size)
         if (num_fanin == 4294967295)
             num_fanin = -1;
         
         map<int, int>::iterator itr;
-        for (itr = switch_fanin_inf[iswitch].begin(); itr != switch_fanin_inf[iswitch].end(); itr ++ ) {
+        for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
             printf("\t\tnumber of fanin: %d", itr->first);
-            printf("\t\tnumber of this switch on chip: %d\n", itr->second);
+            // NB: it seems that a wire can be expanded into several nodes in rr_graph
+            //     e.g.: if a length 16 wire can drive other wires from end points and midpoint,
+            //     then it will become 2 nodes (??)
+            //     in this sense, we are counting nodes driven by the switch, not wires
+            printf("\t\tnumber of nodes that are driven by this switch: %d", itr->second);
+            printf("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
         }
     }
     printf("\n==================================================\n\n");
-    delete[] switch_fanin_inf;
+    delete[] switch_fanin_count;
+    delete[] switch_fanin_delay;
     delete[] inward_switch_index;
 }
 
-
-
+/*
+ * Motivation:
+ *     to see what portion of long wires are utilized
+ *     potentially a good measure for router look ahead quality
+ *     TODO: seems that it is not getting the original wire length now
+ */
+/*
+void print_usage_by_wire_length() {
+    map<int, int> used_wire_count;
+    map<int, int> total_wire_count;
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
+            //int length = abs(rr_node[inode].get_xhigh() + rr_node[inode].get_yhigh() 
+            //             - rr_node[inode].get_xlow() - rr_node[inode].get_ylow());
+            int length = rr_node[inode].get_length();
+            if (rr_node[inode].get_occ() > 0) {
+                if (used_wire_count.count(length) == 0)
+                    used_wire_count[length] = 0;
+                used_wire_count[length] ++;
+            }
+            if (total_wire_count.count(length) == 0)
+                total_wire_count[length] = 0;
+            total_wire_count[length] ++;
+        }
+    }
+    int total_wires = 0;
+    map<int, int>::iterator itr;
+    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
+        total_wires += itr->second;
+    }
+    printf("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
+    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) 
+        printf("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
+    for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
+        float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
+        float ratio_to_all_type_total = ((float)itr->second) / total_wires;
+        printf("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
+    }
+    printf("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    used_wire_count.clear();
+    total_wire_count.clear();
+}
+*/

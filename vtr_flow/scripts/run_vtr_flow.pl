@@ -156,7 +156,7 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-congestion_analysis") {
 		$congestion_analysis = $token;
 	}
-    elsif ( $token eq "-switch_usage_analysis") {
+    elsif ( $token eq "-switch_stats") {
         $switch_usage_analysis = $token;
     }
 	elsif ( $token eq "-vpr_route_chan_width" ) {

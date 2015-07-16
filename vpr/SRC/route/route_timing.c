@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "vpr_utils.h"
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -208,6 +209,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if (expected_success_route_iter == UNDEFINED) return false;
 		}
 
+        //print_usage_by_wire_length();
 
 		if (success) {
    
