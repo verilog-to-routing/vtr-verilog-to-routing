@@ -621,39 +621,46 @@ static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_
 /* Allocates space for the global g_rr_switch_inf variable and returns the 
    number of rr switches that were allocated */
 static int alloc_rr_switch_inf(INP int num_arch_switches, OUTP map<int,int> *switch_fanin){
-
     int num_rr_switches = 0;
-	for (int inode = 0; inode < num_rr_nodes; inode++){
-		t_rr_node from_node = rr_node[inode];
-		int num_edges = from_node.get_num_edges();
-		for (int iedge = 0; iedge < num_edges; iedge++){
-			t_rr_node to_node = rr_node[ from_node.edges[iedge] ];
-			/* get the switch which this edge uses and its fanin */
-			int switch_index = from_node.switches[iedge];
-			int fanin = to_node.get_fan_in();
+    // map key: switch index specified in arch; map value: fanin for that index
+    map<int, int> *inward_switch_inf = new map<int, int>[num_rr_nodes];
+    for (int inode = 0; inode < num_rr_nodes; inode ++) {
+        t_rr_node from_node = rr_node[inode];
+        int num_edges = from_node.get_num_edges();
+        for (int iedge = 0; iedge < num_edges; iedge++) {
+            int switch_index = from_node.switches[iedge];
+            int to_node_index = from_node.edges[iedge];
+            if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
+                inward_switch_inf[to_node_index][switch_index] = 0;
+            inward_switch_inf[to_node_index][switch_index] ++;
+        }
+    }  
 
-			/* we want to keep track of fan-in only for those switches that actually defined
-			   delays for multiple fan-in values */
-			if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1){
-				/* if an arch switch has specified delay at an UNDEFINED (-1) index, 
-				   then the switch didn't specify delays for multiple values of fan-in
-				   (and should only have one entry in its Tdel_map */
-				fanin = UNDEFINED;
-			}
-
-			/* mark the fact that the arch switch at switch_index has a version with 'fanin' 
-			   inputs */
-			if (switch_fanin[switch_index].count(fanin) == 0){
-				/* this value of fanin has not yet been inserted. so insert it */
-				switch_fanin[switch_index][fanin] = 0;
-				num_rr_switches++;
-			}
-		}
-	}
+    // get unique index / fanin combination based on inward_switch_inf
+    for (int inode = 0; inode < num_rr_nodes; inode ++) {
+        map<int, int>::iterator itr;
+        for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
+            int switch_index = itr->first;
+            int fanin = itr->second;
+            if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1) {
+                fanin = UNDEFINED;
+            }
+            if (switch_fanin[switch_index].count(fanin) == 0) {
+                switch_fanin[switch_index][fanin] = 0;
+                num_rr_switches++;
+            }
+        }
+    }
+    delete[] inward_switch_inf;
 	/* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
 	g_rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
 
 	return num_rr_switches;
+}
+
+void print_map(map<int, int> dbmap) {
+    printf("size is: %d\n", (int)dbmap.size());
+    printf("first first: %d\n", (dbmap.begin())->first);
 }
 
 /* load the global g_rr_switch_inf variable. also keep track of, for each arch switch, what 

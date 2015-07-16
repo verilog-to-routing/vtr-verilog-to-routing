@@ -1353,8 +1353,9 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  * Hanson Zeng:
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
- * NOTE: to speed up this function, the most efficient way is to change the rr_node
- * data structure, which means instead of using a nested loop of 
+ * NOTE: to speed up this function, for XXX uni-directional arch XXX, the most efficient 
+ * way is to change the rr_node data structure (let it store the inward switch index,
+ * instead of outward switch index list): --> instead of using a nested loop of 
  *     for (inode in rr_nodes) {
  *         for (iedges in edges) {
  *             get switch type;
@@ -1368,40 +1369,42 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  *         get fanin of inode;
  *     }
  * now since rr_node does not contain the switch type inward to the current node,
- * we cannot directly apply the single loop method. We have to set up an array of 
- * inward switch index, and then do the statistics. 
+ * we have to use an extra loop to setup the information of inward switch first.
  */ 
 void print_switch_usage() {
     map<int, int> *switch_fanin_count;
     map<int, float> *switch_fanin_delay;
     switch_fanin_count = new map<int, int>[g_num_arch_switches];
     switch_fanin_delay = new map<int, float>[g_num_arch_switches];
-
-    int *inward_switch_index = new int[num_rr_nodes];
-    for (int inode = 0; inode < num_rr_nodes; inode++) {
-        inward_switch_index[inode] = -1;
-    }
+    // a node can have multiple inward switches, so
+    // map key: switch index; map value: count (fanin)
+    map<int, int> *inward_switch_inf = new map<int, int>[num_rr_nodes];
     for (int inode = 0; inode < num_rr_nodes; inode++) {
         t_rr_node from_node = rr_node[inode];
         int num_edges = from_node.get_num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.switches[iedge];
             int to_node_index = from_node.edges[iedge];
-            inward_switch_index[to_node_index] = switch_index;
+            // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
+            //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
+            //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
+            if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
+                inward_switch_inf[to_node_index][switch_index] = 0;
+            inward_switch_inf[to_node_index][switch_index] ++;
         }
     }
     for (int inode = 0; inode < num_rr_nodes; inode++) {
-        int fanin = -1;
-        int switch_index = inward_switch_index[inode];
-        float Tdel = g_rr_switch_inf[switch_index].Tdel;
-        int status = convert_switch_index(&switch_index, &fanin);
-        
-        if (status == -1)
-            return;
-        if (switch_index >= 0) {
+        map<int, int>::iterator itr;
+        for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
+            int fanin = -1;
+            int switch_index = itr->first;
+            float Tdel = g_rr_switch_inf[switch_index].Tdel;
+            int status = convert_switch_index(&switch_index, &fanin);
+            if (status == -1)
+                return;
             if (fanin == -1)
-                fanin = rr_node[inode].get_fan_in();
-            if (switch_fanin_count[switch_index].count(fanin) == 0)
+                fanin = itr->second;
+            if (switch_fanin_count[switch_index].count(fanin) == 0) 
                 switch_fanin_count[switch_index][fanin] = 0;
             switch_fanin_count[switch_index][fanin] ++;
             switch_fanin_delay[switch_index][fanin] = Tdel;
@@ -1420,25 +1423,20 @@ void print_switch_usage() {
         map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
             printf("\t\tnumber of fanin: %d", itr->first);
-            // NB: it seems that a wire can be expanded into several nodes in rr_graph
-            //     e.g.: if a length 16 wire can drive other wires from end points and midpoint,
-            //     then it will become 2 nodes (??)
-            //     in this sense, we are counting nodes driven by the switch, not wires
-            printf("\t\tnumber of nodes that are driven by this switch: %d", itr->second);
+            printf("\t\tnumber of wires driven by this switch: %d", itr->second);
             printf("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
         }
     }
     printf("\n==================================================\n\n");
     delete[] switch_fanin_count;
     delete[] switch_fanin_delay;
-    delete[] inward_switch_index;
+    delete[] inward_switch_inf;
 }
 
 /*
  * Motivation:
  *     to see what portion of long wires are utilized
  *     potentially a good measure for router look ahead quality
- *     TODO: seems that it is not getting the original wire length now
  */
 /*
 void print_usage_by_wire_length() {
