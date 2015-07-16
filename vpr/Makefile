@@ -82,8 +82,8 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-congestion: FLAGS += -D CONGESTION_ANALYSIS
-congestion: $(EXE)
+profile: FLAGS += $(DEBUG_FLAGS)
+profile: $(EXE)
 
 # notify is an order-only prerequisite - note the "|"
 $(EXE): $(OBJ) Makefile libvpr.a | notify

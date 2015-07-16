@@ -1,0 +1,16 @@
+vpr_revision;vpr.out;Revision:\s(.*);unknown
+vpr_status;output.txt;vpr_status=(.*)
+min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
+critical_path_delay;vpr.out;Final critical path: (.*) ns
+pack_time;vpr.out;Packing took (.*) seconds
+place_time;vpr.out;Placement took (.*) seconds
+min_chan_width_route_time;vpr.out;Routing took (.*) seconds
+crit_path_route_time;vpr.out;Routing took (.*) seconds
+max_vpr_mem;vpr.out;Maximum resident set size \(kbytes\): (\d+)
+num_pre_packed_nets;vpr.out;total nets: (\d+)
+num_pre_packed_blocks;vpr.out;total blocks: (\d+)
+num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
+num_LAB;vpr.out;Netlist LAB blocks:\s*(\d+)
+num_io;vpr.out;Netlist inputs pins:\s*(\d+)
+num_outputs;vpr.out;Netlist output pins:\s*(\d+)
+error;output.txt;error=(.*)
