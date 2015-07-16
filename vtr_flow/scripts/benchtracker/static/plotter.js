@@ -25,6 +25,10 @@ var gmean_list = [];
 // raw data means it is not processed by gmean, and its param name has not been manipulated.
 // NOTE: we don't store the data of default plot (cuz they are not manipulated)
 var raw_data = null;
+// store data after gmean
+// each task has a folder, each plot has a subfolder, each line has a file (containing only x and y)
+// {task: {plot: {line: [[x, y]]}}}
+var manipulatedData = null;
 var gmean_data = null;
 var range = [];
 // xNameMap is only set when value in x axis is string
@@ -60,6 +64,8 @@ customize_plot.addEventListener('click', function () {
 
 var save_plot = document.getElementById("savePlot");
 save_plot.addEventListener('click', savePlot);
+var save_plot_data = document.getElementById("savePlotData");
+save_plot_data.addEventListener('click', savePlotData);
 
 formGmean = document.getElementById("gmean_select").getElementsByTagName("fieldset")[0];
 formOverlay = document.getElementById("overlay_select").getElementsByTagName("fieldset")[0];
@@ -111,6 +117,7 @@ function plotter_setup(data) {
     xNameMap = [];
     document.getElementById('customizePlot').style.visibility = 'visible';
     document.getElementById('savePlot').style.visibility = 'visible';
+    document.getElementById('savePlotData').style.visibility = 'visible';
     d3.select('#generate_plot').html('');
     d3.select('#generate_plot').text('Regenerate Plots');
     d3.select('#chart').html('');
@@ -123,6 +130,14 @@ function plotter_setup(data) {
     // check is x is run / parsed_date
     // if yes, then geomean on everything
     // if not, then supress on params that will generate the least subplots
+    range = [];
+    manipulatedData = {};
+    for (var i = 0; i < raw_data.data.length; i++) {
+        range.push({x: [], y: []});
+        range[i]['x'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+        range[i]['y'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+        manipulatedData[raw_data.tasks[i]] = {};
+    }
     if (timeParam.indexOf(raw_data.params[0]) !== -1) {
         // geomean on everything. 
         defaultToGmeanTimePlot();
@@ -149,9 +164,6 @@ function defaultToGmeanTimePlot() {
             // should convert it [[x1,y1],[x2,y2],...]
             seriesXY.push([Number(k), groupedX[k], raw_data.tasks[i]]);
         }
-        range.push({x: [], y: []});
-        range[i]['x'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-        range[i]['y'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
         findAxisScale(seriesXY, xNameMap[i], i);
         d3.select('#chart').append('div').attr('class', 'task_container').attr('id', 'task_'+i);
         simple_plot(raw_data.params, seriesXY, [], xNameMap[i], i, 'taskTitle');
@@ -169,7 +181,7 @@ function defaultToGmeanSubPlot() {
     // it should be, cuz it is the primary key
     var gmeanIndex = raw_data.params.indexOf(defaultGmean);
     if (gmeanIndex == -1) {
-        alert('circuit (primary key) is not in the param list\ncheck if this is a bug');
+        alert('circuit (primary key) is not in the param list\nskip default plot');
         generate_overlay_selector();
     } else if (gmeanIndex == 0 || gmeanIndex == 1) {
         alert('circuit is in x y axis: \nskip default plot');
@@ -177,9 +189,6 @@ function defaultToGmeanSubPlot() {
     } else {
         for (var k in raw_data.data) {
             var data = [];
-            range.push({x: [], y: []});
-            range[k]['x'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-            range[k]['y'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
             gmeanPrepData = data_transform(raw_data.data[k], [(gmeanIndex-2)+''], 'non-overlay');
             for (var p in gmeanPrepData) {
                 // now gmeanPrepData[p] is a subplot overlaying on circuit
@@ -448,11 +457,13 @@ function plot_generator() {
     // dealing with overlay axes
     // traverse all tasks
     range = [];
+    manipulatedData = {};
     for (var i = 0; i < series.length; i++) {
         var grouped_series = data_transform(series[i], overlay_list, 'non-overlay');
         range.push({x: [], y: []});
         range[i]['x'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
         range[i]['y'] = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+        manipulatedData[raw_data.tasks[i]] = {};
         for (var k in grouped_series) {
             findAxisScale(grouped_series[k], xNameMap[i], i);
         }
@@ -573,7 +584,7 @@ function epochTimeConverter(unixEpochTime, paramXY) {
  *      1. convert to data structure representing series
  *      2. dealing with some corner case of range
  */
-function prepareData(params, series, overlay_list, xNM, t) {
+function prepareData(params, series, overlay_list, xNM, t, titleMani) {
     //setup data
     if (range[t]['y'][0] == Number.NEGATIVE_INFINITY) {
         range[t]['y'][0] = 0;
@@ -590,6 +601,26 @@ function prepareData(params, series, overlay_list, xNM, t) {
     var lineData = data_transform(series, overlay_list, 'overlay');
     console.log('///// lineData /////');
     console.log(lineData);
+    // setup manipulatedData
+    for (var i in lineData) {
+        var val = i.split('  ');
+        var name = '';
+        for (var c = 1; c < val.length; c++) {
+            name += raw_data.params[Number(overlay_list[c-1]) + 2] + '..';
+            name += val[c] + '--';
+        }
+        manipulatedData[raw_data.tasks[t]][titleMani][name] = lineData[i];
+    }
+    for (var i in manipulatedData) {
+        for (var j in manipulatedData[i]) {
+            for (var k in manipulatedData[i][j]) {
+                for (var m in manipulatedData[i][j][k]) {
+                    manipulatedData[i][j][k][m] = [manipulatedData[i][j][k][m][0],
+                                                   manipulatedData[i][j][k][m][1]];
+                }
+            }
+        }
+    }
     var lineInfo = [];
     for (var k in lineData) {
         var lineVal = [];
@@ -637,12 +668,8 @@ function setupAxis(params, xNM, t, width, height) {
     var x = null;
     if (xNM.values.length == 0) {
         var xAxisRange = [range[t]['x'][0] - 0.1*(range[t]['x'][1]-range[t]['x'][0]), range[t]['x'][1] + 0.1*(range[t]['x'][1]-range[t]['x'][0])];
-        //console.log('--- x axis range (before) ---');
-        //console.log(xAxisRange);
         xAxisRange[0] = epochTimeConverter(xAxisRange[0], params[0]);
         xAxisRange[1] = epochTimeConverter(xAxisRange[1], params[0]);
-        //console.log('--- x axis range (after) ---');
-        //console.log(epochTimeConverter(xAxisRange[0], params[0]));
         if (unixEpoch.indexOf(params[0]) == -1) {
             x = d3.scale.linear()
                   .domain(xAxisRange)
@@ -695,6 +722,20 @@ function setupAxis(params, xNM, t, width, height) {
  *
  */
 function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
+    var titleMani = '';
+    for (var i = 2; i < series[0].length; i ++){
+        if ($.inArray(i-2+'', overlay_list) == -1 
+         && String(series[0][i]).length != 0) {
+            titleMani += params[i];
+            titleMani += '..';
+            titleMani += series[0][i];
+            titleMani += '--';
+        }
+    }
+    console.log(raw_data.tasks[t]);
+    console.log(manipulatedData);
+    manipulatedData[raw_data.tasks[t]][titleMani] = {};
+
     // ...............................
     // setup geometry of plotting area
     // all geometry values are derived by the width of the whole page
@@ -728,7 +769,7 @@ function simple_plot(params, series, overlay_list, xNM, t, titleMode) {
     var legendPeriGap = 10;
     // .................................
     // data
-    var lineInfo = prepareData(params, series, overlay_list, xNM, t);
+    var lineInfo = prepareData(params, series, overlay_list, xNM, t, titleMani);
     // .................................
     // axis
     var xy = setupAxis(params, xNM, t, width, height);
@@ -1020,5 +1061,35 @@ function savePlot() {
         }
         d3.select('#temp').html('');
     });
+}
+
+function savePlotData() {
+    var zip = new JSZip();
+    var task, plot, line;
+    for (var i in manipulatedData) {
+        task = (i == '') ? 'task':i;
+        for (var j in manipulatedData[i]) {
+            plot = j;
+            if (plot[plot.length-1] == '-' && plot[plot.length-2] == '-') {
+                plot = plot.substring(0, plot.length-2);
+            }
+            plot = (plot == '') ? 'plot':plot;
+            for (var k in manipulatedData[i][j]) {
+                line = k;
+                if (line[line.length-1] == '-' && line[line.length-2] == '-') {
+                    line = line.substring(0, line.length-2);
+                }
+                line = (line == '') ? 'line':line;
+                var arr = '';
+                for (var m in manipulatedData[i][j][k]) {
+                    arr += String(manipulatedData[i][j][k][m][0]) + '\t';
+                    arr += String(manipulatedData[i][j][k][m][1]) + '\n';
+                }
+                zip.file(task+'/'+plot+'/'+line, arr);
+            }
+        }
+    }
+    var content = zip.generate({type: 'blob'});
+    saveAs(content, 'plot_data.zip');
 }
 
