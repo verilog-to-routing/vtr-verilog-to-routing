@@ -791,6 +791,7 @@ struct s_router_opts {
 	bool verify_binary_search;
 	bool full_stats;
 	bool congestion_analysis;
+    bool switch_usage_analysis;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 };

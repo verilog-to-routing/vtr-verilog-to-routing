@@ -146,6 +146,7 @@ bool place_and_route(enum e_operation operation,
 		}
 
 		if (success == false) {
+            
 			vpr_printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
 		}
@@ -210,10 +211,16 @@ bool place_and_route(enum e_operation operation,
 	free_port_pin_from_blk_pin();
 	free_blk_pin_from_port_pin();
 
-	end = clock();
+	end = clock();    
 
 	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
+    if (router_opts.switch_usage_analysis) {
+        clock_t start = clock();
+        print_switch_usage();
+        clock_t endd = clock();
+        printf("\nprinting switch usage stats uses %g seconds.\n", (float)(endd-start) / CLOCKS_PER_SEC);
+    }
 
 	/*WMF: cleaning up memory usage */
 
@@ -522,6 +529,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	check_route(router_opts.route_type, g_num_rr_switches,
 			clb_opins_used_locally);
 	get_serial_num();
+
 	if (Fc_clipped) {
 		vpr_printf_warning(__FILE__, __LINE__, 
 				"Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");

@@ -346,7 +346,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	}
 
 	free_rr_node_route_structs();
-	
 	return (success);
 }
 

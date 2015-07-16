@@ -141,7 +141,7 @@ select:focus {
 	flex-wrap:wrap;
 }
 .plotter_options {
-	flex:1 0.5 50%;
+	flex:1 0.5 33%;
 	line-height:2em;
 	visibility: hidden;	
 }
