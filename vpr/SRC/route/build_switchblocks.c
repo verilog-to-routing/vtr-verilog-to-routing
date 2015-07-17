@@ -114,6 +114,7 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 #include "parse_switchblocks.h"
 #include "util.h"
 #include <malloc.h>
+#include <iostream>
 
 using namespace std;
 
@@ -364,12 +365,16 @@ static int get_max_lcm( INP vector<t_switchblock_inf> *switchblocks, INP t_track
 			for (int ifrom = 0; ifrom < num_from_types; ifrom++){
 				/* over each to type */
 				for (int ito = 0; ito < num_to_types; ito++){
-					int length1 = track_type_sizes->at(wc->from_type[ifrom]).length;
-					int length2 = track_type_sizes->at(wc->to_type[ito]).length;
-					int current_lcm = lcm(length1, length2);
-					if (current_lcm > max_lcm){
-						max_lcm = current_lcm;
-					}
+                    if ((*track_type_sizes).find(wc->from_type[ifrom]) != (*track_type_sizes).end() &&
+                        (*track_type_sizes).find(wc->to_type[ito]) != (*track_type_sizes).end()) {
+                        // the condition can fail if freq of a seg is 0 (so it is in wc, but not in track_type_size)
+    					int length1 = track_type_sizes->at(wc->from_type[ifrom]).length;
+	    				int length2 = track_type_sizes->at(wc->to_type[ito]).length;
+		    			int current_lcm = lcm(length1, length2);
+			    		if (current_lcm > max_lcm){
+						    max_lcm = current_lcm;
+					    }
+                    } 
 				}
 			}
 		}
@@ -377,7 +382,6 @@ static int get_max_lcm( INP vector<t_switchblock_inf> *switchblocks, INP t_track
 	
 	return max_lcm;
 }
-
 
 /* computes a horizontal row of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting 
    at coordinate (1,1) */
@@ -645,7 +649,10 @@ static void get_wirepoint_tracks( INP e_directionality directionality, INP int n
 
 	for (int itype = 0; itype < num_types; itype++){
 		string track_type = track_type_vec->at(itype);
-
+        if ((*track_type_sizes).find(track_type) == (*track_type_sizes).end()) {
+            // track_type_sizes may not contain track_type if its seg freq is 0
+            continue;
+        }
 		/* get the number of tracks of given type */
 		int num_type_tracks = track_type_sizes->at(track_type).num_tracks;
 		/* get the last track belonging to this type */
