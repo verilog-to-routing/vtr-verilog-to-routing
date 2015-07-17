@@ -1,10 +1,12 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
+#include <iostream>
 using namespace std;
 
 #include <assert.h>
 
+#include "stats.h"
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -364,42 +366,23 @@ bool feasible_routing(void) {
 	return (true);
 }
 
-int predict_success_route_iter(int itry, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
-	int routing_predictor_running_average = MAX_SHORT;
-	if(historical_overuse_ratio[1] > 0 && historical_overuse_ratio[itry] > 0) {
-		routing_predictor_running_average = ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE + (historical_overuse_ratio[1] / historical_overuse_ratio[itry]) / 4;
-		if (router_opts.routing_failure_predictor == SAFE) {
-			routing_predictor_running_average *= 1.5;
-		}
-	}
-	if (itry > routing_predictor_running_average
-	 && router_opts.routing_failure_predictor != OFF
-	 && num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) {
+int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
 
-		/* linear extrapolation to predict what routing iteration will succeed */
-		int expected_success_route_iter;
-		int ref_iter;
-		double removal_average = 0;
-
-		ref_iter = itry - routing_predictor_running_average;
-		removal_average = (historical_overuse_ratio[ref_iter] -
-						  historical_overuse_ratio[itry]) / routing_predictor_running_average;
-		if (removal_average <= 0) {
-			/* Negative removal sometimes happens from noise when circuit is very close to routing, therefore sample a larger space */
-			ref_iter = min(1, itry - routing_predictor_running_average - 5);
-			removal_average = (historical_overuse_ratio[ref_iter] -
-				historical_overuse_ratio[itry]) / routing_predictor_running_average;
-		}
-
-		expected_success_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
-		if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
-			vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
-			return UNDEFINED;
-		}
-		return expected_success_route_iter;
-	}
 	// invalid condition for prediction
-	return 0;
+	if (router_opts.routing_failure_predictor == OFF || num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) return 0;
+
+	// use the last 5 iterations in prediction
+	size_t itry {historical_overuse_ratio.size() - 1};
+	double congestion_slope {linear_regression_vector(historical_overuse_ratio, itry - 5)};
+
+	// linear extrapolation
+	int expected_success_route_iter = (itry*congestion_slope - historical_overuse_ratio.back()) / congestion_slope;
+
+	if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations) {
+		vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
+		return UNDEFINED;
+	}
+	return expected_success_route_iter;
 }
 
 void pathfinder_update_one_cost(struct s_trace *route_segment_start,

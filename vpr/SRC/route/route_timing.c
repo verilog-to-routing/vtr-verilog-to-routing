@@ -99,7 +99,12 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
-	auto historical_overuse_ratio = vector<double>(router_opts.max_router_iterations + 1);
+	vector<double> historical_overuse_ratio; 
+	historical_overuse_ratio.reserve(router_opts.max_router_iterations + 1);
+
+	// for unroutable large circuits, the time per iteration seems to increase dramatically
+	vector<float> time_per_iteration;
+	time_per_iteration.reserve(router_opts.max_router_iterations + 1);
 	
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 		if (g_clbs_nlist.net[inet].is_global == false) {
@@ -149,6 +154,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		clock_t end = clock();
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
+		time_per_iteration.push_back(time);
 
 		if (itry == 1) {
 			/* Early exit code for cases where it is obvious that a successful route will not be found 
@@ -200,16 +206,31 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
-		historical_overuse_ratio[itry] = overused_ratio;
+		historical_overuse_ratio.push_back(overused_ratio);
 
 		/* Determine when routing is impossible hence should be aborted */
 		if (itry > 5){
 			
-			int expected_success_route_iter = predict_success_route_iter(itry, historical_overuse_ratio, router_opts);
+			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
 			if (expected_success_route_iter == UNDEFINED) return false;
+
+			if (itry > 15) {
+				// compare their slopes over the last 5 iterations
+				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
+				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
+				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
+				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
+					&& time_per_iteration_slope > 1) {	// filter out noise
+					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
+									 while congestion grows at %f %/iteration, unlikely to finish.\n",
+						time_per_iteration_slope);
+					return false;
+				}
+			}
 		}
 
         //print_usage_by_wire_length();
+
 
 		if (success) {
    
@@ -668,12 +689,6 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
 
-		if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
-				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
-				|| rr_node[to_node].get_yhigh() < route_bb[inet].ymin
-				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
-			continue; /* Node is outside (expanded) bounding box. */
-
 		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
@@ -682,6 +697,12 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				continue; /* Node is outside high fanout bin. */
 			}
 		}
+		else if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
+				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
+				|| rr_node[to_node].get_yhigh() < route_bb[inet].ymin
+				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
+			continue; /* Node is outside (expanded) bounding box. */
+
 
 		/* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
 		 * the issue of how to cost them properly so they don't get expanded before *

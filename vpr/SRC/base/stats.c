@@ -476,6 +476,3 @@ int count_netlist_clocks(void) {
 	free (clock_names);
 	return num_clocks;
 }
-
-
-

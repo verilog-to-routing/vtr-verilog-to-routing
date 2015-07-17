@@ -1,4 +1,5 @@
 /************ Defines and types shared by all route files ********************/
+#pragma once
 #include <vector>
 struct s_heap {
 	int index;
@@ -114,4 +115,4 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 void free_chunk_memory_trace(void);
 
-int predict_success_route_iter(int itry, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts);
+int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts);

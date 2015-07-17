@@ -44,5 +44,5 @@ parse_file=titan_bench.txt
 # Pass requirements
 # pass_requirements_file=pass_requirements.txt
 
-script_params=-starting_stage vpr -vpr_route_chan_width 300 -vpr_max_router_iterations 300 -keep_result_files -specific_vpr_stage route -limit_memory_usage 25000000 -timeout 122400 
+script_params=-starting_stage vpr -vpr_route_chan_width 300 -vpr_max_router_iterations 300 -keep_result_files -specific_vpr_stage route -limit_memory_usage 25000000 -timeout 122400 -congestion_analysis
 
