@@ -218,12 +218,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				// compare their slopes over the last 5 iterations
 				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
 				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
+				vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
 				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
 				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
 					&& time_per_iteration_slope > 1) {	// filter out noise
 					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
 									 while congestion grows at %f %/iteration, unlikely to finish.\n",
-						time_per_iteration_slope);
+						time_per_iteration_slope, congestion_per_iteration_slope);
 					return false;
 				}
 			}
@@ -316,7 +317,7 @@ void congestion_analysis() {
 		"OPIN",
 		"CHANX",
 		"CHANY",
-		"INTRA_CLUSTER_EDGE"
+		"ICE"
 	};
 	// each type indexes into array which holds the congestion for that type
 	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
