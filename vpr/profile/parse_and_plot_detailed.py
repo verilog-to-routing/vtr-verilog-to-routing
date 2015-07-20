@@ -8,6 +8,7 @@ import re
 import shlex
 import argparse
 import textwrap
+import csv
 from datetime import datetime
 # generate images wihtout having a window appear
 import matplotlib
@@ -44,46 +45,111 @@ def plot_results(param_names, param_options, results, params):
 		os.mkdir(directory)
 
 	with Chdir(directory):
+
+		export_results_to_csv(param_names, results)
+
 		x = results.keys()
-		for p in range(len(param_names)):
-			plt.figure()
+		y = []
+		next_figure = True
+
+		p = 0
+		plt.figure()
+		while p < len(param_names):
 			print(param_names[p])
-			y = [result[p] for result in results.values()]
 
 			if param_options[p]:
+				nf = True
 				for option in param_options[p].split():
-					plot_options(option)
+					# stopping has veto power (must all be True to pass)
+					nf = nf and plot_options(option)
+				next_figure = nf
 
-			plt.plot(x,y)
+			if not next_figure:
+				# y becomes list of lists (for use with stackable plots)
+				y.append([result[p] for result in results.values()])
+				p += 1
+				continue
+			elif not y:
+				y = [result[p] for result in results.values()]
+
+			lx = x[-1]
+			ly = y[-1]
+			plot_method(x,y)
 			plt.xlabel('iteration')
+			plt.xlim(xmin=0)
+			
 			plt.ylabel(param_names[p])
 
 			# annotate the last value
-			lx = x[-1]
-			ly = y[-1]
-			plt.plot([lx,lx], [0, ly], linestyle="--")
-			plt.scatter([lx,],[ly,], 50, color='black')
+			annotate_last(lx,ly)
 
-			plt.annotate('({},{})'.format(lx, ly),
-				xy=(lx, ly), xytext=(10,10), textcoords='offset points')
+			if next_figure:
+				plt.savefig(param_names[p])
+				plt.figure()
 
-			plt.savefig(param_names[p])
+			p += 1
+		# in case the last figure hasn't been shuffled onto file yet
+		if not next_figure:
+			plot_method(x,y)
+			plt.savefig(param_names[-1])
 
+# can be changed by parameter options (always dump y after plotting)
+def default_plot(x,y):
+	plt.plot(x,y)
+	del y[:]
+
+plot_method = default_plot
+
+def stack_plot(x,y):
+	global plot_method
+	plt.stackplot(x,y)
+	del y[:]
+	plot_method = default_plot
+
+
+# each plot option returns true or false on whether its ready for the next figure
+def plot_stack():
+	global plot_method
+	plot_method = stack_plot
+	return False
 
 def plot_log():
-	plt.semilogy()
+	plt.semilogy(nonposy='mask')
+	return True
+
 def plot_percent():
 	plt.ylim(0,100)
+	return True
 
 plot_opts = {
+	'stackplot':plot_stack,
 	'log':plot_log,
 	'percent':plot_percent
 }
 
 def plot_options(option):
 	print(option)
-	plot_opts[option]()
+	option_handler = plot_opts.get(option, None)
+	if option_handler:
+		return option_handler()
+	return True
 
+def annotate_last(lx, ly):
+	if type(ly) == list:
+		return
+	plt.plot([lx,lx], [0, ly], linestyle="--")
+	plt.scatter([lx,],[ly,], 50, color='black')
+
+	plt.annotate('({},{})'.format(lx, ly),
+		xy=(lx, ly), xytext=(0,15), textcoords='offset points')
+
+def export_results_to_csv(param_names, results):
+	with open('results.csv', 'wb') as csvfile:
+		writer = csv.writer(csvfile)
+		# header line
+		writer.writerow(['iteration'] + param_names)
+		for iteration, result in results.items():
+			writer.writerow([iteration] + result)
 
 def parse_output(param_names, params):
 	"""Return a dictionary mapping iteration -> [params...] 
