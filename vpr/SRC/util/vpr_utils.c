@@ -1390,6 +1390,7 @@ void print_switch_usage() {
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
             if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
                 inward_switch_inf[to_node_index][switch_index] = 0;
+            //assert(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index] ++;
         }
     }
