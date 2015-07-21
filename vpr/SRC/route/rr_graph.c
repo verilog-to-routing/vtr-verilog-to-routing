@@ -607,11 +607,13 @@ static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_
 	if (switch_fanin[wire_to_arch_ipin_switch].count(UNDEFINED)){
 		/* only have one ipin cblock switch. OK. */
 		(*wire_to_rr_ipin_switch) = switch_fanin[wire_to_arch_ipin_switch][UNDEFINED];
-	} else {
+	} else if (switch_fanin[wire_to_arch_ipin_switch].size() != 0){
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, 
 			"Not currently allowing an ipin cblock switch to have multiple fan-ins");
-		
-	}
+	} else {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+            "No switch is specified for the ipin cblock, check if there is an error in arch file");
+    }
 
 	delete[] switch_fanin;
 	

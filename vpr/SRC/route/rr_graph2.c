@@ -68,7 +68,7 @@ static int *label_wire_muxes(
 		INP int chan_num, INP int seg_num,
 		INP t_seg_details * seg_details, INP int max_len,
 		INP enum e_direction dir, INP int max_chan_width,
-		OUTP int *num_wire_muxes);
+		INP bool check_cb, OUTP int *num_wire_muxes);
 
 static int *label_wire_muxes_for_balance(
 		INP int chan_num, INP int seg_num,
@@ -818,8 +818,7 @@ int get_unidir_opin_connections(
 		OUTP bool * Fc_clipped) {
 
 	/* Gets a linked list of Fc nodes to connect to in given
-	 * chan seg.  Fc_ofs is used for the for the opin staggering
-	 * pattern. */
+	 * chan seg.  Fc_ofs is used for the opin staggering pattern. */
 
 	int *inc_muxes = NULL;
 	int *dec_muxes = NULL;
@@ -841,9 +840,9 @@ int get_unidir_opin_connections(
 
 	/* Get the lists of possible muxes. */
 	inc_muxes = label_wire_muxes(chan, seg, seg_details, max_len, 
-			INC_DIRECTION, max_chan_width, &num_inc_muxes);
+			INC_DIRECTION, max_chan_width, true, &num_inc_muxes);
 	dec_muxes = label_wire_muxes(chan, seg, seg_details, max_len, 
-			DEC_DIRECTION, max_chan_width, &num_dec_muxes);
+			DEC_DIRECTION, max_chan_width, true, &num_dec_muxes);
 
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -868,7 +867,6 @@ int get_unidir_opin_connections(
 				L_rr_node_indices);
 		dec_inode_index = get_rr_node_index(x, y, chan_type, dec_track,
 				L_rr_node_indices);
-
 		/* Add to the list. */
 		if (false == L_rr_edge_done[inc_inode_index]) {
 			L_rr_edge_done[inc_inode_index] = true;
@@ -1954,7 +1952,7 @@ static int get_unidir_track_to_chan_seg(
 	if (is_end_sb && (is_core || is_corner || is_straight)) {
 		/* Get the list of possible muxes for the N-to-N mapping. */
 		mux_labels = label_wire_muxes(to_chan, to_seg, seg_details, max_len,
-				to_dir, max_chan_width, &num_labels);
+				to_dir, max_chan_width, false, &num_labels);
 	} else {
 		assert(is_fringe || !is_end_sb);
 
@@ -2341,7 +2339,7 @@ void load_sblock_pattern_lookup(
 		enum e_direction start_dir = (pos_dir ? INC_DIRECTION : DEC_DIRECTION);
 		wire_mux_on_track[side] = label_wire_muxes(chan, seg, 
 				seg_details, chan_len, start_dir, nodes_per_chan->max, 
-				&num_wire_muxes[side]);
+				false, &num_wire_muxes[side]);
 	}
 
 	for (int to_side = 0; to_side < 4; to_side++) {
@@ -2550,13 +2548,18 @@ static int *label_wire_muxes_for_balance(
 	}
 
 	/* Generate the normal labels list as the baseline. */
+    // not all wires can be connected to OPIN at starting point (depending on <cb> pattern)
+    // that's what "clipped" mean.
+    int num_labels_clipped;  // only used to find max and min (in fact, max won't be affected whether you choose num_labels_clipped or num_labels)
+    label_wire_muxes(chan_num, seg_num, seg_details, max_len,
+                     direction, max_chan_width, true, &num_labels_clipped);
 	pre_labels = label_wire_muxes(chan_num, seg_num, seg_details, max_len,
-			direction, max_chan_width, &num_labels);
+			direction, max_chan_width, false, &num_labels);
 
 	/* Find the min and max mux size. */
 	min_opin_mux_size = MAX_SHORT;
 	max_opin_mux_size = 0;
-	for (i = 0; i < num_labels; ++i) {
+	for (i = 0; i < num_labels_clipped; ++i) {
 		inode = get_rr_node_index(x, y, chan_type, pre_labels[i],
 				L_rr_node_indices);
 		if (opin_mux_size[inode] < min_opin_mux_size) {
@@ -2606,7 +2609,7 @@ static int *label_wire_muxes(
 		INP int chan_num, INP int seg_num,
 		INP t_seg_details * seg_details, INP int max_len,
 		INP enum e_direction dir, INP int max_chan_width,
-		OUTP int *num_wire_muxes) {
+		INP bool check_cb, OUTP int *num_wire_muxes) {
 
 	/* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
 	 * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux> 
@@ -2648,10 +2651,19 @@ static int *label_wire_muxes(
 
 			/* Count the labels and load if LOAD pass */
 			if (is_endpoint) {
-				if (pass > 0) {
-					labels[num_labels] = itrack;
-				}
-				++num_labels;
+                /*
+                 * not all wire endpoints can be driven by OPIN (depending on the <cb> pattern in the arch file)
+                 * the check_cb is targeting this arch specification:
+                 * if this function is called by get_unidir_opin_connections(),
+                 * then we need to check if mux connections can be added to this type of wire,
+                 * otherwise, this function should not consider <cb> specification.
+                 */
+                if ((!check_cb) || (seg_details[itrack].cb[0] == true)) {
+    				if (pass > 0) {
+	    				labels[num_labels] = itrack;
+		    		}
+			    	++num_labels;
+                }
 			}
 		}
 	}
