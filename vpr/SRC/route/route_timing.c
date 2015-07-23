@@ -64,7 +64,14 @@ struct more_sinks_than {
 	}
 };
 
+
+
 static void congestion_analysis();
+static void time_on_fanout_analysis();
+const int max_fanout {get_max_pins_per_net()};
+constexpr int fanout_per_bin = 5;
+vector<float> time_on_fanout((max_fanout / fanout_per_bin) + 1, 0);
+vector<int> itry_on_fanout((max_fanout / fanout_per_bin) + 1, 0);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -147,6 +154,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				net_delay,
 				slacks
 			);
+
 			if (!is_routable) {
 				return (false);
 			}
@@ -185,6 +193,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
 				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
+
+				time_on_fanout_analysis();
 				return false;
 			}
 			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
@@ -212,19 +222,25 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		if (itry > 5){
 			
 			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
-			if (expected_success_route_iter == UNDEFINED) return false;
+			if (expected_success_route_iter == UNDEFINED) {
+				time_on_fanout_analysis();
+				return false;
+			}
 
 			if (itry > 15) {
 				// compare their slopes over the last 5 iterations
 				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
 				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
-				vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
+				if (router_opts.congestion_analysis)
+					vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
 				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
 				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
 					&& time_per_iteration_slope > 1) {	// filter out noise
 					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
 									 while congestion grows at %f %/iteration, unlikely to finish.\n",
 						time_per_iteration_slope, congestion_per_iteration_slope);
+
+					time_on_fanout_analysis();
 					return false;
 				}
 			}
@@ -250,6 +266,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
+			time_on_fanout_analysis();
 			return (true);
 		}
 
@@ -301,12 +318,21 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         }
 		fflush(stdout);
 	}
-
 	vpr_printf_info("Routing failed.\n");
+	time_on_fanout_analysis();
 	return (false);
 }
 
 
+void time_on_fanout_analysis() {
+	// using the global time_on_fanout and itry_on_fanout
+	vpr_printf_info("fanout low           time (s)        attemps\n");
+	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
+		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
+			vpr_printf_info("%4d           %14.3f   %12d\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin]);
+		}
+	}
+}
 
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
 void congestion_analysis() {
@@ -353,12 +379,19 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 	} else if (should_route_net(inet) == false) {
 		is_routed = true;
 	} else{
+		// track time spent vs fanout
+		clock_t net_begin = clock();
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
 				router_opts.astar_fac, router_opts.bend_cost, 
 				pin_criticality, sink_order, 
 				rt_node_of_sink, net_delay[inet], slacks);
+
+		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
+		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
+		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
+		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -1058,6 +1091,11 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		/* This algorithm only applies to high fanout nets */
 		return 1;
 	}
+	if (rt_node == NULL || rt_node->u.child_list == NULL) {
+		/* If unknown traceback, set radius of bin to be size of chip */
+		rlim = max(nx + 2, ny + 2);
+		return rlim;
+	}
 
 	area = (route_bb[inet].xmax - route_bb[inet].xmin)
 			* (route_bb[inet].ymax - route_bb[inet].ymin);
@@ -1066,11 +1104,6 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 
 	rlim = (int)(ceil(sqrt((float) area / (float) g_clbs_nlist.net[inet].num_sinks())));
-	if (rt_node == NULL || rt_node->u.child_list == NULL) {
-		/* If unknown traceback, set radius of bin to be size of chip */
-		rlim = max(nx + 2, ny + 2);
-		return rlim;
-	}
 
 	success = false;
 	/* determine quickly a feasible bin radius to route sink for high fanout nets 
