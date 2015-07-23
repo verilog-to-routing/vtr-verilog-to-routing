@@ -68,10 +68,9 @@ struct more_sinks_than {
 
 static void congestion_analysis();
 static void time_on_fanout_analysis();
-const int max_fanout {get_max_pins_per_net()};
 constexpr int fanout_per_bin = 5;
-vector<float> time_on_fanout((max_fanout / fanout_per_bin) + 1, 0);
-vector<int> itry_on_fanout((max_fanout / fanout_per_bin) + 1, 0);
+static vector<float> time_on_fanout;
+static vector<int> itry_on_fanout;
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -81,6 +80,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
+
+	const int max_fanout {get_max_pins_per_net()};
+	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
+	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -335,6 +338,15 @@ void time_on_fanout_analysis() {
 }
 
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
+// efficient bit array for checking against congested type
+struct Congested_node_types {
+	uint32_t mask;
+	Congested_node_types() : mask{0} {}
+	void set_congested(int rr_node_type) {mask |= (1 << rr_node_type);}
+	void clear_congested(int rr_node_type) {mask &= ~(1 << rr_node_type);}
+	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
+	bool empty() const {return mask == 0;}
+};
 void congestion_analysis() {
 	static const std::vector<const char*> node_typename {
 		"SOURCE",
@@ -347,21 +359,38 @@ void congestion_analysis() {
 	};
 	// each type indexes into array which holds the congestion for that type
 	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
+	// print out specific node information if congestion for type is low enough
 
 	int total_congestion = 0;
-	for(int inode = 0; inode < num_rr_nodes; inode++){
+	for (int inode = 0; inode < num_rr_nodes; ++inode) {
 		const t_rr_node& node = rr_node[inode];
 		int congestion = node.get_occ() - node.get_capacity();
 
-		if(congestion > 0) {
+		if (congestion > 0) {
 			total_congestion += congestion;
 			congestion_per_type[node.type] += congestion;
 		}
 	}
 
+	constexpr int specific_node_print_threshold = 5;
+	Congested_node_types congested;
 	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
 		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
-		vpr_printf_info("    %20s: %10.6f %\n", node_typename[type], congestion_percentage); 
+		vpr_printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
+		// nodes of that type need specific printing
+		if (congestion_per_type[type] > 0 &&
+			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
+	}
+
+	// specific print out each congested node
+	if (!congested.empty()) {
+		vpr_printf_info("Specific congested nodes\nxlow ylow   type\n");
+		for (int inode = 0; inode < num_rr_nodes; ++inode) {
+			const t_rr_node& node = rr_node[inode];
+			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
+				vpr_printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
+			}
+		}
 	}
 }
 
