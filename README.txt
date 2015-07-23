@@ -1,7 +1,14 @@
+For information about the overall VTR project go to our wiki 
+at https://github.com/verilog-to-routing/vtr-verilog-to-routing/wiki
+
 This is the development trunk for the Verilog-to-Routing project.  Unlike the
 nicely packaged release that we create, you are working with code in a constant
 state of flux.  You should expect that the tools are not always stable and that
 more work is needed to get the flow to run.
+
+For most users of VTR (rather than active developers) you should download  the latest packaged 
+(and regression tested) version of VTR from 
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/wiki
 
 For new developers, please do the tutorial in tutorial/NewDeveloperTutorial.txt.
 You will be directed back here once you ramp up.
@@ -28,12 +35,12 @@ regression tests.
 # Contributors (Please keep this up-to-date)
 ##############################################################################
 
-Professors: Kenneth Kent, Peter Jamieson, Jason Anderson, Vaughn Betz,
-Jonathan Rose
+Professors: Kenneth Kent, Vaughn Betz, Jonathan Rose, Jason Anderson, Peter Jamieson
 
-Graduate Students: Jason Luu, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville,
+
+Graduate Students: Kevin Murray, Jason Luu, Oleg Petelin, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville,
 Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu,
-Charles Chiasson, Kevin Murray
+Charles Chiasson
 
 Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov,
 Scott Whitty, Michael Wainberg, Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu,

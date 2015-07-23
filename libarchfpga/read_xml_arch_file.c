@@ -124,7 +124,7 @@ static void ProcessDirects(INOUTP ezxml_t Parent, OUTP t_direct_inf **Directs,
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
 		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
-		INP bool timing_enabled);
+		INP bool timing_enabled, INP bool switchblocklist_required);
 static void ProcessSwitchblocks(INOUTP ezxml_t Parent, OUTP vector<t_switchblock_inf> *switchblocks,
 				INP t_arch_switch_inf *switches, INP int num_switches);
 static void ProcessCB_SB(INOUTP ezxml_t Node, INOUTP bool * list,
@@ -2872,14 +2872,15 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 			timing_enabled);
 	FreeNode(Next);
 
+	/* Process switchblocks. This depends on switches */
+	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
+
 	/* Process segments. This depends on switches */
 	Next = FindElement(Cur, "segmentlist", true);
 	ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
-			arch->Switches, arch->num_switches, timing_enabled);
+			arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required);
 	FreeNode(Next);
 
-	/* Process switchblocks. This depends on switches */
-	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
 	Next = FindElement(Cur, "switchblocklist", switchblocklist_required);
 	if (Next){
 		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
@@ -2949,7 +2950,7 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
 		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
-		INP bool timing_enabled) {
+		INP bool timing_enabled, INP bool switchblocklist_required) {
 	int i, j, length;
 	const char *tmp;
 
@@ -2977,6 +2978,12 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		if (tmp) {
 			(*Segs)[i].name = my_strdup(tmp);
 		} else {
+            /* if swich block is "custom", then you have to provide a name for segment */
+            if (switchblocklist_required) {
+    			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+					"No name specified for the segment #%d.\n", i);
+
+            }
 			/* set name to default: "unnamed_segment_<segment_index>" */
 			stringstream ss;
 			ss << "unnamed_segment_" << i;
