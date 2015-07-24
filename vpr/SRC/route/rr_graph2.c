@@ -68,7 +68,7 @@ static int *label_wire_muxes(
 		INP int chan_num, INP int seg_num,
 		INP t_seg_details * seg_details, INP int max_len,
 		INP enum e_direction dir, INP int max_chan_width,
-		INP bool check_cb, OUTP int *num_wire_muxes);
+		INP bool check_cb, OUTP int *num_wire_muxes, OUTP int *num_wire_muxes_cb_restricted);
 
 static int *label_wire_muxes_for_balance(
 		INP int chan_num, INP int seg_num,
@@ -839,10 +839,11 @@ int get_unidir_opin_connections(
 	y = ((CHANX == chan_type) ? chan : seg);
 
 	/* Get the lists of possible muxes. */
+    int dummy;
 	inc_muxes = label_wire_muxes(chan, seg, seg_details, max_len, 
-			INC_DIRECTION, max_chan_width, true, &num_inc_muxes);
+			INC_DIRECTION, max_chan_width, true, &num_inc_muxes, &dummy);
 	dec_muxes = label_wire_muxes(chan, seg, seg_details, max_len, 
-			DEC_DIRECTION, max_chan_width, true, &num_dec_muxes);
+			DEC_DIRECTION, max_chan_width, true, &num_dec_muxes, &dummy);
 
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -1951,8 +1952,9 @@ static int get_unidir_track_to_chan_seg(
 	/* Ending wires use N-to-N mapping if not fringe or if goes straight */
 	if (is_end_sb && (is_core || is_corner || is_straight)) {
 		/* Get the list of possible muxes for the N-to-N mapping. */
+        int dummy;
 		mux_labels = label_wire_muxes(to_chan, to_seg, seg_details, max_len,
-				to_dir, max_chan_width, false, &num_labels);
+				to_dir, max_chan_width, false, &num_labels, &dummy);
 	} else {
 		assert(is_fringe || !is_end_sb);
 
@@ -2336,10 +2338,11 @@ void load_sblock_pattern_lookup(
 				&num_incoming_wires[side], &num_ending_wires[side]);
 
 		/* Figure out all the tracks on a side that are starting. */
+        int dummy;
 		enum e_direction start_dir = (pos_dir ? INC_DIRECTION : DEC_DIRECTION);
 		wire_mux_on_track[side] = label_wire_muxes(chan, seg, 
 				seg_details, chan_len, start_dir, nodes_per_chan->max, 
-				false, &num_wire_muxes[side]);
+				false, &num_wire_muxes[side], &dummy);
 	}
 
 	for (int to_side = 0; to_side < 4; to_side++) {
@@ -2550,20 +2553,14 @@ static int *label_wire_muxes_for_balance(
 	/* Generate the normal labels list as the baseline. */
     // not all wires can be connected to OPIN at starting point (depending on <cb> pattern)
     // that's what "clipped" mean.
-    /*
     int num_labels_clipped;  // only used to find max and min (in fact, max won't be affected whether you choose num_labels_clipped or num_labels)
-    pre_labels = label_wire_muxes(chan_num, seg_num, seg_details, max_len,
-                     direction, max_chan_width, true, &num_labels_clipped);
-    free(pre_labels);
-    */
 	pre_labels = label_wire_muxes(chan_num, seg_num, seg_details, max_len,
-			direction, max_chan_width, false, &num_labels);
-    
+			direction, max_chan_width, false, &num_labels, &num_labels_clipped);
+
 	/* Find the min and max mux size. */
 	min_opin_mux_size = MAX_SHORT;
 	max_opin_mux_size = 0;
-	//for (i = 0; i < num_labels_clipped; ++i) {
-    for (i = 0; i < num_labels; ++i){
+	for (i = 0; i < num_labels_clipped; ++i) {
 		inode = get_rr_node_index(x, y, chan_type, pre_labels[i],
 				L_rr_node_indices);
 		if (opin_mux_size[inode] < min_opin_mux_size) {
@@ -2573,14 +2570,14 @@ static int *label_wire_muxes_for_balance(
 			max_opin_mux_size = opin_mux_size[inode];
 		}
 	}
-    /*
+
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
 		vpr_printf_info("\t max_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"opin muxes are not balanced!\n");
 	}
-    */
+
 	/* Create a new list that we will move the muxes with 'holes' to the start of list. */
 	final_labels = (int *) my_malloc(sizeof(int) * num_labels);
 	j = 0;
@@ -2613,18 +2610,19 @@ static int *label_wire_muxes(
 		INP int chan_num, INP int seg_num,
 		INP t_seg_details * seg_details, INP int max_len,
 		INP enum e_direction dir, INP int max_chan_width,
-		INP bool check_cb, OUTP int *num_wire_muxes) {
+		INP bool check_cb, OUTP int *num_wire_muxes, OUTP int *num_wire_muxes_cb_restricted) {
 
 	/* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
 	 * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux> 
 	 * This routine orders wire muxes by their natural order, i.e. track # */
 
-	int itrack, start, end, num_labels, pass;
+	int itrack, start, end, num_labels, num_labels_restricted, pass;
 	int *labels = NULL;
 	bool is_endpoint;
 
 	/* COUNT pass then a LOAD pass */
 	num_labels = 0;
+    num_labels_restricted = 0;
 	for (pass = 0; pass < 2; ++pass) {
 		/* Alloc the list on LOAD pass */
 		if (pass > 0) {
@@ -2663,16 +2661,20 @@ static int *label_wire_muxes(
                  * otherwise, this function should not consider <cb> specification.
                  */
                 if ((!check_cb) || (seg_details[itrack].cb[0] == true)) {
-    				if (pass > 0) {
-	    				labels[num_labels] = itrack;
-		    		}
-			    	++num_labels;
+                    if (pass > 0) {
+                        labels[num_labels] = itrack;
+                    }
+                    ++num_labels;
                 }
+                if (pass > 0)
+                    num_labels_restricted += (seg_details[itrack].cb[0] == true) ? 1:0;
 			}
 		}
 	}
 
 	*num_wire_muxes = num_labels;
+    *num_wire_muxes_cb_restricted = num_labels_restricted;
+
 	return labels;
 }
 
