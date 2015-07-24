@@ -50,6 +50,7 @@ void build_rr_graph(
 		INP t_direct_inf *directs, 
 		INP int num_directs,
 		INP bool ignore_Fc_0,
+		INP const char *dump_rr_structs_file,
 		OUTP int *wire_to_rr_ipin_switch,
 		OUTP int *num_rr_switches,
 		OUTP int *Warnings);

@@ -20,6 +20,7 @@ using namespace std;
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
 
@@ -164,7 +165,7 @@ static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_
 
 static void remap_rr_node_switch_indices(INP map<int,int> *switch_fanin);
 
-static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switches, INOUTP map<int,int> *switch_fanin);
+static void load_rr_switch_inf(INP int num_arch_switches, INOUTP map<int,int> *switch_fanin);
 
 static int alloc_rr_switch_inf(INP int num_arch_switches, OUTP map<int,int> *switch_fanin);
 
@@ -224,7 +225,8 @@ void build_rr_graph(
 		INP bool trim_empty_channels,
 		INP bool trim_obs_channels,
 		INP t_direct_inf *directs, INP int num_directs, 
-		INP bool ignore_Fc_0, OUTP int *wire_to_rr_ipin_switch,
+		INP bool ignore_Fc_0, INP const char *dump_rr_structs_file,
+		OUTP int *wire_to_rr_ipin_switch,
 		OUTP int *num_rr_switches,
 		OUTP int *Warnings) {
 
@@ -499,6 +501,11 @@ void build_rr_graph(
 
 	check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, Fc_in);
 
+	/* dump out rr structs if requested */
+	if (dump_rr_structs_file){
+		dump_rr_structs(dump_rr_structs_file);
+	}
+
 	/* Free all temp structs */
 	if (seg_details) {
 		free_seg_details(seg_details, max_chan_width);
@@ -595,7 +602,7 @@ static int alloc_and_load_rr_switch_inf(INP int num_arch_switches, INP int wire_
 
 	/* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf 
 	   array each version of its fanin has been mapped to */
-	load_rr_switch_inf(num_arch_switches, num_rr_switches, switch_fanin);
+	load_rr_switch_inf(num_arch_switches, switch_fanin);
 
 	/* next, walk through rr nodes again and remap their switch indices to rr_switch_inf */
 	remap_rr_node_switch_indices(switch_fanin);
@@ -667,7 +674,7 @@ void print_map(map<int, int> dbmap) {
 
 /* load the global g_rr_switch_inf variable. also keep track of, for each arch switch, what 
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
-static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switches, INOUTP map<int,int> *switch_fanin){
+static void load_rr_switch_inf(INP int num_arch_switches, INOUTP map<int,int> *switch_fanin){
 	int i_rr_switch = 0;
     g_switch_fanin_remap = new map<int, int>[num_arch_switches];
 	for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++){
@@ -682,16 +689,16 @@ static void load_rr_switch_inf(INP int num_arch_switches, INP int num_rr_switche
 
 			/* figure out, by looking at the arch switch's Tdel map, what the delay of the new
 			   rr switch should be */
-			map<int,double> *Tdel_map = &g_arch_switch_inf[i_arch_switch].Tdel_map;
+			map<int,double> &Tdel_map = g_arch_switch_inf[i_arch_switch].Tdel_map;
 			double rr_switch_Tdel;
-			if (Tdel_map->count(UNDEFINED) == 1){
+			if (Tdel_map.count(UNDEFINED) == 1){
 				/* the switch specified a single constant delay. i.e., it did not
 				   specify fanin/delay pairs */
-				rr_switch_Tdel = (*Tdel_map)[UNDEFINED];
+				rr_switch_Tdel = Tdel_map[UNDEFINED];
 			} else {
 				/* interpolate/extrapolate based on the available (fanin,delay) pairs in the 
 				   Tdel_map to get the rr_switch_Tdel at 'fanin' */
-				rr_switch_Tdel = linear_interpolate_or_extrapolate(Tdel_map, fanin);
+				rr_switch_Tdel = linear_interpolate_or_extrapolate(&Tdel_map, fanin);
 			}
 
 			/* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */

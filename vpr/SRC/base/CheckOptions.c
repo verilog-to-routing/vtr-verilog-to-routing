@@ -67,6 +67,13 @@ void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
 		}
 	}
 
+	/* If a dump of routing resource structs was requested then routing should have been specified at a
+	   fixed channel width */
+	if (Options.Count[OT_DUMP_RR_STRUCTS_FILE] && !Options.Count[OT_ROUTE_CHAN_WIDTH]){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"-route_chan_width option must be specified if dumping rr structs is requested (-dump_rr_structs_file option)\n");
+	}
+
 	Yes = OT_BASE_UNKNOWN;
 	if (Options.Count[OT_SEED] > 0) {
 		Yes = OT_SEED;

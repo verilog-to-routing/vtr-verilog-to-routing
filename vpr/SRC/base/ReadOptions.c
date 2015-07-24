@@ -342,6 +342,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->SDCFile);
 	case OT_SETTINGS_FILE:
 		return ReadString(Args, &Options->SettingsFile);
+	case OT_DUMP_RR_STRUCTS_FILE:
+		return ReadString(Args, &Options->dump_rr_structs_file);
 		/* General Options */
 	case OT_NODISP:
 	case OT_CONGESTION_ANALYSIS:
