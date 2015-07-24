@@ -1,5 +1,5 @@
 /************ Defines and types shared by all route files ********************/
-
+#include <vector>
 struct s_heap {
 	int index;
 	float cost;
@@ -113,3 +113,5 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 		t_ivec ** clb_opins_used_locally);
 
 void free_chunk_memory_trace(void);
+
+int predict_success_route_iter(int itry, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts);

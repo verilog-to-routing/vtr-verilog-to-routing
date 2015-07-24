@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "vpr_utils.h"
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -22,11 +23,6 @@
 
 using namespace std;
 
-// Disable the routing predictor for circuits with less that this number of nets.
-// This was experimentally determined, by Matthew Walker, to be the most useful
-// metric, and this is also somewhat larger than largest circuit observed to have
-// inaccurate predictions, thought this is still only affects quite small circuits.
-#define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
 
 
 /******************** Subroutines local to route_timing.c ********************/
@@ -68,6 +64,14 @@ struct more_sinks_than {
 	}
 };
 
+
+
+static void congestion_analysis();
+static void time_on_fanout_analysis();
+constexpr int fanout_per_bin = 5;
+static vector<float> time_on_fanout;
+static vector<int> itry_on_fanout;
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
@@ -76,6 +80,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
+
+	const int max_fanout {get_max_pins_per_net()};
+	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
+	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -101,7 +109,12 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
-	auto historical_overuse_ratio = vector<double>(router_opts.max_router_iterations + 1);
+	vector<double> historical_overuse_ratio; 
+	historical_overuse_ratio.reserve(router_opts.max_router_iterations + 1);
+
+	// for unroutable large circuits, the time per iteration seems to increase dramatically
+	vector<float> time_per_iteration;
+	time_per_iteration.reserve(router_opts.max_router_iterations + 1);
 	
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 		if (g_clbs_nlist.net[inet].is_global == false) {
@@ -144,6 +157,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				net_delay,
 				slacks
 			);
+
 			if (!is_routable) {
 				return (false);
 			}
@@ -151,6 +165,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		clock_t end = clock();
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
+		time_per_iteration.push_back(time);
 
 		if (itry == 1) {
 			/* Early exit code for cases where it is obvious that a successful route will not be found 
@@ -181,6 +196,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
 				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
+
+				time_on_fanout_analysis();
 				return false;
 			}
 			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
@@ -202,48 +219,41 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		/* Verification to check the ratio of overused nodes, depending on the configuration
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
-		historical_overuse_ratio[itry] = overused_ratio;
+		historical_overuse_ratio.push_back(overused_ratio);
 
 		/* Determine when routing is impossible hence should be aborted */
 		if (itry > 5){
 			
-			int routing_predictor_running_average = MAX_SHORT;
-			if(historical_overuse_ratio[1] > 0 && historical_overuse_ratio[itry] > 0) {
-				routing_predictor_running_average = ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE + (historical_overuse_ratio[1] / historical_overuse_ratio[itry]) / 4;
-				if (router_opts.routing_failure_predictor == SAFE) {
-					routing_predictor_running_average *= 1.5;
-				}
+			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
+			if (expected_success_route_iter == UNDEFINED) {
+				time_on_fanout_analysis();
+				return false;
 			}
-			if (itry > routing_predictor_running_average
-			 && router_opts.routing_failure_predictor != OFF
-			 && num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) {
 
-				/* linear extrapolation to predict what routing iteration will succeed */
-				int expected_successful_route_iter;
-				int ref_iter;
-				double removal_average = 0;
+			if (itry > 15) {
+				// compare their slopes over the last 5 iterations
+				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
+				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
+				if (router_opts.congestion_analysis)
+					vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
+				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
+				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
+					&& time_per_iteration_slope > 1) {	// filter out noise
+					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
+									 while congestion grows at %f %/iteration, unlikely to finish.\n",
+						time_per_iteration_slope, congestion_per_iteration_slope);
 
-				ref_iter = itry - routing_predictor_running_average;
-				removal_average = (historical_overuse_ratio[ref_iter] -
-								  historical_overuse_ratio[itry]) / routing_predictor_running_average;
-				if (removal_average <= 0) {
-					/* Negative removal sometimes happens from noise when circuit is very close to routing, therefore sample a larger space */
-					ref_iter = min(1, itry - routing_predictor_running_average - 5);
-					removal_average = (historical_overuse_ratio[ref_iter] -
-						historical_overuse_ratio[itry]) / routing_predictor_running_average;
-				}
-
-				expected_successful_route_iter = itry + historical_overuse_ratio[itry] / removal_average;
-				if (expected_successful_route_iter > 1.25 * router_opts.max_router_iterations || removal_average <= 0) {
-					vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_successful_route_iter);
-					return (false);
+					time_on_fanout_analysis();
+					return false;
 				}
 			}
 		}
 
+        //print_usage_by_wire_length();
+
 
 		if (success) {
-
+   
 			if (timing_analysis_enabled) {
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
@@ -259,6 +269,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
+			time_on_fanout_analysis();
 			return (true);
 		}
 
@@ -304,11 +315,83 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
+
+        if (router_opts.congestion_analysis) {
+        	congestion_analysis();
+        }
 		fflush(stdout);
 	}
-
 	vpr_printf_info("Routing failed.\n");
+	time_on_fanout_analysis();
 	return (false);
+}
+
+
+void time_on_fanout_analysis() {
+	// using the global time_on_fanout and itry_on_fanout
+	vpr_printf_info("fanout low           time (s)        attemps\n");
+	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
+		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
+			vpr_printf_info("%4d           %14.3f   %12d\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin]);
+		}
+	}
+}
+
+// at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
+// efficient bit array for checking against congested type
+struct Congested_node_types {
+	uint32_t mask;
+	Congested_node_types() : mask{0} {}
+	void set_congested(int rr_node_type) {mask |= (1 << rr_node_type);}
+	void clear_congested(int rr_node_type) {mask &= ~(1 << rr_node_type);}
+	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
+	bool empty() const {return mask == 0;}
+};
+void congestion_analysis() {
+	static const std::vector<const char*> node_typename {
+		"SOURCE",
+		"SINK",
+		"IPIN",
+		"OPIN",
+		"CHANX",
+		"CHANY",
+		"ICE"
+	};
+	// each type indexes into array which holds the congestion for that type
+	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
+	// print out specific node information if congestion for type is low enough
+
+	int total_congestion = 0;
+	for (int inode = 0; inode < num_rr_nodes; ++inode) {
+		const t_rr_node& node = rr_node[inode];
+		int congestion = node.get_occ() - node.get_capacity();
+
+		if (congestion > 0) {
+			total_congestion += congestion;
+			congestion_per_type[node.type] += congestion;
+		}
+	}
+
+	constexpr int specific_node_print_threshold = 5;
+	Congested_node_types congested;
+	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
+		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
+		vpr_printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
+		// nodes of that type need specific printing
+		if (congestion_per_type[type] > 0 &&
+			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
+	}
+
+	// specific print out each congested node
+	if (!congested.empty()) {
+		vpr_printf_info("Specific congested nodes\nxlow ylow   type\n");
+		for (int inode = 0; inode < num_rr_nodes; ++inode) {
+			const t_rr_node& node = rr_node[inode];
+			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
+				vpr_printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
+			}
+		}
+	}
 }
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
@@ -325,12 +408,19 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 	} else if (should_route_net(inet) == false) {
 		is_routed = true;
 	} else{
+		// track time spent vs fanout
+		clock_t net_begin = clock();
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
 				router_opts.astar_fac, router_opts.bend_cost, 
 				pin_criticality, sink_order, 
 				rt_node_of_sink, net_delay[inet], slacks);
+
+		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
+		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
+		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
+		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -440,10 +530,10 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	unsigned int ipin;
 	int num_sinks, itarget, target_pin, target_node, inode;
-	float target_criticality, old_tcost, new_tcost, largest_criticality,
+	float target_criticality, old_total_cost, new_total_cost, largest_criticality,
 		old_back_cost, new_back_cost;
 	t_rt_node *rt_root;
-	struct s_heap *current;
+	
 	struct s_trace *new_route_start_tptr;
 	int highfanout_rlim;
 
@@ -496,6 +586,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	rt_root = init_route_tree_to_source(inet);
 
+	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
 		target_pin = sink_order[itarget];
 		target_node = net_rr_terminals[inet][target_pin];
@@ -511,12 +602,14 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			rt_root->re_expand = false;
 		}
 
+		// reexplore route tree from root to add any new nodes
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
 
-		current = get_heap_head();
+		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
+		struct s_heap* cheapest = get_heap_head();
 
-		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+		if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
 			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 					   inet, g_clbs_nlist.net[inet].name, itarget);
 			reset_path_costs();
@@ -524,18 +617,18 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			return (false);
 		}
 
-		inode = current->index;
+		inode = cheapest->index;
 
 		while (inode != target_node) {
-			old_tcost = rr_node_route_inf[inode].path_cost;
-			new_tcost = current->cost;
+			old_total_cost = rr_node_route_inf[inode].path_cost;
+			new_total_cost = cheapest->cost;
 
-			if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 				old_back_cost = HUGE_POSITIVE_FLOAT;
 			else
 				old_back_cost = rr_node_route_inf[inode].backward_path_cost;
 
-			new_back_cost = current->backward_path_cost;
+			new_back_cost = cheapest->backward_path_cost;
 
 			/* I only re-expand a node if both the "known" backward cost is lower  *
 			 * in the new expansion (this is necessary to prevent loops from       *
@@ -545,24 +638,24 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			 * than one with higher cost.  Test whether or not I should disallow   *
 			 * re-expansion based on a higher total cost.                          */
 
-			if (old_tcost > new_tcost && old_back_cost > new_back_cost) {
-				rr_node_route_inf[inode].prev_node = current->u.prev_node;
-				rr_node_route_inf[inode].prev_edge = current->prev_edge;
-				rr_node_route_inf[inode].path_cost = new_tcost;
+			if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
+				rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
+				rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
+				rr_node_route_inf[inode].path_cost = new_total_cost;
 				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
 
-				if (old_tcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+				if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
-				timing_driven_expand_neighbours(current, inet, itry, bend_cost,
+				timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
 						target_criticality, target_node, astar_fac,
 						highfanout_rlim);
 			}
 
-			free_heap_data(current);
-			current = get_heap_head();
+			free_heap_data(cheapest);
+			cheapest = get_heap_head();
 
-			if (current == NULL) { /* Impossible routing.  No path for net. */
+			if (cheapest == NULL) { /* Impossible routing.  No path for net. */
 				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 						 inet, g_clbs_nlist.net[inet].name, itarget);
 				reset_path_costs();
@@ -570,7 +663,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 				return (false);
 			}
 
-			inode = current->index;
+			inode = cheapest->index;
 		}
 
 		/* NB:  In the code below I keep two records of the partial routing:  the   *
@@ -582,9 +675,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		 * point.                                                                   */
 
 		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-		new_route_start_tptr = update_traceback(current, inet);
-		rt_node_of_sink[target_pin] = update_route_tree(current);
-		free_heap_data(current);
+		new_route_start_tptr = update_traceback(cheapest, inet);
+		rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+		free_heap_data(cheapest);
 		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
 
 		empty_heap();
@@ -659,12 +752,6 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
 
-		if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
-				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
-				|| rr_node[to_node].get_yhigh() < route_bb[inet].ymin
-				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
-			continue; /* Node is outside (expanded) bounding box. */
-
 		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
@@ -673,6 +760,12 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				continue; /* Node is outside high fanout bin. */
 			}
 		}
+		else if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
+				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
+				|| rr_node[to_node].get_yhigh() < route_bb[inet].ymin
+				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
+			continue; /* Node is outside (expanded) bounding box. */
+
 
 		/* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
 		 * the issue of how to cost them properly so they don't get expanded before *
@@ -1027,6 +1120,11 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		/* This algorithm only applies to high fanout nets */
 		return 1;
 	}
+	if (rt_node == NULL || rt_node->u.child_list == NULL) {
+		/* If unknown traceback, set radius of bin to be size of chip */
+		rlim = max(nx + 2, ny + 2);
+		return rlim;
+	}
 
 	area = (route_bb[inet].xmax - route_bb[inet].xmin)
 			* (route_bb[inet].ymax - route_bb[inet].ymin);
@@ -1035,11 +1133,6 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 
 	rlim = (int)(ceil(sqrt((float) area / (float) g_clbs_nlist.net[inet].num_sinks())));
-	if (rt_node == NULL || rt_node->u.child_list == NULL) {
-		/* If unknown traceback, set radius of bin to be size of chip */
-		rlim = max(nx + 2, ny + 2);
-		return rlim;
-	}
 
 	success = false;
 	/* determine quickly a feasible bin radius to route sink for high fanout nets 

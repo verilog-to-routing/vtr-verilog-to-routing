@@ -18,6 +18,7 @@ struct s_options {
 	char *CmosTechFile;
 	char *out_file_prefix;
 	char *SDCFile;
+	char *dump_rr_structs_file;
 
 	/* General options */
 	int GraphPause;

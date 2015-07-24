@@ -119,6 +119,10 @@ using namespace std;
 
 
 /************ Defines ************/
+/* if defined, switch block patterns are loaded by first computing a row of switch blocks and then
+   stamping out the row throughout the FPGA */ 
+//#define FAST_SB_COMPUTATION
+
 /* REF_X/REF_Y set a reference coordinate; some look-up structures in this file are computed relative to 
    this reference */
 #define REF_X 1			//constexpr int REX_X = 1;	<-- basically C++11 defines; more type-safe	
@@ -151,14 +155,14 @@ typedef map< string, Track_Info > t_track_type_sizes;
 
 
 /************ Function Declarations ************/
-
-/* over all connected wire types (i,j), compute the maximum least common multiple of their track lengths, 
-   ie max(LCM(L_i, L_J)) */
-static int get_max_lcm(INP vector<t_switchblock_inf> *switchblocks, INP t_track_type_sizes *track_type_sizes);
-
 /* Counts the number of tracks in each track type in the specified channel */
 static void count_track_type_sizes(INP t_seg_details *channel, INP int nodes_per_chan, 
 			INOUTP t_track_type_sizes *track_type_sizes);
+
+#ifdef FAST_SB_COMPUTATION
+/* over all connected wire types (i,j), compute the maximum least common multiple of their track lengths, 
+   ie max(LCM(L_i, L_J)) */
+static int get_max_lcm(INP vector<t_switchblock_inf> *switchblocks, INP t_track_type_sizes *track_type_sizes);
 
 /* compute all the switchblocks around the perimeter of the FPGA for the given switchblock and wireconn */
 static void compute_perimeter_switchblocks(INP t_chan_details *chan_details_x, INP t_chan_details *chan_details_y,
@@ -180,6 +184,13 @@ static void stampout_switchblocks_from_row( INP int sb_row_size,
 		INP int nx, INP int ny, INP t_track_type_sizes *track_type_sizes, 
 		INP e_directionality directionality, INP t_sb_connection_map *sb_row, 
 		INOUTP t_sb_connection_map *sb_conns );
+
+/* compute greatest common denominator of x and y */
+static int gcd(INP int x, INP int y);
+
+/* compute least common multiple of x and y */
+static int lcm(INP int x, INP int y);
+#endif	//FAST_SB_COMPUTATION
 
 /* Compute the track(s) that the track at (x, y, from_side, to_side, from_track) should connect to.
    sb_conns is updated with the result */
@@ -240,12 +251,6 @@ static bool is_core(INP int nx, INP int ny, INP int x, INP int y);
 /* adjusts a negative destination track calculated from a permutation formula */
 static int adjust_formula_result(INP int dest_track, INP int dest_W);
 
-/* compute greatest common denominator of x and y */
-static int gcd(INP int x, INP int y);
-
-/* compute least common multiple of x and y */
-static int lcm(INP int x, INP int y);
-
 
 
 /************ Function Definitions ************/
@@ -269,7 +274,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( INP t_chan_detail
 	t_track_type_sizes track_type_sizes;
 	count_track_type_sizes(chan_details_x[0][0], channel_width, &track_type_sizes);
 	
-#if 1
+#ifdef FAST_SB_COMPUTATION
 	/******** fast switch block computation method; computes a row of switchblocks then stamps it out everywhere ********/
 	/* figure out max(lcm(L_i, L_j)) for all wire lengths belonging to wire types i & j */
 	int max_lcm = get_max_lcm(&switchblocks, &track_type_sizes);
@@ -344,7 +349,7 @@ void free_switchblock_permutations(INOUTP t_sb_connection_map *sb_conns){
 	return;
 }
 
-
+#ifdef FAST_SB_COMPUTATION
 /* over all connected wire types (i,j), compute the maximum least common multiple of their track lengths, 
    ie max(LCM(L_i, L_J)) */
 static int get_max_lcm( INP vector<t_switchblock_inf> *switchblocks, INP t_track_type_sizes *track_type_sizes){
@@ -412,73 +417,6 @@ static void compute_switchblock_row(INP int sb_row_size, INP t_chan_details *cha
 }
 
 
-/* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(INP int nx, INP int ny, INP int x, INP int y, INP e_sb_location location){
-	bool sb_not_here = true;
-
-	switch( location ){
-		case E_EVERYWHERE:
-			sb_not_here = false;
-			break;
-		case E_PERIMETER:
-			if (is_perimeter(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		case E_CORNER:
-			if (is_corner(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		case E_CORE:
-			if (is_core(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		case E_FRINGE:
-			if (is_perimeter(nx, ny, x, y) && !is_corner(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		default:
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "sb_not_here: unrecognized location enum: %d\n", location);
-			break;
-	}
-	return sb_not_here;
-}
-
-
-/* checks if the specified coordinates represent a corner of the FPGA */
-static bool is_corner(INP int nx, INP int ny, INP int x, INP int y){
-	bool is_corner = false;
-	if ((x == 0 && y == 0) ||
-	    (x == 0 && y == ny) ||
-	    (x == nx && y == 0) ||
-	    (x == nx && y == ny)){
-		is_corner = true;
-	}
-	return is_corner;
-}
-
-
-/* checks if the specified coordinates correspond to one of the perimeter switchblocks */
-static bool is_perimeter(INP int nx, INP int ny, INP int x, INP int y){
-	bool is_perimeter = false;
-	if (x == 0 || x == nx ||
-	    y == 0 || y == ny){
-		is_perimeter = true;
-	}
-	return is_perimeter;
-}
-
-
-/* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
-static bool is_core(INP int nx, INP int ny, INP int x, INP int y){
-	bool is_core = !is_perimeter(nx, ny, x, y);
-	return is_core;
-}
-
-	
 /* stamp out a row of horizontal switchblocks throughout the FPGA starting at coordinates (ref_x, ref_y) and
    continuing on for sb_row_size */
 static void stampout_switchblocks_from_row( INP int sb_row_size,
@@ -596,6 +534,93 @@ static void compute_perimeter_switchblocks(INP t_chan_details *chan_details_x, I
 }
 
 
+/* compute greatest common denominator of x and y */
+static int gcd(INP int x, INP int y){
+	int result;
+	if (y == 0){
+		result = x;
+	} else {
+		result = gcd(y, x % y);
+	}
+	return result;
+}
+
+
+/* compute least common multiple of x and y */
+static int lcm(INP int x, INP int y){
+	int result;
+	result = x / gcd(x,y) * y;
+	return result;
+}
+#endif	//FAST_SB_COMPUTATION
+
+/* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
+static bool sb_not_here(INP int nx, INP int ny, INP int x, INP int y, INP e_sb_location location){
+	bool sb_not_here = true;
+
+	switch( location ){
+		case E_EVERYWHERE:
+			sb_not_here = false;
+			break;
+		case E_PERIMETER:
+			if (is_perimeter(nx, ny, x, y)){
+				sb_not_here = false;
+			}
+			break;
+		case E_CORNER:
+			if (is_corner(nx, ny, x, y)){
+				sb_not_here = false;
+			}
+			break;
+		case E_CORE:
+			if (is_core(nx, ny, x, y)){
+				sb_not_here = false;
+			}
+			break;
+		case E_FRINGE:
+			if (is_perimeter(nx, ny, x, y) && !is_corner(nx, ny, x, y)){
+				sb_not_here = false;
+			}
+			break;
+		default:
+			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "sb_not_here: unrecognized location enum: %d\n", location);
+			break;
+	}
+	return sb_not_here;
+}
+
+
+/* checks if the specified coordinates represent a corner of the FPGA */
+static bool is_corner(INP int nx, INP int ny, INP int x, INP int y){
+	bool is_corner = false;
+	if ((x == 0 && y == 0) ||
+	    (x == 0 && y == ny) ||
+	    (x == nx && y == 0) ||
+	    (x == nx && y == ny)){
+		is_corner = true;
+	}
+	return is_corner;
+}
+
+
+/* checks if the specified coordinates correspond to one of the perimeter switchblocks */
+static bool is_perimeter(INP int nx, INP int ny, INP int x, INP int y){
+	bool is_perimeter = false;
+	if (x == 0 || x == nx ||
+	    y == 0 || y == ny){
+		is_perimeter = true;
+	}
+	return is_perimeter;
+}
+
+
+/* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
+static bool is_core(INP int nx, INP int ny, INP int x, INP int y){
+	bool is_core = !is_perimeter(nx, ny, x, y);
+	return is_core;
+}
+
+	
 /* Counts the number of tracks in each track type in the specified channel */
 static void count_track_type_sizes(INP t_seg_details *channel, INP int nodes_per_chan, 
 			INOUTP t_track_type_sizes *track_type_sizes){
@@ -1129,26 +1154,6 @@ static int adjust_formula_result(INP int dest_track, INP int dest_W){
 		result = dest_track + mult*dest_W;
 	}
 	result = (result + dest_W) % dest_W;
-	return result;
-}
-
-
-/* compute greatest common denominator of x and y */
-static int gcd(INP int x, INP int y){
-	int result;
-	if (y == 0){
-		result = x;
-	} else {
-		result = gcd(y, x % y);
-	}
-	return result;
-}
-
-
-/* compute least common multiple of x and y */
-static int lcm(INP int x, INP int y){
-	int result;
-	result = x / gcd(x,y) * y;
 	return result;
 }
 

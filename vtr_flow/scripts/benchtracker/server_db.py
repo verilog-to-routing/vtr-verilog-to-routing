@@ -23,6 +23,23 @@ except ImportError:
 
 
 app = Flask(__name__)
+app.debug=False
+if not app.debug:
+    print("adding logger")
+    import logging
+    from logging import FileHandler
+    from logging import Formatter
+    data_dir = os.path.expanduser('~/benchtracker_data/')
+    if not os.path.isdir(data_dir):
+        os.makedirs(data_dir)
+    file_handler = FileHandler(os.path.join(data_dir, 'log.txt'))
+    file_handler.setFormatter(Formatter(
+        '%(asctime)s %(levelname)s: %(message)s '
+        '[in %(pathname)s:%(lineno)d'
+    ))
+    file_handler.setLevel(logging.WARNING)
+    app.logger.addHandler(file_handler)
+
 cors = CORS(app)
 port = 5000
 database = None
@@ -275,3 +292,4 @@ def parse_data():
 if __name__ == '__main__':
     parse_args()
     app.run(host='0.0.0.0', port=port)
+

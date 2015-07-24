@@ -22,7 +22,7 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 #############################################################################################
 
 # build information to expose to program
-BUILD_VERSION := `svnversion`
+BUILD_VERSION := `git describe --always --long`
 BUILD_DATE := `date -R`
 
 CC = $(COMPILER)
@@ -81,6 +81,9 @@ EXE = vpr
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
+
+profile: FLAGS += $(DEBUG_FLAGS)
+profile: $(EXE)
 
 # notify is an order-only prerequisite - note the "|"
 $(EXE): $(OBJ) Makefile libvpr.a | notify

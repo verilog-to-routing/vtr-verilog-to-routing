@@ -22,4 +22,4 @@ parse_file=vpr_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt 
 
-#script_params=-track_memory_usage
+script_params=-track_memory_usage

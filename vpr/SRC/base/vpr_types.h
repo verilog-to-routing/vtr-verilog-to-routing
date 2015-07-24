@@ -806,12 +806,21 @@ struct s_router_opts {
  *           to track i in other channels.  See Steve Wilton, Phd Thesis,   *
  *           University of Toronto, 1996.  The UNIVERSAL switch block is    *
  *           from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.       *
+ *           A CUSTOM switch block has also been added which allows a user  *
+ *           to describe custom permutation functions and connection        *
+ *           patterns. See comment at top of SRC/route/build_switchblocks.c *
+ * switchblocks: A vector of custom switch block descriptions that is       *
+ *           used with the CUSTOM switch block type. See comment at top of  *
+ *           SRC/route/build_switchblocks.c                                 *
  * num_segment:  Number of distinct segment types in the FPGA.              *
  * delayless_switch:  Index of a zero delay switch (used to connect things  *
  *                    that should have no delay).                           *
  * R_minW_nmos:  Resistance (in Ohms) of a minimum width nmos transistor.   *
  *               Used only in the FPGA area model.                          *
- * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   */
+ * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   *
+ * dump_rr_structs_file: routing resource structures will be dumped in      *
+ *                       build_rr_graph() to a file specified by this       *
+ *                       variable                                           */
 
 typedef struct s_det_routing_arch t_det_routing_arch;
 struct s_det_routing_arch {
@@ -827,6 +836,8 @@ struct s_det_routing_arch {
 	int wire_to_rr_ipin_switch;
 	float R_minW_nmos;
 	float R_minW_pmos;
+
+	char *dump_rr_structs_file;
 };
 
 /* legacy routing drivers by Andy Ye (remove or integrate in future) */
@@ -999,24 +1010,24 @@ typedef struct s_vpr_setup {
 
 
 /* Holds the coordinates of a switch block source connection. Used to index into a 
-   map which specifies which destination track segments this source track should
+   map which specifies which destination track segments this source track should		//TODO: what data structure does this index to?
    connect to */
 class Switchblock_Lookup{
 public:
-	int x_coord;		/* x coordinate of switchblock connection */
+	int x_coord;		/* x coordinate of switchblock connection */	//TODO: redundant comment?? add range
 	int y_coord;		/* y coordinate of switchblock connection */
 	e_side from_side;	/* source side of switchblock connection */
 	e_side to_side;		/* destination side of switchblock connection */
-	int from_track;		/* index of the source track segment within the corresponding channel segment */
+	int from_track;		/* index of the source track segment within the corresponding channel segment (0..W-1) */
 
 	/* Empty constructor initializes everything to 0 */
 	Switchblock_Lookup(){
-		x_coord = y_coord = from_track = -1;
+		x_coord = y_coord = from_track = -1;		//TODO: use set function
 	}
 
 	/* Constructor for initializing member variables */
 	Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to, int set_track){
-		this->set_coords(set_x, set_y, set_from, set_to, set_track);
+		this->set_coords(set_x, set_y, set_from, set_to, set_track);		//TODO: use set function
 	}
 
 	/* Function for setting the segment coordinates */
@@ -1056,7 +1067,7 @@ struct s_hash_Switchblock_Lookup{
 /* contains the index of the destination track segment within a channel
    and the index of the switch used to connect to it */
 typedef struct s_to_track_inf{
-	int to_track;
+	short to_track;
 	short switch_ind;	
 } t_to_track_inf;
 

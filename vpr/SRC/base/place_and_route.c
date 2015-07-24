@@ -513,6 +513,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
 			directs, num_directs, false, 
+			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warnings);

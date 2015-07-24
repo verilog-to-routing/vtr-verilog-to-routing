@@ -101,6 +101,8 @@ my $gen_postsynthesis_netlist 	= "off";
 my $seed					= 1;
 my $min_hard_mult_size		= 3;
 my $min_hard_adder_size		= 1;
+my $congestion_analysis		= "";
+my $switch_usage_analysis   = "";
 
 my $track_memory_usage      = 0;
 my $memory_tracker          = "/usr/bin/time";
@@ -151,6 +153,12 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-no_timing" ) {
 		$timing_driven = "off";
 	}
+	elsif ( $token eq "-congestion_analysis") {
+		$congestion_analysis = $token;
+	}
+    elsif ( $token eq "-switch_stats") {
+        $switch_usage_analysis = $token;
+    }
 	elsif ( $token eq "-vpr_route_chan_width" ) {
 		$min_chan_width = shift(@ARGV);
 	}
@@ -511,7 +519,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--routing_failure_predictor", "$routing_failure_predictor",
 			"--sdc_file", 				  "$sdc_file_path",
 			"--seed",			 		  "$seed",
-			"--nodisp"
+			"$congestion_analysis",
+            "$switch_usage_analysis",
+            "--nodisp"
 		);
     
 		if ( $timing_driven eq "on" ) {
@@ -556,7 +566,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
 					"--nodisp",              @vpr_power_args,
 					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
-					"--sdc_file",			 "$sdc_file_path"
+					"--sdc_file",			 "$sdc_file_path",
+					"$congestion_analysis",
+                    "$switch_usage_analysis"
 				);
 			}
 		}
@@ -584,6 +596,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 			"--sdc_file",				  "$sdc_file_path",
+			"$congestion_analysis",
+            "$switch_usage_analysis",
             $specific_vpr_stage
 		);
 	}

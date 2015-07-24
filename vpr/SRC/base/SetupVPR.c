@@ -227,6 +227,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 			*RouterOpts, Timing);
 	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile,
 			PackerOpts);
+	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
 
 	/* init global variables */
 	out_file_prefix = Options->out_file_prefix;

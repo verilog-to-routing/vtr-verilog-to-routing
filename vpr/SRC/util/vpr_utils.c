@@ -12,7 +12,7 @@ using namespace std;
 #include "place_macro.h"
 #include "string.h"
 #include "pack_types.h"
-
+#include <algorithm>
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -1323,3 +1323,156 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	*direct_type_from_blk_pin = temp_direct_type_from_blk_pin;
 }
 
+/*
+ * this function is only called by print_switch_usage()
+ * at the point of this function call, every switch type / fanin combination 
+ * has a unique index.
+ * but for switch usage analysis, we need to convert the index back to the
+ * type / fanin combination
+ */
+static int convert_switch_index(int *switch_index, int *fanin) {
+    if (*switch_index == -1)
+        return 1;
+    for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
+        map<int, int>::iterator itr;
+        for (itr = g_switch_fanin_remap[iswitch].begin(); itr != g_switch_fanin_remap[iswitch].end(); itr++) {
+            if (itr->second == *switch_index) {
+                *switch_index = iswitch;
+                *fanin = itr->first;
+                return 0;
+            } 
+        }
+    }
+    *switch_index = -1;
+    *fanin = -1;
+    printf("\n\nerror converting switch index ! \n\n");
+    return -1;
+}
+
+/*
+ * Hanson Zeng:
+ * print out number of usage for every switch (type / fanin combination)
+ * (referring to rr_graph.c: alloc_rr_switch_inf())
+ * NOTE: to speed up this function, for XXX uni-directional arch XXX, the most efficient 
+ * way is to change the rr_node data structure (let it store the inward switch index,
+ * instead of outward switch index list): --> instead of using a nested loop of 
+ *     for (inode in rr_nodes) {
+ *         for (iedges in edges) {
+ *             get switch type;
+ *             get fanin;
+ *         }
+ *     }
+ * as is done in rr_graph.c: alloc_rr_switch_inf()
+ * we can just use a single loop
+ *     for (inode in rr_nodes) {
+ *         get switch type of inode;
+ *         get fanin of inode;
+ *     }
+ * now since rr_node does not contain the switch type inward to the current node,
+ * we have to use an extra loop to setup the information of inward switch first.
+ */ 
+void print_switch_usage() {
+    map<int, int> *switch_fanin_count;
+    map<int, float> *switch_fanin_delay;
+    switch_fanin_count = new map<int, int>[g_num_arch_switches];
+    switch_fanin_delay = new map<int, float>[g_num_arch_switches];
+    // a node can have multiple inward switches, so
+    // map key: switch index; map value: count (fanin)
+    map<int, int> *inward_switch_inf = new map<int, int>[num_rr_nodes];
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        t_rr_node from_node = rr_node[inode];
+        int num_edges = from_node.get_num_edges();
+        for (int iedge = 0; iedge < num_edges; iedge++) {
+            int switch_index = from_node.switches[iedge];
+            int to_node_index = from_node.edges[iedge];
+            // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
+            //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
+            //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
+            if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
+                inward_switch_inf[to_node_index][switch_index] = 0;
+            //assert(from_node.type != OPIN);
+            inward_switch_inf[to_node_index][switch_index] ++;
+        }
+    }
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        map<int, int>::iterator itr;
+        for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
+            int fanin = -1;
+            int switch_index = itr->first;
+            float Tdel = g_rr_switch_inf[switch_index].Tdel;
+            int status = convert_switch_index(&switch_index, &fanin);
+            if (status == -1)
+                return;
+            if (fanin == -1)
+                fanin = itr->second;
+            if (switch_fanin_count[switch_index].count(fanin) == 0) 
+                switch_fanin_count[switch_index][fanin] = 0;
+            switch_fanin_count[switch_index][fanin] ++;
+            switch_fanin_delay[switch_index][fanin] = Tdel;
+        }
+    }
+    printf("\n=============== switch usage stats ===============\n");
+    for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
+        char *s_name = g_arch_switch_inf[iswitch].name;
+        float s_area = g_arch_switch_inf[iswitch].mux_trans_size;
+        printf(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
+        int num_fanin = (int)(switch_fanin_count[iswitch].size());
+        // 4294967295: unsigned version of -1 (invalid size)
+        if (num_fanin == 4294967295)
+            num_fanin = -1;
+        
+        map<int, int>::iterator itr;
+        for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
+            printf("\t\tnumber of fanin: %d", itr->first);
+            printf("\t\tnumber of wires driven by this switch: %d", itr->second);
+            printf("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
+        }
+    }
+    printf("\n==================================================\n\n");
+    delete[] switch_fanin_count;
+    delete[] switch_fanin_delay;
+    delete[] inward_switch_inf;
+}
+
+/*
+ * Motivation:
+ *     to see what portion of long wires are utilized
+ *     potentially a good measure for router look ahead quality
+ */
+/*
+void print_usage_by_wire_length() {
+    map<int, int> used_wire_count;
+    map<int, int> total_wire_count;
+    for (int inode = 0; inode < num_rr_nodes; inode++) {
+        if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
+            //int length = abs(rr_node[inode].get_xhigh() + rr_node[inode].get_yhigh() 
+            //             - rr_node[inode].get_xlow() - rr_node[inode].get_ylow());
+            int length = rr_node[inode].get_length();
+            if (rr_node[inode].get_occ() > 0) {
+                if (used_wire_count.count(length) == 0)
+                    used_wire_count[length] = 0;
+                used_wire_count[length] ++;
+            }
+            if (total_wire_count.count(length) == 0)
+                total_wire_count[length] = 0;
+            total_wire_count[length] ++;
+        }
+    }
+    int total_wires = 0;
+    map<int, int>::iterator itr;
+    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
+        total_wires += itr->second;
+    }
+    printf("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
+    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) 
+        printf("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
+    for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
+        float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
+        float ratio_to_all_type_total = ((float)itr->second) / total_wires;
+        printf("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
+    }
+    printf("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    used_wire_count.clear();
+    total_wire_count.clear();
+}
+*/
