@@ -2550,16 +2550,20 @@ static int *label_wire_muxes_for_balance(
 	/* Generate the normal labels list as the baseline. */
     // not all wires can be connected to OPIN at starting point (depending on <cb> pattern)
     // that's what "clipped" mean.
+    /*
     int num_labels_clipped;  // only used to find max and min (in fact, max won't be affected whether you choose num_labels_clipped or num_labels)
-    label_wire_muxes(chan_num, seg_num, seg_details, max_len,
+    pre_labels = label_wire_muxes(chan_num, seg_num, seg_details, max_len,
                      direction, max_chan_width, true, &num_labels_clipped);
+    free(pre_labels);
+    */
 	pre_labels = label_wire_muxes(chan_num, seg_num, seg_details, max_len,
 			direction, max_chan_width, false, &num_labels);
-
+    
 	/* Find the min and max mux size. */
 	min_opin_mux_size = MAX_SHORT;
 	max_opin_mux_size = 0;
-	for (i = 0; i < num_labels_clipped; ++i) {
+	//for (i = 0; i < num_labels_clipped; ++i) {
+    for (i = 0; i < num_labels; ++i){
 		inode = get_rr_node_index(x, y, chan_type, pre_labels[i],
 				L_rr_node_indices);
 		if (opin_mux_size[inode] < min_opin_mux_size) {
@@ -2569,14 +2573,14 @@ static int *label_wire_muxes_for_balance(
 			max_opin_mux_size = opin_mux_size[inode];
 		}
 	}
-
+    /*
 	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
 		vpr_printf_info("\t max_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
 				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"opin muxes are not balanced!\n");
 	}
-
+    */
 	/* Create a new list that we will move the muxes with 'holes' to the start of list. */
 	final_labels = (int *) my_malloc(sizeof(int) * num_labels);
 	j = 0;
