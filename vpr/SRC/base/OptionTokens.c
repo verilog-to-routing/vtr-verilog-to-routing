@@ -8,6 +8,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "settings_file", OT_SETTINGS_FILE }, 
 		{ "nodisp", OT_NODISP }, 
 		{ "congestion_analysis", OT_CONGESTION_ANALYSIS },
+		{ "fanout_analysis", OT_FANOUT_ANALYSIS },
         { "switch_stats", OT_SWITCH_USAGE_ANALYSIS },
 		{ "auto", OT_AUTO }, 
 		{ "recompute_crit_iter", OT_RECOMPUTE_CRIT_ITER }, 

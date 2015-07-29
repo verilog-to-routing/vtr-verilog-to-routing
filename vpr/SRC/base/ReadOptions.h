@@ -72,6 +72,7 @@ struct s_options {
 	int max_router_iterations;
 	int bb_factor;
 	bool congestion_analysis;
+	bool fanout_analysis;
     bool switch_usage_analysis;
 	float initial_pres_fac;
 	float pres_fac_mult;

@@ -347,6 +347,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		/* General Options */
 	case OT_NODISP:
 	case OT_CONGESTION_ANALYSIS:
+	case OT_FANOUT_ANALYSIS:
     case OT_SWITCH_USAGE_ANALYSIS:
 		return Args;
 	case OT_AUTO:
@@ -572,6 +573,7 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			/* General Options */
 		case OT_NODISP:
 		case OT_CONGESTION_ANALYSIS:
+		case OT_FANOUT_ANALYSIS:
         case OT_SWITCH_USAGE_ANALYSIS:
 			break;
 		case OT_AUTO:

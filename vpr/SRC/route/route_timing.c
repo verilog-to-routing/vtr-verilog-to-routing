@@ -57,7 +57,6 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 static double get_overused_ratio();
 
 static bool should_route_net(int inet);
-
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
 		return g_clbs_nlist.net[net_index1].num_sinks() > g_clbs_nlist.net[net_index2].num_sinks();
@@ -197,7 +196,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 						FIRST_ITER_WIRELENTH_LIMIT);
 
-				time_on_fanout_analysis();
+				if (router_opts.fanout_analysis) time_on_fanout_analysis();
 				return false;
 			}
 			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
@@ -226,7 +225,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			
 			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
 			if (expected_success_route_iter == UNDEFINED) {
-				time_on_fanout_analysis();
+				if (router_opts.fanout_analysis) time_on_fanout_analysis();
 				return false;
 			}
 
@@ -243,7 +242,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 									 while congestion grows at %f %/iteration, unlikely to finish.\n",
 						time_per_iteration_slope, congestion_per_iteration_slope);
 
-					time_on_fanout_analysis();
+					if (router_opts.fanout_analysis) time_on_fanout_analysis();
 					return false;
 				}
 			}
@@ -269,7 +268,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
-			time_on_fanout_analysis();
+			if (router_opts.fanout_analysis) time_on_fanout_analysis();
 			return (true);
 		}
 
@@ -316,13 +315,12 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
-        if (router_opts.congestion_analysis) {
-        	congestion_analysis();
-        }
+        if (router_opts.congestion_analysis) congestion_analysis();
+        if (router_opts.fanout_analysis) time_on_fanout_analysis();
 		fflush(stdout);
 	}
 	vpr_printf_info("Routing failed.\n");
-	time_on_fanout_analysis();
+	if (router_opts.fanout_analysis) time_on_fanout_analysis();
 	return (false);
 }
 
@@ -417,10 +415,12 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				pin_criticality, sink_order, 
 				rt_node_of_sink, net_delay[inet], slacks);
 
-		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
-		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
-		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
-		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
+		if (router_opts.fanout_analysis) {
+			float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
+			int net_fanout = g_clbs_nlist.net[inet].num_sinks();
+			time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
+			itry_on_fanout[net_fanout / fanout_per_bin] += 1;
+		}
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {

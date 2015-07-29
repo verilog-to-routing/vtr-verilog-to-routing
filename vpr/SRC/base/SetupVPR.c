@@ -538,6 +538,11 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		RouterOpts->congestion_analysis = true;
 	}
 
+	RouterOpts->fanout_analysis = false;
+	if (Options.Count[OT_FANOUT_ANALYSIS]) {
+		RouterOpts->fanout_analysis = true;
+	}
+
     RouterOpts->switch_usage_analysis = false;
     if (Options.Count[OT_SWITCH_USAGE_ANALYSIS]) {
         RouterOpts->switch_usage_analysis = true;

@@ -8,13 +8,15 @@ import re
 import shlex
 import argparse
 import textwrap
+import shutil
 import csv
 from datetime import datetime
 # generate images wihtout having a window appear
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+sys.path.append(os.path.expanduser("~/benchtracker/"))
+from util import (get_trailing_num, immediate_subdir, natural_sort)
 
 
 NO_PARSE = 1
@@ -36,17 +38,24 @@ def plot_results(param_names, param_options, results, params):
 
 	Each of the parameter in results will receive its own plot, drawn by matplotlib"""
 
+	# circuit/run_num where run_num is one before the existing one
+	directory = params.circuit
+	if not os.path.isdir(directory):
+		os.mkdir(directory)
+	runs = immediate_subdir(directory)
+	latest_run = 0
+	if runs:
+		natural_sort(runs)
+		latest_run = get_trailing_num(runs[-1])
+	directory = os.path.join(directory, "run" + str(latest_run+1))
 
-	last_modified = datetime.fromtimestamp(os.path.getmtime(params.output_file))
-	# year-month-day-hour-minute (allow 1 minute between runs)
-	directory = " ".join(params.key_params + [last_modified.strftime("%y-%m-%d-%H-%M")])
 	print(directory)
 	if not os.path.isdir(directory):
 		os.mkdir(directory)
 
 	with Chdir(directory):
 
-		export_results_to_csv(param_names, results)
+		export_results_to_csv(param_names, results, params)
 
 		x = results.keys()
 		y = []
@@ -143,13 +152,28 @@ def annotate_last(lx, ly):
 	plt.annotate('({},{})'.format(lx, ly),
 		xy=(lx, ly), xytext=(0,15), textcoords='offset points')
 
-def export_results_to_csv(param_names, results):
+def export_results_to_csv(param_names, results, params):
+	param_values = {}
+	param_values["circuit"] = params.circuit
+	param_values["channel_width"] = params.channel_width
+	with open(params.output_file, 'r') as out:
+		for regex in params.param_regex:
+			match = re.search(regex, out.read())
+			if match:
+				param_values[regex.split(':')[0]] = match.group(1)
+				print("matched:", match.group(1))
+
+	for param,val in param_values.items():
+		print("{}: {}".format(param, val))
+	# also move the output file header
+	shutil.copy(params.output_file, os.path.basename(params.output_file))
+
 	with open('results.csv', 'wb') as csvfile:
 		writer = csv.writer(csvfile)
 		# header line
-		writer.writerow(['iteration'] + param_names)
+		writer.writerow(['iteration'] + param_names + param_values.keys())
 		for iteration, result in results.items():
-			writer.writerow([iteration] + result)
+			writer.writerow([iteration] + result + param_values.values())
 
 def parse_output(param_names, params):
 	"""Return a dictionary mapping iteration -> [params...] 
@@ -215,8 +239,8 @@ def parse_args(ns=None):
             parse parameters per iteration for a given benchmark and plots them
             
         Benchmark:
-            Each benchmark is described by a combination of key parameters, specified as a list after -k
-            The output file need to also be specified, as well as a parse file describing the parameters to parse.
+            This script is designed for VPR, so circuit and channel_width of a benchmark are required.
+            The circuit name can be a summary or short name rather than the full name.
 
         Parse file:
         	The first line should describe how to match iteration, such as:
@@ -233,10 +257,10 @@ def parse_args(ns=None):
         Parameter Options:
         	log - make the y-axis log scale for this parameter
         	"""),
-            usage="%(prog)s -k <key_params...> [OPTIONS]")
+            usage="%(prog)s <output_file> <circuit> <channel_width> [OPTIONS]")
 
     # arguments should either end with _dir or _file for use by other functions
-    parser.add_argument("-f", "--output_file", 
+    parser.add_argument("output_file", 
             default="vpr.out",
             help="output file to parse; default: %(default)s")
     parser.add_argument("-p", "--parse_file",
@@ -244,13 +268,17 @@ def parse_args(ns=None):
             help="config file where each line describes 1 parameter to parse as:\
             	<parameter_name>;<regex_to_match>\
                 default: %(default)s")
-    parser.add_argument("-k","--key_params", required=True,
-            nargs='+',
-            default=[],
-            help="the combination of key parameters that defines a unique benchmark;\
-            this is also what will be used to generate the directory name;\
-            give parameter values rather than the parameter names")
+    parser.add_argument("circuit",
+    		help="titan circuit to be parsed, similar to task")
+    parser.add_argument("channel_width",
+    		type=int,
+    		help="channel used to route circuit")
+    parser.add_argument("-r","--param_regex",            
+    		nargs='+',
+            default=["Critical path: (.*) ns"],
+            help="additional regular expressions to match on the result file")
     params = parser.parse_args(namespace=ns)
+    params.output_file = os.path.abspath(params.output_file)
     
     return params;
 
