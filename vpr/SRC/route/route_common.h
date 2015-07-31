@@ -2,15 +2,15 @@
 #pragma once
 #include <vector>
 struct s_heap {
-	int index;
-	float cost;
 	union {
 		int prev_node;
 		struct s_heap *next;
 	} u;
-	int prev_edge;
+	float cost;
 	float backward_path_cost;
 	float R_upstream;
+	int index;
+	int prev_edge;
 };
 
 /* Used by the heap as its fundamental data structure.                      * 
@@ -89,6 +89,17 @@ bool is_empty_heap(void);
 void free_traceback(int inet);
 
 void add_to_mod_list(float *fptr);
+
+namespace heap_ {
+	void build_heap();
+	void sift_down(size_t hole);
+	void sift_up(size_t tail, s_heap* hptr);
+	void push_back(s_heap* hptr);
+	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
+		float backward_path_cost, float R_upstream);
+	bool is_valid();
+	void pop_heap();
+}
 
 struct s_heap *get_heap_head(void);
 

@@ -57,6 +57,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 static double get_overused_ratio();
 
 static bool should_route_net(int inet);
+static bool early_exit_heuristic(const t_router_opts& router_opts);
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
 		return g_clbs_nlist.net[net_index1].num_sinks() > g_clbs_nlist.net[net_index2].num_sinks();
@@ -166,43 +167,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
 		time_per_iteration.push_back(time);
 
-		if (itry == 1) {
-			/* Early exit code for cases where it is obvious that a successful route will not be found 
-			   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
-			int total_wirelength = 0;
-			int available_wirelength = 0;
-
-			for (int i = 0; i < num_rr_nodes; ++i) {
-				if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-					available_wirelength += 1 + 
-							rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
-							rr_node[i].get_yhigh() - rr_node[i].get_ylow();
-				}
-			}
-
-			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-				if (g_clbs_nlist.net[inet].is_global == false
-						&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
-					int bends, wirelength, segments;
-					get_num_bends_and_length(inet, &bends, &wirelength, &segments);
-
-					total_wirelength += wirelength;
-				}
-			}
-			vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
-					total_wirelength, available_wirelength,
-					(float) (total_wirelength) / (float) (available_wirelength));
-			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
-				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
-						FIRST_ITER_WIRELENTH_LIMIT);
-
-				if (router_opts.fanout_analysis) time_on_fanout_analysis();
-				return false;
-			}
-			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
-			vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
-			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
-		}
+		if (itry == 1 && early_exit_heuristic(router_opts)) return false;
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
 		   to them are reserved for that purpose. */
@@ -323,7 +288,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	if (router_opts.fanout_analysis) time_on_fanout_analysis();
 	return (false);
 }
-
 
 void time_on_fanout_analysis() {
 	// using the global time_on_fanout and itry_on_fanout
@@ -602,9 +566,11 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			rt_root->re_expand = false;
 		}
 
-		// reexplore route tree from root to add any new nodes
+		// reexplore route tree from root to add any new nodes (buildheap afterwards)
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
+		heap_::build_heap();	// via sifting down everything
+
 
 		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
 		struct s_heap* cheapest = get_heap_head();
@@ -618,7 +584,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		}
 
 		inode = cheapest->index;
-
 		while (inode != target_node) {
 			old_total_cost = rr_node_route_inf[inode].path_cost;
 			new_total_cost = cheapest->cost;
@@ -654,6 +619,8 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 			free_heap_data(cheapest);
 			cheapest = get_heap_head();
+			// test heap property
+			// if (!heap_::is_valid()) {vpr_printf_info("invalid heap: "); heap_::pop_heap();}
 
 			if (cheapest == NULL) { /* Impossible routing.  No path for net. */
 				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
@@ -713,8 +680,10 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 				+ astar_fac
 						* get_timing_driven_expected_cost(inode, target_node,
 								target_criticality, R_upstream);
-		node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+		heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
 				backward_path_cost, R_upstream);
+		// node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+				// backward_path_cost, R_upstream);
 	}
 
 	linked_rt_edge = rt_node->u.child_list;
@@ -753,6 +722,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		to_node = rr_node[inode].edges[iconn];
 
 		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
+			// since target node is an IPIN, xhigh and xlow are the same (same for y values)
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
 					|| rr_node[to_node].get_yhigh() < target_y - highfanout_rlim
@@ -1266,5 +1236,42 @@ static bool should_route_net(int inet) {
 	return false; /* Current route has no overuse */
 }
 
+static bool early_exit_heuristic(const t_router_opts& router_opts) {
+	/* Early exit code for cases where it is obvious that a successful route will not be found 
+	   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
+	int total_wirelength = 0;
+	int available_wirelength = 0;
 
+	for (int i = 0; i < num_rr_nodes; ++i) {
+		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
+			available_wirelength += 1 + 
+					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
+					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
+		}
+	}
+
+	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+		if (g_clbs_nlist.net[inet].is_global == false
+				&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+			int bends, wirelength, segments;
+			get_num_bends_and_length(inet, &bends, &wirelength, &segments);
+
+			total_wirelength += wirelength;
+		}
+	}
+	vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
+			total_wirelength, available_wirelength,
+			(float) (total_wirelength) / (float) (available_wirelength));
+	if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
+		vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
+				FIRST_ITER_WIRELENTH_LIMIT);
+
+		if (router_opts.fanout_analysis) time_on_fanout_analysis();
+		return true;
+	}
+	vpr_printf_info("--------- ---------- ----------- ---------------------\n");
+	vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
+	vpr_printf_info("--------- ---------- ----------- ---------------------\n");	
+	return false;
+}
 
