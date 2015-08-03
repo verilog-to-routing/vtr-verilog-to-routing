@@ -93,12 +93,14 @@ void add_to_mod_list(float *fptr);
 namespace heap_ {
 	void build_heap();
 	void sift_down(size_t hole);
-	void sift_up(size_t tail, s_heap* hptr);
-	void push_back(s_heap* hptr);
+	void sift_up(size_t tail, s_heap* const hptr);
+	void push_back(s_heap* const hptr);
 	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
 	bool is_valid();
 	void pop_heap();
+	void print_heap();
+	void verify_extract_top();
 }
 
 struct s_heap *get_heap_head(void);

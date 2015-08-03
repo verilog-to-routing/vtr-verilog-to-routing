@@ -1,6 +1,8 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
+#include <algorithm>
+#include <vector>
 #include <iostream>
 using namespace std;
 
@@ -646,12 +648,10 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	 * easy.  The backward_path_cost and R_upstream values are used only by the *
 	 * timing-driven router -- the breadth-first router ignores them.           */
 
-	struct s_heap *hptr;
-
 	if (total_cost >= rr_node_route_inf[inode].path_cost)
 		return;
 
-	hptr = alloc_heap_data();
+	s_heap* hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
 	hptr->u.prev_node = prev_node;
@@ -994,16 +994,17 @@ namespace heap_ {
 	// child indices of a heap
 	size_t left(size_t i) {return i << 1;}
 	size_t right(size_t i) {return (i << 1) + 1;}
-
+	size_t size() {return static_cast<size_t>(heap_tail - 1);}	// heap[0] is not valid element
 
 	// make a heap rooted at index i by **sifting down** in O(lgn) time
 	void sift_down(size_t hole) {
 		s_heap* head {heap[hole]};
 		size_t child {left(hole)};
-		while ((int)child+1 < heap_tail) {
-			if (heap[child + 1]->cost < heap[child]->cost)
+		while ((int)child < heap_tail) {
+			if ((int)child + 1 < heap_tail && heap[child + 1]->cost < heap[child]->cost)
 				++child;
 			if (heap[child]->cost < head->cost) {
+				// vpr_printf_info("siftdown child %d(%e) head(%e)\n", child, heap[child]->cost, head->cost);
 				heap[hole] = heap[child];
 				hole = child;
 				child = left(child);
@@ -1024,8 +1025,8 @@ namespace heap_ {
 
 
 	// O(lgn) sifting up to maintain heap property after insertion (should sift down when building heap)
-	void sift_up(size_t leaf, s_heap* node) {
-		while (leaf > 1 && node->cost < heap[parent(leaf)]->cost) {
+	void sift_up(size_t leaf, s_heap* const node) {
+		while ((leaf > 1) && (node->cost < heap[parent(leaf)]->cost)) {
 			// sift hole up
 			heap[leaf] = heap[parent(leaf)];
 			leaf = parent(leaf);
@@ -1044,7 +1045,7 @@ namespace heap_ {
 	}
 
 	// adds an element to the back of heap and expand if necessary, but does not maintain heap property
-	void push_back(s_heap* hptr) {
+	void push_back(s_heap* const hptr) {
 		expand_heap_if_full();
 		heap[heap_tail] = hptr;
 		++heap_tail;
@@ -1072,7 +1073,7 @@ namespace heap_ {
 	}
 
 	bool is_valid() {
-		for (size_t i = 1; (int)i < heap_tail >> 1; ++i) {
+		for (size_t i = 1; (int)i <= heap_tail >> 1; ++i) {
 			if ((int)left(i) < heap_tail && heap[left(i)]->cost < heap[i]->cost) return false;
 			if ((int)right(i) < heap_tail && heap[right(i)]->cost < heap[i]->cost) return false;
 		}
@@ -1083,6 +1084,34 @@ namespace heap_ {
 		while (!is_empty_heap()) vpr_printf_info("%e ", get_heap_head()->cost);
 		vpr_printf_info("\n");
 	}
+	// print every element; not necessarily in order for minheap
+	void print_heap() {
+		for (int i = 1; i < heap_tail >> 1; ++i) vpr_printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
+		vpr_printf_info("\n");
+	}
+	// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
+	void verify_extract_top() {
+		constexpr float float_epsilon = 1e-20;
+		std::cout << "copying heap\n";
+		std::vector<s_heap*> heap_copy {heap + 1, heap + heap_tail};
+		// sort based on cost with cheapest first
+		assert(heap_copy.size() == size());
+		std::sort(begin(heap_copy), end(heap_copy), 
+			[](const s_heap* a, const s_heap* b){
+			return a->cost < b->cost;
+		});
+		std::cout << "starting to compare top elements\n";
+		size_t i = 0;
+		while (!is_empty_heap()) {
+			while (heap_copy[i]->index == OPEN) ++i;	// skip the ones that won't be extracted
+			auto top = get_heap_head();
+			if (abs(top->cost - heap_copy[i]->cost) > float_epsilon)	
+				std::cout << "mismatch with sorted " << top << '(' << top->cost << ") " << heap_copy[i] << '(' << heap_copy[i]->cost << ")\n";
+			++i;
+		}
+		if (i != heap_copy.size()) std::cout << "did not finish extracting: " << i << " vs " << heap_copy.size() << std::endl;
+		else std::cout << "extract top working as intended\n";
+	}
 }
 // adds to heap and maintains heap quality
 static void add_to_heap(struct s_heap *hptr) {
@@ -1090,28 +1119,6 @@ static void add_to_heap(struct s_heap *hptr) {
 	// start with undefined hole
 	++heap_tail;	
 	heap_::sift_up(heap_tail - 1, hptr);
-	// int ito, ifrom;
-	// struct s_heap *temp_ptr;
-
-	// if (heap_tail > heap_size) { /* Heap is full */
-	// 	heap_size *= 2;
-	// 	heap = (struct s_heap **) my_realloc((void *) (heap + 1),
-	// 			heap_size * sizeof(struct s_heap *));
-	// 	heap--; /* heap goes from [1..heap_size] */
-	// }
-
-	// heap[heap_tail] = hptr;
-	// ifrom = heap_tail;
-	// ito = ifrom / 2;
-	// heap_tail++;
-
-	// while ((ito >= 1) && (heap[ifrom]->cost < heap[ito]->cost)) {
-	// 	temp_ptr = heap[ito];
-	// 	heap[ito] = heap[ifrom];
-	// 	heap[ifrom] = temp_ptr;
-	// 	ifrom = ito;
-	// 	ito = ifrom / 2;
-	// }	
 }
 
 /*WMF: peeking accessor :) */
@@ -1126,8 +1133,6 @@ get_heap_head(void) {
 	 * heap is empty.  Invalid (index == OPEN) entries on the heap are never     *
 	 * returned -- they are just skipped over.                                   */
 
-	// int ito, hole;
-	// struct s_heap *temp_ptr;
 	struct s_heap *cheapest;
 	size_t hole, child;
 
@@ -1142,31 +1147,15 @@ get_heap_head(void) {
 
 		hole = 1;
 		child = 2;
-		while ((int)child + 1 < heap_tail) {
+		--heap_tail;
+		while ((int)child < heap_tail) {
 			if (heap[child + 1]->cost < heap[child]->cost)
 				++child;	// become right child
 			heap[hole] = heap[child];
 			hole = child;
 			child = heap_::left(child);
 		}
-		// replace hole with rightmost leaf
-		heap[hole] = heap[--heap_tail];
-		heap_::sift_up(hole, heap[hole]);
-						// heap[1] = heap[heap_tail];
-						// hole = 1;
-						// ito = 2 * hole;
-
-						// while (ito < heap_tail) {
-						// 	if (heap[ito + 1]->cost < heap[ito]->cost)
-						// 		ito++;
-						// 	if (heap[ito]->cost > heap[hole]->cost)
-						// 		break;
-						// 	temp_ptr = heap[ito];
-						// 	heap[ito] = heap[hole];
-						// 	heap[hole] = temp_ptr;
-						// 	hole = ito;
-						// 	ito = 2 * hole;
-						// }
+		heap_::sift_up(hole, heap[heap_tail]);
 
 	} while (cheapest->index == OPEN); /* Get another one if invalid entry. */
 

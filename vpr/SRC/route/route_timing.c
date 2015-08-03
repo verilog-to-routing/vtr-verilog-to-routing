@@ -68,8 +68,9 @@ struct more_sinks_than {
 
 static void congestion_analysis();
 static void time_on_fanout_analysis();
-constexpr int fanout_per_bin = 5;
+constexpr int fanout_per_bin = 4;
 static vector<float> time_on_fanout;
+static vector<float> time_to_build_heap;
 static vector<int> itry_on_fanout;
 
 /************************ Subroutine definitions *****************************/
@@ -83,6 +84,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 	const int max_fanout {get_max_pins_per_net()};
 	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
+	time_to_build_heap.resize((max_fanout / fanout_per_bin) + 1, 0);
 	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
@@ -291,10 +293,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 void time_on_fanout_analysis() {
 	// using the global time_on_fanout and itry_on_fanout
-	vpr_printf_info("fanout low           time (s)        attemps\n");
+	vpr_printf_info("fanout low           time (s)        attemps     heap build time (s)\n");
 	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
 		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4d           %14.3f   %12d\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin]);
+			vpr_printf_info("%4d           %14.3f   %12d %14.3f\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin], time_to_build_heap[bin]);
 		}
 	}
 }
@@ -550,6 +552,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	rt_root = init_route_tree_to_source(inet);
 
+	float build_heap_time = 0;
 	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
 		target_pin = sink_order[itarget];
@@ -567,10 +570,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		}
 
 		// reexplore route tree from root to add any new nodes (buildheap afterwards)
+		clock_t route_tree_start = clock();
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
 		heap_::build_heap();	// via sifting down everything
-
+		// if (itarget == num_sinks && itarget > 800) {
+		// 	vpr_printf_info("heap for target %d: ", itarget); 
+		// 	heap_::verify_extract_top();
+		// }
+		build_heap_time += static_cast<float>(clock() - route_tree_start) / CLOCKS_PER_SEC;
+		
 
 		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
 		struct s_heap* cheapest = get_heap_head();
@@ -651,6 +660,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		reset_path_costs();
 	}
 
+	time_to_build_heap[num_sinks / fanout_per_bin] += build_heap_time;
 	/* For later timing analysis. */
 
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
@@ -682,8 +692,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 								target_criticality, R_upstream);
 		heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
 				backward_path_cost, R_upstream);
-		// node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
-				// backward_path_cost, R_upstream);
+
 	}
 
 	linked_rt_edge = rt_node->u.child_list;
@@ -705,23 +714,21 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	 * the expanded bounding box specified in route_bb are not added to the     *
 	 * heap.                                                                    */
 
-	int iconn, to_node, num_edges, inode, iswitch, target_x, target_y;
-	t_rr_type from_type, to_type;
-	float new_tot_cost, old_back_pcost, new_back_pcost, R_upstream;
-	float new_R_upstream, Tdel;
+	float new_R_upstream;
 
-	inode = current->index;
-	old_back_pcost = current->backward_path_cost;
-	R_upstream = current->R_upstream;
-	num_edges = rr_node[inode].get_num_edges();
+	int inode = current->index;
+	float old_back_pcost = current->backward_path_cost;
+	float R_upstream = current->R_upstream;
+	int num_edges = rr_node[inode].get_num_edges();
 
-	target_x = rr_node[target_node].get_xhigh();
-	target_y = rr_node[target_node].get_yhigh();
+	int target_x = rr_node[target_node].get_xhigh();
+	int target_y = rr_node[target_node].get_yhigh();
+	bool high_fanout = g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM;
 
-	for (iconn = 0; iconn < num_edges; iconn++) {
-		to_node = rr_node[inode].edges[iconn];
+	for (int iconn = 0; iconn < num_edges; iconn++) {
+		int to_node = rr_node[inode].edges[iconn];
 
-		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
+		if (high_fanout) {
 			// since target node is an IPIN, xhigh and xlow are the same (same for y values)
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
@@ -742,7 +749,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		 * more promising routes, but makes route-throughs (via CLBs) impossible.   *
 		 * Change this if you want to investigate route-throughs.                   */
 
-		to_type = rr_node[to_node].type;
+		t_rr_type to_type = rr_node[to_node].type;
 		if (to_type == IPIN
 				&& (rr_node[to_node].get_xhigh() != target_x
 						|| rr_node[to_node].get_yhigh() != target_y))
@@ -753,23 +760,23 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		 * plus the known delay of the total path back to the source.  new_tot_cost *
 		 * is this "known" backward cost + an expected cost to get to the target.   */
 
-		new_back_pcost = old_back_pcost
+		float new_back_pcost = old_back_pcost
 				+ (1. - criticality_fac) * get_rr_cong_cost(to_node);
 		
-		iswitch = rr_node[inode].switches[iconn];
+		int iswitch = rr_node[inode].switches[iconn];
 		if (g_rr_switch_inf[iswitch].buffered) {
 			new_R_upstream = g_rr_switch_inf[iswitch].R;
 		} else {
 			new_R_upstream = R_upstream + g_rr_switch_inf[iswitch].R;
 		}
 
-		Tdel = rr_node[to_node].C * (new_R_upstream + 0.5 * rr_node[to_node].R);
+		float Tdel = rr_node[to_node].C * (new_R_upstream + 0.5 * rr_node[to_node].R);
 		Tdel += g_rr_switch_inf[iswitch].Tdel;
 		new_R_upstream += rr_node[to_node].R;
 		new_back_pcost += criticality_fac * Tdel;
 
 		if (bend_cost != 0.) {
-			from_type = rr_node[inode].type;
+			t_rr_type from_type = rr_node[inode].type;
 			to_type = rr_node[to_node].type;
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
@@ -778,7 +785,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 		float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
 				criticality_fac, new_R_upstream);
-		new_tot_cost = new_back_pcost + astar_fac * expected_cost;
+		float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
 
 		node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
 				new_R_upstream);

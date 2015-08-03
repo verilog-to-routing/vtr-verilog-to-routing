@@ -50,4 +50,5 @@ Session.vim
 #
 #Ctags
 #
+.tags*
 tags
