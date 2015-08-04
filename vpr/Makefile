@@ -82,7 +82,7 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-profile: FLAGS += $(DEBUG_FLAGS)
+profile: FLAGS += $(DEBUG_FLAGS) -DPROFILE
 profile: $(EXE)
 
 # notify is an order-only prerequisite - note the "|"
