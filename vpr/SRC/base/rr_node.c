@@ -35,9 +35,7 @@ short t_rr_node::get_xhigh() const {
 }
 
 short t_rr_node::get_yhigh() const {
-	if (type == CHANY || type == SINK || type == SOURCE || 
-		type == IPIN || type ==  OPIN) {
-		
+	if (type != CHANX && type != INTRA_CLUSTER_EDGE) {
 		return ylow + length;
 	} else {
 		return ylow;
