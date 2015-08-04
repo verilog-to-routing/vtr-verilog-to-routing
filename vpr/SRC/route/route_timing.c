@@ -1,12 +1,9 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-
 #include <assert.h>
-
 #include <vector>
 #include <algorithm>
-
 #include "vpr_utils.h"
 #include "util.h"
 #include "vpr_types.h"
@@ -40,7 +37,6 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream);
-
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 static int get_num_expected_interposer_hops_to_target(int inode, int target_node);
 #endif
@@ -69,10 +65,14 @@ struct more_sinks_than {
 
 static void congestion_analysis();
 static void time_on_fanout_analysis();
+static void time_on_criticality_analysis();
 constexpr int fanout_per_bin = 4;
+constexpr float criticality_per_bin = 0.05;
 static vector<float> time_on_fanout;
 static vector<float> time_to_build_heap;
 static vector<int> itry_on_fanout;
+static vector<float> time_on_criticality;
+static vector<int> itry_on_criticality;
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -82,13 +82,14 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
-
-	#ifdef PROFILE
-		const int max_fanout {get_max_pins_per_net()};
-		time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-		time_to_build_heap.resize((max_fanout / fanout_per_bin) + 1, 0);
-		itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	#endif
+#ifdef PROFILE
+	const int max_fanout {get_max_pins_per_net()};
+	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
+	time_to_build_heap.resize((max_fanout / fanout_per_bin) + 1, 0);
+	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
+	time_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
+	itry_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
+#endif
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -199,25 +200,25 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				return false;
 			}
 
-			#ifdef REGRESSION_EXIT
-				if (itry > 15) {
-					// compare their slopes over the last 5 iterations
-					double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
-					double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
-					if (router_opts.congestion_analysis)
-						vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
-					// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
-					if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
-						&& time_per_iteration_slope > 1) {	// filter out noise
-						vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
-										 while congestion grows at %f %/iteration, unlikely to finish.\n",
-							time_per_iteration_slope, congestion_per_iteration_slope);
+#ifdef REGRESSION_EXIT
+			if (itry > 15) {
+				// compare their slopes over the last 5 iterations
+				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
+				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
+				if (router_opts.congestion_analysis)
+					vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
+				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
+				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
+					&& time_per_iteration_slope > 1) {	// filter out noise
+					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
+									 while congestion grows at %f %/iteration, unlikely to finish.\n",
+						time_per_iteration_slope, congestion_per_iteration_slope);
 
-						if (router_opts.fanout_analysis) time_on_fanout_analysis();
-						return false;
-					}
+					if (router_opts.fanout_analysis) time_on_fanout_analysis();
+					return false;
 				}
-			#endif
+			}
+#endif
 		}
 
         //print_usage_by_wire_length();
@@ -287,8 +288,11 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
+#ifdef PROFILE
         if (router_opts.congestion_analysis) congestion_analysis();
         if (router_opts.fanout_analysis) time_on_fanout_analysis();
+        time_on_criticality_analysis();
+#endif
 		fflush(stdout);
 	}
 	vpr_printf_info("Routing failed.\n");
@@ -297,17 +301,27 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 }
 
 void time_on_fanout_analysis() {
-	#ifdef PROFILE
-		// using the global time_on_fanout and itry_on_fanout
-		vpr_printf_info("fanout low           time (s)        attemps     heap build time (s)\n");
-		for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
-			if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
-				vpr_printf_info("%4d           %14.3f   %12d %14.3f\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin], time_to_build_heap[bin]);
-			}
+#ifdef PROFILE
+	// using the global time_on_fanout and itry_on_fanout
+	vpr_printf_info("fanout low           time (s)        attemps     heap build time (s)\n");
+	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
+		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
+			vpr_printf_info("%4d           %14.3f   %12d %14.3f\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin], time_to_build_heap[bin]);
 		}
-	#endif
+	}
+#endif
 }
 
+void time_on_criticality_analysis() {
+#ifdef PROFILE
+	vpr_printf_info("congestion low           time (s)        attemps\n");
+	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
+		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
+			vpr_printf_info("%4d           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
+		}
+	}	
+#endif
+}
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
 // efficient bit array for checking against congested type
 struct Congested_node_types {
@@ -319,52 +333,52 @@ struct Congested_node_types {
 	bool empty() const {return mask == 0;}
 };
 void congestion_analysis() {
-	#ifdef PROFILE
-		static const std::vector<const char*> node_typename {
-			"SOURCE",
-			"SINK",
-			"IPIN",
-			"OPIN",
-			"CHANX",
-			"CHANY",
-			"ICE"
-		};
-		// each type indexes into array which holds the congestion for that type
-		std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
-		// print out specific node information if congestion for type is low enough
+#ifdef PROFILE
+	static const std::vector<const char*> node_typename {
+		"SOURCE",
+		"SINK",
+		"IPIN",
+		"OPIN",
+		"CHANX",
+		"CHANY",
+		"ICE"
+	};
+	// each type indexes into array which holds the congestion for that type
+	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
+	// print out specific node information if congestion for type is low enough
 
-		int total_congestion = 0;
+	int total_congestion = 0;
+	for (int inode = 0; inode < num_rr_nodes; ++inode) {
+		const t_rr_node& node = rr_node[inode];
+		int congestion = node.get_occ() - node.get_capacity();
+
+		if (congestion > 0) {
+			total_congestion += congestion;
+			congestion_per_type[node.type] += congestion;
+		}
+	}
+
+	constexpr int specific_node_print_threshold = 5;
+	Congested_node_types congested;
+	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
+		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
+		vpr_printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
+		// nodes of that type need specific printing
+		if (congestion_per_type[type] > 0 &&
+			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
+	}
+
+	// specific print out each congested node
+	if (!congested.empty()) {
+		vpr_printf_info("Specific congested nodes\nxlow ylow   type\n");
 		for (int inode = 0; inode < num_rr_nodes; ++inode) {
 			const t_rr_node& node = rr_node[inode];
-			int congestion = node.get_occ() - node.get_capacity();
-
-			if (congestion > 0) {
-				total_congestion += congestion;
-				congestion_per_type[node.type] += congestion;
+			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
+				vpr_printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
 			}
 		}
-
-		constexpr int specific_node_print_threshold = 5;
-		Congested_node_types congested;
-		for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
-			float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
-			vpr_printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
-			// nodes of that type need specific printing
-			if (congestion_per_type[type] > 0 &&
-				congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
-		}
-
-		// specific print out each congested node
-		if (!congested.empty()) {
-			vpr_printf_info("Specific congested nodes\nxlow ylow   type\n");
-			for (int inode = 0; inode < num_rr_nodes; ++inode) {
-				const t_rr_node& node = rr_node[inode];
-				if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
-					vpr_printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
-				}
-			}
-		}
-	#endif
+	}
+#endif
 }
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
@@ -382,9 +396,9 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		is_routed = true;
 	} else{
 		// track time spent vs fanout
-		#ifdef PROFILE
-			clock_t net_begin = clock();
-		#endif
+#ifdef PROFILE
+		clock_t net_begin = clock();
+#endif
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
@@ -392,12 +406,12 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				pin_criticality, sink_order, 
 				rt_node_of_sink, net_delay[inet], slacks);
 
-		#ifdef PROFILE
-			float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
-			int net_fanout = g_clbs_nlist.net[inet].num_sinks();
-			time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
-			itry_on_fanout[net_fanout / fanout_per_bin] += 1;
-		#endif
+#ifdef PROFILE
+		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
+		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
+		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
+		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
+#endif
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -562,16 +576,18 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	mark_ends(inet); /* Only needed to check for multiply-connected SINKs */
 
 	rt_root = init_route_tree_to_source(inet);
-
-	#ifdef PROFILE
+#ifdef PROFILE
 		float build_heap_time = 0;
-	#endif
+#endif
 	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
 		target_pin = sink_order[itarget];
 		target_node = net_rr_terminals[inet][target_pin];
 
 		target_criticality = pin_criticality[target_pin];
+#ifdef PROFILE
+			clock_t sink_criticality_start = clock();
+#endif
 
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 				rt_root);
@@ -583,9 +599,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		}
 
 		// reexplore route tree from root to add any new nodes (buildheap afterwards)
-		#ifdef PROFILE
+#ifdef PROFILE
 			clock_t route_tree_start = clock();
-		#endif
+#endif
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
 		heap_::build_heap();	// via sifting down everything
@@ -593,9 +609,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		// 	vpr_printf_info("heap for target %d: ", itarget); 
 		// 	heap_::verify_extract_top();
 		// }
-		#ifdef PROFILE
+#ifdef PROFILE
 			build_heap_time += static_cast<float>(clock() - route_tree_start) / CLOCKS_PER_SEC;
-		#endif
+#endif
 		
 
 		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
@@ -658,7 +674,10 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 			inode = cheapest->index;
 		}
-
+#ifdef PROFILE
+			time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
+			++itry_on_criticality[target_criticality / criticality_per_bin];
+#endif 
 		/* NB:  In the code below I keep two records of the partial routing:  the   *
 		 * traceback and the route_tree.  The route_tree enables fast recomputation *
 		 * of the Elmore delay to each node in the partial routing.  The traceback  *
@@ -676,10 +695,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		empty_heap();
 		reset_path_costs();
 	}
-
-	#ifdef PROFILE
+#ifdef PROFILE
 		if (!time_to_build_heap.empty()) time_to_build_heap[num_sinks / fanout_per_bin] += build_heap_time;
-	#endif
+#endif
 	/* For later timing analysis. */
 
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
@@ -826,7 +844,6 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	rr_type = rr_node[inode].type;
 
 	if (rr_type == CHANX || rr_type == CHANY) {
-
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
 #endif
@@ -857,7 +874,6 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 												* rr_indexed_data[ortho_cost_index].C_load);
 
 		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
-
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 		float interposer_hop_delay = (float)delay_increase * 1e-12;
 		Tdel += num_interposer_hops * interposer_hop_delay;
@@ -876,7 +892,6 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		return (0.);
 	}
 }
-
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 static int get_num_expected_interposer_hops_to_target(int inode, int target_node) 
 {
@@ -967,7 +982,6 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 
 /* Macro used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
-
 #define ROUND_UP(x) (ceil (x - 0.001))
 
 static int get_expected_segs_to_target(int inode, int target_node,
@@ -981,10 +995,9 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
 	int no_need_to_pass_by_clb;
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
-
-	#ifdef INTERPOSER_BASED_ARCHITECTURE
+#ifdef INTERPOSER_BASED_ARCHITECTURE
 	int num_expected_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-	#endif
+#endif
 	
 	target_x = rr_node[target_node].get_xlow();
 	target_y = rr_node[target_node].get_ylow();
@@ -1013,7 +1026,6 @@ static int get_expected_segs_to_target(int inode, int target_node,
 			*num_segs_ortho_dir_ptr = 0;
 			no_need_to_pass_by_clb = 0;
 		}
-
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		(*num_segs_ortho_dir_ptr) = (*num_segs_ortho_dir_ptr) + 2*num_expected_hops;
 #endif
@@ -1062,7 +1074,6 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		} else {
 			num_segs_same_dir = 0;
 		}
-		
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		num_segs_same_dir = num_segs_same_dir + 2*num_expected_hops;
 #endif
@@ -1187,7 +1198,6 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 	return rlim;
 }
-
 #define ERROR_TOL 0.0001
 
 static void timing_driven_check_net_delays(float **net_delay) {
