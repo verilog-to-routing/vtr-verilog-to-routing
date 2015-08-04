@@ -118,7 +118,7 @@ class SetupAnalysisMode : public Base {
         template<class DelayCalc>
         void backward_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
 
-        //Tag data storage
+        //Setup tag data storage
         std::vector<TimingTags> setup_data_tags_; //Data tags for each node [0..timing_graph.num_nodes()-1]
         std::vector<TimingTags> setup_clock_tags_; //Clock tags for each node [0..timing_graph.num_nodes()-1]
 };

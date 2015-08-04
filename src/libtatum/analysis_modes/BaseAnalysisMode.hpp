@@ -42,5 +42,10 @@ class BaseAnalysisMode {
         //Operations performed whenever an edge is traversed in the backward direction
         template<class DelayCalc>
         void backward_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {}
+
+        //Operations performed once a nodes outgoing edges (on a backward traversal) have been
+        //traversed
+        template<class TagPoolType>
+        void backward_traverse_finalize_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {}
 };
 

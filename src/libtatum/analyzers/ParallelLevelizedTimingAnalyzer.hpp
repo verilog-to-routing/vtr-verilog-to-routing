@@ -36,7 +36,7 @@ class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType
         /*
          * Propogate required times
          */
-        void backward_traversal(const TimingGraph& timing_graph) override;
+        void backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
 
         //We use multiple tag pools to reduce contention between threads
         std::vector<MemoryPool*> tag_pools_;

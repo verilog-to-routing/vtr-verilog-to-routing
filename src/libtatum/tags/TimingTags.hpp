@@ -22,7 +22,7 @@
  *
  * Tag Flattening
  * ----------------
- * As a performance optimization we flatten the first tags of the list as members of this class. 
+ * As a performance optimization we flatten the first tags of the list as members of this class.
  * This ensures that the first tag is usually already in the CPU cache before it is queried,
  * offering a noticable speed-up. How many tags are embedded is controlled by the NUM_FLAT_TAGS
  * define.
@@ -31,7 +31,7 @@
  * will be pulled into the cache with the TimingTags class), and increased memory usage (not all nodes
  * may require all of the flattend tags, in which case it also hurts cache locality.
  *
- * Flattening only the first tag usually offers the best performance (most nodes have only one tag). 
+ * Flattening only the first tag usually offers the best performance (most nodes have only one tag).
  *
  * Tag Memory allocation
  * -----------------------

@@ -42,6 +42,7 @@ ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::Paral
         tag_pools_.push_back(new TagPoolType(sizeof(TimingTag)));
     }
 }
+
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
 ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::~ParallelLevelizedTimingAnalyzer() {
     //Clean-up dynamically alloated tag pools
@@ -97,7 +98,7 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::backward_traversal(const TimingGraph& timing_graph) {
+void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     using namespace std::chrono;
 
     //Backward traversal (required times)
@@ -110,13 +111,15 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
             //Parallel
             cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
-                this->backward_traverse_node(timing_graph, node_id);
+                TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
+                this->backward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
             }
         } else {
             //Serial
             for(int node_idx = 0; node_idx < (NodeId) level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
-                this->backward_traverse_node(timing_graph, node_id);
+                TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
+                this->backward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
             }
         }
 

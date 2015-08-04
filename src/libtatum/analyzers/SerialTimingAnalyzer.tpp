@@ -23,7 +23,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_tim
     auto fwd_traversal_end = high_resolution_clock::now();
 
     auto bck_traversal_start = high_resolution_clock::now();
-    backward_traversal(tg_);
+    backward_traversal(tg_, tc_);
     auto bck_traversal_end = high_resolution_clock::now();
 
     auto analysis_end = high_resolution_clock::now();
@@ -75,7 +75,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_trave
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traversal(const TimingGraph& timing_graph) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
     using namespace std::chrono;
 
     //Backward traversal (required times)
@@ -83,7 +83,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_trav
         auto bck_level_start = high_resolution_clock::now();
 
         for(NodeId node_id : timing_graph.level(level_id)) {
-            backward_traverse_node(timing_graph, node_id);
+            backward_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
         }
 
         auto bck_level_end = high_resolution_clock::now();
@@ -105,7 +105,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_trave
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traverse_node(const TimingGraph& tg, const NodeId node_id) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Pull from downstream sinks to current node
 
     TN_Type node_type = tg.node_type(node_id);
@@ -124,5 +124,7 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_trav
 
         AnalysisType::backward_traverse_edge(tg, dc_, node_id, edge_id);
     }
+
+    AnalysisType::backward_traverse_finalize_node(tag_pool, tg, tc, node_id);
 }
 

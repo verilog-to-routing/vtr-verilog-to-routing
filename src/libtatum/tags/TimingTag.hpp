@@ -6,15 +6,15 @@
 #include "TimingTagIterators.hpp"
 
 /*
- * The 'TimingTag' class represents an individual timing tag: the information associated 
+ * The 'TimingTag' class represents an individual timing tag: the information associated
  * with a node's arrival/required times.
  *
  *
- * This primarily includes the actual arrival and required time, but also 
+ * This primarily includes the actual arrival and required time, but also
  * auxillary metadata such as the clock domain, and launching node.
  *
  * The clock domain in particular is used to tag arrival/required times from different
- * clock domains on a single node.  This enables us to perform only a single graph traversal
+ * clock domains at a single node.  This enables us to perform only a single graph traversal
  * and still analyze mulitple clocks.
  *
  * NOTE: Timing analyzers usually operate on the collection of tags at a particular node.

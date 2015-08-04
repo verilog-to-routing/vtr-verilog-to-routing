@@ -76,18 +76,18 @@ class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> 
         /*
          * Propagate required times
          */
-        virtual void backward_traversal(const TimingGraph& timing_graph);
+        virtual void backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
 
         //Per node worker functions
         void forward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
-        void backward_traverse_node(const TimingGraph& tg, const NodeId node_id);
+        void backward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
         /*
          * Data
          */
         const TimingGraph& tg_; //The timing graph to analyzer
         const TimingConstraints& tc_; //The timing constraints to evaluate
-        const DelayCalcType& dc_; //The delay calculator used
+        const DelayCalcType& dc_; //The delay calculator to use
         TagPoolType tag_pool_; //Memory pool for allocating tags
 
         std::map<std::string, double> perf_data_; //Performance profiling info, assumes each data point has a unique string identifier
