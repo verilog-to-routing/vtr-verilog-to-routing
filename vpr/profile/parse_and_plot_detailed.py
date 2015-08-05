@@ -165,8 +165,10 @@ def export_results_to_csv(param_names, results, params):
 
 	for param,val in param_values.items():
 		print("{}: {}".format(param, val))
-	# also move the output file header
+	# also move the output file, place file, and pack file
 	shutil.copy(params.output_file, os.path.basename(params.output_file))
+	shutil.copy(params.pack_file, os.path.basename(params.pack_file))
+	shutil.copy(params.place_file, os.path.basename(params.place_file))
 
 	with open('results.csv', 'wb') as csvfile:
 		writer = csv.writer(csvfile)
@@ -273,13 +275,24 @@ def parse_args(ns=None):
     parser.add_argument("channel_width",
     		type=int,
     		help="channel used to route circuit")
+    parser.add_argument("--architecture",
+    		default="stratixiv_arch_timing",
+    		help="architecture used to map circuit to; default: %(default)s")
+    parser.add_argument("--resfile_dir",
+    		default="titan",
+    		help="directory (relative or absolute) of where result files (.pack, .place, .route) are kept")
     parser.add_argument("-r","--param_regex",            
     		nargs='+',
-            default=["Critical path: (.*) ns"],
+            default=[],
             help="additional regular expressions to match on the result file")
     params = parser.parse_args(namespace=ns)
     params.output_file = os.path.abspath(params.output_file)
-    
+
+    resfile_name = os.path.join(params.resfile_dir, '_'.join((params.circuit, params.architecture)))
+    print("result file base name: ", resfile_name);
+
+    setattr(params, 'pack_file', os.path.abspath(resfile_name + '.net'))
+    setattr(params, 'place_file', os.path.abspath(resfile_name + '.place'))
     return params;
 
 
