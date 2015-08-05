@@ -206,17 +206,19 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
     std::cout << "Re-allocating nodes so levels are in contiguous memory" << std::endl;
 
     /*
-     * Build a map of the old and new node ids to update edges
+     * Keep a map of the old and new node ids to update edges
      * and node levels later
      */
-    std::vector<NodeId> orig_node_id_map = std::vector<NodeId>(num_nodes(), -1);
-    int cnt = 0;
-    for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
-        for(NodeId node_id : node_levels_[level_idx]) {
-            orig_node_id_map[node_id] = cnt;
-            cnt++;
-        }
-    }
+    std::vector<NodeId> orig_to_new_node_id = std::vector<NodeId>(num_nodes(), -1);
+    /*
+     *int cnt = 0;
+     *for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
+     *    for(NodeId node_id : node_levels_[level_idx]) {
+     *        orig_to_new_node_id[node_id] = cnt;
+     *        cnt++;
+     *    }
+     *}
+     */
 
 
     /*
@@ -243,6 +245,9 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
             node_out_edges_.push_back(old_node_out_edges[old_node_id]);
             node_in_edges_.push_back(old_node_in_edges[old_node_id]);
             node_is_clock_source_.push_back(old_node_is_clock_source[old_node_id]);
+
+            //Record the new node id
+            orig_to_new_node_id[old_node_id] = node_types_.size() - 1;
         }
     }
 
@@ -251,16 +256,20 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
      */
     //The node levels
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
-        for(size_t i = 0; i < node_levels_[level_idx].size(); i++) {
-            NodeId old_node_id = node_levels_[level_idx][i];
-            node_levels_[level_idx][i] = orig_node_id_map[old_node_id];
+        for(size_t node_idx = 0; node_idx < node_levels_[level_idx].size(); node_idx++) {
+            NodeId old_node_id = node_levels_[level_idx][node_idx];
+            NodeId new_node_id = orig_to_new_node_id[old_node_id];
+
+            node_levels_[level_idx][node_idx] = new_node_id;
         }
     }
 
     //The primary outputs
     for(size_t i = 0; i < primary_outputs_.size(); i++) {
         NodeId old_node_id = primary_outputs_[i];
-        primary_outputs_[i] = orig_node_id_map[old_node_id];
+        NodeId new_node_id = orig_to_new_node_id[old_node_id];
+
+        primary_outputs_[i] = new_node_id;
     }
 
     //The Edges
@@ -268,11 +277,14 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
         NodeId old_sink_node = edge_sink_nodes_[i];
         NodeId old_src_node = edge_src_nodes_[i];
 
-        edge_sink_nodes_[i] = orig_node_id_map[old_sink_node];
-        edge_src_nodes_[i] = orig_node_id_map[old_src_node];
+        NodeId new_sink_node = orig_to_new_node_id[old_sink_node];
+        NodeId new_src_node = orig_to_new_node_id[old_src_node];
+
+        edge_sink_nodes_[i] = new_sink_node;
+        edge_src_nodes_[i] = new_src_node;
     }
 
-    return orig_node_id_map;
+    return orig_to_new_node_id;
 }
 
 //Stream extraction for TN_Type
