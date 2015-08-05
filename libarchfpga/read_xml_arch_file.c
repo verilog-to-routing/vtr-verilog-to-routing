@@ -1818,14 +1818,6 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type, t_segment_inf *se
 
 	} /* End of processing pin children */
 
-	/* 
-		<fc default_in_type="frac" default_out_type="frac" default_in_val="0.15" default_out_val="0.1">
-			<pin fc_type="frac" fc_val="0.5"/>
-
-			<segment name="my_l4" in_type="frac" out_type="frac" in_val="0.3" out_val="0.3"/>
-		</fc>
-	*/
-
 	/* now check for segment-based overrides. earlier in this function we already checked that both kinds of
 	   overrides haven't been specified */
 	Child = ezxml_child(Node, "segment");
