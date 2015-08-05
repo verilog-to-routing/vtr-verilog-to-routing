@@ -347,6 +347,9 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
+#ifdef PROFILE
+		time_on_fanout_analysis();
+#endif
 	}
 
 	free_rr_node_route_structs();

@@ -28,3 +28,8 @@ struct timing_driven_route_structs {
 	timing_driven_route_structs();
 	~timing_driven_route_structs();
 };
+
+// profiling functions
+#ifdef PROFILE
+void time_on_fanout_analysis();
+#endif

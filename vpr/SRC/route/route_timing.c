@@ -62,9 +62,8 @@ struct more_sinks_than {
 };
 
 
-
+#ifdef PROFILE
 static void congestion_analysis();
-static void time_on_fanout_analysis();
 static void time_on_criticality_analysis();
 constexpr int fanout_per_bin = 4;
 constexpr float criticality_per_bin = 0.05;
@@ -73,6 +72,7 @@ static vector<float> time_to_build_heap;
 static vector<int> itry_on_fanout;
 static vector<float> time_on_criticality;
 static vector<int> itry_on_criticality;
+#endif
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -196,7 +196,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			
 			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
 			if (expected_success_route_iter == UNDEFINED) {
-				if (router_opts.fanout_analysis) time_on_fanout_analysis();
 				return false;
 			}
 
@@ -214,7 +213,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 									 while congestion grows at %f %/iteration, unlikely to finish.\n",
 						time_per_iteration_slope, congestion_per_iteration_slope);
 
-					if (router_opts.fanout_analysis) time_on_fanout_analysis();
 					return false;
 				}
 			}
@@ -241,7 +239,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
-			if (router_opts.fanout_analysis) time_on_fanout_analysis();
 			return (true);
 		}
 
@@ -296,12 +293,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		fflush(stdout);
 	}
 	vpr_printf_info("Routing failed.\n");
-	if (router_opts.fanout_analysis) time_on_fanout_analysis();
+
 	return (false);
 }
 
-void time_on_fanout_analysis() {
+// profiling per iteration functions
 #ifdef PROFILE
+void time_on_fanout_analysis() {
 	// using the global time_on_fanout and itry_on_fanout
 	vpr_printf_info("fanout low           time (s)        attemps     heap build time (s)\n");
 	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
@@ -309,18 +307,15 @@ void time_on_fanout_analysis() {
 			vpr_printf_info("%4d           %14.3f   %12d %14.3f\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin], time_to_build_heap[bin]);
 		}
 	}
-#endif
 }
 
 void time_on_criticality_analysis() {
-#ifdef PROFILE
 	vpr_printf_info("congestion low           time (s)        attemps\n");
 	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
 		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
 			vpr_printf_info("%4d           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
 		}
 	}	
-#endif
 }
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
 // efficient bit array for checking against congested type
@@ -332,8 +327,8 @@ struct Congested_node_types {
 	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
 	bool empty() const {return mask == 0;}
 };
+
 void congestion_analysis() {
-#ifdef PROFILE
 	static const std::vector<const char*> node_typename {
 		"SOURCE",
 		"SINK",
@@ -378,8 +373,8 @@ void congestion_analysis() {
 			}
 		}
 	}
-#endif
 }
+#endif
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
@@ -1301,8 +1296,6 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 	if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
 		vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 				FIRST_ITER_WIRELENTH_LIMIT);
-
-		if (router_opts.fanout_analysis) time_on_fanout_analysis();
 		return true;
 	}
 	vpr_printf_info("--------- ---------- ----------- ---------------------\n");
