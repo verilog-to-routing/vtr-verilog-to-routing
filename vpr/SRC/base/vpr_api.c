@@ -147,21 +147,37 @@ void vpr_print_usage(void) {
 #endif
 }
 
-/* Initialize VPR 
+void vpr_print_args(int argc, char** argv) {
+    vpr_printf_info("VPR was run with the following command-line:\n");
+    for(int i = 0; i < argc; i++) {
+        if(i != 0) {
+            vpr_printf_info(" ");
+        }
+        vpr_printf_info("%s", argv[i]);
+    }
+    vpr_printf_info("\n\n");
+}
+
+/* Initialize VPR
  1. Read Options
  2. Read Arch
  3. Read Circuit
  4. Sanity check all three
  */
-void vpr_init(INP int argc, INP char **argv, 
+void vpr_init(INP int argc, INP char **argv,
 		OUTP t_options *options,
-		OUTP t_vpr_setup *vpr_setup, 
+		OUTP t_vpr_setup *vpr_setup,
 		OUTP t_arch *arch) {
 
 	log_set_output_file("vpr_stdout.log");
-	
+
 	/* Print title message */
 	vpr_print_title();
+
+    //Print out the arguments passed to VPR.
+    //This provides a reference in the log file to exactly
+    //how VPR was run, aiding in re-producibility
+    vpr_print_args(argc, argv);
 
 	if (argc >= 3) {
 
@@ -186,8 +202,8 @@ void vpr_init(INP int argc, INP char **argv,
 				arch, &vpr_setup->Operation, &vpr_setup->user_models,
 				&vpr_setup->library_models, &vpr_setup->PackerOpts,
 				&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
-				&vpr_setup->RouterOpts, &vpr_setup->RoutingArch, 
-				&vpr_setup->PackerRRGraph, &vpr_setup->Segments, 
+				&vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
+				&vpr_setup->PackerRRGraph, &vpr_setup->Segments,
 				&vpr_setup->Timing, &vpr_setup->ShowGraphics,
 				&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
 
@@ -217,13 +233,13 @@ void vpr_init(INP int argc, INP char **argv,
 	} else {
 		/* Print usage message if no args */
 		vpr_print_usage();
-		vpr_printf_error(__FILE__, __LINE__, 
+		vpr_printf_error(__FILE__, __LINE__,
 			"Missing arguments, see above and try again!\n");
 		exit(1);
 	}
 }
 
-/* 
+/*
  * Sets globals: nx, ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
@@ -231,7 +247,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, 
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch,
 				&num_blocks, &block, &num_nets, &clb_net);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
@@ -364,7 +380,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 /* This function determines locations where cuts should happen for an
- * interposer-based architecture. 
+ * interposer-based architecture.
  * Notice that a cut cannot go through a block.
  *
  * For instance: here we have DSP blocks of height 4, and RAM blocks of height 6.
@@ -373,17 +389,17 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
  * The first possible place to have a cut without cutting through a block is the Least Common Multiple of
  * Block Heights of the blocks in the architecture
  *
- *  
+ *
  * _______    ______ ______________________> y = 12 OK. = LCM (4,6)
  * |     |    |    |
  * | DSP |    | RAM|
  * |     |    |    |
  * |_____|    |    | ______________________> y = 8 Not OK.
- * |     |    |    | 
+ * |     |    |    |
  * | DSP |    |____| ______________________> y = 6 Not OK.
  * |     |    |    |
  * |_____|    |    | ______________________> y = 4 Not OK.
- * |     |    |    |  
+ * |     |    |    |
  * | DSP |    | RAM|
  * |     |    |    |
  * |     |    |    |
@@ -393,7 +409,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
  * 98 / 4 = 24, so at most you can make 23 cuts (24 slices without cutting through a block).
  * You want each slice to be as tall as possible.
  * 24 / 3 = 8. So, you can have at most 8 of the tallest block in each slice.
- * So, 
+ * So,
  * Slice #1 = y=0  --> y= 8*4= 32     (heigh of slice#1 = 32)
  * Slice #2 = y=32 --> y= 8*4*2 = 64  (heigh of slice#2 = 32)
  * Slice #3 = y=64 --> y=98           (heigh of slice#3 = 34)
@@ -402,14 +418,14 @@ void vpr_setup_interposer_cut_locations(t_arch Arch)
 {
 	if(Arch.lcm_of_block_heights >= ny)
 	{
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 		"Given the specifications of block heights in the architecture, it is not possible to "
 		"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
 	}
 
 
 	int num_slices = num_cuts + 1;
-		
+
 	// see explanation above for slice_height
 	int slice_height = ((int)(((int)(ny / Arch.lcm_of_block_heights)) / num_slices )) * Arch.lcm_of_block_heights;
 
@@ -425,7 +441,7 @@ void vpr_setup_interposer_cut_locations(t_arch Arch)
 		arch_cut_locations[cut_counter] = (cut_counter+1)*slice_height;
 		if( arch_cut_locations[cut_counter] >= ny)
 		{
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
 			"Given the specifications of block heights in the architecture, it is not possible to "
 			"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
 		}
@@ -462,7 +478,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	begin = std::chrono::high_resolution_clock::now();
 	vpr_printf_info("Initialize packing.\n");
 
-	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of 
+	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of
 	 a block through an opin switch to a length-4 wire, then through a wire switch to another
 	 length-4 wire, then through a wire-to-ipin-switch into another block. */
 	int wire_segment_length = 4;
@@ -473,14 +489,14 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 
 		/* We want to determine a reasonable fan-in to the opin, wire, and ipin switches, based
 		   on which the intercluster delays can be estimated. The fan-in of a switch influences its
-		   delay. 
-		   
+		   delay.
+
 		   The fan-in of the switch depends on the architecture (unidirectional/bidirectional), as
 		   well as Fc_in/out and Fs */
 		int opin_switch_fanin, wire_switch_fanin, ipin_switch_fanin;
-		get_intercluster_switch_fanin_estimates(vpr_setup, wire_segment_length, &opin_switch_fanin, 
+		get_intercluster_switch_fanin_estimates(vpr_setup, wire_segment_length, &opin_switch_fanin,
 				&wire_switch_fanin, &ipin_switch_fanin);
-		
+
 
 		float Tdel_opin_switch, R_opin_switch, Cout_opin_switch;
 		float opin_switch_del = get_arch_switch_info(arch.Segments[0].arch_opin_switch, opin_switch_fanin,
@@ -498,7 +514,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 		float Rmetal = arch.Segments[0].Rmetal;
 		float Cmetal = arch.Segments[0].Cmetal;
 
-		/* The delay of a wire with its driving switch is the switch delay plus the 
+		/* The delay of a wire with its driving switch is the switch delay plus the
 		 product of the equivalent resistance and capacitance experienced by the wire. */
 
 		float first_wire_seg_delay = opin_switch_del
@@ -527,7 +543,7 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	1) opin to wire switch
 	2) wire to wire switch
 	3) wire to ipin switch
-   We can estimate the fan-in of these switches based on the Fc_in/Fc_out of 
+   We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
    a logic block, and the switch block Fs value */
 static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
 			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin){
@@ -541,7 +557,7 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 	Fc_in = 0, Fc_out = 0;
 
 	/* get Fc_in/out for FILL_TYPE block (i.e. logic blocks) */
-	int num_pins = FILL_TYPE->num_pins;	
+	int num_pins = FILL_TYPE->num_pins;
 	for (int ipin = 0; ipin < num_pins; ipin++){
 		int iclass = FILL_TYPE->pin_class[ipin];
 		e_pin_type pin_type = FILL_TYPE->class_inf[iclass].type;
@@ -572,7 +588,7 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 			}
 		}
 	}
-	
+
 	/* Estimates of switch fan-in are done as follows:
 	   1) opin to wire switch:
 		2 CLBs connect to a channel, each with #opins/4 pins. Each pin has Fc_out*W
@@ -581,10 +597,10 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 
 			Unidirectional: 2 * #opins_per_side * Fc_out * wire_segment_length
 			Bidirectional:  2 * #opins_per_side * Fc_out
-	
+
 	   2) wire to wire switch
 		A wire segment in a switchblock connects to Fs other wires. Assuming these connections are evenly
-		distributed, each target wire receives Fs connections as well. In the unidirectional case, 
+		distributed, each target wire receives Fs connections as well. In the unidirectional case,
 		source wires can only connect to W/wire_segment_length wires.
 
 			Unidirectional: Fs * wire_segment_length
@@ -592,7 +608,7 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 
 	   3) wire to ipin switch
 		An input pin of a CLB simply receives Fc_in connections.
-			
+
 			Unidirectional: Fc_in
 			Bidirectional:  Fc_in
 	*/
@@ -956,7 +972,7 @@ void free_circuit() {
 	}
 }
 
-void vpr_free_vpr_data_structures(INOUTP t_arch Arch, 
+void vpr_free_vpr_data_structures(INOUTP t_arch Arch,
 		INOUTP t_options options,
 		INOUTP t_vpr_setup vpr_setup) {
 
@@ -975,7 +991,7 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch,
 	free_sdc_related_structs();
 }
 
-void vpr_free_all(INOUTP t_arch Arch, 
+void vpr_free_all(INOUTP t_arch Arch,
 		INOUTP t_options options,
 		INOUTP t_vpr_setup vpr_setup) {
 
@@ -1185,11 +1201,11 @@ void vpr_print_error(t_vpr_error* vpr_error){
 		strcpy(error_type, "");
 		break;
 	}
-			
+
 	vpr_printf_error(__FILE__, __LINE__,
 		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
-		error_type, vpr_error->file_name, vpr_error->line_num, 
+		error_type, vpr_error->file_name, vpr_error->line_num,
 		vpr_error->message);
-	
+
 	free (error_type);
 }
