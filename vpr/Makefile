@@ -39,6 +39,7 @@ OTHER_DIR := $(OTHER_DIR) \
 WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g 
+PROFILE_FLAGS = -DPROFILE
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
 DEFINES := -D BUILD_VERSION=\""$(BUILD_VERSION)"\" -D BUILD_DATE=\""$(BUILD_DATE)"\"
@@ -55,9 +56,13 @@ endif
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
+else ifeq (,$(findstring profile, $(BUILD_TYPE)))
+  FLAGS := $(FLAGS) $(PROFILE_FLAGS)
 else                              # DEBUG build
-  FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+  FLAGS := $(FLAGS) $(DEBUG_FLAGS) 
 endif
+
+
 
 ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
   # The following block defines the graphics library directories. If X11 library
@@ -82,12 +87,12 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-profile: FLAGS += $(DEBUG_FLAGS) -DPROFILE
-profile: $(EXE)
+
 
 # notify is an order-only prerequisite - note the "|"
 $(EXE): $(OBJ) Makefile libvpr.a | notify
 	$(CC) $(FLAGS) OBJ/main.o -o $(EXE) $(LIB_DIR) $(LIB)
+
 
 # if graphics enabled but a library is not installed, notify the user
 notify:
