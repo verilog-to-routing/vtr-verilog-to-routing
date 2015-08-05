@@ -1,6 +1,5 @@
-#include <map>
-
 #include "assert.hpp"
+#include <iostream>
 
 #include "TimingGraph.hpp"
 
@@ -124,7 +123,6 @@ void TimingGraph::levelize() {
 
 std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
     //Make all edges in a level be contiguous in memory
-    std::cout << "Re-allocating edges so levels are in contiguous memory" << std::endl;
 
     //Determine the edges driven by each level of the graph
     std::vector<std::vector<EdgeId>> edge_levels;
@@ -203,7 +201,6 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
 
 std::vector<NodeId> TimingGraph::optimize_node_layout() {
     //Make all nodes in a level be contiguous in memory
-    std::cout << "Re-allocating nodes so levels are in contiguous memory" << std::endl;
 
     /*
      * Keep a map of the old and new node ids to update edges

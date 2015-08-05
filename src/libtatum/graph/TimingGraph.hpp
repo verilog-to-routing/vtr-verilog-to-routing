@@ -1,10 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <map>
-#include <forward_list>
-#include <iostream>
-#include <iomanip>
+#include <iosfwd>
 
 #include "timing_graph_fwd.hpp"
 

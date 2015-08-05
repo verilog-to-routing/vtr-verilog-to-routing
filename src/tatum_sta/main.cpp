@@ -52,8 +52,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    struct timespec prog_start, load_start, analyze_start, verify_start, reset_start;
-    struct timespec prog_end, load_end, analyze_end, verify_end, reset_end;
+    struct timespec prog_start, load_start, node_reorder_start, edge_reorder_start, analyze_start, verify_start, reset_start;
+    struct timespec prog_end, load_end, node_reorder_end, edge_reorder_end, analyze_end, verify_end, reset_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
@@ -118,8 +118,15 @@ int main(int argc, char** argv) {
         cout << endl;
 
 #ifdef OPTIMIZE_NODE_EDGE_ORDER
+        clock_gettime(CLOCK_MONOTONIC, &edge_reorder_start);
+
         //Re-order edges
+        cout << "Re-allocating edges so levels are in contiguous memory";
         std::vector<EdgeId> vpr_edge_map = timing_graph.optimize_edge_layout();
+
+        clock_gettime(CLOCK_MONOTONIC, &edge_reorder_end);
+        cout << " (took " << time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
+
 
         //Adjust the edge delays to reflect the new ordering
         edge_delays = std::vector<float>(orig_edge_delays.size());
@@ -128,8 +135,14 @@ int main(int argc, char** argv) {
             edge_delays[new_id] = orig_edge_delays[i];
         }
 
+        clock_gettime(CLOCK_MONOTONIC, &node_reorder_start);
+
         //Re-order nodes
+        cout << "Re-allocating nodes so levels are in contiguous memory";
         std::vector<NodeId> vpr_node_map = timing_graph.optimize_node_layout();
+
+        clock_gettime(CLOCK_MONOTONIC, &node_reorder_end);
+        cout << " (took " << time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
         expected_arr_req_times = VprArrReqTimes();
