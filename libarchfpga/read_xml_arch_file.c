@@ -3909,8 +3909,9 @@ void EchoArch(INP const char *EchoFile, INP const t_type_descriptor * Types,
 			fprintf(Echo, "\tis_Fc_full_flex: \n");
 			fprintf(Echo, "\t\tPin number %d: %s\n", j,
 					(Types[i].is_Fc_full_flex[j] ? "true" : "false"));
-			fprintf(Echo, "\tFc_val: \n");
-			fprintf(Echo, "\tPin number %d: %f\n", j, Types[i].Fc[j]);
+			for (int iseg = 0; iseg < arch->num_segments; iseg++){
+				fprintf(Echo, "\tPin: %d  Segment: %d  Fc: %f\n", j, iseg, Types[i].Fc[j][iseg]);
+			}
 		}
 		fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
 		fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);
