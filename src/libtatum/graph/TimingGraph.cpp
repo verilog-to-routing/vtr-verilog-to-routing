@@ -66,7 +66,8 @@ void TimingGraph::levelize() {
     node_levels_.resize(1);
 
     //Copy the number of input edges per-node
-    //These will be decremented to know when a node is done
+    //These will be decremented to know when all a node's upstream parents have been
+    //placed in a previous level (indicating that the node goes in the current level)
     //
     //Also initialize the first level (nodes with no fanin)
     std::vector<int> node_fanin_remaining(num_nodes());
@@ -84,7 +85,7 @@ void TimingGraph::levelize() {
     //
     //We inspect the output edges of each node and decrement the fanin count of the
     //target node.  Once the fanin count for a node reaches zero it can be added
-    //to the level.
+    //to the current level.
     int level_id = 0;
     bool inserted_node_in_level = true;
     while(inserted_node_in_level) { //If nothing was inserted we are finished
@@ -125,7 +126,7 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
     //Make all edges in a level be contiguous in memory
     std::cout << "Re-allocating edges so levels are in contiguous memory" << std::endl;
 
-    //Collect levels for edges
+    //Determine the edges driven by each level of the graph
     std::vector<std::vector<EdgeId>> edge_levels;
     for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
         edge_levels.push_back(std::vector<EdgeId>());
@@ -133,24 +134,35 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
             for(int i = 0; i < num_node_out_edges(node_id); i++) {
                 EdgeId edge_id = node_out_edge(node_id, i);
 
+                //edge_id is driven by nodes in level level_idx
                 edge_levels[level_idx].push_back(edge_id);
             }
         }
     }
 
-    //Save a map from old edge_id to new edge_id, will be used to update node refs
-    std::vector<EdgeId> orig_edge_id_map = std::vector<NodeId>(num_edges(), -1);
-    int cnt = 0;
-    for(std::vector<EdgeId>& edge_level : edge_levels) {
-        for(EdgeId orig_edge_id : edge_level) {
-            orig_edge_id_map[orig_edge_id] = cnt;
-            cnt++;
-        }
-    }
+    /*
+     * Determine the new index for each edge in the graph
+     * by walking through the edges in levelized order
+     */
+    /*
+     *
+     * //Maps from from original to new edge id, used to update node's edge refs
+     *std::vector<EdgeId> orig_to_new_edge_id = std::vector<NodeId>(num_edges(), -1);
+     *int cnt = 0;
+     *for(std::vector<EdgeId>& edge_level : edge_levels) {
+     *    for(EdgeId orig_edge_id : edge_level) {
+     *        orig_to_new_edge_id[orig_edge_id] = cnt;
+     *        cnt++;
+     *    }
+     *}
+     */
 
     /*
      * Re-allocate edges to be contiguous in memory
      */
+
+    //Maps from from original to new edge id, used to update node to edge refs
+    std::vector<EdgeId> orig_to_new_edge_id(num_edges(), -1);
 
     //Save the old values while we write the new ones
     std::vector<NodeId> old_edge_sink_nodes_;
@@ -159,32 +171,34 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
     //Swap them
     std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
     std::swap(old_edge_src_nodes_, edge_src_nodes_);
-    //std::swap(old_edge_delays_, edge_delays_);
 
-    //Update values
+    //Update edge to node refs
     for(auto& edge_level : edge_levels) {
         for(auto& orig_edge_id : edge_level) {
             //Write edges in the new contiguous order
             edge_sink_nodes_.push_back(old_edge_sink_nodes_[orig_edge_id]);
             edge_src_nodes_.push_back(old_edge_src_nodes_[orig_edge_id]);
+
+            //Save the new edge id to update nodes
+            orig_to_new_edge_id[orig_edge_id] = edge_sink_nodes_.size() - 1;
         }
     }
 
-    /*
-     * Update edge refs in nodes
-     */
-    for(int i = 0; i < num_nodes(); i++) {
-        for(size_t j = 0; j < node_out_edges_[i].size(); j++) {
-            EdgeId old_edge_id = node_out_edges_[i][j];
-            node_out_edges_[i][j] = orig_edge_id_map[old_edge_id];
+    //Update node to edge refs
+    for(NodeId node_id = 0; node_id < num_nodes(); node_id++) {
+        for(int edge_idx = 0; edge_idx < num_node_out_edges(node_id); edge_idx++) {
+            EdgeId old_edge_id = node_out_edges_[node_id][edge_idx];
+            EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
+            node_out_edges_[node_id][edge_idx] = new_edge_id;
         }
-        for(size_t j = 0; j < node_in_edges_[i].size(); j++) {
-            EdgeId old_edge_id = node_in_edges_[i][j];
-            node_in_edges_[i][j] = orig_edge_id_map[old_edge_id];
+        for(int edge_idx = 0; edge_idx < num_node_in_edges(node_id); edge_idx++) {
+            EdgeId old_edge_id = node_in_edges_[node_id][edge_idx];
+            EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
+            node_in_edges_[node_id][edge_idx] = new_edge_id;
         }
     }
 
-    return orig_edge_id_map;
+    return orig_to_new_edge_id;
 }
 
 std::vector<NodeId> TimingGraph::optimize_node_layout() {

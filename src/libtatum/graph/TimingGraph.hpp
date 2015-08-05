@@ -28,7 +28,7 @@
  * ======================
  * For performance reasons (see Implementation section for details) we store all graph data
  * in the 'TimingGraph' class, and do not use separate edge/node objects.  To facilitate this,
- * each node and edge in the graph is given a unique identifier (e.g. NodeId or EdgeId). These
+ * each node and edge in the graph is given a unique identifier (e.g. NodeId, EdgeId). These
  * ID's can then be used to access the required data through the appropriate member function.
  *
  * Implementation
@@ -36,10 +36,10 @@
  * The 'TimingGraph' class represents the timing graph in a "Struct of Arrays (SoA)" manner,
  * rather than as an "Array of Structs (AoS)" which would be the more inuitive data layout.
  *
- * By using a SoA layout we keep all data for a particular field (e.g. node types) in a contiguous
+ * By using a SoA layout we keep all data for a particular field (e.g. node types) in contiguous
  * memory.  Using an AoS layout, while each object (e.g. a TimingNode class) would be contiguous the
  * various fields accross nodes would NOT be contiguous.  Since we typically perform operations on
- * particular fields accross nodes the SoA layout performs better.
+ * particular fields accross nodes the SoA layout performs better. The edges are stored in a SOA format.
  *
  * The SoA layout also motivates the ID based approach, which allows direct indexing into the required
  * vector to retrieve data.
@@ -53,8 +53,8 @@
  * Using this information we can re-arrange the node and edge data to match this traversal order.
  * This greatly improves caching behaviour, since pulling in data for one node immediately pulls
  * in data for the next node/edge to be processed. This exploits both spatial and temporal locality,
- * and ensures that each cache line pulled into the cache will likely be accessed multiple times before
- * being evicted.
+ * and ensures that each cache line pulled into the cache will (likely) be accessed multiple times
+ * before being evicted.
  *
  * Note that performing these optimizations is currently done explicity by calling the optimize_edge_layout()
  * and optimize_node_layout() member functions.  In the future (particularily if incremental modification
