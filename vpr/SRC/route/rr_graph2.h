@@ -132,10 +132,11 @@ int get_unidir_opin_connections(
 		INP int chan,
 		INP int seg,
 		INP int Fc,
+		INP int seg_type_index,
 		INP t_rr_type chan_type,
 		INP t_seg_details *seg_details,
 		INOUTP t_linked_edge **edge_list_ptr,
-		INOUTP int **Fc_ofs,
+		INOUTP int ***Fc_ofs,
 		INOUTP bool *L_rr_edge_done,
 		INP int max_len,
 		INP int max_chan_width,
@@ -184,6 +185,10 @@ void load_sblock_pattern_lookup(
 		INP int Fs,
 		INP enum e_switch_block_type switch_block_type,
 		INOUTP short ******sblock_pattern);
+
+int *get_seg_track_counts(
+		INP int num_sets, INP int num_seg_types,
+		INP t_segment_inf * segment_inf, INP bool use_full_seg_groups);
 
 void dump_seg_details(
 		const t_seg_details *seg_details,

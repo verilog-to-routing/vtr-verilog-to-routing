@@ -95,7 +95,7 @@ static void ProcessPinToPinAnnotations(ezxml_t parent,
 static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode);
 static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 		bool * default_leakage_mode);
-static void Process_Fc(ezxml_t Node, t_type_descriptor * Type);
+static void Process_Fc(ezxml_t Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments);
 static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type);
 static void ProcessSizingTimingIpinCblock(INOUTP ezxml_t Node,
 		OUTP struct s_arch *arch, INP bool timing_enabled);
@@ -112,7 +112,7 @@ static void ProcessLutClass(INOUTP t_pb_type *lut_pb_type);
 static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type);
 static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		OUTP t_type_descriptor ** Types, OUTP int *NumTypes,
-		INP bool timing_enabled);
+		INP bool timing_enabled, s_arch arch);
 static void ProcessSwitches(INOUTP ezxml_t Node,
 		OUTP struct s_arch_switch_inf **Switches, OUTP int *NumSwitches,
 		INP bool timing_enabled);
@@ -1548,7 +1548,7 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
 
 /* Takes in the node ptr for the 'fc_in' and 'fc_out' elements and initializes
  * the appropriate fields of type. Unlinks the contents of the nodes. */
-static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
+static void Process_Fc(ezxml_t Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments) {
 	enum Fc_type def_type_in, def_type_out, ovr_type;
 	const char *Prop, *Prop2;
 	char *port_name;
@@ -1565,7 +1565,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 	Type->is_Fc_frac = (bool *) my_malloc(Type->num_pins * sizeof(bool));
 	Type->is_Fc_full_flex = (bool *) my_malloc(
 			Type->num_pins * sizeof(bool));
-	Type->Fc = (float *) my_malloc(Type->num_pins * sizeof(float));
+	Type->Fc = (float **) alloc_matrix(0, Type->num_pins-1, 0, num_segments-1, sizeof(float));
 
 	/* Load the default fc_in, if specified */
 	Prop = FindProperty(Node, "default_in_type", false);
@@ -1629,26 +1629,34 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		ezxml_set_attr(Node, "default_out_type", NULL);
 	}
 
-	/* Go though all the pins in Type, assign def_in_val and def_out_val     *
-	 * to entries in Type->Fc array corresponding to input pins and output   *
+	/* Go though all the pins and segments in Type, assign def_in_val and def_out_val
+	 * to entries in Type->Fc array corresponding to input pins and output
 	 * pins. Also sets up the type of fc of the pin in the bool arrays    */
 	for (ipin = 0; ipin < Type->num_pins; ipin++) {
 		iclass = Type->pin_class[ipin];
-		if (Type->class_inf[iclass].type == DRIVER) {
-			Type->Fc[ipin] = def_out_val;
-			Type->is_Fc_full_flex[ipin] =
-					(def_type_out == FC_FULL) ? true : false;
-			Type->is_Fc_frac[ipin] = (def_type_out == FC_FRAC) ? true : false;
-		} else if (Type->class_inf[iclass].type == RECEIVER) {
-			Type->Fc[ipin] = def_in_val;
-			Type->is_Fc_full_flex[ipin] =
-					(def_type_in == FC_FULL) ? true : false;
-			Type->is_Fc_frac[ipin] = (def_type_in == FC_FRAC) ? true : false;
-		} else {
-			Type->Fc[ipin] = -1;
-			Type->is_Fc_full_flex[ipin] = false;
-			Type->is_Fc_frac[ipin] = false;
+		for (int iseg = 0; iseg < num_segments; iseg++){
+			if (Type->class_inf[iclass].type == DRIVER) {
+				Type->Fc[ipin][iseg] = def_out_val;
+				Type->is_Fc_full_flex[ipin] =
+						(def_type_out == FC_FULL) ? true : false;
+				Type->is_Fc_frac[ipin] = (def_type_out == FC_FRAC) ? true : false;
+			} else if (Type->class_inf[iclass].type == RECEIVER) {
+				Type->Fc[ipin][iseg] = def_in_val;
+				Type->is_Fc_full_flex[ipin] =
+						(def_type_in == FC_FULL) ? true : false;
+				Type->is_Fc_frac[ipin] = (def_type_in == FC_FRAC) ? true : false;
+			} else {
+				Type->Fc[ipin][iseg] = -1;
+				Type->is_Fc_full_flex[ipin] = false;
+				Type->is_Fc_frac[ipin] = false;
+			}
 		}
+	}
+
+	/* pin-based fc overrides and segment-based fc overrides should not exist at the same time */
+	if (ezxml_child(Node, "pin") != NULL && ezxml_child(Node, "segment") != NULL){
+		vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+				"Complex block 'fc' is allowed to specify pin-based fc overrides OR segment-based fc overrides, not both.\n");
 	}
 
 	/* Now, check for pin-based fc override - look for pin child. */
@@ -1759,7 +1767,7 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 							curr_pin++) {
 
 						// Check whether the value had been overwritten
-						if (ovr_val != Type->Fc[iport_pin + curr_pin]
+						if (ovr_val != Type->Fc[iport_pin + curr_pin][0]
 									|| Type->is_Fc_full_flex[iport_pin
 											+ curr_pin]
 											!= (ovr_type == FC_FULL) ? true :
@@ -1767,7 +1775,10 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 									|| Type->is_Fc_frac[iport_pin + curr_pin]
 											!= (ovr_type == FC_FRAC) ?
 									true : false) {
-							Type->Fc[iport_pin + curr_pin] = ovr_val;
+
+							for (int iseg = 0; iseg < num_segments; iseg++){
+								Type->Fc[iport_pin + curr_pin][iseg] = ovr_val;
+							}
 							Type->is_Fc_full_flex[iport_pin + curr_pin] =
 									(ovr_type == FC_FULL) ? true : false;
 							Type->is_Fc_frac[iport_pin + curr_pin] =
@@ -1806,6 +1817,65 @@ static void Process_Fc(ezxml_t Node, t_type_descriptor * Type) {
 		FreeNode(Junk);
 
 	} /* End of processing pin children */
+
+	/* now check for segment-based overrides. earlier in this function we already checked that both kinds of
+	   overrides haven't been specified */
+	Child = ezxml_child(Node, "segment");
+	while (Child != NULL){
+		const char *segment_name;
+		int seg_ind;
+		float in_val;
+		float out_val;
+
+		/* get name */
+		Prop = FindProperty(Child, "name", true);
+		ezxml_set_attr(Child, "name", NULL);
+		segment_name = Prop;
+
+		/* get fc_in */
+		Prop = FindProperty(Child, "in_val", true);
+		ezxml_set_attr(Child, "in_val", NULL);
+		in_val = (float) atof(Prop);
+
+
+		/* get fc_out */
+		Prop = FindProperty(Child, "out_val", true);
+		ezxml_set_attr(Child, "out_val", NULL);
+		out_val = (float) atof(Prop);
+
+
+		/* get segment index for which Fc should be updated */
+		seg_ind = UNDEFINED;
+		for (int iseg = 0; iseg < num_segments; iseg++){
+			if ( strcmp(segment_name, segments[iseg].name) == 0 ){
+				seg_ind = iseg;
+				break;
+			}
+		}
+		if (seg_ind == UNDEFINED){
+			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Child->line,
+				"Segment-based Fc override specified segment name that cannot be found in segment list: %s\n", segment_name);
+		}
+
+		/* update Fc for this segment across all driver/receiver pins */
+		for (ipin = 0; ipin < Type->num_pins; ipin++){
+			iclass = Type->pin_class[ipin];
+
+			if (Type->class_inf[iclass].type == DRIVER){
+				Type->Fc[ipin][seg_ind] = out_val;
+			} else if (Type->class_inf[iclass].type == RECEIVER){
+				Type->Fc[ipin][seg_ind] = in_val;
+			} else {
+				/* do nothing */
+			}
+		}
+
+
+		/* Find next child and frees up the current child. */
+		Junk = Child;
+		Child = ezxml_next(Child);
+		FreeNode(Junk);
+	}
 
 }
 
@@ -2693,7 +2763,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
  * when complete. */
 static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		OUTP t_type_descriptor ** Types, OUTP int *NumTypes,
-		bool timing_enabled) {
+		bool timing_enabled, s_arch arch) {
 	ezxml_t CurType, Prev;
 	ezxml_t Cur;
 	t_type_descriptor * Type;
@@ -2764,7 +2834,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 
 		/* Load Fc */
 		Cur = FindElement(CurType, "fc", true);
-		Process_Fc(Cur, Type);
+		Process_Fc(Cur, Type, arch.Segments, arch.num_segments);
 		FreeNode(Cur);
 
 #if 0
@@ -2847,25 +2917,6 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 	ProcessDevice(Next, arch, timing_enabled);
 	FreeNode(Next);
 
-	/* Process types */
-	Next = FindElement(Cur, "complexblocklist", true);
-	ProcessComplexBlocks(Next, Types, NumTypes, timing_enabled);
-	FreeNode(Next);
-
-	#ifdef INTERPOSER_BASED_ARCHITECTURE	
-	/* find the least common multiple of block heights
-	 * for interposer based architectures, a culine cannot go through a block */
-	arch->lcm_of_block_heights = 1;
-	for(int i=0; i < *NumTypes; ++i)
-	{
-		t_type_descriptor * Type = &(*Types)[i];
-		if(Type!=0)
-		{
-			arch->lcm_of_block_heights = lcm(arch->lcm_of_block_heights, Type->height);
-		}
-	}
-	#endif
-
 	/* Process switches */
 	Next = FindElement(Cur, "switchlist", true);
 	ProcessSwitches(Next, &(arch->Switches), &(arch->num_switches),
@@ -2886,6 +2937,25 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
 		FreeNode(Next);
 	}
+
+	/* Process types */
+	Next = FindElement(Cur, "complexblocklist", true);
+	ProcessComplexBlocks(Next, Types, NumTypes, timing_enabled, *arch);
+	FreeNode(Next);
+
+	#ifdef INTERPOSER_BASED_ARCHITECTURE	
+	/* find the least common multiple of block heights
+	 * for interposer based architectures, a culine cannot go through a block */
+	arch->lcm_of_block_heights = 1;
+	for(int i=0; i < *NumTypes; ++i)
+	{
+		t_type_descriptor * Type = &(*Types)[i];
+		if(Type!=0)
+		{
+			arch->lcm_of_block_heights = lcm(arch->lcm_of_block_heights, Type->height);
+		}
+	}
+	#endif
 
 	/* Process directs */
 	Next = FindElement(Cur, "directlist", false);

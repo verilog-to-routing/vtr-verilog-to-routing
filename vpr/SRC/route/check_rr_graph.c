@@ -20,7 +20,7 @@ static void check_pass_transistors(int from_node);
 
 void check_rr_graph(INP t_graph_type graph_type, 
 		INP int L_nx, INP int L_ny,
-		INP int num_rr_switches, INP int **Fc_in) {
+		INP int num_rr_switches, INP int ***Fc_in) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
@@ -142,7 +142,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 				if(rr_type == IPIN) {
 					type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
-					if(Fc_in[type->index][rr_node[inode].get_ptc_num()] == 0) {
+					if(Fc_in[type->index][rr_node[inode].get_ptc_num()][0] == 0) {
 						is_chain = true;
 					}
 				}
