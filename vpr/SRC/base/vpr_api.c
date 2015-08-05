@@ -545,7 +545,9 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 	for (int ipin = 0; ipin < num_pins; ipin++){
 		int iclass = FILL_TYPE->pin_class[ipin];
 		e_pin_type pin_type = FILL_TYPE->class_inf[iclass].type;
-		int Fc = FILL_TYPE->Fc[ipin];
+		/* Get Fc of the pin to the first wire segment it connects to. TODO: In the future can
+		   iterate over all segments as well if necessary */
+		int Fc = FILL_TYPE->Fc[ipin][0];
 		bool is_fractional = FILL_TYPE->is_Fc_frac[ipin];
 		bool is_full_flex = FILL_TYPE->is_Fc_full_flex[ipin];
 
