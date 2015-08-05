@@ -21,9 +21,10 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 
 #############################################################################################
 
-# build information to expose to program
-BUILD_VERSION := `git describe --always --long`
-BUILD_DATE := `date -R`
+#Build information to expose to program
+# We touch vpr_api.c to force a re-compile, ensuring the build version and date are always are up to date
+BUILD_VERSION := $(shell git describe --always --long --dirty && touch SRC/base/vpr_api.c)
+BUILD_DATE := $(shell date -R)
 
 CC = $(COMPILER)
 LIB_DIR = -L.
@@ -86,7 +87,6 @@ EXE = vpr
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
-
 
 
 # notify is an order-only prerequisite - note the "|"
