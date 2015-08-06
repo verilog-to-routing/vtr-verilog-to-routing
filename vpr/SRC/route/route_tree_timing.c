@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <cassert>
+#include <vector>
 using namespace std;
 
 #include "util.h"
@@ -276,6 +278,8 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	iswitch = rr_node[inode].switches[iedge];
 
 	/* For all "new" nodes in the path */
+	// inode is node index of previous node
+	// NO_PREVIOUS here is the flag for encountering a prexisting part of the route tree
 
 	while (rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
 		linked_rt_edge = alloc_linked_rt_edge();
@@ -323,7 +327,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	}
 
 	/* Inode is the join point to the old routing */
-
+	// do not need to alloc another node since the old routing has done so already
 	rt_node = rr_node_to_rt_node[inode];
 
 	linked_rt_edge = alloc_linked_rt_edge();
@@ -490,5 +494,75 @@ void update_net_delays_from_route_tree(float *net_delay,
 	for (isink = 1; isink < g_clbs_nlist.net[inet].pins.size(); isink++) {
 		sink_rt_node = rt_node_of_sink[isink];
 		net_delay[isink] = sink_rt_node->Tdel;
+	}
+}
+
+
+// utility and debug functions 
+struct Rt_print {
+	t_rt_node* node;
+	size_t indent;	// leftmost child gets parent indent, each child after gets sibling indent + some amount
+	size_t num_child;
+	size_t branch_factor;
+	Rt_print() = default;
+	Rt_print(t_rt_node* n) : node{n}, num_child{0}, branch_factor{0} {}
+};
+using Layers = vector<vector<Rt_print>>;
+
+static Layers get_route_tree_layers(t_rt_node* rt_root) {
+	Layers layers {vector<Rt_print>{rt_root}};
+	size_t level {0};
+	while (true) {
+		vector<Rt_print> layer;
+		for (Rt_print& parent : layers[level]) {	// every parent in previous layer
+			t_linked_rt_edge* edges = parent.node->u.child_list;
+			// explore each of its children
+			size_t num_child {0};
+			while (edges) {
+				layer.emplace_back(edges->child);
+				edges = edges->next;
+				++num_child;
+			}
+			parent.num_child = num_child;
+		}
+		// nothing on this layer, no parents for next layer
+		if (layer.empty()) break;
+		layers.emplace_back(move(layer));
+		++level;
+	}
+	return layers;
+}
+static void calculate_layers_branch_factor(Layers& layers) {
+	size_t level {layers.size() - 1};	
+	// indent levels can only be figured out after the first traversal, start from the bottom
+	while (level > 0) { // not on the root layer
+		const auto& child_layer = layers[level];
+		size_t child_index = 0;
+		for (Rt_print& parent : layers[level-1]) {	// parent layer
+			// children's branch factors get carried up to parent
+			for (size_t child = 0; child < parent.num_child; ++child) {
+				parent.branch_factor += child_layer[child_index + child].branch_factor;
+			}
+			// own branch factor
+			if (parent.num_child > 1) parent.branch_factor += parent.num_child - 1;
+			child_index += parent.num_child;	// now the 0 indexed child for the next parent
+			assert(child_index <= child_layer.size());
+		}
+		--level;
+	}
+}
+
+void print_route_tree(t_rt_node* rt_root) {
+	constexpr int indent_level {4};
+
+	if (!rt_root) return;
+	Layers layers {get_route_tree_layers(rt_root)};
+	calculate_layers_branch_factor(layers);
+	// actual printing
+	for (const auto& layer : layers) {
+		for (const auto& rt_node : layer) {
+			vpr_printf_info("%-*d", rt_node.branch_factor * indent_level, rt_node.node->inode);
+		}
+		vpr_printf_info("\n");
 	}
 }
