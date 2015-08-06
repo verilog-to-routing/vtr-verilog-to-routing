@@ -66,13 +66,6 @@ static int *label_wire_muxes(
 		INP enum e_direction dir, INP int max_chan_width,
 		INP bool check_cb, OUTP int *num_wire_muxes, OUTP int *num_wire_muxes_cb_restricted);
 
-static int *label_wire_muxes_for_balance(
-		INP int chan_num, INP int seg_num,
-		INP t_seg_details * seg_details, INP int max_len,
-		INP enum e_direction direction, INP int max_chan_width,
-		INP int *num_wire_muxes, INP t_rr_type chan_type,
-		INP int *opin_mux_size, INP t_ivec *** L_rr_node_indices);
-
 static int *label_incoming_wires(
 		INP int chan_num, INP int seg_num,
 		INP int sb_seg, INP t_seg_details * seg_details, INP int max_len,
@@ -1934,30 +1927,10 @@ static int get_unidir_track_to_chan_seg(
 
 	*Fs_clipped = false;
 
-	/* SBs go from (0, 0) to (nx, ny) */
-	bool is_corner =(((sb_x < 1) || (sb_x >= L_nx))
-			&& ((sb_y < 1) || (sb_y >= L_ny)));
-	bool is_fringe =((false == is_corner)
-			&& ((sb_x < 1) || (sb_y < 1) || (sb_x >= L_nx) || (sb_y >= L_ny)));
-	bool is_core =((false == is_corner) && (false == is_fringe));
-	bool is_straight =((from_side == RIGHT && to_side == LEFT)
-			|| (from_side == LEFT && to_side == RIGHT)
-			|| (from_side == TOP && to_side == BOTTOM)
-			|| (from_side == BOTTOM && to_side == TOP));
-
-	/* Ending wires use N-to-N mapping if not fringe or if goes straight */
-	if (is_end_sb && (is_core || is_corner || is_straight)) {
-		/* Get the list of possible muxes for the N-to-N mapping. */
-		int dummy;
-		mux_labels = label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
-				to_dir, max_chan_width, false, &num_labels, &dummy);
-	} else {
-		assert(is_fringe || !is_end_sb);
-
-		mux_labels = label_wire_muxes_for_balance(to_chan, to_seg, seg_details,
-				max_len, to_dir, max_chan_width, &num_labels,
-				to_type, opin_mux_size, L_rr_node_indices);
-	}
+	/* get list of muxes to which we can connect */
+	int dummy;
+	mux_labels = label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
+			to_dir, max_chan_width, false, &num_labels, &dummy);
 
 	/* Can't connect if no muxes. */
 	if (num_labels < 1) {
@@ -2496,110 +2469,6 @@ void load_sblock_pattern_lookup(
 			free(wire_mux_on_track[side]);
 		}
 	}
-}
-
-static int *label_wire_muxes_for_balance(
-		INP int chan_num, INP int seg_num,
-		INP t_seg_details * seg_details, INP int max_len,
-		INP enum e_direction direction, INP int max_chan_width,
-		INP int *num_wire_muxes, INP t_rr_type chan_type,
-		INP int *opin_mux_size, INP t_ivec *** L_rr_node_indices) {
-
-	/* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
-	 * maps a label to the actual track #: array[0] = <the track number of the first mux> */
-
-	/* Sblock (aka wire2mux) pattern generation occurs after opin2mux connections have been 
-	 * made. Since opin2muxes are done with a pattern with which I guarantee imbalance of at most 1 due 
-	 * to them, we will observe that, for each side of an sblock some muxes have one fewer size 
-	 * than the others, considering only the contribution from opins. I refer to these muxes as "holes"
-	 * as they have one fewer opin connection going to them than the rest (like missing one electron)*/
-
-	/* Before May 14, I was labelling wire muxes in the natural order of their track # (lowest first). 
-	 * Now I want to label wire muxes like this: first label the holes in order of their track #,
-	 * then label the non-holes in order of their track #. This way the wire2mux generation will 
-	 * not overlap its own "holes" with the opin "holes", thus creating imbalance greater than 1. */
-
-	/* The best approach in sblock generation is do one assignment of all incoming wires from 3 other
-	 * sides to the muxes on the fourth side, connecting the "opin hole" muxes first (i.e. filling
-	 * the holes) then the rest -> this means after all opin2mux and wire2mux connections the 
-	 * mux size imbalance on one side is at most 1. The mux size imbalance in one sblock is thus
-	 * also one, since the number of muxes per side is identical for all four sides, and they number
-	 * of incoming wires per side is identical for full pop, and almost the same for depop (due to 
-	 * staggering) within +1 or -1. For different tiles (different sblocks) the imbalance is irrelevant,
-	 * since if the tiles are different in mux count then they have to be designed with a different
-	 * physical tile. */
-
-	int num_labels, max_opin_mux_size, min_opin_mux_size;
-	int inode, i, j, x, y;
-	int *pre_labels, *final_labels;
-
-	if (chan_type == CHANX) {
-		x = seg_num;
-		y = chan_num;
-	} else if (chan_type == CHANY) {
-		x = chan_num;
-		y = seg_num;
-	} else {
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-			"Bad channel type (%d).\n", chan_type);
-		x = OPEN;
-		y = OPEN;
-	}
-
-	/* Generate the normal labels list as the baseline. */
-	/* not all wires can be connected to OPIN at starting point (depending on <cb> pattern)
-	   that's what "clipped" mean. */
-	int num_labels_clipped;  // only used to find max and min (in fact, max won't be affected whether you choose num_labels_clipped or num_labels)
-	pre_labels = label_wire_muxes(chan_num, seg_num, seg_details, UNDEFINED, max_len,
-			direction, max_chan_width, false, &num_labels, &num_labels_clipped);
-
-	/* Find the min and max mux size. */
-	min_opin_mux_size = MAX_SHORT;
-	max_opin_mux_size = 0;
-	for (i = 0; i < num_labels_clipped; ++i) {
-		inode = get_rr_node_index(x, y, chan_type, pre_labels[i],
-				L_rr_node_indices);
-		if (opin_mux_size[inode] < min_opin_mux_size) {
-			min_opin_mux_size = opin_mux_size[inode];
-		}
-		if (opin_mux_size[inode] > max_opin_mux_size) {
-			max_opin_mux_size = opin_mux_size[inode];
-		}
-	}
-
-	if (max_opin_mux_size > (min_opin_mux_size + 1)) {
-		vpr_printf_info("\t max_opin_mux_size %d min_opin_mux_size %d chan_type %d x %d y %d\n",
-				max_opin_mux_size, min_opin_mux_size, chan_type, x, y);
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"opin muxes are not balanced!\n");
-	}
-
-	/* Create a new list that we will move the muxes with 'holes' to the start of list. */
-	final_labels = (int *) my_malloc(sizeof(int) * num_labels);
-	j = 0;
-	for (i = 0; i < num_labels; ++i) {
-		inode = pre_labels[i];
-		if (opin_mux_size[inode] < max_opin_mux_size) {
-			final_labels[j] = inode;
-			++j;
-		}
-	}
-	for (i = 0; i < num_labels; ++i) {
-		inode = pre_labels[i];
-		if (opin_mux_size[inode] >= max_opin_mux_size) {
-			final_labels[j] = inode;
-			++j;
-		}
-	}
-
-	/* Free the baseline labelling. */
-	if (pre_labels) {
-		free(pre_labels);
-		pre_labels = NULL;
-	}
-
-	*num_wire_muxes = num_labels;
-	return final_labels;
 }
 
 static int *label_wire_muxes(

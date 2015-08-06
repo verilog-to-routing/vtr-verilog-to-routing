@@ -7,7 +7,7 @@
  Software tools interfacing to VPR should generally call just the functions defined here
  For advanced/power users, you can call functions defined elsewhere in VPR or modify the data structures directly at your discretion but be aware that doing so can break the correctness of this tool
 
- General Usage: 
+ General Usage:
  1. vpr_init
  2. vpr_pack
  3. vpr_init_pre_place_and_route
@@ -50,6 +50,7 @@ void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options,
 
 /* Display general info to user */
 void vpr_print_title(void);
+void vpr_print_args(int argc, char** argv);
 void vpr_print_usage(void);
 
 /****************************************************************************************************
