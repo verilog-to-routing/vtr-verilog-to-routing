@@ -527,6 +527,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
 	free_traceback(inet);
+
 	
 	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 		if (!slacks) {
@@ -572,7 +573,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	rt_root = init_route_tree_to_source(inet);
 #ifdef PROFILE
-		float build_heap_time = 0;
+	float build_heap_time = 0;
 #endif
 	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
@@ -581,7 +582,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 		target_criticality = pin_criticality[target_pin];
 #ifdef PROFILE
-			clock_t sink_criticality_start = clock();
+		clock_t sink_criticality_start = clock();
 #endif
 
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
@@ -595,17 +596,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 		// reexplore route tree from root to add any new nodes (buildheap afterwards)
 #ifdef PROFILE
-			clock_t route_tree_start = clock();
+		clock_t route_tree_start = clock();
 #endif
-		add_route_tree_to_heap(rt_root, target_node, target_criticality,
-				astar_fac);
+		add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
 		heap_::build_heap();	// via sifting down everything
 		// if (itarget == num_sinks && itarget > 800) {
 		// 	vpr_printf_info("heap for target %d: ", itarget); 
 		// 	heap_::verify_extract_top();
 		// }
 #ifdef PROFILE
-			build_heap_time += static_cast<float>(clock() - route_tree_start) / CLOCKS_PER_SEC;
+		build_heap_time += static_cast<float>(clock() - route_tree_start) / CLOCKS_PER_SEC;
 #endif
 		
 
@@ -670,8 +670,8 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			inode = cheapest->index;
 		}
 #ifdef PROFILE
-			time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
-			++itry_on_criticality[target_criticality / criticality_per_bin];
+		time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
+		++itry_on_criticality[target_criticality / criticality_per_bin];
 #endif 
 		/* NB:  In the code below I keep two records of the partial routing:  the   *
 		 * traceback and the route_tree.  The route_tree enables fast recomputation *
@@ -689,12 +689,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 		empty_heap();
 		reset_path_costs();
-	}
+	} // finished all sinks
 #ifdef PROFILE
 		if (!time_to_build_heap.empty()) time_to_build_heap[num_sinks / fanout_per_bin] += build_heap_time;
 #endif
 	/* For later timing analysis. */
 
+	vpr_printf_info("traceback and tree debugging for net %d\n", inet);
+	print_traceback(inet);
+	print_route_tree(rt_root);
+	
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
 	free_route_tree(rt_root);
 	return (true);

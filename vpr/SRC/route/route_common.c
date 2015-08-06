@@ -1474,3 +1474,19 @@ void free_chunk_memory_trace(void) {
 		free_chunk_memory(&trace_ch);
 	}
 }
+
+
+// connection based overhaul (more specificity than nets)
+// utility and debugging functions -----------------------
+void print_traceback(int inet) {
+	// linearly print linked list
+	vpr_printf_info("traceback %d: ", inet);
+	t_trace* head = trace_head[inet];
+	while (head) {
+		int inode {head->index};
+		if (rr_node[inode].type == SINK) vpr_printf_info("%d(sink)->",inode);
+		else vpr_printf_info("%d->",inode);
+		head = head->next;
+	}
+	vpr_printf_info("\n");
+}
