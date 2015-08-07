@@ -572,7 +572,7 @@ t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink) {
 		prev_edge->iswitch = head->iswitch;
 		prev_edge->next = parent_node->u.child_list;
 		parent_node->u.child_list = prev_edge;
-		// child is still dangling in preparation for next sink
+		// edge is still dangling in preparation for next sink
 	}
 
 	return rt_root;
@@ -594,14 +594,31 @@ void prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 				rt_root = parent;
 				parent = parent->parent_node;
 			}
+			edge = parent->u.child_list;
+			// need to advance the parent's child list if the direct edge is about to removed
+			if (edge->child == rt_node) parent->u.child_list = edge->next;
+			// need to get a handle on the edge from join point to illegal branch
+			else {
+				// need to peek because the previous edge must point to nullptr afterwards
+				while (edge->next->child != rt_node) edge = edge->next;
+				t_linked_rt_edge* to_be_removed_edge {edge->next};
+				edge->next = nullptr;
+				edge = to_be_removed_edge;
+			}
+			// edge at the end of the previous block will always be the edge that needs to be removed
+			free_linked_rt_edge(edge);
+			
 			// parent either source or a join point while rt_root is the subtree under that
-			pathfinder_update_one_cost_from_route_tree(rt_root, -1, pres_fac, remaining_targets);
+			pathfinder_update_one_cost_from_route_tree(rt_root, -1, pres_fac, &remaining_targets);
 			free_route_tree(rt_root);
 			// this branch is terminated
 			return;
 		}
-		// legal routing reached sink, this branch is completed
-		if (!edge) return;
+
+		// legal routing reached sink, this branch is completed and can calculate downstream_C from here
+		if (!edge) {
+			return;
+		}
 		// join point, have to recurse now
 		else if (edge->next) {
 			t_linked_rt_edge* sibling_edge = edge->next;
@@ -642,7 +659,7 @@ void traverse_route_tree(t_rt_node* rt_root, Visitor visit) {
 	}
 }
 
-void pathfinder_update_one_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, vector<int>& remaining_targets) {
+void pathfinder_update_one_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, vector<int>* reached_sinks) {
 	// Like pathfinder_update_one_cost, but works with a route tree instead     
 	if (!rt_root) return;
 
@@ -666,8 +683,8 @@ void pathfinder_update_one_cost_from_route_tree(t_rt_node* rt_root, int add_or_s
 
 		// reached a sink
 		if (!edge) {
-			// this sink still needs to be routed
-			remaining_targets.push_back(inode);
+			// caller decides what to do with reached sinks
+			if (reached_sinks) reached_sinks->push_back(inode);
 			return;
 		}
 		// join point (sibling edges)
