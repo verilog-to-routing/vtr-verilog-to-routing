@@ -68,3 +68,5 @@ void update_net_delays_from_route_tree(float *net_delay,
 		t_rt_node ** rt_node_of_sink, int inet);
 
 void print_route_tree(t_rt_node* rt_root);
+
+t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink);
