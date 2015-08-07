@@ -57,7 +57,7 @@ endif
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
-else ifeq (,$(findstring profile, $(BUILD_TYPE)))
+else ifneq (,$(findstring profile, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(PROFILE_FLAGS)
 else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS) 
