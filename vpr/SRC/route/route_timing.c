@@ -695,9 +695,15 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 #endif
 	/* For later timing analysis. */
 
-	vpr_printf_info("traceback and tree debugging for net %d\n", inet);
-	print_traceback(inet);
-	print_route_tree(rt_root);
+	if (num_sinks > 1 && num_sinks < 5) {
+		vpr_printf_info("\n\ntraceback and tree debugging for net %d\n", inet);
+		print_traceback(inet);
+		print_route_tree(rt_root);
+		
+		vpr_printf_info("cloned tree:\n");
+		t_rt_node* cloned_rt_root {traceback_to_route_tree(inet, rt_node_of_sink)};
+		print_route_tree(cloned_rt_root);
+	}
 	
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
 	free_route_tree(rt_root);
