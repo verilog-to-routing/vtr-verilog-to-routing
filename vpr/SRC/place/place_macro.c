@@ -279,7 +279,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 }
 
 
-int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl_macro ** macros){
+int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, int num_segments, t_pl_macro ** macros){
 	
 	/* This function allocates and loads the macros placement macros   *
 	 * and returns the total number of macros in 2 steps.              *
@@ -307,7 +307,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	t_pl_macro * macro = NULL;
 	
 	/* Sets up the required variables. */
-	alloc_and_load_idirect_from_blk_pin(directs, num_directs, 
+	alloc_and_load_idirect_from_blk_pin(directs, num_directs, num_segments, 
 			&f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
 	/* Allocate maximum memory for temporary variables. */
@@ -333,8 +333,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	 * Load the values from the temporary data structures.      */
 	for (imacro = 0; imacro < num_macro; imacro++) {
 		macro[imacro].num_blocks = pl_macro_num_members[imacro];
-		macro[imacro].members = (t_pl_macro_member *) my_malloc 
-										(macro[imacro].num_blocks * sizeof(t_pl_macro_member));
+		macro[imacro].members = (t_pl_macro_member *) my_malloc(macro[imacro].num_blocks * sizeof(t_pl_macro_member));
 
 		/* Load the values for each member of the macro */
 		for (imember = 0; imember < macro[imacro].num_blocks; imember++) {
@@ -356,8 +355,8 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	
 	/* Returns the pointer to the macro by reference. */
 	*macros = macro;
-	return (num_macro);
 
+	return (num_macro);
 }
 
 void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_macros) {
