@@ -134,10 +134,14 @@ if ( $#tasks == -1 ) {
 # Run tasks
 ##############################################################
 
+my $num_total_failures = 0;
 foreach my $task (@tasks) {
 	chomp($task);
-	run_single_task($task);
+	my $num_failures_in_task = run_single_task($task);
+    $num_total_failures += $num_failures_in_task;
 }
+
+exit $num_total_failures;
 
 ##############################################################
 # Subroutines
@@ -343,6 +347,7 @@ sub run_single_task {
 	##############################################################
 	# Run experiment
 	##############################################################
+    my $num_failures = 0;
 	if ( $system_type eq "local" ) {
 		if ( $processors == 1 ) {
 			foreach my $circuit (@circuits) {
@@ -364,15 +369,22 @@ sub run_single_task {
 
 					# SDC file defaults to circuit_name.sdc
 					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
-					system(
+					my $status = system(
 						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params\n"
 					);
+
+                    my $return_code = $status >> 8; #Must shift by 8 bits to get real exit code
+
+                    if($return_code != 0) {
+                        $num_failures += 1;
+                    }
 				}
 			}
 		}
 		else {
 			my $thread_work   = Thread::Queue->new();
 			my $thread_result = Thread::Queue->new();
+			my $thread_return_code = Thread::Queue->new();
 			my $threads       = $processors;
 
 			# print "# of Threads: $threads\n";
@@ -392,7 +404,7 @@ sub run_single_task {
 			}
 
 			my @pool =
-			  map { threads->create( \&do_work, $thread_work, $thread_result ) }
+			  map { threads->create( \&do_work, $thread_work, $thread_result, $thread_return_code ) }
 			  1 .. $threads;
 
 			for ( 1 .. $threads ) {
@@ -400,6 +412,11 @@ sub run_single_task {
 					chomp($result);
 					print $result . "\n";
 				}
+                while (my $return_code = $thread_return_code->dequeue) {
+                    if($return_code != 0) {
+                        $num_failures += 1;
+                    }
+                }
 			}
 
 			$_->join for @pool;
@@ -478,10 +495,11 @@ sub run_single_task {
 			}
 		}
 	}
+    return $num_failures;
 }
 
 sub do_work {
-	my ( $work_queue, $return_queue ) = @_;
+	my ( $work_queue, $return_queue, $return_code_queue ) = @_;
 	my $tid = threads->tid;
 
 	while (1) {
@@ -494,15 +512,21 @@ sub do_work {
 			last;
 		}
 
-		system "cd $dir; $command > thread_${tid}.out";
+		my $return_status = system "cd $dir; $command > thread_${tid}.out";
+        my $exit_code = $return_status >> 8; #Shift to get real exit code
+
 		open( OUT_FILE, "$dir/thread_${tid}.out" )
 		  or die "Cannot open $dir/thread_${tid}.out: $!";
 		my $sys_output = do { local $/; <OUT_FILE> };
 
 		#$sys_output =~ s/\n//g;
 		$return_queue->enqueue($sys_output);
+
+        $return_code_queue->enqueue($exit_code);
 	}
+    #Need to put undef in queues to indicate end and prevent blocking forever
 	$return_queue->enqueue(undef);
+    $return_code_queue->enqueue(undef);
 
 	#print "$tid exited loop\n"
 }

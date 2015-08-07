@@ -23,6 +23,13 @@ quick_test/*
 vpr_stdout.log
 
 #
+# VPR Result files
+#
+*.net
+*.place
+*.route
+
+#
 #Generated intermediate results
 #
 ODIN_II/SRC/verilog_bison.c

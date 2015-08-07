@@ -147,20 +147,23 @@ if ( $#tests > -1 ) {
 		# Set up test
 		setup_single_test($test);
 		# Check for user overrides
-		check_override;
+		check_override();
 		# Run regression test
-		run_single_test;
+		my $run_failures = run_single_test();
+        if($run_failures != 0) {
+            print "\nTest '$test' had $run_failures run failures\n";
+            $num_failed_tests += $run_failures;
+        }
 		$first = 0;
 		# Parse regression test
 		parse_single_test(" ");
 		# Create/Check golden results
 		if ($create_golden) {
 			parse_single_test("create", "calculate");
-		}
-		else {
-			my $test_failures = parse_single_test("check", "calculate");
-            print "\nTest '$test' had $test_failures test failures\n";
-            $num_failed_tests += $test_failures;
+		} else {
+			my $qor_test_failures = parse_single_test("check", "calculate");
+            print "\nTest '$test' had $qor_test_failures qor test failures\n";
+            $num_failed_tests += $qor_test_failures;
 		}
 	}
 	print "\nTest complete\n\n";
@@ -315,8 +318,13 @@ sub run_single_test {
 	print "\nRunning regression test... \n";
 	chdir("$vtr_flow_path");
 	print "scripts/run_vtr_task.pl $run_params \n";
-	system("scripts/run_vtr_task.pl $run_params \n");
+	my $test_status = system("scripts/run_vtr_task.pl $run_params \n");
 	chdir("..");
+
+    #Perl is obtuse, and requires you to manually shift the return value by 8 bits
+    #to get the real exit code from a call to system(). There must be a better way to do this....
+    my $exit_code = $test_status >> 8;
+    return $exit_code;
 }
 
 sub parse_single_test {
