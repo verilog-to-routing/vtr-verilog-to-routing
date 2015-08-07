@@ -162,8 +162,8 @@ if ( $#tests > -1 ) {
 			parse_single_test("create", "calculate");
 		} else {
 			my $qor_test_failures = parse_single_test("check", "calculate");
-            print "\nTest '$test' had $test_failures qor test failures\n";
-            $num_failed_tests += $test_failures;
+            print "\nTest '$test' had $qor_test_failures qor test failures\n";
+            $num_failed_tests += $qor_test_failures;
 		}
 	}
 	print "\nTest complete\n\n";
