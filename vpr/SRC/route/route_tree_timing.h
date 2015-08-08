@@ -67,6 +67,12 @@ t_rt_node *update_route_tree(struct s_heap *hptr);
 void update_net_delays_from_route_tree(float *net_delay,
 		t_rt_node ** rt_node_of_sink, int inet);
 
+void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
+
 void print_route_tree(t_rt_node* rt_root);
 
 t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink);
+
+bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<int>& remaining_targets, float R_upstream = 0);	// 0 for SOURCE
+
+void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, vector<int>* reached_sinks);
