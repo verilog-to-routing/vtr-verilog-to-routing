@@ -625,7 +625,7 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 		It is the **caller's responsibility** to actually call pathfinder_update_cost and free_route_subtree
 		The removal is only done at branch points for its branches
 		returns whether the entire tree was pruned or not
-		assumes arriving rt_root does not have its R_upstream calculated
+		assumes arriving rt_root does not have its R_upstream calculated (works for the SOURCE since R_upstream = 0)
 		Tdel for the entire tree after this function is still unset, call load_route_tree_Tdel(rt_root, 0) at SOURCE
 	*/
 	if (!rt_root) return false;
@@ -649,6 +649,7 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 	// no edge means it must be a sink, legally routed to sink!
 	if (!edge) {
 		vpr_printf_info("legally reached sink %d\n", inode);
+		rt_root->C_downstream = 0;	// sink has no node downstream and always has 0 own capacitance
 		return false;
 	}
 	// recurse over children and get their C_downstream
@@ -671,7 +672,8 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 		}
 		else {
 			// child still exists and has calculated C_downstream
-			C_downstream_children += edge->child->C_downstream;
+			if (!g_rr_switch_inf[edge->iswitch].buffered)
+				C_downstream_children += edge->child->C_downstream;
 			prev_edge = edge;
 			edge = edge->next; // advance normally as branch still exists
 		}
@@ -682,6 +684,7 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 		return true;
 	}
 	// the sum of its children and its own capacitance
+	vpr_printf_info("node %d downstream children C %e own C %e\n", inode, C_downstream_children, rr_node[inode].C);
 	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
 	return false;
 }
@@ -747,58 +750,6 @@ void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, 
 	}
 }
 
-// utility and debug functions 
-// struct Rt_print {
-// 	t_rt_node* node;
-// 	size_t num_child;
-// 	size_t branch_factor;
-// 	Rt_print() = default;
-// 	Rt_print(t_rt_node* n) : node{n}, num_child{0}, branch_factor{0} {}
-// };
-// using Layers = vector<vector<Rt_print>>;
-
-// static Layers get_route_tree_layers(t_rt_node* rt_root) {
-// 	Layers layers {vector<Rt_print>{rt_root}};
-// 	size_t level {0};
-// 	while (true) {
-// 		vector<Rt_print> layer;
-// 		for (Rt_print& parent : layers[level]) {	// every parent in previous layer
-// 			t_linked_rt_edge* edges = parent.node->u.child_list;
-// 			// explore each of its children
-// 			size_t num_child {0};
-// 			while (edges) {
-// 				layer.emplace_back(edges->child);
-// 				edges = edges->next;
-// 				++num_child;
-// 			}
-// 			parent.num_child = num_child;
-// 		}
-// 		// nothing on this layer, no parents for next layer
-// 		if (layer.empty()) break;
-// 		layers.emplace_back(move(layer));
-// 		++level;
-// 	}
-// 	return layers;
-// }
-// static void calculate_layers_branch_factor(Layers& layers) {
-// 	size_t level {layers.size() - 1};	
-// 	// indent levels can only be figured out after the first traversal, start from the bottom
-// 	while (level > 0) { // not on the root layer
-// 		const auto& child_layer = layers[level];
-// 		size_t child_index = 0;
-// 		for (Rt_print& parent : layers[level-1]) {	// parent layer
-// 			// children's branch factors get carried up to parent
-// 			for (size_t child = 0; child < parent.num_child; ++child) {
-// 				parent.branch_factor += child_layer[child_index + child].branch_factor;
-// 			}
-// 			// own branch factor
-// 			if (parent.num_child > 1) parent.branch_factor += parent.num_child - 1;
-// 			child_index += parent.num_child;	// now the 0 indexed child for the next parent
-// 			assert(child_index <= child_layer.size());
-// 		}
-// 		--level;
-// 	}
-// }
 
 static const std::vector<const char*> node_typename {
 		"SOURCE",
@@ -809,24 +760,6 @@ static const std::vector<const char*> node_typename {
 		"CHANY",
 		"ICE"
 };
-// void print_route_tree(t_rt_node* rt_root) {
-// 	constexpr int indent_level {16};
-
-// 	if (!rt_root) return;
-// 	Layers layers {get_route_tree_layers(rt_root)};
-// 	calculate_layers_branch_factor(layers);
-// 	// actual printing
-// 	for (const auto& layer : layers) {
-// 		for (const auto& rt_node : layer) {
-// 			int inode = rt_node.node->inode;
-// 			t_rr_type node_type = rr_node[inode].type;
-// 			vpr_printf_info("%5.1e %5.1e %2d%6s|%-*d", rt_node.node->C_downstream, rt_node.node->R_upstream,
-// 				rt_node.node->parent_switch, node_typename[node_type], 
-// 				(rt_node.branch_factor+1) * indent_level, inode);
-// 		}
-// 		vpr_printf_info("\n");
-// 	}
-// }
 
 static void print_node(t_rt_node* rt_node) {
 	int inode = rt_node->inode;
@@ -864,4 +797,37 @@ static void print_route_tree(t_rt_node* rt_root, int branch_level, bool new_bran
 void print_route_tree(t_rt_node* rt_root) {
 	print_route_tree(rt_root, 0, false);
 	vpr_printf_info("\n");
+}
+
+constexpr float epsilon = 1e-15;
+bool equal_approx(float a, float b) {
+	return fabs(a - b) < epsilon;
+}
+
+bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
+	if (!root && !root_clone) return true;
+	if (!root || !root_clone) return false;	// one of them is null
+	if ((root->inode != root_clone->inode) ||
+		(!equal_approx(root->R_upstream, root_clone->R_upstream)) ||
+		(!equal_approx(root->C_downstream, root_clone->C_downstream)) ||
+		(!equal_approx(root->Tdel, root_clone->Tdel))) {
+		vpr_printf_info("mismatch i %d|%d R %e|%e C %e|%e T %e %e\n", 
+			root->inode, root_clone->inode,
+			root->R_upstream, root_clone->R_upstream, 
+			root->C_downstream, root_clone->C_downstream,
+			root->Tdel, root_clone->Tdel);
+		return false;
+	}
+	t_linked_rt_edge* orig_edge {root->u.child_list};
+	t_linked_rt_edge* clone_edge {root_clone->u.child_list};
+	while (orig_edge && clone_edge) {
+		if (!is_equivalent_route_tree(orig_edge->child, clone_edge->child)) return false;	// child trees not equivalent
+		orig_edge = orig_edge->next;
+		clone_edge = clone_edge->next;
+	}
+	if (orig_edge || clone_edge) {
+		vpr_printf_info("one of the trees have an extra edge!\n");
+		return false;
+	}
+	return true;	// passed all tests
 }
