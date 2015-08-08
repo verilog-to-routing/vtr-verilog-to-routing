@@ -705,29 +705,32 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		t_rt_node* cloned_rt_root {traceback_to_route_tree(inet, rt_node_of_sink)};
 		print_route_tree(cloned_rt_root);
 
-		// vpr_printf_info("pruned tree:\n");
-		// vector<int> remaining_targets;
-		// bool destroyed {prune_illegal_branches_from_route_tree(rt_root, pres_fac, remaining_targets)};
-		// if (destroyed) {
-		// 	vpr_printf_info("entire tree pruned!\n");
-		// 	pathfinder_update_cost_from_route_tree(rt_root, -1, pres_fac, &remaining_targets);
-		// 	free_route_tree(rt_root);
-		// 	rt_root = init_route_tree_to_source(inet);
-		// }
-		// else print_route_tree(rt_root);
-		// // bool destroyed {prune_illegal_branches_from_route_tree(cloned_rt_root, pres_fac, remaining_targets)};
-		// // still need to calculate its time delay (0 Tarrival means from SOURCE)
-		// // load_route_tree_Tdel(cloned_rt_root, 0);
-		// // if (!destroyed) print_route_tree(cloned_rt_root);
+		vpr_printf_info("pruned tree:\n");
+		vector<int> remaining_targets;
+		bool destroyed {prune_illegal_branches_from_route_tree(cloned_rt_root, pres_fac, remaining_targets)};
+		if (destroyed) {
+			vpr_printf_info("entire tree pruned!\n");
+			pathfinder_update_cost_from_route_tree(cloned_rt_root, -1, pres_fac, &remaining_targets);
+			free_route_tree(cloned_rt_root);
+			cloned_rt_root = init_route_tree_to_source(inet);
+		}
+		else {
+			// still need to calculate its time delay (0 Tarrival means from SOURCE)
+			load_route_tree_Tdel(cloned_rt_root, 0);
+			print_route_tree(rt_root);
+		}
 
-		// if (remaining_targets.empty()) {
-		// 	vpr_printf_info("no more remaining targets :D\n");
-		// }
-		// else {
-		// 	vpr_printf_info("remaining targets: ");
-		// 	for (int target : remaining_targets) vpr_printf_info("%d ",target);
-		// 	vpr_printf_info("\n");
-		// }
+		if (remaining_targets.empty()) {
+			// pruned tree should be the same as the original tree
+			vpr_printf_info("no more remaining targets :D\n");
+			vpr_printf_info("pruned tree should be the same as original tree, checking equivalence\n");
+			if (!is_equivalent_route_tree(rt_root, cloned_rt_root)) return false;
+		}
+		else {
+			vpr_printf_info("remaining targets: ");
+			for (int target : remaining_targets) vpr_printf_info("%d ",target);
+			vpr_printf_info("\n");
+		}
 	}
 	
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
