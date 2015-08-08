@@ -70,6 +70,7 @@ extern struct s_bb *route_bb; /* [0..num_nets-1]     */
 
 void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 		int add_or_sub, float pres_fac);
+void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 

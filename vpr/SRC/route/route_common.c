@@ -404,32 +404,15 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 	 * oversubscribed rr_nodes are penalized.                                    */
 
 	struct s_trace *tptr;
-	int inode, occ, capacity;
 
 	tptr = route_segment_start;
 	if (tptr == NULL) /* No routing yet. */
 		return;
 
 	for (;;) {
-		inode = tptr->index;
+		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
 
-		occ = rr_node[inode].get_occ() + add_or_sub;
-		capacity = rr_node[inode].get_capacity();
-
-		rr_node[inode].set_occ(occ);
-
-		/* pres_cost is Pn in the Pathfinder paper. I set my pres_cost according to *
-		 * the overuse that would result from having ONE MORE net use this routing  *
-		 * node.                                                                    */
-
-		if (occ < capacity) {
-			rr_node_route_inf[inode].pres_cost = 1.0;
-		} else {
-			rr_node_route_inf[inode].pres_cost = 1.0
-					+ (occ + 1 - capacity) * pres_fac;
-		}
-
-		if (rr_node[inode].type == SINK) {
+		if (rr_node[tptr->index].type == SINK) {
 			tptr = tptr->next; /* Skip next segment. */
 			if (tptr == NULL)
 				break;
@@ -439,7 +422,21 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 
 	} /* End while loop -- did an entire traceback. */
 }
+void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
+	/* pres_cost is Pn in the Pathfinder paper. I set my pres_cost according to *
+	 * the overuse that would result from having ONE MORE net use this routing  *
+	 * node.     */
+	int occ = rr_node[inode].get_occ() + add_or_sub;
+	rr_node[inode].set_occ(occ);
 
+	int	capacity = rr_node[inode].get_capacity();
+	if (occ < capacity) {
+		rr_node_route_inf[inode].pres_cost = 1.0;
+	} else {
+		rr_node_route_inf[inode].pres_cost = 1.0
+				+ (occ + 1 - capacity) * pres_fac;
+	}
+}
 void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	/* This routine recomputes the pres_cost and acc_cost of each routing        *
