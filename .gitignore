@@ -55,6 +55,11 @@ Session.vim
 *~
 
 #
+# LibreOffice
+#
+\.~lock*\#
+
+#
 #Ctags
 #
 .tags*

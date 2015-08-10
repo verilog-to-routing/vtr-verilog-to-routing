@@ -55,6 +55,7 @@ my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if
 my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
 my $exp_num       = 0;
 my $revision;
+my $verbose       = 0;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -82,6 +83,9 @@ while ( $token = shift(@ARGV) ) {
     }
 	elsif ( $token eq "-revision" ) {
 		$revision = shift(@ARGV);
+	}
+	elsif ( $token eq "-v" ) {
+		$verbose = 1;
 	}
 	elsif ( $token =~ /^-/ ) {
 		die "Invalid option: $token\n";
@@ -412,6 +416,7 @@ sub check_golden {
 	my $failed = 0;
 
 	print "$task_name...";
+    print "\n" if $verbose;
 
 	# Code to check the results against the golden results
 	my $golden_file = "$task_path/config/golden_results.txt";
@@ -573,6 +578,8 @@ sub check_golden {
 			  0 .. $#golden_params;
 			my $test_value   = @test_line[$index];
 			my $golden_value = @golden_line[$index];
+
+
 			if ( $type{$value} eq "Range" ) {
 
 				# Check because of division by 0
@@ -586,6 +593,14 @@ sub check_golden {
 				}
 				else {
 					my $ratio = $test_value / $golden_value;
+                    
+                    if($verbose) {
+                        print "\tParam: $value\n";
+                        print "\t\tTest: $test_value\n";
+                        print "\t\tGolden Value: $golden_value\n";
+                        print "\t\tRatio: $ratio\n";
+                    }
+
 					if (   $ratio < $min_threshold{$value}
 						or $ratio > $max_threshold{$value} )
 					{
