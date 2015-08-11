@@ -676,12 +676,12 @@ void free_arch(t_arch* Arch) {
 	Arch->Switches = NULL;
 	g_arch_switch_inf = NULL;
 	for (int i = 0; i < Arch->num_segments; ++i) {
-		if (Arch->Segments->cb != NULL) {
-			free(Arch->Segments[i].cb);
-		}
-		if (Arch->Segments->sb != NULL) {
-			free(Arch->Segments[i].sb);
-		}
+		free(Arch->Segments[i].cb);
+		Arch->Segments[i].cb = NULL;
+		free(Arch->Segments[i].sb);
+		Arch->Segments[i].sb = NULL;
+		free(Arch->Segments[i].name);
+		Arch->Segments[i].name = NULL;
 	}
 	free(Arch->Segments);
 	t_model *model = Arch->models;
@@ -828,7 +828,7 @@ static void free_complex_block_types(void) {
 
 		free(type_descriptors[i].is_Fc_frac);
 		free(type_descriptors[i].is_Fc_full_flex);
-		free(type_descriptors[i].Fc);
+		free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0, sizeof(float));
 
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);
