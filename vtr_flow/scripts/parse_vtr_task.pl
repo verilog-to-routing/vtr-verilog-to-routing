@@ -55,6 +55,7 @@ my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if
 my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
 my $exp_num       = 0;
 my $revision;
+my $verbose       = 0;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -83,6 +84,9 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-revision" ) {
 		$revision = shift(@ARGV);
 	}
+	elsif ( $token eq "-v" ) {
+		$verbose = 1;
+	}
 	elsif ( $token =~ /^-/ ) {
 		die "Invalid option: $token\n";
 	}
@@ -104,15 +108,21 @@ foreach (@task_files) {
 	close(FH);
 }
 
+my $num_golden_failures = 0;
 foreach my $task (@tasks) {
 	chomp($task);
-	parse_single_task($task);
+	my $failed = parse_single_task($task);
+    if($failed) {
+        $num_golden_failures += 1; 
+    }
 }
 
 if ($calc_geomean) {
 	summarize_qor;
 	calc_geomean;
 }
+
+exit $num_golden_failures;
 
 sub parse_single_task {
 	my $task_name = shift;
@@ -236,9 +246,12 @@ sub parse_single_task {
 		copy( "$run_path/parse_results.txt",
 			"$run_path/../config/golden_results.txt" );
 	}
+
 	if ($check_golden) {
-		check_golden( $task_name, $task_path, $run_path );
+        #Returns 1 if failed
+		return check_golden( $task_name, $task_path, $run_path );
 	}
+    return 0; #Pass
 }
 
 sub summarize_qor {
@@ -399,7 +412,11 @@ sub check_golden {
 	my $task_path = shift;
 	my $run_path  = shift;
 
+    #Did this golden check pass?
+	my $failed = 0;
+
 	print "$task_name...";
+    print "\n" if $verbose;
 
 	# Code to check the results against the golden results
 	my $golden_file = "$task_path/config/golden_results.txt";
@@ -415,7 +432,8 @@ sub check_golden {
 	else {
 		print
 		  "[ERROR] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
-		return;
+        $failed = 1;
+		return $failed;
 	}
 
 	my $pass_req_filename = $1;
@@ -435,11 +453,11 @@ sub check_golden {
 	else {
 		print
 		  "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
-		return;
+        $failed = 0;
+		return $failed;
 	}
 
 	my $line;
-	my $pass = 1;
 
 	my @golden_data;
 	my @test_data;
@@ -455,7 +473,8 @@ sub check_golden {
 	##############################################################
 	if ( !-r $golden_file ) {
 		print "[ERROR] Failed to open $golden_file: $!";
-		return;
+        $failed = 1;
+		return $failed;
 	}
 	open( GOLDEN_DATA, "<$golden_file" );
 	@golden_data = <GOLDEN_DATA>;
@@ -463,7 +482,8 @@ sub check_golden {
 
 	if ( !-r $pass_req_file ) {
 		print "[ERROR] Failed to open $pass_req_file: $!";
-		return;
+        $failed = 1;
+		return $failed;
 	}
 	open( PASS_DATA, "<$pass_req_file" );
 	@pass_req_data = <PASS_DATA>;
@@ -471,7 +491,8 @@ sub check_golden {
 
 	if ( !-r $test_file ) {
 		print "[ERROR] Failed to open $test_file: $!";
-		return;
+        $failed = 1;
+		return $failed;
 	}
 	open( TEST_DATA, "<$test_file" );
 	@test_data = <TEST_DATA>;
@@ -490,7 +511,8 @@ sub check_golden {
 
 	if ( $golden_params ne $test_params ) {
 		print "[ERROR] Different parameters in golden and result file. $golden_params different from $test_params\n";
-		return;
+        $failed = 1;
+		return $failed;
 	}
 
 	# Check to ensure all parameters to compare are consistent
@@ -510,12 +532,14 @@ sub check_golden {
 		#Ensure item is in golden results
 		if ( !grep { $_ eq $name } @golden_params ) {
 			print "[ERROR] $name is not in the golden file.\n";
-			return;
+            $failed = 1;
+			return $failed;
 		}
 
 		# Ensure item is in new results
 		if ( !grep { $_ eq $name } @test_params ) {
 			print "[ERROR] $name is not in the results file.\n";
+            $failed = 1;
 		}
 
 		push( @params, $name );
@@ -527,6 +551,7 @@ sub check_golden {
 	if ( ( scalar @test_data ) != ( scalar @golden_data ) ) {
 		print
 		  "[ERROR] Different number of entries in golden and result files.\n";
+          $failed = 1;
 	}
 	@test_data   = sort (@test_data);
 	@golden_data = sort (@golden_data);
@@ -541,7 +566,8 @@ sub check_golden {
 		{
 			print
 			  "[ERROR] Circuit/Architecture mismatch between golden and result file.\n";
-			return;
+            $failed = 1;
+			return $failed;
 		}
 		my $circuitarch = "@test_line[0]-@test_line[1]";
 
@@ -552,6 +578,8 @@ sub check_golden {
 			  0 .. $#golden_params;
 			my $test_value   = @test_line[$index];
 			my $golden_value = @golden_line[$index];
+
+
 			if ( $type{$value} eq "Range" ) {
 
 				# Check because of division by 0
@@ -559,19 +587,27 @@ sub check_golden {
 					if ( $test_value != 0 ) {
 						print
 						  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
-						$pass = 0;
-						return;
+						$failed = 1;
+						return $failed;
 					}
 				}
 				else {
 					my $ratio = $test_value / $golden_value;
+                    
+                    if($verbose) {
+                        print "\tParam: $value\n";
+                        print "\t\tTest: $test_value\n";
+                        print "\t\tGolden Value: $golden_value\n";
+                        print "\t\tRatio: $ratio\n";
+                    }
+
 					if (   $ratio < $min_threshold{$value}
 						or $ratio > $max_threshold{$value} )
 					{
 						print
 						  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
-						$pass = 0;
-						return;
+						$failed = 1;
+						return $failed;
 					}
 				}
 			}
@@ -579,7 +615,7 @@ sub check_golden {
 
 				# If the type is unknown, check for an exact match
 				if ( $test_value ne $golden_value ) {
-					$pass = 0;
+					$failed = 1;
 					print
 					  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
 				}
@@ -587,9 +623,10 @@ sub check_golden {
 		}
 	}
 
-	if ($pass) {
+	if (!$failed) {
 		print "[Pass]\n";
 	}
+    return $failed;
 }
 
 sub trim($) {

@@ -679,6 +679,8 @@ if ( !$error_code ) {
 }
 print "\n";
 
+exit $error_code;
+
 ################################################################################
 # Subroutine to execute a system call with a timeout
 # system_with_timeout(<program>, <stdout file>, <timeout>, <dir>, <arg1>, <arg2>, etc)

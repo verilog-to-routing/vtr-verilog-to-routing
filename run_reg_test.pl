@@ -138,6 +138,7 @@ if ( $#tests == -1 and !$can_quit ) {
 ##############################################################
 # Run regression tests
 ##############################################################
+my $num_failed_tests = 0;
 
 if ( $#tests > -1 ) {
 
@@ -146,22 +147,35 @@ if ( $#tests > -1 ) {
 		# Set up test
 		setup_single_test($test);
 		# Check for user overrides
-		check_override;
+		check_override();
 		# Run regression test
-		run_single_test;
+		my $run_failures = run_single_test();
+        if($run_failures != 0) {
+            print "\nTest '$test' had $run_failures run failures\n";
+            $num_failed_tests += $run_failures;
+        }
 		$first = 0;
 		# Parse regression test
 		parse_single_test(" ");
 		# Create/Check golden results
 		if ($create_golden) {
 			parse_single_test("create", "calculate");
-		}
-		else {
-			parse_single_test("check", "calculate");
+		} else {
+			my $qor_test_failures = parse_single_test("check", "calculate");
+            print "\nTest '$test' had $qor_test_failures qor test failures\n";
+            $num_failed_tests += $qor_test_failures;
 		}
 	}
 	print "\nTest complete\n\n";
 }
+
+if($num_failed_tests != 0) {
+    print "Error: $num_failed_tests tests failed!\n"
+} else {
+    print "All tests passed\n"
+}
+
+exit $num_failed_tests;
 
 
 ##############################################################
@@ -304,8 +318,13 @@ sub run_single_test {
 	print "\nRunning regression test... \n";
 	chdir("$vtr_flow_path");
 	print "scripts/run_vtr_task.pl $run_params \n";
-	system("scripts/run_vtr_task.pl $run_params \n");
+	my $test_status = system("scripts/run_vtr_task.pl $run_params \n");
 	chdir("..");
+
+    #Perl is obtuse, and requires you to manually shift the return value by 8 bits
+    #to get the real exit code from a call to system(). There must be a better way to do this....
+    my $exit_code = $test_status >> 8;
+    return $exit_code;
 }
 
 sub parse_single_test {
@@ -328,8 +347,13 @@ sub parse_single_test {
 	}
 	chdir("$vtr_flow_path");
 	print "scripts/parse_vtr_task.pl $parse_params \n";
-	system("scripts/parse_vtr_task.pl $parse_params \n");
+	my $parse_status = system("scripts/parse_vtr_task.pl $parse_params \n");
 	chdir("..");
+
+    #Perl is obtuse, and requires you to manually shift the return value by 8 bits
+    #to get the real exit code from a call to system(). There must be a better way to do this....
+    my $exit_code = $parse_status >> 8;
+    return $exit_code;
 }
 
 sub run_quick_test {
