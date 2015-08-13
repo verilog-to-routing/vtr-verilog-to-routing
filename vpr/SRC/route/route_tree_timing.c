@@ -27,6 +27,7 @@ using namespace std;
 
 static t_rt_node **rr_node_to_rt_node = NULL; /* [0..num_rr_nodes-1] */
 
+
 /* Frees lists for fast addition and deletion of nodes and edges. */
 
 static t_rt_node *rt_node_free_list = NULL;
@@ -147,6 +148,7 @@ alloc_linked_rt_edge(void) {
 				sizeof(t_linked_rt_edge));
 	}
 
+	assert(linked_rt_edge != nullptr);
 	return (linked_rt_edge);
 }
 
@@ -282,9 +284,10 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	/* For all "new" nodes in the path */
 	// inode is node index of previous node
-	// NO_PREVIOUS means not part of existing route
 
 	while (rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
+		// vpr_printf_info("adding %d to path (should not be allocated)\n", inode);
+
 		linked_rt_edge = alloc_linked_rt_edge();
 		linked_rt_edge->child = downstream_rt_node;
 		linked_rt_edge->iswitch = iswitch;
@@ -464,6 +467,43 @@ void load_route_tree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 	}
 }
 
+static void load_route_tree_rr_route_inf(t_rt_node* root, int prev_node, int prev_edge) {
+	// traverses down a route tree and updates rr_node_inf for all nodes
+	INCREMENTAL_REROUTING_ASSERT(root != nullptr);
+
+	t_linked_rt_edge* edge {root->u.child_list};
+	
+	for (;;) {
+		int inode = root->inode;
+		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
+		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+		// path cost should be HUGE_POSITIVE_FLOAT
+
+		// reached a sink
+		if (!edge) {return;}
+		// join point (sibling edges)
+		else if (edge->next) {
+			int edge_num = 0;
+			// recursively update for each of its sibling branches
+			do {
+				// if (!is_uncongested_route_tree(edge->child)) return false;
+				load_route_tree_rr_route_inf(edge->child, inode, edge_num);
+				++edge_num;
+				edge = edge->next;
+			} while (edge);
+			return;
+		}
+
+		root = edge->child;
+		edge = root->u.child_list;
+		prev_node = inode;
+	}	
+}
+void load_route_tree_rr_route_inf(t_rt_node* root) {	// from root
+	INCREMENTAL_REROUTING_ASSERT(root != nullptr);
+	load_route_tree_rr_route_inf(root, NO_PREVIOUS, NO_PREVIOUS);
+}
+
 static t_linked_rt_edge* free_route_subtree(t_rt_node* parent, t_linked_rt_edge* previous_edge) {
 	/* frees the parent's child under the edge after the previous edge
 	   returns the parent's next edge
@@ -476,26 +516,26 @@ static t_linked_rt_edge* free_route_subtree(t_rt_node* parent, t_linked_rt_edge*
 	// first edge
 	if (!previous_edge)	{
 		edge_to_be_removed = parent->u.child_list;
-		vpr_printf_info("removing edge to %d from parent %d\n", edge_to_be_removed->child->inode, parent->inode);
+		// vpr_printf_info("removing edge to %d from parent %d\n", edge_to_be_removed->child->inode, parent->inode);
 		free_route_tree(edge_to_be_removed->child);
 		parent->u.child_list = edge_to_be_removed->next;	// if also last edge, then child list becomes null
-		if (parent->u.child_list) 
-			vpr_printf_info("edge is parent's first edge, advancing child list to point to %d\n", parent->u.child_list->child->inode);
-		else
-			vpr_printf_info("edge is parent's first edge, advancing child list to point to null\n");
+		// if (parent->u.child_list) 
+			// vpr_printf_info("edge is parent's first edge, advancing child list to point to %d\n", parent->u.child_list->child->inode);
+		// else
+			// vpr_printf_info("edge is parent's first edge, advancing child list to point to null\n");
 
 		free_linked_rt_edge(edge_to_be_removed);
 		return parent->u.child_list;
 	}
 
-	vpr_printf_info("edge is not first edge, remove by skipping over it\n");
+	// vpr_printf_info("edge is not first edge, remove by skipping over it\n");
 	edge_to_be_removed = previous_edge->next;
-	vpr_printf_info("removing edge to %d from parent %d\n", edge_to_be_removed->child->inode, parent->inode);
+	// vpr_printf_info("removing edge to %d from parent %d\n", edge_to_be_removed->child->inode, parent->inode);
 	previous_edge->next = previous_edge->next->next;	// skip over next one
 	free_route_tree(edge_to_be_removed->child);
 	free_linked_rt_edge(edge_to_be_removed);
-	if (previous_edge->next) vpr_printf_info("next edge points to %d\n", previous_edge->next->child->inode);
-	else vpr_printf_info("edge is last edge, next edge is null\n");
+	// if (previous_edge->next) vpr_printf_info("next edge points to %d\n", previous_edge->next->child->inode);
+	// else vpr_printf_info("edge is last edge, next edge is null\n");
 	return previous_edge->next;	
 }
 
@@ -510,7 +550,7 @@ void free_route_tree(t_rt_node * rt_node) {
 	rt_edge = rt_node->u.child_list;
 
 	while (rt_edge != NULL) { /* For all children */
-		vpr_printf_info("preparing to free child of %d\n", rt_node->inode);
+		// vpr_printf_info("preparing to free child of %d\n", rt_node->inode);
 		child_node = rt_edge->child;
 		free_route_tree(child_node);
 		next_edge = rt_edge->next;
@@ -518,35 +558,40 @@ void free_route_tree(t_rt_node * rt_node) {
 		rt_edge = next_edge;
 	}
 
-	vpr_printf_info("finally freeing %d\n", rt_node->inode);
+	// vpr_printf_info("finally freeing %d\n", rt_node->inode);
 	free_rt_node(rt_node);
 }
 
 void update_net_delays_from_route_tree(float *net_delay,
-		t_rt_node ** rt_node_of_sink, int inet) {
+		const t_rt_node* const * rt_node_of_sink, int inet) {
 
 	/* Goes through all the sinks of this net and copies their delay values from *
 	 * the route_tree to the net_delay array.                                    */
 
-	unsigned int isink;
-	t_rt_node *sink_rt_node;
-
-	for (isink = 1; isink < g_clbs_nlist.net[inet].pins.size(); isink++) {
-		sink_rt_node = rt_node_of_sink[isink];
-		net_delay[isink] = sink_rt_node->Tdel;
+	for (unsigned int isink = 1; isink < g_clbs_nlist.net[inet].pins.size(); isink++) {
+		net_delay[isink] = rt_node_of_sink[isink]->Tdel;
 	}
 }
 
+void update_remaining_net_delays_from_route_tree(float* net_delay, 
+		const t_rt_node* const * rt_node_of_sink, const vector<int>& remaining_sinks) {
+	// like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
+	// this function doesn't actually need to know about the net, just what sink pins need their net delays updated
+	for (int sink_pin : remaining_sinks)
+		net_delay[sink_pin] = rt_node_of_sink[sink_pin]->Tdel;
+}
+
 // conversion between route tree and traceback, creates skeleton without cost
-t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink) {
+t_rt_node* traceback_to_route_tree(int inet) {
 	/* build a skeleton route tree from a traceback
 	   does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
 	   returns the root of the converted route tree
 	   initially points at the traceback equivalent of root */
 	t_trace* head {trace_head[inet]};
-	if (!head) return nullptr;
 
 	t_rt_node* rt_root {init_route_tree_to_source(inet)};
+	if (!head) return rt_root;	// returns a new tree with just the SOURCE if empty
+
 	t_rt_node* parent_node {rt_root};
 	// dangling edge waiting to point to next child, initially belonging to root
 	t_linked_rt_edge* prev_edge {alloc_linked_rt_edge()};	
@@ -556,50 +601,71 @@ t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink) {
 
 	t_trace* tail;
 
-	while (head) {
+	while (true) {
 		// keep head on a branch of the traceback that has been allocated already and advance tail to a sink
 		tail = head->next;
-		while (tail) {
+		while (true) {
 			// tail is always a new element to be converted into a rt_node
 			if (rr_node[tail->index].type == SINK) {
 				// [head+1, tail(sink)] is the new part of the route tree
 				for (t_trace* new_node = head->next; new_node != tail; new_node = new_node->next) {
+					int inode {new_node->index};
 					t_rt_node* rt_node = alloc_rt_node();
-					rt_node->inode = new_node->index;
+					rt_node->inode = inode;
+					// 1 before tail is an IPIN; do not re_expand IPINs
+					if (new_node->next == tail) rt_node->re_expand = false;
+					else rt_node->re_expand = true;
 					rt_node->parent_node = parent_node;
 					rt_node->parent_switch = prev_edge->iswitch;
 
+					// vpr_printf_info("prev edge iswitch, node %d\n", prev_edge->iswitch);
 					// add to dangling edge (switch determined when edge was created)
 					prev_edge->child = rt_node;
+					// at this point parent and child should be set and mutual
+					INCREMENTAL_REROUTING_ASSERT(parent_node->u.child_list->child == rt_node);
+					INCREMENTAL_REROUTING_ASSERT(rt_node->parent_node == parent_node);
 					// create new dangling edge belonging to the current node for its child (there exists one since new_node isn't tail (sink))
 					prev_edge = alloc_linked_rt_edge();
 					prev_edge->iswitch = new_node->iswitch;
 					prev_edge->next = nullptr;
 					rt_node->u.child_list = prev_edge;
 					// hold onto rt_node since we will need it when it becomes the join point for another branch
-					rr_node_to_rt_node[new_node->index] = rt_node;
+					rr_node_to_rt_node[inode] = rt_node;
 					parent_node = rt_node;
 				}
 				// still need to add the sink to the route tree
 				t_rt_node* rt_node = alloc_rt_node();
 				rt_node->u.child_list = nullptr;	// no child for sink (edge is not allocated, need to do that outside for next branch)
 				rt_node->inode = tail->index;
+				rt_node->re_expand = false;	// do not re_expand SINKS
 				rt_node->parent_switch = prev_edge->iswitch;
+				rt_node->parent_node = parent_node;
 				prev_edge->child = rt_node;
 
-				rt_node_of_sink[tail->index] = rt_node;
+				// at this point parent and child should be set and mutual
+				INCREMENTAL_REROUTING_ASSERT(parent_node->u.child_list->child == rt_node);
+				INCREMENTAL_REROUTING_ASSERT(rt_node->parent_node == parent_node);
+
+				rr_node_to_rt_node[tail->index] = rt_node;
 				// terminates this series of edges
+				// vpr_printf_info("prev edge iswitch, sink %d %d %d\n", parent_node->u.child_list->iswitch, prev_edge->iswitch, rt_node->parent_switch);
+				prev_edge = nullptr;
 				break;
 			}
 			tail = tail->next;
 		}
 		// either another prexisting part of the route tree and more sinks to come or end
 		head = tail->next;
+		// vpr_printf_info("cloned last tail %d parent %d(%d)(%d) sink %d(%d)\n", tail->index, 
+		// 	parent_node->inode, parent_node->u.child_list->iswitch, prev_edge->iswitch,
+		// 	prev_edge->child->inode, prev_edge->child->parent_switch);
 		if (!head) break;
+		// continue on the next branch (1 after a sink for the traceback data structure)
 		// the rt_node has already been alocated, get a new dangling edge for it
 		parent_node = rr_node_to_rt_node[head->index];
 		prev_edge = alloc_linked_rt_edge();
 		prev_edge->iswitch = head->iswitch;
+		// vpr_printf_info("prev edge iswitch, new branch %d\n", prev_edge->iswitch);
 		prev_edge->next = parent_node->u.child_list;
 		parent_node->u.child_list = prev_edge;
 		// edge is still dangling in preparation for next sink
@@ -607,16 +673,131 @@ t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink) {
 
 	return rt_root;
 }
-static void print_edge(t_linked_rt_edge* edge) {
+
+static t_trace* traceback_branch_from_route_tree(t_trace* head, t_rt_node* root, int& sinks_left) {
+	// turns route tree into a traceback, **returns the sink trace (tail)**
+	// assumes head has been allocated with index set, but no iswitch or next
+	t_linked_rt_edge* edge {root->u.child_list};
+	
+	for (;;) {
+		// head is always allocated at the start of this loop
+		// reached a sink
+		if (!edge) {
+			// vpr_printf_info("hit sink %d\n", head->index);
+			head->iswitch = OPEN;
+			--sinks_left;
+			return head;	// head is the sink
+		}
+		// join point (sibling edges)
+		else if (edge->next) {
+			// recursively update for each of its sibling branches
+			t_trace* sink;
+			do {
+				head->iswitch = edge->iswitch;
+				t_trace* branch_head = alloc_trace_data();
+				branch_head->index = edge->child->inode;
+				head->next = branch_head;
+
+				sink = traceback_branch_from_route_tree(branch_head, edge->child, sinks_left);
+				// danger here of losing a pointer if sink came from a branch point since sink->next would already be allocated
+				// don't allocate for last sink
+				if (sinks_left) {
+					sink->next = alloc_trace_data();	
+					// copy the information to the other instances of the branch point
+					sink->next->index = head->index;
+					head = sink->next;	// become the new head to update its iswitch
+				}
+				edge = edge->next;
+			} while (edge);
+			return sink;	// returns the last sink, so the caller needs to set the last sink->next = nullptr
+		}
+		// edge must be valid here, and there is only 1 edge
+		head->iswitch = edge->iswitch;
+		root = edge->child;
+		edge = root->u.child_list;
+
+		head->next = alloc_trace_data();
+		// head is now the next head, along with root being the next root
+		head = head->next;
+		head->index = root->inode;
+	}
+}
+t_trace* traceback_from_route_tree(int inet, t_rt_node* root, int num_routed_sinks) {
+	// returns the trace head for the entire route tree
+	// vpr_printf_info("total num sinks to find %d\n", num_routed_sinks);
+	t_trace* head {alloc_trace_data()};
+	head->index = root->inode;
+	// the very last sink
+	auto tail = traceback_branch_from_route_tree(head, root, num_routed_sinks);
+	// should've reached all routed sinks in the pruned route tree
+	INCREMENTAL_REROUTING_ASSERT(num_routed_sinks == 0);
+
+	if (tail->next) {
+		// could be the last in a branch (nullptr), or path (alloc'd)
+		tail->next = nullptr;
+	}
+
+	trace_tail[inet] = tail;
+	trace_head[inet] = head;
+
+	return head;
+}
+
+
+void print_edge(t_linked_rt_edge* edge) {
 	vpr_printf_info("edges to ");
 	if (!edge) {vpr_printf_info("null"); return;}
 	while (edge) {
-		vpr_printf_info("%d ", edge->child->inode);
+		vpr_printf_info("%d(%d) ", edge->child->inode, edge->iswitch);
 		edge = edge->next;
 	}
 	vpr_printf_info("\n");
 }
-bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<int>& remaining_targets, float R_upstream)  {
+bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_sinks, vector<int>& remaining_targets) {
+	// assumes R_upstream is already preset for SOURCE, and skip checking parent switch (index of -1)
+	// SOURCE node should never be congested
+	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
+	INCREMENTAL_REROUTING_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
+	// if (rr_node[rt_root->inode].get_occ() > rr_node[rt_root->inode].get_capacity()) {
+	// 	// vpr_printf_info("SOURCE node %d is congested occ %d > cap %d, entire tree pruned\n", rt_root->inode,
+	// 		// rr_node[rt_root->inode].get_occ(), rr_node[rt_root->inode].get_capacity());
+	// 	pathfinder_update_cost_from_route_tree(rt_root, -1, pres_fac, &remaining_targets);
+	// 	free_route_tree(rt_root);
+	// 	return true;
+	// } 
+
+	// prune illegal branches from root
+	auto edge = rt_root->u.child_list;
+	t_linked_rt_edge* prev_edge {nullptr};
+	float C_downstream_branches {0};
+
+	while (edge) {
+		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_sinks, remaining_targets, 0)};
+		if (pruned) {
+			pathfinder_update_cost_from_route_tree(edge->child, -1, pres_fac, &remaining_targets);
+			edge = free_route_subtree(rt_root, prev_edge);	// returns next edge
+			// previous edge does not change when the current edge gets cut
+		}
+		else {
+			// child still exists and has calculated C_downstream
+			if (!g_rr_switch_inf[edge->iswitch].buffered)
+				C_downstream_branches += edge->child->C_downstream;
+			prev_edge = edge;
+			edge = edge->next; // advance normally as branch still exists
+		}
+	}
+	// for root this can happen if all child branches are pruned
+	if (!rt_root->u.child_list) {
+		// vpr_printf_info("pruned entire tree rooted at %d\n", rt_root->inode);
+		pathfinder_update_single_node_cost(rt_root->inode, -1, pres_fac);
+		return true;
+	}
+	// SOURCE always has 0 own capacitance
+	rt_root->C_downstream = C_downstream_branches;
+	return false;	
+}
+bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_rt_sinks, 
+	vector<int>& remaining_targets, float R_upstream)  {
 	/* as we traverse down, do:
 		1. removes illegal branches from pathfinder costs
 		2. populate remaining targets with the illegally routed sinks
@@ -628,12 +809,13 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 		assumes arriving rt_root does not have its R_upstream calculated (works for the SOURCE since R_upstream = 0)
 		Tdel for the entire tree after this function is still unset, call load_route_tree_Tdel(rt_root, 0) at SOURCE
 	*/
-	if (!rt_root) return false;
+	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
+
 	auto inode = rt_root->inode;
-	vpr_printf_info("pruning tree rooted at %d\n", inode);
+	// vpr_printf_info("pruning tree rooted at %d\n", inode);
 	// illegal tree, propagate information back up (actual removal done at the branching point into this branch)
 	if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
-		vpr_printf_info("tree rooted at %d is illegal occ: %d cap: %d\n", inode, rr_node[inode].get_occ(), rr_node[inode].get_capacity());
+		// vpr_printf_info("tree rooted at %d is illegal occ: %d cap: %d\n", inode, rr_node[inode].get_occ(), rr_node[inode].get_capacity());
 		return true;
 	}
 	// legal routing, allowed to do calculations now
@@ -648,21 +830,24 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 	auto edge = rt_root->u.child_list;
 	// no edge means it must be a sink, legally routed to sink!
 	if (!edge) {
-		vpr_printf_info("legally reached sink %d\n", inode);
+		// vpr_printf_info("legally reached sink %d\n\n", inode);
+		reached_rt_sinks.push_back(rt_root);
 		rt_root->C_downstream = 0;	// sink has no node downstream and always has 0 own capacitance
 		return false;
 	}
 	// recurse over children and get their C_downstream
 	float C_downstream_children {0};
-	print_edge(edge);
+
+	// print_edge(edge);
+
 	t_linked_rt_edge* prev_edge {nullptr};
 	while (edge) {
-		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, remaining_targets, R_upstream)};
+		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_rt_sinks, remaining_targets, R_upstream)};
 		// need to remove edge and possibly change first edge if pruned
 		if (pruned) {
 			// optimization for long paths (no sibling edges), propagate illegality up to branch point
 			if (!rt_root->u.child_list->next) {
-				vpr_printf_info("pruned path at %d, propagating up to branch point\n", inode);
+				// vpr_printf_info("pruned path at %d, propagating up to branch point\n", inode);
 				return true;
 			}
 			// else this is a branch point and the removal should be done here
@@ -678,13 +863,10 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 			edge = edge->next; // advance normally as branch still exists
 		}
 	}
-	// entirely pruned, propagate up, this should never be reached
-	if (!rt_root->u.child_list) {
-		assert(false);	// this should never be reached due to the 1 long path optimization
-		return true;
-	}
+	// entirely pruned, this should never be reached due to the 1 long path optimization
+	INCREMENTAL_REROUTING_ASSERT(rt_root->u.child_list != nullptr);
+
 	// the sum of its children and its own capacitance
-	vpr_printf_info("node %d downstream children C %e own C %e\n", inode, C_downstream_children, rr_node[inode].C);
 	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
 	return false;
 }
@@ -696,8 +878,9 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 // 	// general traversal pattern to minimize function calls
 // 	if (!rt_root) return;
 // 	t_linked_rt_edge* edge {rt_root->u.child_list};
+// 	visit.start();
 // 	for (;;) {
-// 		visit(rt_root);
+// 		visit.node(rt_root);
 // 		// sink, terminate
 // 		if (!edge) {
 // 			visit.sink(rt_root);
@@ -706,10 +889,11 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 // 		// join point, spwan parallel traversals (multithreading potential)
 // 		else if (edge->next) {
 // 			do {
+// 				visit.branch(rt_root);
 // 				traverse_route_tree(edge->child, visit);
 // 				edge = edge->next;
 // 			} while (edge);
-// 			visit.branch(rt_root);
+// 			visit.branch_term(rt_root);
 // 			return;
 // 		}
 // 		rt_root = edge->child;
@@ -717,22 +901,27 @@ bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
 // 	}
 // }
 
+
+
 void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, vector<int>* reached_sinks) {
 	// Like pathfinder_update_one_cost, but works with a route tree instead     
 	// found sinks are put in reached_sinks if it is not null
-	if (!rt_root) return;
+	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
 
 	t_linked_rt_edge* edge {rt_root->u.child_list};
 	
 	// update every node once, so even do it for sinks and join points once
 	for (;;) {
-		vpr_printf_info("updating cost for node %d\n", rt_root->inode);
+		// vpr_printf_info("updating cost for node %d\n", rt_root->inode);
 		pathfinder_update_single_node_cost(rt_root->inode, add_or_sub, pres_fac);
 
 		// reached a sink
 		if (!edge) {
 			// caller decides what to do with reached sinks
-			if (reached_sinks) reached_sinks->push_back(rt_root->inode);
+			if (reached_sinks) {
+				// vpr_printf_info("pathfinder found sink %d while expanding\n\n", rt_root->inode);
+				reached_sinks->push_back(rt_root->inode);
+			}
 			return;
 		}
 		// join point (sibling edges)
@@ -761,21 +950,16 @@ static const std::vector<const char*> node_typename {
 		"ICE"
 };
 
-static void print_node(t_rt_node* rt_node) {
-	int inode = rt_node->inode;
-	t_rr_type node_type = rr_node[inode].type;
-	vpr_printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
-		rt_node->parent_switch, node_typename[node_type], inode);	
-}
 
-static void print_route_tree(t_rt_node* rt_root, int branch_level, bool new_branch) {
-	constexpr int indent_level {34};
+template <typename Op>
+static void traverse_indented_route_tree(t_rt_node* rt_root, int branch_level, bool new_branch, Op op, int indent_level) {
 	// rely on preorder depth first traversal
+	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
 	t_linked_rt_edge* edges = rt_root->u.child_list;
 	// print branch indent
 	if (new_branch) vpr_printf_info("\n%*s", indent_level*branch_level, " \\ ");
 
-	print_node(rt_root);
+	op(rt_root);
 	// reached sink, move onto next branch
 	if (!edges) return;
 	// branch point, has sibling edge
@@ -783,19 +967,45 @@ static void print_route_tree(t_rt_node* rt_root, int branch_level, bool new_bran
 		bool first_branch = true;
 		do {
 			// don't print a new line for the first branch
-			print_route_tree(edges->child, branch_level + 1, !first_branch);
+			traverse_indented_route_tree(edges->child, branch_level + 1, !first_branch, op, indent_level);
 			edges = edges->next;
 			first_branch = false;
 		} while (edges);
 	}
 	// along a path, just propagate down
 	else {
-		print_route_tree(edges->child, branch_level, false);
+		traverse_indented_route_tree(edges->child, branch_level + 1, false, op, indent_level);
 	}
 }
-
+static void print_node(t_rt_node* rt_node) {
+	int inode = rt_node->inode;
+	t_rr_type node_type = rr_node[inode].type;
+	vpr_printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
+		rt_node->re_expand, node_typename[node_type], inode);	
+}
+static void print_node_inf(t_rt_node* rt_node) {
+	int inode = rt_node->inode;
+	const auto& node_inf = rr_node_route_inf[inode];
+	vpr_printf_info("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
+		node_inf.prev_node, node_inf.prev_edge, inode);	
+}
+static void print_node_congestion(t_rt_node* rt_node) {
+	int inode = rt_node->inode;
+	const auto& node_inf = rr_node_route_inf[inode];
+	const auto& node = rr_node[inode];
+	vpr_printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
+		node.get_occ(), node.get_capacity(), inode);		
+}
+void print_route_tree_inf(t_rt_node* rt_root) {
+	traverse_indented_route_tree(rt_root, 0, false, print_node_inf, 34);
+	vpr_printf_info("\n");
+}
 void print_route_tree(t_rt_node* rt_root) {
-	print_route_tree(rt_root, 0, false);
+	traverse_indented_route_tree(rt_root, 0, false, print_node, 34);
+	vpr_printf_info("\n");
+}
+void print_route_tree_congestion(t_rt_node* rt_root) {
+	traverse_indented_route_tree(rt_root, 0, false, print_node_congestion, 15);
 	vpr_printf_info("\n");
 }
 
@@ -821,6 +1031,10 @@ bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
 	t_linked_rt_edge* orig_edge {root->u.child_list};
 	t_linked_rt_edge* clone_edge {root_clone->u.child_list};
 	while (orig_edge && clone_edge) {
+		if (orig_edge->iswitch != clone_edge->iswitch)
+			vpr_printf_info("mismatch i %d|%d edge switch %d|%d\n", 
+				root->inode, root_clone->inode,
+				orig_edge->iswitch, clone_edge->iswitch);
 		if (!is_equivalent_route_tree(orig_edge->child, clone_edge->child)) return false;	// child trees not equivalent
 		orig_edge = orig_edge->next;
 		clone_edge = clone_edge->next;
@@ -830,4 +1044,126 @@ bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
 		return false;
 	}
 	return true;	// passed all tests
+}
+
+// check only the connections are correct, ignore R and C
+bool is_valid_skeleton_tree(t_rt_node* root) {
+	int inode = root->inode;
+	t_linked_rt_edge* edge = root->u.child_list;
+	while (edge) {
+		if (edge->child->parent_node != root) {
+			vpr_printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n", 
+				inode, edge->child->inode,
+				edge->child->inode, edge->child->parent_node->inode);
+			return false;
+		}
+		if (edge->iswitch != edge->child->parent_switch) {
+			vpr_printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n", 
+				inode, edge->child->inode, edge->iswitch, edge->child->parent_switch);
+			return false;
+		}
+
+		if (!is_valid_skeleton_tree(edge->child)) {
+			vpr_printf_info("subtree %d invalid, propagating up\n", edge->child->inode);
+			return false;
+		}
+		edge = edge->next;
+	}
+	return true;	
+}
+
+bool is_valid_route_tree(t_rt_node* root) {
+	// check upstream resistance
+	int inode = root->inode;
+	short iswitch = root->parent_switch;
+	if (root->parent_node) {
+		if (g_rr_switch_inf[iswitch].buffered) {
+			if (root->R_upstream != rr_node[inode].R + g_rr_switch_inf[iswitch].R) {
+				vpr_printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
+					rr_node[inode].R + g_rr_switch_inf[iswitch].R);
+				return false;
+			}
+		}
+		else if (root->R_upstream != rr_node[inode].R + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R) {
+			vpr_printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
+				rr_node[inode].R + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R);
+			return false;
+		}
+	}
+	else if (root->R_upstream != rr_node[inode].R) {
+		vpr_printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, rr_node[inode].R);
+		return false;
+	}
+
+	// check downstream C
+	t_linked_rt_edge* edge = root->u.child_list;
+	float C_downstream_children {0};
+	// sink, must not be congested
+	if (!edge) {
+		int occ = rr_node[inode].get_occ();
+		int capacity = rr_node[inode].get_capacity();
+		if (occ > capacity) {
+			vpr_printf_info("SINK %d occ %d > cap %d\n", inode, occ, capacity);
+			return false;
+		}
+	}
+	while (edge) {
+		if (edge->child->parent_node != root) {
+			vpr_printf_info("parent-child relationship not mutually acknowledged by parent %d->%d child %d<-%d\n", 
+				inode, edge->child->inode,
+				edge->child->inode, edge->child->parent_node->inode);
+			return false;
+		}
+		if (edge->iswitch != edge->child->parent_switch) {
+			vpr_printf_info("parent(%d)-child(%d) connected switch not equivalent parent %d child %d\n", 
+				inode, edge->child->inode, edge->iswitch, edge->child->parent_switch);
+			return false;
+		}
+
+		if (!g_rr_switch_inf[edge->iswitch].buffered)
+			C_downstream_children += edge->child->C_downstream;
+
+		if (!is_valid_route_tree(edge->child)) {
+			vpr_printf_info("subtree %d invalid, propagating up\n", edge->child->inode);
+			return false;
+		}
+		edge = edge->next;
+	}
+
+	if (root->C_downstream != C_downstream_children + rr_node[inode].C) {
+		vpr_printf_info("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + rr_node[inode].C);
+		return false;
+	}
+
+	return true;
+}
+
+bool is_uncongested_route_tree(t_rt_node* root) {
+	// make sure the nodes are legally connected
+	t_linked_rt_edge* edge {root->u.child_list};
+	
+	for (;;) {
+		int inode = root->inode;
+		if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
+			// vpr_printf_info("node %d occ %d > cap %d\n", inode, rr_node[inode].get_occ(), rr_node[inode].get_capacity());
+			return false;
+		}
+
+		// reached a sink
+		if (!edge) {
+			return true;
+		}
+		// join point (sibling edges)
+		else if (edge->next) {
+			// recursively update for each of its sibling branches
+			do {
+				if (!is_uncongested_route_tree(edge->child)) return false;
+				edge = edge->next;
+			} while (edge);
+			return true;
+		}
+
+		root = edge->child;
+		edge = root->u.child_list;
+	}
 }

@@ -10,7 +10,7 @@
 ENABLE_GRAPHICS = false
 # can be true or false
 
-BUILD_TYPE = debug
+BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
@@ -39,7 +39,7 @@ OTHER_DIR := $(OTHER_DIR) \
 
 WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
-DEBUG_FLAGS = -g 
+DEBUG_FLAGS = -g -O0 -DDEBUG_INCREMENTAL_REROUTING
 PROFILE_FLAGS = -DPROFILE
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include
@@ -58,7 +58,7 @@ endif
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
 else ifneq (,$(findstring profile, $(BUILD_TYPE)))
-  FLAGS := $(FLAGS) $(PROFILE_FLAGS)
+  FLAGS := $(FLAGS) $(PROFILE_FLAGS) $(OPT_FLAGS)
 else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS) 
 endif

@@ -20,7 +20,7 @@ using namespace std;
  *				Block to which the nodes of this pin connect. The source 
  *				block is net.pins[0].block and the sink blocks are the remaining pins.
  *				When this is in the g_clb_netlist, it is an index into block[]
- *				When this is is nte g_atoms_netlist, it is an index into logical_block[]
+ *				When this is is the g_atoms_netlist, it is an index into logical_block[]
  * block_port:  Port index (on a block) to which each net terminal connects. 
  *				A port is a named collection of pins.
  *				Indexes into input_net_tnodes
