@@ -57,6 +57,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		t_power_opts * PowerOpts) {
 	int i, j, len;
 
+	if (!Options->CircuitName) vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, "No blif file found in arguments (did you specify an architecture file?)\n");
 	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
 	if (Options->out_file_prefix != NULL ) {
 		len += strlen(Options->out_file_prefix);

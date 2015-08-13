@@ -1,3 +1,5 @@
+#pragma once
+#include <vector>
 /************** Types and defines exported by route_tree_timing.c ************/
 
 struct s_linked_rt_edge {
@@ -65,16 +67,36 @@ void free_route_tree(t_rt_node * rt_node);
 t_rt_node *update_route_tree(struct s_heap *hptr);
 
 void update_net_delays_from_route_tree(float *net_delay,
-		t_rt_node ** rt_node_of_sink, int inet);
+		const t_rt_node* const * rt_node_of_sink, int inet);
+void update_remaining_net_delays_from_route_tree(float* net_delay, 
+		const t_rt_node* const * rt_node_of_sink, const std::vector<int>& remaining_sinks);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
+void load_route_tree_rr_route_inf(t_rt_node* root);	// NO_PREVIOUS for SOURCE
 
+
+/********** incremental connection-based rerouting ***********/
+// logically expensive asserts
+#ifdef DEBUG_INCREMENTAL_REROUTING
+#define INCREMENTAL_REROUTING_ASSERT(expr) assert(expr)
+#else
+#define INCREMENTAL_REROUTING_ASSERT(expr) ;
+#endif
+
+void print_edge(t_linked_rt_edge* edge);
 void print_route_tree(t_rt_node* rt_root);
+void print_route_tree_inf(t_rt_node* rt_root);
+void print_route_tree_congestion(t_rt_node* rt_root);
 
-t_rt_node* traceback_to_route_tree(int inet, t_rt_node** rt_node_of_sink);
+t_rt_node* traceback_to_route_tree(int inet);
+t_trace* traceback_from_route_tree(int inet, t_rt_node* root, int num_remaining_sinks);
 
-bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<int>& remaining_targets, float R_upstream = 0);	// 0 for SOURCE
+bool prune_route_tree(t_rt_node* rt_root, float pres_fac, std::vector<t_rt_node*>& reached_sinks, vector<int>& remaining_targets); 	// 0 R_upstream for SOURCE
+bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, std::vector<t_rt_node*>& reached_sinks, std::vector<int>& remaining_targets, float R_upstream);
 
-void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, vector<int>* reached_sinks);
+void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, std::vector<int>* reached_sinks);
 
 bool is_equivalent_route_tree(t_rt_node* rt_root, t_rt_node* cloned_rt_root);
+bool is_valid_skeleton_tree(t_rt_node* rt_root);
+bool is_valid_route_tree(t_rt_node* rt_root);
+bool is_uncongested_route_tree(t_rt_node* root);

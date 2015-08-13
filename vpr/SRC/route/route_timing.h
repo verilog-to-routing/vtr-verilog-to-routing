@@ -1,3 +1,7 @@
+#pragma once
+#include <unordered_map>
+#include <vector>
+
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally,
         bool timing_analysis_enabled, const t_timing_inf &timing_inf);
@@ -28,6 +32,12 @@ struct timing_driven_route_structs {
 	timing_driven_route_structs();
 	~timing_driven_route_structs();
 };
+
+// connection based functions
+// const alias on the lookup table as my testing showed twice as fast reads compared to using global
+void convert_sink_node_to_pins_of_net(const std::unordered_map<int,int>& node_to_pin_mapping, std::vector<int>& sink_nodes);
+void put_sink_rt_nodes_to_pins_lookup(const std::unordered_map<int, int>& node_to_pin_mapping, const std::vector<s_rt_node*>& sink_rt_node,
+	 t_rt_node** rt_node_of_sink);
 
 // profiling functions
 #ifdef PROFILE

@@ -81,6 +81,7 @@ void reset_path_costs(void);
 float get_rr_cong_cost(int inode);
 
 void mark_ends(int inet);
+void mark_remaining_ends(int inet, const std::vector<int>& remaining_sinks);
 
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
@@ -122,6 +123,7 @@ void reset_rr_node_route_structs(void);
 
 void alloc_route_static_structs(void);
 
+
 void free_trace_structs(void);
 
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
@@ -132,3 +134,6 @@ void free_chunk_memory_trace(void);
 int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts);
 
 void print_traceback(int inet);
+
+t_trace* alloc_trace_data(void);
+void free_trace_data(t_trace* trace);

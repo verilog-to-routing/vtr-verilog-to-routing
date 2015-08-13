@@ -96,10 +96,8 @@ static t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
 /******************** Subroutines local to route_common.c *******************/
 
-static void free_trace_data(struct s_trace *tptr);
 static void load_route_bb(int bb_factor);
 
-static struct s_trace *alloc_trace_data(void);
 static void add_to_heap(struct s_heap *hptr);
 static struct s_heap *alloc_heap_data(void);
 static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
@@ -428,8 +426,11 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	 * node.     */
 	int occ = rr_node[inode].get_occ() + add_or_sub;
 	rr_node[inode].set_occ(occ);
+	// can't have negative occupancy
+	assert(occ >= 0);
 
 	int	capacity = rr_node[inode].get_capacity();
+	// vpr_printf_info("occ for %6d %2d (%2d/%2d)\n", inode, add_or_sub, occ, capacity);
 	if (occ < capacity) {
 		rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
@@ -543,6 +544,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	iedge = hptr->prev_edge;
 
 	while (inode != NO_PREVIOUS) {
+		// vpr_printf_info("creating trace data for node %d\n", inode);
 		prevptr = alloc_trace_data();
 		prevptr->index = inode;
 		prevptr->iswitch = rr_node[inode].switches[iedge];
@@ -636,6 +638,12 @@ void mark_ends(int inet) {
 		inode = net_rr_terminals[inet][ipin];
 		rr_node_route_inf[inode].target_flag++;
 	}
+}
+
+void mark_remaining_ends(int inet, const vector<int>& remaining_sinks) {
+	// like mark_ends, but only performs it for the remaining sinks of a net
+	for (int sink_node : remaining_sinks)
+		++rr_node_route_inf[sink_node].target_flag;
 }
 
 void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
@@ -782,8 +790,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 			}
 		
 			if ((block[iblk].nets[clb_pin] != OPEN
-					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) || block[iblk].nets[clb_pin] == OPEN
-				) {
+					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) || block[iblk].nets[clb_pin] == OPEN) {
 				iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
@@ -1209,7 +1216,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 	}
 }
 
-static struct s_trace *
+struct s_trace *
 alloc_trace_data(void) {
 
 	struct s_trace *temp_ptr;
@@ -1226,7 +1233,7 @@ alloc_trace_data(void) {
 	return (temp_ptr);
 }
 
-static void free_trace_data(struct s_trace *tptr) {
+void free_trace_data(struct s_trace *tptr) {
 
 	/* Puts the traceback structure pointed to by tptr on the free list. */
 
@@ -1481,8 +1488,8 @@ void print_traceback(int inet) {
 	t_trace* head = trace_head[inet];
 	while (head) {
 		int inode {head->index};
-		if (rr_node[inode].type == SINK) vpr_printf_info("%d(sink)->",inode);
-		else vpr_printf_info("%d->",inode);
+		if (rr_node[inode].type == SINK) vpr_printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
+		else vpr_printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
 		head = head->next;
 	}
 	vpr_printf_info("\n");
