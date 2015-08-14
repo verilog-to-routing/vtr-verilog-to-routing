@@ -705,7 +705,9 @@ static int alloc_rr_switch_inf(INP int num_arch_switches, OUTP map<int,int> *swi
         }
     }
     delete[] inward_switch_inf;
+
 	/* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
+	delete [] g_rr_switch_inf;
 	g_rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
 
 	return num_rr_switches;
