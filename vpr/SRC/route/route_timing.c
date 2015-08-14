@@ -22,6 +22,12 @@
 using namespace std;
 
 
+/* Oleg's test code. This is an experimental/test measure to give the timing-driven router
+   look-ahead greater awareness of the different wire lengths in the FPGA.
+   Enabling this significantly increases routing time, but the router will
+   still be much faster than running it with astar_fac = 0. */
+//#define OP_STRONG_LOOKAHEAD
+
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -35,14 +41,25 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim);
 
+#ifndef OP_STRONG_LOOKAHEAD
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream);
+#else
+static float get_timing_driven_multiple_wirelengths_expected_cost(int inode, int target_node,
+		float criticality_fac, float R_upstream);
+#endif
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 static int get_num_expected_interposer_hops_to_target(int inode, int target_node);
 #endif
 
+#ifndef OP_STRONG_LOOKAHEAD
 static int get_expected_segs_to_target(int inode, int target_node,
 		int *num_segs_ortho_dir_ptr);
+#else
+static int get_expected_segs_to_target(int inode, int via_cost_index, int target_node,
+		int *num_segs_ortho_dir_ptr);
+#endif
 
 static void update_rr_base_costs(int inet, float largest_criticality);
 
@@ -718,10 +735,17 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		inode = rt_node->inode;
 		backward_path_cost = target_criticality * rt_node->Tdel;
 		R_upstream = rt_node->R_upstream;
+#ifndef OP_STRONG_LOOKAHEAD
 		tot_cost = backward_path_cost
 				+ astar_fac
 						* get_timing_driven_expected_cost(inode, target_node,
 								target_criticality, R_upstream);
+#else
+		tot_cost = backward_path_cost
+				+ astar_fac
+						* get_timing_driven_multiple_wirelengths_expected_cost(inode, target_node,
+								target_criticality, R_upstream);
+#endif
 		heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
 				backward_path_cost, R_upstream);
 
@@ -815,8 +839,13 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				new_back_pcost += bend_cost;
 		}
 
+#ifndef OP_STRONG_LOOKAHEAD
 		float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
 				criticality_fac, new_R_upstream);
+#else
+		float expected_cost = get_timing_driven_multiple_wirelengths_expected_cost(to_node, target_node,
+				criticality_fac, new_R_upstream);
+#endif
 		float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
 
 		node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
@@ -825,6 +854,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	} /* End for all neighbours */
 }
 
+#ifndef OP_STRONG_LOOKAHEAD
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream) {
 
@@ -839,6 +869,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	rr_type = rr_node[inode].type;
 
 	if (rr_type == CHANX || rr_type == CHANY) {
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
 #endif
@@ -869,6 +900,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 												* rr_indexed_data[ortho_cost_index].C_load);
 
 		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 		float interposer_hop_delay = (float)delay_increase * 1e-12;
 		Tdel += num_interposer_hops * interposer_hop_delay;
@@ -887,6 +919,80 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		return (0.);
 	}
 }
+
+#else
+static float get_timing_driven_multiple_wirelengths_expected_cost(int inode, int target_node,
+		float criticality_fac, float R_upstream) {
+
+	/* Determines the expected cost (due to both delay and resouce cost) to reach *
+	 * the target node from inode.  It doesn't include the cost of inode --       *
+	 * that's already in the "known" path_cost.                                   */
+
+	t_rr_type rr_type;
+	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
+	float expected_cost, cong_cost, Tdel;
+
+	rr_type = rr_node[inode].type;
+
+	if (rr_type == CHANX || rr_type == CHANY) {
+
+		/* OP: Want to account for multiple wirelengths by breaking the assumption that 
+		   a route will stay on the same kind of node that it's currently on. So here I
+		   get the minimum expected cost across all CHANX cost indices. This significantly
+		   drives up routing time, but is still much faster than running VPR with
+		   astar_fac = 0.
+		*/
+		
+		float minimum_cost = -1.0;
+		for (cost_index = CHANX_COST_INDEX_START; cost_index < CHANX_COST_INDEX_START + (num_rr_indexed_data - CHANX_COST_INDEX_START)/2; cost_index++){
+
+			num_segs_same_dir = get_expected_segs_to_target(inode, cost_index, target_node,
+					&num_segs_ortho_dir);
+			ortho_cost_index = cost_index;
+
+			cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
+					+ num_segs_ortho_dir
+							* rr_indexed_data[ortho_cost_index].base_cost;
+			cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
+					+ rr_indexed_data[SINK_COST_INDEX].base_cost;
+
+			Tdel =
+					num_segs_same_dir * rr_indexed_data[cost_index].T_linear
+							+ num_segs_ortho_dir
+									* rr_indexed_data[ortho_cost_index].T_linear
+							+ num_segs_same_dir * num_segs_same_dir
+									* rr_indexed_data[cost_index].T_quadratic
+							+ num_segs_ortho_dir * num_segs_ortho_dir
+									* rr_indexed_data[ortho_cost_index].T_quadratic
+							+ R_upstream
+									* (num_segs_same_dir
+											* rr_indexed_data[cost_index].C_load
+											+ num_segs_ortho_dir
+													* rr_indexed_data[ortho_cost_index].C_load);
+
+			Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
+
+			expected_cost = criticality_fac * Tdel
+					+ (1. - criticality_fac) * cong_cost;
+
+			if (expected_cost < minimum_cost || minimum_cost < 0){
+				minimum_cost = expected_cost;
+			}
+		}
+		//assert( minimum_cost >= 0 );
+		return (minimum_cost);
+	}
+
+	else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+		return (rr_indexed_data[SINK_COST_INDEX].base_cost);
+	}
+
+	else { /* Change this if you want to investigate route-throughs */
+		return (0.);
+	}
+}
+#endif
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 static int get_num_expected_interposer_hops_to_target(int inode, int target_node) 
 {
@@ -979,6 +1085,7 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
  * point values very close to an integer are rounded to that integer.       */
 #define ROUND_UP(x) (ceil (x - 0.001))
 
+#ifndef OP_STRONG_LOOKAHEAD
 static int get_expected_segs_to_target(int inode, int target_node,
 		int *num_segs_ortho_dir_ptr) {
 
@@ -990,9 +1097,10 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
 	int no_need_to_pass_by_clb;
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
-#ifdef INTERPOSER_BASED_ARCHITECTURE
+
+	#ifdef INTERPOSER_BASED_ARCHITECTURE
 	int num_expected_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-#endif
+	#endif
 	
 	target_x = rr_node[target_node].get_xlow();
 	target_y = rr_node[target_node].get_ylow();
@@ -1021,6 +1129,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 			*num_segs_ortho_dir_ptr = 0;
 			no_need_to_pass_by_clb = 0;
 		}
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		(*num_segs_ortho_dir_ptr) = (*num_segs_ortho_dir_ptr) + 2*num_expected_hops;
 #endif
@@ -1069,6 +1178,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		} else {
 			num_segs_same_dir = 0;
 		}
+		
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		num_segs_same_dir = num_segs_same_dir + 2*num_expected_hops;
 #endif
@@ -1076,6 +1186,99 @@ static int get_expected_segs_to_target(int inode, int target_node,
 
 	return (num_segs_same_dir);
 }
+
+#else
+static int get_expected_segs_to_target(int inode, int via_cost_index, int target_node,
+		int *num_segs_ortho_dir_ptr) {
+
+	/* Returns the number of segments the same type as inode that will be needed *
+	 * to reach target_node (not including inode) in each direction (the same    *
+	 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
+
+	/* OP: 'via_cost_index' is the cost index representing the type of node that we
+	   will stay on for teh remainder of the routing */
+
+	t_rr_type rr_type;
+	int target_x, target_y, num_segs_same_dir, cost_index;
+	int no_need_to_pass_by_clb;
+	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
+
+	target_x = rr_node[target_node].get_xlow();
+	target_y = rr_node[target_node].get_ylow();
+	cost_index = via_cost_index;
+	inv_length = rr_indexed_data[cost_index].inv_length;
+	ortho_inv_length = inv_length;
+	rr_type = rr_node[inode].type;
+
+	if (rr_type == CHANX) {
+		ylow = rr_node[inode].get_ylow();
+		xhigh = rr_node[inode].get_xhigh();
+		xlow = rr_node[inode].get_xlow();
+
+		/* Count vertical (orthogonal to inode) segs first. */
+
+		if (ylow > target_y) { /* Coming from a row above target? */
+			*num_segs_ortho_dir_ptr =
+					(int)(ROUND_UP((ylow - target_y + 1.) * ortho_inv_length));
+			no_need_to_pass_by_clb = 1;
+		} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
+			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_y - ylow) *
+					ortho_inv_length));
+			no_need_to_pass_by_clb = 1;
+		} else { /* In a row that passes by target CLB */
+			*num_segs_ortho_dir_ptr = 0;
+			no_need_to_pass_by_clb = 0;
+		}
+		
+		/* Now count horizontal (same dir. as inode) segs. */
+
+		if (xlow > target_x + no_need_to_pass_by_clb) {
+			num_segs_same_dir = (int)(ROUND_UP((xlow - no_need_to_pass_by_clb -
+							target_x) * inv_length));
+		} else if (xhigh < target_x - no_need_to_pass_by_clb) {
+			num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb -
+							xhigh) * inv_length));
+		} else {
+			num_segs_same_dir = 0;
+		}
+	}
+
+	else { /* inode is a CHANY */
+		ylow = rr_node[inode].get_ylow();
+		yhigh = rr_node[inode].get_yhigh();
+		xlow = rr_node[inode].get_xlow();
+
+		/* Count horizontal (orthogonal to inode) segs first. */
+
+		if (xlow > target_x) { /* Coming from a column right of target? */
+			*num_segs_ortho_dir_ptr = (int)(
+					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length));
+			no_need_to_pass_by_clb = 1;
+		} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
+			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_x - xlow) *
+					ortho_inv_length));
+			no_need_to_pass_by_clb = 1;
+		} else { /* In a column that passes by target CLB */
+			*num_segs_ortho_dir_ptr = 0;
+			no_need_to_pass_by_clb = 0;
+		}
+
+		/* Now count vertical (same dir. as inode) segs. */
+
+		if (ylow > target_y + no_need_to_pass_by_clb) {
+			num_segs_same_dir = (int)(ROUND_UP((ylow - no_need_to_pass_by_clb -
+							target_y) * inv_length));
+		} else if (yhigh < target_y - no_need_to_pass_by_clb) {
+			num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb -
+							yhigh) * inv_length));
+		} else {
+			num_segs_same_dir = 0;
+		}
+	}
+
+	return (num_segs_same_dir);
+}
+#endif
 
 static void update_rr_base_costs(int inet, float largest_criticality) {
 
