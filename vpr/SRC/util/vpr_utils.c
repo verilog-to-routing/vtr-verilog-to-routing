@@ -1365,7 +1365,6 @@ static int convert_switch_index(int *switch_index, int *fanin) {
 }
 
 /*
- * Hanson Zeng:
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
  * NOTE: to speed up this function, for XXX uni-directional arch XXX, the most efficient 
@@ -1387,6 +1386,10 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  * we have to use an extra loop to setup the information of inward switch first.
  */ 
 void print_switch_usage() {
+    if (g_switch_fanin_remap == NULL) {
+        vpr_printf_warning(__FILE__, __LINE__, "Cannot print switch usage stats: g_switch_fanin_remap is NULL\n");
+        return;
+    }
     map<int, int> *switch_fanin_count;
     map<int, float> *switch_fanin_delay;
     switch_fanin_count = new map<int, int>[g_num_arch_switches];

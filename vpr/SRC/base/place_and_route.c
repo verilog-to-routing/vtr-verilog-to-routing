@@ -216,11 +216,10 @@ bool place_and_route(enum e_operation operation,
 	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
     if (router_opts.switch_usage_analysis) {
-        clock_t start = clock();
         print_switch_usage();
-        clock_t endd = clock();
-        printf("\nprinting switch usage stats uses %g seconds.\n", (float)(endd-start) / CLOCKS_PER_SEC);
     }
+    delete [] g_switch_fanin_remap;
+    g_switch_fanin_remap = NULL;
 
 	/*WMF: cleaning up memory usage */
 

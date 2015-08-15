@@ -722,6 +722,11 @@ void print_map(map<int, int> dbmap) {
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(INP int num_arch_switches, INOUTP map<int,int> *switch_fanin){
 	int i_rr_switch = 0;
+    if (g_switch_fanin_remap != NULL) {
+        // at this stage, we rebuild the rr_graph (probably in binary search)
+        // so old g_switch_fanin_remap is obsolete
+        delete [] g_switch_fanin_remap;
+    }
     g_switch_fanin_remap = new map<int, int>[num_arch_switches];
 	for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++){
 		map<int,int>::iterator it;
