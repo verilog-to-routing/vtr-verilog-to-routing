@@ -83,20 +83,19 @@ void load_route_tree_rr_route_inf(t_rt_node* root);	// NO_PREVIOUS for SOURCE
 #define INCREMENTAL_REROUTING_ASSERT(expr) ;
 #endif
 
-void print_edge(t_linked_rt_edge* edge);
-void print_route_tree(t_rt_node* rt_root);
-void print_route_tree_inf(t_rt_node* rt_root);
-void print_route_tree_congestion(t_rt_node* rt_root);
+void print_edge(const t_linked_rt_edge* edge);
+void print_route_tree(const t_rt_node* rt_root);
+void print_route_tree_inf(const t_rt_node* rt_root);
+void print_route_tree_congestion(const t_rt_node* rt_root);
 
 t_rt_node* traceback_to_route_tree(int inet);
-t_trace* traceback_from_route_tree(int inet, t_rt_node* root, int num_remaining_sinks);
+t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_remaining_sinks);
 
 bool prune_route_tree(t_rt_node* rt_root, float pres_fac, std::vector<t_rt_node*>& reached_sinks, vector<int>& remaining_targets); 	// 0 R_upstream for SOURCE
-bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, std::vector<t_rt_node*>& reached_sinks, std::vector<int>& remaining_targets, float R_upstream);
 
-void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, std::vector<int>* reached_sinks);
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac);
 
-bool is_equivalent_route_tree(t_rt_node* rt_root, t_rt_node* cloned_rt_root);
-bool is_valid_skeleton_tree(t_rt_node* rt_root);
-bool is_valid_route_tree(t_rt_node* rt_root);
-bool is_uncongested_route_tree(t_rt_node* root);
+bool is_equivalent_route_tree(const t_rt_node* rt_root, const t_rt_node* cloned_rt_root);
+bool is_valid_skeleton_tree(const t_rt_node* rt_root);
+bool is_valid_route_tree(const t_rt_node* rt_root);
+bool is_uncongested_route_tree(const t_rt_node* root);
