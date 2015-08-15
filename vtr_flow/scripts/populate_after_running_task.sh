@@ -2,6 +2,8 @@ task=$1
 
 if [[ "$2" == "-norun" ]]; then
     echo skip to populate
+elif [[ "$2" == "-l" ]]; then
+    ~/vtr/vtr_flow/scripts/run_vtr_task.pl -l $task
 else
     ~/vtr/vtr_flow/scripts/run_vtr_task.pl $task
 fi
