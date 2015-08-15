@@ -23,7 +23,7 @@
 using namespace std;
 
 /***************** Iterative connection based rerouting **********************/
-constexpr unsigned int MIN_ITERATIVE_REROUTE_FANOUT = 5;
+constexpr unsigned int MIN_ITERATIVE_REROUTE_FANOUT = 4;
 
 // array indexed by inet of lookup tables mapping terminal rr_nodes to its pin on the net
 // the reverse lookup of net_rr_terminals
@@ -577,55 +577,50 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 #ifdef PROFILE
 		++entire_net_rerouted;
 #endif
-		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
+				pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
+		free_traceback(inet);
+
 		rt_root = init_route_tree_to_source(inet);
 		for (unsigned int sink_pin = 1; sink_pin <= num_sinks; ++sink_pin)
 			remaining_targets.push_back(sink_pin);
 		// don't have node information in this case, call old functions
 		mark_ends(inet);
-		free_traceback(inet);
 	}
 	else {
 		reached_sinks.clear();
-		// vpr_printf_info("\n\nconverting traceback to route tree for net %d\n", inet);
-		// print_traceback(inet);
 #ifdef PROFILE
 		clock_t rebuild_start = clock();
 #endif
+		// convert the previous iteration's traceback into the partial route tree for this iteration
 		rt_root = traceback_to_route_tree(inet);
-		// vpr_printf_info("unpruned congestion route tree for net %d\n", inet);
-		// print_route_tree_congestion(rt_root);
-		// don't need traceback anymore
-		free_traceback(inet);
 
-        // vpr_printf_info("unpruned skeleton route tree for net %d\n", inet);
-		// print_route_tree(rt_root);
-
-		// vpr_printf_info("skeleton tree without calculated values\n");
 		// check for edge correctness
 		INCREMENTAL_REROUTING_ASSERT(is_valid_skeleton_tree(rt_root));
 		INCREMENTAL_REROUTING_ASSERT(should_route_net(inet));
 		INCREMENTAL_REROUTING_ASSERT(!is_uncongested_route_tree(rt_root));
 
-		// vpr_printf_info("valid skeleton tree, any error after is due to pruning\n");
 
 		bool destroyed {prune_route_tree(rt_root, pres_fac, reached_sinks, remaining_targets)};
+
+		// entire traceback is still freed since the pruned tree will need to have its pres_cost updated
+		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
+		free_traceback(inet);
+
 		// if entirely pruned, have just the source (not removed from pathfinder costs)
 		if (destroyed) {
-			// vpr_printf_info("entire tree pruned!\n");
 #ifdef PROFILE
 			++entire_tree_pruned;
+			// traceback remains empty for just the root and no need to update pathfinder costs
 #endif
-			// prune route tree does not destroy root even if entire tree pruned
-			// rt_root = init_route_tree_to_source(inet);
 		}
 		else {
 #ifdef PROFILE
 			++part_tree_preserved;
 #endif
-			// need to recreate pruned traceback to use when updating traceback
-			// however, traceback should be empty if the entire tree was pruned
+			// sync traceback into a state that matches the route tree
 			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
+			// put the updated costs of the route tree nodes back into pathfinder
+			pathfinder_update_one_cost(trace_head[inet], 1, pres_fac);
 		}
 
 		// give lookup on the reached sinks
@@ -638,10 +633,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		unsigned int sinks_already_routed = num_sinks - remaining_targets.size();
 		float rebuild_time {static_cast<float>(clock() - rebuild_start) / CLOCKS_PER_SEC};
 
-		// vpr_printf_info("total sinks %d remaining sinks %d finished sinks %d\n", num_sinks, sinks_left_to_route, sinks_already_routed);
-		// vpr_printf_info("bin %d size %d %d %d rebuild time %f\n", 
-			// bin, rerouted_sinks.size(), finished_sinks.size(), time_on_fanout_rebuild.size(), rebuild_time);
-
 		finished_sinks[bin] += sinks_already_routed;
 		rerouted_sinks[bin] += sinks_left_to_route;
 		time_on_fanout_rebuild[bin] += rebuild_time;
@@ -650,13 +641,11 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		INCREMENTAL_REROUTING_ASSERT(is_valid_route_tree(rt_root));
 		// congestion should've been pruned away
 		INCREMENTAL_REROUTING_ASSERT(is_uncongested_route_tree(rt_root));
-		// vpr_printf_info("valid route tree\n");
 
 		// use the nodes to directly mark ends before they get converted to pins
 		mark_remaining_ends(inet, remaining_targets);
+
 		// everything dealing with a net works with it in terms of its sink pins; need to convert its sink nodes to sink pins
-		// vpr_printf_info("targets before conversion (node): ");
-		// for (int target_node : remaining_targets) vpr_printf_info(" %d ", target_node);
 		convert_sink_node_to_pins_of_net(rr_node_to_pin[inet], remaining_targets);
 
 		// still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
@@ -806,8 +795,10 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			inode = cheapest->index;
 		}
 #ifdef PROFILE
-		time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
-		++itry_on_criticality[target_criticality / criticality_per_bin];
+		if (!time_on_criticality.empty()) {
+			time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
+			++itry_on_criticality[target_criticality / criticality_per_bin];
+		}
 #endif 
 		/* NB:  In the code below I keep two records of the partial routing:  the   *
 		 * traceback and the route_tree.  The route_tree enables fast recomputation *
@@ -832,65 +823,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	update_remaining_net_delays_from_route_tree(net_delay, rt_node_of_sink, remaining_targets);
 
-	// debugging by comparing against the original tree (clone tree from traceback, prune it, then calculate it)
-	// reached_sinks.clear();
-	// t_rt_node* cloned_rt_root {traceback_to_route_tree(inet, reached_sinks)};
-	// INCREMENTAL_REROUTING_ASSERT(is_valid_skeleton_tree(cloned_rt_root));	
-	// put_sink_rt_nodes_to_pins_lookup(rr_node_to_pin[inet], reached_sinks, rt_node_of_sink);
-
-	// remaining_targets.clear();
-	// bool destroyed {prune_illegal_branches_from_route_tree(cloned_rt_root, pres_fac, remaining_targets)};
-	// if (destroyed) {
-	// 	vpr_printf_info("entire tree pruned!\n");
-	// 	pathfinder_update_cost_from_route_tree(cloned_rt_root, -1, pres_fac, &remaining_targets);
-	// 	free_route_tree(cloned_rt_root);
-	// 	cloned_rt_root = init_route_tree_to_source(inet);
-	// }
-	// // should be valid in terms of R_upstream and C_downstream
-	// // print_route_tree(rt_root);
-
-	// INCREMENTAL_REROUTING_ASSERT(is_valid_route_tree(cloned_rt_root));
-	
-	// // still need to calculate its time delay (0 Tarrival means from SOURCE)
-	// load_route_tree_Tdel(cloned_rt_root, 0);
-
-	// if (remaining_targets.empty()) {
-	// 	// pruned tree should be the same as the original tree
-	// 	vpr_printf_info("no more remaining targets :D\n");
-	// 	vpr_printf_info("pruned tree should be the same as original tree, checking equivalence\n");
-	// 	INCREMENTAL_REROUTING_ASSERT(is_equivalent_route_tree(rt_root, cloned_rt_root));
-	// }
-	// else {
-	// 	vpr_printf_info("remaining targets: ");
-	// 	for (int target : remaining_targets) vpr_printf_info("%d ",target);
-	// 	vpr_printf_info("\n");
-	// }
-
-	// free_route_tree(cloned_rt_root);
-	// if (g_clbs_nlist.net[inet].pins.size() < 4) {
-	// 	print_traceback(inet);
-
-	// 	vpr_printf_info("cloned\n");
-		// print_traceback(inet);
-	// if (itry == 2) {
-	// 	print_route_tree(rt_root);
-	// 	print_route_tree_inf(rt_root);
-	// 	return false;
-	// }
-	// 	print_route_tree(rt_root);
-	// 	print_route_tree_inf(rt_root);
-	// // 	vpr_printf_info("\n\n");
-	// 	return false;
-	// }
-	// if (inet == 41) {
-		// if (itry > 1) {
-		// 	print_route_tree(rt_root);
-		// 	print_route_tree_inf(rt_root);
-		// 	print_route_tree_congestion(rt_root);
-	// 		print_traceback(inet);
-	// }
-	// vpr_printf_info("SOURCE node %d for net %d occ %d  cap %d\n", rt_root->inode, inet,
-	// 		rr_node[rt_root->inode].get_occ(), rr_node[rt_root->inode].get_capacity());
 	INCREMENTAL_REROUTING_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
 
 	free_route_tree(rt_root);

@@ -266,7 +266,7 @@ def parse_args(ns=None):
             default="vpr.out",
             help="output file to parse; default: %(default)s")
     parser.add_argument("-p", "--parse_file",
-            default="standard_parse.txt",
+            default="nocongestion_parse.txt",
             help="config file where each line describes 1 parameter to parse as:\
             	<parameter_name>;<regex_to_match>\
                 default: %(default)s")

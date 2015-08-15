@@ -54,9 +54,13 @@ static t_rt_node *update_unbuffered_ancestors_C_downstream(
 // preceeding_edge_to_subtree->next is the edge to be removed
 static t_linked_rt_edge* free_route_subtree(t_rt_node* parent, t_linked_rt_edge* preceeding_edge_to_subtree);
 
-static void print_node(t_rt_node* rt_node);
 
 /************************** Subroutine definitions ***************************/
+
+constexpr float epsilon = 1e-15;
+static bool equal_approx(float a, float b) {
+	return fabs(a - b) < epsilon;
+}
 
 void alloc_route_tree_timing_structs(void) {
 
@@ -284,9 +288,9 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	/* For all "new" nodes in the path */
 	// inode is node index of previous node
+	// NO_PREVIOUS tags a previously routed node
 
 	while (rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
-		// vpr_printf_info("adding %d to path (should not be allocated)\n", inode);
 
 		linked_rt_edge = alloc_linked_rt_edge();
 		linked_rt_edge->child = downstream_rt_node;
@@ -467,8 +471,11 @@ void load_route_tree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 	}
 }
 
-static void load_route_tree_rr_route_inf(t_rt_node* root, int prev_node, int prev_edge) {
-	// traverses down a route tree and updates rr_node_inf for all nodes
+static void load_route_tree_rr_route_inf(const t_rt_node* root, int prev_node, int prev_edge) {
+
+	/* Traverses down a route tree and updates rr_node_inf for all nodes *
+	 * to reflect that these nodes have already been routed to 			 */
+
 	INCREMENTAL_REROUTING_ASSERT(root != nullptr);
 
 	t_linked_rt_edge* edge {root->u.child_list};
@@ -478,6 +485,7 @@ static void load_route_tree_rr_route_inf(t_rt_node* root, int prev_node, int pre
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		// path cost should be HUGE_POSITIVE_FLOAT
+		INCREMENTAL_REROUTING_ASSERT(equal_approx(rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
 
 		// reached a sink
 		if (!edge) {return;}
@@ -486,7 +494,6 @@ static void load_route_tree_rr_route_inf(t_rt_node* root, int prev_node, int pre
 			int edge_num = 0;
 			// recursively update for each of its sibling branches
 			do {
-				// if (!is_uncongested_route_tree(edge->child)) return false;
 				load_route_tree_rr_route_inf(edge->child, inode, edge_num);
 				++edge_num;
 				edge = edge->next;
@@ -505,37 +512,31 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {	// from root
 }
 
 static t_linked_rt_edge* free_route_subtree(t_rt_node* parent, t_linked_rt_edge* previous_edge) {
-	/* frees the parent's child under the edge after the previous edge
-	   returns the parent's next edge
 
-	   previous edge being null indicates the edge to be removed is the first edge
-	   caller beware, the input edge pointer is invalidated upon call
-	   for the next edge, use ONLY the return value */
+	/* Frees the parent's child under the edge after the previous edge 					*
+	 * returns the parent's next edge 													*
+	 *																					*
+	 * previous edge being null indicates the edge to be removed is the first edge 		*
+	 * caller beware, the input edge pointer is invalidated upon call 					*
+	 * for the next edge, use ONLY the return value 									*/
 
 	t_linked_rt_edge* edge_to_be_removed;
 	// first edge
 	if (!previous_edge)	{
 		edge_to_be_removed = parent->u.child_list;
-		// vpr_printf_info("removing edge to %d from parent %d\n", edge_to_be_removed->child->inode, parent->inode);
 		free_route_tree(edge_to_be_removed->child);
 		parent->u.child_list = edge_to_be_removed->next;	// if also last edge, then child list becomes null
-		// if (parent->u.child_list) 
-			// vpr_printf_info("edge is parent's first edge, advancing child list to point to %d\n", parent->u.child_list->child->inode);
-		// else
-			// vpr_printf_info("edge is parent's first edge, advancing child list to point to null\n");
 
 		free_linked_rt_edge(edge_to_be_removed);
 		return parent->u.child_list;
 	}
 
-	// vpr_printf_info("edge is not first edge, remove by skipping over it\n");
+	// edge is not first edge, remove by skipping over it
 	edge_to_be_removed = previous_edge->next;
-	// vpr_printf_info("removing edge to %d from parent %d\n", edge_to_be_removed->child->inode, parent->inode);
-	previous_edge->next = previous_edge->next->next;	// skip over next one
+	previous_edge->next = previous_edge->next->next;
 	free_route_tree(edge_to_be_removed->child);
 	free_linked_rt_edge(edge_to_be_removed);
-	// if (previous_edge->next) vpr_printf_info("next edge points to %d\n", previous_edge->next->child->inode);
-	// else vpr_printf_info("edge is last edge, next edge is null\n");
+
 	return previous_edge->next;	
 }
 
@@ -550,7 +551,6 @@ void free_route_tree(t_rt_node * rt_node) {
 	rt_edge = rt_node->u.child_list;
 
 	while (rt_edge != NULL) { /* For all children */
-		// vpr_printf_info("preparing to free child of %d\n", rt_node->inode);
 		child_node = rt_edge->child;
 		free_route_tree(child_node);
 		next_edge = rt_edge->next;
@@ -558,7 +558,6 @@ void free_route_tree(t_rt_node * rt_node) {
 		rt_edge = next_edge;
 	}
 
-	// vpr_printf_info("finally freeing %d\n", rt_node->inode);
 	free_rt_node(rt_node);
 }
 
@@ -575,25 +574,31 @@ void update_net_delays_from_route_tree(float *net_delay,
 
 void update_remaining_net_delays_from_route_tree(float* net_delay, 
 		const t_rt_node* const * rt_node_of_sink, const vector<int>& remaining_sinks) {
-	// like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
-	// this function doesn't actually need to know about the net, just what sink pins need their net delays updated
+
+	/* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed              *
+	 * this function doesn't actually need to know about the net, just what sink pins need their net delays updated */
+
 	for (int sink_pin : remaining_sinks)
 		net_delay[sink_pin] = rt_node_of_sink[sink_pin]->Tdel;
 }
 
-// conversion between route tree and traceback, creates skeleton without cost
+
+/***************  Conversion between traceback and route tree *******************/
 t_rt_node* traceback_to_route_tree(int inet) {
-	/* build a skeleton route tree from a traceback
-	   does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
-	   returns the root of the converted route tree
-	   initially points at the traceback equivalent of root */
+
+	/* Builds a skeleton route tree from a traceback                                      *
+	 * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)   *
+	 * returns the root of the converted route tree      								  *
+	 * initially points at the traceback equivalent of root 							  */
+
 	t_trace* head {trace_head[inet]};
+	// always called after the 1st iteration, so should exist
+	assert(head != nullptr);
 
 	t_rt_node* rt_root {init_route_tree_to_source(inet)};
-	if (!head) return rt_root;	// returns a new tree with just the SOURCE if empty
 
 	t_rt_node* parent_node {rt_root};
-	// dangling edge waiting to point to next child, initially belonging to root
+	// prev edge is always a dangling edge, waiting to point to next child, always belongs to parent_node
 	t_linked_rt_edge* prev_edge {alloc_linked_rt_edge()};	
 	prev_edge->iswitch = head->iswitch;
 	prev_edge->next = nullptr;
@@ -601,12 +606,14 @@ t_rt_node* traceback_to_route_tree(int inet) {
 
 	t_trace* tail;
 
-	while (true) {
-		// keep head on a branch of the traceback that has been allocated already and advance tail to a sink
+	while (true) {	// while the last sink has not been reached (tree has not been fully drawn)
+		// head is always on the trunk of the tree (explored part) while tail is always on a new branch
 		tail = head->next;
-		while (true) {
+		while (true) {	// while the next sink has not been reached (this branch has not been fully drawn)
 			// tail is always a new element to be converted into a rt_node
-			if (rr_node[tail->index].type == SINK) {
+			if (rr_node[tail->index].type != SINK) tail = tail->next;
+			// tail is at the end of the branch (SINK)
+			else {
 				// [head+1, tail(sink)] is the new part of the route tree
 				for (t_trace* new_node = head->next; new_node != tail; new_node = new_node->next) {
 					int inode {new_node->index};
@@ -618,7 +625,6 @@ t_rt_node* traceback_to_route_tree(int inet) {
 					rt_node->parent_node = parent_node;
 					rt_node->parent_switch = prev_edge->iswitch;
 
-					// vpr_printf_info("prev edge iswitch, node %d\n", prev_edge->iswitch);
 					// add to dangling edge (switch determined when edge was created)
 					prev_edge->child = rt_node;
 					// at this point parent and child should be set and mutual
@@ -635,7 +641,7 @@ t_rt_node* traceback_to_route_tree(int inet) {
 				}
 				// still need to add the sink to the route tree
 				t_rt_node* rt_node = alloc_rt_node();
-				rt_node->u.child_list = nullptr;	// no child for sink (edge is not allocated, need to do that outside for next branch)
+				rt_node->u.child_list = nullptr;	// no children for sink (edge is not allocated, need to do that outside for next branch)
 				rt_node->inode = tail->index;
 				rt_node->re_expand = false;	// do not re_expand SINKS
 				rt_node->parent_switch = prev_edge->iswitch;
@@ -647,45 +653,44 @@ t_rt_node* traceback_to_route_tree(int inet) {
 				INCREMENTAL_REROUTING_ASSERT(rt_node->parent_node == parent_node);
 
 				rr_node_to_rt_node[tail->index] = rt_node;
-				// terminates this series of edges
-				// vpr_printf_info("prev edge iswitch, sink %d %d %d\n", parent_node->u.child_list->iswitch, prev_edge->iswitch, rt_node->parent_switch);
+				// terminates this series of edges/branch
 				prev_edge = nullptr;
 				break;
 			}
-			tail = tail->next;
 		}
 		// either another prexisting part of the route tree and more sinks to come or end
 		head = tail->next;
-		// vpr_printf_info("cloned last tail %d parent %d(%d)(%d) sink %d(%d)\n", tail->index, 
-		// 	parent_node->inode, parent_node->u.child_list->iswitch, prev_edge->iswitch,
-		// 	prev_edge->child->inode, prev_edge->child->parent_switch);
-		if (!head) break;
+		// end of trunk
+		if (!head) return rt_root;
 		// continue on the next branch (1 after a sink for the traceback data structure)
-		// the rt_node has already been alocated, get a new dangling edge for it
+		// the rt_node has already been alocated as it's part of the trunk, make a new dangling edge for it
 		parent_node = rr_node_to_rt_node[head->index];
 		prev_edge = alloc_linked_rt_edge();
 		prev_edge->iswitch = head->iswitch;
-		// vpr_printf_info("prev edge iswitch, new branch %d\n", prev_edge->iswitch);
+		// advance to trunk node's next edge
 		prev_edge->next = parent_node->u.child_list;
 		parent_node->u.child_list = prev_edge;
 		// edge is still dangling in preparation for next sink
 	}
-
-	return rt_root;
 }
 
-static t_trace* traceback_branch_from_route_tree(t_trace* head, t_rt_node* root, int& sinks_left) {
-	// turns route tree into a traceback, **returns the sink trace (tail)**
-	// assumes head has been allocated with index set, but no iswitch or next
+static t_trace* traceback_branch_from_route_tree(t_trace* head, const t_rt_node* root, int& sinks_left) {
+
+	/* Transforms route tree (supposed to be a branch of the full tree) into  *
+	 * a traceback segement 												  *
+	 * returns the **sink trace (tail)** 									  *
+	 * assumes head has been allocated with index set, but no iswitch or next */
+
 	t_linked_rt_edge* edge {root->u.child_list};
 	
 	for (;;) {
-		// head is always allocated at the start of this loop
+		// head has been allocated at the start of this loop and has correct index
+
 		// reached a sink
 		if (!edge) {
-			// vpr_printf_info("hit sink %d\n", head->index);
 			head->iswitch = OPEN;
 			--sinks_left;
+			// the caller will set the sink's next
 			return head;	// head is the sink
 		}
 		// join point (sibling edges)
@@ -694,22 +699,24 @@ static t_trace* traceback_branch_from_route_tree(t_trace* head, t_rt_node* root,
 			t_trace* sink;
 			do {
 				head->iswitch = edge->iswitch;
+				// a sub-branch off the current one, such that branch_head's parent is head
 				t_trace* branch_head = alloc_trace_data();
 				branch_head->index = edge->child->inode;
 				head->next = branch_head;
 
+				// the tip/end of the sub-branch
 				sink = traceback_branch_from_route_tree(branch_head, edge->child, sinks_left);
 				// danger here of losing a pointer if sink came from a branch point since sink->next would already be allocated
-				// don't allocate for last sink
+				// don't allocate for last sink (no branches after the last sink)
 				if (sinks_left) {
 					sink->next = alloc_trace_data();	
-					// copy the information to the other instances of the branch point
+					// copy the information to the other instances (1 for each branch start) of the branch point
 					sink->next->index = head->index;
-					head = sink->next;	// become the new head to update its iswitch
+					head = sink->next;	// become the since each branch might have different switches
 				}
 				edge = edge->next;
 			} while (edge);
-			return sink;	// returns the last sink, so the caller needs to set the last sink->next = nullptr
+			return sink;	// returns the last ("rightmost") sink rooted at this branch point
 		}
 		// edge must be valid here, and there is only 1 edge
 		head->iswitch = edge->iswitch;
@@ -722,20 +729,21 @@ static t_trace* traceback_branch_from_route_tree(t_trace* head, t_rt_node* root,
 		head->index = root->inode;
 	}
 }
-t_trace* traceback_from_route_tree(int inet, t_rt_node* root, int num_routed_sinks) {
-	// returns the trace head for the entire route tree
-	// vpr_printf_info("total num sinks to find %d\n", num_routed_sinks);
+t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_routed_sinks) {
+
+	/* Creates the traceback for net inet from the route tree rooted at root *
+	 * properly sets trace_head and trace_tail for this net 				 *
+	 * returns the trace head for inet 					 					 */
+
 	t_trace* head {alloc_trace_data()};
 	head->index = root->inode;
 	// the very last sink
 	auto tail = traceback_branch_from_route_tree(head, root, num_routed_sinks);
-	// should've reached all routed sinks in the pruned route tree
-	INCREMENTAL_REROUTING_ASSERT(num_routed_sinks == 0);
+	// should've reached all existing sinks
+	assert(num_routed_sinks == 0);
 
-	if (tail->next) {
-		// could be the last in a branch (nullptr), or path (alloc'd)
-		tail->next = nullptr;
-	}
+	// tag end of traceback
+	tail->next = nullptr;
 
 	trace_tail[inet] = tail;
 	trace_head[inet] = head;
@@ -744,27 +752,116 @@ t_trace* traceback_from_route_tree(int inet, t_rt_node* root, int num_routed_sin
 }
 
 
-void print_edge(t_linked_rt_edge* edge) {
-	vpr_printf_info("edges to ");
-	if (!edge) {vpr_printf_info("null"); return;}
-	while (edge) {
-		vpr_printf_info("%d(%d) ", edge->child->inode, edge->iswitch);
-		edge = edge->next;
+/***************  Pruning and fixing cost of skeleton route tree ****************/
+static void find_sinks_of_route_tree(const t_rt_node* rt_root, vector<int>& sink_nodes) {
+
+	/* Push back the node index of all sinks rooted at rt_root onto sink_nodes */
+
+	t_linked_rt_edge* edge {rt_root->u.child_list};
+	for (;;) {
+		// reached a sink
+		if (!edge) {
+			sink_nodes.push_back(rt_root->inode);
+			return;
+		}
+		// join point (sibling edges)
+		else if (edge->next) {
+			// recursively update for each of its sibling branches
+			do {
+				find_sinks_of_route_tree(edge->child, sink_nodes);
+				edge = edge->next;
+			} while (edge);
+			return;
+		}
+
+		rt_root = edge->child;
+		edge = rt_root->u.child_list;
 	}
-	vpr_printf_info("\n");
+}
+static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_rt_sinks, 
+	vector<int>& remaining_targets, float R_upstream)  {
+
+	/* as we traverse down, do: 											*
+	 *	1. removes illegal branches from pathfinder costs 					*
+	 *	2. populate remaining targets with the illegally routed sinks 		*
+	 *	3. calculate R_upstream and C_downstream for entire subtree 		*
+	 *																		*
+	 *	It is the **caller's responsibility** to actually 					*
+	 *	call pathfinder_update_cost and free_route_subtree 					*
+	 *																		*
+	 *	The removal is only done at branch points for its branches 			*
+	 *	returns whether the entire tree was pruned or not 					*
+	 *	assumes arriving rt_root does not have its R_upstream calculated 	*
+	 *	Tdel for the entire tree after this function is still unset, 		*
+	 *	call load_route_tree_Tdel(rt_root, 0) at SOURCE 					*/
+
+	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
+
+	auto inode = rt_root->inode;
+
+	// illegal tree, propagate information back up (actual removal done at an upstream branch point)
+	if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) return true;
+	// legal routing, allowed to do calculations now
+
+	// can calculate R_upstream from just upstream information without considering children
+	auto parent_switch = rt_root->parent_switch;
+	if (g_rr_switch_inf[parent_switch].buffered)
+		R_upstream = g_rr_switch_inf[parent_switch].R + rr_node[inode].R;
+	else
+		R_upstream += g_rr_switch_inf[parent_switch].R + rr_node[inode].R;
+	rt_root->R_upstream = R_upstream;
+
+	auto edge = rt_root->u.child_list;
+	// no edge means it must be a sink; legally routed to sink!
+	if (!edge) {
+		reached_rt_sinks.push_back(rt_root);
+		rt_root->C_downstream = 0;	// sink has no node downstream and always has 0 own capacitance
+		return false;
+	}
+	
+	// prune children and get their C_downstream
+	float C_downstream_children {0};
+
+	t_linked_rt_edge* prev_edge {nullptr};
+	do {
+		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_rt_sinks, remaining_targets, R_upstream)};
+		// need to remove edge and possibly change first edge if pruned
+		if (pruned) {
+			// optimization for long paths (no sibling edges), propagate illegality up to branch point
+			if (!rt_root->u.child_list->next) {
+				return true;
+			}
+			// else this is a branch point and the removal should be done here
+			find_sinks_of_route_tree(edge->child, remaining_targets);
+			edge = free_route_subtree(rt_root, prev_edge);	// returns next edge
+			// previous edge does not change when the current edge gets cut
+		}
+		else {
+			// child still exists and has calculated C_downstream
+			if (!g_rr_switch_inf[edge->iswitch].buffered)
+				C_downstream_children += edge->child->C_downstream;
+			prev_edge = edge;
+			edge = edge->next; // advance normally as branch still exists
+		}
+	} while (edge);
+	// entirely pruned, this should never be reached due to propagating illegality up to branch point for paths
+	INCREMENTAL_REROUTING_ASSERT(rt_root->u.child_list != nullptr);
+
+	// the sum of its children and its own capacitance
+	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
+	return false;
 }
 bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_sinks, vector<int>& remaining_targets) {
-	// assumes R_upstream is already preset for SOURCE, and skip checking parent switch (index of -1)
+
+	/* Prune a skeleton route tree of illegal branches (in terms of congestion)						  *
+	 * This is the top level function to be called with the SOURCE node as root 					  *
+	 * returns whether the entire tree has been pruned 												  *
+	 * 																								  *
+	 * assumes R_upstream is already preset for SOURCE, and skip checking parent switch (index of -1) */
+
 	// SOURCE node should never be congested
 	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
 	INCREMENTAL_REROUTING_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
-	// if (rr_node[rt_root->inode].get_occ() > rr_node[rt_root->inode].get_capacity()) {
-	// 	// vpr_printf_info("SOURCE node %d is congested occ %d > cap %d, entire tree pruned\n", rt_root->inode,
-	// 		// rr_node[rt_root->inode].get_occ(), rr_node[rt_root->inode].get_capacity());
-	// 	pathfinder_update_cost_from_route_tree(rt_root, -1, pres_fac, &remaining_targets);
-	// 	free_route_tree(rt_root);
-	// 	return true;
-	// } 
 
 	// prune illegal branches from root
 	auto edge = rt_root->u.child_list;
@@ -774,7 +871,7 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& re
 	while (edge) {
 		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_sinks, remaining_targets, 0)};
 		if (pruned) {
-			pathfinder_update_cost_from_route_tree(edge->child, -1, pres_fac, &remaining_targets);
+			find_sinks_of_route_tree(edge->child, remaining_targets);
 			edge = free_route_subtree(rt_root, prev_edge);	// returns next edge
 			// previous edge does not change when the current edge gets cut
 		}
@@ -788,147 +885,36 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& re
 	}
 	// for root this can happen if all child branches are pruned
 	if (!rt_root->u.child_list) {
-		// vpr_printf_info("pruned entire tree rooted at %d\n", rt_root->inode);
-		pathfinder_update_single_node_cost(rt_root->inode, -1, pres_fac);
 		return true;
 	}
-	// SOURCE always has 0 own capacitance
-	rt_root->C_downstream = C_downstream_branches;
+
+	rt_root->C_downstream += C_downstream_branches;
 	return false;	
 }
-bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_rt_sinks, 
-	vector<int>& remaining_targets, float R_upstream)  {
-	/* as we traverse down, do:
-		1. removes illegal branches from pathfinder costs
-		2. populate remaining targets with the illegally routed sinks
-		3. calculate R_upstream and C_downstream for entire subtree
-
-		It is the **caller's responsibility** to actually call pathfinder_update_cost and free_route_subtree
-		The removal is only done at branch points for its branches
-		returns whether the entire tree was pruned or not
-		assumes arriving rt_root does not have its R_upstream calculated (works for the SOURCE since R_upstream = 0)
-		Tdel for the entire tree after this function is still unset, call load_route_tree_Tdel(rt_root, 0) at SOURCE
-	*/
-	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
-
-	auto inode = rt_root->inode;
-	// vpr_printf_info("pruning tree rooted at %d\n", inode);
-	// illegal tree, propagate information back up (actual removal done at the branching point into this branch)
-	if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
-		// vpr_printf_info("tree rooted at %d is illegal occ: %d cap: %d\n", inode, rr_node[inode].get_occ(), rr_node[inode].get_capacity());
-		return true;
-	}
-	// legal routing, allowed to do calculations now
-	// can calculate R_upstream from just upstream information without calling children
-	auto parent_switch = rt_root->parent_switch;
-	if (g_rr_switch_inf[parent_switch].buffered)
-		R_upstream = g_rr_switch_inf[parent_switch].R + rr_node[inode].R;
-	else
-		R_upstream += g_rr_switch_inf[parent_switch].R + rr_node[inode].R;
-	rt_root->R_upstream = R_upstream;
-
-	auto edge = rt_root->u.child_list;
-	// no edge means it must be a sink, legally routed to sink!
-	if (!edge) {
-		// vpr_printf_info("legally reached sink %d\n\n", inode);
-		reached_rt_sinks.push_back(rt_root);
-		rt_root->C_downstream = 0;	// sink has no node downstream and always has 0 own capacitance
-		return false;
-	}
-	// recurse over children and get their C_downstream
-	float C_downstream_children {0};
-
-	// print_edge(edge);
-
-	t_linked_rt_edge* prev_edge {nullptr};
-	while (edge) {
-		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_rt_sinks, remaining_targets, R_upstream)};
-		// need to remove edge and possibly change first edge if pruned
-		if (pruned) {
-			// optimization for long paths (no sibling edges), propagate illegality up to branch point
-			if (!rt_root->u.child_list->next) {
-				// vpr_printf_info("pruned path at %d, propagating up to branch point\n", inode);
-				return true;
-			}
-			// else this is a branch point and the removal should be done here
-			pathfinder_update_cost_from_route_tree(edge->child, -1, pres_fac, &remaining_targets);
-			edge = free_route_subtree(rt_root, prev_edge);	// returns next edge
-			// previous edge does not change when the current edge gets cut
-		}
-		else {
-			// child still exists and has calculated C_downstream
-			if (!g_rr_switch_inf[edge->iswitch].buffered)
-				C_downstream_children += edge->child->C_downstream;
-			prev_edge = edge;
-			edge = edge->next; // advance normally as branch still exists
-		}
-	}
-	// entirely pruned, this should never be reached due to the 1 long path optimization
-	INCREMENTAL_REROUTING_ASSERT(rt_root->u.child_list != nullptr);
-
-	// the sum of its children and its own capacitance
-	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
-	return false;
-}
 
 
-// higher level tree traversal function, potential use to simplify code
-// template <typename Visitor>
-// void traverse_route_tree(t_rt_node* rt_root, Visitor visit) {
-// 	// general traversal pattern to minimize function calls
-// 	if (!rt_root) return;
-// 	t_linked_rt_edge* edge {rt_root->u.child_list};
-// 	visit.start();
-// 	for (;;) {
-// 		visit.node(rt_root);
-// 		// sink, terminate
-// 		if (!edge) {
-// 			visit.sink(rt_root);
-// 			return;
-// 		}
-// 		// join point, spwan parallel traversals (multithreading potential)
-// 		else if (edge->next) {
-// 			do {
-// 				visit.branch(rt_root);
-// 				traverse_route_tree(edge->child, visit);
-// 				edge = edge->next;
-// 			} while (edge);
-// 			visit.branch_term(rt_root);
-// 			return;
-// 		}
-// 		rt_root = edge->child;
-// 		edge = rt_root->u.child_list;
-// 	}
-// }
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
 
+	/* Like pathfinder_update_one_cost, but works with a route tree instead *  
+	 * found sinks are put in reached_sinks if it is not null 				*/
 
-
-void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, float pres_fac, vector<int>* reached_sinks) {
-	// Like pathfinder_update_one_cost, but works with a route tree instead     
-	// found sinks are put in reached_sinks if it is not null
 	INCREMENTAL_REROUTING_ASSERT(rt_root != nullptr);
 
 	t_linked_rt_edge* edge {rt_root->u.child_list};
 	
 	// update every node once, so even do it for sinks and join points once
 	for (;;) {
-		// vpr_printf_info("updating cost for node %d\n", rt_root->inode);
 		pathfinder_update_single_node_cost(rt_root->inode, add_or_sub, pres_fac);
 
 		// reached a sink
 		if (!edge) {
-			// caller decides what to do with reached sinks
-			if (reached_sinks) {
-				// vpr_printf_info("pathfinder found sink %d while expanding\n\n", rt_root->inode);
-				reached_sinks->push_back(rt_root->inode);
-			}
 			return;
 		}
 		// join point (sibling edges)
 		else if (edge->next) {
 			// recursively update for each of its sibling branches
 			do {
-				pathfinder_update_cost_from_route_tree(edge->child, add_or_sub, pres_fac, reached_sinks);
+				pathfinder_update_cost_from_route_tree(edge->child, add_or_sub, pres_fac);
 				edge = edge->next;
 			} while (edge);
 			return;
@@ -938,6 +924,7 @@ void pathfinder_update_cost_from_route_tree(t_rt_node* rt_root, int add_or_sub, 
 		edge = rt_root->u.child_list;
 	}
 }
+
 
 
 static const std::vector<const char*> node_typename {
@@ -977,6 +964,15 @@ static void traverse_indented_route_tree(t_rt_node* rt_root, int branch_level, b
 		traverse_indented_route_tree(edges->child, branch_level + 1, false, op, indent_level);
 	}
 }
+void print_edge(t_linked_rt_edge* edge) {
+	vpr_printf_info("edges to ");
+	if (!edge) {vpr_printf_info("null"); return;}
+	while (edge) {
+		vpr_printf_info("%d(%d) ", edge->child->inode, edge->iswitch);
+		edge = edge->next;
+	}
+	vpr_printf_info("\n");
+}
 static void print_node(t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	t_rr_type node_type = rr_node[inode].type;
@@ -1009,10 +1005,6 @@ void print_route_tree_congestion(t_rt_node* rt_root) {
 	vpr_printf_info("\n");
 }
 
-constexpr float epsilon = 1e-15;
-bool equal_approx(float a, float b) {
-	return fabs(a - b) < epsilon;
-}
 
 bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
 	if (!root && !root_clone) return true;
