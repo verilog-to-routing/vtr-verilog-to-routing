@@ -3048,16 +3048,17 @@ static void ProcessSegments(INOUTP ezxml_t Parent,
 		if (tmp) {
 			(*Segs)[i].name = my_strdup(tmp);
 		} else {
-            /* if swich block is "custom", then you have to provide a name for segment */
-            if (switchblocklist_required) {
-    			vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
+			/* if swich block is "custom", then you have to provide a name for segment */
+			if (switchblocklist_required) {
+				vpr_throw(VPR_ERROR_ARCH, arch_file_name, Node->line,
 					"No name specified for the segment #%d.\n", i);
 
-            }
+			}
 			/* set name to default: "unnamed_segment_<segment_index>" */
 			stringstream ss;
 			ss << "unnamed_segment_" << i;
-			tmp = ss.str().c_str();
+			string dummy = ss.str();
+			tmp = dummy.c_str();
 			(*Segs)[i].name = my_strdup(tmp);
 		}
 		ezxml_set_attr(Node, "name", NULL);
