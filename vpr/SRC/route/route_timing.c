@@ -204,8 +204,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #endif
     acc_route_time = 0.;
 	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
-        if (itry > 1 && time_pre_itr > 2 * time_1st_itr)
-            printf("BFS OFF for itr %d\n", itry);
         if (itry == 1) crit_threshold = crit_threshold_init;
         else crit_threshold *= crit_threshold_inc_rate;
         if (crit_threshold > 0.988) crit_threshold = 0.988;
@@ -216,6 +214,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         if (itry > 1) {
             nodes_expanded_pre_itr = nodes_expanded_cur_itr;
             nodes_expanded_max_itr = (nodes_expanded_cur_itr > nodes_expanded_max_itr) ? nodes_expanded_cur_itr:nodes_expanded_max_itr;
+            if (nodes_expanded_pre_itr > 2 * nodes_expanded_1st_itr) {
+                crit_threshold = (crit_threshold > 0.98) ? crit_threshold : 0.98;
+                printf("BFS RAISE THRESHOLD to 0.98 for %d\n", itry);
+            }
         }
         nodes_expanded_cur_itr = 0;
 		clock_t begin = clock();
@@ -1047,8 +1049,8 @@ static bool turn_on_bfs_map_lookup(float criticality) {
         return false;
     if (itry_share == 1)
         return true;
-    if (time_pre_itr > 2 * time_1st_itr)
-        return false;
+    //if (nodes_expanded_pre_itr > 2 * nodes_expanded_1st_itr)
+    //    return false;
     if (criticality > crit_threshold) return true;
     else return false;
     //if (nodes_expanded_pre_itr < 2 * nodes_expanded_1st_itr)

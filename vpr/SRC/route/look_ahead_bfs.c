@@ -154,13 +154,29 @@ void pre_cal_look_ahead(t_segment_inf *segment_inf, int num_segment) {
                 // start wire is either INC_DIR or BI_DIR
                 if (rr_node[inode].get_direction() == DEC_DIRECTION)
                     continue;
-                if (rr_indexed_data[rr_node[inode].get_cost_index()].seg_index != i)
+                int i_seg_index = rr_indexed_data[rr_node[inode].get_cost_index()].seg_index;
+                if (i_seg_index != i)
                     continue;
                 if (rr_node[inode].type == chan_type[ichan]
                  && rr_node[inode].get_xlow() == 2
                  && rr_node[inode].get_ylow() == 2) {
+                    /*
+                    if (i_seg_index == 0) {
+                        int num_edges = rr_node[inode].get_num_edges();
+                        for (int iconn = 0; iconn < num_edges; iconn++) {
+                            int to_node = rr_node[inode].edges[iconn];
+                            int to_node_seg_index = rr_indexed_data[rr_node[to_node].get_cost_index()].seg_index;
+                            if (to_node_seg_index == 1 || to_node_seg_index == 2) {
+                                start_inode = inode;
+                                inode = num_rr_nodes;
+                                break;
+                            }
+                        }
+                    } else {
+                    */
                     start_inode = inode;
                     inode = num_rr_nodes;
+                    //}
                 }
             }
             // if not found such wire (maybe due to a too small chip size / too long wire)
