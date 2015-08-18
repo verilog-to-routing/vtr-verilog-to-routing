@@ -1,3 +1,4 @@
+#pragma once
 /************** Types and defines exported by route_tree_timing.c ************/
 
 struct s_linked_rt_edge {
@@ -62,7 +63,7 @@ t_rt_node *init_route_tree_to_source(int inet);
 
 void free_route_tree(t_rt_node * rt_node);
 
-t_rt_node *update_route_tree(struct s_heap *hptr);
+t_rt_node *update_route_tree(struct s_heap *hptr, bool lookahead_eval, float target_criticality);
 
 void update_net_delays_from_route_tree(float *net_delay,
 		t_rt_node ** rt_node_of_sink, int inet);

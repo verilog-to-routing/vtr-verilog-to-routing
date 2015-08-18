@@ -229,7 +229,11 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 
 	if (remaining_connections_to_sink == 0) { /* Usual case. */
 		while (tptr != NULL) {
-			node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+			node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN, OPEN, nx+10, ny+10);
+#else 
+            node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN, OPEN);
+#endif
 			tptr = tptr->next;
 		}
 	}
@@ -254,8 +258,11 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 
 		while (next_ptr != NULL) {
 			inode = tptr->index;
-			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
-
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN, OPEN, nx + 10, ny + 10);
+#else
+			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN, OPEN);
+#endif
 			if (rr_node[inode].type == IPIN)
 				last_ipin_node = inode;
 
@@ -316,8 +323,11 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 					|| (from_type == CHANY && to_type == CHANX))
 				tot_cost += bend_cost;
 		}
-
-		node_to_heap(to_node, tot_cost, inode, iconn, OPEN, OPEN);
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+		node_to_heap(to_node, tot_cost, inode, iconn, OPEN, OPEN, OPEN, nx + 10, ny + 10);
+#else
+		node_to_heap(to_node, tot_cost, inode, iconn, OPEN, OPEN, OPEN);
+#endif
 	}
 }
 
@@ -330,8 +340,11 @@ static void breadth_first_add_source_to_heap(int inet) {
 
 	inode = net_rr_terminals[inet][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);
-
-	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN, OPEN, nx + 1, ny + 1);
+#else
+	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN, OPEN);
+#endif
 }
 
 

@@ -12,7 +12,10 @@ using namespace std;
 #include "place_macro.h"
 #include "string.h"
 #include "pack_types.h"
+#include "route_common.h"
 #include <algorithm>
+#include <map>
+#include <cmath>
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -1452,6 +1455,155 @@ void print_switch_usage() {
     delete[] inward_switch_inf;
 }
 
+void print_lookahead_eval() {
+#if DEPTHWISELOOKAHEADEVAL == 1
+    map<int, int>::iterator itr;
+    for (itr = subtree_count.begin(); itr != subtree_count.end(); itr++) {
+        int tree_depth = itr->first;
+        float expand_ratio = subtree_size_avg[tree_depth] / tree_depth;
+        float dev = subtree_est_dev_avg[tree_depth];
+        float dev_abs = subtree_est_dev_abs_avg[tree_depth];
+        printf("-- subtree depth: %d\tcount: %d\texpand ratio (geo): %.3f\tdev: %.4f\tdev abs (geo): %.4f\n", tree_depth, itr->second, expand_ratio, dev, dev_abs);
+    }
+#endif
+}
+
+void print_lookahead_by_history() {
+#if LOOKAHEADBYHISTORY == 1
+    if (max_cost_by_relative_pos == NULL)
+        return;
+    printf("**** max BB cost occurs at: ****\n");
+    for (int i = 0; i <= (nx+1); i ++) {
+        for (int j = 0; j <= (ny+1); j ++) {
+            if (max_cost_coord[i][j].first != -1) {
+                dev_cost_by_relative_pos[i][j] /= count_by_relative_pos[i][j];
+                dev_cost_by_relative_pos[i][j] -= pow(avg_cost_by_relative_pos[i][j], 2);
+                if (count_by_relative_pos[i][j] == 1)
+                    dev_cost_by_relative_pos[i][j] = 0.;
+                else if (abs(dev_cost_by_relative_pos[i][j]) < pow(10, -24) )
+                    dev_cost_by_relative_pos[i][j] = 0.;
+                else
+                    dev_cost_by_relative_pos[i][j] = pow(dev_cost_by_relative_pos[i][j], 0.5);
+                printf("\t\tBB width: %d\tBB height: %d\tx relative: %2.2f %%\ty relative: %2.2f %%\tmax: %.3f e-10\tdev: %.3e\tcount: %d\n", i, j, (max_cost_coord[i][j].first) * 100.0, (max_cost_coord[i][j].second) * 100.0, max_cost_by_relative_pos[i][j] * pow(10, 10), dev_cost_by_relative_pos[i][j], count_by_relative_pos[i][j]);
+            }
+        }
+    }
+    printf("**** min BB cost occurs at: ****\n");
+    for (int i = 0; i <= (nx+1); i ++) {
+        for (int j = 0; j <= (ny+1); j ++) {
+            if (min_cost_coord[i][j].first != -1) {
+                assert(max_cost_by_relative_pos[i][j] >= min_cost_by_relative_pos[i][j]);
+                //assert(min_cost_by_relative_pos[i][j] != 0);
+                printf("\t\tBB width: %d\tBB height: %d\tx relative: %2.2f %%\ty relative: %2.2f %%\tavg: %.3f e-10\tmax/min: %2.2f %%\n", i, j, (min_cost_coord[i][j].first) * 100.0, (min_cost_coord[i][j].second) * 100.0, avg_cost_by_relative_pos[i][j] * pow(10, 10), (max_cost_by_relative_pos[i][j] / min_cost_by_relative_pos[i][j]) * 100.0);
+            }
+        }
+    }
+#endif
+}
+
+void clear_lookahead_history_array(){
+#if LOOKAHEADBYHISTORY == 1
+    if (max_cost_by_relative_pos == NULL) {
+        return;
+    }
+    for (int i = 0; i <= (nx+1); i ++) {
+        for (int j = 0; j <= (ny+1); j ++) {
+            max_cost_by_relative_pos[i][j] = -1;
+            min_cost_by_relative_pos[i][j] = HUGE_POSITIVE_FLOAT;
+            avg_cost_by_relative_pos[i][j] = -1;
+            dev_cost_by_relative_pos[i][j] = HUGE_POSITIVE_FLOAT;
+            count_by_relative_pos[i][j] = 0;
+            max_cost_coord[i][j].first = -1;
+            max_cost_coord[i][j].second = -1;
+            min_cost_coord[i][j].first = -1;
+            min_cost_coord[i][j].second = -1;
+        }
+    }
+#endif
+}
+void clear_congestion_map() {
+#if CONGESTIONBYCHIPAREA == 1
+    total_cong_tile_count = CONG_MAP_BASE_COST * (nx + 1) * (ny+1);
+    if (congestion_map_by_area == NULL) {
+        return;
+    }
+    for (int i = 0; i <= (nx+1); i ++) {
+        for (int j = 0; j <= (ny+1); j ++) {
+            congestion_map_by_area[i][j] = CONG_MAP_BASE_COST;
+        }
+    }
+#endif
+}
+void clear_congestion_map_relative() {
+#if CONGESTIONBYCHIPAREA == 1
+    if (congestion_map_relative == NULL) {
+        return;
+    }
+    for (int i = 0; i <= (nx+1); i ++) {
+        for (int j = 0; j <= (ny+1); j ++) {
+            congestion_map_relative[i][j] = 0;
+        }
+    }
+#endif
+}
+
+void print_congestion_map() {
+#if CONGESTIONBYCHIPAREA == 1
+    printf("PRINT CONGESTION MAP\tbase_cost: %d\n", CONG_MAP_BASE_COST);
+    printf("\tx\ty\theat\n");
+    for (int i = 0; i <= (nx+1); i++) {
+        for (int j = 0; j <= (ny+1); j++) {
+            printf("\t%d\t%d\t%d\n", i, j, congestion_map_by_area[i][j]);
+        }
+    }
+    printf("END CURRENT MAP\n");
+    printf("PRINT CONGESTION RELATIVE\tbase_cost: %d\n", CONG_MAP_BASE_COST);
+    printf("\tx\ty\theat\n");
+    for (int i = 0; i <= (nx+1); i++) {
+        for (int j = 0; j <= (ny+1); j++) {
+            printf("\t%d\t%d\t%d\n", i, j, congestion_map_relative[i][j]);
+        }
+    }
+    printf("END CURRENT MAP\n");
+
+#endif
+}
+void get_unidir_seg_start(int inode, int *x, int *y) {
+    if (rr_node[inode].type == CHANX
+     || rr_node[inode].type == CHANY) {
+        *x = (rr_node[inode].get_direction() == INC_DIRECTION) ? rr_node[inode].get_xlow() : rr_node[inode].get_xhigh();
+        *y = (rr_node[inode].get_direction() == INC_DIRECTION) ? rr_node[inode].get_ylow() : rr_node[inode].get_yhigh();
+    } else {
+        *x = (rr_node[inode].get_xhigh() + rr_node[inode].get_xlow()) / 2;
+        *y = (rr_node[inode].get_yhigh() + rr_node[inode].get_ylow()) / 2;
+    }
+}
+void get_unidir_seg_end(int inode, int *x, int *y) {
+    if (rr_node[inode].type == CHANX
+     || rr_node[inode].type == CHANY) {
+        *x = (rr_node[inode].get_direction() == INC_DIRECTION) ? rr_node[inode].get_xhigh() : rr_node[inode].get_xlow();
+        *y = (rr_node[inode].get_direction() == INC_DIRECTION) ? rr_node[inode].get_yhigh() : rr_node[inode].get_ylow();
+    } else {
+        *x = (rr_node[inode].get_xhigh() + rr_node[inode].get_xlow()) / 2;
+        *y = (rr_node[inode].get_yhigh() + rr_node[inode].get_ylow()) / 2;
+   }
+}
+
+void print_db_node_inf(int inode){
+    const char *dir_name[2];
+    dir_name[0] = "INC";
+    dir_name[1] = "DEC";
+    const char *node_seg_type[2];
+    node_seg_type[0] = "wire";
+    node_seg_type[1] = "pin";
+    int dir = (rr_node[inode].get_direction() == INC_DIRECTION) ? 0 : 1;
+    int seg_type = (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) ? 0 : 1;
+ 
+    printf("\tINODE %d(L%d)\t%s\t%s\t(%d,%d)\t(%d,%d)\n",
+           inode, rr_node[inode].get_len(), dir_name[dir], node_seg_type[seg_type],
+           rr_node[inode].get_xlow(), rr_node[inode].get_ylow(),
+           rr_node[inode].get_xhigh(), rr_node[inode].get_yhigh());
+}
 /*
  * Motivation:
  *     to see what portion of long wires are utilized

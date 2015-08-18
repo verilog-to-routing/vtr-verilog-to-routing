@@ -349,6 +349,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_CONGESTION_ANALYSIS:
 	case OT_FANOUT_ANALYSIS:
     case OT_SWITCH_USAGE_ANALYSIS:
+    case OT_LOOKAHEAD_EVAL:
 		return Args;
 	case OT_AUTO:
 		return ReadInt(Args, &Options->GraphPause);
@@ -575,6 +576,7 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 		case OT_CONGESTION_ANALYSIS:
 		case OT_FANOUT_ANALYSIS:
         case OT_SWITCH_USAGE_ANALYSIS:
+        case OT_LOOKAHEAD_EVAL:
 			break;
 		case OT_AUTO:
 			dest->GraphPause = src->GraphPause;

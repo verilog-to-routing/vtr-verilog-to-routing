@@ -60,6 +60,15 @@ void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
 
 void print_switch_usage();
+void print_lookahead_eval();
+void print_lookahead_by_history();
+void clear_lookahead_history_array();
+void clear_congestion_map();
+void clear_congestion_map_relative();
+void print_congestion_map();
+void get_unidir_seg_start(int inode, int *x, int *y);
+void get_unidir_seg_end(int inode, int *x, int *y);
+void print_db_node_inf(int inode);
 //void print_usage_by_wire_length();
 #endif
 

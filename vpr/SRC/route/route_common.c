@@ -1,9 +1,8 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-#include <algorithm>
-#include <vector>
 #include <iostream>
+#include <map>
 using namespace std;
 
 #include <assert.h>
@@ -22,7 +21,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
-
+#include "look_ahead_bfs.h"
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful
@@ -39,7 +38,48 @@ struct s_bb *route_bb = NULL; /* [0..g_clbs_nlist.net.size()-1]. Limits area in 
 /* net must be routed.                         */
 
 /**************** Static variables local to route_common.c ******************/
-
+// itry_share is iteration num (basically itry in timing_driven_route_net)
+int itry_share = 0;
+float opin_penalty = OPIN_INIT_PENALTY;
+float future_cong_penalty = 1.0;
+int node_on_path = 0;
+int node_expanded_per_net = 0;
+int node_expanded_per_sink = 0;
+float estimated_cost_deviation = 0;
+float estimated_cost_deviation_abs = 0;
+int total_nodes_expanded = 0;
+int nodes_expanded_cur_itr = UNDEFINED;
+int nodes_expanded_1st_itr = UNDEFINED;
+int nodes_expanded_pre_itr = UNDEFINED;
+float cong_cur_itr = UNDEFINED;
+float cong_pre_itr = UNDEFINED;
+#if DEPTHWISELOOKAHEADEVAL == 1
+map<int, int> subtree_count;
+map<int, float> subtree_size_avg;
+map<int, float> subtree_est_dev_avg;
+map<int, float> subtree_est_dev_abs_avg;
+#endif
+#if LOOKAHEADBYHISTORY == 1
+/* these arrays are initialized in alloc_and_load_rr_graph() */
+float **max_cost_by_relative_pos = NULL;
+float **min_cost_by_relative_pos = NULL;
+float **avg_cost_by_relative_pos = NULL;
+float **dev_cost_by_relative_pos = NULL;
+int **count_by_relative_pos = NULL;
+pair<float, float> **max_cost_coord = NULL;
+pair<float, float> **min_cost_coord = NULL;
+#endif
+#if CONGESTIONBYCHIPAREA == 1
+int **congestion_map_by_area = NULL;
+int **congestion_map_relative = NULL;
+int total_cong_tile_count = CONG_MAP_BASE_COST * (nx + 1) * (ny + 1);
+#endif
+#if PRINTCRITICALPATH == 1
+bool is_print_cpath = true;
+#endif
+#if SPACEDRIVENHEAP == 1
+float heap_min_cost = HUGE_POSITIVE_FLOAT;
+#endif
 static struct s_heap **heap; /* Indexed from [1..heap_size] */
 static int heap_size; /* Number of slots in the heap array */
 static int heap_tail; /* Index of first unused slot in the heap array */
@@ -328,15 +368,17 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 			&warning_count);
 
 	clock_t end = clock();
-
 	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
-
 	bool success = true;
 
 	/* Allocate and load additional rr_graph information needed only by the router. */
 	alloc_and_load_rr_node_route_structs();
 
 	init_route_structs(router_opts.bb_factor);
+
+#if LOOKAHEADBFS == 1
+    pre_cal_look_ahead(segment_inf, det_routing_arch->num_segment);
+#endif
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
 		vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
@@ -347,9 +389,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
-#ifdef PROFILE
-		time_on_fanout_analysis();
-#endif
 	}
 
 	free_rr_node_route_structs();
@@ -434,7 +473,19 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 			if (tptr == NULL)
 				break;
 		}
-
+#if CONGESTIONBYCHIPAREA == 1
+        //if (rr_node[inode].type != SINK) {
+        if (rr_node[inode].type != SINK && rr_node[inode].type != SOURCE 
+         && rr_node[inode].type != IPIN && rr_node[inode].type != OPIN) {
+            for (int i = rr_node[inode].get_xlow(); i <= rr_node[inode].get_xhigh(); i++) {
+                for (int j = rr_node[inode].get_ylow(); j <= rr_node[inode].get_yhigh(); j++) {
+                    congestion_map_by_area[i][j] += add_or_sub;
+                    congestion_map_relative[i][j] += add_or_sub;
+                    total_cong_tile_count += add_or_sub;
+                }
+            }
+        }
+#endif
 		tptr = tptr->next;
 
 	} /* End while loop -- did an entire traceback. */
@@ -611,6 +662,8 @@ void reset_path_costs(void) {
 }
 
 float get_rr_cong_cost(int inode) {
+    //if (itry_share == 1)
+    //    return 0;
 
 	/* Returns the *congestion* cost of using this rr_node. */
 
@@ -640,27 +693,37 @@ void mark_ends(int inet) {
 		rr_node_route_inf[inode].target_flag++;
 	}
 }
-
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
 void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
-		float backward_path_cost, float R_upstream) {
-
+		float backward_path_cost, float R_upstream, float back_Tdel, int offset_x, int offset_y) {
+#else
+void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
+		float backward_path_cost, float R_upstream, float back_Tdel) {
+#endif
 	/* Puts an rr_node on the heap, if the new cost given is lower than the     *
 	 * current path_cost to this channel segment.  The index of its predecessor *
 	 * is stored to make traceback easy.  The index of the edge used to get     *
 	 * from its predecessor to it is also stored to make timing analysis, etc.  *
 	 * easy.  The backward_path_cost and R_upstream values are used only by the *
 	 * timing-driven router -- the breadth-first router ignores them.           */
+	struct s_heap *hptr;
 
 	if (total_cost >= rr_node_route_inf[inode].path_cost)
 		return;
-
-	s_heap* hptr = alloc_heap_data();
+    total_nodes_expanded ++;
+    nodes_expanded_cur_itr ++;
+	hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
 	hptr->u.prev_node = prev_node;
 	hptr->prev_edge = prev_edge;
 	hptr->backward_path_cost = backward_path_cost;
 	hptr->R_upstream = R_upstream;
+    hptr->back_Tdel = back_Tdel;
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+    hptr->offset_x = offset_x;
+    hptr->offset_y = offset_y;
+#endif
 	add_to_heap(hptr);
 }
 
@@ -883,6 +946,8 @@ void alloc_and_load_rr_node_route_structs(void) {
 		rr_node_route_inf[inode].acc_cost = 1.0;
 		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
 		rr_node_route_inf[inode].target_flag = 0;
+        // XXX: added by router experiment
+        rr_node_route_inf[inode].back_Tdel = 0.;
 	}
 }
 
@@ -902,6 +967,8 @@ void reset_rr_node_route_structs(void) {
 		rr_node_route_inf[inode].acc_cost = 1.0;
 		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
 		rr_node_route_inf[inode].target_flag = 0;
+        // XXX: added by router experiment
+        rr_node_route_inf[inode].back_Tdel = 0.;
 	}
 }
 
@@ -992,136 +1059,33 @@ void add_to_mod_list(float *fptr) {
 	mod_ptr->fptr = fptr;
 	rr_modified_head = mod_ptr;
 }
-namespace heap_ {
-	size_t parent(size_t i) {return i >> 1;}
-	// child indices of a heap
-	size_t left(size_t i) {return i << 1;}
-	size_t right(size_t i) {return (i << 1) + 1;}
-	size_t size() {return static_cast<size_t>(heap_tail - 1);}	// heap[0] is not valid element
 
-	// make a heap rooted at index i by **sifting down** in O(lgn) time
-	void sift_down(size_t hole) {
-		s_heap* head {heap[hole]};
-		size_t child {left(hole)};
-		while ((int)child < heap_tail) {
-			if ((int)child + 1 < heap_tail && heap[child + 1]->cost < heap[child]->cost)
-				++child;
-			if (heap[child]->cost < head->cost) {
-				// vpr_printf_info("siftdown child %d(%e) head(%e)\n", child, heap[child]->cost, head->cost);
-				heap[hole] = heap[child];
-				hole = child;
-				child = left(child);
-			}
-			else break;
-		}
-		heap[hole] = head;
-	}
-
-
-	// runs in O(n) time by sifting down; the least work is done on the most elements: 1 swap for bottom layer, 2 swap for 2nd, ... lgn swap for top
-	// 1*(n/2) + 2*(n/4) + 3*(n/8) + ... + lgn*1 = 2n (sum of i/2^i)
-	void build_heap() {
-		// second half of heap are leaves
-		for (size_t i = heap_tail >> 1; i != 0; --i)
-			sift_down(i);
-	}
-
-
-	// O(lgn) sifting up to maintain heap property after insertion (should sift down when building heap)
-	void sift_up(size_t leaf, s_heap* const node) {
-		while ((leaf > 1) && (node->cost < heap[parent(leaf)]->cost)) {
-			// sift hole up
-			heap[leaf] = heap[parent(leaf)];
-			leaf = parent(leaf);
-		}
-		heap[leaf] = node;
-	}
-
-
-	void expand_heap_if_full() {
-		if (heap_tail > heap_size) { /* Heap is full */
-			heap_size *= 2;
-			heap = (struct s_heap **) my_realloc((void *) (heap + 1),
-					heap_size * sizeof(struct s_heap *));
-			heap--; /* heap goes from [1..heap_size] */
-		}		
-	}
-
-	// adds an element to the back of heap and expand if necessary, but does not maintain heap property
-	void push_back(s_heap* const hptr) {
-		expand_heap_if_full();
-		heap[heap_tail] = hptr;
-		++heap_tail;
-	}
-
-
-	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
-		float backward_path_cost, float R_upstream) {
-
-		/* Puts an rr_node on the heap with the same condition as node_to_heap,
-		   but do not fix heap property yet as that is more efficiently done from
-		   bottom up with build_heap    */
-	
-		if (total_cost >= rr_node_route_inf[inode].path_cost)
-			return;
-
-		s_heap* hptr = alloc_heap_data();
-		hptr->index = inode;
-		hptr->cost = total_cost;
-		hptr->u.prev_node = prev_node;
-		hptr->prev_edge = prev_edge;
-		hptr->backward_path_cost = backward_path_cost;
-		hptr->R_upstream = R_upstream;
-		push_back(hptr);
-	}
-
-	bool is_valid() {
-		for (size_t i = 1; (int)i <= heap_tail >> 1; ++i) {
-			if ((int)left(i) < heap_tail && heap[left(i)]->cost < heap[i]->cost) return false;
-			if ((int)right(i) < heap_tail && heap[right(i)]->cost < heap[i]->cost) return false;
-		}
-		return true;
-	}
-	// extract every element and print it
-	void pop_heap() {
-		while (!is_empty_heap()) vpr_printf_info("%e ", get_heap_head()->cost);
-		vpr_printf_info("\n");
-	}
-	// print every element; not necessarily in order for minheap
-	void print_heap() {
-		for (int i = 1; i < heap_tail >> 1; ++i) vpr_printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
-		vpr_printf_info("\n");
-	}
-	// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
-	void verify_extract_top() {
-		constexpr float float_epsilon = 1e-20;
-		std::cout << "copying heap\n";
-		std::vector<s_heap*> heap_copy {heap + 1, heap + heap_tail};
-		// sort based on cost with cheapest first
-		assert(heap_copy.size() == size());
-		std::sort(begin(heap_copy), end(heap_copy), 
-			[](const s_heap* a, const s_heap* b){
-			return a->cost < b->cost;
-		});
-		std::cout << "starting to compare top elements\n";
-		size_t i = 0;
-		while (!is_empty_heap()) {
-			while (heap_copy[i]->index == OPEN) ++i;	// skip the ones that won't be extracted
-			auto top = get_heap_head();
-			if (abs(top->cost - heap_copy[i]->cost) > float_epsilon)	
-				std::cout << "mismatch with sorted " << top << '(' << top->cost << ") " << heap_copy[i] << '(' << heap_copy[i]->cost << ")\n";
-			++i;
-		}
-		if (i != heap_copy.size()) std::cout << "did not finish extracting: " << i << " vs " << heap_copy.size() << std::endl;
-		else std::cout << "extract top working as intended\n";
-	}
-}
-// adds to heap and maintains heap quality
 static void add_to_heap(struct s_heap *hptr) {
-	heap_::expand_heap_if_full();
-	// start with undefined hole
-	++heap_tail;	
-	heap_::sift_up(heap_tail - 1, hptr);
+
+	/* Adds an item to the heap, expanding the heap if necessary.             */
+
+	int ito, ifrom;
+	struct s_heap *temp_ptr;
+
+	if (heap_tail > heap_size) { /* Heap is full */
+		heap_size *= 2;
+		heap = (struct s_heap **) my_realloc((void *) (heap + 1),
+				heap_size * sizeof(struct s_heap *));
+		heap--; /* heap goes from [1..heap_size] */
+	}
+
+	heap[heap_tail] = hptr;
+	ifrom = heap_tail;
+	ito = ifrom / 2;
+	heap_tail++;
+
+	while ((ito >= 1) && (heap[ifrom]->cost < heap[ito]->cost)) {
+		temp_ptr = heap[ito];
+		heap[ito] = heap[ifrom];
+		heap[ifrom] = temp_ptr;
+		ifrom = ito;
+		ito = ifrom / 2;
+	}
 }
 
 /*WMF: peeking accessor :) */
@@ -1136,9 +1100,12 @@ get_heap_head(void) {
 	 * heap is empty.  Invalid (index == OPEN) entries on the heap are never     *
 	 * returned -- they are just skipped over.                                   */
 
-	struct s_heap *cheapest;
-	size_t hole, child;
-
+	int ito, ifrom, poped_pos;
+	struct s_heap *heap_head, *temp_ptr;
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+    struct s_heap *heap_low;
+#endif
+    //struct s_heap *temp_ptr;
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
 			vpr_printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
@@ -1146,28 +1113,62 @@ get_heap_head(void) {
 			return (NULL);
 		}
 
-		cheapest = heap[1]; 
+		heap_head = heap[1]; /* Smallest element. */
+        poped_pos = 1; /* default: 1 */
+#if INPRECISE_GET_HEAP_HEAD == 1
+        float allowed_cost = (1 + ALLOWED_HEAP_ERR) * heap_head->cost;
+        int cur_chk_pos = poped_pos;
+        int cur_min_distance = nx + ny + 10;
+        // in some places we won't use this coarse get_heap_head method
+        if (heap_head->offset_x < nx + 10) {
+            //int bound = (heap_tail > 10) ? 10:heap_tail;
+            int bound = heap_tail;
+            while (cur_chk_pos < bound && heap[cur_chk_pos]->cost <= allowed_cost) {
+                int heap_node_distance = heap[cur_chk_pos]->offset_x + heap[cur_chk_pos]->offset_y;
+                if (cur_min_distance > heap_node_distance) {
+                    poped_pos = cur_chk_pos;
+                    cur_min_distance = heap_node_distance;
+                }
+                cur_chk_pos ++;
+            }
+        }
+        heap_low = heap[poped_pos];
+#endif
+		/* Now fix up the heap */
+		heap_tail--;
+		heap[poped_pos] = heap[heap_tail];
+		ifrom = poped_pos;
+		ito = 2 * ifrom;
 
-		hole = 1;
-		child = 2;
-		--heap_tail;
-		while ((int)child < heap_tail) {
-			if (heap[child + 1]->cost < heap[child]->cost)
-				++child;	// become right child
-			heap[hole] = heap[child];
-			hole = child;
-			child = heap_::left(child);
+		while (ito < heap_tail) {
+			if (heap[ito + 1]->cost < heap[ito]->cost)
+				ito++;
+			if (heap[ito]->cost > heap[ifrom]->cost)
+				break;
+			temp_ptr = heap[ito];
+			heap[ito] = heap[ifrom];
+			heap[ifrom] = temp_ptr;
+			ifrom = ito;
+			ito = 2 * ifrom;
 		}
-		heap_::sift_up(hole, heap[heap_tail]);
-
-	} while (cheapest->index == OPEN); /* Get another one if invalid entry. */
-
-	return (cheapest);
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+	} while (heap_low->index == OPEN); /* Get another one if invalid entry. */
+#else
+    } while (heap_head->index == OPEN);
+#endif
+	//return (heap[1]);
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+    return heap_low;
+#else 
+    return heap_head;
+#endif
 }
 
 void empty_heap(void) {
 
-	for (int i = 1; i < heap_tail; i++)
+	int i;
+
+	for (i = 1; i < heap_tail; i++)
 		free_heap_data(heap[i]);
 
 	heap_tail = 1;
@@ -1206,7 +1207,9 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 	 * via ipin_node, as invalid (OPEN).  Used only by the breadth_first router *
 	 * and even then only in rare circumstances.                                */
 
-	for (int i = 1; i < heap_tail; i++) {
+	int i;
+
+	for (i = 1; i < heap_tail; i++) {
 		if (heap[i]->index == sink_node && heap[i]->u.prev_node == ipin_node)
 			heap[i]->index = OPEN; /* Invalid. */
 	}
@@ -1430,7 +1433,11 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 				for (iconn = 0; iconn < num_edges; iconn++) {
 					to_node = rr_node[from_node].edges[iconn];
 					cost = get_rr_cong_cost(to_node);
-					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0., 0., nx + 10, ny + 10);
+#else
+                    node_to_heap(to_node, cost, OPEN, OPEN, 0., 0., 0.);
+#endif
 				}
 
 				for (ipin = 0; ipin < num_local_opin; ipin++) {

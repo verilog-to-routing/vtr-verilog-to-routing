@@ -23,6 +23,7 @@ using namespace std;
 #include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
+#include "route_common.h"
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 #include "rr_graph_multi.h"
@@ -379,6 +380,9 @@ void build_rr_graph(
 			&num_rr_nodes, chan_details_x, chan_details_y);
 	rr_node = (t_rr_node *) my_malloc(sizeof(t_rr_node) * num_rr_nodes);
 	memset(rr_node, 0, sizeof(t_rr_node) * num_rr_nodes);
+    // XXX
+    g_pin_side = (char *) my_malloc(sizeof(char) * num_rr_nodes);
+    memset(g_pin_side, 0, sizeof(char) * num_rr_nodes);
 	bool *L_rr_edge_done = (bool *) my_malloc(sizeof(bool) * num_rr_nodes);
 	memset(L_rr_edge_done, 0, sizeof(bool) * num_rr_nodes);
 
@@ -1065,6 +1069,82 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 	}
 
 	free(opin_mux_size);
+    // setup the side info for SOURCE and SINK
+    map<int, int>::iterator itr;
+    for (itr = g_ipin_to_sink.begin(); itr != g_ipin_to_sink.end(); itr++) {
+        int sink_node = itr->second;
+        int ipin_node = itr->first;
+        g_pin_side[sink_node] |= g_pin_side[ipin_node];
+    }
+    /* XXX currently don't do opins as it is more tricky than ipins
+       you will need to differentiate unidir and bidir
+    for (itr = g_opin_by_source.begin(); itr != g_opin_by_source.end(); itr++) {
+
+    }
+    */
+    g_opin_by_source.clear();
+    g_ipin_to_sink.clear();
+#if LOOKAHEADBYHISTORY == 1
+    // the first time alloc_and_load_rr_graph() is called is when it does placement
+    // and after that, size of the chip (nx, ny) is fixed. 
+    if (max_cost_by_relative_pos == NULL) {
+        assert(min_cost_by_relative_pos == NULL);
+        assert(max_cost_coord == NULL);
+        assert(min_cost_coord == NULL);
+        max_cost_by_relative_pos = (float **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(float));
+        min_cost_by_relative_pos = (float **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(float));
+        avg_cost_by_relative_pos = (float **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(float));
+        dev_cost_by_relative_pos = (float **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(float));
+        count_by_relative_pos = (int **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(int));
+        max_cost_coord = (pair<float, float> **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(pair<float, float>));
+        min_cost_coord = (pair<float, float> **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(pair<float, float>));
+    }
+    // everytime this function is called, the chan width is changed.
+    // so the old data stored in the 2d arrays are no longer valid
+    // So clear them up.
+    for (int i = 0; i <= (L_nx + 1); ++i) {
+        for (int j = 0; j <= (L_ny + 1); ++j) {
+            max_cost_by_relative_pos[i][j] = -1;
+            min_cost_by_relative_pos[i][j] = HUGE_POSITIVE_FLOAT;
+            avg_cost_by_relative_pos[i][j] = -1;
+            dev_cost_by_relative_pos[i][j] = HUGE_POSITIVE_FLOAT;
+            count_by_relative_pos[i][j] = 0;
+            max_cost_coord[i][j].first = -1;
+            max_cost_coord[i][j].second = -1;
+            min_cost_coord[i][j].first = -1;
+            min_cost_coord[i][j].second = -1;
+        }
+    }
+#endif
+#if CONGESTIONBYCHIPAREA == 1
+    total_cong_tile_count = CONG_MAP_BASE_COST * (nx + 1) * (ny + 1);
+    if (congestion_map_by_area == NULL) {
+        congestion_map_by_area = (int **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(int));
+        congestion_map_relative = (int **)alloc_matrix(0, L_nx+1, 0, L_ny+1, sizeof(int));
+
+    }
+    for (int i = 0; i <= (L_nx + 1); ++i) {
+        for (int j = 0; j <= (L_ny + 1); ++j) {
+            congestion_map_by_area[i][j] = CONG_MAP_BASE_COST;
+            congestion_map_relative[i][j] = 0;
+        }
+    }
+#endif
+#if ONEMORELOOKAHEAD == 1
+    for (int i = 0; i < num_rr_nodes; i++) {
+        rr_node[i].is_to_long_wire = false;
+        if (rr_node[i].type != CHANX && rr_node[i].type != CHANY)
+            continue;
+        if (rr_node[i].get_len() != 4)
+            continue;
+        int to_num_edges = rr_node[i].get_num_edges();
+        for (int e = 0; e < to_num_edges; e++) {
+            int to_node = rr_node[i].edges[e];
+            if (rr_node[to_node].get_len() == 16)
+                rr_node[i].is_to_long_wire = true;
+        }
+    }
+#endif
 }
 
 static void build_bidir_rr_opins(INP int i, INP int j,
@@ -1131,7 +1211,10 @@ void free_rr_graph(void) {
 	 * whether or not the graph has been allocated -- if it is not NULL,    *
 	 * a routing graph exists and can be freed.  Hence, you can call this   *
 	 * routine even if you're not sure of whether a rr_graph exists or not. */
-
+    if (g_pin_side != NULL) {
+        free(g_pin_side);
+        g_pin_side = NULL;
+    }
 	if (rr_mem_ch.chunk_ptr_head == NULL) /* Nothing to free. */
 		return;
 
@@ -1169,6 +1252,36 @@ void free_rr_graph(void) {
 
 	delete[] g_rr_switch_inf;
 	g_rr_switch_inf = NULL;
+
+#if LOOKAHEADBYHISTORY == 1
+    assert(max_cost_by_relative_pos != NULL);
+    assert(min_cost_by_relative_pos != NULL);
+    assert(max_cost_coord != NULL);
+    assert(min_cost_coord != NULL);
+    free_matrix(max_cost_by_relative_pos, 0, nx+1, 0, sizeof(float));
+    free_matrix(min_cost_by_relative_pos, 0, nx+1, 0, sizeof(float));
+    free_matrix(avg_cost_by_relative_pos, 0, nx+1, 0, sizeof(float));
+    free_matrix(dev_cost_by_relative_pos, 0, nx+1, 0, sizeof(float));
+    free_matrix(count_by_relative_pos, 0, nx+1, 0, sizeof(int));
+    free_matrix(max_cost_coord, 0, nx+1, 0, sizeof(pair<float, float>));
+    free_matrix(min_cost_coord, 0, nx+1, 0, sizeof(pair<float, float>));
+    free_matrix4(bfs_lookahead_info, 0, nx-3, 0, ny-3, g_num_segment-1, 0, sizeof(pair<float, float>));
+    max_cost_by_relative_pos = NULL;
+    min_cost_by_relative_pos = NULL;
+    avg_cost_by_relative_pos = NULL;
+    dev_cost_by_relative_pos = NULL;
+    count_by_relative_pos = NULL;
+    max_cost_coord = NULL;
+    min_cost_coord = NULL;
+    bfs_lookahead_info = NULL;
+#endif
+#if CONGESTIONBYCHIPAREA == 1
+    assert(congestion_map_by_area != NULL);
+    free_matrix(congestion_map_by_area, 0, nx+1, 0, sizeof(int));
+    free_matrix(congestion_map_relative, 0, nx+1, 0, sizeof(int));
+    congestion_map_by_area = NULL;
+    congestion_map_relative = NULL;
+#endif
 }
 
 static void alloc_net_rr_terminals(void) {
@@ -1286,6 +1399,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
 				int pin_num = class_inf[iclass].pinlist[ipin];
 				int to_node = get_rr_node_index(i, j, OPIN, pin_num, L_rr_node_indices);
+                // XXX: to_node is OPIN, inode is SOURCE
+                g_opin_by_source[to_node] = inode;
 				L_rr_node[inode].edges[ipin] = to_node;
 				L_rr_node[inode].switches[ipin] = delayless_switch;
 
@@ -1346,7 +1461,9 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		if (class_inf[iclass].type == RECEIVER) {
 			inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
 			int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
-
+            // XXX: inode is IPIN; to_node is SINK
+            // setup this mapping to setup g_pin_side for sinks in the future
+            g_ipin_to_sink[inode] = to_node;
 			L_rr_node[inode].set_num_edges(1);
 			L_rr_node[inode].edges = (int *) my_malloc(sizeof(int));
 			L_rr_node[inode].switches = (short *) my_malloc(sizeof(short));
@@ -1503,7 +1620,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 						Fs_per_side, sblock_pattern, &edge_list, 
 						from_seg_details, to_seg_details, opposite_chan_details, 
 						directionality,	L_rr_node_indices, L_rr_edge_done,
-						 switch_block_conn, sb_conn_map);
+						switch_block_conn, sb_conn_map);
 			}
 		}
 		if (chan_coord < chan_dimension) {

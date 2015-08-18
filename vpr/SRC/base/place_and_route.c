@@ -61,6 +61,8 @@ bool place_and_route(enum e_operation operation,
 
 	/* This routine controls the overall placement and routing of a circuit. */
 	char msg[BUFSIZE];
+    g_num_segment = det_routing_arch->num_segment;
+    route_start = false;
 
 	bool success = false;
 	t_chunk net_delay_ch = {NULL, 0, NULL};
@@ -95,6 +97,8 @@ bool place_and_route(enum e_operation operation,
 	post_place_sync(num_blocks, block);
 
 	fflush(stdout);
+    
+    route_start = true;
 
 	int width_fac = router_opts.fixed_channel_width;
 

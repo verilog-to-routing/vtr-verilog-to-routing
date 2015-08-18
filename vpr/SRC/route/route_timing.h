@@ -1,3 +1,4 @@
+#pragma once
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally,
         bool timing_analysis_enabled, const t_timing_inf &timing_inf);
@@ -9,7 +10,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		float *pin_criticality, int *sink_order, t_rt_node ** rt_node_of_sink, 
-		float *net_delay, t_slack * slacks);
+		float *net_delay, t_slack * slacks, bool lookahead_eval);
 
 /*
  * NOTE:
@@ -28,8 +29,5 @@ struct timing_driven_route_structs {
 	timing_driven_route_structs();
 	~timing_driven_route_structs();
 };
-
-// profiling functions
-#ifdef PROFILE
-void time_on_fanout_analysis();
-#endif
+float get_timing_driven_future_Tdel(int inode, int target_node, float *C_downstream, float *basecost);
+float get_timing_driven_cong_penalty(int inode, int target_node);

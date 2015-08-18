@@ -10,6 +10,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "congestion_analysis", OT_CONGESTION_ANALYSIS },
 		{ "fanout_analysis", OT_FANOUT_ANALYSIS },
         { "switch_stats", OT_SWITCH_USAGE_ANALYSIS },
+        { "lookahead_eval", OT_LOOKAHEAD_EVAL }, 
 		{ "auto", OT_AUTO }, 
 		{ "recompute_crit_iter", OT_RECOMPUTE_CRIT_ITER }, 
 		{ "inner_loop_recompute_divider", OT_INNER_LOOP_RECOMPUTE_DIVIDER }, 

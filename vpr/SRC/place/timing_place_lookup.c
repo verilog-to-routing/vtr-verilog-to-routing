@@ -622,7 +622,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			pin_criticality, sink_order, rt_node_of_sink, 
-			net_delay[NET_USED], NULL);
+			net_delay[NET_USED], NULL, false);
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 

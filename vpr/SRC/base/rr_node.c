@@ -78,6 +78,9 @@ short t_rr_node::get_occ() const {
 	return occ;
 }
 
+short t_rr_node::get_len() const {
+    return length + 1;
+}
 /*
 	Pass in two coordinate variables describing location of node.
 	They do not have to be in any particular order.

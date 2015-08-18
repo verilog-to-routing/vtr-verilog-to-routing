@@ -1,9 +1,12 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
+
 #include <assert.h>
+
 #include <vector>
 #include <algorithm>
+
 #include "vpr_utils.h"
 #include "util.h"
 #include "vpr_types.h"
@@ -17,11 +20,48 @@
 #include "net_delay.h"
 #include "stats.h"
 #include "ReadOptions.h"
-
+#include "profile_lookahead.h"
+#include "look_ahead_bfs.h"
 
 using namespace std;
-
-
+int g_target_node;
+float g_basecost;
+#define DEBUGSMITHWATERMAN
+#ifdef DEBUGSMITHWATERMAN
+bool debug_bt_begin = false;
+bool debug_itr_begin = false;
+bool heap_head_begin = false;
+int target_count = 0;
+#endif
+#if PRINTCRITICALPATH == 1
+bool is_first_itr = false;
+float max_crit_len_product = -1;
+float min_crit_len_product = pow(10, 20);
+float max_crit = -1;
+float min_crit = 10;
+int max_inet = -1;
+int max_ipin = -1;
+int min_inet = -1;
+int min_ipin = -1;
+#endif
+float acc_route_time = 0.;
+struct s_opin_cost_inf {
+    float Tdel;
+    float acc_basecost;
+    float acc_C;
+};
+// map key: seg_index; map value: cost of that seg_index from source to target
+map<int, struct s_opin_cost_inf> opin_cost_by_seg_type;
+struct s_target_pin_side {
+    int chan_type;
+    int x;
+    int y;
+};
+// map key: currently expanded inode; map value: ipin side, x, y that will produce a min cost to target
+map<int, struct s_target_pin_side> expanded_node_min_target_side;
+int target_chan_type = UNDEFINED;
+int target_pin_x = UNDEFINED;
+int target_pin_y = UNDEFINED;
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -33,10 +73,11 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static void timing_driven_expand_neighbours(struct s_heap *current, 
 		int inet, int itry,
 		float bend_cost, float criticality_fac, int target_node,
-		float astar_fac, int highfanout_rlim);
+		float astar_fac, int highfanout_rlim, bool lookahead_eval, float crit);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream);
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 static int get_num_expected_interposer_hops_to_target(int inode, int target_node);
 #endif
@@ -54,7 +95,25 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 static double get_overused_ratio();
 
 static bool should_route_net(int inet);
-static bool early_exit_heuristic(const t_router_opts& router_opts);
+
+static bool turn_on_bfs_map_lookup();
+
+static void setup_min_side_reaching_target(int inode, int t_chan_type, int t_x, int t_y, 
+        float *min_Tdel, float cur_Tdel, float *C_downstream, float *future_base_cost, 
+        float cur_C_downstream, float cur_basecost);
+
+float bfs_direct_lookup(int offset_x, int offset_y, int seg_type, int chan_type, 
+                int to_chan_type, float *acc_C, float *acc_basecost);
+
+static void adjust_coord_for_wrong_dir_wire(int *s_chan_type, int *s_dir, int start_len, 
+                                            int *x_start, int *y_start, int x_target, int y_target);
+ 
+static float get_bfs_lookup_Tdel(int s_inode, int s_chan_type, int t_chan_type, int s_seg_type, int s_dir,
+                                 int x_start, int y_start, int x_target, int y_target, int len_start,
+                                 float *acc_C, float *acc_basecost);
+   
+static void setup_opin_cost_by_seg_type(int source_node, int target_node);
+
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
 		return g_clbs_nlist.net[net_index1].num_sinks() > g_clbs_nlist.net[net_index2].num_sinks();
@@ -62,17 +121,12 @@ struct more_sinks_than {
 };
 
 
-#ifdef PROFILE
+
 static void congestion_analysis();
-static void time_on_criticality_analysis();
-constexpr int fanout_per_bin = 4;
-constexpr float criticality_per_bin = 0.05;
+static void time_on_fanout_analysis();
+constexpr int fanout_per_bin = 5;
 static vector<float> time_on_fanout;
-static vector<float> time_to_build_heap;
 static vector<int> itry_on_fanout;
-static vector<float> time_on_criticality;
-static vector<int> itry_on_criticality;
-#endif
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -82,14 +136,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
-#ifdef PROFILE
+
 	const int max_fanout {get_max_pins_per_net()};
 	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	time_to_build_heap.resize((max_fanout / fanout_per_bin) + 1, 0);
 	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	time_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
-	itry_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
-#endif
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -141,16 +191,101 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	}
 
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
-
+#if OPINPENALTY == 1
+    opin_penalty = OPIN_INIT_PENALTY;
+#else
+    opin_penalty = 1;
+#endif
+    acc_route_time = 0.;
 	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
+        if (itry == 2)
+            nodes_expanded_1st_itr = nodes_expanded_cur_itr;
+        if (itry > 1) {
+            nodes_expanded_pre_itr = nodes_expanded_cur_itr;
+            if (turn_on_bfs_map_lookup()) printf("\tON BFS\n");
+            else printf("\tOFF BFS\n");
+        }
+        nodes_expanded_cur_itr = 0;
 		clock_t begin = clock();
-
+        total_nodes_expanded = 0;
+        itry_share = itry;
+        //if (itry <= 20)
+            //opin_penalty *= 0.93;
+#if OPINPENALTY == 1
+        opin_penalty *= OPIN_DECAY_RATE;
+#endif
+#if LOOKAHEADCONGPENALTY == 1
+        if (itry > 5 && itry <= 15)
+            future_cong_penalty *= 1.1;
+#endif
+#if PRINTCRITICALPATH == 1
+        if (itry == 1) {
+            is_first_itr = true;
+        } else {
+            is_first_itr = false;
+        }
+#endif
+#if DEPTHWISELOOKAHEADEVAL == 1
+        if (router_opts.lookahead_eval) {
+            subtree_count.clear();
+            subtree_size_avg.clear();
+            subtree_est_dev_avg.clear();
+            subtree_est_dev_abs_avg.clear();
+            subtree_size_avg[0] = 0;
+        }
+#endif
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 			g_clbs_nlist.net[inet].is_routed = false;
 			g_clbs_nlist.net[inet].is_fixed = false;
 		}
-
+#if PRINTCRITICALPATH == 1
+        // XXX: set up max/min criticality && where the max/min happens
+        max_crit_len_product = -1;
+        min_crit_len_product = pow(10, 20);
+        max_crit = -1;
+        min_crit = pow(10, 20);
+        max_inet = -1;
+        max_ipin = -1;
+        min_inet = -1;
+        min_ipin = -1;
+		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+            if (should_route_net(inet) == false)
+                continue; 
+    		if (g_clbs_nlist.net[inet].is_global == true)
+                continue;
+            if (g_clbs_nlist.net[inet].is_fixed == true)
+                continue;
+            int source_inode = net_rr_terminals[inet][0];
+            int x_source_mid = (rr_node[source_inode].get_xhigh() + rr_node[source_inode].get_xlow()) / 2;
+            int y_source_mid = (rr_node[source_inode].get_yhigh() + rr_node[source_inode].get_ylow()) / 2;
+            unsigned int pin_upbound = (g_clbs_nlist.net[inet].pins.size() > 2) ? 2 : g_clbs_nlist.net[inet].pins.size();
+            for (unsigned int ipin = 1; ipin < pin_upbound; ipin++) {
+			    float pin_criticality = slacks->timing_criticality[inet][ipin];
+                //printf("%f  ", pin_criticality);
+                int target_inode = net_rr_terminals[inet][ipin];
+                int x_target_mid = (rr_node[target_inode].get_xhigh() + rr_node[target_inode].get_xlow()) / 2;
+                int y_target_mid = (rr_node[target_inode].get_yhigh() + rr_node[target_inode].get_ylow()) / 2;
+                // print long nets only
+                int bb_len = abs(x_source_mid - x_target_mid + 1) + abs(y_source_mid - y_target_mid + 1);
+                //if (abs(x_source_mid - x_target_mid) + abs(y_source_mid - y_target_mid) > 0.3 * (nx + ny)) {
+                float len_crit_product = bb_len * pin_criticality;
+                float len_inv_crit_product = (1./bb_len) * pin_criticality;
+                max_inet = (len_crit_product > max_crit_len_product) ? inet : max_inet;
+                max_ipin = (len_crit_product > max_crit_len_product) ? ipin : max_ipin;
+                min_inet = (len_inv_crit_product < min_crit_len_product) ? inet : min_inet;
+                min_ipin = (len_inv_crit_product < min_crit_len_product) ? ipin : min_ipin;
+                max_crit = (len_crit_product > max_crit_len_product) ? pin_criticality : max_crit;
+                min_crit = (len_inv_crit_product < min_crit_len_product) ? pin_criticality : min_crit;
+                max_crit_len_product = (len_crit_product > max_crit_len_product) ? len_crit_product : max_crit_len_product;
+                min_crit_len_product = (len_inv_crit_product < min_crit_len_product) ? len_inv_crit_product : min_crit_len_product;
+                //}
+            }
+        }
+        //printf("max_inet %d\tmax_ipin %d\tmin_inet %d\tmin_ipin %d\n", max_inet, max_ipin, min_inet, min_ipin);
+        //printf("max_crit_len_product %f\tmin_crit %f\n", max_crit_len_product, min_crit);
+        //printf("\n");
+#endif
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
 				sorted_nets[i],
@@ -168,12 +303,52 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				return (false);
 			}
 		}
-
+#if PRINTCRITICALPATH == 1
+        printf("MAX crit: %f\tMIN crit: %f\tmaxpin: %d\tminpin: %d\n", max_crit, min_crit, max_ipin, min_ipin);
+#endif
 		clock_t end = clock();
-		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
-		time_per_iteration.push_back(time);
 
-		if (itry == 1 && early_exit_heuristic(router_opts)) return false;
+		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
+        acc_route_time += time;
+		time_per_iteration.push_back(time);
+        printf("\tTOTAL NODES EXPANDED FOR ITERATION %d is %d\n", itry, total_nodes_expanded);
+		if (itry == 1) {
+			/* Early exit code for cases where it is obvious that a successful route will not be found 
+			   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
+			int total_wirelength = 0;
+			int available_wirelength = 0;
+
+			for (int i = 0; i < num_rr_nodes; ++i) {
+				if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
+					available_wirelength += 1 + 
+							rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
+							rr_node[i].get_yhigh() - rr_node[i].get_ylow();
+				}
+			}
+
+			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+				if (g_clbs_nlist.net[inet].is_global == false
+						&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+					int bends, wirelength, segments;
+					get_num_bends_and_length(inet, &bends, &wirelength, &segments);
+
+					total_wirelength += wirelength;
+				}
+			}
+			vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
+					total_wirelength, available_wirelength,
+					(float) (total_wirelength) / (float) (available_wirelength));
+			if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
+				vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
+						FIRST_ITER_WIRELENTH_LIMIT);
+
+				time_on_fanout_analysis();
+				return false;
+			}
+			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
+			vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
+			vpr_printf_info("--------- ---------- ----------- ---------------------\n");
+		}
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
 		   to them are reserved for that purpose. */
@@ -196,10 +371,11 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			
 			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
 			if (expected_success_route_iter == UNDEFINED) {
+				time_on_fanout_analysis();
+                vpr_printf_info("\tTOTAL ROUTE TIME (SUM OF ALL ITR)\t%f\n", acc_route_time);
 				return false;
 			}
 
-#ifdef REGRESSION_EXIT
 			if (itry > 15) {
 				// compare their slopes over the last 5 iterations
 				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
@@ -213,17 +389,24 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 									 while congestion grows at %f %/iteration, unlikely to finish.\n",
 						time_per_iteration_slope, congestion_per_iteration_slope);
 
+					time_on_fanout_analysis();
+                    vpr_printf_info("\tTOTAL ROUTE TIME (SUM OF ALL ITR)\t%f\n", acc_route_time);
 					return false;
 				}
 			}
-#endif
 		}
-
-        //print_usage_by_wire_length();
-
-
+        if (router_opts.lookahead_eval)
+            print_lookahead_eval();
+        clear_lookahead_history_array();
+        // I don't clear the congestion map: it is the accumulated version across all itry
+        //clear_congestion_map();
+#if CONGESTIONBYCHIPAREA
+        if (itry % 4 == 0)
+            print_congestion_map();
+        clear_congestion_map_relative();
+#endif
 		if (success) {
-   
+            vpr_printf_info("\tTOTAL ROUTE TIME (SUM OF ALL ITR)\t%f\n", acc_route_time);
 			if (timing_analysis_enabled) {
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
@@ -239,6 +422,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
 #endif
+			time_on_fanout_analysis();
 			return (true);
 		}
 
@@ -285,38 +469,28 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
-#ifdef PROFILE
-        if (router_opts.congestion_analysis) congestion_analysis();
-        if (router_opts.fanout_analysis) time_on_fanout_analysis();
-        time_on_criticality_analysis();
-#endif
+        if (router_opts.congestion_analysis) {
+        	congestion_analysis();
+        }
 		fflush(stdout);
 	}
+    vpr_printf_info("\tTOTAL ROUTE TIME (SUM OF ALL ITR)\t%f\n", acc_route_time);
 	vpr_printf_info("Routing failed.\n");
-
+	time_on_fanout_analysis();
 	return (false);
 }
 
-// profiling per iteration functions
-#ifdef PROFILE
+
 void time_on_fanout_analysis() {
 	// using the global time_on_fanout and itry_on_fanout
-	vpr_printf_info("fanout low           time (s)        attemps     heap build time (s)\n");
+	vpr_printf_info("fanout low           time (s)        attemps\n");
 	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
 		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4d           %14.3f   %12d %14.3f\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin], time_to_build_heap[bin]);
+			vpr_printf_info("%4d           %14.3f   %12d\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin]);
 		}
 	}
 }
 
-void time_on_criticality_analysis() {
-	vpr_printf_info("congestion low           time (s)        attemps\n");
-	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
-		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4d           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
-		}
-	}	
-}
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
 // efficient bit array for checking against congested type
 struct Congested_node_types {
@@ -327,7 +501,6 @@ struct Congested_node_types {
 	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
 	bool empty() const {return mask == 0;}
 };
-
 void congestion_analysis() {
 	static const std::vector<const char*> node_typename {
 		"SOURCE",
@@ -374,7 +547,6 @@ void congestion_analysis() {
 		}
 	}
 }
-#endif
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
@@ -391,22 +563,18 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		is_routed = true;
 	} else{
 		// track time spent vs fanout
-#ifdef PROFILE
 		clock_t net_begin = clock();
-#endif
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
 				router_opts.astar_fac, router_opts.bend_cost, 
 				pin_criticality, sink_order, 
-				rt_node_of_sink, net_delay[inet], slacks);
+				rt_node_of_sink, net_delay[inet], slacks, router_opts.lookahead_eval);
 
-#ifdef PROFILE
 		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
 		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
 		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
 		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
-#endif
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -506,14 +674,13 @@ static int get_max_pins_per_net(void) {
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		float *pin_criticality, int *sink_order,
-		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks) {
+		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks, bool lookahead_eval) {
 
 	/* Returns true as long is found some way to hook up this net, even if that *
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
 	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
 	 * give each net a dummy criticality of 0.									*/
-
 	unsigned int ipin;
 	int num_sinks, itarget, target_pin, target_node, inode;
 	float target_criticality, old_total_cost, new_total_cost, largest_criticality,
@@ -527,7 +694,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
 	free_traceback(inet);
-	
 	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 		if (!slacks) {
 			/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
@@ -543,20 +709,8 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			/* Pin criticality is based on only timing criticality. */
 			pin_criticality[ipin] = slacks->timing_criticality[inet][ipin];
 #endif
-			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
-			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
-			by 0.01) and cut off at 0.  This means that all pins with small criticalities 
-			(<0.01) get criticality 0 and are ignored entirely, and everything
-			else becomes a bit less critical. This effect becomes more pronounced if
-			max_criticality is set lower. */
-			// assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
-
-			/* Take pin criticality to some power (1 by default). */
-			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
-			
-			/* Cut off pin criticality at max_criticality. */
-			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);
+            pin_criticality[ipin] *= 0.98;
+            pin_criticality[ipin] += 0.01;
 		}
 	}
 
@@ -571,18 +725,29 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	mark_ends(inet); /* Only needed to check for multiply-connected SINKs */
 
 	rt_root = init_route_tree_to_source(inet);
-#ifdef PROFILE
-		float build_heap_time = 0;
-#endif
+    
+    node_expanded_per_net = 0;
+    node_on_path = 0;
+    estimated_cost_deviation = 0;
+    estimated_cost_deviation_abs = 0;
 	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
 		target_pin = sink_order[itarget];
 		target_node = net_rr_terminals[inet][target_pin];
-
+        if (target_node == 52356)
+            printf("INET %d\n", inet);
 		target_criticality = pin_criticality[target_pin];
-#ifdef PROFILE
-			clock_t sink_criticality_start = clock();
+#if PRINTCRITICALPATH == 1
+        if ((int)inet == max_inet && itarget == max_ipin) {
+            is_print_cpath = true;
+        } else {
+            is_print_cpath = false;
+        }
 #endif
+        target_chan_type = UNDEFINED;
+        target_pin_x = UNDEFINED;
+        target_pin_y = UNDEFINED;
+        expanded_node_min_target_side.clear();
 
 		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 				rt_root);
@@ -593,21 +758,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			rt_root->re_expand = false;
 		}
 
-		// reexplore route tree from root to add any new nodes (buildheap afterwards)
-#ifdef PROFILE
-			clock_t route_tree_start = clock();
-#endif
+		// reexplore route tree from root to add any new nodes
 		add_route_tree_to_heap(rt_root, target_node, target_criticality,
 				astar_fac);
-		heap_::build_heap();	// via sifting down everything
-		// if (itarget == num_sinks && itarget > 800) {
-		// 	vpr_printf_info("heap for target %d: ", itarget); 
-		// 	heap_::verify_extract_top();
-		// }
-#ifdef PROFILE
-			build_heap_time += static_cast<float>(clock() - route_tree_start) / CLOCKS_PER_SEC;
-#endif
-		
 
 		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
 		struct s_heap* cheapest = get_heap_head();
@@ -621,10 +774,13 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		}
 
 		inode = cheapest->index;
+        node_expanded_per_sink = 0;
+
+        print_start_end_to_sink(true, itry, inet, target_node, itarget);
+
 		while (inode != target_node) {
 			old_total_cost = rr_node_route_inf[inode].path_cost;
 			new_total_cost = cheapest->cost;
-
 			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 				old_back_cost = HUGE_POSITIVE_FLOAT;
 			else
@@ -645,20 +801,28 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 				rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
 				rr_node_route_inf[inode].path_cost = new_total_cost;
 				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
-
+                rr_node_route_inf[inode].back_Tdel = cheapest->back_Tdel;
 				if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
 				timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
 						target_criticality, target_node, astar_fac,
-						highfanout_rlim);
+						highfanout_rlim, lookahead_eval, target_criticality);
 			}
-
+            else if (debug_bt_begin && debug_itr_begin) {
+                printf("\tfree %d\tTdel %e\n", inode, cheapest->back_Tdel);
+            }
 			free_heap_data(cheapest);
 			cheapest = get_heap_head();
-			// test heap property
-			// if (!heap_::is_valid()) {vpr_printf_info("invalid heap: "); heap_::pop_heap();}
-
+            if (target_chan_type == UNDEFINED) {
+                int cheap_inode = cheapest->index;
+                if (expanded_node_min_target_side.count(cheap_inode) > 0) {
+                    target_chan_type = expanded_node_min_target_side[cheap_inode].chan_type;
+                    target_pin_x = expanded_node_min_target_side[cheap_inode].x;
+                    target_pin_y = expanded_node_min_target_side[cheap_inode].y;
+                    expanded_node_min_target_side.clear();
+                }
+            }
 			if (cheapest == NULL) { /* Impossible routing.  No path for net. */
 				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 						 inet, g_clbs_nlist.net[inet].name, itarget);
@@ -666,13 +830,11 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 				free_route_tree(rt_root);
 				return (false);
 			}
-
+            if (heap_head_begin) 
+                printf("HEAPHEAD: %d\n", cheapest->index);
 			inode = cheapest->index;
 		}
-#ifdef PROFILE
-			time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
-			++itry_on_criticality[target_criticality / criticality_per_bin];
-#endif 
+
 		/* NB:  In the code below I keep two records of the partial routing:  the   *
 		 * traceback and the route_tree.  The route_tree enables fast recomputation *
 		 * of the Elmore delay to each node in the partial routing.  The traceback  *
@@ -680,19 +842,19 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		 * all take a traceback structure as input.  Before this routine exits the  *
 		 * route_tree structure is destroyed; only the traceback is needed at that  *
 		 * point.                                                                   */
-
+#if DEPTHWISELOOKAHEADEVAL == 1
+        subtree_size_avg[0] = node_expanded_per_sink;
+#endif
 		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
 		new_route_start_tptr = update_traceback(cheapest, inet);
-		rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+		rt_node_of_sink[target_pin] = update_route_tree(cheapest, lookahead_eval, target_criticality);
 		free_heap_data(cheapest);
 		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
-
+        print_start_end_to_sink(false, itry, inet, target_node, itarget);
 		empty_heap();
 		reset_path_costs();
 	}
-#ifdef PROFILE
-		if (!time_to_build_heap.empty()) time_to_build_heap[num_sinks / fanout_per_bin] += build_heap_time;
-#endif
+ 
 	/* For later timing analysis. */
 
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
@@ -706,6 +868,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 	/* Puts the entire partial routing below and including rt_node onto the heap *
 	 * (except for those parts marked as not to be expanded) by calling itself   *
 	 * recursively.                                                              */
+    opin_cost_by_seg_type.clear();
 
 	int inode;
 	t_rt_node *child_node;
@@ -722,9 +885,19 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 				+ astar_fac
 						* get_timing_driven_expected_cost(inode, target_node,
 								target_criticality, R_upstream);
-		heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
-				backward_path_cost, R_upstream);
-
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+        int target_x = rr_node[target_node].get_xlow();
+        int target_y = rr_node[target_node].get_ylow();
+        int offset_x = (rr_node[inode].get_xlow() + rr_node[inode].get_xhigh()) / 2;
+        int offset_y = (rr_node[inode].get_ylow() + rr_node[inode].get_yhigh()) / 2;
+        offset_x = abs(target_x - offset_x);
+        offset_y = abs(target_y - offset_y);
+        node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+                backward_path_cost, R_upstream, rt_node->Tdel, offset_x, offset_y);
+#else
+		node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+				backward_path_cost, R_upstream, rt_node->Tdel);
+#endif
 	}
 
 	linked_rt_edge = rt_node->u.child_list;
@@ -740,28 +913,38 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static void timing_driven_expand_neighbours(struct s_heap *current, 
 		int inet, int itry,
 		float bend_cost, float criticality_fac, int target_node,
-		float astar_fac, int highfanout_rlim) {
+		float astar_fac, int highfanout_rlim, bool lookahead_eval, float target_criticality) {
 
 	/* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
 	 * the expanded bounding box specified in route_bb are not added to the     *
 	 * heap.                                                                    */
 
-	float new_R_upstream;
+	int iconn, to_node, num_edges, inode, iswitch, target_x, target_y;
+	t_rr_type from_type, to_type;
+	float new_tot_cost, old_back_pcost, new_back_pcost, R_upstream;
+	float new_R_upstream, Tdel;
 
-	int inode = current->index;
-	float old_back_pcost = current->backward_path_cost;
-	float R_upstream = current->R_upstream;
-	int num_edges = rr_node[inode].get_num_edges();
+	inode = current->index;
+	old_back_pcost = current->backward_path_cost;
+	R_upstream = current->R_upstream;
+	num_edges = rr_node[inode].get_num_edges();
 
-	int target_x = rr_node[target_node].get_xhigh();
-	int target_y = rr_node[target_node].get_yhigh();
-	bool high_fanout = g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM;
+	target_x = rr_node[target_node].get_xhigh();
+	target_y = rr_node[target_node].get_yhigh();
+    if (rr_node[inode].type == SOURCE && route_start) {
+        opin_cost_by_seg_type.clear();
+        setup_opin_cost_by_seg_type(inode, target_node);
+    }   
+#if DEBUGEXPANSIONRATIO == 1
+    if (itry_share == DB_ITRY && target_node == DB_TARGET_NODE) 
+        printf("CRITICALITY %f\n", target_criticality);
+#endif
+    print_expand_neighbours(true, inode, target_node, 
+        target_chan_type, target_pin_x, target_pin_y, 0., 0., 0., 0., 0.);
 
-	for (int iconn = 0; iconn < num_edges; iconn++) {
-		int to_node = rr_node[inode].edges[iconn];
-
-		if (high_fanout) {
-			// since target node is an IPIN, xhigh and xlow are the same (same for y values)
+	for (iconn = 0; iconn < num_edges; iconn++) {
+		to_node = rr_node[inode].edges[iconn];
+		if (g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM) {
 			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
 					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
 					|| rr_node[to_node].get_yhigh() < target_y - highfanout_rlim
@@ -781,7 +964,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		 * more promising routes, but makes route-throughs (via CLBs) impossible.   *
 		 * Change this if you want to investigate route-throughs.                   */
 
-		t_rr_type to_type = rr_node[to_node].type;
+		to_type = rr_node[to_node].type;
 		if (to_type == IPIN
 				&& (rr_node[to_node].get_xhigh() != target_x
 						|| rr_node[to_node].get_yhigh() != target_y))
@@ -791,46 +974,71 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		 * congestion cost of all the routing resources back to the existing route  *
 		 * plus the known delay of the total path back to the source.  new_tot_cost *
 		 * is this "known" backward cost + an expected cost to get to the target.   */
-
-		float new_back_pcost = old_back_pcost
-				+ (1. - criticality_fac) * get_rr_cong_cost(to_node);
-		
-		int iswitch = rr_node[inode].switches[iconn];
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+        int offset_x = (rr_node[to_node].get_xlow() + rr_node[to_node].get_xhigh()) / 2;
+        int offset_y = (rr_node[to_node].get_ylow() + rr_node[to_node].get_yhigh()) / 2;
+        offset_x = abs(offset_x - target_x);
+        offset_y = abs(offset_y - target_y);
+#endif		
+		iswitch = rr_node[inode].switches[iconn];
 		if (g_rr_switch_inf[iswitch].buffered) {
 			new_R_upstream = g_rr_switch_inf[iswitch].R;
 		} else {
 			new_R_upstream = R_upstream + g_rr_switch_inf[iswitch].R;
 		}
-
-		float Tdel = rr_node[to_node].C * (new_R_upstream + 0.5 * rr_node[to_node].R);
+        // Tdel is the delay of current node
+		Tdel = rr_node[to_node].C * (new_R_upstream + 0.5 * rr_node[to_node].R);
 		Tdel += g_rr_switch_inf[iswitch].Tdel;
 		new_R_upstream += rr_node[to_node].R;
-		new_back_pcost += criticality_fac * Tdel;
+        new_back_pcost = old_back_pcost;
+		new_back_pcost += criticality_fac * Tdel 
+                        + (1. - criticality_fac) * get_rr_cong_cost(to_node);
 
 		if (bend_cost != 0.) {
-			t_rr_type from_type = rr_node[inode].type;
+			from_type = rr_node[inode].type;
 			to_type = rr_node[to_node].type;
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
 				new_back_pcost += bend_cost;
 		}
-
 		float expected_cost = get_timing_driven_expected_cost(to_node, target_node,
-				criticality_fac, new_R_upstream);
-		float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
-
-		node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
-				new_R_upstream);
-
+		    		criticality_fac, new_R_upstream);
+ 
+		new_tot_cost = new_back_pcost + astar_fac * expected_cost;
+#if INPRECISE_GET_HEAP_HEAD == 1 || SPACEDRIVENHEAP == 1
+ 		node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
+				new_R_upstream, Tdel + current->back_Tdel, offset_x, offset_y);
+#else
+        node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
+                new_R_upstream, Tdel + current->back_Tdel);
+#endif
+        if (lookahead_eval) {
+            if (new_tot_cost < rr_node_route_inf[to_node].path_cost) {
+                node_expanded_per_net ++;
+                node_expanded_per_sink ++;
+            }
+        }
+        if (new_tot_cost < rr_node_route_inf[to_node].path_cost) {
+            print_expand_neighbours(false, to_node, target_node, 
+                target_chan_type, target_pin_x, target_pin_y, 
+                expected_cost, Tdel + current->back_Tdel, new_tot_cost, 
+                g_basecost, get_rr_cong_cost(to_node));
+        }
 	} /* End for all neighbours */
 }
-
+static bool turn_on_bfs_map_lookup() {
+    if (itry_share <= 5)
+        return true;
+    if (nodes_expanded_pre_itr < 2 * nodes_expanded_1st_itr)
+        return true;
+    return false;
+}
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream) {
-
 	/* Determines the expected cost (due to both delay and resouce cost) to reach *
 	 * the target node from inode.  It doesn't include the cost of inode --       *
 	 * that's already in the "known" path_cost.                                   */
+    g_target_node = target_node;
 
 	t_rr_type rr_type;
 	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
@@ -838,37 +1046,50 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 
 	rr_type = rr_node[inode].type;
 
-	if (rr_type == CHANX || rr_type == CHANY) {
+	if (rr_type == CHANX || rr_type == CHANY || rr_type == OPIN) {
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
 #endif
+        float Tdel_future = 0.;
+#if LOOKAHEADBFS == 1
+        if (turn_on_bfs_map_lookup()) {// && criticality_fac > 0.15) {
+            // calculate Tdel, not just Tdel_future
+            float C_downstream = -1.0;
+            cong_cost = -1.0;
+            Tdel_future = get_timing_driven_future_Tdel(inode, target_node, &C_downstream, &cong_cost);
+            g_basecost = cong_cost;
+            Tdel = Tdel_future + R_upstream * C_downstream;
+            cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
+                       + rr_indexed_data[SINK_COST_INDEX].base_cost;
 
-		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
-				&num_segs_ortho_dir);
-		cost_index = rr_node[inode].get_cost_index();
-		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
+        } else {
+ #endif
+            if (rr_type == OPIN) {
+                // keep the same as the original router
+                return 0;
+            }
+            num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
+                    &num_segs_ortho_dir);
+            cost_index = rr_node[inode].get_cost_index();
+            ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
+            cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
+                      + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].base_cost;
+            cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
+                       + rr_indexed_data[SINK_COST_INDEX].base_cost;
 
-		cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
-				+ num_segs_ortho_dir
-						* rr_indexed_data[ortho_cost_index].base_cost;
-		cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
-				+ rr_indexed_data[SINK_COST_INDEX].base_cost;
-
-		Tdel =
-				num_segs_same_dir * rr_indexed_data[cost_index].T_linear
-						+ num_segs_ortho_dir
-								* rr_indexed_data[ortho_cost_index].T_linear
-						+ num_segs_same_dir * num_segs_same_dir
-								* rr_indexed_data[cost_index].T_quadratic
-						+ num_segs_ortho_dir * num_segs_ortho_dir
-								* rr_indexed_data[ortho_cost_index].T_quadratic
-						+ R_upstream
-								* (num_segs_same_dir
-										* rr_indexed_data[cost_index].C_load
-										+ num_segs_ortho_dir
-												* rr_indexed_data[ortho_cost_index].C_load);
-
+            // future without R_upstream
+            Tdel_future = num_segs_same_dir * rr_indexed_data[cost_index].T_linear
+                         + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].T_linear
+                         + num_segs_same_dir * num_segs_same_dir * rr_indexed_data[cost_index].T_quadratic
+                         + num_segs_ortho_dir * num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].T_quadratic;
+            // add R_upstream factor
+            Tdel = Tdel_future + R_upstream * (num_segs_same_dir * rr_indexed_data[cost_index].C_load
+                                + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].C_load);
+#if LOOKAHEADBFS == 1
+        }
+#endif
 		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 		float interposer_hop_delay = (float)delay_increase * 1e-12;
 		Tdel += num_interposer_hops * interposer_hop_delay;
@@ -887,6 +1108,296 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		return (0.);
 	}
 }
+
+/*
+ * the whole motivation of this version of bfs look ahead:
+ *    we don't evaluate the Tdel cost from (x1, y1) to (x2, y2)
+ *    instead we evaluate by channel base. --> for example: 
+ *    give the cost from chanx at (x1, y1) to chany at (x2, y2)
+ *    prerequisite of reaching this level of precision:
+ *         given a sink at (x,y), can it be reached from 
+ *         TOP / RIGHT / BOTTOM / LEFT side of the clb?
+ *    this prerequisite requires extra backward information about the sink
+ *    which is store in g_pin_side, and setup when you build rr_graph (in rr_graph.c / rr_graph2.c)
+ *         
+ *
+ *
+ */
+float get_timing_driven_future_Tdel (int inode, int target_node, 
+        float *C_downstream, float *future_base_cost) {
+    *future_base_cost = 0;
+    *C_downstream = 0;
+
+    if (rr_node[inode].type != CHANX
+     && rr_node[inode].type != CHANY
+     && rr_node[inode].type != OPIN) {
+        return 0;
+    }
+    int x_start, y_start;
+    get_unidir_seg_start(inode, &x_start, &y_start);
+    // s_* stands for information related to start node (inode)
+    // t_* is for target node
+    int s_seg_type = rr_indexed_data[rr_node[inode].get_cost_index()].seg_index;
+    int s_dir = rr_node[inode].get_direction();
+    int s_len = rr_node[inode].get_len();
+    int s_chan_type = rr_node[inode].type;
+    // if we haven't decided which side is the cheapest to reach the target node,
+    // then we expand and get the estimated cost of all possible sides.
+    if (target_chan_type == UNDEFINED && rr_node[inode].type != OPIN) {
+        int t_chan_type;
+        int x_target, y_target;
+        get_unidir_seg_end(target_node, &x_target, &y_target);
+        float cur_C_downstream, cur_basecost;
+        float min_Tdel = HUGE_POSITIVE_FLOAT, cur_Tdel = HUGE_POSITIVE_FLOAT;
+        if ((g_pin_side[target_node] & static_cast<char>(Pin_side::TOP)) == static_cast<char>(Pin_side::TOP)) {
+            t_chan_type = CHANX;
+            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+                        x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
+            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+                                    C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
+        }
+        if ((g_pin_side[target_node] & static_cast<char>(Pin_side::RIGHT)) == static_cast<char>(Pin_side::RIGHT)) {
+            t_chan_type = CHANY;
+            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+                        x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
+            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+                                    C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
+        }
+        if ((g_pin_side[target_node] & static_cast<char>(Pin_side::BOTTOM)) == static_cast<char>(Pin_side::BOTTOM)) {
+            t_chan_type = CHANX;
+            y_target --;
+            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+                        x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
+            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+                                    C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
+            y_target ++;
+        }
+        if ((g_pin_side[target_node] & static_cast<char>(Pin_side::LEFT)) == static_cast<char>(Pin_side::LEFT)) {
+            t_chan_type = CHANY;
+            x_target --;
+            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+                        x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
+            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+                                    C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
+            x_target ++;
+        }
+        // C_downstream & basecost is set by setup_min_side_reaching_target
+        assert(cur_Tdel < 0.98 * HUGE_POSITIVE_FLOAT);
+        assert(min_Tdel < 0.98 * HUGE_POSITIVE_FLOAT);
+        return min_Tdel;
+    } else {
+        int t_chan_type, x_target, y_target;
+        if (target_chan_type == UNDEFINED) {
+            // always do coarse estimation for OPIN
+            // OPIN
+            get_unidir_seg_end(target_node, &x_target, &y_target);
+            t_chan_type = CHANX;
+        } else {
+            // let get_bfs_lookup_Tdel() directly look up correct value
+            // from target_chan_type, target_pin_x, target_pin_y
+            t_chan_type = target_chan_type;
+            x_target = target_pin_x;
+            y_target = target_pin_y;
+        }
+        return get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+                    x_start, y_start, x_target, y_target, s_len, C_downstream, future_base_cost);
+    }
+}
+static float get_bfs_lookup_Tdel(int s_inode, int s_chan_type, int t_chan_type, int s_seg_type, int s_dir,
+                                 int x_start, int y_start, int x_target, int y_target, int len_start,
+                                 float *acc_C, float *acc_basecost) {
+    // dealing with CHANX / CHANY / OPIN
+    float Tdel = 0.0;
+    int offset_x, offset_y;
+    if (rr_node[s_inode].type == OPIN) {
+#if OPINPENALTY == 0
+        opin_penalty = 1;
+#endif
+        float opin_del = HUGE_POSITIVE_FLOAT;
+        int to_seg_type = -1;
+        int num_edges = rr_node[s_inode].get_num_edges();
+        for (int iconn = 0; iconn < num_edges; iconn ++) {
+            int to_node = rr_node[s_inode].edges[iconn];
+            int seg_type = rr_indexed_data[rr_node[to_node].get_cost_index()].seg_index;
+            float cur_opin_del = 0.5 * rr_node[to_node].R * rr_node[to_node].C;
+            if (opin_cost_by_seg_type.count(seg_type) > 0) {
+                cur_opin_del += opin_cost_by_seg_type[seg_type].Tdel;
+                opin_del = (opin_del > cur_opin_del) ? cur_opin_del : opin_del;
+                to_seg_type = seg_type;
+            }
+        }
+        if (opin_del > 0.98 * HUGE_POSITIVE_FLOAT) {
+            offset_x = abs(x_start - x_target);
+            offset_y = abs(y_start - y_target);
+            offset_x = (offset_x > nx-3) ? nx-3 : offset_x;
+            offset_y = (offset_y > ny-3) ? ny-3 : offset_y;
+            *acc_C = bfs_lookahead_info[offset_x][offset_y][0][0].acc_C_x;
+            *acc_basecost = bfs_lookahead_info[offset_x][offset_y][0][0].acc_basecost_x;
+            return opin_penalty * bfs_lookahead_info[offset_x][offset_y][0][0].Tdel_x;
+        } else {
+            *acc_C = opin_cost_by_seg_type[to_seg_type].acc_C;
+            *acc_basecost = opin_cost_by_seg_type[to_seg_type].acc_basecost;
+            return opin_penalty * opin_del;
+        }
+
+    } else {
+        // CHANX or CHANY
+        bool is_heading_opposite;
+        // first check if the direction is correct
+        if (s_dir == INC_DIRECTION) { 
+            if (s_chan_type == CHANX)
+                is_heading_opposite = (x_start <= x_target) ? false : true; 
+            else
+                is_heading_opposite = (y_start <= y_target) ? false : true;
+        } else {
+            if (s_chan_type == CHANX) {
+                if (t_chan_type == CHANX)
+                    is_heading_opposite = (x_start >= x_target) ? false : true;
+                else
+                    is_heading_opposite = (x_start >= x_target + 1) ? false : true;
+            } else {
+                if (t_chan_type == CHANY)
+                    is_heading_opposite = (y_start >= y_target) ? false : true;
+                else 
+                    is_heading_opposite = (y_start >= y_target + 1) ? false : true;
+            }
+        }
+        // get Tdel: carefully calculate offset x and y
+        if (is_heading_opposite) {
+            // we make assumption how wires heading for wrong direction 
+            // will eventually get to the right track
+            adjust_coord_for_wrong_dir_wire(&s_chan_type, &s_dir, len_start, &x_start, &y_start, x_target, y_target);
+            int guessed_iswitch = rr_node[s_inode].switches[0];
+            // XXX not updating basecost and C now
+            Tdel += (0.5 * rr_node[s_inode].R + g_rr_switch_inf[guessed_iswitch].R) * rr_node[s_inode].C;
+            Tdel += g_rr_switch_inf[guessed_iswitch].Tdel;
+        }
+        offset_x = abs(x_start - x_target);
+        offset_y = abs(y_start - y_target);
+        if (s_chan_type == CHANX && t_chan_type == CHANY) {
+            offset_y += (y_start > y_target) ? 1 : 0;
+            offset_x += (s_dir == DEC_DIRECTION) ? -1 : 0;
+        } else if (s_chan_type == CHANY && t_chan_type == CHANX) {
+            offset_x += (x_start > x_target) ? 1 : 0;
+            offset_y += (s_dir == DEC_DIRECTION) ? -1 : 0;
+        }
+        Tdel += bfs_direct_lookup(offset_x, offset_y, s_seg_type, s_chan_type, t_chan_type, acc_C, acc_basecost);
+        return Tdel;
+    }
+}
+
+float bfs_direct_lookup(int offset_x, int offset_y, int seg_type, int chan_type, 
+                int to_chan_type, float *acc_C, float *acc_basecost) {
+    offset_x = (offset_x > (nx-3)) ? nx-3 : offset_x;
+    offset_y = (offset_y > (ny-3)) ? ny-3 : offset_y;
+
+    chan_type = (chan_type == CHANX) ? 0 : 1;
+    float Tdel = 0.;
+    if (to_chan_type == CHANX) {
+        *acc_C = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].acc_C_x;
+        *acc_basecost = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].acc_basecost_x;
+        Tdel = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].Tdel_x;
+    } else {
+        *acc_C = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].acc_C_y;
+        *acc_basecost = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].acc_basecost_y;
+        Tdel = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].Tdel_y;
+    }
+    return Tdel;
+}
+
+static void setup_min_side_reaching_target(int inode, int t_chan_type, int t_x, int t_y, 
+        float *min_Tdel, float cur_Tdel, float *C_downstream, float *future_base_cost, 
+        float cur_C_downstream, float cur_basecost) {
+    if (cur_Tdel < *min_Tdel) {
+        *min_Tdel = cur_Tdel;
+        *C_downstream = cur_C_downstream;
+        *future_base_cost = cur_basecost;
+        expanded_node_min_target_side[inode].chan_type = t_chan_type;
+        expanded_node_min_target_side[inode].x = t_x;
+        expanded_node_min_target_side[inode].y = t_y;
+    }
+}
+
+static void adjust_coord_for_wrong_dir_wire(int *s_chan_type, int *s_dir, int start_len, 
+                                            int *x_start, int *y_start, int x_target, int y_target) {
+    int orig_dir = *s_dir;
+    if (*s_chan_type == CHANX) {
+        *s_dir = (*y_start <= y_target) ? INC_DIRECTION : DEC_DIRECTION;
+    } else {
+        *s_dir = (*x_start <= x_target) ? INC_DIRECTION : DEC_DIRECTION;
+    }
+    int new_x_start = *x_start;
+    int new_y_start = *y_start;
+    int len = start_len - 1;
+    if (*s_chan_type == CHANX) {
+        if (orig_dir == INC_DIRECTION) new_x_start += len;
+        else new_x_start -= len;
+    } else {
+        if (orig_dir == INC_DIRECTION) new_y_start += len;
+        else new_y_start -= len;
+    }
+    *x_start = new_x_start;
+    *y_start = new_y_start;
+    *s_chan_type = (*s_chan_type == CHANX) ? CHANY : CHANX;
+}
+
+static void setup_opin_cost_by_seg_type(int source_node, int target_node) {
+    assert(rr_node[source_node].type == SOURCE);
+    int num_to_opin_edges = rr_node[source_node].get_num_edges();
+    for (int iopin = 0; iopin < num_to_opin_edges; iopin++) {
+        int opin_node = rr_node[source_node].edges[iopin];
+        int num_to_wire_edges = rr_node[opin_node].get_num_edges();
+        for (int iwire = 0; iwire < num_to_wire_edges; iwire ++) {
+            int wire_node = rr_node[opin_node].edges[iwire];
+            int seg_type = rr_indexed_data[rr_node[wire_node].get_cost_index()].seg_index;
+            if (seg_type >= g_num_segment || seg_type < 0)
+                continue;
+            int chan_type = (rr_node[wire_node].type == CHANX) ? 0 : 1;
+            // quick, coarse calculation
+            int offset_x = abs(rr_node[opin_node].get_xlow() - rr_node[target_node].get_xlow());
+            int offset_y = abs(rr_node[opin_node].get_ylow() - rr_node[target_node].get_ylow());
+            offset_x = (offset_x > (nx-3)) ? nx-3 : offset_x;
+            offset_y = (offset_y > (ny-3)) ? ny-3 : offset_y;
+            opin_cost_by_seg_type[seg_type].Tdel = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].Tdel_x;
+            opin_cost_by_seg_type[seg_type].acc_C = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].acc_C_x;
+            opin_cost_by_seg_type[seg_type].acc_basecost = bfs_lookahead_info[offset_x][offset_y][seg_type][chan_type].acc_basecost_x;
+            if ((int)opin_cost_by_seg_type.size() == g_num_segment) {
+                return;
+            }
+        }
+    }
+}
+float get_timing_driven_cong_penalty (int inode, int target_node) {
+    float penalty = 1.0;
+#if CONGESTIONBYCHIPAREA == 1
+    int to_x_mid = (rr_node[inode].get_xhigh() + rr_node[inode].get_xlow()) / 2;
+    int to_y_mid = (rr_node[inode].get_yhigh() + rr_node[inode].get_ylow()) / 2;
+    int target_x_mid = (rr_node[target_node].get_xhigh() + rr_node[target_node].get_xlow()) / 2;
+    int target_y_mid = (rr_node[target_node].get_yhigh() + rr_node[target_node].get_ylow()) / 2;
+    //float avg_cong_on_chip = total_cong_tile_count / ((nx + 1.)*(ny+1.));
+    float avg_cong_bb = 0;
+    int x_start = (to_x_mid > target_x_mid) ? target_x_mid : to_x_mid;
+    int x_end = (to_x_mid <= target_x_mid) ? target_x_mid : to_x_mid;
+    int y_start = (to_y_mid > target_y_mid) ? target_y_mid : to_y_mid;
+    int y_end = (to_y_mid <= target_y_mid) ? target_y_mid : to_y_mid;
+    for (int i = x_start; i <= x_end; i++) {
+        for (int j = y_start; j <= y_end; j++) {
+            avg_cong_bb += congestion_map_by_area[i][j];
+        }
+    }
+    avg_cong_bb /= ((x_end - x_start + 1) * (y_end - y_start + 1));
+    //float penalty = (avg_cong_bb > avg_cong_on_chip) ? (avg_cong_bb / avg_cong_on_chip) : 1;
+    float avg_by_chan_width = (200+200);
+    float penalty = (avg_cong_bb > avg_by_chan_width) ? avg_cong_bb / avg_by_chan_width : 1;
+    penalty = (penalty > 2) ? 2 : penalty;
+    //penalty = 1 + pow(penalty - 1, 1.5+target_criticality);
+    //penalty = (penalty > 1.5) ? 1.5 : penalty;
+    //if (penalty > 1.2)
+    //    printf("penalty %f\n", penalty);
+#endif
+    return penalty;
+}
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 static int get_num_expected_interposer_hops_to_target(int inode, int target_node) 
 {
@@ -977,6 +1488,7 @@ static int get_num_expected_interposer_hops_to_target(int inode, int target_node
 
 /* Macro used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
+
 #define ROUND_UP(x) (ceil (x - 0.001))
 
 static int get_expected_segs_to_target(int inode, int target_node,
@@ -990,9 +1502,10 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
 	int no_need_to_pass_by_clb;
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
-#ifdef INTERPOSER_BASED_ARCHITECTURE
+
+	#ifdef INTERPOSER_BASED_ARCHITECTURE
 	int num_expected_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-#endif
+	#endif
 	
 	target_x = rr_node[target_node].get_xlow();
 	target_y = rr_node[target_node].get_ylow();
@@ -1021,21 +1534,33 @@ static int get_expected_segs_to_target(int inode, int target_node,
 			*num_segs_ortho_dir_ptr = 0;
 			no_need_to_pass_by_clb = 0;
 		}
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		(*num_segs_ortho_dir_ptr) = (*num_segs_ortho_dir_ptr) + 2*num_expected_hops;
 #endif
 		
 		/* Now count horizontal (same dir. as inode) segs. */
-
+        // TODO: must take into account direction
+        // TODO: if distance is less than wire length, could enforce the restriction that end point to target distance should not be larger than start point to target distance
+        int x = (rr_node[inode].get_direction() == INC_DIRECTION) ? xhigh : xlow;
+        x += 0;
 		if (xlow > target_x + no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((xlow - no_need_to_pass_by_clb -
-							target_x) * inv_length));
+			//num_segs_same_dir = (int)(ROUND_UP((xlow - no_need_to_pass_by_clb -
+			//				target_x) * inv_length));
+            num_segs_same_dir = (int)(ROUND_UP((x - no_need_to_pass_by_clb - target_x) * inv_length));
 		} else if (xhigh < target_x - no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb -
-							xhigh) * inv_length));
+			//num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb -
+			//				xhigh) * inv_length));
+            num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb - x) * inv_length));
 		} else {
 			num_segs_same_dir = 0;
 		}
+        /*
+        //XXX: discourage wires going in the wrong dir
+        int x_start = (rr_node[inode].get_direction() == INC_DIRECTION) ? xlow : xhigh;
+        if (abs(x_start - target_x) < abs(x - target_x))
+            num_segs_same_dir ++;
+        */
 	}
 
 	else { /* inode is a CHANY */
@@ -1059,16 +1584,26 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		}
 
 		/* Now count vertical (same dir. as inode) segs. */
-
+        // TODO: changed the way num seg is calculated
+        int y = (rr_node[inode].get_direction() == INC_DIRECTION) ? yhigh : ylow;
+        y += 0;
 		if (ylow > target_y + no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((ylow - no_need_to_pass_by_clb -
-							target_y) * inv_length));
+			//num_segs_same_dir = (int)(ROUND_UP((ylow - no_need_to_pass_by_clb -
+			//				target_y) * inv_length));
+            num_segs_same_dir = (int)(ROUND_UP((y - no_need_to_pass_by_clb - target_y) * inv_length));
 		} else if (yhigh < target_y - no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb -
-							yhigh) * inv_length));
+			//num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb -
+			//				yhigh) * inv_length));
+            num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb - y) * inv_length));
 		} else {
 			num_segs_same_dir = 0;
 		}
+        /*
+        //XXX: discourage wires going in the wrong dir
+        int y_start = (rr_node[inode].get_direction() == INC_DIRECTION) ? ylow : yhigh;
+        if (abs(y_start - target_y) < abs(y - target_y))
+            num_segs_same_dir ++;
+        */
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		num_segs_same_dir = num_segs_same_dir + 2*num_expected_hops;
 #endif
@@ -1193,6 +1728,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 	return rlim;
 }
+
 #define ERROR_TOL 0.0001
 
 static void timing_driven_check_net_delays(float **net_delay) {
@@ -1267,40 +1803,5 @@ static bool should_route_net(int inet) {
 	return false; /* Current route has no overuse */
 }
 
-static bool early_exit_heuristic(const t_router_opts& router_opts) {
-	/* Early exit code for cases where it is obvious that a successful route will not be found 
-	   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
-	int total_wirelength = 0;
-	int available_wirelength = 0;
 
-	for (int i = 0; i < num_rr_nodes; ++i) {
-		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-			available_wirelength += 1 + 
-					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
-					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
-		}
-	}
-
-	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		if (g_clbs_nlist.net[inet].is_global == false
-				&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
-			int bends, wirelength, segments;
-			get_num_bends_and_length(inet, &bends, &wirelength, &segments);
-
-			total_wirelength += wirelength;
-		}
-	}
-	vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
-			total_wirelength, available_wirelength,
-			(float) (total_wirelength) / (float) (available_wirelength));
-	if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
-		vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
-				FIRST_ITER_WIRELENTH_LIMIT);
-		return true;
-	}
-	vpr_printf_info("--------- ---------- ----------- ---------------------\n");
-	vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
-	vpr_printf_info("--------- ---------- ----------- ---------------------\n");	
-	return false;
-}
 

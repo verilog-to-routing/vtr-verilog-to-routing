@@ -2,10 +2,15 @@
 using namespace std;
 
 #include "util.h"
+#include "vpr_utils.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "route_common.h"
 #include "route_tree_timing.h"
+#include "route_timing.h"
+#include "profile_lookahead.h"
+#include <cassert>
+#include <cmath>
 
 /* This module keeps track of the partial routing tree for timing-driven     *
  * routing.  The normal traceback structure doesn't provide enough info      *
@@ -41,7 +46,7 @@ static t_linked_rt_edge *alloc_linked_rt_edge(void);
 static void free_linked_rt_edge(t_linked_rt_edge * rt_edge);
 
 static t_rt_node *add_path_to_route_tree(struct s_heap *hptr,
-		t_rt_node ** sink_rt_node_ptr);
+		t_rt_node ** sink_rt_node_ptr, bool lookahead_eval, float target_criticality);
 
 static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node);
 
@@ -180,7 +185,7 @@ init_route_tree_to_source(int inet) {
 }
 
 t_rt_node *
-update_route_tree(struct s_heap * hptr) {
+update_route_tree(struct s_heap * hptr, bool lookahead_eval, float target_criticality) {
 
 	/* Adds the most recently finished wire segment to the routing tree, and    *
 	 * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr   *
@@ -192,7 +197,7 @@ update_route_tree(struct s_heap * hptr) {
 	float Tdel_start;
 	short iswitch;
 
-	start_of_new_path_rt_node = add_path_to_route_tree(hptr, &sink_rt_node);
+	start_of_new_path_rt_node = add_path_to_route_tree(hptr, &sink_rt_node, lookahead_eval, target_criticality);
 	load_new_path_R_upstream(start_of_new_path_rt_node);
 	unbuffered_subtree_rt_root = update_unbuffered_ancestors_C_downstream(
 			start_of_new_path_rt_node);
@@ -214,8 +219,38 @@ update_route_tree(struct s_heap * hptr) {
 	return (sink_rt_node);
 }
 
+#if LOOKAHEADBYHISTORY == 1
+/*
+ * util function called by add_path_to_route_tree
+ */
+static void get_rt_subtree_bb_coord (int inode, int *bb_coord_x, int *bb_coord_y) {
+    int type = rr_node[inode].type;
+    int dir = rr_node[inode].get_direction();
+    int xhigh = rr_node[inode].get_xhigh();
+    int xlow = rr_node[inode].get_xlow();
+    int yhigh = rr_node[inode].get_yhigh();
+    int ylow = rr_node[inode].get_ylow();
+    if (type == CHANX || type == CHANY) {
+        if (dir == INC_DIRECTION) {
+            *bb_coord_x = xlow;
+            *bb_coord_x = ylow;
+        } else if (dir == DEC_DIRECTION) {
+            *bb_coord_x = xlow;
+            *bb_coord_y = ylow;
+        } else {
+            // Bi-directional
+            *bb_coord_x = (xhigh + xlow) / 2;
+            *bb_coord_y = (yhigh + ylow) / 2;
+        }
+    } else {
+        // OPIN
+        *bb_coord_x = (xhigh + xlow) / 2;
+        *bb_coord_y = (yhigh + ylow) / 2;
+    }
+}
+#endif
 static t_rt_node *
-add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
+add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr, bool lookahead_eval, float target_criticality) {
 
 	/* Adds the most recent wire segment, ending at the SINK indicated by hptr, *
 	 * to the routing tree.  It returns the first (most upstream) new rt_node,  *
@@ -228,7 +263,15 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	t_linked_rt_edge *linked_rt_edge;
 
 	inode = hptr->index;
-
+    int target_node = inode;
+    float actual_tot_cost = 0;
+    actual_tot_cost += 0;
+    if (lookahead_eval) {
+        assert(hptr->cost == hptr->backward_path_cost);
+    }
+    actual_tot_cost = hptr->backward_path_cost;
+    float actual_Tdel = hptr->back_Tdel;
+    actual_Tdel += 0;
 #ifdef DEBUG
 	if (rr_node[inode].type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -269,15 +312,52 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	}
 
 	/* Now do it's predecessor. */
-
 	downstream_rt_node = sink_rt_node;
 	inode = hptr->u.prev_node;
 	iedge = hptr->prev_edge;
 	iswitch = rr_node[inode].switches[iedge];
 
 	/* For all "new" nodes in the path */
+    int new_nodes_count = 0;
+    float new_nodes_dev = 0;
+    new_nodes_count += 0;
+    new_nodes_dev += 0;
+    float new_nodes_abs_dev = 0;
+    new_nodes_abs_dev += 0;
 
+    float total_Tdel = rr_node_route_inf[inode].back_Tdel;
+    total_Tdel += 0.;
+    // used to get the Tdel eval for wire only
+    int furthest_wire_inode = -1;
 	while (rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
+        if (rr_node[inode].type == CHANX
+         || rr_node[inode].type == CHANY)
+            furthest_wire_inode = inode;
+        new_nodes_count ++;
+        if (lookahead_eval) {
+#if NETWISELOOKAHEADEVAL == 1 || DEPTHWISELOOKAHEADEVAL == 1
+            float estimated_future_cost, c_downstream, basecost = 0;
+            estimated_future_cost = get_timing_driven_future_Tdel(inode, target_node, &c_downstream, &basecost);
+            float actual_future_cost = total_Tdel - rr_node_route_inf[inode].back_Tdel;
+            estimated_future_cost += 0.0;
+            actual_future_cost += 0.0;
+#endif
+#if NETWISELOOKAHEADEVAL == 1
+            node_on_path ++;
+            if ( actual_future_cost != 0 ) {
+                estimated_cost_deviation += (estimated_future_cost / actual_future_cost - 1);
+                estimated_cost_deviation_abs += abs(estimated_future_cost / actual_future_cost - 1);
+            }
+#endif
+#if DEPTHWISELOOKAHEADEVAL == 1
+            /*
+            if (actual_future_cost != 0) {
+                new_nodes_dev += (estimated_future_cost / total_Tdel - 1);
+                new_nodes_abs_dev += abs(estimated_future_cost / total_Tdel - 1);
+            }
+            */
+#endif
+        }
 		linked_rt_edge = alloc_linked_rt_edge();
 		linked_rt_edge->child = downstream_rt_node;
 		linked_rt_edge->iswitch = iswitch;
@@ -321,9 +401,36 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		inode = rr_node_route_inf[inode].prev_node;
 		iswitch = rr_node[inode].switches[iedge];
 	}
-
+    // XXX: only print out for critical path
+#if PRINTCRITICALPATH == 1
+    if (target_node == DB_TARGET_NODE && itry_share == DB_ITRY) {
+        int iinode = hptr->u.prev_node;
+        printf("CRITICAL PATH %d: back trace start\tcrit: %fNEW NODES %d\n", target_node, target_criticality, new_nodes_count);
+        while (rr_node_route_inf[iinode].prev_node != NO_PREVIOUS) {
+            // this is backtrace, so print in anti-direction order
+            int ix_s, ix_e, iy_s, iy_e;
+            get_unidir_seg_end(iinode, &ix_s, &iy_s);
+            get_unidir_seg_start(iinode, &ix_e, &iy_e);
+            int prev_iinode = rr_node_route_inf[iinode].prev_node;
+            float bTdel = rr_node_route_inf[iinode].back_Tdel;
+            float bbTdel = rr_node_route_inf[prev_iinode].back_Tdel;
+            int wire_type = rr_indexed_data[rr_node[iinode].get_cost_index()].seg_index;
+            float dummy, basecost = 0;
+            printf("\tid:%d - %d\tstart(%d,%d)\tend(%d,%d)\tbackTdel:%einodeTdel:%e\tactual future Tdel:%.3f\test future Tdel:%.3f\n", 
+                    iinode, wire_type, ix_s, iy_s, ix_e, iy_e,
+                    bTdel, (bTdel - bbTdel), 
+                    (actual_Tdel - bTdel) * pow(10, 10), 
+                    get_timing_driven_future_Tdel(iinode, target_node, &dummy, &basecost) * pow(10, 10));
+            iinode = prev_iinode;
+        }
+    }
+#endif
 	/* Inode is the join point to the old routing */
-
+    if (rr_node[inode].type == CHANX
+     || rr_node[inode].type == CHANY)
+        furthest_wire_inode = inode;
+    if (furthest_wire_inode == -1)
+        furthest_wire_inode = target_node;
 	rt_node = rr_node_to_rt_node[inode];
 
 	linked_rt_edge = alloc_linked_rt_edge();
@@ -335,6 +442,87 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	downstream_rt_node->parent_node = rt_node;
 	downstream_rt_node->parent_switch = iswitch;
 
+    new_nodes_count ++ ;
+    // new_nodes_count ++ / node_on_path ++ accouts for the intersection node
+    //if (new_nodes_count == 14)
+    //    printf("TARGET NODE %d\n", target_node);
+
+    if (lookahead_eval){
+#if NETWISELOOKAHEADEVAL == 1 || DEPTHWISELOOKAHEADEVAL == 1
+        /*
+        float estimated_future_cost = rr_node_route_inf[inode].path_cost 
+                                - rr_node_route_inf[inode].backward_path_cost;
+        float actual_future_cost = actual_tot_cost 
+                                - rr_node_route_inf[inode].backward_path_cost;
+        */
+        float estimated_future_cost, c_downstream, basecost = 0;
+        estimated_future_cost = get_timing_driven_future_Tdel(furthest_wire_inode, target_node, &c_downstream, &basecost);
+        float actual_future_cost = total_Tdel - rr_node_route_inf[furthest_wire_inode].back_Tdel;
+
+#endif
+#if NETWISELOOKAHEADEVAL == 1
+        // netwise lookahead_eval finishing up
+        node_on_path ++;
+        if ( actual_future_cost != 0 ) {
+            estimated_cost_deviation += (estimated_future_cost / actual_future_cost - 1);
+            estimated_cost_deviation_abs += abs(estimated_future_cost / actual_future_cost - 1);
+        }
+#endif
+#if DEPTHWISELOOKAHEADEVAL == 1
+        // depthwise lookahead_eval setting up
+        if (subtree_count.count(new_nodes_count) <= 0) {
+            subtree_count[new_nodes_count] = 0;
+            subtree_size_avg[new_nodes_count] = 0;
+            subtree_est_dev_avg[new_nodes_count] = 0;
+            subtree_est_dev_abs_avg[new_nodes_count] = 0;
+        }
+        if (actual_future_cost != 0) {
+            new_nodes_dev += (estimated_future_cost / actual_future_cost - 1);
+            new_nodes_abs_dev += abs(estimated_future_cost / actual_future_cost - 1);
+        }
+        subtree_count[new_nodes_count] ++;
+        int tree_counter = subtree_count[new_nodes_count];
+        // running avg
+        // arithmetic avg
+        //subtree_size_avg[new_nodes_count] = ((tree_counter - 1) * subtree_size_avg[new_nodes_count]
+        //                                + subtree_size_avg[0]) / (float)tree_counter;
+        // geometric avg
+        if (subtree_size_avg[new_nodes_count] == 0) {
+            subtree_size_avg[new_nodes_count] = subtree_size_avg[0];
+            /*
+            if (new_nodes_count == 19)
+                printf("\nitry %d\tTARGET NODE %d\tsubtree count %d\tsubtree expanded nodes %f\n", itry_share, target_node, subtree_count[19], subtree_size_avg[0]);
+            */
+            if (target_node == DB_TARGET_NODE) {
+                print_db_node_inf(DB_TARGET_NODE);
+                print_db_node_inf(hptr->u.prev_node);
+            }
+        } else {
+            float temp = pow(subtree_size_avg[new_nodes_count], (tree_counter - 1) / (float)tree_counter);
+            subtree_size_avg[new_nodes_count] = temp * pow(subtree_size_avg[0], 1.0/(float)tree_counter);
+        }
+        float cur_dev = new_nodes_dev; // / new_nodes_count;
+        /*
+        if (cur_dev == -1) {
+            printf("@@@@@@@\titry %d\ttarget_node %d\tnew nodes count %d\n", itry_share, target_node, new_nodes_count);
+            assert(cur_dev != -1);
+        }
+        */
+        if (cur_dev < -0.6 && new_nodes_count > 10)
+            printf("\nXXXXX TARGET NODE %d\n\n", target_node);
+        float cur_dev_abs = new_nodes_abs_dev / new_nodes_count;
+        subtree_est_dev_avg[new_nodes_count] = ((tree_counter - 1) * subtree_est_dev_avg[new_nodes_count]
+                                        + cur_dev) / (float)tree_counter;
+        //subtree_est_dev_abs_avg[new_nodes_count] = ((tree_counter - 1) * subtree_est_dev_abs_avg[new_nodes_count]
+        //                                + cur_dev_abs) / (float)tree_counter;
+        if (subtree_est_dev_abs_avg[new_nodes_count] == 0) {
+            subtree_est_dev_abs_avg[new_nodes_count] = cur_dev_abs;
+        } else {
+            float temp = pow(subtree_est_dev_abs_avg[new_nodes_count], (tree_counter - 1) / (float)tree_counter);
+            subtree_est_dev_abs_avg[new_nodes_count] = temp * pow(cur_dev_abs, 1.0/(float)tree_counter);
+        }
+#endif
+    }
 	*sink_rt_node_ptr = sink_rt_node;
 	return (downstream_rt_node);
 }

@@ -28,6 +28,10 @@ char *default_output_name = NULL;
 int num_nets = 0;
 struct s_net *clb_net = NULL;
 
+char *g_pin_side = NULL;
+map<int, int> g_ipin_to_sink;
+map<int, int> g_opin_by_source;
+
 int num_blocks = 0;
 struct s_block *block = NULL;
 
@@ -46,7 +50,7 @@ t_type_ptr EMPTY_TYPE = NULL;
 t_type_ptr FILL_TYPE = NULL;
 
 /******** Physical architecture stuff ********/
-
+int g_num_segment = -1;
 int nx = 0;
 int ny = 0;
 
@@ -68,7 +72,7 @@ struct s_trace **trace_head = NULL; /* [0..(num_nets-1)] */
 struct s_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
 
 /******** Structures defining the FPGA routing architecture ********/
-
+bool route_start = false;
 int num_rr_nodes = 0;
 t_rr_node *rr_node = NULL; /* [0..(num_rr_nodes-1)] */
 t_ivec ***rr_node_indices = NULL;
@@ -96,6 +100,12 @@ int **rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */
 
 /* primiary inputs removed from circuit */
 struct s_linked_vptr *circuit_p_io_removed = NULL;
+// the cost map obtained by the bfs pre-calculation
+// should use one map --> make use of locality
+//map< pair<int, int>, float ** > bfs_cost_map;
+//map< pair<int, int>, float ** > bfs_C_downstream_map;
+// dimensions: x, y, segment_type, chan_type
+struct s_bfs_cost_inf **** bfs_lookahead_info = NULL;
 
 /********** Structures representing timing graph information */
 float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */

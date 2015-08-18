@@ -1512,7 +1512,8 @@ int get_track_to_pins(
 					y = j;
 					side = (0 == pass ? RIGHT : LEFT);
 				}
-
+                // bit shift to the enum of Pin_side
+                Pin_side pin_side = static_cast<Pin_side>(1 << side);
 				/* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
 				if (grid[x][y].type == EMPTY_TYPE)
 					continue;
@@ -1535,6 +1536,9 @@ int get_track_to_pins(
 
 					/* Check there is a connection and Fc map isn't wrong */
 					to_node = get_rr_node_index(x, y, IPIN, ipin, L_rr_node_indices);
+                    // XXX: this is where you should setup ipin map
+                    // to_node is the ipin, side is the side this ipin is facing
+                    g_pin_side[to_node] = static_cast<char>(pin_side);
 					edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch);
 					++num_conn;
 				}

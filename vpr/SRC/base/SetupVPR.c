@@ -548,6 +548,11 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
         RouterOpts->switch_usage_analysis = true;
     }
 
+    RouterOpts->lookahead_eval = false;
+    if (Options.Count[OT_LOOKAHEAD_EVAL]) {
+        RouterOpts->lookahead_eval = true;
+    }
+
 	RouterOpts->verify_binary_search = false; /* DEFAULT */
 	if (Options.Count[OT_VERIFY_BINARY_SEARCH]) {
 		RouterOpts->verify_binary_search = true;

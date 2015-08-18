@@ -1,5 +1,5 @@
 #include "vpr_types.h"
-
+#include "route_common.h"
 #ifndef RR_NODE_H
 #define RR_NODE_H
 
@@ -72,6 +72,10 @@ public:
 	t_rr_type type;
 	int *edges;
 	short *switches;
+#if ONEMORELOOKAHEAD == 1
+    // XXX: is to facilitate one more layer of look ahead
+    bool is_to_long_wire;
+#endif
 
 	float R;
 	float C;
@@ -99,6 +103,7 @@ public:
 	short get_fan_in() const;
 	short get_num_edges() const;
 	short get_occ() const;
+    short get_len() const;
 	enum e_direction get_direction() const;
 	enum e_drivers get_drivers() const;
 
