@@ -51,6 +51,7 @@ int total_nodes_expanded = 0;
 int nodes_expanded_cur_itr = UNDEFINED;
 int nodes_expanded_1st_itr = UNDEFINED;
 int nodes_expanded_pre_itr = UNDEFINED;
+int nodes_expanded_max_itr = UNDEFINED;
 float cong_cur_itr = UNDEFINED;
 float cong_pre_itr = UNDEFINED;
 #if DEPTHWISELOOKAHEADEVAL == 1

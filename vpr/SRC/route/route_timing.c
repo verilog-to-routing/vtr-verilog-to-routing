@@ -63,6 +63,12 @@ int target_chan_type = UNDEFINED;
 int target_pin_x = UNDEFINED;
 int target_pin_y = UNDEFINED;
 
+float crit_threshold_init = 0.8;
+float crit_threshold_inc_rate = 1.01;
+float crit_threshold;
+
+float time_pre_itr;
+float time_1st_itr;
 /******************** Subroutines local to route_timing.c ********************/
 
 static int get_max_pins_per_net(void);
@@ -96,7 +102,7 @@ static double get_overused_ratio();
 
 static bool should_route_net(int inet);
 
-static bool turn_on_bfs_map_lookup();
+static bool turn_on_bfs_map_lookup(float criticality);
 
 static void setup_min_side_reaching_target(int inode, int t_chan_type, int t_x, int t_y, 
         float *min_Tdel, float cur_Tdel, float *C_downstream, float *future_base_cost, 
@@ -198,12 +204,18 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #endif
     acc_route_time = 0.;
 	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
-        if (itry == 2)
+        if (itry > 1 && time_pre_itr > 2 * time_1st_itr)
+            printf("BFS OFF for itr %d\n", itry);
+        if (itry == 1) crit_threshold = crit_threshold_init;
+        else crit_threshold *= crit_threshold_inc_rate;
+        if (crit_threshold > 0.988) crit_threshold = 0.988;
+        if (itry == 2) {
             nodes_expanded_1st_itr = nodes_expanded_cur_itr;
+            nodes_expanded_max_itr = nodes_expanded_cur_itr;
+        }
         if (itry > 1) {
             nodes_expanded_pre_itr = nodes_expanded_cur_itr;
-            if (turn_on_bfs_map_lookup()) printf("\tON BFS\n");
-            else printf("\tOFF BFS\n");
+            nodes_expanded_max_itr = (nodes_expanded_cur_itr > nodes_expanded_max_itr) ? nodes_expanded_cur_itr:nodes_expanded_max_itr;
         }
         nodes_expanded_cur_itr = 0;
 		clock_t begin = clock();
@@ -309,6 +321,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		clock_t end = clock();
 
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
+        if (itry == 1) time_1st_itr = time;
+        time_pre_itr = time;
+
         acc_route_time += time;
 		time_per_iteration.push_back(time);
         printf("\tTOTAL NODES EXPANDED FOR ITERATION %d is %d\n", itry, total_nodes_expanded);
@@ -1026,15 +1041,19 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
         }
 	} /* End for all neighbours */
 }
-static bool turn_on_bfs_map_lookup() {
+static bool turn_on_bfs_map_lookup(float criticality) {
     // Not currently add the bfs map look up in placement
     if (!route_start)
         return false;
-    if (itry_share <= 5)
+    if (itry_share == 1)
         return true;
-    if (nodes_expanded_pre_itr < 2 * nodes_expanded_1st_itr)
-        return true;
-    return false;
+    if (time_pre_itr > 2 * time_1st_itr)
+        return false;
+    if (criticality > crit_threshold) return true;
+    else return false;
+    //if (nodes_expanded_pre_itr < 2 * nodes_expanded_1st_itr)
+    //    return true;
+    //return false;
 }
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream) {
@@ -1055,7 +1074,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 #endif
         float Tdel_future = 0.;
 #if LOOKAHEADBFS == 1
-        if (turn_on_bfs_map_lookup()) {// && criticality_fac > 0.15) {
+        if (turn_on_bfs_map_lookup(criticality_fac)) {// && criticality_fac > 0.15) {
             // calculate Tdel, not just Tdel_future
             float C_downstream = -1.0;
             cong_cost = -1.0;

@@ -123,6 +123,7 @@ extern int total_nodes_expanded;
 extern int nodes_expanded_cur_itr;
 extern int nodes_expanded_pre_itr;
 extern int nodes_expanded_1st_itr;
+extern int nodes_expanded_max_itr;
 extern float cong_cur_itr;
 extern float cong_pre_itr;
 #if DEPTHWISELOOKAHEADEVAL == 1
