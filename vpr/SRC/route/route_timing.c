@@ -1027,6 +1027,9 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	} /* End for all neighbours */
 }
 static bool turn_on_bfs_map_lookup() {
+    // Not currently add the bfs map look up in placement
+    if (!route_start)
+        return false;
     if (itry_share <= 5)
         return true;
     if (nodes_expanded_pre_itr < 2 * nodes_expanded_1st_itr)
