@@ -5,7 +5,7 @@
 #include "TimingTags.hpp"
 #include "BaseAnalysisMode.hpp"
 
-/**
+/** \file
  * The 'SetupAnalysisMode' class defines the operators needed by a timing analyzer class
  * to perform a setup (max/longest path) analysis. It extends the BaseAnalysisMode concept class.
  *
@@ -56,7 +56,9 @@
  * \f[
  *      t_{arr}^{(max)} \leq t_{req}^{(min)} (3)
  * \f]
- *
+ */
+
+ /**
  * Setup Analysis Implementation
  * ===============================
  * When we perform setup analysis we follow the formulation of (2), by performing two key operations: traversing

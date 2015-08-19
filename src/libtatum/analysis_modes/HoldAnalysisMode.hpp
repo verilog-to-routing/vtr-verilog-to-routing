@@ -4,7 +4,7 @@
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 #include "BaseAnalysisMode.hpp"
-/**
+/** \file
  * The 'HoldAnalysisMode' class defines the operators needed by a timing analyzer class
  * to perform a hold (min/shortest path) analysis. It extends the BaseAnalysisMode concept class.
  *
@@ -34,7 +34,9 @@
  * Note that unlike in setup analysis this behaviour is indepenant of clock period.
  * Intuitively, hold analysis can be viewed as data from the upstream FF trampling the data launched
  * on the previous cycle before it can be captured by the donwstream FF.
- *
+ */
+
+/**
  * Hold Analysis Implementation
  * ===============================
  * The hold analysis implementation is generally similar to the implementation used for Setup, except

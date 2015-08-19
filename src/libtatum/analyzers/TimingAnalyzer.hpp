@@ -1,6 +1,6 @@
 #pragma once
-/*
- * TIMING ANALYSIS: Overview
+/** \file
+ * Timing Analysis: Overview
  * ===========================
  * Timing analysis involves determining at what point in time (relative to some reference,
  * usually a clock) signals arrive at every point in a circuit. This is used to verify
@@ -25,7 +25,7 @@
  *
  *
  * Static Timing Analysis (STA)
- * ==============================
+ * ------------------------------
  * Static Timing Analysis (STA), which this library implements, simplifies the problem somewhat
  * by ignoring the dynamic behaviour the circuit. That is, we assume all paths could be sensitized,
  * even if in practice they may be extremely rare or impossible to sensitize in practice. This
@@ -45,7 +45,7 @@
  * STA to be perfomed in linear time.
  *
  * Arrival Time, Required Time & Slack
- * =======================================
+ * ---------------------------------------
  * When a Timing Analyzer performs timing analysis it is primarily calculating the following:
  *
  *    - Arrival Time: The time a signal actually arrived at a particular point in the circuit.
@@ -63,7 +63,7 @@
  *
  *
  * Calculating Arrival & Required Times
- * ======================================
+ * --------------------------------------
  * It is also useful to define the following collections of timing graph nodes:
  *    - Primary Inputs (PIs): circuit external input pins, Flip-Flop Q pins
  *    - Primary Outputs (POs): circuit external output pins, Flip-Flop D pins
@@ -94,7 +94,7 @@
  *      4) Repeat (2)-(3) until all nodes have valid required times.
  *
  * Clock Skew
- * ============
+ * ------------
  * In a real system the clocks which launch signals at the PIs and capture them at POs may not
  * all arrive at the same instance in time.  This difference is known as 'skew'.
  *
@@ -102,7 +102,7 @@
  * signal actually reaches the node.  Similarily the PO required times can also be adjusted.
  *
  * Multi-clock Analysis
- * ======================
+ * ----------------------
  * The previous discussion has focused primarily on single-clock STA. In a multi-clock analysis
  * transfers between clock domains need to be handled (e.g. if the launch and capture clocks are
  * different). This is typically handled by identifying the worst-case alignment between all pairs
@@ -118,14 +118,13 @@
  * of the timing graph. The combined values {clock, arrival time, required time} (and potentially other
  * info) are typically combined into a single 'Tag'.  As a result there may be multiple tags stored
  * at each node in the timing graph.
- *
  */
 
-/*
- * XXX TODO: these features haven't yet been implemented!
+ /* XXX TODO: these features haven't yet been implemented!
+ * ======================================================
  *
  * Derating & Pesimism Reduction Techniques
- * ==========================================
+ * ------------------------------------------
  *
  * Unlike the previous discussion (which assumed constant delay values), in reality circuit delays
  * varry based on a variety of different parameters.  To generate a correct (i.e. pessimistic and not
@@ -193,10 +192,12 @@
 #include "timing_constraints_fwd.hpp"
 #include "analysis_types.hpp"
 
-/*
+/**
  * TimingAnalyzer represents an abstract interface for all timing analyzers.
+ * \tparam AnalysisType A class satisfying the BaseAnalysisMode concept (used to define type of analysis, e.g. setup vs. hold)
+ * \tparam DelayCalcType A class satisfying the DelayCalculator concept (used to perform delay calculation)
  *
- * NOTE: Mix-in Classes
+ * Mix-in Classes
  * ====================
  * The TimingAnalyzer class hierarchy uses 'mix-in classes' to separate
  * the mechanics of performing a traversal of a timing graph (implemented by
@@ -216,22 +217,23 @@
 template<class AnalysisType, class DelayCalcType>
 class TimingAnalyzer : public AnalysisType {
     public:
-        //The type of the delay calculator this analyzer uses
+        ///The type of the delay calculator this analyzer uses
         typedef DelayCalcType delay_calculator_type;
-        //The type of analysis this analyzer performs
+        ///The type of analysis this analyzer performs
         typedef AnalysisType analysis_type;
 
         virtual ~TimingAnalyzer() {};
 
-        //Perform timing analysis to calculate timing information (i.e. arrival & required times)
+        ///Perform timing analysis to calculate timing information (i.e. arrival & required times)
         virtual void calculate_timing() = 0;
 
-        //Clear any old timing values calculated
+        ///Clear any old timing values calculated
         virtual void reset_timing() = 0;
 
-        //Return the current delay calculator
+        ///Return the current delay calculator
         virtual const DelayCalcType& delay_calculator() = 0;
 
-        //Return performance profiling data
+        ///Return performance profiling data
+        ///\returns A set of key-value performance/profiling metrics
         virtual std::map<std::string, double> profiling_data() = 0;
 };
