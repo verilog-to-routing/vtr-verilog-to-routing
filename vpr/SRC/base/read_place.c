@@ -27,7 +27,10 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 	struct s_block *cur_blk;
 
 	infile = fopen(place_file, "r");
-
+	if (!infile) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
+				"'%s' - Cannot find place file.\n", 
+				place_file);
+		
 	/* Check filenames in first line match */
 	tokens = ReadLineTokens(infile, &line);
 	error = 0;
