@@ -4,26 +4,31 @@
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 #include "BaseAnalysisMode.hpp"
-/*
+/**
  * The 'HoldAnalysisMode' class defines the operators needed by a timing analyzer class
- * to perform a hold (min/shortest path) analysis.
+ * to perform a hold (min/shortest path) analysis. It extends the BaseAnalysisMode concept class.
+ *
+ * \see SetupAnalysisMode
  *
  * Hold Analysis Principles
  * ==========================
+ *
  * In addition to satisfying setup constraints, data arriving at a Flip-Flop (FF) must stay (i.e.
- * remain stable) for some amount of time AFTER the capturing clock edge arrives. This time is
+ * remain stable) for some amount of time *after* the capturing clock edge arrives. This time is
  * referred to as the 'Hold Time' of the Flip-Flop.  If the data changes during the hold window
- * (i.e. less than t_h after the capturing clock edge) then the FF may go meta-stable
+ * (i.e. less than \f$ t_h \f$ after the capturing clock edge) then the FF may go meta-stable
  * failing to capture the data. This will put the circuit in an invalid state (this is bad).
  *
  * More formally, for correct operation at every cycle we require the following to be satisfied
  * for every path in the circuit:
  *
- *      t_{clk_insrt}^{(launch)} + t_{cq}^{(min)} + t_{comb}^{(min)} \geq t_{clk_insrt}^{(capture)} + t_h   (1)
+ * \f[
+ *      t_{clk\_insrt}^{(launch)} + t_{cq}^{(min)} + t_{comb}^{(min)} \geq t_{clk\_insrt}^{(capture)} + t_h   (1)
+ * \f]
  *
- * where t_{clk_insrt}^{(launch)}/t_{clk_insrt}^{(capture)} are the up/downstream FF clock insertion
- * delays, t_{cq}^{(min)} is the minimum clock-to-q delay of the upstream FF, t_{comb}^{(max)} is
- * the minimum combinational path delay from the upstream to downstream FFs, and t_h is the hold
+ * where \f$ t_{clk\_insrt}^{(launch)}, t_{clk\_insrt}^{(capture)} \f$ are the up/downstream FF clock insertion
+ * delays,  \f$ t_{cq}^{(min)} \f$ is the minimum clock-to-q delay of the upstream FF, \f$ t_{comb}^{(min)} \f$ is
+ * the minimum combinational path delay from the upstream to downstream FFs, and \f$ t_h \f$ is the hold
  * constraint of the downstream FF.
  *
  * Note that unlike in setup analysis this behaviour is indepenant of clock period.
