@@ -7,8 +7,8 @@
 //  A value of 1 tends to help cache locality and performs best
 #define NUM_FLAT_TAGS 1
 
-/*
- * The 'TimingTags' class represents the collection of timing tags (see the 'TimingTag' class)
+/**
+ * The 'TimingTags' class represents a collection of timing tags (see the 'TimingTag' class)
  * that belong to a particular node in the timing graph.
  *
  * Any operations performed using this task generally consider *all* associated tags.
@@ -36,59 +36,92 @@
  * Tag Memory allocation
  * -----------------------
  * Note that tags are allocated from a memory pool (tag_pool argument to some functions) which is
- * owned by the analyzer.  Since they are pool allocated, this class does not handle freeing
- * the allocated tags.
+ * typically owned by the TimingAnalyzer. Since they are pool allocated, this class does not handle 
+ * freeing the allocated tags.
  */
 class TimingTags {
     public:
-        //Getters
+        /*
+         * Getters
+         */
+        ///\returns The number of timing tags in this set
         size_t num_tags() const { return num_tags_; };
+
+        ///Finds a TimingTag in the current set that has clock domain id matching domain_id
+        ///\param domain_id The clock domain id to look for
+        ///\returns An iterator to the tag if found, or end() if not found
         TimingTagIterator find_tag_by_clock_domain(DomainId domain_id);
         TimingTagConstIterator find_tag_by_clock_domain(DomainId domain_id) const;
-#if NUM_FLAT_TAGS >= 1
+
+        ///\returns An iterator to the first tag in the current set
         TimingTagIterator begin() { return (num_tags_ > 0) ? TimingTagIterator(&head_tags_[0]) : end(); };
         TimingTagConstIterator begin() const { return (num_tags_ > 0) ? TimingTagConstIterator(&head_tags_[0]) : end(); };
-#else
-        TimingTagIterator begin() { return TimingTagIterator(head_tags_); };
-        TimingTagConstIterator begin() const { return TimingTagConstIterator(head_tags_); };
-#endif
+
+        ///\returns An iterator 'one-past-the-end' of the current set
         TimingTagIterator end() { return TimingTagIterator(nullptr); };
         TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
-        //Modifiers
+        /*
+         * Modifiers
+         */
+        ///Adds a TimingTag to the current set provided it has a valid clock domain
+        ///\param tag_pool The pool memory allocator used to allocate the tag
+        ///\param src_tag The source tag who is inserted. Note that the src_tag is copied when inserted (the original is unchanged)
         template<class TagPoolType>
         void add_tag(TagPoolType& tag_pool, const TimingTag& src_tag);
 
-        //Setup operations
+        /*
+         * Setup operations
+         */
+        ///Updates the arrival time of this set of tags to be the maximum.
+        ///\param tag_pool The pool memory allocator to use
+        ///\param new_time The new arrival time to compare against
+        ///\param base_tag The associated metat-data for new_time
+        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is larger
         template<class TagPoolType>
         void max_arr(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
 
+        ///Updates the required time of this set of tags to be the minimum.
+        ///\param tag_pool The pool memory allocator to use
+        ///\param new_time The new arrival time to compare against
+        ///\param base_tag The associated metat-data for new_time
+        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is smaller
         template<class TagPoolType>
         void min_req(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
 
-        //Hold operations
+        /*
+         * Hold operations
+         */
+        ///Updates the arrival time of this set of tags to be the minimum.
+        ///\param tag_pool The pool memory allocator to use
+        ///\param new_time The new arrival time to compare against
+        ///\param base_tag The associated metat-data for new_time
+        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is smaller
         template<class TagPoolType>
         void min_arr(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
 
+        ///Updates the required time of this set of tags to be the maximum.
+        ///\param tag_pool The pool memory allocator to use
+        ///\param new_time The new arrival time to compare against
+        ///\param base_tag The associated metat-data for new_time
+        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is larger
         template<class TagPoolType>
         void max_req(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
 
+        ///Clears the tags in the current set
+        ///\warning Note this does not deallocate the tags. Tag deallocation is the responsibility of the associated pool allocator
         void clear();
 
 
     private:
         int num_tags_;
 
-#if NUM_FLAT_TAGS >= 1
         //The first NUM_FLAT_TAGS tags are stored directly as members
         //of this object. Any additional tags are stored in a dynamically
         //allocated linked list.
         //Note that despite being an array, each element of head_tags_ is
         //hooked into the linked list
         std::array<TimingTag, NUM_FLAT_TAGS> head_tags_;
-#else
-        TimingTag* head_tags_;
-#endif
 };
 
 //Implementation
