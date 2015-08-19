@@ -34,9 +34,9 @@
  * rather than the more typical "Array of Structs (AoS)" data layout.
  *
  * By using a SoA layout we keep all data for a particular field (e.g. node types) in contiguous
- * memory.  Using an AoS layout the various fields accross nodes would *not* be contiguous 
+ * memory.  Using an AoS layout the various fields accross nodes would *not* be contiguous
  * (although the different fields within each object (e.g. a TimingNode class) would be contiguous.
- * Since we typically perform operations on particular fields accross nodes the SoA layout performs 
+ * Since we typically perform operations on particular fields accross nodes the SoA layout performs
  * better (and enables memory ordering optimizations). The edges are also stored in a SOA format.
  *
  * The SoA layout also motivates the ID based approach, which allows direct indexing into the required
@@ -65,11 +65,11 @@ class TimingGraph {
          * Node data accessors
          */
         ///\param id The id of a node
-        ///\returns The type of the node 
+        ///\returns The type of the node
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
 
         ///\param id The id of a node
-        ///\returns The clock domain of the node 
+        ///\returns The clock domain of the node
         DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
 
         ///\param id The id of a node
