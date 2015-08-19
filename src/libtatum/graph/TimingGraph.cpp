@@ -1,5 +1,6 @@
 #include "assert.hpp"
 #include <iostream>
+#include <stdexcept>
 
 #include "TimingGraph.hpp"
 
@@ -137,23 +138,6 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
             }
         }
     }
-
-    /*
-     * Determine the new index for each edge in the graph
-     * by walking through the edges in levelized order
-     */
-    /*
-     *
-     * //Maps from from original to new edge id, used to update node's edge refs
-     *std::vector<EdgeId> orig_to_new_edge_id = std::vector<NodeId>(num_edges(), -1);
-     *int cnt = 0;
-     *for(std::vector<EdgeId>& edge_level : edge_levels) {
-     *    for(EdgeId orig_edge_id : edge_level) {
-     *        orig_to_new_edge_id[orig_edge_id] = cnt;
-     *        cnt++;
-     *    }
-     *}
-     */
 
     /*
      * Re-allocate edges to be contiguous in memory

@@ -5,7 +5,7 @@
 
 #include "timing_graph_fwd.hpp"
 
-/*
+/**
  * The 'TimingGraph' class represents a timing graph.
  *
  * Logically the timing graph is a directed graph connecting Primary Inputs (nodes with no
@@ -31,12 +31,13 @@
  * Implementation
  * ================
  * The 'TimingGraph' class represents the timing graph in a "Struct of Arrays (SoA)" manner,
- * rather than as an "Array of Structs (AoS)" which would be the more inuitive data layout.
+ * rather than the more typical "Array of Structs (AoS)" data layout.
  *
  * By using a SoA layout we keep all data for a particular field (e.g. node types) in contiguous
- * memory.  Using an AoS layout, while each object (e.g. a TimingNode class) would be contiguous the
- * various fields accross nodes would NOT be contiguous.  Since we typically perform operations on
- * particular fields accross nodes the SoA layout performs better. The edges are stored in a SOA format.
+ * memory.  Using an AoS layout the various fields accross nodes would *not* be contiguous 
+ * (although the different fields within each object (e.g. a TimingNode class) would be contiguous.
+ * Since we typically perform operations on particular fields accross nodes the SoA layout performs 
+ * better (and enables memory ordering optimizations). The edges are also stored in a SOA format.
  *
  * The SoA layout also motivates the ID based approach, which allows direct indexing into the required
  * vector to retrieve data.
@@ -60,38 +61,127 @@
  */
 class TimingGraph {
     public:
-        //Node data accessors
+        /*
+         * Node data accessors
+         */
+        ///\param id The id of a node
+        ///\returns The type of the node 
         TN_Type node_type(NodeId id) const { return node_types_[id]; }
+
+        ///\param id The id of a node
+        ///\returns The clock domain of the node 
         DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
+
+        ///\param id The id of a node
+        ///\returns Whether the is the source of a clock
         bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
 
-        //Node edge accessors
+        /*
+         * Node edge accessors
+         */
+        ///\param id The id of a node
+        ///\returns The number of out-going edges the node drives
         int num_node_out_edges(const NodeId id) const { return node_out_edges_[id].size(); }
+
+        ///\param id The id of a node
+        ///\returns The number of in-coming edges the node sinks
         int num_node_in_edges(const NodeId id) const { return node_in_edges_[id].size(); }
+
+        ///\param node_id The id of a node
+        ///\param edge_idx The out-going edge number at this node
+        ///\returns The edge id of the edge_idx'th edge driven by node_id
         EdgeId node_out_edge(const NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
+
+        ///\param node_id The id of a node
+        ///\param edge_idx The in-coming edge number at this node
+        ///\returns The edge id of the edge_idx'th edge sunk by node_id
         EdgeId node_in_edge(const NodeId node_id, int edge_idx) const { return node_in_edges_[node_id][edge_idx]; }
 
-        //Edge accessors
+        /*
+         * Edge accessors
+         */
+        ///\param id The id of an edge
+        ///\returns The node id of the edge's sink
         NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[id]; }
+
+        ///\param id The id of an edge
+        ///\returns The node id of the edge's source (driver)
         NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[id]; }
 
-        //Graph accessors
+        /*
+         * Graph accessors
+         */
+        ///\returns The total number of nodes in the graph
         NodeId num_nodes() const { return node_types_.size(); }
+
+        ///\returns The total number of edges in the graph
         EdgeId num_edges() const { return edge_src_nodes_.size(); }
+
+        ///\returns The total number of levels in the graph
         LevelId num_levels() const { return node_levels_.size(); }
 
-        //Node collection accessors
-        const std::vector<NodeId>& level(const NodeId level_id) const { return node_levels_[level_id]; }
+        /*
+         * Node collection accessors
+         */
+        ///\param level_id The level index in the graph
+        ///\pre The graph must been levelized.
+        ///\returns The nodes in the level
+        ///\see levelize()
+        const std::vector<NodeId>& level(const LevelId level_id) const { return node_levels_[level_id]; }
+
+        ///\pre The graph must be levelized.
+        ///\returns The nodes which are primary inputs
+        ///\see levelize()
         const std::vector<NodeId>& primary_inputs() const { return node_levels_[0]; } //After levelizing PIs will be 1st level
+
+        ///\pre The primary outputs have been identified.
+        ///\returns The nodes which are primary outputs
+        ///\warning The primary outputs may be on different levels of the graph
+        ///\see levelize()
         const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
 
-        //Graph modifiers
+        /*
+         * Graph modifiers
+         */
+        ///Adds a node to the timing graph
+        ///\param type The type of the node to be added
+        ///\param clock_domain The clock domain id of the node to be added
+        ///\param is_clk_src Identifies if the node to be added is the source of a clock
+        ///\warning Graph will likely need to be re-levelized after modification
         NodeId add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src);
+
+        ///Adds an edge to the timing graph
+        ///\param src_node The node id of the edge's driving node
+        ///\param sink_node The node id of the edge's sink node
+        ///\pre The src_node and sink_node must have been already added to the graph
+        ///\warning Graph will likely need to be re-levelized after modification
         EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
 
-        //Graph-level modification operations
+        /*
+         * Graph-level modification operations
+         */
+        ///Levelizes the graph.
+        ///\post The graph topologically ordered (i.e. the level of each node is known)
+        ///\post The primary outputs have been identified
         void levelize();
+
+        /*
+         * Memory layout optimization operations
+         */
+        ///Optimizes the memory layout of edges in the graph by re-ordering them
+        ///for improved spatial/temporal cache locality.
+        ///\pre The graph must be levelized
+        ///\warning Old edge ids are invalidated
+        ///\returns A mapping from old to new edge ids
+        ///\see levelize()
         std::vector<EdgeId> optimize_edge_layout();
+
+        ///Optimizes the memory layout of nodes in the graph by re-ordering them
+        ///for improved spatial/temporal cache locality.
+        ///\pre The graph must be levelized
+        ///\warning Old node ids are invalidated
+        ///\returns A mapping from old to new node ids
+        ///\see levelize()
         std::vector<NodeId> optimize_node_layout();
 
     private:
@@ -117,7 +207,7 @@ class TimingGraph {
                                               //      scattered through the graph and do not exist on a single level
 };
 
-/*
+/**
  * Potential types for nodes in the timing graph
  */
 enum class TN_Type {
