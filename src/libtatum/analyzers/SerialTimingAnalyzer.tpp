@@ -15,15 +15,15 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::calculate_tim
     auto analysis_start = high_resolution_clock::now();
 
     auto pre_traversal_start = high_resolution_clock::now();
-    pre_traversal(tg_, tc_);
+    pre_traversal();
     auto pre_traversal_end = high_resolution_clock::now();
 
     auto fwd_traversal_start = high_resolution_clock::now();
-    forward_traversal(tg_, tc_);
+    forward_traversal();
     auto fwd_traversal_end = high_resolution_clock::now();
 
     auto bck_traversal_start = high_resolution_clock::now();
-    backward_traversal(tg_, tc_);
+    backward_traversal();
     auto bck_traversal_end = high_resolution_clock::now();
 
     auto analysis_end = high_resolution_clock::now();
@@ -44,28 +44,28 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::reset_timing(
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::pre_traversal() {
     /*
      * The pre-traversal sets up the timing graph for propagating arrival
      * and required times.
      * Steps performed include:
      *   - Initialize arrival times on primary inputs
      */
-    for(NodeId node_id : timing_graph.primary_inputs()) {
-        AnalysisType::pre_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
+    for(NodeId node_id : tg_.primary_inputs()) {
+        AnalysisType::pre_traverse_node(tag_pool_, tg_, tc_, node_id);
     }
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_traversal() {
     using namespace std::chrono;
 
     //Forward traversal (arrival times)
-    for(LevelId level_id = 1; level_id < timing_graph.num_levels(); level_id++) {
+    for(LevelId level_id = 1; level_id < tg_.num_levels(); level_id++) {
         auto fwd_level_start = high_resolution_clock::now();
 
-        for(NodeId node_id : timing_graph.level(level_id)) {
-            forward_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
+        for(NodeId node_id : tg_.level(level_id)) {
+            forward_traverse_node(tag_pool_, node_id);
         }
 
         auto fwd_level_end = high_resolution_clock::now();
@@ -75,15 +75,15 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_trave
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traversal() {
     using namespace std::chrono;
 
     //Backward traversal (required times)
-    for(LevelId level_id = timing_graph.num_levels() - 2; level_id >= 0; level_id--) {
+    for(LevelId level_id = tg_.num_levels() - 2; level_id >= 0; level_id--) {
         auto bck_level_start = high_resolution_clock::now();
 
-        for(NodeId node_id : timing_graph.level(level_id)) {
-            backward_traverse_node(tag_pool_, timing_graph, timing_constraints, node_id);
+        for(NodeId node_id : tg_.level(level_id)) {
+            backward_traverse_node(tag_pool_, node_id);
         }
 
         auto bck_level_end = high_resolution_clock::now();
@@ -93,38 +93,36 @@ void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_trav
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::forward_traverse_node(TagPoolType& tag_pool, const NodeId node_id) {
     //Pull from upstream sources to current node
-    for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
-        EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
+    for(int edge_idx = 0; edge_idx < tg_.num_node_in_edges(node_id); edge_idx++) {
+        EdgeId edge_id = tg_.node_in_edge(node_id, edge_idx);
 
-        AnalysisType::forward_traverse_edge(tag_pool, tg, dc_, node_id, edge_id);
+        AnalysisType::forward_traverse_edge(tag_pool, tg_, dc_, node_id, edge_id);
     }
 
-    AnalysisType::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
+    AnalysisType::forward_traverse_finalize_node(tag_pool, tg_, tc_, node_id);
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+void SerialTimingAnalyzer<AnalysisType,DelayCalcType,TagPoolType>::backward_traverse_node(TagPoolType& tag_pool, const NodeId node_id) {
     //Pull from downstream sinks to current node
-
-    TN_Type node_type = tg.node_type(node_id);
 
     //We don't propagate required times past FF_CLOCK nodes,
     //since anything upstream is part of the clock network
     //
     //TODO: if performing optimization on a clock network this may actually be useful
-    if(node_type == TN_Type::FF_CLOCK) {
+    if(tg_.node_type(node_id) == TN_Type::FF_CLOCK) {
         return;
     }
 
     //Each back-edge from down stream node
-    for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
-        EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+    for(int edge_idx = 0; edge_idx < tg_.num_node_out_edges(node_id); edge_idx++) {
+        EdgeId edge_id = tg_.node_out_edge(node_id, edge_idx);
 
-        AnalysisType::backward_traverse_edge(tg, dc_, node_id, edge_id);
+        AnalysisType::backward_traverse_edge(tg_, dc_, node_id, edge_id);
     }
 
-    AnalysisType::backward_traverse_finalize_node(tag_pool, tg, tc, node_id);
+    AnalysisType::backward_traverse_finalize_node(tag_pool, tg_, tc_, node_id);
 }
 

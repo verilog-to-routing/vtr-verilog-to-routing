@@ -5,12 +5,13 @@
 #include "TimingAnalyzer.hpp"
 #include "memory_pool.hpp"
 
-/* Overview
+/**
+ * Overview
  * ==========
  * SerialTimingAnalyzer implements the TimingAnalyzer interface, providing a standard
  * serial (single-threaded) timing analyzer.
  *
- * NOTE: Any tags retrieved by reference from the analyzer will no longer be valid once
+ * \warning Any tags retrieved by reference from the analyzer will no longer be valid once
  *       it has been destroyed!
  *
  * Most parallel analyzers are derived from this class and simply re-define the
@@ -55,32 +56,38 @@
 template<class AnalysisType, class DelayCalcType, class TagPoolType=MemoryPool>
 class SerialTimingAnalyzer : public TimingAnalyzer<AnalysisType, DelayCalcType> {
     public:
+        ///The type of the pooled memory allocator
         typedef TagPoolType tag_pool_type;
 
+        ///Initializes the analyzer
+        /// \param timing_graph The timing graph to analyze
+        /// \param timing_constraints The timing constraints to apply during analysis
+        /// \param delay_calculator The delay calculator to use to determine edge delays
         SerialTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalcType& delay_calculator);
         void calculate_timing() override;
         void reset_timing() override;
         const DelayCalcType& delay_calculator() override { return dc_; }
         std::map<std::string, double> profiling_data() override { return perf_data_; }
     protected:
-        /*
-         * Setup the timing graph.
-         */
-        virtual void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        ///Setups the timing graph in preparation for main traversals.
+        /// Initializes arrival times on primary inputs
+        virtual void pre_traversal();
 
-        /*
-         * Propagate arrival times, set required times on primary outputs
-         */
-        virtual void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        ///Propagate arrival times, set required times on primary outputs
+        virtual void forward_traversal();
 
-        /*
-         * Propagate required times
-         */
-        virtual void backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints);
+        ///Propagate required times from primary outputs to primary inputs
+        virtual void backward_traversal();
 
-        //Per node worker functions
-        void forward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
-        void backward_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        ///Per node worker function for forward traversal
+        /// \param tag_pool The tag pool used to allocate new TimingTag objects
+        /// \param node_id The node to process
+        void forward_traverse_node(TagPoolType& tag_pool, const NodeId node_id);
+
+        ///Per node worker function for backward traversal
+        /// \param tag_pool The tag pool used to allocate new TimingTag objects
+        /// \param node_id The node to process
+        void backward_traverse_node(TagPoolType& tag_pool, const NodeId node_id);
 
         /*
          * Data

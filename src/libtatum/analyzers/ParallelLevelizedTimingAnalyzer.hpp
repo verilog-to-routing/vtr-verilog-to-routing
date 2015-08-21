@@ -24,19 +24,14 @@ class ParallelLevelizedTimingAnalyzer : public SerialTimingAnalyzer<AnalysisType
         ~ParallelLevelizedTimingAnalyzer() override;
     protected:
         /*
-         * Setup the timing graph.
-         */
-        void pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
-
-        /*
          * Propogate arrival times
          */
-        void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
+        void forward_traversal() override;
 
         /*
          * Propogate required times
          */
-        void backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
+        void backward_traversal() override;
 
         //We use multiple tag pools to reduce contention between threads
         std::vector<MemoryPool*> tag_pools_;

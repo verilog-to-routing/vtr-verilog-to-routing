@@ -53,40 +53,29 @@ ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::~Para
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::pre_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
-    const std::vector<NodeId>& primary_inputs = timing_graph.primary_inputs();
-
-    //To little work to overcome parallel overhead, just run serially
-    for(int node_idx = 0; node_idx < (int) primary_inputs.size(); node_idx++) {
-        NodeId node_id = primary_inputs[node_idx];
-        AnalysisType::pre_traverse_node(*(this->tag_pools_[0]), timing_graph, timing_constraints, node_id);
-    }
-
-}
-
-template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::forward_traversal() {
     using namespace std::chrono;
 
     //Forward traversal (arrival times)
-    for(LevelId level_id = 1; level_id < timing_graph.num_levels(); level_id++) {
+    for(LevelId level_id = 1; level_id < this->tg_.num_levels(); level_id++) {
         auto fwd_level_start = high_resolution_clock::now();
 
-        const std::vector<NodeId>& level = timing_graph.level(level_id);
+        const std::vector<NodeId>& level = this->tg_.level(level_id);
 
         if(level.size() > parallel_threshold_fwd_) {
             //Parallel
             cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
+
+                //We use a per-thread tag pool to avoid synchronization
                 TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
-                this->forward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+                this->forward_traverse_node(tag_pool, node_id);
             }
         } else {
             //Serial
             for(int node_idx = 0; node_idx < (int) level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
-                TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
-                this->forward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+                this->forward_traverse_node(this->tag_pool_, node_id);
             }
 
         }
@@ -98,28 +87,29 @@ void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::
 }
 
 template<class AnalysisType, class DelayCalcType, class TagPoolType>
-void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::backward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) {
+void ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType>::backward_traversal() {
     using namespace std::chrono;
 
     //Backward traversal (required times)
-    for(LevelId level_id = timing_graph.num_levels() - 2; level_id >= 0; level_id--) {
+    for(LevelId level_id = this->tg_.num_levels() - 2; level_id >= 0; level_id--) {
         auto bck_level_start = high_resolution_clock::now();
 
-        const std::vector<NodeId>& level = timing_graph.level(level_id);
+        const std::vector<NodeId>& level = this->tg_.level(level_id);
 
         if(level.size() > parallel_threshold_bck_) {
             //Parallel
             cilk_for(int node_idx = 0; node_idx < level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
+
+                //We use a per-thread tag pool to avoid synchronization
                 TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
-                this->backward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+                this->backward_traverse_node(tag_pool, node_id);
             }
         } else {
             //Serial
             for(int node_idx = 0; node_idx < (NodeId) level.size(); node_idx++) {
                 NodeId node_id = level[node_idx];
-                TagPoolType& tag_pool = *tag_pools_[__cilkrts_get_worker_number()];
-                this->backward_traverse_node(tag_pool, timing_graph, timing_constraints, node_id);
+                this->backward_traverse_node(this->tag_pool_, node_id);
             }
         }
 
