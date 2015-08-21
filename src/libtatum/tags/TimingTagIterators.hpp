@@ -5,10 +5,10 @@
 class TimingTags;
 class TimingTag;
 
-/*
+/**
  * A standard iterater interface to a collection of TimingTag objects.
  *
- * The actual object pointed to is defined as a template parameter, 
+ * The actual object pointed to is defined as a template parameter,
  * allowing the TimingTagIter class to model both const and non-const
  * iterators.
  */
@@ -30,5 +30,9 @@ class TimingTagIter : public boost::iterator_facade<TimingTagIter<Value>, Value,
 /*
  * Actual Non-Const/Const iterators
  */
+
+///A non-const TimingTag iterator
 typedef TimingTagIter<TimingTag> TimingTagIterator;
+
+///A const TimingTag iterator
 typedef TimingTagIter<TimingTag const> TimingTagConstIterator;
