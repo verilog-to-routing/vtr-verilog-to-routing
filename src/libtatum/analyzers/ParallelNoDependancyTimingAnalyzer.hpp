@@ -3,7 +3,7 @@
 #include "timing_graph_fwd.hpp"
 #include "ParallelLevelizedTimingAnalyzer.hpp"
 
-/*
+/**
  * DO NOT USE! (unless you are sure you know what you are doing)
  *
  * ParallelNoDependancyTimingAnalyzer implements the TimingGraph interface, but does not produce
@@ -13,7 +13,7 @@
  * INCORRECT results, and hence should not be used to do any real timing analysis.
  *
  * Its only use, is providing an upper-bound on the achievable parallel speed-up (since it ignores
- * dependancies scales better).
+ * dependancies it scales better).
  */
 template<class AnalysisType, class DelayCalcType, class TagPoolType=MemoryPool>
 class ParallelNoDependancyTimingAnalyzer : public ParallelLevelizedTimingAnalyzer<AnalysisType, DelayCalcType, TagPoolType> {
@@ -23,12 +23,12 @@ class ParallelNoDependancyTimingAnalyzer : public ParallelLevelizedTimingAnalyze
         /*
          * Propogate arrival times
          */
-        void forward_traversal(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints) override;
+        void forward_traversal() override;
 
         /*
          * Propogate required times
          */
-        void backward_traversal(const TimingGraph& timing_graph) override;
+        void backward_traversal() override;
 };
 
 #include "ParallelNoDependancyTimingAnalyzer.tpp"
