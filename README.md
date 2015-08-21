@@ -19,8 +19,6 @@ I had need for a high performance, flexible STA engine for my PhD research into 
 I could find no suitable open source STA engines, and wrote my own.
 
 ##Origin of the Name
-A *tatum* is a unit of time used in the computational analysis of music.
-It is "roughly equivalent to the time division that most highly coincides with note onsets" \[[1]\].
-Tatums are named after the famous Jazz pianist [Art Tatum](https://en.wikipedia.org/wiki/Art_Tatum).
+A *tatum* is a unit of time used in the computational analysis of music \[[1]\], named after the famous Jazz pianist [Art Tatum](https://en.wikipedia.org/wiki/Art_Tatum).
 
 [1]: http://web.media.mit.edu/~tristan/phd/dissertation/chapter3.html#x1-390003.4.3

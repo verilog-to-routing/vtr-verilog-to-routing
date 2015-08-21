@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project("tatum")
+project("Tatum")
 
 
 message(STATUS "CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
