@@ -104,8 +104,8 @@
  *
  * \see HoldAnalysisMode
  */
-template<class Base = BaseAnalysisMode>
-class SetupAnalysisMode : public Base {
+template<class BaseAnalysisMode = BaseAnalysisMode>
+class SetupAnalysisMode : public BaseAnalysisMode {
     public:
         //External tag access
         const TimingTags& setup_data_tags(NodeId node_id) const { return setup_data_tags_[node_id]; }

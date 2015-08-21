@@ -1,18 +1,18 @@
-template<class Base>
-void SetupAnalysisMode<Base>::initialize_traversal(const TimingGraph& tg) {
+template<class BaseAnalysisMode>
+void SetupAnalysisMode<BaseAnalysisMode>::initialize_traversal(const TimingGraph& tg) {
     //Chain to base class
-    Base::initialize_traversal(tg);
+    BaseAnalysisMode::initialize_traversal(tg);
 
     //Initialize
     setup_data_tags_ = std::vector<TimingTags>(tg.num_nodes());
     setup_clock_tags_ = std::vector<TimingTags>(tg.num_nodes());
 }
 
-template<class Base>
+template<class BaseAnalysisMode>
 template<class TagPoolType>
-void SetupAnalysisMode<Base>::pre_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+void SetupAnalysisMode<BaseAnalysisMode>::pre_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Chain to base class
-    Base::pre_traverse_node(tag_pool, tg, tc, node_id);
+    BaseAnalysisMode::pre_traverse_node(tag_pool, tg, tc, node_id);
 
     //Primary Input
     ASSERT_MSG(tg.num_node_in_edges(node_id) == 0, "Primary input has input edges: timing graph not levelized.");
@@ -60,11 +60,11 @@ void SetupAnalysisMode<Base>::pre_traverse_node(TagPoolType& tag_pool, const Tim
     }
 }
 
-template<class Base>
+template<class BaseAnalysisMode>
 template<class TagPoolType, class DelayCalcType>
-void SetupAnalysisMode<Base>::forward_traverse_edge(TagPoolType& tag_pool, const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
+void SetupAnalysisMode<BaseAnalysisMode>::forward_traverse_edge(TagPoolType& tag_pool, const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
     //Chain to base class
-    Base::forward_traverse_edge(tag_pool, tg, dc, node_id, edge_id);
+    BaseAnalysisMode::forward_traverse_edge(tag_pool, tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
@@ -121,11 +121,11 @@ void SetupAnalysisMode<Base>::forward_traverse_edge(TagPoolType& tag_pool, const
     }
 }
 
-template<class Base>
+template<class BaseAnalysisMode>
 template<class TagPoolType>
-void SetupAnalysisMode<Base>::forward_traverse_finalize_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+void SetupAnalysisMode<BaseAnalysisMode>::forward_traverse_finalize_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Chain to base class
-    Base::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
+    BaseAnalysisMode::forward_traverse_finalize_node(tag_pool, tg, tc, node_id);
 
     //Take tags by reference so they are updated in-place
     TimingTags& node_data_tags = setup_data_tags_[node_id];
@@ -179,11 +179,11 @@ void SetupAnalysisMode<Base>::forward_traverse_finalize_node(TagPoolType& tag_po
     }
 }
 
-template<class Base>
+template<class BaseAnalysisMode>
 template<class DelayCalcType>
-void SetupAnalysisMode<Base>::backward_traverse_edge(const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
+void SetupAnalysisMode<BaseAnalysisMode>::backward_traverse_edge(const TimingGraph& tg, const DelayCalcType& dc, const NodeId node_id, const EdgeId edge_id) {
     //Chain to base class
-    Base::backward_traverse_edge(tg, dc, node_id, edge_id);
+    BaseAnalysisMode::backward_traverse_edge(tg, dc, node_id, edge_id);
 
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags

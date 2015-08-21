@@ -42,8 +42,8 @@
  * The hold analysis implementation is generally similar to the implementation used for Setup, except
  * that the minumum arrival times (and maximum required times) are propagated through the timing graph.
  */
-template<class Base = BaseAnalysisMode>
-class HoldAnalysisMode : public Base {
+template<class BaseAnalysisMode = BaseAnalysisMode>
+class HoldAnalysisMode : public BaseAnalysisMode {
     public:
         //External tag access
         const TimingTags& hold_data_tags(NodeId node_id) const { return hold_data_tags_[node_id]; }
