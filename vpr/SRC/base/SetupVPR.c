@@ -519,6 +519,11 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		RouterOpts->max_router_iterations = Options.max_router_iterations;
 	}
 
+	RouterOpts->min_incremental_reroute_fanout = 64;	/* DEFAULT */
+	if (Options.Count[OT_MIN_INCREMENTAL_REROUTE_FANOUT]) {
+		RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
+	}
+
 	RouterOpts->pres_fac_mult = 1.3; /* DEFAULT */
 	if (Options.Count[OT_PRES_FAC_MULT]) {
 		RouterOpts->pres_fac_mult = Options.pres_fac_mult;

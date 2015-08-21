@@ -446,6 +446,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		/* Router Options */
 	case OT_MAX_ROUTER_ITERATIONS:
 		return ReadInt(Args, &Options->max_router_iterations);
+	case OT_MIN_INCREMENTAL_REROUTE_FANOUT:
+		return ReadInt(Args, &Options->min_incremental_reroute_fanout);
 	case OT_BB_FACTOR:
 		return ReadInt(Args, &Options->bb_factor);
 	case OT_INITIAL_PRES_FAC:
@@ -705,6 +707,9 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			/* Router Options */
 		case OT_MAX_ROUTER_ITERATIONS:
 			dest->max_router_iterations = src->max_router_iterations;
+			break;
+		case OT_MIN_INCREMENTAL_REROUTE_FANOUT:
+			dest->min_incremental_reroute_fanout = src->min_incremental_reroute_fanout;
 			break;
 		case OT_BB_FACTOR:
 			dest->bb_factor = src->bb_factor;

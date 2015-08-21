@@ -70,6 +70,7 @@ struct s_options {
 
 	/* Router Options */
 	int max_router_iterations;
+	int min_incremental_reroute_fanout;
 	int bb_factor;
 	bool congestion_analysis;
 	bool fanout_analysis;

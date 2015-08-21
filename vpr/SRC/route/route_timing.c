@@ -23,7 +23,6 @@
 using namespace std;
 
 /***************** Iterative connection based rerouting **********************/
-constexpr unsigned int MIN_ITERATIVE_REROUTE_FANOUT = 4;
 
 // array indexed by inet of lookup tables mapping terminal rr_nodes to its pin on the net
 // the reverse lookup of net_rr_terminals
@@ -188,7 +187,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				pres_fac,
 				router_opts,
 				route_structs.pin_criticality,
-				route_structs.sink_order,
 				route_structs.rt_node_of_sink,
 				net_delay,
 				slacks
@@ -420,7 +418,7 @@ void congestion_analysis() {
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
-		float* pin_criticality, int* sink_order,
+		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks) {
 
 	bool is_routed = false;
@@ -440,7 +438,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
 				router_opts.astar_fac, router_opts.bend_cost, 
-				pin_criticality, sink_order, 
+				pin_criticality, router_opts.min_incremental_reroute_fanout, 
 				rt_node_of_sink, net_delay[inet], slacks);
 
 #ifdef PROFILE
@@ -554,7 +552,7 @@ struct Criticality_comp {
 
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
-		float *pin_criticality, int *sink_order,
+		float *pin_criticality, int min_incremental_reroute_fanout,
 		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks) {
 
 	/* Returns true as long is found some way to hook up this net, even if that *
@@ -573,7 +571,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	remaining_targets.clear();	// efficient clearing by just resetting size without allocation
 	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
-	if (num_sinks < MIN_ITERATIVE_REROUTE_FANOUT || itry == 1) {
+	if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
 #ifdef PROFILE
 		++entire_net_rerouted;
 #endif

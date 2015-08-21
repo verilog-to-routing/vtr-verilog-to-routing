@@ -724,6 +724,9 @@ struct s_placer_opts {
  * bend_cost:  Cost of a bend (usually non-zero only for global routing).   *
  * max_router_iterations:  Maximum number of iterations before giving       *
  *                up.                                                       *
+ * min_incremental_reroute_fanout: Minimum fanout a net needs to have 		*
+ *				for incremental reroute to be applied to it through route 	*
+ *				tree pruning. Larger circuits should get larger thresholds	*
  * bb_factor:  Linear distance a route can go outside the net bounding      *
  *             box.                                                         *
  * route_type:  GLOBAL or DETAILED.                                         *
@@ -778,6 +781,7 @@ struct s_router_opts {
 	float acc_fac;
 	float bend_cost;
 	int max_router_iterations;
+	int min_incremental_reroute_fanout;
 	int bb_factor;
 	enum e_route_type route_type;
 	int fixed_channel_width;
