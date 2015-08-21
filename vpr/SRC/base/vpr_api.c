@@ -122,6 +122,7 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--td_place_exp_last <float>]\n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
+	vpr_printf_info("\t[--min_incremental_reroute_fanout <int>]\n");
 	vpr_printf_info("\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
 	vpr_printf_info("\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
 	vpr_printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");

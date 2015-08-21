@@ -162,6 +162,9 @@ void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
 	if (Options.Count[OT_MAX_ROUTER_ITERATIONS] > 0) {
 		Yes = OT_MAX_ROUTER_ITERATIONS;
 	}
+	if (Options.Count[OT_MIN_INCREMENTAL_REROUTE_FANOUT] > 0) {
+		Yes = OT_MIN_INCREMENTAL_REROUTE_FANOUT;
+	}
 	if (Options.Count[OT_INITIAL_PRES_FAC] > 0) {
 		Yes = OT_INITIAL_PRES_FAC;
 	}

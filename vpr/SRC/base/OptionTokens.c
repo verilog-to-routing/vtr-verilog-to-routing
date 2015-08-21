@@ -36,6 +36,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "block_dist", OT_BLOCK_DIST }, 
 		{ "place_chan_width", OT_PLACE_CHAN_WIDTH }, 
 		{ "max_router_iterations", OT_MAX_ROUTER_ITERATIONS }, 
+		{ "min_incremental_reroute_fanout", OT_MIN_INCREMENTAL_REROUTE_FANOUT },
 		{ "bb_factor", OT_BB_FACTOR }, 
 		{ "router_algorithm", OT_ROUTER_ALGORITHM }, 
 		{ "first_iter_pres_fac", OT_FIRST_ITER_PRES_FAC }, 
