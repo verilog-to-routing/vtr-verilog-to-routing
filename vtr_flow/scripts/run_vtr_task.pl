@@ -53,6 +53,7 @@ my $processors             = 1;
 my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
 my $system_type            = "local";
+my $shared_script_params = "";
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -66,6 +67,15 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-p" ) {
 		$processors = int( shift(@ARGV) );
 	}
+
+    # Treat the remainder of the command line options as script parameters shared by all tasks
+    elsif ( $token eq "-s" ) {
+        $shared_script_params = join(' ', @ARGV);
+        while ($token = shift(@ARGV)) {
+            print "adding to shared script params: $token\n"
+        }
+        print "shared script params: $shared_script_params\n"
+    }
 
 	elsif ( $token eq "-system" ) {
 		$system_type = shift(@ARGV);
@@ -154,7 +164,7 @@ sub run_single_task {
 	my $script_default = "run_vtr_flow.pl";
 	my $script         = $script_default;
 	my $script_path;
-	my $script_params = "";
+	my $script_params = $shared_script_params;  # start with the shared ones then build unique ones
 	my @circuits;
 	my @archs;
 	my $cmos_tech_path = "";
@@ -200,7 +210,7 @@ sub run_single_task {
 			$script = $value;
 		}
 		elsif ( $key eq "script_params" ) {
-			$script_params = $value;
+			$script_params .= ' ' . $value;
 		}
 		elsif ( $key eq "cmos_tech_behavior" ) {
 			$cmos_tech_path = $value;
