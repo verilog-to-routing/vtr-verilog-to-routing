@@ -421,16 +421,18 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 	} /* End while loop -- did an entire traceback. */
 }
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
-	/* pres_cost is Pn in the Pathfinder paper. I set my pres_cost according to *
-	 * the overuse that would result from having ONE MORE net use this routing  *
-	 * node.     */
+
+	/* Updates pathfinder's congestion cost by either adding or removing the    *
+	 * usage of a resource node. pres_cost is Pn in the Pathfinder paper. 		*
+	 * pres_cost is set according to the overuse that would result from having  *
+	 * ONE MORE net use this routing node.     */
+
 	int occ = rr_node[inode].get_occ() + add_or_sub;
 	rr_node[inode].set_occ(occ);
 	// can't have negative occupancy
 	assert(occ >= 0);
 
 	int	capacity = rr_node[inode].get_capacity();
-	// vpr_printf_info("occ for %6d %2d (%2d/%2d)\n", inode, add_or_sub, occ, capacity);
 	if (occ < capacity) {
 		rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
@@ -544,7 +546,6 @@ update_traceback(struct s_heap *hptr, int inet) {
 	iedge = hptr->prev_edge;
 
 	while (inode != NO_PREVIOUS) {
-		// vpr_printf_info("creating trace data for node %d\n", inode);
 		prevptr = alloc_trace_data();
 		prevptr->index = inode;
 		prevptr->iswitch = rr_node[inode].switches[iedge];
@@ -1011,7 +1012,6 @@ namespace heap_ {
 			if ((int)child + 1 < heap_tail && heap[child + 1]->cost < heap[child]->cost)
 				++child;
 			if (heap[child]->cost < head->cost) {
-				// vpr_printf_info("siftdown child %d(%e) head(%e)\n", child, heap[child]->cost, head->cost);
 				heap[hole] = heap[child];
 				hole = child;
 				child = left(child);

@@ -935,7 +935,9 @@ struct s_linked_f_pointer {
 typedef enum e_rr_type {
 	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES
 } t_rr_type;
-
+const std::vector<const char*> node_typename {
+	"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "ICE"
+};
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *
  * iswitch: Index of the switch type used to go from this rr_node to       *

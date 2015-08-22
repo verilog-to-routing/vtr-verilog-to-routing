@@ -72,7 +72,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 		const t_rt_node* const * rt_node_of_sink, const std::vector<int>& remaining_sinks);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
-void load_route_tree_rr_route_inf(t_rt_node* root);	// NO_PREVIOUS for SOURCE
+void load_route_tree_rr_route_inf(t_rt_node* root);	
 
 
 /********** incremental connection-based rerouting ***********/

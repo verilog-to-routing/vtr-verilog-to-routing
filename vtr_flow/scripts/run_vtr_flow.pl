@@ -91,6 +91,7 @@ my $has_memory              = 1;
 my $timing_driven           = "on";
 my $min_chan_width          = -1; 
 my $max_router_iterations   = 50;
+my $min_incremental_reroute_fanout = 64;
 my $lut_size                = -1;
 my $vpr_cluster_seed_type   = "";
 my $routing_failure_predictor = "safe";
@@ -164,6 +165,9 @@ while ( $token = shift(@ARGV) ) {
 	}
     elsif ( $token eq "-vpr_max_router_iterations" ) {
         $max_router_iterations = shift(@ARGV);
+    }
+    elsif ( $token eq "-min_incremental_reroute_fanout" ) {
+    	$min_incremental_reroute_fanout = shift(@ARGV);
     }
 	elsif ( $token eq "-lut_size" ) {
 		$lut_size = shift(@ARGV);
@@ -563,6 +567,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--blif_file",           "$prevpr_output_file_name",
 					"--route_chan_width",    "$min_chan_width",
                     "--max_router_iterations", "$max_router_iterations",
+                    "--min_incremental_reroute_fanout", "$min_incremental_reroute_fanout",
 					"--cluster_seed_type",   "$vpr_cluster_seed_type",
 					"--nodisp",              @vpr_power_args,
 					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
@@ -592,6 +597,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--timing_driven_clustering", "$timing_driven",
 			"--route_chan_width",         "$min_chan_width",
             "--max_router_iterations",    "$max_router_iterations",
+            "--min_incremental_reroute_fanout", "$min_incremental_reroute_fanout",
 			"--nodisp",                   "--cluster_seed_type",
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
