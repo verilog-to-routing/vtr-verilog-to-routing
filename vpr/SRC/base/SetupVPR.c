@@ -519,7 +519,11 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		RouterOpts->max_router_iterations = Options.max_router_iterations;
 	}
 
-	RouterOpts->min_incremental_reroute_fanout = 64;	/* DEFAULT */
+	/* Based on testing, choosing a low threshold can lead to instability
+	   where sometimes route time and critical path are degraded. 64 seems
+	   to be a reasonable choice for most circuits. For nets with a greater
+	   distribution of high fanout nets, choose a larger threshold */
+	RouterOpts->min_incremental_reroute_fanout = 64;	
 	if (Options.Count[OT_MIN_INCREMENTAL_REROUTE_FANOUT]) {
 		RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
 	}

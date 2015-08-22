@@ -5,7 +5,6 @@ using namespace std;
 #include "vpr_types.h"
 #include "globals.h"
 #include "net_delay.h"
-#include "route_common.h"
 /***************** Types and defines local to this module ********************/
 
 struct s_linked_rc_edge {
@@ -244,7 +243,6 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 			prev_node = prev_rc->inode;
 			if (rr_node[prev_node].type != SINK) {
 				vpr_printf_info("prev node %d, type is actually %d\n", prev_node, rr_node[prev_node].type);
-				print_traceback(inet);
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 						"in alloc_and_load_rc_tree: Routing of net %d is not a tree.\n", inet);
 			}
