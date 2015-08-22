@@ -6,6 +6,7 @@ pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
 min_chan_width_route_time;vpr.out;Routing took (.*) seconds
 crit_path_route_time;vpr.crit_path.out;Routing took (.*) seconds
+routed_wirelength;vpr.out;Total wirelength: (.*), average
 max_odin_mem;odin.out;Maximum resident set size \(kbytes\): (\d+)
 max_abc_mem;abc.out;Maximum resident set size \(kbytes\): (\d+)
 max_vpr_mem;vpr.out;Maximum resident set size \(kbytes\): (\d+)

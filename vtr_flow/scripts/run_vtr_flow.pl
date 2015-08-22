@@ -111,6 +111,7 @@ my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
 
 my $abc_quote_addition      = 0;
+my @forwarded_vpr_args;   # VPR arguments that pass through the script
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -198,8 +199,9 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	}
+    # else forward the argument
 	else {
-		die "Error: Invalid argument ($token)\n";
+        push @forwarded_vpr_args, $token;
 	}
 
 	if ( $starting_stage == -1 or $ending_stage == -1 ) {
@@ -521,6 +523,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"--seed",			 		  "$seed",
 			"$congestion_analysis",
             "$switch_usage_analysis",
+            @forwarded_vpr_args,
             "--nodisp"
 		);
     
@@ -567,6 +570,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 					"--nodisp",              @vpr_power_args,
 					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 					"--sdc_file",			 "$sdc_file_path",
+					@forwarded_vpr_args,
 					"$congestion_analysis",
                     "$switch_usage_analysis"
 				);
@@ -596,8 +600,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			"$vpr_cluster_seed_type",     @vpr_power_args,
 			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
 			"--sdc_file",				  "$sdc_file_path",
-			"$congestion_analysis",
             "$switch_usage_analysis",
+            @forwarded_vpr_args,
             $specific_vpr_stage
 		);
 	}
