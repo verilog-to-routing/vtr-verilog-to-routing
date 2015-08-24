@@ -202,6 +202,11 @@ while ( $token = shift(@ARGV) ) {
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
+        # next element could be the number 0, which needs to be forwarded
+        if ( $ARGV[0] == '0' ) {
+            $token = shift(@ARGV);
+            push @forwarded_vpr_args, $token;
+        }
 	}
 
 	if ( $starting_stage == -1 or $ending_stage == -1 ) {
