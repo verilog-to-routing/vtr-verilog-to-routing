@@ -23,6 +23,8 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 
+#include "route_profiling.h"
+
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful
@@ -345,9 +347,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
-#ifdef PROFILE
-		time_on_fanout_analysis();
-#endif
+		profiling::time_on_fanout_analysis();
 	}
 
 	free_rr_node_route_structs();

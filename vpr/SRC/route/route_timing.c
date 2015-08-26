@@ -18,6 +18,9 @@
 #include "net_delay.h"
 #include "stats.h"
 #include "ReadOptions.h"
+
+// all functions in profiling:: namespace, which are only activated if PROFILE is defined
+#include "route_profiling.h"	
  
 using namespace std;
 
@@ -65,22 +68,6 @@ struct more_sinks_than {
 };
 
 
-#ifdef PROFILE // break down the total time into how much is spent on nets of certain fanouts
-static void congestion_analysis();
-static void time_on_criticality_analysis();
-constexpr unsigned int fanout_per_bin = 4;
-constexpr float criticality_per_bin = 0.05;
-static vector<float> time_on_fanout;
-static vector<float> time_on_fanout_rebuild;
-static vector<float> time_on_criticality;
-static vector<int> itry_on_fanout;
-static vector<int> itry_on_criticality;
-static vector<int> rerouted_sinks;
-static vector<int> finished_sinks;
-static int entire_net_rerouted;
-static int entire_tree_pruned;
-static int part_tree_preserved;
-#endif
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -91,19 +78,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
 
-#ifdef PROFILE // initialize and properly size the lookups for profiling fanout breakdown
-	const int max_fanout {get_max_pins_per_net()};
-	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	time_on_fanout_rebuild.resize((max_fanout / fanout_per_bin) + 1, 0);
-	rerouted_sinks.resize((max_fanout / fanout_per_bin) + 1, 0);
-	finished_sinks.resize((max_fanout / fanout_per_bin) + 1, 0);
-	time_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
-	itry_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
-	entire_net_rerouted = 0;
-	entire_tree_pruned = 0;
-	part_tree_preserved = 0;
-#endif
+	// initialize and properly size the lookups for profiling fanout breakdown
+	 profiling::profiling_initialization(get_max_pins_per_net());
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -304,11 +280,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
-#ifdef PROFILE
-        if (router_opts.congestion_analysis) congestion_analysis();
-        if (router_opts.fanout_analysis) time_on_fanout_analysis();
-        time_on_criticality_analysis();
-#endif
+        if (router_opts.congestion_analysis) profiling::congestion_analysis();
+        if (router_opts.fanout_analysis) profiling::time_on_fanout_analysis();
+        profiling::time_on_criticality_analysis();
+
 		fflush(stdout);
 	}
 	vpr_printf_info("Routing failed.\n");
@@ -316,86 +291,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	return (false);
 }
 
-// profiling per iteration functions
-#ifdef PROFILE
-void time_on_fanout_analysis() {
-	vpr_printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n", 
-		entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
-	// using the global time_on_fanout and itry_on_fanout
-	vpr_printf_info("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
-	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
-		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n",
-				bin*fanout_per_bin, 
-				time_on_fanout[bin], 
-				itry_on_fanout[bin], 
-				time_on_fanout_rebuild[bin],
-				finished_sinks[bin],
-				rerouted_sinks[bin]);
-		}
-		// clear the non-cumulative values
-		finished_sinks[bin] = 0;
-		rerouted_sinks[bin] = 0;
-	}
-}
-
-void time_on_criticality_analysis() {
-	vpr_printf_info("criticality low           time (s)        attemps\n");
-	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
-		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4f           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
-		}
-	}	
-}
-// at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
-// efficient bit array for checking against congested type
-struct Congested_node_types {
-	uint32_t mask;
-	Congested_node_types() : mask{0} {}
-	void set_congested(int rr_node_type) {mask |= (1 << rr_node_type);}
-	void clear_congested(int rr_node_type) {mask &= ~(1 << rr_node_type);}
-	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
-	bool empty() const {return mask == 0;}
-};
-
-void congestion_analysis() {
-	// each type indexes into array which holds the congestion for that type
-	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
-	// print out specific node information if congestion for type is low enough
-
-	int total_congestion = 0;
-	for (int inode = 0; inode < num_rr_nodes; ++inode) {
-		const t_rr_node& node = rr_node[inode];
-		int congestion = node.get_occ() - node.get_capacity();
-
-		if (congestion > 0) {
-			total_congestion += congestion;
-			congestion_per_type[node.type] += congestion;
-		}
-	}
-
-	constexpr int specific_node_print_threshold = 5;
-	Congested_node_types congested;
-	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
-		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
-		vpr_printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
-		// nodes of that type need specific printing
-		if (congestion_per_type[type] > 0 &&
-			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
-	}
-
-	// specific print out each congested node
-	if (!congested.empty()) {
-		vpr_printf_info("Specific congested nodes\nxlow ylow   type\n");
-		for (int inode = 0; inode < num_rr_nodes; ++inode) {
-			const t_rr_node& node = rr_node[inode];
-			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
-				vpr_printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
-			}
-		}
-	}
-}
-#endif
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
@@ -413,9 +308,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		is_routed = true;
 	} else{
 		// track time spent vs fanout
-#ifdef PROFILE
-		clock_t net_begin = clock();
-#endif
+		profiling::net_fanout_start();
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
@@ -424,12 +317,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				pin_criticality, router_opts.min_incremental_reroute_fanout, 
 				rt_node_of_sink, net_delay[inet], slacks);
 
-#ifdef PROFILE
-		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
-		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
-		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
-		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
-#endif
+		profiling::net_fanout_end(g_clbs_nlist.net[inet].num_sinks());
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -633,9 +521,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 
 	int target_node = net_rr_terminals[inet][target_pin];
 
-#ifdef PROFILE
-	clock_t sink_criticality_start = clock();
-#endif
+	profiling::sink_criticality_start();
 
 	int highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
 			rt_root);
@@ -715,12 +601,9 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 
 		inode = cheapest->index;
 	}
-#ifdef PROFILE
-	if (!time_on_criticality.empty()) {
-		time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
-		++itry_on_criticality[target_criticality / criticality_per_bin];
-	}
-#endif 
+
+	profiling::sink_criticality_end(target_criticality);
+
 	/* NB:  In the code below I keep two records of the partial routing:  the   *
 	 * traceback and the route_tree.  The route_tree enables fast recomputation *
 	 * of the Elmore delay to each node in the partial routing.  The traceback  *
@@ -760,9 +643,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 	// otherwise, we incrementally reroute by reusing legal parts of the previous iteration
 	// convert the previous iteration's traceback into the starting route tree for this iteration
 	if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
-#ifdef PROFILE
-		++entire_net_rerouted;
-#endif
+
+		profiling::net_rerouted();
+
 		// rip up the whole net
 		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
 		free_traceback(inet);
@@ -778,9 +661,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 	else {
 		auto& reached_sinks = incremental_reroute_res.get_reached_sinks();
 		reached_sinks.clear();
-#ifdef PROFILE
-		clock_t rebuild_start = clock();
-#endif
+
+		profiling::net_rebuild_start();
+
 		// convert the previous iteration's traceback into the partial route tree for this iteration
 		rt_root = traceback_to_route_tree(inet);
 
@@ -799,15 +682,12 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 
 		// if entirely pruned, have just the source (not removed from pathfinder costs)
 		if (destroyed) {
-#ifdef PROFILE
-			++entire_tree_pruned;
+			profiling::route_tree_pruned();
 			// traceback remains empty for just the root and no need to update pathfinder costs
-#endif
 		}
 		else {
-#ifdef PROFILE
-			++part_tree_preserved;
-#endif
+			profiling::route_tree_preserved();
+
 			// sync traceback into a state that matches the route tree
 			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
 			// put the updated costs of the route tree nodes back into pathfinder
@@ -817,17 +697,8 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		// give lookup on the reached sinks
 		incremental_reroute_res.put_sink_rt_nodes_in_net_pins_lookup(inet, reached_sinks, rt_node_of_sink);
 
-#ifdef PROFILE
+		profiling::net_rebuild_end(num_sinks, remaining_targets.size());
 
-		unsigned int bin {num_sinks / fanout_per_bin};
-		unsigned int sinks_left_to_route = remaining_targets.size();
-		unsigned int sinks_already_routed = num_sinks - remaining_targets.size();
-		float rebuild_time {static_cast<float>(clock() - rebuild_start) / CLOCKS_PER_SEC};
-
-		finished_sinks[bin] += sinks_already_routed;
-		rerouted_sinks[bin] += sinks_left_to_route;
-		time_on_fanout_rebuild[bin] += rebuild_time;
-#endif
 		// check for R_upstream C_downstream and edge correctness
 		INCREMENTAL_REROUTING_ASSERT(is_valid_route_tree(rt_root));
 		// congestion should've been pruned away
