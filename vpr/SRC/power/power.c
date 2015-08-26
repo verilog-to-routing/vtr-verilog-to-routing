@@ -790,6 +790,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
+			rr_node[trace->index].net_num = net_idx;
 		}
 	}
 
@@ -804,8 +805,6 @@ static void power_usage_routing(t_power_usage * power_usage,
 			if (node_power->visited) {
 				continue;
 			}
-
-			node->net_num = net_idx;
 
 			for (edge_idx = 0; edge_idx < node->get_num_edges(); edge_idx++) {
 				if (node->edges[edge_idx] != OPEN) {
