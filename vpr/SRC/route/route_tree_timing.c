@@ -886,7 +886,7 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& re
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
 
-	/* Like pathfinder_update_one_cost, but works with a route tree instead *  
+	/* Like pathfinder_update_path_cost, but works with a route tree instead *  
 	 * found sinks are put in reached_sinks if it is not null 				*/
 
 	assert(rt_root != nullptr);
@@ -921,6 +921,9 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 /***************** Debugging and printing for incremental rerouting ****************/
 template <typename Op>
 static void traverse_indented_route_tree(t_rt_node* rt_root, int branch_level, bool new_branch, Op op, int indent_level) {
+
+	/* pretty print the route tree; what's printed depends on the printer Op passed in */
+
 	// rely on preorder depth first traversal
 	assert(rt_root != nullptr);
 	t_linked_rt_edge* edges = rt_root->u.child_list;
@@ -945,6 +948,8 @@ static void traverse_indented_route_tree(t_rt_node* rt_root, int branch_level, b
 		traverse_indented_route_tree(edges->child, branch_level + 1, false, op, indent_level);
 	}
 }
+
+
 void print_edge(t_linked_rt_edge* edge) {
 	vpr_printf_info("edges to ");
 	if (!edge) {vpr_printf_info("null"); return;}
@@ -954,18 +959,24 @@ void print_edge(t_linked_rt_edge* edge) {
 	}
 	vpr_printf_info("\n");
 }
+
+
 static void print_node(t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	t_rr_type node_type = rr_node[inode].type;
 	vpr_printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
 		rt_node->re_expand, node_typename[node_type], inode);	
 }
+
+
 static void print_node_inf(t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	const auto& node_inf = rr_node_route_inf[inode];
 	vpr_printf_info("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
 		node_inf.prev_node, node_inf.prev_edge, inode);	
 }
+
+
 static void print_node_congestion(t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	const auto& node_inf = rr_node_route_inf[inode];
@@ -973,20 +984,25 @@ static void print_node_congestion(t_rt_node* rt_node) {
 	vpr_printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
 		node.get_occ(), node.get_capacity(), inode);		
 }
+
+
 void print_route_tree_inf(t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node_inf, 34);
 	vpr_printf_info("\n");
 }
+
 void print_route_tree(t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node, 34);
 	vpr_printf_info("\n");
 }
+
 void print_route_tree_congestion(t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node_congestion, 15);
 	vpr_printf_info("\n");
 }
 
-
+/* the following is_* functions are for debugging correctness of pruned route tree 
+   these should only be called when the debug switch DEBUG_INCREMENTAL_REROUTING is on */
 bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
 	if (!root && !root_clone) return true;
 	if (!root || !root_clone) return false;	// one of them is null

@@ -390,7 +390,7 @@ int predict_success_route_iter(const std::vector<double>& historical_overuse_rat
 	return expected_success_route_iter;
 }
 
-void pathfinder_update_one_cost(struct s_trace *route_segment_start,
+void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 		int add_or_sub, float pres_fac) {
 
 	/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
@@ -420,6 +420,7 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 
 	} /* End while loop -- did an entire traceback. */
 }
+
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
 
 	/* Updates pathfinder's congestion cost by either adding or removing the    *
@@ -1488,8 +1489,10 @@ void print_traceback(int inet) {
 	t_trace* head = trace_head[inet];
 	while (head) {
 		int inode {head->index};
-		if (rr_node[inode].type == SINK) vpr_printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
-		else vpr_printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
+		if (rr_node[inode].type == SINK) 
+			vpr_printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
+		else 
+			vpr_printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
 		head = head->next;
 	}
 	vpr_printf_info("\n");

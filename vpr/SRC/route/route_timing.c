@@ -21,29 +21,14 @@
  
 using namespace std;
 
-/***************** Iterative connection based rerouting **********************/
-
-// conceptually works like rr_node_to_pin[net_index][sink_node_index] to get the pin index for that net
-// each net maps SINK node index -> PIN index for net
-// only need to be built once at the start since the SINK nodes never change
-// the reverse lookup of net_rr_terminals
-// do not query this directly, as rr_node_to_pin[inet][inode] will create the entry if it does not exist
-// instead, use it through functions convert_sink_node_to_pins_of_net and put_sink_rt_nodes_to_pins_lookup
-static vector<unordered_map<int,int>> rr_node_to_pin;
-
-// a property of each net, but only valid after pruning the previous route tree
-static vector<int> remaining_targets;
-static vector<t_rt_node*> reached_sinks;	// used to populate rt_node_of_sink after building route tree from traceback
 
 /******************** Subroutines local to route_timing.c ********************/
 
-static void init_connection_based_lookup();
+static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout, 
+	Incremental_reroute_resources& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
-#ifdef DEBUG_INCREMENTAL_REROUTING
-static bool sanity_check_lookup();
-#endif
-
-static int get_max_pins_per_net(void);
+static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality, 
+	float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac);
@@ -80,7 +65,7 @@ struct more_sinks_than {
 };
 
 
-#ifdef PROFILE
+#ifdef PROFILE // break down the total time into how much is spent on nets of certain fanouts
 static void congestion_analysis();
 static void time_on_criticality_analysis();
 constexpr unsigned int fanout_per_bin = 4;
@@ -105,7 +90,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
-#ifdef PROFILE
+
+#ifdef PROFILE // initialize and properly size the lookups for profiling fanout breakdown
 	const int max_fanout {get_max_pins_per_net()};
 	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
 	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
@@ -127,8 +113,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 	// sort so net with most sinks is first.
 	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
-
-
 
 	timing_driven_route_structs route_structs{}; // allocs route strucs (calls default constructor)
 	// contains:
@@ -169,9 +153,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		}
 	}
 
+	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
-	init_connection_based_lookup();
-	INCREMENTAL_REROUTING_ASSERT(sanity_check_lookup());
+	Incremental_reroute_resources incremental_reroute_res {};
+	INCREMENTAL_REROUTING_ASSERT(incremental_reroute_res.sanity_check_lookup());
 
 
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
@@ -190,6 +175,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				itry,
 				pres_fac,
 				router_opts,
+				incremental_reroute_res,
 				route_structs.pin_criticality,
 				route_structs.rt_node_of_sink,
 				net_delay,
@@ -333,7 +319,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 // profiling per iteration functions
 #ifdef PROFILE
 void time_on_fanout_analysis() {
-	vpr_printf_info("%d entire net rerouted, %d entire trees pruned, %d partially rerouted\n", 
+	vpr_printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n", 
 		entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
 	// using the global time_on_fanout and itry_on_fanout
 	vpr_printf_info("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
@@ -413,6 +399,7 @@ void congestion_analysis() {
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
+		Incremental_reroute_resources& incremental_reroute_res,
 		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks) {
 
@@ -433,6 +420,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
 				router_opts.astar_fac, router_opts.bend_cost, 
+				incremental_reroute_res,
 				pin_criticality, router_opts.min_incremental_reroute_fanout, 
 				rt_node_of_sink, net_delay[inet], slacks);
 
@@ -520,7 +508,7 @@ timing_driven_route_structs::~timing_driven_route_structs() {
 	);
 }
 
-static int get_max_pins_per_net(void) {
+int get_max_pins_per_net(void) {
 
 	/* Returns the largest number of pins on any non-global net.    */
 
@@ -547,111 +535,23 @@ struct Criticality_comp {
 
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
+		Incremental_reroute_resources& incremental_reroute_res,
 		float *pin_criticality, int min_incremental_reroute_fanout,
 		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks) {
 
-	/* Returns true as long is found some way to hook up this net, even if that *
+	/* Returns true as long as found some way to hook up this net, even if that *
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
 	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
 	 * give each net a dummy criticality of 0.									*/
 
-	// for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
-	// otherwise, we incrementally reroute by reusing legal parts of the previous iteration
-	// convert the previous iteration's traceback into the starting route tree for this iteration
-
-	INCREMENTAL_REROUTING_ASSERT(sanity_check_lookup());
-
-	t_rt_node* rt_root;
-	remaining_targets.clear();	// efficient clearing by just resetting size without allocation
 	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
-	if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
-#ifdef PROFILE
-		++entire_net_rerouted;
-#endif
-		// rip up the whole net
-		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
-		free_traceback(inet);
-
-		rt_root = init_route_tree_to_source(inet);
-		for (unsigned int sink_pin = 1; sink_pin <= num_sinks; ++sink_pin)
-			remaining_targets.push_back(sink_pin);
-		// when we don't prune the tree, we also don't know the sink node indices 
-		// thus we'll use functions that act on pin indices like mark_ends instead
-		// of their versions that act on node indices directly like mark_remaining_ends
-		mark_ends(inet);
-	}
-	else {
-		reached_sinks.clear();
-#ifdef PROFILE
-		clock_t rebuild_start = clock();
-#endif
-		// convert the previous iteration's traceback into the partial route tree for this iteration
-		rt_root = traceback_to_route_tree(inet);
-
-		// check for edge correctness
-		INCREMENTAL_REROUTING_ASSERT(is_valid_skeleton_tree(rt_root));
-		INCREMENTAL_REROUTING_ASSERT(should_route_net(inet));
-		INCREMENTAL_REROUTING_ASSERT(!is_uncongested_route_tree(rt_root));
-
-		// prune the branches of the tree that don't legally lead to sinks
-		// destroyed represents whether the entire tree is illegal
-		bool destroyed {prune_route_tree(rt_root, pres_fac, reached_sinks, remaining_targets)};
-
-		// entire traceback is still freed since the pruned tree will need to have its pres_cost updated
-		pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
-		free_traceback(inet);
-
-		// if entirely pruned, have just the source (not removed from pathfinder costs)
-		if (destroyed) {
-#ifdef PROFILE
-			++entire_tree_pruned;
-			// traceback remains empty for just the root and no need to update pathfinder costs
-#endif
-		}
-		else {
-#ifdef PROFILE
-			++part_tree_preserved;
-#endif
-			// sync traceback into a state that matches the route tree
-			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
-			// put the updated costs of the route tree nodes back into pathfinder
-			pathfinder_update_one_cost(trace_head[inet], 1, pres_fac);
-		}
-
-		// give lookup on the reached sinks
-		put_sink_rt_nodes_to_pins_lookup(rr_node_to_pin[inet], reached_sinks, rt_node_of_sink);
-
-#ifdef PROFILE
-
-		unsigned int bin {num_sinks / fanout_per_bin};
-		unsigned int sinks_left_to_route = remaining_targets.size();
-		unsigned int sinks_already_routed = num_sinks - remaining_targets.size();
-		float rebuild_time {static_cast<float>(clock() - rebuild_start) / CLOCKS_PER_SEC};
-
-		finished_sinks[bin] += sinks_already_routed;
-		rerouted_sinks[bin] += sinks_left_to_route;
-		time_on_fanout_rebuild[bin] += rebuild_time;
-#endif
-		// check for R_upstream C_downstream and edge correctness
-		INCREMENTAL_REROUTING_ASSERT(is_valid_route_tree(rt_root));
-		// congestion should've been pruned away
-		INCREMENTAL_REROUTING_ASSERT(is_uncongested_route_tree(rt_root));
-
-		// use the nodes to directly mark ends before they get converted to pins
-		mark_remaining_ends(inet, remaining_targets);
-
-		// everything dealing with a net works with it in terms of its sink pins; need to convert its sink nodes to sink pins
-		convert_sink_node_to_pins_of_net(rr_node_to_pin[inet], remaining_targets);
-
-		// still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
-		load_route_tree_Tdel(rt_root, 0);
-		// mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
-		load_route_tree_rr_route_inf(rt_root);
-	}
+	t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, 
+		incremental_reroute_res, rt_node_of_sink);
 	// after this point the route tree is correct
 	// remaining_targets from this point on are the **pin indices** that have yet to be routed 
+	auto& remaining_targets = incremental_reroute_res.get_remaining_targets();
 
 	// should always have targets to route to since some parts of the net are still congested
 	assert(!remaining_targets.empty());
@@ -698,117 +598,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	update_rr_base_costs(inet, largest_criticality);
 	
 
-	int itarget {0};	// not sure if necessary...
 	// explore in order of decreasing criticality (no longer need sink_order array)
-	for (int target_pin : remaining_targets) {
-		++itarget;
-
-		int target_node = net_rr_terminals[inet][target_pin];
-
+	for (unsigned itarget = 0; itarget < remaining_targets.size(); ++itarget) {
+		int target_pin = remaining_targets[itarget];
 		float target_criticality = pin_criticality[target_pin];
 
-#ifdef PROFILE
-		clock_t sink_criticality_start = clock();
-#endif
+		// build a branch in the route tree to the target
+		if (!timing_driven_route_sink(itry, inet, itarget, target_pin, target_criticality, 
+			pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink)) 
+			return false;
 
-		int highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
-				rt_root);
-		
-		if (itarget > 1 && itry > 5) {
-			/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-			assert(rr_node[rt_root->inode].type == SOURCE);
-			rt_root->re_expand = false;
-		}
-
-		// reexplore route tree from root to add any new nodes (buildheap afterwards)
-
-		add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
-		heap_::build_heap();	// via sifting down everything
-
-		INCREMENTAL_REROUTING_ASSERT(heap_::is_valid());
-
-
-		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
-		struct s_heap* cheapest {get_heap_head()};
-
-		if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
-			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-					   inet, g_clbs_nlist.net[inet].name, target_pin);
-			reset_path_costs();
-			free_route_tree(rt_root);
-			return (false);
-		}
-
-		float old_total_cost, new_total_cost, old_back_cost, new_back_cost;
-		int inode = cheapest->index;
-		while (inode != target_node) {
-			old_total_cost = rr_node_route_inf[inode].path_cost;
-			new_total_cost = cheapest->cost;
-
-			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-				old_back_cost = HUGE_POSITIVE_FLOAT;
-			else
-				old_back_cost = rr_node_route_inf[inode].backward_path_cost;
-
-			new_back_cost = cheapest->backward_path_cost;
-
-			/* I only re-expand a node if both the "known" backward cost is lower  *
-			 * in the new expansion (this is necessary to prevent loops from       *
-			 * forming in the routing and causing havoc) *and* the expected total  *
-			 * cost to the sink is lower than the old value.  Different R_upstream *
-			 * values could make a path with lower back_path_cost less desirable   *
-			 * than one with higher cost.  Test whether or not I should disallow   *
-			 * re-expansion based on a higher total cost.                          */
-
-			if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
-				rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
-				rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
-				rr_node_route_inf[inode].path_cost = new_total_cost;
-				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
-
-				// tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
-				// path_cost is specific for each sink (different expected cost)
-				if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
-
-				timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
-						target_criticality, target_node, astar_fac,
-						highfanout_rlim);
-			}
-
-			free_heap_data(cheapest);
-			cheapest = get_heap_head();
-
-			if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						 inet, g_clbs_nlist.net[inet].name, target_pin);
-				reset_path_costs();
-				free_route_tree(rt_root);
-				return (false);
-			}
-
-			inode = cheapest->index;
-		}
-#ifdef PROFILE
-		if (!time_on_criticality.empty()) {
-			time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
-			++itry_on_criticality[target_criticality / criticality_per_bin];
-		}
-#endif 
-		/* NB:  In the code below I keep two records of the partial routing:  the   *
-		 * traceback and the route_tree.  The route_tree enables fast recomputation *
-		 * of the Elmore delay to each node in the partial routing.  The traceback  *
-		 * lets me reuse all the routines written for breadth-first routing, which  *
-		 * all take a traceback structure as input.  Before this routine exits the  *
-		 * route_tree structure is destroyed; only the traceback is needed at that  *
-		 * point.                                                                   */
-
-		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-		t_trace* new_route_start_tptr = update_traceback(cheapest, inet);
-		rt_node_of_sink[target_pin] = update_route_tree(cheapest);
-		free_heap_data(cheapest);
-		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
-		empty_heap();
 		// need to gurantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
 		// do this by resetting all the path_costs that have been touched while routing to the current sink
 		reset_path_costs();
@@ -825,6 +624,230 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	free_route_tree(rt_root);
 	return (true);
 }
+
+static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality, 
+	float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink) {
+
+	/* Build a path from the existing route tree rooted at rt_root to the target_node
+	 * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
+
+	int target_node = net_rr_terminals[inet][target_pin];
+
+#ifdef PROFILE
+	clock_t sink_criticality_start = clock();
+#endif
+
+	int highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
+			rt_root);
+	
+	if (itarget > 0 && itry > 5) {
+		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
+		assert(rr_node[rt_root->inode].type == SOURCE);
+		rt_root->re_expand = false;
+	}
+
+	// reexplore route tree from root to add any new nodes (buildheap afterwards)
+	// route tree needs to be repushed onto the heap since each node's cost is target specific
+
+	add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
+	heap_::build_heap();	// via sifting down everything
+
+	INCREMENTAL_REROUTING_ASSERT(heap_::is_valid());
+
+	// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
+	struct s_heap* cheapest {get_heap_head()};
+
+	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
+		vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+				   inet, g_clbs_nlist.net[inet].name, target_node);
+		reset_path_costs();
+		free_route_tree(rt_root);
+		return (false);
+	}
+
+	float old_total_cost, new_total_cost, old_back_cost, new_back_cost;
+	int inode = cheapest->index;
+	while (inode != target_node) {
+		old_total_cost = rr_node_route_inf[inode].path_cost;
+		new_total_cost = cheapest->cost;
+
+		if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+			old_back_cost = HUGE_POSITIVE_FLOAT;
+		else
+			old_back_cost = rr_node_route_inf[inode].backward_path_cost;
+
+		new_back_cost = cheapest->backward_path_cost;
+
+		/* I only re-expand a node if both the "known" backward cost is lower  *
+		 * in the new expansion (this is necessary to prevent loops from       *
+		 * forming in the routing and causing havoc) *and* the expected total  *
+		 * cost to the sink is lower than the old value.  Different R_upstream *
+		 * values could make a path with lower back_path_cost less desirable   *
+		 * than one with higher cost.  Test whether or not I should disallow   *
+		 * re-expansion based on a higher total cost.                          */
+
+		if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
+			rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
+			rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
+			rr_node_route_inf[inode].path_cost = new_total_cost;
+			rr_node_route_inf[inode].backward_path_cost = new_back_cost;
+
+			// tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
+			// path_cost is specific for each sink (different expected cost)
+			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+				add_to_mod_list(&rr_node_route_inf[inode].path_cost);
+
+			timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
+					target_criticality, target_node, astar_fac,
+					highfanout_rlim);
+		}
+
+		free_heap_data(cheapest);
+		cheapest = get_heap_head();
+
+		if (cheapest == NULL) { /* Impossible routing.  No path for net. */
+			vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+					 inet, g_clbs_nlist.net[inet].name, target_node);
+			reset_path_costs();
+			free_route_tree(rt_root);
+			return (false);
+		}
+
+		inode = cheapest->index;
+	}
+#ifdef PROFILE
+	if (!time_on_criticality.empty()) {
+		time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
+		++itry_on_criticality[target_criticality / criticality_per_bin];
+	}
+#endif 
+	/* NB:  In the code below I keep two records of the partial routing:  the   *
+	 * traceback and the route_tree.  The route_tree enables fast recomputation *
+	 * of the Elmore delay to each node in the partial routing.  The traceback  *
+	 * lets me reuse all the routines written for breadth-first routing, which  *
+	 * all take a traceback structure as input.  Before this routine exits the  *
+	 * route_tree structure is destroyed; only the traceback is needed at that  *
+	 * point.                                                                   */
+
+	rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+	t_trace* new_route_start_tptr = update_traceback(cheapest, inet);
+	rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+	free_heap_data(cheapest);
+	pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
+	empty_heap();	
+
+	// routed to a sink successfully
+	return true;
+}
+
+static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout, 
+	Incremental_reroute_resources& incremental_reroute_res, t_rt_node** rt_node_of_sink) {
+
+	/* Build and return a partial route tree from the legal connections from last iteration.
+	 * along the way do:
+	 * 	update pathfinder costs to be accurate to the partial route tree
+	 *	update the net's traceback to be accurate to the partial route tree
+	 * 	find and store the pins that still need to be reached in incremental_rerouting_resources.remaining_targets
+	 * 	find and store the rt nodes that have been reached in incremental_rerouting_resources.reached_sinks
+	 *	mark the rr_node sinks as targets to be reached */
+
+	t_rt_node* rt_root;
+
+	auto& remaining_targets = incremental_reroute_res.get_remaining_targets();
+	remaining_targets.clear();
+
+	// for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
+	// otherwise, we incrementally reroute by reusing legal parts of the previous iteration
+	// convert the previous iteration's traceback into the starting route tree for this iteration
+	if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
+#ifdef PROFILE
+		++entire_net_rerouted;
+#endif
+		// rip up the whole net
+		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
+		free_traceback(inet);
+
+		rt_root = init_route_tree_to_source(inet);
+		for (unsigned int sink_pin = 1; sink_pin <= num_sinks; ++sink_pin)
+			remaining_targets.push_back(sink_pin);
+		// when we don't prune the tree, we also don't know the sink node indices 
+		// thus we'll use functions that act on pin indices like mark_ends instead
+		// of their versions that act on node indices directly like mark_remaining_ends
+		mark_ends(inet);
+	}
+	else {
+		auto& reached_sinks = incremental_reroute_res.get_reached_sinks();
+		reached_sinks.clear();
+#ifdef PROFILE
+		clock_t rebuild_start = clock();
+#endif
+		// convert the previous iteration's traceback into the partial route tree for this iteration
+		rt_root = traceback_to_route_tree(inet);
+
+		// check for edge correctness
+		INCREMENTAL_REROUTING_ASSERT(is_valid_skeleton_tree(rt_root));
+		INCREMENTAL_REROUTING_ASSERT(should_route_net(inet));
+		INCREMENTAL_REROUTING_ASSERT(!is_uncongested_route_tree(rt_root));
+
+		// prune the branches of the tree that don't legally lead to sinks
+		// destroyed represents whether the entire tree is illegal
+		bool destroyed = prune_route_tree(rt_root, pres_fac, reached_sinks, remaining_targets);
+
+		// entire traceback is still freed since the pruned tree will need to have its pres_cost updated
+		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
+		free_traceback(inet);
+
+		// if entirely pruned, have just the source (not removed from pathfinder costs)
+		if (destroyed) {
+#ifdef PROFILE
+			++entire_tree_pruned;
+			// traceback remains empty for just the root and no need to update pathfinder costs
+#endif
+		}
+		else {
+#ifdef PROFILE
+			++part_tree_preserved;
+#endif
+			// sync traceback into a state that matches the route tree
+			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
+			// put the updated costs of the route tree nodes back into pathfinder
+			pathfinder_update_path_cost(trace_head[inet], 1, pres_fac);
+		}
+
+		// give lookup on the reached sinks
+		incremental_reroute_res.put_sink_rt_nodes_in_net_pins_lookup(inet, reached_sinks, rt_node_of_sink);
+
+#ifdef PROFILE
+
+		unsigned int bin {num_sinks / fanout_per_bin};
+		unsigned int sinks_left_to_route = remaining_targets.size();
+		unsigned int sinks_already_routed = num_sinks - remaining_targets.size();
+		float rebuild_time {static_cast<float>(clock() - rebuild_start) / CLOCKS_PER_SEC};
+
+		finished_sinks[bin] += sinks_already_routed;
+		rerouted_sinks[bin] += sinks_left_to_route;
+		time_on_fanout_rebuild[bin] += rebuild_time;
+#endif
+		// check for R_upstream C_downstream and edge correctness
+		INCREMENTAL_REROUTING_ASSERT(is_valid_route_tree(rt_root));
+		// congestion should've been pruned away
+		INCREMENTAL_REROUTING_ASSERT(is_uncongested_route_tree(rt_root));
+
+		// use the nodes to directly mark ends before they get converted to pins
+		mark_remaining_ends(inet, remaining_targets);
+
+		// everything dealing with a net works with it in terms of its sink pins; need to convert its sink nodes to sink pins
+		incremental_reroute_res.convert_sink_nodes_to_net_pins(inet, remaining_targets);
+
+		// still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
+		load_route_tree_Tdel(rt_root, 0);
+		// mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
+		load_route_tree_rr_route_inf(rt_root);
+	}
+	// completed constructing the partial route tree and updated all other data structures to match
+	return rt_root;
+}
+
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac) {
@@ -1430,90 +1453,5 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 	return false;
 }
 
-void convert_sink_node_to_pins_of_net(const unordered_map<int,int>& node_to_pin_mapping, vector<int>& sink_nodes) {
 
-	/* Turn a vector of node indices, assumed to be of sinks for a net *
-	 * into the pin indices of the same net. node_to_pin_mapping is a  *
-	 * net specific lookup table gotten from rr_node_to_pin[inet]	   */
 
-	for (size_t s = 0; s < sink_nodes.size(); ++s) {
-
-		auto mapping = node_to_pin_mapping.find(sink_nodes[s]);
-		// should always expect it find a pin mapping for its own net
-		INCREMENTAL_REROUTING_ASSERT(mapping != node_to_pin_mapping.end());
-
-		sink_nodes[s] = mapping->second;
-	}
-}
-
-void put_sink_rt_nodes_to_pins_lookup(const unordered_map<int,int>& node_to_pin_mapping, const vector<t_rt_node*>& sink_rt_nodes,
-	t_rt_node** rt_node_of_sink) {
-
-	/* Load rt_node_of_sink (which maps a PIN index to a route tree node) *
-	 * with a vector of route tree sink nodes. 							  *
-	 * node_to_pin_mapping is a net specific lookup table gotten from 	  *
-	 * rr_node_to_pin[inet] and provides the mapping from each route tree *
-	 * sink nodes' node index into its pin index for this net 			  *
-	 *																	  *
-	 * The identity the net is implicit in the node_to_pin_mapping passed *
-	 * as argument														  */
-
-	for (t_rt_node* rt_node : sink_rt_nodes) {
-		auto mapping = node_to_pin_mapping.find(rt_node->inode);
-		// element should be able to find itself
-		INCREMENTAL_REROUTING_ASSERT(mapping != node_to_pin_mapping.end());
-
-		rt_node_of_sink[mapping->second] = rt_node;
-	}
-}
-
-#ifdef DEBUG_INCREMENTAL_REROUTING
-static bool sanity_check_lookup() {
-	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		const auto& net_node_to_pin = rr_node_to_pin[inet];
-
-		for (auto mapping : net_node_to_pin) {
-			auto sanity = net_node_to_pin.find(mapping.first);
-			if (sanity == net_node_to_pin.end()) {
-				vpr_printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
-				return false;
-			}
-			assert(net_rr_terminals[inet][mapping.second] == mapping.first);
-		}		
-	}	
-	return true;
-}
-#endif
-
-static void init_connection_based_lookup() {
-
-	/* Initialize the persistent data structures for incremental rerouting *
-	 * this includes rr_node_to_pin, which provides pin lookup given a 	   *
-	 * 	sink node for a specific net.									   *
-	 * remaining_targets will reserve enough space to ensure it won't need *
-	 * 	to grow while storing the sinks that still need routing after 	   *
-	 * 	pruning 													       *
-	 * reached_sinks will also reserve enough space, but instead of 	   *
-	 *	indices, it will store the pointers to route tree nodes 		   */
-
-	// can have as many targets as sink pins (total number of pins - SOURCE pin)
-	// supposed to be used as persistent vector growing with push_back and clearing at the start of each net routing iteration
-	auto max_pins_per_net = get_max_pins_per_net();
-	remaining_targets.reserve(max_pins_per_net - 1);
-	reached_sinks.reserve(max_pins_per_net - 1);
-	// an array of hash tables from terminal node ---> pin on net
-	// supposed to be used as a constant lookup table, to only be used with const operator[] after initialization
-	size_t local_num_nets {g_clbs_nlist.net.size()};
-	rr_node_to_pin.resize(local_num_nets);
-	for (unsigned int inet = 0; inet < local_num_nets; ++inet) {
-		// unordered_map<int,int> net_node_to_pin;
-		auto& net_node_to_pin = rr_node_to_pin[inet];
-
-		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
-		net_node_to_pin.reserve(num_pins - 1);	// not looking up on the SOURCE pin
-
-		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
-			net_node_to_pin.insert({net_rr_terminals[inet][ipin], ipin});
-		}
-	}
-}
