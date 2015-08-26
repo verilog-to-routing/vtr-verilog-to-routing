@@ -68,7 +68,7 @@ extern struct s_bb *route_bb; /* [0..num_nets-1]     */
 
 /******* Subroutines in route_common used only by other router modules ******/
 
-void pathfinder_update_one_cost(struct s_trace *route_segment_start,
+void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 		int add_or_sub, float pres_fac);
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
 
