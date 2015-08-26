@@ -1,18 +1,18 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k6_frac_N10_mem32K_40nm.xml	bgm.v	4614M	success	114	24.8728	91.4686	133.812	1753.6	20.2835	-1	-1	-1	36929	36444	20488	2807	257	32	0	11		
-k6_frac_N10_mem32K_40nm.xml	blob_merge.v	4614M	success	70	10.4625	10.111	10.0183	64.0913	1.96152	-1	-1	-1	6789	6889	3072	542	36	100	0	0		
-k6_frac_N10_mem32K_40nm.xml	boundtop.v	4614M	success	56	6.89782	3.7978	4.52267	8.12557	0.553292	-1	-1	-1	5015	5207	2217	232	275	192	1	0		
-k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	4614M	success	50	3.89852	0.813644	0.467128	0.728301	0.064386	-1	-1	-1	765	895	415	36	99	130	1	0		
-k6_frac_N10_mem32K_40nm.xml	diffeq1.v	4614M	success	52	21.8809	0.439396	0.87116	6.42467	0.549182	-1	-1	-1	1004	941	698	37	162	96	0	5		
-k6_frac_N10_mem32K_40nm.xml	diffeq2.v	4614M	success	50	17.2479	0.314154	0.685266	6.54513	0.489199	-1	-1	-1	649	585	468	26	66	96	0	5		
-k6_frac_N10_mem32K_40nm.xml	mcml.v	unknown	success	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1		
-k6_frac_N10_mem32K_40nm.xml	mkDelayWorker32B.v	4614M	success	78	7.61241	10.9946	15.7288	528.333	7.86958	-1	-1	-1	9969	10522	5268	442	511	553	43	0		
-k6_frac_N10_mem32K_40nm.xml	mkPktMerge.v	4614M	success	48	4.78792	0.564409	2.13614	16.3213	1.1598	-1	-1	-1	1034	1190	978	15	311	156	15	0		
-k6_frac_N10_mem32K_40nm.xml	mkSMAdapter4B.v	4614M	success	58	5.99657	2.98992	2.99105	12.3191	0.614198	-1	-1	-1	3308	3513	1575	165	195	205	5	0		
-k6_frac_N10_mem32K_40nm.xml	or1200.v	4614M	success	76	15.1594	4.62448	6.25901	112.562	1.57014	-1	-1	-1	4257	4588	2497	257	385	394	2	1		
-k6_frac_N10_mem32K_40nm.xml	raygentop.v	4614M	success	72	5.06486	4.44945	3.33095	14.5545	1.08461	-1	-1	-1	4037	4153	1946	170	239	305	1	7		
-k6_frac_N10_mem32K_40nm.xml	sha.v	4614M	success	52	13.2641	5.52856	2.58364	17.2565	0.426779	-1	-1	-1	3226	3262	1350	210	38	36	0	0		
-k6_frac_N10_mem32K_40nm.xml	stereovision0.v	4614M	success	60	4.58929	15.2811	21.7644	40.8709	1.87699	-1	-1	-1	25034	25231	7883	907	157	197	0	0		
-k6_frac_N10_mem32K_40nm.xml	stereovision1.v	4614M	success	100	6.04865	17.0808	22.3015	222.556	6.59039	-1	-1	-1	24641	22506	11082	907	133	145	0	38		
-k6_frac_N10_mem32K_40nm.xml	stereovision2.v	4614M	success	144	17.3949	37.4419	116.963	6728.82	42.4992	-1	-1	-1	58011	49031	34396	2383	149	182	0	201		
-k6_frac_N10_mem32K_40nm.xml	stereovision3.v	4614M	success	30	2.81941	0.115647	0.143774	0.375743	0.020988	-1	-1	-1	293	323	130	13	11	30	0	0		
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_frac_N10_mem32K_40nm.xml	bgm.v	a6e4991-dirty	success	114	25.3781	84.3966	92.8178	1858.82	18.2365	613224	-1	-1	-1	36929	36444	20488	2807	257	32	0	11		
+k6_frac_N10_mem32K_40nm.xml	blob_merge.v	a6e4991-dirty	success	70	10.8032	9.19561	7.60636	56.2803	1.52752	87901	-1	-1	-1	6789	6889	3072	542	36	100	0	0		
+k6_frac_N10_mem32K_40nm.xml	boundtop.v	a6e4991-dirty	success	54	7.04192	3.53128	3.69093	5.08388	0.459231	30231	-1	-1	-1	5015	5207	2217	232	275	192	1	0		
+k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	a6e4991-dirty	success	50	4.02911	0.770231	0.422016	0.669439	0.058005	4102	-1	-1	-1	765	895	415	36	99	130	1	0		
+k6_frac_N10_mem32K_40nm.xml	diffeq1.v	a6e4991-dirty	success	50	22.0162	0.409927	0.792704	5.9874	0.385206	12410	-1	-1	-1	1004	941	698	37	162	96	0	5		
+k6_frac_N10_mem32K_40nm.xml	diffeq2.v	a6e4991-dirty	success	58	17.2633	0.293454	0.625915	4.8759	0.37981	8346	-1	-1	-1	649	585	468	26	66	96	0	5		
+k6_frac_N10_mem32K_40nm.xml	mcml.v	unknown	success	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1		
+k6_frac_N10_mem32K_40nm.xml	mkDelayWorker32B.v	a6e4991-dirty	success	76	7.91712	10.3436	13.0979	1505.15	6.97824	129507	-1	-1	-1	9969	10522	5268	442	511	553	43	0		
+k6_frac_N10_mem32K_40nm.xml	mkPktMerge.v	a6e4991-dirty	success	48	4.67668	0.567721	1.96626	14.7531	0.88037	16371	-1	-1	-1	1034	1190	978	15	311	156	15	0		
+k6_frac_N10_mem32K_40nm.xml	mkSMAdapter4B.v	a6e4991-dirty	success	58	5.88261	2.86804	2.63605	27.426	0.566667	28296	-1	-1	-1	3308	3513	1575	165	195	205	5	0		
+k6_frac_N10_mem32K_40nm.xml	or1200.v	a6e4991-dirty	success	74	15.0285	4.33294	5.39638	71.2469	1.17869	57566	-1	-1	-1	4257	4588	2497	257	385	394	2	1		
+k6_frac_N10_mem32K_40nm.xml	raygentop.v	a6e4991-dirty	success	70	5.28904	4.25929	2.9647	10.6516	0.702106	32201	-1	-1	-1	4037	4153	1946	170	239	305	1	7		
+k6_frac_N10_mem32K_40nm.xml	sha.v	a6e4991-dirty	success	54	14.0986	5.34691	2.15719	14.5449	0.375032	23315	-1	-1	-1	3226	3262	1350	210	38	36	0	0		
+k6_frac_N10_mem32K_40nm.xml	stereovision0.v	a6e4991-dirty	success	64	4.71375	14.3047	15.6534	126.382	1.65726	94112	-1	-1	-1	25034	25231	7883	907	157	197	0	0		
+k6_frac_N10_mem32K_40nm.xml	stereovision1.v	a6e4991-dirty	success	100	6.33078	16.3597	18.0193	671.503	5.565	199730	-1	-1	-1	24641	22506	11082	907	133	145	0	38		
+k6_frac_N10_mem32K_40nm.xml	stereovision2.v	a6e4991-dirty	success	144	17.4729	34.6987	89.7639	22157.3	42.8486	889773	-1	-1	-1	58011	49031	34396	2383	149	182	0	201		
+k6_frac_N10_mem32K_40nm.xml	stereovision3.v	a6e4991-dirty	success	34	2.88388	0.113621	0.14497	0.206139	0.022334	900	-1	-1	-1	293	323	130	13	11	30	0	0		

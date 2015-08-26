@@ -1,7 +1,7 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k6_frac_N10_mem32K_40nm.xml	alu4.blif	4614M	success	44	5.63431	4.18648	0.89246	3.08464	0.28713	-1	-1	-1	1536	1544	683	106	14	8	0	0		
-k6_frac_N10_mem32K_40nm.xml	apex4.blif	4614M	success	54	5.46885	2.73577	0.897825	3.57352	0.302267	-1	-1	-1	1271	1290	692	89	9	19	0	0		
-k6_frac_N10_mem32K_40nm.xml	bigkey.blif	4614M	success	40	2.4566	4.08713	1.45738	3.71537	0.24722	-1	-1	-1	2152	2349	540	120	229	197	0	0		
-k6_frac_N10_mem32K_40nm.xml	diffeq.blif	4614M	success	50	6.68274	3.10483	1.05635	1.74059	0.188589	-1	-1	-1	1935	1974	884	94	64	39	0	0		
-k6_frac_N10_mem32K_40nm.xml	or1200.latren.blif	4614M	success	70	26.5901	4.76993	5.96999	84.0216	1.42884	-1	-1	-1	4167	4498	2421	246	385	394	2	1		
-k6_frac_N10_mem32K_40nm.xml	sha.latren.blif	4614M	success	48	21.2585	5.39526	2.47823	7.0609	0.42316	-1	-1	-1	3161	3197	1298	201	38	36	0	0		
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_frac_N10_mem32K_40nm.xml	alu4.blif	a6e4991-dirty	success	44	5.64834	3.95464	0.782008	2.3009	0.18991	11576	-1	-1	50296	1536	1544	683	106	14	8	0	0		
+k6_frac_N10_mem32K_40nm.xml	apex4.blif	a6e4991-dirty	success	52	5.5182	2.59393	0.746453	5.59316	0.232289	13413	-1	-1	48788	1271	1290	692	89	9	19	0	0		
+k6_frac_N10_mem32K_40nm.xml	bigkey.blif	a6e4991-dirty	success	52	2.32217	3.9341	1.22014	1.56071	0.178466	6956	-1	-1	84336	2152	2349	540	120	229	197	0	0		
+k6_frac_N10_mem32K_40nm.xml	diffeq.blif	a6e4991-dirty	success	48	6.84892	2.99979	0.885293	1.99601	0.162102	11376	-1	-1	106208	1935	1974	884	94	64	39	0	0		
+k6_frac_N10_mem32K_40nm.xml	or1200.latren.blif	a6e4991-dirty	success	72	26.5857	4.50117	5.31365	219.071	1.09845	57538	-1	-1	162144	4167	4498	2421	246	385	394	2	1		
+k6_frac_N10_mem32K_40nm.xml	sha.latren.blif	a6e4991-dirty	success	48	21.6277	5.23104	2.02713	10.2153	0.333915	21464	-1	-1	86708	3161	3197	1298	201	38	36	0	0		

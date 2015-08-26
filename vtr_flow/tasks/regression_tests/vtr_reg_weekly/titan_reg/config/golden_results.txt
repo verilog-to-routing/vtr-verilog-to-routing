@@ -1,3 +1,3 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-stratixiv_arch.simple.xml	sudoku_check_stratixiv_arch_simple.blif	4614M	success	-1	-1	50.2615	8.16012	7.23976	-1	-1	-1	-1	16792	16781	11621	-1	2	52	-1	-1		
-stratixiv_arch.simple.xml	wb_conmax_stratixiv_arch_simple.blif	4614M	success	-1	-1	63.5045	13.7564	19.5766	-1	-1	-1	-1	15377	16083	7903	-1	403	704	-1	-1		
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+stratixiv_arch.simple.xml	sudoku_check_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	47.9069	6.21362	6.50133	-1	243874	-1	-1	653088	16792	16781	11621	-1	2	52	-1	-1		
+stratixiv_arch.simple.xml	wb_conmax_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	60.8079	10.973	18.6662	-1	200100	-1	-1	1709884	15377	16083	7903	-1	403	704	-1	-1		

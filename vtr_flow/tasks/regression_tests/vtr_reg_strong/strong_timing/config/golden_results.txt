@@ -1,2 +1,2 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	4614M	success	50	3.89852	0.811048	0.488961	0.770812	0.067862	-1	-1	-1	765	895	415	36	99	130	1	0		
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	a6e4991-dirty	success	50	4.02911	0.772417	0.415362	0.681489	0.056662	4102	7644	29936	126852	765	895	415	36	99	130	1	0		

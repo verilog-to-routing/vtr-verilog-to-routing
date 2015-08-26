@@ -1,6 +1,7 @@
 vpr_status;String
 min_chan_width;Range;0.80;1.30
 critical_path_delay;Range;0.80;1.40
+routed_wirelength;Range;0.60;1.50
 pack_time;Range;0.10;10.0
 place_time;Range;0.10;10.0
 min_chan_width_route_time;Range;0.10;10.0
