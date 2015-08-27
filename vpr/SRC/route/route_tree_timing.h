@@ -76,12 +76,8 @@ void load_route_tree_rr_route_inf(t_rt_node* root);
 
 
 /********** incremental connection-based rerouting ***********/
-// logically expensive asserts
-#ifdef DEBUG_INCREMENTAL_REROUTING
-#define INCREMENTAL_REROUTING_ASSERT(expr) assert(expr)
-#else
-#define INCREMENTAL_REROUTING_ASSERT(expr) ;
-#endif
+// instead of ripping up a net that has some congestion, cut the branches
+// that don't legally lead to a sink and start routing with that partial route tree
 
 void print_edge(const t_linked_rt_edge* edge);
 void print_route_tree(const t_rt_node* rt_root);

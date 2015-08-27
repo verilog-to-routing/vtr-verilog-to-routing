@@ -85,13 +85,13 @@ void net_fanout_end(unsigned net_fanout) {
 }
 #else
 void sink_criticality_start() {}
-void sink_criticality_end(float target_criticality) {}
+void sink_criticality_end(float) {}
 
 void net_rebuild_start() {}
-void net_rebuild_end(unsigned net_fanout) {}
+void net_rebuild_end(unsigned, unsigned) {}
 
 void net_fanout_start() {}
-void net_fanout_end(unsigned net_fanout) {}
+void net_fanout_end(unsigned) {}
 #endif
 
 void time_on_fanout_analysis() {
