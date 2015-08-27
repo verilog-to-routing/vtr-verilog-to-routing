@@ -61,5 +61,16 @@ void free_pb(t_pb *pb);
 
 void print_switch_usage();
 //void print_usage_by_wire_length();
+
+
+// additional debugging tools
+#ifdef EXPENSIVE_ASSERTS
+#define EXPENSIVE_ASSERT(expr) assert(expr);
+#else
+#define EXPENSIVE_ASSERT(expr) 
+#endif
+
+
+
 #endif
 

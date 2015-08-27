@@ -5,6 +5,7 @@ using namespace std;
 
 #include "util.h"
 #include "vpr_types.h"
+#include "vpr_utils.h"
 #include "globals.h"
 #include "route_common.h"
 #include "route_tree_timing.h"
@@ -485,7 +486,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		// path cost should be HUGE_POSITIVE_FLOAT to indicate it's unset
-		INCREMENTAL_REROUTING_ASSERT(equal_approx(rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
+		EXPENSIVE_ASSERT(equal_approx(rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
 
 		// reached a sink
 		if (!edge) {return;}
@@ -922,7 +923,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 
 /***************** Debugging and printing for incremental rerouting ****************/
 template <typename Op>
-static void traverse_indented_route_tree(t_rt_node* rt_root, int branch_level, bool new_branch, Op op, int indent_level) {
+static void traverse_indented_route_tree(const t_rt_node* rt_root, int branch_level, bool new_branch, Op op, int indent_level) {
 
 	/* pretty print the route tree; what's printed depends on the printer Op passed in */
 
@@ -952,7 +953,7 @@ static void traverse_indented_route_tree(t_rt_node* rt_root, int branch_level, b
 }
 
 
-void print_edge(t_linked_rt_edge* edge) {
+void print_edge(const t_linked_rt_edge* edge) {
 	vpr_printf_info("edges to ");
 	if (!edge) {vpr_printf_info("null"); return;}
 	while (edge) {
@@ -963,7 +964,7 @@ void print_edge(t_linked_rt_edge* edge) {
 }
 
 
-static void print_node(t_rt_node* rt_node) {
+static void print_node(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	t_rr_type node_type = rr_node[inode].type;
 	vpr_printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
@@ -971,7 +972,7 @@ static void print_node(t_rt_node* rt_node) {
 }
 
 
-static void print_node_inf(t_rt_node* rt_node) {
+static void print_node_inf(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	const auto& node_inf = rr_node_route_inf[inode];
 	vpr_printf_info("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
@@ -979,7 +980,7 @@ static void print_node_inf(t_rt_node* rt_node) {
 }
 
 
-static void print_node_congestion(t_rt_node* rt_node) {
+static void print_node_congestion(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	const auto& node_inf = rr_node_route_inf[inode];
 	const auto& node = rr_node[inode];
@@ -988,24 +989,24 @@ static void print_node_congestion(t_rt_node* rt_node) {
 }
 
 
-void print_route_tree_inf(t_rt_node* rt_root) {
+void print_route_tree_inf(const t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node_inf, 34);
 	vpr_printf_info("\n");
 }
 
-void print_route_tree(t_rt_node* rt_root) {
+void print_route_tree(const t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node, 34);
 	vpr_printf_info("\n");
 }
 
-void print_route_tree_congestion(t_rt_node* rt_root) {
+void print_route_tree_congestion(const t_rt_node* rt_root) {
 	traverse_indented_route_tree(rt_root, 0, false, print_node_congestion, 15);
 	vpr_printf_info("\n");
 }
 
 /* the following is_* functions are for debugging correctness of pruned route tree 
    these should only be called when the debug switch DEBUG_INCREMENTAL_REROUTING is on */
-bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
+bool is_equivalent_route_tree(const t_rt_node* root, const t_rt_node* root_clone) {
 	if (!root && !root_clone) return true;
 	if (!root || !root_clone) return false;	// one of them is null
 	if ((root->inode != root_clone->inode) ||
@@ -1038,7 +1039,7 @@ bool is_equivalent_route_tree(t_rt_node* root, t_rt_node* root_clone) {
 }
 
 // check only the connections are correct, ignore R and C
-bool is_valid_skeleton_tree(t_rt_node* root) {
+bool is_valid_skeleton_tree(const t_rt_node* root) {
 	int inode = root->inode;
 	t_linked_rt_edge* edge = root->u.child_list;
 	while (edge) {
@@ -1063,7 +1064,7 @@ bool is_valid_skeleton_tree(t_rt_node* root) {
 	return true;	
 }
 
-bool is_valid_route_tree(t_rt_node* root) {
+bool is_valid_route_tree(const t_rt_node* root) {
 	// check upstream resistance
 	int inode = root->inode;
 	short iswitch = root->parent_switch;
@@ -1129,7 +1130,7 @@ bool is_valid_route_tree(t_rt_node* root) {
 	return true;
 }
 
-bool is_uncongested_route_tree(t_rt_node* root) {
+bool is_uncongested_route_tree(const t_rt_node* root) {
 	// make sure the nodes are legally connected
 	t_linked_rt_edge* edge {root->u.child_list};
 	

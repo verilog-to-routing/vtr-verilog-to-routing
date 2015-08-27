@@ -423,9 +423,9 @@ void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
 
-	/* Updates pathfinder's congestion cost by either adding or removing the    *
-	 * usage of a resource node. pres_cost is Pn in the Pathfinder paper. 		*
-	 * pres_cost is set according to the overuse that would result from having  *
+	/* Updates pathfinder's congestion cost by either adding or removing the 
+	 * usage of a resource node. pres_cost is Pn in the Pathfinder paper.
+	 * pres_cost is set according to the overuse that would result from having
 	 * ONE MORE net use this routing node.     */
 
 	int occ = rr_node[inode].get_occ() + add_or_sub;

@@ -91,10 +91,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
 
 	timing_driven_route_structs route_structs{}; // allocs route strucs (calls default constructor)
-	// contains:
-	// float *pin_criticality; /* [1..max_pins_per_net-1] */
-	// int *sink_order; /* [1..max_pins_per_net-1] */;
-	// t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
 
 	/* First do one routing iteration ignoring congestion to get reasonable net 
 	   delay estimates. Set criticalities to 1 when timing analysis is on to 
@@ -132,7 +128,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
 	Incremental_reroute_resources incremental_reroute_res {};
-	INCREMENTAL_REROUTING_ASSERT(incremental_reroute_res.sanity_check_lookup());
+	EXPENSIVE_ASSERT(incremental_reroute_res.sanity_check_lookup());
 
 
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
@@ -538,7 +534,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
 	heap_::build_heap();	// via sifting down everything
 
-	INCREMENTAL_REROUTING_ASSERT(heap_::is_valid());
+	EXPENSIVE_ASSERT(heap_::is_valid());
 
 	// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
 	struct s_heap* cheapest {get_heap_head()};
@@ -668,9 +664,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		rt_root = traceback_to_route_tree(inet);
 
 		// check for edge correctness
-		INCREMENTAL_REROUTING_ASSERT(is_valid_skeleton_tree(rt_root));
-		INCREMENTAL_REROUTING_ASSERT(should_route_net(inet));
-		INCREMENTAL_REROUTING_ASSERT(!is_uncongested_route_tree(rt_root));
+		EXPENSIVE_ASSERT(is_valid_skeleton_tree(rt_root));
+		EXPENSIVE_ASSERT(should_route_net(inet));
+		EXPENSIVE_ASSERT(!is_uncongested_route_tree(rt_root));
 
 		// prune the branches of the tree that don't legally lead to sinks
 		// destroyed represents whether the entire tree is illegal
@@ -700,9 +696,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		profiling::net_rebuild_end(num_sinks, remaining_targets.size());
 
 		// check for R_upstream C_downstream and edge correctness
-		INCREMENTAL_REROUTING_ASSERT(is_valid_route_tree(rt_root));
+		EXPENSIVE_ASSERT(is_valid_route_tree(rt_root));
 		// congestion should've been pruned away
-		INCREMENTAL_REROUTING_ASSERT(is_uncongested_route_tree(rt_root));
+		EXPENSIVE_ASSERT(is_uncongested_route_tree(rt_root));
 
 		// use the nodes to directly mark ends before they get converted to pins
 		mark_remaining_ends(inet, remaining_targets);
@@ -1325,4 +1321,89 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 }
 
 
+// incremental rerouting resources class definitions
+Incremental_reroute_resources::Incremental_reroute_resources() {
 
+	/* Initialize the persistent data structures for incremental rerouting
+	 * this includes rr_sink_node_to_pin, which provides pin lookup given a
+	 * sink node for a specific net.
+	 *
+	 * remaining_targets will reserve enough space to ensure it won't need
+	 * to grow while storing the sinks that still need routing after pruning
+	 *
+	 * reached_sinks will also reserve enough space, but instead of
+	 * indices, it will store the pointers to route tree nodes */
+
+	// can have as many targets as sink pins (total number of pins - SOURCE pin)
+	// supposed to be used as persistent vector growing with push_back and clearing at the start of each net routing iteration
+	auto max_sink_pins_per_net = get_max_pins_per_net() - 1;
+	remaining_targets.reserve(max_sink_pins_per_net);
+	reached_sinks.reserve(max_sink_pins_per_net);
+	// an array of hash tables from terminal node ---> pin on net
+	// supposed to be used as a constant lookup table, to only be used with const operator[] after initialization
+	size_t local_num_nets {g_clbs_nlist.net.size()};
+	rr_sink_node_to_pin.resize(local_num_nets);
+	for (unsigned int inet = 0; inet < local_num_nets; ++inet) {
+		// unordered_map<int,int> net_node_to_pin;
+		auto& net_node_to_pin = rr_sink_node_to_pin[inet];
+
+		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+		net_node_to_pin.reserve(num_pins - 1);	// not looking up on the SOURCE pin
+
+		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
+			net_node_to_pin.insert({net_rr_terminals[inet][ipin], ipin});
+		}
+	}
+}
+
+void Incremental_reroute_resources::convert_sink_nodes_to_net_pins(unsigned inet, 
+	vector<int>& rr_sink_nodes) const {
+
+	/* Turn a vector of rr_node indices, assumed to be of sinks for a net *
+	 * into the pin indices of the same net. */
+
+	const auto& node_to_pin_mapping = rr_sink_node_to_pin[inet];
+
+	for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
+
+		auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
+		// should always expect it find a pin mapping for its own net
+		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+
+		rr_sink_nodes[s] = mapping->second;
+	}
+}
+
+void Incremental_reroute_resources::put_sink_rt_nodes_in_net_pins_lookup(unsigned inet, 
+	const vector<t_rt_node*>& sink_rt_nodes, t_rt_node** rt_node_of_sink) const {
+
+	/* Load rt_node_of_sink (which maps a PIN index to a route tree node)
+	 * with a vector of route tree sink nodes. */
+
+	// a net specific mapping from node index to pin index
+	const auto& node_to_pin_mapping = rr_sink_node_to_pin[inet];
+
+	for (t_rt_node* rt_node : sink_rt_nodes) {
+		auto mapping = node_to_pin_mapping.find(rt_node->inode);
+		// element should be able to find itself
+		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+
+		rt_node_of_sink[mapping->second] = rt_node;
+	}
+}
+
+bool Incremental_reroute_resources::sanity_check_lookup() const {
+	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+		const auto& net_node_to_pin = rr_sink_node_to_pin[inet];
+
+		for (auto mapping : net_node_to_pin) {
+			auto sanity = net_node_to_pin.find(mapping.first);
+			if (sanity == net_node_to_pin.end()) {
+				vpr_printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
+				return false;
+			}
+			assert(net_rr_terminals[inet][mapping.second] == mapping.first);
+		}		
+	}	
+	return true;
+}
