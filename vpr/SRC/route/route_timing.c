@@ -21,22 +21,41 @@
 #include "stats.h"
 #include "ReadOptions.h"
 #include "profile_lookahead.h"
-#include "look_ahead_bfs.h"
+#include "look_ahead_bfs_precal.h"
 
 using namespace std;
-int g_target_node;
-float g_basecost;
-#define DEBUGSMITHWATERMAN
-#ifdef DEBUGSMITHWATERMAN
-bool debug_bt_begin = false;
-bool debug_itr_begin = false;
-bool heap_head_begin = false;
-int target_count = 0;
-#endif
+
+/************************* variables used by new look ahead *****************************/
+typedef struct s_opin_cost_inf {
+    float Tdel;
+    float acc_basecost;
+    float acc_C;
+} t_opin_cost_inf;
+// map key: seg_index; map value: cost of that seg_index from source to target
+map<int, t_opin_cost_inf> opin_cost_by_seg_type;
+typedef struct s_target_pin_side {
+    int chan_type;
+    int x;
+    int y;
+} t_target_pin_side;
+// map key: currently expanded inode; map value: ipin side, x, y that will produce a min cost to target
+map<int, t_target_pin_side> expanded_node_min_target_side;
+int target_chosen_chan_type = UNDEFINED;
+int target_pin_x = UNDEFINED;
+int target_pin_y = UNDEFINED;
+
+float crit_threshold;   // for switch between new & old lookahead: only use new lookahead for high critical path
+
+
+/******************* variables for profiling & debugging *******************/
+float basecost_for_printing;    // for printing in expand_neighbours()
+float acc_route_time = 0.;      // accumulated route time: sum of router runtime over all iterations
+
+float time_pre_itr;
+float time_1st_itr;
+
 #if PRINTCRITICALPATH == 1
 bool is_first_itr = false;
-float max_crit_len_product = -1;
-float min_crit_len_product = pow(10, 20);
 float max_crit = -1;
 float min_crit = 10;
 int max_inet = -1;
@@ -44,31 +63,8 @@ int max_ipin = -1;
 int min_inet = -1;
 int min_ipin = -1;
 #endif
-float acc_route_time = 0.;
-struct s_opin_cost_inf {
-    float Tdel;
-    float acc_basecost;
-    float acc_C;
-};
-// map key: seg_index; map value: cost of that seg_index from source to target
-map<int, struct s_opin_cost_inf> opin_cost_by_seg_type;
-struct s_target_pin_side {
-    int chan_type;
-    int x;
-    int y;
-};
-// map key: currently expanded inode; map value: ipin side, x, y that will produce a min cost to target
-map<int, struct s_target_pin_side> expanded_node_min_target_side;
-int target_chan_type = UNDEFINED;
-int target_pin_x = UNDEFINED;
-int target_pin_y = UNDEFINED;
 
-float crit_threshold_init = 0.8;
-float crit_threshold_inc_rate = 1.01;
-float crit_threshold;
 
-float time_pre_itr;
-float time_1st_itr;
 /******************** Subroutines local to route_timing.c ********************/
 
 static int get_max_pins_per_net(void);
@@ -100,21 +96,22 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 
 static double get_overused_ratio();
 
-static bool should_route_net(int inet);
+// should_route_net is used in setup_max_min_criticality() in profile_lookahead.c
+//static bool should_route_net(int inet);
 
 static bool turn_on_bfs_map_lookup(float criticality);
 
-static void setup_min_side_reaching_target(int inode, int t_chan_type, int t_x, int t_y, 
+static void setup_min_side_reaching_target(int inode, int target_chan_type, int target_x, int target_y, 
         float *min_Tdel, float cur_Tdel, float *C_downstream, float *future_base_cost, 
         float cur_C_downstream, float cur_basecost);
 
 float bfs_direct_lookup(int offset_x, int offset_y, int seg_type, int chan_type, 
                 int to_chan_type, float *acc_C, float *acc_basecost);
 
-static void adjust_coord_for_wrong_dir_wire(int *s_chan_type, int *s_dir, int start_len, 
+static void adjust_coord_for_wrong_dir_wire(int *start_chan_type, int *start_dir, int start_len, 
                                             int *x_start, int *y_start, int x_target, int y_target);
  
-static float get_bfs_lookup_Tdel(int s_inode, int s_chan_type, int t_chan_type, int s_seg_type, int s_dir,
+static float get_precal_Tdel(int start_node, int start_chan_type, int target_chan_type, int start_seg_type, int start_dir,
                                  int x_start, int y_start, int x_target, int y_target, int len_start,
                                  float *acc_C, float *acc_basecost);
    
@@ -204,9 +201,12 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #endif
     acc_route_time = 0.;
 	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
-        if (itry == 1) crit_threshold = crit_threshold_init;
-        else crit_threshold *= crit_threshold_inc_rate;
-        if (crit_threshold > 0.988) crit_threshold = 0.988;
+        if (itry == 1) 
+            crit_threshold = CRIT_THRES_INIT;
+        else 
+            crit_threshold *= CRIT_THRES_INC_RATE;
+        if (crit_threshold > 0.988) 
+            crit_threshold = 0.988;
         if (itry == 2) {
             nodes_expanded_1st_itr = nodes_expanded_cur_itr;
             nodes_expanded_max_itr = nodes_expanded_cur_itr;
@@ -228,17 +228,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #if OPINPENALTY == 1
         opin_penalty *= OPIN_DECAY_RATE;
 #endif
-#if LOOKAHEADCONGPENALTY == 1
-        if (itry > 5 && itry <= 15)
-            future_cong_penalty *= 1.1;
-#endif
-#if PRINTCRITICALPATH == 1
-        if (itry == 1) {
-            is_first_itr = true;
-        } else {
-            is_first_itr = false;
-        }
-#endif
 #if DEPTHWISELOOKAHEADEVAL == 1
         if (router_opts.lookahead_eval) {
             subtree_count.clear();
@@ -254,51 +243,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			g_clbs_nlist.net[inet].is_fixed = false;
 		}
 #if PRINTCRITICALPATH == 1
-        // XXX: set up max/min criticality && where the max/min happens
-        max_crit_len_product = -1;
-        min_crit_len_product = pow(10, 20);
-        max_crit = -1;
-        min_crit = pow(10, 20);
-        max_inet = -1;
-        max_ipin = -1;
-        min_inet = -1;
-        min_ipin = -1;
-		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-            if (should_route_net(inet) == false)
-                continue; 
-    		if (g_clbs_nlist.net[inet].is_global == true)
-                continue;
-            if (g_clbs_nlist.net[inet].is_fixed == true)
-                continue;
-            int source_inode = net_rr_terminals[inet][0];
-            int x_source_mid = (rr_node[source_inode].get_xhigh() + rr_node[source_inode].get_xlow()) / 2;
-            int y_source_mid = (rr_node[source_inode].get_yhigh() + rr_node[source_inode].get_ylow()) / 2;
-            unsigned int pin_upbound = (g_clbs_nlist.net[inet].pins.size() > 2) ? 2 : g_clbs_nlist.net[inet].pins.size();
-            for (unsigned int ipin = 1; ipin < pin_upbound; ipin++) {
-			    float pin_criticality = slacks->timing_criticality[inet][ipin];
-                //printf("%f  ", pin_criticality);
-                int target_inode = net_rr_terminals[inet][ipin];
-                int x_target_mid = (rr_node[target_inode].get_xhigh() + rr_node[target_inode].get_xlow()) / 2;
-                int y_target_mid = (rr_node[target_inode].get_yhigh() + rr_node[target_inode].get_ylow()) / 2;
-                // print long nets only
-                int bb_len = abs(x_source_mid - x_target_mid + 1) + abs(y_source_mid - y_target_mid + 1);
-                //if (abs(x_source_mid - x_target_mid) + abs(y_source_mid - y_target_mid) > 0.3 * (nx + ny)) {
-                float len_crit_product = bb_len * pin_criticality;
-                float len_inv_crit_product = (1./bb_len) * pin_criticality;
-                max_inet = (len_crit_product > max_crit_len_product) ? inet : max_inet;
-                max_ipin = (len_crit_product > max_crit_len_product) ? ipin : max_ipin;
-                min_inet = (len_inv_crit_product < min_crit_len_product) ? inet : min_inet;
-                min_ipin = (len_inv_crit_product < min_crit_len_product) ? ipin : min_ipin;
-                max_crit = (len_crit_product > max_crit_len_product) ? pin_criticality : max_crit;
-                min_crit = (len_inv_crit_product < min_crit_len_product) ? pin_criticality : min_crit;
-                max_crit_len_product = (len_crit_product > max_crit_len_product) ? len_crit_product : max_crit_len_product;
-                min_crit_len_product = (len_inv_crit_product < min_crit_len_product) ? len_inv_crit_product : min_crit_len_product;
-                //}
-            }
+        if (itry == 1) {
+            is_first_itr = true;
+        } else {
+            is_first_itr = false;
         }
-        //printf("max_inet %d\tmax_ipin %d\tmin_inet %d\tmin_ipin %d\n", max_inet, max_ipin, min_inet, min_ipin);
-        //printf("max_crit_len_product %f\tmin_crit %f\n", max_crit_len_product, min_crit);
-        //printf("\n");
+        setup_max_min_criticality(max_crit, min_crit, 
+                max_inet, min_inet, max_ipin, min_ipin, slacks);
 #endif
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
@@ -755,13 +706,12 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
             printf("INET %d\n", inet);
 		target_criticality = pin_criticality[target_pin];
 #if PRINTCRITICALPATH == 1
-        if ((int)inet == max_inet && itarget == max_ipin) {
+        if ((int)inet == max_inet && itarget == max_ipin)
             is_print_cpath = true;
-        } else {
+        else
             is_print_cpath = false;
-        }
 #endif
-        target_chan_type = UNDEFINED;
+        target_chosen_chan_type = UNDEFINED;
         target_pin_x = UNDEFINED;
         target_pin_y = UNDEFINED;
         expanded_node_min_target_side.clear();
@@ -826,15 +776,12 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 						target_criticality, target_node, astar_fac,
 						highfanout_rlim, lookahead_eval, target_criticality);
 			}
-            else if (debug_bt_begin && debug_itr_begin) {
-                printf("\tfree %d\tTdel %e\n", inode, cheapest->back_Tdel);
-            }
 			free_heap_data(cheapest);
 			cheapest = get_heap_head();
-            if (target_chan_type == UNDEFINED) {
+            if (target_chosen_chan_type == UNDEFINED) {
                 int cheap_inode = cheapest->index;
                 if (expanded_node_min_target_side.count(cheap_inode) > 0) {
-                    target_chan_type = expanded_node_min_target_side[cheap_inode].chan_type;
+                    target_chosen_chan_type = expanded_node_min_target_side[cheap_inode].chan_type;
                     target_pin_x = expanded_node_min_target_side[cheap_inode].x;
                     target_pin_y = expanded_node_min_target_side[cheap_inode].y;
                     expanded_node_min_target_side.clear();
@@ -847,8 +794,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 				free_route_tree(rt_root);
 				return (false);
 			}
-            if (heap_head_begin) 
-                printf("HEAPHEAD: %d\n", cheapest->index);
 			inode = cheapest->index;
 		}
 
@@ -955,9 +900,9 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 #if DEBUGEXPANSIONRATIO == 1
     if (itry_share == DB_ITRY && target_node == DB_TARGET_NODE) 
         printf("CRITICALITY %f\n", target_criticality);
-#endif
     print_expand_neighbours(true, inode, target_node, 
-        target_chan_type, target_pin_x, target_pin_y, 0., 0., 0., 0., 0.);
+        target_chosen_chan_type, target_pin_x, target_pin_y, 0., 0., 0., 0., 0.);
+#endif
 
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
@@ -1035,34 +980,22 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
                 node_expanded_per_sink ++;
             }
         }
+#if DEBUGEXPANSIONRATIO == 1
         if (new_tot_cost < rr_node_route_inf[to_node].path_cost) {
             print_expand_neighbours(false, to_node, target_node, 
-                target_chan_type, target_pin_x, target_pin_y, 
+                target_chosen_chan_type, target_pin_x, target_pin_y, 
                 expected_cost, Tdel + current->back_Tdel, new_tot_cost, 
-                g_basecost, get_rr_cong_cost(to_node));
+                basecost_for_printing, get_rr_cong_cost(to_node));
         }
+#endif
 	} /* End for all neighbours */
 }
-static bool turn_on_bfs_map_lookup(float criticality) {
-    // Not currently add the bfs map look up in placement
-    if (!route_start)
-        return false;
-    if (itry_share == 1)
-        return true;
-    //if (nodes_expanded_pre_itr > 2 * nodes_expanded_1st_itr)
-    //    return false;
-    if (criticality > crit_threshold) return true;
-    else return false;
-    //if (nodes_expanded_pre_itr < 2 * nodes_expanded_1st_itr)
-    //    return true;
-    //return false;
-}
+
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream) {
 	/* Determines the expected cost (due to both delay and resouce cost) to reach *
 	 * the target node from inode.  It doesn't include the cost of inode --       *
 	 * that's already in the "known" path_cost.                                   */
-    g_target_node = target_node;
 
 	t_rr_type rr_type;
 	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
@@ -1076,18 +1009,17 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 #endif
         float Tdel_future = 0.;
 #if LOOKAHEADBFS == 1
-        if (turn_on_bfs_map_lookup(criticality_fac)) {// && criticality_fac > 0.15) {
+        if (turn_on_bfs_map_lookup(criticality_fac)) {
             // calculate Tdel, not just Tdel_future
             float C_downstream = -1.0;
-            cong_cost = -1.0;
             Tdel_future = get_timing_driven_future_Tdel(inode, target_node, &C_downstream, &cong_cost);
-            g_basecost = cong_cost;
+            basecost_for_printing = cong_cost;
             Tdel = Tdel_future + R_upstream * C_downstream;
             cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
                        + rr_indexed_data[SINK_COST_INDEX].base_cost;
 
         } else {
- #endif
+#endif
             if (rr_type == OPIN) {
                 // keep the same as the original router
                 return 0;
@@ -1133,22 +1065,43 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	}
 }
 
-/*
- * the whole motivation of this version of bfs look ahead:
- *    we don't evaluate the Tdel cost from (x1, y1) to (x2, y2)
- *    instead we evaluate by channel base. --> for example: 
- *    give the cost from chanx at (x1, y1) to chany at (x2, y2)
- *    prerequisite of reaching this level of precision:
- *         given a sink at (x,y), can it be reached from 
- *         TOP / RIGHT / BOTTOM / LEFT side of the clb?
- *    this prerequisite requires extra backward information about the sink
- *    which is store in g_pin_side, and setup when you build rr_graph (in rr_graph.c / rr_graph2.c)
- *         
- *
- *
- */
+
+/******************************* START function definition for new look ahead ***************************************/
+static bool turn_on_bfs_map_lookup(float criticality) {
+    /*
+     * check function to decide whether we should use the
+     * new lookahead or the old one
+     * crit_threshold is updated after each iteration
+     */
+    // Not currently add the bfs map look up in placement
+    if (!route_start)
+        return false;
+    if (itry_share == 1)
+        return true;
+    if (criticality > crit_threshold) 
+        return true;
+    else 
+        return false;
+}
+
+
 float get_timing_driven_future_Tdel (int inode, int target_node, 
         float *C_downstream, float *future_base_cost) {
+    /*
+     * the whole motivation of this version of bfs look ahead:
+     *    we don't evaluate the Tdel cost from (x1, y1) to (x2, y2)
+     *    instead we evaluate by channel. --> for example: 
+     *    give the cost from chanx at (x1, y1) to chany at (x2, y2)
+     *    prerequisite of supporting this level of precision:
+     *         given a sink at (x,y), we should know if it can be
+     *         reached from TOP / RIGHT / BOTTOM / LEFT side of the clb
+     *    this prerequisite requires extra backward information about the sink
+     *    which is store in g_pin_side, and setup when building rr_graph 
+     *    (in rr_graph.c / rr_graph2.c)     
+     *
+     *
+     */
+
     *future_base_cost = 0;
     *C_downstream = 0;
 
@@ -1161,47 +1114,48 @@ float get_timing_driven_future_Tdel (int inode, int target_node,
     get_unidir_seg_start(inode, &x_start, &y_start);
     // s_* stands for information related to start node (inode)
     // t_* is for target node
-    int s_seg_type = rr_indexed_data[rr_node[inode].get_cost_index()].seg_index;
-    int s_dir = rr_node[inode].get_direction();
+    int start_seg_type = rr_indexed_data[rr_node[inode].get_cost_index()].seg_index;
+    int start_dir = rr_node[inode].get_direction();
     int s_len = rr_node[inode].get_len();
-    int s_chan_type = rr_node[inode].type;
-    // if we haven't decided which side is the cheapest to reach the target node,
-    // then we expand and get the estimated cost of all possible sides.
-    if (target_chan_type == UNDEFINED && rr_node[inode].type != OPIN) {
-        int t_chan_type;
+    int start_chan_type = rr_node[inode].type;
+
+    if (target_chosen_chan_type == UNDEFINED && rr_node[inode].type != OPIN) {
+        // if we haven't decided which side is the cheapest to reach the target node,
+        // then we expand and get the estimated cost of all possible sides.
+        int target_chan_type;
         int x_target, y_target;
         get_unidir_seg_end(target_node, &x_target, &y_target);
         float cur_C_downstream, cur_basecost;
         float min_Tdel = HUGE_POSITIVE_FLOAT, cur_Tdel = HUGE_POSITIVE_FLOAT;
         if ((g_pin_side[target_node] & static_cast<char>(Pin_side::TOP)) == static_cast<char>(Pin_side::TOP)) {
-            t_chan_type = CHANX;
-            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+            target_chan_type = CHANX;
+            cur_Tdel = get_precal_Tdel(inode, start_chan_type, target_chan_type, start_seg_type, start_dir, 
                         x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
-            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+            setup_min_side_reaching_target(inode, target_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
                                     C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
         }
         if ((g_pin_side[target_node] & static_cast<char>(Pin_side::RIGHT)) == static_cast<char>(Pin_side::RIGHT)) {
-            t_chan_type = CHANY;
-            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+            target_chan_type = CHANY;
+            cur_Tdel = get_precal_Tdel(inode, start_chan_type, target_chan_type, start_seg_type, start_dir, 
                         x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
-            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+            setup_min_side_reaching_target(inode, target_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
                                     C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
         }
         if ((g_pin_side[target_node] & static_cast<char>(Pin_side::BOTTOM)) == static_cast<char>(Pin_side::BOTTOM)) {
-            t_chan_type = CHANX;
+            target_chan_type = CHANX;
             y_target --;
-            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+            cur_Tdel = get_precal_Tdel(inode, start_chan_type, target_chan_type, start_seg_type, start_dir, 
                         x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
-            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+            setup_min_side_reaching_target(inode, target_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
                                     C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
             y_target ++;
         }
         if ((g_pin_side[target_node] & static_cast<char>(Pin_side::LEFT)) == static_cast<char>(Pin_side::LEFT)) {
-            t_chan_type = CHANY;
+            target_chan_type = CHANY;
             x_target --;
-            cur_Tdel = get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+            cur_Tdel = get_precal_Tdel(inode, start_chan_type, target_chan_type, start_seg_type, start_dir, 
                         x_start, y_start, x_target, y_target, s_len, &cur_C_downstream, &cur_basecost);
-            setup_min_side_reaching_target(inode, t_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
+            setup_min_side_reaching_target(inode, target_chan_type, x_target, y_target, &min_Tdel, cur_Tdel,
                                     C_downstream, future_base_cost, cur_C_downstream, cur_basecost);
             x_target ++;
         }
@@ -1210,38 +1164,49 @@ float get_timing_driven_future_Tdel (int inode, int target_node,
         assert(min_Tdel < 0.98 * HUGE_POSITIVE_FLOAT);
         return min_Tdel;
     } else {
-        int t_chan_type, x_target, y_target;
-        if (target_chan_type == UNDEFINED) {
+        int target_chan_type, x_target, y_target;
+        if (target_chosen_chan_type == UNDEFINED) {
             // always do coarse estimation for OPIN
             // OPIN
             get_unidir_seg_end(target_node, &x_target, &y_target);
-            t_chan_type = CHANX;
+            target_chan_type = CHANX;
         } else {
-            // let get_bfs_lookup_Tdel() directly look up correct value
-            // from target_chan_type, target_pin_x, target_pin_y
-            t_chan_type = target_chan_type;
+            // let get_precal_Tdel() directly look up correct value
+            // from target_chosen_chan_type, target_pin_x, target_pin_y
+            target_chan_type = target_chosen_chan_type;
             x_target = target_pin_x;
             y_target = target_pin_y;
         }
-        return get_bfs_lookup_Tdel(inode, s_chan_type, t_chan_type, s_seg_type, s_dir, 
+        return get_precal_Tdel(inode, start_chan_type, target_chan_type, start_seg_type, start_dir, 
                     x_start, y_start, x_target, y_target, s_len, C_downstream, future_base_cost);
     }
 }
-static float get_bfs_lookup_Tdel(int s_inode, int s_chan_type, int t_chan_type, int s_seg_type, int s_dir,
+
+
+static float get_precal_Tdel(int start_node, int start_chan_type, int target_chan_type, int start_seg_type, int start_dir,
                                  int x_start, int y_start, int x_target, int y_target, int len_start,
                                  float *acc_C, float *acc_basecost) {
+    /*
+     * lookup the precalculated Tdel from start node to target node
+     * The real target node is SINK, and the target node in this function 
+     * is wire that can drive the SINK. So it has chan / seg type
+     * I currently adopt different policies for OPIN & wire as start node:
+     *    use a coarse Tdel for OPIN, and accurate Tdel for wire
+     *    TODO: may want to change OPIN lookup to be accurate as well, since
+     *    I am using OPIN penalty to restrict OPIN expansion
+     */
     // dealing with CHANX / CHANY / OPIN
     float Tdel = 0.0;
     int offset_x, offset_y;
-    if (rr_node[s_inode].type == OPIN) {
+    if (rr_node[start_node].type == OPIN) {
 #if OPINPENALTY == 0
         opin_penalty = 1;
 #endif
         float opin_del = HUGE_POSITIVE_FLOAT;
         int to_seg_type = -1;
-        int num_edges = rr_node[s_inode].get_num_edges();
+        int num_edges = rr_node[start_node].get_num_edges();
         for (int iconn = 0; iconn < num_edges; iconn ++) {
-            int to_node = rr_node[s_inode].edges[iconn];
+            int to_node = rr_node[start_node].edges[iconn];
             int seg_type = rr_indexed_data[rr_node[to_node].get_cost_index()].seg_index;
             float cur_opin_del = 0.5 * rr_node[to_node].R * rr_node[to_node].C;
             if (opin_cost_by_seg_type.count(seg_type) > 0) {
@@ -1268,19 +1233,21 @@ static float get_bfs_lookup_Tdel(int s_inode, int s_chan_type, int t_chan_type, 
         // CHANX or CHANY
         bool is_heading_opposite;
         // first check if the direction is correct
-        if (s_dir == INC_DIRECTION) { 
-            if (s_chan_type == CHANX)
+        // if wire is heading away from target, we cannot directly lookup the cost map,
+        // instead we transform this case to the normal case in adjust_coord_for_wrong_dir_wire()
+        if (start_dir == INC_DIRECTION) { 
+            if (start_chan_type == CHANX)
                 is_heading_opposite = (x_start <= x_target) ? false : true; 
             else
                 is_heading_opposite = (y_start <= y_target) ? false : true;
         } else {
-            if (s_chan_type == CHANX) {
-                if (t_chan_type == CHANX)
+            if (start_chan_type == CHANX) {
+                if (target_chan_type == CHANX)
                     is_heading_opposite = (x_start >= x_target) ? false : true;
                 else
                     is_heading_opposite = (x_start >= x_target + 1) ? false : true;
             } else {
-                if (t_chan_type == CHANY)
+                if (target_chan_type == CHANY)
                     is_heading_opposite = (y_start >= y_target) ? false : true;
                 else 
                     is_heading_opposite = (y_start >= y_target + 1) ? false : true;
@@ -1290,28 +1257,32 @@ static float get_bfs_lookup_Tdel(int s_inode, int s_chan_type, int t_chan_type, 
         if (is_heading_opposite) {
             // we make assumption how wires heading for wrong direction 
             // will eventually get to the right track
-            adjust_coord_for_wrong_dir_wire(&s_chan_type, &s_dir, len_start, &x_start, &y_start, x_target, y_target);
-            int guessed_iswitch = rr_node[s_inode].switches[0];
+            adjust_coord_for_wrong_dir_wire(&start_chan_type, &start_dir, len_start, &x_start, &y_start, x_target, y_target);
+            int guessed_iswitch = rr_node[start_node].switches[0];
             // XXX not updating basecost and C now
-            Tdel += (0.5 * rr_node[s_inode].R + g_rr_switch_inf[guessed_iswitch].R) * rr_node[s_inode].C;
+            Tdel += (0.5 * rr_node[start_node].R + g_rr_switch_inf[guessed_iswitch].R) * rr_node[start_node].C;
             Tdel += g_rr_switch_inf[guessed_iswitch].Tdel;
         }
         offset_x = abs(x_start - x_target);
         offset_y = abs(y_start - y_target);
-        if (s_chan_type == CHANX && t_chan_type == CHANY) {
+        if (start_chan_type == CHANX && target_chan_type == CHANY) {
             offset_y += (y_start > y_target) ? 1 : 0;
-            offset_x += (s_dir == DEC_DIRECTION) ? -1 : 0;
-        } else if (s_chan_type == CHANY && t_chan_type == CHANX) {
+            offset_x += (start_dir == DEC_DIRECTION) ? -1 : 0;
+        } else if (start_chan_type == CHANY && target_chan_type == CHANX) {
             offset_x += (x_start > x_target) ? 1 : 0;
-            offset_y += (s_dir == DEC_DIRECTION) ? -1 : 0;
+            offset_y += (start_dir == DEC_DIRECTION) ? -1 : 0;
         }
-        Tdel += bfs_direct_lookup(offset_x, offset_y, s_seg_type, s_chan_type, t_chan_type, acc_C, acc_basecost);
+        Tdel += bfs_direct_lookup(offset_x, offset_y, start_seg_type, start_chan_type, target_chan_type, acc_C, acc_basecost);
         return Tdel;
     }
 }
 
+
 float bfs_direct_lookup(int offset_x, int offset_y, int seg_type, int chan_type, 
                 int to_chan_type, float *acc_C, float *acc_basecost) {
+    /*
+     * directly lookup the global cost map
+     */
     offset_x = (offset_x > (nx-3)) ? nx-3 : offset_x;
     offset_y = (offset_y > (ny-3)) ? ny-3 : offset_y;
 
@@ -1329,31 +1300,48 @@ float bfs_direct_lookup(int offset_x, int offset_y, int seg_type, int chan_type,
     return Tdel;
 }
 
-static void setup_min_side_reaching_target(int inode, int t_chan_type, int t_x, int t_y, 
+
+static void setup_min_side_reaching_target(int inode, int target_chan_type, int target_x, int target_y, 
         float *min_Tdel, float cur_Tdel, float *C_downstream, float *future_base_cost, 
         float cur_C_downstream, float cur_basecost) {
+    /*
+     * setup expanded_node_min_target_side after we determine which 
+     * side of target clb is the cheapest
+     */
     if (cur_Tdel < *min_Tdel) {
         *min_Tdel = cur_Tdel;
         *C_downstream = cur_C_downstream;
         *future_base_cost = cur_basecost;
-        expanded_node_min_target_side[inode].chan_type = t_chan_type;
-        expanded_node_min_target_side[inode].x = t_x;
-        expanded_node_min_target_side[inode].y = t_y;
+        expanded_node_min_target_side[inode].chan_type = target_chan_type;
+        expanded_node_min_target_side[inode].x = target_x;
+        expanded_node_min_target_side[inode].y = target_y;
     }
 }
 
-static void adjust_coord_for_wrong_dir_wire(int *s_chan_type, int *s_dir, int start_len, 
+
+static void adjust_coord_for_wrong_dir_wire(int *start_chan_type, int *start_dir, int start_len, 
                                             int *x_start, int *y_start, int x_target, int y_target) {
-    int orig_dir = *s_dir;
-    if (*s_chan_type == CHANX) {
-        *s_dir = (*y_start <= y_target) ? INC_DIRECTION : DEC_DIRECTION;
+    /*
+     * for nodes heading away from target:
+     *    we cannot directly lookup the entry in the global cost map.
+     *    I transform the case to the normal case where wire is heading towards
+     *    the target by making the following assumption:
+     *        the wire heading for wrong direction will choose an othogonal wire
+     *        of the same seg type at the next hop, thus switching to the correct
+     *        direction. 
+     *    This assumption may not be accurate in some cases (e.g.: L16 heading for
+     *    wrong dir may likely take a turn using L4 rather than L16 at next hop).
+     */
+    int orig_dir = *start_dir;
+    if (*start_chan_type == CHANX) {
+        *start_dir = (*y_start <= y_target) ? INC_DIRECTION : DEC_DIRECTION;
     } else {
-        *s_dir = (*x_start <= x_target) ? INC_DIRECTION : DEC_DIRECTION;
+        *start_dir = (*x_start <= x_target) ? INC_DIRECTION : DEC_DIRECTION;
     }
     int new_x_start = *x_start;
     int new_y_start = *y_start;
     int len = start_len - 1;
-    if (*s_chan_type == CHANX) {
+    if (*start_chan_type == CHANX) {
         if (orig_dir == INC_DIRECTION) new_x_start += len;
         else new_x_start -= len;
     } else {
@@ -1362,10 +1350,16 @@ static void adjust_coord_for_wrong_dir_wire(int *s_chan_type, int *s_dir, int st
     }
     *x_start = new_x_start;
     *y_start = new_y_start;
-    *s_chan_type = (*s_chan_type == CHANX) ? CHANY : CHANX;
+    *start_chan_type = (*start_chan_type == CHANX) ? CHANY : CHANX;
 }
 
+
 static void setup_opin_cost_by_seg_type(int source_node, int target_node) {
+    /*
+     * precalculate the cost from wires that are driven by OPINs of source_node
+     * to target_node. Setup the opin cost map: opin_cost_by_seg_type. 
+     * Later when expanding OPINs, just lookup opin_cost_by_seg_type
+     */
     assert(rr_node[source_node].type == SOURCE);
     int num_to_opin_edges = rr_node[source_node].get_num_edges();
     for (int iopin = 0; iopin < num_to_opin_edges; iopin++) {
@@ -1391,6 +1385,9 @@ static void setup_opin_cost_by_seg_type(int source_node, int target_node) {
         }
     }
 }
+
+/****************************** END function definition for new look ahead *************************************/
+
 float get_timing_driven_cong_penalty (int inode, int target_node) {
     float penalty = 1.0;
 #if CONGESTIONBYCHIPAREA == 1
@@ -1797,7 +1794,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 
 /* Detect if net should be routed or not */
-static bool should_route_net(int inet) {
+bool should_route_net(int inet) {
 	t_trace * tptr = trace_head[inet];
 
 	if (tptr == NULL) {

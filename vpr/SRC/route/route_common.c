@@ -21,7 +21,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
-#include "look_ahead_bfs.h"
+#include "look_ahead_bfs_precal.h"
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful

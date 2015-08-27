@@ -140,7 +140,7 @@ extern map<int, int> *g_switch_fanin_remap;
 extern int **rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 //extern map< pair<int, int>, float ** > bfs_cost_map;
 //extern map< pair<int, int>, float ** > bfs_C_downstream_map;
-struct s_bfs_cost_inf {
+typedef struct s_fut_cost_inf {
     float Tdel_x;
     float Tdel_y;
     float acc_basecost_x;
@@ -148,8 +148,8 @@ struct s_bfs_cost_inf {
     float acc_C_x;
     float acc_C_y;
     //int is_arrive_chanx;
-};
-extern struct s_bfs_cost_inf **** bfs_lookahead_info;
+} t_fut_cost_inf;
+extern t_fut_cost_inf **** bfs_lookahead_info;
 /* the head pointers of structures that are "freed" and used constantly */
 /*struct s_heap *g_heap_free_head;
 struct s_trace *g_trace_free_head;

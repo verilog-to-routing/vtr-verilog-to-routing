@@ -19,6 +19,8 @@
 #define INPRECISE_GET_HEAP_HEAD 0
 #define SPACEDRIVENHEAP 0
 
+#define CRIT_THRES_INIT 0.8     /* criticality threshold for switching to new look ahead */
+#define CRIT_THRES_INC_RATE 1.01
 #define OPIN_INIT_PENALTY 2.2
 #define OPIN_DECAY_RATE 0.9
 #define ALLOWED_HEAP_ERR 0.02  /* for the new get heap head method (take into account (x,y)) */

@@ -29,3 +29,5 @@ void print_expand_neighbours(bool is_parent, int inode, int target_node,
     int target_chan_type, int target_pin_x, int target_pin_y,
     float expected_cost, float future_Tdel, float new_tot_cost,
     float cur_basecost, float cong_cost);
+void setup_max_min_criticality(float &max_crit, float &min_crit, 
+        int &max_inet, int &min_inet, int &max_ipin, int &min_ipin, t_slack * slacks);

@@ -105,7 +105,7 @@ struct s_linked_vptr *circuit_p_io_removed = NULL;
 //map< pair<int, int>, float ** > bfs_cost_map;
 //map< pair<int, int>, float ** > bfs_C_downstream_map;
 // dimensions: x, y, segment_type, chan_type
-struct s_bfs_cost_inf **** bfs_lookahead_info = NULL;
+t_fut_cost_inf **** bfs_lookahead_info = NULL;
 
 /********** Structures representing timing graph information */
 float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */

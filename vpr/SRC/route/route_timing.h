@@ -7,6 +7,9 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		float* pin_criticality, int* sink_order,
 		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks);
 
+// this is used in setup_max_min_criticality() in profile_lookahead.c
+bool should_route_net(int inet);
+
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		float *pin_criticality, int *sink_order, t_rt_node ** rt_node_of_sink, 
