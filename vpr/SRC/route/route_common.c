@@ -42,24 +42,18 @@ struct s_bb *route_bb = NULL; /* [0..g_clbs_nlist.net.size()-1]. Limits area in 
 int itry_share = 0;
 float opin_penalty = OPIN_INIT_PENALTY;
 float future_cong_penalty = 1.0;
-int node_on_path = 0;
-int node_expanded_per_net = 0;
 int node_expanded_per_sink = 0;
-float estimated_cost_deviation = 0;
-float estimated_cost_deviation_abs = 0;
 int total_nodes_expanded = 0;
+/* potentially used for condition of turning on new look ahead */
 int nodes_expanded_cur_itr = UNDEFINED;
 int nodes_expanded_1st_itr = UNDEFINED;
 int nodes_expanded_pre_itr = UNDEFINED;
 int nodes_expanded_max_itr = UNDEFINED;
 float cong_cur_itr = UNDEFINED;
 float cong_pre_itr = UNDEFINED;
-#if DEPTHWISELOOKAHEADEVAL == 1
 map<int, int> subtree_count;
 map<int, float> subtree_size_avg;
 map<int, float> subtree_est_dev_avg;
-map<int, float> subtree_est_dev_abs_avg;
-#endif
 #if LOOKAHEADBYHISTORY == 1
 /* these arrays are initialized in alloc_and_load_rr_graph() */
 float **max_cost_by_relative_pos = NULL;

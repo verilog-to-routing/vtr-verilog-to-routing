@@ -4,8 +4,6 @@
 #include <map>
 
 #define DEBUGEXPANSIONRATIO 0
-#define DEPTHWISELOOKAHEADEVAL 1
-#define NETWISELOOKAHEADEVAL 0
 #define LOOKAHEADBYHISTORY 0
 // turn this on together with the LOOKAHEADCONGMAP in expand_neighbours
 #define CONGESTIONBYCHIPAREA 0
@@ -25,7 +23,7 @@
 #define OPIN_DECAY_RATE 0.9
 #define ALLOWED_HEAP_ERR 0.02  /* for the new get heap head method (take into account (x,y)) */
 #define DB_ITRY 5
-#define DB_TARGET_NODE 102804
+#define DB_TARGET_NODE -1
 using namespace std;
 #if SPACEDRIVENHEAP == 1
 extern float heap_min_cost;
@@ -105,12 +103,10 @@ typedef struct {
 extern int itry_share;
 extern float opin_penalty;
 extern float future_cong_penalty;
-extern int node_on_path;
-extern int node_expanded_per_net;
 extern int node_expanded_per_sink;
-extern float estimated_cost_deviation;
-extern float estimated_cost_deviation_abs;
 /*
+ * The following are used for evaluating the quality of look ahead:
+ *
  * subtree: the subtree built when routing a SOURCE to a SINK, consisting of nodes expanded
  * map key: depth of the subtree
  * map value:
@@ -118,7 +114,6 @@ extern float estimated_cost_deviation_abs;
  *     subtree_size_avg: average number of nodes on the subtree of that depth
            subtree_size_avg[0] is storing the number of expanded nodes of current routing
  *     subtree_est_dev_avg: average deviation of estimated lookahead cost and actual future path cost of this depth subtree
- *     subtree_est_dev_abs_avg: the absolute deviation
  *     
  */ 
 extern int total_nodes_expanded;
@@ -128,12 +123,10 @@ extern int nodes_expanded_1st_itr;
 extern int nodes_expanded_max_itr;
 extern float cong_cur_itr;
 extern float cong_pre_itr;
-#if DEPTHWISELOOKAHEADEVAL == 1
 extern map<int, int> subtree_count;
 extern map<int, float> subtree_size_avg;
 extern map<int, float> subtree_est_dev_avg;
-extern map<int, float> subtree_est_dev_abs_avg;
-#endif
+
 #if LOOKAHEADBYHISTORY == 1
 /*
  * the below 4 2D arrays are indexed by relative position between

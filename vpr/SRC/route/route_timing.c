@@ -228,15 +228,12 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #if OPINPENALTY == 1
         opin_penalty *= OPIN_DECAY_RATE;
 #endif
-#if DEPTHWISELOOKAHEADEVAL == 1
         if (router_opts.lookahead_eval) {
             subtree_count.clear();
             subtree_size_avg.clear();
             subtree_est_dev_avg.clear();
-            subtree_est_dev_abs_avg.clear();
             subtree_size_avg[0] = 0;
         }
-#endif
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 			g_clbs_nlist.net[inet].is_routed = false;
@@ -694,10 +691,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	rt_root = init_route_tree_to_source(inet);
     
-    node_expanded_per_net = 0;
-    node_on_path = 0;
-    estimated_cost_deviation = 0;
-    estimated_cost_deviation_abs = 0;
 	// explore in order of decreasing criticality
 	for (itarget = 1; itarget <= num_sinks; itarget++) {
 		target_pin = sink_order[itarget];
@@ -742,9 +735,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 		inode = cheapest->index;
         node_expanded_per_sink = 0;
-
+#if DEBUGEXPANSIONRATIO == 1
         print_start_end_to_sink(true, itry, inet, target_node, itarget);
-
+#endif
 		while (inode != target_node) {
 			old_total_cost = rr_node_route_inf[inode].path_cost;
 			new_total_cost = cheapest->cost;
@@ -804,15 +797,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		 * all take a traceback structure as input.  Before this routine exits the  *
 		 * route_tree structure is destroyed; only the traceback is needed at that  *
 		 * point.                                                                   */
-#if DEPTHWISELOOKAHEADEVAL == 1
-        subtree_size_avg[0] = node_expanded_per_sink;
-#endif
+        if (lookahead_eval)
+            subtree_size_avg[0] = node_expanded_per_sink;
 		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
 		new_route_start_tptr = update_traceback(cheapest, inet);
 		rt_node_of_sink[target_pin] = update_route_tree(cheapest, lookahead_eval, target_criticality);
 		free_heap_data(cheapest);
 		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
+#if DEBUGEXPANSIONRATIO == 1
         print_start_end_to_sink(false, itry, inet, target_node, itarget);
+#endif
 		empty_heap();
 		reset_path_costs();
 	}
@@ -974,11 +968,8 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
         node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
                 new_R_upstream, Tdel + current->back_Tdel);
 #endif
-        if (lookahead_eval) {
-            if (new_tot_cost < rr_node_route_inf[to_node].path_cost) {
-                node_expanded_per_net ++;
-                node_expanded_per_sink ++;
-            }
+        if (lookahead_eval && new_tot_cost < rr_node_route_inf[to_node].path_cost) {
+            node_expanded_per_sink ++;
         }
 #if DEBUGEXPANSIONRATIO == 1
         if (new_tot_cost < rr_node_route_inf[to_node].path_cost) {
@@ -1389,6 +1380,11 @@ static void setup_opin_cost_by_seg_type(int source_node, int target_node) {
 /****************************** END function definition for new look ahead *************************************/
 
 float get_timing_driven_cong_penalty (int inode, int target_node) {
+    /*
+     * NOTE: 
+     *      this function could be ignored, as the result of adding
+     *      congestion penalty is not satisfying
+     */
     float penalty = 1.0;
 #if CONGESTIONBYCHIPAREA == 1
     int to_x_mid = (rr_node[inode].get_xhigh() + rr_node[inode].get_xlow()) / 2;

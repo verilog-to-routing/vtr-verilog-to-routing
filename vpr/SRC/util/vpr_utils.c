@@ -1456,16 +1456,14 @@ void print_switch_usage() {
 }
 
 void print_lookahead_eval() {
-#if DEPTHWISELOOKAHEADEVAL == 1
     map<int, int>::iterator itr;
     for (itr = subtree_count.begin(); itr != subtree_count.end(); itr++) {
         int tree_depth = itr->first;
         float expand_ratio = subtree_size_avg[tree_depth] / tree_depth;
         float dev = subtree_est_dev_avg[tree_depth];
-        float dev_abs = subtree_est_dev_abs_avg[tree_depth];
-        printf("-- subtree depth: %d\tcount: %d\texpand ratio (geo): %.3f\tdev: %.4f\tdev abs (geo): %.4f\n", tree_depth, itr->second, expand_ratio, dev, dev_abs);
+        printf("-- subtree depth: %d\tcount: %d\texpand ratio (geo): %.3f\tdev: %.4f\n", 
+                tree_depth, itr->second, expand_ratio, dev);
     }
-#endif
 }
 
 void print_lookahead_by_history() {
@@ -1604,45 +1602,4 @@ void print_db_node_inf(int inode){
            rr_node[inode].get_xlow(), rr_node[inode].get_ylow(),
            rr_node[inode].get_xhigh(), rr_node[inode].get_yhigh());
 }
-/*
- * Motivation:
- *     to see what portion of long wires are utilized
- *     potentially a good measure for router look ahead quality
- */
-/*
-void print_usage_by_wire_length() {
-    map<int, int> used_wire_count;
-    map<int, int> total_wire_count;
-    for (int inode = 0; inode < num_rr_nodes; inode++) {
-        if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
-            //int length = abs(rr_node[inode].get_xhigh() + rr_node[inode].get_yhigh() 
-            //             - rr_node[inode].get_xlow() - rr_node[inode].get_ylow());
-            int length = rr_node[inode].get_length();
-            if (rr_node[inode].get_occ() > 0) {
-                if (used_wire_count.count(length) == 0)
-                    used_wire_count[length] = 0;
-                used_wire_count[length] ++;
-            }
-            if (total_wire_count.count(length) == 0)
-                total_wire_count[length] = 0;
-            total_wire_count[length] ++;
-        }
-    }
-    int total_wires = 0;
-    map<int, int>::iterator itr;
-    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
-        total_wires += itr->second;
-    }
-    printf("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
-    for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) 
-        printf("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
-    for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
-        float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
-        float ratio_to_all_type_total = ((float)itr->second) / total_wires;
-        printf("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
-    }
-    printf("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
-    used_wire_count.clear();
-    total_wire_count.clear();
-}
-*/
+
