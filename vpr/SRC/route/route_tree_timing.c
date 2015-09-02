@@ -748,7 +748,7 @@ t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_rout
 
 
 /***************  Pruning and fixing cost of skeleton route tree ****************/
-static void find_sinks_of_route_tree(const t_rt_node* rt_root, vector<int>& sink_nodes) {
+static void find_sinks_of_route_tree(const t_rt_node* rt_root, CBRR& connections_inf) {
 
 	/* Push back the node index of all sinks rooted at rt_root onto sink_nodes */
 
@@ -756,14 +756,18 @@ static void find_sinks_of_route_tree(const t_rt_node* rt_root, vector<int>& sink
 	for (;;) {
 		// reached a sink
 		if (!edge) {
-			sink_nodes.push_back(rt_root->inode);
+			// rerouting this sink, so reset the force reroute flag
+			connections_inf.clear_force_reroute_for_connection(rt_root->inode);
+
+			// put in remaining targets, marked as a sink that hasn't been reached legally yet
+			connections_inf.toreach_rr_sink(rt_root->inode);
 			return;
 		}
 		// branch point (sibling edges)
 		else if (edge->next) {
 			// recursively update for each of its sibling branches
 			do {
-				find_sinks_of_route_tree(edge->child, sink_nodes);
+				find_sinks_of_route_tree(edge->child, connections_inf);
 				edge = edge->next;
 			} while (edge);
 			return;
@@ -773,8 +777,10 @@ static void find_sinks_of_route_tree(const t_rt_node* rt_root, vector<int>& sink
 		edge = rt_root->u.child_list;
 	}
 }
-static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_rt_sinks, 
-	vector<int>& remaining_targets, float R_upstream)  {
+
+
+static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pres_fac, 
+	CBRR& connections_inf, float R_upstream)  {
 
 	/* as we traverse down, do: 
 	 *	1. removes illegal branches from pathfinder costs
@@ -809,9 +815,18 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	auto edge = rt_root->u.child_list;
 	// no edge means it must be a sink; legally routed to sink!
 	if (!edge) {
-		reached_rt_sinks.push_back(rt_root);
-		rt_root->C_downstream = 0;	// sink has no node downstream and always has 0 own capacitance
-		return false;
+		if (connections_inf.should_force_reroute_connection(inode)) {
+			// forced the reroute, clear so future iterations don't get a stale flag
+			connections_inf.clear_force_reroute_for_connection(inode);
+			vpr_printf_info("forcing high fanout %4d %d\n", connections_inf.get_current_inet(), inode);
+			return true;
+		}
+		// don't need to reroute connection so can safely claim to have reached rt_sink
+		else {
+			rt_root->C_downstream = 0;	// sink has no node downstream and always has 0 own capacitance
+			connections_inf.reached_rt_sink(rt_root);
+			return false;			
+		}
 	}
 	
 	// prune children and get their C_downstream
@@ -819,7 +834,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 
 	t_linked_rt_edge* prev_edge {nullptr};
 	do {
-		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_rt_sinks, remaining_targets, R_upstream)};
+		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, connections_inf, R_upstream)};
 		// need to remove edge and possibly change first edge if pruned
 		if (pruned) {
 			// optimization for long paths (no sibling edges), propagate illegality up to branch point
@@ -827,7 +842,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 				return true;
 			}
 			// else this is a branch point and the removal should be done here
-			find_sinks_of_route_tree(edge->child, remaining_targets);
+			find_sinks_of_route_tree(edge->child, connections_inf);
 			edge = free_route_subtree(rt_root, prev_edge);	// returns next edge
 			// previous edge does not change when the current edge gets cut
 		}
@@ -846,7 +861,9 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
 	return false;
 }
-bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& reached_sinks, vector<int>& remaining_targets) {
+
+
+bool prune_route_tree(t_rt_node* rt_root, float pres_fac, CBRR& connections_inf) {
 
 	/* Prune a skeleton route tree of illegal branches - when there is at least 1 congested node on the path to a sink
 	 * This is the top level function to be called with the SOURCE node as root
@@ -864,9 +881,9 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, vector<t_rt_node*>& re
 	float C_downstream_branches {0};
 
 	while (edge) {
-		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, reached_sinks, remaining_targets, 0)};
+		bool pruned {prune_illegal_branches_from_route_tree(edge->child, pres_fac, connections_inf, 0)};
 		if (pruned) {
-			find_sinks_of_route_tree(edge->child, remaining_targets);
+			find_sinks_of_route_tree(edge->child, connections_inf);
 			edge = free_route_subtree(rt_root, prev_edge);	// returns next edge
 			// previous edge does not change when the current edge gets cut
 		}

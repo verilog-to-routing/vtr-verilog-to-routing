@@ -616,13 +616,13 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	int itry = 1;
 	float pres_fac = 0.0; /* ignore congestion */
 
-	Incremental_reroute_resources dummy_res;
+	CBRR dummy_connections_inf;
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
 	timing_driven_route_net(NET_USED, itry, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
-			dummy_res,
+			dummy_connections_inf,
 			pin_criticality, router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
 			net_delay[NET_USED], NULL);
 

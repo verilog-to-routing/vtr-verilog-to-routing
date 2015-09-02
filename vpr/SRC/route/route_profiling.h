@@ -9,7 +9,8 @@ namespace profiling {
 void net_rerouted();
 void route_tree_pruned();
 void route_tree_preserved();
-
+void mark_for_forced_reroute();
+void perform_forced_reroute();
 
 // timing functions where *_start starts a clock and *_end terminates the clock
 void sink_criticality_start();

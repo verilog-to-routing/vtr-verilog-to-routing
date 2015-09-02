@@ -24,32 +24,32 @@ static vector<int> finished_sinks;
 // action counters for what setup routing resources did
 #ifdef PROFILE
 static int entire_net_rerouted;
-void net_rerouted() {
-	++entire_net_rerouted;
-}
+void net_rerouted() {++entire_net_rerouted;}
 
 static int entire_tree_pruned;
-void route_tree_pruned() {
-	++entire_tree_pruned;
-}
+void route_tree_pruned() {++entire_tree_pruned;}
 
 static int part_tree_preserved;
-void route_tree_preserved() {
-	++part_tree_preserved;
-}
+void route_tree_preserved() {++part_tree_preserved;}
+
+static int connections_forced_to_reroute;
+void mark_for_forced_reroute() {++connections_forced_to_reroute;}
+static int connections_rerouted_due_to_forcing;
+void perform_forced_reroute() {++connections_rerouted_due_to_forcing;}
+
 #else
 void net_rerouted() {}
 void route_tree_pruned() {}
 void route_tree_preserved() {}
+void mark_for_forced_reroute() {}
+void perform_forced_reroute() {}
 #endif
 
 
 // timing functions where *_start starts a clock and *_end terminates the clock
 #ifdef PROFILE
 static clock_t sink_criticality_clock;
-void sink_criticality_start() {
-	sink_criticality_clock = clock();
-}
+void sink_criticality_start() {sink_criticality_clock = clock();}
 
 void sink_criticality_end(float target_criticality) {
 	if (!time_on_criticality.empty()) {
@@ -59,9 +59,7 @@ void sink_criticality_end(float target_criticality) {
 }
 
 static clock_t net_rebuild_clock;
-void net_rebuild_start() {
-	net_rebuild_clock = clock();
-}
+void net_rebuild_start() {net_rebuild_clock = clock();}
 
 void net_rebuild_end(unsigned net_fanout, unsigned sinks_left_to_route) {
 	unsigned int bin {net_fanout / fanout_per_bin};
@@ -98,6 +96,7 @@ void time_on_fanout_analysis() {
 #ifdef PROFILE
 	vpr_printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n", 
 		entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
+	vpr_printf_info("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
 	// using the global time_on_fanout and itry_on_fanout
 	vpr_printf_info("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
 	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
@@ -114,6 +113,8 @@ void time_on_fanout_analysis() {
 		finished_sinks[bin] = 0;
 		rerouted_sinks[bin] = 0;
 	}
+
+	connections_forced_to_reroute = connections_rerouted_due_to_forcing = 0;
 #endif
 	return;
 }
@@ -198,6 +199,8 @@ void profiling_initialization(unsigned max_fanout) {
 	entire_net_rerouted = 0;
 	entire_tree_pruned = 0;
 	part_tree_preserved = 0;
+	connections_forced_to_reroute = 0;
+	connections_rerouted_due_to_forcing = 0;
 #endif
 	return;
 }
