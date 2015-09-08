@@ -617,6 +617,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	float pres_fac = 0.0; /* ignore congestion */
 
 	CBRR dummy_connections_inf;
+	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
 	timing_driven_route_net(NET_USED, itry, pres_fac,
