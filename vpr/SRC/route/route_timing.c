@@ -1346,7 +1346,7 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources() : 
 	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
-	critical_path_growth_tolerance {1},
+	critical_path_growth_tolerance {0},
 	connection_criticality_tolerance {0.9},
 	connection_delay_optimality_tolerance {1.3}	 {	
 
@@ -1500,7 +1500,8 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))
 				continue;
 
-			vpr_printf_info("marking %4d %d\n", inet, rr_sink_node);
+			vpr_printf_info("marking %4d %d (crit: %6f) (optimality: %6f)\n", inet, rr_sink_node, 
+				slacks->timing_criticality[inet][ipin], net_delay[inet][ipin] / lower_bound_connection_delay[inet][ipin - 1]);
 			forcible_reroute_connection_flag[inet][rr_sink_node] = true;
 			// note that we don't set forcible_reroute_connection_flag to false when the converse is true
 			// resetting back to false will be done during tree pruning, after the sink has been legally reached
@@ -1520,6 +1521,9 @@ void Connection_based_routing_resources::clear_force_reroute_for_connection(int 
 }
 
 void Connection_based_routing_resources::clear_force_reroute_for_net() {
+
+	assert(current_inet != (unsigned)NO_PREVIOUS);
+
 	auto& net_flags = forcible_reroute_connection_flag[current_inet];
 	for (auto& force_reroute_flag : net_flags) {
 		if (force_reroute_flag.second) {
