@@ -2280,8 +2280,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
                 if (timing_inf.slack_definition == 'R' || timing_inf.slack_definition == 'G') {
                     /* Since we updated the destination node (to_node), change the max arrival  
                     time for the forward traversal if to_node's arrival time is greater than 
-                    the existing maximum. */
-                    max_Tarr = max(max_Tarr, tnode[to_node].T_arr);
+                    the existing maximum, and it is on the sink clock domain. */
+                    if (tnode[to_node].num_edges == 0 && tnode[to_node].clock_domain == sink_clock_domain) {
+			max_Tarr = max(max_Tarr, tnode[to_node].T_arr);
+                    }
                 }
 			}
 		}
@@ -2830,8 +2832,10 @@ t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_inf) {
 
 		for (i = 0; i < g_sdc->num_constrained_clocks; i++) {
 			for (j = 0; j < g_sdc->num_constrained_clocks; j++) {
-				if (min_slack > f_timing_stats->least_slack[i][j]) {
-					min_slack = f_timing_stats->least_slack[i][j];
+				// Use the true, unrelaxed, least slack (constraint - critical path delay).
+				slack = g_sdc->domain_constraint[source_clock_domain][sink_clock_domain] - f_timing_stats->cpd[i][j];
+				if (slack < min_slack) {
+					min_slack = slack;
 					source_clock_domain = i;
 					sink_clock_domain = j;
 				}
