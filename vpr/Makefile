@@ -7,7 +7,7 @@
 
 # Please note that a Mac can run the graphics if the X11 library is installed. 
 
-ENABLE_GRAPHICS = false
+ENABLE_GRAPHICS = true
 # can be true or false
 
 BUILD_TYPE = release
@@ -37,7 +37,7 @@ OTHER_DIR := $(OTHER_DIR) \
 	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
 
-WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g 
 PROFILE_FLAGS = -DPROFILE

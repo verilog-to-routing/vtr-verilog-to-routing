@@ -17,6 +17,7 @@
 #include "net_delay.h"
 #include "stats.h"
 #include "ReadOptions.h"
+#include "timing_driven_lookup.h"
 
 
 using namespace std;
@@ -78,6 +79,9 @@ static vector<int> itry_on_criticality;
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
 		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
+
+	/* compute timing-driven router lookahead */
+	compute_timing_driven_lookahead();
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
