@@ -202,6 +202,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
+	g_num_segment = RoutingArch->num_segment;
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 	/* getting the data from the options struct  for interposer-based architectures*/

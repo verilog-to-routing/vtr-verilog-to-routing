@@ -26,6 +26,8 @@ using namespace std;
 
 /******************** Subroutines local to route_timing.c ********************/
 
+long long unsigned f_nodes_expanded = 0;
+
 static int get_max_pins_per_net(void);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
@@ -79,9 +81,6 @@ static vector<int> itry_on_criticality;
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
 		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
-
-	/* compute timing-driven router lookahead */
-	compute_timing_driven_lookahead();
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
@@ -843,6 +842,10 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	rr_type = rr_node[inode].type;
 
 	if (rr_type == CHANX || rr_type == CHANY) {
+		float my_delay, my_cong;
+		float my_cost = get_lookahead_map_cost(inode, target_node, criticality_fac, my_delay, my_cong);
+
+
 #ifdef INTERPOSER_BASED_ARCHITECTURE		
 		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
 #endif
@@ -880,7 +883,9 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 
 		expected_cost = criticality_fac * Tdel
 				+ (1. - criticality_fac) * cong_cost;
-		return (expected_cost);
+
+	//	printf("cost_ratio %f  delay_ratio %f  cong_ratio %f \n", my_cost/expected_cost, my_delay/Tdel, my_cong/cong_cost);
+		return (my_cost);
 	}
 
 	else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */

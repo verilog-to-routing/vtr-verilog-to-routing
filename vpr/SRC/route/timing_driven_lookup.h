@@ -7,6 +7,6 @@ void compute_timing_driven_lookahead(int num_segments);
 
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
    from the specified source to the specified target */
-float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac);
+float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac, float &delay, float &cong);
 
 

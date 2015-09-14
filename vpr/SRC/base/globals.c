@@ -69,6 +69,9 @@ struct s_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
 
 /******** Structures defining the FPGA routing architecture ********/
 
+/* information about segment types */
+int g_num_segment;
+
 int num_rr_nodes = 0;
 t_rr_node *rr_node = NULL; /* [0..(num_rr_nodes-1)] */
 t_ivec ***rr_node_indices = NULL;

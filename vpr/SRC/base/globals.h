@@ -106,6 +106,9 @@ extern int *vpack_to_clb_net_mapping; /* [0..num_vpack_nets - 1] */
 /* chan_width is for x|y-directed channels; i.e. between rows */
 extern t_chan_width chan_width;
 
+/* information about segment types */
+extern int g_num_segment;
+
 /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
 extern struct s_trace **trace_head, **trace_tail;
 

@@ -14,8 +14,8 @@
 using namespace std;
 
 /* the cost map is computed by running a BFS from channel segment rr nodes at the specified reference coordinate */
-#define REF_X 2
-#define REF_Y 2
+#define REF_X 3
+#define REF_Y 3
 
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
@@ -58,6 +58,7 @@ public:
 		} else {
 			//TODO: try some more complicated stuff like geomean of all entries
 			return cost_vector[0];
+			//return cost_vector[ cost_vector.size()-1 ];
 		}
 	}
 };
@@ -140,14 +141,17 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
    from the specified source to the specified target */
-float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
+float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac, float &delay, float &cong){
 	int from_x, from_y, to_x, to_y;
 
 	e_rr_type from_type = rr_node[from_node_ind].type;
 	int from_cost_index = rr_node[from_node_ind].get_cost_index();
 	int from_seg_index = rr_indexed_data[from_cost_index].seg_index;
 
+	assert(from_seg_index >= 0);
+
 	// TODO: can probably make a more informed choice w.r.t. xlow/xhigh & ylow/yhigh
+	// TODO: can try setting cost to 0 if target node is very close 
 	from_x = rr_node[from_node_ind].get_xlow();
 	from_y = rr_node[from_node_ind].get_ylow();
 	
@@ -163,11 +167,16 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 	if (from_type == CHANY){
 		from_chan_index = 1;
 	}
-	Cost_Entry &cost_entry = f_cost_map[from_chan_index][from_seg_index][delta_x][delta_y];
-	float expected_delay = cost_entry.delay;
+
+	//printf("from_chan_index %d  from_seg_index %d  delta_x %d  delta_y %d\n", from_chan_index, from_seg_index, delta_x, delta_y);
+	Cost_Entry cost_entry = f_cost_map[from_chan_index][from_seg_index][delta_x][delta_y];
+	float expected_delay = cost_entry.delay * 1.0;
 	float expected_congestion = cost_entry.congestion;
 
 	float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
+
+	delay = expected_delay;
+	cong = expected_congestion;
 
 	return expected_cost;
 }
@@ -177,7 +186,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 void compute_timing_driven_lookahead(int num_segments){
 	//TODO: account for bend cost??
 
-	vpr_printf_info("Computing timing driven router look-ahead...");
+	vpr_printf_info("Computing timing driven router look-ahead...\n");
 
 	/* free previous delay map and allocate new one */
 	free_cost_map();
@@ -188,10 +197,15 @@ void compute_timing_driven_lookahead(int num_segments){
 		for (e_rr_type chan_type : {CHANX, CHANY}){
 			/* allocate the BFS cost map for this iseg/chan_type */
 			t_bfs_cost_map bfs_cost_map;
-			bfs_cost_map.assign( nx+1, vector<BFS_Cost_Entry>(ny+1, BFS_Cost_Entry()) );
+			bfs_cost_map.assign( nx+2, vector<BFS_Cost_Entry>(ny+2, BFS_Cost_Entry()) );
 
 			/* get the rr node index from which to start BFS */
 			int start_node_ind = get_start_node_ind(REF_X, REF_Y, nx, ny, chan_type, iseg);
+
+			if (start_node_ind == UNDEFINED){
+				assert(false);
+				continue;
+			}
 
 			/* run BFS */
 			run_bfs(start_node_ind, REF_X, REF_Y, bfs_cost_map);
@@ -200,11 +214,25 @@ void compute_timing_driven_lookahead(int num_segments){
 			   cost map */
 			set_lookahead_map_costs(iseg, chan_type, bfs_cost_map);
 
+			//assert(false);
 			/* fill in missing entries in the lookahead cost map by copying the closest cost entries (BFS cost map was computed based on
 			   a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
 			fill_in_missing_lookahead_entries(iseg, chan_type);
 		}
 	}
+
+	////XXX printing out delay maps
+	//for (int iseg = 0; iseg < num_segments; iseg++){
+	//	for (int chan_index : {0,1}){
+	//		for (int iy = 0; iy < ny+1; iy++){
+	//			for (int ix = 0; ix < nx+1; ix++){
+	//				printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
+	//			}
+	//			printf("\n");
+	//		}
+	//		printf("\n\n");
+	//	}
+	//}
 }
 
 
@@ -233,13 +261,16 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 	t_ivec channel_node_list = rr_node_indices[rr_type][chan_coord][seg_coord];		//XXX: indexing by chan/seg is correct, right?
 
+	//printf("num tracks: %d\n", channel_node_list.nelem);
 	/* find first node in channel that has specified segment index and goes in the desired direction */
 	for (int itrack = 0; itrack < channel_node_list.nelem; itrack++){
 		int node_ind = channel_node_list.list[itrack];
 
 		e_direction node_direction = rr_node[node_ind].get_direction();
-		int node_cost_ind = rr_node[node_ind].get_ptc_num();
+		int node_cost_ind = rr_node[node_ind].get_cost_index();
 		int node_seg_ind = rr_indexed_data[node_cost_ind].seg_index;
+
+		//printf("\ttrack %d  cost_index %d  seg_ind %d\n", itrack, node_cost_ind, node_seg_ind);
 
 		if ((node_direction == direction || node_direction == BI_DIRECTION) &&
 			    node_seg_ind == seg_index){
@@ -249,16 +280,14 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		}
 	}
 
-	assert(result != UNDEFINED);
-
 	return result;
 }
 
 
 /* allocates space for cost map entries */
 static void alloc_cost_map(int num_segments){
-	vector<Cost_Entry> ny_entries( ny+1, Cost_Entry() );
-	vector< vector<Cost_Entry> > nx_entries( nx+1, ny_entries );
+	vector<Cost_Entry> ny_entries( ny+2, Cost_Entry() );
+	vector< vector<Cost_Entry> > nx_entries( nx+2, ny_entries );
 	vector< vector< vector<Cost_Entry> > > segment_entries( num_segments, nx_entries );
 	f_cost_map.assign( 2, segment_entries );
 }
@@ -302,6 +331,8 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 			continue;
 		}
 
+		//printf("expanded %d\n", node_ind);
+
 		/* if this node is an ipin record its congestion/delay in the bfs_cost_map */
 		if (rr_node[node_ind].type == IPIN){
 			int ipin_x = rr_node[node_ind].get_xlow();
@@ -311,14 +342,17 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 				int delta_x = ipin_x - start_x;
 				int delta_y = ipin_y - start_y;
 
+				//printf("\t%d %d\n", delta_x, delta_y);
+
 				bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
 
 				/* no need to expand to sink nodes */
-				continue;
+				//continue;
 			}
 		}
 
 		expand_bfs_neighbours(current, node_visited_costs, node_expanded, pq);
+		node_expanded[node_ind] = true;
 	}
 }
 
@@ -369,6 +403,8 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_bf
 			
 			BFS_Cost_Entry &bfs_cost_entry = bfs_cost_map[ix][iy];
 
+			//printf("%d %d  %f\n", ix, iy, bfs_cost_entry.get_representative_cost_entry());
+
 			f_cost_map[chan_index][segment_index][ix][iy] = bfs_cost_entry.get_representative_cost_entry();
 		}
 	}
@@ -382,15 +418,22 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 		chan_index = 1;
 	}
 
+	//TODO: may need to set (0,0) entry manually to avoid ram block weirdness
+
 	/* find missing cost entries and fill them in by copying a nearby cost entry */
 	for (unsigned ix = 0; ix < f_cost_map[chan_index][segment_index].size(); ix++){
 		for (unsigned iy = 0; iy < f_cost_map[chan_index][segment_index][ix].size(); iy++){
 			Cost_Entry cost_entry = f_cost_map[chan_index][segment_index][ix][iy];
 
 			if (cost_entry.delay < 0 && cost_entry.congestion < 0){
-				Cost_Entry copied_entry = get_nearby_cost_entry(ix, iy, segment_index, chan_index);
+				//if (ix == 0 && iy == 0){
+				//	Cost_Entry entry(0, 0);
+				//	f_cost_map[chan_index][segment_index][ix][iy] = entry;
+				//} else {
+					Cost_Entry copied_entry = get_nearby_cost_entry(ix, iy, segment_index, chan_index);
+					f_cost_map[chan_index][segment_index][ix][iy] = copied_entry;
+				//}
 
-				f_cost_map[chan_index][segment_index][ix][iy] = copied_entry;
 			}
 		}
 	}
@@ -402,18 +445,28 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 	/* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
 	   of the cost entry to be copied */
 
-	float slope = (float)y/(float)x;
+	assert(x > 0 || y > 0);
+
+	float slope;
+	if (x == 0){
+		slope = 1e12;	//just a really large number
+	} else if (y == 0){
+		slope = 1e-12;	//just a really small number		
+	} else {
+		slope = (float)y/(float)x;
+	}
 
 	int copy_x, copy_y;
 	if (slope >= 1.0){
 		copy_y = y-1;
-		copy_x = nint( slope * (float)x );	
+		copy_x = nint( (float)y / slope );
 	} else {
 		copy_x = x-1;
-		copy_y = nint( (float)y / slope );
+		copy_y = nint( (float)x * slope );
 	}
 
-	assert(copy_x > REF_X && copy_y > REF_Y);
+	//printf("%d %d  %f  %d %d\n", x, y, slope, copy_x, copy_y);
+	assert(copy_x > 0 || copy_y > 0);
 
 	Cost_Entry copy_entry = f_cost_map[chan_index][segment_index][copy_x][copy_y];
 
