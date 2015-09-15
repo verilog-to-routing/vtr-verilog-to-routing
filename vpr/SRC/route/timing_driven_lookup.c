@@ -18,6 +18,7 @@ using namespace std;
 #define REF_Y 3
 
 #define MAX_TRACK_OFFSET 10
+#define REPRESENTATIVE_BFS_ENTRY_METHOD SMALLEST
 
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
@@ -75,12 +76,26 @@ public:
 		if (cost_vector.empty()){
 			return Cost_Entry();
 		} else {
-			//return cost_vector[0];
-			//return cost_vector[ cost_vector.size()-1 ];
-			return this->get_smallest_entry();
-			//return this->get_average_entry();
-			//return this->get_geomean_entry();
-			//return this->get_median_entry();
+			switch (method){
+				case FIRST:
+					return cost_vector[0];
+					break;
+				case SMALLEST:
+					return this->get_smallest_entry();
+					break;
+				case AVERAGE:
+					return this->get_average_entry();
+					break;
+				case GEOMEAN:
+					return this->get_geomean_entry();
+					break;
+				case MEDIAN:
+					return this->get_median_entry();
+					break;
+				default:
+					return this->get_smallest_entry();
+					break;
+			}
 		}
 	}
 };
@@ -435,7 +450,7 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_bf
 
 			//printf("%d %d  %f\n", ix, iy, bfs_cost_entry.get_representative_cost_entry());
 
-			f_cost_map[chan_index][segment_index][ix][iy] = bfs_cost_entry.get_representative_cost_entry(FIRST);
+			f_cost_map[chan_index][segment_index][ix][iy] = bfs_cost_entry.get_representative_cost_entry( REPRESENTATIVE_BFS_ENTRY_METHOD );
 		}
 	}
 }

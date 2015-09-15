@@ -844,43 +844,43 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		float my_cost = get_lookahead_map_cost(inode, target_node, criticality_fac, my_delay, my_cong);
 
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE		
-		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-#endif
-
-		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
-				&num_segs_ortho_dir);
-		cost_index = rr_node[inode].get_cost_index();
-		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
-
-		cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
-				+ num_segs_ortho_dir
-						* rr_indexed_data[ortho_cost_index].base_cost;
-		cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
-				+ rr_indexed_data[SINK_COST_INDEX].base_cost;
-
-		Tdel =
-				num_segs_same_dir * rr_indexed_data[cost_index].T_linear
-						+ num_segs_ortho_dir
-								* rr_indexed_data[ortho_cost_index].T_linear
-						+ num_segs_same_dir * num_segs_same_dir
-								* rr_indexed_data[cost_index].T_quadratic
-						+ num_segs_ortho_dir * num_segs_ortho_dir
-								* rr_indexed_data[ortho_cost_index].T_quadratic
-						+ R_upstream
-								* (num_segs_same_dir
-										* rr_indexed_data[cost_index].C_load
-										+ num_segs_ortho_dir
-												* rr_indexed_data[ortho_cost_index].C_load);
-
-		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-		float interposer_hop_delay = (float)delay_increase * 1e-12;
-		Tdel += num_interposer_hops * interposer_hop_delay;
-#endif
-
-		expected_cost = criticality_fac * Tdel
-				+ (1. - criticality_fac) * cong_cost;
+//#ifdef INTERPOSER_BASED_ARCHITECTURE		
+//		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
+//#endif
+//
+//		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
+//				&num_segs_ortho_dir);
+//		cost_index = rr_node[inode].get_cost_index();
+//		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
+//
+//		cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
+//				+ num_segs_ortho_dir
+//						* rr_indexed_data[ortho_cost_index].base_cost;
+//		cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
+//				+ rr_indexed_data[SINK_COST_INDEX].base_cost;
+//
+//		Tdel =
+//				num_segs_same_dir * rr_indexed_data[cost_index].T_linear
+//						+ num_segs_ortho_dir
+//								* rr_indexed_data[ortho_cost_index].T_linear
+//						+ num_segs_same_dir * num_segs_same_dir
+//								* rr_indexed_data[cost_index].T_quadratic
+//						+ num_segs_ortho_dir * num_segs_ortho_dir
+//								* rr_indexed_data[ortho_cost_index].T_quadratic
+//						+ R_upstream
+//								* (num_segs_same_dir
+//										* rr_indexed_data[cost_index].C_load
+//										+ num_segs_ortho_dir
+//												* rr_indexed_data[ortho_cost_index].C_load);
+//
+//		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
+//#ifdef INTERPOSER_BASED_ARCHITECTURE
+//		float interposer_hop_delay = (float)delay_increase * 1e-12;
+//		Tdel += num_interposer_hops * interposer_hop_delay;
+//#endif
+//
+//		expected_cost = criticality_fac * Tdel
+//				+ (1. - criticality_fac) * cong_cost;
 
 		//printf("cost_ratio %f  delay_ratio %f  cong_ratio %f \n", my_cost/expected_cost, my_delay/Tdel, my_cong/cong_cost);
 		return (my_cost);
