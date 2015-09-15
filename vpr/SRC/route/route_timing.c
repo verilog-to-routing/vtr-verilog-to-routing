@@ -884,7 +884,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		expected_cost = criticality_fac * Tdel
 				+ (1. - criticality_fac) * cong_cost;
 
-	//	printf("cost_ratio %f  delay_ratio %f  cong_ratio %f \n", my_cost/expected_cost, my_delay/Tdel, my_cong/cong_cost);
+		//printf("cost_ratio %f  delay_ratio %f  cong_ratio %f \n", my_cost/expected_cost, my_delay/Tdel, my_cong/cong_cost);
 		return (my_cost);
 	}
 

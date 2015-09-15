@@ -59,6 +59,36 @@ public:
 			//TODO: try some more complicated stuff like geomean of all entries
 			return cost_vector[0];
 			//return cost_vector[ cost_vector.size()-1 ];
+
+			//TODO: 
+			//	- compute map over a few more wires
+			//	- try min over all entries
+			//	- try median over all entries
+
+			//Cost_Entry min_cost_entry = cost_vector[0];
+			//for (auto entry : cost_vector){
+			//	if (entry.delay < min_cost_entry.delay){
+			//		min_cost_entry = entry;
+			//	}
+			//}
+
+			//return min_cost_entry;
+
+
+			//double geomean_delay = 0;
+			//double geomean_congestion = 0;
+
+			//for (auto cost_entry : cost_vector){
+			//	geomean_delay += cost_entry.delay;
+			//	geomean_congestion += cost_entry.congestion;
+			//	//printf("%.3e %.3e\n", geomean_delay, geomean_congestion);
+			//}
+			////geomean_delay = pow( geomean_delay, 1./(float)cost_vector.size() );
+			////geomean_congestion = pow( geomean_congestion, 1./(float)cost_vector.size() );
+			////printf("\t\t%.3e %.3e\n", geomean_delay, geomean_congestion);
+			//geomean_delay /= (float)cost_vector.size();
+			//geomean_congestion /= (float)cost_vector.size();
+			//return Cost_Entry(geomean_delay, geomean_congestion);
 		}
 	}
 };
@@ -87,7 +117,8 @@ public:
 		}
 		
 		/* get delay info for this node */
-		this->delay = parent_delay + rr_node[set_rr_node_ind].C * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R);
+		this->delay = parent_delay + rr_node[set_rr_node_ind].C * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R)
+		                + g_rr_switch_inf[switch_ind].Tdel;
 		new_R_upstream += rr_node[set_rr_node_ind].R;
 		this->R_upstream = new_R_upstream;
 
@@ -170,7 +201,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 	//printf("from_chan_index %d  from_seg_index %d  delta_x %d  delta_y %d\n", from_chan_index, from_seg_index, delta_x, delta_y);
 	Cost_Entry cost_entry = f_cost_map[from_chan_index][from_seg_index][delta_x][delta_y];
-	float expected_delay = cost_entry.delay * 1.0;
+	float expected_delay = cost_entry.delay;
 	float expected_congestion = cost_entry.congestion;
 
 	float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
@@ -221,7 +252,7 @@ void compute_timing_driven_lookahead(int num_segments){
 		}
 	}
 
-	////XXX printing out delay maps
+	//XXX printing out delay maps
 	//for (int iseg = 0; iseg < num_segments; iseg++){
 	//	for (int chan_index : {0,1}){
 	//		for (int iy = 0; iy < ny+1; iy++){
