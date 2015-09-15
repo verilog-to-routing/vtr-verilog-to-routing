@@ -17,6 +17,8 @@ using namespace std;
 #define REF_X 3
 #define REF_Y 3
 
+#define MAX_TRACK_OFFSET 10
+
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
    to travel relative x/y distances */
@@ -36,12 +38,29 @@ public:
 };
 
 
+/* when a list of delay/congestion entries at a coordinate in BFS_Cost_Entry is boiled down to a single
+   representative entry, this enum is passed-in to specify how that representative entry should be 
+   calculated */
+enum e_representative_entry_method{
+	FIRST = 0,
+	SMALLEST,
+	AVERAGE,
+	GEOMEAN,
+	MEDIAN
+};
+
 /* a class that stores delay/congestion information for a given relative coordinate during the BFS expansion. 
    since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored 
    in the final lookahead cost map */
 class BFS_Cost_Entry{
 private:
 	vector<Cost_Entry> cost_vector;
+
+	Cost_Entry get_smallest_entry();
+	Cost_Entry get_average_entry();
+	Cost_Entry get_geomean_entry();
+	Cost_Entry get_median_entry();
+
 
 public:
 	void add_cost_entry(float add_delay, float add_congestion){
@@ -52,43 +71,16 @@ public:
 		this->cost_vector.clear();
 	}
 
-	Cost_Entry get_representative_cost_entry(){
+	Cost_Entry get_representative_cost_entry(e_representative_entry_method method){
 		if (cost_vector.empty()){
 			return Cost_Entry();
 		} else {
-			//TODO: try some more complicated stuff like geomean of all entries
-			return cost_vector[0];
+			//return cost_vector[0];
 			//return cost_vector[ cost_vector.size()-1 ];
-
-			//TODO: 
-			//	- compute map over a few more wires
-			//	- try min over all entries
-			//	- try median over all entries
-
-			//Cost_Entry min_cost_entry = cost_vector[0];
-			//for (auto entry : cost_vector){
-			//	if (entry.delay < min_cost_entry.delay){
-			//		min_cost_entry = entry;
-			//	}
-			//}
-
-			//return min_cost_entry;
-
-
-			//double geomean_delay = 0;
-			//double geomean_congestion = 0;
-
-			//for (auto cost_entry : cost_vector){
-			//	geomean_delay += cost_entry.delay;
-			//	geomean_congestion += cost_entry.congestion;
-			//	//printf("%.3e %.3e\n", geomean_delay, geomean_congestion);
-			//}
-			////geomean_delay = pow( geomean_delay, 1./(float)cost_vector.size() );
-			////geomean_congestion = pow( geomean_congestion, 1./(float)cost_vector.size() );
-			////printf("\t\t%.3e %.3e\n", geomean_delay, geomean_congestion);
-			//geomean_delay /= (float)cost_vector.size();
-			//geomean_congestion /= (float)cost_vector.size();
-			//return Cost_Entry(geomean_delay, geomean_congestion);
+			return this->get_smallest_entry();
+			//return this->get_average_entry();
+			//return this->get_geomean_entry();
+			//return this->get_median_entry();
 		}
 	}
 };
@@ -155,7 +147,7 @@ t_cost_map f_cost_map;
 static void alloc_cost_map(int num_segments);
 static void free_cost_map();
 /* returns index of a node from which to start BFS */
-static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index);
+static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 /* runs BFS from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
    to that pin is stored is added to an entry in the bfs_cost_map */
 static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map &bfs_cost_map);
@@ -230,16 +222,19 @@ void compute_timing_driven_lookahead(int num_segments){
 			t_bfs_cost_map bfs_cost_map;
 			bfs_cost_map.assign( nx+2, vector<BFS_Cost_Entry>(ny+2, BFS_Cost_Entry()) );
 
-			/* get the rr node index from which to start BFS */
-			int start_node_ind = get_start_node_ind(REF_X, REF_Y, nx, ny, chan_type, iseg);
+			for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
+				/* get the rr node index from which to start BFS */
+				int start_node_ind = get_start_node_ind(REF_X, REF_Y, nx, ny, chan_type, iseg, track_offset);
 
-			if (start_node_ind == UNDEFINED){
-				assert(false);
-				continue;
+				if (start_node_ind == UNDEFINED){
+					continue;
+				}
+
+				/* run BFS */
+				run_bfs(start_node_ind, REF_X, REF_Y, bfs_cost_map);
 			}
-
-			/* run BFS */
-			run_bfs(start_node_ind, REF_X, REF_Y, bfs_cost_map);
+			printf("\n");
+	
 			
 			/* boil down the cost list in bfs_cost_map at each coordinate to a representative cost entry and store it in the lookahead
 			   cost map */
@@ -253,22 +248,22 @@ void compute_timing_driven_lookahead(int num_segments){
 	}
 
 	//XXX printing out delay maps
-	//for (int iseg = 0; iseg < num_segments; iseg++){
-	//	for (int chan_index : {0,1}){
-	//		for (int iy = 0; iy < ny+1; iy++){
-	//			for (int ix = 0; ix < nx+1; ix++){
-	//				printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
-	//			}
-	//			printf("\n");
-	//		}
-	//		printf("\n\n");
-	//	}
-	//}
+	for (int iseg = 0; iseg < num_segments; iseg++){
+		for (int chan_index : {0,1}){
+			for (int iy = 0; iy < ny+1; iy++){
+				for (int ix = 0; ix < nx+1; ix++){
+					printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
+				}
+				printf("\n");
+			}
+			printf("\n\n");
+		}
+	}
 }
 
 
 /* returns index of a node from which to start BFS */
-static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index){
+static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset){
 
 	int result = UNDEFINED;
 
@@ -307,7 +302,11 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 			    node_seg_ind == seg_index){
 			/* found first track that has the specified segment index and goes in the desired direction */
 			result = node_ind;
-			break;
+			if (track_offset == 0){
+				printf("track %d  offset %d\n", itrack, track_offset);
+				break;
+			}
+			track_offset -= 2;
 		}
 	}
 
@@ -436,7 +435,7 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_bf
 
 			//printf("%d %d  %f\n", ix, iy, bfs_cost_entry.get_representative_cost_entry());
 
-			f_cost_map[chan_index][segment_index][ix][iy] = bfs_cost_entry.get_representative_cost_entry();
+			f_cost_map[chan_index][segment_index][ix][iy] = bfs_cost_entry.get_representative_cost_entry(FIRST);
 		}
 	}
 }
@@ -508,4 +507,106 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 
 	return copy_entry;
 }
+
+
+/* returns cost entry with the smallest delay */
+Cost_Entry BFS_Cost_Entry::get_smallest_entry(){
+
+	Cost_Entry smallest_entry;
+
+	for (auto entry : this->cost_vector){
+		if (smallest_entry.delay < 0 || entry.delay < smallest_entry.delay){
+			smallest_entry = entry;
+		}
+	}
+
+	return smallest_entry;
+}
+
+/* returns a cost entry that represents the average of all the recorded entries */
+Cost_Entry BFS_Cost_Entry::get_average_entry(){
+	float avg_delay = 0;
+	float avg_congestion = 0;
+
+	for (auto cost_entry : this->cost_vector){
+		avg_delay += cost_entry.delay;
+		avg_congestion += cost_entry.congestion;
+	}
+
+	avg_delay /= (float)this->cost_vector.size();
+	avg_congestion /= (float)this->cost_vector.size();
+
+	return Cost_Entry(avg_delay, avg_congestion);
+}
+
+/* returns a cost entry that represents the geomean of all the recorded entries */
+Cost_Entry BFS_Cost_Entry::get_geomean_entry(){
+	
+
+	float geomean_delay = 0;
+	float geomean_cong = 0;
+	for (auto cost_entry : this->cost_vector){
+		geomean_delay += log(cost_entry.delay);
+		geomean_cong += log(cost_entry.congestion);
+	}
+
+	geomean_delay = exp( geomean_delay / (float)this->cost_vector.size() );
+	geomean_cong = exp( geomean_cong / (float)this->cost_vector.size() );
+
+	return Cost_Entry(geomean_delay, geomean_cong);
+}
+
+/* returns a cost entry that represents the medial of all recorded entries */
+Cost_Entry BFS_Cost_Entry::get_median_entry(){
+	/* find median by binning the delays of all entries and then chosing the bin 
+	   with the largest number of entries */
+
+	int num_bins = 10;
+	
+	/* find entries with smallest and largest delays */
+	Cost_Entry min_del_entry;
+	Cost_Entry max_del_entry;
+	for(auto entry : this->cost_vector){
+		if (min_del_entry.delay < 0 || entry.delay < min_del_entry.delay){
+			min_del_entry = entry;
+		}
+		if (max_del_entry.delay < 0 || entry.delay > max_del_entry.delay){
+			max_del_entry = entry;
+		}
+	}
+
+	/* get the bin size */
+	float delay_diff = max_del_entry.delay - min_del_entry.delay;
+	float bin_size = delay_diff / (float)num_bins;
+	
+	/* sort the cost entries into bins */
+	vector< vector<Cost_Entry> > entry_bins( num_bins, vector<Cost_Entry>() );
+	for (auto entry : this->cost_vector){
+		float bin_num = floor( (entry.delay - min_del_entry.delay) / bin_size );
+
+		//printf("entry %.3e  min %.3e  bin_size %.3e  bin_num %.3e\n", entry.delay, min_del_entry.delay, bin_size, bin_num);
+		assert(nint(bin_num) >= 0 && nint(bin_num) <= num_bins);
+		if (nint(bin_num) == num_bins){
+			/* largest entry will otherwise have an out-of-bounds bin number */
+			bin_num -= 1;
+		}
+		entry_bins[ nint(bin_num) ].push_back(entry);
+	}
+
+	/* find the bin with the largest number of elements */
+	int largest_bin = 0;
+	int largest_size = 0;
+	for (int ibin = 0; ibin < num_bins; ibin++){
+		if ( entry_bins[ibin].size() > (unsigned)largest_size ){
+			largest_bin = ibin;
+			largest_size = (unsigned)entry_bins[ibin].size();
+		}
+	}
+
+	/* get the representative delay of the largest bin */
+	Cost_Entry representative_entry = entry_bins[largest_bin][0];
+	
+	return representative_entry;
+}
+
 

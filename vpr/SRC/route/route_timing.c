@@ -26,8 +26,6 @@ using namespace std;
 
 /******************** Subroutines local to route_timing.c ********************/
 
-long long unsigned f_nodes_expanded = 0;
-
 static int get_max_pins_per_net(void);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
