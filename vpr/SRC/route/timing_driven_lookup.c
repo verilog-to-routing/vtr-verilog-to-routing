@@ -17,7 +17,7 @@ using namespace std;
 #define REF_X 3
 #define REF_Y 3
 
-#define MAX_TRACK_OFFSET 10
+#define MAX_TRACK_OFFSET 32
 #define REPRESENTATIVE_BFS_ENTRY_METHOD SMALLEST
 
 
@@ -124,8 +124,10 @@ public:
 		}
 		
 		/* get delay info for this node */
-		this->delay = parent_delay + rr_node[set_rr_node_ind].C * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R)
-		                + g_rr_switch_inf[switch_ind].Tdel;
+		this->delay = parent_delay + rr_node[set_rr_node_ind].C * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R);
+		if (switch_ind != UNDEFINED){
+			this->delay += g_rr_switch_inf[switch_ind].Tdel;
+		}
 		new_R_upstream += rr_node[set_rr_node_ind].R;
 		this->R_upstream = new_R_upstream;
 
