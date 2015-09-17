@@ -2833,7 +2833,7 @@ t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_inf) {
 		for (i = 0; i < g_sdc->num_constrained_clocks; i++) {
 			for (j = 0; j < g_sdc->num_constrained_clocks; j++) {
 				// Use the true, unrelaxed, least slack (constraint - critical path delay).
-				slack = g_sdc->domain_constraint[source_clock_domain][sink_clock_domain] - f_timing_stats->cpd[i][j];
+				slack = g_sdc->domain_constraint[i][j] - f_timing_stats->cpd[i][j];
 				if (slack < min_slack) {
 					min_slack = slack;
 					source_clock_domain = i;
