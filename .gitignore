@@ -28,6 +28,7 @@ vpr_stdout.log
 *.net
 *.place
 *.route
+*.out
 
 #
 #Generated intermediate results
