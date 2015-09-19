@@ -349,9 +349,6 @@ static void free_cost_map(){
 /* runs BFS from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
    to that pin is stored is added to an entry in the bfs_cost_map */
 static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map &bfs_cost_map){
-/*
-	TODO: need structure and function for priority queue
-*/
 
 	/* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
 	vector<bool> node_expanded( num_rr_nodes, false );
@@ -392,11 +389,37 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 				//printf("\t%d %d\n", delta_x, delta_y);
 
 				bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
-
-				/* no need to expand to sink nodes */
-				//continue;
 			}
 		}
+
+		////XXX: stop at CHANX/CHANY nodes instead of IPINS
+		//if (rr_node[node_ind].type == CHANX){
+		//	int xlow = rr_node[node_ind].get_xlow();
+		//	int xhigh = rr_node[node_ind].get_xhigh();
+		//	int y = rr_node[node_ind].get_ylow();
+
+		//	for (int ix = xlow; ix <= xhigh; ix++){
+		//		if (ix >= start_x && y >= start_y){
+		//			int delta_x = ix - start_x;
+		//			int delta_y = y - start_y;
+
+		//			bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
+		//		}
+		//	}
+		//} else if (rr_node[node_ind].type == CHANY){
+		//	int ylow = rr_node[node_ind].get_ylow();
+		//	int yhigh = rr_node[node_ind].get_yhigh();
+		//	int x = rr_node[node_ind].get_xlow();
+
+		//	for (int iy = ylow; iy <= yhigh; iy++){
+		//		if (iy >= start_y && x >= start_x){
+		//			int delta_x = x - start_x;
+		//			int delta_y = iy - start_y;
+
+		//			bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
+		//		}
+		//	}
+		//}
 
 		expand_bfs_neighbours(current, node_visited_costs, node_expanded, pq);
 		node_expanded[node_ind] = true;
