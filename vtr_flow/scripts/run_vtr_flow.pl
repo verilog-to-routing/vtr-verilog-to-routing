@@ -11,6 +11,7 @@
 #   architecture_file: Path to the architecture file (.xml)
 #
 # Options:
+#   Note that all unrecognized parameters are forwarded to VPR.
 # 	-starting_stage <stage>: Start the VTR flow at the specified stage.
 #								Acceptable values: odin, abc, script, vpr.
 #								Default value is odin.

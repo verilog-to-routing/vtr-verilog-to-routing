@@ -6,6 +6,8 @@
 #	run_vtr_task.pl <task_name1> <task_name2> ... [OPTIONS]
 #
 # Options:
+#   -s <script_params>:  Treat the remaining command line options as parameters
+#               to forward to the VPR calling script (e.g. run_vtr_flow.pl).
 # 	-p <N>:  Perform parallel execution using N threads. Note: Large benchmarks
 #				will use very large amounts of memory (several gigabytes). Because
 #				of this, parallel execution often saturates the physical memory,

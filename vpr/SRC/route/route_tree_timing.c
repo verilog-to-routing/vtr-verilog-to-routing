@@ -759,7 +759,6 @@ static void find_sinks_of_route_tree(const t_rt_node* rt_root, CBRR& connections
 			if (connections_inf.should_force_reroute_connection(rt_root->inode)) {
 				// rerouting this sink due to congestion, so reset the force reroute flag anyway
 				connections_inf.clear_force_reroute_for_connection(rt_root->inode);
-				vpr_printf_info("forcing high fanout (congested) %4d %d\n", connections_inf.get_current_inet(), rt_root->inode);
 			}
 
 			// put in remaining targets, marked as a sink that hasn't been reached legally yet
@@ -821,7 +820,6 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 		if (connections_inf.should_force_reroute_connection(inode)) {
 			// forced the reroute, clear so future iterations don't get a stale flag
 			connections_inf.clear_force_reroute_for_connection(inode);
-			vpr_printf_info("forcing high fanout %4d %d\n", connections_inf.get_current_inet(), inode);
 			return true;
 		}
 		// don't need to reroute connection so can safely claim to have reached rt_sink

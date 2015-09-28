@@ -286,7 +286,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 					connections_inf.set_stable_critical_path_delay(critical_path_delay);
 			}
             vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-            vpr_printf_info("stable critical path delay: %8.5f ns\n", connections_inf.get_stable_critical_path_delay());
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
@@ -1299,7 +1298,6 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 		if (rr_node[inode].type == SINK) {
 			// even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
 			if (connections_inf.should_force_reroute_connection(inode)) {
-				vpr_printf_info("net %d forced to reroute\n", inet);
 				return true;
 			}
 			tptr = tptr->next; /* Skip next segment. */
@@ -1549,7 +1547,6 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 	for (auto& force_reroute_flag : net_flags) {
 		if (force_reroute_flag.second) {
 			force_reroute_flag.second = false;
-			vpr_printf_info("forcing low fanout %4d %d\n", this->get_current_inet(), force_reroute_flag.first);
 			profiling::perform_forced_reroute();
 		}
 	}
