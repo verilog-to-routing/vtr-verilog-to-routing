@@ -156,11 +156,6 @@ bool place_and_route(enum e_operation operation,
 			get_serial_num();
 
 			vpr_printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
-		// REMOVE AFTER
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		float critical_path_delay = get_critical_path_delay();
-		vpr_printf_info("Critical path before routing stats: %g ns\n", critical_path_delay);
 
 			routing_stats(router_opts.full_stats, router_opts.route_type,
 					g_num_rr_switches, segment_inf,

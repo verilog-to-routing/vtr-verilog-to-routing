@@ -36,14 +36,6 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
 
-		// REMOVE AFTER
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		float critical_path_delay = get_critical_path_delay();
-		vpr_printf_info("Critical path at the start of routing stats: %g ns\n", critical_path_delay);
-
-
-
 	float area, used_area;
 	int i, j;
 
@@ -79,38 +71,17 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	}
 	vpr_printf_info("\tTotal used logic block area: %g\n", used_area);
 
-		// REMOVE AFTER
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		vpr_printf_info("Critical path after getting logic block area: %g ns\n", get_critical_path_delay());
-
-
 	if (route_type == DETAILED) {
-
-
-
 		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch, 
 				segment_inf, R_minW_nmos, R_minW_pmos);
 		get_segment_usage_stats(num_segment, segment_inf);
-
-		// REMOVE AFTER
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		vpr_printf_info("Critical path after getting usage stats: %g ns\n", get_critical_path_delay());
 
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 			load_timing_graph_net_delays(net_delay);
-		// REMOVE AFTER
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		vpr_printf_info("Critical path after loading net delay from routing: %g ns\n", get_critical_path_delay());
-
 
 			do_timing_analysis(slacks, timing_inf, false, true);
-		// REMOVE AFTER
-		vpr_printf_info("Critical path after doing final timing analysis: %g ns\n", get_critical_path_delay());
 
 			if (getEchoEnabled()) {
 				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
