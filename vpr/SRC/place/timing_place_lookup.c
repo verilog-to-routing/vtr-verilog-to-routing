@@ -616,12 +616,15 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	int itry = 1;
 	float pres_fac = 0.0; /* ignore congestion */
 
+	CBRR dummy_connections_inf;
+	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
 	timing_driven_route_net(NET_USED, itry, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
-			pin_criticality, sink_order, rt_node_of_sink, 
+			dummy_connections_inf,
+			pin_criticality, router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
 			net_delay[NET_USED], NULL);
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];

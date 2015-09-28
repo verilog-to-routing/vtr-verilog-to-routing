@@ -3324,6 +3324,11 @@ void print_timing_stats(void) {
 	double fanout_weighted_geomean_period = 0.;
 	bool found;
 
+		// REMOVE AFTER
+		critical_path_delay = get_critical_path_delay();
+		vpr_printf_info("Critical path in print timing: %g ns\n", critical_path_delay);
+		critical_path_delay = UNDEFINED;
+
 	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
 	 the limiting factor on critical path delay, so print that instead, with a special message. */
 	

@@ -23,6 +23,8 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 
+#include "route_profiling.h"
+
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful
@@ -96,10 +98,8 @@ static t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
 /******************** Subroutines local to route_common.c *******************/
 
-static void free_trace_data(struct s_trace *tptr);
 static void load_route_bb(int bb_factor);
 
-static struct s_trace *alloc_trace_data(void);
 static void add_to_heap(struct s_heap *hptr);
 static struct s_heap *alloc_heap_data(void);
 static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
@@ -347,9 +347,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 		assert(router_opts.route_type != GLOBAL);
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
-#ifdef PROFILE
-		time_on_fanout_analysis();
-#endif
+		profiling::time_on_fanout_analysis();
 	}
 
 	free_rr_node_route_structs();
@@ -392,7 +390,7 @@ int predict_success_route_iter(const std::vector<double>& historical_overuse_rat
 	return expected_success_route_iter;
 }
 
-void pathfinder_update_one_cost(struct s_trace *route_segment_start,
+void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 		int add_or_sub, float pres_fac) {
 
 	/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
@@ -404,32 +402,15 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 	 * oversubscribed rr_nodes are penalized.                                    */
 
 	struct s_trace *tptr;
-	int inode, occ, capacity;
 
 	tptr = route_segment_start;
 	if (tptr == NULL) /* No routing yet. */
 		return;
 
 	for (;;) {
-		inode = tptr->index;
+		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
 
-		occ = rr_node[inode].get_occ() + add_or_sub;
-		capacity = rr_node[inode].get_capacity();
-
-		rr_node[inode].set_occ(occ);
-
-		/* pres_cost is Pn in the Pathfinder paper. I set my pres_cost according to *
-		 * the overuse that would result from having ONE MORE net use this routing  *
-		 * node.                                                                    */
-
-		if (occ < capacity) {
-			rr_node_route_inf[inode].pres_cost = 1.0;
-		} else {
-			rr_node_route_inf[inode].pres_cost = 1.0
-					+ (occ + 1 - capacity) * pres_fac;
-		}
-
-		if (rr_node[inode].type == SINK) {
+		if (rr_node[tptr->index].type == SINK) {
 			tptr = tptr->next; /* Skip next segment. */
 			if (tptr == NULL)
 				break;
@@ -440,6 +421,26 @@ void pathfinder_update_one_cost(struct s_trace *route_segment_start,
 	} /* End while loop -- did an entire traceback. */
 }
 
+void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
+
+	/* Updates pathfinder's congestion cost by either adding or removing the 
+	 * usage of a resource node. pres_cost is Pn in the Pathfinder paper.
+	 * pres_cost is set according to the overuse that would result from having
+	 * ONE MORE net use this routing node.     */
+
+	int occ = rr_node[inode].get_occ() + add_or_sub;
+	rr_node[inode].set_occ(occ);
+	// can't have negative occupancy
+	assert(occ >= 0);
+
+	int	capacity = rr_node[inode].get_capacity();
+	if (occ < capacity) {
+		rr_node_route_inf[inode].pres_cost = 1.0;
+	} else {
+		rr_node_route_inf[inode].pres_cost = 1.0
+				+ (occ + 1 - capacity) * pres_fac;
+	}
+}
 void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	/* This routine recomputes the pres_cost and acc_cost of each routing        *
@@ -641,6 +642,12 @@ void mark_ends(int inet) {
 	}
 }
 
+void mark_remaining_ends(int inet, const vector<int>& remaining_sinks) {
+	// like mark_ends, but only performs it for the remaining sinks of a net
+	for (int sink_node : remaining_sinks)
+		++rr_node_route_inf[sink_node].target_flag;
+}
+
 void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream) {
 
@@ -785,8 +792,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 			}
 		
 			if ((block[iblk].nets[clb_pin] != OPEN
-					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) || block[iblk].nets[clb_pin] == OPEN
-				) {
+					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) || block[iblk].nets[clb_pin] == OPEN) {
 				iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
@@ -1007,7 +1013,6 @@ namespace heap_ {
 			if ((int)child + 1 < heap_tail && heap[child + 1]->cost < heap[child]->cost)
 				++child;
 			if (heap[child]->cost < head->cost) {
-				// vpr_printf_info("siftdown child %d(%e) head(%e)\n", child, heap[child]->cost, head->cost);
 				heap[hole] = heap[child];
 				hole = child;
 				child = left(child);
@@ -1212,7 +1217,7 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 	}
 }
 
-static struct s_trace *
+struct s_trace *
 alloc_trace_data(void) {
 
 	struct s_trace *temp_ptr;
@@ -1229,7 +1234,7 @@ alloc_trace_data(void) {
 	return (temp_ptr);
 }
 
-static void free_trace_data(struct s_trace *tptr) {
+void free_trace_data(struct s_trace *tptr) {
 
 	/* Puts the traceback structure pointed to by tptr on the free list. */
 
@@ -1473,4 +1478,22 @@ void free_chunk_memory_trace(void) {
 	if (trace_ch.chunk_ptr_head != NULL) {
 		free_chunk_memory(&trace_ch);
 	}
+}
+
+
+// connection based overhaul (more specificity than nets)
+// utility and debugging functions -----------------------
+void print_traceback(int inet) {
+	// linearly print linked list
+	vpr_printf_info("traceback %d: ", inet);
+	t_trace* head = trace_head[inet];
+	while (head) {
+		int inode {head->index};
+		if (rr_node[inode].type == SINK) 
+			vpr_printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
+		else 
+			vpr_printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
+		head = head->next;
+	}
+	vpr_printf_info("\n");
 }

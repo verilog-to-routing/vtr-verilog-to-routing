@@ -11,6 +11,7 @@
 #   architecture_file: Path to the architecture file (.xml)
 #
 # Options:
+#   Note that all unrecognized parameters are forwarded to VPR.
 # 	-starting_stage <stage>: Start the VTR flow at the specified stage.
 #								Acceptable values: odin, abc, script, vpr.
 #								Default value is odin.
@@ -202,6 +203,11 @@ while ( $token = shift(@ARGV) ) {
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
+        # next element could be the number 0, which needs to be forwarded
+        if ( $ARGV[0] == '0' ) {
+            $token = shift(@ARGV);
+            push @forwarded_vpr_args, $token;
+        }
 	}
 
 	if ( $starting_stage == -1 or $ending_stage == -1 ) {

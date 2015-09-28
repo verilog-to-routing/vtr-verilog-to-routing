@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-#include <assert.h>
+#include <cassert>
 #include <vector>
+#include <unordered_map>
 #include <algorithm>
 #include "vpr_utils.h"
 #include "util.h"
@@ -18,14 +19,19 @@
 #include "stats.h"
 #include "ReadOptions.h"
 
-
+// all functions in profiling:: namespace, which are only activated if PROFILE is defined
+#include "route_profiling.h"	
+ 
 using namespace std;
-
 
 
 /******************** Subroutines local to route_timing.c ********************/
 
-static int get_max_pins_per_net(void);
+static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout, 
+	CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
+
+static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality, 
+	float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac);
@@ -53,7 +59,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 
 static double get_overused_ratio();
 
-static bool should_route_net(int inet);
+static bool should_route_net(int inet, const CBRR& connections_inf);
 static bool early_exit_heuristic(const t_router_opts& router_opts);
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
@@ -62,17 +68,6 @@ struct more_sinks_than {
 };
 
 
-#ifdef PROFILE
-static void congestion_analysis();
-static void time_on_criticality_analysis();
-constexpr int fanout_per_bin = 4;
-constexpr float criticality_per_bin = 0.05;
-static vector<float> time_on_fanout;
-static vector<float> time_to_build_heap;
-static vector<int> itry_on_fanout;
-static vector<float> time_on_criticality;
-static vector<int> itry_on_criticality;
-#endif
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
@@ -82,14 +77,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
-#ifdef PROFILE
-	const int max_fanout {get_max_pins_per_net()};
-	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	time_to_build_heap.resize((max_fanout / fanout_per_bin) + 1, 0);
-	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
-	time_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
-	itry_on_criticality.resize((1 / criticality_per_bin) + 1, 0);
-#endif
+
+	// initialize and properly size the lookups for profiling fanout breakdown
+	 profiling::profiling_initialization(get_max_pins_per_net());
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -101,10 +91,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
 
 	timing_driven_route_structs route_structs{}; // allocs route strucs (calls default constructor)
-	// contains:
-	// float *pin_criticality; /* [1..max_pins_per_net-1] */
-	// int *sink_order; /* [1..max_pins_per_net-1] */;
-	// t_rt_node **rt_node_of_sink; /* [1..max_pins_per_net-1] */
 
 	/* First do one routing iteration ignoring congestion to get reasonable net 
 	   delay estimates. Set criticalities to 1 when timing analysis is on to 
@@ -117,7 +103,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	double overused_ratio;
 	vector<double> historical_overuse_ratio; 
 	historical_overuse_ratio.reserve(router_opts.max_router_iterations + 1);
-
 	// for unroutable large circuits, the time per iteration seems to increase dramatically
 	vector<float> time_per_iteration;
 	time_per_iteration.reserve(router_opts.max_router_iterations + 1);
@@ -140,11 +125,16 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		}
 	}
 
+	// build lookup datastructures and 
+	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
+	CBRR connections_inf {};
+	EXPENSIVE_ASSERT(connections_inf.sanity_check_lookup());
+
+
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
 
 	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
 		clock_t begin = clock();
-
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 			g_clbs_nlist.net[inet].is_routed = false;
@@ -157,8 +147,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				itry,
 				pres_fac,
 				router_opts,
+				connections_inf,
 				route_structs.pin_criticality,
-				route_structs.sink_order,
 				route_structs.rt_node_of_sink,
 				net_delay,
 				slacks
@@ -168,7 +158,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				return (false);
 			}
 		}
-
 		clock_t end = clock();
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
 		time_per_iteration.push_back(time);
@@ -221,7 +210,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
         //print_usage_by_wire_length();
 
-
+		// finished routing, converged to a solution with all legal connections (no congestion)
 		if (success) {
    
 			if (timing_analysis_enabled) {
@@ -242,6 +231,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			return (true);
 		}
 
+		// still need to route more iterations (some congested parts)
 		if (itry == 1) {
 			pres_fac = router_opts.initial_pres_fac;
 			pathfinder_update_cost(pres_fac, 0.); /* Acc_fac=0 for first iter. */
@@ -280,16 +270,31 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		
 		if (timing_analysis_enabled) {
 			float critical_path_delay = get_critical_path_delay();
+			// check if any connection needs to be forcibly rerouted
+			// first iteration sets up the lower bound connection delays since only timing is optimized for
+			if (itry == 1) {
+				connections_inf.set_stable_critical_path_delay(critical_path_delay);
+				connections_inf.set_lower_bound_connection_delays(net_delay);
+			}
+			else {
+				bool stable_routing_configuration = true;
+				// only need to forcibly reroute if critical path grew significantly
+				if (connections_inf.critical_path_delay_grew_significantly(critical_path_delay))
+					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, slacks, net_delay);
+				// not stable if any connection needs to be forcibly rerouted
+				if (stable_routing_configuration)
+					connections_inf.set_stable_critical_path_delay(critical_path_delay);
+			}
             vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vpr_printf_info("stable critical path delay: %8.5f ns\n", connections_inf.get_stable_critical_path_delay());
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
-#ifdef PROFILE
-        if (router_opts.congestion_analysis) congestion_analysis();
-        if (router_opts.fanout_analysis) time_on_fanout_analysis();
-        time_on_criticality_analysis();
-#endif
+        if (router_opts.congestion_analysis) profiling::congestion_analysis();
+        if (router_opts.fanout_analysis) profiling::time_on_fanout_analysis();
+        // profiling::time_on_criticality_analysis();
+
 		fflush(stdout);
 	}
 	vpr_printf_info("Routing failed.\n");
@@ -297,116 +302,35 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	return (false);
 }
 
-// profiling per iteration functions
-#ifdef PROFILE
-void time_on_fanout_analysis() {
-	// using the global time_on_fanout and itry_on_fanout
-	vpr_printf_info("fanout low           time (s)        attemps     heap build time (s)\n");
-	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
-		if (itry_on_fanout[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4d           %14.3f   %12d %14.3f\n",bin*fanout_per_bin, time_on_fanout[bin], itry_on_fanout[bin], time_to_build_heap[bin]);
-		}
-	}
-}
-
-void time_on_criticality_analysis() {
-	vpr_printf_info("congestion low           time (s)        attemps\n");
-	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
-		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
-			vpr_printf_info("%4d           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
-		}
-	}	
-}
-// at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
-// efficient bit array for checking against congested type
-struct Congested_node_types {
-	uint32_t mask;
-	Congested_node_types() : mask{0} {}
-	void set_congested(int rr_node_type) {mask |= (1 << rr_node_type);}
-	void clear_congested(int rr_node_type) {mask &= ~(1 << rr_node_type);}
-	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
-	bool empty() const {return mask == 0;}
-};
-
-void congestion_analysis() {
-	static const std::vector<const char*> node_typename {
-		"SOURCE",
-		"SINK",
-		"IPIN",
-		"OPIN",
-		"CHANX",
-		"CHANY",
-		"ICE"
-	};
-	// each type indexes into array which holds the congestion for that type
-	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
-	// print out specific node information if congestion for type is low enough
-
-	int total_congestion = 0;
-	for (int inode = 0; inode < num_rr_nodes; ++inode) {
-		const t_rr_node& node = rr_node[inode];
-		int congestion = node.get_occ() - node.get_capacity();
-
-		if (congestion > 0) {
-			total_congestion += congestion;
-			congestion_per_type[node.type] += congestion;
-		}
-	}
-
-	constexpr int specific_node_print_threshold = 5;
-	Congested_node_types congested;
-	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
-		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
-		vpr_printf_info(" %6s: %10.6f %\n", node_typename[type], congestion_percentage); 
-		// nodes of that type need specific printing
-		if (congestion_per_type[type] > 0 &&
-			congestion_per_type[type] < specific_node_print_threshold) congested.set_congested(type);
-	}
-
-	// specific print out each congested node
-	if (!congested.empty()) {
-		vpr_printf_info("Specific congested nodes\nxlow ylow   type\n");
-		for (int inode = 0; inode < num_rr_nodes; ++inode) {
-			const t_rr_node& node = rr_node[inode];
-			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
-				vpr_printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
-			}
-		}
-	}
-}
-#endif
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
-		float* pin_criticality, int* sink_order,
+		CBRR& connections_inf,
+		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks) {
 
 	bool is_routed = false;
+
+	connections_inf.prepare_routing_for_net(inet);
 
 	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
 		is_routed = true;
 	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
 		is_routed = true;
-	} else if (should_route_net(inet) == false) {
+	} else if (should_route_net(inet, connections_inf) == false) {
 		is_routed = true;
 	} else{
 		// track time spent vs fanout
-#ifdef PROFILE
-		clock_t net_begin = clock();
-#endif
+		profiling::net_fanout_start();
 
 		is_routed = timing_driven_route_net(inet, itry, pres_fac,
 				router_opts.max_criticality, router_opts.criticality_exp, 
 				router_opts.astar_fac, router_opts.bend_cost, 
-				pin_criticality, sink_order, 
+				connections_inf,
+				pin_criticality, router_opts.min_incremental_reroute_fanout, 
 				rt_node_of_sink, net_delay[inet], slacks);
 
-#ifdef PROFILE
-		float time_for_net = static_cast<float>(clock() - net_begin) / CLOCKS_PER_SEC;
-		int net_fanout = g_clbs_nlist.net[inet].num_sinks();
-		time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
-		itry_on_fanout[net_fanout / fanout_per_bin] += 1;
-#endif
+		profiling::net_fanout_end(g_clbs_nlist.net[inet].num_sinks());
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -485,7 +409,7 @@ timing_driven_route_structs::~timing_driven_route_structs() {
 	);
 }
 
-static int get_max_pins_per_net(void) {
+int get_max_pins_per_net(void) {
 
 	/* Returns the largest number of pins on any non-global net.    */
 
@@ -503,38 +427,44 @@ static int get_max_pins_per_net(void) {
 	return (max_pins_per_net);
 }
 
+struct Criticality_comp {
+	const float* criticality;
+
+	Criticality_comp(const float* calculated_criticalities) : criticality{calculated_criticalities} {}
+	bool operator()(int a, int b) const {return criticality[a] > criticality[b];}
+};
+
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
-		float *pin_criticality, int *sink_order,
+		CBRR& connections_inf,
+		float *pin_criticality, int min_incremental_reroute_fanout,
 		t_rt_node ** rt_node_of_sink, float *net_delay, t_slack * slacks) {
 
-	/* Returns true as long is found some way to hook up this net, even if that *
+	/* Returns true as long as found some way to hook up this net, even if that *
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
 	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
 	 * give each net a dummy criticality of 0.									*/
 
-	unsigned int ipin;
-	int num_sinks, itarget, target_pin, target_node, inode;
-	float target_criticality, old_total_cost, new_total_cost, largest_criticality,
-		old_back_cost, new_back_cost;
-	t_rt_node *rt_root;
-	
-	struct s_trace *new_route_start_tptr;
-	int highfanout_rlim;
+	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
-	/* Rip-up any old routing. */
+	t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, 
+		connections_inf, rt_node_of_sink);
+	// after this point the route tree is correct
+	// remaining_targets from this point on are the **pin indices** that have yet to be routed 
+	auto& remaining_targets = connections_inf.get_remaining_targets();
 
-	pathfinder_update_one_cost(trace_head[inet], -1, pres_fac);
-	free_traceback(inet);
-	
-	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-		if (!slacks) {
-			/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
-			compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
-			pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
-			pin_criticality[ipin] = 1.0;
-		} else { 
+	// should always have targets to route to since some parts of the net are still congested
+	assert(!remaining_targets.empty());
+
+
+	// calculate criticality of remaining target pins
+	for (int ipin : remaining_targets) {
+		/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
+		compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
+		pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
+		if (!slacks) pin_criticality[ipin] = 1.0;
+		else {
 #ifdef PATH_COUNTING
 			/* Pin criticality is based on a weighted sum of timing and path criticalities. */	
 			pin_criticality[ipin] =		 ROUTE_PATH_WEIGHT	* slacks->path_criticality[inet][ipin]
@@ -556,149 +486,261 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
 			
 			/* Cut off pin criticality at max_criticality. */
-			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);
+			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
 		}
 	}
 
-	num_sinks = g_clbs_nlist.net[inet].num_sinks();
-	heapsort(sink_order, pin_criticality, num_sinks, 0);
-
+	// compare the criticality of different sink nodes
+	sort(begin(remaining_targets), end(remaining_targets), Criticality_comp{pin_criticality});
 	/* Update base costs according to fanout and criticality rules */
 
-	largest_criticality = pin_criticality[sink_order[1]];
+
+	float largest_criticality = pin_criticality[remaining_targets[0]];
 	update_rr_base_costs(inet, largest_criticality);
+	
 
-	mark_ends(inet); /* Only needed to check for multiply-connected SINKs */
+	// explore in order of decreasing criticality (no longer need sink_order array)
+	for (unsigned itarget = 0; itarget < remaining_targets.size(); ++itarget) {
+		int target_pin = remaining_targets[itarget];
+		float target_criticality = pin_criticality[target_pin];
 
-	rt_root = init_route_tree_to_source(inet);
-#ifdef PROFILE
-		float build_heap_time = 0;
-#endif
-	// explore in order of decreasing criticality
-	for (itarget = 1; itarget <= num_sinks; itarget++) {
-		target_pin = sink_order[itarget];
-		target_node = net_rr_terminals[inet][target_pin];
+		// build a branch in the route tree to the target
+		if (!timing_driven_route_sink(itry, inet, itarget, target_pin, target_criticality, 
+			pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink)) 
+			return false;
 
-		target_criticality = pin_criticality[target_pin];
-#ifdef PROFILE
-			clock_t sink_criticality_start = clock();
-#endif
+		// need to gurantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
+		// do this by resetting all the path_costs that have been touched while routing to the current sink
+		reset_path_costs();
+	} // finished all sinks
 
-		highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
-				rt_root);
-		
-		if (itarget > 1 && itry > 5) {
-			/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-			assert(rr_node[rt_root->inode].type == SOURCE);
-			rt_root->re_expand = false;
+	/* For later timing analysis. */
+
+	// may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
+	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
+
+	if (!g_clbs_nlist.net[inet].is_global) {
+		for (unsigned ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
+			if (net_delay[ipin] == 0) {	// should be SOURCE->OPIN->IPIN->SINK
+				assert(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
+			}
+		}
+	}
+
+	// SOURCE should never be congested
+	assert(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
+
+	// route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
+	free_route_tree(rt_root);
+	return (true);
+}
+
+static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality, 
+	float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink) {
+
+	/* Build a path from the existing route tree rooted at rt_root to the target_node
+	 * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
+
+	int target_node = net_rr_terminals[inet][target_pin];
+
+	profiling::sink_criticality_start();
+
+	int highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
+			rt_root);
+	
+	if (itarget > 0 && itry > 5) {
+		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
+		assert(rr_node[rt_root->inode].type == SOURCE);
+		rt_root->re_expand = false;
+	}
+
+	// reexplore route tree from root to add any new nodes (buildheap afterwards)
+	// route tree needs to be repushed onto the heap since each node's cost is target specific
+
+	add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
+	heap_::build_heap();	// via sifting down everything
+
+	EXPENSIVE_ASSERT(heap_::is_valid());
+
+	// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
+	struct s_heap* cheapest {get_heap_head()};
+
+	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
+		vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+				   inet, g_clbs_nlist.net[inet].name, target_node);
+		reset_path_costs();
+		free_route_tree(rt_root);
+		return (false);
+	}
+
+	float old_total_cost, new_total_cost, old_back_cost, new_back_cost;
+	int inode = cheapest->index;
+	while (inode != target_node) {
+		old_total_cost = rr_node_route_inf[inode].path_cost;
+		new_total_cost = cheapest->cost;
+
+		if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+			old_back_cost = HUGE_POSITIVE_FLOAT;
+		else
+			old_back_cost = rr_node_route_inf[inode].backward_path_cost;
+
+		new_back_cost = cheapest->backward_path_cost;
+
+		/* I only re-expand a node if both the "known" backward cost is lower  *
+		 * in the new expansion (this is necessary to prevent loops from       *
+		 * forming in the routing and causing havoc) *and* the expected total  *
+		 * cost to the sink is lower than the old value.  Different R_upstream *
+		 * values could make a path with lower back_path_cost less desirable   *
+		 * than one with higher cost.  Test whether or not I should disallow   *
+		 * re-expansion based on a higher total cost.                          */
+
+		if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
+			rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
+			rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
+			rr_node_route_inf[inode].path_cost = new_total_cost;
+			rr_node_route_inf[inode].backward_path_cost = new_back_cost;
+
+			// tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
+			// path_cost is specific for each sink (different expected cost)
+			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
+				add_to_mod_list(&rr_node_route_inf[inode].path_cost);
+
+			timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
+					target_criticality, target_node, astar_fac,
+					highfanout_rlim);
 		}
 
-		// reexplore route tree from root to add any new nodes (buildheap afterwards)
-#ifdef PROFILE
-			clock_t route_tree_start = clock();
-#endif
-		add_route_tree_to_heap(rt_root, target_node, target_criticality,
-				astar_fac);
-		heap_::build_heap();	// via sifting down everything
-		// if (itarget == num_sinks && itarget > 800) {
-		// 	vpr_printf_info("heap for target %d: ", itarget); 
-		// 	heap_::verify_extract_top();
-		// }
-#ifdef PROFILE
-			build_heap_time += static_cast<float>(clock() - route_tree_start) / CLOCKS_PER_SEC;
-#endif
-		
+		free_heap_data(cheapest);
+		cheapest = get_heap_head();
 
-		// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
-		struct s_heap* cheapest = get_heap_head();
-
-		if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
-			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-					   inet, g_clbs_nlist.net[inet].name, itarget);
+		if (cheapest == NULL) { /* Impossible routing.  No path for net. */
+			vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+					 inet, g_clbs_nlist.net[inet].name, target_node);
 			reset_path_costs();
 			free_route_tree(rt_root);
 			return (false);
 		}
 
 		inode = cheapest->index;
-		while (inode != target_node) {
-			old_total_cost = rr_node_route_inf[inode].path_cost;
-			new_total_cost = cheapest->cost;
-
-			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-				old_back_cost = HUGE_POSITIVE_FLOAT;
-			else
-				old_back_cost = rr_node_route_inf[inode].backward_path_cost;
-
-			new_back_cost = cheapest->backward_path_cost;
-
-			/* I only re-expand a node if both the "known" backward cost is lower  *
-			 * in the new expansion (this is necessary to prevent loops from       *
-			 * forming in the routing and causing havoc) *and* the expected total  *
-			 * cost to the sink is lower than the old value.  Different R_upstream *
-			 * values could make a path with lower back_path_cost less desirable   *
-			 * than one with higher cost.  Test whether or not I should disallow   *
-			 * re-expansion based on a higher total cost.                          */
-
-			if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
-				rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
-				rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
-				rr_node_route_inf[inode].path_cost = new_total_cost;
-				rr_node_route_inf[inode].backward_path_cost = new_back_cost;
-
-				if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
-
-				timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
-						target_criticality, target_node, astar_fac,
-						highfanout_rlim);
-			}
-
-			free_heap_data(cheapest);
-			cheapest = get_heap_head();
-			// test heap property
-			// if (!heap_::is_valid()) {vpr_printf_info("invalid heap: "); heap_::pop_heap();}
-
-			if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						 inet, g_clbs_nlist.net[inet].name, itarget);
-				reset_path_costs();
-				free_route_tree(rt_root);
-				return (false);
-			}
-
-			inode = cheapest->index;
-		}
-#ifdef PROFILE
-			time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_start) / CLOCKS_PER_SEC;
-			++itry_on_criticality[target_criticality / criticality_per_bin];
-#endif 
-		/* NB:  In the code below I keep two records of the partial routing:  the   *
-		 * traceback and the route_tree.  The route_tree enables fast recomputation *
-		 * of the Elmore delay to each node in the partial routing.  The traceback  *
-		 * lets me reuse all the routines written for breadth-first routing, which  *
-		 * all take a traceback structure as input.  Before this routine exits the  *
-		 * route_tree structure is destroyed; only the traceback is needed at that  *
-		 * point.                                                                   */
-
-		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-		new_route_start_tptr = update_traceback(cheapest, inet);
-		rt_node_of_sink[target_pin] = update_route_tree(cheapest);
-		free_heap_data(cheapest);
-		pathfinder_update_one_cost(new_route_start_tptr, 1, pres_fac);
-
-		empty_heap();
-		reset_path_costs();
 	}
-#ifdef PROFILE
-		if (!time_to_build_heap.empty()) time_to_build_heap[num_sinks / fanout_per_bin] += build_heap_time;
-#endif
-	/* For later timing analysis. */
 
-	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
-	free_route_tree(rt_root);
-	return (true);
+	profiling::sink_criticality_end(target_criticality);
+
+	/* NB:  In the code below I keep two records of the partial routing:  the   *
+	 * traceback and the route_tree.  The route_tree enables fast recomputation *
+	 * of the Elmore delay to each node in the partial routing.  The traceback  *
+	 * lets me reuse all the routines written for breadth-first routing, which  *
+	 * all take a traceback structure as input.  Before this routine exits the  *
+	 * route_tree structure is destroyed; only the traceback is needed at that  *
+	 * point.                                                                   */
+
+	rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+	t_trace* new_route_start_tptr = update_traceback(cheapest, inet);
+	rt_node_of_sink[target_pin] = update_route_tree(cheapest);
+	free_heap_data(cheapest);
+	pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
+	empty_heap();	
+
+	// routed to a sink successfully
+	return true;
 }
+
+static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout, 
+	CBRR& connections_inf, t_rt_node** rt_node_of_sink) {
+
+	/* Build and return a partial route tree from the legal connections from last iteration.
+	 * along the way do:
+	 * 	update pathfinder costs to be accurate to the partial route tree
+	 *	update the net's traceback to be accurate to the partial route tree
+	 * 	find and store the pins that still need to be reached in incremental_rerouting_resources.remaining_targets
+	 * 	find and store the rt nodes that have been reached in incremental_rerouting_resources.reached_rt_sinks
+	 *	mark the rr_node sinks as targets to be reached */
+
+	t_rt_node* rt_root;
+
+	// for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
+	// otherwise, we incrementally reroute by reusing legal parts of the previous iteration
+	// convert the previous iteration's traceback into the starting route tree for this iteration
+	if ((int)num_sinks < min_incremental_reroute_fanout || itry == 1) {
+
+		profiling::net_rerouted();
+
+		// rip up the whole net
+		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
+		free_traceback(inet);
+
+		rt_root = init_route_tree_to_source(inet);
+		for (unsigned int sink_pin = 1; sink_pin <= num_sinks; ++sink_pin)
+			connections_inf.toreach_rr_sink(sink_pin);
+		// since all connections will be rerouted for this net, clear all of net's forced reroute flags
+		connections_inf.clear_force_reroute_for_net();
+
+		// when we don't prune the tree, we also don't know the sink node indices 
+		// thus we'll use functions that act on pin indices like mark_ends instead
+		// of their versions that act on node indices directly like mark_remaining_ends
+		mark_ends(inet);
+	}
+	else {
+		auto& reached_rt_sinks = connections_inf.get_reached_rt_sinks();
+		auto& remaining_targets = connections_inf.get_remaining_targets();
+
+		profiling::net_rebuild_start();
+
+		// convert the previous iteration's traceback into the partial route tree for this iteration
+		rt_root = traceback_to_route_tree(inet);
+
+		// check for edge correctness
+		EXPENSIVE_ASSERT(is_valid_skeleton_tree(rt_root));
+		EXPENSIVE_ASSERT(should_route_net(inet, connections_inf));
+		EXPENSIVE_ASSERT(!is_uncongested_route_tree(rt_root));
+
+		// prune the branches of the tree that don't legally lead to sinks
+		// destroyed represents whether the entire tree is illegal
+		bool destroyed = prune_route_tree(rt_root, pres_fac, connections_inf); 
+
+		// entire traceback is still freed since the pruned tree will need to have its pres_cost updated
+		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
+		free_traceback(inet);
+
+		// if entirely pruned, have just the source (not removed from pathfinder costs)
+		if (destroyed) {
+			profiling::route_tree_pruned();
+			// traceback remains empty for just the root and no need to update pathfinder costs
+		}
+		else {
+			profiling::route_tree_preserved();
+
+			// sync traceback into a state that matches the route tree
+			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
+			// put the updated costs of the route tree nodes back into pathfinder
+			pathfinder_update_path_cost(trace_head[inet], 1, pres_fac);
+		}
+
+		// give lookup on the reached sinks
+		connections_inf.put_sink_rt_nodes_in_net_pins_lookup(reached_rt_sinks, rt_node_of_sink);
+
+		profiling::net_rebuild_end(num_sinks, remaining_targets.size());
+
+		// check for R_upstream C_downstream and edge correctness
+		EXPENSIVE_ASSERT(is_valid_route_tree(rt_root));
+		// congestion should've been pruned away
+		EXPENSIVE_ASSERT(is_uncongested_route_tree(rt_root));
+
+		// use the nodes to directly mark ends before they get converted to pins
+		mark_remaining_ends(inet, remaining_targets);
+
+		// everything dealing with a net works with it in terms of its sink pins; need to convert its sink nodes to sink pins
+		connections_inf.convert_sink_nodes_to_net_pins(remaining_targets);
+
+		// still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
+		load_route_tree_Tdel(rt_root, 0);
+		// mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
+		load_route_tree_rr_route_inf(rt_root);
+	}
+	// completed constructing the partial route tree and updated all other data structures to match
+	return rt_root;
+}
+
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac) {
@@ -713,7 +755,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 	float tot_cost, backward_path_cost, R_upstream;
 
 	/* Pre-order depth-first traversal */
-
+	// IPINs and SINKS are not re_expanded
 	if (rt_node->re_expand) {
 		inode = rt_node->inode;
 		backward_path_cost = target_criticality * rt_node->Tdel;
@@ -1237,7 +1279,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 
 /* Detect if net should be routed or not */
-static bool should_route_net(int inet) {
+static bool should_route_net(int inet, const CBRR& connections_inf) {
 	t_trace * tptr = trace_head[inet];
 
 	if (tptr == NULL) {
@@ -1255,6 +1297,10 @@ static bool should_route_net(int inet) {
 		}
 
 		if (rr_node[inode].type == SINK) {
+			// even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
+			if (connections_inf.should_force_reroute_connection(inode)) {
+				return true;
+			}
 			tptr = tptr->next; /* Skip next segment. */
 			if (tptr == NULL)
 				break;
@@ -1304,3 +1350,203 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 	return false;
 }
 
+
+// incremental rerouting resources class definitions
+Connection_based_routing_resources::Connection_based_routing_resources() : 
+	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
+	critical_path_growth_tolerance {1.001},
+	connection_criticality_tolerance {0.9},
+	connection_delay_optimality_tolerance {1.1}	 {	
+
+	/* Initialize the persistent data structures for incremental rerouting
+	 * this includes rr_sink_node_to_pin, which provides pin lookup given a
+	 * sink node for a specific net.
+	 *
+	 * remaining_targets will reserve enough space to ensure it won't need
+	 * to grow while storing the sinks that still need routing after pruning
+	 *
+	 * reached_rt_sinks will also reserve enough space, but instead of
+	 * indices, it will store the pointers to route tree nodes */
+
+	// can have as many targets as sink pins (total number of pins - SOURCE pin)
+	// supposed to be used as persistent vector growing with push_back and clearing at the start of each net routing iteration
+	auto max_sink_pins_per_net = get_max_pins_per_net() - 1;
+	remaining_targets.reserve(max_sink_pins_per_net);
+	reached_rt_sinks.reserve(max_sink_pins_per_net);
+
+	size_t routing_num_nets = g_clbs_nlist.net.size();
+	rr_sink_node_to_pin.resize(routing_num_nets);
+	lower_bound_connection_delay.resize(routing_num_nets);
+	forcible_reroute_connection_flag.resize(routing_num_nets);
+
+	for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
+		// unordered_map<int,int> net_node_to_pin;
+		auto& net_node_to_pin = rr_sink_node_to_pin[inet];
+		auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
+		auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[inet];
+
+		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+		net_node_to_pin.reserve(num_pins - 1);	// not looking up on the SOURCE pin
+		net_lower_bound_connection_delay.reserve(num_pins - 1);	// will be filled in after the 1st iteration's
+		net_forcible_reroute_connection_flag.reserve(num_pins - 1);	// all false to begin with
+
+		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
+			// rr sink node index corresponding to this connection terminal
+			auto rr_sink_node = net_rr_terminals[inet][ipin];
+
+			net_node_to_pin.insert({rr_sink_node, ipin});
+			net_forcible_reroute_connection_flag.insert({rr_sink_node, false});
+		}
+	}
+}
+
+void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<int>& rr_sink_nodes) const {
+
+	/* Turn a vector of rr_node indices, assumed to be of sinks for a net *
+	 * into the pin indices of the same net. */
+
+	assert(current_inet != (unsigned)NO_PREVIOUS);	// not uninitialized
+
+	const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
+
+	for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
+
+		auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
+		// should always expect it find a pin mapping for its own net
+		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+
+		rr_sink_nodes[s] = mapping->second;
+	}
+}
+
+void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(const vector<t_rt_node*>& sink_rt_nodes,
+ 	t_rt_node** rt_node_of_sink) const {
+
+	/* Load rt_node_of_sink (which maps a PIN index to a route tree node)
+	 * with a vector of route tree sink nodes. */
+
+	assert(current_inet != (unsigned)NO_PREVIOUS);
+
+	// a net specific mapping from node index to pin index
+	const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
+
+	for (t_rt_node* rt_node : sink_rt_nodes) {
+		auto mapping = node_to_pin_mapping.find(rt_node->inode);
+		// element should be able to find itself
+		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+
+		rt_node_of_sink[mapping->second] = rt_node;
+	}
+}
+
+bool Connection_based_routing_resources::sanity_check_lookup() const {
+	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+		const auto& net_node_to_pin = rr_sink_node_to_pin[inet];
+
+		for (auto mapping : net_node_to_pin) {
+			auto sanity = net_node_to_pin.find(mapping.first);
+			if (sanity == net_node_to_pin.end()) {
+				vpr_printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
+				return false;
+			}
+			assert(net_rr_terminals[inet][mapping.second] == mapping.first);
+		}		
+	}	
+	return true;
+}
+
+void Connection_based_routing_resources::set_lower_bound_connection_delays(const float* const * net_delay) {
+
+	/* Set the lower bound connection delays after first iteration, which only optimizes for timing delay.
+	   This will be used later to judge the optimality of a connection, with suboptimal ones being candidates
+	   for forced reroute */
+
+	size_t routing_num_nets = g_clbs_nlist.net.size();
+
+	for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
+
+		auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
+
+		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+
+		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
+			net_lower_bound_connection_delay.push_back(net_delay[inet][ipin]);
+		}
+	}	
+}
+
+bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality, const t_slack* slacks, const float* const * net_delay) {
+
+	/* Run through all non-congested connections of all nets and see if any need to be forcibly rerouted.
+	   The connection must satisfy all following criteria:
+			1. the connection is critical enough
+			2. the connection is suboptimal, in comparison to lower_bound_connection_delay  
+	*/
+
+	bool any_connection_rerouted = false;	// true if any connection has been marked for rerouting
+
+	size_t routing_num_nets = g_clbs_nlist.net.size();
+
+	for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
+
+		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+
+		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
+			// rr sink node index corresponding to this connection terminal
+			auto rr_sink_node = net_rr_terminals[inet][ipin];
+
+			// should always be left unset or cleared by rerouting before the end of the iteration
+			assert(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
+
+
+			// skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
+			if (lower_bound_connection_delay[inet][ipin - 1] == 0)
+				continue;
+
+			// update if more optimal connection found
+			if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
+				if (net_delay[inet][ipin] == 0) {
+					// vpr_printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
+				}
+				lower_bound_connection_delay[inet][ipin - 1] = net_delay[inet][ipin];
+				continue;
+			}
+				
+			// skip if connection criticality is too low (not a problem connection)
+			if (slacks->timing_criticality[inet][ipin] < (max_criticality * connection_criticality_tolerance))
+				continue;
+
+			// skip if connection's delay is close to optimal
+			if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))				
+				continue;
+		
+			forcible_reroute_connection_flag[inet][rr_sink_node] = true;
+			// note that we don't set forcible_reroute_connection_flag to false when the converse is true
+			// resetting back to false will be done during tree pruning, after the sink has been legally reached
+			any_connection_rerouted = true;
+
+			profiling::mark_for_forced_reroute();
+		}
+	}
+
+	// non-stable configuration if any connection has to be rerouted, otherwise stable
+	return !any_connection_rerouted;		
+}
+
+void Connection_based_routing_resources::clear_force_reroute_for_connection(int rr_sink_node) {
+	forcible_reroute_connection_flag[current_inet][rr_sink_node] = false;
+	profiling::perform_forced_reroute();
+}
+
+void Connection_based_routing_resources::clear_force_reroute_for_net() {
+
+	assert(current_inet != (unsigned)NO_PREVIOUS);
+
+	auto& net_flags = forcible_reroute_connection_flag[current_inet];
+	for (auto& force_reroute_flag : net_flags) {
+		if (force_reroute_flag.second) {
+			force_reroute_flag.second = false;
+			profiling::perform_forced_reroute();
+		}
+	}
+}

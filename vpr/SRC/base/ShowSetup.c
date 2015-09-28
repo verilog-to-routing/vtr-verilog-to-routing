@@ -237,6 +237,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 		vpr_printf_info("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
 		vpr_printf_info("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
 		vpr_printf_info("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
+		vpr_printf_info("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
 
 		if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
 			vpr_printf_info("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
@@ -298,6 +299,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 		vpr_printf_info("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
 		vpr_printf_info("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
 		vpr_printf_info("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
+		vpr_printf_info("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
 		if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
 			vpr_printf_info("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
 			vpr_printf_info("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);

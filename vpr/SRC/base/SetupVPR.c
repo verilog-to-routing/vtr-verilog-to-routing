@@ -57,6 +57,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		t_power_opts * PowerOpts) {
 	int i, j, len;
 
+	if (!Options->CircuitName) vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, "No blif file found in arguments (did you specify an architecture file?)\n");
 	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
 	if (Options->out_file_prefix != NULL ) {
 		len += strlen(Options->out_file_prefix);
@@ -516,6 +517,15 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 	}
 	if (Options.Count[OT_MAX_ROUTER_ITERATIONS]) {
 		RouterOpts->max_router_iterations = Options.max_router_iterations;
+	}
+
+	/* Based on testing, choosing a low threshold can lead to instability
+	   where sometimes route time and critical path are degraded. 64 seems
+	   to be a reasonable choice for most circuits. For nets with a greater
+	   distribution of high fanout nets, choose a larger threshold */
+	RouterOpts->min_incremental_reroute_fanout = 64;	
+	if (Options.Count[OT_MIN_INCREMENTAL_REROUTE_FANOUT]) {
+		RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
 	}
 
 	RouterOpts->pres_fac_mult = 1.3; /* DEFAULT */
