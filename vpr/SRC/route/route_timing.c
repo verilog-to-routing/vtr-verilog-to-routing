@@ -286,6 +286,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 					connections_inf.set_stable_critical_path_delay(critical_path_delay);
 			}
             vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vpr_printf_info("stable critical path delay: %8.5f ns\n", connections_inf.get_stable_critical_path_delay());
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
@@ -1501,7 +1502,6 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			// skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
 			if (lower_bound_connection_delay[inet][ipin - 1] == 0)
 				continue;
-			
 
 			// update if more optimal connection found
 			if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
@@ -1515,7 +1515,6 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			// skip if connection criticality is too low (not a problem connection)
 			if (slacks->timing_criticality[inet][ipin] < (max_criticality * connection_criticality_tolerance))
 				continue;
-
 
 			// skip if connection's delay is close to optimal
 			if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))				
