@@ -516,7 +516,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	/* For later timing analysis. */
 
-	update_remaining_net_delays_from_route_tree(net_delay, rt_node_of_sink, remaining_targets);
+	// may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
+	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
+
+	if (!g_clbs_nlist.net[inet].is_global) {
+		for (unsigned ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
+			if (net_delay[ipin] == 0) {	// should be SOURCE->OPIN->IPIN->SINK
+				assert(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
+			}
+		}
+	}
 
 	// SOURCE should never be congested
 	assert(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
@@ -1348,7 +1357,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
 	critical_path_growth_tolerance {0},
 	connection_criticality_tolerance {0.9},
-	connection_delay_optimality_tolerance {1.3}	 {	
+	connection_delay_optimality_tolerance {1.1}	 {	
 
 	/* Initialize the persistent data structures for incremental rerouting
 	 * this includes rr_sink_node_to_pin, which provides pin lookup given a
@@ -1462,6 +1471,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
 
 		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
+			// vpr_printf_info("lower bound connection %4d %d %6e\n", inet, net_rr_terminals[inet][ipin], net_delay[inet][ipin]);
 			net_lower_bound_connection_delay.push_back(net_delay[inet][ipin]);
 		}
 	}	
@@ -1475,7 +1485,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			2. the connection is suboptimal, in comparison to lower_bound_connection_delay  
 	*/
 
-	vpr_printf_info("forcibly rerouting critical suboptimal connections\n");
+	// vpr_printf_info("forcibly rerouting critical suboptimal connections\n");
 
 	bool any_connection_rerouted = false;	// true if any connection has been marked for rerouting
 
@@ -1492,16 +1502,46 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			// should always be left unset or cleared by rerouting before the end of the iteration
 			assert(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
 
+
+			// skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
+			if (lower_bound_connection_delay[inet][ipin - 1] == 0) {
+				// if (net_delay[inet][ipin] != 0) {
+				// 	vpr_printf_info("invalid net delay %4d %d; should be 0, but is %6e (crit: %6f)\n", inet, rr_sink_node, 
+				// 		net_delay[inet][ipin], slacks->timing_criticality[inet][ipin]);
+				// }
+				// assert(net_delay[inet][ipin] == 0);
+				continue;
+			}
+
+			// update if more optimal connection found
+			if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
+				if (net_delay[inet][ipin] == 0) {
+					// vpr_printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
+				}
+				lower_bound_connection_delay[inet][ipin - 1] = net_delay[inet][ipin];
+				continue;
+			}
+				
 			// skip if connection criticality is too low (not a problem connection)
 			if (slacks->timing_criticality[inet][ipin] < (max_criticality * connection_criticality_tolerance))
 				continue;
 
-			// skip if connection's delay is close to optimal
-			if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))
-				continue;
+			// vpr_printf_info("considering %4d %d (crit: %6f) (current: %6e optimal: %6e optimality: %6f)\n", inet, rr_sink_node, 
+			// 	slacks->timing_criticality[inet][ipin],
+			// 	net_delay[inet][ipin], 
+			// 	lower_bound_connection_delay[inet][ipin - 1],
+			// 	net_delay[inet][ipin] / lower_bound_connection_delay[inet][ipin - 1]);
 
-			vpr_printf_info("marking %4d %d (crit: %6f) (optimality: %6f)\n", inet, rr_sink_node, 
-				slacks->timing_criticality[inet][ipin], net_delay[inet][ipin] / lower_bound_connection_delay[inet][ipin - 1]);
+			// skip if connection's delay is close to optimal
+			if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))				
+				continue;
+		
+
+			// vpr_printf_info("marking %4d %d (crit: %6f) (current: %6e optimal: %6e optimality: %6f)\n", inet, rr_sink_node, 
+			// 	slacks->timing_criticality[inet][ipin],
+			// 	net_delay[inet][ipin], 
+			// 	lower_bound_connection_delay[inet][ipin - 1],
+			// 	net_delay[inet][ipin] / lower_bound_connection_delay[inet][ipin - 1]);
 			forcible_reroute_connection_flag[inet][rr_sink_node] = true;
 			// note that we don't set forcible_reroute_connection_flag to false when the converse is true
 			// resetting back to false will be done during tree pruning, after the sink has been legally reached
