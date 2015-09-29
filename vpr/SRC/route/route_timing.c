@@ -286,7 +286,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 					connections_inf.set_stable_critical_path_delay(critical_path_delay);
 			}
             vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-            vpr_printf_info("stable critical path delay: %8.5f ns\n", connections_inf.get_stable_critical_path_delay());
 		} else {
             vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
