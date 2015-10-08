@@ -1831,13 +1831,13 @@ static int get_bidir_track_to_chan_seg(
 	return num_conn;
 }
 
-/* Figures out the edges that should connect the given track segment to the given
+/* Figures out the edges that should connect the given wire segment to the given
    channel segment, adds these edges to 'edge_list' and returns the number of 
    edges added .
    See route/build_switchblocks.c for a detailed description of how the switch block
    connection map sb_conn_map is generated. */
 static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
-		INP int from_track, INP int to_chan, INP int to_seg,
+		INP int from_wire, INP int to_chan, INP int to_seg,
 		INP t_rr_type to_chan_type,
 		INP e_side from_side, INP e_side to_side,
 		INP t_ivec ***L_rr_node_indices, 
@@ -1868,20 +1868,20 @@ static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
 	}
 
 	/* get coordinate to index into the SB map */
-	Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side, from_track);
+	Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side, from_wire);
 	if ( sb_conn_map->count(sb_coord) > 0 ){
-		/* get reference to the connections vector which lists all destination tracks for a given source track
+		/* get reference to the connections vector which lists all destination wires for a given source wire
 		   at a specific coordinate sb_coord */
-		vector<t_to_track_inf> &conn_vector = (*sb_conn_map)[sb_coord];
+		vector<t_to_wire_inf> &conn_vector = (*sb_conn_map)[sb_coord];
 
 		/* go through the connections... */
 		for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
 			
-			int to_track = conn_vector.at(iconn).to_track;
-			int to_node = get_rr_node_index(to_x, to_y, to_chan_type, to_track,
+			int to_wire = conn_vector.at(iconn).to_wire;
+			int to_node = get_rr_node_index(to_x, to_y, to_chan_type, to_wire,
 					L_rr_node_indices);
 
-			/* Get the index of the switch connecting the two tracks */
+			/* Get the index of the switch connecting the two wires */
 			int src_switch = conn_vector[iconn].switch_ind;
 
 			/* Skip edge if already done */

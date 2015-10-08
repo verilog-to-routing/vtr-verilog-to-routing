@@ -78,62 +78,62 @@ public:
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
-static void parse_comma_separated_wire_types(INP const char *ch, INOUTP vector<string> *wire_types_vec);
+static void parse_comma_separated_wire_types(const char *ch, vector<string> *wire_types_vec);
 
 /* parses the wirepoints specified in ch into the vector wire_points_vec */
-static void parse_comma_separated_wire_points(INP const char *ch, INOUTP vector<int> *wire_points_vec);
+static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec);
 
 /* checks for correctness of a unidir switchblock. hard exit if error found (to be changed to throw later) */
-static void check_unidir_switchblock( INP t_switchblock_inf *sb );
+static void check_unidir_switchblock( t_switchblock_inf *sb );
 
 /* checks for correctness of a bidir switchblock. hard exit if error found (to be changed to throw later) */
-static void check_bidir_switchblock( INP t_permutation_map *permutation_map );
+static void check_bidir_switchblock( t_permutation_map *permutation_map );
 
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 /* returns integer result according to specified formula and data */
-static int parse_formula( INP const char *formula, INP const s_formula_data &mydata );
+static int parse_formula( const char *formula, const s_formula_data &mydata );
 
 /* returns integer result according to specified piece-wise formula and data */
-static int parse_piecewise_formula( INP const char *formula, INP const s_formula_data &mydata );
+static int parse_piecewise_formula( const char *formula, const s_formula_data &mydata );
 
 /* converts specified formula to a vector in reverse-polish notation */
-static void formula_to_rpn( INP const char* formula, INP const s_formula_data &mydata, 
-				INOUTP vector<Formula_Object> &rpn_output );
+static void formula_to_rpn( const char* formula, const s_formula_data &mydata, 
+				vector<Formula_Object> &rpn_output );
 
-static void get_formula_object( INP const char *ch, INOUTP int &ichar, INP const s_formula_data &mydata,
-				 INOUTP Formula_Object *fobj );
+static void get_formula_object( const char *ch, int &ichar, const s_formula_data &mydata,
+				 Formula_Object *fobj );
 
 /* returns integer specifying precedence of passed-in operator. higher integer 
    means higher precedence */
-static int get_fobj_precedence( INP const Formula_Object &fobj );
+static int get_fobj_precedence( const Formula_Object &fobj );
 
 /* Returns associativity of the specified operator */
-static bool op_associativity_is_left( INP const t_operator &op );
+static bool op_associativity_is_left( const t_operator &op );
 
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
-static void handle_operator( INP const Formula_Object &fobj, INOUTP vector<Formula_Object> &rpn_output,
-				INOUTP stack<Formula_Object> &op_stack);
+static void handle_operator( const Formula_Object &fobj, vector<Formula_Object> &rpn_output,
+				stack<Formula_Object> &op_stack);
 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
-static void handle_bracket( INP const Formula_Object &fobj, INOUTP vector<Formula_Object> &rpn_output,
-				INOUTP stack<Formula_Object> &op_stack);
+static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &rpn_output,
+				stack<Formula_Object> &op_stack);
 
 /* parses revere-polish notation vector to return formula result */
-static int parse_rpn_vector( INOUTP vector<Formula_Object> &rpn_vec );
+static int parse_rpn_vector( vector<Formula_Object> &rpn_vec );
 
 /* applies operation specified by 'op' to the given arguments. arg1 comes before arg2 */
-static int apply_rpn_op( INP const Formula_Object &arg1, INP const Formula_Object &arg2, 
-					INP const Formula_Object &op );
+static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2, 
+					const Formula_Object &op );
 
 /* checks if specified character represents an ASCII number */
-static bool is_char_number( INP const char ch );
+static bool is_char_number( const char ch );
 
 /* checks if the specified formula is piece-wise defined */
-static bool is_piecewise_formula( INP const char *formula );
+static bool is_piecewise_formula( const char *formula );
 
 /* increments str_ind until it reaches specified char is formula. returns true if character was found, false otherwise */
-static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, char ch);
+static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 
 
 /**** Function Definitions ****/
@@ -141,7 +141,7 @@ static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, c
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
+void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, ezxml_t Node, t_switchblock_inf *sb ){
 	
 	/* Make sure that Node is a switchblock */
 	CheckElement(Node, "switchblock");
@@ -160,24 +160,24 @@ void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, I
 		SubElem = ezxml_child(Node, "wireconn");
 
 		/* get from type */
-		char_prop = FindProperty(SubElem, "FT", true);
+		char_prop = FindProperty(SubElem, "from_type", true);
 		parse_comma_separated_wire_types(char_prop, &wc.from_type);
-		ezxml_set_attr(SubElem, "FT", NULL);
+		ezxml_set_attr(SubElem, "from_type", NULL);
 
 		/* get to type */
-		char_prop = FindProperty(SubElem, "TT", true);
+		char_prop = FindProperty(SubElem, "to_type", true);
 		parse_comma_separated_wire_types(char_prop, &wc.to_type);
-		ezxml_set_attr(SubElem, "TT", NULL);
+		ezxml_set_attr(SubElem, "to_type", NULL);
 
 		/* get the source wire point */
-		char_prop = FindProperty(SubElem, "FP", true);
+		char_prop = FindProperty(SubElem, "from_switchpoint", true);
 		parse_comma_separated_wire_points(char_prop, &(wc.from_point));
-		ezxml_set_attr(SubElem, "FP", NULL);
+		ezxml_set_attr(SubElem, "from_switchpoint", NULL);
 
 		/* get the destination wire point */
-		char_prop = FindProperty(SubElem, "TP", true);
+		char_prop = FindProperty(SubElem, "to_switchpoint", true);
 		parse_comma_separated_wire_points(char_prop, &(wc.to_point));
-		ezxml_set_attr(SubElem, "TP", NULL);
+		ezxml_set_attr(SubElem, "to_switchpoint", NULL);
 
 		sb->wireconns.push_back(wc);
 		FreeNode(SubElem);
@@ -189,7 +189,7 @@ void read_sb_wireconns( INP t_arch_switch_inf *switches, INP int num_switches, I
 
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
-static void parse_comma_separated_wire_types(INP const char *ch, INOUTP vector<string> *wire_types_vec){
+static void parse_comma_separated_wire_types(const char *ch, vector<string> *wire_types_vec){
 	
 	string types(ch);
 	int str_size = types.size();
@@ -222,7 +222,7 @@ static void parse_comma_separated_wire_types(INP const char *ch, INOUTP vector<s
 
 
 /* parses the wirepoints specified in the comma-separated 'ch' char array into the vector wire_points_vec */
-static void parse_comma_separated_wire_points(INP const char *ch, INOUTP vector<int> *wire_points_vec){
+static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec){
 	int ind = 0;
 	wire_points_vec->clear();
 
@@ -265,7 +265,7 @@ static void parse_comma_separated_wire_points(INP const char *ch, INOUTP vector<
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
    <switchfuncs> */
-void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
+void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 	
 	/* Make sure the passed-in is correct */
 	CheckElement(Node, "switchfuncs");
@@ -284,7 +284,7 @@ void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 	vector<string> * func_ptr;
 
 	/* used to index into permutation map of switchblock */
-	Connect_SB_Sides conn;
+	SB_Side_Connection conn;
 
 	/* now we iterate through all the specified permutation functions, and 
 	   load them into the switchblock structure as appropriate */
@@ -311,7 +311,7 @@ void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 		}
 
 		/* go through all the possible cases of func_type */
-		if (0 == strcmp(func_type, "lt")){		//TODO change this to north/south/west/east (i.e. wn, we, etc)
+		if (0 == strcmp(func_type, "lt")){
 			conn.set_sides(LEFT, TOP);
 		} else if (0 == strcmp(func_type, "lr")) {
 			conn.set_sides(LEFT, RIGHT);
@@ -353,7 +353,7 @@ void read_sb_switchfuncs( INP ezxml_t Node, INOUTP t_switchblock_inf *sb ){
 
 
 /* checks for correctness of switch block read-in from the XML architecture file */
-void check_switchblock( INP t_switchblock_inf *sb ){
+void check_switchblock( t_switchblock_inf *sb ){
 
 	/* get directionality */
 	enum e_directionality directionality = sb->directionality;
@@ -376,7 +376,7 @@ void check_switchblock( INP t_switchblock_inf *sb ){
 
 
 /* checks for correctness of a unidirectional switchblock. hard exit if error found (to be changed to throw later) */
-static void check_unidir_switchblock( INP t_switchblock_inf *sb ){
+static void check_unidir_switchblock( t_switchblock_inf *sb ){
 
 	/* Check that the destination wire points are always the starting points (i.e. of wire point 0) */
 	vector<t_wireconn_inf> &wireconns = sb->wireconns;
@@ -390,11 +390,11 @@ static void check_unidir_switchblock( INP t_switchblock_inf *sb ){
 
 
 /* checks for correctness of a bidirectional switchblock */
-static void check_bidir_switchblock( INP t_permutation_map *permutation_map ){
+static void check_bidir_switchblock( t_permutation_map *permutation_map ){
 	/**** check that if side1->side2 is specified, then side2->side1 is not, as it is implicit ****/
 
 	/* variable used to index into the permutation map */
-	Connect_SB_Sides conn;
+	SB_Side_Connection conn;
 
 	/* iterate over all combinations of from_side -> to side */
 	for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
@@ -428,7 +428,7 @@ static void check_bidir_switchblock( INP t_permutation_map *permutation_map ){
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 
 /* returns integer result according to the specified switchblock formula and data. formula may be piece-wise */
-int get_sb_formula_result( INP const char* formula, INP const s_formula_data &mydata ){
+int get_sb_formula_result( const char* formula, const s_formula_data &mydata ){
 	/* the result of the formula will be an integer */
 	int result = -1;
 
@@ -452,14 +452,14 @@ int get_sb_formula_result( INP const char* formula, INP const s_formula_data &my
 
 
 /* returns integer result according to specified non-piece-wise formula and data */
-static int parse_formula( INP const char *formula, INP const s_formula_data &mydata ){
+static int parse_formula( const char *formula, const s_formula_data &mydata ){
 	int result = -1;
 
 	/* output in reverse-polish notation */
 	vector<Formula_Object> rpn_output;	
 
 	/* now we have to run the shunting-yard algorithm to convert formula to reverse polish notation */
-	formula_to_rpn( formula, mydata, OUTP rpn_output );
+	formula_to_rpn( formula, mydata, rpn_output );
 	
 	/* then we run an RPN parser to get the final result */
 	result = parse_rpn_vector(rpn_output);
@@ -472,21 +472,21 @@ static int parse_formula( INP const char *formula, INP const s_formula_data &myd
    
    returns integer result according to specified piece-wise formula and data. the piecewise 
    notation specifies different formulas that should be evaluated based on the index of 
-   the incoming track in 'mydata'. for example the formula 
+   the incoming wire in 'mydata'. for example the formula 
 
        {0:(W/2)} t-1; {(W/2):W} t+1;
 
-   indicates that the function "t-1" should be evaluated if the incoming track index falls 
+   indicates that the function "t-1" should be evaluated if the incoming wire index falls 
    within the range [0,W/2) and that "t+1" should be evaluated if it falls within the 
    [W/2,W) range. The piece-wise format is:
    
        {start_0:end_0} formula_0; ... {start_i;end_i} formula_i; ... 
 */
-static int parse_piecewise_formula( INP const char *formula, INP const s_formula_data &mydata ){
+static int parse_piecewise_formula( const char *formula, const s_formula_data &mydata ){
 	int result = -1;
 	int str_ind = 0;
 	int str_size = 0;
-	int t = mydata.track;
+	int t = mydata.wire;
 	int tmp_ind_start = -1;
 	int tmp_ind_count = -1;
 	string substr;
@@ -502,7 +502,7 @@ static int parse_piecewise_formula( INP const char *formula, INP const s_formula
 	/* find the range to which t corresponds */
 	/* the first character must be '{' as verified above */
 	while (str_ind != str_size - 1){
-		/* set to true when range to which track number corresponds has been found */
+		/* set to true when range to which wire number corresponds has been found */
 		bool found_range = false;
 		bool char_found = false;
 		int range_start = -1;
@@ -534,7 +534,7 @@ static int parse_piecewise_formula( INP const char *formula, INP const s_formula
 			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end);
 		}
 
-		/* is the incoming track within this range? (inclusive) */
+		/* is the incoming wire within this range? (inclusive) */
 		if ( range_start <= t && range_end >= t ){
 			found_range = true;
 		} else {
@@ -551,7 +551,7 @@ static int parse_piecewise_formula( INP const char *formula, INP const s_formula
 		}
 	}
 	/* the string index should never actually get to the end of the string because we should have found the range to which the 
-	   current track number corresponds */
+	   current wire number corresponds */
 	if (str_ind == str_size-1){
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: could not find a closing '}'?\n");
 	}
@@ -571,7 +571,7 @@ static int parse_piecewise_formula( INP const char *formula, INP const s_formula
 
 
 /* increments str_ind until it reaches specified char in formula. returns true if character was found, false otherwise */
-static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, char ch){
+static bool goto_next_char( int *str_ind, const string &pw_formula, char ch){
 	bool result = true;
 	int str_size = pw_formula.size();	
 	if ((*str_ind) == str_size-1){
@@ -595,8 +595,8 @@ static bool goto_next_char( INOUTP int *str_ind, INP const string &pw_formula, c
 
 /* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result 
    is stored in the rpn_output vector in reverse-polish notation */
-static void formula_to_rpn( INP const char* formula, INP const s_formula_data &mydata, 
-				INOUTP vector<Formula_Object> &rpn_output ){
+static void formula_to_rpn( const char* formula, const s_formula_data &mydata, 
+				vector<Formula_Object> &rpn_output ){
 
 	stack<Formula_Object> op_stack;		/* stack for handling operators and brackets in formula */
 	Formula_Object fobj;		 	/* for parsing formula objects */
@@ -657,8 +657,8 @@ static void formula_to_rpn( INP const char* formula, INP const s_formula_data &m
    which help determine which numeric value, if any, gets assigned to fobj
    ichar is incremented by the corresponding count if the need to step through the 
    character array arises */
-static void get_formula_object( INP const char *ch, INOUTP int &ichar, INP const s_formula_data &mydata,
-				 INOUTP Formula_Object *fobj ){
+static void get_formula_object( const char *ch, int &ichar, const s_formula_data &mydata,
+				 Formula_Object *fobj ){
 
 	/* the character can either be part of a number, or it can be an object like W, t, (, +, etc
 	   here we have to account for both possibilities */
@@ -682,7 +682,7 @@ static void get_formula_object( INP const char *ch, INOUTP int &ichar, INP const
 				break;
 			case 't':
 				fobj->type = E_FML_NUMBER;
-				fobj->data.num = mydata.track;
+				fobj->data.num = mydata.wire;
 				break;
 			case '+':
 				fobj->type = E_FML_OPERATOR;
@@ -720,7 +720,7 @@ static void get_formula_object( INP const char *ch, INOUTP int &ichar, INP const
 
 /* returns integer specifying precedence of passed-in operator. higher integer 
    means higher precedence */
-static int get_fobj_precedence( INP const Formula_Object &fobj ){
+static int get_fobj_precedence( const Formula_Object &fobj ){
 	int precedence = 0;
 
 	if (E_FML_BRACKET == fobj.type){
@@ -753,7 +753,7 @@ static int get_fobj_precedence( INP const Formula_Object &fobj ){
 
 
 /* Returns associativity of the specified operator */
-static bool op_associativity_is_left( INP const t_operator &op ){
+static bool op_associativity_is_left( const t_operator &op ){
 	bool is_left = true;
 	
 	/* associativity is 'left' for all but the power operator, which is not yet implemented */
@@ -765,8 +765,8 @@ static bool op_associativity_is_left( INP const t_operator &op ){
 
 
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
-static void handle_operator( INP const Formula_Object &fobj, INOUTP vector<Formula_Object> &rpn_output,
-				INOUTP stack<Formula_Object> &op_stack){
+static void handle_operator( const Formula_Object &fobj, vector<Formula_Object> &rpn_output,
+				stack<Formula_Object> &op_stack){
 	if ( E_FML_OPERATOR != fobj.type){
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in handle_operator: passed in formula object not of type operator\n");
 	}
@@ -809,8 +809,8 @@ static void handle_operator( INP const Formula_Object &fobj, INOUTP vector<Formu
 
 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
-static void handle_bracket( INP const Formula_Object &fobj, INOUTP vector<Formula_Object> &rpn_output,
-				INOUTP stack<Formula_Object> &op_stack ){
+static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &rpn_output,
+				stack<Formula_Object> &op_stack ){
 	if ( E_FML_BRACKET != fobj.type){
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in handle_bracket: passed-in formula object not of type bracket\n");
 	}
@@ -860,7 +860,7 @@ static void handle_bracket( INP const Formula_Object &fobj, INOUTP vector<Formul
 
 /* parses a reverse-polish notation vector corresponding to a switchblock formula
    and returns the integer result */
-static int parse_rpn_vector( INOUTP vector<Formula_Object> &rpn_vec ){
+static int parse_rpn_vector( vector<Formula_Object> &rpn_vec ){
 	int result = -1;
 
 	/* first entry should always be a number */
@@ -908,8 +908,8 @@ static int parse_rpn_vector( INOUTP vector<Formula_Object> &rpn_vec ){
 
 
 /* applies operation specified by 'op' to the given arguments. arg1 comes before arg2 */
-static int apply_rpn_op( INP const Formula_Object &arg1, INP const Formula_Object &arg2, 
-					INP const Formula_Object &op ){
+static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2, 
+					const Formula_Object &op ){
 	int result = -1;
 	
 	/* arguments must be numbers */
@@ -947,7 +947,7 @@ static int apply_rpn_op( INP const Formula_Object &arg1, INP const Formula_Objec
 
 
 /* checks if specified character represents an ASCII number */
-static bool is_char_number ( INP const char ch ){
+static bool is_char_number ( const char ch ){
 	bool result = false;
 	
 	if ( ch >= '0' && ch <= '9' ){
@@ -961,7 +961,7 @@ static bool is_char_number ( INP const char ch ){
 
 
 /* checks if the specified formula is piece-wise defined */
-static bool is_piecewise_formula( INP const char *formula ){
+static bool is_piecewise_formula( const char *formula ){
 	bool result = false;
 	/* if formula is piecewise, we expect '{' to be the very first character */
 	if ('{' == formula[0]){

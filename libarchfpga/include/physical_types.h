@@ -870,7 +870,7 @@ typedef struct s_wireconn_inf{
 } t_wireconn_inf;
 
 /* represents a connection between two sides of a switchblock */
-class Connect_SB_Sides{
+class SB_Side_Connection{
 public:
 	/* specify the two SB sides that form a connection */
 	enum e_side from_side;
@@ -881,17 +881,17 @@ public:
 		to_side = to;
 	}
 
-	Connect_SB_Sides(){
+	SB_Side_Connection(){
 		/* do nothing */
 	}
 
-	Connect_SB_Sides(enum e_side from, enum e_side to){
+	SB_Side_Connection(enum e_side from, enum e_side to){
 		from_side = from;
 		to_side = to;
 	}
 
 	/* overload < operator which will be used by std::map */	
-	bool operator < (const Connect_SB_Sides &obj) const{
+	bool operator < (const SB_Side_Connection &obj) const{
 		bool result;
 
 		if (from_side < obj.from_side){
@@ -909,7 +909,7 @@ public:
 };
 
 /* Use a map to index into the string permutation functions used to connect from one side to another */
-typedef std::map< Connect_SB_Sides, std::vector<std::string> > t_permutation_map;
+typedef std::map< SB_Side_Connection, std::vector<std::string> > t_permutation_map;
 
 /* Lists all information about a particular switch block specified in the architecture file */
 typedef struct s_switchblock_inf{

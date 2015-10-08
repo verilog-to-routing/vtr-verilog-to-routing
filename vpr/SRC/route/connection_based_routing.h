@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include "route_tree_type.h"
 
 /***************** Connection based rerouting **********************/
