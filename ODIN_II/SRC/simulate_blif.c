@@ -85,6 +85,9 @@ void simulate_netlist(netlist_t *netlist)
 		printf("Simulating %d new vectors.\n", num_vectors); fflush(stdout);
 	}
 
+	// Setup data structures for activity estimation
+	alloc_and_init_ace_structs(netlist);
+
 	// Determine which edge(s) we are outputting.
 	int output_edge;
 	if      (global_args.sim_output_both_edges ) output_edge = -1; // Both edges

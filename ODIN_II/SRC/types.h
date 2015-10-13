@@ -47,6 +47,7 @@ typedef struct info_ast_visit_t_t info_ast_visit_t;
 
 typedef struct sim_state_t_t sim_state_t;
 typedef struct nnode_t_t nnode_t;
+typedef struct ace_obj_info_t_t ace_obj_info_t;
 typedef struct npin_t_t npin_t;
 typedef struct nnet_t_t nnet_t;
 typedef struct signal_list_t_t signal_list_t;
@@ -473,6 +474,20 @@ struct nnode_t_t
 	signed char initial_value; // initial net value
 };
 
+
+// Ace_Obj_Info_t; /* Activity info for each node */
+struct ace_obj_info_t_t
+{
+	int value;
+	int num_ones;
+	int num_toggles;
+	double static_prob;
+	double switch_prob;
+	double switch_act;
+	double prob0to1;
+	double prob1to0;
+};
+
 struct npin_t_t
 {
 	long unique_id;
@@ -492,6 +507,10 @@ struct npin_t_t
 	char is_default; // The pin is feeding a mux from logic representing an else or default.
 	char is_implied; // This signal is implied.
 	////////////////////
+
+        // For Activity Estimation
+        ace_obj_info_t *ace_info;
+
 };
 
 struct nnet_t_t
