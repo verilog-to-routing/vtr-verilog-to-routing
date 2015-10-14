@@ -63,6 +63,7 @@ SRCO = $(addprefix $(SRC_DIR)/,$(strip \
 	activity_estimation.c \
 	read_netlist.c \
 	read_blif.c \
+	ace.c \
 	output_graphcrunch_format.c \
 	verilog_preprocessor.c \
 	odin_ii_func.c \
