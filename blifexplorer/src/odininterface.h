@@ -26,36 +26,31 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include <QtGui>
 
-extern "C" {
-    #include <stdlib.h>
-    #include <stdio.h>
-    #include <unistd.h>
-    #include <string.h>
-    #include "globals.h"
-    #include "types.h"
-    #include "util.h"
-    #include "netlist_utils.h"
-    #include "arch_types.h"
-    #include "parse_making_ast.h"
-    #include "netlist_create_from_ast.h"
-    #include "outputs.h"
-    #include "netlist_optimizations.h"
-    #include "read_xml_config_file.h"
-    #include "read_xml_arch_file.h"
-    #include "partial_map.h"
-    #include "multipliers.h"
-    #include "netlist_check.h"
-    #include "read_blif.h"
-    #include "read_netlist.h"
-    #include "activity_estimation.h"
-    #include "high_level_data.h"
-    #include "hard_blocks.h"
-    #include "memories.h"
-    #include "simulate_blif.h"
-    #include "errors.h"
-    #include "netlist_visualizer.h"
-    #include "odin_ii_func.h"
-}
+#include "globals.h"
+#include "types.h"
+#include "util.h"
+#include "netlist_utils.h"
+#include "arch_types.h"
+#include "parse_making_ast.h"
+#include "netlist_create_from_ast.h"
+#include "outputs.h"
+#include "netlist_optimizations.h"
+#include "read_xml_config_file.h"
+#include "read_xml_arch_file.h"
+#include "partial_map.h"
+#include "multipliers.h"
+#include "netlist_check.h"
+#include "read_blif.h"
+#include "read_netlist.h"
+#include "activity_estimation.h"
+#include "high_level_data.h"
+#include "hard_blocks.h"
+#include "memories.h"
+#include "simulate_blif.h"
+#include "ace.h"
+#include "errors.h"
+#include "netlist_visualizer.h"
+#include "odin_ii_func.h"
 
 
 class OdinInterface
