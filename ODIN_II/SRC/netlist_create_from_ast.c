@@ -1366,7 +1366,6 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 			/* store the data which is an idx here */
 			output_nets_sc->data[sc_spot] = (void*)new_net;
 			new_net->name = temp_string;
-			free(temp_string);
 			
 			/* Assign initial value to this net if it exists */
 			if(var_declare->types.variable.is_initialized){
@@ -2969,7 +2968,6 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
 			add_input_port_to_implicit_memory(left_memory, we, "we2");
 
-			free(in_1);
 			in_1 = init_signal_list();
 			char *name = left->children[0]->types.identifier;
 			int i;
