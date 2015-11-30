@@ -240,6 +240,7 @@ void build_rr_graph(
 		OUTP int *num_rr_switches,
 		OUTP int *Warnings) {
 
+
 	/* Reset warning flag */
 	*Warnings = RR_GRAPH_NO_WARN;
 
@@ -445,6 +446,7 @@ void build_rr_graph(
 
 	/* START IPINP MAP */
 	/* Create ipin map lookups */
+
 	int ******ipin_to_track_map = NULL; /* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 	t_ivec *****track_to_pin_lookup = NULL; /* [0..num_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
 
@@ -1855,13 +1857,16 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 	 * good low Fc block that leverages the fact that usually lots of pins   *
 	 * are logically equivalent.                                             */
 
-	int side = LEFT;
+	int side = LEFT;//left is 3!!! top is 0
  	int width = 0;
 	int height = Type->height - 1;
 	int pin = 0;
 	int pin_index = -1;
+	
+
 
 	while (pin < num_phys_pins) {
+		if (Type->height==1){
 		if (side == TOP) {
 			if (width >= Type->width - 1) {
 				side = RIGHT;
@@ -1888,13 +1893,60 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 				height++;
 			}
 		}
+	}
+	else{// for blocks with height > 1
+	 if (side == TOP) {
+
+				if (height == Type->height - 1) 
+				{
+					side = RIGHT;
+					height = 0;
+				}
+				else height++;
+			}
+			else if (side == RIGHT) {
+
+				if (height == Type->height - 1) 
+				{
+					side = BOTTOM;
+					height = 0;
+				}
+				else height++;
+			}
+			else if (side == BOTTOM) {
+
+
+				if (height == Type->height - 1) 
+				{
+					side = LEFT;
+					height = 0;
+				}
+				else height++;
+			}
+			else if (side == LEFT) {
+				
+				
+				if (height == Type->height - 1) 
+				{
+					height = 0;
+					pin_index++;
+					side = TOP;
+				}
+				else height++;
+
+			}
+		}
+
 
 		assert(pin_index < num_phys_pins);
 		/* Number of physical pins bounds number of logical pins */
 
-		if (num_done_per_dir[width][height][side] >= num_dir[width][height][side])
+		if (num_done_per_dir[width][height][side] >= num_dir[width][height][side] * Type->height){
+
 			continue;
-		pin_num_ordering[pin] = dir_list[width][height][side][pin_index];
+
+		}
+		pin_num_ordering[pin] = dir_list[width][height][side][pin_index];//pin index says how many u have on that particular side, height,width
 		side_ordering[pin] = side;
 		width_ordering[pin] = width;
 		height_ordering[pin] = height;
@@ -2025,6 +2077,7 @@ static void load_perturbed_switch_pattern(INP t_type_ptr type,
 		int side = side_ordering[i];
 		int width = width_ordering[i];
 		int height = height_ordering[i];
+
 
 		int max_chan_width = (side == 0 || side == 2 ? x_chan_width : y_chan_width);
 		float step_size = (float) max_chan_width / (float) (Fc * num_phys_pins);
