@@ -23,6 +23,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "types.h"
 #include "globals.h"
 #include "errors.h"
@@ -476,7 +477,8 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 	signal_list_t *list = NULL;
 
 	/* BASE CASE is when there are no other instantiations of modules in this module */
-	if (current_module->types.module.size_module_instantiations == 0 && current_module->types.function.size_function_instantiations == 0)
+	if (current_module->types.module.size_module_instantiations == 0 && 
+		current_module->types.function.size_function_instantiations == 0)
 	{
 		list = netlist_expand_ast_of_module(current_module, instance_name);
 	}
@@ -734,7 +736,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				break;
             case INITIALS:
                 /* define initial value of latchs */
-                define_latchs_initial_value_inside_initial_statement(node->children[0],instance_name_prefix);                
+                define_latchs_initial_value_inside_initial_statement(node->children[0], instance_name_prefix);                
                 skip_children = TRUE;
                 break;            
             case FUNCTION_INSTANCE:
@@ -1345,8 +1347,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		if(var_declare->types.variable.is_initialized){
 			initial_value = var_declare->types.variable.initial_value;
 		}
-		
-		
+
 		/* This register declaration is a range as opposed to a single bit so we need to define each element */
 		/* assume digit 1 is largest */
 		for (i = node_min->types.number.value; i <= node_max->types.number.value; i++)
@@ -2836,8 +2837,12 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	if(assignment->type == VAR_DECLARE){
 		left  = assignment->children[0];
 		right = assignment->children[5];
+
+		/*we don't create signal list on declaration.*/
+		return init_signal_list();
 	}
-	else{
+	else
+	{
 		left  = assignment->children[0];
 		right = assignment->children[1];
 	}
@@ -2927,7 +2932,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, left))
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", left_memory->name);
-
+				
 		// A memory can only be written from a clocked sequential block.
 		if (type_of_circuit != SEQUENTIAL)
 		{
@@ -3026,7 +3031,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			}
 			free_signal_list(in_1);
 		}
-		else{
+		else
+		{
 			if (output_size < in_1->count)
 			{
 				/* need to shrink the output list */
@@ -3091,47 +3097,52 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	return return_list;
 }
 
-void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix){
+void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix)
+{
     int i;
     long sc_spot;
-    ast_node_t *left;  
-    ast_node_t *right; 
+    ast_node_t *assignee;  
+    ast_node_t *value; 
     char *word_to_set_latch_initial_value;
-    for(i = 0; i < initial_node->num_children; i++){
-        if((initial_node->children[i]->type == BLOCKING_STATEMENT || initial_node->children[i]->type == NON_BLOCKING_STATEMENT) && initial_node->children[i]->children[1]->type == NUMBERS){
+    for(i = 0; i < initial_node->num_children; i++)
+    {
+    	/*check to see if, for each member of the initial block, if the assignment to a given variable is a number and not
+    	a complex statement*/
+        if((initial_node->children[i]->type == BLOCKING_STATEMENT || initial_node->children[i]->type == NON_BLOCKING_STATEMENT) 
+        	&& initial_node->children[i]->children[1]->type == NUMBERS)
+        {
+            //Assignee
+            assignee = initial_node->children[i]->children[0];
             
-            left = initial_node->children[i]->children[0];
-            right = initial_node->children[i]->children[1];
-
-            word_to_set_latch_initial_value = (char *)calloc(strlen(left->types.identifier)+40,sizeof(char));
+            //Value
+            value = initial_node->children[i]->children[1];
+            
+            //Create out string.
+            word_to_set_latch_initial_value = (char *)calloc(strlen(assignee->types.identifier)+40, sizeof(char));
             strcpy(word_to_set_latch_initial_value,instance_name_prefix);
             strcat(word_to_set_latch_initial_value,"^");
-
-            strcat(word_to_set_latch_initial_value,left->types.identifier);
+            strcat(word_to_set_latch_initial_value,assignee->types.identifier);
             strcat(word_to_set_latch_initial_value,"_latch_initial_value");
-            
             sc_spot = sc_lookup_string(local_symbol_table_sc, word_to_set_latch_initial_value);
 
-            if (sc_spot != -1){
-               ((nnode_t *)(local_symbol_table_sc->data[sc_spot]))->has_initial_value = 1;
-               if(right->types.number.value > 1) 
-                ((nnode_t *)(local_symbol_table_sc->data[sc_spot]))->initial_value = 0;
-               else ((nnode_t *)(local_symbol_table_sc->data[sc_spot]))->initial_value = right->types.number.value;
-               free(word_to_set_latch_initial_value);			
+            if (sc_spot != -1)
+            {
+            	/*found the entry so simply udpdate node info*/
+
+            	/*here, I think we can have a check for if the ast ndoe is marked as alread being initialized, then we can assume 
+            	that someone has placed an assignment for that node before our initial block, so we just die and tell them they are 
+            	stupid.*/
+                ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.is_initialized = TRUE;
+			    ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.initial_value = value->types.number.value;
+                //free(word_to_set_latch_initial_value);				
             }
-            else{
+            else
+            {
+            	/*could not find entry, so add it then update the node*/
                 sc_spot = sc_add_string(local_symbol_table_sc, word_to_set_latch_initial_value);
-                if(right->types.number.value > 1) {
-                    local_symbol_table_sc->data[sc_spot] = (char *)calloc(2,sizeof(char));
-                    ((char *)(local_symbol_table_sc->data[sc_spot]))[0] = '0';//local_symbol_table_sc->data[sc_spot] = "0";
-                    //strcpy((char *)(local_symbol_table_sc->data[sc_spot]),"0");
-                }
-                else{
-                    local_symbol_table_sc->data[sc_spot] = (char *)calloc(2,sizeof(char));
-                    ((char *)(local_symbol_table_sc->data[sc_spot]))[0] = right->types.number.value;
-                    //strcpy((char *)(local_symbol_table_sc->data[sc_spot]),right->types.number.value);
-                    //strcpy(local_symbol_table_sc->data[sc_spot],right->types.number.value);
-                }
+                local_symbol_table_sc->data[sc_spot] = assignee;
+                ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.is_initialized = TRUE;
+			    ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.initial_value = value->types.number.value;
             }
         }    
     }
@@ -3302,7 +3313,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
             
             for(j = i-1; j >= 0; j--){
 
-               if(list_dependence_pin[j]->net->driver_pin && 
+               if(list_dependence_pin[j] && list_dependence_pin[j]->net->driver_pin && 
 					list_dependence_type[j] && list_dependence_type[j] == BLOCKING_STATEMENT &&
 						strcmp(ref_string,assignment->pins[j]->node->name) == 0){
 
@@ -5480,3 +5491,4 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	return return_list;
 }
 #endif
+
