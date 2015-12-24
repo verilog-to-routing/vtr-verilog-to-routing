@@ -75,6 +75,7 @@ struct s_options {
 	bool congestion_analysis;
 	bool fanout_analysis;
     bool switch_usage_analysis;
+    bool enable_forced_reroute;
 	float initial_pres_fac;
 	float pres_fac_mult;
 	float acc_fac;

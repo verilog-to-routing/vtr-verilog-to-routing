@@ -558,6 +558,11 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
         RouterOpts->switch_usage_analysis = true;
     }
 
+    RouterOpts->enable_forced_reroute = true;
+    if (Options.Count[OT_DISABLE_FORCED_REROUTE]) {
+        RouterOpts->enable_forced_reroute = false;
+    }
+
 	RouterOpts->verify_binary_search = false; /* DEFAULT */
 	if (Options.Count[OT_VERIFY_BINARY_SEARCH]) {
 		RouterOpts->verify_binary_search = true;

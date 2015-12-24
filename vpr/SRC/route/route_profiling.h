@@ -30,4 +30,6 @@ void time_on_fanout_analysis();
 
 void profiling_initialization(unsigned max_net_fanout);
 
+void report_total_route_time();
+
 } // end namespace profiling
