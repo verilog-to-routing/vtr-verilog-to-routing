@@ -661,6 +661,15 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				create_symbol_table_for_module(node, instance_name_prefix);
 				local_clock_found = FALSE;
 
+				/* check for initial register values set in initial block.*/ 
+				for (i = 0; i < node->num_children; i++)
+				{
+					if(node->children[i]->type == INITIALS)
+					{
+						define_latchs_initial_value_inside_initial_statement(node->children[i]->children[0], instance_name_prefix);
+					}
+				}
+
 				/* create all the driven nets based on the "reg" registers */		
 				create_all_driver_nets_in_this_module(instance_name_prefix);
 
@@ -736,7 +745,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				break;
             case INITIALS:
                 /* define initial value of latchs */
-                define_latchs_initial_value_inside_initial_statement(node->children[0], instance_name_prefix);                
+                //define_latchs_initial_value_inside_initial_statement(node->children[0], instance_name_prefix);                
                 skip_children = TRUE;
                 break;            
             case FUNCTION_INSTANCE:
@@ -3097,9 +3106,11 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	return return_list;
 }
 
+
+
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix)
 {
-    int i;
+    int i, q;
     long sc_spot;
     ast_node_t *assignee;  
     ast_node_t *value; 
@@ -3115,38 +3126,27 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
             assignee = initial_node->children[i]->children[0];
             
             //Value
-            value = initial_node->children[i]->children[1];
-            
-            //Create out string.
-            word_to_set_latch_initial_value = (char *)calloc(strlen(assignee->types.identifier)+40, sizeof(char));
-            strcpy(word_to_set_latch_initial_value,instance_name_prefix);
-            strcat(word_to_set_latch_initial_value,"^");
-            strcat(word_to_set_latch_initial_value,assignee->types.identifier);
-            strcat(word_to_set_latch_initial_value,"_latch_initial_value");
-            sc_spot = sc_lookup_string(local_symbol_table_sc, word_to_set_latch_initial_value);
+            int number = initial_node->children[i]->children[1]->types.number.value;
 
-            if (sc_spot != -1)
-            {
-            	/*found the entry so simply udpdate node info*/
-
-            	/*here, I think we can have a check for if the ast ndoe is marked as alread being initialized, then we can assume 
-            	that someone has placed an assignment for that node before our initial block, so we just die and tell them they are 
-            	stupid.*/
-                ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.is_initialized = TRUE;
-			    ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.initial_value = value->types.number.value;
-                //free(word_to_set_latch_initial_value);				
-            }
-            else
-            {
-            	/*could not find entry, so add it then update the node*/
-                sc_spot = sc_add_string(local_symbol_table_sc, word_to_set_latch_initial_value);
-                local_symbol_table_sc->data[sc_spot] = assignee;
-                ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.is_initialized = TRUE;
-			    ((ast_node_t *)(local_symbol_table_sc->data[sc_spot]))->types.variable.initial_value = value->types.number.value;
-            }
+            //Find corresponding register, set it's members to reflect initialization.
+			if(initial_node->children[i])
+			{
+				/*if the identifier we found in the table matches the identifier of our blocking statement*/
+				sc_spot = sc_lookup_string(local_symbol_table_sc, initial_node->children[i]->children[0]->types.identifier);
+				if(sc_spot == -1)
+				{
+					printf("** Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
+				}
+				else
+				{
+					local_symbol_table[sc_spot]->types.variable.is_initialized = 1;
+					local_symbol_table[sc_spot]->types.variable.initial_value = number;
+				}
+			}
         }    
     }
 }
+
 /*---------------------------------------------------------------------------------------------
  * (function: terminate_registered_assignment)
  *-------------------------------------------------------------------------------------------*/
@@ -5491,4 +5491,5 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	return return_list;
 }
 #endif
+
 
