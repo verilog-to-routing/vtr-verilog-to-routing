@@ -457,7 +457,11 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 					(net->driver_pin->node->type == MINUS) )
 					{
 						fprintf(out, " %s", net->driver_pin->name);
-					}				
+					}
+					else
+					{
+						fprintf(out, " %s", net->driver_pin->node->name);
+					}
 				}
 				else
 				{
@@ -637,6 +641,10 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 					{
 						fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
 					}
+					else
+					{
+						fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name);
+					}
 				}
 				else
 				{
@@ -762,6 +770,10 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 				    	(net->driver_pin->node->type == MINUS))
 					{
 						fprintf(out, " %s", net->driver_pin->name);
+					}
+					else
+					{
+						fprintf(out, " %s", net->driver_pin->node->name);
 					}
 				}
 				else
