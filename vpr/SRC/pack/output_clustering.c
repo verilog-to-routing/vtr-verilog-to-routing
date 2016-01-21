@@ -36,17 +36,14 @@ static t_pb_graph_pin ***pb_graph_pin_lookup_from_index_by_type = NULL; /* [0..n
 
 static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * fpout) {
 
-	/* Prints string without making any lines longer than LINELENGTH.  Column  *
-	 * points to the column in which the next character will go (both used and *
-	 * updated), and fpout points to the output file.                          */
+	/* 
+     * Column points to the column in which the next character will go (both 
+     * used and updated), and fpout points to the output file.
+     */
 
 	int len;
 
 	len = strlen(str_ptr);
-	if (len + 3 > LINELENGTH) {
-		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
-				"in print_string: String %s is too long for desired maximum line length.\n", str_ptr);
-	}
 
 	if (*column + len + 2 > LINELENGTH) {
 		fprintf(fpout, "\n");
@@ -60,9 +57,8 @@ static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * 
 
 static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 
-	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
-	 * length of a line to LINELENGTH characters by using \ to continue *
-	 * lines.  net_num is the index of the g_atoms_nlist.net to be printed, while     *
+	/* This routine prints out the g_atoms_nlist.net name (or open).  
+     * net_num is the index of the g_atoms_nlist.net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
@@ -79,13 +75,6 @@ static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 
 static void print_interconnect(t_type_ptr type, int inode, int *column, int num_tabs, t_pb_route *pb_route, 
 		FILE * fpout) {
-
-	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
-	 * length of a line to LINELENGTH characters by using \ to continue *
-	 * lines.  net_num is the index of the g_atoms_nlist.net to be printed, while     *
-	 * column points to the current printing column (column is both     *
-	 * used and updated by this routine).  fpout is the output file     *
-	 * pointer.                                                         */
 
 	char *str_ptr, *name;
 	int prev_node, prev_edge;
