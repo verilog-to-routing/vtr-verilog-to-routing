@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 /* Ted Campbell, Aug 14 2007 */
 #if !defined(WIN32) && !defined(_WIN32)
@@ -787,24 +788,20 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 /* Wrapper for ezxml_parse_str() that accepts a file stream. Reads the entire */
 /* stream into memory and then parses it. For xml files, use ezxml_parse_file() */
 /* or ezxml_parse_fd() */
-ezxml_t ezxml_parse_fp(FILE * fp) {
+ezxml_t ezxml_parse_fp(FILE * fp, size_t size) {
 	ezxml_root_t root;
-	size_t l, len = 0;
-	char *s;
+	char *s; //The buffer
 
 	/* Jason Luu, Aug 29, 2007. Removed assignment in conditional statement */
-	s = (char*)malloc(EZXML_BUFSIZE);
+	s = (char*)malloc(size);
 	if (!s)
 		return NULL;
-	do {
-		len += (l = fread((s + len), 1, EZXML_BUFSIZE, fp));
-		if (l == EZXML_BUFSIZE)
-			s = (char*)realloc(s, len + EZXML_BUFSIZE);
-	} while (s && l == EZXML_BUFSIZE);
 
-	if (!s)
-		return NULL;
-	root = (ezxml_root_t) ezxml_parse_str(s, len);
+    size_t bytes_read = fread(s, 1, size, fp);
+
+    assert(bytes_read == size);
+
+	root = (ezxml_root_t) ezxml_parse_str(s, bytes_read);
 	/* Ted Campbell, Aug 14, 2007. Added explicit cast. */
 	root->len = (size_t) (-1); /* so we know to free s in ezxml_free() */
 	return &root->xml;
@@ -844,11 +841,18 @@ ezxml_t ezxml_parse_fd(int fd) {
 
 /* a wrapper for ezxml_parse_fd that accepts a file name */
 ezxml_t ezxml_parse_file(const char *file) {
-	int fd = open(file, O_RDONLY, 0);
-	ezxml_t xml = ezxml_parse_fd(fd);
+    ezxml_t xml;
 
-	if (fd >= 0)
-		close(fd);
+    FILE* fp = fopen(file, "r");
+	if (fp) {
+        //Determine the file size
+        struct stat st;
+        stat(file, &st);
+
+
+        xml = ezxml_parse_fp(fp, st.st_size);
+		fclose(fp);
+    }
 	return xml;
 }
 
