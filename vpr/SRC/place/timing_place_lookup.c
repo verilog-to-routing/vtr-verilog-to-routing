@@ -460,19 +460,19 @@ static void setup_chan_width(struct s_router_opts router_opts,
 	/*we give plenty of tracks, this increases routability for the */
 	/*lookup table generation */
 
-	int width_fac, i, max_pins_per_clb;
+	int width_fac;
 
-	max_pins_per_clb = 0;
-	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
-	}
-
-	if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH)
-		width_fac = 4 * max_pins_per_clb; /*this is 2x the value that binary search starts */
-	/*this should be enough to allow most pins to   */
-	/*connect to tracks in the architecture */
-	else
+	if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
+        //We use the number of pins on the FILL_TYPE, since
+        //while building the placement timing model we use a
+        //uniformly filled FPGA architecture.
+		width_fac = 4 * FILL_TYPE->num_pins; 
+        /*this is 2x the value that binary search starts */
+        /*this should be enough to allow most pins to   */
+        /*connect to tracks in the architecture */
+    } else {
 		width_fac = router_opts.fixed_channel_width;
+    }
 
 	init_chan(width_fac, 0, chan_width_dist);
 }
