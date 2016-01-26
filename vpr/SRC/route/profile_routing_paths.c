@@ -1,52 +1,8 @@
 
 /*
 
-The idea is to run a Monte Carlo A* search from a bunch of random sources to a bunch of random sinks.
-
-Ideally we'd check every source to every sink, but that seems unreasonable. So for each source we can
-check a representative number of random sinks at each "distance" according to some #define'd depth.
-
-So I think the question is:
- - how do we pick out random sources?
- - how do we pick out random sinks?
- - what are the results?
- 	- timing cost to route to the sink?
- - should we hold results for each sink touched?
- - what data structure should we use to hold the results?
- 	- for each source, hold data for each sink touched?
- - how do we analyze the results?
- - how do we present the results?
-
- - can also analyze each level of depth separately so we don't have to hold as much intermediate information
-
- - need to do this for every physical block type? also, to every physical block type?
-
-
-TODO:
- - Function to make a vector of viable PB's at individual level from the start point
- - Function to make a vector of viables sources & sinks
- - Function to select a random set of sources at sinks
-
- - need to flesh this out better...
-
-
-The idea:
-	- split things up into "levels." Each level represents a manhattan distance from sources
-	- each level has a corresponding vector of (delay, path_cost) pairs that represent costs required to route to sinks
-	  at that Manhattan distance away from sources
-	- for each level we can compute metrics -- min delay, max delay, average delay, std. deviation
-	--> we compute this "level" thing for LB sources and sinks of each physical block type (LB, DSP, RAM, I/O, etc)
-		- but start simple -- let's just do LB-->LB for now
-
-First we need a list of viable sources
- - Go through rr graph and make a list of sources belonging to a specified PB type?
- - What are the different pb types?
- 	- 
-	
-
-
-Next up: 
- - for a given source node, get all sinks at a certain Manhattan distance away that belong to the specified pb type :):)
+	Use A* to compute minimum delays from a subset of sources to random sinks at different Manhattan distances.
+	Compute figures of merit for the delays at each Manhattan distance.
 
 */
 
@@ -60,18 +16,18 @@ Next up:
 #include "vpr_utils.h"
 #include "util.h"
 #include "globals.h"
-#include "timing_driven_lookup.h"
+#include "router_lookahead_map.h"
 #include "profile_routing_paths.h"
 
 using namespace std;
 
 
-#define MAX_DISTANCE 100		//Analyze up to this Manhattan distance from sources
+#define MAX_DISTANCE 50 //100		//Analyze up to this Manhattan distance from sources
 #define SOURCES_TO_ANALYZE 20		//Number of sources which will be analyzed
 #define INCREMENT 1			//Distances analyzed will be (1 + n*INCREMENT) n = 0,1,2,...
 #define MAX_SINKS 200			//The maximum number of sinks to analyze for any given source at some distance
 
-
+bool f_profiling_done = false;
 
 /* contains the timing and path cost associated with some source-->sink routing */
 class Route_Costs{
@@ -160,6 +116,11 @@ static void print_statistics( int distance, vector<Route_Costs> &route_costs );
 /* Analyzes the consistency of sources having fast paths to sinks at different distances. Prints out corresponding statistics */
 void profile_routing_paths(){
 
+	/* make sure profiling is only run once per VPR run */
+	if (f_profiling_done){
+		return;
+	}
+
 	/* get list of possible sources */
 	vector<int> lb_sources;
 	get_sources_of_pb_type(FILL_TYPE->index, lb_sources);
@@ -168,10 +129,11 @@ void profile_routing_paths(){
 	get_random_nodes(SOURCES_TO_ANALYZE, lb_sources, analyze_sources);
 
 	/* Analyze LB->LB routing paths for now. Can add other block types later */	
-	auto target_pb_inds = {FILL_TYPE->index};
+	//auto target_pb_inds = {FILL_TYPE->index};
 
-	for (int pb_ind : target_pb_inds){
-		vpr_printf_info("==== CLB to %s Routing Profile ====\n", type_descriptors[pb_ind].name);
+	//for (int pb_ind : target_pb_inds){
+	for (int pb_ind = 0; pb_ind < num_types; pb_ind++){
+		vpr_printf_info("==== %s to %s Routing Delay Profile ====\n", FILL_TYPE->name, type_descriptors[pb_ind].name);
 		vpr_printf_info("\tdist \t#sinks \tmin \t\tmax \t\tmean \t\t(max-min)/mean*100 \tstandard deviation\n");
 		for (int idist = 1; idist <= MAX_DISTANCE; idist += INCREMENT){
 			vector<Route_Costs> route_costs;
@@ -199,6 +161,8 @@ void profile_routing_paths(){
 			print_statistics( idist, route_costs );
 		}
 	}
+
+	f_profiling_done = false;
 }
 
 
@@ -207,6 +171,10 @@ static void print_statistics( int distance, vector<Route_Costs> &route_costs ){
 	/* print min/max/mean delay and the std. deviation */
 	
 	int sinks_analyzed = (int)route_costs.size();
+
+	if (sinks_analyzed == 0){
+		return;
+	}
 
 	/* get min, max, mean delay */
 	float min_delay = UNDEFINED;
@@ -307,30 +275,32 @@ static void get_sinks_at_distance(int source_ind, int distance, int pb_ind, vect
 				continue;
 			}
 
-			//printf("%s\n", grid[pb_x][pb_y].type->name);
-
-			//TODO: don't add sinks which have no incoming edges or which belong to global pins???
 			/* get all the sinks at that coordinate */
 			t_ivec sink_list = rr_node_indices[SINK][pb_x][pb_y];
-			assert( sink_list.list != NULL );
+			if (sink_list.list == NULL){
+				continue;
+			}
 			for (int isink = 0; isink < sink_list.nelem; isink++){
 				int node_ind = sink_list.list[isink];
-				if (rr_node[node_ind].type == SINK){
-					int ptc = rr_node[node_ind].get_ptc_num();
-					int num_corresponding_pins = type_descriptors[pb_ind].class_inf[ptc].num_pins;
-					if (num_corresponding_pins == 0){
-						continue;
-					}
-					int representative_pin = type_descriptors[pb_ind].class_inf[ptc].pinlist[0];
-
-					if (type_descriptors[pb_ind].is_global_pin[representative_pin]){
-						continue;
-					}
-
-					sinks.push_back( node_ind );
-					//printf("\t%d %s\n", node_ind, rr_node[node_ind].rr_get_type_string());
-					//assert( rr_node[node_ind].type == SINK );
+				if (rr_node[node_ind].type != SINK){
+					continue;
 				}
+				if (rr_node[node_ind].get_xlow() != pb_x || rr_node[node_ind].get_ylow() != pb_y){
+					continue;
+				}
+
+				int ptc = rr_node[node_ind].get_ptc_num();
+				int num_corresponding_pins = type_descriptors[pb_ind].class_inf[ptc].num_pins;
+				if (num_corresponding_pins == 0){
+					continue;
+				}
+				int representative_pin = type_descriptors[pb_ind].class_inf[ptc].pinlist[0];
+
+				if (type_descriptors[pb_ind].is_global_pin[representative_pin]){
+					continue;
+				}
+
+				sinks.push_back( node_ind );
 			}
 
 			if (iy == 0){

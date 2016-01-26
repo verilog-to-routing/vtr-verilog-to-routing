@@ -5,20 +5,21 @@
 #include <vector>
 #include <queue>
 #include <assert.h>
+#include <ctime>
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "util.h"
 #include "globals.h"
-#include "timing_driven_lookup.h"
+#include "router_lookahead_map.h"
 
 using namespace std;
 
-/* the cost map is computed by running a BFS from channel segment rr nodes at the specified reference coordinate */
+/* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
 #define REF_X 3
 #define REF_Y 3
 
-#define MAX_TRACK_OFFSET 32
-#define REPRESENTATIVE_BFS_ENTRY_METHOD SMALLEST
+#define MAX_TRACK_OFFSET 16//32
+#define REPRESENTATIVE_ENTRY_METHOD SMALLEST
 
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
@@ -39,7 +40,7 @@ public:
 };
 
 
-/* when a list of delay/congestion entries at a coordinate in BFS_Cost_Entry is boiled down to a single
+/* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
    representative entry, this enum is passed-in to specify how that representative entry should be 
    calculated */
 enum e_representative_entry_method{
@@ -50,10 +51,10 @@ enum e_representative_entry_method{
 	MEDIAN
 };
 
-/* a class that stores delay/congestion information for a given relative coordinate during the BFS expansion. 
+/* a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion. 
    since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored 
    in the final lookahead cost map */
-class BFS_Cost_Entry{
+class Expansion_Cost_Entry{
 private:
 	vector<Cost_Entry> cost_vector;
 
@@ -66,7 +67,18 @@ private:
 public:
 	void add_cost_entry(float add_delay, float add_congestion){
 		Cost_Entry cost_entry(add_delay, add_congestion);
-		this->cost_vector.push_back(cost_entry);
+		if (REPRESENTATIVE_ENTRY_METHOD == SMALLEST){
+			/* taking the smallest-delay entry anyway, so no need to push back multple entries */
+			if (this->cost_vector.empty()){
+				this->cost_vector.push_back(cost_entry);
+			} else {
+				if (add_delay < this->cost_vector[0].delay){
+					this->cost_vector[0] = cost_entry;
+				}
+			}
+		} else {
+			this->cost_vector.push_back(cost_entry);
+		}
 	}
 	void clear_cost_entries(){
 		this->cost_vector.clear();
@@ -101,8 +113,8 @@ public:
 };
 
 
-/* a class that represents an entry in the BFS expansion queue */
-class BFS_Queue_Entry{
+/* a class that represents an entry in the Dijkstra expansion priority queue */
+class PQ_Entry{
 public:
 	int rr_node_ind;		//index of rr_node that this entry represents
 	float cost;				//the cost of the path to get to this node
@@ -112,7 +124,7 @@ public:
 	float R_upstream;
 	float congestion_upstream;
 
-	BFS_Queue_Entry(int set_rr_node_ind, int switch_ind, float parent_delay, float parent_R_upstream, float parent_congestion_upstream){
+	PQ_Entry(int set_rr_node_ind, int switch_ind, float parent_delay, float parent_R_upstream, float parent_congestion_upstream){
 		this->rr_node_ind = set_rr_node_ind;
 
 		float new_R_upstream = 0;
@@ -123,6 +135,10 @@ public:
 			}
 		}
 		
+		if (rr_node[set_rr_node_ind].type == IPIN){
+			//printf("%.2e, %.2e, %.2e, %.2e\n", parent_delay, rr_node[set_rr_node_ind].C, new_R_upstream, rr_node[set_rr_node_ind].R);
+		}
+
 		/* get delay info for this node */
 		this->delay = parent_delay + rr_node[set_rr_node_ind].C * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R);
 		if (switch_ind != UNDEFINED){
@@ -139,7 +155,7 @@ public:
 		this->cost = this->delay;
 	}
 
-	bool operator < (const BFS_Queue_Entry &obj) const{
+	bool operator < (const PQ_Entry &obj) const{
 		/* inserted into max priority queue so want queue entries with a lower cost to be greater */
 		return (this->cost > obj.cost);
 	}
@@ -150,9 +166,9 @@ public:
    in the x/y direction */
 typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;		//[0..1][[0..num_seg_types-1]0..nx][0..ny]	-- [0..1] entry is to 
                                                                             //distinguish between CHANX/CHANY start nodes respectively
-/* used during BFS expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type. 
+/* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type. 
    the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vector< vector<BFS_Cost_Entry> > t_bfs_cost_map;		//[0..nx][0..ny]
+typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..nx][0..ny]
 
 
 /******** File-Scope Variables ********/
@@ -163,15 +179,15 @@ t_cost_map f_cost_map;
 /******** File-Scope Functions ********/
 static void alloc_cost_map(int num_segments);
 static void free_cost_map();
-/* returns index of a node from which to start BFS */
+/* returns index of a node from which to start routing */
 static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
-/* runs BFS from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
-   to that pin is stored is added to an entry in the bfs_cost_map */
-static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map &bfs_cost_map);
+/* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
+   to that pin is stored is added to an entry in the routing_cost_map */
+static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map &routing_cost_map);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_bfs_neighbours(BFS_Queue_Entry parent_entry, vector<float> &node_visited_costs, vector<bool> &node_expanded, priority_queue<BFS_Queue_Entry> &pq);
-/* sets the lookahead cost map entries based on representative cost entries from bfs_cost_map */
-static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_bfs_cost_map &bfs_cost_map);
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &node_visited_costs, vector<bool> &node_expanded, priority_queue<PQ_Entry> &pq);
+/* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
+static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_routing_cost_map &routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 /* returns a cost entry in the f_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
@@ -191,7 +207,6 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 	assert(from_seg_index >= 0);
 
 	// TODO: can probably make a more informed choice w.r.t. xlow/xhigh & ylow/yhigh
-	// TODO: can try setting cost to 0 if target node is very close 
 	from_x = rr_node[from_node_ind].get_xlow();
 	from_y = rr_node[from_node_ind].get_ylow();
 	
@@ -201,14 +216,12 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 	int delta_x = abs(from_x - to_x);
 	int delta_y = abs(from_y - to_y);
 
-
 	/* now get the expected cost from our lookahead map */
 	int from_chan_index = 0;
 	if (from_type == CHANY){
 		from_chan_index = 1;
 	}
 
-	//printf("from_chan_index %d  from_seg_index %d  delta_x %d  delta_y %d\n", from_chan_index, from_seg_index, delta_x, delta_y);
 	Cost_Entry cost_entry = f_cost_map[from_chan_index][from_seg_index][delta_x][delta_y];
 	float expected_delay = cost_entry.delay;
 	float expected_congestion = cost_entry.congestion;
@@ -223,69 +236,76 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, it will be cleared
    and a new one will be allocated. The rr graph must have been built before calling this function. */
-void compute_timing_driven_lookahead(int num_segments){
+void compute_router_lookahead(int num_segments){
 	//TODO: account for bend cost??
 
-	vpr_printf_info("Computing timing driven router look-ahead...\n");
+	if (f_cost_map.size()){
+		/* if lookahead map has already been computed, do not compute it again */
+		vpr_printf_info("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
+		return;
+	}
+
+	clock_t start_time = clock();
 
 	/* free previous delay map and allocate new one */
 	free_cost_map();
 	alloc_cost_map(num_segments);
 
-	/* run BFS for each segment type & channel type combination */
+	/* run Dijkstra's algorithm for each segment type & channel type combination */
 	for (int iseg = 0; iseg < num_segments; iseg++){
 		for (e_rr_type chan_type : {CHANX, CHANY}){
-			/* allocate the BFS cost map for this iseg/chan_type */
-			t_bfs_cost_map bfs_cost_map;
-			bfs_cost_map.assign( nx+2, vector<BFS_Cost_Entry>(ny+2, BFS_Cost_Entry()) );
+			/* allocate the cost map for this iseg/chan_type */
+			t_routing_cost_map routing_cost_map;
+			routing_cost_map.assign( nx+2, vector<Expansion_Cost_Entry>(ny+2, Expansion_Cost_Entry()) );
 
 			for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
-				/* get the rr node index from which to start BFS */
+				/* get the rr node index from which to start routing */
 				int start_node_ind = get_start_node_ind(REF_X, REF_Y, nx, ny, chan_type, iseg, track_offset);
 
 				if (start_node_ind == UNDEFINED){
 					continue;
 				}
 
-				/* run BFS */
-				run_bfs(start_node_ind, REF_X, REF_Y, bfs_cost_map);
+				/* run Dijkstra's algorithm */
+				run_dijkstra(start_node_ind, REF_X, REF_Y, routing_cost_map);
 			}
-			printf("\n");
-	
 			
-			/* boil down the cost list in bfs_cost_map at each coordinate to a representative cost entry and store it in the lookahead
+			/* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
 			   cost map */
-			set_lookahead_map_costs(iseg, chan_type, bfs_cost_map);
+			set_lookahead_map_costs(iseg, chan_type, routing_cost_map);
 
-			//assert(false);
-			/* fill in missing entries in the lookahead cost map by copying the closest cost entries (BFS cost map was computed based on
+			/* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
 			   a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
 			fill_in_missing_lookahead_entries(iseg, chan_type);
 		}
 	}
 
-	//XXX printing out delay maps
-	for (int iseg = 0; iseg < num_segments; iseg++){
-		for (int chan_index : {0,1}){
-			for (int iy = 0; iy < ny+1; iy++){
-				for (int ix = 0; ix < nx+1; ix++){
-					printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
-				}
-				printf("\n");
-			}
-			printf("\n\n");
-		}
-	}
+	//printing out delay maps
+	//for (int iseg = 0; iseg < num_segments; iseg++){
+	//	for (int chan_index : {0,1}){
+	//		for (int iy = 0; iy < ny+1; iy++){
+	//			for (int ix = 0; ix < nx+1; ix++){
+	//				printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
+	//			}
+	//			printf("\n");
+	//		}
+	//		printf("\n\n");
+	//	}
+	//}
+
+	clock_t end_time = clock();
+	
+	vpr_printf_info("Computing router lookahead map took %f seconds.\n", ((float)end_time - start_time)/CLOCKS_PER_SEC);
 }
 
 
-/* returns index of a node from which to start BFS */
+/* returns index of a node from which to start routing */
 static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset){
 
 	int result = UNDEFINED;
 
 	if (rr_type != CHANX && rr_type != CHANY){
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead BFS from CHANX or CHANY node\n");	
+		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Must start lookahead routing from CHANX or CHANY node\n");	
 	}
 
 	int chan_coord = start_x;
@@ -320,7 +340,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 			/* found first track that has the specified segment index and goes in the desired direction */
 			result = node_ind;
 			if (track_offset == 0){
-				printf("track %d  offset %d\n", itrack, track_offset);
+				//printf("track %d  offset %d\n", itrack, track_offset);
 				break;
 			}
 			track_offset -= 2;
@@ -346,26 +366,25 @@ static void free_cost_map(){
 }
 
 
-/* runs BFS from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
-   to that pin is stored is added to an entry in the bfs_cost_map */
-static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map &bfs_cost_map){
-
+/* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
+   to that pin is stored is added to an entry in the routing_cost_map */
+static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map &routing_cost_map){
 	/* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
 	vector<bool> node_expanded( num_rr_nodes, false );
 	/* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
-	   a candidate node onto the BFS expansion queue */
+	   a candidate node onto the expansion queue */
 	vector<float> node_visited_costs( num_rr_nodes, -1.0 );
-	/* a priority queue for BFS expansion */
-	priority_queue<BFS_Queue_Entry> pq;
+	/* a priority queue for expansion */
+	priority_queue<PQ_Entry> pq;
 
 	/* first entry has no upstream delay or congestion */
-	BFS_Queue_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0);
+	PQ_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0);
 
 	pq.push( first_entry );
 
-	/* now do BFS */
+	/* now do routing */
 	while( !pq.empty() ){
-		BFS_Queue_Entry current = pq.top();
+		PQ_Entry current = pq.top();
 		pq.pop();
 
 		int node_ind = current.rr_node_ind;
@@ -377,7 +396,7 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 
 		//printf("expanded %d\n", node_ind);
 
-		/* if this node is an ipin record its congestion/delay in the bfs_cost_map */
+		/* if this node is an ipin record its congestion/delay in the routing_cost_map */
 		if (rr_node[node_ind].type == IPIN){
 			int ipin_x = rr_node[node_ind].get_xlow();
 			int ipin_y = rr_node[node_ind].get_ylow();
@@ -388,7 +407,7 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 
 				//printf("\t%d %d\n", delta_x, delta_y);
 
-				bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
+				routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
 			}
 		}
 
@@ -403,7 +422,7 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 		//			int delta_x = ix - start_x;
 		//			int delta_y = y - start_y;
 
-		//			bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
+		//			routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
 		//		}
 		//	}
 		//} else if (rr_node[node_ind].type == CHANY){
@@ -416,19 +435,19 @@ static void run_bfs(int start_node_ind, int start_x, int start_y, t_bfs_cost_map
 		//			int delta_x = x - start_x;
 		//			int delta_y = iy - start_y;
 
-		//			bfs_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
+		//			routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
 		//		}
 		//	}
 		//}
 
-		expand_bfs_neighbours(current, node_visited_costs, node_expanded, pq);
+		expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
 		node_expanded[node_ind] = true;
 	}
 }
 
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_bfs_neighbours(BFS_Queue_Entry parent_entry, vector<float> &node_visited_costs, vector<bool> &node_expanded, priority_queue<BFS_Queue_Entry> &pq){
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &node_visited_costs, vector<bool> &node_expanded, priority_queue<PQ_Entry> &pq){
 
 	int parent_ind = parent_entry.rr_node_ind;
 
@@ -443,7 +462,7 @@ static void expand_bfs_neighbours(BFS_Queue_Entry parent_entry, vector<float> &n
 			continue;
 		}
 
-		BFS_Queue_Entry child_entry(child_node_ind, switch_ind, parent_entry.delay,
+		PQ_Entry child_entry(child_node_ind, switch_ind, parent_entry.delay,
 		                             parent_entry.R_upstream, parent_entry.congestion_upstream);
 
 		assert(child_entry.cost >= 0);
@@ -460,22 +479,22 @@ static void expand_bfs_neighbours(BFS_Queue_Entry parent_entry, vector<float> &n
 }
 
 
-/* sets the lookahead cost map entries based on representative cost entries from bfs_cost_map */
-static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_bfs_cost_map &bfs_cost_map){
+/* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
+static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_routing_cost_map &routing_cost_map){
 	int chan_index = 0;
 	if (chan_type == CHANY){
 		chan_index = 1;
 	}
 
-	/* set the lookahead cost map entries with a representative cost entry from bfs_cost_map */
-	for (unsigned ix = 0; ix < bfs_cost_map.size(); ix++){
-		for (unsigned iy = 0; iy < bfs_cost_map[ix].size(); iy++){
+	/* set the lookahead cost map entries with a representative cost entry from routing_cost_map */
+	for (unsigned ix = 0; ix < routing_cost_map.size(); ix++){
+		for (unsigned iy = 0; iy < routing_cost_map[ix].size(); iy++){
 			
-			BFS_Cost_Entry &bfs_cost_entry = bfs_cost_map[ix][iy];
+			Expansion_Cost_Entry &expansion_cost_entry = routing_cost_map[ix][iy];
 
-			//printf("%d %d  %f\n", ix, iy, bfs_cost_entry.get_representative_cost_entry());
+			//printf("%d %d  %f\n", ix, iy, expansion_cost_entry.get_representative_cost_entry());
 
-			f_cost_map[chan_index][segment_index][ix][iy] = bfs_cost_entry.get_representative_cost_entry( REPRESENTATIVE_BFS_ENTRY_METHOD );
+			f_cost_map[chan_index][segment_index][ix][iy] = expansion_cost_entry.get_representative_cost_entry( REPRESENTATIVE_ENTRY_METHOD );
 		}
 	}
 }
@@ -550,7 +569,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 
 
 /* returns cost entry with the smallest delay */
-Cost_Entry BFS_Cost_Entry::get_smallest_entry(){
+Cost_Entry Expansion_Cost_Entry::get_smallest_entry(){
 
 	Cost_Entry smallest_entry;
 
@@ -564,7 +583,7 @@ Cost_Entry BFS_Cost_Entry::get_smallest_entry(){
 }
 
 /* returns a cost entry that represents the average of all the recorded entries */
-Cost_Entry BFS_Cost_Entry::get_average_entry(){
+Cost_Entry Expansion_Cost_Entry::get_average_entry(){
 	float avg_delay = 0;
 	float avg_congestion = 0;
 
@@ -580,7 +599,7 @@ Cost_Entry BFS_Cost_Entry::get_average_entry(){
 }
 
 /* returns a cost entry that represents the geomean of all the recorded entries */
-Cost_Entry BFS_Cost_Entry::get_geomean_entry(){
+Cost_Entry Expansion_Cost_Entry::get_geomean_entry(){
 	
 
 	float geomean_delay = 0;
@@ -597,7 +616,7 @@ Cost_Entry BFS_Cost_Entry::get_geomean_entry(){
 }
 
 /* returns a cost entry that represents the medial of all recorded entries */
-Cost_Entry BFS_Cost_Entry::get_median_entry(){
+Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 	/* find median by binning the delays of all entries and then chosing the bin 
 	   with the largest number of entries */
 

@@ -22,6 +22,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "profile_routing_paths.h"
 
 
 // Disable the routing predictor for circuits with less that this number of nets.
@@ -326,6 +327,9 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
 			&warning_count);
+
+	//XXX
+	//profile_routing_paths();
 
 	clock_t end = clock();
 

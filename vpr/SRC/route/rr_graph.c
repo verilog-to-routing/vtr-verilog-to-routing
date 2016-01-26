@@ -23,6 +23,7 @@ using namespace std;
 #include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
+#include "router_lookahead_map.h"
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 #include "rr_graph_multi.h"
@@ -545,6 +546,9 @@ void build_rr_graph(
 	if (dump_rr_structs_file){
 		dump_rr_structs(dump_rr_structs_file);
 	}
+
+	/* compute the router lookahead map -- will only be done the first time build_rr_graph is run */
+	compute_router_lookahead(g_num_segment);
 
 	/* Free all temp structs */
 	if (seg_details) {
