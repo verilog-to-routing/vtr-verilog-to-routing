@@ -548,7 +548,7 @@ void build_rr_graph(
 	}
 
 	/* compute the router lookahead map -- will only be done the first time build_rr_graph is run */
-	compute_router_lookahead(g_num_segment);
+	compute_router_lookahead(g_num_segment, *wire_to_rr_ipin_switch);
 
 	/* Free all temp structs */
 	if (seg_details) {

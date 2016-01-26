@@ -1,5 +1,3 @@
-//TODO: rename to 'timing_route_lookahead'
-
 
 #include <cmath>
 #include <vector>
@@ -21,6 +19,7 @@ using namespace std;
 #define MAX_TRACK_OFFSET 16//32
 #define REPRESENTATIVE_ENTRY_METHOD SMALLEST
 
+//#define IMPLICIT_IPINS	//if defined, routing will stop before reaching IPINs and the delays due to ipin switches will be added implicitly
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
    to travel relative x/y distances */
@@ -119,7 +118,7 @@ public:
 	int rr_node_ind;		//index of rr_node that this entry represents
 	float cost;				//the cost of the path to get to this node
 
-	//store backward delay, R and congestion info
+	/* store backward delay, R and congestion info */
 	float delay;
 	float R_upstream;
 	float congestion_upstream;
@@ -133,10 +132,6 @@ public:
 			if (!g_rr_switch_inf[switch_ind].buffered){
 				new_R_upstream += parent_R_upstream;
 			}
-		}
-		
-		if (rr_node[set_rr_node_ind].type == IPIN){
-			//printf("%.2e, %.2e, %.2e, %.2e\n", parent_delay, rr_node[set_rr_node_ind].C, new_R_upstream, rr_node[set_rr_node_ind].R);
 		}
 
 		/* get delay info for this node */
@@ -175,6 +170,9 @@ typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..nx][0.
 /* The cost map */
 t_cost_map f_cost_map;
 
+#ifdef IMPLICIT_IPINS
+float f_wire_to_ipin_switch_delay = UNDEFINED;
+#endif
 
 /******** File-Scope Functions ********/
 static void alloc_cost_map(int num_segments);
@@ -236,7 +234,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, it will be cleared
    and a new one will be allocated. The rr graph must have been built before calling this function. */
-void compute_router_lookahead(int num_segments){
+void compute_router_lookahead(int num_segments, int wire_to_ipin_rr_switch_ind){
 	//TODO: account for bend cost??
 
 	if (f_cost_map.size()){
@@ -246,6 +244,10 @@ void compute_router_lookahead(int num_segments){
 	}
 
 	clock_t start_time = clock();
+
+#ifdef IMPLICIT_IPINS
+	f_wire_to_ipin_switch_delay = g_rr_switch_inf[wire_to_ipin_rr_switch_ind].Tdel;
+#endif
 
 	/* free previous delay map and allocate new one */
 	free_cost_map();
@@ -396,6 +398,45 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 
 		//printf("expanded %d\n", node_ind);
 
+
+#ifdef IMPLICIT_IPINS
+		/* Stop at CHANX/CHANY nodes instead of IPINS */
+
+		float extra_delay = f_wire_to_ipin_switch_delay;
+		if (rr_node[node_ind].type == CHANX){
+			int xlow = rr_node[node_ind].get_xlow();
+			int xhigh = rr_node[node_ind].get_xhigh();
+			int y = rr_node[node_ind].get_ylow();
+
+			for (int ix = xlow; ix <= xhigh; ix++){
+				if (ix >= start_x && y >= start_y){
+					int delta_x = ix - start_x;
+					int delta_y = y - start_y;
+					
+					if (delta_x >= 0 && delta_y >= 0){
+						routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
+						routing_cost_map[delta_x][delta_y + 1].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
+					}
+				}
+			}
+		} else if (rr_node[node_ind].type == CHANY){
+			int ylow = rr_node[node_ind].get_ylow();
+			int yhigh = rr_node[node_ind].get_yhigh();
+			int x = rr_node[node_ind].get_xlow();
+
+			for (int iy = ylow; iy <= yhigh; iy++){
+				if (iy >= start_y && x >= start_x){
+					int delta_x = x - start_x;
+					int delta_y = iy - start_y;
+
+					if (delta_x >= 0 && delta_y >= 0){
+						routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
+						routing_cost_map[delta_x + 1][delta_y].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
+					}
+				}
+			}
+		}
+#else
 		/* if this node is an ipin record its congestion/delay in the routing_cost_map */
 		if (rr_node[node_ind].type == IPIN){
 			int ipin_x = rr_node[node_ind].get_xlow();
@@ -411,34 +452,7 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 			}
 		}
 
-		////XXX: stop at CHANX/CHANY nodes instead of IPINS
-		//if (rr_node[node_ind].type == CHANX){
-		//	int xlow = rr_node[node_ind].get_xlow();
-		//	int xhigh = rr_node[node_ind].get_xhigh();
-		//	int y = rr_node[node_ind].get_ylow();
-
-		//	for (int ix = xlow; ix <= xhigh; ix++){
-		//		if (ix >= start_x && y >= start_y){
-		//			int delta_x = ix - start_x;
-		//			int delta_y = y - start_y;
-
-		//			routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
-		//		}
-		//	}
-		//} else if (rr_node[node_ind].type == CHANY){
-		//	int ylow = rr_node[node_ind].get_ylow();
-		//	int yhigh = rr_node[node_ind].get_yhigh();
-		//	int x = rr_node[node_ind].get_xlow();
-
-		//	for (int iy = ylow; iy <= yhigh; iy++){
-		//		if (iy >= start_y && x >= start_x){
-		//			int delta_x = x - start_x;
-		//			int delta_y = iy - start_y;
-
-		//			routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
-		//		}
-		//	}
-		//}
+#endif
 
 		expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
 		node_expanded[node_ind] = true;
