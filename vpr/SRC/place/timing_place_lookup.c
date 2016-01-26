@@ -19,6 +19,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "netlist.h"
 #include "timing_driven_lookup.h"
+#include "profile_routing_paths.h"
 
 /*this file contains routines that generate the array containing*/
 /*the delays between blocks, this is used in the timing driven  */
@@ -1088,6 +1089,8 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 
 	/* compute the router lookahead -- this is easier to do when all blocks in grpah are CLBs so I'm doing it here */
 	compute_timing_driven_lookahead(g_num_segment);
+	profile_routing_paths();
+	assert(false);
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 	num_cuts = temp_num_cuts;
