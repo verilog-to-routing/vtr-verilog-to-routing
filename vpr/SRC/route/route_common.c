@@ -330,6 +330,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	//XXX
 	//profile_routing_paths();
+	compute_heatmap();
 
 	clock_t end = clock();
 

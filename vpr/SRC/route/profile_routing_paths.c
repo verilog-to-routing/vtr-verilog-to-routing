@@ -24,10 +24,12 @@ using namespace std;
 
 #define MAX_DISTANCE 50 //100		//Analyze up to this Manhattan distance from sources
 #define SOURCES_TO_ANALYZE 20		//Number of sources which will be analyzed
-#define INCREMENT 1			//Distances analyzed will be (1 + n*INCREMENT) n = 0,1,2,...
 #define MAX_SINKS 200			//The maximum number of sinks to analyze for any given source at some distance
 
-bool f_profiling_done = false;
+#define HEATMAP_DISTANCE 20	//Manhattan distance up to which the comprehensive routing profile map will be computed
+#define HEATMAP_SOURCES 50
+
+
 
 /* contains the timing and path cost associated with some source-->sink routing */
 class Route_Costs{
@@ -100,6 +102,12 @@ public:
 };
 
 
+typedef vector<vector<vector<Route_Costs>>> t_comprehensive_routing_profile; 
+
+bool f_profiling_done = false;
+
+
+
 /************ File-Scope Functions ************/
 /* uses A* to route from the specified source to the specified sink */
 static Route_Costs route_nodes(int from_node, int to_node);
@@ -110,6 +118,7 @@ static void get_sources_of_pb_type(int pb_index, vector<int> &pb_type_sources);
 static void get_random_nodes(int num_random_nodes, vector<int> &nodes, vector<int> &selected_nodes);
 static void get_sinks_at_distance(int source_ind, int distance, int pb_ind, vector<int> &sinks);
 static void print_statistics( int distance, vector<Route_Costs> &route_costs );
+static void print_heatmap(int array_size, t_comprehensive_routing_profile &routing_profile);
 
 /************ Function Definitnions ************/
 
@@ -135,7 +144,7 @@ void profile_routing_paths(){
 	for (int pb_ind = 0; pb_ind < num_types; pb_ind++){
 		vpr_printf_info("==== %s to %s Routing Delay Profile ====\n", FILL_TYPE->name, type_descriptors[pb_ind].name);
 		vpr_printf_info("\tdist \t#sinks \tmin \t\tmax \t\tmean \t\t(max-min)/mean*100 \tstandard deviation\n");
-		for (int idist = 1; idist <= MAX_DISTANCE; idist += INCREMENT){
+		for (int idist = 1; idist <= MAX_DISTANCE; idist++){
 			vector<Route_Costs> route_costs;
 
 			for (int source_ind : analyze_sources){
@@ -308,6 +317,80 @@ static void get_sinks_at_distance(int source_ind, int distance, int pb_ind, vect
 				break;
 			}
 		}
+	}
+}
+
+
+void compute_heatmap(){
+
+	int req_array_size = HEATMAP_DISTANCE * 2 + 1;
+
+	/* create a 2d array where each entry holds a vector of Route_Costs corresponding to the cost of that
+	   relative coordinate */
+	vector<Route_Costs> dummy1;
+	vector<vector<Route_Costs>> dummy2(req_array_size, dummy1);
+	t_comprehensive_routing_profile routing_profile(req_array_size, dummy2);
+
+	/* get list of possible sources */
+	vector<int> lb_sources;
+	get_sources_of_pb_type(FILL_TYPE->index, lb_sources);
+	/* get a subset of possible sources */
+	vector<int> analyze_sources;
+	get_random_nodes(HEATMAP_SOURCES, lb_sources, analyze_sources);
+
+	for (int source_ind : analyze_sources){
+		int from_x = rr_node[source_ind].get_xlow();
+		int from_y = rr_node[source_ind].get_ylow();
+
+		for (int idist = 1; idist <= HEATMAP_DISTANCE; idist++){
+			/* get a list of sinks to analyze */
+			vector<int> possible_sinks;
+			get_sinks_at_distance(source_ind, idist, FILL_TYPE->index, possible_sinks);	//TODO: change FILL_TYPE; iterate through all PBs instead
+			
+			int num_sinks_to_analyze = (int)possible_sinks.size();
+			num_sinks_to_analyze = min( num_sinks_to_analyze, MAX_SINKS );
+			if (num_sinks_to_analyze == 0){
+				continue;
+			}
+
+			vector<int> analyze_sinks;
+			get_random_nodes(num_sinks_to_analyze, possible_sinks, analyze_sinks);
+		
+			for (int sink_ind : analyze_sinks){
+				int to_x = rr_node[sink_ind].get_xlow();
+				int to_y = rr_node[sink_ind].get_ylow();
+				int del_x = to_x - from_x;
+				int del_y = to_y - from_y;
+
+				Route_Costs cost = route_nodes(source_ind, sink_ind);
+				routing_profile[del_x + HEATMAP_DISTANCE][del_y + HEATMAP_DISTANCE].push_back( cost );
+			}
+		}
+	}
+
+	print_heatmap(req_array_size, routing_profile);
+}
+
+
+static void print_heatmap(int array_size, t_comprehensive_routing_profile &routing_profile){
+
+	for (int iy = 0; iy < array_size; iy++){
+		for (int ix = 0; ix < array_size; ix++){
+			if (routing_profile[ix][iy].empty()){
+				vpr_printf_info("%.2e\t", 0.0);
+				continue;
+			}
+
+			/* get mean element */
+			float delay = 0;
+			int num_elements = (int)routing_profile[ix][iy].size();
+			for (Route_Costs cost : routing_profile[ix][iy]){
+				delay += cost.timing_cost;
+			}
+			delay /= num_elements;
+			vpr_printf_info("%.2e\t", delay);
+		}
+		vpr_printf_info("\n");
 	}
 }
 
