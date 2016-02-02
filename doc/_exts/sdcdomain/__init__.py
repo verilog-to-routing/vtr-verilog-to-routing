@@ -1,0 +1,1 @@
+from sdcdomain import setup

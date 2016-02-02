@@ -46,6 +46,11 @@ ODIN_II/SRC/verilog_flex.c
 *.a
 
 #
+#Python
+#
+*.pyc
+
+#
 #Vim
 #
 [._]*.s[a-w][a-z]

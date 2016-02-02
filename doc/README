@@ -1,0 +1,43 @@
+How to build documentation
+--------------------------
+
+The VTR documentaion is generated using sphinx, a python based documenation generator.
+
+The documentation itself is written in re-structured text (files ending in .rst), which
+is a lightwieght mark-up language for text documents.
+
+Currently VTR's documenation is automatically built by www.readthedocs.org and is served at:
+
+    https://vtr.readthedocs.org/en/latest/
+
+To build the documentation locally you need sphinx installed.
+
+For ubuntu/debian based systems:
+
+    apt-get install python-sphinx
+
+To properly build citations and the bibliography, we use the sphinxcontrib-bibtex extension:
+
+    pip install sphinxcontrib-bibtex
+
+Documentation Layout
+-------------------
+
+The root of the VTR documentation is the index.rst file in the current directory.
+
+This file references other files using the toctree directive.
+
+Key sub-systems of VTR have their documentation located in a sub-directy (e.g. vpr, arch), with thier own index.rst.
+
+Useful links:
+-------------
+
+Re-Structured Text Syntax: 
+    http://www.sphinx-doc.org/en/stable/rest.html
+
+Paragraph-level markup: 
+    http://www.sphinx-doc.org/en/stable/markup/para.html
+
+Inline markup:
+    http://www.sphinx-doc.org/en/stable/markup/inline.html
+
