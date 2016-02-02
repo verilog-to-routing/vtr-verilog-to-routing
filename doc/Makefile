@@ -8,7 +8,7 @@ PAPER         =
 BUILDDIR      = _build
 
 SVG2PDF 	  = convert
-SVG2PDF_FLAGS = -density 300
+SVG2PDF_FLAGS = 
 
 #Build a list of PDF files derived from .svg files
 SRC_SVGs:= $(shell find -name "*.svg" -not -path "./_*")
