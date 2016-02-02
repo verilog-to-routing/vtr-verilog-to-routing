@@ -60,7 +60,6 @@ help:
 
 clean:
 	rm -rf $(BUILDDIR)/*
-	rm -rf $(GEN_PDFs)
 
 #Explicit Rule to build PDFs
 images_gen_pdf: $(GEN_PDFs)
