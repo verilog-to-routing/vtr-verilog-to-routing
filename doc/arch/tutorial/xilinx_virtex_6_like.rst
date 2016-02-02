@@ -10,7 +10,7 @@ In this example, we describe the Xilinx Virtex-6 FPGA logic slice, shown in :num
 
 .. figure:: v6_logic_slice.*
     
-    Commercial FPGA logic block slice (taken from Virtex-6 description [1])
+    Commercial FPGA logic block slice (Virtex-6 :cite:`xilinx_virtex_6_clb`)
 
 .. code-block:: xml
 
