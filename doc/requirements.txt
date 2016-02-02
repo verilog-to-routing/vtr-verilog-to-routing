@@ -1,0 +1,4 @@
+#Python requirements file for building documentation
+#
+#
+sphinxcontrib-bibtex
