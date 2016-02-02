@@ -4,13 +4,13 @@ Virtex 6 like Logic Slice Example
 ---------------------------------
 
 In order to demonstrate the expressiveness of the architecture description language, we use it to describe a section of a commercial logic block.
-In this example, we describe the Xilinx Virtex-6 FPGA logic slice, shown in :numref:`fig_v6_slice`, as follows:
+In this example, we describe the Xilinx Virtex-6 FPGA logic slice :cite:`xilinx_virtex_6_clb`, shown in :numref:`fig_v6_slice`, as follows:
 
 .. _fig_v6_slice:
 
 .. figure:: v6_logic_slice.*
     
-    Commercial FPGA logic block slice (Virtex-6 :cite:`xilinx_virtex_6_clb`)
+    Commercial FPGA logic block slice (Xilinx Virtex-6)
 
 .. code-block:: xml
 
