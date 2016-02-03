@@ -3110,11 +3110,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix)
 {
-    int i, q;
+    int i;
     long sc_spot;
-    ast_node_t *assignee;  
-    ast_node_t *value; 
-    char *word_to_set_latch_initial_value;
     for(i = 0; i < initial_node->num_children; i++)
     {
     	/*check to see if, for each member of the initial block, if the assignment to a given variable is a number and not
@@ -3122,9 +3119,6 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
         if((initial_node->children[i]->type == BLOCKING_STATEMENT || initial_node->children[i]->type == NON_BLOCKING_STATEMENT) 
         	&& initial_node->children[i]->children[1]->type == NUMBERS)
         {
-            //Assignee
-            assignee = initial_node->children[i]->children[0];
-            
             //Value
             int number = initial_node->children[i]->children[1]->types.number.value;
 
