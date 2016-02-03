@@ -8,11 +8,13 @@ The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to pro
 to generate FPGA speed and area results.
 VTR also includes a set of benchmark designs known to work with the design flow.
 
-From more information please see the [wiki](https://github.com/verilog-to-routing/vtr-verilog-to-routing/wiki).
-
 Download
 ========
-For most users of VTR (rather than active developers) you should download the latest packaged (and regression tested) version of VTR from [here](https://github.com/verilog-to-routing/vtr-verilog-to-routing/wiki).
+For most users of VTR (rather than active developers) you should download the latest packaged (and regression tested) version of VTR from [here](https://vtr.readthedocs.org/en/latest/vtr/get_vtr/).
+
+Documentation
+=============
+VTR's full documentation is available [here](https://vtr.readthedocs.org).
 
 Mailing Lists
 =============
