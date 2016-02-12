@@ -28,7 +28,7 @@ class Connection_based_routing_resources {
 	// order does not matter
 	std::vector<t_rt_node*> reached_rt_sinks;	
 public:
-	Connection_based_routing_resources();
+	Connection_based_routing_resources(bool enable_forced_reroute);
 	// adding to the resources when they are reached during pruning
 	// mark rr sink node as something that still needs to be reached
 	void toreach_rr_sink(int rr_sink_node) {remaining_targets.push_back(rr_sink_node);}
@@ -77,6 +77,8 @@ private:
 	float connection_criticality_tolerance;
 	// what percentage of a connection's lower bound delay is considered close enough to optimal (> 1)
 	float connection_delay_optimality_tolerance;
+	// whether targeted reroute should be performed at all
+    bool perform_forced_reroute;
 
 public:
 	// after timing analysis of 1st iteration, can set a lower bound on connection delay
@@ -104,6 +106,7 @@ public:
 
 	// get whether the connection to rr_sink_node of current_inet should be forcibly rerouted (can either assign or just read)
 	bool should_force_reroute_connection(int rr_sink_node) const {
+	    if (!perform_forced_reroute) return false;
 		auto force_flag = forcible_reroute_connection_flag[current_inet].find(rr_sink_node);
 		return force_flag->second;
 	}

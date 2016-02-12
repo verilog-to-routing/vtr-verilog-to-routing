@@ -127,7 +127,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
-	CBRR connections_inf {};
+	CBRR connections_inf {router_opts.enable_forced_reroute};
 	EXPENSIVE_ASSERT(connections_inf.sanity_check_lookup());
 
 
@@ -280,7 +280,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				bool stable_routing_configuration = true;
 				// only need to forcibly reroute if critical path grew significantly
 				if (connections_inf.critical_path_delay_grew_significantly(critical_path_delay))
-					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, slacks, net_delay);
+				    // if any connection was forcibly rerouted, then it is not a stable configuration
+					stable_routing_configuration = !connections_inf.forcibly_reroute_connections(router_opts.max_criticality, slacks, net_delay);
 				// not stable if any connection needs to be forcibly rerouted
 				if (stable_routing_configuration)
 					connections_inf.set_stable_critical_path_delay(critical_path_delay);
@@ -1351,11 +1352,12 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 
 
 // incremental rerouting resources class definitions
-Connection_based_routing_resources::Connection_based_routing_resources() : 
+Connection_based_routing_resources::Connection_based_routing_resources(bool enable_forced_reroute) : 
 	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
 	critical_path_growth_tolerance {1.001},
 	connection_criticality_tolerance {0.9},
-	connection_delay_optimality_tolerance {1.1}	 {	
+	connection_delay_optimality_tolerance {1.1},
+	perform_forced_reroute {enable_forced_reroute} {	
 
 	/* Initialize the persistent data structures for incremental rerouting
 	 * this includes rr_sink_node_to_pin, which provides pin lookup given a
@@ -1481,6 +1483,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			1. the connection is critical enough
 			2. the connection is suboptimal, in comparison to lower_bound_connection_delay  
 	*/
+	if (!this->perform_forced_reroute) return false;
 
 	bool any_connection_rerouted = false;	// true if any connection has been marked for rerouting
 
@@ -1529,7 +1532,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 	}
 
 	// non-stable configuration if any connection has to be rerouted, otherwise stable
-	return !any_connection_rerouted;		
+	return any_connection_rerouted;		
 }
 
 void Connection_based_routing_resources::clear_force_reroute_for_connection(int rr_sink_node) {

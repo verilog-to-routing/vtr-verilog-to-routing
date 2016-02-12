@@ -796,6 +796,7 @@ struct s_router_opts {
 	bool congestion_analysis;
 	bool fanout_analysis;
     bool switch_usage_analysis;
+    bool enable_forced_reroute;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
 };

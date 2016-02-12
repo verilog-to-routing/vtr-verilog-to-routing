@@ -205,4 +205,17 @@ void profiling_initialization(unsigned max_fanout) {
 	return;
 }
 
+void report_total_route_time() {
+#ifdef PROFILE
+    // sum up all the time spent on all the different fanouts
+    double total_route_time = 0;
+	for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
+	    total_route_time += time_on_fanout[bin];
+    }
+    vpr_printf_info("Total route time (s): %14.3f\n", total_route_time);
+#endif
+    return;
+}
+
+
 }	// end namespace profiling

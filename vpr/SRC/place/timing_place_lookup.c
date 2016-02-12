@@ -616,7 +616,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	int itry = 1;
 	float pres_fac = 0.0; /* ignore congestion */
 
-	CBRR dummy_connections_inf;
+	CBRR dummy_connections_inf {false}; // don't enable forced reroute for dummy
 	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
