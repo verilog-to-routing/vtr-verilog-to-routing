@@ -2,7 +2,7 @@
 # Makefile to build CAD tools in Verilog-to-Routing (VTR) Framework #
 #####################################################################
 
-SUBDIRS = ODIN_II vpr abc_with_bb_support libarchfpga liblog ace2 libsdc_parse
+SUBDIRS = abc_with_bb_support ODIN_II vpr libarchfpga liblog ace2 libsdc_parse
 
 all: notifications subdirs
 

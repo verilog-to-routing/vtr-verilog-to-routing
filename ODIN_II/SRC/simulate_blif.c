@@ -53,6 +53,11 @@ void simulate_netlist(netlist_t *netlist)
 	if (!in_out)
 		error_message(SIMULATION_ERROR, 0, -1, "Could not open input vector file.");
 
+	// Open the activity output file.
+	FILE *act_out  = fopen( OUTPUT_ACTIVITY_FILE_NAME, "w");
+	if (!act_out)
+		error_message(SIMULATION_ERROR, 0, -1, "Could not open activity output file.");
+
 	// Open the modelsim vector file.
 	FILE *modelsim_out = fopen("test.do", "w");
 	if (!modelsim_out)
@@ -231,6 +236,10 @@ void simulate_netlist(netlist_t *netlist)
 
 		free_stages(stages);
 	}
+
+	// Perform ACE activity calculations
+	calculate_activity ( netlist, num_vectors, act_out );
+	fclose(act_out);
 
 	free_lines(output_lines);
 	free_lines(input_lines);
@@ -778,6 +787,33 @@ void compute_and_store_value(nnode_t *node, int cycle)
 		for (i = 0; i < node->num_output_pins; i++)
 			if(get_pin_value(node->output_pins[i],cycle-1) != get_pin_value(node->output_pins[i],cycle))
 				node->output_pins[i]->coverage++;
+	}
+
+
+	// Count number of ones and toggles for activity estimation
+	// This could probably lead to the removal of the coverage code above.
+	{
+	  int i, pin_value, last_pin_value;
+	  for (i = 0; i < node->num_output_pins; i++) {
+	    if ( node->output_pins[i]->ace_info != NULL ) {
+
+	      pin_value = get_pin_value(node->output_pins[i],cycle);
+	      //last_pin_value = get_pin_value(node->output_pins[i],cycle-1);
+              // Pin values for cycle-1 were not correct on Wave boundaries. Needed to store it in ace object.
+	      last_pin_value = node->output_pins[i]->ace_info->value;
+
+	      // # of ones
+	      if ( pin_value == 1 ) {
+ 		node->output_pins[i]->ace_info->num_ones += pin_value;
+ 	      }
+
+	      // # of toggles
+	      if ( ( pin_value != last_pin_value ) && (last_pin_value != -1 ) ) {
+		node->output_pins[i]->ace_info->num_toggles++;
+	      }
+	      node->output_pins[i]->ace_info->value = pin_value;
+	    }
+	   }
 	}
 }
 

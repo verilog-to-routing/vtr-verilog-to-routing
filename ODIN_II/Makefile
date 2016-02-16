@@ -12,11 +12,15 @@ EXEO = odin_II.exe
 
 DEBUG_FLAGS = -g -DYYERROR_VERBOSE
 
+ABC_DIR = ../abc_with_bb_support
+ABC_AR  = $(ABC_DIR)/libabc.a
+ABC_INC = -I $(ABC_DIR)/src/bdd/cudd -I $(ABC_DIR)/src/bdd/epd -I $(ABC_DIR)/src/bdd/mtr -I $(ABC_DIR)/src/misc/st
+
 #OPT_FLAGS = -O2 
 # Use this value of OPT_FLAGS to simulate in parallel (requires GCC >= 4.2)
 #OPT_FLAGS = -O2 -fopenmp 
 
-INC_FLAGS =  -I../libarchfpga/include -I../libcommon_c++/SRC/TIO_InputOutputHandlers
+INC_FLAGS =  -I../libarchfpga/include -I../libcommon_c++/SRC/TIO_InputOutputHandlers $(ABC_INC)
 LIB = -L../libarchfpga -larchfpga -lm -ldl
 C_DIRECTIVE = -DVPR6 -DUSING_BISON
 
@@ -84,7 +88,7 @@ DEP = $(OBJ:.o=.d)
 all: CTAGS $(EXEO)
 
 $(EXEO): $(OBJ)
-	$(CC) $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB)
+	$(CC) $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB) $(ABC_AR)
 
 CTAGS :
 	@ cd SRC && ctags *.[ch]

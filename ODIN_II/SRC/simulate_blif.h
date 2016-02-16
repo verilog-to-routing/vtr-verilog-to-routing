@@ -55,6 +55,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  */
 #define INPUT_VECTOR_FILE_NAME "input_vectors"
 #define OUTPUT_VECTOR_FILE_NAME "output_vectors"
+#define OUTPUT_ACTIVITY_FILE_NAME "output_activity"
 
 #define SINGLE_PORT_MEMORY_NAME "single_port_ram"
 #define DUAL_PORT_MEMORY_NAME "dual_port_ram"

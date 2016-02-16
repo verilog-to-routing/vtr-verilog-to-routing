@@ -26,6 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "types.h"
 
 void alloc_and_init_ace_structs (netlist_t * net);
-ace_obj_info_t* alloc_and_init_ace_info_object ();
+void calculate_activity ( netlist_t *net, int max_cycles, FILE *act_out );
 
 #endif
