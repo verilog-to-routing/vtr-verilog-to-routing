@@ -67,8 +67,7 @@ class TimingTags {
         ///Adds a TimingTag to the current set provided it has a valid clock domain
         ///\param tag_pool The pool memory allocator used to allocate the tag
         ///\param src_tag The source tag who is inserted. Note that the src_tag is copied when inserted (the original is unchanged)
-        template<class TagPoolType>
-        void add_tag(TagPoolType& tag_pool, const TimingTag& src_tag);
+        void add_tag(const TimingTag& src_tag);
 
         /*
          * Setup operations
@@ -78,16 +77,14 @@ class TimingTags {
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is larger
-        template<class TagPoolType>
-        void max_arr(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
+        void max_arr(const Time& new_time, const TimingTag& base_tag);
 
         ///Updates the required time of this set of tags to be the minimum.
         ///\param tag_pool The pool memory allocator to use
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is smaller
-        template<class TagPoolType>
-        void min_req(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
+        void min_req(const Time& new_time, const TimingTag& base_tag);
 
         /*
          * Hold operations
@@ -97,16 +94,14 @@ class TimingTags {
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is smaller
-        template<class TagPoolType>
-        void min_arr(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
+        void min_arr(const Time& new_time, const TimingTag& base_tag);
 
         ///Updates the required time of this set of tags to be the maximum.
         ///\param tag_pool The pool memory allocator to use
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is larger
-        template<class TagPoolType>
-        void max_req(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag);
+        void max_req(const Time& new_time, const TimingTag& base_tag);
 
         ///Clears the tags in the current set
         ///\warning Note this does not deallocate the tags. Tag deallocation is the responsibility of the associated pool allocator

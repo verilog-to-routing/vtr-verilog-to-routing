@@ -4,8 +4,7 @@
  */
 
 //Modifiers
-template<class TagPoolType>
-inline void TimingTags::add_tag(TagPoolType& tag_pool, const TimingTag& tag) {
+inline void TimingTags::add_tag(const TimingTag& tag) {
     ASSERT_MSG(tag.next() == nullptr, "Attempted to add new timing tag which is already part of a Linked List");
 
     //Don't add invalid clock domains
@@ -26,7 +25,7 @@ inline void TimingTags::add_tag(TagPoolType& tag_pool, const TimingTag& tag) {
 
         //Allocate form a central storage pool
         VERIFY(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
-        TimingTag* new_tag = new(tag_pool.malloc()) TimingTag(tag);
+        TimingTag* new_tag = new TimingTag(tag);
 
         //Insert one-after the last head in O(1) time
         //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
@@ -40,8 +39,7 @@ inline void TimingTags::add_tag(TagPoolType& tag_pool, const TimingTag& tag) {
     num_tags_++;
 }
 
-template<class TagPoolType>
-inline void TimingTags::max_arr(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -52,8 +50,7 @@ inline void TimingTags::max_arr(TagPoolType& tag_pool, const Time& new_time, con
     }
 }
 
-template<class TagPoolType>
-inline void TimingTags::min_req(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::min_req(const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -64,8 +61,7 @@ inline void TimingTags::min_req(TagPoolType& tag_pool, const Time& new_time, con
     }
 }
 
-template<class TagPoolType>
-inline void TimingTags::min_arr(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::min_arr(const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
@@ -76,8 +72,7 @@ inline void TimingTags::min_arr(TagPoolType& tag_pool, const Time& new_time, con
     }
 }
 
-template<class TagPoolType>
-inline void TimingTags::max_req(TagPoolType& tag_pool, const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag) {
     TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain

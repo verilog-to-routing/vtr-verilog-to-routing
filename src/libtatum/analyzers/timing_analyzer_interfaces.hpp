@@ -1,4 +1,9 @@
 #pragma once
+#include <memory>
+
+#include "TimingTags.hpp"
+#include "timing_graph_fwd.hpp"
+
 /** \file
  * Timing Analysis: Overview
  * ===========================
@@ -185,30 +190,50 @@
  * CCPR does not directly remove this effect, but instead calculates a 'credit' which is
  * added back to the final path to counter-act this extra pessimism.
  */
-#include <memory>
-#include <vector>
 
-#include "timing_graph_fwd.hpp"
-#include "timing_constraints_fwd.hpp"
-#include "analysis_types.hpp"
+ /*
+  * IMPLEMENTATION NOTES
+  * --------------------
+  *
+  * All the timing analyzers defined here are pure abstract classes.
+  * They should all have pure virtual functions and store NO data members.
+  *
+  * We use multiple (virtual) inheritance to define the SetupHoldTimingAnalyzer
+  * class, allowing it to be cleanly substituted for any SetupTimingAnalyzer
+  * or HoldTimingAnalyzer.
+  *
+  * Note also that we are using the NVF (Non-Virtual Interface) pattern, so
+  * any public member functions should delegate their work to an appropriate
+  * protected virtual member function.
+  */
 
 /**
  * TimingAnalyzer represents an abstract interface for all timing analyzers,
- * which can be updated (update_timing()) and reset (reset_timing()).
+ * which can be:
+ *   - updated (update_timing())
+ *   - reset (reset_timing()).
+ *
+ * This is the most abstract interface provided (it does not allow access
+ * to any calculated data).  As a result this interface is suitable for
+ * code that needs to update timing analysis, but does not _require_ the
+ * analysis results itself.
+ *
+ * If you need the analysis results you should be using one of the dervied
+ * classes (e.g. SetupTimingAnalyzer).
  */
 class TimingAnalyzer {
     public:
         virtual ~TimingAnalyzer() {};
 
+        ///Perform timing analysis to update timing information (i.e. arrival & required times)
         void update_timing() { update_timing_impl(); }
 
+        ///Clear any old timing values updated
         void reset_timing() { reset_timing_impl(); }
 
     protected:
-        ///Perform timing analysis to update timing information (i.e. arrival & required times)
         virtual void update_timing_impl() = 0;
 
-        ///Clear any old timing values updated
         virtual void reset_timing_impl() = 0;
 };
 
@@ -218,10 +243,12 @@ class TimingAnalyzer {
  */
 class SetupTimingAnalyzer : TimingAnalyzer {
     public:
-        std::shared_ptr<TimingTags> get_setup_tags(NodeId node_id) { return get_setup_tags_impl(node_id); }
+        std::shared_ptr<TimingTags> get_setup_data_tags(NodeId node_id) { return get_setup_data_tags_impl(node_id); }
+        std::shared_ptr<TimingTags> get_setup_clock_tags(NodeId node_id) { return get_setup_clock_tags_impl(node_id); }
 
     protected:
-        virtual std::shared_ptr<TimingTags> get_setup_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<TimingTags> get_setup_data_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<TimingTags> get_setup_clock_tags_impl(NodeId node_id) = 0;
 
 };
 
@@ -231,10 +258,12 @@ class SetupTimingAnalyzer : TimingAnalyzer {
  */
 class HoldTimingAnalyzer : TimingAnalyzer {
     public:
-        std::shared_ptr<TimingTags> get_hold_tags(NodeId node_id) { return get_hold_tags_impl(node_id); }
+        std::shared_ptr<TimingTags> get_hold_data_tags(NodeId node_id) { return get_hold_data_tags_impl(node_id); }
+        std::shared_ptr<TimingTags> get_hold_clock_tags(NodeId node_id) { return get_hold_clock_tags_impl(node_id); }
 
     protected:
-        virtual std::shared_ptr<TimingTags> get_hold_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<TimingTags> get_hold_data_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<TimingTags> get_hold_clock_tags_impl(NodeId node_id) = 0;
 };
 
 /**
@@ -246,235 +275,12 @@ class HoldTimingAnalyzer : TimingAnalyzer {
  *
  * It implements both the SetupTimingAnalyzer and HoldTimingAnalyzer interfaces.
  */
-/*
- * Note that we use virtual inheritance to avoid duplicating the common base class
- */
 class SetupHoldTimingAnalyzer : public virtual SetupTimingAnalyzer, public virtual HoldTimingAnalyzer {
-    //Empty
+    //Empty (all behaviour inherited)
+    //
+    // Note that we use virtual inheritance to avoid duplicating the common base class
 };
 
 
-template<class GraphWalker>
-class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
-    public:
-        SetupFullTimingAnalyzer(std::shared_ptr<TimingGraph> timing_graph)
-            : SetupTimingAnalyzer()
-            , timing_graph_(timing_graph) {}
-
-    protected:
-        virtual void update_timing_impl() override {
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, setup_visitor_);            
-            graph_walker_.do_arrival_traversal(timing_graph_, setup_visitor_);            
-
-            graph_walker_.do_required_pre_traversal(timing_graph_, setup_visitor_);            
-            graph_walker_.do_required_traversal(timing_graph_, setup_visitor_);            
-        }
-
-        virtual void reset_timing_impl() override {
-            setup_visitor_.clear();
-        }
-
-        std::shared_ptr<TimingTags> get_setup_tags_impl(NodeId node_id) {
-            return setup_visitor_.get_tags(node_id);
-        }
-
-    private:
-        std::shared_ptr<TimingGraph> timing_graph_;
-        SetupAnalysisVisitor setup_visitor_;
-        GraphWalker<SetupAnalysisVisitor> graph_walker_;
-};
-
-template<class GraphWalker>
-class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
-    public:
-        HoldFullTimingAnalyzer(std::shared_ptr<TimingGraph> timing_graph)
-            : HoldTimingAnalyzer()
-            , timing_graph_(timing_graph) {}
-
-    protected:
-        virtual void update_timing_impl() override {
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, hold_visitor_);            
-            graph_walker_.do_arrival_traversal(timing_graph_, hold_visitor_);            
-
-            graph_walker_.do_required_pre_traversal(timing_graph_, hold_visitor_);            
-            graph_walker_.do_required_traversal(timing_graph_, hold_visitor_);            
-        }
-
-        virtual void reset_timing_impl() override {
-            hold_visitor_.clear();
-        }
-
-        std::shared_ptr<TimingTags> get_hold_tags_impl(NodeId node_id) {
-            return hold_visitor_.get_tags(node_id);
-        }
-
-    private:
-        std::shared_ptr<TimingGraph> timing_graph_;
-        HoldAnalysisVisitor hold_visitor_;
-        GraphWalker<HoldAnalaysisVisitor> graph_walker_;
-};
-
-template<class GraphWalker>
-class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
-    public:
-        SetupHoldFullTimingAnalyzer(std::shared_ptr<TimingGraph> timing_graph)
-            : SetupHoldTimingAnalyzer()
-            , timing_graph_(timing_graph) {}
-
-    protected:
-        virtual void update_timing_impl() override {
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, setup_hold_visitor_);            
-            graph_walker_.do_arrival_traversal(timing_graph_, setup_hold_visitor_);            
-
-            graph_walker_.do_required_pre_traversal(timing_graph_, setup_hold_visitor_);            
-            graph_walker_.do_required_traversal(timing_graph_, setup_hold_visitor_);            
-        }
-
-        virtual void reset_timing_impl() override {
-            setup_hold_visitor_.clear();
-        }
-
-        std::shared_ptr<TimingTags> get_setup_tags(NodeId node_id) {
-            return setup_hold_visitor_.get_setup_tags(node_id);
-        }
-
-        std::shared_ptr<TimingTags> get_hold_tags(NodeId node_id) {
-            return setup_hold_visitor_.get_hold_tags(node_id);
-        }
-
-    private:
-        std::shared_ptr<TimingGraph> timing_graph_;
-        SetupHoldAnalysisVisitor setup_hold_visitor_;
-        GraphWalker<SetupHoldAnalysisVisistor> graph_walker_;
-};
 
 
-class GraphVisitor {
-    public:
-        void arrival_pre_traverse_node(TimingGraph& tg, NodeId node_id);
-        void arrival_traverse_node(TimingGraph& tg, NodeId node_id);
-
-        void required_pre_traverse_node(TimingGraph& tg, NodeId node_id);
-        void required_traverse_node(TimingGraph& tg, NodeId node_id);
-
-        void clear();
-};
-
-class SetupAnalysisVisitor {
-    public:
-        void arrival_pre_traverse_node(TimingGraph& tg, NodeId node_id);
-        void arrival_traverse_node(TimingGraph& tg, NodeId node_id);
-
-        void required_pre_traverse_node(TimingGraph& tg, NodeId node_id);
-        void required_traverse_node(TimingGraph& tg, NodeId node_id);
-
-        std::shared_ptr<TimingTags> get_setup_tags(NodeId node_id);
-
-    private:
-        std::vector<std::shared_ptr<TimingTags>> setup_tags_;
-}
-
-class HoldAnalysisVisitor {
-    public:
-        void arrival_pre_traverse_node(TimingGraph& tg, NodeId node_id);
-        void arrival_traverse_node(TimingGraph& tg, NodeId node_id);
-
-        void required_pre_traverse_node(TimingGraph& tg, NodeId node_id);
-        void required_traverse_node(TimingGraph& tg, NodeId node_id);
-
-        std::shared_ptr<TimingTags> get_hold_tags(NodeId node_id);
-
-    private:
-        std::vector<std::shared_ptr<TimingTags> hold_tags_;
-}
-
-class SetupHoldAnalysisVisitor {
-    public:
-        void arrival_pre_traverse_node(TimingGraph& tg, NodeId node_id) { setup_visitor_.arrival_pre_traverse_node(tg, node_id); hold_visitor.arrival_pre_traverse_node(tg, node_id); }
-        void arrival_traverse_node(TimingGraph& tg, NodeId node_id) { setup_visitor_.arrival_traverse_node(tg, node_id); hold_visitor.arrival_traverse_node(tg, node_id); }
-
-        void required_pre_traverse_node(TimingGraph& tg, NodeId node_id) { setup_visitor_.required_pre_traverse_node(tg, node_id); hold_visitor.required_pre_traverse_node(tg, node_id); }
-        void required_traverse_node(TimingGraph& tg, NodeId node_id) { setup_visitor_.required_traverse_node(tg, node_id); hold_visitor.required_traverse_node(tg, node_id); }
-
-        std::shared_ptr<TimingTags> get_setup_tags(NodeId node_id) { return setup_visitor_.get_setup_tags(node_id); }
-        std::shared_ptr<TimingTags> get_hold_tags(NodeId node_id) { return hold_visitor_.get_hold_tags(node_id); }
-
-        void clear() { setup_visitor_.clear(); hold_visitor_.clear(); }
-
-    private:
-        HoldAnalysisVisitor hold_visitor_;
-        SetupAnalysisVisitor setup_visitor_;
-}
-
-template<class V>
-class GraphWalker {
-    public:
-        void do_arrival_pre_traversal(TimingGraph& tg, V& visitor) {}
-        void do_required_pre_traversal(TimingGraph& tg, V& visitor) {}
-        void do_arrival_traversal(TimingGraph& tg, V& visitor) {}
-        void do_required_traversal(TimingGraph& tg, V& visitor) {}
-};
-
-template<class V>
-class SerialWalker : public GraphWalker<V> {
-    public:
-        void do_arrival_pre_traversal(TimingGraph& tg, V& visitor) override {
-            for(NodeId node_id : tg.primary_inputs()) {
-                visitor.arrival_pre_traverse_node(tg, node_id);
-            }
-        }
-
-        void do_required_pre_traversal(TimingGraph& tg, V& visitor) override {
-            for(NodeId node_id : tg.primary_outputs()) {
-                visitor.required_pre_traverse_node(tg, node_id);
-            }
-        }
-
-        void do_arrival_traversal(TimingGraph& tg, V& visitor) override {
-            for(LevelId level_id = 1; level_id < tg.num_levels(); level_id++) {
-                for(NodeId node_id : tg.level(level_id)) {
-                    visitor.arrival_traverse_node(tg, node_id);
-                }
-            }
-        }
-
-        void do_required_traversal(TimingGraph& tg, V& visitor) override {
-            for(LevelId level_id = tg.num_levels() - 2; level_id >= 0; level_id--) {
-                for(NodeId node_id : tg.level(level_id)) {
-                    visitor.required_traverse_node(tg, node_id);
-                }
-            }
-        }
-};
-
-template<class V>
-class ParallelLevelizedCilkWalker : public GraphWalker<V> {
-    public:
-        void do_arrival_pre_traversal(TimingGraph& tg, V& visitor) override {
-            cilk_for(NodeId node_id : tg.primary_inputs()) {
-                visitor.arrival_pre_traverse_node(tg, node_id);
-            }
-        }
-
-        void do_required_pre_traversal(TimingGraph& tg, V& visitor) override {
-            cilk_for(NodeId node_id : tg.primary_outputs()) {
-                visitor.required_pre_traverse_node(tg, node_id);
-            }
-        }
-
-        void do_arrival_traversal(TimingGraph& tg, V& visitor) override {
-            for(LevelId level_id = 1; level_id < tg.num_levels(); level_id++) {
-                cilk_for(NodeId node_id : tg.level(level_id)) {
-                    visitor.visit(tg, node_id);
-                }
-            }
-        }
-
-        void do_required_traversal(TimingGraph& tg, V& visitor) override {
-            for(LevelId level_id = tg.num_levels() - 2; level_id >= 0; level_id--) {
-                cilk_for(NodeId node_id : tg.level(level_id)) {
-                    visitor.visit(tg, node_id);
-                }
-            }
-        }
-}

@@ -20,6 +20,12 @@
  *          composition.
  */
 class BaseAnalysisMode {
+    public:
+        void do_initialize_traversal();
+        void do_pre_traverse_node();
+        void do_forward_traverse_node();
+        void do_backward_traverse_node();
+
     protected:
         ///Performs any initial setup for the traversal.
         ///\param tg The timing graph to be analyzed
@@ -34,15 +40,6 @@ class BaseAnalysisMode {
         template<class TagPoolType>
         void pre_traverse_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {}
 
-        ///Operations performed whenever an edge is traversed in the forward direction
-        ///\param tag_pool The memory pool used to allocate TimingTag objects
-        ///\param tg The timing graph to be analyzed
-        ///\param dc The delay calculator to use
-        ///\param node_id The node to operate on
-        ///\param edge_id The edge to operate on
-        template<class TagPoolType, class DelayCalc>
-        void forward_traverse_edge(TagPoolType& tag_pool, const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {}
-
         ///Operations performed once a nodes incoming edges (on a forward traversal) have been traversed
         ///\param tag_pool The memory pool used to allocate TimingTag objects
         ///\param tg The timing graph to be analyzed
@@ -50,14 +47,6 @@ class BaseAnalysisMode {
         ///\param node_id The node to operate on
         template<class TagPoolType>
         void forward_traverse_finalize_node(TagPoolType& tag_pool, const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {}
-
-        ///Operations performed whenever an edge is traversed in the backward direction
-        ///\param tg The timing graph to be analyzed
-        ///\param dc The delay calculator to use
-        ///\param node_id The node to operate on
-        ///\param edge_id The edge to operate on
-        template<class DelayCalc>
-        void backward_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {}
 
         ///Operations performed once a nodes outgoing edges (on a backward traversal) have been traversed
         ///\param tag_pool The memory pool used to allocate TimingTag objects
