@@ -40,12 +40,12 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
             //std::cout << "LEVEL " << ilevel << std::endl;
             for(NodeId node_id : tg.level(ilevel)) {
                 //std::cout << "Verifying node: " << node_id << " Launch: " << src_domain << " Capture: " << sink_domain << std::endl;
-                const TimingTags& node_data_tags = analyzer->setup_data_tags(node_id);
+                auto node_data_tags = analyzer->get_setup_data_tags(node_id);
                 float vpr_arr_time = expected_arr_req_times.get_arr_time(domain, node_id);
 
                 //Check arrival
-                TimingTagConstIterator data_tag_iter = node_data_tags.find_tag_by_clock_domain(domain);
-                if(data_tag_iter == node_data_tags.end()) {
+                TimingTagConstIterator data_tag_iter = node_data_tags->find_tag_by_clock_domain(domain);
+                if(data_tag_iter == node_data_tags->end()) {
                     //Did not find a matching data tag
 
                     //See if there is an associated clock tag.
@@ -53,9 +53,9 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
                     if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
-                        const TimingTags& node_clock_tags = analyzer->setup_clock_tags(node_id);
-                        TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
-                        if(clock_tag_iter != node_data_tags.end()) {
+                        auto node_clock_tags = analyzer->get_setup_clock_tags(node_id);
+                        TimingTagConstIterator clock_tag_iter = node_clock_tags->find_tag_by_clock_domain(domain);
+                        if(clock_tag_iter != node_data_tags->end()) {
                             error |= verify_arr_tag(clock_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
 
                         } else if(!isnan(vpr_arr_time)) {
@@ -81,19 +81,19 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
         for(int ilevel = tg.num_levels() - 1; ilevel >= 0; ilevel--) {
             for(NodeId node_id : tg.level(ilevel)) {
 
-                const TimingTags& node_data_tags = analyzer->setup_data_tags(node_id);
+                auto node_data_tags = analyzer->get_setup_data_tags(node_id);
                 float vpr_req_time = expected_arr_req_times.get_req_time(domain, node_id);
                 //Check Required time
-                TimingTagConstIterator data_tag_iter = node_data_tags.find_tag_by_clock_domain(domain);
-                if(data_tag_iter == node_data_tags.end()) {
+                TimingTagConstIterator data_tag_iter = node_data_tags->find_tag_by_clock_domain(domain);
+                if(data_tag_iter == node_data_tags->end()) {
                     //See if there is an associated clock tag.
                     //Note that VPR doesn't handle seperate clock tags, but we place
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
                     if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
-                        const TimingTags& node_clock_tags = analyzer->setup_clock_tags(node_id);
-                        TimingTagConstIterator clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
-                        if(clock_tag_iter != node_data_tags.end()) {
+                        auto node_clock_tags = analyzer->get_setup_clock_tags(node_id);
+                        TimingTagConstIterator clock_tag_iter = node_clock_tags->find_tag_by_clock_domain(domain);
+                        if(clock_tag_iter != node_data_tags->end()) {
                             error |= verify_req_tag(clock_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
                         } else if(!isnan(vpr_req_time)) {
                             error = true;

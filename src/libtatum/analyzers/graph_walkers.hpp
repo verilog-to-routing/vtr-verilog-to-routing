@@ -1,4 +1,5 @@
 #pragma once
+#include "cilk_safe.hpp"
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
@@ -80,22 +81,25 @@ template<class V>
 class ParallelLevelizedCilkWalker {
     public:
         void do_arrival_pre_traversal(TimingGraph& tg, const TimingConstraints& tc, V& visitor) {
-            cilk_for(NodeId node_id : tg.primary_inputs()) {
-                visitor.do_arrival_pre_traverse_node(tg, tc, node_id);
+            const auto& pi = tg.primary_inputs();
+            cilk_for(auto iter = pi.begin(); iter != pi.end(); ++iter) {
+                visitor.do_arrival_pre_traverse_node(tg, tc, *iter);
             }
         }
 
         void do_required_pre_traversal(TimingGraph& tg, const TimingConstraints& tc, V& visitor) {
-            cilk_for(NodeId node_id : tg.primary_outputs()) {
-                visitor.do_required_pre_traverse_node(tg, tc, node_id);
+            const auto& po = tg.primary_outputs();
+            cilk_for(auto iter = po.begin(); iter != po.end(); ++iter) {
+                visitor.do_required_pre_traverse_node(tg, tc, *iter);
             }
         }
 
         template<class DelayCalc>
         void do_arrival_traversal(TimingGraph& tg, const DelayCalc& dc, V& visitor) {
             for(LevelId level_id = 1; level_id < tg.num_levels(); level_id++) {
-                cilk_for(NodeId node_id : tg.level(level_id)) {
-                    visitor.do_visit(tg, dc, node_id);
+                const auto& level = tg.level(level_id);
+                cilk_for(auto iter = level.begin(); iter != level.end(); ++iter) {
+                    visitor.do_arrival_traverse_node(tg, dc, *iter);
                 }
             }
         }
@@ -103,9 +107,10 @@ class ParallelLevelizedCilkWalker {
         template<class DelayCalc>
         void do_required_traversal(TimingGraph& tg, const DelayCalc& dc, V& visitor) {
             for(LevelId level_id = tg.num_levels() - 2; level_id >= 0; level_id--) {
-                cilk_for(NodeId node_id : tg.level(level_id)) {
-                    visitor.do_visit(tg, dc, node_id);
+                const auto& level = tg.level(level_id);
+                cilk_for(auto iter = level.begin(); iter != level.end(); ++iter) {
+                    visitor.do_required_traverse_node(tg, dc, *iter);
                 }
             }
         }
-}
+};

@@ -241,14 +241,14 @@ class TimingAnalyzer {
  * SetupTimingAnalyzer represents an abstract interface for all timing analyzers
  * performing setup (i.e. long-path) analysis.
  */
-class SetupTimingAnalyzer : TimingAnalyzer {
+class SetupTimingAnalyzer : public virtual TimingAnalyzer {
     public:
-        std::shared_ptr<TimingTags> get_setup_data_tags(NodeId node_id) { return get_setup_data_tags_impl(node_id); }
-        std::shared_ptr<TimingTags> get_setup_clock_tags(NodeId node_id) { return get_setup_clock_tags_impl(node_id); }
+        std::shared_ptr<const TimingTags> get_setup_data_tags(NodeId node_id) { return get_setup_data_tags_impl(node_id); }
+        std::shared_ptr<const TimingTags> get_setup_clock_tags(NodeId node_id) { return get_setup_clock_tags_impl(node_id); }
 
     protected:
-        virtual std::shared_ptr<TimingTags> get_setup_data_tags_impl(NodeId node_id) = 0;
-        virtual std::shared_ptr<TimingTags> get_setup_clock_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<const TimingTags> get_setup_data_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<const TimingTags> get_setup_clock_tags_impl(NodeId node_id) = 0;
 
 };
 
@@ -256,14 +256,14 @@ class SetupTimingAnalyzer : TimingAnalyzer {
  * HoldTimingAnalyzer represents an abstract interface for all timing analyzers
  * performing hold (i.e. short-path) analysis.
  */
-class HoldTimingAnalyzer : TimingAnalyzer {
+class HoldTimingAnalyzer : public virtual TimingAnalyzer {
     public:
-        std::shared_ptr<TimingTags> get_hold_data_tags(NodeId node_id) { return get_hold_data_tags_impl(node_id); }
-        std::shared_ptr<TimingTags> get_hold_clock_tags(NodeId node_id) { return get_hold_clock_tags_impl(node_id); }
+        std::shared_ptr<const TimingTags> get_hold_data_tags(NodeId node_id) { return get_hold_data_tags_impl(node_id); }
+        std::shared_ptr<const TimingTags> get_hold_clock_tags(NodeId node_id) { return get_hold_clock_tags_impl(node_id); }
 
     protected:
-        virtual std::shared_ptr<TimingTags> get_hold_data_tags_impl(NodeId node_id) = 0;
-        virtual std::shared_ptr<TimingTags> get_hold_clock_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<const TimingTags> get_hold_data_tags_impl(NodeId node_id) = 0;
+        virtual std::shared_ptr<const TimingTags> get_hold_clock_tags_impl(NodeId node_id) = 0;
 };
 
 /**
@@ -275,7 +275,7 @@ class HoldTimingAnalyzer : TimingAnalyzer {
  *
  * It implements both the SetupTimingAnalyzer and HoldTimingAnalyzer interfaces.
  */
-class SetupHoldTimingAnalyzer : public virtual SetupTimingAnalyzer, public virtual HoldTimingAnalyzer {
+class SetupHoldTimingAnalyzer : public SetupTimingAnalyzer, public HoldTimingAnalyzer {
     //Empty (all behaviour inherited)
     //
     // Note that we use virtual inheritance to avoid duplicating the common base class

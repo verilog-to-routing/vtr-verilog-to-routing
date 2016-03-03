@@ -116,9 +116,12 @@
  */
 class SetupAnalysisVisitor {
     public:
-        SetupAnalysisVisitor(size_t num_tags)
-            : setup_data_tags_(num_tags)
-            , setup_clock_tags_(num_tags) {}
+        SetupAnalysisVisitor(size_t num_tags) {
+            for(size_t i = 0; i < num_tags; ++i) {
+                setup_data_tags_.push_back(std::make_shared<TimingTags>());
+                setup_clock_tags_.push_back(std::make_shared<TimingTags>());
+            }
+        }
 
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
@@ -130,7 +133,7 @@ class SetupAnalysisVisitor {
         template<class DelayCalc>
         void do_required_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id);
 
-        void clear() { setup_data_tags_.clear(); setup_clock_tags_.clear(); }
+        void reset();
 
         std::shared_ptr<TimingTags> get_setup_data_tags(const NodeId node_id) { return setup_data_tags_[node_id]; }
         std::shared_ptr<TimingTags> get_setup_clock_tags(const NodeId node_id) { return setup_clock_tags_[node_id]; }
@@ -145,6 +148,18 @@ class SetupAnalysisVisitor {
 
         std::vector<std::shared_ptr<TimingTags>> setup_data_tags_;
         std::vector<std::shared_ptr<TimingTags>> setup_clock_tags_;
+};
+
+void SetupAnalysisVisitor::reset() {
+    size_t num_tags = setup_data_tags_.size();
+
+    setup_data_tags_.clear();
+    setup_clock_tags_.clear();
+
+    for(size_t i = 0; i < num_tags; ++i) {
+        setup_data_tags_.push_back(std::make_shared<TimingTags>());
+        setup_clock_tags_.push_back(std::make_shared<TimingTags>());
+    }
 }
 
 /*
@@ -340,7 +355,7 @@ void SetupAnalysisVisitor::do_required_traverse_node(const TimingGraph& tg, cons
     for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
         EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
-        required_traverse_edge(tg, dc, node_id, edge_id);
+        do_required_traverse_edge(tg, dc, node_id, edge_id);
     }
 }
 

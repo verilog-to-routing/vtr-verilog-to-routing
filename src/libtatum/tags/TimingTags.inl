@@ -24,7 +24,6 @@ inline void TimingTags::add_tag(const TimingTag& tag) {
         //Store it in a linked list from head tags
 
         //Allocate form a central storage pool
-        VERIFY(tag_pool.get_requested_size() == sizeof(TimingTag)); //Make sure the pool is the correct size
         TimingTag* new_tag = new TimingTag(tag);
 
         //Insert one-after the last head in O(1) time
@@ -44,7 +43,7 @@ inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag)
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
-        add_tag(tag_pool, tag);
+        add_tag(tag);
     } else {
         iter->max_arr(new_time, base_tag);
     }
@@ -55,7 +54,7 @@ inline void TimingTags::min_req(const Time& new_time, const TimingTag& base_tag)
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(Time(NAN), new_time, base_tag);
-        add_tag(tag_pool, tag);
+        add_tag(tag);
     } else {
         iter->min_req(new_time, base_tag);
     }
@@ -66,7 +65,7 @@ inline void TimingTags::min_arr(const Time& new_time, const TimingTag& base_tag)
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
-        add_tag(tag_pool, tag);
+        add_tag(tag);
     } else {
         iter->min_arr(new_time, base_tag);
     }
@@ -77,7 +76,7 @@ inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag)
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
-        add_tag(tag_pool, tag);
+        add_tag(tag);
     } else {
         iter->max_req(new_time, base_tag);
     }

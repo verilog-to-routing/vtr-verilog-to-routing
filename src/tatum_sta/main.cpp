@@ -9,27 +9,21 @@
 #include <valgrind/callgrind.h>
 
 #include "assert.hpp"
-#include "sta_util.hpp"
-#include "verify.hpp"
+
+#include "timing_analyzer_interfaces.hpp"
+#include "full_timing_analyzers.hpp"
+#include "graph_walkers.hpp"
 
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-#include "SerialTimingAnalyzer.hpp"
-#include "analysis_types.hpp"
-#include "TimingTag.hpp"
 #include "PreCalcDelayCalculator.hpp"
 #include "ConstantDelayCalculator.hpp"
 
-//Cilk variants
-#include "ParallelLevelizedTimingAnalyzer.hpp"
-//#include "ParallelDynamicCilkTimingAnalyzer.hpp"
-
-
-//Illegal versions used for upper-bound speed-up estimates
-#include "ParallelNoDependancyTimingAnalyzer.hpp"
-
 #include "vpr_timing_graph_common.hpp"
+
+#include "sta_util.hpp"
+#include "verify.hpp"
 
 #define NUM_SERIAL_RUNS 20
 #define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
@@ -67,8 +61,8 @@ int main(int argc, char** argv) {
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
 
     //Raw outputs of parser
-    TimingGraph timing_graph;
-    TimingConstraints timing_constraints;
+    auto timing_graph = std::make_shared<TimingGraph>();
+    auto timing_constraints = std::make_shared<TimingConstraints>();
     VprArrReqTimes orig_expected_arr_req_times;
     std::vector<float> orig_edge_delays;
     std::vector<BlockId> node_logical_blocks;
@@ -80,18 +74,12 @@ int main(int argc, char** argv) {
     std::set<NodeId> const_gen_fanout_nodes;
     std::set<NodeId> clock_gen_fanout_nodes;
 
-    //ParallelLevelizedCilkTimingAnalyzer parallel_analyzer = ParallelLevelizedCilkTimingAnalyzer();
-
-    //ParallelNoDependancyCilkTimingAnalyzer parallel_analyzer = ParallelNoDependancyCilkTimingAnalyzer();
-    //ParallelDynamicCilkTimingAnalyzer parallel_analyzer = ParallelDynamicCilkTimingAnalyzer();
-    //ParallelLevelizedOpenMPTimingAnalyzer parallel_analyzer = ParallelLevelizedOpenMPTimingAnalyzer();
-
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
 
         yyin = fopen(argv[1], "r");
         if(yyin != NULL) {
-            int error = yyparse(timing_graph, orig_expected_arr_req_times, timing_constraints, node_logical_blocks, orig_edge_delays);
+            int error = yyparse(*timing_graph, orig_expected_arr_req_times, *timing_constraints, node_logical_blocks, orig_edge_delays);
             if(error) {
                 cout << "Parse Error" << endl;
                 fclose(yyin);
@@ -106,13 +94,13 @@ int main(int argc, char** argv) {
         //Fix up the timing graph.
         //VPR doesn't have edges from FF_CLOCKs to FF_SOURCEs and FF_SINKs,
         //but we require them. So post-process the timing graph here to add them.
-        add_ff_clock_to_source_sink_edges(timing_graph, node_logical_blocks, orig_edge_delays);
+        add_ff_clock_to_source_sink_edges(*timing_graph, node_logical_blocks, orig_edge_delays);
         //We then need to re-levelize the graph
-        timing_graph.levelize();
+        timing_graph->levelize();
 
         cout << "Timing Graph Stats:" << endl;
-        cout << "  Nodes : " << timing_graph.num_nodes() << endl;
-        cout << "  Levels: " << timing_graph.num_levels() << endl;
+        cout << "  Nodes : " << timing_graph->num_nodes() << endl;
+        cout << "  Levels: " << timing_graph->num_levels() << endl;
         cout << "Num Clocks: " << orig_expected_arr_req_times.get_num_clocks() << endl;
 
         cout << endl;
@@ -122,7 +110,7 @@ int main(int argc, char** argv) {
 
         //Re-order edges
         cout << "Re-allocating edges so levels are in contiguous memory";
-        std::vector<EdgeId> vpr_edge_map = timing_graph.optimize_edge_layout();
+        std::vector<EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &edge_reorder_end);
         cout << " (took " << time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
@@ -139,7 +127,7 @@ int main(int argc, char** argv) {
 
         //Re-order nodes
         cout << "Re-allocating nodes so levels are in contiguous memory";
-        std::vector<NodeId> vpr_node_map = timing_graph.optimize_node_layout();
+        std::vector<NodeId> vpr_node_map = timing_graph->optimize_node_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &node_reorder_end);
         cout << " (took " << time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;
@@ -158,7 +146,7 @@ int main(int argc, char** argv) {
         }
 
         //Adjust the timing constraints
-        timing_constraints.remap_nodes(vpr_node_map);
+        timing_constraints->remap_nodes(vpr_node_map);
 
 #else
         expected_arr_req_times = orig_expected_arr_req_times;
@@ -167,8 +155,8 @@ int main(int argc, char** argv) {
 
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
-        const_gen_fanout_nodes = identify_constant_gen_fanout(timing_graph);
-        clock_gen_fanout_nodes = identify_clock_gen_fanout(timing_graph);
+        const_gen_fanout_nodes = identify_constant_gen_fanout(*timing_graph);
+        clock_gen_fanout_nodes = identify_clock_gen_fanout(*timing_graph);
     }
     cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
@@ -178,9 +166,9 @@ int main(int argc, char** argv) {
      */
 
     int n_histo_bins = 10;
-    print_level_histogram(timing_graph, n_histo_bins);
-    print_node_fanin_histogram(timing_graph, n_histo_bins);
-    print_node_fanout_histogram(timing_graph, n_histo_bins);
+    print_level_histogram(*timing_graph, n_histo_bins);
+    print_node_fanin_histogram(*timing_graph, n_histo_bins);
+    print_node_fanout_histogram(*timing_graph, n_histo_bins);
     cout << endl;
 
     /*
@@ -197,10 +185,10 @@ int main(int argc, char** argv) {
 
 
     //Create the delay calculator
-    PreCalcDelayCalculator delay_calculator(edge_delays);
+    auto delay_calculator = std::make_shared<PreCalcDelayCalculator>(edge_delays);
 
     //Create the timing analyzer
-    auto serial_analyzer = std::make_shared<SerialTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<SetupTimingAnalyzer> serial_analyzer = std::make_shared<SetupFullTimingAnalyzer<SerialWalker, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     //Performance variables
     float serial_verify_time = 0.;
@@ -218,14 +206,16 @@ int main(int argc, char** argv) {
 
             CALLGRIND_TOGGLE_COLLECT;
 
-            serial_analyzer->calculate_timing();
+            serial_analyzer->update_timing();
 
             CALLGRIND_TOGGLE_COLLECT;
 
+#if 0
             auto prof_data = serial_analyzer->profiling_data();
             for(auto kv : prof_data) {
                 serial_prof_data[kv.first] += kv.second;
             }
+#endif
 
             cout << ".";
             cout.flush();
@@ -237,7 +227,7 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
 #ifdef VERIFY_VPR_TO_TATUM
-            serial_arr_req_verified = verify_analyzer(timing_graph, serial_analyzer,
+            serial_arr_req_verified = verify_analyzer(*timing_graph, serial_analyzer,
                                                       expected_arr_req_times, const_gen_fanout_nodes,
                                                       clock_gen_fanout_nodes );
 #endif
@@ -267,29 +257,29 @@ int main(int argc, char** argv) {
         cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["bck_traversal"] << " s";
         cout << " (" << std::setprecision(2) << serial_prof_data["bck_traversal"]/serial_prof_data["analysis"] << ")" << endl;
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
-        if(serial_arr_req_verified != 2*timing_graph.num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
+        if(serial_arr_req_verified != 2*timing_graph->num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph.num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
         }
         cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
     }
 
-    if(timing_graph.num_nodes() < 1000) {
+    if(timing_graph->num_nodes() < 1000) {
         cout << "Writing Anotated Timing Graph Dot File" << endl;
         std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-        write_dot_file_setup(tg_setup_dot_file, timing_graph, serial_analyzer);
+        write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
 
         //std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
-        //write_dot_file_hold(tg_hold_dot_file, timing_graph, serial_analyzer);
+        //write_dot_file_hold(tg_hold_dot_file, *timing_graph, serial_analyzer, delay_calculator);
     } else {
         cout << "Skipping writting dot file due to large graph size" << endl;
     }
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    auto parallel_analyzer = std::make_shared<ParallelLevelizedTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<SetupTimingAnalyzer> parallel_analyzer = std::make_shared<SetupFullTimingAnalyzer<ParallelLevelizedCilkWalker, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
     //auto parallel_analyzer = std::make_shared<ParallelNoDependancyTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     //float parallel_analysis_time = 0;
@@ -311,13 +301,15 @@ int main(int argc, char** argv) {
             //Analyze
             clock_gettime(CLOCK_MONOTONIC, &analyze_start);
 
-            parallel_analyzer->calculate_timing();
+            parallel_analyzer->update_timing();
 
             clock_gettime(CLOCK_MONOTONIC, &analyze_end);
+#if 0
             auto prof_data = parallel_analyzer->profiling_data();
             for(auto kv : prof_data) {
                 parallel_prof_data[kv.first] += kv.second;
             }
+#endif
 
             cout << ".";
             cout.flush();
@@ -326,7 +318,7 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
 #ifdef VERIFY_VPR_TO_TATUM
-            parallel_arr_req_verified = verify_analyzer(timing_graph, parallel_analyzer,
+            parallel_arr_req_verified = verify_analyzer(*timing_graph, parallel_analyzer,
                                                       expected_arr_req_times, const_gen_fanout_nodes,
                                                       clock_gen_fanout_nodes );
 #endif
@@ -354,10 +346,10 @@ int main(int argc, char** argv) {
         cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["bck_traversal"] << " s";
         cout << " (" << std::setprecision(2) << parallel_prof_data["bck_traversal"]/parallel_prof_data["analysis"] << ")" << endl;
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
-        if(parallel_arr_req_verified != 2*timing_graph.num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
+        if(parallel_arr_req_verified != 2*timing_graph->num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph.num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
         }
         cout << "Resetting Parallel Analysis took: " << parallel_reset_time << " sec" << endl;
     }
@@ -372,12 +364,12 @@ int main(int argc, char** argv) {
     cout << endl;
 
     //Per-level speed-up
-    dump_level_times("level_times.csv", timing_graph, serial_prof_data, parallel_prof_data);
+    dump_level_times("level_times.csv", *timing_graph, serial_prof_data, parallel_prof_data);
 #endif //NUM_PARALLEL_RUNS
 
 
     //Tag stats
-    print_setup_tags_histogram(timing_graph, serial_analyzer);
+    print_setup_tags_histogram(*timing_graph, serial_analyzer);
     //print_hold_tags_histogram(timing_graph, serial_analyzer);
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);

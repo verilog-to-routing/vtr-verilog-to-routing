@@ -14,5 +14,5 @@ class GraphVisitor {
         template<class DelayCalc>
         void do_required_traverse_node(const TimingGraph& tg, const DelayCalc& dc, NodeId node_id) {}
 
-        void clear() {}
+        void reset() {}
 };
