@@ -37,6 +37,9 @@
 //will not match VPR
 //#define CHECK_TATUM_TO_VPR_DIFFERENCES
 
+typedef std::chrono::duration<double> dsec;
+typedef std::chrono::high_resolution_clock Clock;
+
 using std::cout;
 using std::endl;
 
@@ -46,8 +49,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    struct timespec prog_start, load_start, node_reorder_start, edge_reorder_start, analyze_start, verify_start, reset_start;
-    struct timespec prog_end, load_end, node_reorder_end, edge_reorder_end, analyze_end, verify_end, reset_end;
+    struct timespec prog_start, load_start, node_reorder_start, edge_reorder_start, verify_start, reset_start;
+    struct timespec prog_end, load_end, node_reorder_end, edge_reorder_end, verify_end, reset_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
@@ -200,22 +203,20 @@ int main(int argc, char** argv) {
 
         //To selectively profile using callgrind:
         //  valgrind --tool=callgrind --collect-atstart=no --instr-atstart=no --cache-sim=yes --cacheuse=yes ./command
-        CALLGRIND_START_INSTRUMENTATION;
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
 
-            CALLGRIND_TOGGLE_COLLECT;
+            {
+                auto start = Clock::now();
 
-            serial_analyzer->update_timing();
+                serial_analyzer->update_timing();
 
-            CALLGRIND_TOGGLE_COLLECT;
-
-#if 0
-            auto prof_data = serial_analyzer->profiling_data();
-            for(auto kv : prof_data) {
-                serial_prof_data[kv.first] += kv.second;
+                serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
             }
-#endif
+
+            for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
+                serial_prof_data[key] += serial_analyzer->get_profiling_data(key);
+            }
 
             cout << ".";
             cout.flush();
@@ -249,13 +250,20 @@ int main(int argc, char** argv) {
         }
 
         cout << endl;
-        cout << "Serial Analysis took " << serial_prof_data["analysis"]*NUM_SERIAL_RUNS << " sec, AVG: " << serial_prof_data["analysis"]<< " s" << endl;
-        cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["pre_traversal"] << " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["pre_traversal"]/serial_prof_data["analysis"] << ")" << endl;
-        cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["fwd_traversal"] << " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["fwd_traversal"]/serial_prof_data["analysis"] << ")" << endl;
-        cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["bck_traversal"] << " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["bck_traversal"]/serial_prof_data["analysis"] << ")" << endl;
+        cout << "Serial Analysis took " << serial_prof_data["analysis_sec"] << " sec, AVG: " << serial_prof_data["analysis_sec"] / NUM_SERIAL_RUNS << " s" << endl;
+
+        cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["arrival_pre_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << serial_prof_data["arrival_pre_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+
+        cout << "\tReq Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["required_pre_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << serial_prof_data["required_pre_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+
+        cout << "\tArr     traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["arrival_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << serial_prof_data["arrival_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+
+        cout << "\tReq     traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["required_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << serial_prof_data["required_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
         if(serial_arr_req_verified != 2*timing_graph->num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
@@ -299,17 +307,17 @@ int main(int argc, char** argv) {
 
         for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
             //Analyze
-            clock_gettime(CLOCK_MONOTONIC, &analyze_start);
+            {
+                auto start = Clock::now();
 
-            parallel_analyzer->update_timing();
+                parallel_analyzer->update_timing();
 
-            clock_gettime(CLOCK_MONOTONIC, &analyze_end);
-#if 0
-            auto prof_data = parallel_analyzer->profiling_data();
-            for(auto kv : prof_data) {
-                parallel_prof_data[kv.first] += kv.second;
+                parallel_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
             }
-#endif
+
+            for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
+                parallel_prof_data[key] += parallel_analyzer->get_profiling_data(key);
+            }
 
             cout << ".";
             cout.flush();
@@ -338,13 +346,20 @@ int main(int argc, char** argv) {
         }
         cout << endl;
 
-        cout << "Parallel Analysis took " << parallel_prof_data["analysis"]*NUM_PARALLEL_RUNS << " sec, AVG: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["analysis"] << " s" << endl;
-        cout << "\tPre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["pre_traversal"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["pre_traversal"]/parallel_prof_data["analysis"] << ")" << endl;
-        cout << "\tFwd-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["fwd_traversal"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["fwd_traversal"]/parallel_prof_data["analysis"] << ")" << endl;
-        cout << "\tBck-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["bck_traversal"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["bck_traversal"]/parallel_prof_data["analysis"] << ")" << endl;
+        cout << "Parallel Analysis took " << parallel_prof_data["analysis_sec"] << " sec, AVG: " << parallel_prof_data["analysis_sec"] / NUM_SERIAL_RUNS << " s" << endl;
+
+        cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["arrival_pre_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << parallel_prof_data["arrival_pre_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+
+        cout << "\tReq Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["required_pre_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << parallel_prof_data["required_pre_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+
+        cout << "\tArr     traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["arrival_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << parallel_prof_data["arrival_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+
+        cout << "\tReq     traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["required_traversal_sec"] / NUM_SERIAL_RUNS << " s";
+        cout << " (" << std::setprecision(2) << parallel_prof_data["required_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
         if(parallel_arr_req_verified != 2*timing_graph->num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
@@ -357,10 +372,11 @@ int main(int argc, char** argv) {
 
 
 
-    cout << "Parallel Speed-Up: " << std::fixed << serial_prof_data["analysis"] / parallel_prof_data["analysis"] << "x" << endl;
-    cout << "\tPre-traversal: " << std::fixed << serial_prof_data["pre_traversal"] / parallel_prof_data["pre_traversal"] << "x" << endl;
-    cout << "\tFwd-traversal: " << std::fixed << serial_prof_data["fwd_traversal"] / parallel_prof_data["fwd_traversal"] << "x" << endl;
-    cout << "\tBck-traversal: " << std::fixed << serial_prof_data["bck_traversal"] / parallel_prof_data["bck_traversal"] << "x" << endl;
+    cout << "Parallel Speed-Up: " << std::fixed << serial_prof_data["analysis_sec"] / parallel_prof_data["analysis_sec"] << "x" << endl;
+    cout << "\tArr Pre-traversal: " << std::fixed << serial_prof_data["arrival_pre_traversal_sec"] / parallel_prof_data["arrival_pre_traversal_sec"] << "x" << endl;
+    cout << "\tReq Pre-traversal: " << std::fixed << serial_prof_data["required_pre_traversal_sec"] / parallel_prof_data["required_pre_traversal_sec"] << "x" << endl;
+    cout << "\t    Arr-traversal: " << std::fixed << serial_prof_data["arrival_traversal_sec"] / parallel_prof_data["arrival_traversal_sec"] << "x" << endl;
+    cout << "\t    Req-traversal: " << std::fixed << serial_prof_data["required_traversal_sec"] / parallel_prof_data["required_traversal_sec"] << "x" << endl;
     cout << endl;
 
     //Per-level speed-up

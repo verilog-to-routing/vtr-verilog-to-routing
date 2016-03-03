@@ -389,7 +389,7 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
 
 void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data) {
     //Per-level speed-up
-    cout << "Level Speed-Ups by width:" << endl;
+    //cout << "Level Speed-Ups by width:" << endl;
     std::map<int,std::vector<int>,std::greater<int>> widths_to_levels;
     for(int ilevel = 0; ilevel < timing_graph.num_levels(); ilevel++) {
         int width = timing_graph.level(ilevel).size();

@@ -231,10 +231,14 @@ class TimingAnalyzer {
         ///Clear any old timing values updated
         void reset_timing() { reset_timing_impl(); }
 
+        double get_profiling_data(std::string key) { return get_profiling_data_impl(key); }
+
     protected:
         virtual void update_timing_impl() = 0;
 
         virtual void reset_timing_impl() = 0;
+
+        virtual double get_profiling_data_impl(std::string key) = 0;
 };
 
 /**
