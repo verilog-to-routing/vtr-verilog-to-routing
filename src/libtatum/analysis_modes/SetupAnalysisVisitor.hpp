@@ -187,7 +187,7 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
         TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
 
         //Add the tag
-        get_setup_data_tags(node_id)->add_tag(clock_tag);
+        get_setup_clock_tags(node_id)->add_tag(clock_tag);
 
     } else {
         ASSERT(node_type == TN_Type::INPAD_SOURCE);
@@ -287,14 +287,15 @@ void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const
  */
 
 void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
-    //Take tags by reference so they are updated in-place
+    TN_Type node_type = tg.node_type(node_id);
+
     std::shared_ptr<TimingTags> node_data_tags = get_setup_data_tags(node_id);
     std::shared_ptr<TimingTags> node_clock_tags = get_setup_clock_tags(node_id);
 
     /*
      * Calculate required times
      */
-    if(tg.node_type(node_id) == TN_Type::OUTPAD_SINK) {
+    if(node_type == TN_Type::OUTPAD_SINK) {
         //Determine the required time for outputs.
         //
         //We assume any output delay is on the OUTPAT_IPIN to OUTPAD_SINK edge,
@@ -311,7 +312,7 @@ void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, 
                 node_data_tags->min_req(Time(clock_constraint), data_tag);
             }
         }
-    } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
+    } else if (node_type == TN_Type::FF_SINK) {
         //Determine the required time at this FF
         //
         //We need to generate a required time for each clock domain for which there is a data
@@ -321,6 +322,7 @@ void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, 
 
         for(TimingTag& node_data_tag : *node_data_tags) {
             for(const TimingTag& node_clock_tag : *node_clock_tags) {
+
                 //Should we be analyzing paths between these two domains?
                 if(tc.should_analyze(node_data_tag.clock_domain(), node_clock_tag.clock_domain())) {
 
