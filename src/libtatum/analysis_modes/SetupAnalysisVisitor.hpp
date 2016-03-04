@@ -10,7 +10,7 @@
 #include "TimingTags.hpp"
 
 /** \file
- * The 'SetupAnalysisVisitor' class defines the operations needed used by a GraphWalker class
+ * The 'SetupAnalysisVisitor' class defines the operations needed by a GraphWalker class
  * to perform a setup (max/longest path) analysis. It satisifes and extends the GraphVisitor 
  * concept class.
  *
@@ -103,7 +103,7 @@
  * -----------------------------------
  * In practice the clock and data propogation, although sometimes logically useful to think of as separate,
  * are combined into a single traversal for efficiency (minimizing graph walks).  This is enabled by
- * building the timing graph with edges FF_CLOCK and FF_SINK/FF_SOUCE nodes.  On the forward traversal
+ * building the timing graph with edges between FF_CLOCK and FF_SINK/FF_SOUCE nodes.  On the forward traversal
  * we propogate clock tags from known clock sources, which are converted to data tags (with appropriate
  * *arrival times*) at FF_SOURCE nodes, and data tags (with appropriate *required times*) at FF_SINK nodes.
  *
