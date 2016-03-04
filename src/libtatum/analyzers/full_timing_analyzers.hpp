@@ -24,27 +24,18 @@ class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
         virtual void update_timing_impl() override {
 
             graph_walker_.do_arrival_pre_traversal(*timing_graph_, *timing_constraints_, setup_visitor_);            
-
             graph_walker_.do_arrival_traversal(*timing_graph_, *delay_calculator_, setup_visitor_);            
 
             graph_walker_.do_required_pre_traversal(*timing_graph_, *timing_constraints_, setup_visitor_);            
-
             graph_walker_.do_required_traversal(*timing_graph_, *delay_calculator_, setup_visitor_);            
         }
 
-        virtual void reset_timing_impl() override {
-            setup_visitor_.reset();
-        }
+        virtual void reset_timing_impl() override { setup_visitor_.reset(); }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        std::shared_ptr<const TimingTags> get_setup_data_tags_impl(NodeId node_id) override {
-            return setup_visitor_.get_setup_data_tags(node_id);
-        }
-
-        std::shared_ptr<const TimingTags> get_setup_clock_tags_impl(NodeId node_id) override {
-            return setup_visitor_.get_setup_clock_tags(node_id);
-        }
+        std::shared_ptr<const TimingTags> get_setup_data_tags_impl(NodeId node_id) override { return setup_visitor_.get_setup_data_tags(node_id); }
+        std::shared_ptr<const TimingTags> get_setup_clock_tags_impl(NodeId node_id) override { return setup_visitor_.get_setup_clock_tags(node_id); }
 
 
     private:
@@ -77,18 +68,12 @@ class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
             graph_walker_.do_required_traversal(timing_graph_, delay_calculator_, hold_visitor_);            
         }
 
-        virtual void reset_timing_impl() override {
-            hold_visitor_.reset();
-        }
+        virtual void reset_timing_impl() override { hold_visitor_.reset(); }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        std::shared_ptr<const TimingTags> get_hold_data_tags_impl(NodeId node_id) override {
-            return hold_visitor_.get_hold_data_tags(node_id);
-        }
-        std::shared_ptr<const TimingTags> get_hold_clock_tags_impl(NodeId node_id) override {
-            return hold_visitor_.get_hold_clock_tags(node_id);
-        }
+        std::shared_ptr<const TimingTags> get_hold_data_tags_impl(NodeId node_id) override { return hold_visitor_.get_hold_data_tags(node_id); }
+        std::shared_ptr<const TimingTags> get_hold_clock_tags_impl(NodeId node_id) override { return hold_visitor_.get_hold_clock_tags(node_id); }
 
     private:
         std::shared_ptr<TimingGraph> timing_graph_;
@@ -118,25 +103,14 @@ class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
             graph_walker_.do_required_traversal(timing_graph_, delay_calculator_, setup_hold_visitor_);            
         }
 
-        virtual void reset_timing_impl() override {
-            setup_hold_visitor_.reset();
-        }
+        virtual void reset_timing_impl() override { setup_hold_visitor_.reset(); }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        std::shared_ptr<TimingTags> get_setup_data_tags(NodeId node_id) override {
-            return setup_hold_visitor_.get_setup_data_tags(node_id);
-        }
-        std::shared_ptr<TimingTags> get_setup_clock_tags(NodeId node_id) override {
-            return setup_hold_visitor_.get_setup_clock_tags(node_id);
-        }
-
-        std::shared_ptr<TimingTags> get_hold_data_tags(NodeId node_id) override {
-            return setup_hold_visitor_.get_hold_data_tags(node_id);
-        }
-        std::shared_ptr<TimingTags> get_hold_clock_tags(NodeId node_id) override {
-            return setup_hold_visitor_.get_hold_clock_tags(node_id);
-        }
+        std::shared_ptr<TimingTags> get_setup_data_tags(NodeId node_id) override { return setup_hold_visitor_.get_setup_data_tags(node_id); }
+        std::shared_ptr<TimingTags> get_setup_clock_tags(NodeId node_id) override { return setup_hold_visitor_.get_setup_clock_tags(node_id); }
+        std::shared_ptr<TimingTags> get_hold_data_tags(NodeId node_id) override { return setup_hold_visitor_.get_hold_data_tags(node_id); }
+        std::shared_ptr<TimingTags> get_hold_clock_tags(NodeId node_id) override { return setup_hold_visitor_.get_hold_clock_tags(node_id); }
 
     private:
         std::shared_ptr<TimingGraph> timing_graph_;
