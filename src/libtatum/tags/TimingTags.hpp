@@ -17,9 +17,12 @@
  * typically has only a handful (usually << 10) tags this linear search is not too painful.
  */
 class TimingTags {
+    private:
+        typedef std::vector<TimingTag> TagStore;
+
     public:
-        typedef std::vector<TimingTag>::iterator iterator;
-        typedef std::vector<TimingTag>::const_iterator const_iterator;
+        typedef TagStore::iterator iterator;
+        typedef TagStore::const_iterator const_iterator;
 
         TimingTags();
 
@@ -92,7 +95,7 @@ class TimingTags {
 
 
     private:
-        std::vector<TimingTag> tags_;
+        TagStore tags_;
 };
 
 //Implementation
