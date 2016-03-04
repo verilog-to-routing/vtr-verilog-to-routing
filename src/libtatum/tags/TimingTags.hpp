@@ -95,6 +95,9 @@ class TimingTags {
 
 
     private:
+        //How many tags to reserve space for in the constructor
+        const static int num_reserved_tags_ = 1; 
+
         TagStore tags_;
 };
 

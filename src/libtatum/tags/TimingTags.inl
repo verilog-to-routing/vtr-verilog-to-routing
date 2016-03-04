@@ -1,10 +1,11 @@
 #include "assert.hpp"
+
 /*
  * TimingTags implementation
  */
 
 inline TimingTags::TimingTags() {
-    tags_.reserve(1);
+    tags_.reserve(num_reserved_tags_);
 }
 
 inline size_t TimingTags::num_tags() const { 
