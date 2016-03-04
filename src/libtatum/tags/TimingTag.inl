@@ -5,24 +5,21 @@
  */
 
 inline TimingTag::TimingTag()
-    : next_(nullptr)
-    , arr_time_(NAN)
+    : arr_time_(NAN)
     , req_time_(NAN)
     , clock_domain_(INVALID_CLOCK_DOMAIN)
     , launch_node_(-1)
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node)
-    : next_(nullptr)
-    , arr_time_(arr_time_val)
+    : arr_time_(arr_time_val)
     , req_time_(req_time_val)
     , clock_domain_(domain)
     , launch_node_(node)
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag)
-    : next_(nullptr)
-    , arr_time_(arr_time_val)
+    : arr_time_(arr_time_val)
     , req_time_(req_time_val)
     , clock_domain_(base_tag.clock_domain())
     , launch_node_(base_tag.launch_node())

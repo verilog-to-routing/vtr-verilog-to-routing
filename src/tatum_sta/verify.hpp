@@ -55,7 +55,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
                     if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
                         const auto& node_clock_tags = analyzer->get_setup_clock_tags(node_id);
                         auto clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
-                        if(clock_tag_iter != node_data_tags.end()) {
+                        if(clock_tag_iter != node_clock_tags.end()) {
                             error |= verify_arr_tag(clock_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
 
                         } else if(!isnan(vpr_arr_time)) {
@@ -93,7 +93,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
                     if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
                         const auto& node_clock_tags = analyzer->get_setup_clock_tags(node_id);
                         auto clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
-                        if(clock_tag_iter != node_data_tags.end()) {
+                        if(clock_tag_iter != node_clock_tags.end()) {
                             error |= verify_req_tag(clock_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
                         } else if(!isnan(vpr_req_time)) {
                             error = true;

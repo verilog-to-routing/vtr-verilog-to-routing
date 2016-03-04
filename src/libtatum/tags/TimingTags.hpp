@@ -3,10 +3,6 @@
 #include "TimingTag.hpp"
 #include "memory_pool.hpp"
 
-//How many timing tag objects should be flattened into the TimingTags class?
-//  A value of 1 tends to help cache locality and performs best
-#define NUM_FLAT_TAGS 1
-
 /**
  * The 'TimingTags' class represents a collection of timing tags (see the 'TimingTag' class)
  * that belong to a particular node in the timing graph.
@@ -19,47 +15,34 @@
  * ====================
  * Nominally the set of tags is implemented as a singly linked list, since each node in the timing graph
  * typically has only a handful (usually << 10) tags this linear search is not too painful.
- *
- * Tag Flattening
- * ----------------
- * As a performance optimization we flatten the first tags of the list as members of this class.
- * This ensures that the first tag is usually already in the CPU cache before it is queried,
- * offering a noticable speed-up. How many tags are embedded is controlled by the NUM_FLAT_TAGS
- * define.
- *
- * The number of tags to flatten offers a trade-off between better cache locality (the embedded tags
- * will be pulled into the cache with the TimingTags class), and increased memory usage (not all nodes
- * may require all of the flattend tags, in which case it also hurts cache locality.
- *
- * Flattening only the first tag usually offers the best performance (most nodes have only one tag).
- *
- * Tag Memory allocation
- * -----------------------
- * Note that tags are allocated from a memory pool (tag_pool argument to some functions) which is
- * typically owned by the TimingAnalyzer. Since they are pool allocated, this class does not handle 
- * freeing the allocated tags.
  */
 class TimingTags {
     public:
+        typedef std::vector<TimingTag>::iterator iterator;
+        typedef std::vector<TimingTag>::const_iterator const_iterator;
+
+        TimingTags();
+
         /*
          * Getters
          */
         ///\returns The number of timing tags in this set
-        size_t num_tags() const { return num_tags_; };
+        size_t num_tags() const;
+
+        ///\returns An iterator to the first tag in the current set
+        iterator begin();
+        const_iterator begin() const;
+
+        ///\returns An iterator 'one-past-the-end' of the current set
+        iterator end();
+        const_iterator end() const;
 
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
         ///\param domain_id The clock domain id to look for
         ///\returns An iterator to the tag if found, or end() if not found
-        TimingTagIterator find_tag_by_clock_domain(DomainId domain_id);
-        TimingTagConstIterator find_tag_by_clock_domain(DomainId domain_id) const;
+        iterator find_tag_by_clock_domain(DomainId domain_id);
+        const_iterator find_tag_by_clock_domain(DomainId domain_id) const;
 
-        ///\returns An iterator to the first tag in the current set
-        TimingTagIterator begin() { return (num_tags_ > 0) ? TimingTagIterator(&head_tags_[0]) : end(); };
-        TimingTagConstIterator begin() const { return (num_tags_ > 0) ? TimingTagConstIterator(&head_tags_[0]) : end(); };
-
-        ///\returns An iterator 'one-past-the-end' of the current set
-        TimingTagIterator end() { return TimingTagIterator(nullptr); };
-        TimingTagConstIterator end() const { return TimingTagConstIterator(nullptr); };
 
         /*
          * Modifiers
@@ -109,14 +92,7 @@ class TimingTags {
 
 
     private:
-        int num_tags_;
-
-        //The first NUM_FLAT_TAGS tags are stored directly as members
-        //of this object. Any additional tags are stored in a dynamically
-        //allocated linked list.
-        //Note that despite being an array, each element of head_tags_ is
-        //hooked into the linked list
-        std::array<TimingTag, NUM_FLAT_TAGS> head_tags_;
+        std::vector<TimingTag> tags_;
 };
 
 //Implementation

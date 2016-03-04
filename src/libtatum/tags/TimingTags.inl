@@ -3,43 +3,44 @@
  * TimingTags implementation
  */
 
+inline TimingTags::TimingTags() {
+    tags_.reserve(1);
+}
+
+inline size_t TimingTags::num_tags() const { 
+    return tags_.size();
+}
+
+inline TimingTags::iterator TimingTags::begin() {
+    return tags_.begin(); 
+}
+
+inline TimingTags::const_iterator TimingTags::begin() const { 
+    return tags_.begin(); 
+}
+
+inline TimingTags::iterator TimingTags::end() { 
+    return tags_.end(); 
+}
+
+inline TimingTags::const_iterator TimingTags::end() const { 
+    return tags_.end(); 
+}
+
 //Modifiers
 inline void TimingTags::add_tag(const TimingTag& tag) {
-    ASSERT_MSG(tag.next() == nullptr, "Attempted to add new timing tag which is already part of a Linked List");
-
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
     if(tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
         return;
     }
 
-    if(num_tags_ < (int) head_tags_.max_size()) {
-        //Store it as a head tag
-        head_tags_[num_tags_] = tag;
-        if(num_tags_ != 0) {
-            //Link from previous if it exists
-            head_tags_[num_tags_-1].set_next(&head_tags_[num_tags_]);
-        }
-    } else {
-        //Store it in a linked list from head tags
-
-        //Allocate form a central storage pool
-        TimingTag* new_tag = new TimingTag(tag);
-
-        //Insert one-after the last head in O(1) time
-        //Note that we don't maintain the tags in any order since we expect a relatively small number of tags
-        //per node
-        TimingTag* next_tag = head_tags_[head_tags_.max_size()-1].next(); //Save next link (may be nullptr)
-        head_tags_[head_tags_.max_size()-1].set_next(new_tag); //Tag is now in the list
-        new_tag->set_next(next_tag); //Attach tail of the list
-    }
-
-    //Tag has been added
-    num_tags_++;
+    //Allocate form a central storage pool
+    tags_.push_back(tag);
 }
 
 inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
-    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
@@ -50,7 +51,7 @@ inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::min_req(const Time& new_time, const TimingTag& base_tag) {
-    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(Time(NAN), new_time, base_tag);
@@ -61,7 +62,7 @@ inline void TimingTags::min_req(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::min_arr(const Time& new_time, const TimingTag& base_tag) {
-    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
@@ -72,7 +73,7 @@ inline void TimingTags::min_arr(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag) {
-    TimingTagIterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
@@ -83,20 +84,17 @@ inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::clear() {
-    //Note that we do not clean up the tag linked list!
-    //Since these are allocated in a memory pool they will be freed by
-    //the owner of the pool (typically the analyzer that is calling us)
-    num_tags_ = 0;
+    tags_.clear();
 }
 
-inline TimingTagIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
+inline TimingTags::iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
     auto pred = [domain_id](const TimingTag& tag) {
         return tag.clock_domain() == domain_id;
     };
     return std::find_if(begin(), end(), pred);
 }
 
-inline TimingTagConstIterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) const {
+inline TimingTags::const_iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) const {
     auto pred = [domain_id](const TimingTag& tag) {
         return tag.clock_domain() == domain_id;
     };

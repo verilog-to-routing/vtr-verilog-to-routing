@@ -53,9 +53,6 @@ class TimingTag {
         ///\returns This tag's launching node's id
         NodeId launch_node() const { return launch_node_; }
 
-        ///\returns The next TimingTag in the current set of TimingTags (i.e. the next tag at a specific nonde in the TimingGraph)
-        TimingTag* next() const { return next_; }
-
         /*
          * Setters
          */
@@ -70,9 +67,6 @@ class TimingTag {
 
         ///\param new_launch_node The new value set as the tag's launching node
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
-
-        ///\param new_next The new timing tag to insert in the current set of TimingTags
-        void set_next(TimingTag* new_next) { next_ = new_next; }
 
         /*
          * Modification operations
@@ -112,7 +106,6 @@ class TimingTag {
         /*
          * Data
          */
-        TimingTag* next_; //Next element in linked list of tags at a particular timing graph node
         Time arr_time_; //Arrival time
         Time req_time_; //Required time
         DomainId clock_domain_; //Clock domain for arr/req times

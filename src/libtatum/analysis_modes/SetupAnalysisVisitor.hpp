@@ -259,7 +259,6 @@ void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const
                 //Update the launch node, since the data is
                 //launching from this node
                 launch_tag.set_launch_node(node_id);
-                ASSERT(launch_tag.next() == nullptr);
 
                 //Mark propagated launch time as a DATA tag
                 node_data_tags.max_arr(launch_tag.arr_time() + edge_delay, launch_tag);
@@ -372,7 +371,7 @@ void SetupAnalysisVisitor::do_required_traverse_edge(const TimingGraph& tg, cons
 
     for(const TimingTag& sink_tag : sink_data_tags) {
         //We only propogate the required time if we have a valid arrival time
-        TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
+        auto matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
         if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
             //Valid arrival, update required
             matched_tag_iter->min_req(sink_tag.req_time() - edge_delay, sink_tag);
