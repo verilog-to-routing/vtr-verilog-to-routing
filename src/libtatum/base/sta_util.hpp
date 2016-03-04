@@ -40,8 +40,8 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         auto data_tags = analyzer->get_setup_data_tags(inode);
-        if(data_tags->num_tags() > 0) {
-            for(const TimingTag& tag : *data_tags) {
+        if(data_tags.num_tags() > 0) {
+            for(const TimingTag& tag : data_tags) {
                 os << " | {";
                 os << "DATA - clk: " << tag.clock_domain();
                 os << " launch: " << tag.launch_node();
@@ -52,8 +52,8 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
             }
         }
         auto clock_tags = analyzer->get_setup_clock_tags(inode);
-        if(clock_tags->num_tags() > 0) {
-            for(const TimingTag& tag : *clock_tags) {
+        if(clock_tags.num_tags() > 0) {
+            for(const TimingTag& tag : clock_tags) {
                 os << " | {";
                 os << "CLOCK - clk: " << tag.clock_domain();
                 os << " launch: " << tag.launch_node();
@@ -107,8 +107,8 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         auto data_tags = analyzer->get_hold_data_tags(inode);
-        if(data_tags->num_tags() > 0) {
-            for(const TimingTag& tag : *data_tags) {
+        if(data_tags.num_tags() > 0) {
+            for(const TimingTag& tag : data_tags) {
                 os << " | {";
                 os << "DATA - clk: " << tag.clock_domain();
                 os << " launch: " << tag.launch_node();
@@ -119,8 +119,8 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
             }
         }
         auto clock_tags = analyzer->get_hold_clock_tags(inode);
-        if(clock_tags->num_tags() > 0) {
-            for(const TimingTag& tag : *clock_tags) {
+        if(clock_tags.num_tags() > 0) {
+            for(const TimingTag& tag : clock_tags) {
                 os << " | {";
                 os << "CLOCK - clk: " << tag.clock_domain();
                 os << " launch: " << tag.launch_node();
@@ -174,7 +174,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Ana
     std::cout << "Node Data Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        data_tag_cnts[analyzer->get_setup_data_tags(i)->num_tags()]++;
+        data_tag_cnts[analyzer->get_setup_data_tags(i).num_tags()]++;
     }
 
     int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
@@ -185,7 +185,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Ana
     std::cout << "Node Clock Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_tag_cnts;
     for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        clock_tag_cnts[analyzer->get_setup_clock_tags(i)->num_tags()]++;
+        clock_tag_cnts[analyzer->get_setup_clock_tags(i).num_tags()]++;
     }
 
     int total_clock_tags = std::accumulate(clock_tag_cnts.begin(), clock_tag_cnts.end(), 0, totaler);

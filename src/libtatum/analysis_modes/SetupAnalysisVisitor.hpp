@@ -116,12 +116,10 @@
  */
 class SetupAnalysisVisitor {
     public:
-        SetupAnalysisVisitor(size_t num_tags) {
-            for(size_t i = 0; i < num_tags; ++i) {
-                setup_data_tags_.push_back(std::make_shared<TimingTags>());
-                setup_clock_tags_.push_back(std::make_shared<TimingTags>());
-            }
-        }
+        SetupAnalysisVisitor(size_t num_tags)
+            : setup_data_tags_(num_tags)
+            , setup_clock_tags_(num_tags) {}
+
 
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
@@ -135,8 +133,11 @@ class SetupAnalysisVisitor {
 
         void reset();
 
-        std::shared_ptr<TimingTags> get_setup_data_tags(const NodeId node_id) { return setup_data_tags_[node_id]; }
-        std::shared_ptr<TimingTags> get_setup_clock_tags(const NodeId node_id) { return setup_clock_tags_[node_id]; }
+        TimingTags& get_setup_data_tags(const NodeId node_id) { return setup_data_tags_[node_id]; }
+        const TimingTags& get_setup_data_tags(const NodeId node_id) const { return setup_data_tags_[node_id]; }
+
+        TimingTags& get_setup_clock_tags(const NodeId node_id) { return setup_clock_tags_[node_id]; }
+        const TimingTags& get_setup_clock_tags(const NodeId node_id) const { return setup_clock_tags_[node_id]; }
 
     private:
 
@@ -146,20 +147,15 @@ class SetupAnalysisVisitor {
         template<class DelayCalc>
         void do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
 
-        std::vector<std::shared_ptr<TimingTags>> setup_data_tags_;
-        std::vector<std::shared_ptr<TimingTags>> setup_clock_tags_;
+        std::vector<TimingTags> setup_data_tags_;
+        std::vector<TimingTags> setup_clock_tags_;
 };
 
 void SetupAnalysisVisitor::reset() {
     size_t num_tags = setup_data_tags_.size();
 
-    setup_data_tags_.clear();
-    setup_clock_tags_.clear();
-
-    for(size_t i = 0; i < num_tags; ++i) {
-        setup_data_tags_.push_back(std::make_shared<TimingTags>());
-        setup_clock_tags_.push_back(std::make_shared<TimingTags>());
-    }
+    setup_data_tags_ = std::vector<TimingTags>(num_tags);
+    setup_clock_tags_ = std::vector<TimingTags>(num_tags);
 }
 
 /*
@@ -181,13 +177,13 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
         //system
 
     } else if(node_type == TN_Type::CLOCK_SOURCE) {
-        ASSERT_MSG(get_setup_clock_tags(node_id)->num_tags() == 0, "Clock source already has clock tags");
+        ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
 
         //Initialize a clock tag with zero arrival, invalid required time
         TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
 
         //Add the tag
-        get_setup_clock_tags(node_id)->add_tag(clock_tag);
+        get_setup_clock_tags(node_id).add_tag(clock_tag);
 
     } else {
         ASSERT(node_type == TN_Type::INPAD_SOURCE);
@@ -202,13 +198,13 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
 
         //Figure out if we are an input which defines a clock
         if(tg.node_is_clock_source(node_id)) {
-            ASSERT_MSG(get_setup_clock_tags(node_id)->num_tags() == 0, "Logical input already has clock tags");
+            ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Logical input already has clock tags");
 
-            get_setup_clock_tags(node_id)->add_tag(input_tag);
+            get_setup_clock_tags(node_id).add_tag(input_tag);
         } else {
-            ASSERT_MSG(get_setup_clock_tags(node_id)->num_tags() == 0, "Logical input already has data tags");
+            ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Logical input already has data tags");
 
-            get_setup_data_tags(node_id)->add_tag(input_tag);
+            get_setup_data_tags(node_id).add_tag(input_tag);
         }
     }
 }
@@ -229,8 +225,8 @@ template<class DelayCalc>
 void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
-    std::shared_ptr<TimingTags> node_data_tags = get_setup_data_tags(node_id);
-    std::shared_ptr<TimingTags> node_clock_tags = get_setup_clock_tags(node_id);
+    TimingTags& node_data_tags = get_setup_data_tags(node_id);
+    TimingTags& node_clock_tags = get_setup_clock_tags(node_id);
 
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
@@ -245,10 +241,10 @@ void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const
         //The clock arrival will have already been converted to a
         //data tag when the previous level was traversed.
 
-        const std::shared_ptr<TimingTags> src_clk_tags = get_setup_clock_tags(src_node_id);
-        for(const TimingTag& src_clk_tag : *src_clk_tags) {
+        const TimingTags& src_clk_tags = get_setup_clock_tags(src_node_id);
+        for(const TimingTag& src_clk_tag : src_clk_tags) {
             //Standard propagation through the clock network
-            node_clock_tags->max_arr(src_clk_tag.arr_time() + edge_delay, src_clk_tag);
+            node_clock_tags.max_arr(src_clk_tag.arr_time() + edge_delay, src_clk_tag);
 
             if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
                 //We are traversing a clock to data launch edge.
@@ -266,7 +262,7 @@ void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const
                 ASSERT(launch_tag.next() == nullptr);
 
                 //Mark propagated launch time as a DATA tag
-                node_data_tags->max_arr(launch_tag.arr_time() + edge_delay, launch_tag);
+                node_data_tags.max_arr(launch_tag.arr_time() + edge_delay, launch_tag);
             }
         }
     }
@@ -274,11 +270,11 @@ void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const
     /*
      * Data tags
      */
-    const std::shared_ptr<TimingTags> src_data_tags = get_setup_data_tags(src_node_id);
+    const TimingTags& src_data_tags = get_setup_data_tags(src_node_id);
 
-    for(const TimingTag& src_data_tag : *src_data_tags) {
+    for(const TimingTag& src_data_tag : src_data_tags) {
         //Standard data-path propagation
-        node_data_tags->max_arr(src_data_tag.arr_time() + edge_delay, src_data_tag);
+        node_data_tags.max_arr(src_data_tag.arr_time() + edge_delay, src_data_tag);
     }
 }
 
@@ -289,8 +285,8 @@ void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const
 void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     TN_Type node_type = tg.node_type(node_id);
 
-    std::shared_ptr<TimingTags> node_data_tags = get_setup_data_tags(node_id);
-    std::shared_ptr<TimingTags> node_clock_tags = get_setup_clock_tags(node_id);
+    TimingTags& node_data_tags = get_setup_data_tags(node_id);
+    TimingTags& node_clock_tags = get_setup_clock_tags(node_id);
 
     /*
      * Calculate required times
@@ -301,7 +297,7 @@ void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, 
         //We assume any output delay is on the OUTPAT_IPIN to OUTPAD_SINK edge,
         //so we only need set the constraint on the OUTPAD_SINK
         DomainId node_domain = tg.node_clock_domain(node_id);
-        for(const TimingTag& data_tag : *node_data_tags) {
+        for(const TimingTag& data_tag : node_data_tags) {
             //Should we be analyzing paths between these two domains?
             if(tc.should_analyze(data_tag.clock_domain(), node_domain)) {
                 //These clock domains should be analyzed
@@ -309,7 +305,7 @@ void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, 
                 float clock_constraint = tc.setup_clock_constraint(data_tag.clock_domain(), node_domain);
 
                 //Set the required time on the sink.
-                node_data_tags->min_req(Time(clock_constraint), data_tag);
+                node_data_tags.min_req(Time(clock_constraint), data_tag);
             }
         }
     } else if (node_type == TN_Type::FF_SINK) {
@@ -320,8 +316,8 @@ void SetupAnalysisVisitor::do_required_pre_traverse_node(const TimingGraph& tg, 
         //this node (i.e. take the most restrictive constraint accross all clock tags at this
         //node)
 
-        for(TimingTag& node_data_tag : *node_data_tags) {
-            for(const TimingTag& node_clock_tag : *node_clock_tags) {
+        for(TimingTag& node_data_tag : node_data_tags) {
+            for(const TimingTag& node_clock_tag : node_clock_tags) {
 
                 //Should we be analyzing paths between these two domains?
                 if(tc.should_analyze(node_data_tag.clock_domain(), node_clock_tag.clock_domain())) {
@@ -365,19 +361,19 @@ template<class DelayCalc>
 void SetupAnalysisVisitor::do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
-    std::shared_ptr<TimingTags> node_data_tags = get_setup_data_tags(node_id);
+    TimingTags& node_data_tags = get_setup_data_tags(node_id);
 
     //Pulling values from downstream sink node
     int sink_node_id = tg.edge_sink_node(edge_id);
 
     const Time& edge_delay = dc.max_edge_delay(tg, edge_id);
 
-    const std::shared_ptr<TimingTags> sink_data_tags = get_setup_data_tags(sink_node_id);
+    const TimingTags& sink_data_tags = get_setup_data_tags(sink_node_id);
 
-    for(const TimingTag& sink_tag : *sink_data_tags) {
+    for(const TimingTag& sink_tag : sink_data_tags) {
         //We only propogate the required time if we have a valid arrival time
-        TimingTagIterator matched_tag_iter = node_data_tags->find_tag_by_clock_domain(sink_tag.clock_domain());
-        if(matched_tag_iter != node_data_tags->end() && matched_tag_iter->arr_time().valid()) {
+        TimingTagIterator matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
+        if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
             //Valid arrival, update required
             matched_tag_iter->min_req(sink_tag.req_time() - edge_delay, sink_tag);
         }

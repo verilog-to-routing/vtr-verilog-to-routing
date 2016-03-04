@@ -34,8 +34,8 @@ class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        std::shared_ptr<const TimingTags> get_setup_data_tags_impl(NodeId node_id) override { return setup_visitor_.get_setup_data_tags(node_id); }
-        std::shared_ptr<const TimingTags> get_setup_clock_tags_impl(NodeId node_id) override { return setup_visitor_.get_setup_clock_tags(node_id); }
+        const TimingTags& get_setup_data_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_data_tags(node_id); }
+        const TimingTags& get_setup_clock_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_clock_tags(node_id); }
 
 
     private:
@@ -72,8 +72,8 @@ class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        std::shared_ptr<const TimingTags> get_hold_data_tags_impl(NodeId node_id) override { return hold_visitor_.get_hold_data_tags(node_id); }
-        std::shared_ptr<const TimingTags> get_hold_clock_tags_impl(NodeId node_id) override { return hold_visitor_.get_hold_clock_tags(node_id); }
+        const TimingTags& get_hold_data_tags_impl(NodeId node_id) const override { return hold_visitor_.get_hold_data_tags(node_id); }
+        const TimingTags& get_hold_clock_tags_impl(NodeId node_id) const override { return hold_visitor_.get_hold_clock_tags(node_id); }
 
     private:
         std::shared_ptr<TimingGraph> timing_graph_;
@@ -107,10 +107,10 @@ class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        std::shared_ptr<TimingTags> get_setup_data_tags(NodeId node_id) override { return setup_hold_visitor_.get_setup_data_tags(node_id); }
-        std::shared_ptr<TimingTags> get_setup_clock_tags(NodeId node_id) override { return setup_hold_visitor_.get_setup_clock_tags(node_id); }
-        std::shared_ptr<TimingTags> get_hold_data_tags(NodeId node_id) override { return setup_hold_visitor_.get_hold_data_tags(node_id); }
-        std::shared_ptr<TimingTags> get_hold_clock_tags(NodeId node_id) override { return setup_hold_visitor_.get_hold_clock_tags(node_id); }
+        const TimingTags& get_setup_data_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_setup_data_tags(node_id); }
+        const TimingTags& get_setup_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_setup_clock_tags(node_id); }
+        const TimingTags& get_hold_data_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_hold_data_tags(node_id); }
+        const TimingTags& get_hold_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_hold_clock_tags(node_id); }
 
     private:
         std::shared_ptr<TimingGraph> timing_graph_;

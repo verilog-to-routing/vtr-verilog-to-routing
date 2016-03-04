@@ -203,13 +203,16 @@ int main(int argc, char** argv) {
 
         //To selectively profile using callgrind:
         //  valgrind --tool=callgrind --collect-atstart=no --instr-atstart=no --cache-sim=yes --cacheuse=yes ./command
+        CALLGRIND_START_INSTRUMENTATION;
         for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
             //Analyze
 
             {
                 auto start = Clock::now();
 
+                CALLGRIND_TOGGLE_COLLECT;
                 serial_analyzer->update_timing();
+                CALLGRIND_TOGGLE_COLLECT;
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
             }
@@ -250,7 +253,7 @@ int main(int argc, char** argv) {
         }
 
         cout << endl;
-        cout << "Serial Analysis took " << serial_prof_data["analysis_sec"]*NUM_SERIAL_RUNS << " sec, AVG: " << serial_prof_data["analysis_sec"] << " s" << endl;
+        cout << "Serial Analysis took " << std::setprecision(6) << std::setw(6) << serial_prof_data["analysis_sec"]*NUM_SERIAL_RUNS << " sec, AVG: " << serial_prof_data["analysis_sec"] << " s" << endl;
 
         cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["arrival_pre_traversal_sec"] << " s";
         cout << " (" << std::setprecision(2) << serial_prof_data["arrival_pre_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
@@ -346,7 +349,7 @@ int main(int argc, char** argv) {
         }
         cout << endl;
 
-        cout << "Parallel Analysis took " << parallel_prof_data["analysis_sec"]*NUM_PARALLEL_RUNS << " sec, AVG: " << parallel_prof_data["analysis_sec"] << " s" << endl;
+        cout << "Parallel Analysis took " << std::setprecision(6) << std::setw(6) << parallel_prof_data["analysis_sec"]*NUM_PARALLEL_RUNS << " sec, AVG: " << parallel_prof_data["analysis_sec"] << " s" << endl;
 
         cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["arrival_pre_traversal_sec"] << " s";
         cout << " (" << std::setprecision(2) << parallel_prof_data["arrival_pre_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;

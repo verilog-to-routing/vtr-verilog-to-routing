@@ -13,10 +13,17 @@ class SetupHoldAnalysisVisitor {
         template<class DelayCalc>
         void do_required_traverse_node(TimingGraph& tg, const DelayCalc& dc, const NodeId node_id) { setup_visitor_.do_required_traverse_node(tg, dc, node_id); hold_visitor_.do_required_traverse_node(tg, dc, node_id); }
 
-        std::shared_ptr<TimingTags> get_setup_data_tags(NodeId node_id) { return setup_visitor_.get_setup_data_tags(node_id); }
-        std::shared_ptr<TimingTags> get_setup_clock_tags(NodeId node_id) { return setup_visitor_.get_setup_clock_tags(node_id); }
-        std::shared_ptr<TimingTags> get_hold_data_tags(NodeId node_id) { return hold_visitor_.get_hold_data_tags(node_id); }
-        std::shared_ptr<TimingTags> get_hold_clock_tags(NodeId node_id) { return hold_visitor_.get_hold_clock_tags(node_id); }
+        TimingTags& get_setup_data_tags(NodeId node_id) { return setup_visitor_.get_setup_data_tags(node_id); }
+        const TimingTags& get_setup_data_tags(NodeId node_id) const { return setup_visitor_.get_setup_data_tags(node_id); }
+
+        TimingTags& get_setup_clock_tags(NodeId node_id) { return setup_visitor_.get_setup_clock_tags(node_id); }
+        const TimingTags& get_setup_clock_tags(NodeId node_id) const { return setup_visitor_.get_setup_clock_tags(node_id); }
+
+        TimingTags& get_hold_data_tags(NodeId node_id) { return hold_visitor_.get_hold_data_tags(node_id); }
+        const TimingTags& get_hold_data_tags(NodeId node_id) const { return hold_visitor_.get_hold_data_tags(node_id); }
+
+        TimingTags& get_hold_clock_tags(NodeId node_id) { return hold_visitor_.get_hold_clock_tags(node_id); }
+        const TimingTags& get_hold_clock_tags(NodeId node_id) const { return hold_visitor_.get_hold_clock_tags(node_id); }
 
         void reset() { setup_visitor_.reset(); hold_visitor_.reset(); }
 

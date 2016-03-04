@@ -247,12 +247,12 @@ class TimingAnalyzer {
  */
 class SetupTimingAnalyzer : public virtual TimingAnalyzer {
     public:
-        std::shared_ptr<const TimingTags> get_setup_data_tags(NodeId node_id) { return get_setup_data_tags_impl(node_id); }
-        std::shared_ptr<const TimingTags> get_setup_clock_tags(NodeId node_id) { return get_setup_clock_tags_impl(node_id); }
+        const TimingTags& get_setup_data_tags(NodeId node_id) const { return get_setup_data_tags_impl(node_id); }
+        const TimingTags& get_setup_clock_tags(NodeId node_id) const { return get_setup_clock_tags_impl(node_id); }
 
     protected:
-        virtual std::shared_ptr<const TimingTags> get_setup_data_tags_impl(NodeId node_id) = 0;
-        virtual std::shared_ptr<const TimingTags> get_setup_clock_tags_impl(NodeId node_id) = 0;
+        virtual const TimingTags& get_setup_data_tags_impl(NodeId node_id) const = 0;
+        virtual const TimingTags& get_setup_clock_tags_impl(NodeId node_id) const = 0;
 
 };
 
@@ -262,12 +262,12 @@ class SetupTimingAnalyzer : public virtual TimingAnalyzer {
  */
 class HoldTimingAnalyzer : public virtual TimingAnalyzer {
     public:
-        std::shared_ptr<const TimingTags> get_hold_data_tags(NodeId node_id) { return get_hold_data_tags_impl(node_id); }
-        std::shared_ptr<const TimingTags> get_hold_clock_tags(NodeId node_id) { return get_hold_clock_tags_impl(node_id); }
+        const TimingTags& get_hold_data_tags(NodeId node_id) const { return get_hold_data_tags_impl(node_id); }
+        const TimingTags& get_hold_clock_tags(NodeId node_id) const { return get_hold_clock_tags_impl(node_id); }
 
     protected:
-        virtual std::shared_ptr<const TimingTags> get_hold_data_tags_impl(NodeId node_id) = 0;
-        virtual std::shared_ptr<const TimingTags> get_hold_clock_tags_impl(NodeId node_id) = 0;
+        virtual const TimingTags& get_hold_data_tags_impl(NodeId node_id) const = 0;
+        virtual const TimingTags& get_hold_clock_tags_impl(NodeId node_id) const = 0;
 };
 
 /**
