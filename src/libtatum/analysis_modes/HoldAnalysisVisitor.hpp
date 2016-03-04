@@ -7,6 +7,11 @@
 
 class HoldAnalysisVisitor {
     public:
+        HoldAnalysisVisitor(size_t num_nodes)
+            : hold_data_tags_(num_nodes)
+            , hold_clock_tags_(num_nodes)
+            {}
+
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
@@ -29,3 +34,9 @@ class HoldAnalysisVisitor {
         std::vector<TimingTags> hold_clock_tags_;
 };
 
+void HoldAnalysisVisitor::reset() {
+    size_t num_tags = hold_data_tags_.size();
+
+    hold_data_tags_ = std::vector<TimingTags>(num_tags);
+    hold_clock_tags_ = std::vector<TimingTags>(num_tags);
+}

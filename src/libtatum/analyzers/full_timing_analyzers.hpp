@@ -57,6 +57,7 @@ class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints_)
             , delay_calculator_(delay_calculator)
+            , hold_visitor_(timing_graph_->num_nodes())
             {}
 
     protected:
@@ -92,6 +93,7 @@ class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints_)
             , delay_calculator_(delay_calculator)
+            , setup_hold_visitor_(timing_graph_->num_nodes())
             {}
 
     protected:
