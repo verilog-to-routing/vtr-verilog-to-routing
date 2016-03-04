@@ -16,8 +16,8 @@ void print_level_histogram(const TimingGraph& tg, int nbuckets);
 void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets);
 void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets);
 
-void print_timing_graph(const TimingGraph& tg);
-void print_levelization(const TimingGraph& tg);
+void print_timing_graph(std::shared_ptr<const TimingGraph> tg);
+void print_levelization(std::shared_ptr<const TimingGraph> tg);
 
 std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg);
 std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg);

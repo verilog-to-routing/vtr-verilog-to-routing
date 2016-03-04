@@ -116,35 +116,34 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
 }
 
 
-void print_timing_graph(const TimingGraph& tg) {
-    for(NodeId node_id = 0; node_id < tg.num_nodes(); node_id++) {
+void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
+    for(NodeId node_id = 0; node_id < tg->num_nodes(); node_id++) {
         cout << "Node: " << node_id;
-        cout << " Type: " << tg.node_type(node_id);
-        cout << " Out Edges: " << tg.num_node_out_edges(node_id);
-        cout << " is_clk_src: " << tg.node_is_clock_source(node_id);
-        cout << endl;
-        for(int out_edge_idx = 0; out_edge_idx < tg.num_node_out_edges(node_id); out_edge_idx++) {
-            EdgeId edge_id = tg.node_out_edge(node_id, out_edge_idx);
-            ASSERT(tg.edge_src_node(edge_id) == node_id);
+        cout << " Type: " << tg->node_type(node_id);
+        cout << " Out Edges: " << tg->num_node_out_edges(node_id);
+        cout << " is_clk_src: " << tg->node_is_clock_source(node_id);
+        cout << "\n";
+        for(int out_edge_idx = 0; out_edge_idx < tg->num_node_out_edges(node_id); out_edge_idx++) {
+            EdgeId edge_id = tg->node_out_edge(node_id, out_edge_idx);
+            ASSERT(tg->edge_src_node(edge_id) == node_id);
 
-            NodeId sink_node_id = tg.edge_sink_node(edge_id);
+            NodeId sink_node_id = tg->edge_sink_node(edge_id);
 
-            cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << endl;
-            //<< " Delay: " << tg.edge_delay(edge_id).value() << endl;
+            cout << "\tEdge src node: " << node_id << " sink node: " << sink_node_id << "\n";
         }
     }
 }
 
-void print_levelization(const TimingGraph& tg) {
-    cout << "Num Levels: " << tg.num_levels() << endl;
-    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
-        const auto& level = tg.level(ilevel);
-        cout << "Level " << ilevel << ": " << level.size() << " nodes" << endl;
+void print_levelization(std::shared_ptr<const TimingGraph> tg) {
+    cout << "Num Levels: " << tg->num_levels() << "\n";
+    for(int ilevel = 0; ilevel < tg->num_levels(); ilevel++) {
+        const auto& level = tg->level(ilevel);
+        cout << "Level " << ilevel << ": " << level.size() << " nodes" << "\n";
         cout << "\t";
         for(auto node_id : level) {
             cout << node_id << " ";
         }
-        cout << endl;
+        cout << "\n";
     }
 }
 
