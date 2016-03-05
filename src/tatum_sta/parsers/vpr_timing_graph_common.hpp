@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <set>
 #include <cmath>
 #include "timing_graph_fwd.hpp"
 
@@ -147,6 +148,14 @@ class VprArrReqTimes {
                     std::cout << std::endl;
                 }
             }
+        }
+
+        std::set<int> domains() {
+            std::set<int> domain_values;
+            for(const auto& pair : arr) {
+                domain_values.insert(pair.first);
+            }
+            return domain_values;
         }
     private:
 

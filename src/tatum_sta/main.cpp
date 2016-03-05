@@ -139,7 +139,9 @@ int main(int argc, char** argv) {
         expected_arr_req_times = VprArrReqTimes();
         expected_arr_req_times.set_num_nodes(orig_expected_arr_req_times.get_num_nodes());
 
-        for(int src_domain = 0; src_domain < (int) orig_expected_arr_req_times.get_num_clocks(); src_domain++) {
+        //Collect the clock domains with actual values (clock domain IDs could be discontinous))))
+
+        for(auto src_domain : orig_expected_arr_req_times.domains()) {
             //For every clock domain pair
             for(int i = 0; i < orig_expected_arr_req_times.get_num_nodes(); i++) {
                 NodeId new_id = vpr_node_map[i];
