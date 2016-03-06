@@ -22,11 +22,11 @@ char **GetNodeTokens(INP ezxml_t Node);
 char **LookaheadNodeTokens(INP ezxml_t Node);
 int CountChildren(INP ezxml_t Node, INP const char *Name,
 		INP int min_count);
-int GetIntProperty(INP ezxml_t Parent, INP char *Name,
+int GetIntProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP int default_value);
-float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
+float GetFloatProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP float default_value);
-bool GetboolProperty(INP ezxml_t Parent, INP char *Name,
+bool GetboolProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP bool default_value);
 #ifdef __cplusplus 
 }

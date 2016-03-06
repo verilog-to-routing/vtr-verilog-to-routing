@@ -265,7 +265,7 @@ LookaheadNodeTokens(INP ezxml_t Node) {
 
 /* Find integer attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
+extern int GetIntProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP int default_value) {
 	const char * Prop;
 	int property_value;
@@ -281,7 +281,7 @@ extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
 
 /* Find floating-point attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
+extern float GetFloatProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP float default_value) {
 
 	const char * Prop;
@@ -298,7 +298,7 @@ extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
 
 /* Find bool attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern bool GetboolProperty(INP ezxml_t Parent, INP char *Name,
+extern bool GetboolProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP bool default_value) {
 
 	const char * Prop;
