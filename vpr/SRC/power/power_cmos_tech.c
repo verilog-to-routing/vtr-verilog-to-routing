@@ -61,7 +61,7 @@ static int power_compare_buffer_sc_levr(const void * key_void,
 		const void * elem_void);
 static void power_tech_xml_load_components(ezxml_t parent);
 static void power_tech_xml_load_component(ezxml_t parent,
-		PowerSpicedComponent ** component, char * name,
+		PowerSpicedComponent ** component, const char * name,
 		float (*usage_fn)(int num_inputs, float transistor_size));
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -100,11 +100,11 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 	cur = ezxml_parse_file(cmos_tech_behavior_filepath);
 
 	prop = FindProperty(cur, "file", true);
-	ezxml_set_attr(cur, "file", NULL);
+	ezxml_set_attr(cur, my_strdup("file"), NULL);
 
 	prop = FindProperty(cur, "size", true);
 	g_power_tech->tech_size = atof(prop);
-	ezxml_set_attr(cur, "size", NULL);
+	ezxml_set_attr(cur, my_strdup("size"), NULL);
 
 	child = FindElement(cur, "operating_point", true);
 	g_power_tech->temperature = GetFloatProperty(child, "temperature", true, 0);
@@ -152,7 +152,7 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 }
 
 static void power_tech_xml_load_component(ezxml_t parent,
-		PowerSpicedComponent ** component, char * name,
+		PowerSpicedComponent ** component, const char * name,
 		float (*usage_fn)(int num_inputs, float transistor_size)) {
 	ezxml_t cur, child, gc, prev;
 
@@ -438,7 +438,7 @@ static void process_tech_xml_load_transistor_info(ezxml_t parent) {
 	} else {
 		assert(0);
 	}
-	ezxml_set_attr(parent, "type", NULL);
+	ezxml_set_attr(parent, my_strdup("type"), NULL);
 
 	/* Get long transistor information (W=1,L=2) */
 	trans_inf->long_trans_inf = (t_transistor_size_inf*) my_malloc(
