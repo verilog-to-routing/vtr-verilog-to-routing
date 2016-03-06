@@ -274,7 +274,7 @@ extern int GetIntProperty(INP ezxml_t Parent, INP const char *Name,
 	Prop = FindProperty(Parent, Name, Required);
 	if (Prop) {
 		property_value = my_atoi(Prop);
-		ezxml_set_attr(Parent, Name, NULL);
+		ezxml_set_attr(Parent, my_strdup(Name), NULL);
 	}
 	return property_value;
 }
@@ -291,7 +291,7 @@ extern float GetFloatProperty(INP ezxml_t Parent, INP const char *Name,
 	Prop = FindProperty(Parent, Name, Required);
 	if (Prop) {
 		property_value = (float)atof(Prop);
-		ezxml_set_attr(Parent, Name, NULL);
+		ezxml_set_attr(Parent, my_strdup(Name), NULL);
 	}
 	return property_value;
 }
@@ -317,7 +317,7 @@ extern bool GetboolProperty(INP ezxml_t Parent, INP const char *Name,
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
 				"Unknown value %s for bool attribute %s in %s", Prop, Name, Parent->name);
 		}
-		ezxml_set_attr(Parent, Name, NULL);
+		ezxml_set_attr(Parent, my_strdup(Name), NULL);
 	}
 	return property_value;
 }
