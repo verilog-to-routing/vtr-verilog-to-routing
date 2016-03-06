@@ -1164,6 +1164,12 @@ ezxml_t ezxml_set_txt(ezxml_t xml, char *txt) {
 	return xml;
 }
 
+/* const char* version for string literals */
+ezxml_t ezxml_set_txt(ezxml_t xml, const char *txt) {
+    return ezxml_set_txt(xml, my_strdup(txt));
+}
+
+
 /* Sets the given tag attribute or adds a new attribute if not found. A value */
 /* of NULL will remove the specified attribute. Returns the tag given. */
 ezxml_t ezxml_set_attr(ezxml_t xml, char *name, char *value) {
@@ -1219,6 +1225,12 @@ ezxml_t ezxml_set_attr(ezxml_t xml, char *name, char *value) {
 	xml->flags &= ~EZXML_DUP; /* clear strdup() flag */
 	return xml;
 }
+
+/* const char* version for string literals */
+ezxml_t ezxml_set_attr(ezxml_t xml, const char *name, char *value) {
+    return ezxml_set_attr(xml, my_strdup(name), value);
+}
+
 
 /* sets a flag for the given tag and returns the tag */
 ezxml_t ezxml_set_flag(ezxml_t xml, short flag) {

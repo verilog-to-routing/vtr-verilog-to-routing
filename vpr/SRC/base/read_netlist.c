@@ -103,7 +103,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	/* Check top-level netlist attributes */
 	Prop = FindProperty(Top, "name", true);
 	vpr_printf_info("Netlist generated from file '%s'.\n", Prop);
-	ezxml_set_attr(Top, my_strdup("name"), NULL);
+	ezxml_set_attr(Top, "name", NULL);
 
 	Prop = FindProperty(Top, "instance", true);
 	if (strcmp(Prop, "FPGA_packed_netlist[0]") != 0) {
@@ -111,7 +111,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 				"Expected instance to be \"FPGA_packed_netlist[0]\", found %s.",
 				Prop);
 	}
-	ezxml_set_attr(Top, my_strdup("instance"), NULL);
+	ezxml_set_attr(Top, "instance", NULL);
 
 	/* Parse top-level netlist I/Os */
 	Cur = FindElement(Top, "inputs", true);
@@ -254,11 +254,11 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	Prop = FindProperty(Parent, "name", true);
 	cb[index].name = my_strdup(Prop);
 	cb[index].pb->name = my_strdup(Prop);
-	ezxml_set_attr(Parent, my_strdup("name"), NULL);
+	ezxml_set_attr(Parent, "name", NULL);
 
 	Prop = FindProperty(Parent, "instance", true);
 	tokens = GetTokensFromString(Prop, &num_tokens);
-	ezxml_set_attr(Parent, my_strdup("instance"), NULL);
+	ezxml_set_attr(Parent, "instance", NULL);
 	if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
 			|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
 			|| tokens[2].type != TOKEN_INT
@@ -289,7 +289,7 @@ static void processComplexBlock(INOUTP ezxml_t Parent, INOUTP t_block *cb,
 	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
 	
 	Prop = FindProperty(Parent, "mode", true);
-	ezxml_set_attr(Parent, my_strdup("mode"), NULL);
+	ezxml_set_attr(Parent, "mode", NULL);
 
 	found = false;
 	for (i = 0; i < pb_type->num_modes; i++) {
@@ -381,7 +381,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 
 				instance_type = FindProperty(Cur, "instance", true);
 				tokens = GetTokensFromString(instance_type, &num_tokens);
-				ezxml_set_attr(Cur, my_strdup("instance"), NULL);
+				ezxml_set_attr(Cur, "instance", NULL);
 				if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
 						|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
 						|| tokens[2].type != TOKEN_INT
@@ -425,7 +425,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 				}
 
 				Prop = FindProperty(Cur, "name", true);
-				ezxml_set_attr(Cur, my_strdup("name"), NULL);
+				ezxml_set_attr(Cur, "name", NULL);
 				if (0 != strcmp(Prop, "open")) {
 					pb->child_pbs[i][pb_index].name = my_strdup(Prop);
 
@@ -434,7 +434,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 
 					Prop = FindProperty(Cur, "mode", false);
 					if (Prop) {
-						ezxml_set_attr(Cur, my_strdup("mode"), NULL);
+						ezxml_set_attr(Cur, "mode", NULL);
 					}
 					pb->child_pbs[i][pb_index].mode = 0;
 					found = false;
@@ -469,7 +469,7 @@ static void processPb(INOUTP ezxml_t Parent, INOUTP t_block *cb, INP int index,
 						lookahead = FindFirstElement(lookahead, "port", true);
 						Prop = FindProperty(Cur, "mode", false);
 						if (Prop) {
-							ezxml_set_attr(Cur, my_strdup("mode"), NULL);
+							ezxml_set_attr(Cur, "mode", NULL);
 						}
 						pb->child_pbs[i][pb_index].mode = 0;
 						found = false;
@@ -587,7 +587,7 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 			CheckElement(Cur, "port");
 
 			Prop = FindProperty(Cur, "name", true);
-			ezxml_set_attr(Cur, my_strdup("name"), NULL);
+			ezxml_set_attr(Cur, "name", NULL);
 
 			in_port = out_port = clock_port = 0;
 			found = false;
