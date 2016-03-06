@@ -8,8 +8,22 @@ Tasks provide a framework for running the VTR flow on multiple benchmarks and ar
 A task specifies a set of benchmark circuits and architectures to be used.
 By default, tasks execute the :ref:`run_vtr_flow` script for every circuit/architecture combination.
 
+Example Tasks
+~~~~~~~~~~~~~
+* ``basic_flow``: Runs the VTR flow mapping a simple Verilog circuit to an FPGA architecture.
+
+* ``timing``: Runs the flagship VTR benchmarks on a comprehensive, realistic architecture file.
+
+* ``timing_chain``: Same as ``timing`` but with carry chains.
+
+* ``regression_mcnc``: Runs VTR on the historical MCNC benchmarks on a legacy architecture file. (Note: This is only useful for comparing to the past, it is not realistic in the modern world)
+
+* ``regression_titan\titan_small``: Runs a small subset of the Titan benchmarks targetting a simplified Altera Stratix IV (commercial FPGA) architecture capture
+
+* ``regression_fpu_hard_block_arch``: Custom hard FPU logic block architecture
+
 File Layout
-~~~~~~~~~~~~~~
+~~~~~~~~~~~
 
 All of VTR's included tasks are located here::
 
