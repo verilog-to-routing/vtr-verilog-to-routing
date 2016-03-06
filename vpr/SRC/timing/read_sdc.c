@@ -521,7 +521,7 @@ static bool apply_set_multicycle_path(t_sdc_set_multicycle_path* sdc_set_multicy
 static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
     int iio, iport;
     bool found;
-    char* io_type;
+    const char* io_type;
     char* clock_name;
 
 
