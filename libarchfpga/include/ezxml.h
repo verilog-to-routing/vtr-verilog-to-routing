@@ -147,6 +147,7 @@ ezxml_t ezxml_add_child(ezxml_t xml, char *name, size_t off);
 
 /* sets the character content for the given tag and returns the tag */
 ezxml_t ezxml_set_txt(ezxml_t xml, char *txt);
+ezxml_t ezxml_set_txt(ezxml_t xml, const char *txt);
 
 /* wrapper for ezxml_set_txt() that strdup()s txt */
 #define ezxml_set_txt_d(xml, txt) \
@@ -154,8 +155,8 @@ ezxml_t ezxml_set_txt(ezxml_t xml, char *txt);
 
 /* Sets the given tag attribute or adds a new attribute if not found. A value */
 /* of NULL will remove the specified attribute. Returns the tag given. */
-ezxml_t ezxml_set_attr(ezxml_t xml, const char *name, char *value);
 ezxml_t ezxml_set_attr(ezxml_t xml, char *name, char *value);
+ezxml_t ezxml_set_attr(ezxml_t xml, const char *name, char *value);
 
 /* Wrapper for ezxml_set_attr() that strdup()s name/value. Value cannot be NULL */
 #define ezxml_set_attr_d(xml, name, value) \
