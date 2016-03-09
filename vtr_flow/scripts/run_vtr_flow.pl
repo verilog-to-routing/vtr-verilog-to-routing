@@ -516,21 +516,35 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_power_args, "$tech_file" );
 	}
 	if ( $min_chan_width < 0 ) {
+
+		my @vpr_args;
+		push( @vpr_args, $architecture_file_name );
+		push( @vpr_args, "$benchmark_name" );
+		push( @vpr_args, "--blif_file"	);
+		push( @vpr_args, "$prevpr_output_file_name");
+		push( @vpr_args, "--timing_analysis" );   
+		push( @vpr_args, "$timing_driven");
+		push( @vpr_args, "--timing_driven_clustering" );
+		push( @vpr_args, "$timing_driven");
+		push( @vpr_args, "--cluster_seed_type" );       
+		push( @vpr_args, "$vpr_cluster_seed_type");
+		push( @vpr_args, "--routing_failure_predictor" );
+		push( @vpr_args, "$routing_failure_predictor");
+		if (-e $sdc_file_path){
+			push( @vpr_args, "--sdc_file" );				  
+			push( @vpr_args, "$sdc_file_path");
+		}
+		push( @vpr_args, "--seed");			 		  
+		push( @vpr_args, "$seed");
+		push( @vpr_args, "$congestion_analysis");
+		push( @vpr_args, "$switch_usage_analysis");
+		push( @vpr_args, @forwarded_vpr_args);
+		push( @vpr_args, "--nodisp");
+
+
 		$q = &system_with_timeout(
             $vpr_path, "vpr.out", 
-            $timeout, $temp_dir,
-			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",				  "$prevpr_output_file_name",
-			"--timing_analysis",          "$timing_driven",
-			"--timing_driven_clustering", "$timing_driven",
-			"--cluster_seed_type",        "$vpr_cluster_seed_type",
-			"--routing_failure_predictor", "$routing_failure_predictor",
-			"--sdc_file", 				  "$sdc_file_path",
-			"--seed",			 		  "$seed",
-			"$congestion_analysis",
-            "$switch_usage_analysis",
-            @forwarded_vpr_args,
-            "--nodisp"
+            $timeout, $temp_dir, @vpr_args
 		);
     
 		if ( $timing_driven eq "on" ) {
@@ -564,21 +578,35 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 			if ( -e $vpr_route_output_file_path ) {
 				system "rm -f $vpr_route_output_file_path";
+
+				my @vpr_args;
+				push( @vpr_args, $architecture_file_name );
+				push( @vpr_args, "$benchmark_name" );
+				push( @vpr_args, "--route" );
+				push( @vpr_args, "--blif_file"	);
+				push( @vpr_args, "$prevpr_output_file_name");
+				push( @vpr_args, "--route_chan_width" );   
+				push( @vpr_args, "$min_chan_width" );
+				push( @vpr_args, "--max_router_iterations" );
+				push( @vpr_args, "$max_router_iterations");
+				push( @vpr_args, "--cluster_seed_type"   );
+				push( @vpr_args, "$vpr_cluster_seed_type");
+				push( @vpr_args, "--nodisp" );             
+				push( @vpr_args, @vpr_power_args);
+				push( @vpr_args, "--gen_postsynthesis_netlist" );
+				push( @vpr_args, "$gen_postsynthesis_netlist");
+				if (-e $sdc_file_path){
+					push( @vpr_args, "--sdc_file");			 
+					push( @vpr_args, "$sdc_file_path");
+				}
+				push( @vpr_args, @forwarded_vpr_args);
+				push( @vpr_args, "$congestion_analysis");
+				push( @vpr_args, "$switch_usage_analysis");
+
+
 				$q = &system_with_timeout(
-					$vpr_path,               "vpr.crit_path.out",
-					$timeout,                $temp_dir,
-					$architecture_file_name, "$benchmark_name",
-					"--route",
-					"--blif_file",           "$prevpr_output_file_name",
-					"--route_chan_width",    "$min_chan_width",
-                    "--max_router_iterations", "$max_router_iterations",
-					"--cluster_seed_type",   "$vpr_cluster_seed_type",
-					"--nodisp",              @vpr_power_args,
-					"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
-					"--sdc_file",			 "$sdc_file_path",
-					@forwarded_vpr_args,
-					"$congestion_analysis",
-                    "$switch_usage_analysis"
+					$vpr_path, "vpr.crit_path.out",
+					$timeout, $temp_dir, @vpr_args
 				);
 			}
 		}
@@ -592,23 +620,38 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 &find_and_move_newest("$benchmark_name", "place");
             }
         }
+		my @vpr_args;
+		push( @vpr_args, $architecture_file_name );
+		push( @vpr_args, "$benchmark_name" );
+		push( @vpr_args, "--blif_file"	);
+		push( @vpr_args, "$prevpr_output_file_name");
+		push( @vpr_args, "--timing_analysis" );   
+		push( @vpr_args, "$timing_driven");
+		push( @vpr_args, "--timing_driven_clustering" );
+		push( @vpr_args, "$timing_driven");
+		push( @vpr_args, "--route_chan_width" );   
+		push( @vpr_args, "$min_chan_width" );
+		push( @vpr_args, "--max_router_iterations" );
+		push( @vpr_args, "$max_router_iterations");
+		push( @vpr_args, "--nodisp");
+		push( @vpr_args, "--cluster_seed_type" );       
+		push( @vpr_args, "$vpr_cluster_seed_type");
+		push( @vpr_args, @vpr_power_args);
+		push( @vpr_args, "--gen_postsynthesis_netlist" );
+		push( @vpr_args, "$gen_postsynthesis_netlist");
+		if (-e $sdc_file_path){
+			push( @vpr_args, "--sdc_file" );				  
+			push( @vpr_args, "$sdc_file_path");
+		}
+		push( @vpr_args, "$switch_usage_analysis");
+		push( @vpr_args, @forwarded_vpr_args);
+		push( @vpr_args, $specific_vpr_stage);
+
 
 		$q = &system_with_timeout(
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
-			$architecture_file_name,      "$benchmark_name",
-			"--blif_file",                "$prevpr_output_file_name",
-			"--timing_analysis",          "$timing_driven",
-			"--timing_driven_clustering", "$timing_driven",
-			"--route_chan_width",         "$min_chan_width",
-            "--max_router_iterations",    "$max_router_iterations",
-			"--nodisp",                   "--cluster_seed_type",
-			"$vpr_cluster_seed_type",     @vpr_power_args,
-			"--gen_postsynthesis_netlist", "$gen_postsynthesis_netlist",
-			"--sdc_file",				  "$sdc_file_path",
-            "$switch_usage_analysis",
-            @forwarded_vpr_args,
-            $specific_vpr_stage
+			@vpr_args
 		);
 	}
 	  					
