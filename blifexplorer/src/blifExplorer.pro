@@ -59,15 +59,6 @@ HEADERS  += mainwindow.h \
     ../../ODIN_II/SRC/adders.h \
     ../../ODIN_II/SRC/implicit_memory.h \
     ../../ODIN_II/SRC/subtractions.h \
-    ../../printhandler/SRC/TIO_InputOutputHandlers/TIO_PrintHandlerExtern.h \
-    ../../printhandler/SRC/TIO_InputOutputHandlers/TIO_SkinHandler.h \
-    ../../printhandler/SRC/TIO_InputOutputHandlers/TIO_PrintHandler.h \
-    ../../printhandler/SRC/TIO_InputOutputHandlers/TIO_FileOutput.h \
-    ../../printhandler/SRC/TIO_InputOutputHandlers/TIO_CustomOutput.h \
-    ../../printhandler/SRC/TIO_InputOutputHandlers/TIO_FileHandler.h \
-    ../../printhandler/SRC/TC_Common/TC_Name.h \
-    ../../printhandler/SRC/TC_Common/TC_StringUtils.h \
-    ../../printhandler/SRC/TC_Common/RegExp.h \
     clockconfig.h
 
 
@@ -81,7 +72,6 @@ INCLUDEPATH += ../../libarchfpga/include ../../libarchfpga ../../ODIN_II/SRC ../
 
 LIBS += -L../../libarchfpga \
 -L../../ODIN_II/OBJ \
--lm -ldl\
 \
 ../../ODIN_II/OBJ/odin_ii_func.o \
 ../../ODIN_II/OBJ/netlist_visualizer.o \
@@ -98,16 +88,19 @@ LIBS += -L../../libarchfpga \
 ../../ODIN_II/OBJ/queue.o \
 ../../ODIN_II/OBJ/hashtable.o \
 ../../ODIN_II/OBJ/simulate_blif.o\
+../../ODIN_II/OBJ/ace.o\
 ../../ODIN_II/OBJ/print_netlist.o \
 \
 ../../ODIN_II/OBJ/read_xml_config_file.o \
 ../../ODIN_II/OBJ/outputs.o \
 ../../ODIN_II/OBJ/parse_making_ast.o \
+../../ODIN_II/OBJ/ast_elaborate.o \
 ../../ODIN_II/OBJ/ast_util.o \
 ../../ODIN_II/OBJ/high_level_data.o \
 ../../ODIN_II/OBJ/ast_optimizations.o \
 ../../ODIN_II/OBJ/netlist_create_from_ast.o \
 ../../ODIN_II/OBJ/netlist_optimizations.o \
+../../ODIN_II/OBJ/netlist_cleanup.o \
 ../../ODIN_II/OBJ/output_blif.o \
 ../../ODIN_II/OBJ/netlist_check.o \
 ../../ODIN_II/OBJ/activity_estimation.o \
@@ -121,18 +114,12 @@ LIBS += -L../../libarchfpga \
 ../../ODIN_II/OBJ/implicit_memory.o \
 ../../ODIN_II/OBJ/subtractions.o \
 \
-/usr/lib/x86_64-linux-gnu/libdl.so \
 ../../libarchfpga/ezxml.o \
 ../../libarchfpga/read_xml_arch_file.o \
 ../../libarchfpga/read_xml_util.o \
 ../../libarchfpga/util.o\
 ../../libarchfpga/ReadLine.o \
-../../printhandler/OBJ/TIO_InputOutputHandlers/TIO_PrintHandlerExtern.o \
-../../printhandler/OBJ/TIO_InputOutputHandlers/TIO_SkinHandler.o \
-../../printhandler/OBJ/TIO_InputOutputHandlers/TIO_PrintHandler.o \
-../../printhandler/OBJ/TIO_InputOutputHandlers/TIO_FileOutput.o \
-../../printhandler/OBJ/TIO_InputOutputHandlers/TIO_CustomOutput.o \
-../../printhandler/OBJ/TIO_InputOutputHandlers/TIO_FileHandler.o \
-../../printhandler/OBJ/TC_Common/TC_Name.o \
-../../printhandler/OBJ/TC_Common/TC_StringUtils.o \
-../../printhandler/OBJ/TC_Common/RegExp.o \
+../../libarchfpga/parse_switchblocks.o \
+\
+../../liblog/obj/log.o \
+-lm -ldl\

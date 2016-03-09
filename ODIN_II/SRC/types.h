@@ -486,6 +486,7 @@ struct ace_obj_info_t_t
 	double switch_act;
 	double prob0to1;
 	double prob1to0;
+	int depth;
 };
 
 struct npin_t_t

@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 /* Ted Campbell, Aug 14 2007 */
 #if !defined(WIN32) && !defined(_WIN32)
@@ -644,7 +645,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 						(l) ? (char*)realloc(attr[l + 1], (l / 2) + 2) : (char*)malloc(2); /* mem for list of maloced vals */
 				strcpy(attr[l + 3] + (l / 2), " "); /* value is not malloced */
 				attr[l + 2] = NULL; /* null terminate list */
-				attr[l + 1] = ""; /* temporary attribute value */
+				attr[l + 1] = my_strdup(""); /* temporary attribute value */
 				attr[l] = s; /* set attribute name */
 
 				s += strcspn(s, EZXML_WS "=/>");
@@ -787,24 +788,20 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 /* Wrapper for ezxml_parse_str() that accepts a file stream. Reads the entire */
 /* stream into memory and then parses it. For xml files, use ezxml_parse_file() */
 /* or ezxml_parse_fd() */
-ezxml_t ezxml_parse_fp(FILE * fp) {
+ezxml_t ezxml_parse_fp(FILE * fp, size_t size) {
 	ezxml_root_t root;
-	size_t l, len = 0;
-	char *s;
+	char *s; //The buffer
 
 	/* Jason Luu, Aug 29, 2007. Removed assignment in conditional statement */
-	s = (char*)malloc(EZXML_BUFSIZE);
+	s = (char*)malloc(size);
 	if (!s)
 		return NULL;
-	do {
-		len += (l = fread((s + len), 1, EZXML_BUFSIZE, fp));
-		if (l == EZXML_BUFSIZE)
-			s = (char*)realloc(s, len + EZXML_BUFSIZE);
-	} while (s && l == EZXML_BUFSIZE);
 
-	if (!s)
-		return NULL;
-	root = (ezxml_root_t) ezxml_parse_str(s, len);
+    size_t bytes_read = fread(s, 1, size, fp);
+
+    assert(bytes_read == size);
+
+	root = (ezxml_root_t) ezxml_parse_str(s, bytes_read);
 	/* Ted Campbell, Aug 14, 2007. Added explicit cast. */
 	root->len = (size_t) (-1); /* so we know to free s in ezxml_free() */
 	return &root->xml;
@@ -844,11 +841,18 @@ ezxml_t ezxml_parse_fd(int fd) {
 
 /* a wrapper for ezxml_parse_fd that accepts a file name */
 ezxml_t ezxml_parse_file(const char *file) {
-	int fd = open(file, O_RDONLY, 0);
-	ezxml_t xml = ezxml_parse_fd(fd);
+    ezxml_t xml;
 
-	if (fd >= 0)
-		close(fd);
+    FILE* fp = fopen(file, "r");
+	if (fp) {
+        //Determine the file size
+        struct stat st;
+        stat(file, &st);
+
+
+        xml = ezxml_parse_fp(fp, st.st_size);
+		fclose(fp);
+    }
 	return xml;
 }
 
@@ -1072,14 +1076,14 @@ ezxml_error(ezxml_t xml) {
 
 /* returns a new empty ezxml structure with the given root tag name */
 ezxml_t ezxml_new(char *name) {
-	static char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
+	static const char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
 			"apos;", "&#39;", "amp;", "&#38;", NULL };
 	ezxml_root_t root = (ezxml_root_t) memset(malloc(sizeof(struct ezxml_root)),
 			'\0', sizeof(struct ezxml_root));
 
 	root->xml.name = name;
 	root->cur = &root->xml;
-	strcpy(root->err, root->xml.txt = "");
+	strcpy(root->err, root->xml.txt = my_strdup(""));
 	root->ent = (char**)memcpy(malloc(sizeof(ent)), ent, sizeof(ent));
 	root->attr = root->pi = (char ***) (root->xml.attr = EZXML_NIL);
 	return &root->xml;
@@ -1143,7 +1147,7 @@ ezxml_t ezxml_add_child(ezxml_t xml, char *name, size_t off) {
 			sizeof(struct ezxml));
 	child->name = name;
 	child->attr = EZXML_NIL;
-	child->txt = "";
+	child->txt = my_strdup("");
 
 	return ezxml_insert(child, xml, off);
 }
@@ -1159,6 +1163,12 @@ ezxml_t ezxml_set_txt(ezxml_t xml, char *txt) {
 	xml->txt = txt;
 	return xml;
 }
+
+/* const char* version for string literals */
+ezxml_t ezxml_set_txt(ezxml_t xml, const char *txt) {
+    return ezxml_set_txt(xml, my_strdup(txt));
+}
+
 
 /* Sets the given tag attribute or adds a new attribute if not found. A value */
 /* of NULL will remove the specified attribute. Returns the tag given. */
@@ -1215,6 +1225,12 @@ ezxml_t ezxml_set_attr(ezxml_t xml, char *name, char *value) {
 	xml->flags &= ~EZXML_DUP; /* clear strdup() flag */
 	return xml;
 }
+
+/* const char* version for string literals */
+ezxml_t ezxml_set_attr(ezxml_t xml, const char *name, char *value) {
+    return ezxml_set_attr(xml, my_strdup(name), value);
+}
+
 
 /* sets a flag for the given tag and returns the tag */
 ezxml_t ezxml_set_flag(ezxml_t xml, short flag) {

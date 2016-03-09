@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 //global vars needed for odin
 t_arch Arch;
 int current_parse_file;
+global_args_t global_args;
 
 OdinInterface::OdinInterface()
 {
@@ -50,7 +51,7 @@ void OdinInterface::startOdin()
     {
         fprintf(stderr, "Reading FPGA Architecture file\n");
 
-        XmlReadArch(global_args.arch_file, (boolean)FALSE, &Arch, &type_descriptors, &num_types);
+        XmlReadArch(global_args.arch_file, (bool)FALSE, &Arch, &type_descriptors, &num_types);
     }
 
     if (!global_args.blif_file)

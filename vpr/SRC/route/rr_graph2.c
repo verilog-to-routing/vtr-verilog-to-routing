@@ -2109,7 +2109,7 @@ short ******alloc_sblock_pattern_lookup(
 
 	/* Alloc each list of pointers in one go. items is a running product that increases
 	 * with each new dimension of the matrix. */
-	int items = 1;
+	size_t items = 1;
 	items *= (L_nx + 1);
 	short ******i_list = (short ******) my_malloc(sizeof(short *****) * items);
 	items *= (L_ny + 1);

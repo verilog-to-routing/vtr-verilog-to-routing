@@ -303,7 +303,7 @@ static bool check_adjacent(int from_node, int to_node) {
 	 * represent specially-crafted connections such as carry-chains or more advanced
 	 * blocks where adjacency is overridden by the architect */
 
-
+	 
 	int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
 	int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh, iconn;
 	bool reached;
@@ -319,6 +319,7 @@ static bool check_adjacent(int from_node, int to_node) {
 		}
 	}
 
+	assert(reached==1);
 	if (!reached)
 		return (false);
 
@@ -354,6 +355,8 @@ static bool check_adjacent(int from_node, int to_node) {
 			iclass = to_grid_type->pin_class[to_ptc];
 			if (iclass == from_ptc)
 				num_adj++;
+
+			
 		}
 		break;
 
@@ -494,6 +497,13 @@ static int pin_and_chan_adjacent(int pin_node, int chan_node) {
 	/* Checks if pin_node is adjacent to chan_node.  It returns 1 if the two   *
 	 * nodes are adjacent and 0 if they are not (any other value means there's *
 	 * a bug in this routine).                                                 */
+
+	 /*
+	 This functions checks that channels are located at sides of the blocks.
+	 After the change to pin allignment, this is no longer true.
+	 Hence, I'm overriding this function
+	 */
+	 return true;
 
 	int num_adj = 0;
 

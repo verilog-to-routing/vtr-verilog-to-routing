@@ -625,24 +625,24 @@ static void processPorts(INOUTP ezxml_t Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 			if (0 == strcmp(Parent->name, "inputs")) {
 				if (num_tokens != pb->pb_graph_node->num_input_pins[in_port]) {
 					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
-							"Incorrect # pins %d found for port %s for pb %s[%d].\n",
-							num_tokens, Prop, pb->pb_graph_node->pb_type->name,
+							"Incorrect # pins %d found (expected %d) for input port %s for pb %s[%d].\n",
+							num_tokens, pb->pb_graph_node->num_input_pins[in_port], Prop, pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
 				}
 			} else if (0 == strcmp(Parent->name, "outputs")) {
 				if (num_tokens
 						!= pb->pb_graph_node->num_output_pins[out_port]) {
 					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
-							"Incorrect # pins %d found for port %s for pb %s[%d].\n",
-							num_tokens, Prop, pb->pb_graph_node->pb_type->name,
+							"Incorrect # pins %d (expected %d) found for output port %s for pb %s[%d].\n",
+							num_tokens, pb->pb_graph_node->num_output_pins[out_port], Prop, pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
 				}
 			} else {
 				if (num_tokens
 						!= pb->pb_graph_node->num_clock_pins[clock_port]) {
 					vpr_throw(VPR_ERROR_NET_F, netlist_file_name, Cur->line,
-							"Incorrect # pins %d found for port %s for pb %s[%d].\n",
-							num_tokens, Prop, pb->pb_graph_node->pb_type->name,
+							"Incorrect # pins %d found for clock port %s for pb %s[%d].\n",
+							num_tokens, pb->pb_graph_node->num_clock_pins[clock_port], Prop, pb->pb_graph_node->pb_type->name,
 							pb->pb_graph_node->placement_index);
 				}
 			}

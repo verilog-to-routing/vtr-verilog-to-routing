@@ -32,7 +32,7 @@ using namespace std;
 /************************* GLOBALS **********************************/
 
 /************************* FUNCTION DECLARATIONS*********************/
-static void log_msg(t_log * log_ptr, char * msg);
+static void log_msg(t_log * log_ptr, const char * msg);
 static void int_2_binary_str(char * binary_str, int value, int str_length);
 static void init_mux_arch_default(t_mux_arch * mux_arch, int levels,
 		int num_inputs, float transistor_size);
@@ -64,11 +64,11 @@ float power_perc_dynamic(t_power_usage * power_usage) {
 	return power_usage->dynamic / power_sum_usage(power_usage);
 }
 
-void power_log_msg(e_power_log_type log_type, char * msg) {
+void power_log_msg(e_power_log_type log_type, const char * msg) {
 	log_msg(&g_power_output->logs[log_type], msg);
 }
 
-char * transistor_type_name(e_tx_type type) {
+const char * transistor_type_name(e_tx_type type) {
 	if (type == NMOS) {
 		return "NMOS";
 	} else if (type == PMOS) {
@@ -137,7 +137,7 @@ bool mux_find_selector_values(int * selector_values, t_mux_node * mux_node,
 	return false;
 }
 
-static void log_msg(t_log * log_ptr, char * msg) {
+static void log_msg(t_log * log_ptr, const char * msg) {
 	int msg_idx;
 
 	/* Check if this message is already in the log */
@@ -431,7 +431,7 @@ float clb_net_prob(int net_idx) {
 	}
 }
 
-char * interconnect_type_name(enum e_interconnect type) {
+const char * interconnect_type_name(enum e_interconnect type) {
 	switch (type) {
 	case COMPLETE_INTERC:
 		return "complete";
@@ -470,7 +470,7 @@ float power_buffer_size_from_logical_effort(float C_load) {
 					/ (2 * g_power_arch->logical_effort_factor));
 }
 
-void power_print_title(FILE * fp, char * title) {
+void power_print_title(FILE * fp, const char * title) {
 	int i;
 	const int width = 80;
 

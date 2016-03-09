@@ -2849,6 +2849,11 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			block[iblk].y = y;
 			block[iblk].z = z;
 
+            //Mark IOs as fixed if specifying a (fixed) random placement
+            if(block[iblk].type == IO_TYPE && pad_loc_type == RANDOM) {
+                block[iblk].is_fixed = true;
+ 			}
+
 			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the 
 				* legal positions in legal_pos to remove the entry (choice) we just used, but faster to 
 				* just move the last entry in legal_pos to the spot we just used and decrement the 

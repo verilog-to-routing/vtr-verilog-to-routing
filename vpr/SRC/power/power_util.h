@@ -43,7 +43,7 @@ float power_sum_usage(t_power_usage * power_usage);
 float power_perc_dynamic(t_power_usage * power_usage);
 
 /* Message Logger */
-void power_log_msg(e_power_log_type log_type, char * msg);
+void power_log_msg(e_power_log_type log_type, const char * msg);
 
 /* Buffers */
 int power_calc_buffer_num_stages(float final_stage_size, float desired_stage_effort);
@@ -62,17 +62,17 @@ bool power_method_is_transistor_level(
 bool power_method_is_recursive(
 		e_power_estimation_method method);
 
-char * transistor_type_name(e_tx_type type);
+const char * transistor_type_name(e_tx_type type);
 char * alloc_SRAM_values_from_truth_table(int LUT_size,
 		t_linked_vptr * truth_table);
 float clb_net_density(int net_idx);
-char * interconnect_type_name(enum e_interconnect type);
+const char * interconnect_type_name(enum e_interconnect type);
 float clb_net_prob(int net_idx);
 
 void output_log(t_log * log_ptr, FILE * fp);
 
 void output_logs(FILE * fp, t_log * logs, int num_logs);
 
-void power_print_title(FILE * fp, char * title);
+void power_print_title(FILE * fp, const char * title);
 
 #endif

@@ -265,7 +265,7 @@ LookaheadNodeTokens(INP ezxml_t Node) {
 
 /* Find integer attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
+extern int GetIntProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP int default_value) {
 	const char * Prop;
 	int property_value;
@@ -274,14 +274,14 @@ extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
 	Prop = FindProperty(Parent, Name, Required);
 	if (Prop) {
 		property_value = my_atoi(Prop);
-		ezxml_set_attr(Parent, Name, NULL);
+		ezxml_set_attr(Parent, my_strdup(Name), NULL);
 	}
 	return property_value;
 }
 
 /* Find floating-point attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
+extern float GetFloatProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP float default_value) {
 
 	const char * Prop;
@@ -291,14 +291,14 @@ extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
 	Prop = FindProperty(Parent, Name, Required);
 	if (Prop) {
 		property_value = (float)atof(Prop);
-		ezxml_set_attr(Parent, Name, NULL);
+		ezxml_set_attr(Parent, my_strdup(Name), NULL);
 	}
 	return property_value;
 }
 
 /* Find bool attribute matching Name in XML tag Parent and return it if exists.  
  Removes attribute from Parent */
-extern bool GetboolProperty(INP ezxml_t Parent, INP char *Name,
+extern bool GetboolProperty(INP ezxml_t Parent, INP const char *Name,
 		INP bool Required, INP bool default_value) {
 
 	const char * Prop;
@@ -317,7 +317,7 @@ extern bool GetboolProperty(INP ezxml_t Parent, INP char *Name,
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
 				"Unknown value %s for bool attribute %s in %s", Prop, Name, Parent->name);
 		}
-		ezxml_set_attr(Parent, Name, NULL);
+		ezxml_set_attr(Parent, my_strdup(Name), NULL);
 	}
 	return property_value;
 }

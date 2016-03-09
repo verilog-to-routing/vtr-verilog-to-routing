@@ -2562,6 +2562,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	case CHANX:
 		start = rr_node[chan_node].get_xlow();
 		end = rr_node[chan_node].get_xhigh();
+
 		if (is_opin(pin_num, type)) {
 			if (direction == INC_DIRECTION) {
 				end = rr_node[chan_node].get_xlow();
@@ -2575,19 +2576,42 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		assert(end >= start);
 		/* Make sure we are nearby */
 
+
 		if ((grid_y + height - 1) == chan_ylow) {
 			iside = TOP;
 			width_offset = width - 1;
 			height_offset = height - 1;
 			draw_pin_off = draw_coords->pin_size;
-		} else {
-			assert((grid_y - 1) == chan_ylow);
+		} else if ((grid_y - 1) == chan_ylow) {
+			//assert((grid_y - 1) == chan_ylow);
 
 			iside = BOTTOM;
+
 			width_offset = 0;
 			height_offset = 0;
+
 			draw_pin_off = -draw_coords->pin_size;
 		}
+		else {//This is used to determine where the pins are located in locations
+			//other than the perimeter.
+				iside=TOP;
+				for (int side1 = 0; side1 < 4; ++side1) {
+			for (int width1 = 0; width1 < grid[grid_x][grid_y].type->width; ++width1) {
+				for (int height1= 0; height1 < grid[grid_x][grid_y].type->height; ++height1) {
+					if (grid[grid_x][grid_y].type->pinloc[width1][height1][side1][pin_num])
+					{
+						height_offset = height1;
+						width_offset = width1;
+						if(side1==0)
+							iside=TOP;
+						else if(side1==2) iside=BOTTOM;
+					}
+				}
+			}
+		}
+			draw_pin_off = -draw_coords->pin_size;
+		}
+
 		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);

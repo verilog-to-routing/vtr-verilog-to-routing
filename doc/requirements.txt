@@ -1,0 +1,6 @@
+#Python requirements file for building documentation
+# used by Read The Docs to install python required 
+# modules with pip.
+
+#Handle references in bibtex format
+sphinxcontrib-bibtex

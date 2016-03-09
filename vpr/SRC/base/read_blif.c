@@ -682,7 +682,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 			port_name = my_strdup(subckt_signal_name[i]);
 			pin_number = strrchr(port_name, '[');
 			if (pin_number == NULL) {
-				pin_number = "0"; /* default to 0 */
+				pin_number = my_strdup("0"); /* default to 0 */
 			} else {
 				/* The pin numbering is port_name[pin_number] so need to go one to the right of [ then NULL out ] */
 				*pin_number = '\0';

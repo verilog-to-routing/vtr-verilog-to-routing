@@ -61,7 +61,7 @@ static int power_compare_buffer_sc_levr(const void * key_void,
 		const void * elem_void);
 static void power_tech_xml_load_components(ezxml_t parent);
 static void power_tech_xml_load_component(ezxml_t parent,
-		PowerSpicedComponent ** component, char * name,
+		PowerSpicedComponent ** component, const char * name,
 		float (*usage_fn)(int num_inputs, float transistor_size));
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -152,7 +152,7 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 }
 
 static void power_tech_xml_load_component(ezxml_t parent,
-		PowerSpicedComponent ** component, char * name,
+		PowerSpicedComponent ** component, const char * name,
 		float (*usage_fn)(int num_inputs, float transistor_size)) {
 	ezxml_t cur, child, gc, prev;
 
