@@ -19,7 +19,7 @@ using namespace std;
 #define MAX_TRACK_OFFSET 16//32
 #define REPRESENTATIVE_ENTRY_METHOD SMALLEST
 
-#define IMPLICIT_IPINS	//if defined, routing will stop before reaching IPINs and the delays due to ipin switches will be added implicitly
+//#define IMPLICIT_IPINS	//if defined, routing will stop before reaching IPINs and the delays due to ipin switches will be added implicitly
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
    to travel relative x/y distances */

@@ -22,7 +22,7 @@
 using namespace std;
 
 
-#define MAX_DISTANCE 50 //100		//Analyze up to this Manhattan distance from sources
+#define MAX_DISTANCE 100		//Analyze up to this Manhattan distance from sources
 #define SOURCES_TO_ANALYZE 20		//Number of sources which will be analyzed
 #define MAX_SINKS 200			//The maximum number of sinks to analyze for any given source at some distance
 
