@@ -1867,22 +1867,30 @@ static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
 		}
 	}
 
+	/* get reference to the connections vector which lists all destination tracks for a given source track
+	   at a specific coordinate sb_coord */
+	//vector<t_to_track_inf> &conn_vector = (*sb_conn_map)[tile_x][tile_y][from_side][to_side][from_track];
+	forward_list<t_to_track_inf> &conn_list = (*sb_conn_map)[tile_x][tile_y][from_side][to_side][from_track];
 	/* get coordinate to index into the SB map */
-	Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side, from_track);
-	if ( sb_conn_map->count(sb_coord) > 0 ){
-		/* get reference to the connections vector which lists all destination tracks for a given source track
-		   at a specific coordinate sb_coord */
-		vector<t_to_track_inf> &conn_vector = (*sb_conn_map)[sb_coord];
+	//Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side, from_track);
+	if ( !conn_list.empty() ){
+		///* get reference to the connections vector which lists all destination tracks for a given source track
+		//   at a specific coordinate sb_coord */
+		//vector<t_to_track_inf> &conn_vector = (*sb_conn_map)[sb_coord];
 
 		/* go through the connections... */
-		for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
+		//for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
+		while ( !conn_list.empty() ){
+
+			t_to_track_inf target_info = conn_list.front();
+			conn_list.pop_front();
 			
-			int to_track = conn_vector.at(iconn).to_track;
+			int to_track = target_info.to_track;
 			int to_node = get_rr_node_index(to_x, to_y, to_chan_type, to_track,
 					L_rr_node_indices);
 
 			/* Get the index of the switch connecting the two tracks */
-			int src_switch = conn_vector[iconn].switch_ind;
+			int src_switch = target_info.switch_ind;
 
 			/* Skip edge if already done */
 			if (L_rr_edge_done[to_node]) {

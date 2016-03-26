@@ -577,7 +577,7 @@ void build_rr_graph(
 		switch_block_conn = NULL;
 	}
 	if (sb_conn_map) {
-		free_switchblock_permutations(sb_conn_map);
+		free_switchblock_permutations(sb_conn_map, L_nx, L_ny);
 		sb_conn_map = NULL;
 	}
 	if (L_rr_edge_done) {

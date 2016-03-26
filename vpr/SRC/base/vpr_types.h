@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <forward_list>
 #include "arch_types.h"
 
 /*******************************************************************************
@@ -1080,6 +1081,13 @@ typedef struct s_to_track_inf{
    of the map is a vector of destination tracks.
    A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large
    so we use an unordered map to take advantage of the sparsity. */
-typedef std::unordered_map< Switchblock_Lookup, std::vector< t_to_track_inf >, s_hash_Switchblock_Lookup > t_sb_connection_map;
+//typedef std::unordered_map< Switchblock_Lookup, std::vector< t_to_track_inf >, s_hash_Switchblock_Lookup > t_sb_connection_map;
+
+/* unordered map above uses too much memory... try regular vector array */
+//          x             y        from_side     to_side    from_track
+
+
+//typedef std::forward_list< t_to_track_inf >***** t_sb_connection_map;
+typedef std::vector< std::vector< std::vector< std::vector< std::vector< std::forward_list< t_to_track_inf >>>>>> t_sb_connection_map;
 
 #endif

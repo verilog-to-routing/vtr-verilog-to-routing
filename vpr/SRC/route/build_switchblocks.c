@@ -115,6 +115,7 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 #include "util.h"
 #include <malloc.h>
 #include <iostream>
+#include <forward_list>
 
 using namespace std;
 
@@ -252,6 +253,7 @@ static bool is_core(INP int nx, INP int ny, INP int x, INP int y);
 /* adjusts a negative destination track calculated from a permutation formula */
 static int adjust_formula_result(INP int dest_track, INP int dest_W);
 
+t_sb_connection_map* alloc_switchblock_permutations(int nx, int ny, int channel_width);
 
 
 /************ Function Definitions ************/
@@ -268,7 +270,8 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( INP t_chan_detail
 	}
 
 	/* sparse array that will contain switch block connections */
-	t_sb_connection_map *sb_conns = new t_sb_connection_map;
+	//t_sb_connection_map *sb_conns = new t_sb_connection_map;
+	t_sb_connection_map *sb_conns = alloc_switchblock_permutations(nx, ny, channel_width);
 
 	/* We assume that x & y channels have the same ratios of track types. i.e., looking at a single 
 	   channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
@@ -336,10 +339,30 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( INP t_chan_detail
 }
 
 
+/* allocate switch block matrix */
+t_sb_connection_map* alloc_switchblock_permutations(int nx, int ny, int channel_width){
+
+	t_sb_connection_map *sb_conns = new t_sb_connection_map;
+
+	forward_list< t_to_track_inf > tracks;
+	vector < forward_list< t_to_track_inf >> from_track_vec(channel_width, tracks);
+	vector < vector< forward_list < t_to_track_inf >>> to_side_vec(4, from_track_vec);
+	vector < vector< vector < forward_list < t_to_track_inf >>>> from_side_vec(4, to_side_vec);
+	vector < vector< vector < vector < forward_list < t_to_track_inf >>>>> y_vec(ny+1, from_side_vec);
+	sb_conns->assign(nx+1, y_vec);
+
+	//(*sb_conns) = (t_sb_connection_map) alloc_matrix5(0, nx, 0, ny, 0, 3, 0, 3, 0, channel_width-1, sizeof(forward_list<t_to_track_inf>));
+
+	return sb_conns;
+}
+
 /* deallocates switch block connections sparse array */
-void free_switchblock_permutations(INOUTP t_sb_connection_map *sb_conns){
+void free_switchblock_permutations(INOUTP t_sb_connection_map *sb_conns, int nx, int ny){
 	sb_conns->clear();
 	delete sb_conns;
+	
+	//free_matrix5((void*)(*sb_conns), 0, nx, 0, ny, 0, 3, 0, 3, 0, sizeof(forward_list<t_to_track_inf>));
+
 	sb_conns = NULL;
 	/* the switch block unordered_map can get quite large and it doesn't seem like the program
 	   is interested in releasing the memory back to the OS after the map is cleared. 
@@ -931,13 +954,15 @@ static void compute_track_wireconn_connections(INP int nx, INP int ny, INP e_dir
 		to_track_inf.switch_ind = to_chan_details[to_x][to_y][to_track].arch_wire_switch;
 
 		/* and now, finally, add this switchblock connection to the switchblock connections map */
-		(*sb_conns)[sb_conn].push_back(to_track_inf);
+		//(*sb_conns)[sb_conn.x_coord][sb_conn.y_coord][sb_conn.from_side][sb_conn.to_side][sb_conn.from_track].push_back(to_track_inf);
+		(*sb_conns)[sb_conn.x_coord][sb_conn.y_coord][sb_conn.from_side][sb_conn.to_side][sb_conn.from_track].push_front(to_track_inf);
 
 		/* If bidir architecture, implement the reverse connection as well */
 		if (BI_DIRECTIONAL == directionality){
 			to_track_inf.to_track = sb_conn.from_track;
 			Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.to_side, sb_conn.from_side, to_track);
-			(*sb_conns)[sb_conn_reverse].push_back(to_track_inf);
+			//(*sb_conns)[sb_conn.x_coord][sb_conn.y_coord][sb_conn.to_side][sb_conn.from_side][to_track].push_back(to_track_inf);
+			(*sb_conns)[sb_conn.x_coord][sb_conn.y_coord][sb_conn.to_side][sb_conn.from_side][to_track].push_front(to_track_inf);
 		}
 	}
 }

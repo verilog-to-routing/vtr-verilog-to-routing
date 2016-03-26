@@ -14,6 +14,6 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( INP t_chan_detail
 				INP s_chan_width *nodes_per_chan, INP enum e_directionality directionality);
 
 /* deallocates switch block connections sparse array */
-void free_switchblock_permutations(INOUTP t_sb_connection_map *sb_conns);
+void free_switchblock_permutations(INOUTP t_sb_connection_map *sb_conns, int nx, int ny);
 
 #endif
