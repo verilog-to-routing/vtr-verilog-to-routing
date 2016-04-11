@@ -91,6 +91,14 @@ Detailed Command-line Options
 
     .. note:: Specifying the routing stage requires a channel width to also be specified.
 
+.. option:: -no_timing
+
+    Disables timing analysis during the CAD flow.
+
+    This disables timing-driven compilation in VPR, causing the design to be optimized for wirelength only.
+    
+    .. note:: This option is required for architectures which do not provide timing information.
+
 .. option:: -power
     
     Enables power estimation.
