@@ -2307,20 +2307,16 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					//The flag denotes that an input edge to this node was disconnected to break a combinational
 					//loop, and hence we don't consider this an error.
 					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-							"Timing graph started on unexpected node %d %s.%s[%d]. "
+							"Timing graph started on unexpected node %d. "
 							"This is a VPR internal error, contact VPR development team.\n",
-							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
-							tnode[inode].pb_graph_pin->port->name, 
-							tnode[inode].pb_graph_pin->pin_number);
+                            inode);
 				}
 			} else {
 				if ((tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
 					vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-							"Timing graph discovered unexpected edge to node %s.%s[%d].\n"
+							"Timing graph discovered unexpected edge to node %d.\n"
 							"This is a VPR internal error, contact VPR development team.\n",
-							tnode[inode].pb_graph_pin->parent_node->pb_type->name, 
-							tnode[inode].pb_graph_pin->port->name, 
-							tnode[inode].pb_graph_pin->pin_number);
+                            inode);
 				}
 			}
 	
