@@ -30,10 +30,6 @@
 #include <stdarg.h>
 #include <fcntl.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define EZXML_BUFSIZE 1024	/* size of internal memory buffers */
 #define EZXML_NAMEM   0x80	/* name is malloced */
 #define EZXML_TXTM    0x40	/* txt is malloced */
@@ -151,6 +147,7 @@ ezxml_t ezxml_add_child(ezxml_t xml, char *name, size_t off);
 
 /* sets the character content for the given tag and returns the tag */
 ezxml_t ezxml_set_txt(ezxml_t xml, char *txt);
+ezxml_t ezxml_set_txt(ezxml_t xml, const char *txt);
 
 /* wrapper for ezxml_set_txt() that strdup()s txt */
 #define ezxml_set_txt_d(xml, txt) \
@@ -159,6 +156,7 @@ ezxml_t ezxml_set_txt(ezxml_t xml, char *txt);
 /* Sets the given tag attribute or adds a new attribute if not found. A value */
 /* of NULL will remove the specified attribute. Returns the tag given. */
 ezxml_t ezxml_set_attr(ezxml_t xml, char *name, char *value);
+ezxml_t ezxml_set_attr(ezxml_t xml, const char *name, char *value);
 
 /* Wrapper for ezxml_set_attr() that strdup()s name/value. Value cannot be NULL */
 #define ezxml_set_attr_d(xml, name, value) \
@@ -180,7 +178,4 @@ ezxml_t ezxml_insert(ezxml_t xml, ezxml_t dest, size_t off);
 /* removes a tag along with all its subtags */
 #define ezxml_remove(xml) ezxml_free(ezxml_cut(xml))
 
-#ifdef __cplusplus
-}
-#endif
 #endif				/* _EZXML_H */

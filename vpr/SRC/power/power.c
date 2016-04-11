@@ -102,13 +102,13 @@ static void power_print_summary(FILE * fp, t_vpr_setup vpr_setup);
 //static void power_print_stats(FILE * fp);
 static void power_print_breakdown_summary(FILE * fp);
 static void power_print_breakdown_entry(FILE * fp, int indent,
-		e_power_breakdown_entry_type type, char * name, float power,
-		float total_power, float perc_dyn, char * method);
-static void power_print_breakdown_component(FILE * fp, char * name,
+		e_power_breakdown_entry_type type, const char * name, float power,
+		float total_power, float perc_dyn, const char * method);
+static void power_print_breakdown_component(FILE * fp, const char * name,
 		e_power_component_type type, int indent_level);
 static void power_print_breakdown_pb(FILE * fp);
 
-static char * power_estimation_method_name(
+static const char * power_estimation_method_name(
 		e_power_estimation_method power_method);
 
 /************************* FUNCTION DEFINITIONS *********************/
@@ -1536,7 +1536,7 @@ static void power_print_clb_detailed(FILE * fp) {
  }
  */
 
-static char * power_estimation_method_name(
+static const char * power_estimation_method_name(
 		e_power_estimation_method power_method) {
 	switch (power_method) {
 	case POWER_METHOD_UNDEFINED:
@@ -1822,7 +1822,7 @@ static void power_print_breakdown_pb(FILE * fp) {
 /**
  * Internal recurseive function, used by power_component_print_usage
  */
-static void power_print_breakdown_component(FILE * fp, char * name,
+static void power_print_breakdown_component(FILE * fp, const char * name,
 		e_power_component_type type, int indent_level) {
 	power_print_breakdown_entry(fp, indent_level,
 			POWER_BREAKDOWN_ENTRY_TYPE_COMPONENT, name,
@@ -1872,8 +1872,8 @@ static void power_print_breakdown_component(FILE * fp, char * name,
 }
 
 static void power_print_breakdown_entry(FILE * fp, int indent,
-		e_power_breakdown_entry_type type, char * name, float power,
-		float total_power, float perc_dyn, char * method) {
+		e_power_breakdown_entry_type type, const char * name, float power,
+		float total_power, float perc_dyn, const char * method) {
 	const int buf_size = 32;
 	char buf[buf_size];
 

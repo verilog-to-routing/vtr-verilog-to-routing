@@ -2248,7 +2248,7 @@ static void ProcessChanWidthDistrDir(INOUTP ezxml_t Node, OUTP t_chan * chan) {
 static void SetupEmptyType(void) {
 	t_type_descriptor * type;
 	type = &cb_type_descriptors[EMPTY_TYPE->index];
-	type->name = "<EMPTY>";
+	type->name = my_strdup("<EMPTY>");
 	type->num_pins = 0;
 	type->width = 1;
 	type->height = 1;

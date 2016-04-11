@@ -645,7 +645,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len) {
 						(l) ? (char*)realloc(attr[l + 1], (l / 2) + 2) : (char*)malloc(2); /* mem for list of maloced vals */
 				strcpy(attr[l + 3] + (l / 2), " "); /* value is not malloced */
 				attr[l + 2] = NULL; /* null terminate list */
-				attr[l + 1] = ""; /* temporary attribute value */
+				attr[l + 1] = my_strdup(""); /* temporary attribute value */
 				attr[l] = s; /* set attribute name */
 
 				s += strcspn(s, EZXML_WS "=/>");
@@ -1076,14 +1076,14 @@ ezxml_error(ezxml_t xml) {
 
 /* returns a new empty ezxml structure with the given root tag name */
 ezxml_t ezxml_new(char *name) {
-	static char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
+	static const char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
 			"apos;", "&#39;", "amp;", "&#38;", NULL };
 	ezxml_root_t root = (ezxml_root_t) memset(malloc(sizeof(struct ezxml_root)),
 			'\0', sizeof(struct ezxml_root));
 
 	root->xml.name = name;
 	root->cur = &root->xml;
-	strcpy(root->err, root->xml.txt = "");
+	strcpy(root->err, root->xml.txt = my_strdup(""));
 	root->ent = (char**)memcpy(malloc(sizeof(ent)), ent, sizeof(ent));
 	root->attr = root->pi = (char ***) (root->xml.attr = EZXML_NIL);
 	return &root->xml;
@@ -1147,7 +1147,7 @@ ezxml_t ezxml_add_child(ezxml_t xml, char *name, size_t off) {
 			sizeof(struct ezxml));
 	child->name = name;
 	child->attr = EZXML_NIL;
-	child->txt = "";
+	child->txt = my_strdup("");
 
 	return ezxml_insert(child, xml, off);
 }
@@ -1163,6 +1163,12 @@ ezxml_t ezxml_set_txt(ezxml_t xml, char *txt) {
 	xml->txt = txt;
 	return xml;
 }
+
+/* const char* version for string literals */
+ezxml_t ezxml_set_txt(ezxml_t xml, const char *txt) {
+    return ezxml_set_txt(xml, my_strdup(txt));
+}
+
 
 /* Sets the given tag attribute or adds a new attribute if not found. A value */
 /* of NULL will remove the specified attribute. Returns the tag given. */
@@ -1219,6 +1225,12 @@ ezxml_t ezxml_set_attr(ezxml_t xml, char *name, char *value) {
 	xml->flags &= ~EZXML_DUP; /* clear strdup() flag */
 	return xml;
 }
+
+/* const char* version for string literals */
+ezxml_t ezxml_set_attr(ezxml_t xml, const char *name, char *value) {
+    return ezxml_set_attr(xml, my_strdup(name), value);
+}
+
 
 /* sets a flag for the given tag and returns the tag */
 ezxml_t ezxml_set_flag(ezxml_t xml, short flag) {
