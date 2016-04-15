@@ -23,6 +23,7 @@ static char **outputFileNames = NULL;
 
 static char **ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token);
 static void Error(INP const char *Token);
+static void Error(const char *Token, const char* msg);
 static char **ProcessOption(INP char **Args, INOUTP t_options * Options);
 static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id);
 static char **ReadFloat(INP char **Args, OUTP float *Val);
@@ -811,13 +812,24 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 }
 
 /* Called for parse errors. Spits out a message and then exits program. */
-static void Error(INP const char *Token) {
+static void Error(const char *Token) {
 	if (Token) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 		"Unexpected token '%s' on command line.\n", Token);
 	} else {
 		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, 
 		"Missing token at end of command line.\n");
+	}
+}
+
+//Same as above, but with a context-dependant message
+static void Error(INP const char *Token, const char* msg) {
+	if (Token) {
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+		"Unexpected token '%s' on command line. %s\n", Token, msg);
+	} else {
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, 
+		"Missing token at end of command line. %s\n", msg);
 	}
 }
 
@@ -839,7 +851,7 @@ ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
 		*Type = VPACK_BLEND;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected cluster seed specification.");
 	}
 
 	return Args;
@@ -860,7 +872,7 @@ ReadPackerAlgorithm(INP char **Args, OUTP enum e_packer_algorithm *Algo) {
 		*Algo = PACK_BRUTE_FORCE;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected packing algorithm specification.");
 	}
 
 	return Args;
@@ -885,7 +897,7 @@ ReadRouterAlgorithm(INP char **Args, OUTP enum e_router_algorithm *Algo) {
 		*Algo = TIMING_DRIVEN;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected routing algorithm specification.");
 	}
 
 	return Args;
@@ -909,7 +921,7 @@ ReadRoutingPredictor(INP char **Args, OUTP enum e_routing_failure_predictor *Rou
 		*RoutingPred = AGGRESSIVE;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected routing predictor specification.");
 	}
 
 	return Args;
@@ -933,7 +945,7 @@ ReadBaseCostType(INP char **Args, OUTP enum e_base_cost_type *BaseCostType) {
 		*BaseCostType = DEMAND_ONLY;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected router base cost type specification.");
 	}
 
 	return Args;
@@ -954,7 +966,7 @@ ReadRouteType(INP char **Args, OUTP enum e_route_type *Type) {
 		*Type = DETAILED;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected routing type specification.");
 	}
 
 	return Args;
@@ -978,7 +990,7 @@ ReadPlaceAlgorithm(INP char **Args, OUTP enum e_place_algorithm *Algo) {
 		*Algo = PATH_TIMING_DRIVEN_PLACE;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected placement algorithm specifcation.");
 	}
 
 	return Args;
@@ -1014,7 +1026,7 @@ ReadOnOff(INP char **Args, OUTP bool * Val) {
 		*Val = false;
 		break;
 	default:
-		Error(*PrevArgs);
+		Error(*PrevArgs, "Expected 'on' or 'off'.");
 	}
 	return Args;
 }
@@ -1022,9 +1034,9 @@ ReadOnOff(INP char **Args, OUTP bool * Val) {
 static char **
 ReadInt(INP char **Args, OUTP int *Val) {
 	if (NULL == *Args)
-		Error(*Args);
+		Error(*Args, "Expected integer.");
 	if ((**Args > '9') || (**Args < '0'))
-		Error(*Args);
+		Error(*Args, "Expected integer.");
 
 	*Val = atoi(*Args);
 
@@ -1034,12 +1046,12 @@ ReadInt(INP char **Args, OUTP int *Val) {
 static char **
 ReadFloat(INP char ** Args, OUTP float *Val) {
 	if (NULL == *Args) {
-		Error(*Args);
+		Error(*Args, "Expected float.");
 	}
 
 	if ((**Args != '-') && (**Args != '.')
 			&& ((**Args > '9') || (**Args < '0'))) {
-		Error(*Args);
+		Error(*Args, "Expected float.");
 	}
 
 	*Val = atof(*Args);
@@ -1050,7 +1062,7 @@ ReadFloat(INP char ** Args, OUTP float *Val) {
 static char **
 ReadString(INP char **Args, OUTP char **Val) {
 	if (NULL == *Args) {
-		Error(*Args);
+		Error(*Args, "Expected string.");
 	}
 
 	*Val = my_strdup(*Args);
@@ -1061,7 +1073,7 @@ ReadString(INP char **Args, OUTP char **Val) {
 static char **
 ReadChar(INP char **Args, OUTP char *Val) {
     if (NULL == *Args) {
-        Error(*Args);
+        Error(*Args, "Expected character.");
     }
 
     *Val = (*Args)[0];
