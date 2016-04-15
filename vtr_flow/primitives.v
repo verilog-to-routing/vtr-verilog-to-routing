@@ -12,9 +12,9 @@ module LUT_3(in_2,in_1,in_0,out);
    integer     selected_row;
    wire [2:0]  a;
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
+   fpga_interconnect inter0(in_0 , a[0]);
+   fpga_interconnect inter1(in_1 , a[1]);
+   fpga_interconnect inter2(in_2 , a[2]);
    
    always@(a[0], a[1], a[2])
      begin
@@ -36,10 +36,10 @@ module LUT_4(in_3,in_2,in_1,in_0,out);
    integer     selected_row;
    wire [3:0]  a;
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
+   fpga_interconnect inter0(in_0 , a[0]);
+   fpga_interconnect inter1(in_1 , a[1]);
+   fpga_interconnect inter2(in_2 , a[2]);
+   fpga_interconnect inter3(in_3 , a[3]);
 
    always@(a[0], a[1], a[2], a[3])
      begin
@@ -62,11 +62,11 @@ module LUT_5(in_4,in_3,in_2,in_1,in_0,out);
 
    wire [4:0]  a;
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
-   interconnect inter4(in_4 , a[4]);
+   fpga_interconnect inter0(in_0 , a[0]);
+   fpga_interconnect inter1(in_1 , a[1]);
+   fpga_interconnect inter2(in_2 , a[2]);
+   fpga_interconnect inter3(in_3 , a[3]);
+   fpga_interconnect inter4(in_4 , a[4]);
    
    always@(a[0], a[1], a[2], a[3], a[4])
      begin
@@ -89,12 +89,12 @@ module LUT_6(in_5,in_4,in_3,in_2,in_1,in_0,out);
 
    wire [5:0]  a;
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
-   interconnect inter4(in_4 , a[4]);
-   interconnect inter5(in_5 , a[5]);
+   fpga_interconnect inter0(in_0 , a[0]);
+   fpga_interconnect inter1(in_1 , a[1]);
+   fpga_interconnect inter2(in_2 , a[2]);
+   fpga_interconnect inter3(in_3 , a[3]);
+   fpga_interconnect inter4(in_4 , a[4]);
+   fpga_interconnect inter5(in_5 , a[5]);
    
    always@(a[0], a[1], a[2], a[3], a[4], a[5])
      begin
@@ -116,13 +116,13 @@ module LUT_7(in_6,in_5,in_4,in_3,in_2,in_1,in_0,out);
    integer     selected_row;
    wire [6:0]  a;
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
-   interconnect inter4(in_4 , a[4]);
-   interconnect inter5(in_5 , a[5]);
-   interconnect inter6(in_6 , a[6]);
+   fpga_interconnect inter0(in_0 , a[0]);
+   fpga_interconnect inter1(in_1 , a[1]);
+   fpga_interconnect inter2(in_2 , a[2]);
+   fpga_interconnect inter3(in_3 , a[3]);
+   fpga_interconnect inter4(in_4 , a[4]);
+   fpga_interconnect inter5(in_5 , a[5]);
+   fpga_interconnect inter6(in_6 , a[6]);
    
    always@(a[0], a[1], a[2], a[3], a[4], a[5], a[6])
      begin
@@ -161,7 +161,7 @@ endspecify
 endmodule
 
 //Routing interconnect module
-module interconnect(datain,dataout);
+module fpga_interconnect(datain,dataout);
 
 input datain;
 output dataout;

@@ -967,7 +967,7 @@ static void interconnect_printing(FILE *fp, conn_list *downhill)
         }     
       assert(port_number_out >= 0 && port_number_in >= 0);
 
-      fprintf(fp , "interconnect routing_segment_%s_output_%d_%d_to_%s_input_%d_%d( %s_output_%d_%d , %s_input_%d_%d );\n",
+      fprintf(fp , "fpga_interconnect routing_segment_%s_output_%d_%d_to_%s_input_%d_%d( %s_output_%d_%d , %s_input_%d_%d );\n",
               fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
               fixed_name2 , port_number_out , connections->load_pin->pin_number,
               fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
@@ -1012,7 +1012,7 @@ static void SDF_interconnect_delay_printing(FILE *SDF, conn_list *downhill)
       internal_delay = internal_delay + 0.5;              /*Rounding the delay to the nearset picosecond*/
       del = (int)internal_delay;
 
-      fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"interconnect\")\n\t(INSTANCE inst/routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
+      fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"fpga_interconnect\")\n\t(INSTANCE inst/routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
 	      fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
               fixed_name2 , port_number_out , connections->load_pin->pin_number);
       fprintf(SDF , "\t\t(DELAY\n\t\t(ABSOLUTE\n\t\t\t(IOPATH datain dataout (%d:%d:%d)(%d:%d:%d))\n\t\t)\n\t\t)\n\t)\n" ,
