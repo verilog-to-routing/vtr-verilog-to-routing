@@ -1012,7 +1012,7 @@ static void SDF_interconnect_delay_printing(FILE *SDF, conn_list *downhill)
       internal_delay = internal_delay + 0.5;              /*Rounding the delay to the nearset picosecond*/
       del = (int)internal_delay;
 
-      fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"fpga_interconnect\")\n\t(INSTANCE inst/routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
+      fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"fpga_interconnect\")\n\t(INSTANCE routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
 	      fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
               fixed_name2 , port_number_out , connections->load_pin->pin_number);
       fprintf(SDF , "\t\t(DELAY\n\t\t(ABSOLUTE\n\t\t\t(IOPATH datain dataout (%d:%d:%d)(%d:%d:%d))\n\t\t)\n\t\t)\n\t)\n" ,
@@ -1059,7 +1059,7 @@ static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
           del = (int)internal_delay;
 
 	  if (!record) { // print the SDF record header
-	    fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"LUT_%d\")\n\t(INSTANCE inst/lut_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , find_number_of_inputs(pb) , fixed_name);
+	    fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"LUT_%d\")\n\t(INSTANCE lut_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , find_number_of_inputs(pb) , fixed_name);
 	    record = 1;
 	  }
 
@@ -1079,7 +1079,7 @@ static void sdf_DFF_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
   int del,pin_count;
 
   fixed_name = fix_name(pb->name);
-  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"D_Flip_Flop\")\n\t(INSTANCE inst/DFF_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , fixed_name);
+  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"D_Flip_Flop\")\n\t(INSTANCE DFF_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , fixed_name);
 
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // the Q output of the FF (which has only a single output port and pin)
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count];
@@ -1100,7 +1100,7 @@ static void SDF_Mult_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **looku
   int del;
 
   fixed_name = fix_name(pb->name);
-  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"mult\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
+  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"mult\")\n\t(INSTANCE %s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
   pin_count = pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster;
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real multiplication, will need to assign another student to fix */
@@ -1155,7 +1155,7 @@ static void SDF_Adder_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **look
 	int del = tNodeInput->out_edges[k].Tdel * 1.0E12 + 0.5;
 
 	if (!record) { // print the SDF record header
-	  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"ripple_adder\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
+	  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"ripple_adder\")\n\t(INSTANCE %s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 	  record = 1;
 	}
 
@@ -1185,7 +1185,7 @@ static void SDF_ram_single_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, 
 
   //  num_inputs = pb->pb_graph_node->num_input_pins[0];
   fixed_name = fix_name(pb->name);
-  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"single_port_ram\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
+  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"single_port_ram\")\n\t(INSTANCE %s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real memory, will need to assign another student to fix */
@@ -1211,7 +1211,7 @@ static void SDF_ram_dual_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, in
 
   //  num_inputs = pb->pb_graph_node->num_input_pins[0];
   fixed_name = fix_name(pb->name);
-  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"dual_port_ram\")\n\t(INSTANCE inst/%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
+  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"dual_port_ram\")\n\t(INSTANCE %s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; 
