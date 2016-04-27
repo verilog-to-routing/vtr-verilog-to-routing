@@ -187,6 +187,9 @@ static char *load_truth_table(int inputs, t_pb *pb);
 with those illegal characters removed and replaced with '_'*/
 static char *fix_name(char *name);
 
+/* Removes any 'out_' prefix from outputs so that they match the input blif netlist */
+static char *adjust_output_name(char *name);
+
 /*This function finds the number of inputs to a primitive.*/
 static int find_number_of_inputs(t_pb *pb);
 
@@ -296,7 +299,9 @@ static void instantiate_top_level_module(FILE *verilog)
               }
               else if(!strcmp(logical_block[current->pb->logical_block].model->name,"output")){
 
-                fprintf(verilog , "output %s\n",fixed_name);/*declaring the outputs*/
+                char* adjusted_name = adjust_output_name(fixed_name);
+                fprintf(verilog , "output %s\n",adjusted_name);/*declaring the outputs*/
+                free(adjusted_name);
 	      }
               free(fixed_name);
             }
@@ -352,7 +357,9 @@ static void instantiate_wires(FILE *verilog)
 		  if(!strcmp(logical_block[current->pb->logical_block].model->name,"output"))/*if that pin is an outpad then have to connect the input to the outputs 
 											       of the top level module*/
 		    {
-		      fprintf(verilog , "assign %s = %s_input_%d_%d;\n\n",fixed_name , fixed_name , j , k);
+              char* adjusted_name = adjust_output_name(fixed_name);
+		      fprintf(verilog , "assign %s = %s_input_%d_%d;\n\n",adjusted_name , fixed_name , j , k);
+              free(adjusted_name);
 		    }     
                 }
             }
@@ -922,6 +929,16 @@ static char *fix_name(char *name)
         }
     }
   return(new_);
+}
+
+static char *adjust_output_name(char *name) {
+    //Trim the 'out_' prefix
+    assert(strlen(name) > 4);
+    assert(name[0] == 'o' &&
+           name[1] == 'u' &&
+           name[2] == 't' &&
+           name[3] == '_');
+    return my_strdup(name+4);
 }
 
 /*This function finds the number of inputs to a primitive.*/
