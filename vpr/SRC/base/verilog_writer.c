@@ -226,6 +226,8 @@ static void SDF_ram_single_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, 
 /*This function instantiates the SdF cell that contains the delay information of a Dual_port_RAM*/
 static void SDF_ram_dual_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id);
 
+static int delay_to_picoseconds(float delay);
+
 
 
 
@@ -1001,7 +1003,6 @@ static void SDF_interconnect_delay_printing(FILE *SDF, conn_list *downhill)
   conn_list *connections;
   char *fixed_name1;
   char *fixed_name2;
-  float internal_delay;
   int del;
   int port_number_out=-1,port_number_in=-1,i;  
 
@@ -1024,10 +1025,7 @@ static void SDF_interconnect_delay_printing(FILE *SDF, conn_list *downhill)
               port_number_in = i;
             }
         }     
-      internal_delay = connections->driver_to_load_delay;
-      internal_delay = internal_delay * 1000000000000.00; /*converting the delay from seconds to picoseconds*/
-      internal_delay = internal_delay + 0.5;              /*Rounding the delay to the nearset picosecond*/
-      del = (int)internal_delay;
+      del = delay_to_picoseconds(connections->driver_to_load_delay);
 
       fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"fpga_interconnect\")\n\t(INSTANCE routing_segment_%s_output_%d_%d_to_%s_input_%d_%d)\n" ,
 	      fixed_name1 , port_number_in/*connections->driver_pin->port->port_index_by_type*/ , connections->driver_pin->pin_number,
@@ -1046,7 +1044,6 @@ static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
 {
   char *fixed_name;
   int j,pin_count;
-  float internal_delay;
   int del;
   int logical_block_index = pb->logical_block;
   int record = 0;
@@ -1070,10 +1067,7 @@ static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
 	  assert(q != pb->pb_graph_node->num_input_pins[0]);
 	  int itnode = lookup_tnode_from_pin_id[iblock][pin_count];
 
-          internal_delay = tnode[itnode].out_edges->Tdel;
-          internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
-          internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
-          del = (int)internal_delay;
+          del = delay_to_picoseconds(tnode[itnode].out_edges->Tdel);
 
 	  if (!record) { // print the SDF record header
 	    fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"LUT_%d\")\n\t(INSTANCE lut_%s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" , find_number_of_inputs(pb) , fixed_name);
@@ -1092,7 +1086,6 @@ static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
 static void sdf_DFF_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup_tnode_from_pin_id)
 {
   char *fixed_name;
-  float internal_delay;
   int del,pin_count;
 
   fixed_name = fix_name(pb->name);
@@ -1101,8 +1094,7 @@ static void sdf_DFF_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // the Q output of the FF (which has only a single output port and pin)
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count];
   assert(itnode != OPEN);
-  internal_delay = tnode[itnode].T_arr * 1.0E12 + 0.5;
-  del = (int)internal_delay;
+  del = delay_to_picoseconds(tnode[itnode].T_arr);
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) Q (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
   fprintf(SDF , "\t\t)\n\t\t)\n\t)\n");
@@ -1113,7 +1105,6 @@ static void SDF_Mult_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **looku
 {
   char *fixed_name;
   int pin_count;
-  float internal_delay;
   int del;
 
   fixed_name = fix_name(pb->name);
@@ -1122,19 +1113,13 @@ static void SDF_Mult_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **looku
   pin_count = pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster;
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real multiplication, will need to assign another student to fix */
   assert(itnode != OPEN);
-  internal_delay = tnode[itnode].out_edges->Tdel;
-  internal_delay = internal_delay * 1000000000000.00;/*converting the delay from seconds to picoseconds*/
-  internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
-  del = (int)internal_delay;
+  del = delay_to_picoseconds(tnode[itnode].out_edges->Tdel);
   fprintf(SDF , "\t\t\t(IOPATH delay/A delay/B (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
   
   pin_count = pb->pb_graph_node->input_pins[1][0].pin_count_in_cluster;
   itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real multiplication, will need to assign another student to fix */
   assert(itnode != OPEN);
-  internal_delay = tnode[itnode].out_edges->Tdel;
-  internal_delay = internal_delay * 1.0E12;/*converting the delay from seconds to picoseconds*/
-  internal_delay = internal_delay + 0.5;             /*Rounding the delay to the nearset picosecond*/
-  del = (int)internal_delay;
+  del = delay_to_picoseconds(tnode[itnode].out_edges->Tdel);
   fprintf(SDF , "\t\t\t(IOPATH delay2/A delay2/B (%d:%d:%d)(%d:%d:%d))\n" , del , del , del , del , del , del);
   
   fprintf(SDF , "\t\t)\n\t\t)\n\t)\n");
@@ -1169,8 +1154,7 @@ static void SDF_Adder_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **look
       for (k = 0; k < tNodeInput->num_edges; k++) {   
 
 	t_tnode tNodeOutput = tnode[tNodeInput->out_edges[k].to_node]; // dest pin of timing arc
-	int del = tNodeInput->out_edges[k].Tdel * 1.0E12 + 0.5;
-
+    int del = delay_to_picoseconds(tNodeInput->out_edges[k].Tdel);
 	if (!record) { // print the SDF record header
 	  fprintf(SDF , "\t(CELL\n\t(CELLTYPE \"ripple_adder\")\n\t(INSTANCE %s)\n\t\t(DELAY\n\t\t(ABSOLUTE\n" ,  fixed_name);
 	  record = 1;
@@ -1197,7 +1181,6 @@ static void SDF_ram_single_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, 
   //  int num_inputs;
   char *fixed_name;
   int pin_count;
-  float internal_delay;
   int del;
 
   //  num_inputs = pb->pb_graph_node->num_input_pins[0];
@@ -1208,8 +1191,7 @@ static void SDF_ram_single_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, 
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; /* Jason Luu Note TODO: This is definitely implemented wrong.  Works for our current architectures but won't work in future. The delay is constant for all pins of the same port which is obviously not true for any real memory, will need to assign another student to fix */
 
   assert(itnode != OPEN);
-  internal_delay = tnode[itnode].T_arr * 1.0E12 + 0.5;
-  del = (int)internal_delay;
+  del = delay_to_picoseconds(tnode[itnode].T_arr);
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
 
@@ -1223,7 +1205,6 @@ static void SDF_ram_dual_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, in
   //  int num_inputs;
   char *fixed_name;
   int pin_count;
-  float internal_delay;
   int del;
 
   //  num_inputs = pb->pb_graph_node->num_input_pins[0];
@@ -1233,8 +1214,7 @@ static void SDF_ram_dual_port_delay_printing(FILE *SDF, t_pb *pb, int iblock, in
   pin_count = pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster; // an output pin of the RAM
   int itnode = lookup_tnode_from_pin_id[iblock][pin_count]; 
   assert(itnode != OPEN);
-  internal_delay = tnode[itnode].T_arr * 1.0E12 + 0.5;
-  del = (int)internal_delay;
+  del = delay_to_picoseconds(tnode[itnode].T_arr);
 
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out1 (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
   fprintf(SDF , "\t\t\t(IOPATH (posedge clock) out2 (%d:%d:%d)(%d:%d:%d))" , del , del , del , del , del , del);
@@ -1493,3 +1473,8 @@ static conn_list *free_linked_list_conn(conn_list *list)
   return(list);
 }
 
+static int delay_to_picoseconds(float delay) {
+      delay *= 1e12; /*converting the delay from seconds to picoseconds*/
+      delay += 0.5;  /*Rounding the delay to the nearset picosecond*/
+      return (int) delay;
+}
