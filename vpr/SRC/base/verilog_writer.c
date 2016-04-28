@@ -1048,6 +1048,7 @@ static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
     int logical_block_index = pb->logical_block;
     int record = 0;
 
+    int num_lut_inputs = find_number_of_inputs(pb);
     fixed_name = fix_name(pb->name);
 
     for(j=0 ; j < pb->pb_graph_node->num_input_pins[0] ; j++)/*Assuming that LUTs have a single input port*/
@@ -1074,7 +1075,12 @@ static void sdf_LUT_delay_printing(FILE *SDF, t_pb *pb, int iblock, int **lookup
                 record = 1;
             }
 
-            fprintf(SDF , "\t\t\t(IOPATH inter%d/datain inter%d/dataout (%d:%d:%d)(%d:%d:%d))\n" , j , j , del , del , del , del , del , del);
+            //The verilog writer instantiates the LUT ports from left to right
+            //In primitives.v this corresponds to decreasing input number (e.g. in_5, in_4, in_3, in_2, in_1, in_0)
+            //We need to match the corresponding interconnect number (since j goes from 0 to num_lut_inputs-1)
+            int interconnect_index = (num_lut_inputs - 1) - j;
+
+            fprintf(SDF , "\t\t\t(IOPATH inter%d/datain inter%d/dataout (%d:%d:%d)(%d:%d:%d))\n" , interconnect_index, interconnect_index, del , del , del , del , del , del);
         }
     }
     if (record) 
