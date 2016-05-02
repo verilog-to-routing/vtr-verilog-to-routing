@@ -379,9 +379,8 @@ bool feasible_routing(void) {
 }
 
 int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
-
 	// invalid condition for prediction
-	if (router_opts.routing_failure_predictor == OFF || num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) return 0;
+	if (router_opts.routing_failure_predictor == OFF || num_nets < MIN_NETS_TO_ACTIVATE_PREDICTOR) return 0;
 
 	// use the last 5 iterations in prediction
 	size_t itry {historical_overuse_ratio.size() - 1};
