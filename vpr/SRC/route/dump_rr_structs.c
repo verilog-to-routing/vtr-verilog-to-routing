@@ -9,6 +9,7 @@ See comment of "dump_rr_structs" function for formate
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <assert.h>
 #include "dump_rr_structs.h"
 #include "globals.h"
 #include "util.h"
@@ -69,6 +70,10 @@ void dump_rr_structs( const char *filename ){
 	dump_rr_node_indices(fid);
 
 	fid.close(); 
+
+	//TEST CODE: if we're dumping rr structs, quit after the first time
+	//assert(false);
+	exit(0);
 }
 
 /* dumps all routing resource nodes to specified file */
