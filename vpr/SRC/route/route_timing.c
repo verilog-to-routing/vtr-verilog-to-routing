@@ -180,33 +180,31 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		overused_ratio = get_overused_ratio();
 		historical_overuse_ratio.push_back(overused_ratio);
 
-		/* Determine when routing is impossible hence should be aborted */
-		if (itry > 5){
-			
-			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
-			if (expected_success_route_iter == UNDEFINED) {
-				return false;
-			}
+		/**** Routing Predictor -- Determine when routing success is unlikely, and routing should be aborted ****/
+		int expected_success_route_iter = predict_success_route_iter(itry, historical_overuse_ratio, router_opts);
+		if (expected_success_route_iter == UNDEFINED) {
+			return false;
+		}
 
 #ifdef REGRESSION_EXIT
-			if (itry > 15) {
-				// compare their slopes over the last 5 iterations
-				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
-				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
-				if (router_opts.congestion_analysis)
-					vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
-				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
-				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
-					&& time_per_iteration_slope > 1) {	// filter out noise
-					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
-									 while congestion grows at %f %/iteration, unlikely to finish.\n",
-						time_per_iteration_slope, congestion_per_iteration_slope);
+		if (itry > 15) {
+			// compare their slopes over the last 5 iterations
+			double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
+			double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
+			if (router_opts.congestion_analysis)
+				vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
+			// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
+			if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
+				&& time_per_iteration_slope > 1) {	// filter out noise
+				vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
+								 while congestion grows at %f %/iteration, unlikely to finish.\n",
+					time_per_iteration_slope, congestion_per_iteration_slope);
 
-					return false;
-				}
+				return false;
 			}
-#endif
 		}
+#endif
+		/**** END Routing Predictor ****/
 
         //print_usage_by_wire_length();
 

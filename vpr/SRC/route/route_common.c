@@ -31,6 +31,13 @@ using namespace std;
 // metric, and this is also somewhat larger than largest circuit observed to have
 // inaccurate predictions, thought this is still only affects quite small circuits.
 #define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
+// Routing failure predictor will take into account this number of past iterations:
+#define PREDICTOR_ITERATIONS 5
+// XXX: Congestion can take a little longer to resolve once the fraction of overused nodes is low.
+//	Once the overuse ratio is lower than the following value, the predictor will take into account
+//	the previous 2*PREDICTOR_ITERATIONS iterations instead.
+//	This is just a placeholder; the exact value should be investigated
+#define OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK 0.0002
 
 /***************** Variables shared only by route modules *******************/
 
@@ -371,16 +378,27 @@ bool feasible_routing(void) {
 	return (true);
 }
 
-int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
+int predict_success_route_iter(int router_iteration, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
+
+	if (router_iteration <= PREDICTOR_ITERATIONS) 
+		return 0;
 
 	// invalid condition for prediction
-	if (router_opts.routing_failure_predictor == OFF || num_nets > MIN_NETS_TO_ACTIVATE_PREDICTOR) return 0;
+	if (router_opts.routing_failure_predictor == OFF || num_nets < MIN_NETS_TO_ACTIVATE_PREDICTOR) 
+		return 0;
 
-	// use the last 5 iterations in prediction
-	size_t itry {historical_overuse_ratio.size() - 1};
-	double congestion_slope {linear_regression_vector(historical_overuse_ratio, itry - 5)};
+	// compute slope 
+	size_t itry = historical_overuse_ratio.size() - 1;
+	size_t start_iteration = itry - PREDICTOR_ITERATIONS;
+	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK){
+		start_iteration = itry - 2*PREDICTOR_ITERATIONS;
+		if (2*PREDICTOR_ITERATIONS > itry)
+			start_iteration = 0;
+	}
+	double congestion_slope = linear_regression_vector(historical_overuse_ratio, start_iteration);
 
 	// linear extrapolation
+	// FIXME: if congestion increases compared to previous iterations, this can return a positive slope
 	int expected_success_route_iter = (itry*congestion_slope - historical_overuse_ratio.back()) / congestion_slope;
 
 	if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations) {

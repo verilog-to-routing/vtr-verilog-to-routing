@@ -131,7 +131,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 void free_chunk_memory_trace(void);
 
-int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts);
+int predict_success_route_iter(int router_iteration, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts);
 
 void print_traceback(int inet);
 
