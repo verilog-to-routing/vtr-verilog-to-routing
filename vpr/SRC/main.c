@@ -74,6 +74,8 @@ int main(int argc, char **argv) {
 	}
 	catch(t_vpr_error* vpr_error){
 		vpr_print_error(vpr_error);
+        /* Return 1 to signal error to scripts */
+        return 1;
 	}
 	
 	/* Return 0 to single success to scripts */
