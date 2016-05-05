@@ -1,135 +1,151 @@
 `timescale 1ps/1ps
 
 //3-Input Look Up Table module
-module LUT_3(in_2,in_1,in_0,out);
-
+module LUT_3#(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=8'b00000000; 
-   
-   input in_0,in_1,in_2;
-   output reg out;
-   integer     selected_row;
-   wire [2:0]  a;
+   parameter Truth_table=8'b00000000
+) (
+    input in_2, 
+    input in_1, 
+    input in_0, 
+    output reg out
+);
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   
-   always@(a[0], a[1], a[2])
-     begin
-	selected_row = {a[2], a[1], a[0]};
-	out = Truth_table[selected_row];
-     end
-     
+    integer selected_row;
+    wire [2:0] a;
+
+    fpga_interconnect inter0(in_0 , a[0]);
+    fpga_interconnect inter1(in_1 , a[1]);
+    fpga_interconnect inter2(in_2 , a[2]);
+
+    always@(*) begin
+        selected_row = {a[2], a[1], a[0]};
+        out = Truth_table[selected_row];
+    end
+
 endmodule
 
 //4-Input Look Up Table module
-module LUT_4(in_3,in_2,in_1,in_0,out);
-
+module LUT_4 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=16'b0000000000000000; 
-   
-   input in_0,in_1,in_2,in_3;
-   output reg out;
-   integer     selected_row;
-   wire [3:0]  a;
+   parameter Truth_table=16'b0000000000000000
+) (
+    input in_3,
+    input in_2,
+    input in_1,
+    input in_0,
+    output reg out
+);
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
+    integer selected_row;
+    wire [3:0] a;
 
-   always@(a[0], a[1], a[2], a[3])
-     begin
-	selected_row = {a[3], a[2], a[1], a[0]};
-	out = Truth_table[selected_row];
-     end
+    fpga_interconnect inter0(in_0 , a[0]);
+    fpga_interconnect inter1(in_1 , a[1]);
+    fpga_interconnect inter2(in_2 , a[2]);
+    fpga_interconnect inter3(in_3 , a[3]);
+
+    always@(*) begin
+        selected_row = {a[3], a[2], a[1], a[0]};
+        out = Truth_table[selected_row];
+    end
      
 endmodule
 
 //5-Input Look Up Table module
-module LUT_5(in_4,in_3,in_2,in_1,in_0,out);
-
+module LUT_5 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=32'b00000000000000000000000000000000; 
+   parameter Truth_table=32'b00000000000000000000000000000000
+) (
+    input in_4,
+    input in_3,
+    input in_2,
+    input in_1,
+    input in_0,
+    output reg out
+);
    
-   input in_0,in_1,in_2,in_3,in_4;
-   output reg out;
-   integer     selected_row = 0;
+    integer selected_row = 0;
+    wire [4:0] a;
 
-   wire [4:0]  a;
+    fpga_interconnect inter0(in_0 , a[0]);
+    fpga_interconnect inter1(in_1 , a[1]);
+    fpga_interconnect inter2(in_2 , a[2]);
+    fpga_interconnect inter3(in_3 , a[3]);
+    fpga_interconnect inter4(in_4 , a[4]);
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
-   interconnect inter4(in_4 , a[4]);
-   
-   always@(a[0], a[1], a[2], a[3], a[4])
-     begin
-	selected_row = {a[4], a[3], a[2], a[1], a[0]};
-	out = Truth_table[selected_row];
-     end
+    always@(*) begin
+        selected_row = {a[4], a[3], a[2], a[1], a[0]};
+        out = Truth_table[selected_row];
+    end
      
 endmodule
 
 //6-Input Look Up Table module
-module LUT_6(in_5,in_4,in_3,in_2,in_1,in_0,out);
-
+module LUT_6 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=64'b0000000000000000000000000000000000000000000000000000000000000000; 
-   
-   input in_0,in_1,in_2,in_3,in_4,in_5;
-   output reg out;
-   integer     selected_row;
+   parameter Truth_table=64'b0000000000000000000000000000000000000000000000000000000000000000
+) (
+    input in_5,
+    input in_4,
+    input in_3,
+    input in_2,
+    input in_1,
+    input in_0,
+    output reg out
+);
+    integer selected_row;
+    wire [5:0] a;
 
-   wire [5:0]  a;
+    fpga_interconnect inter0(in_0 , a[0]);
+    fpga_interconnect inter1(in_1 , a[1]);
+    fpga_interconnect inter2(in_2 , a[2]);
+    fpga_interconnect inter3(in_3 , a[3]);
+    fpga_interconnect inter4(in_4 , a[4]);
+    fpga_interconnect inter5(in_5 , a[5]);
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
-   interconnect inter4(in_4 , a[4]);
-   interconnect inter5(in_5 , a[5]);
-   
-   always@(a[0], a[1], a[2], a[3], a[4], a[5])
-     begin
-	selected_row = {a[5], a[4], a[3], a[2], a[1], a[0]};
-	out = Truth_table[selected_row];
-     end
-     
+    always@(*) begin
+        selected_row = {a[5], a[4], a[3], a[2], a[1], a[0]};
+        out = Truth_table[selected_row];
+    end
+
 endmodule
 
 //7-Input Look Up Table module
-module LUT_7(in_6,in_5,in_4,in_3,in_2,in_1,in_0,out);
-
+module LUT_7 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000; 
-   
-   input in_0,in_1,in_2,in_3,in_4,in_5,in_6;
-   output reg out;
-   integer     selected_row;
-   wire [6:0]  a;
+   parameter Truth_table=128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+) (
+    input in_6,
+    input in_5,
+    input in_4,
+    input in_3,
+    input in_2,
+    input in_1,
+    input in_0,
+    output reg out
+);
+    integer selected_row;
+    wire [6:0] a;
 
-   interconnect inter0(in_0 , a[0]);
-   interconnect inter1(in_1 , a[1]);
-   interconnect inter2(in_2 , a[2]);
-   interconnect inter3(in_3 , a[3]);
-   interconnect inter4(in_4 , a[4]);
-   interconnect inter5(in_5 , a[5]);
-   interconnect inter6(in_6 , a[6]);
-   
-   always@(a[0], a[1], a[2], a[3], a[4], a[5], a[6])
-     begin
-	selected_row = {a[6],a[5],a[4], a[3], a[2], a[1], a[0]};
-	out = Truth_table[selected_row];
-     end
-     
+    fpga_interconnect inter0(in_0 , a[0]);
+    fpga_interconnect inter1(in_1 , a[1]);
+    fpga_interconnect inter2(in_2 , a[2]);
+    fpga_interconnect inter3(in_3 , a[3]);
+    fpga_interconnect inter4(in_4 , a[4]);
+    fpga_interconnect inter5(in_5 , a[5]);
+    fpga_interconnect inter6(in_6 , a[6]);
+
+    always@(*) begin
+        selected_row = {a[6],a[5],a[4], a[3], a[2], a[1], a[0]};
+        out = Truth_table[selected_row];
+    end
+
 endmodule
 
 //D-FlipFlop module with synchronous active low clear and preset.
@@ -160,8 +176,8 @@ endspecify
      end
 endmodule
 
-//Routing interconnect module
-module interconnect(datain,dataout);
+//Routing fpga_interconnect module
+module fpga_interconnect(datain,dataout);
 
 input datain;
 output dataout;
