@@ -5,8 +5,11 @@
 #include <vector>
 #include <string>
 #include <cassert>
+
 #include "verilog_writer2.h"
+
 #include "globals.h"
+#include "path_delay.h"
 
 class PrintingVisitor : public NetlistVisitor {
     private:
@@ -28,11 +31,23 @@ class PrintingVisitor : public NetlistVisitor {
 
 
 
-class VerilogWriterVisitor : public NetlistVisitor {
+class VerilogSdfWriterVisitor : public NetlistVisitor {
     public:
-        VerilogWriterVisitor(std::ostream& os)
-            : os_(os)
-            {}
+        VerilogSdfWriterVisitor(std::ostream& verilog_os, std::ostream& sdf_os)
+            : verilog_os_(verilog_os)
+            , sdf_os_(sdf_os) {
+            
+            pin_id_to_tnode_lookup_ = alloc_and_load_tnode_lookup_from_pin_id();
+        }
+
+        //Non copyable/assignable/moveable
+        VerilogSdfWriterVisitor(VerilogSdfWriterVisitor& other) = delete;
+        VerilogSdfWriterVisitor(VerilogSdfWriterVisitor&& other) = delete;
+        VerilogSdfWriterVisitor& operator=(VerilogSdfWriterVisitor& rhs) = delete;
+
+        ~VerilogSdfWriterVisitor() {
+            free(pin_id_to_tnode_lookup_);
+        }
 
     private: //Internal types
         enum class PortDir {
@@ -40,26 +55,78 @@ class VerilogWriterVisitor : public NetlistVisitor {
             OUT
         };
 
-        struct Instance {
-            Instance(std::string type_, std::string param_, std::string inst_name_, std::map<std::string,std::string> port_conns_)
-                : type(type_)
-                , param(param_)
-                , inst_name(inst_name_)
-                , port_connections(port_conns_)
-                {}
-            std::string type;
-            std::string param;
-            std::string inst_name;
-            std::map<std::string,std::string> port_connections;
+        class Arc {
+            public:
+                Arc(std::string src, std::string snk, float del)
+                    : source_name_(src)
+                    , sink_name_(snk)
+                    , delay_(del)
+                    {}
+
+                std::string source_name() { return source_name_; }
+                std::string sink_name() { return sink_name_; }
+                float delay() { return delay_; }
+
+            private:
+                std::string source_name_;
+                std::string sink_name_;
+                float delay_;
         };
 
-        struct Assignment {
-            Assignment(std::string lval_, std::string rval_)
-                : lval(lval_)
-                , rval(rval_)
-                {}
-            std::string lval;
-            std::string rval;
+        class Instance {
+            public:
+                Instance(std::string type_name, std::string param, std::string inst_name, std::map<std::string,std::string> port_conns, std::map<int,Arc> timing_arc_values)
+                    : type_(type_name)
+                    , param_(param)
+                    , inst_name_(inst_name)
+                    , port_connections_(port_conns)
+                    , timing_arcs_(timing_arc_values)
+                    {}
+
+                const std::map<int,Arc>& timing_arcs() { return timing_arcs_; }
+
+                void print_verilog(std::ostream& os, std::string indent) {
+                    //Instantiate the lut
+                    os << indent << type_;
+                    if(!param_.empty()) {
+                        os << " #(" << param_ << ") ";
+                    }
+                    os << inst_name_ << "(";
+
+                    //and all its named port connections
+                    for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
+                        os << "." + iter->first << "(" << iter->second << ")";
+
+                        if(iter != --port_connections_.end()) {
+                            os << ", ";
+                        }
+                    }
+                    os << ");\n";
+                }
+                std::string instance_name() { return inst_name_; }
+                std::string type() { return type_; }
+            private:
+                std::string type_;
+                std::string param_;
+                std::string inst_name_;
+                std::map<std::string,std::string> port_connections_;
+                std::map<int,Arc> timing_arcs_; //Pin index to timing arc
+
+        };
+
+        class Assignment {
+            public:
+                Assignment(std::string lval, std::string rval)
+                    : lval_(lval)
+                    , rval_(rval)
+                    {}
+
+                void print_verilog(std::ostream& os, std::string indent) {
+                    os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
+                }
+            private:
+                std::string lval_;
+                std::string rval_;
         };
     private: //NetlistVisitor interface functions
 
@@ -76,84 +143,148 @@ class VerilogWriterVisitor : public NetlistVisitor {
             } else if(model->name == std::string("output")) {
                 outputs_.emplace_back(make_io(atom, PortDir::OUT));
             } else if(model->name == std::string("names")) {
-                instances_.push_back(make_lut_instance(atom));
+                cell_instances_.push_back(make_lut_instance(atom));
             }
             printf("ATOM: %s (%s: %s)\n", atom->name, pb_type->name, model->name); 
         }
 
         void finish_impl() {
-            os_ << "module " << top_module_name_ << " (\n";
-            for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
-                os_ << indent_ << "input " << *iter;
-                if(iter + 1 != inputs_.end() || outputs_.size() > 0) {
-                   os_ << ",";
-                }
-                os_ << "\n";
-            }
-            for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
-                os_ << indent_ << "output " << *iter;
-                if(iter + 1 != outputs_.end()) {
-                   os_ << ",";
-                }
-                os_ << "\n";
-            }
-            os_ << ");\n" ;
+            
+            print_verilog();
 
-            os_ << "\n";
-            os_ << indent_ << "//Wires\n";
-            for(auto& kv : logical_net_drivers_) {
-                os_ << indent_ << "wire " << kv.second << ";\n";
+            print_sdf();
+        }
+
+    private: //Helper functions
+
+        void print_verilog(int depth=0) {
+            verilog_os_ << indent(depth) << "module " << top_module_name_ << " (\n";
+            for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
+                verilog_os_ << indent(depth+1) << "input " << *iter;
+                if(iter + 1 != inputs_.end() || outputs_.size() > 0) {
+                   verilog_os_ << ",";
+                }
+                verilog_os_ << "\n";
+            }
+
+            for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
+                verilog_os_ << indent(depth+1) << "output " << *iter;
+                if(iter + 1 != outputs_.end()) {
+                   verilog_os_ << ",";
+                }
+                verilog_os_ << "\n";
+            }
+            verilog_os_ << indent(depth) << ");\n" ;
+
+            verilog_os_ << "\n";
+            verilog_os_ << indent(depth+1) << "//Wires\n";
+            for(auto& wire_tnode_pair : logical_net_drivers_) {
+                verilog_os_ << indent(depth+1) << "wire " << wire_tnode_pair.first << ";\n";
             }
             for(auto& kv : logical_net_sinks_) {
-                for(auto& wire_name : kv.second) {
-                    os_ << indent_ << "wire " << wire_name << ";\n";
+                for(auto& wire_tnode_pair : kv.second) {
+                    verilog_os_ << indent(depth+1) << "wire " << wire_tnode_pair.first << ";\n";
                 }
             }
 
-            os_ << "\n";
-            os_ << indent_ << "//IO assignments\n";
+            verilog_os_ << "\n";
+            verilog_os_ << indent(depth+1) << "//IO assignments\n";
             for(auto& assign : assignments_) {
-                os_ << indent_ << "assign " << assign.lval << " = " << assign.rval << ";\n";
+                assign.print_verilog(verilog_os_, indent(depth+1));
             }
 
-            os_ << "\n";
-            os_ << indent_ << "//Interconnect\n";
+            verilog_os_ << "\n";
+            verilog_os_ << indent(depth+1) << "//Interconnect\n";
             for(const auto& kv : logical_net_sinks_) {
                 int atom_net_idx = kv.first;
                 auto driver_iter = logical_net_drivers_.find(atom_net_idx);
                 assert(driver_iter != logical_net_drivers_.end());
-                const auto& driver_wire = driver_iter->second;
+                const auto& driver_wire = driver_iter->second.first;
 
-                for(auto& sink_wire : kv.second) {
-                    std::string inst_name = driver_wire + "_to_" + sink_wire;
-                    os_ << indent_ << "fpga_interconnect " << inst_name;
-                    os_ << " (" << driver_wire << ", " << sink_wire << ");\n";
+                for(auto& sink_wire_tnode_pair : kv.second) {
+                    std::string inst_name = interconnect_name(driver_wire, sink_wire_tnode_pair.first);
+                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << inst_name;
+                    verilog_os_ << "(" << driver_wire << ", " << sink_wire_tnode_pair.first << ");\n";
                 }
             }
 
-            os_ << "\n";
-            os_ << indent_ << "//Cell instances\n";
-            for(auto& inst : instances_) {
-                //Instantiate the lut
-                os_ << indent_ << inst.type << " #(" << inst.param << ") " << inst.inst_name << "(";
-
-                //and all its named port connections
-                const auto& port_conns = inst.port_connections;
-                for(auto iter = port_conns.begin(); iter != port_conns.end(); ++iter) {
-                    os_ << "." + iter->first << "(" << iter->second << ")";
-
-                    if(iter != --inst.port_connections.end()) {
-                        os_ << ", ";
-                    }
-                }
-                os_ << ");\n";
+            verilog_os_ << "\n";
+            verilog_os_ << indent(depth+1) << "//Cell instances\n";
+            for(auto& inst : cell_instances_) {
+                inst.print_verilog(verilog_os_, indent(depth+1));
             }
 
-            os_ << "\n";
-            os_ << "endmodule\n";
+            verilog_os_ << "\n";
+            verilog_os_ << indent(depth) << "endmodule\n";
         }
 
-    private: //Helper functions
+        void print_sdf(int depth=0) {
+            sdf_os_ << indent(depth) << "(DELAYFILE\n";
+            sdf_os_ << indent(depth+1) << "(SDFVERSION \"2.1\")\n";
+            sdf_os_ << indent(depth+1) << "(DIVIDER /)\n";
+            sdf_os_ << indent(depth+1) << "(TIMESCALE 1 ps)\n";
+            sdf_os_ << "\n";
+
+            //Interconnect
+            for(const auto& kv : logical_net_sinks_) {
+                int atom_net_idx = kv.first;
+                auto driver_iter = logical_net_drivers_.find(atom_net_idx);
+                assert(driver_iter != logical_net_drivers_.end());
+                auto driver_wire = driver_iter->second.first;
+                auto driver_tnode = driver_iter->second.second;
+
+                for(auto& sink_wire_tnode_pair : kv.second) {
+                    auto sink_wire = sink_wire_tnode_pair.first;
+                    auto sink_tnode = sink_wire_tnode_pair.second;
+
+                    sdf_os_ << indent(depth+1) << "(CELL\n";
+                    sdf_os_ << indent(depth+2) << "(CELLTYPE \"fpga_interconnect\")\n";
+                    sdf_os_ << indent(depth+2) << "(INSTANCE " << interconnect_name(driver_wire, sink_wire) << ")\n";
+                    sdf_os_ << indent(depth+2) << "(DELAY\n";
+                    sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
+
+                    int delay = get_delay_ps(driver_tnode, sink_tnode);
+
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << delay << ":" << delay << ":" << delay << ")";
+
+                    sdf_os_ << indent(depth+4) << "(IOPATH datain dataout " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    sdf_os_ << indent(depth+3) << ")\n";
+                    sdf_os_ << indent(depth+2) << ")\n";
+                    sdf_os_ << indent(depth+1) << ")\n";
+                    sdf_os_ << indent(depth) << "\n";
+                }
+            }
+
+            //Cells
+            for(auto& inst : cell_instances_) {
+                sdf_os_ << indent(depth+1) << "(CELL\n";
+                sdf_os_ << indent(depth+2) << "(CELLTYPE \"" << inst.type() << "\")\n";
+                sdf_os_ << indent(depth+2) << "(INSTANCE " << inst.instance_name()<< ")\n";
+                sdf_os_ << indent(depth+2) << "(DELAY\n";
+                sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
+                
+                for(auto& pin_arc_pair : inst.timing_arcs()) {
+                    auto arc = pin_arc_pair.second;
+
+                    int delay_ps = get_delay_ps(arc.delay());
+
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+
+                    sdf_os_ << indent(depth+4) << "(IOPATH " << arc.source_name() << " " << arc.sink_name();
+                    sdf_os_ << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                }
+
+                sdf_os_ << indent(depth+3) << ")\n";
+                sdf_os_ << indent(depth+2) << ")\n";
+                sdf_os_ << indent(depth+1) << ")\n";
+                sdf_os_ << indent(depth) << "\n";
+            }
+
+            sdf_os_ << indent(depth) << ")\n";
+        }
+
         std::string escape_name(const char* name) {
             std::string escaped_name = name;
             for(size_t i = 0; i < escaped_name.size(); i++) {
@@ -177,7 +308,7 @@ class VerilogWriterVisitor : public NetlistVisitor {
             return count;
         }
 
-        std::string make_inst_wire(int atom_net_idx, std::string inst_name, PortDir dir, int port_idx, int pin_idx) {
+        std::string make_inst_wire(int atom_net_idx, int tnode_id, std::string inst_name, PortDir dir, int port_idx, int pin_idx) {
             std::stringstream ss;
             ss << inst_name;
             if(dir == PortDir::IN) {
@@ -191,10 +322,14 @@ class VerilogWriterVisitor : public NetlistVisitor {
 
             std::string wire_name = ss.str();
 
+            auto value = std::make_pair(wire_name, tnode_id);
             if(dir == PortDir::IN) {
-                logical_net_sinks_[atom_net_idx].push_back(wire_name);
+                //Add the sink
+                logical_net_sinks_[atom_net_idx].push_back(value);
+
             } else {
-                auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_idx, wire_name));
+                //Add the driver
+                auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_idx, value));
                 assert(ret.second); //Was inserted, drivers are unique
             }
 
@@ -230,9 +365,12 @@ class VerilogWriterVisitor : public NetlistVisitor {
             //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
             PortDir wire_dir = (dir == PortDir::IN) ? PortDir::OUT : PortDir::IN;
 
-            auto wire_name = make_inst_wire(atom_net_idx, io_name, wire_dir, 0, 0);
+            //Look up the tnode associated with this pin (used for delay calculation)
+            int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-            auto assignment = Assignment(io_name, wire_name);
+            auto wire_name = make_inst_wire(atom_net_idx, tnode_id, io_name, wire_dir, 0, 0);
+
+            //Connect the wires to to I/Os with assign statements
             if(wire_dir == PortDir::IN) {
                 assignments_.emplace_back(io_name, wire_name);
             } else {
@@ -271,6 +409,7 @@ class VerilogWriterVisitor : public NetlistVisitor {
             const t_block* top_block = find_top_block(atom);
 
             //Add inputs adding connections
+            std::map<int,Arc> timing_arcs;
             for(int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
                 int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
                 int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
@@ -284,10 +423,24 @@ class VerilogWriterVisitor : public NetlistVisitor {
                     assert(ret.second); //Was inserted
                 } else {
                     //Connected to a net
+                    
+                    //Look up the tnode associated with this pin (used for delay calculation)
+                    int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    std::string input_net = make_inst_wire(atom_net_idx, inst_name, PortDir::IN, 0, pin_idx);
+                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortDir::IN, 0, pin_idx);
                     auto ret = port_conns.insert(std::make_pair(port_name, input_net)); 
                     assert(ret.second); //Was inserted
+
+
+                    //Record the timing arc
+                    std::string source_name = "inter" + std::to_string(pin_idx) + "/datain";
+                    std::string sink_name = "inter" + std::to_string(pin_idx) + "/dataout";
+
+                    assert(tnode[tnode_id].num_edges == 1);
+                    float delay = tnode[tnode_id].out_edges[0].Tdel;
+                    Arc timing_arc(source_name, sink_name, delay);
+
+                    timing_arcs.insert(std::make_pair(pin_idx,timing_arc));
                 }
             }
 
@@ -308,13 +461,18 @@ class VerilogWriterVisitor : public NetlistVisitor {
                 } else {
                     //Connected to a net
 
-                    std::string input_net = make_inst_wire(atom_net_idx, inst_name, PortDir::OUT, 0, 0);
+                    //Look up the tnode associated with this pin (used for delay calculation)
+                    int tnode_id = find_tnode(atom, cluster_pin_idx);
+
+                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortDir::OUT, 0, 0);
                     auto ret = port_conns.insert(std::make_pair(port_name, input_net)); 
                     assert(ret.second); //Was inserted
                 }
             }
 
-            return Instance(inst_type, lut_mask_param, inst_name, port_conns);
+            auto inst = Instance(inst_type, lut_mask_param, inst_name, port_conns, timing_arcs);
+
+            return inst;
         }
 
         const t_block* find_top_block(const t_pb* curr) {
@@ -338,6 +496,16 @@ class VerilogWriterVisitor : public NetlistVisitor {
                 parent = curr->parent_pb;
             }
             return curr;
+        }
+
+        int find_tnode(const t_pb* atom, int cluster_pin_idx) {
+
+            int clb_index = logical_block[atom->logical_block].clb_index;
+            int tnode_id = pin_id_to_tnode_lookup_[clb_index][cluster_pin_idx];
+
+            assert(tnode_id != OPEN);
+
+            return tnode_id;
         }
 
         std::string load_lut_mask(int num_inputs, const t_pb* atom) {
@@ -436,23 +604,54 @@ class VerilogWriterVisitor : public NetlistVisitor {
             return lut_mask_indicies;
         }
 
+        int get_delay_ps(float delay_sec) {
+
+            return delay_sec * 1e12 + 0.5; //Scale and rounding
+        }
+
+        int get_delay_ps(int source_tnode, int sink_tnode) {
+            float source_delay = tnode[source_tnode].T_arr;
+            float sink_delay = tnode[sink_tnode].T_arr;
+
+            float delay_sec = sink_delay - source_delay;
+
+
+            return get_delay_ps(delay_sec);
+        }
+
+        std::string interconnect_name(std::string driver_wire, std::string sink_wire) {
+            return "routing_segment_" + driver_wire + "_to_" + sink_wire;
+        }
+
+        std::string indent(size_t depth) {
+            std::string new_indent;
+            for(size_t i = 0; i < depth; ++i) {
+                new_indent += indent_;
+            }
+            return new_indent;
+        }
+
     private: //Data
         std::string top_module_name_;
         std::vector<std::string> inputs_;
         std::vector<std::string> outputs_;
-        std::set<std::string> wires_;
         std::vector<Assignment> assignments_;
-        std::vector<Instance> instances_;
+        std::vector<Instance> cell_instances_;
+        std::vector<Instance> interconnect_instances_;
 
-        std::map<int, std::string> logical_net_drivers_;
-        std::map<int, std::vector<std::string>> logical_net_sinks_;
+        std::map<int, std::pair<std::string,int>> logical_net_drivers_; //Value: pair of wire_name and tnode_id
+        std::map<int, std::vector<std::pair<std::string,int>>> logical_net_sinks_; //Value: vector wire_name tnode_id pairs
+        std::map<std::string, float> logical_net_sink_delays_;
 
-        std::ostream& os_;
+        int** pin_id_to_tnode_lookup_;
+
+        std::ostream& verilog_os_;
+        std::ostream& sdf_os_;
         std::string indent_ = "    ";
 };
 
 void verilog_writer2() {
-    VerilogWriterVisitor visitor(std::cout);
+    VerilogSdfWriterVisitor visitor(std::cout, std::cout);
 
     NetlistWalker nl_walker(visitor);
 
