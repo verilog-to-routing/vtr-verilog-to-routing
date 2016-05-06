@@ -1582,8 +1582,9 @@ void print_timing_graph(const char *fname) {
 				fprintf(fp, "\t\t   -");
 			}
 #ifdef PATH_COUNTING
-			fprintf(fp, "\t%12g\t%12g\n", tnode[inode].forward_weight, tnode[inode].backward_weight);
+			fprintf(fp, "\t%12g\t%12g", tnode[inode].forward_weight, tnode[inode].backward_weight);
 #endif
+            fprintf(fp, "\n");
 		}
 	}
 
