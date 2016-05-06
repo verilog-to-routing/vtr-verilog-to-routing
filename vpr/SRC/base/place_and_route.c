@@ -188,7 +188,7 @@ bool place_and_route(enum e_operation operation,
 			if(GetPostSynthesisOption())
 			{
                 verilog_writer2();
-				verilog_writer();
+				/*verilog_writer();*/
 			}
 
 			free_timing_graph(slacks);
@@ -563,7 +563,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		if(GetPostSynthesisOption())
 		  {
             verilog_writer2();
-		    verilog_writer();
+			/*verilog_writer();*/
 		  }
 
 		free_timing_graph(slacks);
