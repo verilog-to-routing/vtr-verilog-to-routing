@@ -26,27 +26,7 @@ class PrintingVisitor : public NetlistVisitor {
         }
 };
 
-struct Assignment {
-    Assignment(std::string lval_, std::string rval_)
-        : lval(lval_)
-        , rval(rval_)
-        {}
-    std::string lval;
-    std::string rval;
-};
 
-struct Instance {
-    Instance(std::string type_, std::string param_, std::string inst_name_, std::map<std::string,std::string> port_conns_)
-        : type(type_)
-        , param(param_)
-        , inst_name(inst_name_)
-        , port_connections(port_conns_)
-        {}
-    std::string type;
-    std::string param;
-    std::string inst_name;
-    std::map<std::string,std::string> port_connections;
-};
 
 class VerilogWriterVisitor : public NetlistVisitor {
     public:
@@ -58,6 +38,28 @@ class VerilogWriterVisitor : public NetlistVisitor {
         enum class PortDir {
             IN,
             OUT
+        };
+
+        struct Instance {
+            Instance(std::string type_, std::string param_, std::string inst_name_, std::map<std::string,std::string> port_conns_)
+                : type(type_)
+                , param(param_)
+                , inst_name(inst_name_)
+                , port_connections(port_conns_)
+                {}
+            std::string type;
+            std::string param;
+            std::string inst_name;
+            std::map<std::string,std::string> port_connections;
+        };
+
+        struct Assignment {
+            Assignment(std::string lval_, std::string rval_)
+                : lval(lval_)
+                , rval(rval_)
+                {}
+            std::string lval;
+            std::string rval;
         };
     private: //NetlistVisitor interface functions
 
@@ -80,16 +82,22 @@ class VerilogWriterVisitor : public NetlistVisitor {
         }
 
         void finish_impl() {
-            os_ << "module " << top_module_name_ << " #(\n";
-            os_ << ") (\n" ;
-            for(auto& input : inputs_) {
-                os_ << indent_ << "input " << input << ";\n";
+            os_ << "module " << top_module_name_ << " (\n";
+            for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
+                os_ << indent_ << "input " << *iter;
+                if(iter + 1 != inputs_.end() || outputs_.size() > 0) {
+                   os_ << ",";
+                }
+                os_ << "\n";
             }
-            for(auto& output : outputs_) {
-                os_ << indent_ << "output " << output << ";\n";
+            for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
+                os_ << indent_ << "output " << *iter;
+                if(iter + 1 != outputs_.end()) {
+                   os_ << ",";
+                }
+                os_ << "\n";
             }
             os_ << ");\n" ;
-            os_ << "\n";
 
             os_ << "\n";
             os_ << indent_ << "//Wires\n";
@@ -112,10 +120,9 @@ class VerilogWriterVisitor : public NetlistVisitor {
             os_ << indent_ << "//Interconnect\n";
             for(const auto& kv : logical_net_sinks_) {
                 int atom_net_idx = kv.first;
-                /*auto driver_iter = logical_net_drivers_.find(atom_net_idx);*/
-                /*assert(driver_iter != logical_net_drivers_.end());*/
-                /*const auto& driver_wire = driver_iter->second;*/
-                auto& driver_wire = logical_net_drivers_[atom_net_idx];
+                auto driver_iter = logical_net_drivers_.find(atom_net_idx);
+                assert(driver_iter != logical_net_drivers_.end());
+                const auto& driver_wire = driver_iter->second;
 
                 for(auto& sink_wire : kv.second) {
                     std::string inst_name = driver_wire + "_to_" + sink_wire;
@@ -143,7 +150,7 @@ class VerilogWriterVisitor : public NetlistVisitor {
             }
 
             os_ << "\n";
-            os_ << "endmodule;\n";
+            os_ << "endmodule\n";
         }
 
     private: //Helper functions
@@ -245,15 +252,12 @@ class VerilogWriterVisitor : public NetlistVisitor {
             auto inst_type = ss.str();
 
             //Determine the truth table
-            std::stringstream truth_table_ss;
+            std::stringstream lut_mask_param_ss;
             int lut_bits = (1 << lut_size);
-            truth_table_ss << lut_bits;
-            truth_table_ss << "'b";
-            //TODO: properly
-            for(int i = 0; i < lut_bits; ++i) {
-                truth_table_ss << "X";
-            }
-            std::string truth_table = truth_table_ss.str();
+            lut_mask_param_ss << lut_bits;
+            lut_mask_param_ss << "'b";
+            lut_mask_param_ss << load_lut_mask(lut_size, atom);
+            std::string lut_mask_param = lut_mask_param_ss.str();
 
             //Determine the instance name
             auto inst_name = "lut_" + escape_name(atom->name);
@@ -310,7 +314,7 @@ class VerilogWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            return Instance(inst_type, truth_table, inst_name, port_conns);
+            return Instance(inst_type, lut_mask_param, inst_name, port_conns);
         }
 
         const t_block* find_top_block(const t_pb* curr) {
@@ -334,6 +338,102 @@ class VerilogWriterVisitor : public NetlistVisitor {
                 parent = curr->parent_pb;
             }
             return curr;
+        }
+
+        std::string load_lut_mask(int num_inputs, const t_pb* atom) {
+            const t_model* model = logical_block[atom->logical_block].model;
+            assert(model->name == std::string("names"));
+
+            int lut_bits = (1 << num_inputs);
+
+            //Initialize LUT mask to all false
+            std::string lut_mask = std::string(lut_bits, '0'); 
+
+            //VPR stores the truth table as in BLIF
+            //Each row of the table (i.e. a c-string) is stored in a linked list 
+            //
+            //The c-string is the literal row from BLIF, e.g. "0 1" for an inverter, "11 1" for an AND2
+            t_linked_vptr* truth_table_row_ptr = logical_block[atom->logical_block].truth_table;
+            
+            //Process each row
+            while(truth_table_row_ptr != nullptr) {
+                const std::string truth_table_row = (const char*) truth_table_row_ptr->data_vptr;
+
+                std::cout << truth_table_row << std::endl;
+
+                auto truth_val_iter = truth_table_row.end() - 1;
+                auto space_iter = truth_table_row.end() - 2;
+
+                assert(*space_iter == ' ');
+                assert(*truth_val_iter == '1' || *truth_val_iter == '0');
+
+                std::string input_values = std::string(truth_table_row.begin(), space_iter);
+                assert(input_values.size() == truth_table_row.size() - 2);
+
+                //Convert the set of input values to an index in the LUT mask
+                //and set the corresponding entry to the truth value
+                for(int lut_mask_idx : expand_input_values_to_lut_mask_index(lut_bits, input_values)) {
+                    lut_mask[lut_mask_idx] = *truth_val_iter;
+                }
+                
+                truth_table_row_ptr = truth_table_row_ptr->next;
+            }
+
+            return lut_mask;
+        }
+
+        std::vector<int> expand_input_values_to_lut_mask_index(int lut_bits, std::string input_values) {
+            //Return a vector of indicies, since a single set of input values (if they have don't cares)
+            //can expend to multiplie indicies.
+            //However currently we do not support don't cares in the input values.
+            std::vector<int> lut_mask_indicies;
+
+
+            //We invert the index here to make the actual LUT mask parameter sensible,
+            //by intializing it to the highest index in the lut_mask string, and then
+            //subtracting the powers for each input that is specified as true.
+            //
+            //For example:
+            //
+            //  Consider an AND2 implemented in a 6-LUT
+            //  The truth table in blif looks like:
+            //  .names a b a_and_b
+            //  11 1
+            //
+            //  The corresponding input_values is "11"
+            //
+            //  We initialize lut_mask_idx to 63 (since there are 2^6 == 64 bits in the lut mask)
+            //
+            //  This index corresponds to the right-most character in the std::string
+            //  used to represent the lut mask:
+            //
+            //      0000000000000000000000000000000000000000000000000000000000000000
+            //                                                                     ^
+            //
+            //  which corresponds to the LSB of the LUT mask when interpreted in verilog
+            //
+            //  We then subtract the corresponding power (i.e. 2^i) to get the string index
+            //  corresponding to the appropriate case:
+            //
+            //      lut_mask_index = 63 - 2^0 - 2^1 = 60
+            //
+            //  Which is then used to set the appropriate lutmask bit
+            //  
+            //      0000000000000000000000000000000000000000000000000000000000001000
+            //                                                                  ^   
+            int lut_mask_idx = lut_bits-1;
+            for(size_t i = 0; i < input_values.size(); i++) {
+                int index_power = (1 << i); 
+
+                if(input_values[i] == '1') {
+                    lut_mask_idx -= index_power;
+                } else {
+                    assert(input_values[i] == '0'); //Currently no support for don't cares
+                }
+            }
+            lut_mask_indicies.push_back(lut_mask_idx);
+
+            return lut_mask_indicies;
         }
 
     private: //Data
