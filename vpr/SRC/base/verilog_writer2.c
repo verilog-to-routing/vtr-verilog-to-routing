@@ -130,6 +130,79 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 std::string lval_;
                 std::string rval_;
         };
+
+        enum class LogicVal {
+            FALSE=0,
+            TRUE=1,
+            DONTCARE,
+            UNKOWN,
+            HIGHZ
+        };
+
+        friend std::ostream& operator<<(std::ostream& os, LogicVal val) {
+            if(val == LogicVal::FALSE) os << "0";
+            else if (val == LogicVal::TRUE) os << "1";
+            else if (val == LogicVal::DONTCARE) os << "-";
+            else if (val == LogicVal::UNKOWN) os << "x";
+            else if (val == LogicVal::HIGHZ) os << "z";
+            else assert(false);
+            return os;
+        }
+
+        class LogicVec {
+            public:
+                LogicVec() = default;
+                LogicVec(size_t size, LogicVal init_value)
+                    : values_(size, init_value)
+                    {}
+
+                LogicVal& operator[](size_t i) { return values_[i]; }
+
+                friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {
+                    os << logic_vec.values_.size() << "'b";
+                    //Print in reverse since th convention is MSB on the left, LSB on the right
+                    for(auto iter = logic_vec.begin(); iter != logic_vec.end(); iter++) {
+                        os << *iter;
+                    }
+                    return os;
+                }
+
+                void rotate(std::vector<int> permute) {
+                    assert(permute.size() == values_.size());
+
+                    auto orig_values = values_;
+
+                    for(size_t i = 0; i < values_.size(); i++) {
+                        /*std::cout << "\tMove " << permute[i] << " -> " << i << ": " << *this;*/
+
+                        values_[i] = orig_values[permute[i]];
+
+                        /*std::cout << " -> " << *this << std::endl;*/
+                    }
+                }
+
+                size_t minterm() {
+                    size_t minterm_number = 0;
+
+                    for(size_t i = 0; i < values_.size(); i++) {
+                        if(values_[i] == LogicVal::TRUE) {
+                            size_t index_power = (1 << i);
+                            minterm_number += index_power;
+                        } else if(values_[i] == LogicVal::FALSE) {
+                            //pass
+                        } else {
+                            assert(false); //Unsupported values
+                        }
+                    }
+                    return minterm_number;
+                }
+
+                std::vector<LogicVal>::reverse_iterator begin() { return values_.rbegin(); }
+                std::vector<LogicVal>::reverse_iterator end() { return values_.rend(); }
+
+            private:
+                std::vector<LogicVal> values_;
+        };
     private: //NetlistVisitor interface functions
 
         void visit_top_impl(const char* top_level_name) { 
@@ -396,9 +469,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
             //Determine the truth table
             std::stringstream lut_mask_param_ss;
-            int lut_bits = (1 << lut_size);
-            lut_mask_param_ss << lut_bits;
-            lut_mask_param_ss << "'b";
             lut_mask_param_ss << load_lut_mask(lut_size, atom);
             std::string lut_mask_param = lut_mask_param_ss.str();
 
@@ -513,21 +583,85 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return tnode_id;
         }
 
-        std::string load_lut_mask(size_t num_inputs, const t_pb* atom) {
+        LogicVec load_lut_mask(size_t num_inputs, const t_pb* atom) {
             const t_model* model = logical_block[atom->logical_block].model;
             assert(model->name == std::string("names"));
+
+            std::cout << "Loading LUT mask for: " << atom->name << std::endl;
 
             int lut_bits = (1 << num_inputs);
 
             //Initialize LUT mask to all false
-            std::string lut_mask = std::string(lut_bits, '0'); 
+            auto lut_mask = LogicVec(lut_bits, LogicVal::FALSE); 
 
+            //Since the LUT inputs may have been rotated from the input blif specification we need to
+            //figure out this permutation to reflect the physical implementation connectivity.
+            //
+            //We create a permutation map (which is a list of swaps from index to index)
+            //which is then applied to do the rotation of the lutmask
+            std::vector<int> permute(num_inputs, OPEN);
+
+            std::cout << "\tInit Permute: {";
+            for(size_t i = 0; i < permute.size(); i++) {
+                std::cout << permute[i] << ", ";
+            }
+            std::cout << "}" << std::endl;
+
+            //Determine the permutation
+            //
+            //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
+            //and find the corresponding input in the implementation atom (i.e. in the current netlist)
+            for(size_t i = 0; i < num_inputs; i++) {
+                int logical_net = logical_block[atom->logical_block].input_nets[0][i]; //The original net in the input netlist
+
+                if(logical_net != OPEN) {
+                    int atom_input_net = OPEN;
+                    size_t j;
+                    for(j = 0; j < num_inputs; j++) {
+                        atom_input_net = find_atom_input_logical_net(atom, j); //The net currently connected to input j
+
+                        if(logical_net == atom_input_net) {
+                            std::cout << "\tLogic net " << logical_net << " (" << g_atoms_nlist.net[logical_net].name << ") atom lut input " << i << " -> impl lut input " << j << std::endl;
+                            break;
+                        }
+                    }
+                    assert(atom_input_net == logical_net);
+
+                    permute[j] = i;
+                }
+            }
+
+            //Fill in any missing values in the permutation (i.e. zeros)
+            std::set<int> perm_indicies(permute.begin(), permute.end());
+            size_t unused_index = 0;
+            for(size_t i = 0; i < permute.size(); i++) {
+                if(permute[i] == OPEN) {
+                    while(perm_indicies.count(unused_index)) {
+                        unused_index++;
+                    }
+                    permute[i] = unused_index;
+                    perm_indicies.insert(unused_index);
+                }
+            }
+
+
+
+            std::cout << "\tPermute: {";
+            for(size_t k = 0; k < permute.size(); k++) {
+                std::cout << permute[k] << ", ";
+            }
+            std::cout << "}" << std::endl;
+
+
+            std::cout << "\tBLIF = Input ->  Rotated" << std::endl;
+            std::cout << "\t------------------------" << std::endl;
+            
             //VPR stores the truth table as in BLIF
             //Each row of the table (i.e. a c-string) is stored in a linked list 
             //
             //The c-string is the literal row from BLIF, e.g. "0 1" for an inverter, "11 1" for an AND2
             t_linked_vptr* truth_table_row_ptr = logical_block[atom->logical_block].truth_table;
-            
+
             //Process each row
             while(truth_table_row_ptr != nullptr) {
                 const std::string truth_table_row = (const char*) truth_table_row_ptr->data_vptr;
@@ -538,62 +672,50 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 assert(*space_iter == ' ');
                 
                 //Extract the truth (output value) for this row
-                std::string truth_value(truth_val_iter, truth_table_row.end());
-                assert(truth_value == "1" || truth_value == "0");
+                LogicVal truth_val = LogicVal::UNKOWN;
+                if(*truth_val_iter == '1') {
+                    truth_val = LogicVal::TRUE; 
+                } else if (*truth_val_iter == '0') {
+                    truth_val = LogicVal::FALSE; 
+                } else {
+                    assert(false);
+                }
 
                 //Extract the input values for this row
-                std::string input_values(truth_table_row.begin(), space_iter);
-                assert(input_values.size() == truth_table_row.size() - 2);
-
-                //We now pad-out the input_values to match the LUT size (ignoring connectivity)
-                input_values = input_values + std::string(num_inputs - input_values.size(), '0');
-                assert(input_values.size() == num_inputs);
-
-                //Now we permute the input_values to reflect which physical LUT input is connected
-                //to each logical signal
-                //
-                //We create a permutation array (which at index i contains the index of input_values to be placed at i)
-                //which is then applied
-                std::vector<size_t> permute(num_inputs);
-                std::iota(permute.begin(), permute.end(), 0);
-
-                //Determine the permutation
-                //
-                //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
-                //and find the corresponding input in the implementation atom (i.e. in the current netlist)
-                for(size_t i = 0; i < num_inputs; i++) {
-                    int logical_net = logical_block[atom->logical_block].input_nets[0][i]; //The original net in the input netlist
-
-                    if(logical_net != OPEN) {
-                        int atom_input_net = OPEN;
-                        size_t j;
-                        for(j = 0; j < num_inputs; j++) {
-                            atom_input_net = find_atom_input_logical_net(atom, j);
-
-                            if(logical_net == atom_input_net) {
-                                break;
-                            }
-                        }
-                        assert(atom_input_net == logical_net);
-
-                        std::swap(permute[i], permute[j]);
+                LogicVec input_values(num_inputs, LogicVal::FALSE);
+                size_t i = 0;
+                while(truth_table_row[i] != ' ') {
+                    LogicVal input_val = LogicVal::UNKOWN;
+                    if(truth_table_row[i] == '1') {
+                        input_val = LogicVal::TRUE; 
+                    } else if (truth_table_row[i] == '0') {
+                        input_val = LogicVal::FALSE; 
+                    } else {
+                        assert(false);
                     }
+
+                    input_values[i] =  input_val;
+                    /*std::cout << "Setting input " << i << " " << input_val << ": " << input_values << std::endl;*/
+                    i++;
                 }
 
-                //Apply the permutation
-                std::string permuted_input_values(num_inputs, '0');
-                for(size_t i = 0; i < num_inputs; i++) {
-                    permuted_input_values[i] = input_values[permute[i]];
-                }
+                auto permuted_input_values = input_values;
+                permuted_input_values.rotate(permute);
 
-                //Convert the set of input values to an index in the LUT mask
-                //and set the corresponding entry to the truth value
-                for(int lut_mask_idx : expand_input_values_to_lut_mask_index(lut_bits, permuted_input_values)) {
-                    lut_mask[lut_mask_idx] = *truth_val_iter;
-                }
+                std::cout << "\t" << truth_table_row << " = "<< input_values << ":" << truth_val;
+
+                std::cout << " -> " << permuted_input_values << ":" << truth_val << std::endl;
+
+                size_t minterm = permuted_input_values.minterm();
+                std::cout << "\tSetting minterm : " << minterm << " to " << truth_val << std::endl;
+                //Set the appropraite lut mask entry
+                lut_mask[minterm] = truth_val;
                 
+                //Advance to the next row
                 truth_table_row_ptr = truth_table_row_ptr->next;
             }
+
+            std::cout << "\tLUT_MASK: " << lut_mask << std::endl;
 
             return lut_mask;
         }
@@ -607,7 +729,8 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return atom_net_idx;
         }
 
-        std::vector<int> expand_input_values_to_lut_mask_index(int lut_bits, std::string input_values) {
+#if 0
+        std::vector<int> expand_input_values_to_lut_mask_index(int lut_bits, LogicVec input_values) {
             //Return a vector of indicies, since a single set of input values (if they have don't cares)
             //can expend to multiplie indicies.
             //However currently we do not support don't cares in the input values.
@@ -620,37 +743,53 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             //
             //For example:
             //
-            //  Consider an AND2 implemented in a 6-LUT
-            //  The truth table in blif looks like:
-            //  .names a b a_and_b
-            //  11 1
+            //  Consider an AND2 whose truth table looks like:
+            //      .names a b a_and_b
+            //      11 1
             //
-            //  The corresponding input_values is "11"
+            //  The caller of this function should have already padded this out expanded to fill out the 6-LUT as:
+            //      .names unconn5 unconn4 unconn3 unconn2 a b a_and_b
+            //      000011 1
+            //
+            //  (The corresponding input_values is "000011")
+            //
+            //  The caller should also have already handled applying any lut rotations
+            //
+            //  This implies that minterm number 3 (= 2^1 + 2^0) should be set to '1'
             //
             //  We initialize lut_mask_idx to 63 (since there are 2^6 == 64 bits in the lut mask)
             //
-            //  This index corresponds to the right-most character in the std::string
+            //  Index 63 corresponds to the right-most character in the std::string
             //  used to represent the lut mask:
             //
-            //      0000000000000000000000000000000000000000000000000000000000000000
-            //                                                                     ^
+            //  logic minterm:    m63                                                             m0
+            //                     v                                                              v
             //
-            //  which corresponds to the LSB of the LUT mask when interpreted in verilog
+            //  lut_mask     :     0000000000000000000000000000000000000000000000000000000000000000
             //
-            //  We then subtract the corresponding power (i.e. 2^i) to get the string index
-            //  corresponding to the appropriate case:
+            //                     ^                                                              ^
+            //  string idex  :    i0                                                              i63
             //
-            //      lut_mask_index = 63 - 2^0 - 2^1 = 60
+            //   which corresponds to minterm zero (i.e. all LUT inputs zero).
             //
-            //  Which is then used to set the appropriate lutmask bit
-            //  
-            //      0000000000000000000000000000000000000000000000000000000000001000
-            //                                                                  ^   
+            //   We then subtract the corresponding power (i.e. 2^i) to get the string index
+            //   corresponding to the appropriate case:
+            //
+            //       lut_mask_index = 63 - 2^1 - 2^0 = 60
+            //
+            //   Which is then used to set the appropriate lut mask bit:
+            //      m63                                                         m3  m0
+            //                                                                   v 
+            //
+            //       0000000000000000000000000000000000000000000000000000000000001000
+            //
+            //                                                                   ^ 
+            //      i0                                                          i60 i63
             int lut_mask_idx = lut_bits-1;
             for(size_t i = 0; i < input_values.size(); i++) {
-                int index_power = (1 << i); 
 
                 if(input_values[i] == '1') {
+                    int index_power = (1 << i); 
                     lut_mask_idx -= index_power;
                 } else {
                     assert(input_values[i] == '0'); //Currently no support for don't cares
@@ -660,6 +799,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
             return lut_mask_indicies;
         }
+#endif
 
         int get_delay_ps(float delay_sec) {
 
