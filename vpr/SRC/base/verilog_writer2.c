@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>
 #include <cassert>
+#include <bitset>
 
 #include "verilog_writer2.h"
 
@@ -35,8 +36,9 @@ class PrintingVisitor : public NetlistVisitor {
 
 class VerilogSdfWriterVisitor : public NetlistVisitor {
     public:
-        VerilogSdfWriterVisitor(std::ostream& verilog_os, std::ostream& sdf_os)
+        VerilogSdfWriterVisitor(std::ostream& verilog_os, std::ostream& blif_os, std::ostream& sdf_os)
             : verilog_os_(verilog_os)
+            , blif_os_(blif_os)
             , sdf_os_(sdf_os) {
             
             pin_id_to_tnode_lookup_ = alloc_and_load_tnode_lookup_from_pin_id();
@@ -52,85 +54,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         }
 
     private: //Internal types
-        enum class PortDir {
-            IN,
-            OUT
-        };
-
-        class Arc {
-            public:
-                Arc(std::string src, std::string snk, float del)
-                    : source_name_(src)
-                    , sink_name_(snk)
-                    , delay_(del)
-                    {}
-
-                std::string source_name() { return source_name_; }
-                std::string sink_name() { return sink_name_; }
-                float delay() { return delay_; }
-
-            private:
-                std::string source_name_;
-                std::string sink_name_;
-                float delay_;
-        };
-
-        class Instance {
-            public:
-                Instance(std::string type_name, std::string param, std::string inst_name, std::map<std::string,std::string> port_conns, std::map<int,Arc> timing_arc_values)
-                    : type_(type_name)
-                    , param_(param)
-                    , inst_name_(inst_name)
-                    , port_connections_(port_conns)
-                    , timing_arcs_(timing_arc_values)
-                    {}
-
-                const std::map<int,Arc>& timing_arcs() { return timing_arcs_; }
-
-                void print_verilog(std::ostream& os, std::string indent) {
-                    //Instantiate the lut
-                    os << indent << type_;
-                    if(!param_.empty()) {
-                        os << " #(" << param_ << ") ";
-                    }
-                    os << inst_name_ << "(";
-
-                    //and all its named port connections
-                    for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                        os << "." + iter->first << "(" << iter->second << ")";
-
-                        if(iter != --port_connections_.end()) {
-                            os << ", ";
-                        }
-                    }
-                    os << ");\n\n";
-                }
-                std::string instance_name() { return inst_name_; }
-                std::string type() { return type_; }
-            private:
-                std::string type_;
-                std::string param_;
-                std::string inst_name_;
-                std::map<std::string,std::string> port_connections_;
-                std::map<int,Arc> timing_arcs_; //Pin index to timing arc
-
-        };
-
-        class Assignment {
-            public:
-                Assignment(std::string lval, std::string rval)
-                    : lval_(lval)
-                    , rval_(rval)
-                    {}
-
-                void print_verilog(std::ostream& os, std::string indent) {
-                    os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
-                }
-            private:
-                std::string lval_;
-                std::string rval_;
-        };
-
         enum class LogicVal {
             FALSE=0,
             TRUE=1,
@@ -152,11 +75,12 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         class LogicVec {
             public:
                 LogicVec() = default;
-                LogicVec(size_t size, LogicVal init_value)
-                    : values_(size, init_value)
+                LogicVec(size_t size_val, LogicVal init_value)
+                    : values_(size_val, init_value)
                     {}
 
                 LogicVal& operator[](size_t i) { return values_[i]; }
+                size_t size() { return values_.size(); }
 
                 friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {
                     os << logic_vec.values_.size() << "'b";
@@ -225,6 +149,115 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
                 std::vector<LogicVal> values_;
         };
+
+        enum class PortDir {
+            IN,
+            OUT
+        };
+
+        class Arc {
+            public:
+                Arc(std::string src, std::string snk, float del)
+                    : source_name_(src)
+                    , sink_name_(snk)
+                    , delay_(del)
+                    {}
+
+                std::string source_name() { return source_name_; }
+                std::string sink_name() { return sink_name_; }
+                float delay() { return delay_; }
+
+            private:
+                std::string source_name_;
+                std::string sink_name_;
+                float delay_;
+        };
+
+        class LutInstance {
+            public:
+                LutInstance(std::string type_name, LogicVec lut_mask, std::string inst_name, std::map<std::string,std::string> port_conns, std::map<int,Arc> timing_arc_values)
+                    : type_(type_name)
+                    , lut_mask_(lut_mask)
+                    , inst_name_(inst_name)
+                    , port_connections_(port_conns)
+                    , timing_arcs_(timing_arc_values)
+                    {}
+
+                const std::map<int,Arc>& timing_arcs() { return timing_arcs_; }
+
+                void print_verilog(std::ostream& os, std::string indent) {
+                    //Instantiate the lut
+                    os << indent << type_;
+
+                    std::stringstream param_ss;
+                    param_ss << lut_mask_;
+                    os << " #(" << param_ss.str() << ") ";
+
+                    os << inst_name_ << "(";
+
+                    //and all its named port connections
+                    for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
+                        os << "." + iter->first << "(" << iter->second << ")";
+
+                        if(iter != --port_connections_.end()) {
+                            os << ", ";
+                        }
+                    }
+                    os << ");\n\n";
+                }
+
+                void print_blif(std::ostream& os , std::string indent) {
+                    os << indent << ".names ";
+
+                    //We currently rely upon the ports begin sorted by thier name (e.g. in_0, in_1)
+                    for(auto kv : port_connections_) {
+                        os << kv.second << " ";
+                    }
+                    os << "\n";
+
+                    for(size_t i = 0; i < lut_mask_.size(); i++) {
+                        if(lut_mask_[i] == LogicVal::TRUE) {
+                            std::string bit_str = std::bitset<64>(i).to_string();
+                            std::reverse(bit_str.begin(), bit_str.end());
+
+                            std::string input_values(bit_str.begin(), bit_str.begin() + (port_connections_.size() - 1));
+
+                            os << input_values << " 1\n";
+
+                            std::cout << i << " => " << bit_str << " => " << input_values << "\n";
+                        }
+                        i++;
+                    }
+                }
+
+                std::string instance_name() { return inst_name_; }
+                std::string type() { return type_; }
+            private:
+                std::string type_;
+                LogicVec lut_mask_;
+                std::string inst_name_;
+                std::map<std::string,std::string> port_connections_;
+                std::map<int,Arc> timing_arcs_; //Pin index to timing arc
+        };
+
+        class Assignment {
+            public:
+                Assignment(std::string lval, std::string rval)
+                    : lval_(lval)
+                    , rval_(rval)
+                    {}
+
+                void print_verilog(std::ostream& os, std::string indent) {
+                    os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
+                }
+                void print_blif(std::ostream& os, std::string indent) {
+                    os << indent << ".names " << rval_ << " " << lval_ << "\n";
+                    os << indent << "1 1\n";
+                }
+            private:
+                std::string lval_;
+                std::string rval_;
+        };
     private: //NetlistVisitor interface functions
 
         void visit_top_impl(const char* top_level_name) { 
@@ -246,6 +279,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         void finish_impl() {
             
             print_verilog();
+            print_blif();
 
             print_sdf();
         }
@@ -312,6 +346,51 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
             verilog_os_ << "\n";
             verilog_os_ << indent(depth) << "endmodule\n";
+        }
+
+        void print_blif(int depth=0) {
+            blif_os_ << indent(depth) << "//BLIF generated by VPR from post-place-and-route implementation\n";
+            blif_os_ << indent(depth) << ".model " << top_module_name_ << "\n";
+            blif_os_ << indent(depth) << ".inputs ";
+            for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
+                blif_os_ << *iter << " ";
+            }
+            blif_os_ << "\n";
+
+            blif_os_ << indent(depth) << ".outputs ";
+            for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
+                blif_os_ << *iter << " ";
+            }
+            blif_os_ << "\n";
+
+            blif_os_ << "\n";
+            blif_os_ << indent(depth) << "#IO assignments\n";
+            for(auto& assign : assignments_) {
+                assign.print_blif(blif_os_, indent(depth));
+            }
+
+            blif_os_ << "\n";
+            blif_os_ << indent(depth) << "#Interconnect\n";
+            for(const auto& kv : logical_net_sinks_) {
+                int atom_net_idx = kv.first;
+                auto driver_iter = logical_net_drivers_.find(atom_net_idx);
+                assert(driver_iter != logical_net_drivers_.end());
+                const auto& driver_wire = driver_iter->second.first;
+
+                for(auto& sink_wire_tnode_pair : kv.second) {
+                    blif_os_ << indent(depth) << ".names " << driver_wire << " " << sink_wire_tnode_pair.first << "\n";
+                    blif_os_ << indent(depth) << "1 1\n";
+                }
+            }
+
+            blif_os_ << "\n";
+            blif_os_ << indent(depth) << "#Cell instances\n";
+            for(auto& inst : cell_instances_) {
+                inst.print_blif(blif_os_, indent(depth));
+            }
+
+            blif_os_ << "\n";
+            blif_os_ << indent(depth) << ".end\n";
         }
 
         void print_sdf(int depth=0) {
@@ -485,7 +564,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return io_name;
         }
 
-        Instance make_lut_instance(const t_pb* atom)  {
+        LutInstance make_lut_instance(const t_pb* atom)  {
             //Determine what size LUT
             int lut_size = find_num_inputs(atom);
 
@@ -495,9 +574,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             auto inst_type = ss.str();
 
             //Determine the truth table
-            std::stringstream lut_mask_param_ss;
-            lut_mask_param_ss << load_lut_mask(lut_size, atom);
-            std::string lut_mask_param = lut_mask_param_ss.str();
+            auto lut_mask = load_lut_mask(lut_size, atom);
 
             //Determine the instance name
             auto inst_name = "lut_" + escape_name(atom->name);
@@ -572,7 +649,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            auto inst = Instance(inst_type, lut_mask_param, inst_name, port_conns, timing_arcs);
+            auto inst = LutInstance(inst_type, lut_mask, inst_name, port_conns, timing_arcs);
 
             return inst;
         }
@@ -863,8 +940,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         std::vector<std::string> inputs_;
         std::vector<std::string> outputs_;
         std::vector<Assignment> assignments_;
-        std::vector<Instance> cell_instances_;
-        std::vector<Instance> interconnect_instances_;
+        std::vector<LutInstance> cell_instances_;
 
         std::map<int, std::pair<std::string,int>> logical_net_drivers_; //Value: pair of wire_name and tnode_id
         std::map<int, std::vector<std::pair<std::string,int>>> logical_net_sinks_; //Value: vector wire_name tnode_id pairs
@@ -873,6 +949,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         int** pin_id_to_tnode_lookup_;
 
         std::ostream& verilog_os_;
+        std::ostream& blif_os_;
         std::ostream& sdf_os_;
         std::string indent_ = "    ";
 };
@@ -880,12 +957,14 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 void verilog_writer2() {
     std::string top_level_name = blif_circuit_name;
     std::string verilog_filename = top_level_name + "_post_synthesis.v";
+    std::string blif_filename = top_level_name + "_post_synthesis.blif";
     std::string sdf_filename = top_level_name + "_post_synthesis.sdf";
 
     std::ofstream verilog_os(verilog_filename);
+    std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
 
-    VerilogSdfWriterVisitor visitor(verilog_os, sdf_os);
+    VerilogSdfWriterVisitor visitor(verilog_os, blif_os, sdf_os);
 
     NetlistWalker nl_walker(visitor);
 
