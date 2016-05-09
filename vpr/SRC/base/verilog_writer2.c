@@ -339,23 +339,28 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 sdf_os_ << indent(depth+1) << "(CELL\n";
                 sdf_os_ << indent(depth+2) << "(CELLTYPE \"" << inst.type() << "\")\n";
                 sdf_os_ << indent(depth+2) << "(INSTANCE " << inst.instance_name()<< ")\n";
-                sdf_os_ << indent(depth+2) << "(DELAY\n";
-                sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
-                
-                for(auto& pin_arc_pair : inst.timing_arcs()) {
-                    auto arc = pin_arc_pair.second;
 
-                    int delay_ps = get_delay_ps(arc.delay());
+                auto arcs = inst.timing_arcs();
 
-                    std::stringstream delay_triple;
-                    delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+                if(!arcs.empty()) {
+                    sdf_os_ << indent(depth+2) << "(DELAY\n";
+                    sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
+                    
+                    for(auto& pin_arc_pair : arcs) {
+                        auto arc = pin_arc_pair.second;
 
-                    sdf_os_ << indent(depth+4) << "(IOPATH " << arc.source_name() << " " << arc.sink_name();
-                    sdf_os_ << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                        int delay_ps = get_delay_ps(arc.delay());
+
+                        std::stringstream delay_triple;
+                        delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+
+                        sdf_os_ << indent(depth+4) << "(IOPATH " << arc.source_name() << " " << arc.sink_name();
+                        sdf_os_ << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    }
+                    sdf_os_ << indent(depth+3) << ")\n";
+                    sdf_os_ << indent(depth+2) << ")\n";
                 }
 
-                sdf_os_ << indent(depth+3) << ")\n";
-                sdf_os_ << indent(depth+2) << ")\n";
                 sdf_os_ << indent(depth+1) << ")\n";
                 sdf_os_ << indent(depth) << "\n";
             }
