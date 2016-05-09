@@ -828,7 +828,7 @@ static bool **alloc_and_load_perturb_ipins(INP int max_chan_width, INP int L_num
 
 			int tracks_in_seg_type = sets_per_seg_type[iseg] * fac;
 
-			for (int itype = 1; iseg < L_num_types; ++itype) {
+			for (int itype = 1; itype < L_num_types; ++itype) {
 				result[itype][iseg] = false;
 
 				float Fc_ratio;
