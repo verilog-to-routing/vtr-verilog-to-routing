@@ -181,26 +181,48 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     }
                 }
 
-                size_t minterm() {
-                    size_t minterm_number = 0;
+                std::vector<size_t> minterms() {
+                    std::vector<size_t> minterms_vec;
 
-                    for(size_t i = 0; i < values_.size(); i++) {
-                        if(values_[i] == LogicVal::TRUE) {
-                            size_t index_power = (1 << i);
-                            minterm_number += index_power;
-                        } else if(values_[i] == LogicVal::FALSE) {
-                            //pass
-                        } else {
-                            assert(false); //Unsupported values
-                        }
-                    }
-                    return minterm_number;
+                    minterms_recurr(minterms_vec, *this);
+
+                    return minterms_vec;
                 }
 
                 std::vector<LogicVal>::reverse_iterator begin() { return values_.rbegin(); }
                 std::vector<LogicVal>::reverse_iterator end() { return values_.rend(); }
+                std::vector<LogicVal>::const_reverse_iterator begin() const { return values_.crbegin(); }
+                std::vector<LogicVal>::const_reverse_iterator end() const { return values_.crend(); }
 
             private:
+
+                void minterms_recurr(std::vector<size_t>& minterms_vec, LogicVec logic_vec) {
+
+                    auto iter = std::find(logic_vec.begin(), logic_vec.end(), LogicVal::DONTCARE);
+                    if(iter == logic_vec.end()) {
+                        //Base case (only TRUE/FALSE) caluclate minterm number
+                        size_t minterm_number = 0;
+                        for(size_t i = 0; i < values_.size(); i++) {
+                            if(logic_vec.values_[i] == LogicVal::TRUE) {
+                                size_t index_power = (1 << i);
+                                minterm_number += index_power;
+                            } else if(logic_vec.values_[i] == LogicVal::FALSE) {
+                                //pass
+                            } else {
+                                assert(false); //Unsupported values
+                            }
+                        }
+                        minterms_vec.push_back(minterm_number);
+                    } else {
+                        //Recurse
+                        *iter = LogicVal::TRUE;
+                        minterms_recurr(minterms_vec, logic_vec);
+
+                        *iter = LogicVal::FALSE;
+                        minterms_recurr(minterms_vec, logic_vec);
+                    }
+                }
+
                 std::vector<LogicVal> values_;
         };
     private: //NetlistVisitor interface functions
@@ -695,6 +717,8 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                         input_val = LogicVal::TRUE; 
                     } else if (truth_table_row[i] == '0') {
                         input_val = LogicVal::FALSE; 
+                    } else if (truth_table_row[i] == '-') {
+                        input_val = LogicVal::DONTCARE; 
                     } else {
                         assert(false);
                     }
@@ -711,10 +735,11 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
                 std::cout << " -> " << permuted_input_values << ":" << truth_val << std::endl;
 
-                size_t minterm = permuted_input_values.minterm();
-                std::cout << "\tSetting minterm : " << minterm << " to " << truth_val << std::endl;
-                //Set the appropraite lut mask entry
-                lut_mask[minterm] = truth_val;
+                for(size_t minterm : permuted_input_values.minterms()) {
+                    std::cout << "\tSetting minterm : " << minterm << " to " << truth_val << std::endl;
+                    //Set the appropraite lut mask entry
+                    lut_mask[minterm] = truth_val;
+                }
                 
                 //Advance to the next row
                 truth_table_row_ptr = truth_table_row_ptr->next;
