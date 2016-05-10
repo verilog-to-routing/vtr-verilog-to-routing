@@ -197,7 +197,23 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
                     //and all its named port connections
                     for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                        os << "." + iter->first << "(" << iter->second << ")";
+                        os << "." + iter->first;
+                        os << "(";
+                        if(iter->second == "") {
+                            //Disconnected
+
+                            if(iter != --port_connections_.end()) {
+                                //Disconnected inputs are grounded
+                                os << "1'b0";
+                            } else {
+                                //Disconnected outputs are left open
+                                os << "";
+                            }
+                            
+                        } else {
+                            os << iter->second;
+                        }
+                        os << ")";
 
                         if(iter != --port_connections_.end()) {
                             os << ", ";
@@ -211,22 +227,38 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
                     //We currently rely upon the ports begin sorted by thier name (e.g. in_0, in_1)
                     for(auto kv : port_connections_) {
-                        os << kv.second << " ";
+                        if(kv.second == "") {
+                            //Disconnected
+                            os << "unconn" << " ";
+                        } else {
+                            os << kv.second << " ";
+                        }
                     }
                     os << "\n";
 
-                    for(size_t i = 0; i < lut_mask_.size(); i++) {
-                        if(lut_mask_[i] == LogicVal::TRUE) {
-                            std::string bit_str = std::bitset<64>(i).to_string();
+                    size_t minterms_set = 0;
+                    for(size_t minterm = 0; minterm < lut_mask_.size(); minterm++) {
+                        if(lut_mask_[minterm] == LogicVal::TRUE) {
+                            //Convert the minterm to a string of bits
+                            std::string bit_str = std::bitset<64>(minterm).to_string();
+
+                            //Because BLIF puts the input values in order from LSB (left) to MSB (right), we need
+                            //to reverse the string
                             std::reverse(bit_str.begin(), bit_str.end());
 
+                            //Trim to the LUT size
                             std::string input_values(bit_str.begin(), bit_str.begin() + (port_connections_.size() - 1));
 
+                            //Add the row as true
                             os << input_values << " 1\n";
 
-                            std::cout << i << " => " << bit_str << " => " << input_values << "\n";
+                            minterms_set++;
                         }
-                        i++;
+                    }
+                    if(minterms_set == 0) {
+                        //To make ABC happy (i.e. avoid complaints about mismatching cover size and fanin)
+                        //put in a false value for luts that are always false
+                        os << std::string(port_connections_.size() - 1, '-') << " 0\n";
                     }
                 }
 
@@ -597,8 +629,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 if(atom_net_idx == OPEN) {
                     //Disconnected
 
-                    //We ground disconnected LUT input pins
-                    auto ret = port_conns.insert(std::make_pair(port_name, "1'b0")); 
+                    auto ret = port_conns.insert(std::make_pair(port_name, "")); 
                     assert(ret.second); //Was inserted
                 } else {
                     //Connected to a net
