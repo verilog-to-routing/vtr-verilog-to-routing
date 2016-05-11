@@ -21,7 +21,7 @@ evaluate whether or not our work is clearly presented.
 Task #1 - Environment Setup
 
   1.  Log into your workstation/personal computer.  Check your account for 
-  general features such as internet, printing, svn, etc.  If there are problems 
+  general features such as internet, printing, git, etc.  If there are problems 
   at this stage, talk to your advisor to get this setup.
 
   2.  If you are not familiar with development on Linux, this is the time to get 
@@ -42,8 +42,8 @@ Task #2 - Background Reading
 
 Task #3 - Setup VTR
 
-  1.  Use svn to grab a trunk copy of VTR from 
-  https://code.google.com/p/vtr-verilog-to-routing/
+  1.  Use git to clone a copy of VTR from 
+ https://github.com/verilog-to-routing/vtr-verilog-to-routing
 
   2.  Build the project
 
@@ -58,7 +58,7 @@ Task #4 - Use VTR
   1.  Create your own custom Verilog file.  Create your own custom architecture 
   file using one of the existing architecture files as a template.  Use VTR to 
   map that circuit that you created to that architecture that you created. The VTR
-  documentation, to be found at https://code.google.com/p/vtr-verilog-to-routing/
+  documentation, to be found at https://vtr.readthedocs.io/en/latest/
   will prove useful. You may also wish to look at the following links for descriptions
   of the language used inside the architecture files:
   - http://www.eecg.utoronto.ca/~jluu/publications/luu_vpr_fpga2011.pdf
@@ -96,7 +96,7 @@ Task #6 - Submitting Changes and Regression Testing
   1.  Read README.txt in the base directory of VTR.  Code changes rapidly so please help keep
   this up to date if you see something that is out of date.
 
-  2.  Make your first commit to svn by modifying README.txt and committing it.  I recommend 
+  2.  Make your first change to git by modifying README.txt and pushing it.  I recommend 
   adding your name to the list of contributors.  If you have
   nothing to modify, just add/remove a line of whitespace at the bottom of the file.
 

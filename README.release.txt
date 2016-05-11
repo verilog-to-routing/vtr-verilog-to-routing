@@ -67,7 +67,7 @@ an FPGA architecture that contains embedded memories and multipliers:
 4.  For more information on how the vtr_flow infrastructure works (and how to 
     add the tests that you want to do to this infrastructure), please read the 
     vtr_flow documentation in the vtr wiki 
-    (http://code.google.com/p/vtr-verilog-to-routing/wiki/TOC).
+    (https://vtr.readthedocs.io/en/latest/).
 
 
 ==============================================================================
