@@ -166,7 +166,7 @@ The tags within the ``<device>`` tag are:
 
     **Custom Switch Blocks:**
 
-    Specifying ``custom`` allows custom switch blocks to be described under the ``<switchblocklist>`` XML node, the format for which is described in Section 3.1.8.
+    Specifying ``custom`` allows custom switch blocks to be described under the ``<switchblocklist>`` XML node, the format for which is described in :ref:`custom_switch_blocks`.
     If the switch block is specified as ``custom``, the ``fs`` field does not have to be specified, and will be ignored if present. 
 
 .. arch:tag:: <chan_width_distr>content</chan_width_distr>
@@ -886,6 +886,8 @@ The ``<direct>`` tag and its contents are described below.
     .. code-block:: xml
 
         <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+
+.. _custom_switch_blocks:
 
 Custom Switch Blocks
 --------------------
