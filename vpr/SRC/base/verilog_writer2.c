@@ -223,20 +223,24 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     os << ");\n\n";
                 }
 
-                void print_blif(std::ostream& os , std::string indent) {
+                void print_blif(std::ostream& os, size_t& unconn_count, std::string indent) {
                     os << indent << ".names ";
 
                     //We currently rely upon the ports begin sorted by thier name (e.g. in_0, in_1)
                     for(auto kv : port_connections_) {
                         if(kv.second == "") {
                             //Disconnected
-                            os << "unconn" << " ";
+                            os << "__vpr__unconn" << unconn_count++ << " ";
                         } else {
                             os << kv.second << " ";
                         }
                     }
                     os << "\n";
 
+                    //For simplicity we always output the ON set
+                    // Using the OFF set for functions that are mostly 'on' 
+                    // would reduce the size of the output blif, 
+                    // but would add complexity
                     size_t minterms_set = 0;
                     for(size_t minterm = 0; minterm < lut_mask_.size(); minterm++) {
                         if(lut_mask_[minterm] == LogicVal::TRUE) {
@@ -417,8 +421,9 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
             blif_os_ << "\n";
             blif_os_ << indent(depth) << "#Cell instances\n";
+            size_t unconn_count = 0;
             for(auto& inst : cell_instances_) {
-                inst.print_blif(blif_os_, indent(depth));
+                inst.print_blif(blif_os_, unconn_count, indent(depth));
             }
 
             blif_os_ << "\n";
@@ -866,7 +871,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     /*std::cout << "Setting input " << i << " " << input_val << ": " << input_values << std::endl;*/
                     i++;
                 }
-                assert(i == num_inputs);
 
                 //Apply any LUT input rotations
                 auto permuted_input_values = input_values;
