@@ -32,7 +32,7 @@ using namespace std;
  * 4.  Clean up
  */
 
-(int argc, char **argv) {
+int main(int argc, char **argv) {
 	t_options Options;
 	t_arch Arch;
 	t_vpr_setup vpr_setup;
