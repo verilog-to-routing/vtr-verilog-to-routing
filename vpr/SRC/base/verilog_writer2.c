@@ -792,30 +792,43 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             std::cout << "\tBLIF = Input ->  Rotated" << std::endl;
             std::cout << "\t------------------------" << std::endl;
             
+            //Determine the truth (output value) for this row
+            // By default we assume the on-set is encoded to correctly handle
+            // constant true/false
+            //
+            // False output:
+            //      .names j
+            //
+            // True output:
+            //      .names j
+            //      1
+            bool encoding_on_set = true;
+
+
             //VPR stores the truth table as in BLIF
             //Each row of the table (i.e. a c-string) is stored in a linked list 
             //
             //The c-string is the literal row from BLIF, e.g. "0 1" for an inverter, "11 1" for an AND2
             t_linked_vptr* names_row_ptr = logical_block[atom->logical_block].truth_table;
 
+            //We may get a nullptr if the output is always false
+            if(names_row_ptr) {
+                //Determine whether the truth table stores the ON or OFF set
+                //
+                //  In blif, the 'output values' of a .names must be either '1' or '0', and must be consistent
+                //  within a single .names -- that is a single .names can encode either the ON or OFF set 
+                //  (of which only one will be encoded in a single .names)
+                //
+                const std::string names_first_row = (const char*) names_row_ptr->data_vptr;
+                auto names_first_row_output_iter = names_first_row.end() - 1;
 
-            //Determine whether the truth table stores the ON or OFF set
-            //
-            //  In blif, the 'output values' of a .names must be either '1' or '0', and must be consistent
-            //  within a single .names -- that is a single .names can encode either the ON or OFF set 
-            //  (of which only one will be encoded in a single .names)
-            //
-            const std::string names_first_row = (const char*) names_row_ptr->data_vptr;
-            auto names_first_row_output_iter = names_first_row.end() - 1;
-
-            //Extract the truth (output value) for this row
-            bool encoding_on_set = false;
-            if(*names_first_row_output_iter == '1') {
-                encoding_on_set = true; 
-            } else if (*names_first_row_output_iter == '0') {
-                encoding_on_set = false; 
-            } else {
-                assert(false);
+                if(*names_first_row_output_iter == '1') {
+                    encoding_on_set = true; 
+                } else if (*names_first_row_output_iter == '0') {
+                    encoding_on_set = false; 
+                } else {
+                    assert(false);
+                }
             }
 
             //Initialize LUT mask
