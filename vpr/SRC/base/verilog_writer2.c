@@ -14,6 +14,9 @@
 #include "globals.h"
 #include "path_delay.h"
 
+//Enable for extra output while calculating LUT masks
+/*#define DEBUG_LUT_MASK*/
+
 class PrintingVisitor : public NetlistVisitor {
     private:
         void visit_top_impl(const char* top_level_name) { 
@@ -727,7 +730,9 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             const t_model* model = logical_block[atom->logical_block].model;
             assert(model->name == std::string("names"));
 
+#ifdef DEBUG_LUT_MASK
             std::cout << "Loading LUT mask for: " << atom->name << std::endl;
+#endif
 
 
             //Since the LUT inputs may have been rotated from the input blif specification we need to
@@ -737,11 +742,13 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             //which is then applied to do the rotation of the lutmask
             std::vector<int> permute(num_inputs, OPEN);
 
+#ifdef DEBUG_LUT_MASK
             std::cout << "\tInit Permute: {";
             for(size_t i = 0; i < permute.size(); i++) {
                 std::cout << permute[i] << ", ";
             }
             std::cout << "}" << std::endl;
+#endif
 
             //Determine the permutation
             //
@@ -757,7 +764,9 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                         atom_input_net = find_atom_input_logical_net(atom, j); //The net currently connected to input j
 
                         if(logical_net == atom_input_net) {
+#ifdef DEBUG_LUT_MASK
                             std::cout << "\tLogic net " << logical_net << " (" << g_atoms_nlist.net[logical_net].name << ") atom lut input " << i << " -> impl lut input " << j << std::endl;
+#endif
                             break;
                         }
                     }
@@ -782,6 +791,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
 
 
+#ifdef DEBUG_LUT_MASK
             std::cout << "\tPermute: {";
             for(size_t k = 0; k < permute.size(); k++) {
                 std::cout << permute[k] << ", ";
@@ -791,6 +801,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
             std::cout << "\tBLIF = Input ->  Rotated" << std::endl;
             std::cout << "\t------------------------" << std::endl;
+#endif
             
             //Determine the truth (output value) for this row
             // By default we assume the on-set is encoded to correctly handle
@@ -889,12 +900,16 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 auto permuted_input_values = input_values;
                 permuted_input_values.rotate(permute);
 
+#ifdef DEBUG_LUT_MASK
                 std::cout << "\t" << names_row << " = "<< input_values << ":" << output_val;
 
                 std::cout << " -> " << permuted_input_values << ":" << output_val << std::endl;
+#endif
 
                 for(size_t minterm : permuted_input_values.minterms()) {
+#ifdef DEBUG_LUT_MASK
                     std::cout << "\tSetting minterm : " << minterm << " to " << output_val << std::endl;
+#endif
                     //Set the appropraite lut mask entry
                     lut_mask[minterm] = output_val;
                 }
@@ -903,7 +918,9 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 names_row_ptr = names_row_ptr->next;
             }
 
+#ifdef DEBUG_LUT_MASK
             std::cout << "\tLUT_MASK: " << lut_mask << std::endl;
+#endif
 
             return lut_mask;
         }
@@ -916,78 +933,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             int atom_net_idx = top_clb->pb_route[cluster_pin_idx].atom_net_idx;
             return atom_net_idx;
         }
-
-#if 0
-        std::vector<int> expand_input_values_to_lut_mask_index(int lut_bits, LogicVec input_values) {
-            //Return a vector of indicies, since a single set of input values (if they have don't cares)
-            //can expend to multiplie indicies.
-            //However currently we do not support don't cares in the input values.
-            std::vector<int> lut_mask_indicies;
-
-
-            //We invert the index here to make the actual LUT mask parameter sensible,
-            //by intializing it to the highest index in the lut_mask string, and then
-            //subtracting the powers for each input that is specified as true.
-            //
-            //For example:
-            //
-            //  Consider an AND2 whose truth table looks like:
-            //      .names a b a_and_b
-            //      11 1
-            //
-            //  The caller of this function should have already padded this out expanded to fill out the 6-LUT as:
-            //      .names unconn5 unconn4 unconn3 unconn2 a b a_and_b
-            //      000011 1
-            //
-            //  (The corresponding input_values is "000011")
-            //
-            //  The caller should also have already handled applying any lut rotations
-            //
-            //  This implies that minterm number 3 (= 2^1 + 2^0) should be set to '1'
-            //
-            //  We initialize lut_mask_idx to 63 (since there are 2^6 == 64 bits in the lut mask)
-            //
-            //  Index 63 corresponds to the right-most character in the std::string
-            //  used to represent the lut mask:
-            //
-            //  logic minterm:    m63                                                             m0
-            //                     v                                                              v
-            //
-            //  lut_mask     :     0000000000000000000000000000000000000000000000000000000000000000
-            //
-            //                     ^                                                              ^
-            //  string idex  :    i0                                                              i63
-            //
-            //   which corresponds to minterm zero (i.e. all LUT inputs zero).
-            //
-            //   We then subtract the corresponding power (i.e. 2^i) to get the string index
-            //   corresponding to the appropriate case:
-            //
-            //       lut_mask_index = 63 - 2^1 - 2^0 = 60
-            //
-            //   Which is then used to set the appropriate lut mask bit:
-            //      m63                                                         m3  m0
-            //                                                                   v 
-            //
-            //       0000000000000000000000000000000000000000000000000000000000001000
-            //
-            //                                                                   ^ 
-            //      i0                                                          i60 i63
-            int lut_mask_idx = lut_bits-1;
-            for(size_t i = 0; i < input_values.size(); i++) {
-
-                if(input_values[i] == '1') {
-                    int index_power = (1 << i); 
-                    lut_mask_idx -= index_power;
-                } else {
-                    assert(input_values[i] == '0'); //Currently no support for don't cares
-                }
-            }
-            lut_mask_indicies.push_back(lut_mask_idx);
-
-            return lut_mask_indicies;
-        }
-#endif
 
         int get_delay_ps(float delay_sec) {
 
