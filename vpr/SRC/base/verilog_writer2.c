@@ -31,8 +31,8 @@ int get_delay_ps(int source_tnode, int sink_tnode);
 enum class LogicVal {
     FALSE=0,
     TRUE=1,
-    DONTCARE,
-    UNKOWN,
+    DONTCARE=2,
+    UNKOWN=3,
     HIGHZ
 };
 std::ostream& operator<<(std::ostream& os, LogicVal val);
@@ -279,7 +279,106 @@ class LutInstance : public Instance {
 };
 
 class LatchInstance : public Instance {
+    public:
+        enum class Type {
+            RISING_EDGE,
+            FALLING_EDGE,
+            ACTIVE_HIGH,
+            ACTIVE_LOW,
+            ASYNCHRONOUS,
+        };
+        friend std::ostream& operator<<(std::ostream& os, const Type& type) {
+            if     (type == Type::RISING_EDGE)  os << "re";
+            else if(type == Type::FALLING_EDGE) os << "fe";
+            else if(type == Type::ACTIVE_HIGH)  os << "ah";
+            else if(type == Type::ACTIVE_LOW)   os << "al";
+            else if(type == Type::ASYNCHRONOUS) os << "as";
+            else assert(false);
+            return os;
+        }
+        friend std::istream& operator>>(std::istream& is, Type& type) {
+            std::string tok;
+            is >> tok;
+            if     (tok == "re") type = Type::RISING_EDGE;
+            else if(tok == "fe") type = Type::FALLING_EDGE;
+            else if(tok == "ah") type = Type::ACTIVE_HIGH;
+            else if(tok == "al") type = Type::ACTIVE_LOW;
+            else if(tok == "as") type = Type::ASYNCHRONOUS;
+            else assert(false);
+            return is;
+        }
+    public:
+        LatchInstance(std::string inst_name, std::map<std::string,std::string> port_conns,
+                      Type type, LogicVal init_value)
+            : instance_name_(inst_name)
+            , port_connections_(port_conns)
+            , type_(type)
+            , initial_value_(init_value)
+            {}
 
+        void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
+            os << indent(depth) << ".latch" << " ";
+
+            //Input D port
+            auto d_port_iter = port_connections_.find("D");
+            assert(d_port_iter != port_connections_.end());
+            os << d_port_iter->second << " ";
+
+            //Output Q port
+            auto q_port_iter = port_connections_.find("Q");
+            assert(q_port_iter != port_connections_.end());
+            os << q_port_iter->second << " ";
+
+            //Latch type
+            os << type_ << " "; //Type, i.e. rising-edge
+
+            //Control input
+            auto control_port_iter = port_connections_.find("control");
+            os << control_port_iter->second << " "; //e.g. clock
+            os << (int) initial_value_ << " "; //Init value: e.g. 2=don't care
+            os << "\n";
+        }
+
+        void print_verilog(std::ostream& os, int depth=0) override {
+            //Currently assume a standard DFF
+            assert(type_ == Type::RISING_EDGE);
+            os << indent(depth) << "D_Flip_Flop" << " ";
+            os << instance_name_ << " ";
+            os << "#(INITIAL_VALUE=";
+            if     (initial_value_ == LogicVal::TRUE)     os << "1'b1";
+            else if(initial_value_ == LogicVal::FALSE)    os << "1'b0";
+            else if(initial_value_ == LogicVal::DONTCARE) os << "1'bx";
+            else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
+            else assert(false);
+            os << ")" << " ";
+
+            os << "(";
+            for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
+                os << "." << iter->first << "(" << iter->second << ")";
+
+                if(iter != --port_connections_.end()) {
+                    os << ", ";
+                }
+            }
+            os << ");";
+            os << "\n";
+        }
+
+        void print_sdf(std::ostream& os, int depth=0) override {
+            assert(type_ == Type::RISING_EDGE);
+
+            os << indent(depth) << "(CELL\n";
+            os << indent(depth+1) << "(CELLTYPE \"" << "D_Flip_Flop" << "\")\n";
+            os << indent(depth+1) << "(INSTANCE " << instance_name_ << ")\n";
+            //TODO implement
+            os << indent(depth) << ")\n";
+            os << indent(depth) << "\n";
+        }
+    private:
+        std::string instance_name_;
+        std::map<std::string,std::string> port_connections_;
+        Type type_;
+        LogicVal initial_value_;
 };
 
 class Assignment {
