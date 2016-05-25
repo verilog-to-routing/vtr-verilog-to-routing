@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <bitset>
+#include <memory>
 
 #include "verilog_writer2.h"
 
@@ -16,6 +17,291 @@
 
 //Enable for extra output while calculating LUT masks
 /*#define DEBUG_LUT_MASK*/
+
+//
+// File local function delcarations
+//
+std::string indent(size_t depth);
+int get_delay_ps(float delay_sec);
+int get_delay_ps(int source_tnode, int sink_tnode);
+
+//
+//File local type delcarations
+//
+enum class LogicVal {
+    FALSE=0,
+    TRUE=1,
+    DONTCARE,
+    UNKOWN,
+    HIGHZ
+};
+std::ostream& operator<<(std::ostream& os, LogicVal val);
+
+
+enum class PortDir {
+    IN,
+    OUT
+};
+
+class LogicVec {
+    public:
+        LogicVec() = default;
+        LogicVec(size_t size_val, LogicVal init_value)
+            : values_(size_val, init_value)
+            {}
+
+        LogicVal& operator[](size_t i) { return values_[i]; }
+        size_t size() { return values_.size(); }
+
+        friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {
+            os << logic_vec.values_.size() << "'b";
+            //Print in reverse since th convention is MSB on the left, LSB on the right
+            for(auto iter = logic_vec.begin(); iter != logic_vec.end(); iter++) {
+                os << *iter;
+            }
+            return os;
+        }
+
+        void rotate(std::vector<int> permute) {
+            assert(permute.size() == values_.size());
+
+            auto orig_values = values_;
+
+            for(size_t i = 0; i < values_.size(); i++) {
+                /*std::cout << "\tMove " << permute[i] << " -> " << i << ": " << *this;*/
+
+                values_[i] = orig_values[permute[i]];
+
+                /*std::cout << " -> " << *this << std::endl;*/
+            }
+        }
+
+        std::vector<size_t> minterms() {
+            std::vector<size_t> minterms_vec;
+
+            minterms_recurr(minterms_vec, *this);
+
+            return minterms_vec;
+        }
+
+        std::vector<LogicVal>::reverse_iterator begin() { return values_.rbegin(); }
+        std::vector<LogicVal>::reverse_iterator end() { return values_.rend(); }
+        std::vector<LogicVal>::const_reverse_iterator begin() const { return values_.crbegin(); }
+        std::vector<LogicVal>::const_reverse_iterator end() const { return values_.crend(); }
+
+    private:
+
+        void minterms_recurr(std::vector<size_t>& minterms_vec, LogicVec logic_vec) {
+
+            auto iter = std::find(logic_vec.begin(), logic_vec.end(), LogicVal::DONTCARE);
+            if(iter == logic_vec.end()) {
+                //Base case (only TRUE/FALSE) caluclate minterm number
+                size_t minterm_number = 0;
+                for(size_t i = 0; i < values_.size(); i++) {
+                    if(logic_vec.values_[i] == LogicVal::TRUE) {
+                        size_t index_power = (1 << i);
+                        minterm_number += index_power;
+                    } else if(logic_vec.values_[i] == LogicVal::FALSE) {
+                        //pass
+                    } else {
+                        assert(false); //Unsupported values
+                    }
+                }
+                minterms_vec.push_back(minterm_number);
+            } else {
+                //Recurse
+                *iter = LogicVal::TRUE;
+                minterms_recurr(minterms_vec, logic_vec);
+
+                *iter = LogicVal::FALSE;
+                minterms_recurr(minterms_vec, logic_vec);
+            }
+        }
+
+        std::vector<LogicVal> values_;
+};
+
+class Arc {
+    public:
+        Arc(std::string src, std::string snk, float del)
+            : source_name_(src)
+            , sink_name_(snk)
+            , delay_(del)
+            {}
+
+        std::string source_name() { return source_name_; }
+        std::string sink_name() { return sink_name_; }
+        float delay() { return delay_; }
+
+    private:
+        std::string source_name_;
+        std::string sink_name_;
+        float delay_;
+};
+
+class Instance {
+    public:
+        virtual void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) = 0;
+        virtual void print_verilog(std::ostream& os, int depth=0) = 0;
+        virtual void print_sdf(std::ostream& os, int depth=0) = 0;
+};
+
+class LutInstance : public Instance {
+    public:
+        LutInstance(std::string type_name, LogicVec lut_mask, std::string inst_name, 
+                    std::map<std::string,std::string> port_conns, std::map<int,Arc> timing_arc_values)
+            : type_(type_name)
+            , lut_mask_(lut_mask)
+            , inst_name_(inst_name)
+            , port_connections_(port_conns)
+            , timing_arcs_(timing_arc_values)
+            {}
+
+        const std::map<int,Arc>& timing_arcs() { return timing_arcs_; }
+        std::string instance_name() { return inst_name_; }
+        std::string type() { return type_; }
+
+        void print_verilog(std::ostream& os, int depth) override {
+            //Instantiate the lut
+            os << indent(depth) << type_;
+
+            std::stringstream param_ss;
+            param_ss << lut_mask_;
+            os << " #(" << param_ss.str() << ") ";
+
+            os << inst_name_ << "(";
+
+            //and all its named port connections
+            for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
+                os << "." + iter->first;
+                os << "(";
+                if(iter->second == "") {
+                    //Disconnected
+
+                    if(iter != --port_connections_.end()) {
+                        //Disconnected inputs are grounded
+                        os << "1'b0";
+                    } else {
+                        //Disconnected outputs are left open
+                        os << "";
+                    }
+                    
+                } else {
+                    os << iter->second;
+                }
+                os << ")";
+
+                if(iter != --port_connections_.end()) {
+                    os << ", ";
+                }
+            }
+            os << ");\n\n";
+        }
+
+        void print_blif(std::ostream& os, size_t& unconn_count, int depth) override {
+            os << indent(depth) << ".names ";
+
+            //We currently rely upon the ports begin sorted by thier name (e.g. in_0, in_1)
+            for(auto kv : port_connections_) {
+                if(kv.second == "") {
+                    //Disconnected
+                    os << "__vpr__unconn" << unconn_count++ << " ";
+                } else {
+                    os << kv.second << " ";
+                }
+            }
+            os << "\n";
+
+            //For simplicity we always output the ON set
+            // Using the OFF set for functions that are mostly 'on' 
+            // would reduce the size of the output blif, 
+            // but would add complexity
+            size_t minterms_set = 0;
+            for(size_t minterm = 0; minterm < lut_mask_.size(); minterm++) {
+                if(lut_mask_[minterm] == LogicVal::TRUE) {
+                    //Convert the minterm to a string of bits
+                    std::string bit_str = std::bitset<64>(minterm).to_string();
+
+                    //Because BLIF puts the input values in order from LSB (left) to MSB (right), we need
+                    //to reverse the string
+                    std::reverse(bit_str.begin(), bit_str.end());
+
+                    //Trim to the LUT size
+                    std::string input_values(bit_str.begin(), bit_str.begin() + (port_connections_.size() - 1));
+
+                    //Add the row as true
+                    os << indent(depth) << input_values << " 1\n";
+
+                    minterms_set++;
+                }
+            }
+            if(minterms_set == 0) {
+                //To make ABC happy (i.e. avoid complaints about mismatching cover size and fanin)
+                //put in a false value for luts that are always false
+                os << std::string(port_connections_.size() - 1, '-') << " 0\n";
+            }
+        }
+
+        void print_sdf(std::ostream& os, int depth) override {
+            os << indent(depth) << "(CELL\n";
+            os << indent(depth+1) << "(CELLTYPE \"" << type() << "\")\n";
+            os << indent(depth+1) << "(INSTANCE " << instance_name()<< ")\n";
+
+            if(!timing_arcs().empty()) {
+                os << indent(depth+1) << "(DELAY\n";
+                os << indent(depth+2) << "(ABSOLUTE\n";
+                
+                for(auto& pin_arc_pair : timing_arcs()) {
+                    auto arc = pin_arc_pair.second;
+
+                    int delay_ps = get_delay_ps(arc.delay());
+
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+
+                    os << indent(depth+3) << "(IOPATH " << arc.source_name() << " " << arc.sink_name();
+                    os << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                }
+                os << indent(depth+2) << ")\n";
+                os << indent(depth+1) << ")\n";
+            }
+
+            os << indent(depth) << ")\n";
+            os << indent(depth) << "\n";
+        }
+
+    private:
+        std::string type_;
+        LogicVec lut_mask_;
+        std::string inst_name_;
+        std::map<std::string,std::string> port_connections_;
+        std::map<int,Arc> timing_arcs_; //Pin index to timing arc
+};
+
+class LatchInstance : public Instance {
+
+};
+
+class Assignment {
+    public:
+        Assignment(std::string lval, std::string rval)
+            : lval_(lval)
+            , rval_(rval)
+            {}
+
+        void print_verilog(std::ostream& os, std::string indent) {
+            os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
+        }
+        void print_blif(std::ostream& os, std::string indent) {
+            os << indent << ".names " << rval_ << " " << lval_ << "\n";
+            os << indent << "1 1\n";
+        }
+    private:
+        std::string lval_;
+        std::string rval_;
+};
+
+
 
 class PrintingVisitor : public NetlistVisitor {
     private:
@@ -51,253 +337,13 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         VerilogSdfWriterVisitor(VerilogSdfWriterVisitor& other) = delete;
         VerilogSdfWriterVisitor(VerilogSdfWriterVisitor&& other) = delete;
         VerilogSdfWriterVisitor& operator=(VerilogSdfWriterVisitor& rhs) = delete;
+        VerilogSdfWriterVisitor& operator=(VerilogSdfWriterVisitor&& rhs) = delete;
 
         ~VerilogSdfWriterVisitor() {
             free(pin_id_to_tnode_lookup_);
         }
 
     private: //Internal types
-        enum class LogicVal {
-            FALSE=0,
-            TRUE=1,
-            DONTCARE,
-            UNKOWN,
-            HIGHZ
-        };
-
-        friend std::ostream& operator<<(std::ostream& os, LogicVal val) {
-            if(val == LogicVal::FALSE) os << "0";
-            else if (val == LogicVal::TRUE) os << "1";
-            else if (val == LogicVal::DONTCARE) os << "-";
-            else if (val == LogicVal::UNKOWN) os << "x";
-            else if (val == LogicVal::HIGHZ) os << "z";
-            else assert(false);
-            return os;
-        }
-
-        class LogicVec {
-            public:
-                LogicVec() = default;
-                LogicVec(size_t size_val, LogicVal init_value)
-                    : values_(size_val, init_value)
-                    {}
-
-                LogicVal& operator[](size_t i) { return values_[i]; }
-                size_t size() { return values_.size(); }
-
-                friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {
-                    os << logic_vec.values_.size() << "'b";
-                    //Print in reverse since th convention is MSB on the left, LSB on the right
-                    for(auto iter = logic_vec.begin(); iter != logic_vec.end(); iter++) {
-                        os << *iter;
-                    }
-                    return os;
-                }
-
-                void rotate(std::vector<int> permute) {
-                    assert(permute.size() == values_.size());
-
-                    auto orig_values = values_;
-
-                    for(size_t i = 0; i < values_.size(); i++) {
-                        /*std::cout << "\tMove " << permute[i] << " -> " << i << ": " << *this;*/
-
-                        values_[i] = orig_values[permute[i]];
-
-                        /*std::cout << " -> " << *this << std::endl;*/
-                    }
-                }
-
-                std::vector<size_t> minterms() {
-                    std::vector<size_t> minterms_vec;
-
-                    minterms_recurr(minterms_vec, *this);
-
-                    return minterms_vec;
-                }
-
-                std::vector<LogicVal>::reverse_iterator begin() { return values_.rbegin(); }
-                std::vector<LogicVal>::reverse_iterator end() { return values_.rend(); }
-                std::vector<LogicVal>::const_reverse_iterator begin() const { return values_.crbegin(); }
-                std::vector<LogicVal>::const_reverse_iterator end() const { return values_.crend(); }
-
-            private:
-
-                void minterms_recurr(std::vector<size_t>& minterms_vec, LogicVec logic_vec) {
-
-                    auto iter = std::find(logic_vec.begin(), logic_vec.end(), LogicVal::DONTCARE);
-                    if(iter == logic_vec.end()) {
-                        //Base case (only TRUE/FALSE) caluclate minterm number
-                        size_t minterm_number = 0;
-                        for(size_t i = 0; i < values_.size(); i++) {
-                            if(logic_vec.values_[i] == LogicVal::TRUE) {
-                                size_t index_power = (1 << i);
-                                minterm_number += index_power;
-                            } else if(logic_vec.values_[i] == LogicVal::FALSE) {
-                                //pass
-                            } else {
-                                assert(false); //Unsupported values
-                            }
-                        }
-                        minterms_vec.push_back(minterm_number);
-                    } else {
-                        //Recurse
-                        *iter = LogicVal::TRUE;
-                        minterms_recurr(minterms_vec, logic_vec);
-
-                        *iter = LogicVal::FALSE;
-                        minterms_recurr(minterms_vec, logic_vec);
-                    }
-                }
-
-                std::vector<LogicVal> values_;
-        };
-
-        enum class PortDir {
-            IN,
-            OUT
-        };
-
-        class Arc {
-            public:
-                Arc(std::string src, std::string snk, float del)
-                    : source_name_(src)
-                    , sink_name_(snk)
-                    , delay_(del)
-                    {}
-
-                std::string source_name() { return source_name_; }
-                std::string sink_name() { return sink_name_; }
-                float delay() { return delay_; }
-
-            private:
-                std::string source_name_;
-                std::string sink_name_;
-                float delay_;
-        };
-
-        class LutInstance {
-            public:
-                LutInstance(std::string type_name, LogicVec lut_mask, std::string inst_name, 
-                            std::map<std::string,std::string> port_conns, std::map<int,Arc> timing_arc_values)
-                    : type_(type_name)
-                    , lut_mask_(lut_mask)
-                    , inst_name_(inst_name)
-                    , port_connections_(port_conns)
-                    , timing_arcs_(timing_arc_values)
-                    {}
-
-                const std::map<int,Arc>& timing_arcs() { return timing_arcs_; }
-
-                void print_verilog(std::ostream& os, std::string indent) {
-                    //Instantiate the lut
-                    os << indent << type_;
-
-                    std::stringstream param_ss;
-                    param_ss << lut_mask_;
-                    os << " #(" << param_ss.str() << ") ";
-
-                    os << inst_name_ << "(";
-
-                    //and all its named port connections
-                    for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                        os << "." + iter->first;
-                        os << "(";
-                        if(iter->second == "") {
-                            //Disconnected
-
-                            if(iter != --port_connections_.end()) {
-                                //Disconnected inputs are grounded
-                                os << "1'b0";
-                            } else {
-                                //Disconnected outputs are left open
-                                os << "";
-                            }
-                            
-                        } else {
-                            os << iter->second;
-                        }
-                        os << ")";
-
-                        if(iter != --port_connections_.end()) {
-                            os << ", ";
-                        }
-                    }
-                    os << ");\n\n";
-                }
-
-                void print_blif(std::ostream& os, size_t& unconn_count, std::string indent) {
-                    os << indent << ".names ";
-
-                    //We currently rely upon the ports begin sorted by thier name (e.g. in_0, in_1)
-                    for(auto kv : port_connections_) {
-                        if(kv.second == "") {
-                            //Disconnected
-                            os << "__vpr__unconn" << unconn_count++ << " ";
-                        } else {
-                            os << kv.second << " ";
-                        }
-                    }
-                    os << "\n";
-
-                    //For simplicity we always output the ON set
-                    // Using the OFF set for functions that are mostly 'on' 
-                    // would reduce the size of the output blif, 
-                    // but would add complexity
-                    size_t minterms_set = 0;
-                    for(size_t minterm = 0; minterm < lut_mask_.size(); minterm++) {
-                        if(lut_mask_[minterm] == LogicVal::TRUE) {
-                            //Convert the minterm to a string of bits
-                            std::string bit_str = std::bitset<64>(minterm).to_string();
-
-                            //Because BLIF puts the input values in order from LSB (left) to MSB (right), we need
-                            //to reverse the string
-                            std::reverse(bit_str.begin(), bit_str.end());
-
-                            //Trim to the LUT size
-                            std::string input_values(bit_str.begin(), bit_str.begin() + (port_connections_.size() - 1));
-
-                            //Add the row as true
-                            os << input_values << " 1\n";
-
-                            minterms_set++;
-                        }
-                    }
-                    if(minterms_set == 0) {
-                        //To make ABC happy (i.e. avoid complaints about mismatching cover size and fanin)
-                        //put in a false value for luts that are always false
-                        os << std::string(port_connections_.size() - 1, '-') << " 0\n";
-                    }
-                }
-
-                std::string instance_name() { return inst_name_; }
-                std::string type() { return type_; }
-            private:
-                std::string type_;
-                LogicVec lut_mask_;
-                std::string inst_name_;
-                std::map<std::string,std::string> port_connections_;
-                std::map<int,Arc> timing_arcs_; //Pin index to timing arc
-        };
-
-        class Assignment {
-            public:
-                Assignment(std::string lval, std::string rval)
-                    : lval_(lval)
-                    , rval_(rval)
-                    {}
-
-                void print_verilog(std::ostream& os, std::string indent) {
-                    os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
-                }
-                void print_blif(std::ostream& os, std::string indent) {
-                    os << indent << ".names " << rval_ << " " << lval_ << "\n";
-                    os << indent << "1 1\n";
-                }
-            private:
-                std::string lval_;
-                std::string rval_;
-        };
     private: //NetlistVisitor interface functions
 
         void visit_top_impl(const char* top_level_name) { 
@@ -313,6 +359,10 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 outputs_.emplace_back(make_io(atom, PortDir::OUT));
             } else if(model->name == std::string("names")) {
                 cell_instances_.push_back(make_lut_instance(atom));
+            } else if(model->name == std::string("latch")) {
+                cell_instances_.push_back(make_latch_instance(atom));
+            } else {
+                assert(false); //Unrecognized primitive
             }
         }
 
@@ -380,7 +430,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             verilog_os_ << "\n";
             verilog_os_ << indent(depth+1) << "//Cell instances\n";
             for(auto& inst : cell_instances_) {
-                inst.print_verilog(verilog_os_, indent(depth+1));
+                inst->print_verilog(verilog_os_, depth+1);
             }
 
             verilog_os_ << "\n";
@@ -426,7 +476,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             blif_os_ << indent(depth) << "#Cell instances\n";
             size_t unconn_count = 0;
             for(auto& inst : cell_instances_) {
-                inst.print_blif(blif_os_, unconn_count, indent(depth));
+                inst->print_blif(blif_os_, unconn_count);
             }
 
             blif_os_ << "\n";
@@ -476,34 +526,8 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             }
 
             //Cells
-            for(auto& inst : cell_instances_) {
-                sdf_os_ << indent(depth+1) << "(CELL\n";
-                sdf_os_ << indent(depth+2) << "(CELLTYPE \"" << inst.type() << "\")\n";
-                sdf_os_ << indent(depth+2) << "(INSTANCE " << inst.instance_name()<< ")\n";
-
-                auto arcs = inst.timing_arcs();
-
-                if(!arcs.empty()) {
-                    sdf_os_ << indent(depth+2) << "(DELAY\n";
-                    sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
-                    
-                    for(auto& pin_arc_pair : arcs) {
-                        auto arc = pin_arc_pair.second;
-
-                        int delay_ps = get_delay_ps(arc.delay());
-
-                        std::stringstream delay_triple;
-                        delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
-
-                        sdf_os_ << indent(depth+4) << "(IOPATH " << arc.source_name() << " " << arc.sink_name();
-                        sdf_os_ << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
-                    }
-                    sdf_os_ << indent(depth+3) << ")\n";
-                    sdf_os_ << indent(depth+2) << ")\n";
-                }
-
-                sdf_os_ << indent(depth+1) << ")\n";
-                sdf_os_ << indent(depth) << "\n";
+            for(auto inst : cell_instances_) {
+                inst->print_sdf(sdf_os_, depth+1);
             }
 
             sdf_os_ << indent(depth) << ")\n";
@@ -604,7 +628,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return io_name;
         }
 
-        LutInstance make_lut_instance(const t_pb* atom)  {
+        std::shared_ptr<Instance> make_lut_instance(const t_pb* atom)  {
             //Determine what size LUT
             int lut_size = find_num_inputs(atom);
 
@@ -688,9 +712,13 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            auto inst = LutInstance(inst_type, lut_mask, inst_name, port_conns, timing_arcs);
+            auto inst = std::make_shared<LutInstance>(inst_type, lut_mask, inst_name, port_conns, timing_arcs);
 
             return inst;
+        }
+
+        std::shared_ptr<Instance> make_latch_instance(const t_pb* atom)  {
+            return std::shared_ptr<LatchInstance>();
         }
 
         const t_block* find_top_block(const t_pb* curr) {
@@ -934,39 +962,18 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return atom_net_idx;
         }
 
-        int get_delay_ps(float delay_sec) {
-
-            return delay_sec * 1e12 + 0.5; //Scale and rounding
-        }
-
-        int get_delay_ps(int source_tnode, int sink_tnode) {
-            float source_delay = tnode[source_tnode].T_arr;
-            float sink_delay = tnode[sink_tnode].T_arr;
-
-            float delay_sec = sink_delay - source_delay;
-
-
-            return get_delay_ps(delay_sec);
-        }
 
         std::string interconnect_name(std::string driver_wire, std::string sink_wire) {
             return "routing_segment_" + driver_wire + "_to_" + sink_wire;
         }
 
-        std::string indent(size_t depth) {
-            std::string new_indent;
-            for(size_t i = 0; i < depth; ++i) {
-                new_indent += indent_;
-            }
-            return new_indent;
-        }
 
     private: //Data
         std::string top_module_name_;
         std::vector<std::string> inputs_;
         std::vector<std::string> outputs_;
         std::vector<Assignment> assignments_;
-        std::vector<LutInstance> cell_instances_;
+        std::vector<std::shared_ptr<Instance>> cell_instances_;
 
         std::map<int, std::pair<std::string,int>> logical_net_drivers_; //Value: pair of wire_name and tnode_id
         std::map<int, std::vector<std::pair<std::string,int>>> logical_net_sinks_; //Value: vector wire_name tnode_id pairs
@@ -977,7 +984,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         std::ostream& verilog_os_;
         std::ostream& blif_os_;
         std::ostream& sdf_os_;
-        std::string indent_ = "    ";
 };
 
 void verilog_writer2() {
@@ -996,4 +1002,39 @@ void verilog_writer2() {
 
     nl_walker.walk();
 
+}
+
+std::ostream& operator<<(std::ostream& os, LogicVal val) {
+    if(val == LogicVal::FALSE) os << "0";
+    else if (val == LogicVal::TRUE) os << "1";
+    else if (val == LogicVal::DONTCARE) os << "-";
+    else if (val == LogicVal::UNKOWN) os << "x";
+    else if (val == LogicVal::HIGHZ) os << "z";
+    else assert(false);
+    return os;
+}
+
+
+std::string indent(size_t depth) {
+    std::string indent_ = "    ";
+    std::string new_indent;
+    for(size_t i = 0; i < depth; ++i) {
+        new_indent += indent_;
+    }
+    return new_indent;
+}
+
+int get_delay_ps(float delay_sec) {
+
+    return delay_sec * 1e12 + 0.5; //Scale and rounding
+}
+
+int get_delay_ps(int source_tnode, int sink_tnode) {
+    float source_delay = tnode[source_tnode].T_arr;
+    float sink_delay = tnode[sink_tnode].T_arr;
+
+    float delay_sec = sink_delay - source_delay;
+
+
+    return get_delay_ps(delay_sec);
 }
