@@ -38,9 +38,10 @@ enum class LogicVal {
 std::ostream& operator<<(std::ostream& os, LogicVal val);
 
 
-enum class PortDir {
+enum class PortType {
     IN,
-    OUT
+    OUT,
+    CLOCK
 };
 
 class LogicVec {
@@ -334,6 +335,7 @@ class LatchInstance : public Instance {
 
             //Control input
             auto control_port_iter = port_connections_.find("control");
+            assert(control_port_iter != port_connections_.end());
             os << control_port_iter->second << " "; //e.g. clock
             os << (int) initial_value_ << " "; //Init value: e.g. 2=don't care
             os << "\n";
@@ -453,9 +455,9 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             const t_model* model = logical_block[atom->logical_block].model;
 
             if(model->name == std::string("input")) {
-                inputs_.emplace_back(make_io(atom, PortDir::IN));
+                inputs_.emplace_back(make_io(atom, PortType::IN));
             } else if(model->name == std::string("output")) {
-                outputs_.emplace_back(make_io(atom, PortDir::OUT));
+                outputs_.emplace_back(make_io(atom, PortType::OUT));
             } else if(model->name == std::string("names")) {
                 cell_instances_.push_back(make_lut_instance(atom));
             } else if(model->name == std::string("latch")) {
@@ -655,13 +657,15 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return count;
         }
 
-        std::string make_inst_wire(int atom_net_idx, int tnode_id, std::string inst_name, PortDir dir, int port_idx, int pin_idx) {
+        std::string make_inst_wire(int atom_net_idx, int tnode_id, std::string inst_name, PortType port_type, int port_idx, int pin_idx) {
             std::stringstream ss;
             ss << inst_name;
-            if(dir == PortDir::IN) {
+            if(port_type == PortType::IN) {
                 ss << "_input";
+            } else if(port_type == PortType::CLOCK) {
+                ss << "_clock";
             } else {
-                assert(dir == PortDir::OUT);
+                assert(port_type == PortType::OUT);
                 ss << "_output";
             }
             ss << "_" << port_idx;
@@ -670,7 +674,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             std::string wire_name = ss.str();
 
             auto value = std::make_pair(wire_name, tnode_id);
-            if(dir == PortDir::IN) {
+            if(port_type == PortType::IN || port_type == PortType::CLOCK) {
                 //Add the sink
                 logical_net_sinks_[atom_net_idx].push_back(value);
 
@@ -683,14 +687,14 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return wire_name;
         }
 
-        std::string make_io(const t_pb* atom, PortDir dir) {
+        std::string make_io(const t_pb* atom, PortType dir) {
             std::string io_name = escape_name(atom->name);  
             
 
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
             int cluster_pin_idx = -1;
-            if(dir == PortDir::IN) {
+            if(dir == PortType::IN) {
                 assert(pb_graph_node->num_output_ports == 1); //One output port
                 assert(pb_graph_node->num_output_pins[0] == 1); //One output pin
                 cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -710,7 +714,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
 
             //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
-            PortDir wire_dir = (dir == PortDir::IN) ? PortDir::OUT : PortDir::IN;
+            PortType wire_dir = (dir == PortType::IN) ? PortType::OUT : PortType::IN;
 
             //Look up the tnode associated with this pin (used for delay calculation)
             int tnode_id = find_tnode(atom, cluster_pin_idx);
@@ -718,7 +722,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             auto wire_name = make_inst_wire(atom_net_idx, tnode_id, io_name, wire_dir, 0, 0);
 
             //Connect the wires to to I/Os with assign statements
-            if(wire_dir == PortDir::IN) {
+            if(wire_dir == PortType::IN) {
                 assignments_.emplace_back(io_name, wire_name);
             } else {
                 assignments_.emplace_back(wire_name, io_name);
@@ -768,7 +772,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     //Look up the tnode associated with this pin (used for delay calculation)
                     int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortDir::IN, 0, pin_idx);
+                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::IN, 0, pin_idx);
                     auto ret = port_conns.insert(std::make_pair(port_name, input_net)); 
                     assert(ret.second); //Was inserted
 
@@ -805,7 +809,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     //Look up the tnode associated with this pin (used for delay calculation)
                     int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortDir::OUT, 0, 0);
+                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::OUT, 0, 0);
                     auto ret = port_conns.insert(std::make_pair(port_name, input_net)); 
                     assert(ret.second); //Was inserted
                 }
@@ -817,7 +821,46 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         }
 
         std::shared_ptr<Instance> make_latch_instance(const t_pb* atom)  {
-            return std::shared_ptr<LatchInstance>();
+            std::string inst_name = "latch_" + escape_name(atom->name);
+
+            const t_block* top_block = find_top_block(atom);
+            const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
+             
+            //We expect a single input, output and clock ports
+            assert(pb_graph_node->num_input_ports == 1);
+            assert(pb_graph_node->num_output_ports == 1);
+            assert(pb_graph_node->num_clock_ports == 1);
+            assert(pb_graph_node->num_input_pins[0] == 1);
+            assert(pb_graph_node->num_output_pins[0] == 1);
+            assert(pb_graph_node->num_clock_pins[0] == 1);
+
+            //The connections
+            std::map<std::string,std::string> port_conns;
+
+            //Input (D)
+            int input_cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            int input_atom_net_idx = top_block->pb_route[input_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
+            std::string input_net = make_inst_wire(input_atom_net_idx, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::IN, 0, 0);
+            port_conns["D"] = input_net;
+
+            //Output (Q)
+            int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            int output_atom_net_idx = top_block->pb_route[output_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
+            std::string output_net = make_inst_wire(output_atom_net_idx, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUT, 0, 0);
+            port_conns["Q"] = output_net;
+
+            //Clock (control)
+            int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+            int control_atom_net_idx = top_block->pb_route[control_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
+            std::string control_net = make_inst_wire(control_atom_net_idx, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
+            port_conns["control"] = control_net;
+
+            //VPR currently doesn't store enough information to determine these attributes,
+            //for now assume reasonable defaults.
+            LatchInstance::Type type = LatchInstance::Type::RISING_EDGE;
+            LogicVal init_value = LogicVal::FALSE;
+
+            return std::make_shared<LatchInstance>(inst_name, port_conns, type, init_value);
         }
 
         const t_block* find_top_block(const t_pb* curr) {
