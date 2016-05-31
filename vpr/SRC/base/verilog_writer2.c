@@ -334,7 +334,7 @@ class LatchInstance : public Instance {
             os << type_ << " "; //Type, i.e. rising-edge
 
             //Control input
-            auto control_port_iter = port_connections_.find("control");
+            auto control_port_iter = port_connections_.find("clock");
             assert(control_port_iter != port_connections_.end());
             os << control_port_iter->second << " "; //e.g. clock
             os << (int) initial_value_ << " "; //Init value: e.g. 2=don't care
@@ -853,7 +853,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
             int control_atom_net_idx = top_block->pb_route[control_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
             std::string control_net = make_inst_wire(control_atom_net_idx, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
-            port_conns["control"] = control_net;
+            port_conns["clock"] = control_net;
 
             //VPR currently doesn't store enough information to determine these attributes,
             //for now assume reasonable defaults.

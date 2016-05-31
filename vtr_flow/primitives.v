@@ -149,31 +149,25 @@ module LUT_7 #(
 endmodule
 
 //D-FlipFlop module with synchronous active low clear and preset.
-module D_Flip_Flop(clock,D,clear,preset,Q);
+module DFF #(
+    parameter INITIAL_VALUE=1'b0    
+) (
+    input clock,
+    input D,
+    output reg Q
+);
 
-input clock,D,clear,preset;
-output reg Q = 1'b0;
+    specify
+        (clock => Q)="";
+    endspecify
 
-specify
-	(clock => Q)="";
-endspecify
+    initial begin
+        Q <= INITIAL_VALUE;
+    end
 
-   initial
-     begin
-	Q <= 1'b0;
-     end
-   
-   always@(posedge clock)
-     begin
-	if(clear==0)
-	  Q<=0;
-	else if(preset==0)
-	  Q<=1;
-	else
-	  begin
-	     Q<=D;
-	  end
-     end
+    always@(posedge clock) begin
+        Q <= D;
+    end
 endmodule
 
 //Routing fpga_interconnect module
