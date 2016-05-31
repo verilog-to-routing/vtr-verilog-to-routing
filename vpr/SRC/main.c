@@ -32,7 +32,7 @@ using namespace std;
  * 4.  Clean up
  */
 
-//int main(int argc, char **argv) {
+int main(int argc, char **argv) {
 	t_options Options;
 	t_arch Arch;
 	t_vpr_setup vpr_setup;
@@ -49,7 +49,7 @@ using namespace std;
 			vpr_pack(vpr_setup, Arch);
 		}
 
-		if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
+		//if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
 			vpr_init_pre_place_and_route(vpr_setup, Arch);
 			
 			#ifdef INTERPOSER_BASED_ARCHITECTURE
