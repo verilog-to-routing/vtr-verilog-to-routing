@@ -344,15 +344,15 @@ class LatchInstance : public Instance {
         void print_verilog(std::ostream& os, int depth=0) override {
             //Currently assume a standard DFF
             assert(type_ == Type::RISING_EDGE);
-            os << indent(depth) << "D_Flip_Flop" << " ";
-            os << instance_name_ << " ";
-            os << "#(INITIAL_VALUE=";
+            os << indent(depth) << "DFF" << " ";
+            os << "#(.INITIAL_VALUE(";
             if     (initial_value_ == LogicVal::TRUE)     os << "1'b1";
             else if(initial_value_ == LogicVal::FALSE)    os << "1'b0";
             else if(initial_value_ == LogicVal::DONTCARE) os << "1'bx";
             else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
             else assert(false);
-            os << ")" << " ";
+            os << "))" << " ";
+            os << instance_name_ << " ";
 
             os << "(";
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
