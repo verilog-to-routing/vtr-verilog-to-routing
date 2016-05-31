@@ -32,7 +32,7 @@ using namespace std;
  * 4.  Clean up
  */
 
-//int main(int argc, char **argv) {
+int main(int argc, char **argv) {
 	t_options Options;
 	t_arch Arch;
 	t_vpr_setup vpr_setup;
@@ -45,7 +45,7 @@ using namespace std;
 		vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
 		/* If the user requests packing, do packing */
-		if (vpr_setup.PackerOpts.doPacking) {
+//		if (vpr_setup.PackerOpts.doPacking) {
 			vpr_pack(vpr_setup, Arch);
 		}
 
