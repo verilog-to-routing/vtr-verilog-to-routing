@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 			vpr_setup_interposer_cut_locations(Arch);
 			#endif
 			
-			vpr_place_and_route(&vpr_setup, Arch);
+			//vpr_place_and_route(&vpr_setup, Arch);
 		}
 
 		if (vpr_setup.PowerOpts.do_power) {
