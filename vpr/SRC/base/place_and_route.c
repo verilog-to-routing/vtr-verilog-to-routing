@@ -182,7 +182,7 @@ bool place_and_route(enum e_operation operation,
 			assert(slacks->slack);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-				print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);
+				/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
 			}
 
 			if(GetPostSynthesisOption())
@@ -557,7 +557,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	if (timing_inf.timing_analysis_enabled) {
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-			print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);
+			/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
 		}
 		
 		if(GetPostSynthesisOption())
