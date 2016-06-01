@@ -22,8 +22,8 @@
 // File local function delcarations
 //
 std::string indent(size_t depth);
-int get_delay_ps(float delay_sec);
-int get_delay_ps(int source_tnode, int sink_tnode);
+double get_delay_ps(double delay_sec);
+double get_delay_ps(int source_tnode, int sink_tnode);
 
 //
 //File local type delcarations
@@ -124,20 +124,23 @@ class LogicVec {
 
 class Arc {
     public:
-        Arc(std::string src, std::string snk, float del)
+        Arc(std::string src, std::string snk, float del, std::string cond="")
             : source_name_(src)
             , sink_name_(snk)
             , delay_(del)
+            , condition_(cond)
             {}
 
-        std::string source_name() { return source_name_; }
-        std::string sink_name() { return sink_name_; }
-        float delay() { return delay_; }
+        std::string source_name() const { return source_name_; }
+        std::string sink_name() const { return sink_name_; }
+        double delay() const { return delay_; }
+        std::string condition() const { return condition_; }
 
     private:
         std::string source_name_;
         std::string sink_name_;
-        float delay_;
+        double delay_;
+        std::string condition_;
 };
 
 class Instance {
@@ -150,7 +153,7 @@ class Instance {
 class LutInstance : public Instance {
     public:
         LutInstance(std::string type_name, LogicVec lut_mask, std::string inst_name, 
-                    std::map<std::string,std::string> port_conns, std::map<int,Arc> timing_arc_values)
+                    std::map<std::string,std::string> port_conns, std::vector<Arc> timing_arc_values)
             : type_(type_name)
             , lut_mask_(lut_mask)
             , inst_name_(inst_name)
@@ -158,7 +161,7 @@ class LutInstance : public Instance {
             , timing_arcs_(timing_arc_values)
             {}
 
-        const std::map<int,Arc>& timing_arcs() { return timing_arcs_; }
+        const std::vector<Arc>& timing_arcs() { return timing_arcs_; }
         std::string instance_name() { return inst_name_; }
         std::string type() { return type_; }
 
@@ -252,10 +255,8 @@ class LutInstance : public Instance {
                 os << indent(depth+1) << "(DELAY\n";
                 os << indent(depth+2) << "(ABSOLUTE\n";
                 
-                for(auto& pin_arc_pair : timing_arcs()) {
-                    auto arc = pin_arc_pair.second;
-
-                    int delay_ps = get_delay_ps(arc.delay());
+                for(auto& arc : timing_arcs()) {
+                    double delay_ps = get_delay_ps(arc.delay());
 
                     std::stringstream delay_triple;
                     delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
@@ -276,7 +277,7 @@ class LutInstance : public Instance {
         LogicVec lut_mask_;
         std::string inst_name_;
         std::map<std::string,std::string> port_connections_;
-        std::map<int,Arc> timing_arcs_; //Pin index to timing arc
+        std::vector<Arc> timing_arcs_;
 };
 
 class LatchInstance : public Instance {
@@ -310,11 +311,15 @@ class LatchInstance : public Instance {
         }
     public:
         LatchInstance(std::string inst_name, std::map<std::string,std::string> port_conns,
-                      Type type, LogicVal init_value)
+                      Type type, LogicVal init_value, double tcq=std::numeric_limits<double>::quiet_NaN(), 
+                      double tsu=std::numeric_limits<double>::quiet_NaN(), double thld=std::numeric_limits<double>::quiet_NaN())
             : instance_name_(inst_name)
             , port_connections_(port_conns)
             , type_(type)
             , initial_value_(init_value)
+            , tcq_(tcq)
+            , tsu_(tsu)
+            , thld_(thld)
             {}
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
@@ -370,9 +375,40 @@ class LatchInstance : public Instance {
             assert(type_ == Type::RISING_EDGE);
 
             os << indent(depth) << "(CELL\n";
-            os << indent(depth+1) << "(CELLTYPE \"" << "D_Flip_Flop" << "\")\n";
+            os << indent(depth+1) << "(CELLTYPE \"" << "DFF" << "\")\n";
             os << indent(depth+1) << "(INSTANCE " << instance_name_ << ")\n";
-            //TODO implement
+
+            //Clock to Q
+            if(!std::isnan(tcq_)) {
+                os << indent(depth+1) << "(DELAY\n";
+                os << indent(depth+2) << "(ABSOLUTE\n";
+                    double delay_ps = get_delay_ps(tcq_);
+
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+
+                    os << indent(depth+3) << "(IOPATH " << "(posedge clock) Q " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                os << indent(depth+2) << ")\n";
+                os << indent(depth+1) << ")\n";
+            }
+
+            //Setup/Hold
+            if(!std::isnan(tsu_) || !std::isnan(thld_)) {
+                os << indent(depth+1) << "(TIMINGCHECK\n";
+                if(!std::isnan(tsu_)) {
+                    std::stringstream setup_triple;
+                    double setup_ps = get_delay_ps(tsu_);
+                    setup_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
+                    os << indent(depth+2) << "(SETUP D (posedge clock) " << setup_triple.str() << ")\n";
+                }
+                if(!std::isnan(thld_)) {
+                    std::stringstream hold_triple;
+                    double hold_ps = get_delay_ps(thld_);
+                    hold_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
+                    os << indent(depth+2) << "(HOLD D (posedge clock) " << hold_triple.str() << ")\n";
+                }
+            }
+            os << indent(depth+1) << ")\n";
             os << indent(depth) << ")\n";
             os << indent(depth) << "\n";
         }
@@ -381,6 +417,9 @@ class LatchInstance : public Instance {
         std::map<std::string,std::string> port_connections_;
         Type type_;
         LogicVal initial_value_;
+        double tcq_; //Clock delay + tcq
+        double tsu_; //Setup time
+        double thld_; //Hold time
 };
 
 class Assignment {
@@ -613,7 +652,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     sdf_os_ << indent(depth+2) << "(DELAY\n";
                     sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
 
-                    int delay = get_delay_ps(driver_tnode, sink_tnode);
+                    double delay = get_delay_ps(driver_tnode, sink_tnode);
 
                     std::stringstream delay_triple;
                     delay_triple << "(" << delay << ":" << delay << ":" << delay << ")";
@@ -755,7 +794,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             const t_block* top_block = find_top_block(atom);
 
             //Add inputs adding connections
-            std::map<int,Arc> timing_arcs;
+            std::vector<Arc> timing_arcs;
             for(int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
                 int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
                 int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
@@ -785,7 +824,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     float delay = tnode[tnode_id].out_edges[0].Tdel;
                     Arc timing_arc(source_name, sink_name, delay);
 
-                    timing_arcs.insert(std::make_pair(pin_idx,timing_arc));
+                    timing_arcs.push_back(timing_arc);
                 }
             }
 
@@ -843,11 +882,15 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             std::string input_net = make_inst_wire(input_atom_net_idx, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::IN, 0, 0);
             port_conns["D"] = input_net;
 
+            double tsu = pb_graph_node->input_pins[0][0].tsu_tco;
+
             //Output (Q)
             int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
             int output_atom_net_idx = top_block->pb_route[output_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
             std::string output_net = make_inst_wire(output_atom_net_idx, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUT, 0, 0);
             port_conns["Q"] = output_net;
+
+            double tcq = pb_graph_node->output_pins[0][0].tsu_tco;
 
             //Clock (control)
             int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -860,7 +903,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             LatchInstance::Type type = LatchInstance::Type::RISING_EDGE;
             LogicVal init_value = LogicVal::FALSE;
 
-            return std::make_shared<LatchInstance>(inst_name, port_conns, type, init_value);
+            return std::make_shared<LatchInstance>(inst_name, port_conns, type, init_value, tcq, tsu);
         }
 
         const t_block* find_top_block(const t_pb* curr) {
@@ -1166,12 +1209,12 @@ std::string indent(size_t depth) {
     return new_indent;
 }
 
-int get_delay_ps(float delay_sec) {
+double get_delay_ps(double delay_sec) {
 
-    return delay_sec * 1e12 + 0.5; //Scale and rounding
+    return delay_sec * 1e12; //Scale to picoseconds
 }
 
-int get_delay_ps(int source_tnode, int sink_tnode) {
+double get_delay_ps(int source_tnode, int sink_tnode) {
     float source_delay = tnode[source_tnode].T_arr;
     float sink_delay = tnode[sink_tnode].T_arr;
 
