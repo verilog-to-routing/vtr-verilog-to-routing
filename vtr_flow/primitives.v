@@ -198,7 +198,7 @@ module mux(
 endmodule
 
 module ripple_adder #(
-    paramter WIDTH = 0   
+    parameter WIDTH = 0   
 ) (
     input [WIDTH-1:0] a, 
     input [WIDTH-1:0] b, 
@@ -229,15 +229,13 @@ module mult #(
     output [2*WIDTH-1:0] result
 );
 
-    wire[WIDTH-1:0] inA1,
+    wire [WIDTH-1:0] inA1;
     wire [WIDTH-1:0] inB1;
     Mult_interconnect #(WIDTH) delay(inA, inA1);
     Mult_interconnect #(WIDTH) delay2(inB, inB1);
    
-    always@(*) begin
-        result = inA1 * inB1;
-    end
-   	
+    assign result = inA1 * inB1;
+
 endmodule // mult
 
 //This interconnect is needed to specify the delay of the multiplier in the SDF file
@@ -259,7 +257,7 @@ endmodule // Mult_interconnect
 //single_port_ram module
 module single_port_ram #(
     parameter ADDR_WIDTH = 0,
-    parameter DATA_WIDTH = 0;
+    parameter DATA_WIDTH = 0
 ) (
     input clock,
     input we,
@@ -278,9 +276,9 @@ module single_port_ram #(
    
     always@(posedge clock) begin
         if(we) begin
-            Mem[addr] = data;
+            Mem[addr] = data_in;
         end
-    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    	data_out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
     end
    
 endmodule // single_port_RAM
@@ -288,7 +286,7 @@ endmodule // single_port_RAM
 //dual_port_ram module
 module dual_port_ram #(
     parameter ADDR_WIDTH = 0,
-    parameter DATA_WIDTH = 0,
+    parameter DATA_WIDTH = 0
 ) (
     input clock,
 
@@ -299,7 +297,7 @@ module dual_port_ram #(
     input we2,
     input [ADDR_WIDTH-1:0] addr2,
     input [DATA_WIDTH-1:0] data_in2,
-    output reg [DATA_WIDTH-1:0] data_out2,
+    output reg [DATA_WIDTH-1:0] data_out2
 );
 
     localparam MEM_DEPTH = 1 << ADDR_WIDTH;
@@ -307,8 +305,8 @@ module dual_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock=>out1)="";
-        (clock=>out2)="";
+        (clock=>data_out1)="";
+        (clock=>data_out2)="";
     endspecify
    
     always@(posedge clock) begin //Port 1
