@@ -1,7 +1,7 @@
 `timescale 1ps/1ps
 
 //3-Input Look Up Table module
-module LUT_3#(
+module LUT_3 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
    parameter Truth_table=8'b00000000
@@ -171,39 +171,40 @@ module DFF #(
 endmodule
 
 //Routing fpga_interconnect module
-module fpga_interconnect(datain,dataout);
+module fpga_interconnect(
+    input datain,
+    output dataout
+);
 
-input datain;
-output dataout;
+    specify
+        (datain=>dataout)="";
+    endspecify
 
-specify
-	(datain=>dataout)="";
-endspecify
-
-assign dataout=datain;
+    assign dataout = datain;
 
 endmodule
 
 
 //2-to-1 mux module
-module mux(select,x,y,z);
+module mux(
+    input select,
+    input x,
+    input y,
+    output z
+);
 
-input select,x,y;
-output z;
-
-assign z=(x & ~select) | (y & select);
+    assign z = (x & ~select) | (y & select);
 
 endmodule
 
-module ripple_adder(a, b, cin, cout, sumout);
-   
-   parameter width = 0;
-
-   input [width-1:0] a, b;
-   input 	     cin;
-   
-   output [width-1:0] sumout;
-   output 	      cout;
+module ripple_adder #(
+    paramter WIDTH = 0   
+) (
+    input [WIDTH-1:0] a, 
+    input [WIDTH-1:0] b, 
+    input cin, 
+    output cout, 
+    output [WIDTH-1:0] sumout);
 
    specify
       (a=>sumout)="";
@@ -219,122 +220,109 @@ module ripple_adder(a, b, cin, cout, sumout);
 endmodule
    
 //nxn multiplier module
-module mult(inA,inB,result);
+module mult #(
+    //The width of input signals
+    parameter WIDTH = 0
+) (
+    input [WIDTH-1:0] inA,
+    input [WIDTH-1:0] inB,
+    output [2*WIDTH-1:0] result
+);
 
-//the number of inputs to the multiplier is passes in as a parameter to the module
-parameter inputs = 0;
- 
+    wire[WIDTH-1:0] inA1,
+    wire [WIDTH-1:0] inB1;
+    Mult_interconnect #(WIDTH) delay(inA, inA1);
+    Mult_interconnect #(WIDTH) delay2(inB, inB1);
    
-   input[inputs-1:0]inA,inB;
-   output reg[inputs + inputs -1:0] result;
-
-   wire[inputs-1:0]inA1,inB1;
-   Mult_interconnect #(inputs)delay(inA,inA1);
-   Mult_interconnect #(inputs)delay2(inB,inB1);
-   
-   always@(inA1 or inB1)
-   	result = inA1 * inB1;
+    always@(*) begin
+        result = inA1 * inB1;
+    end
    	
 endmodule // mult
 
 //This interconnect is needed to specify the delay of the multiplier in the SDF file
-module Mult_interconnect(A,B);
+module Mult_interconnect #(
+    parameter WIDTH = 0   
+) (
+    input [WIDTH-1:0] A,
+    output [WIDTH-1:0] B
+);
 
-   parameter num_inputs = 0;
-   
-   input [num_inputs-1:0]A;
-   output [num_inputs-1:0] B;
-
-   specify
+    specify
       (A=>B)="";
-   endspecify
-   
-   assign B = A;
-   
+    endspecify
+
+    assign B = A;
+
 endmodule // Mult_interconnect
 
 //single_port_ram module
-module single_port_ram(addr,data,we,out,clock);
+module single_port_ram #(
+    parameter ADDR_WIDTH = 0,
+    parameter DATA_WIDTH = 0;
+) (
+    input clock,
+    input we,
+    input [ADDR_WIDTH-1:0] addr,
+    input [DATA_WIDTH-1:0] data_in,
+    output reg [DATA_WIDTH-1:0] data_out
+);
 
-   parameter addr_width = 0;
-   parameter data_width = 0;
-   parameter mem_depth = 1 << addr_width;
+    localparam MEM_DEPTH = 1 << ADDR_WIDTH;
 
-   input clock;
-   input [addr_width-1:0] addr;
-   input [data_width-1:0] data;
-   input 		  we;
-   output reg [data_width-1:0] out;
-   
-   reg [data_width-1:0]        Mem[0:mem_depth];
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
-   specify
-      (clock=>out)="";
-   endspecify
+    specify
+        (clock=>data_out)="";
+    endspecify
    
-   always@(posedge clock)
-     begin
-	if(we)
-	  Mem[addr] = data;
-     end
+    always@(posedge clock) begin
+        if(we) begin
+            Mem[addr] = data;
+        end
+    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    end
    
-   always@(posedge clock)
-     begin
-	out = Mem[addr];
-     end
-  
 endmodule // single_port_RAM
 
 //dual_port_ram module
-module dual_port_ram(addr1,addr2,data1,data2,we1,we2,out1,out2,clock);
+module dual_port_ram #(
+    parameter ADDR_WIDTH = 0,
+    parameter DATA_WIDTH = 0,
+) (
+    input clock,
 
-   parameter addr1_width = 0;
-   parameter data1_width = 0;
-   parameter addr2_width = 0;
-   parameter data2_width = 0;
-   parameter mem_depth1 = 1 << addr1_width;
-   parameter mem_depth2 = 1 << addr2_width;
+    input we1,
+    input [ADDR_WIDTH-1:0] addr1,
+    input [DATA_WIDTH-1:0] data_in1,
+    output reg [DATA_WIDTH-1:0] data_out1,
+    input we2,
+    input [ADDR_WIDTH-1:0] addr2,
+    input [DATA_WIDTH-1:0] data_in2,
+    output reg [DATA_WIDTH-1:0] data_out2,
+);
 
-   input clock;
-   
-   input [addr1_width-1:0] addr1;
-   input [data1_width-1:0] data1;
-   input 		   we1;
-   output reg [data1_width-1:0] out1;
-   
-   input [addr2_width-1:0] 	addr2;
-   input [data2_width-1:0] 	data2;
-   input 			we2;
-   output reg [data2_width-1:0] out2;
-   
-   reg [data1_width-1:0] 	Mem1[0:mem_depth1];
-   reg [data2_width-1:0] 	Mem2[0:mem_depth2];
+    localparam MEM_DEPTH = 1 << ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-       (clock=>out1)="";
-       (clock=>out2)="";
+        (clock=>out1)="";
+        (clock=>out2)="";
     endspecify
    
-   always@(posedge clock)
-     begin
-	if(we1)
-	  Mem1[addr1] = data1;
-     end
-   
-   always@(posedge clock)
-      begin
-	if(we2)
-	  Mem2[addr2] = data2;
-     end
-   
-   always@(posedge clock)
-     begin
-	out1 = Mem1[addr1];
-     end
-   
-   always@(posedge clock)
-     begin
-	out2 = Mem2[addr2];
-     end
+    always@(posedge clock) begin //Port 1
+        if(we1) begin
+            Mem[addr1] = data_in1;
+        end
+        data_out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+    end
+
+    always@(posedge clock) begin //Port 2
+        if(we2) begin
+            Mem[addr2] = data_in2;
+        end
+        data_out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+    end
    
 endmodule // dual_port_ram
