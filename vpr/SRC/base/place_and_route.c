@@ -28,7 +28,6 @@ using namespace std;
 #include "place_macro.h"
 #include "verilog_writer2.h"
 #include "power.h"
-#include "endpoint_timing.h"
 
 /******************* Subroutines local to this module ************************/
 
@@ -184,10 +183,6 @@ bool place_and_route(enum e_operation operation,
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
 				/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
 			}
-
-			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
-                print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
-            }
 
 			if(GetPostSynthesisOption())
 			{
