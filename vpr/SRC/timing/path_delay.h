@@ -1,5 +1,6 @@
 #ifndef PATH_DELAY
 #define PATH_DELAY
+#include "vpr_types.h"
 
 #define DO_NOT_ANALYSE -1
 
