@@ -167,16 +167,17 @@ class LutInstance : public Instance {
 
         void print_verilog(std::ostream& os, int depth) override {
             //Instantiate the lut
-            os << indent(depth) << type_;
+            os << indent(depth) << type_ << " #(\n";
 
             std::stringstream param_ss;
             param_ss << lut_mask_;
-            os << " #(" << param_ss.str() << ") ";
+            os << indent(depth+1) << ".LUTMASK(" << param_ss.str() << ")\n";
 
-            os << inst_name_ << "(";
+            os << indent(depth) << ") " << inst_name_ << " (\n";
 
             //and all its named port connections
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
+                os << indent(depth+1);
                 os << "." + iter->first;
                 os << "(";
                 if(iter->second == "") {
@@ -198,8 +199,9 @@ class LutInstance : public Instance {
                 if(iter != --port_connections_.end()) {
                     os << ", ";
                 }
+                os << "\n";
             }
-            os << ");\n\n";
+            os << indent(depth) << ");\n\n";
         }
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth) override {
@@ -349,25 +351,25 @@ class LatchInstance : public Instance {
         void print_verilog(std::ostream& os, int depth=0) override {
             //Currently assume a standard DFF
             assert(type_ == Type::RISING_EDGE);
-            os << indent(depth) << "DFF" << " ";
-            os << "#(.INITIAL_VALUE(";
+            os << indent(depth) << "DFF" << " #(\n";
+            os << indent(depth+1) << ".INITIAL_VALUE(";
             if     (initial_value_ == LogicVal::TRUE)     os << "1'b1";
             else if(initial_value_ == LogicVal::FALSE)    os << "1'b0";
             else if(initial_value_ == LogicVal::DONTCARE) os << "1'bx";
             else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
             else assert(false);
-            os << "))" << " ";
-            os << instance_name_ << " ";
+            os << ")\n";
+            os << indent(depth) << ") " << instance_name_ << " (\n";
 
-            os << "(";
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                os << "." << iter->first << "(" << iter->second << ")";
+                os << indent(depth+1) << "." << iter->first << "(" << iter->second << ")";
 
                 if(iter != --port_connections_.end()) {
                     os << ", ";
                 }
+                os << "\n";
             }
-            os << ");";
+            os << indent(depth) << ");";
             os << "\n";
         }
 
@@ -562,8 +564,10 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
                     std::string inst_name = interconnect_name(driver_wire, sink_wire_tnode_pair.first);
-                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << inst_name;
-                    verilog_os_ << "(" << driver_wire << ", " << sink_wire_tnode_pair.first << ");\n\n";
+                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << inst_name << " (\n";
+                    verilog_os_ << indent(depth+2) << ".datain(" << driver_wire << "),\n";
+                    verilog_os_ << indent(depth+2) << ".dataout(" << sink_wire_tnode_pair.first << ")\n";
+                    verilog_os_ << indent(depth+1) << ");\n\n";
                 }
             }
 
