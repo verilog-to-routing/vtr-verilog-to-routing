@@ -17,7 +17,7 @@ void print_endpoint_timing(char* filename) {
 
     for(int inode = 0; inode < num_tnodes; inode++) {
         if(tnode[inode].type == TN_OUTPAD_SINK) {
-            char* identifier = logical_block[tnode[inode].block].name;
+            char* identifier = block[tnode[inode].block].name + 4; //Trim out:
             print_tnode_info(fp, inode, identifier);
         }
     }
