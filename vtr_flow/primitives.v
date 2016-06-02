@@ -4,7 +4,7 @@
 module LUT_3 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=8'b00000000
+   parameter LUT_MASK=8'b00000000
 ) (
     input in_2, 
     input in_1, 
@@ -21,7 +21,7 @@ module LUT_3 #(
 
     always@(*) begin
         selected_row = {a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+        out = LUT_MASK[selected_row];
     end
 
 endmodule
@@ -30,7 +30,7 @@ endmodule
 module LUT_4 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=16'b0000000000000000
+   parameter LUT_MASK=16'b0000000000000000
 ) (
     input in_3,
     input in_2,
@@ -49,7 +49,7 @@ module LUT_4 #(
 
     always@(*) begin
         selected_row = {a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+        out = LUT_MASK[selected_row];
     end
      
 endmodule
@@ -58,7 +58,7 @@ endmodule
 module LUT_5 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=32'b00000000000000000000000000000000
+   parameter LUT_MASK=32'b00000000000000000000000000000000
 ) (
     input in_4,
     input in_3,
@@ -79,7 +79,7 @@ module LUT_5 #(
 
     always@(*) begin
         selected_row = {a[4], a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+        out = LUT_MASK[selected_row];
     end
      
 endmodule
@@ -88,7 +88,7 @@ endmodule
 module LUT_6 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=64'b0000000000000000000000000000000000000000000000000000000000000000
+   parameter LUT_MASK=64'b0000000000000000000000000000000000000000000000000000000000000000
 ) (
     input in_5,
     input in_4,
@@ -110,7 +110,7 @@ module LUT_6 #(
 
     always@(*) begin
         selected_row = {a[5], a[4], a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+        out = LUT_MASK[selected_row];
     end
 
 endmodule
@@ -119,7 +119,7 @@ endmodule
 module LUT_7 #(
    //Truth table parameter represents the default function of the LUT.
    //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+   parameter LUT_MASK=128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ) (
     input in_6,
     input in_5,
@@ -143,12 +143,12 @@ module LUT_7 #(
 
     always@(*) begin
         selected_row = {a[6],a[5],a[4], a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+        out = LUT_MASK[selected_row];
     end
 
 endmodule
 
-//D-FlipFlop module with synchronous active low clear and preset.
+//D-FlipFlop module
 module DFF #(
     parameter INITIAL_VALUE=1'b0    
 ) (
@@ -158,7 +158,8 @@ module DFF #(
 );
 
     specify
-        (clock => Q)="";
+        (clock => Q) = "";
+        $setup(D, posedge clock, "");
     endspecify
 
     initial begin
