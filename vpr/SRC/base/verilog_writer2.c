@@ -171,7 +171,7 @@ class LutInstance : public Instance {
 
             std::stringstream param_ss;
             param_ss << lut_mask_;
-            os << indent(depth+1) << ".LUTMASK(" << param_ss.str() << ")\n";
+            os << indent(depth+1) << ".LUT_MASK(" << param_ss.str() << ")\n";
 
             os << indent(depth) << ") " << inst_name_ << " (\n";
 
