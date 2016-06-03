@@ -53,8 +53,21 @@ void print_tnode_info(FILE* fp, int inode, char* identifier) {
         assert(tnode[inode].type == TN_FF_SINK);
         fprintf(fp, "      \"tnode_type\": \"TN_FF_SINK\",\n");
     }
-    fprintf(fp, "      \"T_arr\": \"%g\",\n", tnode[inode].T_arr);
-    fprintf(fp, "      \"T_req\": \"%g\"\n", tnode[inode].T_req);
+
+    double T_arr = tnode[inode].T_arr;
+    double T_req = tnode[inode].T_req;
+
+    if(T_arr <= HUGE_NEGATIVE_FLOAT) {
+        //Un-specified (e.g. driven by constant generator
+        T_arr = 0.;
+    }
+    if(T_req >= HUGE_POSITIVE_FLOAT) {
+        //Un-specified (e.g. driven by constant generator
+        T_req = 0.;
+    }
+
+    fprintf(fp, "      \"T_arr\": \"%g\",\n", T_arr);
+    fprintf(fp, "      \"T_req\": \"%g\"\n", T_req);
      
     fprintf(fp, "    }");
 }
