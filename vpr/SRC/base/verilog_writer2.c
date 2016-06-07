@@ -24,6 +24,7 @@
 std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
 double get_delay_ps(int source_tnode, int sink_tnode);
+std::string escape_name(const char* name);
 
 //
 //File local type delcarations
@@ -677,21 +678,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             sdf_os_ << indent(depth) << ")\n";
         }
 
-        std::string escape_name(const char* name) {
-            std::string escaped_name = name;
-            for(size_t i = 0; i < escaped_name.size(); i++) {
-                //Replace invalid verilog characters (e.g. '^' , '~' , '[' , etc. ) with '_'
-                if(escaped_name[i] == '^' || 
-                    (int) escaped_name[i] < 48 || 
-                   ((int) escaped_name[i] > 57 && (int) escaped_name[i] < 65) || 
-                   ((int) escaped_name[i] > 90 && (int) escaped_name[i] < 97) ||
-                    (int) escaped_name[i] > 122) {
-                    escaped_name[i]='_';
-                }
-            }
-            return escaped_name;
-        }
-
         int find_num_inputs(const t_pb* pb) {
             int count = 0;
             for(int i = 0; i < pb->pb_graph_node->num_input_ports; i++) {
@@ -1227,3 +1213,19 @@ double get_delay_ps(int source_tnode, int sink_tnode) {
 
     return get_delay_ps(delay_sec);
 }
+
+std::string escape_name(const char* name) {
+    std::string escaped_name = name;
+    for(size_t i = 0; i < escaped_name.size(); i++) {
+        //Replace invalid verilog characters (e.g. '^' , '~' , '[' , etc. ) with '_'
+        if(escaped_name[i] == '^' || 
+            (int) escaped_name[i] < 48 || 
+           ((int) escaped_name[i] > 57 && (int) escaped_name[i] < 65) || 
+           ((int) escaped_name[i] > 90 && (int) escaped_name[i] < 97) ||
+            (int) escaped_name[i] > 122) {
+            escaped_name[i]='_';
+        }
+    }
+    return escaped_name;
+}
+
