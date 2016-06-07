@@ -1125,7 +1125,7 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 
 	for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 		for (j = 0; j < cur_pb->pb_graph_node->input_pin_class_size[i]; j++) {
-			if (cur_pb->pb_stats->input_pins_used[i][j] != OPEN)
+			if (cur_pb->pb_stats->input_pins_used[i][j] == OPEN)
 				inputs_avail++;
 		}
 	}
