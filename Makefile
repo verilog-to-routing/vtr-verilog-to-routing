@@ -45,4 +45,12 @@ clean:
 clean_vpr:
 	@ cd vpr && make clean
 
+get_titan_benchmarks:
+	@ echo "Warning: A typical Titan release is a ~1GB download, and uncompresses to ~10GB."
+	@ echo "Starting download in 15 seconds..."
+	@ sleep 15
+	@ ./vtr_flow/scripts/download_titan.py --vtr_flow_dir ./vtr_flow
+	@ echo "Titan architectures: vtr_flow/arch/titan"
+	@ echo "Titan benchmarks: vtr_flow/benchmarks/titan_blif"
+
 .PHONY: packages subdirs $(SUBDIRS)
