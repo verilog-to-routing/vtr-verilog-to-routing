@@ -18,6 +18,17 @@ vtr_flow/tasks/**/task_summary/
 quick_test/*
 
 #
+# Titan benchmarks
+#
+#   We ignore the Titan netlists because of thier large size, and the 
+#   Titan architectures since they need to be kept in sync with the
+#   netlists.
+#
+titan_release*.tar.gz
+vtr_flow/arch/titan/*.xml
+vtr_flow/benchmarks/titan_blif/*.blif
+
+#
 # Log Files
 #
 vpr_stdout.log

@@ -24,8 +24,8 @@
 <div id="selection_bar">
 	<div class="box_wrapper"><div class="selection_box" id="task_select">
 		<h5 class="box_header">Select tasks</h5>
-		{% for task_name, task_context in tasks.iteritems() %}
-	    <a class="task" title="{{ task_name }}|{{ task_context }}">{{task_name}}</a>
+		{% for task_name in tasks %}
+	    <a class="task" title="{{ task_name }}">{{task_name}}</a>
 	    {% endfor %}
     </div></div>
     <div class="box_wrapper"><div class="selection_box" id="x_box"> 
