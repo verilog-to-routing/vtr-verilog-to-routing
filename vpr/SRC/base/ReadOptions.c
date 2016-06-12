@@ -381,6 +381,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadOnOff(Args, &Options->hill_climbing_flag);
 	case OT_SWEEP_HANGING_NETS_AND_INPUTS:
 		return ReadOnOff(Args, &Options->sweep_hanging_nets_and_inputs);
+	case OT_ABSORB_BUFFER_LUTS:
+		return ReadOnOff(Args, &Options->absorb_buffer_luts);
 	case OT_TIMING_DRIVEN_CLUSTERING:
 		return ReadOnOff(Args, &Options->timing_driven);
 	case OT_CLUSTER_SEED:
