@@ -1,0 +1,3 @@
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif	d509ab7-dirty	success	-1	-1	148.281	211.806	200.384	-1	1301343	-1	-1	4767164	123883	90858	56112	-1	42	35	-1	-1		
+stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	d509ab7-dirty	success	-1	-1	114.098	240.323	141.963	-1	972074	-1	-1	4734848	126400	93171	63798	-1	353	707	-1	-1		
