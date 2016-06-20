@@ -46,4 +46,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script Parameters
-script_params=-track_memory_usage -routing_failure_predictor safe
+script_params=-track_memory_usage -routing_failure_predictor off

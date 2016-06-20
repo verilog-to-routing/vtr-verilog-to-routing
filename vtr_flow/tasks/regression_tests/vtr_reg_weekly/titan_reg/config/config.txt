@@ -40,5 +40,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-starting_stage vpr -no_timing -vpr_route_chan_width 300 -track_memory_usage
+script_params=-starting_stage vpr -no_timing -vpr_route_chan_width 300 -track_memory_usage -vpr_max_router_iterations 400
 
