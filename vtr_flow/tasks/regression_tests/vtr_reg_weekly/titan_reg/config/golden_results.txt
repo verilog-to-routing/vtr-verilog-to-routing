@@ -1,3 +1,14 @@
 arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-stratixiv_arch.simple.xml	sudoku_check_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	47.9069	6.21362	6.50133	-1	243874	-1	-1	653088	16792	16781	11621	-1	2	52	-1	-1		
-stratixiv_arch.simple.xml	wb_conmax_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	60.8079	10.973	18.6662	-1	200100	-1	-1	1709884	15377	16083	7903	-1	403	704	-1	-1		
+stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	182.891	53.6781	66.6217	-1	1159120	-1	-1	4722224	123883	90858	53247	-1	42	35	-1	-1		
+stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	397.023	76.8512	104.707	-1	1337042	-1	-1	2625688	92461	91581	51166	-1	173	137	-1	-1		
+stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	139.777	57.7317	70.7496	-1	871904	-1	-1	4689308	126400	93171	60662	-1	326	680	-1	-1		
+stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	372.162	108.98	77.8516	-1	1312185	-1	-1	4825664	140194	108500	60038	-1	111	151	-1	-1		
+stratixiv_arch.timing.xml	des90_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	763.978	164.977	825.525	-1	3385182	-1	-1	7375052	138584	109930	87637	-1	85	32	-1	-1		
+stratixiv_arch.timing.xml	SLAM_spheric_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	332.848	291.581	109.13	-1	2342363	-1	-1	3962024	156159	125680	90437	-1	323	156	-1	-1		
+stratixiv_arch.timing.xml	segmentation_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	761.915	560.677	102.544	-1	2695272	-1	-1	5257048	206053	168365	126593	-1	72	369	-1	-1		
+stratixiv_arch.timing.xml	bitonic_mesh_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	1592.71	313.78	280.604	-1	5436944	-1	-1	14089844	235691	191785	147006	-1	87	32	-1	-1		
+stratixiv_arch.timing.xml	dart_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	960.042	192.466	254.011	-1	2956574	-1	-1	6306612	224141	202440	122027	-1	23	46	-1	-1	Complex block 7040: cb.out:error, type: io	
+stratixiv_arch.timing.xml	openCV_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	952.836	264.645	190.123	-1	4072711	-1	-1	9442104	279575	212826	163402	-1	106	102	-1	-1		
+stratixiv_arch.timing.xml	stap_qrd_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	998.894	563.091	116.344	-1	3163775	-1	-1	7815576	287273	237349	132453	-1	68	82	-1	-1		
+stratixiv_arch.timing.xml	minres_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	1220.86	291.153	175.357	-1	3090783	-1	-1	10840712	312799	252688	165233	-1	129	100	-1	-1		
+stratixiv_arch.timing.xml	cholesky_bdti_stratixiv_arch_timing.blif	8d4eee4-dirty	success	-1	-1	970.188	339.891	139.731	-1	3117402	-1	-1	8793052	332534	256236	140297	-1	94	68	-1	-1		

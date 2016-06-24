@@ -1,0 +1,15 @@
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	bgm.v	8d4eee4-dirty	success	-1	-1	15.9421	190.546	118.953	-1	843665	496048	198300	1813184	47164	46679	45898	5640	257	32	0	11		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	blob_merge.v	8d4eee4-dirty	success	-1	-1	3.21823	22.6005	18.4523	-1	170277	48048	68056	422972	10891	10991	10156	1265	36	100	0	0		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	boundtop.v	8d4eee4-dirty	success	-1	-1	1.03392	10.7668	6.50545	-1	54509	37344	47952	193588	6101	6293	4447	518	275	192	2	0		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	LU8PEEng.v	8d4eee4-dirty	success	-1	-1	10.6835	152.842	90.1976	-1	623644	227180	144280	1915060	38333	38059	35485	4198	114	102	84	8		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	LU32PEEng.v	8d4eee4-dirty	success	-1	-1	58.7359	1024.44	450.179	-1	2587283	833252	407924	7398072	129156	127754	120770	14234	114	102	300	32		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	mcml.v	8d4eee4-dirty	success	-1	-1	67.8712	1041.32	3432.34	-1	2046091	1130868	632140	7514448	175492	173950	126364	15532	36	33	318	27		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	mkDelayWorker32B.v	8d4eee4-dirty	success	-1	-1	3.68403	67.1702	61.7923	-1	211564	82712	74440	1620052	12152	12705	9668	978	511	553	80	0		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	mkSMAdapter4B.v	8d4eee4-dirty	success	-1	-1	0.797132	13.3989	10.9569	-1	49214	31744	41368	334112	4222	4427	3244	362	195	205	10	0		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	or1200.v	8d4eee4-dirty	success	-1	-1	1.5605	12.1694	7.39537	-1	77403	35040	42256	194984	5523	5854	4833	540	385	394	4	1		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	raygentop.v	8d4eee4-dirty	success	-1	-1	0.784985	7.74929	6.53294	-1	49891	26580	45904	172144	4685	4801	3544	385	239	305	1	7		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	sha.v	8d4eee4-dirty	success	-1	-1	0.871941	5.74693	5.24843	-1	47158	50272	82836	138260	4053	4089	3143	389	38	36	0	0		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	stereovision0.v	8d4eee4-dirty	success	-1	-1	2.62349	42.6263	22.3556	-1	163189	107396	127316	670424	26370	26567	16284	2016	157	197	0	0		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	stereovision1.v	8d4eee4-dirty	success	-1	-1	2.71983	49.7132	45.4189	-1	260173	98180	158864	787100	26938	24803	18430	1984	133	145	0	38		
+k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	stereovision2.v	8d4eee4-dirty	success	-1	-1	12.3623	293.576	250.045	-1	1363496	123772	273712	4562196	65344	56364	53421	5447	149	182	0	201		
