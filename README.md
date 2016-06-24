@@ -57,8 +57,8 @@ For new developers, please do the tutorial in `tutorial/NewDeveloperTutorial.txt
 VTR development follows a classic centralized repository (svn-like) workflow. The 'master' branch is supposed to be the most current stable version of the project. Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull`) to keep in sync with the GitHub master. When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation. Unstable code should remain in the developer's local copy.
 
 We do automated testing of the trunk using BuildBot to verify functionality and Quality of Results (QoR).
-You can see the state of the trunk [here](http://islanders.eecg.utoronto.ca:8080/waterfall).
-QoR tracking links can be found [here](http://islanders.eecg.utoronto.ca:8080/).
+You can see the state of the trunk [here](http://betzgrp-pchenry.eecg.utoronto.ca:8080/waterfall).
+QoR tracking links can be found [here](http://betzgrp-pchenry.eecg.utoronto.ca:8080/).
 
 *IMPORTANT*: A broken build must be fixed at top priority. You break the build if your commit breaks any of the automated regression tests.
 
