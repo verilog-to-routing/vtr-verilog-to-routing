@@ -23,10 +23,10 @@ circuit_list_add=openCV_stratixiv_arch_timing.blif
 circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
 circuit_list_add=minres_stratixiv_arch_timing.blif
 circuit_list_add=cholesky_bdti_stratixiv_arch_timing.blif
+circuit_list_add=denoise_stratixiv_arch_timing.blif
+circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
+circuit_list_add=mes_noc_stratixiv_arch_timing.blif
 #circuit_list_add=sparcT2_core_stratixiv_arch_timing.blif
-#circuit_list_add=denoise_stratixiv_arch_timing.blif
-#circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
-#circuit_list_add=mes_noc_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing.xml
