@@ -2094,6 +2094,15 @@ static void ProcessLayout(INOUTP ezxml_t Node, OUTP struct s_arch *arch) {
 					"Grid aspect ratio is less than or equal to zero %g\n",
 					arch->clb_grid.Aspect);
 		}
+		/* Load initial width and calculate height if applicable */
+		arch->clb_grid.W = 1;
+		arch->clb_grid.H = 1;
+		Prop = FindProperty(Node, "init_width", false);
+		if (Prop != NULL) {
+			arch->clb_grid.W = my_atoi(Prop);
+			arch->clb_grid.H = nint(arch->clb_grid.W / arch->clb_grid.Aspect);
+			ezxml_set_attr(Node, "init_width", NULL);
+		}
 	}
 }
 
