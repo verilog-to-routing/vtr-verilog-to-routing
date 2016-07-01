@@ -233,6 +233,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		block[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
 		block[bnum].y = j; /* I need to set .x only as a done flag.         */
+		block[bnum].z = k;
 		block[bnum].is_fixed = true;
 
 		if (grid[i][j].type != IO_TYPE) {
