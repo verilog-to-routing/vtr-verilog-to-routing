@@ -1941,7 +1941,7 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 		assert(pin_index < num_phys_pins);
 		/* Number of physical pins bounds number of logical pins */
 
-		if (num_done_per_dir[width][height][side] >= num_dir[width][height][side] * Type->height){
+		if (num_done_per_dir[width][height][side] >= num_dir[width][height][side]){
 
 			continue;
 
