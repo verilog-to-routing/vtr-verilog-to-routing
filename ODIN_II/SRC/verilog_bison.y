@@ -378,6 +378,7 @@ delay_control: '@' '(' event_expression_list ')' 				{$$ = $3;}
 
 // 7 Expressions	{$$ = NULL;}
 event_expression_list: event_expression_list vOR event_expression		{$$ = newList_entry($1, $3);}
+        | event_expression_list ',' event_expression	                 	{$$ = newList_entry($1, $3);}
 	| event_expression							{$$ = newList(DELAY_CONTROL, $1);}
 	;
 
