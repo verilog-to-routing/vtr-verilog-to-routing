@@ -361,7 +361,7 @@ void build_rr_graph(
 					}
 					else {
 						vpr_printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d, Fc_out = %d, Fc_in = %d.\n",
-								type_descriptors[i].name, j, k, Fc_out[i][j], Fc_in[i][j]);
+								type_descriptors[i].name, j, k, Fc_out[i][j][k], Fc_in[i][j][k]);
 					}
 				}
 			}
