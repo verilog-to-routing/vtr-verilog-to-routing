@@ -1666,9 +1666,7 @@ static int *****alloc_and_load_pin_to_track_map(INP e_pin_type pin_type,
 	/* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
 	   used to index into the correct entries when loading up 'result' */
 	int *****result = NULL;			/* [0..num_pins-1][0..width-1][0..height-1][0..3][0..Fc-1] */
-	int ****next_result_index = NULL;	/* [0..num_pins-1][0..width-1][0..height-1][0..3] */
 	result = (int *****) alloc_matrix5(0, Type->num_pins-1, 0, Type->width-1, 0, Type->height-1, 0, 3, 0, max_pin_tracks-1, sizeof(int));
-	next_result_index = (int ****) alloc_matrix4(0, Type->num_pins-1, 0, Type->width-1, 0, Type->height-1, 0, 3, sizeof(int));
 	for (int ipin = 0; ipin < Type->num_pins; ipin++){
 		for (int iwidth = 0; iwidth < Type->width; iwidth++){
 			for (int iheight = 0; iheight < Type->height; iheight++){
@@ -1676,7 +1674,6 @@ static int *****alloc_and_load_pin_to_track_map(INP e_pin_type pin_type,
 					for (int itrack = 0; itrack < max_pin_tracks; itrack++){
 						result[ipin][iwidth][iheight][iside][itrack] = OPEN;
 					}
-					next_result_index[ipin][iwidth][iheight][iside] = 0;
 				}
 			}
 		}
@@ -1718,11 +1715,7 @@ static int *****alloc_and_load_pin_to_track_map(INP e_pin_type pin_type,
 						for (int iconn = 0; iconn < max_Fc; iconn++){
 							int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][iside][iconn];
 							int absolute_track_ind = relative_track_ind + seg_type_start_track;
-
-							int result_index = next_result_index[ipin][iwidth][iheight][iside];
-							next_result_index[ipin][iwidth][iheight][iside]++;
-
-							result[ipin][iwidth][iheight][iside][result_index] = absolute_track_ind;
+							result[ipin][iwidth][iheight][iside][iconn] = absolute_track_ind;
 						}
 					}
 				}
@@ -1740,13 +1733,6 @@ static int *****alloc_and_load_pin_to_track_map(INP e_pin_type pin_type,
 		/* next seg type will start at this track index */
 		seg_type_start_track += seg_type_tracks;
 	}
-
-	/* free temporary function variables */
-	free_matrix4(next_result_index, 0, Type->num_pins-1,
-			0, Type->width-1,
-			0, Type->height-1,
-			0, sizeof(int));
-	next_result_index = NULL;
 
 	return result;
 }
