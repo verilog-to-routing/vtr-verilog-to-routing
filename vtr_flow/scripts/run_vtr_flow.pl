@@ -110,7 +110,8 @@ my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
-
+my $valgrind 		    = 0;		
+my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 
@@ -148,6 +149,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-timeout" ) {
         $timeout = shift(@ARGV);
+    }
+    elsif ( $token eq "-valgrind" ) {
+        $valgrind = 1;
     }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
@@ -744,6 +748,11 @@ sub system_with_timeout {
 
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
+    if ($valgrind) {
+        my $program = shift @_;        
+	unshift @_, "valgrind";
+        splice @_, 4, 0, , @valgrind_args, $program;
+    }
     # Use a memory tracker to call executable if checking for memory usage
     if ($track_memory_usage) {
         my $program = shift @_;
