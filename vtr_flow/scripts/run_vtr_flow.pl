@@ -563,10 +563,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				close(VPROUT);
 				$/ = "\n";    # Restore for normal behaviour later in script
 
-				if ( $content =~ m/(.*Error.*)/i ) {
-					$error = $1;
-				}
-
 				if ( $content =~
 					/Best routing used a channel width factor of (\d+)/m )
 				{
@@ -714,10 +710,6 @@ if ( open( VPROUT, "< vpr.out" ) ) {
 	my $content = <VPROUT>;
 	close(VPROUT);
 	$/ = "\n";    # Restore for normal behaviour later in script
-
-	if ( $content =~ m/(.*Error.*)/i ) {
-		$error = $1;
-	}
 }
 print RESULTS "error=$error\n";
 
