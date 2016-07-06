@@ -1,0 +1,10 @@
+.model top
+.inputs a b clk
+.outputs out
+
+.names a b c
+11 1
+
+.latch c out re clk 0
+
+.end
