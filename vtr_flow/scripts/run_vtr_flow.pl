@@ -43,6 +43,7 @@ use File::Spec;
 use POSIX;
 use File::Copy;
 use FindBin;
+use File::Basename;
 
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
 use XML::TreePP;
@@ -311,18 +312,13 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 	  or die "Cannot find ACE executable ($ace_path)";
 }
 
-# Get circuit name (everything up to the first '.' in the circuit file)
-my ( $vol, $path, $circuit_file_name ) =
-  File::Spec->splitpath($circuit_file_path);
-$circuit_file_name =~ m/(.*)[.].*?/;
-my $benchmark_name = $1;
+#Extract the circuit/architecture name and filename
+my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
+my $circuit_file_name = $benchmark_name . $circuit_suffix;
 
-# Get architecture name
-$architecture_file_path =~ m/.*\/(.*?.xml)/;
-my $architecture_file_name = $1;
+my ($architecture_name, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
+my $architecture_file_name = $architecture_name . $arch_suffix;
 
-$architecture_file_name =~ m/(.*).xml$/;
-my $architecture_name = $1;
 print "$architecture_name/$benchmark_name...";
 
 # Get Memory Size
