@@ -703,6 +703,12 @@ static void add_subckt(bool doall, t_model *user_models) {
 								subckt_signal_name[i], subckt_name);
 					}
 					found_subckt_signal = true;
+					if(my_atoi(pin_number) >= port->size)
+					{
+						vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+								"Out-of-bound access to index %d of signal %s.%s [%d:0].\n",
+								my_atoi(pin_number), subckt_name, port->name, port->size-1);
+					}
 					if (port->is_clock) {
 						assert(
 								logical_block[num_logical_blocks - 1].clock_net
@@ -737,6 +743,12 @@ static void add_subckt(bool doall, t_model *user_models) {
 								subckt_signal_name[i], subckt_name);
 					}
 					found_subckt_signal = true;
+					if(my_atoi(pin_number) >= port->size)
+					{
+						vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+								"Out-of-bound access to index %d of signal %s.%s [%d:0].\n",
+								my_atoi(pin_number), subckt_name, port->name/*subckt_signal_name[i]*/, port->size-1);
+					}
 					logical_block[num_logical_blocks - 1].output_nets[port->index][my_atoi(
 							pin_number)] = add_vpack_net(circuit_signal_name[i],
 							DRIVER, num_logical_blocks - 1, port->index,
