@@ -341,6 +341,8 @@ They describe how a complex block interfaces with the inter-block world.
     Sets the number of tracks to which each logic block pin connects in each channel bordering the pin.
     The :math:`F_c` value :cite:`brown_fpgas` used is always the minimum of the specified :math:`F_c` and the channel width, :math:`W`.
 
+    When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
+
 
     **Special Case:**
 
