@@ -402,9 +402,19 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
 
 	if ( !$error_code ) {
-		$q =
-		  &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-			"-c", $odin_config_file_name );
+	#added so that valgrind will not run on odin because of existing memory errors 
+		if ($valgrind) {
+			$valgrind = 0;	
+			$q =
+		  		&system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+				"-c", $odin_config_file_name );
+			$valgrind = 1;
+		} 	
+		else {
+			$q =
+			  	&system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+				"-c", $odin_config_file_name );
+		}
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
@@ -765,6 +775,11 @@ sub system_with_timeout {
     }
 	# ( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
 	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
+	
+	#start valgrind output on new line 
+	if ($valgrind) {
+		print "\n";
+	}
 
 	# Save the pid of child process
 	my $pid = fork;
@@ -775,9 +790,10 @@ sub system_with_timeout {
 		chdir $_[3];
 
 		
-		open( STDOUT, "> $_[1]" );
-		open( STDERR, ">&STDOUT" );
-		
+		open( STDOUT, "> $_[1]" );	
+		if (!$valgrind) {		
+			open( STDERR, ">&STDOUT" );
+		}
 
 		# Copy the args and cut out first four
 		my @VPRARGS = @_;
