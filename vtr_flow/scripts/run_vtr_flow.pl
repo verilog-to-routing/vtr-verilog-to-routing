@@ -406,7 +406,7 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 		  &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 			"-c", $odin_config_file_name );
 
-		if ( -e $odin_output_file_path ) {
+		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
 				system "rm -f ${temp_dir}*.dot";
 				system "rm -f ${temp_dir}*.v";
@@ -430,11 +430,13 @@ if (    $starting_stage <= $stage_idx_abc
     my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
-
+    
+    #$valgrind = 0;
     $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
         $abc_commands);
-
-	if ( -e $abc_output_file_path ) {
+    #$valgrind = 1;
+	
+	if ( -e $abc_output_file_path and $q eq "success") {
 
 		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
@@ -462,8 +464,8 @@ if (    $starting_stage <= $stage_idx_ace
 		"-o",      $ace_output_act_name,
 		"-s", $seed
 	);
-
-	if ( -e $ace_output_blif_path ) {
+	
+	if ( -e $ace_output_blif_path and $q eq "success") {
 		if ( !$keep_intermediate_files ) {
 			system "rm -f $abc_output_file_path";
 			#system "rm -f ${temp_dir}*.rc";
