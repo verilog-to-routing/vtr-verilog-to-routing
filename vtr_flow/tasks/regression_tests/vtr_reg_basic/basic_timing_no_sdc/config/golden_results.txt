@@ -1,2 +1,2 @@
 arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k6_frac_N10_mem32K_40nm.xml	ch_intrinsics.v	d509ab7-dirty	success	54	3.82849	0.832327	0.483405	0.786849	0.070315	4171	7712	29932	30680	765	895	415	36	99	130	1	0		
+k6_N10_mem32K_40nm.xml	mkPktMerge.v	d509ab7-dirty	success	42	4.71788	0.511047	1.60024	14.7753	1.53807	15255	16004	34832	136224	1034	1190	973	23	311	156	15	0		

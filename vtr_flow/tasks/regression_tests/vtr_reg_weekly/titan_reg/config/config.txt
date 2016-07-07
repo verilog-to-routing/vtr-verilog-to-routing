@@ -10,12 +10,26 @@ circuits_dir=benchmarks/titan_blif
 archs_dir=arch/titan
 
 # Add circuits to list to sweep
-circuit_list_add=sudoku_check_stratixiv_arch_simple.blif
-circuit_list_add=wb_conmax_stratixiv_arch_simple.blif
-
+circuit_list_add=neuron_stratixiv_arch_timing.blif
+circuit_list_add=sparcT1_core_stratixiv_arch_timing.blif
+circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
+circuit_list_add=cholesky_mc_stratixiv_arch_timing.blif
+circuit_list_add=des90_stratixiv_arch_timing.blif
+circuit_list_add=SLAM_spheric_stratixiv_arch_timing.blif
+circuit_list_add=segmentation_stratixiv_arch_timing.blif
+circuit_list_add=bitonic_mesh_stratixiv_arch_timing.blif
+circuit_list_add=dart_stratixiv_arch_timing.blif
+circuit_list_add=openCV_stratixiv_arch_timing.blif
+circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
+circuit_list_add=minres_stratixiv_arch_timing.blif
+circuit_list_add=cholesky_bdti_stratixiv_arch_timing.blif
+circuit_list_add=denoise_stratixiv_arch_timing.blif
+circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
+circuit_list_add=mes_noc_stratixiv_arch_timing.blif
+#circuit_list_add=sparcT2_core_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
-arch_list_add=stratixiv_arch.simple.xml
+arch_list_add=stratixiv_arch.timing.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -26,5 +40,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-starting_stage vpr -no_timing -vpr_route_chan_width 300 -track_memory_usage
+script_params=-starting_stage vpr -no_timing -vpr_route_chan_width 300 -track_memory_usage -vpr_max_router_iterations 400
 

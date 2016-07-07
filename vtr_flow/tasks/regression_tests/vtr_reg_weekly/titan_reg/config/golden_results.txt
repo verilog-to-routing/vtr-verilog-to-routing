@@ -1,3 +1,17 @@
 arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-stratixiv_arch.simple.xml	sudoku_check_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	47.9069	6.21362	6.50133	-1	243874	-1	-1	653088	16792	16781	11621	-1	2	52	-1	-1		
-stratixiv_arch.simple.xml	wb_conmax_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	60.8079	10.973	18.6662	-1	200100	-1	-1	1709884	15377	16083	7903	-1	403	704	-1	-1		
+stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	156.271	39.5496	59.0342	-1	1159120	-1	-1	4722036	123883	90858	53247	-1	42	35	-1	-1		
+stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	382.256	75.5988	99.3421	-1	1337042	-1	-1	2625688	92461	91581	51166	-1	173	137	-1	-1		
+stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	98.1974	41.8137	51.3192	-1	871904	-1	-1	4689136	126400	93171	60662	-1	326	680	-1	-1		
+stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	359.839	85.6077	67.368	-1	1312185	-1	-1	4825696	140194	108500	60038	-1	111	151	-1	-1		
+stratixiv_arch.timing.xml	des90_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	651.852	156.52	661.769	-1	3385182	-1	-1	7374932	138584	109930	87637	-1	85	32	-1	-1		
+stratixiv_arch.timing.xml	SLAM_spheric_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	323.655	269.787	88.4802	-1	2342363	-1	-1	3962032	156159	125680	90437	-1	323	156	-1	-1		
+stratixiv_arch.timing.xml	segmentation_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	573.071	443.312	83.5147	-1	2695272	-1	-1	5256888	206053	168365	126593	-1	72	369	-1	-1		
+stratixiv_arch.timing.xml	bitonic_mesh_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	1714.3	326.866	238.034	-1	5436944	-1	-1	14089860	235691	191785	147006	-1	87	32	-1	-1		
+stratixiv_arch.timing.xml	dart_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	942.563	213.257	295.279	-1	2956574	-1	-1	6306576	224141	202440	122027	-1	23	46	-1	-1	Complex block 7040: cb.out:error, type: io	
+stratixiv_arch.timing.xml	openCV_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	986.702	286.436	196.696	-1	4072711	-1	-1	9442212	279575	212826	163402	-1	106	102	-1	-1		
+stratixiv_arch.timing.xml	stap_qrd_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	1056.63	633.398	130.103	-1	3163775	-1	-1	7815552	287273	237349	132453	-1	68	82	-1	-1		
+stratixiv_arch.timing.xml	minres_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	1209.46	318.135	187.906	-1	3090783	-1	-1	10840720	312799	252688	165233	-1	129	100	-1	-1		
+stratixiv_arch.timing.xml	cholesky_bdti_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	932.335	370.495	151.08	-1	3117402	-1	-1	8793232	332534	256236	140297	-1	94	68	-1	-1		
+stratixiv_arch.timing.xml	denoise_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	1502.52	1654.44	275.279	-1	5379155	-1	-1	10009972	425585	343756	259057	-1	264	588	-1	-1		
+stratixiv_arch.timing.xml	gsm_switch_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	3829.84	698.162	300.178	-1	6653476	-1	-1	17456512	512178	491990	184904	-1	100	38	-1	-1		
+stratixiv_arch.timing.xml	mes_noc_stratixiv_arch_timing.blif	afc7a47-dirty	success	-1	-1	2852.57	1794.94	2239.11	-1	7980687	-1	-1	13331696	579537	549053	315886	-1	3	2	-1	-1		

@@ -1,7 +1,7 @@
 arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k6_frac_N10_mem32K_40nm.xml	alu4.blif	a6e4991-dirty	success	44	5.64834	3.95464	0.782008	2.3009	0.18991	11576	-1	-1	50296	1536	1544	683	106	14	8	0	0		
-k6_frac_N10_mem32K_40nm.xml	apex4.blif	a6e4991-dirty	success	52	5.5182	2.59393	0.746453	5.59316	0.232289	13413	-1	-1	48788	1271	1290	692	89	9	19	0	0		
-k6_frac_N10_mem32K_40nm.xml	bigkey.blif	a6e4991-dirty	success	52	2.32217	3.9341	1.22014	1.56071	0.178466	6956	-1	-1	84336	2152	2349	540	120	229	197	0	0		
-k6_frac_N10_mem32K_40nm.xml	diffeq.blif	a6e4991-dirty	success	48	6.84892	2.99979	0.885293	1.99601	0.162102	11376	-1	-1	106208	1935	1974	884	94	64	39	0	0		
-k6_frac_N10_mem32K_40nm.xml	or1200.latren.blif	a6e4991-dirty	success	72	26.5857	4.50117	5.31365	219.071	1.09845	57538	-1	-1	162144	4167	4498	2421	246	385	394	2	1		
-k6_frac_N10_mem32K_40nm.xml	sha.latren.blif	a6e4991-dirty	success	48	21.6277	5.23104	2.02713	10.2153	0.333915	21464	-1	-1	86708	3161	3197	1298	201	38	36	0	0		
+k6_frac_N10_mem32K_40nm.xml	alu4.blif	d509ab7-dirty	success	46	5.70686	5.31747	1.19092	2.11272	0.348993	11313	-1	-1	54816	1536	1544	683	106	14	8	0	0		
+k6_frac_N10_mem32K_40nm.xml	apex4.blif	d509ab7-dirty	success	52	5.52897	3.32839	1.09423	4.49994	0.326358	13363	-1	-1	53136	1271	1290	692	89	9	19	0	0		
+k6_frac_N10_mem32K_40nm.xml	bigkey.blif	d509ab7-dirty	success	52	2.30872	4.49164	1.28471	1.83341	0.279265	6943	-1	-1	87948	2152	2349	540	120	229	197	0	0		
+k6_frac_N10_mem32K_40nm.xml	diffeq.blif	d509ab7-dirty	success	48	6.85401	4.24751	1.21857	2.37817	0.363431	11549	-1	-1	107056	1935	1974	884	94	64	39	0	0		
+k6_frac_N10_mem32K_40nm.xml	or1200.latren.blif	d509ab7-dirty	success	72	26.5691	5.70451	6.62634	80.7175	1.32412	58215	-1	-1	172420	4167	4498	2417	246	385	394	2	1		
+k6_frac_N10_mem32K_40nm.xml	sha.latren.blif	d509ab7-dirty	success	50	21.9032	5.57546	2.85549	6.15622	0.399589	20180	-1	-1	94580	3161	3197	1295	200	38	36	0	0		

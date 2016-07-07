@@ -44,6 +44,7 @@ use POSIX;
 use File::Copy;
 use FindBin;
 use File::Find;
+use File::Basename;
 
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
 use XML::TreePP;
@@ -111,7 +112,8 @@ my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
-
+my $valgrind 		    = 0;		
+my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 
@@ -149,6 +151,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-timeout" ) {
         $timeout = shift(@ARGV);
+    }
+    elsif ( $token eq "-valgrind" ) {
+        $valgrind = 1;
     }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
@@ -309,18 +314,13 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 	  or die "Cannot find ACE executable ($ace_path)";
 }
 
-# Get circuit name (everything up to the first '.' in the circuit file)
-my ( $vol, $path, $circuit_file_name ) =
-  File::Spec->splitpath($circuit_file_path);
-$circuit_file_name =~ m/(.*)[.].*?/;
-my $benchmark_name = $1;
+#Extract the circuit/architecture name and filename
+my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
+my $circuit_file_name = $benchmark_name . $circuit_suffix;
 
-# Get architecture name
-$architecture_file_path =~ m/.*\/(.*?.xml)/;
-my $architecture_file_name = $1;
+my ($architecture_name, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
+my $architecture_file_name = $architecture_name . $arch_suffix;
 
-$architecture_file_name =~ m/(.*).xml$/;
-my $architecture_name = $1;
 print "$architecture_name/$benchmark_name...";
 
 # Get Memory Size
@@ -343,23 +343,19 @@ if ( $lut_size < 1 ) {
 # Get memory size
 $mem_size = xml_find_mem_size($xml_tree);
 
-my $odin_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
+my $odin_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
 my $odin_output_file_path = "$temp_dir$odin_output_file_name";
 
-my $abc_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
+my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
-my $ace_output_blif_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_ace);
+my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace);
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
 my $ace_output_act_name = "$benchmark_name" . ".act";
 my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 
-my $prevpr_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr);
+my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr);
 my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
 my $vpr_route_output_file_name = "$benchmark_name.route";
@@ -375,8 +371,7 @@ my $architecture_file_path_new = "$temp_dir$architecture_file_name";
 copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
-my $circuit_file_path_new =
-  "$temp_dir$benchmark_name" . file_ext_for_stage( $starting_stage - 1 );
+my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage( $starting_stage - 1 );
 copy( $circuit_file_path, $circuit_file_path_new );
 $circuit_file_path = $circuit_file_path_new;
 
@@ -396,10 +391,8 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	#system "sed 's/PPP/$mem_size/g' < temp3.xml > circuit_config.xml";
 
 	file_find_and_replace( $odin_config_file_path, "XXX", $circuit_file_name );
-	file_find_and_replace( $odin_config_file_path, "YYY",
-		$architecture_file_name );
-	file_find_and_replace( $odin_config_file_path, "ZZZ",
-		$odin_output_file_name );
+	file_find_and_replace( $odin_config_file_path, "YYY", $architecture_file_name );
+	file_find_and_replace( $odin_config_file_path, "ZZZ", $odin_output_file_name );
 	file_find_and_replace( $odin_config_file_path, "PPP", $mem_size );
 	file_find_and_replace( $odin_config_file_path, "MMM", $min_hard_mult_size );
 	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
@@ -762,6 +755,11 @@ sub system_with_timeout {
 
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
+    if ($valgrind) {
+        my $program = shift @_;        
+	unshift @_, "valgrind";
+        splice @_, 4, 0, , @valgrind_args, $program;
+    }
     # Use a memory tracker to call executable if checking for memory usage
     if ($track_memory_usage) {
         my $program = shift @_;

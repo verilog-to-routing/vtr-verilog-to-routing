@@ -1,3 +1,4 @@
+#
 ############################################
 # Configuration file for running experiments
 ##############################################
@@ -6,19 +7,37 @@
 circuits_dir=benchmarks/blif/4
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/bidir
 
 # Path to directory of SDC files to use
-sdc_dir = sdc
+sdc_dir=sdc
 
 # Add circuits to list to sweep
+circuit_list_add=alu4.blif
+circuit_list_add=apex2.blif
+circuit_list_add=apex4.blif
+circuit_list_add=bigkey.blif
+circuit_list_add=clma.blif
+circuit_list_add=des.blif
 circuit_list_add=diffeq.blif
+circuit_list_add=dsip.blif
+circuit_list_add=elliptic.blif
+circuit_list_add=ex1010.blif
 circuit_list_add=ex5p.blif
+circuit_list_add=frisc.blif
+circuit_list_add=misex3.blif
+circuit_list_add=pdc.blif
 circuit_list_add=s298.blif
+circuit_list_add=s38417.blif
+circuit_list_add=s38584.1.blif
+circuit_list_add=seq.blif
+circuit_list_add=spla.blif
+circuit_list_add=tseng.blif
+
 
 # Add architectures to list to sweep
-arch_list_add=k4_N4_90nm.xml
- 
+arch_list_add=k4_n4_v7_bidir.xml
+
 # Parse info and how to parse
 parse_file=vpr_standard.txt
 

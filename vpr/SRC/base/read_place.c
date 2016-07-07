@@ -148,7 +148,10 @@ void read_user_pad_loc(char *pad_loc_file) {
 	vpr_printf_info("\n");
 	vpr_printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
 	fp = fopen(pad_loc_file, "r");
-
+	if (!fp) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
+				"'%s' - Cannot find IO pads location file.\n", 
+				pad_loc_file);
+		
 	hash_table = alloc_hash_table();
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		if (block[iblk].type == IO_TYPE) {
