@@ -432,11 +432,17 @@ if (    $starting_stage <= $stage_idx_abc
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
     
     #added so that valgrind will not run on abc because of existing memory errors 
-    $valgrind = 0;
-    $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-        $abc_commands);
-    $valgrind = 1;
-	
+    if ($valgrind) {
+            $valgrind = 0;
+	    $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+		$abc_commands);
+            $valgrind = 1;
+    }
+    else {
+	$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+            $abc_commands);
+    }
+
 	if ( -e $abc_output_file_path and $q eq "success") {
 
 		#system "rm -f abc.out";
