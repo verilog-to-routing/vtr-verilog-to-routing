@@ -369,14 +369,14 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
     }
 	processPorts(inputs, pb, pb_route, vpack_net_hash, loc_data);
 
-    auto outputs = Parent.child("inputs");
+    auto outputs = Parent.child("outputs");
     if(!outputs) {
         vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(Parent),
                   "Expected child 'outputs' node.\n");
     }
 	processPorts(outputs, pb, pb_route, vpack_net_hash, loc_data);
 
-    auto clocks = Parent.child("inputs");
+    auto clocks = Parent.child("clocks");
     if(!clocks) {
         vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(Parent),
                   "Expected child 'clocks' node.\n");
@@ -662,6 +662,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
             }
         }
 
+        vpr_printf_info("Parent Name: %s\n", Parent.name());
         //Process the input and clock ports
         if (0 == strcmp(Parent.name(), "inputs") || 0 == strcmp(Parent.name(), "clocks")) {
             if (pb->parent_pb == NULL) {
@@ -741,8 +742,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
             if (pb->pb_graph_node->pb_type->num_modes == 0) {
                 /* primitives are drivers of nets */
                 for (i = 0; i < num_tokens; i++) {
-                    rr_node_index =
-                            pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+                    rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         temp_hash = get_hash_entry(vpack_net_hash, pins[i].c_str());
                         if (temp_hash == NULL) {
@@ -830,54 +830,56 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 			assert(0);
 		}
 
-		/* First determine nets external to complex blocks */
 		assert( block_list[i].type->pb_type->num_input_pins
 						+ block_list[i].type->pb_type->num_output_pins
 						+ block_list[i].type->pb_type->num_clock_pins
 						== block_list[i].type->num_pins / block_list[i].type->capacity);
 
+        //Load the external nets connected to input ports
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_input_ports; j++) {
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_input_pins[j]; k++) {
-				pb_graph_pin =
-						&block_list[i].pb->pb_graph_node->input_pins[j][k];
+				pb_graph_pin = &block_list[i].pb->pb_graph_node->input_pins[j][k];
 				assert(pb_graph_pin->pin_count_in_cluster == ipin);
+
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
-					block_list[i].nets[ipin] =
-							add_net_to_hash(ext_nhash,
-									nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
-									ext_ncount);
+					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
+                                                nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
+                                                ext_ncount);
+                    vpr_printf_info("Block %d: Input Pin: %d Net: %s\n", i, ipin, nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
 				ipin++;
 			}
 		}
+
+        //Load the external nets connected to output ports
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_output_ports; j++) {
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_output_pins[j]; k++) {
-				pb_graph_pin =
-						&block_list[i].pb->pb_graph_node->output_pins[j][k];
+				pb_graph_pin = &block_list[i].pb->pb_graph_node->output_pins[j][k];
 				assert(pb_graph_pin->pin_count_in_cluster == ipin);
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
-					block_list[i].nets[ipin] =
-							add_net_to_hash(ext_nhash,
-							nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
-									ext_ncount);
+					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
+                                                nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
+                                                ext_ncount);
+                    vpr_printf_info("Block %d: Output Pin: %d Net: %s\n", i, ipin, nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
 				ipin++;
 			}
 		}
+
+        //Load the external nets connected to clock ports
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_clock_ports; j++) {
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_clock_pins[j]; k++) {
-				pb_graph_pin =
-						&block_list[i].pb->pb_graph_node->clock_pins[j][k];
+				pb_graph_pin = &block_list[i].pb->pb_graph_node->clock_pins[j][k];
 				assert(pb_graph_pin->pin_count_in_cluster == ipin);
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
-					block_list[i].nets[ipin] =
-							add_net_to_hash(ext_nhash,
-								nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
-									ext_ncount);
+					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
+                                                nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
+                                                ext_ncount);
+                    vpr_printf_info("Block %d: Clock Pin: %d Net: %s\n", i, ipin, nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -891,6 +893,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 
 	/* alloc and partially load the list of external nets */
 	(*ext_nets) = alloc_and_init_netlist_from_hash(*ext_ncount, ext_nhash);
+
 	/* Load global nets */
 	num_tokens = circuit_clocks.size();
 
@@ -902,8 +905,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		for (j = 0; j < block_list[i].type->num_pins; j++) {
 			netnum = block_list[i].nets[j];
 			if (netnum != OPEN) {
-				if (RECEIVER
-						== block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type) {
+				if (RECEIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type) {
 					count[netnum]++;
 					if (count[netnum] > (*ext_nets)[netnum].num_sinks) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
@@ -918,9 +920,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					(*ext_nets)[netnum].is_global =
 							block_list[i].type->is_global_pin[j]; /* Error check performed later to ensure no mixing of global and non-global signals */
 				} else {
-					assert(
-							DRIVER
-									== block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
+					assert(DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
 					assert((*ext_nets)[netnum].node_block[0] == OPEN);
 					(*ext_nets)[netnum].node_block[0] = i;
 					(*ext_nets)[netnum].node_block_pin[0] = j;
