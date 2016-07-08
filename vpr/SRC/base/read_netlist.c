@@ -81,8 +81,9 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
 void read_netlist(INP const char *net_file, INP const t_arch *arch,
 		OUTP int *L_num_blocks, OUTP struct s_block *block_list[],
 		OUTP int *L_num_nets, OUTP struct s_net *net_list[]) {
+	clock_t begin = clock();
 	int i;
-	int bcount;
+	int bcount = 0;
 	struct s_block *blist;
 	int ext_ncount;
 	struct s_net *ext_nlist;
@@ -92,7 +93,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	int num_primitives = 0;
 
 	/* Parse the file */
-	vpr_printf_info("Begin parsing packed FPGA netlist file.\n");
+	vpr_printf_info("Begin loading packed FPGA netlist file.\n");
     pugi::xml_document doc;
     auto load_result = doc.load_file(net_file);
     if(!load_result) {
@@ -101,7 +102,6 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
     }
     auto loc_data = pugiloc::loc_data(net_file);
 
-	vpr_printf_info("Finished parsing packed FPGA netlist file.\n");
 
 	/* Save netlist file's name in file-scoped variable */
 	netlist_file_name = net_file;
@@ -244,6 +244,10 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	free_hash_table(logical_block_hash);
 	free_hash_table(vpack_net_hash);
+
+	clock_t end = clock();
+
+	vpr_printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 /**
@@ -662,7 +666,6 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
             }
         }
 
-        vpr_printf_info("Parent Name: %s\n", Parent.name());
         //Process the input and clock ports
         if (0 == strcmp(Parent.name(), "inputs") || 0 == strcmp(Parent.name(), "clocks")) {
             if (pb->parent_pb == NULL) {
@@ -845,7 +848,6 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
                                                 ext_ncount);
-                    vpr_printf_info("Block %d: Input Pin: %d Net: %s\n", i, ipin, nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -862,7 +864,6 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
                                                 ext_ncount);
-                    vpr_printf_info("Block %d: Output Pin: %d Net: %s\n", i, ipin, nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -879,7 +880,6 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
                                                 ext_ncount);
-                    vpr_printf_info("Block %d: Clock Pin: %d Net: %s\n", i, ipin, nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
