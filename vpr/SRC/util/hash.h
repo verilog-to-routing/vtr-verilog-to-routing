@@ -33,6 +33,6 @@ struct s_hash *get_next_hash(struct s_hash **hash_table,
 		struct s_hash_iterator *hash_iterator);
 struct s_hash *insert_in_hash_table(struct s_hash **hash_table, char *name,
 		int next_free_index);
-struct s_hash *get_hash_entry(struct s_hash **hash_table, char *name);
-int hash_value(char *name);
+struct s_hash *get_hash_entry(struct s_hash **hash_table, const char *name);
+int hash_value(const char *name);
 void get_hash_stats(struct s_hash **hash_table, char *hash_table_name);
