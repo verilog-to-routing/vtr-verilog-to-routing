@@ -499,12 +499,15 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = NULL;
                 pb->child_pbs[i][pb_index].logical_block = OPEN;
-                /*
-                 *lookahead = FindElement(Cur, "outputs", false);
-                 */
-                auto lookahead = child.child("outputs").child("port");
-                if (lookahead) {
-                    auto mode = lookahead.attribute("mode");
+
+                auto lookahead1 = child.child("outputs");
+                if (lookahead1) {
+                    auto lookahead2 = lookahead1.child("port");
+                    if(!lookahead2) {
+                        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
+                                  "Failed to find expect lookahead nodes <outputs> <port> of %s", child.name());
+                    }
+                    auto mode = child.attribute("mode");
 
                     pb->child_pbs[i][pb_index].mode = 0;
                     found = false;
