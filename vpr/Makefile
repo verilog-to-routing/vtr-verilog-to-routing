@@ -10,7 +10,7 @@
 ENABLE_GRAPHICS = false
 # can be true or false
 
-BUILD_TYPE = release
+BUILD_TYPE = debug
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
@@ -37,14 +37,14 @@ OTHER_DIR := $(OTHER_DIR) \
 	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
 
-WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g -O0 
 #Potentially expensive asserts that should only be used if you're really scared
 ADDITIONAL_DEBUG_FLAGS = -DEXPENSIVE_ASSERTS
 PROFILE_FLAGS = -DPROFILE
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -I../libarchfpga/include
+INC_FLAGS = -I../libarchfpga/include -I ../libpugixml/src -I ../libvtrutil/src
 DEFINES := -D BUILD_VERSION=\""$(BUILD_VERSION)"\" -D BUILD_DATE=\""$(BUILD_DATE)"\"
 
 FLAGS = $(INC_FLAGS) $(WARN_FLAGS) $(DEFINES) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++0x
@@ -107,20 +107,36 @@ packages:
 libarchfpga:
 	@ cd ../libarchfpga && make
 
+libpugixml:
+	@ cd ../libpugixml && make
+
+libvtrutil:
+	@ cd ../libvtrutil && make
+
 libsdc_parse:
 	@ cd ../libsdc_parse && make VERBOSITY=0
 
 liblog:
 	@ cd ../liblog && make liblog.a
 
-libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse liblog
+libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse liblog libpugixml libvtrutil
 	@ cp ../libarchfpga/libarchfpga.a $@
 	@ cp ../libsdc_parse/libsdc_parse.a .
-	@#Ugly. Extract libsdc_parse.a into OBJ/libsdc_parse
-	@#and then have ar archive results
+	@#Extract libsdc_parse.a into OBJ/libsdc_parse and then have ar archive results
 	@ mkdir -p  OBJ/libsdc_parse/
 	@ cd OBJ/libsdc_parse && ar x ../../libsdc_parse.a 
 	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o
+	@#Extract libpugixml.a into OBJ/libpugixml and then have ar archive results
+	@ cp ../libpugixml/libpugixml.a .
+	@ mkdir -p  OBJ/libpugixml/
+	@ cd OBJ/libpugixml && ar x ../../libpugixml.a 
+	@ ar rcs $@ $(OBJ) OBJ/libpugixml/*.o
+	@#Extract libvtrutil.a into OBJ/libvtrutil and then have ar archive results
+	@ cp ../libvtrutil/libvtrutil.a .
+	@ mkdir -p  OBJ/libvtrutil/
+	@ cd OBJ/libvtrutil && ar x ../../libvtrutil.a 
+	@ ar rcs $@ $(OBJ) OBJ/libvtrutil/*.o
+	@#Remove main
 	@ ar d $@ main.o
 
 # Enable a second round of expansion so that we may include
@@ -143,9 +159,11 @@ $(OBJ_DIRS):
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
 	cd ../libarchfpga && make clean
+	cd ../libpugixml && make clean
 	cd ../libsdc_parse && make clean
 	cd ../liblog && make clean
 	rm -f $(OBJ_DIR)/libsdc_parse/*
+	rm -f $(OBJ_DIR)/libpugixml/*
 
 clean_coverage: clean
 	rm -rf ./usr
