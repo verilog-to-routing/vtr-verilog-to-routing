@@ -591,13 +591,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
         const pugiloc::loc_data& loc_data) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
-    /*
-	 *ezxml_t Cur, Prev;
-	 *const char *Prop;
-     */
     std::vector<std::string> pins;
-	const char *pin_name;
-    char * interconnect_name;
 	int rr_node_index;
 	t_pb_graph_pin *** pin_node;
 	int *num_ptrs, num_sets;
@@ -609,6 +603,11 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 
         auto port_name = Cur.attribute("name");
 
+        //Determine the port index on the pb
+        //
+        //Traverse all the ports on the pb until we find the matching port name,
+        //at that point in_port/clock_port/output_port will be the index associated
+        //with that port
         in_port = out_port = clock_port = 0;
         found = false;
         for (i = 0; i < pb->pb_graph_node->pb_type->num_ports; i++) {
@@ -634,8 +633,11 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     pb->pb_graph_node->placement_index);
         }
 
+        //Extract all the pins for this port
         pins = vtrutil::split(Cur.text().get(), " \t\n");
         num_tokens = pins.size();
+
+        //Check that the number of pins from the netlist file matches the pb port's number of pins
         if (0 == strcmp(Parent.name(), "inputs")) {
             if (num_tokens != pb->pb_graph_node->num_input_pins[in_port]) {
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
@@ -659,39 +661,54 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                         pb->pb_graph_node->placement_index);
             }
         }
-        if (0 == strcmp(Parent.name(), "inputs")
-                || 0 == strcmp(Parent.name(), "clocks")) {
+
+        //Process the input and clock ports
+        if (0 == strcmp(Parent.name(), "inputs") || 0 == strcmp(Parent.name(), "clocks")) {
             if (pb->parent_pb == NULL) {
-                /* top-level, connections are nets to route */
+                //We are processing a top-level pb, so these pins connect to inter-block nets
                 for (i = 0; i < num_tokens; i++) {
+                    //Set rr_node_index to the pb_route for the appropriate port
                     if (0 == strcmp(Parent.name(), "inputs"))
                         rr_node_index = pb->pb_graph_node->input_pins[in_port][i].pin_count_in_cluster;
                     else
                         rr_node_index = pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
+
+
                     if (strcmp(pins[i].c_str(), "open") != 0) {
+                        //For connected pins look-up the inter-block net index associated with it
                         temp_hash = get_hash_entry(vpack_net_hash, pins[i].c_str());
                         if (temp_hash == NULL) {
                             vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
                                     ".blif and .net do not match, unknown net %s found in .net file.\n.",
                                     pins[i].c_str());
                         }
+                        //Mark the associated inter-block net
                         pb_route[rr_node_index].atom_net_idx = temp_hash->index;
                     }						
                 }
             } else {
+                //We are processing an internal pb
                 for (i = 0; i < num_tokens; i++) {
                     if (0 == strcmp(pins[i].c_str(), "open")) {
                         continue;
                     }
-                    interconnect_name = (char*) strstr(pins[i].c_str(), (const char*) "->");
-                    *interconnect_name = '\0';
-                    interconnect_name += 2;
-                    pin_name = pins[i].c_str();
+
+                    //Extract the portion of the pin name after '->'
+                    //
+                    //e.g. 'memory.addr1[0]->address1' becomes 'address1'
+                    size_t loc = pins[i].find("->");
+                    assert(loc != std::string::npos);
+
+                    std::string pin_name = pins[i].substr(0, loc);
+
+                    loc += 2; //Skip over the '->'
+                    std::string interconnect_name = pins[i].substr(loc, std::string::npos);
+
                     pin_node = alloc_and_load_port_pin_ptrs_from_string(
                                     pb->pb_graph_node->pb_type->parent_mode->interconnect[0].line_num,
                                     pb->pb_graph_node->parent_pb_graph_node,
                                     pb->pb_graph_node->parent_pb_graph_node->child_pb_graph_nodes[pb->parent_pb->mode],
-                                    pin_name, &num_ptrs, &num_sets, true,
+                                    pin_name.c_str(), &num_ptrs, &num_sets, true,
                                     true);
                     assert(num_sets == 1 && num_ptrs[0] == 1);
                     if (0 == strcmp(Parent.name(), "inputs"))
@@ -701,7 +718,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (0 == strcmp(interconnect_name, pin_node[0][0]->output_edges[j]->interconnect->name)) {
+                        if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
                             found = true;
                             break;
                         }
@@ -714,7 +731,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                                 "Unknown interconnect %s connecting to pin %s.\n",
-                                interconnect_name, pin_name);
+                                interconnect_name.c_str(), pin_name.c_str());
                     }
                 }
             }
@@ -741,24 +758,29 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     if (0 == strcmp(pins[i].c_str(), "open")) {
                         continue;
                     }
-                    interconnect_name = (char*) strstr(pins[i].c_str(), "->");
-                    *interconnect_name = '\0';
-                    interconnect_name += 2;
-                    pin_name = pins[i].c_str();
-                    pin_node =
-                            alloc_and_load_port_pin_ptrs_from_string(
+                    //Extract the portion of the pin name after '->'
+                    //
+                    //e.g. 'memory.addr1[0]->address1' becomes 'address1'
+                    size_t loc = pins[i].find("->");
+                    assert(loc != std::string::npos);
+
+                    std::string pin_name = pins[i].substr(0, loc);
+
+                    loc += 2; //Skip over the '->'
+                    std::string interconnect_name = pins[i].substr(loc, std::string::npos);
+
+                    pin_node = alloc_and_load_port_pin_ptrs_from_string(
                                     pb->pb_graph_node->pb_type->modes[pb->mode].interconnect->line_num,
                                     pb->pb_graph_node,
                                     pb->pb_graph_node->child_pb_graph_nodes[pb->mode],
-                                    pin_name, &num_ptrs, &num_sets, true,
+                                    pin_name.c_str(), &num_ptrs, &num_sets, true,
                                     true);
                     assert(num_sets == 1 && num_ptrs[0] == 1);
-                    rr_node_index =
-                            pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+                    rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
                     pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (0 == strcmp(interconnect_name, pin_node[0][0]->output_edges[j]->interconnect->name)) {
+                        if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
                             found = true;
                             break;
                         }
@@ -771,10 +793,8 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                                 "Unknown interconnect %s connecting to pin %s.\n",
-                                interconnect_name, pin_name);
+                                interconnect_name.c_str(), pin_name.c_str());
                     }
-                    interconnect_name -= 2;
-                    *interconnect_name = '-';
                 }
             }
         }
