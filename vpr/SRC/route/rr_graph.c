@@ -1543,9 +1543,13 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 				}
 			}
 			if (target_seg > 0 && target_seg < seg_dimension+1){
-				t_seg_details * to_seg_details = chan_details_x[target_seg][y_coord];
-				if (chan_type == CHANY)
+				t_seg_details *to_seg_details;
+				if (chan_type == CHANX){
+					to_seg_details = chan_details_x[target_seg][y_coord];
+				} else {
+					assert(chan_type == CHANY);
 					to_seg_details = chan_details_y[x_coord][target_seg];
+				}
 				if (to_seg_details->length > 0) {
 					num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
 							chan_type, seg_dimension, max_chan_width, opin_mux_size, 
