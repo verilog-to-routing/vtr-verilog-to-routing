@@ -929,6 +929,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 			} else {
 				vpack_net[nindex].num_sinks++;
 				if ((num_driver[nindex] < 0) || (num_driver[nindex] > 1)) {
+					assert(index < num_logical_nets);
 					vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 							"Number of drivers for net #%d (%s) has %d drivers.\n",
 							nindex, ptr, num_driver[index]);
