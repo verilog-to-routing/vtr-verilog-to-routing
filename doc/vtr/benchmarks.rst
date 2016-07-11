@@ -5,12 +5,11 @@ There are several sets of benchmark designs which can be used with VTR.
 
 VTR Benchmarks
 --------------
-The VTR benchmarks are a set of medium-sized benchmarks included with VTR.
+The VTR benchmarks :cite:`luu_vtr,luu_vtr_7` are a set of medium-sized benchmarks included with VTR.
 They are fully compatible with the full VTR flow.
-
-The VTR benchmarks are provided as Verilog, enabling full flexibility to modify and change how the designs are implemented (including the creation of new netlist primitives).
-
 They are suitable for FPGA architecture research and medium-scale CAD research.
+
+
 
 .. _table_vtr_benchmarks:
 
@@ -40,6 +39,16 @@ They are suitable for FPGA architecture research and medium-scale CAD research.
     stereovision3       Computer Vision
     ================    =================
 
+The VTR benchmarks are provided as Verilog under: ::
+
+    <vtr>/vtr_flow/benchmarks/verilog
+
+This provides full flexibility to modify and change how the designs are implemented (including the creation of new netlist primitives).
+
+The VTR benchmarks are also included as pre-synthesized BLIF files under: ::
+
+    <vtr>/vtr_flow/benchmarks/vtr_benchmarks_blif
+
 Titan Benchmarks
 ----------------
 The Titan benchmarks :cite:`murray_titan,murray_timing_driven_titan` are a set of large modern FPGA benchmarks.
@@ -47,7 +56,7 @@ The pre-synthesized versions of these benchmarks are compatible with recent vers
 
 The Titan benchmarks are suitable for large-scale FPGA CAD research, and FPGA architecture research which does not require synthesizing new netlist primitives.
 
-.. note:: The Titan benchmarks are not included with the VTR release. However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <http://www.eecg.utoronto.ca/~kmurray/titan/>`_.
+.. note:: The Titan benchmarks are not included with the VTR release (due to their size). However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <http://www.eecg.utoronto.ca/~kmurray/titan/>`_.
 
 MCNC20 Benchmarks
 -----------------
