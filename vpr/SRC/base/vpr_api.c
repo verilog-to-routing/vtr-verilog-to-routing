@@ -70,11 +70,11 @@ void vpr_print_title(void) {
 
 	vpr_printf_info("\n");
 	vpr_printf_info("VPR FPGA Placement and Routing.\n");
-	vpr_printf_info("Version: Version " VPR_VERSION "\n");
+	vpr_printf_info("Version: v" VPR_VERSION "\n");
 	vpr_printf_info("Revision: " BUILD_VERSION "\n");
 	vpr_printf_info("Compiled: " BUILD_DATE ".\n");
 	vpr_printf_info("University of Toronto\n");
-	vpr_printf_info("vpr@eecg.utoronto.ca\n");
+	vpr_printf_info("vtr-users@googlegroups.com\n");
 	vpr_printf_info("This is free open source code under MIT license.\n");
 	vpr_printf_info("\n");
 
