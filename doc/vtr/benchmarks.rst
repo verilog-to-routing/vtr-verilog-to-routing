@@ -47,7 +47,7 @@ The pre-synthesized versions of these benchmarks are compatible with recent vers
 
 The Titan benchmarks are suitable for large-scale FPGA CAD research, and FPGA architecture research which does not require synthesizing new netlist primitives.
 
-.. note:: The Titan benchmarks are not included with the VTR release, but can be downloaded from `here <http://www.eecg.utoronto.ca/~kmurray/titan/>`_.
+.. note:: The Titan benchmarks are not included with the VTR release. However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.  They can also be `downloaded manually <http://www.eecg.utoronto.ca/~kmurray/titan/>`_.
 
 MCNC20 Benchmarks
 -----------------
