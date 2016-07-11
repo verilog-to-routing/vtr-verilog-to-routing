@@ -35,6 +35,7 @@ my $threaded = eval 'use threads; use Thread::Queue; 1';
 use Cwd;
 use File::Spec;
 use File::Basename;
+use File::Path qw(make_path);
 use IPC::Open2;
 use POSIX qw(strftime);
 
@@ -347,7 +348,8 @@ sub run_single_task {
 	# Make this seperately from file script
 	# just in case failure occurs creating directory
 	foreach my $arch (@archs) {
-		mkdir( "$arch", 0775 ) or die "Failed to create directory ($arch): $!";
+		#mkdir( "$arch", 0775 ) or die "Failed to create directory ($arch): $!";
+		make_path( "$arch", { mode => 0775 } ) or die "Failed to create directory ($arch): $!";
 		chmod( 0775, "$arch" );
 		foreach my $circuit (@circuits) {
 			mkdir( "$arch/$circuit", 0775 )
