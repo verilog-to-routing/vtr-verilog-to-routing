@@ -1,9 +1,8 @@
 #ifndef PUGIXML_LOC_H
 #define PUGIXML_LOC_H
 /*
- * This file contains utility wrapper functions around the PUGI XML parser,
- * hanlding things like retrieving line numbers, and producing errors for
- * missing nodes/attributes
+ * This file contains utilities for the  PUGI XML parser,
+ * hanlding the retrieval of line numbers (useful for error messages)
  */
 
 #include <vector>
@@ -20,32 +19,36 @@ namespace pugiloc {
                 build_loc_data();
             }
 
+            //The filename this location data is for
             const std::string& filename() const { return filename_; }
             const char* filename_c_str() const { return filename_.c_str(); }
 
+
+            //Convenience wrapper which takes xml_nodes
             size_t line(pugi::xml_node node) const {
                 return line(node.offset_debug());
             }
 
+            //Convenience wrapper which takes xml_nodes
             size_t col(pugi::xml_node node) const {
                 return col(node.offset_debug());
 
             }
 
+            //Return the line number from the given offset
             size_t line(ptrdiff_t offset) const {
                 auto it = std::lower_bound(offsets_.begin(), offsets_.end(), offset);
                 size_t index = it - offsets_.begin();
 
                 return 1 + index;
-
             }
 
+            //Return the column number from the given offset
             size_t col(ptrdiff_t offset) const {
                 auto it = std::lower_bound(offsets_.begin(), offsets_.end(), offset);
                 size_t index = it - offsets_.begin();
 
                 return index == 0 ? offset + 1 : offset - offsets_[index - 1];
-
             }
 
         private:
