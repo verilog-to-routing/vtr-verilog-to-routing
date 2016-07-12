@@ -10,7 +10,8 @@
 #include <bitset>
 #include <memory>
 
-#include "verilog_writer2.h"
+#include "netlist_walker.h"
+#include "netlist_writer.h"
 
 #include "globals.h"
 #include "path_delay.h"
@@ -992,8 +993,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 }
             }
 
-
-
 #ifdef DEBUG_LUT_MASK
             std::cout << "\tPermute: {";
             for(size_t k = 0; k < permute.size(); k++) {
@@ -1161,7 +1160,7 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
         std::ostream& sdf_os_;
 };
 
-void verilog_writer2() {
+void netlist_writer() {
     std::string top_level_name = blif_circuit_name;
     std::string verilog_filename = top_level_name + "_post_synthesis.v";
     std::string blif_filename = top_level_name + "_post_synthesis.blif";

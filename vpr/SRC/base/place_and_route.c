@@ -26,7 +26,7 @@ using namespace std;
 #include "ReadOptions.h"
 #include "route_common.h"
 #include "place_macro.h"
-#include "verilog_writer2.h"
+#include "netlist_writer.h"
 #include "power.h"
 
 /******************* Subroutines local to this module ************************/
@@ -186,7 +186,7 @@ bool place_and_route(enum e_operation operation,
 
 			if(GetPostSynthesisOption())
 			{
-				verilog_writer2();
+				netlist_writer();
 			}
 
 			free_timing_graph(slacks);
@@ -560,7 +560,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		
 		if(GetPostSynthesisOption())
 		  {
-		    verilog_writer2();
+		    netlist_writer();
 		  }
 
 		free_timing_graph(slacks);
