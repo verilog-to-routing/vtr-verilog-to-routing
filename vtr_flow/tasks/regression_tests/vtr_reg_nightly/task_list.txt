@@ -5,4 +5,3 @@ regression_tests/vtr_reg_nightly/vpr_reg_verilog_writer
 regression_tests/vtr_reg_nightly/titan_small
 regression_tests/vtr_reg_nightly/vtr_bidir
 regression_tests/vtr_reg_nightly/complex_switch
-regression_tests/vtr_reg_nightly/valgrind
