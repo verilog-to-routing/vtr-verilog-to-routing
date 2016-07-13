@@ -260,11 +260,11 @@ module single_port_ram #(
     parameter ADDR_WIDTH = 0,
     parameter DATA_WIDTH = 0
 ) (
-    input clock,
-    input we,
     input [ADDR_WIDTH-1:0] addr,
-    input [DATA_WIDTH-1:0] data_in,
-    output reg [DATA_WIDTH-1:0] data_out
+    input [DATA_WIDTH-1:0] data,
+    input we,
+    input clock,
+    output reg [DATA_WIDTH-1:0] out
 );
 
     localparam MEM_DEPTH = 1 << ADDR_WIDTH;
@@ -272,14 +272,14 @@ module single_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock=>data_out)="";
+        (clock=>out)="";
     endspecify
    
     always@(posedge clock) begin
         if(we) begin
-            Mem[addr] = data_in;
+            Mem[addr] = data;
         end
-    	data_out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
     end
    
 endmodule // single_port_RAM
@@ -291,14 +291,14 @@ module dual_port_ram #(
 ) (
     input clock,
 
-    input we1,
     input [ADDR_WIDTH-1:0] addr1,
-    input [DATA_WIDTH-1:0] data_in1,
-    output reg [DATA_WIDTH-1:0] data_out1,
-    input we2,
     input [ADDR_WIDTH-1:0] addr2,
-    input [DATA_WIDTH-1:0] data_in2,
-    output reg [DATA_WIDTH-1:0] data_out2
+    input [DATA_WIDTH-1:0] data1,
+    input [DATA_WIDTH-1:0] data2,
+    input we1,
+    input we2,
+    output reg [DATA_WIDTH-1:0] out1,
+    output reg [DATA_WIDTH-1:0] out2
 );
 
     localparam MEM_DEPTH = 1 << ADDR_WIDTH;
@@ -306,22 +306,22 @@ module dual_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock=>data_out1)="";
-        (clock=>data_out2)="";
+        (clock=>out1)="";
+        (clock=>out2)="";
     endspecify
    
     always@(posedge clock) begin //Port 1
         if(we1) begin
-            Mem[addr1] = data_in1;
+            Mem[addr1] = data1;
         end
-        data_out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
     end
 
     always@(posedge clock) begin //Port 2
         if(we2) begin
-            Mem[addr2] = data_in2;
+            Mem[addr2] = data2;
         end
-        data_out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
     end
    
 endmodule // dual_port_ram
