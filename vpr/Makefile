@@ -37,7 +37,7 @@ OTHER_DIR := $(OTHER_DIR) \
 	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
 
-WARN_FLAGS = -Wall -Werror -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall  -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g -O0 
 #Potentially expensive asserts that should only be used if you're really scared
