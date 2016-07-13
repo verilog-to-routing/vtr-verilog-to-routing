@@ -1197,11 +1197,14 @@ void vpr_print_error(t_vpr_error* vpr_error){
 	case VPR_ERROR_PLACE_F:
 		strcpy(error_type, "Placement file");
 		break;
+	case VPR_ERROR_IMPL_NETLIST_WRITER:
+		strcpy(error_type, "Implementation Netlist Writer");
+		break;
 	case VPR_ERROR_OTHER:
 		strcpy(error_type, "Other");
 		break;
 	default:
-		strcpy(error_type, "");
+		strcpy(error_type, "Unrecognized Error");
 		break;
 	}
 
