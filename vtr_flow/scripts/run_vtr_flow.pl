@@ -395,19 +395,8 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
 
 	if ( !$error_code ) {
-	#added so that valgrind will not run on odin because of existing memory errors 
-		if ($valgrind) {
-			$valgrind = 0;	
-			$q =
-		  		&system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-				"-c", $odin_config_file_name );
-			$valgrind = 1;
-		} 	
-		else {
-			$q =
-			  	&system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
-				"-c", $odin_config_file_name );
-		}
+		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+			"-c", $odin_config_file_name );
 
 		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
