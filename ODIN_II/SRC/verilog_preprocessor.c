@@ -242,8 +242,9 @@ int veri_is_defined(char * symbol)
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
 	
-	for (i = 0; (i < veri_defines.current_index) && (i < veri_defines.current_size) && (def_iterator != NULL); def_iterator = veri_defines.defined_constants[++i])
+	for (i = 0; (i < veri_defines.current_index) && (i < veri_defines.current_size) && (def_iterator != NULL); i++)
 	{
+		def_iterator = veri_defines.defined_constants[i];
 		if (0 == strcmp(symbol, def_iterator->symbol))
 		{
 			return i;

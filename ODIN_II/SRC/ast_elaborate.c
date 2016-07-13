@@ -858,42 +858,55 @@ void reduce_enode_list()
 {
 	enode *temp;
 	int a;
-	for (temp = head; temp != NULL; temp = temp->next)
+	
+	while(head != NULL && (head->type.data == 0) && (head->next->priority == 2) && (head->next->type.operation == '+')){
+		temp=head;
+		head = head->next->next;
+		head->pre = NULL;
+		
+		free(temp->next);
+		free(temp);
+	}
+	
+	if(head == NULL){
+		return;
+	}
+	
+	temp = head->next;
+	while (temp != NULL)
 	{
-		if (temp == head)
+		if ((temp->flag == 1) && (temp->pre->priority == 2))
 		{
-			if ((temp->type.data == 0) && (temp->next->priority == 2) && (temp->next->type.operation == '+'))
+			if (temp->type.data == 0)
 			{
-				head = temp->next->next;
-				free(temp->next);
-				free(temp);
+				if (temp->next == NULL)
+					temp->pre->pre->next = NULL;
+				else
+				{
+					temp->pre->pre->next = temp->next;
+					temp->next->pre = temp->pre->pre;
+				}
+				free(temp->pre);
+				
+				enode *toBeDeleted = temp;
+				temp = temp->next;
+				free(toBeDeleted);
+			} else if (temp->type.data < 0)
+			{
+				if (temp->pre->type.operation == '+')
+					temp->pre->type.operation = '-';
+				else
+					temp->pre->type.operation = '+';
+				a = temp->type.data;
+				temp->type.data = -a;
+				
+				temp = temp->next;
+			} else {
+				temp = temp->next;
 			}
+		} else {
+			temp = temp->next;
 		}
-		else
-			if ((temp->flag == 1) && (temp->pre->priority == 2))
-			{
-				if (temp->type.data == 0)
-				{
-					if (temp->next == NULL)
-						temp->pre->pre->next = NULL;
-					else
-					{
-						temp->pre->pre->next = temp->next;
-						temp->next->pre = temp->pre->pre;
-					}
-					free(temp->pre);
-					free(temp);
-				}
-				if (temp->type.data < 0)
-				{
-					if (temp->pre->type.operation == '+')
-						temp->pre->type.operation = '-';
-					else
-						temp->pre->type.operation = '+';
-					a = temp->type.data;
-					temp->type.data = -a;
-				}
-			}
 	}
 }
 
@@ -1998,7 +2011,6 @@ void change_bit_size(ast_node_t *node, int module_num, long long size)
 	char *name;
 	top= ast_modules[module_num];
 	name = node->types.identifier;
-	sprintf(name, "%s", node->types.identifier);
 	search_var_declare_list(top, name, size);
 
 }
