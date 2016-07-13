@@ -426,6 +426,92 @@ class LatchInstance : public Instance {
         double thld_; //Hold time
 };
 
+class SinglePortRamInstance : public Instance {
+    public:
+        SinglePortRamInstance(std::string inst_name,
+                              size_t addr_width,
+                              size_t data_width,
+                              std::map<std::string,std::string> port_conns, 
+                              std::map<std::string,double> ports_tsu, 
+                              std::map<std::string,double> ports_tcq)
+            : inst_name_(inst_name)
+            , addr_width_(addr_width)
+            , data_width_(data_width)
+            , port_conns_(port_conns)
+            , ports_tsu_(ports_tsu)
+            , ports_tcq_(ports_tcq)
+        {}
+
+        void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
+            os << indent(depth) << ".subckt single_port_ram\n";
+
+            for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
+                os << indent(depth+1) << iter->first << "=" << iter->second;
+                if(iter != --port_conns_.end()) {
+                    os << " \\";
+                }
+                os << "\n";
+            }
+            os << "\n";
+        }
+
+        void print_verilog(std::ostream& os, int depth=0) override {
+            os << indent(depth) << "single_port_ram #(\n";
+            os << indent(depth+1) << ".ADDR_WIDTH(" << addr_width_ << "),\n";
+            os << indent(depth+1) << ".DATA_WIDTH(" << data_width_ << ")\n";
+            os << indent(depth) << ") " << inst_name_ << " (\n";
+
+            for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
+                os << indent(depth+1) << "." << iter->first << "(" << iter->second << ")";
+                if(iter != --port_conns_.end()) {
+                    os << ",";
+                }
+                os << "\n";
+            }
+            os << indent(depth) << ");\n";
+            os << "\n";
+        }
+
+        void print_sdf(std::ostream& os, int depth=0) override {
+            os << indent(depth) << "(CELL\n";
+            os << indent(depth+1) << "(CELLTYPE \"single_port_ram\")\n";
+            os << indent(depth+1) << "(INSTANCE " << inst_name_ << ")\n";
+            os << indent(depth+1) << "(DELAY\n";
+            os << indent(depth+2) << "(ABSOLUTE\n";
+            for(auto kv : ports_tcq_) {
+                double setup_ps = get_delay_ps(kv.second);
+
+                std::stringstream delay_triple;
+                delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
+
+                os << indent(depth+3) << "(IOPATH (posedge clock) " << kv.first << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+            }
+            os << indent(depth+2) << ")\n";
+            os << indent(depth+2) << "(TIMINGCHECK\n";
+            for(auto kv : ports_tsu_) {
+                double clock_to_q_ps = get_delay_ps(kv.second);
+
+                std::stringstream delay_triple;
+                delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
+
+                os << indent(depth+3) << "(SETUP " << kv.first << " (posedge clock) " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+            }
+            os << indent(depth+2) << ")\n";
+            os << indent(depth+1) << ")\n";
+            os << indent(depth) << ")\n";
+            os << "\n";
+        }
+
+    private:
+        std::string inst_name_;
+        size_t addr_width_;
+        size_t data_width_;
+        std::map<std::string,std::string> port_conns_;
+        std::map<std::string,double> ports_tsu_;
+        std::map<std::string,double> ports_tcq_;
+
+};
+
 class Assignment {
     public:
         Assignment(std::string lval, std::string rval)
@@ -505,8 +591,11 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 cell_instances_.push_back(make_lut_instance(atom));
             } else if(model->name == std::string("latch")) {
                 cell_instances_.push_back(make_latch_instance(atom));
+            } else if(model->name == std::string("single_port_ram")) {
+                cell_instances_.push_back(make_single_port_ram_instance(atom));
             } else {
-                assert(false); //Unrecognized primitive
+                vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                            "Primitive '%s' not recognized by netlist writer\n", model->name);
             }
         }
 
@@ -897,6 +986,119 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return std::make_shared<LatchInstance>(inst_name, port_conns, type, init_value, tcq, tsu);
         }
 
+        std::shared_ptr<Instance> make_adder_instance(const t_pb* atom)  {
+            assert(false);
+        }
+
+        std::shared_ptr<Instance> make_single_port_ram_instance(const t_pb* atom)  {
+            std::string inst_name = "single_port_ram_" + escape_name(atom->name);
+
+            const t_block* top_block = find_top_block(atom);
+            const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
+            const t_pb_type* pb_type = pb_graph_node->pb_type;
+
+            assert(pb_type->class_type == MEMORY_CLASS);
+
+            std::map<std::string,std::string> port_conns;
+            std::map<std::string,double> ports_tcq;
+            std::map<std::string,double> ports_tsu;
+
+            size_t data_width = 0;
+            size_t addr_width = 0;
+
+            //Process the input ports
+            for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
+
+                for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                    const t_port* port = pin->port; 
+                    std::string port_class = port->port_class;
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+
+                    std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
+
+                    std::string port_name;
+                    if(port_class == "address") {
+                        port_name = "addr[" + std::to_string(ipin) + "]";
+                        addr_width = (size_t) port->num_pins;
+                    } else if (port_class == "data_in") {
+                        port_name = "data[" + std::to_string(ipin) + "]";
+                        data_width = (size_t) port->num_pins;
+                    } else if (port_class == "write_en") {
+                        port_name = "we";
+                    } else {
+                        vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                    }
+
+                    port_conns[port_name] = net;
+                    ports_tsu[port_name] = pin->tsu_tco;
+                }
+            }
+
+            //Process the output ports
+            for(int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
+
+                for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                    const t_port* port = pin->port; 
+                    std::string port_class = port->port_class;
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+
+                    std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
+
+                    std::string port_name;
+                    if(port_class == "data_out") {
+                        port_name = "out[" + std::to_string(ipin) + "]";
+                    } else {
+                        vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                    }
+                    port_conns[port_name] = net;
+                    ports_tcq[port_name] = pin->tsu_tco;
+                }
+            }
+
+            //Process the clock ports
+            for(int iport = 0; iport < pb_graph_node->num_clock_ports; ++iport) {
+                assert(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock port
+
+                for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
+                    const t_port* port = pin->port; 
+                    std::string port_class = port->port_class;
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+
+                    std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::CLOCK, iport, ipin);
+
+                    if(port_class == "clock") {
+                        assert(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
+                        port_conns["clock"] = net;
+                    } else {
+                        vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                    }
+                }
+            }
+
+
+            return std::make_shared<SinglePortRamInstance>(inst_name, addr_width, data_width, port_conns, ports_tsu, ports_tcq);
+        }
+
+        std::shared_ptr<Instance> make_dual_port_ram_instance(const t_pb* atom)  {
+            assert(false);
+        }
+
+        std::shared_ptr<Instance> make_multiplier_instance(const t_pb* atom)  {
+            assert(false);
+        }
+
         const t_block* find_top_block(const t_pb* curr) {
             //TODO: this is not very efficient...
             const t_pb* top_pb = find_top_clb(curr); 
@@ -1166,6 +1368,10 @@ void netlist_writer() {
     std::string blif_filename = top_level_name + "_post_synthesis.blif";
     std::string sdf_filename = top_level_name + "_post_synthesis.sdf";
 
+    vpr_printf_info("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
+    vpr_printf_info("Writting Implementation Netlist: %s\n", blif_filename.c_str());
+    vpr_printf_info("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
+
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
@@ -1175,7 +1381,6 @@ void netlist_writer() {
     NetlistWalker nl_walker(visitor);
 
     nl_walker.walk();
-
 }
 
 std::ostream& operator<<(std::ostream& os, LogicVal val) {
