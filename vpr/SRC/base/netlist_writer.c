@@ -426,15 +426,17 @@ class LatchInstance : public Instance {
         double thld_; //Hold time
 };
 
-class SinglePortRamInstance : public Instance {
+class RamInstance : public Instance {
     public:
-        SinglePortRamInstance(std::string inst_name,
+        RamInstance(std::string ram_type,
+                              std::string inst_name,
                               size_t addr_width,
                               size_t data_width,
                               std::map<std::string,std::string> port_conns, 
                               std::map<std::string,double> ports_tsu, 
                               std::map<std::string,double> ports_tcq)
-            : inst_name_(inst_name)
+            : ram_type_(ram_type)
+            , inst_name_(inst_name)
             , addr_width_(addr_width)
             , data_width_(data_width)
             , port_conns_(port_conns)
@@ -443,7 +445,7 @@ class SinglePortRamInstance : public Instance {
         {}
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
-            os << indent(depth) << ".subckt single_port_ram\n";
+            os << indent(depth) << ".subckt " << ram_type_ << "\n";
 
             for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
                 os << indent(depth+1) << iter->first << "=" << iter->second;
@@ -456,7 +458,7 @@ class SinglePortRamInstance : public Instance {
         }
 
         void print_verilog(std::ostream& os, int depth=0) override {
-            os << indent(depth) << "single_port_ram #(\n";
+            os << indent(depth) << ram_type_ << " #(\n";
             os << indent(depth+1) << ".ADDR_WIDTH(" << addr_width_ << "),\n";
             os << indent(depth+1) << ".DATA_WIDTH(" << data_width_ << ")\n";
             os << indent(depth) << ") " << inst_name_ << " (\n";
@@ -474,7 +476,7 @@ class SinglePortRamInstance : public Instance {
 
         void print_sdf(std::ostream& os, int depth=0) override {
             os << indent(depth) << "(CELL\n";
-            os << indent(depth+1) << "(CELLTYPE \"single_port_ram\")\n";
+            os << indent(depth+1) << "(CELLTYPE \"" << ram_type_ << "\")\n";
             os << indent(depth+1) << "(INSTANCE " << inst_name_ << ")\n";
             os << indent(depth+1) << "(DELAY\n";
             os << indent(depth+2) << "(ABSOLUTE\n";
@@ -503,6 +505,7 @@ class SinglePortRamInstance : public Instance {
         }
 
     private:
+        std::string ram_type_;
         std::string inst_name_;
         size_t addr_width_;
         size_t data_width_;
@@ -510,6 +513,15 @@ class SinglePortRamInstance : public Instance {
         std::map<std::string,double> ports_tsu_;
         std::map<std::string,double> ports_tcq_;
 
+};
+
+class MultInstance : public Instance {
+        void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
+        }
+        void print_verilog(std::ostream& os, int depth=0) override {
+        }
+        void print_sdf(std::ostream& os, int depth=0) override {
+        }
 };
 
 class Assignment {
@@ -592,7 +604,11 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             } else if(model->name == std::string("latch")) {
                 cell_instances_.push_back(make_latch_instance(atom));
             } else if(model->name == std::string("single_port_ram")) {
-                cell_instances_.push_back(make_single_port_ram_instance(atom));
+                cell_instances_.push_back(make_ram_instance(atom));
+            } else if(model->name == std::string("dual_port_ram")) {
+                cell_instances_.push_back(make_ram_instance(atom));
+            } else if(model->name == std::string("multiply")) {
+                /*cell_instances_.push_back(make_multiply_instance(atom));*/
             } else {
                 vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                             "Primitive '%s' not recognized by netlist writer\n", model->name);
@@ -799,6 +815,8 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
 
             } else {
                 //Add the driver
+                assert(port_type == PortType::OUT);
+
                 auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_idx, value));
                 assert(ret.second); //Was inserted, drivers are unique
             }
@@ -990,12 +1008,14 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             assert(false);
         }
 
-        std::shared_ptr<Instance> make_single_port_ram_instance(const t_pb* atom)  {
-            std::string inst_name = "single_port_ram_" + escape_name(atom->name);
-
+        //The interface to the dual and single port rams is nearly identical, so we using a single function to handle both
+        std::shared_ptr<Instance> make_ram_instance(const t_pb* atom)  {
             const t_block* top_block = find_top_block(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
+
+            std::string type = pb_type->model->name;
+            std::string inst_name = type + "_" + escape_name(atom->name);
 
             assert(pb_type->class_type == MEMORY_CLASS);
 
@@ -1017,17 +1037,38 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    if(atom_net_idx == OPEN) {
+                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
+                        continue;
+                    }
+
                     std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
 
                     std::string port_name;
                     if(port_class == "address") {
                         port_name = "addr[" + std::to_string(ipin) + "]";
                         addr_width = (size_t) port->num_pins;
+                    } else if(port_class == "address1") {
+                        port_name = "addr1[" + std::to_string(ipin) + "]";
+                        addr_width = (size_t) port->num_pins;
+                    } else if(port_class == "address2") {
+                        port_name = "addr2[" + std::to_string(ipin) + "]";
+                        addr_width = (size_t) port->num_pins;
                     } else if (port_class == "data_in") {
                         port_name = "data[" + std::to_string(ipin) + "]";
                         data_width = (size_t) port->num_pins;
+                    } else if (port_class == "data_in1") {
+                        port_name = "data1[" + std::to_string(ipin) + "]";
+                        data_width = (size_t) port->num_pins;
+                    } else if (port_class == "data_in2") {
+                        port_name = "data2[" + std::to_string(ipin) + "]";
+                        data_width = (size_t) port->num_pins;
                     } else if (port_class == "write_en") {
                         port_name = "we";
+                    } else if (port_class == "write_en1") {
+                        port_name = "we1";
+                    } else if (port_class == "write_en2") {
+                        port_name = "we2";
                     } else {
                         vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
@@ -1049,11 +1090,20 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    if(atom_net_idx == OPEN) {
+                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
+                        continue;
+                    }
+
                     std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
 
                     std::string port_name;
                     if(port_class == "data_out") {
                         port_name = "out[" + std::to_string(ipin) + "]";
+                    } else if(port_class == "data_out1") {
+                        port_name = "out1[" + std::to_string(ipin) + "]";
+                    } else if(port_class == "data_out2") {
+                        port_name = "out2[" + std::to_string(ipin) + "]";
                     } else {
                         vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
@@ -1087,20 +1137,14 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 }
             }
 
-
-            return std::make_shared<SinglePortRamInstance>(inst_name, addr_width, data_width, port_conns, ports_tsu, ports_tcq);
-        }
-
-        std::shared_ptr<Instance> make_dual_port_ram_instance(const t_pb* atom)  {
-            assert(false);
+            return std::make_shared<RamInstance>(type, inst_name, addr_width, data_width, port_conns, ports_tsu, ports_tcq);
         }
 
         std::shared_ptr<Instance> make_multiplier_instance(const t_pb* atom)  {
-            assert(false);
+            return std::make_shared<MultInstance>();
         }
 
         const t_block* find_top_block(const t_pb* curr) {
-            //TODO: this is not very efficient...
             const t_pb* top_pb = find_top_clb(curr); 
 
             for(int i = 0; i < num_blocks; i++) {
