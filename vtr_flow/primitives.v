@@ -225,35 +225,19 @@ module mult #(
     //The width of input signals
     parameter WIDTH = 0
 ) (
-    input [WIDTH-1:0] inA,
-    input [WIDTH-1:0] inB,
-    output [2*WIDTH-1:0] result
-);
-
-    wire [WIDTH-1:0] inA1;
-    wire [WIDTH-1:0] inB1;
-    Mult_interconnect #(WIDTH) delay(inA, inA1);
-    Mult_interconnect #(WIDTH) delay2(inB, inB1);
-   
-    assign result = inA1 * inB1;
-
-endmodule // mult
-
-//This interconnect is needed to specify the delay of the multiplier in the SDF file
-module Mult_interconnect #(
-    parameter WIDTH = 0   
-) (
-    input [WIDTH-1:0] A,
-    output [WIDTH-1:0] B
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    output [2*WIDTH-1:0] out
 );
 
     specify
-      (A=>B)="";
+        (a => out) = ""
+        (b => out) = ""
     endspecify
 
-    assign B = A;
+    assign out = a * b;
 
-endmodule // Mult_interconnect
+endmodule // mult
 
 //single_port_ram module
 module single_port_ram #(
