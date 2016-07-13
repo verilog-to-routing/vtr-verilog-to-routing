@@ -577,13 +577,62 @@ class MultInst : public Instance {
 
 class AdderInst : public Instance {
     public:
-        AdderInst() {}
+        AdderInst(std::string inst_name, 
+                 size_t width, 
+                 std::map<std::string,std::string> port_conns,
+                 std::vector<Arc> timing_arcs
+                 )
+            : inst_name_(inst_name)
+            , width_(width)
+            , port_conns_(port_conns)
+            , timing_arcs_(timing_arcs)
+        {}
+
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
+            os << indent(depth) << ".subckt adder" << "\n";
+
+            for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
+                os << indent(depth+1) << iter->first << "=" << iter->second;
+                if(iter != --port_conns_.end()) {
+                    os << " \\";
+                }
+                os << "\n";
+            }
+            os << "\n";
         }
         void print_verilog(std::ostream& os, int depth=0) override {
+            os << indent(depth) << "adder" << " #(\n";
+            os << indent(depth+1) << ".WIDTH(" << width_ << ")\n";
+            os << indent(depth) << ") " << inst_name_ << " (\n";
+
+            for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
+                os << indent(depth+1) << "." << iter->first << "(" << iter->second << ")";
+                if(iter != --port_conns_.end()) {
+                    os << ",";
+                }
+                os << "\n";
+            }
+            os << indent(depth) << ");\n";
+            os << "\n";
         }
         void print_sdf(std::ostream& os, int depth=0) override {
+            os << indent(depth) << "(CELL\n";
+            os << indent(depth+1) << "(CELLTYPE \"" << "adder" << "\")\n";
+            os << indent(depth+1) << "(INSTANCE " << inst_name_ << ")\n";
+            os << indent(depth+1) << "(DELAY\n";
+            os << indent(depth+2) << "(ABSOLUTE\n";
+            for(auto arc : timing_arcs_) {
+                os << indent(depth+3) << "(IOPATH " << arc.source_name() << " " << arc.sink_name() << " " << get_delay_ps(arc.delay()) << ")\n";
+            }
+            os << indent(depth+1) << ")\n";
+            os << indent(depth) << ")\n";
         }
+
+    private:
+        std::string inst_name_;
+        size_t width_;
+        std::map<std::string,std::string> port_conns_;
+        std::vector<Arc> timing_arcs_;
 };
 
 class Assignment {
@@ -671,6 +720,8 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
                 cell_instances_.push_back(make_ram_instance(atom));
             } else if(model->name == std::string("multiply")) {
                 cell_instances_.push_back(make_multiply_instance(atom));
+            } else if(model->name == std::string("adder")) {
+                cell_instances_.push_back(make_adder_instance(atom));
             } else {
                 vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                             "Primitive '%s' not recognized by netlist writer\n", model->name);
@@ -1066,10 +1117,6 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             return std::make_shared<LatchInstance>(inst_name, port_conns, type, init_value, tcq, tsu);
         }
 
-        std::shared_ptr<Instance> make_adder_instance(const t_pb* atom)  {
-            assert(false);
-        }
-
         //The interface to the dual and single port rams is nearly identical, so we using a single function to handle both
         std::shared_ptr<Instance> make_ram_instance(const t_pb* atom)  {
             const t_block* top_block = find_top_block(atom);
@@ -1278,6 +1325,85 @@ class VerilogSdfWriterVisitor : public NetlistVisitor {
             }
 
             return std::make_shared<MultInst>(inst_name, width, port_conns, timing_arcs);
+        }
+
+        std::shared_ptr<Instance> make_adder_instance(const t_pb* atom)  {
+            std::string inst_name = "adder_" + escape_name(atom->name);
+            size_t width = 0;
+            std::map<std::string, std::string> port_conns;
+            std::vector<Arc> timing_arcs;
+
+            //Delay matrix[sink_tnode] -> pairs of source_pin_name, delay
+            std::map<int,std::vector<std::pair<std::string,double>>> tnode_delay_matrix;
+
+            const t_block* top_block = find_top_block(atom);
+            const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
+
+            //Process the input ports
+            for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
+                for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->input_pins[iport][ipin];
+                    const t_port* port = pin->port; 
+
+                    if(port->name == std::string("a") || port->name == std::string("b")) {
+                        width = port->num_pins; //Assume same width on all ports
+                    }
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+
+                    if(atom_net_idx == OPEN) {
+                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
+                        continue;
+                    }
+
+                    auto inode = find_tnode(atom, cluster_pin_idx);
+                    std::string net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+
+                    std::string pin_name = std::string(port->name) + "[" + std::to_string(ipin) + "]";
+                    port_conns[pin_name] = net;
+
+                    //Delays
+                    //
+                    //We record the souce sink tnodes and thier delays here since the timing graph only
+                    //has forward edges
+                    for(int iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
+                        auto& edge = tnode[inode].out_edges[iedge];
+                        auto key = edge.to_node;
+                        tnode_delay_matrix[key].emplace_back(pin_name, edge.Tdel);
+                    }
+                }
+            }
+
+            //Process the output ports
+            for(int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
+
+                for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
+                    const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
+                    const t_port* port = pin->port; 
+
+                    int cluster_pin_idx = pin->pin_count_in_cluster;
+                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+
+                    if(atom_net_idx == OPEN) {
+                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
+                        continue;
+                    }
+
+                    auto inode = find_tnode(atom, cluster_pin_idx);
+                    std::string net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
+
+                    std::string pin_name = std::string(port->name) + "[" + std::to_string(ipin) + "]";
+                    port_conns[pin_name] = net;
+
+                    //Record the timing arcs
+                    for(auto& pin_name_delay : tnode_delay_matrix[inode]) {
+                        timing_arcs.emplace_back(pin_name_delay.first, pin_name, pin_name_delay.second);
+                    }
+                }
+            }
+
+            return std::make_shared<AdderInst>(inst_name, width, port_conns, timing_arcs);
         }
 
         const t_block* find_top_block(const t_pb* curr) {

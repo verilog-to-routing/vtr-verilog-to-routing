@@ -198,7 +198,7 @@ module mux(
 
 endmodule
 
-module ripple_adder #(
+module adder #(
     parameter WIDTH = 0   
 ) (
     input [WIDTH-1:0] a, 
