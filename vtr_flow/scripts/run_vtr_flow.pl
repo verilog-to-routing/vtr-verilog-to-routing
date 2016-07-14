@@ -651,8 +651,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		);
 	}
 	  					
-	if (-e $vpr_route_output_file_path and $q eq "success")
-	{
+	if (-e $vpr_route_output_file_path and $q eq "success") {
 		if($check_equivalent eq "on") {
 			if($abc_path eq "") {
 				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
@@ -666,19 +665,22 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 							"-c", 
 							"cec $odin_output_file_name $vpr_postsynthesis_netlist;sec $odin_output_file_name $vpr_postsynthesis_netlist"
 			);
-		}
-                # Parse ABC verification output
-                if ( open( EQUIVOUT, "< equiv.out" ) ) {
-	            undef $/;
-	            my $content = <EQUIVOUT>;
-	            close(EQUIVOUT);
-	            $/ = "\n";    # Restore for normal behaviour later in script
+            # Parse ABC verification output
+            if ( open( EQUIVOUT, "< equiv.out" ) ) {
+                undef $/;
+                my $content = <EQUIVOUT>;
+                close(EQUIVOUT);
+                $/ = "\n";    # Restore for normal behaviour later in script
 
-	            if ( $content !~ m/(.*Networks are equivalent.*)/i ) {
-		        print("failed: formal verification");
-                        $error_code = 1;
-	            } 
-                 }
+                if ( $content !~ m/(.*Networks are equivalent.*)/i ) {
+                    print("failed: formal verification");
+                    $error_code = 1;
+                } 
+            } else {
+                print("failed: formal verification");
+                $error_code = 1;
+            }
+		}
 
 		if (! $keep_intermediate_files)
 		{
