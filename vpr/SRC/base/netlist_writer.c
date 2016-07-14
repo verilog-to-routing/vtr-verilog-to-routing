@@ -28,7 +28,10 @@
 std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
 double get_delay_ps(int source_tnode, int sink_tnode);
-std::string escape_name(const char* name);
+std::string escape_identifier(const std::string id);
+std::string unescape_identifier(std::string id);
+bool is_escaped_identifier(std::string id);
+std::string join_identifier(std::string lhs, std::string rhs);
 
 //
 //File local type delcarations
@@ -273,7 +276,7 @@ class LutInstance : public Instance {
                     //Disconnected
                     os << "__vpr__unconn" << unconn_count++ << " ";
                 } else {
-                    os << kv.second << " ";
+                    os << unescape_identifier(kv.second) << " ";
                 }
             }
             os << "\n";
@@ -397,12 +400,12 @@ class LatchInstance : public Instance {
             //Input D port
             auto d_port_iter = port_connections_.find("D");
             assert(d_port_iter != port_connections_.end());
-            os << d_port_iter->second << " ";
+            os << unescape_identifier(d_port_iter->second) << " ";
 
             //Output Q port
             auto q_port_iter = port_connections_.find("Q");
             assert(q_port_iter != port_connections_.end());
-            os << q_port_iter->second << " ";
+            os << unescape_identifier(q_port_iter->second) << " ";
 
             //Latch type
             os << type_ << " "; //Type, i.e. rising-edge
@@ -410,7 +413,7 @@ class LatchInstance : public Instance {
             //Control input
             auto control_port_iter = port_connections_.find("clock");
             assert(control_port_iter != port_connections_.end());
-            os << control_port_iter->second << " "; //e.g. clock
+            os << unescape_identifier(control_port_iter->second) << " "; //e.g. clock
             os << (int) initial_value_ << " "; //Init value: e.g. 2=don't care
             os << "\n";
         }
@@ -510,10 +513,10 @@ class BlackBoxInst : public Instance {
         {}
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
-            os << indent(depth) << ".subckt " << type_name_ << "\n";
+            os << indent(depth) << ".subckt " << unescape_identifier(type_name_) << "\n";
 
             for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
-                os << indent(depth+1) << iter->first << "=" << iter->second;
+                os << indent(depth+1) << unescape_identifier(iter->first) << "=" << unescape_identifier(iter->second);
                 if(iter != --port_conns_.end()) {
                     os << " \\";
                 }
@@ -623,7 +626,7 @@ class Assignment {
             os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
         }
         void print_blif(std::ostream& os, std::string indent) {
-            os << indent << ".names " << rval_ << " " << lval_ << "\n";
+            os << indent << ".names " << unescape_identifier(rval_) << " " << unescape_identifier(lval_) << "\n";
             os << indent << "1 1\n";
         }
     private:
@@ -769,13 +772,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
             blif_os_ << indent(depth) << ".model " << top_module_name_ << "\n";
             blif_os_ << indent(depth) << ".inputs ";
             for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
-                blif_os_ << *iter << " ";
+                blif_os_ << unescape_identifier(*iter) << " ";
             }
             blif_os_ << "\n";
 
             blif_os_ << indent(depth) << ".outputs ";
             for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
-                blif_os_ << *iter << " ";
+                blif_os_ << unescape_identifier(*iter) << " ";
             }
             blif_os_ << "\n";
 
@@ -794,7 +797,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 const auto& driver_wire = driver_iter->second.first;
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
-                    blif_os_ << indent(depth) << ".names " << driver_wire << " " << sink_wire_tnode_pair.first << "\n";
+                    blif_os_ << indent(depth) << ".names " << unescape_identifier(driver_wire) << " " << unescape_identifier(sink_wire_tnode_pair.first) << "\n";
                     blif_os_ << indent(depth) << "1 1\n";
                 }
             }
@@ -869,20 +872,19 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                    PortType port_type, //The port direction
                                    int port_idx, //The instance port index
                                    int pin_idx) { //The instance pin index
-            std::stringstream ss;
-            ss << inst_name;
+
+            std::string wire_name = inst_name;
             if(port_type == PortType::IN) {
-                ss << "_input";
+                wire_name = join_identifier(wire_name, "input");
             } else if(port_type == PortType::CLOCK) {
-                ss << "_clock";
+                wire_name = join_identifier(wire_name, "clock");
             } else {
                 assert(port_type == PortType::OUT);
-                ss << "_output";
+                wire_name = join_identifier(wire_name, "output");
             }
-            ss << "_" << port_idx;
-            ss << "_" << pin_idx;
 
-            std::string wire_name = ss.str();
+            wire_name = join_identifier(wire_name, std::to_string(port_idx));
+            wire_name = join_identifier(wire_name, std::to_string(pin_idx));
 
             auto value = std::make_pair(wire_name, tnode_id);
             if(port_type == PortType::IN || port_type == PortType::CLOCK) {
@@ -904,25 +906,27 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //The I/O is recorded and instantiated by the top level output routines
         std::string make_io(const t_pb* atom, //The implementation primitive representing the I/O
                             PortType dir) { //The IO direction
-            std::string io_name = escape_name(atom->name);  
             
 
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
+            std::string io_name;
             int cluster_pin_idx = -1;
             if(dir == PortType::IN) {
                 assert(pb_graph_node->num_output_ports == 1); //One output port
                 assert(pb_graph_node->num_output_pins[0] == 1); //One output pin
                 cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+                
+                io_name = escape_identifier(atom->name);  
 
             } else {
                 assert(pb_graph_node->num_input_ports == 1); //One input port
                 assert(pb_graph_node->num_input_pins[0] == 1); //One input pin
                 cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
 
-                //Trip off the starting 'out_' that vpr adds to uniqify outputs
+                //Strip off the starting 'out:' that vpr adds to uniqify outputs
                 //this makes the port names match the input blif file
-                io_name = std::string(io_name.begin() + 4, io_name.end());
+                io_name = escape_identifier(atom->name + 4);  
             }
 
             const t_block* top_block = find_top_block(atom);
@@ -961,7 +965,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto lut_mask = load_lut_mask(lut_size, atom);
 
             //Determine the instance name
-            auto inst_name = "lut_" + escape_name(atom->name);
+            auto inst_name = join_identifier("lut", escape_identifier(atom->name));
 
             //Determine the port connections
             std::map<std::string,std::string> port_conns;
@@ -1039,7 +1043,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns an Instance object representing the Latch
         std::shared_ptr<Instance> make_latch_instance(const t_pb* atom)  {
-            std::string inst_name = "latch_" + escape_name(atom->name);
+            std::string inst_name = join_identifier("latch", escape_identifier(atom->name));
 
             const t_block* top_block = find_top_block(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
@@ -1096,7 +1100,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             assert(pb_type->class_type == MEMORY_CLASS);
 
             std::string type = pb_type->model->name;
-            std::string inst_name = type + "_" + escape_name(atom->name);
+            std::string inst_name = type + "_" + escape_identifier(atom->name);
             std::map<std::string,std::string> params;
             std::map<std::string,std::string> port_conns;
             std::vector<Arc> timing_arcs;
@@ -1231,7 +1235,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
             std::string type_name = pb_type->model->name;
-            std::string inst_name = type_name + "_" + escape_name(atom->name);
+            std::string inst_name = type_name + "_" + escape_identifier(atom->name);
             std::map<std::string,std::string> params;
             std::map<std::string,std::string> port_conns;
             std::vector<Arc> timing_arcs;
@@ -1318,7 +1322,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
             std::string type_name = pb_type->model->name;
-            std::string inst_name = type_name + "_" + escape_name(atom->name);
+            std::string inst_name = join_identifier(type_name, escape_identifier(atom->name));
             std::map<std::string,std::string> params;
             std::map<std::string,std::string> port_conns;
             std::vector<Arc> timing_arcs;
@@ -1674,7 +1678,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns the name of the routing segment between two wires
         std::string interconnect_name(std::string driver_wire, std::string sink_wire) {
-            return "routing_segment_" + driver_wire + "_to_" + sink_wire;
+            std::string name = join_identifier("routing_segment", driver_wire);
+            name = join_identifier(name, "to");
+            name = join_identifier(name, sink_wire);
+
+            return name;
         }
 
 
@@ -1761,18 +1769,68 @@ double get_delay_ps(int source_tnode, int sink_tnode) {
     return get_delay_ps(delay_sec);
 }
 
-//Escapes the given name to be safe for verilog and sdf
-std::string escape_name(const char* name) {
-    std::string escaped_name = name;
-    for(size_t i = 0; i < escaped_name.size(); i++) {
-        //Replace invalid verilog characters (e.g. '^' , '~' , '[' , etc. ) with '_'
-        if(escaped_name[i] == '^' || 
-            (int) escaped_name[i] < 48 || 
-           ((int) escaped_name[i] > 57 && (int) escaped_name[i] < 65) || 
-           ((int) escaped_name[i] > 90 && (int) escaped_name[i] < 97) ||
-            (int) escaped_name[i] > 122) {
-            escaped_name[i]='_';
-        }
-    }
+//Escapes the given identifier to be safe for verilog and sdf
+std::string escape_identifier(const std::string identifier) {
+    //Verilog and SDF allow escaped identifiers
+    //
+    //The escaped identifiers start with a literal back-slash '\'
+    //followed by the identifier and are terminated by white space
+    //
+    //We pre-pend the escape back-slash and append a space to avoid
+    //the identifier gobbling up adjacent characters like commas which
+    //are not actually part of the identifier
+    std::string prefix = "\\";
+    std::string suffix = " ";
+    std::string escaped_name = prefix + identifier + suffix;
+    /*
+     *for(size_t i = 0; i < escaped_name.size(); i++) {
+     *    //Replace invalid verilog characters (e.g. '^' , '~' , '[' , etc. ) with '_'
+     *    if(escaped_name[i] == '^' || 
+     *        (int) escaped_name[i] < 48 || 
+     *       ((int) escaped_name[i] > 57 && (int) escaped_name[i] < 65) || 
+     *       ((int) escaped_name[i] > 90 && (int) escaped_name[i] < 97) ||
+     *        (int) escaped_name[i] > 122) {
+     *        escaped_name[i]='_';
+     *    }
+     *}
+     */
+
     return escaped_name;
+}
+
+bool is_escaped_identifier(std::string id) {
+    if(id.size() > 0 && id[0] == '\\' && id[id.size()-1] == ' ') {
+        return true;
+    }
+    return false;
+}
+
+std::string unescape_identifier(std::string id) {
+    if(is_escaped_identifier(id)) {
+        //Was escaped trim off leading back-slash and trailing space
+        return std::string(id.begin() + 1, id.end() - 1);
+    }
+
+    //Not escaped
+    return id;
+}
+
+std::string join_identifier(std::string lhs, std::string rhs) {
+    bool return_escaped = false;
+
+    if(is_escaped_identifier(lhs)) {
+        lhs = unescape_identifier(lhs);
+        return_escaped = true;
+    }
+    if(is_escaped_identifier(rhs)) {
+        rhs = unescape_identifier(rhs);
+        return_escaped = true;
+    }
+
+    std::string joined = lhs + '_' + rhs;
+
+    if(return_escaped) {
+        return escape_identifier(joined);
+    }
+    return joined;
 }
