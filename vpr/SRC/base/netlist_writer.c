@@ -9,6 +9,7 @@
 #include <cassert>
 #include <bitset>
 #include <memory>
+#include <unordered_set>
 
 #include "netlist_walker.h"
 #include "netlist_writer.h"
@@ -28,7 +29,8 @@
 std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
 double get_delay_ps(int source_tnode, int sink_tnode);
-std::string escape_identifier(const std::string id);
+std::string escape_verilog_identifier(const std::string id);
+std::string escape_sdf_identifier(const std::string id);
 std::string join_identifier(std::string lhs, std::string rhs);
 
 //
@@ -207,16 +209,19 @@ class Instance {
 class LutInstance : public Instance {
     public: //Public methods
 
-        LutInstance(LogicVec lut_mask, //The LUT mask representing the logic function
+        LutInstance(size_t lut_size, //The LUT size
+                    LogicVec lut_mask, //The LUT mask representing the logic function
                     std::string inst_name, //The name of this instance
                     std::map<std::string,std::string> port_conns, //The port connections of this instance
                     std::vector<Arc> timing_arc_values) //The timing arcs of this instance
-            : type_("LUT")
+            : type_()
             , lut_mask_(lut_mask)
             , inst_name_(inst_name)
             , port_connections_(port_conns)
             , timing_arcs_(timing_arc_values)
-            {}
+            {
+            type_ = "LUT_" + std::to_string(lut_size);     
+        }
 
         //Accessors
         const std::vector<Arc>& timing_arcs() { return timing_arcs_; }
@@ -234,7 +239,7 @@ class LutInstance : public Instance {
             param_ss << lut_mask_;
             os << indent(depth+1) << ".LUT_MASK(" << param_ss.str() << ")\n";
 
-            os << indent(depth) << ") " << escape_identifier(inst_name_) << " (\n";
+            os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
 
             //and all its named port connections
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
@@ -253,7 +258,7 @@ class LutInstance : public Instance {
                     }
                     
                 } else {
-                    os << escape_identifier(iter->second);
+                    os << escape_verilog_identifier(iter->second);
                 }
                 os << ")";
 
@@ -312,7 +317,7 @@ class LutInstance : public Instance {
         void print_sdf(std::ostream& os, int depth) override {
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << type() << "\")\n";
-            os << indent(depth+1) << "(INSTANCE " << escape_identifier(instance_name()) << ")\n";
+            os << indent(depth+1) << "(INSTANCE " << escape_sdf_identifier(instance_name()) << ")\n";
 
             if(!timing_arcs().empty()) {
                 os << indent(depth+1) << "(DELAY\n";
@@ -427,10 +432,10 @@ class LatchInstance : public Instance {
             else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
             else assert(false);
             os << ")\n";
-            os << indent(depth) << ") " << escape_identifier(instance_name_) << " (\n";
+            os << indent(depth) << ") " << escape_verilog_identifier(instance_name_) << " (\n";
 
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                os << indent(depth+1) << "." << iter->first << "(" << escape_identifier(iter->second) << ")";
+                os << indent(depth+1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
 
                 if(iter != --port_connections_.end()) {
                     os << ", ";
@@ -446,7 +451,7 @@ class LatchInstance : public Instance {
 
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << "DFF" << "\")\n";
-            os << indent(depth+1) << "(INSTANCE " << escape_identifier(instance_name_) << ")\n";
+            os << indent(depth+1) << "(INSTANCE " << escape_sdf_identifier(instance_name_) << ")\n";
 
             //Clock to Q
             if(!std::isnan(tcq_)) {
@@ -537,11 +542,11 @@ class BlackBoxInst : public Instance {
             }
 
             //Instance name
-            os << indent(depth) << ") " << escape_identifier(inst_name_) << " (\n";
+            os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
 
             //Port connections
             for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
-                os << indent(depth+1) << "." << iter->first << "(" << escape_identifier(iter->second) << ")";
+                os << indent(depth+1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
                 if(iter != --port_conns_.end()) {
                     os << ",";
                 }
@@ -554,7 +559,7 @@ class BlackBoxInst : public Instance {
         void print_sdf(std::ostream& os, int depth=0) override {
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << type_name_ << "\")\n";
-            os << indent(depth+1) << "(INSTANCE " << escape_identifier(inst_name_) << ")\n";
+            os << indent(depth+1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
             os << indent(depth+1) << "(DELAY\n";
 
             if(!timing_arcs_.empty() || !ports_tcq_.empty()) {
@@ -621,7 +626,7 @@ class Assignment {
             {}
 
         void print_verilog(std::ostream& os, std::string indent) {
-            os << indent << "assign " << escape_identifier(lval_) << " = " << escape_identifier(rval_) << ";\n";
+            os << indent << "assign " << escape_verilog_identifier(lval_) << " = " << escape_verilog_identifier(rval_) << ";\n";
         }
         void print_blif(std::ostream& os, std::string indent) {
             os << indent << ".names " << rval_ << " " << lval_ << "\n";
@@ -704,7 +709,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             verilog_os_ << indent(depth) << "//Verilog generated by VPR " << BUILD_VERSION << " from post-place-and-route implementation\n";
             verilog_os_ << indent(depth) << "module " << top_module_name_ << " (\n";
             for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
-                verilog_os_ << indent(depth+1) << "input " << escape_identifier(*iter);
+                verilog_os_ << indent(depth+1) << "input " << escape_verilog_identifier(*iter);
                 if(iter + 1 != inputs_.end() || outputs_.size() > 0) {
                    verilog_os_ << ",";
                 }
@@ -712,7 +717,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
 
             for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
-                verilog_os_ << indent(depth+1) << "output " << escape_identifier(*iter);
+                verilog_os_ << indent(depth+1) << "output " << escape_verilog_identifier(*iter);
                 if(iter + 1 != outputs_.end()) {
                    verilog_os_ << ",";
                 }
@@ -723,11 +728,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
             verilog_os_ << "\n";
             verilog_os_ << indent(depth+1) << "//Wires\n";
             for(auto& kv : logical_net_drivers_) {
-                verilog_os_ << indent(depth+1) << "wire " << escape_identifier(kv.second.first) << ";\n";
+                verilog_os_ << indent(depth+1) << "wire " << escape_verilog_identifier(kv.second.first) << ";\n";
             }
             for(auto& kv : logical_net_sinks_) {
                 for(auto& wire_tnode_pair : kv.second) {
-                    verilog_os_ << indent(depth+1) << "wire " << escape_identifier(wire_tnode_pair.first) << ";\n";
+                    verilog_os_ << indent(depth+1) << "wire " << escape_verilog_identifier(wire_tnode_pair.first) << ";\n";
                 }
             }
 
@@ -747,9 +752,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
                     std::string inst_name = interconnect_name(driver_wire, sink_wire_tnode_pair.first);
-                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << escape_identifier(inst_name) << " (\n";
-                    verilog_os_ << indent(depth+2) << ".datain(" << escape_identifier(driver_wire) << "),\n";
-                    verilog_os_ << indent(depth+2) << ".dataout(" << escape_identifier(sink_wire_tnode_pair.first) << ")\n";
+                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << escape_verilog_identifier(inst_name) << " (\n";
+                    verilog_os_ << indent(depth+2) << ".datain(" << escape_verilog_identifier(driver_wire) << "),\n";
+                    verilog_os_ << indent(depth+2) << ".dataout(" << escape_verilog_identifier(sink_wire_tnode_pair.first) << ")\n";
                     verilog_os_ << indent(depth+1) << ");\n\n";
                 }
             }
@@ -837,7 +842,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     sdf_os_ << indent(depth+1) << "(CELL\n";
                     sdf_os_ << indent(depth+2) << "(CELLTYPE \"fpga_interconnect\")\n";
-                    sdf_os_ << indent(depth+2) << "(INSTANCE " << escape_identifier(interconnect_name(driver_wire, sink_wire)) << ")\n";
+                    sdf_os_ << indent(depth+2) << "(INSTANCE " << escape_sdf_identifier(interconnect_name(driver_wire, sink_wire)) << ")\n";
                     sdf_os_ << indent(depth+2) << "(DELAY\n";
                     sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
 
@@ -954,11 +959,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Determine what size LUT
             int lut_size = find_num_inputs(atom);
 
-            //Determine the instance type
-            std::stringstream ss;
-            ss << "LUT_" << lut_size;
-            auto inst_type = ss.str();
-
             //Determine the truth table
             auto lut_mask = load_lut_mask(lut_size, atom);
 
@@ -1034,7 +1034,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            auto inst = std::make_shared<LutInstance>(lut_mask, inst_name, port_conns, timing_arcs);
+            auto inst = std::make_shared<LutInstance>(lut_size, lut_mask, inst_name, port_conns, timing_arcs);
 
             return inst;
         }
@@ -1767,9 +1767,9 @@ double get_delay_ps(int source_tnode, int sink_tnode) {
     return get_delay_ps(delay_sec);
 }
 
-//Escapes the given identifier to be safe for verilog and sdf
-std::string escape_identifier(const std::string identifier) {
-    //Verilog and SDF allow escaped identifiers
+//Escapes the given identifier to be safe for verilog
+std::string escape_verilog_identifier(const std::string identifier) {
+    //Verilog allows escaped identifiers
     //
     //The escaped identifiers start with a literal back-slash '\'
     //followed by the identifier and are terminated by white space
@@ -1780,6 +1780,60 @@ std::string escape_identifier(const std::string identifier) {
     std::string prefix = "\\";
     std::string suffix = " ";
     std::string escaped_name = prefix + identifier + suffix;
+
+    return escaped_name;
+}
+
+//Returns true if c is categorized as a special character in SDF
+bool is_special_sdf_char(char c) {
+    //From section 3.2.5 of IEEE1497 Part 3 (i.e. the SDF spec)
+    //Special characters run from:
+    //    ! to # (ASCII decimal 33-35)
+    //    % to / (ASCII decimal 37-47)
+    //    : to @ (ASCII decimal 58-64)
+    //    [ to ^ (ASCII decimal 91-94)
+    //    ` to ` (ASCII decimal 96)
+    //    { to ~ (ASCII decimal 123-126)
+    //
+    //Not that the spec defines _ (decimal code 95) and $ (decimal code 36) 
+    //as non-special alphanumeric characters. 
+    //
+    //However it inconsistently also listing $ in the list of special characters.
+    //Since the spec allows for non-special characters to be escaped (they are treated
+    //normally), we treat $ as a special character to be safe.
+    //
+    //Note that the spec appears to have rendering errors in the PDF availble
+    //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK' 
+    //character (decimal code 171) in place of the APOSTROPHE character ' 
+    //with decimal code 39 in the special character list
+    if((c >= 33 && c <= 35) ||
+       (c == 36) || // $
+       (c >= 37 && c <= 47) ||
+       (c >= 58 && c <= 64) ||
+       (c >= 91 && c <= 94) ||
+       (c == 96) ||
+       (c >= 123 && c <= 126)) {
+        return true;
+    }
+
+    return false;
+}
+
+//Escapes the given identifier to be safe for sdf
+std::string escape_sdf_identifier(const std::string identifier) {
+    //SDF allows escaped characters
+    //
+    //We look at each character in the string and escape it if it is in
+    //the list 'special' characters
+    std::string escaped_name;
+
+    for(char c : identifier) {
+        if(is_special_sdf_char(c)) {
+            //Escape the special character
+            escaped_name += '\\';
+        }
+        escaped_name += c;
+    }
 
     return escaped_name;
 }
