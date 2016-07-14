@@ -29,8 +29,6 @@ std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
 double get_delay_ps(int source_tnode, int sink_tnode);
 std::string escape_identifier(const std::string id);
-std::string unescape_identifier(std::string id);
-bool is_escaped_identifier(std::string id);
 std::string join_identifier(std::string lhs, std::string rhs);
 
 //
@@ -236,7 +234,7 @@ class LutInstance : public Instance {
             param_ss << lut_mask_;
             os << indent(depth+1) << ".LUT_MASK(" << param_ss.str() << ")\n";
 
-            os << indent(depth) << ") " << inst_name_ << " (\n";
+            os << indent(depth) << ") " << escape_identifier(inst_name_) << " (\n";
 
             //and all its named port connections
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
@@ -255,7 +253,7 @@ class LutInstance : public Instance {
                     }
                     
                 } else {
-                    os << iter->second;
+                    os << escape_identifier(iter->second);
                 }
                 os << ")";
 
@@ -276,7 +274,7 @@ class LutInstance : public Instance {
                     //Disconnected
                     os << "__vpr__unconn" << unconn_count++ << " ";
                 } else {
-                    os << unescape_identifier(kv.second) << " ";
+                    os << kv.second << " ";
                 }
             }
             os << "\n";
@@ -314,7 +312,7 @@ class LutInstance : public Instance {
         void print_sdf(std::ostream& os, int depth) override {
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << type() << "\")\n";
-            os << indent(depth+1) << "(INSTANCE " << instance_name()<< ")\n";
+            os << indent(depth+1) << "(INSTANCE " << escape_identifier(instance_name()) << ")\n";
 
             if(!timing_arcs().empty()) {
                 os << indent(depth+1) << "(DELAY\n";
@@ -400,12 +398,12 @@ class LatchInstance : public Instance {
             //Input D port
             auto d_port_iter = port_connections_.find("D");
             assert(d_port_iter != port_connections_.end());
-            os << unescape_identifier(d_port_iter->second) << " ";
+            os << d_port_iter->second << " ";
 
             //Output Q port
             auto q_port_iter = port_connections_.find("Q");
             assert(q_port_iter != port_connections_.end());
-            os << unescape_identifier(q_port_iter->second) << " ";
+            os << q_port_iter->second << " ";
 
             //Latch type
             os << type_ << " "; //Type, i.e. rising-edge
@@ -413,7 +411,7 @@ class LatchInstance : public Instance {
             //Control input
             auto control_port_iter = port_connections_.find("clock");
             assert(control_port_iter != port_connections_.end());
-            os << unescape_identifier(control_port_iter->second) << " "; //e.g. clock
+            os << control_port_iter->second << " "; //e.g. clock
             os << (int) initial_value_ << " "; //Init value: e.g. 2=don't care
             os << "\n";
         }
@@ -429,10 +427,10 @@ class LatchInstance : public Instance {
             else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
             else assert(false);
             os << ")\n";
-            os << indent(depth) << ") " << instance_name_ << " (\n";
+            os << indent(depth) << ") " << escape_identifier(instance_name_) << " (\n";
 
             for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                os << indent(depth+1) << "." << iter->first << "(" << iter->second << ")";
+                os << indent(depth+1) << "." << iter->first << "(" << escape_identifier(iter->second) << ")";
 
                 if(iter != --port_connections_.end()) {
                     os << ", ";
@@ -448,7 +446,7 @@ class LatchInstance : public Instance {
 
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << "DFF" << "\")\n";
-            os << indent(depth+1) << "(INSTANCE " << instance_name_ << ")\n";
+            os << indent(depth+1) << "(INSTANCE " << escape_identifier(instance_name_) << ")\n";
 
             //Clock to Q
             if(!std::isnan(tcq_)) {
@@ -513,10 +511,10 @@ class BlackBoxInst : public Instance {
         {}
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
-            os << indent(depth) << ".subckt " << unescape_identifier(type_name_) << "\n";
+            os << indent(depth) << ".subckt " << type_name_ << "\n";
 
             for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
-                os << indent(depth+1) << unescape_identifier(iter->first) << "=" << unescape_identifier(iter->second);
+                os << indent(depth+1) << iter->first << "=" << iter->second;
                 if(iter != --port_conns_.end()) {
                     os << " \\";
                 }
@@ -539,11 +537,11 @@ class BlackBoxInst : public Instance {
             }
 
             //Instance name
-            os << indent(depth) << ") " << inst_name_ << " (\n";
+            os << indent(depth) << ") " << escape_identifier(inst_name_) << " (\n";
 
             //Port connections
             for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
-                os << indent(depth+1) << "." << iter->first << "(" << iter->second << ")";
+                os << indent(depth+1) << "." << iter->first << "(" << escape_identifier(iter->second) << ")";
                 if(iter != --port_conns_.end()) {
                     os << ",";
                 }
@@ -556,7 +554,7 @@ class BlackBoxInst : public Instance {
         void print_sdf(std::ostream& os, int depth=0) override {
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << type_name_ << "\")\n";
-            os << indent(depth+1) << "(INSTANCE " << inst_name_ << ")\n";
+            os << indent(depth+1) << "(INSTANCE " << escape_identifier(inst_name_) << ")\n";
             os << indent(depth+1) << "(DELAY\n";
 
             if(!timing_arcs_.empty() || !ports_tcq_.empty()) {
@@ -623,10 +621,10 @@ class Assignment {
             {}
 
         void print_verilog(std::ostream& os, std::string indent) {
-            os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
+            os << indent << "assign " << escape_identifier(lval_) << " = " << escape_identifier(rval_) << ";\n";
         }
         void print_blif(std::ostream& os, std::string indent) {
-            os << indent << ".names " << unescape_identifier(rval_) << " " << unescape_identifier(lval_) << "\n";
+            os << indent << ".names " << rval_ << " " << lval_ << "\n";
             os << indent << "1 1\n";
         }
     private:
@@ -706,7 +704,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             verilog_os_ << indent(depth) << "//Verilog generated by VPR " << BUILD_VERSION << " from post-place-and-route implementation\n";
             verilog_os_ << indent(depth) << "module " << top_module_name_ << " (\n";
             for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
-                verilog_os_ << indent(depth+1) << "input " << *iter;
+                verilog_os_ << indent(depth+1) << "input " << escape_identifier(*iter);
                 if(iter + 1 != inputs_.end() || outputs_.size() > 0) {
                    verilog_os_ << ",";
                 }
@@ -714,7 +712,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
 
             for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
-                verilog_os_ << indent(depth+1) << "output " << *iter;
+                verilog_os_ << indent(depth+1) << "output " << escape_identifier(*iter);
                 if(iter + 1 != outputs_.end()) {
                    verilog_os_ << ",";
                 }
@@ -725,11 +723,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
             verilog_os_ << "\n";
             verilog_os_ << indent(depth+1) << "//Wires\n";
             for(auto& kv : logical_net_drivers_) {
-                verilog_os_ << indent(depth+1) << "wire " << kv.second.first << ";\n";
+                verilog_os_ << indent(depth+1) << "wire " << escape_identifier(kv.second.first) << ";\n";
             }
             for(auto& kv : logical_net_sinks_) {
                 for(auto& wire_tnode_pair : kv.second) {
-                    verilog_os_ << indent(depth+1) << "wire " << wire_tnode_pair.first << ";\n";
+                    verilog_os_ << indent(depth+1) << "wire " << escape_identifier(wire_tnode_pair.first) << ";\n";
                 }
             }
 
@@ -749,9 +747,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
                     std::string inst_name = interconnect_name(driver_wire, sink_wire_tnode_pair.first);
-                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << inst_name << " (\n";
-                    verilog_os_ << indent(depth+2) << ".datain(" << driver_wire << "),\n";
-                    verilog_os_ << indent(depth+2) << ".dataout(" << sink_wire_tnode_pair.first << ")\n";
+                    verilog_os_ << indent(depth+1) << "fpga_interconnect " << escape_identifier(inst_name) << " (\n";
+                    verilog_os_ << indent(depth+2) << ".datain(" << escape_identifier(driver_wire) << "),\n";
+                    verilog_os_ << indent(depth+2) << ".dataout(" << escape_identifier(sink_wire_tnode_pair.first) << ")\n";
                     verilog_os_ << indent(depth+1) << ");\n\n";
                 }
             }
@@ -772,13 +770,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
             blif_os_ << indent(depth) << ".model " << top_module_name_ << "\n";
             blif_os_ << indent(depth) << ".inputs ";
             for(auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
-                blif_os_ << unescape_identifier(*iter) << " ";
+                blif_os_ << *iter << " ";
             }
             blif_os_ << "\n";
 
             blif_os_ << indent(depth) << ".outputs ";
             for(auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
-                blif_os_ << unescape_identifier(*iter) << " ";
+                blif_os_ << *iter << " ";
             }
             blif_os_ << "\n";
 
@@ -797,7 +795,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 const auto& driver_wire = driver_iter->second.first;
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
-                    blif_os_ << indent(depth) << ".names " << unescape_identifier(driver_wire) << " " << unescape_identifier(sink_wire_tnode_pair.first) << "\n";
+                    blif_os_ << indent(depth) << ".names " << driver_wire << " " << sink_wire_tnode_pair.first << "\n";
                     blif_os_ << indent(depth) << "1 1\n";
                 }
             }
@@ -839,7 +837,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     sdf_os_ << indent(depth+1) << "(CELL\n";
                     sdf_os_ << indent(depth+2) << "(CELLTYPE \"fpga_interconnect\")\n";
-                    sdf_os_ << indent(depth+2) << "(INSTANCE " << interconnect_name(driver_wire, sink_wire) << ")\n";
+                    sdf_os_ << indent(depth+2) << "(INSTANCE " << escape_identifier(interconnect_name(driver_wire, sink_wire)) << ")\n";
                     sdf_os_ << indent(depth+2) << "(DELAY\n";
                     sdf_os_ << indent(depth+3) << "(ABSOLUTE\n";
 
@@ -917,7 +915,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 assert(pb_graph_node->num_output_pins[0] == 1); //One output pin
                 cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
                 
-                io_name = escape_identifier(atom->name);  
+                io_name = atom->name;  
 
             } else {
                 assert(pb_graph_node->num_input_ports == 1); //One input port
@@ -926,7 +924,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 //Strip off the starting 'out:' that vpr adds to uniqify outputs
                 //this makes the port names match the input blif file
-                io_name = escape_identifier(atom->name + 4);  
+                io_name = atom->name + 4;  
             }
 
             const t_block* top_block = find_top_block(atom);
@@ -965,7 +963,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto lut_mask = load_lut_mask(lut_size, atom);
 
             //Determine the instance name
-            auto inst_name = join_identifier("lut", escape_identifier(atom->name));
+            auto inst_name = join_identifier("lut", atom->name);
 
             //Determine the port connections
             std::map<std::string,std::string> port_conns;
@@ -1043,7 +1041,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns an Instance object representing the Latch
         std::shared_ptr<Instance> make_latch_instance(const t_pb* atom)  {
-            std::string inst_name = join_identifier("latch", escape_identifier(atom->name));
+            std::string inst_name = join_identifier("latch", atom->name);
 
             const t_block* top_block = find_top_block(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
@@ -1100,7 +1098,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             assert(pb_type->class_type == MEMORY_CLASS);
 
             std::string type = pb_type->model->name;
-            std::string inst_name = type + "_" + escape_identifier(atom->name);
+            std::string inst_name = join_identifier(type, atom->name);
             std::map<std::string,std::string> params;
             std::map<std::string,std::string> port_conns;
             std::vector<Arc> timing_arcs;
@@ -1235,7 +1233,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
             std::string type_name = pb_type->model->name;
-            std::string inst_name = type_name + "_" + escape_identifier(atom->name);
+            std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
             std::map<std::string,std::string> port_conns;
             std::vector<Arc> timing_arcs;
@@ -1322,7 +1320,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
             std::string type_name = pb_type->model->name;
-            std::string inst_name = join_identifier(type_name, escape_identifier(atom->name));
+            std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
             std::map<std::string,std::string> port_conns;
             std::vector<Arc> timing_arcs;
@@ -1782,55 +1780,11 @@ std::string escape_identifier(const std::string identifier) {
     std::string prefix = "\\";
     std::string suffix = " ";
     std::string escaped_name = prefix + identifier + suffix;
-    /*
-     *for(size_t i = 0; i < escaped_name.size(); i++) {
-     *    //Replace invalid verilog characters (e.g. '^' , '~' , '[' , etc. ) with '_'
-     *    if(escaped_name[i] == '^' || 
-     *        (int) escaped_name[i] < 48 || 
-     *       ((int) escaped_name[i] > 57 && (int) escaped_name[i] < 65) || 
-     *       ((int) escaped_name[i] > 90 && (int) escaped_name[i] < 97) ||
-     *        (int) escaped_name[i] > 122) {
-     *        escaped_name[i]='_';
-     *    }
-     *}
-     */
 
     return escaped_name;
 }
 
-bool is_escaped_identifier(std::string id) {
-    if(id.size() > 0 && id[0] == '\\' && id[id.size()-1] == ' ') {
-        return true;
-    }
-    return false;
-}
-
-std::string unescape_identifier(std::string id) {
-    if(is_escaped_identifier(id)) {
-        //Was escaped trim off leading back-slash and trailing space
-        return std::string(id.begin() + 1, id.end() - 1);
-    }
-
-    //Not escaped
-    return id;
-}
-
+//Joins to identifier strings
 std::string join_identifier(std::string lhs, std::string rhs) {
-    bool return_escaped = false;
-
-    if(is_escaped_identifier(lhs)) {
-        lhs = unescape_identifier(lhs);
-        return_escaped = true;
-    }
-    if(is_escaped_identifier(rhs)) {
-        rhs = unescape_identifier(rhs);
-        return_escaped = true;
-    }
-
-    std::string joined = lhs + '_' + rhs;
-
-    if(return_escaped) {
-        return escape_identifier(joined);
-    }
-    return joined;
+    return lhs + '_' + rhs;
 }
