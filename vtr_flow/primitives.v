@@ -231,8 +231,8 @@ module mult #(
 );
 
     specify
-        (a => out) = ""
-        (b => out) = ""
+        (a => out) = "";
+        (b => out) = "";
     endspecify
 
     assign out = a * b;
