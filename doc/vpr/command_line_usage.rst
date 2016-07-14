@@ -218,8 +218,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
 .. seealso:: :ref:`timing_driven_placer_options`
 
-.. note:: The non-linear congestion option for placement has been deprecated.
-
 .. option:: -seed <int>
 
     Sets the initial random seed used by the placer. 
