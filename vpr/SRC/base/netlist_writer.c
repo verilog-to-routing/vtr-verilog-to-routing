@@ -615,9 +615,19 @@ class BlackBoxInst : public Instance {
 
                     //Note that we explicitly do not escape the last array indexing so an SDF
                     //reader will treat the ports as multi-bit
+                    //
+                    //We also only put the last index in if the port has multiple bits
                     os << indent(depth+3) << "(IOPATH ";
-                    os << escape_sdf_identifier(arc.source_name()) << "[" << arc.source_ipin() << "]" << " ";
-                    os << escape_sdf_identifier(arc.sink_name()) << "[" << arc.sink_ipin() << "]" << " ";
+                    os << escape_sdf_identifier(arc.source_name());
+                    if(find_port_size(arc.source_name()) > 1) { 
+                        os << "[" << arc.source_ipin() << "]";
+                    }
+                    os << " ";
+                    os << escape_sdf_identifier(arc.sink_name());
+                    if(find_port_size(arc.sink_name()) > 1) { 
+                        os << "[" << arc.sink_ipin() << "]";
+                    }
+                    os << " ";
                     os << delay_triple.str();
                     os << ")\n";
                 }
@@ -633,17 +643,18 @@ class BlackBoxInst : public Instance {
                 }
                 os << indent(depth+2) << ")\n"; //ABSOLUTE
             }
+            os << indent(depth+1) << ")\n"; //DELAY
 
             if(!ports_tsu_.empty() || !ports_thld_.empty()) {
                 //Setup checks
-                os << indent(depth+2) << "(TIMINGCHECK\n";
+                os << indent(depth+1) << "(TIMINGCHECK\n";
                 for(auto kv : ports_tsu_) {
                     double setup_ps = get_delay_ps(kv.second);
 
                     std::stringstream delay_triple;
                     delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
 
-                    os << indent(depth+3) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    os << indent(depth+2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << ")\n";
                 }
                 for(auto kv : ports_thld_) {
                     double hold_ps = get_delay_ps(kv.second);
@@ -651,12 +662,26 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
 
-                    os << indent(depth+3) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    os << indent(depth+2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << ")\n";
                 }
-                os << indent(depth+2) << ")\n"; //TIMINGCHECK
+                os << indent(depth+1) << ")\n"; //TIMINGCHECK
             }
-            os << indent(depth+1) << ")\n"; //DELAY
             os << indent(depth) << ")\n"; //CELL
+        }
+
+        size_t find_port_size(std::string port_name) {
+            auto iter = input_port_conns_.find(port_name);
+            if(iter != input_port_conns_.end()) {
+                return iter->second.size();
+            }
+
+            iter = output_port_conns_.find(port_name);
+            if(iter != output_port_conns_.end()) {
+                return iter->second.size();
+            }
+            vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                        "Could not find port %s on %s of type %s\n", port_name.c_str(), inst_name_.c_str(), type_name_.c_str());
+            return -1;
         }
 
     private:
