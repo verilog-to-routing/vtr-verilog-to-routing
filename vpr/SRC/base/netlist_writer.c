@@ -1619,48 +1619,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::cout << "Loading LUT mask for: " << atom->name << std::endl;
 #endif
 
-            //Figure out how the inputs were permuted
+            //Figure out how the inputs were permuted (compared to the input netlist)
             std::vector<int> permute = determine_lut_permutation(num_inputs, atom);
-
-            
-            //Determine the truth (output value) for this row
-            // By default we assume the on-set is encoded to correctly handle
-            // constant true/false
-            //
-            // False output:
-            //      .names j
-            //
-            // True output:
-            //      .names j
-            //      1
-            bool encoding_on_set = true;
-
 
             //VPR stores the truth table as in BLIF
             //Each row of the table (i.e. a c-string) is stored in a linked list 
             //
             //The c-string is the literal row from BLIF, e.g. "0 1" for an inverter, "11 1" for an AND2
             t_linked_vptr* names_row_ptr = logical_block[atom->logical_block].truth_table;
-
-            //We may get a nullptr if the output is always false
-            if(names_row_ptr) {
-                //Determine whether the truth table stores the ON or OFF set
-                //
-                //  In blif, the 'output values' of a .names must be either '1' or '0', and must be consistent
-                //  within a single .names -- that is a single .names can encode either the ON or OFF set 
-                //  (of which only one will be encoded in a single .names)
-                //
-                const std::string names_first_row = (const char*) names_row_ptr->data_vptr;
-                auto names_first_row_output_iter = names_first_row.end() - 1;
-
-                if(*names_first_row_output_iter == '1') {
-                    encoding_on_set = true; 
-                } else if (*names_first_row_output_iter == '0') {
-                    encoding_on_set = false; 
-                } else {
-                    assert(false);
-                }
-            }
+            
+            //Determine the truth (output value) for this .names
+            bool encoding_on_set = names_encodes_on_set(names_row_ptr);
 
             //Initialize LUT mask
             int lut_bits = std::pow(2, num_inputs);
@@ -1675,48 +1644,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 lut_mask = LogicVec(lut_bits, LogicVal::TRUE); 
             }
 
-            //Process each row of the .names
+            //Process each row of the .names truth table
             while(names_row_ptr != nullptr) {
-                const std::string names_row = (const char*) names_row_ptr->data_vptr;
 
-                //Get an iterator to the last character (i.e. the output value)
-                auto output_val_iter = names_row.end() - 1;
-
-                //Sanity-check, the 2nd last character should be a space
-                auto space_iter = names_row.end() - 2;
-                assert(*space_iter == ' ');
-                
-                //Extract the truth (output value) for this row
-                LogicVal output_val = LogicVal::UNKOWN;
-                if(*output_val_iter == '1') {
-                    assert(encoding_on_set);
-                    output_val = LogicVal::TRUE; 
-                } else if (*output_val_iter == '0') {
-                    assert(!encoding_on_set);
-                    output_val = LogicVal::FALSE; 
-                } else {
-                    assert(false);
-                }
-
-                //Extract the input values for this row
-                LogicVec input_values(num_inputs, LogicVal::FALSE);
-                size_t i = 0;
-                //Walk through each input in the input cube for this row
-                while(names_row[i] != ' ') {
-                    LogicVal input_val = LogicVal::UNKOWN;
-                    if(names_row[i] == '1') {
-                        input_val = LogicVal::TRUE; 
-                    } else if (names_row[i] == '0') {
-                        input_val = LogicVal::FALSE; 
-                    } else if (names_row[i] == '-') {
-                        input_val = LogicVal::DONTCARE; 
-                    } else {
-                        assert(false);
-                    }
-
-                    input_values[i] =  input_val;
-                    i++;
-                }
+                //Get the input values defining this row of the truth table
+                LogicVec input_values = names_row_to_logic_vec(static_cast<const char*>(names_row_ptr->data_vptr), num_inputs, encoding_on_set);
 
                 //Apply any LUT input rotations
                 auto permuted_input_values = input_values;
@@ -1728,14 +1660,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 std::cout << " -> " << permuted_input_values << ":" << output_val << std::endl;
 #endif
 
-                //Since there may be Don't Care's for som input settings we may need to set
-                //multiple minterms in the lut mask
+                //Get the minterm numbers representing the logic function, while
+                //expand any don't cares in the input values
                 for(size_t minterm : permuted_input_values.minterms()) {
 #ifdef DEBUG_LUT_MASK
                     std::cout << "\tSetting minterm : " << minterm << " to " << output_val << std::endl;
 #endif
                     //Set the appropraite lut mask entry
-                    lut_mask[minterm] = output_val;
+                    lut_mask[minterm] = (encoding_on_set) ? LogicVal::TRUE : LogicVal::FALSE;
                 }
                 
                 //Advance to the next row
@@ -1820,6 +1752,92 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::cout << "\t------------------------" << std::endl;
 #endif
             return permute;
+        }
+
+        //Helper function for load_lut_mask() which determines if the
+        //names is encodeing the ON (returns true) or OFF (returns false)
+        //set.
+        bool names_encodes_on_set(t_linked_vptr* names_row_ptr) {
+            //Determine the truth (output value) for this row
+            // By default we assume the on-set is encoded to correctly handle
+            // constant true/false
+            //
+            // False output:
+            //      .names j
+            //
+            // True output:
+            //      .names j
+            //      1
+            bool encoding_on_set = true;
+
+
+
+            //We may get a nullptr if the output is always false
+            if(names_row_ptr) {
+                //Determine whether the truth table stores the ON or OFF set
+                //
+                //  In blif, the 'output values' of a .names must be either '1' or '0', and must be consistent
+                //  within a single .names -- that is a single .names can encode either the ON or OFF set 
+                //  (of which only one will be encoded in a single .names)
+                //
+                const std::string names_first_row = (const char*) names_row_ptr->data_vptr;
+                auto names_first_row_output_iter = names_first_row.end() - 1;
+
+                if(*names_first_row_output_iter == '1') {
+                    encoding_on_set = true; 
+                } else if (*names_first_row_output_iter == '0') {
+                    encoding_on_set = false; 
+                } else {
+                    vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", *names_first_row_output_iter);
+                }
+            }
+
+            return encoding_on_set;
+        }
+
+        //Helper function for load_lut_mask()
+        //
+        //Converts the given names_row string to a LogicVec
+        LogicVec names_row_to_logic_vec(const std::string names_row, size_t num_inputs, bool encoding_on_set) {
+            //Get an iterator to the last character (i.e. the output value)
+            auto output_val_iter = names_row.end() - 1;
+
+            //Sanity-check, the 2nd last character should be a space
+            auto space_iter = names_row.end() - 2;
+            assert(*space_iter == ' ');
+            
+            //Extract the truth (output value) for this row
+            if(*output_val_iter == '1') {
+                assert(encoding_on_set);
+            } else if (*output_val_iter == '0') {
+                assert(!encoding_on_set);
+            } else {
+                vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                            "Invalid .names encoding both ON and OFF set\n");
+            }
+
+            //Extract the input values for this row
+            LogicVec input_values(num_inputs, LogicVal::FALSE);
+            size_t i = 0;
+            //Walk through each input in the input cube for this row
+            while(names_row[i] != ' ') {
+                LogicVal input_val = LogicVal::UNKOWN;
+                if(names_row[i] == '1') {
+                    input_val = LogicVal::TRUE; 
+                } else if (names_row[i] == '0') {
+                    input_val = LogicVal::FALSE; 
+                } else if (names_row[i] == '-') {
+                    input_val = LogicVal::DONTCARE; 
+                } else {
+                    vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
+                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", names_row[i]);
+                }
+
+                input_values[i] =  input_val;
+                i++;
+            }
+            return input_values;
         }
 
 
