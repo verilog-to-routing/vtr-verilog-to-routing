@@ -1,5 +1,124 @@
 `timescale 1ps/1ps
+//Overivew
+//========
+//This file contains the verilog primitives produced by VPR's
+//post-synthesis netlist writer.
+//
+//If you wish to do back-annotated timing simulation you will need
+//to link with this file during simulation.
+//
+//To ensure currect result when performing back-annoatation with 
+//Modelsim see the notes at the end of this comment.
+//
+//Specifying Timing Edges
+//=======================
+//To perform timing back-annotation the simulator must know the delay 
+//dependancies (timing edges) between the ports on each primitive.
+//
+//During back-annotation the simulator will attempt to annotate SDF delay
+//values onto the timing edges.  It should give a warning if was unable
+//to find a matching edge.
+//
+//
+//In Verilog timing edges are specified using a specify block (delimited by the
+//'specify' and 'endspecify' keywords.
+//
+//Inside the specify block a set of specify statements are used to describe
+//the timing edges.  For example consider:
+//
+//  input [1:0] in;
+//  output [1:0] out;
+//  specify
+//      (in[0] => out[0]) = "";
+//      (in[1] => out[1]) = "";
+//  endspecify
+//
+//This states that there are the following timing edges (dependancies):
+//  * from in[0] to out[0]
+//  * from in[1] to out[1]
+//
+//We could (according to the Verilog standard) equivalently have used:
+//
+//  input [1:0] in;
+//  output [1:0] out;
+//  specify
+//      (in => out) = "";
+//  endspecify
+//
+//However NOT ALL SIMULATORS TREAT MULTIBIT SPECIFY STATEMENTS CORRECTLY,
+//at least by default (in particular ModelSim, see notes below).
+//
+//The previos examples use the 'parrallel connection' operator '=>', which
+//creates parallel edges between the two operands (i.e. bit 0 to bit 0, bit
+//1 to bit 1 etc.).  Note that both operands must have the same bit-width. 
+//
+//Verilog also supports the 'full connection' operator '*>' which will create
+//a fully connected set of edges (e.g. from all-to-all). It does not require
+//both operands to have the same bit-width. For example:
+//
+//  input [1:0] in;
+//  output [2:0] out;
+//  specify
+//      (in *> out) = "";
+//  endspecify
+//
+//states that there are the following timing edges (dependancies):
+//  * from in[0] to out[0]
+//  * from in[0] to out[1]
+//  * from in[0] to out[1]
+//  * from in[1] to out[0]
+//  * from in[1] to out[1]
+//  * from in[1] to out[2]
+//
+//For more details on specify blocks see Section 14 "Specify Blocks" of the
+//Verilog standard (IEEE 1364-2005).
+//
+//Back-annotation with Modelsim
+//=============================
+//
+//Ensuring Multi-bit Specifies are Handled Correctly: Bit-blasting
+//----------------------------------------------------------------
+//
+//ModelSim (tested on Modelsim SE 10.4c) ignores multi-bit specify statements
+//by default.
+//
+//This causes SDF annotation errors such as:
+//
+//  vsim-SDF-3261: Failed to find matching specify module path
+//
+//To force Modelsim to correctly interpret multi-bit specify statements you
+//should provide the '+bitblast' option to the vsim executable.
+//This forces it to apply specify statements using multi-bit operands to
+//each bit of the operand (i.e. according to the Verilog standard).
+//
+//Confirming back-annotation is occuring correctly
+//------------------------------------------------
+//
+//Another useful option is '+sdf_verbose' which produces extra output about
+//SDF annotation, which can be used to verify annotation occured correctly.
+//
+//For example:
+//
+//      Summary of Verilog design objects annotated: 
+//      
+//           Module path delays =          5
+//      
+//       ******************************************************************************
+//      
+//       Summary of constructs read: 
+//      
+//                 IOPATH =          5
+//
+//shows that all 5 IOPATH constructs in the SDF were annotated to the verilog
+//design.
+//
+//Example vsim Command Line
+//--------------------------
+//The following is an example command-line to vsim:
+//
+//  vsim -t 1ps -L rtl_work -L work -voptargs="+acc" +sdf_verbose +bitblast tb
 
+//K-input Look-Up Table
 module LUT_K #(
     //The Look-up Table size (number of inputs)
     parameter K, 
@@ -14,10 +133,10 @@ module LUT_K #(
 );
 
     specify
-        (in => out) = "";
+        (in *> out) = "";
     endspecify
 
-    assign out = LUT_MASK[in];
+    assign out = LUT_MASK[out];
 
 endmodule
 
@@ -72,6 +191,7 @@ module mux(
 
 endmodule
 
+//n-bit adder
 module adder #(
     parameter WIDTH = 1   
 ) (
@@ -82,11 +202,11 @@ module adder #(
     output [WIDTH-1:0] sumout);
 
    specify
-      (a=>sumout)="";
-      (b=>sumout)="";
-      (cin=>sumout)="";
-      (a=>cout)="";
-      (b=>cout)="";
+      (a*>sumout)="";
+      (b*>sumout)="";
+      (cin*>sumout)="";
+      (a*>cout)="";
+      (b*>cout)="";
       (cin=>cout)="";
    endspecify
    
@@ -105,8 +225,8 @@ module mult #(
 );
 
     specify
-        (a => out) = "";
-        (b => out) = "";
+        (a *> out) = "";
+        (b *> out) = "";
     endspecify
 
     assign out = a * b;
@@ -130,7 +250,7 @@ module single_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock=>out)="";
+        (clock*>out)="";
         $setup(addr, posedge clock, "");
         $setup(data, posedge clock, "");
         $setup(we, posedge clock, "");
@@ -170,8 +290,8 @@ module dual_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock=>out1)="";
-        (clock=>out2)="";
+        (clock*>out1)="";
+        (clock*>out2)="";
         $setup(addr1, posedge clock, "");
         $setup(addr2, posedge clock, "");
         $setup(data1, posedge clock, "");
