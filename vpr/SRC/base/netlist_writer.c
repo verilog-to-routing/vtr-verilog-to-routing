@@ -223,15 +223,15 @@ class LutInstance : public Instance {
         LutInstance(size_t lut_size, //The LUT size
                     LogicVec lut_mask, //The LUT mask representing the logic function
                     std::string inst_name, //The name of this instance
-                    std::map<std::string,std::string> port_conns, //The port connections of this instance
+                    std::map<std::string,std::vector<std::string>> port_conns, //The port connections of this instance
                     std::vector<Arc> timing_arc_values) //The timing arcs of this instance
-            : type_()
+            : type_("LUT_K")
+            , lut_size_(lut_size)
             , lut_mask_(lut_mask)
             , inst_name_(inst_name)
-            , port_connections_(port_conns)
+            , port_conns_(port_conns)
             , timing_arcs_(timing_arc_values)
             {
-            type_ = "LUT_" + std::to_string(lut_size);     
         }
 
         //Accessors
@@ -246,52 +246,46 @@ class LutInstance : public Instance {
             //Instantiate the lut
             os << indent(depth) << type_ << " #(\n";
 
+            os << indent(depth+1) << ".K(" << lut_size_ << "),\n";
+
             std::stringstream param_ss;
             param_ss << lut_mask_;
             os << indent(depth+1) << ".LUT_MASK(" << param_ss.str() << ")\n";
 
             os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
 
-            //and all its named port connections
-            for(auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
-                os << indent(depth+1);
-                os << "." + iter->first;
-                os << "(";
-                if(iter->second == "") {
-                    //Disconnected
+            assert(port_conns_.count("in"));
+            assert(port_conns_.count("out"));
+            assert(port_conns_.size() == 2);
 
-                    if(iter != --port_connections_.end()) {
-                        //Disconnected inputs are grounded
-                        os << "1'b0";
-                    } else {
-                        //Disconnected outputs are left open
-                        os << "";
-                    }
-                    
-                } else {
-                    os << escape_verilog_identifier(iter->second);
-                }
-                os << ")";
+            print_verilog_port(os, "in", port_conns_["in"], PortType::IN, depth+1);
+            os << "," << "\n";
+            print_verilog_port(os, "out", port_conns_["out"], PortType::OUT, depth+1);
+            os << "\n";
 
-                if(iter != --port_connections_.end()) {
-                    os << ", ";
-                }
-                os << "\n";
-            }
             os << indent(depth) << ");\n\n";
         }
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth) override {
             os << indent(depth) << ".names ";
 
-            //We currently rely upon the ports begin sorted by thier name (e.g. in_0, in_1)
-            for(auto kv : port_connections_) {
-                if(kv.second == "") {
+            for(auto net : port_conns_["in"]) {
+                if(net == "") {
                     //Disconnected
                     os << create_unconn_net(unconn_count) << " ";
                 } else {
-                    os << kv.second << " ";
+                    os << net << " ";
                 }
+            }
+
+            assert(port_conns_["out"].size() == 1);
+
+            auto out_net = port_conns_["out"][0];
+            if(out_net == "") {
+                //Disconnected
+                os << create_unconn_net(unconn_count) << " ";
+            } else {
+                os << out_net << " ";
             }
             os << "\n";
 
@@ -310,7 +304,7 @@ class LutInstance : public Instance {
                     std::reverse(bit_str.begin(), bit_str.end());
 
                     //Trim to the LUT size
-                    std::string input_values(bit_str.begin(), bit_str.begin() + (port_connections_.size() - 1));
+                    std::string input_values(bit_str.begin(), bit_str.begin() + (lut_size_));
 
                     //Add the row as true
                     os << indent(depth) << input_values << " 1\n";
@@ -321,7 +315,7 @@ class LutInstance : public Instance {
             if(minterms_set == 0) {
                 //To make ABC happy (i.e. avoid complaints about mismatching cover size and fanin)
                 //put in a false value for luts that are always false
-                os << std::string(port_connections_.size() - 1, '-') << " 0\n";
+                os << std::string(lut_size_, '-') << " 0\n";
             }
         }
 
@@ -341,9 +335,13 @@ class LutInstance : public Instance {
                     delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
 
                     os << indent(depth+3) << "(IOPATH ";
-                    os << "inter" << arc.source_ipin() << "/datain";
-                    os << "inter" << arc.source_ipin() << "/dataout";
-                    os << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    //Note we do not escape the last index of multi-bit signals since they are used to
+                    //match multi-bit ports
+                    os << escape_sdf_identifier(arc.source_name()) << "[" << arc.source_ipin() << "]" << " ";
+
+                    assert(arc.sink_ipin() == 0); //Should only be one output
+                    os << escape_sdf_identifier(arc.sink_name()) << " ";
+                    os << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 }
                 os << indent(depth+2) << ")\n";
                 os << indent(depth+1) << ")\n";
@@ -357,9 +355,10 @@ class LutInstance : public Instance {
 
     private:
         std::string type_;
+        size_t lut_size_;
         LogicVec lut_mask_;
         std::string inst_name_;
-        std::map<std::string,std::string> port_connections_;
+        std::map<std::string,std::vector<std::string>> port_conns_;
         std::vector<Arc> timing_arcs_;
 };
 
@@ -1025,7 +1024,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto inst_name = join_identifier("lut", atom->name);
 
             //Determine the port connections
-            std::map<std::string,std::string> port_conns;
+            std::map<std::string,std::vector<std::string>> port_conns;
 
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             assert(pb_graph_node->num_input_ports == 1); //LUT has one input port
@@ -1038,30 +1037,26 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
                 int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
 
-                std::string port_name = "in_" + std::to_string(pin_idx);
+                std::string net;
                 if(atom_net_idx == OPEN) {
                     //Disconnected
-
-                    auto ret = port_conns.insert(std::make_pair(port_name, "")); 
-                    assert(ret.second); //Was inserted
+                    net = "";
                 } else {
                     //Connected to a net
                     
                     //Look up the tnode associated with this pin (used for delay calculation)
                     int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::IN, 0, pin_idx);
-                    auto ret = port_conns.insert(std::make_pair(port_name, input_net)); 
-                    assert(ret.second); //Was inserted
-
+                    net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::IN, 0, pin_idx);
 
                     //Record the timing arc
                     assert(tnode[tnode_id].num_edges == 1);
                     float delay = tnode[tnode_id].out_edges[0].Tdel;
-                    Arc timing_arc("", pin_idx, "", 0, delay);
+                    Arc timing_arc("in", pin_idx, "out", 0, delay);
 
                     timing_arcs.push_back(timing_arc);
                 }
+                port_conns["in"].push_back(net);
             }
 
             //Add the single output connection
@@ -1071,23 +1066,19 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 int cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
                 int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
 
-                std::string port_name = "out";
+                std::string net;
                 if(atom_net_idx == OPEN) {
                     //Disconnected
-
-                    //We leave disconnected LUT output pins disconnected
-                    auto ret = port_conns.insert(std::make_pair(port_name, "")); 
-                    assert(ret.second); //Was inserted
+                    net = "";
                 } else {
                     //Connected to a net
 
                     //Look up the tnode associated with this pin (used for delay calculation)
                     int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    std::string input_net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::OUT, 0, 0);
-                    auto ret = port_conns.insert(std::make_pair(port_name, input_net)); 
-                    assert(ret.second); //Was inserted
+                    net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::OUT, 0, 0);
                 }
+                port_conns["out"].push_back(net);
             }
 
             auto inst = std::make_shared<LutInstance>(lut_size, lut_mask, inst_name, port_conns, timing_arcs);
