@@ -20,19 +20,6 @@
 //Enable for extra output while calculating LUT masks
 /*#define DEBUG_LUT_MASK*/
 
-//Define for extra output regarding disconnected pins
-/*#define DEBUG_DISCONNECTED_PINS*/
-
-//
-// File local function delcarations
-//
-std::string indent(size_t depth);
-double get_delay_ps(double delay_sec);
-double get_delay_ps(int source_tnode, int sink_tnode);
-std::string escape_verilog_identifier(const std::string id);
-std::string escape_sdf_identifier(const std::string id);
-std::string join_identifier(std::string lhs, std::string rhs);
-
 //
 //File local type delcarations
 //
@@ -51,6 +38,22 @@ enum class PortType {
     OUT,
     CLOCK
 };
+
+//
+// File local function delcarations
+//
+std::string indent(size_t depth);
+double get_delay_ps(double delay_sec);
+double get_delay_ps(int source_tnode, int sink_tnode);
+
+void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth);
+void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth);
+
+std::string create_unconn_net(size_t& unconn_count);
+std::string escape_verilog_identifier(const std::string id);
+std::string escape_sdf_identifier(const std::string id);
+std::string join_identifier(std::string lhs, std::string rhs);
+
 
 //A vector-like object containing logic values.
 //It includes some useful additional operations such as input rotation (rotate()) and
@@ -154,25 +157,33 @@ class LogicVec {
 //A combinational timing arc
 class Arc {
     public:
-        Arc(std::string src, //Source of the arc 
-            std::string snk, //Sink of the arc
+        Arc(std::string src_port, //Source of the arc 
+            int src_ipin, //Source pin index
+            std::string snk_port, //Sink of the arc
+            int snk_ipin, //Sink pin index
             float del, //Delay on this arc
             std::string cond="") //Condition associated with the arc
-            : source_name_(src)
-            , sink_name_(snk)
+            : source_name_(src_port)
+            , source_ipin_(src_ipin)
+            , sink_name_(snk_port)
+            , sink_ipin_(snk_ipin)
             , delay_(del)
             , condition_(cond)
             {}
 
         //Accessors
         std::string source_name() const { return source_name_; }
+        int source_ipin() const { return source_ipin_; }
         std::string sink_name() const { return sink_name_; }
+        int sink_ipin() const { return sink_ipin_; }
         double delay() const { return delay_; }
         std::string condition() const { return condition_; }
 
     private:
         std::string source_name_;
+        int source_ipin_;
         std::string sink_name_;
+        int sink_ipin_;
         double delay_;
         std::string condition_;
 };
@@ -277,7 +288,7 @@ class LutInstance : public Instance {
             for(auto kv : port_connections_) {
                 if(kv.second == "") {
                     //Disconnected
-                    os << "__vpr__unconn" << unconn_count++ << " ";
+                    os << create_unconn_net(unconn_count) << " ";
                 } else {
                     os << kv.second << " ";
                 }
@@ -329,7 +340,9 @@ class LutInstance : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
 
-                    os << indent(depth+3) << "(IOPATH " << arc.source_name() << " " << arc.sink_name();
+                    os << indent(depth+3) << "(IOPATH ";
+                    os << "inter" << arc.source_ipin() << "/datain";
+                    os << "inter" << arc.source_ipin() << "/dataout";
                     os << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 }
                 os << indent(depth+2) << ")\n";
@@ -502,25 +515,41 @@ class BlackBoxInst : public Instance {
         BlackBoxInst(std::string type_name, //Instance type
                      std::string inst_name, //Instance name
                      std::map<std::string,std::string> params, //Verilog parameters: Dictonary of <param_name,value>
-                     std::map<std::string,std::string> port_conns, //Port connections: Dictionary of <port,net>
+                     std::map<std::string,std::vector<std::string>> input_port_conns, //Port connections: Dictionary of <port,nets>
+                     std::map<std::string,std::vector<std::string>> output_port_conns, //Port connections: Dictionary of <port,nets>
                      std::vector<Arc> timing_arcs, //Combinational timing arcs
                      std::map<std::string,double> ports_tsu, //Port setup checks
                      std::map<std::string,double> ports_tcq) //Port clock-to-q delays
             : type_name_(type_name)
             , inst_name_(inst_name)
             , params_(params)
-            , port_conns_(port_conns)
+            , input_port_conns_(input_port_conns)
+            , output_port_conns_(output_port_conns)
             , timing_arcs_(timing_arcs)
             , ports_tsu_(ports_tsu)
             , ports_tcq_(ports_tcq)
         {}
 
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
-            os << indent(depth) << ".subckt " << type_name_ << "\n";
+            os << indent(depth) << ".subckt " << type_name_ << " \\" << "\n";
 
-            for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
-                os << indent(depth+1) << iter->first << "=" << iter->second;
-                if(iter != --port_conns_.end()) {
+            for(auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
+                const auto& port_name = iter->first;
+                const auto& nets = iter->second;
+                print_blif_port(os, unconn_count, port_name, nets, depth+1);
+
+                if(!(iter == --input_port_conns_.end() && output_port_conns_.empty())) {
+                    os << " \\";
+                }
+                os << "\n";
+            }
+
+            for(auto iter = output_port_conns_.begin(); iter != output_port_conns_.end(); ++iter) {
+                const auto& port_name = iter->first;
+                const auto& nets = iter->second;
+                print_blif_port(os, unconn_count, port_name, nets, depth+1);
+
+                if(!(iter == --output_port_conns_.end())) {
                     os << " \\";
                 }
                 os << "\n";
@@ -544,10 +573,23 @@ class BlackBoxInst : public Instance {
             //Instance name
             os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
 
-            //Port connections
-            for(auto iter = port_conns_.begin(); iter != port_conns_.end(); ++iter) {
-                os << indent(depth+1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
-                if(iter != --port_conns_.end()) {
+            //Input Port connections
+            for(auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
+                auto& port_name = iter->first;
+                auto& nets = iter->second;
+                print_verilog_port(os, port_name, nets, PortType::IN, depth+1);
+                if(!(iter == --input_port_conns_.end() && output_port_conns_.empty())) {
+                    os << ",";
+                }
+                os << "\n";
+            }
+
+            //Output Port connections
+            for(auto iter = output_port_conns_.begin(); iter != output_port_conns_.end(); ++iter) {
+                auto& port_name = iter->first;
+                auto& nets = iter->second;
+                print_verilog_port(os, port_name, nets, PortType::OUT, depth+1);
+                if(!(iter == --output_port_conns_.end())) {
                     os << ",";
                 }
                 os << "\n";
@@ -572,7 +614,13 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
 
-                    os << indent(depth+3) << "(IOPATH " << arc.source_name() << " " << arc.sink_name() << " " << delay_triple.str() << ")\n";
+                    //Note that we explicitly do not escape the last array indexing so an SDF
+                    //reader will treat the ports as multi-bit
+                    os << indent(depth+3) << "(IOPATH ";
+                    os << escape_sdf_identifier(arc.source_name()) << "[" << arc.source_ipin() << "]" << " ";
+                    os << escape_sdf_identifier(arc.sink_name()) << "[" << arc.sink_ipin() << "]" << " ";
+                    os << delay_triple.str();
+                    os << ")\n";
                 }
 
                 //Clock-to-Q delays
@@ -582,12 +630,12 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
 
-                    os << indent(depth+3) << "(IOPATH (posedge clock) " << kv.first << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    os << indent(depth+3) << "(IOPATH (posedge clock) " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 }
-                os << indent(depth+1) << ")\n";
+                os << indent(depth+2) << ")\n"; //ABSOLUTE
             }
 
-            if(!ports_tsu_.empty()) {
+            if(!ports_tsu_.empty() || !ports_thld_.empty()) {
                 //Setup checks
                 os << indent(depth+2) << "(TIMINGCHECK\n";
                 for(auto kv : ports_tsu_) {
@@ -596,20 +644,31 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
 
-                    os << indent(depth+3) << "(SETUP " << kv.first << " (posedge clock) " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    os << indent(depth+3) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 }
-                os << indent(depth+2) << ")\n";
+                for(auto kv : ports_thld_) {
+                    double hold_ps = get_delay_ps(kv.second);
+
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
+
+                    os << indent(depth+3) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                }
+                os << indent(depth+2) << ")\n"; //TIMINGCHECK
             }
-            os << indent(depth) << ")\n";
+            os << indent(depth+1) << ")\n"; //DELAY
+            os << indent(depth) << ")\n"; //CELL
         }
 
     private:
         std::string type_name_;
         std::string inst_name_;
         std::map<std::string,std::string> params_;
-        std::map<std::string,std::string> port_conns_;
+        std::map<std::string,std::vector<std::string>> input_port_conns_;
+        std::map<std::string,std::vector<std::string>> output_port_conns_;
         std::vector<Arc> timing_arcs_;
         std::map<std::string,double> ports_tsu_;
+        std::map<std::string,double> ports_thld_;
         std::map<std::string,double> ports_tcq_;
 };
 
@@ -997,12 +1056,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
 
                     //Record the timing arc
-                    std::string source_name = "inter" + std::to_string(pin_idx) + "/datain";
-                    std::string sink_name = "inter" + std::to_string(pin_idx) + "/dataout";
-
                     assert(tnode[tnode_id].num_edges == 1);
                     float delay = tnode[tnode_id].out_edges[0].Tdel;
-                    Arc timing_arc(source_name, sink_name, delay);
+                    Arc timing_arc("", pin_idx, "", 0, delay);
 
                     timing_arcs.push_back(timing_arc);
                 }
@@ -1100,7 +1156,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type = pb_type->model->name;
             std::string inst_name = join_identifier(type, atom->name);
             std::map<std::string,std::string> params;
-            std::map<std::string,std::string> port_conns;
+            std::map<std::string,std::vector<std::string>> input_port_conns;
+            std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
             std::map<std::string,double> ports_tsu;
             std::map<std::string,double> ports_tcq;
@@ -1119,33 +1176,34 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    std::string net;
                     if(atom_net_idx == OPEN) {
-#ifdef DEBUG_DISCONNECTED_PINS
-                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
-#endif
-                        continue;
+                        //Disconnected
+                        net = "";
+                    } else {
+                        //Connected
+                        net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
                     }
 
-                    std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
 
                     std::string port_name;
                     if(port_class == "address") {
-                        port_name = "addr[" + std::to_string(ipin) + "]";
+                        port_name = "addr";
                         params["ADDR_WIDTH"] = std::to_string(port->num_pins);
                     } else if(port_class == "address1") {
-                        port_name = "addr1[" + std::to_string(ipin) + "]";
+                        port_name = "addr1";
                         params["ADDR_WIDTH"] = std::to_string(port->num_pins);
                     } else if(port_class == "address2") {
-                        port_name = "addr2[" + std::to_string(ipin) + "]";
+                        port_name = "addr2";
                         params["ADDR_WIDTH"] = std::to_string(port->num_pins);
                     } else if (port_class == "data_in") {
-                        port_name = "data[" + std::to_string(ipin) + "]";
+                        port_name = "data";
                         params["DATA_WIDTH"] = std::to_string(port->num_pins);
                     } else if (port_class == "data_in1") {
-                        port_name = "data1[" + std::to_string(ipin) + "]";
+                        port_name = "data1";
                         params["DATA_WIDTH"] = std::to_string(port->num_pins);
                     } else if (port_class == "data_in2") {
-                        port_name = "data2[" + std::to_string(ipin) + "]";
+                        port_name = "data2";
                         params["DATA_WIDTH"] = std::to_string(port->num_pins);
                     } else if (port_class == "write_en") {
                         port_name = "we";
@@ -1158,7 +1216,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                     }
 
-                    port_conns[port_name] = net;
+                    input_port_conns[port_name].push_back(net);
                     ports_tsu[port_name] = pin->tsu_tco;
                 }
             }
@@ -1174,27 +1232,26 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    std::string net;
                     if(atom_net_idx == OPEN) {
-#ifdef DEBUG_DISCONNECTED_PINS
-                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
-#endif
-                        continue;
+                        //Disconnected
+                        net = "";
+                    } else {
+                        net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
                     }
-
-                    std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
 
                     std::string port_name;
                     if(port_class == "data_out") {
-                        port_name = "out[" + std::to_string(ipin) + "]";
+                        port_name = "out";
                     } else if(port_class == "data_out1") {
-                        port_name = "out1[" + std::to_string(ipin) + "]";
+                        port_name = "out1";
                     } else if(port_class == "data_out2") {
-                        port_name = "out2[" + std::to_string(ipin) + "]";
+                        port_name = "out2";
                     } else {
                         vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                     }
-                    port_conns[port_name] = net;
+                    output_port_conns[port_name].push_back(net);
                     ports_tcq[port_name] = pin->tsu_tco;
                 }
             }
@@ -1211,11 +1268,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    assert(atom_net_idx != OPEN); //Must have a clock
+
                     std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::CLOCK, iport, ipin);
 
                     if(port_class == "clock") {
                         assert(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
-                        port_conns["clock"] = net;
+                        input_port_conns["clock"].push_back(net);
                     } else {
                         vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
@@ -1223,7 +1282,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            return std::make_shared<BlackBoxInst>(type, inst_name, params, port_conns, timing_arcs, ports_tsu, ports_tcq);
+            return std::make_shared<BlackBoxInst>(type, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         //Returns an Instance object representing the Multiplier
@@ -1235,15 +1294,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type_name = pb_type->model->name;
             std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
-            std::map<std::string,std::string> port_conns;
+            std::map<std::string,std::vector<std::string>> input_port_conns;
+            std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
             std::map<std::string,double> ports_tsu;
             std::map<std::string,double> ports_tcq;
 
             params["WIDTH"] = "0";
 
-            //Delay matrix[sink_tnode] -> pairs of source_pin_name, delay
-            std::map<int,std::vector<std::pair<std::string,double>>> tnode_delay_matrix;
+            //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
+            std::map<int,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
 
             //Process the input ports
             for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
@@ -1255,28 +1315,28 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    std::string net;
                     if(atom_net_idx == OPEN) {
-#ifdef DEBUG_DISCONNECTED_PINS
-                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
-#endif
-                        continue;
+                        //Disconnected
+                        net = "";
+                    } else {
+                        //Connected
+                        auto inode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+
+                        //Delays
+                        //
+                        //We record the souce sink tnodes and thier delays here since the timing graph only
+                        //has forward edges
+                        for(int iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
+                            auto& edge = tnode[inode].out_edges[iedge];
+                            auto key = edge.to_node;
+                            tnode_delay_matrix[key].emplace_back(port->name, ipin, edge.Tdel);
+                        }
                     }
 
-                    auto inode = find_tnode(atom, cluster_pin_idx);
-                    std::string net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+                    input_port_conns[port->name].push_back(net);
 
-                    std::string pin_name = std::string(port->name) + "[" + std::to_string(ipin) + "]";
-                    port_conns[pin_name] = net;
-
-                    //Delays
-                    //
-                    //We record the souce sink tnodes and thier delays here since the timing graph only
-                    //has forward edges
-                    for(int iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
-                        auto& edge = tnode[inode].out_edges[iedge];
-                        auto key = edge.to_node;
-                        tnode_delay_matrix[key].emplace_back(pin_name, edge.Tdel);
-                    }
                 }
             }
 
@@ -1290,27 +1350,33 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    std::string net;
                     if(atom_net_idx == OPEN) {
-#ifdef DEBUG_DISCONNECTED_PINS
-                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
-#endif
-                        continue;
+                        //Disconnected
+                        net = "";
+                    } else {
+                        //Connected
+
+                        auto inode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
+
+                        //Record the timing arcs
+                        for(auto& data_tuple : tnode_delay_matrix[inode]) {
+                            auto src_name = get<0>(data_tuple);
+                            auto src_ipin = get<1>(data_tuple);
+                            auto delay = get<2>(data_tuple);
+                            timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
+                        }
                     }
 
-                    auto inode = find_tnode(atom, cluster_pin_idx);
-                    std::string net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
+                    output_port_conns[port->name].push_back(net);
 
-                    std::string pin_name = std::string(port->name) + "[" + std::to_string(ipin) + "]";
-                    port_conns[pin_name] = net;
-
-                    //Record the timing arcs
-                    for(auto& pin_name_delay : tnode_delay_matrix[inode]) {
-                        timing_arcs.emplace_back(pin_name_delay.first, pin_name, pin_name_delay.second);
-                    }
                 }
             }
 
-            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, port_conns, timing_arcs, ports_tsu, ports_tcq);
+            assert(pb_graph_node->num_clock_ports == 0); //No clocks
+
+            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         //Returns an Instance object representing the Adder
@@ -1322,15 +1388,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string type_name = pb_type->model->name;
             std::string inst_name = join_identifier(type_name, atom->name);
             std::map<std::string,std::string> params;
-            std::map<std::string,std::string> port_conns;
+            std::map<std::string,std::vector<std::string>> input_port_conns;
+            std::map<std::string,std::vector<std::string>> output_port_conns;
             std::vector<Arc> timing_arcs;
             std::map<std::string,double> ports_tsu;
             std::map<std::string,double> ports_tcq;
 
             params["WIDTH"] = "0";
 
-            //Delay matrix[sink_tnode] -> pairs of source_pin_name, delay
-            std::map<int,std::vector<std::pair<std::string,double>>> tnode_delay_matrix;
+            //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
+            std::map<int,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
 
 
             //Process the input ports
@@ -1346,28 +1413,28 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    std::string net;
                     if(atom_net_idx == OPEN) {
-#ifdef DEBUG_DISCONNECTED_PINS
-                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
-#endif
-                        continue;
+                        //Disconnected
+
+                    } else {
+                        //Connected
+                        auto inode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+
+                        //Delays
+                        //
+                        //We record the souce sink tnodes and thier delays here since the timing graph only
+                        //has forward edges
+                        for(int iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
+                            auto& edge = tnode[inode].out_edges[iedge];
+                            auto key = edge.to_node;
+                            tnode_delay_matrix[key].emplace_back(port->name, ipin, edge.Tdel);
+                        }
                     }
 
-                    auto inode = find_tnode(atom, cluster_pin_idx);
-                    std::string net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+                    input_port_conns[port->name].push_back(net);
 
-                    std::string pin_name = std::string(port->name) + "[" + std::to_string(ipin) + "]";
-                    port_conns[pin_name] = net;
-
-                    //Delays
-                    //
-                    //We record the souce sink tnodes and thier delays here since the timing graph only
-                    //has forward edges
-                    for(int iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
-                        auto& edge = tnode[inode].out_edges[iedge];
-                        auto key = edge.to_node;
-                        tnode_delay_matrix[key].emplace_back(pin_name, edge.Tdel);
-                    }
                 }
             }
 
@@ -1381,27 +1448,29 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
+                    std::string net;
                     if(atom_net_idx == OPEN) {
-#ifdef DEBUG_DISCONNECTED_PINS
-                        vpr_printf_warning(__FILE__, __LINE__, "Atom '%s' pin %d on port '%s' is disconnected\n", atom->name, ipin, port->name); 
-#endif
-                        continue;
+                        //Disconnected
+                        net = "";
+                    } else {
+                        //Connected
+                        auto inode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
+
+                        //Record the timing arcs
+                        for(auto& data_tuple : tnode_delay_matrix[inode]) {
+                            auto src_name = get<0>(data_tuple);
+                            auto src_ipin = get<1>(data_tuple);
+                            auto delay = get<2>(data_tuple);
+                            timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
+                        }
                     }
 
-                    auto inode = find_tnode(atom, cluster_pin_idx);
-                    std::string net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
-
-                    std::string pin_name = std::string(port->name) + "[" + std::to_string(ipin) + "]";
-                    port_conns[pin_name] = net;
-
-                    //Record the timing arcs
-                    for(auto& pin_name_delay : tnode_delay_matrix[inode]) {
-                        timing_arcs.emplace_back(pin_name_delay.first, pin_name, pin_name_delay.second);
-                    }
+                    output_port_conns[port->name].push_back(net);
                 }
             }
 
-            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, port_conns, timing_arcs, ports_tsu, ports_tcq);
+            return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
 
         //Returns the netlist block associated with the given pb
@@ -1765,6 +1834,90 @@ double get_delay_ps(int source_tnode, int sink_tnode) {
     float delay_sec = sink_delay - source_delay;
 
     return get_delay_ps(delay_sec);
+}
+
+//Returns the name of a unique unconnected net
+std::string create_unconn_net(size_t& unconn_count) {
+    return "__vpr__unconn" + std::to_string(unconn_count++);
+}
+
+//Prints a verilog port to the given output stream
+//
+//  Handles special cases like multi-bit and disconnected ports
+void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth) {
+    if(nets.size() == 1) {
+        //If only a single bit port, don't include port indexing
+        os << indent(depth) << port_name << "=";
+        if(nets[0].empty()) {
+            os << create_unconn_net(unconn_count);
+        } else {
+            os << nets[0];
+        }
+    } else {
+        //Include bit indexing for multi-bit ports
+        for(int ipin = 0; ipin < (int) nets.size(); ++ipin) {
+            os << indent(depth) << port_name << "[" << ipin << "]" << "=";
+
+            if(nets[ipin].empty()) {
+                os << create_unconn_net(unconn_count);
+            } else {
+                os << nets[ipin];
+            }
+            if(ipin != (int) nets.size() - 1) {
+                os << " " << "\\" << "\n";
+            }
+        }
+    }
+}
+
+//Prints a verilog port to the given output stream
+//
+//  Handles special cases like multi-bit and disconnected ports
+void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth) {
+    //Port name
+    os << indent(depth) << "." << port_name << "(";
+
+    //Pins
+    if(nets.size() == 1) {
+        //Single-bit port
+        if(nets[0].empty()) {
+            //Disconnected
+            if(type == PortType::IN || type == PortType::CLOCK) {
+                os << "1'b0";
+            } else {
+                assert(type == PortType::OUT);
+                os << "";
+            }
+        } else {
+            //Connected
+            os << escape_verilog_identifier(nets[0]);
+        }
+    } else {
+        //A multi-bit port, we explicitly concat the single-bit nets to build the port,
+        //taking care to print MSB on left and LSB on right
+        os << "{" << "\n";
+        for(int ipin = (int) nets.size() - 1; ipin >= 0; --ipin) { //Reverse order to match endianess
+            os << indent(depth+1);
+            if(nets[ipin].empty()) {
+                //Disconnected
+                if(type == PortType::IN || type == PortType::CLOCK) {
+                    os << "1'b0";
+                } else {
+                    assert(type == PortType::OUT);
+                    os << "";
+                }
+            } else {
+                //Connected
+                os << escape_verilog_identifier(nets[ipin]) ;
+            }
+            if(ipin != 0) {
+                os << ",";
+                os << "\n";
+            }
+        }
+        os << "}";
+    }
+    os << ")";
 }
 
 //Escapes the given identifier to be safe for verilog
