@@ -10,16 +10,14 @@ module LUT_K #(
     parameter LUT_MASK={2**K{1'b0}} 
 ) (
     input [K-1:0] in,
-    output reg out
+    output out
 );
 
     specify
         (in => out) = "";
-    end
+    endspecify
 
-    always@(*) begin
-        out = LUT_MASK[in];
-    end
+    assign out = LUT_MASK[in];
 
 endmodule
 
@@ -35,6 +33,7 @@ module DFF #(
     specify
         (clock => Q) = "";
         $setup(D, posedge clock, "");
+        $hold(posedge clock, D, "");
     endspecify
 
     initial begin
@@ -132,6 +131,12 @@ module single_port_ram #(
 
     specify
         (clock=>out)="";
+        $setup(addr, posedge clock, "");
+        $setup(data, posedge clock, "");
+        $setup(we, posedge clock, "");
+        $hold(posedge clock, addr, "");
+        $hold(posedge clock, data, "");
+        $hold(posedge clock, we, "");
     endspecify
    
     always@(posedge clock) begin
@@ -167,6 +172,18 @@ module dual_port_ram #(
     specify
         (clock=>out1)="";
         (clock=>out2)="";
+        $setup(addr1, posedge clock, "");
+        $setup(addr2, posedge clock, "");
+        $setup(data1, posedge clock, "");
+        $setup(data2, posedge clock, "");
+        $setup(we1, posedge clock, "");
+        $setup(we2, posedge clock, "");
+        $hold(posedge clock, addr1, "");
+        $hold(posedge clock, addr2, "");
+        $hold(posedge clock, data1, "");
+        $hold(posedge clock, data2, "");
+        $hold(posedge clock, we1, "");
+        $hold(posedge clock, we2, "");
     endspecify
    
     always@(posedge clock) begin //Port 1
