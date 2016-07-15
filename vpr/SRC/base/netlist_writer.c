@@ -17,6 +17,18 @@
 #include "globals.h"
 #include "path_delay.h"
 
+//Overview
+//========
+//
+//This file implements the netlist writer which generates post-implementation (i.e. post-routing) netlists
+//in BLIF and Verilog formats, along with an SDF file which can be used for timing back-annotation (e.g. for
+//timing simulation).
+//
+//Implementation
+
+
+
+
 //Enable for extra output while calculating LUT masks
 /*#define DEBUG_LUT_MASK*/
 
@@ -39,6 +51,14 @@ enum class PortType {
     CLOCK
 };
 
+class LogicVec;
+class Arc;
+class Instance;
+class LutInst;
+class LatchInst;
+class BlackBoxInst;
+class NetlistWriterVisitor;
+
 //
 // File local function delcarations
 //
@@ -54,6 +74,11 @@ std::string escape_verilog_identifier(const std::string id);
 std::string escape_sdf_identifier(const std::string id);
 std::string join_identifier(std::string lhs, std::string rhs);
 
+//
+//
+// File local class and function implementations
+//
+//
 
 //A vector-like object containing logic values.
 //It includes some useful additional operations such as input rotation (rotate()) and
@@ -193,7 +218,7 @@ class Arc {
 //Instances know how to describe themselves in BLIF, Verilog and SDF
 //
 //This should be subclassed to implement support for new primitive types (although
-//see BlackBoxInst for a general implementation for generic primitives)
+//see BlackBoxInst for a general implementation for a black box primitive)
 class Instance {
     public:
         //Print the current instance in blif format
@@ -217,14 +242,14 @@ class Instance {
 };
 
 //An instance representing a Look-Up Table
-class LutInstance : public Instance {
+class LutInst : public Instance {
     public: //Public methods
 
-        LutInstance(size_t lut_size, //The LUT size
-                    LogicVec lut_mask, //The LUT mask representing the logic function
-                    std::string inst_name, //The name of this instance
-                    std::map<std::string,std::vector<std::string>> port_conns, //The port connections of this instance
-                    std::vector<Arc> timing_arc_values) //The timing arcs of this instance
+        LutInst(size_t lut_size, //The LUT size
+                LogicVec lut_mask, //The LUT mask representing the logic function
+                std::string inst_name, //The name of this instance
+                std::map<std::string,std::vector<std::string>> port_conns, //The port connections of this instance. Key: port name, Value: connected nets 
+                std::vector<Arc> timing_arc_values) //The timing arcs of this instance
             : type_("LUT_K")
             , lut_size_(lut_size)
             , lut_mask_(lut_mask)
@@ -269,6 +294,7 @@ class LutInstance : public Instance {
         void print_blif(std::ostream& os, size_t& unconn_count, int depth) override {
             os << indent(depth) << ".names ";
 
+            //Input nets
             for(auto net : port_conns_["in"]) {
                 if(net == "") {
                     //Disconnected
@@ -280,6 +306,7 @@ class LutInstance : public Instance {
 
             assert(port_conns_["out"].size() == 1);
 
+            //Output net
             auto out_net = port_conns_["out"][0];
             if(out_net == "") {
                 //Disconnected
@@ -289,6 +316,8 @@ class LutInstance : public Instance {
             }
             os << "\n";
 
+            //Write out the truth table.
+            //
             //For simplicity we always output the ON set
             // Using the OFF set for functions that are mostly 'on' 
             // would reduce the size of the output blif, 
@@ -362,7 +391,7 @@ class LutInstance : public Instance {
         std::vector<Arc> timing_arcs_;
 };
 
-class LatchInstance : public Instance {
+class LatchInst : public Instance {
     public: //Public types
         //Types of latches (defined by BLIF)
         enum class Type {
@@ -393,13 +422,13 @@ class LatchInstance : public Instance {
             return is;
         }
     public:
-        LatchInstance(std::string inst_name, //Name of this instance
-                      std::map<std::string,std::string> port_conns, //Instance's port-to-net connections
-                      Type type, //Type of this latch
-                      LogicVal init_value, //Initial value of the latch
-                      double tcq=std::numeric_limits<double>::quiet_NaN(), //Clock-to-Q delay
-                      double tsu=std::numeric_limits<double>::quiet_NaN(), //Setup time
-                      double thld=std::numeric_limits<double>::quiet_NaN()) //Hold time
+        LatchInst(std::string inst_name, //Name of this instance
+                  std::map<std::string,std::string> port_conns, //Instance's port-to-net connections
+                  Type type, //Type of this latch
+                  LogicVal init_value, //Initial value of the latch
+                  double tcq=std::numeric_limits<double>::quiet_NaN(), //Clock-to-Q delay
+                  double tsu=std::numeric_limits<double>::quiet_NaN(), //Setup time
+                  double thld=std::numeric_limits<double>::quiet_NaN()) //Hold time
             : instance_name_(inst_name)
             , port_connections_(port_conns)
             , type_(type)
@@ -436,6 +465,7 @@ class LatchInstance : public Instance {
         void print_verilog(std::ostream& os, int depth=0) override {
             //Currently assume a standard DFF
             assert(type_ == Type::RISING_EDGE);
+
             os << indent(depth) << "DFF" << " #(\n";
             os << indent(depth+1) << ".INITIAL_VALUE(";
             if     (initial_value_ == LogicVal::TRUE)     os << "1'b1";
@@ -532,6 +562,7 @@ class BlackBoxInst : public Instance {
         void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
             os << indent(depth) << ".subckt " << type_name_ << " \\" << "\n";
 
+            //Input ports
             for(auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
                 const auto& port_name = iter->first;
                 const auto& nets = iter->second;
@@ -543,6 +574,7 @@ class BlackBoxInst : public Instance {
                 os << "\n";
             }
 
+            //Output ports
             for(auto iter = output_port_conns_.begin(); iter != output_port_conns_.end(); ++iter) {
                 const auto& port_name = iter->first;
                 const auto& nets = iter->second;
@@ -681,7 +713,8 @@ class BlackBoxInst : public Instance {
             }
             vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                         "Could not find port %s on %s of type %s\n", port_name.c_str(), inst_name_.c_str(), type_name_.c_str());
-            return -1;
+
+            return -1; //Suppress warning
         }
 
     private:
@@ -723,7 +756,7 @@ class Assignment {
 
 //A class which writes post-synthesis netlists (Verilog and BLIF) and the SDF
 //
-//It implements the NetlistVisitor interface used by NetlistWalker
+//It implements the NetlistVisitor interface used by NetlistWalker (see netlist_walker.h)
 class NetlistWriterVisitor : public NetlistVisitor {
     public: //Public interface
         NetlistWriterVisitor(std::ostream& verilog_os, //Output stream for verilog netlist
@@ -1106,7 +1139,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 port_conns["out"].push_back(net);
             }
 
-            auto inst = std::make_shared<LutInstance>(lut_size, lut_mask, inst_name, port_conns, timing_arcs);
+            auto inst = std::make_shared<LutInst>(lut_size, lut_mask, inst_name, port_conns, timing_arcs);
 
             return inst;
         }
@@ -1153,10 +1186,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //VPR currently doesn't store enough information to determine these attributes,
             //for now assume reasonable defaults.
-            LatchInstance::Type type = LatchInstance::Type::RISING_EDGE;
+            LatchInst::Type type = LatchInst::Type::RISING_EDGE;
             LogicVal init_value = LogicVal::FALSE;
 
-            return std::make_shared<LatchInstance>(inst_name, port_conns, type, init_value, tcq, tsu);
+            return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq, tsu);
         }
 
         //Returns an Instance object representing the RAM
@@ -1597,7 +1630,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 //Get an iterator to the last character (i.e. the output value)
                 auto output_val_iter = names_row.end() - 1;
 
-
                 //Sanity-check, the 2nd last character should be a space
                 auto space_iter = names_row.end() - 2;
                 assert(*space_iter == ' ');
@@ -1631,7 +1663,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     }
 
                     input_values[i] =  input_val;
-                    /*std::cout << "Setting input " << i << " " << input_val << ": " << input_values << std::endl;*/
                     i++;
                 }
 
@@ -1700,7 +1731,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                         if(logical_net == atom_input_net) {
 #ifdef DEBUG_LUT_MASK
-                            std::cout << "\tLogic net " << logical_net << " (" << g_atoms_nlist.net[logical_net].name << ") atom lut input " << i << " -> impl lut input " << j << std::endl;
+                            std::cout << "\tLogic net " << logical_net << " (" << g_atoms_nlist.net[logical_net].name << ") "
+                            std::cout << "atom lut input " << i << " -> impl lut input " << j << std::endl;
 #endif
                             break;
                         }
@@ -1794,11 +1826,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::ostream& sdf_os_;
 };
 
+//
+// Externally Accessible Functions
+//
+
 //Main routing for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string base_name) {
-    std::string verilog_filename = base_name+ "_post_synthesis.v";
-    std::string blif_filename = base_name + "_post_synthesis.blif";
-    std::string sdf_filename = base_name + "_post_synthesis.sdf";
+void netlist_writer(const std::string basename) {
+    std::string verilog_filename = basename+ "_post_synthesis.v";
+    std::string blif_filename = basename + "_post_synthesis.blif";
+    std::string sdf_filename = basename + "_post_synthesis.sdf";
 
     vpr_printf_info("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
     vpr_printf_info("Writting Implementation Netlist: %s\n", blif_filename.c_str());
@@ -1814,6 +1850,10 @@ void netlist_writer(const std::string base_name) {
 
     nl_walker.walk();
 }
+
+//
+// File-scope function implementations
+//
 
 //Output operator for LogicVal
 std::ostream& operator<<(std::ostream& os, LogicVal val) {
@@ -1854,10 +1894,12 @@ double get_delay_ps(int source_tnode, int sink_tnode) {
 
 //Returns the name of a unique unconnected net
 std::string create_unconn_net(size_t& unconn_count) {
+    //We increment unconn_count by reference so each
+    //call generates a unique name
     return "__vpr__unconn" + std::to_string(unconn_count++);
 }
 
-//Prints a verilog port to the given output stream
+//Pretty-Prints a blif port to the given output stream
 //
 //  Handles special cases like multi-bit and disconnected ports
 void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth) {
@@ -1886,7 +1928,7 @@ void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& 
     }
 }
 
-//Prints a verilog port to the given output stream
+//Pretty-Prints a verilog port to the given output stream
 //
 //  Handles special cases like multi-bit and disconnected ports
 void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth) {
@@ -1967,14 +2009,14 @@ bool is_special_sdf_char(char c) {
     //Not that the spec defines _ (decimal code 95) and $ (decimal code 36) 
     //as non-special alphanumeric characters. 
     //
-    //However it inconsistently also listing $ in the list of special characters.
+    //However it inconsistently also lists $ in the list of special characters.
     //Since the spec allows for non-special characters to be escaped (they are treated
     //normally), we treat $ as a special character to be safe.
     //
     //Note that the spec appears to have rendering errors in the PDF availble
     //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK' 
     //character (decimal code 171) in place of the APOSTROPHE character ' 
-    //with decimal code 39 in the special character list
+    //with decimal code 39 in the special character list. We assume code 39
     if((c >= 33 && c <= 35) ||
        (c == 36) || // $
        (c >= 37 && c <= 47) ||
@@ -1992,8 +2034,8 @@ bool is_special_sdf_char(char c) {
 std::string escape_sdf_identifier(const std::string identifier) {
     //SDF allows escaped characters
     //
-    //We look at each character in the string and escape it if it is in
-    //the list 'special' characters
+    //We look at each character in the string and escape it if it is
+    //a special character
     std::string escaped_name;
 
     for(char c : identifier) {
@@ -2007,7 +2049,7 @@ std::string escape_sdf_identifier(const std::string identifier) {
     return escaped_name;
 }
 
-//Joins to identifier strings
+//Joins two identifier strings
 std::string join_identifier(std::string lhs, std::string rhs) {
     return lhs + '_' + rhs;
 }
