@@ -74,7 +74,7 @@ module mux(
 endmodule
 
 module adder #(
-    parameter WIDTH = 0   
+    parameter WIDTH = 1   
 ) (
     input [WIDTH-1:0] a, 
     input [WIDTH-1:0] b, 
@@ -98,7 +98,7 @@ endmodule
 //nxn multiplier module
 module mult #(
     //The width of input signals
-    parameter WIDTH = 0
+    parameter WIDTH = 1
 ) (
     input [WIDTH-1:0] a,
     input [WIDTH-1:0] b,
@@ -116,8 +116,8 @@ endmodule // mult
 
 //single_port_ram module
 module single_port_ram #(
-    parameter ADDR_WIDTH = 0,
-    parameter DATA_WIDTH = 0
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
 ) (
     input [ADDR_WIDTH-1:0] addr,
     input [DATA_WIDTH-1:0] data,
@@ -145,8 +145,8 @@ endmodule // single_port_RAM
 
 //dual_port_ram module
 module dual_port_ram #(
-    parameter ADDR_WIDTH = 0,
-    parameter DATA_WIDTH = 0
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
 ) (
     input clock,
 
