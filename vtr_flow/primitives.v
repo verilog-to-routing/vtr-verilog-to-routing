@@ -126,7 +126,7 @@ module single_port_ram #(
     output reg [DATA_WIDTH-1:0] out
 );
 
-    localparam MEM_DEPTH = 1 << ADDR_WIDTH;
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
 
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
@@ -160,7 +160,7 @@ module dual_port_ram #(
     output reg [DATA_WIDTH-1:0] out2
 );
 
-    localparam MEM_DEPTH = 1 << ADDR_WIDTH;
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
 
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
