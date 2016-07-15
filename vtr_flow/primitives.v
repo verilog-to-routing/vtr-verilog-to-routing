@@ -215,7 +215,7 @@ module adder #(
 endmodule
    
 //nxn multiplier module
-module mult #(
+module multiply #(
     //The width of input signals
     parameter WIDTH = 1
 ) (
