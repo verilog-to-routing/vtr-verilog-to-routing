@@ -1,149 +1,24 @@
 `timescale 1ps/1ps
 
-//3-Input Look Up Table module
-module LUT_3 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter LUT_MASK=8'b00000000
+module LUT_K #(
+    //The Look-up Table size (number of inputs)
+    parameter K, 
+
+    //The lut mask.  
+    //Left-most (MSB) bit corresponds to all inputs logic one. 
+    //Defaults to always false.
+    parameter LUT_MASK={2**K{1'b0}} 
 ) (
-    input in_2, 
-    input in_1, 
-    input in_0, 
+    input [K-1:0] in,
     output reg out
 );
 
-    integer selected_row;
-    wire [2:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-
-    always@(*) begin
-        selected_row = {a[2], a[1], a[0]};
-        out = LUT_MASK[selected_row];
+    specify
+        (in => out) = "";
     end
 
-endmodule
-
-//4-Input Look Up Table module
-module LUT_4 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter LUT_MASK=16'b0000000000000000
-) (
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-
-    integer selected_row;
-    wire [3:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-
     always@(*) begin
-        selected_row = {a[3], a[2], a[1], a[0]};
-        out = LUT_MASK[selected_row];
-    end
-     
-endmodule
-
-//5-Input Look Up Table module
-module LUT_5 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter LUT_MASK=32'b00000000000000000000000000000000
-) (
-    input in_4,
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-   
-    integer selected_row = 0;
-    wire [4:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-    fpga_interconnect inter4(in_4 , a[4]);
-
-    always@(*) begin
-        selected_row = {a[4], a[3], a[2], a[1], a[0]};
-        out = LUT_MASK[selected_row];
-    end
-     
-endmodule
-
-//6-Input Look Up Table module
-module LUT_6 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter LUT_MASK=64'b0000000000000000000000000000000000000000000000000000000000000000
-) (
-    input in_5,
-    input in_4,
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-    integer selected_row;
-    wire [5:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-    fpga_interconnect inter4(in_4 , a[4]);
-    fpga_interconnect inter5(in_5 , a[5]);
-
-    always@(*) begin
-        selected_row = {a[5], a[4], a[3], a[2], a[1], a[0]};
-        out = LUT_MASK[selected_row];
-    end
-
-endmodule
-
-//7-Input Look Up Table module
-module LUT_7 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter LUT_MASK=128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-) (
-    input in_6,
-    input in_5,
-    input in_4,
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-    integer selected_row;
-    wire [6:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-    fpga_interconnect inter4(in_4 , a[4]);
-    fpga_interconnect inter5(in_5 , a[5]);
-    fpga_interconnect inter6(in_6 , a[6]);
-
-    always@(*) begin
-        selected_row = {a[6],a[5],a[4], a[3], a[2], a[1], a[0]};
-        out = LUT_MASK[selected_row];
+        out = LUT_MASK[in];
     end
 
 endmodule
