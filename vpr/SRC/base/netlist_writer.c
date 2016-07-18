@@ -822,11 +822,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     private: //Internal types
     private: //NetlistVisitor interface functions
 
-        void visit_top_impl(const char* top_level_name) { 
+        void visit_top_impl(const char* top_level_name) override { 
             top_module_name_ = top_level_name;
         }
 
-        void visit_atom_impl(const t_pb* atom) { 
+        void visit_atom_impl(const t_pb* atom) override { 
             const t_model* model = logical_block[atom->logical_block].model;
 
             if(model->name == std::string("input")) {
@@ -851,7 +851,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        void finish_impl() {
+        void finish_impl() override {
             print_verilog();
             print_blif();
             print_sdf();
