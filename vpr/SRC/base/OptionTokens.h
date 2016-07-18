@@ -4,7 +4,6 @@
 /* The order of this does NOT matter, but do not give things specific values
  * or you will screw up the ability to count things properly */
 enum e_OptionBaseToken {
-	OT_SETTINGS_FILE,
 	OT_NODISP,
 	OT_CONGESTION_ANALYSIS,
 	OT_FANOUT_ANALYSIS,
