@@ -77,10 +77,6 @@ static struct s_type_descriptor *cb_type_descriptors;
 static void SetupPinLocationsAndPinClasses(ezxml_t Locations,
 		t_type_descriptor * Type);
 static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type);
-#if 0
-static void SetupTypeTiming(ezxml_t timing,
-		t_type_descriptor * Type);
-#endif
 /*    Process XML hiearchy */
 static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		t_mode * mode);
@@ -2423,14 +2419,6 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		Process_Fc(Cur, Type, arch.Segments, arch.num_segments);
 		FreeNode(Cur);
 
-#if 0
-		Cur = FindElement(CurType, "timing", timing_enabled);
-		if (Cur)
-		{
-			SetupTypeTiming(Cur, Type);
-			FreeNode(Cur);
-		}
-#endif
 		Type->index = i;
 
 		/* Type fully read */
