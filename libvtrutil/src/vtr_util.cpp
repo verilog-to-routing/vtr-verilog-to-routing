@@ -8,6 +8,7 @@ std::vector<std::string> split(const std::string& text, const std::string delims
     std::string curr_tok;
     for(char c : text) {
         if(delims.find(c) != std::string::npos) {
+            //Delimeter character
             if(!curr_tok.empty()) {
                 //At the end of the token
 
@@ -20,7 +21,7 @@ std::vector<std::string> split(const std::string& text, const std::string delims
                 //Pass
             }
         } else {
-            //Append to token
+            //Non-delimeter append to token
             curr_tok += c;
         }
     }
