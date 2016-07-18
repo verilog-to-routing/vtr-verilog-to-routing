@@ -4,7 +4,6 @@
 ##############################################
 
 # Path to directory of circuits to use
-#circuits_dir=benchmarks/verilog
 circuits_dir=benchmarks/microbenchmarks
 
 # Path to directory of architectures to use
@@ -14,8 +13,6 @@ archs_dir=arch/timing
 sdc_dir=sdc
 
 # Add circuits to list to sweep
-#circuit_list_add=sha.v 
-#circuit_list_add=stereovision3.v 
 circuit_list_add=and.blif
 circuit_list_add=and_latch.blif
 circuit_list_add=false_path_mux.blif 
