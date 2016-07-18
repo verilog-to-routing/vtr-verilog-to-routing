@@ -158,7 +158,7 @@ void create_button(const char *prev_button_text, const char *button_text,
     buttons[i].height = bheight;
     buttons[i].width = 90;
     buttons[i].type = button_type;
-    strncpy(buttons[i].text, button_text, BUTTON_TEXT_LEN);
+    strncpy(buttons[i].text, button_text, BUTTON_TEXT_LEN + 1);
     // lambdas with variadic arguments do't work on GCC versions older than ~2013, but std::bind does
     // buttons[i].fcn = [&](void(*drawscreen_ptr)(void)){button_func(drawscreen_ptr, args...); };
     buttons[i].fcn = std::bind(button_func, std::placeholders::_1, args...);
