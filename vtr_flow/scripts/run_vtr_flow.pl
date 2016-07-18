@@ -658,47 +658,58 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
 			
 			find(\&find_postsynthesis_netlist, ".");
+
+
+            #First try ABC's Sequentail Equivalence Check (SEC)
 			$q = &system_with_timeout($abc_path, 
-							"cec.out",
-							$timeout,
-							$temp_dir,
-							"-c", 
-							"cec $odin_output_file_name $vpr_postsynthesis_netlist;"
-			);
-			$q = &system_with_timeout($abc_path, 
-							"sec.out",
+							"abc.sec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
 							"sec $odin_output_file_name $vpr_postsynthesis_netlist"
 			);
 
-                	# Parse ABC verification output
-                	if ( open( SECOUT, "< sec.out" ) ) {
-	            		undef $/;
-	            		my $sec_content = <SECOUT>;
-	            		close(SECOUT);
-	            		$/ = "\n";    # Restore for normal behaviour later in script
+            # Parse ABC verification output
+            if ( open( SECOUT, "< abc.sec.out" ) ) {
+                undef $/;
+                my $sec_content = <SECOUT>;
+                close(SECOUT);
+                $/ = "\n";    # Restore for normal behaviour later in script
 			
-	        		if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
-					# Parsing cec output if needed
-		                	if ( open( CECOUT, "< cec.out" ) ) {
-	        	    			undef $/;
-	        	    			my $cec_content = <CECOUT>;
-	        	   			close(CECOUT);
-		        	    		$/ = "\n";    # Restore for normal behaviour later in script
+                if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
+                    # This circuit has no latches, ABC's 'sec' command only supports circuits with latches.
+                    # Re-try using ABC's Combinational Equivalence Check (CEC)
+                    $q = &system_with_timeout($abc_path, 
+                                    "abc.cec.out",
+                                    $timeout,
+                                    $temp_dir,
+                                    "-c", 
+                                    "cec $odin_output_file_name $vpr_postsynthesis_netlist;"
+                    );
 
-		        	    		if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
-				       	 		print("failed: formal verification");
-        	        	        		$error_code = 1;
-		        	    		} 
-        	        		 }
-	       			} elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
-				    	print("failed: formal verification");
-					$error_code = 1;
-				}
-                 	}
-		}
+                    if ( open( CECOUT, "< abc.cec.out" ) ) {
+                        undef $/;
+                        my $cec_content = <CECOUT>;
+                        close(CECOUT);
+                        $/ = "\n";    # Restore for normal behaviour later in script
+
+                        if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
+                            print("failed: formal verification");
+                            $error_code = 1;
+                        }
+                    } else {
+                        print("failed: no CEC output");
+                        $error_code = 1;
+                    }
+                } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
+                    print("failed: formal verification");
+                    $error_code = 1;
+                }
+            } else {
+                print("failed: no SEC output");
+                $error_code = 1;
+            }
+        }
 
 		if (! $keep_intermediate_files)
 		{
