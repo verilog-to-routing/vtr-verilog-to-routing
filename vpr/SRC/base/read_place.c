@@ -21,7 +21,7 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 
 	FILE *infile;
 	char **tokens;
-	int line;
+	int line = 0;
 	int i;
 	int error;
 	struct s_block *cur_blk;
