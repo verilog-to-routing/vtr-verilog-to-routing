@@ -651,8 +651,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		);
 	}
 	  					
-	if (-e $vpr_route_output_file_path and $q eq "success")
-	{
+	if (-e $vpr_route_output_file_path and $q eq "success") {
 		if($check_equivalent eq "on") {
 			if($abc_path eq "") {
 				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
@@ -673,33 +672,34 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 							"-c", 
 							"sec $odin_output_file_name $vpr_postsynthesis_netlist"
 			);
-		}
-                # Parse ABC verification output
-                if ( open( SECOUT, "< sec.out" ) ) {
-	            undef $/;
-	            my $sec_content = <SECOUT>;
-	            close(SECOUT);
-	            $/ = "\n";    # Restore for normal behaviour later in script
-			
-	            if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
-			# Parsing cec output if needed
-                	if ( open( CECOUT, "< cec.out" ) ) {
-	            		undef $/;
-	            		my $cec_content = <CECOUT>;
-	           		close(CECOUT);
-	            		$/ = "\n";    # Restore for normal behaviour later in script
 
-	            		if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
-		       	 		print("failed: formal verification");
-                        		$error_code = 1;
-	            		} 
-                	 }
-	            } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
-		    	print("failed: formal verification");
-			$error_code = 1;
-		    }
+                	# Parse ABC verification output
+                	if ( open( SECOUT, "< sec.out" ) ) {
+	            		undef $/;
+	            		my $sec_content = <SECOUT>;
+	            		close(SECOUT);
+	            		$/ = "\n";    # Restore for normal behaviour later in script
+			
+	        		if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
+					# Parsing cec output if needed
+		                	if ( open( CECOUT, "< cec.out" ) ) {
+	        	    		undef $/;
+	        	    		my $cec_content = <CECOUT>;
+	        	   		close(CECOUT);
+	        	    		$/ = "\n";    # Restore for normal behaviour later in script
+
+	        	    		if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
+			       	 		print("failed: formal verification");
+                	        		$error_code = 1;
+	        	    		} 
+                		 }
+	        	    } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
+			    	print("failed: formal verification");
+				$error_code = 1;
+			    }
 		 
-                 }
+                 	}
+		}
 
 		if (! $keep_intermediate_files)
 		{
