@@ -12,7 +12,6 @@ using namespace std;
 
 #include "util.h"
 #include "token.h"
-#include "ezxml.h"
 #include "read_xml_util.h"
 
 enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
