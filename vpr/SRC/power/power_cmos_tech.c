@@ -115,7 +115,7 @@ void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
 
     auto operating_point = get_single_child(technology, "operating_point", loc_data);
     g_power_tech->temperature = get_attribute(operating_point, "temperature", loc_data).as_float();
-    g_power_tech->Vdd = get_attribute(operating_point, "temperature", loc_data).as_float();
+    g_power_tech->Vdd = get_attribute(operating_point, "Vdd", loc_data).as_float();
 
     auto p_to_n = get_single_child(technology, "p_to_n", loc_data);
     g_power_tech->PN_ratio = get_attribute(p_to_n, "ratio", loc_data).as_float();
