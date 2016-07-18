@@ -33,7 +33,6 @@
 #include "power_cmos_tech.h"
 #include "power.h"
 #include "power_util.h"
-/*#include "ezxml.h"*/
 #include "util.h"
 #include "read_xml_util.h"
 #include "PowerSpicedComponent.h"
@@ -56,7 +55,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 static int power_compare_transistor_size(const void * key_void, const void * elem_void);
 static int power_compare_voltage_pair(const void * key_void, const void * elem_void);
 static int power_compare_leakage_pair(const void * key_void, const void * elem_void);
-//static void power_tech_xml_load_sc(ezxml_t parent);
+//static void power_tech_xml_load_sc(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
 static int power_compare_buffer_strength(const void * key_void, const void * elem_void);
 static int power_compare_buffer_sc_levr(const void * key_void, const void * elem_void);
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
@@ -214,8 +213,7 @@ static void power_tech_xml_load_components(pugi::xml_node parent, const pugiloc:
  * This contains values for buffers of various 1) # Stages 2) Stage strength 3) Input type & capacitance
  */
 #if 0
-static void power_tech_xml_load_sc(ezxml_t parent) {
-	ezxml_t child, prev, gc, ggc;
+static void power_tech_xml_load_sc(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
 	int i, j, k;
 	int num_buffer_sizes;
 
@@ -289,9 +287,6 @@ static void power_tech_xml_load_sc(ezxml_t parent) {
  *  This builds a table of (Vds,Ids) value pairs
  *  */
 static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
-    /*
-	 *ezxml_t me, child, prev;
-     */
 	int num_nmos_sizes;
 	int num_leakage_pairs;
 	int i;
@@ -332,9 +327,6 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
  *  This contains the estimates of mux output voltages, depending on 1) Mux Size 2) Mux Vin
  *  */
 static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
-    /*
-	 *ezxml_t me, child, prev, gc;
-     */
 	int num_nmos_sizes;
 	int num_mux_sizes;
 	int i, j, nmos_idx;
