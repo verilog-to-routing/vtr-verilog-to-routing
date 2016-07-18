@@ -65,7 +65,7 @@
 //states that there are the following timing edges (dependancies):
 //  * from in[0] to out[0]
 //  * from in[0] to out[1]
-//  * from in[0] to out[1]
+//  * from in[0] to out[2]
 //  * from in[1] to out[0]
 //  * from in[1] to out[1]
 //  * from in[1] to out[2]
@@ -114,9 +114,13 @@
 //
 //Example vsim Command Line
 //--------------------------
-//The following is an example command-line to vsim:
+//The following is an example command-line to vsim (where 'tb' is the name of your
+//testbench):
 //
 //  vsim -t 1ps -L rtl_work -L work -voptargs="+acc" +sdf_verbose +bitblast tb
+
+
+
 
 //K-input Look-Up Table
 module LUT_K #(
