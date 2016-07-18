@@ -24,7 +24,7 @@
 namespace pugiutil {
 
     //An error produced while getting an XML node/attribute
-    class XmlError : VtrError {
+    class XmlError : public VtrError {
         public:
             XmlError(std::string msg="", std::string new_filename="", size_t new_linenumber=-1)
                 : VtrError(msg, new_filename, new_linenumber) {}

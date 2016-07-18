@@ -15,6 +15,8 @@
 #include <ctime>
 using namespace std;
 
+#include "vtr_error.h"
+
 #include "vpr_api.h"
 #include "util.h" /* for CLOCKS_PER_SEC */
 #include "path_delay.h" /* for timing_analysis_runtime */
@@ -41,6 +43,7 @@ int main(int argc, char **argv) {
 	entire_flow_begin = clock();
 
 	try{
+
 		/* Read options, architecture, and circuit netlist */
 		vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
@@ -71,9 +74,13 @@ int main(int argc, char **argv) {
 	
 		/* free data structures */
 		vpr_free_all(Arch, Options, vpr_setup);
-	}
-	catch(t_vpr_error* vpr_error){
+
+	} catch(t_vpr_error* vpr_error){
 		vpr_print_error(vpr_error);
+        /* Return 1 to signal error to scripts */
+        return 1;
+	} catch(VtrError& vtr_error){
+        vpr_printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename().c_str(), vtr_error.line(), vtr_error.what());
         /* Return 1 to signal error to scripts */
         return 1;
 	}

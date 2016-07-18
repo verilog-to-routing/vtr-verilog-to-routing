@@ -553,7 +553,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 	struct s_hash *temp_hash;
 	bool found;
 
-    for(auto Cur = pugiutil::get_first_child(Parent, "port", loc_data); Cur; Cur = Cur.next_sibling("port")) {
+    for(auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
 
         auto port_name = pugiutil::get_attribute(Cur, "name", loc_data);
 
