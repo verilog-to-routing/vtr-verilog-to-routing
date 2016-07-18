@@ -43,6 +43,7 @@ use File::Spec;
 use POSIX;
 use File::Copy;
 use FindBin;
+use File::Find;
 use File::Basename;
 
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
@@ -192,6 +193,7 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-check_equivalent" ) {
 		$check_equivalent = "on";
+		$keep_intermediate_files = 1;
 	}
 	elsif ( $token eq "-gen_postsynthesis_netlist" ) {
 		$gen_postsynthesis_netlist = "on";
@@ -358,6 +360,7 @@ my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
+my $vpr_postsynthesis_netlist = "";
 
 #system"cp $abc_rc_path $temp_dir";
 #system "cp $architecture_path $temp_dir";
@@ -652,20 +655,66 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		);
 	}
 	  					
-	if (-e $vpr_route_output_file_path and $q eq "success")
-	{
+	if (-e $vpr_route_output_file_path and $q eq "success") {
 		if($check_equivalent eq "on") {
 			if($abc_path eq "") {
 				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
 			}
+			
+			find(\&find_postsynthesis_netlist, ".");
+
+
+            #First try ABC's Sequentail Equivalence Check (SEC)
 			$q = &system_with_timeout($abc_path, 
-							"equiv.out",
+							"abc.sec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"cec $prevpr_output_file_name post_pack_netlist.blif;sec $prevpr_output_file_name post_pack_netlist.blif"
+							"sec $odin_output_file_name $vpr_postsynthesis_netlist"
 			);
-		}
+
+            # Parse ABC verification output
+            if ( open( SECOUT, "< abc.sec.out" ) ) {
+                undef $/;
+                my $sec_content = <SECOUT>;
+                close(SECOUT);
+                $/ = "\n";    # Restore for normal behaviour later in script
+			
+                if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
+                    # This circuit has no latches, ABC's 'sec' command only supports circuits with latches.
+                    # Re-try using ABC's Combinational Equivalence Check (CEC)
+                    $q = &system_with_timeout($abc_path, 
+                                    "abc.cec.out",
+                                    $timeout,
+                                    $temp_dir,
+                                    "-c", 
+                                    "cec $odin_output_file_name $vpr_postsynthesis_netlist;"
+                    );
+
+                    if ( open( CECOUT, "< abc.cec.out" ) ) {
+                        undef $/;
+                        my $cec_content = <CECOUT>;
+                        close(CECOUT);
+                        $/ = "\n";    # Restore for normal behaviour later in script
+
+                        if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
+                            print("failed: formal verification");
+                            $error_code = 1;
+                        }
+                    } else {
+                        print("failed: no CEC output");
+                        $error_code = 1;
+                    }
+                } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
+                    print("failed: formal verification");
+                    $error_code = 1;
+                }
+            } else {
+                print("failed: no SEC output");
+                $error_code = 1;
+            }
+        }
+
 		if (! $keep_intermediate_files)
 		{
 			system "rm -f $prevpr_output_file_name";
@@ -1048,4 +1097,12 @@ sub find_and_move_newest {
 
     # negate bash exit truth for perl
     return 1;
+}
+
+sub find_postsynthesis_netlist {
+    my $file_name = $_;
+    if ($file_name =~ /_post_synthesis\.blif/) {
+        $vpr_postsynthesis_netlist = $file_name;
+        return;
+    }
 }

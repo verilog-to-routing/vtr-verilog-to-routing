@@ -15,6 +15,7 @@ using namespace std;
 #include "path_delay.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "endpoint_timing.h"
 
 /********************** Subroutines local to this module *********************/
 
@@ -92,6 +93,10 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 
 			print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
 			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
+
+			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
+                print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
+            }
 
 			print_timing_stats();
 		}

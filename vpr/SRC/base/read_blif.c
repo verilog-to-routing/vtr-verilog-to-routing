@@ -73,7 +73,7 @@ static void read_blif(char *blif_file, bool sweep_hanging_nets_and_inputs,
 		t_model *user_models, t_model *library_models,
 		bool read_activity_file, char * activity_file);
 
-static void absorb_buffer_luts(void);
+static void do_absorb_buffer_luts(void);
 static void compress_netlist(void);
 static void show_blif_stats(t_model *user_models, t_model *library_models);
 static bool add_activity_to_net(char * net_name, float probability,
@@ -1547,7 +1547,7 @@ static void free_parse(void) {
 	free((void *) temp_num_pins);
 }
 
-static void absorb_buffer_luts(void) {
+static void do_absorb_buffer_luts(void) {
 	/* This routine uses a simple pattern matching algorithm to remove buffer LUTs where possible (single-input LUTs that are programmed to be a wire) */
 
 	int bnum, in_blk, out_blk, ipin, out_net, in_net;
@@ -1817,7 +1817,8 @@ static void compress_netlist(void) {
  * - power_opts: Power options, can be NULL
  */
 void read_and_process_blif(char *blif_file,
-		bool sweep_hanging_nets_and_inputs, t_model *user_models,
+		bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
+        t_model *user_models,
 		t_model *library_models, bool read_activity_file,
 		char * activity_file) {
 
@@ -1841,7 +1842,9 @@ void read_and_process_blif(char *blif_file,
 				library_models);
 	}
 
-	absorb_buffer_luts();
+    if(absorb_buffer_luts) {
+        do_absorb_buffer_luts();
+    }
 	compress_netlist(); /* remove unused inputs */
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPRESSED_NETLIST)) {

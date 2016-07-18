@@ -1,222 +1,216 @@
 `timescale 1ps/1ps
+//Overivew
+//========
+//This file contains the verilog primitives produced by VPR's
+//post-synthesis netlist writer.
+//
+//If you wish to do back-annotated timing simulation you will need
+//to link with this file during simulation.
+//
+//To ensure currect result when performing back-annoatation with 
+//Modelsim see the notes at the end of this comment.
+//
+//Specifying Timing Edges
+//=======================
+//To perform timing back-annotation the simulator must know the delay 
+//dependancies (timing edges) between the ports on each primitive.
+//
+//During back-annotation the simulator will attempt to annotate SDF delay
+//values onto the timing edges.  It should give a warning if was unable
+//to find a matching edge.
+//
+//
+//In Verilog timing edges are specified using a specify block (delimited by the
+//'specify' and 'endspecify' keywords.
+//
+//Inside the specify block a set of specify statements are used to describe
+//the timing edges.  For example consider:
+//
+//  input [1:0] in;
+//  output [1:0] out;
+//  specify
+//      (in[0] => out[0]) = "";
+//      (in[1] => out[1]) = "";
+//  endspecify
+//
+//This states that there are the following timing edges (dependancies):
+//  * from in[0] to out[0]
+//  * from in[1] to out[1]
+//
+//We could (according to the Verilog standard) equivalently have used:
+//
+//  input [1:0] in;
+//  output [1:0] out;
+//  specify
+//      (in => out) = "";
+//  endspecify
+//
+//However NOT ALL SIMULATORS TREAT MULTIBIT SPECIFY STATEMENTS CORRECTLY,
+//at least by default (in particular ModelSim, see notes below).
+//
+//The previos examples use the 'parrallel connection' operator '=>', which
+//creates parallel edges between the two operands (i.e. bit 0 to bit 0, bit
+//1 to bit 1 etc.).  Note that both operands must have the same bit-width. 
+//
+//Verilog also supports the 'full connection' operator '*>' which will create
+//a fully connected set of edges (e.g. from all-to-all). It does not require
+//both operands to have the same bit-width. For example:
+//
+//  input [1:0] in;
+//  output [2:0] out;
+//  specify
+//      (in *> out) = "";
+//  endspecify
+//
+//states that there are the following timing edges (dependancies):
+//  * from in[0] to out[0]
+//  * from in[0] to out[1]
+//  * from in[0] to out[2]
+//  * from in[1] to out[0]
+//  * from in[1] to out[1]
+//  * from in[1] to out[2]
+//
+//For more details on specify blocks see Section 14 "Specify Blocks" of the
+//Verilog standard (IEEE 1364-2005).
+//
+//Back-annotation with Modelsim
+//=============================
+//
+//Ensuring Multi-bit Specifies are Handled Correctly: Bit-blasting
+//----------------------------------------------------------------
+//
+//ModelSim (tested on Modelsim SE 10.4c) ignores multi-bit specify statements
+//by default.
+//
+//This causes SDF annotation errors such as:
+//
+//  vsim-SDF-3261: Failed to find matching specify module path
+//
+//To force Modelsim to correctly interpret multi-bit specify statements you
+//should provide the '+bitblast' option to the vsim executable.
+//This forces it to apply specify statements using multi-bit operands to
+//each bit of the operand (i.e. according to the Verilog standard).
+//
+//Confirming back-annotation is occuring correctly
+//------------------------------------------------
+//
+//Another useful option is '+sdf_verbose' which produces extra output about
+//SDF annotation, which can be used to verify annotation occured correctly.
+//
+//For example:
+//
+//      Summary of Verilog design objects annotated: 
+//      
+//           Module path delays =          5
+//      
+//       ******************************************************************************
+//      
+//       Summary of constructs read: 
+//      
+//                 IOPATH =          5
+//
+//shows that all 5 IOPATH constructs in the SDF were annotated to the verilog
+//design.
+//
+//Example vsim Command Line
+//--------------------------
+//The following is an example command-line to vsim (where 'tb' is the name of your
+//testbench):
+//
+//  vsim -t 1ps -L rtl_work -L work -voptargs="+acc" +sdf_verbose +bitblast tb
 
-//3-Input Look Up Table module
-module LUT_3#(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=8'b00000000
+
+
+
+//K-input Look-Up Table
+module LUT_K #(
+    //The Look-up Table size (number of inputs)
+    parameter K, 
+
+    //The lut mask.  
+    //Left-most (MSB) bit corresponds to all inputs logic one. 
+    //Defaults to always false.
+    parameter LUT_MASK={2**K{1'b0}} 
 ) (
-    input in_2, 
-    input in_1, 
-    input in_0, 
-    output reg out
+    input [K-1:0] in,
+    output out
 );
 
-    integer selected_row;
-    wire [2:0] a;
+    specify
+        (in *> out) = "";
+    endspecify
 
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-
-    always@(*) begin
-        selected_row = {a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
-    end
+    assign out = LUT_MASK[out];
 
 endmodule
 
-//4-Input Look Up Table module
-module LUT_4 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=16'b0000000000000000
+//D-FlipFlop module
+module DFF #(
+    parameter INITIAL_VALUE=1'b0    
 ) (
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
+    input clock,
+    input D,
+    output reg Q
 );
 
-    integer selected_row;
-    wire [3:0] a;
+    specify
+        (clock => Q) = "";
+        $setup(D, posedge clock, "");
+        $hold(posedge clock, D, "");
+    endspecify
 
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-
-    always@(*) begin
-        selected_row = {a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
-    end
-     
-endmodule
-
-//5-Input Look Up Table module
-module LUT_5 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=32'b00000000000000000000000000000000
-) (
-    input in_4,
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-   
-    integer selected_row = 0;
-    wire [4:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-    fpga_interconnect inter4(in_4 , a[4]);
-
-    always@(*) begin
-        selected_row = {a[4], a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
-    end
-     
-endmodule
-
-//6-Input Look Up Table module
-module LUT_6 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=64'b0000000000000000000000000000000000000000000000000000000000000000
-) (
-    input in_5,
-    input in_4,
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-    integer selected_row;
-    wire [5:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-    fpga_interconnect inter4(in_4 , a[4]);
-    fpga_interconnect inter5(in_5 , a[5]);
-
-    always@(*) begin
-        selected_row = {a[5], a[4], a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+    initial begin
+        Q <= INITIAL_VALUE;
     end
 
-endmodule
-
-//7-Input Look Up Table module
-module LUT_7 #(
-   //Truth table parameter represents the default function of the LUT.
-   //The most significant bit is the output when all inputs are logic one.
-   parameter Truth_table=128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-) (
-    input in_6,
-    input in_5,
-    input in_4,
-    input in_3,
-    input in_2,
-    input in_1,
-    input in_0,
-    output reg out
-);
-    integer selected_row;
-    wire [6:0] a;
-
-    fpga_interconnect inter0(in_0 , a[0]);
-    fpga_interconnect inter1(in_1 , a[1]);
-    fpga_interconnect inter2(in_2 , a[2]);
-    fpga_interconnect inter3(in_3 , a[3]);
-    fpga_interconnect inter4(in_4 , a[4]);
-    fpga_interconnect inter5(in_5 , a[5]);
-    fpga_interconnect inter6(in_6 , a[6]);
-
-    always@(*) begin
-        selected_row = {a[6],a[5],a[4], a[3], a[2], a[1], a[0]};
-        out = Truth_table[selected_row];
+    always@(posedge clock) begin
+        Q <= D;
     end
-
-endmodule
-
-//D-FlipFlop module with synchronous active low clear and preset.
-module D_Flip_Flop(clock,D,clear,preset,Q);
-
-input clock,D,clear,preset;
-output reg Q = 1'b0;
-
-specify
-	(clock => Q)="";
-endspecify
-
-   initial
-     begin
-	Q <= 1'b0;
-     end
-   
-   always@(posedge clock)
-     begin
-	if(clear==0)
-	  Q<=0;
-	else if(preset==0)
-	  Q<=1;
-	else
-	  begin
-	     Q<=D;
-	  end
-     end
 endmodule
 
 //Routing fpga_interconnect module
-module fpga_interconnect(datain,dataout);
+module fpga_interconnect(
+    input datain,
+    output dataout
+);
 
-input datain;
-output dataout;
+    specify
+        (datain=>dataout)="";
+    endspecify
 
-specify
-	(datain=>dataout)="";
-endspecify
-
-assign dataout=datain;
+    assign dataout = datain;
 
 endmodule
 
 
 //2-to-1 mux module
-module mux(select,x,y,z);
+module mux(
+    input select,
+    input x,
+    input y,
+    output z
+);
 
-input select,x,y;
-output z;
-
-assign z=(x & ~select) | (y & select);
+    assign z = (x & ~select) | (y & select);
 
 endmodule
 
-module ripple_adder(a, b, cin, cout, sumout);
-   
-   parameter width = 0;
-
-   input [width-1:0] a, b;
-   input 	     cin;
-   
-   output [width-1:0] sumout;
-   output 	      cout;
+//n-bit adder
+module adder #(
+    parameter WIDTH = 1   
+) (
+    input [WIDTH-1:0] a, 
+    input [WIDTH-1:0] b, 
+    input cin, 
+    output cout, 
+    output [WIDTH-1:0] sumout);
 
    specify
-      (a=>sumout)="";
-      (b=>sumout)="";
-      (cin=>sumout)="";
-      (a=>cout)="";
-      (b=>cout)="";
+      (a*>sumout)="";
+      (b*>sumout)="";
+      (cin*>sumout)="";
+      (a*>cout)="";
+      (b*>cout)="";
       (cin=>cout)="";
    endspecify
    
@@ -225,122 +219,109 @@ module ripple_adder(a, b, cin, cout, sumout);
 endmodule
    
 //nxn multiplier module
-module mult(inA,inB,result);
+module multiply #(
+    //The width of input signals
+    parameter WIDTH = 1
+) (
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    output [2*WIDTH-1:0] out
+);
 
-//the number of inputs to the multiplier is passes in as a parameter to the module
-parameter inputs = 0;
- 
-   
-   input[inputs-1:0]inA,inB;
-   output reg[inputs + inputs -1:0] result;
+    specify
+        (a *> out) = "";
+        (b *> out) = "";
+    endspecify
 
-   wire[inputs-1:0]inA1,inB1;
-   Mult_interconnect #(inputs)delay(inA,inA1);
-   Mult_interconnect #(inputs)delay2(inB,inB1);
-   
-   always@(inA1 or inB1)
-   	result = inA1 * inB1;
-   	
+    assign out = a * b;
+
 endmodule // mult
 
-//This interconnect is needed to specify the delay of the multiplier in the SDF file
-module Mult_interconnect(A,B);
-
-   parameter num_inputs = 0;
-   
-   input [num_inputs-1:0]A;
-   output [num_inputs-1:0] B;
-
-   specify
-      (A=>B)="";
-   endspecify
-   
-   assign B = A;
-   
-endmodule // Mult_interconnect
-
 //single_port_ram module
-module single_port_ram(addr,data,we,out,clock);
+module single_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input [ADDR_WIDTH-1:0] addr,
+    input [DATA_WIDTH-1:0] data,
+    input we,
+    input clock,
+    output reg [DATA_WIDTH-1:0] out
+);
 
-   parameter addr_width = 0;
-   parameter data_width = 0;
-   parameter mem_depth = 1 << addr_width;
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
 
-   input clock;
-   input [addr_width-1:0] addr;
-   input [data_width-1:0] data;
-   input 		  we;
-   output reg [data_width-1:0] out;
-   
-   reg [data_width-1:0]        Mem[0:mem_depth];
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
-   specify
-      (clock=>out)="";
-   endspecify
+    specify
+        (clock*>out)="";
+        $setup(addr, posedge clock, "");
+        $setup(data, posedge clock, "");
+        $setup(we, posedge clock, "");
+        $hold(posedge clock, addr, "");
+        $hold(posedge clock, data, "");
+        $hold(posedge clock, we, "");
+    endspecify
    
-   always@(posedge clock)
-     begin
-	if(we)
-	  Mem[addr] = data;
-     end
+    always@(posedge clock) begin
+        if(we) begin
+            Mem[addr] = data;
+        end
+    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    end
    
-   always@(posedge clock)
-     begin
-	out = Mem[addr];
-     end
-  
 endmodule // single_port_RAM
 
 //dual_port_ram module
-module dual_port_ram(addr1,addr2,data1,data2,we1,we2,out1,out2,clock);
+module dual_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input clock,
 
-   parameter addr1_width = 0;
-   parameter data1_width = 0;
-   parameter addr2_width = 0;
-   parameter data2_width = 0;
-   parameter mem_depth1 = 1 << addr1_width;
-   parameter mem_depth2 = 1 << addr2_width;
+    input [ADDR_WIDTH-1:0] addr1,
+    input [ADDR_WIDTH-1:0] addr2,
+    input [DATA_WIDTH-1:0] data1,
+    input [DATA_WIDTH-1:0] data2,
+    input we1,
+    input we2,
+    output reg [DATA_WIDTH-1:0] out1,
+    output reg [DATA_WIDTH-1:0] out2
+);
 
-   input clock;
-   
-   input [addr1_width-1:0] addr1;
-   input [data1_width-1:0] data1;
-   input 		   we1;
-   output reg [data1_width-1:0] out1;
-   
-   input [addr2_width-1:0] 	addr2;
-   input [data2_width-1:0] 	data2;
-   input 			we2;
-   output reg [data2_width-1:0] out2;
-   
-   reg [data1_width-1:0] 	Mem1[0:mem_depth1];
-   reg [data2_width-1:0] 	Mem2[0:mem_depth2];
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-       (clock=>out1)="";
-       (clock=>out2)="";
+        (clock*>out1)="";
+        (clock*>out2)="";
+        $setup(addr1, posedge clock, "");
+        $setup(addr2, posedge clock, "");
+        $setup(data1, posedge clock, "");
+        $setup(data2, posedge clock, "");
+        $setup(we1, posedge clock, "");
+        $setup(we2, posedge clock, "");
+        $hold(posedge clock, addr1, "");
+        $hold(posedge clock, addr2, "");
+        $hold(posedge clock, data1, "");
+        $hold(posedge clock, data2, "");
+        $hold(posedge clock, we1, "");
+        $hold(posedge clock, we2, "");
     endspecify
    
-   always@(posedge clock)
-     begin
-	if(we1)
-	  Mem1[addr1] = data1;
-     end
-   
-   always@(posedge clock)
-      begin
-	if(we2)
-	  Mem2[addr2] = data2;
-     end
-   
-   always@(posedge clock)
-     begin
-	out1 = Mem1[addr1];
-     end
-   
-   always@(posedge clock)
-     begin
-	out2 = Mem2[addr2];
-     end
+    always@(posedge clock) begin //Port 1
+        if(we1) begin
+            Mem[addr1] = data1;
+        end
+        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+    end
+
+    always@(posedge clock) begin //Port 2
+        if(we2) begin
+            Mem[addr2] = data2;
+        end
+        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+    end
    
 endmodule // dual_port_ram

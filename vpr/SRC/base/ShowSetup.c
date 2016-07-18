@@ -428,6 +428,7 @@ static void ShowPackerOpts(INP struct s_packer_opts PackerOpts) {
 	vpr_printf_info("PackerOpts.intra_cluster_net_delay: %f\n", PackerOpts.intra_cluster_net_delay);
 	vpr_printf_info("PackerOpts.recompute_timing_after: %d\n", PackerOpts.recompute_timing_after);
 	vpr_printf_info("PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "true\n" : "false\n"));
+	vpr_printf_info("PackerOpts.absorb_buffer_luts: %s", (PackerOpts.absorb_buffer_luts ? "true\n" : "false\n"));
 	vpr_printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
 	vpr_printf_info("\n");
 }
