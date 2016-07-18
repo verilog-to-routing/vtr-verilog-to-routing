@@ -333,8 +333,7 @@ void try_place(struct s_placer_opts placer_opts,
 	num_swap_aborted = 0;
 	num_ts_called = 0;
 
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		/*do this before the initial placement to avoid messing up the initial placement */
 		slacks = alloc_lookups_and_criticalities(chan_width_dist, router_opts,
@@ -400,8 +399,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	/* Gets initial cost and loads bounding boxes. */
 
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		bb_cost = comp_bb_cost(NORMAL);
 
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -411,20 +409,7 @@ void try_place(struct s_placer_opts placer_opts,
 		vpr_printf_info("There are %d point to point connections in this circuit.\n", num_connections);
 		vpr_printf_info("\n");
 
-		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE) {
-			for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
-				for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++)
-					timing_place_crit[inet][ipin] = 0; /*dummy crit values */
-
-			comp_td_costs(&timing_cost, &delay_cost); /*first pass gets delay_cost, which is used 
-			 * in criticality computations in the next call
-			 * to comp_td_costs. */
-			place_delay_value = delay_cost / num_connections; /*used for computing criticalities */
-			load_constant_net_delay(net_delay, place_delay_value, g_clbs_nlist.net,
-				g_clbs_nlist.net.size());
-
-		} else
-			place_delay_value = 0;
+		place_delay_value = 0;
 
 		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			net_delay = point_to_point_delay_cost; /*this keeps net_delay up to date with      *
@@ -528,8 +513,7 @@ void try_place(struct s_placer_opts placer_opts,
 	/* Outer loop of the simmulated annealing begins */
 	while (exit_crit(t, cost, annealing_sched) == 0) {
 
-		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			cost = 1;
 		}
 
@@ -557,9 +541,7 @@ void try_place(struct s_placer_opts placer_opts,
 			}
 			bb_cost = new_bb_cost;
 
-			if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-					|| placer_opts.place_algorithm
-							== PATH_TIMING_DRIVEN_PLACE) {
+			if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 				comp_td_costs(&new_timing_cost, &new_delay_cost);
 				if (fabs(new_timing_cost - timing_cost) > timing_cost * ERROR_TOL) {
 					vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
@@ -623,8 +605,7 @@ void try_place(struct s_placer_opts placer_opts,
 		update_screen(MINOR, msg, PLACEMENT, false, timing_inf);
 		update_rlim(&rlim, success_rat);
 
-		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			crit_exponent = (1 - (rlim - final_rlim) * inverse_delta_rlim)
 					* (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
 					+ placer_opts.td_place_exp_first;
@@ -696,8 +677,7 @@ void try_place(struct s_placer_opts placer_opts,
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
 	}
 
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		net_delay = point_to_point_delay_cost; /*this makes net_delay up to date with    *
 		 *the same values that the placer is using*/
@@ -748,8 +728,7 @@ void try_place(struct s_placer_opts placer_opts,
 	free_placement_structs(
 				old_region_occ_x, old_region_occ_y,
 				placer_opts);
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 
 		net_delay = remember_net_delay_original_ptr;
@@ -766,8 +745,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf) {
 
-	if (placer_opts.place_algorithm != NET_TIMING_DRIVEN_PLACE
-			&& placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
+	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
 		return;
 
 	/*at each temperature change we update these values to be used     */
@@ -779,9 +757,6 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 #endif
 		*place_delay_value = (*delay_cost) / num_connections;
 
-		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
-			load_constant_net_delay(net_delay, *place_delay_value,
-				g_clbs_nlist.net, g_clbs_nlist.net.size());
 		/*note, for path_based, the net delay is not updated since it is current,
 		 *because it accesses point_to_point_delay array */
 
@@ -844,8 +819,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 		}
 
 
-		if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 
 			/* Do we want to re-timing analyze the circuit to get updated slack and criticality values? 
 			 * We do this only once in a while, since it is expensive.
@@ -857,16 +831,6 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 #ifdef VERBOSE
 				vpr_printf_trace("Inner loop recompute criticalities\n");
 #endif
-				if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE) {
-					/* Use a constant delay per connection as the delay estimate, rather than
-					 * estimating based on the current placement.  Not a great idea, but not the 
-					 * default.
-					 */
-					(*place_delay_value) = (*delay_cost) / num_connections;
-					load_constant_net_delay(net_delay, *place_delay_value,
-							g_clbs_nlist.net, g_clbs_nlist.net.size());
-				}
-
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
 				 */
@@ -1328,8 +1292,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 			bb_delta_c += temp_net_cost[inet] - net_cost[inet];
 		}
 
-		if (place_algorithm == NET_TIMING_DRIVEN_PLACE
-				|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+		if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			/*in this case we redefine delta_c as a combination of timing and bb.  *
 			 *additionally, we normalize all values, therefore delta_c is in       *
 			 *relation to 1*/
@@ -1349,8 +1312,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 			*cost = *cost + delta_c;
 			*bb_cost = *bb_cost + bb_delta_c;
 	
-			if (place_algorithm == NET_TIMING_DRIVEN_PLACE
-					|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+			if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 				/*update the point_to_point_timing_cost and point_to_point_delay_cost 
 				 * values from the temporary values */
 				*timing_cost = *timing_cost + timing_delta_c;
@@ -1947,8 +1909,7 @@ static void free_placement_structs(
 	free_legal_placements();
 	free_fast_cost_update();
 
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 			/*add one to the address since it is indexed from 1 not 0 */
@@ -2016,8 +1977,7 @@ static void alloc_and_load_placement_structs(
 		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
 	}
 
-	if (placer_opts.place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		/* Allocate structures associated with timing driven placement */
 		/* [0..g_clbs_nlist.net.size()-1][1..num_pins-1]  */
@@ -3085,8 +3045,7 @@ static void check_place(float bb_cost, float timing_cost,
 		error++;
 	}
 
-	if (place_algorithm == NET_TIMING_DRIVEN_PLACE
-			|| place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+	if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		comp_td_costs(&timing_cost_check, &delay_cost_check);
 		vpr_printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
 		if (fabs(timing_cost_check - timing_cost) > timing_cost * ERROR_TOL) {

@@ -108,7 +108,6 @@ struct s_TokenPair OptionArgTokenList[] = {
 		{ "off", OT_OFF },
 		{ "random", OT_RANDOM }, 
 		{ "bounding_box", OT_BOUNDING_BOX }, 
-		{ "net_timing_driven", OT_NET_TIMING_DRIVEN }, 
 		{ "path_timing_driven", OT_PATH_TIMING_DRIVEN }, 
 		{ "breadth_first", OT_BREADTH_FIRST }, 
 		{ "timing_driven", OT_TIMING_DRIVEN }, 

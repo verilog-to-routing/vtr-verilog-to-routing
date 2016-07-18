@@ -33,8 +33,7 @@ void CheckSetup(INP enum e_operation Operation,
 	}
 
 	if ((false == Timing.timing_analysis_enabled)
-			&& ((PlacerOpts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
-					|| (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE))) {
+			&& (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE)) {
 
 		/* May work, not tested */
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 

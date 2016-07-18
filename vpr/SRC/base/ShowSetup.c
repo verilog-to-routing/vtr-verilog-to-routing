@@ -350,9 +350,6 @@ static void ShowPlacerOpts(INP t_options Options,
 		case BOUNDING_BOX_PLACE:
 			vpr_printf_info("BOUNDING_BOX_PLACE\n");
 			break;
-		case NET_TIMING_DRIVEN_PLACE:
-			vpr_printf_info("NET_TIMING_DRIVEN_PLACE\n");
-			break;
 		case PATH_TIMING_DRIVEN_PLACE:
 			vpr_printf_info("PATH_TIMING_DRIVEN_PLACE\n");
 			break;
@@ -381,8 +378,7 @@ static void ShowPlacerOpts(INP t_options Options,
 			vpr_printf_info("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 		}
 
-		if ((NET_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm)
-				|| (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm)) {
+		if (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm) {
 			vpr_printf_info("PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);
 			vpr_printf_info("PlacerOpts.recompute_crit_iter: %d\n", PlacerOpts.recompute_crit_iter);
 			vpr_printf_info("PlacerOpts.timing_tradeoff: %f\n", PlacerOpts.timing_tradeoff);

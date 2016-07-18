@@ -867,8 +867,7 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 
 	/* Depends on PlacerOpts->place_algorithm */
 	PlacerOpts->enable_timing_computations = false; /* DEFAULT */
-	if ((PlacerOpts->place_algorithm == PATH_TIMING_DRIVEN_PLACE)
-			|| (PlacerOpts->place_algorithm == NET_TIMING_DRIVEN_PLACE)) {
+	if (PlacerOpts->place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		PlacerOpts->enable_timing_computations = true; /* DEFAULT */
 	}
 	if (Options.Count[OT_ENABLE_TIMING_COMPUTATIONS]) {

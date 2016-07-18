@@ -971,9 +971,6 @@ ReadPlaceAlgorithm(INP char **Args, OUTP enum e_place_algorithm *Algo) {
 	case OT_BOUNDING_BOX:
 		*Algo = BOUNDING_BOX_PLACE;
 		break;
-	case OT_NET_TIMING_DRIVEN:
-		*Algo = NET_TIMING_DRIVEN_PLACE;
-		break;
 	case OT_PATH_TIMING_DRIVEN:
 		*Algo = PATH_TIMING_DRIVEN_PLACE;
 		break;

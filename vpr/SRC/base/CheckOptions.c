@@ -51,8 +51,7 @@ void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
 	/* If placing and timing is enabled, default to a timing placer */
 	TimingPlacer =((Options.Count[OT_PLACE] || default_flow) && TimingEnabled);
 	if (Options.Count[OT_PLACE_ALGORITHM] > 0) {
-		if ((PATH_TIMING_DRIVEN_PLACE != Options.PlaceAlgorithm)
-				&& (NET_TIMING_DRIVEN_PLACE != Options.PlaceAlgorithm)) {
+		if (PATH_TIMING_DRIVEN_PLACE != Options.PlaceAlgorithm) {
 			/* Turn off the timing placer if they request a different placer */
 			TimingPlacer = false;
 		}

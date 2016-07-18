@@ -661,8 +661,7 @@ struct s_annealing_sched {
 };
 
 /* Various options for the placer.                                           *
- * place_algorithm:  BOUNDING_BOX_PLACE or NET_TIMING_DRIVEN_PLACE, or       *
- *                   PATH_TIMING_DRIVEN_PLACE                                *
+ * place_algorithm:  BOUNDING_BOX_PLACE or PATH_TIMING_DRIVEN_PLACE          *
  * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff     *
  *                   timing driven and BOUNDING_BOX_PLACE.                   *
  * block_dist:  Initial guess of how far apart blocks on the critical path   *
@@ -689,7 +688,7 @@ struct s_annealing_sched {
  * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
 
 enum e_place_algorithm {
-	BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE
+	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
 struct s_placer_opts {

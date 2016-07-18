@@ -105,7 +105,7 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--connection_driven_clustering on | off] \n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Placer Options:\n");
-	vpr_printf_info("\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
+	vpr_printf_info("\t[--place_algorithm bounding_box | path_timing_driven]\n");
 	vpr_printf_info("\t[--init_t <float>] [--exit_t <float>]\n");
 	vpr_printf_info("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
 	vpr_printf_info("\t[--place_cost_exp <float>]\n");
