@@ -1655,16 +1655,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 permuted_input_values.rotate(permute);
 
 #ifdef DEBUG_LUT_MASK
-                std::cout << "\t" << names_row << " = "<< input_values << ":" << output_val;
+                std::cout << "\t" << names_row << " = "<< input_values << ":" << encoding_on_set;
 
-                std::cout << " -> " << permuted_input_values << ":" << output_val << std::endl;
+                std::cout << " -> " << permuted_input_values << ":" << encoding_on_set<< std::endl;
 #endif
 
                 //Get the minterm numbers representing the logic function, while
                 //expand any don't cares in the input values
                 for(size_t minterm : permuted_input_values.minterms()) {
 #ifdef DEBUG_LUT_MASK
-                    std::cout << "\tSetting minterm : " << minterm << " to " << output_val << std::endl;
+                    std::cout << "\tSetting minterm : " << minterm << " to " << encoding_on_set << std::endl;
 #endif
                     //Set the appropraite lut mask entry
                     lut_mask[minterm] = (encoding_on_set) ? LogicVal::TRUE : LogicVal::FALSE;
