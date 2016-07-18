@@ -660,24 +660,45 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			
 			find(\&find_postsynthesis_netlist, ".");
 			$q = &system_with_timeout($abc_path, 
-							"equiv.out",
+							"cec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"cec $odin_output_file_name $vpr_postsynthesis_netlist;sec $odin_output_file_name $vpr_postsynthesis_netlist"
+							"cec $odin_output_file_name $vpr_postsynthesis_netlist;"
+			);
+			$q = &system_with_timeout($abc_path, 
+							"sec.out",
+							$timeout,
+							$temp_dir,
+							"-c", 
+							"sec $odin_output_file_name $vpr_postsynthesis_netlist"
 			);
 		}
                 # Parse ABC verification output
-                if ( open( EQUIVOUT, "< equiv.out" ) ) {
+                if ( open( SECOUT, "< sec.out" ) ) {
 	            undef $/;
-	            my $content = <EQUIVOUT>;
-	            close(EQUIVOUT);
+	            my $sec_content = <SECOUT>;
+	            close(SECOUT);
 	            $/ = "\n";    # Restore for normal behaviour later in script
+			
+	            if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
+			# Parsing cec output if needed
+                	if ( open( CECOUT, "< cec.out" ) ) {
+	            		undef $/;
+	            		my $cec_content = <CECOUT>;
+	           		close(CECOUT);
+	            		$/ = "\n";    # Restore for normal behaviour later in script
 
-	            if ( $content !~ m/(.*Networks are equivalent.*)/i ) {
-		        print("failed: formal verification");
-                        $error_code = 1;
-	            } 
+	            		if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
+		       	 		print("failed: formal verification");
+                        		$error_code = 1;
+	            		} 
+                	 }
+	            } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
+		    	print("failed: formal verification");
+			$error_code = 1;
+		    }
+		 
                  }
 
 		if (! $keep_intermediate_files)
