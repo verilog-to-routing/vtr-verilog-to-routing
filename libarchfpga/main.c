@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "read_xml_arch_file.h"
+#include "echo_arch.h"
 
 void print_help();
 

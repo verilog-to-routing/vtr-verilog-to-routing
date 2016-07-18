@@ -20,9 +20,6 @@ void
 XmlReadArch( INP const char *ArchFile, INP bool timing_enabled,
 		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
 		OUTP int *NumTypes);
-void
-EchoArch( INP const char *EchoFile, INP const t_type_descriptor * Types,
-		INP int NumTypes, struct s_arch *arch);
 
 const char* get_arch_file_name();
 
