@@ -94,13 +94,15 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	/* Parse the file */
 	vpr_printf_info("Begin loading packed FPGA netlist file.\n");
+
     pugi::xml_document doc;
-    auto load_result = doc.load_file(net_file);
-    if(!load_result) {
-        vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                  "Unable to load netlist file '%s'. Reason: %s.\n", net_file, load_result.description());
+    pugiloc::loc_data loc_data;
+    try {
+        loc_data = pugiutil::load_xml(doc, net_file);
+    } catch(pugiutil::XmlError& e) {
+        vpr_throw(VPR_ERROR_NET_F, net_file, 0,
+                  "Failed to load netlist file '%s' (%s).\n", net_file, e.what());
     }
-    auto loc_data = pugiloc::loc_data(net_file);
 
 
 	/* Save netlist file's name in file-scoped variable */

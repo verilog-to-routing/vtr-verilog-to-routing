@@ -30,6 +30,19 @@ namespace pugiutil {
                 : VtrError(msg, new_filename, new_linenumber) {}
     };
 
+    //Loads the XML file specified by filename into the passed pugi::xml_docment
+    //
+    //Returns pugiloc::loc_data look-up for xml node line numbers
+    pugiloc::loc_data load_xml(pugi::xml_document& doc,  //Document object to be loaded with file contents
+                               const std::string filename) { //Filename to load from
+        auto load_result = doc.load_file(filename.c_str());
+        if(!load_result) {
+            throw XmlError("Unable to load XML file '" + filename + "', " + load_result.description() + "", __FILE__, __LINE__);
+        }
+
+        return pugiloc::loc_data(filename);
+    }
+
     //Defines whether something (e.g. a node/attribute) is optional or required.
     //  We use this to improve clarity at the function call site (compared to just 
     //  using boolean values).
