@@ -236,7 +236,9 @@ sub run_single_task {
 		# This is hack to automatically add the option '-temp_dir .' if using the run_vtr_flow.pl script
 		# This ensures that a 'temp' folder is not created in each circuit directory
 		if ( !( $script_params =~ /-temp_dir/ ) ) {
-			$script_params = $script_params . " -temp_dir . ";
+            #-temp_dir must come before the script_params, so that it gets picked up by run_vtr_flow
+            # and not passed on as an argument to a tool (e.g. VPR)
+ 			$script_params = " -temp_dir . " . $script_params;
 		}
 	}
 	else {
