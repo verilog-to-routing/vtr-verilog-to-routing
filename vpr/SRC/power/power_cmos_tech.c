@@ -299,20 +299,17 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
 	g_power_tech->num_nmos_leakage_info = num_nmos_sizes;
-	g_power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) my_calloc(
-			num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
+	g_power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) my_calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
 	nmos_idx = 0;
 	while (me) {
-		t_power_nmos_leakage_inf * nmos_info =
-				&g_power_tech->nmos_leakage_info[nmos_idx];
+		t_power_nmos_leakage_inf * nmos_info = &g_power_tech->nmos_leakage_info[nmos_idx];
 		nmos_info->nmos_size = get_attribute(me, "size", loc_data).as_float(0.);
 
         num_leakage_pairs = count_children(me, "nmos_leakage", loc_data);
 		nmos_info->num_leakage_pairs = num_leakage_pairs;
-		nmos_info->leakage_pairs = (t_power_nmos_leakage_pair*) my_calloc(
-				num_leakage_pairs, sizeof(t_power_nmos_leakage_pair));
+		nmos_info->leakage_pairs = (t_power_nmos_leakage_pair*) my_calloc(num_leakage_pairs, sizeof(t_power_nmos_leakage_pair));
 
 		auto child = get_first_child(me, "nmos_leakage", loc_data);
 		i = 0;
@@ -324,7 +321,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 			i++;
 		}
 
-        me = me.next_sibling("nmos_leakage");
+        me = me.next_sibling("nmos");
 		nmos_idx++;
 	}
 
@@ -388,7 +385,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 				nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_min = get_attribute(gc, "out_min", loc_data).as_float(0.0);
 				nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_max = get_attribute(gc, "out_max", loc_data).as_float(0.0);
 
-                gc = gc.next_sibling("multiplexer");
+                gc = gc.next_sibling("voltages");
 				j++;
 			}
 
@@ -567,9 +564,7 @@ void power_find_nmos_leakage(t_power_nmos_leakage_inf * nmos_leakage_info,
 			sizeof(t_power_nmos_leakage_pair), power_compare_leakage_pair);
 	assert(found);
 
-	if (found
-			== &nmos_leakage_info->leakage_pairs[nmos_leakage_info->num_leakage_pairs
-					- 1]) {
+	if (found == &nmos_leakage_info->leakage_pairs[nmos_leakage_info->num_leakage_pairs - 1]) {
 		/* The results equal to the max voltage (Vdd) */
 		*lower = found;
 		*upper = NULL;
@@ -662,19 +657,13 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf ** lower,
 /**
  * Comparison function, used by power_find_nmos_leakage
  */
-static int power_compare_leakage_pair(const void * key_void,
-		const void * elem_void) {
-	const t_power_nmos_leakage_pair * key =
-			(const t_power_nmos_leakage_pair*) key_void;
-	const t_power_nmos_leakage_pair * elem =
-			(const t_power_nmos_leakage_pair*) elem_void;
-	const t_power_nmos_leakage_pair * next =
-			(const t_power_nmos_leakage_pair*) elem + 1;
+static int power_compare_leakage_pair(const void * key_void, const void * elem_void) {
+	const t_power_nmos_leakage_pair * key = (const t_power_nmos_leakage_pair*) key_void;
+	const t_power_nmos_leakage_pair * elem = (const t_power_nmos_leakage_pair*) elem_void;
+	const t_power_nmos_leakage_pair * next = (const t_power_nmos_leakage_pair*) elem + 1;
 
 	/* Compare against last? */
-	if (elem
-			== &g_power_searching_nmos_leakage_info->leakage_pairs[g_power_searching_nmos_leakage_info->num_leakage_pairs
-					- 1]) {
+	if (elem == &g_power_searching_nmos_leakage_info->leakage_pairs[g_power_searching_nmos_leakage_info->num_leakage_pairs - 1]) {
 		if (key->v_ds >= elem->v_ds) {
 			return 0;
 		} else {
