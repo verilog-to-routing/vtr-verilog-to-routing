@@ -23,7 +23,6 @@ using namespace std;
 #include "vpr_utils.h"
 #include "ReadLine.h"
 #include "globals.h"
-#include "ezxml.h"
 #include "read_xml_util.h"
 #include "read_netlist.h"
 #include "pb_type_graph.h"
