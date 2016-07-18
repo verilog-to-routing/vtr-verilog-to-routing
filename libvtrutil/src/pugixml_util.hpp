@@ -33,7 +33,7 @@ namespace pugiutil {
     //Loads the XML file specified by filename into the passed pugi::xml_docment
     //
     //Returns pugiloc::loc_data look-up for xml node line numbers
-    pugiloc::loc_data load_xml(pugi::xml_document& doc,  //Document object to be loaded with file contents
+    inline pugiloc::loc_data load_xml(pugi::xml_document& doc,  //Document object to be loaded with file contents
                                const std::string filename) { //Filename to load from
         auto load_result = doc.load_file(filename.c_str());
         if(!load_result) {
@@ -67,7 +67,7 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    pugi::xml_node get_first_child(const pugi::xml_node node, 
+    inline pugi::xml_node get_first_child(const pugi::xml_node node, 
                                    const std::string& child_name, 
                                    const pugiloc::loc_data& loc_data,
                                    const ReqOpt req_opt=REQUIRED) {
@@ -87,7 +87,7 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    pugi::xml_node get_single_child(const pugi::xml_node node, 
+    inline pugi::xml_node get_single_child(const pugi::xml_node node, 
                                     const std::string& child_name, 
                                     const pugiloc::loc_data& loc_data,
                                     const ReqOpt req_opt=REQUIRED) {
@@ -107,7 +107,7 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    size_t count_children(const pugi::xml_node node, 
+    inline size_t count_children(const pugi::xml_node node, 
                           const std::string& child_name, 
                           const pugiloc::loc_data& loc_data,
                           const ReqOpt req_opt=REQUIRED) {
@@ -129,7 +129,7 @@ namespace pugiutil {
     //  attr_name - The attribute name
     //  loc_data - XML file location data
     //  req_opt - Whether the peropry is required (will error if required and not found) or optional. Defaults to REQUIRED
-    pugi::xml_attribute get_attribute(const pugi::xml_node node, 
+    inline pugi::xml_attribute get_attribute(const pugi::xml_node node, 
                                       const std::string& attr_name,
                                       const pugiloc::loc_data& loc_data,
                                       const ReqOpt req_opt=REQUIRED) {
@@ -150,7 +150,7 @@ namespace pugiutil {
     //  tag_name - The expected tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the tag name is required (will error if required and not found) or optional. Defaults to REQUIRED
-    bool check_node(const pugi::xml_node node,
+    inline bool check_node(const pugi::xml_node node,
                     const std::string& tag_name,
                     const pugiloc::loc_data& loc_data,
                     const ReqOpt req_opt=REQUIRED) {
