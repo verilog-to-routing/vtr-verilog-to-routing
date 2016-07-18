@@ -1,28 +1,24 @@
-/* The XML parser processes an XML file into a tree data structure composed of      *
- * ezxml_t nodes.  Each ezxml_t node represents an XML element.  For example        *
- * <a> <b/> </a> will generate two ezxml_t nodes.  One called "a" and its           *
- * child "b".  Each ezxml_t node can contain various XML data such as attribute     *
- * information and text content.  The XML parser provides several functions to      *
- * help the developer build, traverse, and free this ezxml_t tree.                  *
- *                                                                                  *
- * The function ezxml_parse_file reads in an architecture file.                     *
- *                                                                                  *
- * The function FindElement returns a child ezxml_t node for a given ezxml_t        *
- * node that matches a name provided by the developer.                              *
- *                                                                                  *
- * The function FreeNode frees a child ezxml_t node.  All children nodes must       *
- * be freed before the parent can be freed.                                         *
- *                                                                                  *
- * The function FindProperty is used to extract attributes from an ezxml_t node.    *
- * The corresponding ezxml_set_attr is used to then free an attribute after it      *
- * is read.  We have several helper functions that perform this common              *
- * read/store/free operation in one step such as GetIntProperty and                 *
- * GetFloatProperty.                                                                *
- *                                                                                  *
- * Because of how the XML tree traversal works, we free everything when we're       *
- * done reading an architecture file to make sure that there isn't some part        *
- * of the architecture file that got missed. 
- * 
+/* The XML parser processes an XML file into a tree data structure composed of  
+ * pugi::xml_nodes.  Each node represents an XML element.  For example          
+ * <a> <b/> </a> will generate two pugi::xml_nodes.  One called "a" and its      
+ * child "b".  Each pugi::xml_node can contain various XML data such as attribute 
+ * information and text content.  The XML parser provides several functions to  
+ * help the developer build, and traverse tree (this is also somtime referred to
+ * as the Document Object Model or DOM).              
+ *                                                                              
+ * For convenience it often makes sense to use some wraper functions (provided in
+ * the pugiutil namespace of libvtrutil) which simplify loading an XML file and 
+ * error handling.
+ *
+ * The function pugiutil::load_xml() reads in an xml file.                 
+ *                                                                              
+ * The function pugiutil::get_single_child() returns a child xml_node for a given parent
+ * xml_node if there is a child which matches the name provided by the developer.                          
+ *                                                                              
+ * The function pugiutil::get_attributes() is used to extract attributes from an 
+ * xml_node, returning a pugi::xml_attribute. xml_attribute objects support accessors
+ * such as as_float(), as_int() to retrieve semantic values. See pugixml documentation
+ * for more details.
  * 
  * Architecture file checks already implemented (Daniel Chen):
  *		- Duplicate pb_types, pb_type ports, models, model ports,
@@ -155,6 +151,259 @@ e_power_estimation_method power_method_inherited(
 static void CheckXMLTagOrder(ezxml_t Parent);
 static void primitives_annotation_clock_match(
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type);
+
+/*
+ *
+ *
+ * External Function Implementations
+ *
+ *
+ */
+
+/* Loads the given architecture file. */
+void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
+		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
+		OUTP int *NumTypes) {
+	ezxml_t Cur = NULL, Next;
+	const char *Prop;
+	bool power_reqd;
+
+	if (check_file_name_extension(ArchFile, ".xml") == false) {
+		vpr_printf_warning(__FILE__, __LINE__,
+				"Architecture file '%s' may be in incorrect format. "
+						"Expecting .xml format for architecture files.\n",
+				ArchFile);
+	}
+
+	/* Parse the file */
+	Cur = ezxml_parse_file(ArchFile);
+	if (NULL == Cur) {
+		vpr_throw(VPR_ERROR_ARCH, ArchFile, 0,
+				"Unable to find/load architecture file '%s'.\n", ArchFile);
+	}
+
+	arch_file_name = ArchFile;
+
+	/* Root node should be architecture */
+	CheckElement(Cur, "architecture");
+
+	/* TODO: do version processing properly with string delimiting on the . */
+	Prop = FindProperty(Cur, "version", false);
+	if (Prop != NULL) {
+		if (atof(Prop) > atof(VPR_VERSION)) {
+			vpr_printf_warning(__FILE__, __LINE__,
+					"This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
+					atof(Prop));
+		}
+		ezxml_set_attr(Cur, "version", NULL);
+	}
+
+	/* Process models */
+	Next = FindElement(Cur, "models", true);
+	ProcessModels(Next, arch);
+	FreeNode(Next);
+	CreateModelLibrary(arch);
+
+	/* Process layout */
+	Next = FindElement(Cur, "layout", true);
+	ProcessLayout(Next, arch);
+	FreeNode(Next);
+
+	/* Process device */
+	Next = FindElement(Cur, "device", true);
+	ProcessDevice(Next, arch, timing_enabled);
+	FreeNode(Next);
+
+	/* Process switches */
+	Next = FindElement(Cur, "switchlist", true);
+	ProcessSwitches(Next, &(arch->Switches), &(arch->num_switches),
+			timing_enabled);
+	FreeNode(Next);
+
+	/* Process switchblocks. This depends on switches */
+	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
+
+	/* Process segments. This depends on switches */
+	Next = FindElement(Cur, "segmentlist", true);
+	ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
+			arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required);
+	FreeNode(Next);
+
+	Next = FindElement(Cur, "switchblocklist", switchblocklist_required);
+	if (Next){
+		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
+		FreeNode(Next);
+	}
+
+	/* Process types */
+	Next = FindElement(Cur, "complexblocklist", true);
+	ProcessComplexBlocks(Next, Types, NumTypes, timing_enabled, *arch);
+	FreeNode(Next);
+
+	#ifdef INTERPOSER_BASED_ARCHITECTURE	
+	/* find the least common multiple of block heights
+	 * for interposer based architectures, a culine cannot go through a block */
+	arch->lcm_of_block_heights = 1;
+	for(int i=0; i < *NumTypes; ++i)
+	{
+		t_type_descriptor * Type = &(*Types)[i];
+		if(Type!=0)
+		{
+			arch->lcm_of_block_heights = lcm(arch->lcm_of_block_heights, Type->height);
+		}
+	}
+	#endif
+
+	/* Process directs */
+	Next = FindElement(Cur, "directlist", false);
+	if (Next) {
+		ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
+                arch->Switches, arch->num_switches,
+				timing_enabled);
+		FreeNode(Next);
+	}
+
+	/* Process architecture power information */
+
+	/* If arch->power has been initialized, meaning the user has requested power estimation,
+	 * then the power architecture information is required.
+	 */
+	if (arch->power) {
+		power_reqd = true;
+	} else {
+		power_reqd = false;
+	}
+
+	Next = FindElement(Cur, "power", power_reqd);
+	if (Next) {
+		if (arch->power) {
+			ProcessPower(Next, arch->power, *Types, *NumTypes);
+		} else {
+			/* This information still needs to be read, even if it is just
+			 * thrown away.
+			 */
+			t_power_arch * power_arch_fake = (t_power_arch*) my_calloc(1,
+					sizeof(t_power_arch));
+			ProcessPower(Next, power_arch_fake, *Types, *NumTypes);
+			free(power_arch_fake);
+		}
+		FreeNode(Next);
+	}
+
+// Process Clocks
+	Next = FindElement(Cur, "clocks", power_reqd);
+	if (Next) {
+		if (arch->clocks) {
+			ProcessClocks(Next, arch->clocks);
+		} else {
+			/* This information still needs to be read, even if it is just
+			 * thrown away.
+			 */
+			t_clock_arch * clocks_fake = (t_clock_arch*) my_calloc(1,
+					sizeof(t_clock_arch));
+			ProcessClocks(Next, clocks_fake);
+			free(clocks_fake->clock_inf);
+			free(clocks_fake);
+		}
+		FreeNode(Next);
+	}
+	SyncModelsPbTypes(arch, *Types, *NumTypes);
+	UpdateAndCheckModels(arch);
+
+	/* Release the full XML tree */
+	FreeNode(Cur);
+}
+
+/* Output the data from architecture data so user can verify it
+ * was interpretted correctly. */
+void EchoArch(INP const char *EchoFile, INP const t_type_descriptor * Types,
+		INP int NumTypes, struct s_arch *arch) {
+	int i, j;
+	FILE * Echo;
+	t_model * cur_model;
+	t_model_ports * model_port;
+	struct s_linked_vptr *cur_vptr;
+
+	Echo = my_fopen(EchoFile, "w", 0);
+	cur_model = NULL;
+
+	//Print all layout device switch/segment list info first
+	PrintArchInfo(Echo, arch);
+
+	//Models
+	fprintf(Echo, "*************************************************\n");
+	for (j = 0; j < 2; j++) {
+		if (j == 0) {
+			fprintf(Echo, "Printing user models \n");
+			cur_model = arch->models;
+		} else if (j == 1) {
+			fprintf(Echo, "Printing library models \n");
+			cur_model = arch->model_library;
+		}
+		while (cur_model) {
+			fprintf(Echo, "Model: \"%s\"\n", cur_model->name);
+			model_port = cur_model->inputs;
+			while (model_port) {
+				fprintf(Echo, "\tInput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
+						model_port->name, model_port->size,
+						model_port->min_size);
+				model_port = model_port->next;
+			}
+			model_port = cur_model->outputs;
+			while (model_port) {
+				fprintf(Echo, "\tOutput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
+						model_port->name, model_port->size,
+						model_port->min_size);
+				model_port = model_port->next;
+			}
+			cur_vptr = cur_model->pb_types;
+			i = 0;
+			while (cur_vptr != NULL) {
+				fprintf(Echo, "\tpb_type %d: \"%s\"\n", i,
+						((t_pb_type*) cur_vptr->data_vptr)->name);
+				cur_vptr = cur_vptr->next;
+				i++;
+			}
+
+			cur_model = cur_model->next;
+		}
+	}
+	fprintf(Echo, "*************************************************\n\n");
+	fprintf(Echo, "*************************************************\n");
+	for (i = 0; i < NumTypes; ++i) {
+		fprintf(Echo, "Type: \"%s\"\n", Types[i].name);
+		fprintf(Echo, "\tcapacity: %d\n", Types[i].capacity);
+		fprintf(Echo, "\twidth: %d\n", Types[i].width);
+		fprintf(Echo, "\theight: %d\n", Types[i].height);
+		for (j = 0; j < Types[i].num_pins; j++) {
+			fprintf(Echo, "\tis_Fc_frac: \n");
+			fprintf(Echo, "\t\tPin number %d: %s\n", j,
+					(Types[i].is_Fc_frac[j] ? "true" : "false"));
+			fprintf(Echo, "\tis_Fc_full_flex: \n");
+			fprintf(Echo, "\t\tPin number %d: %s\n", j,
+					(Types[i].is_Fc_full_flex[j] ? "true" : "false"));
+			for (int iseg = 0; iseg < arch->num_segments; iseg++){
+				fprintf(Echo, "\tPin: %d  Segment: %d  Fc: %f\n", j, iseg, Types[i].Fc[j][iseg]);
+			}
+		}
+		fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
+		fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);
+		fprintf(Echo, "\tindex: %d\n", Types[i].index);
+		if (Types[i].pb_type) {
+			PrintPb_types_rec(Echo, Types[i].pb_type, 2);
+		}
+		fprintf(Echo, "\n");
+	}
+	fclose(Echo);
+}
+
+/*
+ *
+ *
+ * File-scope function implementations
+ *
+ *
+ */
 
 #ifdef INTERPOSER_BASED_ARCHITECTURE
 int gcd(int a, int b)
@@ -2863,159 +3112,6 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 	pb_type_descriptors.clear();
 }
 
-/* Loads the given architecture file. Currently only
- * handles type information */
-void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
-		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
-		OUTP int *NumTypes) {
-	ezxml_t Cur = NULL, Next;
-	const char *Prop;
-	bool power_reqd;
-
-	if (check_file_name_extension(ArchFile, ".xml") == false) {
-		vpr_printf_warning(__FILE__, __LINE__,
-				"Architecture file '%s' may be in incorrect format. "
-						"Expecting .xml format for architecture files.\n",
-				ArchFile);
-	}
-
-	/* Parse the file */
-	Cur = ezxml_parse_file(ArchFile);
-	if (NULL == Cur) {
-		vpr_throw(VPR_ERROR_ARCH, ArchFile, 0,
-				"Unable to find/load architecture file '%s'.\n", ArchFile);
-	}
-
-	arch_file_name = ArchFile;
-
-	/* Root node should be architecture */
-	CheckElement(Cur, "architecture");
-	/* TODO: do version processing properly with string delimiting on the . */
-	Prop = FindProperty(Cur, "version", false);
-	if (Prop != NULL) {
-		if (atof(Prop) > atof(VPR_VERSION)) {
-			vpr_printf_warning(__FILE__, __LINE__,
-					"This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
-					atof(Prop));
-		}
-		ezxml_set_attr(Cur, "version", NULL);
-	}
-
-	/* Process models */
-	Next = FindElement(Cur, "models", true);
-	ProcessModels(Next, arch);
-	FreeNode(Next);
-	CreateModelLibrary(arch);
-
-	/* Process layout */
-	Next = FindElement(Cur, "layout", true);
-	ProcessLayout(Next, arch);
-	FreeNode(Next);
-
-	/* Process device */
-	Next = FindElement(Cur, "device", true);
-	ProcessDevice(Next, arch, timing_enabled);
-	FreeNode(Next);
-
-	/* Process switches */
-	Next = FindElement(Cur, "switchlist", true);
-	ProcessSwitches(Next, &(arch->Switches), &(arch->num_switches),
-			timing_enabled);
-	FreeNode(Next);
-
-	/* Process switchblocks. This depends on switches */
-	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
-
-	/* Process segments. This depends on switches */
-	Next = FindElement(Cur, "segmentlist", true);
-	ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
-			arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required);
-	FreeNode(Next);
-
-	Next = FindElement(Cur, "switchblocklist", switchblocklist_required);
-	if (Next){
-		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches);
-		FreeNode(Next);
-	}
-
-	/* Process types */
-	Next = FindElement(Cur, "complexblocklist", true);
-	ProcessComplexBlocks(Next, Types, NumTypes, timing_enabled, *arch);
-	FreeNode(Next);
-
-	#ifdef INTERPOSER_BASED_ARCHITECTURE	
-	/* find the least common multiple of block heights
-	 * for interposer based architectures, a culine cannot go through a block */
-	arch->lcm_of_block_heights = 1;
-	for(int i=0; i < *NumTypes; ++i)
-	{
-		t_type_descriptor * Type = &(*Types)[i];
-		if(Type!=0)
-		{
-			arch->lcm_of_block_heights = lcm(arch->lcm_of_block_heights, Type->height);
-		}
-	}
-	#endif
-
-	/* Process directs */
-	Next = FindElement(Cur, "directlist", false);
-	if (Next) {
-		ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
-                arch->Switches, arch->num_switches,
-				timing_enabled);
-		FreeNode(Next);
-	}
-
-	/* Process architecture power information */
-
-	/* If arch->power has been initialized, meaning the user has requested power estimation,
-	 * then the power architecture information is required.
-	 */
-	if (arch->power) {
-		power_reqd = true;
-	} else {
-		power_reqd = false;
-	}
-
-	Next = FindElement(Cur, "power", power_reqd);
-	if (Next) {
-		if (arch->power) {
-			ProcessPower(Next, arch->power, *Types, *NumTypes);
-		} else {
-			/* This information still needs to be read, even if it is just
-			 * thrown away.
-			 */
-			t_power_arch * power_arch_fake = (t_power_arch*) my_calloc(1,
-					sizeof(t_power_arch));
-			ProcessPower(Next, power_arch_fake, *Types, *NumTypes);
-			free(power_arch_fake);
-		}
-		FreeNode(Next);
-	}
-
-// Process Clocks
-	Next = FindElement(Cur, "clocks", power_reqd);
-	if (Next) {
-		if (arch->clocks) {
-			ProcessClocks(Next, arch->clocks);
-		} else {
-			/* This information still needs to be read, even if it is just
-			 * thrown away.
-			 */
-			t_clock_arch * clocks_fake = (t_clock_arch*) my_calloc(1,
-					sizeof(t_clock_arch));
-			ProcessClocks(Next, clocks_fake);
-			free(clocks_fake->clock_inf);
-			free(clocks_fake);
-		}
-		FreeNode(Next);
-	}
-	SyncModelsPbTypes(arch, *Types, *NumTypes);
-	UpdateAndCheckModels(arch);
-
-	/* Release the full XML tree */
-	FreeNode(Cur);
-}
 
 static void ProcessSegments(INOUTP ezxml_t Parent,
 		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
@@ -3842,88 +3938,6 @@ static void UpdateAndCheckModels(INOUTP struct s_arch *arch) {
 	}
 }
 
-/* Output the data from architecture data so user can verify it
- * was interpretted correctly. */
-void EchoArch(INP const char *EchoFile, INP const t_type_descriptor * Types,
-		INP int NumTypes, struct s_arch *arch) {
-	int i, j;
-	FILE * Echo;
-	t_model * cur_model;
-	t_model_ports * model_port;
-	struct s_linked_vptr *cur_vptr;
-
-	Echo = my_fopen(EchoFile, "w", 0);
-	cur_model = NULL;
-
-	//Print all layout device switch/segment list info first
-	PrintArchInfo(Echo, arch);
-
-	//Models
-	fprintf(Echo, "*************************************************\n");
-	for (j = 0; j < 2; j++) {
-		if (j == 0) {
-			fprintf(Echo, "Printing user models \n");
-			cur_model = arch->models;
-		} else if (j == 1) {
-			fprintf(Echo, "Printing library models \n");
-			cur_model = arch->model_library;
-		}
-		while (cur_model) {
-			fprintf(Echo, "Model: \"%s\"\n", cur_model->name);
-			model_port = cur_model->inputs;
-			while (model_port) {
-				fprintf(Echo, "\tInput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
-						model_port->name, model_port->size,
-						model_port->min_size);
-				model_port = model_port->next;
-			}
-			model_port = cur_model->outputs;
-			while (model_port) {
-				fprintf(Echo, "\tOutput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
-						model_port->name, model_port->size,
-						model_port->min_size);
-				model_port = model_port->next;
-			}
-			cur_vptr = cur_model->pb_types;
-			i = 0;
-			while (cur_vptr != NULL) {
-				fprintf(Echo, "\tpb_type %d: \"%s\"\n", i,
-						((t_pb_type*) cur_vptr->data_vptr)->name);
-				cur_vptr = cur_vptr->next;
-				i++;
-			}
-
-			cur_model = cur_model->next;
-		}
-	}
-	fprintf(Echo, "*************************************************\n\n");
-	fprintf(Echo, "*************************************************\n");
-	for (i = 0; i < NumTypes; ++i) {
-		fprintf(Echo, "Type: \"%s\"\n", Types[i].name);
-		fprintf(Echo, "\tcapacity: %d\n", Types[i].capacity);
-		fprintf(Echo, "\twidth: %d\n", Types[i].width);
-		fprintf(Echo, "\theight: %d\n", Types[i].height);
-		for (j = 0; j < Types[i].num_pins; j++) {
-			fprintf(Echo, "\tis_Fc_frac: \n");
-			fprintf(Echo, "\t\tPin number %d: %s\n", j,
-					(Types[i].is_Fc_frac[j] ? "true" : "false"));
-			fprintf(Echo, "\tis_Fc_full_flex: \n");
-			fprintf(Echo, "\t\tPin number %d: %s\n", j,
-					(Types[i].is_Fc_full_flex[j] ? "true" : "false"));
-			for (int iseg = 0; iseg < arch->num_segments; iseg++){
-				fprintf(Echo, "\tPin: %d  Segment: %d  Fc: %f\n", j, iseg, Types[i].Fc[j][iseg]);
-			}
-		}
-		fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
-		fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);
-		fprintf(Echo, "\tindex: %d\n", Types[i].index);
-		if (Types[i].pb_type) {
-			PrintPb_types_rec(Echo, Types[i].pb_type, 2);
-		}
-		fprintf(Echo, "\n");
-	}
-	fclose(Echo);
-}
 
 static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 		int level) {
