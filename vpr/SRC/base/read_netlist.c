@@ -13,6 +13,7 @@ using namespace std;
 
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
+#include "pugixml_util.hpp"
 
 #include "vtr_util.h"
 
@@ -107,7 +108,6 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	netlist_file_name = net_file;
 
 	/* Root node should be block */
-	/*CheckElement(Top, "block");*/
     auto top = doc.child("block");
     if(!top) {
         vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
@@ -124,11 +124,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	vpr_printf_info("Netlist generated from file '%s'.\n", top_name.value());
 
     //Verify top level attributes
-    auto top_instance = top.attribute("instance");
-    if(!top_instance) {
-        vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
-                  "Root element must have 'instance' attribute (in %s).\n", net_file);
-    }
+    auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
 
     if(strcmp(top_instance.value(), "FPGA_packed_netlist[0]") != 0) {
 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
@@ -137,34 +133,19 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
     }
 
     //Collect top level I/Os
-    auto top_inputs = top.child("inputs");
-    if(!top_inputs) {
-        vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                  "Root element must have a child node 'inputs' (in %s).\n", net_file);
-    }
-    circuit_inputs = vtrutil::split(top_inputs.text().get(), " \t\n");
+    auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
+    circuit_inputs = vtrutil::split(top_inputs.text().get());
 
+    auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
+    circuit_outputs = vtrutil::split(top_outputs.text().get());
 
-    auto top_outputs = top.child("outputs");
-    if(!top_inputs) {
-        vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                  "Root element must have a child node 'outputs' (in %s).\n", net_file);
-    }
-    circuit_outputs = vtrutil::split(top_outputs.text().get(), " \t\n");
-
-    auto top_clocks = top.child("clocks");
-    if(!top_inputs) {
-        vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-                  "Root element must have a child node 'clocks' (in %s).\n", net_file);
-    }
-    circuit_clocks = vtrutil::split(top_clocks.text().get(), " \t\n");
+    auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
+    circuit_clocks = vtrutil::split(top_clocks.text().get());
 
 	/* Parse all CLB blocks and all nets*/
 
     //Count the number of blocks for allocation
-    for(auto child = top.child("block"); child; child = child.next_sibling("block")) {
-        bcount++;
-    }
+    bcount = pugiutil::count_children(top, "block", loc_data);
 	blist = (struct s_block *) my_calloc(bcount, sizeof(t_block));
 
 	/* create quick hash look up for vpack_net and logical_block 
@@ -274,18 +255,12 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 	/* parse cb attributes */
 	cb[index].pb = (t_pb*) my_calloc(1, sizeof(t_pb));
 
-    auto block_name = clb_block.attribute("name");
-    if(!block_name) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block), "Expected 'name' attribute\n");
-    }
+    auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
 	cb[index].name = my_strdup(block_name.value());
 	cb[index].pb->name = my_strdup(block_name.value());
 
 
-    auto block_inst = clb_block.attribute("instance");
-    if(!block_inst) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block), "Expected 'instance' attribute\n");
-    }
+    auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
 	tokens = GetTokensFromString(block_inst.value(), &num_tokens);
 	if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
 			|| tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
@@ -297,6 +272,7 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 				block_inst.value(), clb_block.name());
 	}
 	assert(my_atoi(tokens[2].data) == index);
+
 	found = false;
 	for (i = 0; i < num_types; i++) {
 		if (strcmp(type_descriptors[i].name, tokens[0].data) == 0) {
@@ -317,10 +293,7 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
 	
-    auto clb_mode = clb_block.attribute("mode");
-    if(!clb_mode) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block), "Expected 'mode' attribute\n");
-    }
+    auto clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
 
 	found = false;
 	for (i = 0; i < pb_type->num_modes; i++) {
@@ -366,25 +339,13 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
 	int num_tokens;
 	struct s_hash *temp_hash;
 
-    auto inputs = Parent.child("inputs");
-    if(!inputs) {
-        vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(Parent),
-                  "Expected child 'inputs' node.\n");
-    }
+    auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
 	processPorts(inputs, pb, pb_route, vpack_net_hash, loc_data);
 
-    auto outputs = Parent.child("outputs");
-    if(!outputs) {
-        vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(Parent),
-                  "Expected child 'outputs' node.\n");
-    }
+    auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
 	processPorts(outputs, pb, pb_route, vpack_net_hash, loc_data);
 
-    auto clocks = Parent.child("clocks");
-    if(!clocks) {
-        vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(Parent),
-                  "Expected child 'clocks' node.\n");
-    }
+    auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
 	processPorts(clocks, pb, pb_route, vpack_net_hash, loc_data);
 
 	pb_type = pb->pb_graph_node->pb_type;
@@ -418,11 +379,7 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
         for(auto child = Parent.child("block"); child; child = child.next_sibling("block")) {
             assert(strcmp(child.name(), "block") == 0);
 
-            auto instance_type = child.attribute("instance");
-            if(!instance_type) {
-                vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(child),
-                          "Expected 'instance' attribute.\n");
-            }
+            auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
             tokens = GetTokensFromString(instance_type.value(), &num_tokens);
             if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
                     || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
@@ -464,11 +421,7 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
                         "Unknown pb type %s.\n", instance_type.value());
             }
 
-            auto name = child.attribute("name");
-            if(!name) {
-                vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(child),
-                          "Expected 'name' attribute.\n");
-            }
+            auto name = pugiutil::get_attribute(child, "name", loc_data);
             if (0 != strcmp(name.value(), "open")) {
                 pb->child_pbs[i][pb_index].name = my_strdup(name.value());
 
@@ -500,14 +453,10 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
                 pb->child_pbs[i][pb_index].name = NULL;
                 pb->child_pbs[i][pb_index].logical_block = OPEN;
 
-                auto lookahead1 = child.child("outputs");
+                auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
                 if (lookahead1) {
-                    auto lookahead2 = lookahead1.child("port");
-                    if(!lookahead2) {
-                        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
-                                  "Failed to find expect lookahead nodes <outputs> <port> of %s", child.name());
-                    }
-                    auto mode = child.attribute("mode");
+                    pugiutil::get_first_child(lookahead1, "port", loc_data); //Check that port child tag exists
+                    auto mode = pugiutil::get_attribute(child, "mode", loc_data);
 
                     pb->child_pbs[i][pb_index].mode = 0;
                     found = false;
@@ -605,10 +554,9 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 	struct s_hash *temp_hash;
 	bool found;
 
-    for(auto Cur = Parent.child("port"); Cur; Cur = Cur.next_sibling("port")) {
-        assert(strcmp(Cur.name(), "port") == 0);
+    for(auto Cur = pugiutil::get_first_child(Parent, "port", loc_data); Cur; Cur = Cur.next_sibling("port")) {
 
-        auto port_name = Cur.attribute("name");
+        auto port_name = pugiutil::get_attribute(Cur, "name", loc_data);
 
         //Determine the port index on the pb
         //
