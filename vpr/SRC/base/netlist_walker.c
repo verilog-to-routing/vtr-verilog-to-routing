@@ -14,9 +14,6 @@ void NetlistWalker::walk() {
         walk_atoms(block[i].pb);
     }
 
-    //Visit all the nets
-
-
     visitor_.finish();
 }
 
