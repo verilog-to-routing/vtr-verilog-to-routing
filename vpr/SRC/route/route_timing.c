@@ -162,7 +162,17 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
 		time_per_iteration.push_back(time);
 
-		if (itry == 1 && early_exit_heuristic(router_opts)) return false;
+		if (itry == 1) {
+            
+            if(early_exit_heuristic(router_opts)) {
+                //Abort
+                return false;
+            }
+
+            vpr_printf_info("--------- ---------- ----------- ---------------------\n");
+            vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
+            vpr_printf_info("--------- ---------- ----------- ---------------------\n");	
+        }
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
 		   to them are reserved for that purpose. */
@@ -1318,7 +1328,7 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 
 	for (int i = 0; i < num_rr_nodes; ++i) {
 		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-			available_wirelength += 1 + 
+			available_wirelength += rr_node[i].get_capacity() + 
 					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
 					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
 		}
@@ -1333,17 +1343,17 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 			total_wirelength += wirelength;
 		}
 	}
+    float used_wirelength_ratio = (float) (total_wirelength) / (float) (available_wirelength);
+
 	vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
 			total_wirelength, available_wirelength,
-			(float) (total_wirelength) / (float) (available_wirelength));
-	if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
+			used_wirelength_ratio);
+
+	if (used_wirelength_ratio > FIRST_ITER_WIRELENTH_LIMIT) {
 		vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 				FIRST_ITER_WIRELENTH_LIMIT);
-		return true;
+        return true;
 	}
-	vpr_printf_info("--------- ---------- ----------- ---------------------\n");
-	vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
-	vpr_printf_info("--------- ---------- ----------- ---------------------\n");	
 	return false;
 }
 

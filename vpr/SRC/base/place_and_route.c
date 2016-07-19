@@ -111,6 +111,7 @@ bool place_and_route(enum e_operation operation,
 
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
+        //Binary search for the min channel width
 		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, place_file, net_file,
 				arch_file, route_file, router_opts.full_stats,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
@@ -118,6 +119,7 @@ bool place_and_route(enum e_operation operation,
 				models, directs, num_directs);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
+        //Route at the specified channel width
 		g_solution_inf.channel_width = width_fac;
 		if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
@@ -149,9 +151,7 @@ bool place_and_route(enum e_operation operation,
             
 			vpr_printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
-		}
-
-		else {
+		} else {
 			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally);
 			get_serial_num();
 
@@ -271,9 +271,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (
-				det_routing_arch->directionality == BI_DIRECTIONAL ?
-						GRAPH_BIDIR : GRAPH_UNIDIR);
+		graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?  GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
 	max_pins_per_clb = 0;
@@ -310,9 +308,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					"in pack_place_and_route.c: Tried odd chan width (%d) for udsd architecture.\n",
 					current);
 		}
-	}
-
-	else {
+	} else {
 		if (det_routing_arch->Fs % 3) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					"Fs must be three in bidirectional mode.\n");

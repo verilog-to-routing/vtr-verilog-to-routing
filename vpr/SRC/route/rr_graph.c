@@ -326,9 +326,8 @@ void build_rr_graph(
 	int *sets_per_seg_type = get_seg_track_counts(total_sets, num_seg_types, segment_inf, use_full_seg_groups);
 
 	if (is_global_graph) {
-		//FIXME: out of bounds?
-		Fc_in = (int ***) my_malloc(sizeof(int) * L_num_types);
-		Fc_out = (int ***) my_malloc(sizeof(int) * L_num_types);
+        Fc_in = (int ***) alloc_matrix3(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1, sizeof(int));
+        Fc_out = (int ***) alloc_matrix3(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1, sizeof(int));
 		for (int i = 0; i < L_num_types; ++i) {
 			for (int j = 0; j < types[i].num_pins; ++j) {
 				for (int k = 0; k < num_seg_types; k++){
