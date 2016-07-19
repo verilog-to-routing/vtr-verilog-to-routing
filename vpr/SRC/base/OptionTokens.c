@@ -33,7 +33,6 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "place_algorithm", OT_PLACE_ALGORITHM }, 
 		{ "timing_tradeoff", OT_TIMING_TRADEOFF }, 
 		{ "enable_timing_computations", OT_ENABLE_TIMING_COMPUTATIONS },
-		{ "block_dist", OT_BLOCK_DIST }, 
 		{ "place_chan_width", OT_PLACE_CHAN_WIDTH }, 
 		{ "max_router_iterations", OT_MAX_ROUTER_ITERATIONS }, 
 		{ "min_incremental_reroute_fanout", OT_MIN_INCREMENTAL_REROUTE_FANOUT },

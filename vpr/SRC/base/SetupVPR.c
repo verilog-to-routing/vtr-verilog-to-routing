@@ -810,10 +810,6 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
  * such as checking for conflicting params is assumed to be done beforehand */
 static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 		OUTP struct s_placer_opts *PlacerOpts) {
-	PlacerOpts->block_dist = 1; /* DEFAULT */
-	if (Options.Count[OT_BLOCK_DIST]) {
-		PlacerOpts->block_dist = Options.block_dist;
-	}
 
 	PlacerOpts->inner_loop_recompute_divider = 0; /* DEFAULT */
 	if (Options.Count[OT_INNER_LOOP_RECOMPUTE_DIVIDER]) {

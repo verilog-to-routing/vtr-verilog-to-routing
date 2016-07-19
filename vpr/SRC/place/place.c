@@ -341,45 +341,6 @@ void try_place(struct s_placer_opts placer_opts,
 
 		remember_net_delay_original_ptr = net_delay;
 
-		/*#define PRINT_LOWER_BOUND */
-#ifdef PRINT_LOWER_BOUND
-		/*print the crit_path, assuming delay between blocks that are*
-		 *block_dist apart*/
-
-		if (placer_opts.block_dist <= nx)
-		place_delay_value =
-		delta_clb_to_clb[placer_opts.block_dist][0];
-		else if (placer_opts.block_dist <= ny)
-		place_delay_value =
-		delta_clb_to_clb[0][placer_opts.block_dist];
-		else
-		place_delay_value = delta_clb_to_clb[nx][ny];
-
-		vpr_printf_info("\n");
-		vpr_printf_info("Lower bound assuming delay of %g\n", place_delay_value);
-
-		load_constant_net_delay(net_delay, place_delay_value);
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, true);
-
-		if (getEchoEnabled()) {
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRITICAL_PATH))
-				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH), timing_inf);
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS))
-				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS));
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS))
-				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS));
-		}
-
-		/*also print sink delays assuming 0 delay between blocks, 
-		 * this tells us how much logic delay is on each path */
-
-		load_constant_net_delay(net_delay, 0);
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, true);
-
-#endif
-
 	}
 
 	width_fac = placer_opts.place_chan_width;

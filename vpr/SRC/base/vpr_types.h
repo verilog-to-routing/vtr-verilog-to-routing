@@ -665,8 +665,6 @@ struct s_annealing_sched {
  * place_algorithm:  BOUNDING_BOX_PLACE or PATH_TIMING_DRIVEN_PLACE          *
  * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff     *
  *                   timing driven and BOUNDING_BOX_PLACE.                   *
- * block_dist:  Initial guess of how far apart blocks on the critical path   *
- *              This is used to compute the initial slacks and criticalities *
  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
@@ -695,7 +693,6 @@ enum e_place_algorithm {
 struct s_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
-	int block_dist;
 	float place_cost_exp;
 	int place_chan_width;
 	enum e_pad_loc_type pad_loc_type;

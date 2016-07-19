@@ -112,7 +112,6 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--place_chan_width <int>] \n");
 	vpr_printf_info("\t[--fix_pins random | <file.pads>]\n");
 	vpr_printf_info("\t[--enable_timing_computations on | off]\n");
-	vpr_printf_info("\t[--block_dist <int>]\n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Placement Options Valid Only for Timing-Driven Placement:\n");
 	vpr_printf_info("\t[--timing_tradeoff <float>]\n");

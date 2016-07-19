@@ -205,7 +205,7 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
     long max_critical_output_paths, const t_timing_inf &timing_inf);
 #endif
 
-static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
+//static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
 
 static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping);
 
@@ -3605,8 +3605,8 @@ void print_timing_graph_as_blif (const char *fname, t_model *models) {
 
 	FILE *fp;
 	int i, j;
-
-	int **lookup_tnode_from_pin_id = NULL;
+	
+	//int **lookup_tnode_from_pin_id = NULL;
 
 	fp = my_fopen(fname, "w", 0);
 
@@ -3636,12 +3636,14 @@ void print_timing_graph_as_blif (const char *fname, t_model *models) {
 	fprintf(fp, "\n");
 	fprintf(fp, ".names unconn\n");
 	fprintf(fp, " 0\n\n");
-
+	
+	
 	/* Print out primitives */
-	for (i = 0; i < num_logical_blocks; i++) {
-		print_primitive_as_blif(fp, i, lookup_tnode_from_pin_id);
-	}
-
+	//FIXME: Causing a segfault	
+	//for (i = 0; i < num_logical_blocks; i++) {
+	//	print_primitive_as_blif(fp, i, lookup_tnode_from_pin_id);
+	//}
+	
 	/* Print out tnode connections */
 	for (i = 0; i < num_tnodes; i++) {
 		if (tnode[i].type != TN_PRIMITIVE_IPIN && tnode[i].type != TN_FF_SOURCE
@@ -3692,18 +3694,18 @@ void print_timing_graph_as_blif (const char *fname, t_model *models) {
 	fclose(fp);
 }
 
-
-static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id) {
+//Causing a segfault around line 3714
+/*static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id) {
 	int i, j;
 	struct s_model_ports *port;
 	struct s_linked_vptr *truth_table;
 	t_pb_route *pb_route;
 	t_pb_graph_node *pb_graph_node;
 	int node;
-
+*/
 	
 	/* Print primitives found in timing graph in blif format based on whether this is a logical primitive or a physical primitive */
-	if (logical_block[iblk].type == VPACK_INPAD) {
+	/*if (logical_block[iblk].type == VPACK_INPAD) {
 		if (logical_block[iblk].pb == NULL) {
 			fprintf(fpout, ".names %s tnode_%d\n", logical_block[iblk].name,
 					get_tnode_index(logical_block[iblk].output_net_tnodes[0][0]));
@@ -3712,15 +3714,15 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->output_pins[0][0].pin_count_in_cluster]);
 		}
 		fprintf(fpout, "1 1\n\n");
-	} else if (logical_block[iblk].type == VPACK_OUTPAD) {
+	} else if (logical_block[iblk].type == VPACK_OUTPAD) {*/
 		/* outputs have the symbol out: automatically prepended to it, must remove */
-		if (logical_block[iblk].pb == NULL) {
+		/*if (logical_block[iblk].pb == NULL) {
 			fprintf(fpout, ".names tnode_%d %s\n",
 					get_tnode_index(logical_block[iblk].input_net_tnodes[0][0]),
 					&logical_block[iblk].name[4]);
-		} else {
+		} else {*/
 			/* avoid the out: from output pad naming */
-			fprintf(fpout, ".names tnode_%d %s\n",
+			/*fprintf(fpout, ".names tnode_%d %s\n",
 				lookup_tnode_from_pin_id[iblk][logical_block[iblk].pb->pb_graph_node->input_pins[0][0].pin_count_in_cluster],
 					(logical_block[iblk].name + 4));
 		}
@@ -3875,9 +3877,9 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 		fprintf(fpout, ".names lut_%s tnode_%d\n", logical_block[iblk].name,
 				node);
 		fprintf(fpout, "1 1\n\n");
-	} else {
+	} else {*/
 		/* This is a standard .subckt blif structure */
-		fprintf(fpout, ".subckt %s ", logical_block[iblk].model->name);
+		/*fprintf(fpout, ".subckt %s ", logical_block[iblk].model->name);
 		if (logical_block[iblk].pb == NULL) {
 			i = 0;
 			port = logical_block[iblk].model->inputs;
@@ -4052,9 +4054,9 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 				}
 			}
 
-			fprintf(fpout, "\n\n");
+			fprintf(fpout, "\n\n");*/
 			/* connect up output port names to output tnodes */
-			for (i = 0; i < pb_graph_node->num_output_ports; i++) {
+			/*for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 					if (pb_route[pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx
 							!= OPEN) {
@@ -4067,7 +4069,7 @@ static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_fr
 			}
 		}
 	}
-}
+}*/
 
 /*
  Create a lookup table that returns the tnode index for [iblock][pb_graph_pin_id]

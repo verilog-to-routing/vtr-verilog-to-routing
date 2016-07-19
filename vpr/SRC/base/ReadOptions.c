@@ -431,8 +431,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadFixPins(Args, &Options->PinFile);
 	case OT_ENABLE_TIMING_COMPUTATIONS:
 		return ReadOnOff(Args, &Options->ShowPlaceTiming);
-	case OT_BLOCK_DIST:
-		return ReadInt(Args, &Options->block_dist);
 
 		/* Placement Options Valid Only for Timing-Driven Placement */
 	case OT_TIMING_TRADEOFF:
@@ -685,9 +683,6 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 			break;
 		case OT_ENABLE_TIMING_COMPUTATIONS:
 			dest->ShowPlaceTiming = src->ShowPlaceTiming;
-			break;
-		case OT_BLOCK_DIST:
-			dest->block_dist = src->block_dist;
 			break;
 
 			/* Placement Options Valid Only for Timing-Driven Placement */

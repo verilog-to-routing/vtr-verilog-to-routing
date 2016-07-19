@@ -60,7 +60,6 @@ struct s_options {
 	int PlaceChanWidth;
 	char *PinFile;
 	bool ShowPlaceTiming;
-	int block_dist;
 
 	/* Timing-driven placement options only */
 	float PlaceTimingTradeoff;
