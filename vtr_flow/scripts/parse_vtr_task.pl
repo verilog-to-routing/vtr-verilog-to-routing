@@ -53,7 +53,7 @@ my $check_golden  = 0;
 my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if 
 						# user does not specify QoR parse file in config.txt
 my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
-my $exp_num       = 0;
+my $override_exp_num       = 0;
 my $revision;
 my $verbose       = 0;
 
@@ -79,7 +79,7 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	}
 	elsif ( $token eq "-run") {
-	    $exp_num = shift(@ARGV);
+	    $override_exp_num = shift(@ARGV);
     }
 	elsif ( $token eq "-revision" ) {
 		$revision = shift(@ARGV);
@@ -185,15 +185,13 @@ sub parse_single_task {
 	    $qor_parse_file = get_important_file($task_path, $vtr_flow_path, $qor_parse_file);
     }
 
-    # haven't explicitely specified via -run parameter
-    if ($exp_num < 1) {
-        $exp_num = 1;
-        foreach my $folder_name (@folders) {
-            $folder_name =~ /${run_prefix}(\d+)/;
-            if (int($1) > $exp_num) {
-                $exp_num = int($1);
-            }
-        }
+    my $exp_num = 0;
+    if($override_exp_num != 0) {
+        #explicitely specified via -run parameter
+        $exp_num = $override_exp_num;
+    } else {
+        # haven't explicitely specified via -run parameter
+        $exp_num = last_exp(${task_path});
     }
 	
 	my $run_path = "$task_path/${run_prefix}${exp_num}";
