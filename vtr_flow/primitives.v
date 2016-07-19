@@ -140,7 +140,7 @@ module LUT_K #(
         (in *> out) = "";
     endspecify
 
-    assign out = LUT_MASK[out];
+    assign out = LUT_MASK[in];
 
 endmodule
 
