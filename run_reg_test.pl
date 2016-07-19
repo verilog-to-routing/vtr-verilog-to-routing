@@ -32,6 +32,7 @@ use strict;
 use Cwd;
 use File::Spec;
 use List::Util;
+use List::MoreUtils qw(uniq);
 use Scalar::Util;
 
 # Function Prototypes
@@ -102,8 +103,7 @@ while ( $token = shift(@ARGV) ) {
 }
 
 # Remove duplicate tests
-my %hash = map { $_, 1 } @tests;
-@tests = keys %hash;
+@tests = uniq(@tests);
 
 if ( $#tests == -1 and !$can_quit ) {
 	die "\n"
