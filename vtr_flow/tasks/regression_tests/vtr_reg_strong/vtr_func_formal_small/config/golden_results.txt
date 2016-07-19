@@ -1,0 +1,15 @@
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_frac_N10_40nm.xml	and.blif	36a7eb8-dirty	success	-1	-1	0.0451069	0.012421	0.011144	-1	3	-1	25108	7888	3	4	3	1	2	1	-1	-1		
+k6_frac_N10_40nm.xml	and_latch.blif	36a7eb8-dirty	success	-1	-1	0.041518	0.012181	0.010447	-1	5	-1	25744	7876	5	6	4	1	3	1	-1	-1		
+k6_frac_N10_40nm.xml	false_path_mux.blif	36a7eb8-dirty	success	-1	-1	0.0457339	0.010745	0.010885	-1	4	-1	25236	7900	5	6	4	1	3	1	-1	-1		
+k6_frac_N10_40nm.xml	mult_2x2.blif	36a7eb8-dirty	success	-1	-1	0.0333415	0.013753	0.01061	-1	14	-1	25872	7980	8	12	8	1	4	4	-1	-1		
+k6_frac_N10_40nm.xml	mult_3x3.blif	36a7eb8-dirty	success	-1	-1	0.0664409	0.01647	0.012034	-1	18	-1	26060	8028	12	18	12	1	6	6	-1	-1		
+k6_frac_N10_40nm.xml	mult_3x4.blif	36a7eb8-dirty	success	-1	-1	0.0777838	0.040876	0.035121	-1	45	-1	26312	8072	23	31	15	2	7	8	-1	-1		
+k6_frac_N10_40nm.xml	mult_4x4.blif	36a7eb8-dirty	success	-1	-1	0.0741726	0.042956	0.036904	-1	58	-1	26336	8304	29	37	21	2	8	8	-1	-1		
+k6_frac_N10_40nm.xml	mult_5x5.blif	36a7eb8-dirty	success	-1	-1	0.150194	0.052916	0.040378	-1	110	-1	26348	8208	45	55	34	3	10	10	-1	-1		
+k6_frac_N10_40nm.xml	mult_5x6.blif	36a7eb8-dirty	success	-1	-1	0.159917	0.084398	0.073507	-1	167	-1	26392	20692	65	76	44	5	11	11	-1	-1		
+k6_frac_N10_40nm.xml	rca_1bit.blif	36a7eb8-dirty	success	-1	-1	0.0468625	0.01059	0.011268	-1	9	-1	26012	10136	5	7	5	1	3	2	-1	-1		
+k6_frac_N10_40nm.xml	rca_2bit.blif	36a7eb8-dirty	success	-1	-1	0.0316051	0.023634	0.016358	-1	9	-1	25240	12044	8	11	8	1	5	3	-1	-1		
+k6_frac_N10_40nm.xml	rca_3bit.blif	36a7eb8-dirty	success	-1	-1	0.0417714	0.013767	0.011319	-1	13	-1	26000	10012	12	16	11	1	7	4	-1	-1		
+k6_frac_N10_40nm.xml	rca_4bit.blif	36a7eb8-dirty	success	-1	-1	0.0677333	0.010607	0.011809	-1	22	-1	26168	10092	15	20	14	1	9	5	-1	-1		
+k6_frac_N10_40nm.xml	rca_5bit.blif	36a7eb8-dirty	success	-1	-1	0.0455652	0.016674	0.011376	-1	22	-1	26140	10084	19	25	17	1	11	6	-1	-1		

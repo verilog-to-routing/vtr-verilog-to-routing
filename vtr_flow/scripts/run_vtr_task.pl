@@ -594,23 +594,38 @@ sub ret_expected_runtime {
 
 	my $location = $index{"pack_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"place_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"min_chan_width_route_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"crit_path_route_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"route_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 
 	if ( $seconds != 0 ) {

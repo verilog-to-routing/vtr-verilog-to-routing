@@ -224,6 +224,7 @@ void vpr_init(INP int argc, INP char **argv,
 		/* Read blif file and sweep unused components */
 		read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
 				vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs,
+				vpr_setup->PackerOpts.absorb_buffer_luts,
 				vpr_setup->user_models, vpr_setup->library_models,
 				vpr_setup->PowerOpts.do_power, vpr_setup->FileNameOpts.ActFile);
 		fflush(stdout);
@@ -1053,10 +1054,11 @@ void vpr_check_setup(INP enum e_operation Operation,
 }
 /* Read blif file and sweep unused components */
 void vpr_read_and_process_blif(INP char *blif_file,
-		INP bool sweep_hanging_nets_and_inputs, INP t_model *user_models,
+		INP bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
+        INP t_model *user_models,
 		INP t_model *library_models, bool read_activity_file,
 		char * activity_file) {
-	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
+	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, absorb_buffer_luts, user_models,
 			library_models, read_activity_file, activity_file);
 }
 /* Show current setup */
@@ -1195,11 +1197,14 @@ void vpr_print_error(t_vpr_error* vpr_error){
 	case VPR_ERROR_PLACE_F:
 		strcpy(error_type, "Placement file");
 		break;
+	case VPR_ERROR_IMPL_NETLIST_WRITER:
+		strcpy(error_type, "Implementation Netlist Writer");
+		break;
 	case VPR_ERROR_OTHER:
 		strcpy(error_type, "Other");
 		break;
 	default:
-		strcpy(error_type, "");
+		strcpy(error_type, "Unrecognized Error");
 		break;
 	}
 

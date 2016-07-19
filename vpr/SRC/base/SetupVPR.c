@@ -738,6 +738,12 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 				Options.sweep_hanging_nets_and_inputs;
 	}
 
+	PackerOpts->absorb_buffer_luts = true;
+	if (Options.Count[OT_ABSORB_BUFFER_LUTS]) {
+		PackerOpts->absorb_buffer_luts =
+				Options.absorb_buffer_luts;
+	}
+
 	PackerOpts->skip_clustering = false; /* DEFAULT */
 	if (Options.Count[OT_SKIP_CLUSTERING]) {
 		PackerOpts->skip_clustering = true;

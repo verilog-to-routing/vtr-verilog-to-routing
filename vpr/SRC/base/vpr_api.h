@@ -85,7 +85,8 @@ void vpr_check_setup(INP enum e_operation Operation,
 		INP t_timing_inf Timing, INP t_chan_width_dist Chans);
 /* Read blif file and sweep unused components */
 void vpr_read_and_process_blif(INP char *blif_file,
-		INP bool sweep_hanging_nets_and_inputs, INP t_model *user_models,
+		INP bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
+        INP t_model *user_models,
 		INP t_model *library_models, bool read_activity_file,
 		char * activity_file);
 /* Show current setup */

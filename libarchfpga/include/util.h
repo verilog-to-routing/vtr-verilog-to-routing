@@ -37,6 +37,7 @@ enum e_vpr_error {
 	VPR_ERROR_NET_F,
 	VPR_ERROR_PLACE_F,
 	VPR_ERROR_BLIF_F,
+	VPR_ERROR_IMPL_NETLIST_WRITER,
 	VPR_ERROR_OTHER
 };
 typedef enum e_vpr_error t_vpr_error_type;

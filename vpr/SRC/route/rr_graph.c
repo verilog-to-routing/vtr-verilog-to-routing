@@ -326,9 +326,8 @@ void build_rr_graph(
 	int *sets_per_seg_type = get_seg_track_counts(total_sets, num_seg_types, segment_inf, use_full_seg_groups);
 
 	if (is_global_graph) {
-		//FIXME: out of bounds?
-		Fc_in = (int ***) my_malloc(sizeof(int) * L_num_types);
-		Fc_out = (int ***) my_malloc(sizeof(int) * L_num_types);
+        Fc_in = (int ***) alloc_matrix3(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1, sizeof(int));
+        Fc_out = (int ***) alloc_matrix3(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1, sizeof(int));
 		for (int i = 0; i < L_num_types; ++i) {
 			for (int j = 0; j < types[i].num_pins; ++j) {
 				for (int k = 0; k < num_seg_types; k++){
@@ -426,6 +425,9 @@ void build_rr_graph(
 					chan_details_y, L_nx, L_ny, switchblocks, 
 					nodes_per_chan, directionality);
 		} else {
+			/* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
+			assert(Fs == 3);
+
 			unidir_sb_pattern = alloc_sblock_pattern_lookup(L_nx, L_ny, max_chan_width);
 			for (int i = 0; i <= L_nx; i++) {
 				for (int j = 0; j <= L_ny; j++) {

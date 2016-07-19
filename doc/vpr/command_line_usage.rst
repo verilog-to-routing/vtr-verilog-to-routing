@@ -206,6 +206,25 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``blend`` if timing_driven_clustering is on; ``max_inputs`` otherwise.
 
+
+.. option:: -sweep_hanging_nets_and_inputs {on | off}
+
+    Controls whether hanging/dangling nets and inputs (i.e. those that do not drive anything)) are swept and removed from the netlist.
+
+    **Default**: ``on``
+
+.. option:: -absorb_buffer_luts {on | off}
+
+    Controls whether LUTs programmed as wires (i.e. implementing logical identity) should be absorbed into the downstream logic.
+
+    Usually buffer LUTS are introduced in BLIF circuits by upstream tools in order to rename signals (like ``assign`` statements in Verilog). 
+    Absorbing these buffers reduces the number of LUTs required to implement the circuit.
+
+    Ocassionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
+    Disabling buffer absorption can also improve the matching between the input and post-synthesis netlist/SDF.
+
+    **Default**: ``on``
+
 .. _placer_options:
 
 Placer Options
