@@ -2430,7 +2430,6 @@ void load_sblock_pattern_lookup(
 			}
 		}
 
-		//int opp_incoming_wire_count = 0;
 		if (incoming_wire_label[side_opp]) {
 			for (int itrack = 0; itrack < nodes_per_chan->max; itrack++) {
 
@@ -2448,17 +2447,14 @@ void load_sblock_pattern_lookup(
 								num_wire_muxes[to_side], itrack);
 						sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
 					} else {
-						//FIXME: this code does not appear to do anything. later in build_rr_chan()
-						//	switch block connections from segment midpoints to the opposite side
-						//	are explicitly skipped.
-						//	Commenting code for now, will remove later if nothing breaks.
+						/* These are wire segments that pass through the switch block.
 
-						/* These are passing wires with sblock for core sblocks */
-						//int mux = ((side_ccw_incoming_wire_count + side_cw_incoming_wire_count)
-						//		* Fs_per_side + opp_incoming_wire_count	* (Fs_per_side - 1))
-						//		% num_wire_muxes[to_side];
-						//sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
-						//opp_incoming_wire_count++;
+						   There is no connection from wire segment midpoints to the opposite switch block
+						   side, so there's nothing to be done here (at Fs=3, this connection is implicit for passing 
+						   wires and at Fs>3 the code in this function seems to create heavily unbalanced 
+						   switch patterns). Additionally, the code in build_rr_chan() explicitly skips 
+						   connections from wire segment midpoints to the opposide sb side (for switch block patterns
+						   generated with this function) so any such assignment to sblock_pattern will be ignored anyway. */
 					}
 				}
 			}
