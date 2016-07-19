@@ -1835,6 +1835,7 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 	int num_phys_pins = 0;
 	for (int width = 0; width < Type->width; ++width) {
 		for (int height = 0; height < Type->height; ++height) {
+			for (int side = 0; side < 4; ++side)
 				num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
 		}
 	}
