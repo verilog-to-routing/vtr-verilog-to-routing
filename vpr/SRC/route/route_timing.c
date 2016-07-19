@@ -888,9 +888,6 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	rr_type = rr_node[inode].type;
 
 	if (rr_type == CHANX || rr_type == CHANY) {
-#ifdef INTERPOSER_BASED_ARCHITECTURE		
-		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-#endif
 
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
 				&num_segs_ortho_dir);

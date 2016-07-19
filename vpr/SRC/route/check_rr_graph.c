@@ -370,22 +370,6 @@ void check_node(int inode, enum e_route_type route_type) {
 		}
 
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-		// in the interposer-based architectures, we are using [ptc_num..2*nodes_per_chan-1] for interposer nodes
-		if (ptc_num >= 2*nodes_per_chan)
-		{
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in check_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-		}
-#endif
-#ifndef INTERPOSER_BASED_ARCHITECTURE
-		if (ptc_num >= nodes_per_chan) {
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in check_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-		}
-#endif
-
-
 		if (capacity != tracks_per_node) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);

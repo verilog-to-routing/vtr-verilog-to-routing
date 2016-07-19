@@ -599,11 +599,6 @@ void init_draw_coords(float width_val) {
 	for (i = 0; i < (nx + 1); i++) {
 		draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
 		j += chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
-
-		// to show the interposer wires, we need more space between the blocks
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		j += (chan_width.y_list[i] + 1);
-		#endif
 	}
 	draw_coords->tile_x[nx + 1] = ((nx + 1) * draw_coords->get_tile_width()) + j;
 
@@ -611,11 +606,6 @@ void init_draw_coords(float width_val) {
 	for (i = 0; i < (ny + 1); ++i) {
 		draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
 		j += chan_width.x_list[i] + 1;
-
-		// to show the interposer wires, we need more space between the blocks
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		j += (chan_width.x_list[i] + 1);
-		#endif
 	}
 	draw_coords->tile_y[ny + 1] = ((ny + 1) * draw_coords->get_tile_width()) + j;
 
@@ -997,35 +987,14 @@ static void draw_rr_chany(int inode, int itrack, const t_color& color) {
 		// If wire is highlighted, then draw with thicker linewidth.
 		setlinewidth(3);
 
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		if(is_inode_an_interposer_wire(inode))
-		{
-			draw_shifted_line(inode);
-		}
-		else
-		{
-			drawline(bound_box.bottom_left(), bound_box.top_right());
-		}
-		#else
 		drawline(bound_box.bottom_left(), bound_box.top_right());
-		#endif		
 		
 		setlinewidth(0);
 	}
 	else
 	{
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		if(is_inode_an_interposer_wire(inode))
-		{
-			draw_shifted_line(inode);
-		}
-		else
-		{
-			drawline(bound_box.bottom_left(), bound_box.top_right());
-		}
-		#else
 		drawline(bound_box.bottom_left(), bound_box.top_right());
-		#endif
+
 	}
 
 	wire_start_x1 = bound_box.left() - WIRE_DRAWING_WIDTH/2;
@@ -1335,15 +1304,6 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		y2 = chany_bbox.bottom();
 	}
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	// handle CHANY connections to interposer wires
-	// connect to the bottom of an interposer wire
-	if(chany_track >= chan_width.y_list[chany_x])
-	{
-		y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width() + chan_width.y_list[chany_x] + 0.25*chan_width.y_list[chany_x];
-	}
-#endif 
-
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle != DRAW_ALL_RR) {
@@ -1506,33 +1466,11 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 				// for interposer-based architectures, the interposer node will have
 				// the same y_low and y_high as the cutline y-coordinate
 				// so, for connections from CHANY wire just below the cut to the interposer node,
-				// from_ylow can be equal to to_ylow
-				#ifndef INTERPOSER_BASED_ARCHITECTURE
-				assert(from_ylow < to_ylow);
-				#endif
-				
+
 				y2 = to_chan.bottom();
 				/* since no U-turns from_track must be INC as well */
 				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at top edge */
-			
-				// for interposer-based architectures, the interposer node is marked as CHANY
-				// so, it is possible to have from_yhigh equal to to_yhigh
-				#ifndef INTERPOSER_BASED_ARCHITECTURE
-				if (!(from_yhigh > to_yhigh)) {
-					vpr_printf_info("from_yhigh (%d) !> to_yhigh (%d).\n", 
-							from_yhigh, to_yhigh);
-					vpr_printf_info("from is (%d, %d) to (%d, %d) track %d.\n",
-							rr_node[from_node].get_xhigh(), rr_node[from_node].get_yhigh(),
-							rr_node[from_node].get_xlow(), rr_node[from_node].get_ylow(),
-							rr_node[from_node].get_ptc_num());
-					vpr_printf_info("to is (%d, %d) to (%d, %d) track %d.\n",
-							rr_node[to_node].get_xhigh(), rr_node[to_node].get_yhigh(),
-							rr_node[to_node].get_xlow(), rr_node[to_node].get_ylow(),
-							rr_node[to_node].get_ptc_num());
-					exit(1);
-				}
-				#endif
 				
 				y2 = to_chan.top();
 				y1 = draw_coords->tile_y[to_yhigh + 1];
@@ -1557,31 +1495,6 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 		}
 	}
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	//handle CHANX connections to and from interposer wires
-	if(is_inode_an_interposer_wire(from_node))
-	{
-		if(rr_node[from_node].direction == DEC_DIRECTION)
-		{
-			y1 = draw_coords->tile_y[from_ylow] + draw_coords->get_tile_width() + chan_width.y_list[from_x] + 0.25*chan_width.y_list[from_x];
-		}
-		else if(rr_node[from_node].direction == INC_DIRECTION)
-		{
-			y1 = draw_coords->tile_y[from_ylow] + draw_coords->get_tile_width() + 2*chan_width.y_list[from_x] - 0.25*chan_width.y_list[from_x];
-		}
-	}
-	if(is_inode_an_interposer_wire(to_node))
-	{
-		if(rr_node[to_node].direction == INC_DIRECTION)
-		{
-			y2 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() + chan_width.y_list[to_x] + 0.25*chan_width.y_list[to_x];
-		}
-		else if(rr_node[to_node].direction == DEC_DIRECTION)
-		{
-			y2 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() + 2*chan_width.y_list[to_x] - 0.25*chan_width.y_list[to_x];
-		}
-	}
-#endif
 
 	/* UDSD Modification by WMF End */
 	drawline(x1, y1, x2, y2);

@@ -34,22 +34,6 @@ void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 	vpr_printf_info("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
 	vpr_printf_info("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	vpr_printf_info("Percent wires cut: %d\n", percent_wires_cut);
-	vpr_printf_info("Number of cuts: %d\n", num_cuts);
-	vpr_printf_info("Delay increase: %d\n", delay_increase);
-	vpr_printf_info("Placer cost constant: %f\n", placer_cost_constant);
-	vpr_printf_info("Constant type: %d\n", constant_type);
-
-	vpr_printf_info("\nallow_chanx_interposer_connections: %s\n\n", allow_chanx_interposer_connections? "YES":"NO");
-	vpr_printf_info("transfer_interposer_fanins: %s\n", transfer_interposer_fanins? "YES":"NO");
-	vpr_printf_info("allow_additional_interposer_fanins: %s\n", allow_additional_interposer_fanins? "YES":"NO");
-	vpr_printf_info("pct_of_interposer_nodes_each_chany_can_drive: %d\n\n", pct_of_interposer_nodes_each_chany_can_drive);
-	vpr_printf_info("transfer_interposer_fanouts: %s\n", transfer_interposer_fanouts? "YES":"NO");
-	vpr_printf_info("allow_additional_interposer_fanouts: %s\n", allow_additional_interposer_fanouts? "YES":"NO");
-	vpr_printf_info("pct_of_chany_wires_an_interposer_node_can_drive: %d\n\n", pct_of_chany_wires_an_interposer_node_can_drive);
-#endif
-
 	if (vpr_setup.PackerOpts.doPacking) {
 		ShowPackerOpts(vpr_setup.PackerOpts);
 	}

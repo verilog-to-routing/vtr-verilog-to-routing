@@ -952,10 +952,6 @@ struct s_arch {
 	float T_ipin_cblock;
 	float ipin_mux_trans_size;
 
-	#ifdef INTERPOSER_BASED_ARCHITECTURE
-	// this is used to make sure a cutline does not go through a physical block
-	int lcm_of_block_heights;
-	#endif
 };
 
 #endif

@@ -87,22 +87,6 @@ struct s_options {
 	enum e_router_algorithm RouterAlgorithm;
 	enum e_base_cost_type base_cost_type;
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	int percent_wires_cut;
-	int num_cuts;
-	int delay_increase;
-	float placer_cost_constant;
-	int constant_type;
-	/* architecture experiments */
-	bool allow_chanx_interposer_connections;
-	bool transfer_interposer_fanins;
-	bool allow_additional_interposer_fanins;
-	int  pct_of_interposer_nodes_each_chany_can_drive;
-	bool transfer_interposer_fanouts;
-	bool allow_additional_interposer_fanouts;
-	int  pct_of_chany_wires_an_interposer_node_can_drive;
-#endif
-
 	/* Timing-driven router options only */
 	float astar_fac;
 	float criticality_exp;

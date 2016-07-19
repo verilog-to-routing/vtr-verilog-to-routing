@@ -101,8 +101,5 @@ char *vpr_get_output_file_name(enum e_output_files ename);
 /* Prints user file or internal errors for VPR */
 void vpr_print_error(t_vpr_error* vpr_error);
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-void vpr_setup_interposer_cut_locations(t_arch Arch);
-#endif
 
 #endif

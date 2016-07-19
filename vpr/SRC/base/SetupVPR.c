@@ -204,24 +204,6 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	/* getting the data from the options struct  for interposer-based architectures*/
-	percent_wires_cut = Options->percent_wires_cut;
-	num_cuts = Options->num_cuts;
-	delay_increase = Options->delay_increase;
-	placer_cost_constant = Options->placer_cost_constant;
-	constant_type = Options->constant_type;
-
-	/* used for experiments of interposer-based architectures */
-	allow_chanx_interposer_connections = Options->allow_chanx_interposer_connections? true: false;
-	transfer_interposer_fanins = Options->transfer_interposer_fanins? true: false;
-	allow_additional_interposer_fanins = Options->allow_additional_interposer_fanins? true: false;
-	pct_of_interposer_nodes_each_chany_can_drive = Options->pct_of_interposer_nodes_each_chany_can_drive;
-	transfer_interposer_fanouts = Options->transfer_interposer_fanouts? true: false;
-	allow_additional_interposer_fanouts = Options->allow_additional_interposer_fanouts? true: false;
-	pct_of_chany_wires_an_interposer_node_can_drive = Options->pct_of_chany_wires_an_interposer_node_can_drive;
-#endif
-
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,

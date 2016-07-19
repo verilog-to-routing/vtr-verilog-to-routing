@@ -24,10 +24,6 @@ using namespace std;
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-#include "rr_graph_multi.h"
-#endif
-
 typedef struct s_mux {
 	int size;
 	struct s_mux *next;
@@ -535,13 +531,6 @@ void build_rr_graph(
 		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
 	}
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	/* Main Entry Point to rr_graph modifications for interposer-based architectures */
-	if(num_cuts > 0)
-	{
-		modify_rr_graph_for_interposer_based_arch(max_chan_width, directionality);
-	}
-#endif
 
 	check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, Fc_in);
 
@@ -1846,7 +1835,6 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 	int num_phys_pins = 0;
 	for (int width = 0; width < Type->width; ++width) {
 		for (int height = 0; height < Type->height; ++height) {
-			for (int side = 0; side < 4; ++side)
 				num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
 		}
 	}

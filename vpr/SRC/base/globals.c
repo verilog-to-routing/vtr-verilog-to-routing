@@ -103,25 +103,3 @@ const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with h
 
 /********** Structures representing the global clock network */
 t_clock_arch * g_clock_arch;
-
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-/********** Interposer-based architecture parameters **************************/
-int percent_wires_cut = 0;
-int num_cuts = 0;
-int delay_increase = 0;
-float placer_cost_constant = 0.0;
-int constant_type = 0;
-
-/* Mapping from edges to edges with increased delay */
-int *increased_delay_edge_map = NULL;
-
-/* architecture experimentation */
-bool allow_chanx_interposer_connections = true;
-bool transfer_interposer_fanins = false;
-bool allow_additional_interposer_fanins = false;
-int  pct_of_interposer_nodes_each_chany_can_drive = 0;
-bool transfer_interposer_fanouts = false;
-bool allow_additional_interposer_fanouts = false;
-int  pct_of_chany_wires_an_interposer_node_can_drive= 0;
-int* arch_cut_locations = 0;
-#endif
