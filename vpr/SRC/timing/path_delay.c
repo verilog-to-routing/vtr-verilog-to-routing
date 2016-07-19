@@ -865,7 +865,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					count++;
 				}
 			}
-			assert(count > 0);
+			assert(count >= 0);
 			tnode[i].num_edges = count;
 			tnode[i].out_edges = (t_tedge *) my_chunk_malloc(
 					count * sizeof(t_tedge), &tedge_ch);
@@ -892,7 +892,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					count++;
 				}
 			}
-			assert(count > 0);
+			assert(count >= 0);
 
 			break;
 		case TN_PRIMITIVE_IPIN:

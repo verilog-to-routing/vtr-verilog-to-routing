@@ -1,0 +1,8 @@
+.model top
+.inputs a b
+.outputs c
+
+.names a b c
+11 1
+
+.end

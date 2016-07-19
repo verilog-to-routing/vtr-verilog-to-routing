@@ -33,6 +33,7 @@ struct s_options {
 	int lut_size;
 	bool hill_climbing_flag;
 	bool sweep_hanging_nets_and_inputs;
+	bool absorb_buffer_luts;
 	bool timing_driven;
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;
@@ -153,6 +154,7 @@ enum e_echo_files {
 	E_ECHO_SEG_DETAILS,
 	E_ECHO_CHAN_DETAILS,
 	E_ECHO_SBLOCK_PATTERN,
+    E_ECHO_ENDPOINT_TIMING,
 	E_ECHO_END_TOKEN
 };
 

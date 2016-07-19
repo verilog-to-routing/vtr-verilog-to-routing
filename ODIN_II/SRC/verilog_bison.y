@@ -116,7 +116,7 @@ int yywrap()
 %type <node> module_connection always statement function_statement blocking_assignment 
 %type <node> non_blocking_assignment case_item_list case_items seq_block 
 %type <node> stmt_list delay_control event_expression_list event_expression 
-%type <node> expression primary expression_list module_parameter
+%type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
 %type <node> initial_block parallel_connection list_of_blocking_assignment
 
@@ -424,19 +424,18 @@ expression: primary								{$$ = $1;}
 	| expression '?' expression ':' expression				{$$ = newIfQuestion($1, $3, $5, yylineno);}
 	| function_instantiation                            			{$$ = $1;}
 	| '(' expression ')'							{$$ = $2;}
-										/* rule below is strictly unnecessary, causes a bison conflict, 
-										but simplifies the AST so that expression_lists with one child 
-										(i.e. just an expression) does not create a CONCATENATE parent) */
-	| '{' expression '{' expression '}' '}'					{$$ = newListReplicate( $2, $4 ); }
-	| '{' expression '{' expression_list '}' '}'				{$$ = newListReplicate( $2, $4 ); }
+	| '{' expression '{' probable_expression_list '}' '}'				{$$ = newListReplicate( $2, $4 ); }
 	;
 
 primary: vNUMBER_ID								{$$ = newNumberNode($1, yylineno);}
 	| vSYMBOL_ID								{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'						{$$ = newArrayRef($1, $3, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']'				{$$ = newRangeRef($1, $3, $5, yylineno);}
-	| '{' expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
+	| '{' probable_expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
+	
+probable_expression_list: expression						{$$ = $1;}
+	| expression_list ',' expression						{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
 	 
 expression_list: expression_list ',' expression					{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
 	| expression								{$$ = newList(CONCATENATE, $1);}

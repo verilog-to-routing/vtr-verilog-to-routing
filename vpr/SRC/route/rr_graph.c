@@ -426,6 +426,9 @@ void build_rr_graph(
 					chan_details_y, L_nx, L_ny, switchblocks, 
 					nodes_per_chan, directionality);
 		} else {
+			/* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
+			assert(Fs == 3);
+
 			unidir_sb_pattern = alloc_sblock_pattern_lookup(L_nx, L_ny, max_chan_width);
 			for (int i = 0; i <= L_nx; i++) {
 				for (int j = 0; j <= L_ny; j++) {

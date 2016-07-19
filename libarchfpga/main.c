@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
 				"Error: Unexpected # of arguments.  Expected 3 found %d arguments\n",
 				argc);
 		print_help();
+        return 1;
 	}
 
 	printf(
@@ -53,16 +54,13 @@ int main(int argc, char **argv) {
 }
 
 void print_help() {
-	printf(
-			"\n---------------------------------------------------------------------------------------\n");
-	printf(
-			"read_arch: Read a VPR architecture file and output internal data structures");
-	printf(
-			"Usage: read_arch <arch_file.xml> <timing_driven (0|1)> <output_file>\n");
+	printf("\n---------------------------------------------------------------------------------------\n");
+	printf("read_arch - Read a VPR architecture file and output internal data structures\n");
+	printf("\n");
+	printf("Usage: read_arch <arch_file.xml> <timing_driven (0|1)> <output_file>\n");
+	printf("\n");
 	printf("  ex: read_arch k4_n10.xml 1 arch_data.out\n");
-	printf(
-			"      Read timing-driven architecture k4_n10.xml and output the results to arch_data.out\n");
-	printf(
-			"\n---------------------------------------------------------------------------------------\n");
+	printf("      Read timing-driven architecture k4_n10.xml and output the results to arch_data.out\n");
+	printf("\n---------------------------------------------------------------------------------------\n");
 }
 

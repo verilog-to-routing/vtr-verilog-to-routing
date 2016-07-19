@@ -1853,6 +1853,9 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 			case GATE_INSTANCE:
 				fprintf(fp, "\t%d [label=\"GATE_INSTANCE\"];\n", my_label);
 				break;
+			case ONE_GATE_INSTANCE:
+				fprintf(fp, "\t%d [label=\"ONE_GATE_INSTANCE\"];\n", my_label);
+				break;
 			case MODULE_CONNECT_LIST:
 				fprintf(fp, "\t%d [label=\"MODULE_CONNECT_LIST\"];\n", my_label);
 				break;

@@ -826,7 +826,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 			return;
 		}
 	} else {
-		assert( from_wire_direction = BI_DIRECTION );
+		assert( from_wire_direction == BI_DIRECTION );
 	}
 
 	/* name of the source wire type */

@@ -10,7 +10,7 @@
 ENABLE_GRAPHICS = false
 # can be true or false
 
-BUILD_TYPE = debug
+BUILD_TYPE = release
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
@@ -37,7 +37,7 @@ OTHER_DIR := $(OTHER_DIR) \
 	 -I../liblog/src \
 	$(shell pkg-config --cflags freetype2)
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall  -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g -O0 
 #Potentially expensive asserts that should only be used if you're really scared

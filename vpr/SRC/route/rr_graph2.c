@@ -2430,7 +2430,7 @@ void load_sblock_pattern_lookup(
 			}
 		}
 
-		int opp_incoming_wire_count = 0;
+		//int opp_incoming_wire_count = 0;
 		if (incoming_wire_label[side_opp]) {
 			for (int itrack = 0; itrack < nodes_per_chan->max; itrack++) {
 
@@ -2448,13 +2448,17 @@ void load_sblock_pattern_lookup(
 								num_wire_muxes[to_side], itrack);
 						sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
 					} else {
+						//FIXME: this code does not appear to do anything. later in build_rr_chan()
+						//	switch block connections from segment midpoints to the opposite side
+						//	are explicitly skipped.
+						//	Commenting code for now, will remove later if nothing breaks.
 
 						/* These are passing wires with sblock for core sblocks */
-						int mux = ((side_ccw_incoming_wire_count + side_cw_incoming_wire_count)
-								* Fs_per_side + opp_incoming_wire_count	* (Fs_per_side - 1))
-								% num_wire_muxes[to_side];
-						sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
-						opp_incoming_wire_count++;
+						//int mux = ((side_ccw_incoming_wire_count + side_cw_incoming_wire_count)
+						//		* Fs_per_side + opp_incoming_wire_count	* (Fs_per_side - 1))
+						//		% num_wire_muxes[to_side];
+						//sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
+						//opp_incoming_wire_count++;
 					}
 				}
 			}

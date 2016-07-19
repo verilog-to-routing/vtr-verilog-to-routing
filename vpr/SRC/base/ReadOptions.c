@@ -169,6 +169,7 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
 	setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
 	setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
+	setEchoFileName(E_ECHO_ENDPOINT_TIMING, "endpoint_timing.echo.json");
 }
 
 void free_echo_file_info() {
@@ -358,6 +359,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadOnOff(Args, &Options->hill_climbing_flag);
 	case OT_SWEEP_HANGING_NETS_AND_INPUTS:
 		return ReadOnOff(Args, &Options->sweep_hanging_nets_and_inputs);
+	case OT_ABSORB_BUFFER_LUTS:
+		return ReadOnOff(Args, &Options->absorb_buffer_luts);
 	case OT_TIMING_DRIVEN_CLUSTERING:
 		return ReadOnOff(Args, &Options->timing_driven);
 	case OT_CLUSTER_SEED:

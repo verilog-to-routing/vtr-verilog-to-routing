@@ -63,6 +63,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "global_clocks", OT_GLOBAL_CLOCKS }, 
 		{ "hill_climbing", OT_HILL_CLIMBING_FLAG }, 
 		{ "sweep_hanging_nets_and_inputs", OT_SWEEP_HANGING_NETS_AND_INPUTS }, 
+		{ "absorb_buffer_luts", OT_ABSORB_BUFFER_LUTS }, 
 		{ "no_clustering", OT_SKIP_CLUSTERING }, 
 		{ "allow_unrelated_clustering", OT_ALLOW_UNRELATED_CLUSTERING }, 
 		{ "allow_early_exit", OT_ALLOW_EARLY_EXIT }, 

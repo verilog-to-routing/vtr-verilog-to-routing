@@ -88,6 +88,10 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 
 class Wire_Counting{
 public:
+    Wire_Counting()
+        : num_wires(0)
+        , expectation_available(0.) {}
+
 	/* number of wires in this wire group (here, wires are grouped by the number of switches they carry) */
 	int num_wires;
 	/* map key is number of wires used. element represents how many times, over all possible configurations of the switches
