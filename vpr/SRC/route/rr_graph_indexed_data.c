@@ -18,9 +18,6 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 static float get_delay_normalization_fac(int nodes_per_chan,
 		t_ivec *** L_rr_node_indices);
 
-static float get_average_opin_delay(t_ivec *** L_rr_node_indices,
-		int nodes_per_chan);
-
 static void load_rr_indexed_data_T_values(int index_start,
 		int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
 		t_ivec *** L_rr_node_indices, t_segment_inf * segment_inf);
@@ -142,26 +139,13 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 #endif
 	}
 
-	else if (base_cost_type == INTRINSIC_DELAY) {
-		rr_indexed_data[SOURCE_COST_INDEX].base_cost = 0.;
-		rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
-		rr_indexed_data[OPIN_COST_INDEX].base_cost = get_average_opin_delay(
-				L_rr_node_indices, nodes_per_chan);
-		rr_indexed_data[IPIN_COST_INDEX].base_cost =
-				g_rr_switch_inf[wire_to_ipin_switch].Tdel;
-	}
-
 	/* Load base costs for CHANX and CHANY segments */
 
 	for (index = CHANX_COST_INDEX_START; index < num_rr_indexed_data; index++) {
-		if (base_cost_type == INTRINSIC_DELAY)
-			rr_indexed_data[index].base_cost = rr_indexed_data[index].T_linear
-					+ rr_indexed_data[index].T_quadratic;
-		else
 			/*       rr_indexed_data[index].base_cost = delay_normalization_fac /
 			 rr_indexed_data[index].inv_length;  */
 
-			rr_indexed_data[index].base_cost = delay_normalization_fac;
+		rr_indexed_data[index].base_cost = delay_normalization_fac;
 		/*       rr_indexed_data[index].base_cost = delay_normalization_fac *
 		 sqrt (1. / rr_indexed_data[index].inv_length);  */
 		/*       rr_indexed_data[index].base_cost = delay_normalization_fac *
@@ -217,45 +201,6 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	}
 
 	return (Tdel_sum / (2. * nodes_per_chan));
-}
-
-static float get_average_opin_delay(t_ivec *** L_rr_node_indices,
-		int nodes_per_chan) {
-
-	/* Returns the average delay from an OPIN to a wire in an adjacent channel. */
-	/* RESEARCH TODO: Got to think if this heuristic needs to change for hetero, right now, I'll calculate
-	 * the average delay of non-IO blocks */
-	int inode, ipin, iclass, iedge, itype, num_edges, to_switch, to_node,
-			num_conn;
-	float Cload, Tdel;
-
-	Tdel = 0.;
-	num_conn = 0;
-	for (itype = 0; itype < num_types && &type_descriptors[itype] != IO_TYPE;
-			itype++) {
-		for (ipin = 0; ipin < type_descriptors[itype].num_pins; ipin++) {
-			iclass = type_descriptors[itype].pin_class[ipin];
-			if (type_descriptors[itype].class_inf[iclass].type == DRIVER) { /* OPIN */
-				inode = find_average_rr_node_index(nx, ny, OPIN,
-						ipin, L_rr_node_indices);
-				if (inode == -1)
-					continue;
-				num_edges = rr_node[inode].get_num_edges();
-
-				for (iedge = 0; iedge < num_edges; iedge++) {
-					to_node = rr_node[inode].edges[iedge];
-					to_switch = rr_node[inode].switches[iedge];
-					Cload = rr_node[to_node].C;
-					Tdel += Cload * g_rr_switch_inf[to_switch].R
-							+ g_rr_switch_inf[to_switch].Tdel;
-					num_conn++;
-				}
-			}
-		}
-	}
-
-	Tdel /= (float) num_conn;
-	return (Tdel);
 }
 
 static void load_rr_indexed_data_T_values(int index_start,

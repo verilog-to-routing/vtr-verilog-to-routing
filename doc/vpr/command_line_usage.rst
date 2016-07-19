@@ -250,15 +250,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``on`` if timing-driven placement is specified, ``off`` otherwise.
 
-.. option:: -block_dist <int> 
-
-    .. deprecated:: 7.0
-
-    Specifies that the placement algorithm should print out an estimate of the circuit critical path, assuming that each inter-block connection is between blocks a (horizontal) distance of block_dist logic blocks apart.
-    This setting affects statistics output only, not optimization  behaviour.
-
-    **Default:** ``1`` (Currently the code that prints out this lower bound is #ifdef ’ed out in place.c -- define PRINT_LOWER_BOUND in place.c to reactivate it.)
-
 .. option:: -inner_num <float>
 
     The number of moves attempted at each temperature is inner_num *  num_blocks^(4/3) in the circuit.
@@ -298,7 +289,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** off (i.e. placer chooses pad locations).
 
-.. option:: -place_algorithm {bounding_box | net_timing_driven | path_timing_driven}
+.. option:: -place_algorithm {bounding_box | path_timing_driven}
 
     Controls the algorithm used by the placer.
 
@@ -306,7 +297,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     ``path_timing_driven`` focuses on minimizing both wirelength and the critical path delay.
 
-    ``net_timing_driven`` is similar to path_timing_driven, but assumes that all nets have the same delay when estimating the critical path during placement, rather than using the current placement to obtain delay estimates.
 
     **Default:**  ``path_timing_driven``
 
@@ -417,17 +407,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``3``
 
-.. option:: -base_cost_type {demand_only | delay_normalized | intrinsic_delay} 
+.. option:: -base_cost_type {demand_only | delay_normalized} 
 
     Sets the basic cost of using a routing node (resource).
 
     ``demand_only`` sets the basic cost of a node according to how much demand is expected for that type of node.
 
     ``delay_normalized`` is similar, but normalizes all these basic costs to be of the same magnitude as the typical delay through a routing resource.
-
-    ``intrinsic_delay`` sets the basic cost of a node to its intrinsic delay.
-
-    .. warning:: ``intrinsic_delay`` is no longer supported and may give unusual results
 
     **Default:** ``delay_normalized`` for the timing-driven router and ``demand_only`` for the breadth-first router
 

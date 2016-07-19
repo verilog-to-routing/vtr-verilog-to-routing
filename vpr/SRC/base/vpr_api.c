@@ -127,7 +127,7 @@ void vpr_print_usage(void) {
 	vpr_printf_info("\t[--min_incremental_reroute_fanout <int>]\n");
 	vpr_printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
 	vpr_printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf_info("\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
+	vpr_printf_info("\t[--base_cost_type delay_normalized | demand_only]\n");
 	vpr_printf_info("\n");
 	vpr_printf_info("Routing options valid only for timing-driven routing:\n");
 	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");

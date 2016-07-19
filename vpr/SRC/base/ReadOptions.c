@@ -359,8 +359,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return Args;
     case OT_SLACK_DEFINITION:
         return ReadChar(Args, &Options->SlackDefinition);
-	case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
-		return ReadFloat(Args, &Options->constant_net_delay);
 	case OT_FAST:
 	case OT_FULL_STATS:
 		return Args;
@@ -585,9 +583,6 @@ static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
 		case OT_PACK:
 		case OT_ROUTE:
 		case OT_PLACE:
-			break;
-		case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
-			dest->constant_net_delay = src->constant_net_delay;
 			break;
 		case OT_GEN_NELIST_AS_BLIF:
 			break;
@@ -921,9 +916,6 @@ ReadBaseCostType(INP char **Args, OUTP enum e_base_cost_type *BaseCostType) {
 	PrevArgs = Args;
 	Args = ReadToken(Args, &Token);
 	switch (Token) {
-	case OT_INTRINSIC_DELAY:
-		*BaseCostType = INTRINSIC_DELAY;
-		break;
 	case OT_DELAY_NORMALIZED:
 		*BaseCostType = DELAY_NORMALIZED;
 		break;

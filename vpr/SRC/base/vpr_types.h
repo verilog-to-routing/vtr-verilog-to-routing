@@ -733,8 +733,7 @@ struct s_placer_opts {
  * router_algorithm:  BREADTH_FIRST or TIMING_DRIVEN.  Selects the desired  *
  *                    routing algorithm.                                    *
  * base_cost_type: Specifies how to compute the base cost of each type of   *
- *                 rr_node.  INTRINSIC_DELAY -> base_cost = intrinsic delay *
- *                 of each node.  DELAY_NORMALIZED -> base_cost = "demand"  *
+ *                 rr_node.  DELAY_NORMALIZED -> base_cost = "demand"       *
  *                 x average delay to route past 1 CLB.  DEMAND_ONLY ->     *
  *                 expected demand of this node (old breadth-first costs).  *
  *                                                                          *
@@ -761,7 +760,7 @@ enum e_router_algorithm {
 	BREADTH_FIRST, TIMING_DRIVEN, NO_TIMING
 };
 enum e_base_cost_type {
-	INTRINSIC_DELAY, DELAY_NORMALIZED, DEMAND_ONLY
+	DELAY_NORMALIZED, DEMAND_ONLY
 };
 enum e_routing_failure_predictor {
 	OFF, SAFE, AGGRESSIVE

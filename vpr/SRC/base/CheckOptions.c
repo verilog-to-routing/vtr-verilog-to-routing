@@ -17,8 +17,7 @@ void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
 	enum e_OptionBaseToken Yes;
 
 	default_flow = (Options.Count[OT_ROUTE] == 0
-			&& Options.Count[OT_PLACE] == 0 && Options.Count[OT_PACK] == 0
-			&& Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY] == 0);
+			&& Options.Count[OT_PLACE] == 0 && Options.Count[OT_PACK] == 0);
 
 	/* Check that all filenames were given */
 	if ((NULL == Options.CircuitName) || (NULL == Options.ArchFile)) {
@@ -40,13 +39,6 @@ void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
 
 	/* Check for conflicting parameters and determine if placer and 
 	 * router are on. */
-
-	if (Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY]
-			&& (Options.Count[OT_PACK] || Options.Count[OT_PLACE]
-					|| Options.Count[OT_ROUTE])) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-				"'cluster'/'route'/'place', and 'timing_analysis_only_with_net_delay' are mutually exclusive flags..\n");
-	}
 
 	/* If placing and timing is enabled, default to a timing placer */
 	TimingPlacer =((Options.Count[OT_PLACE] || default_flow) && TimingEnabled);
@@ -103,9 +95,6 @@ void CheckOptions(INP t_options Options, INP bool TimingEnabled) {
 	}
 	if (Options.Count[OT_ENABLE_TIMING_COMPUTATIONS] > 0) {
 		Yes = OT_ENABLE_TIMING_COMPUTATIONS;
-	}
-	if (Options.Count[OT_BLOCK_DIST] > 0) {
-		Yes = OT_BLOCK_DIST;
 	}
 	/* Make sure if place is off none of those options were given */
 	if ((Options.Count[OT_PLACE] == 0) && !default_flow

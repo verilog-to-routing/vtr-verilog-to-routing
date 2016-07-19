@@ -645,7 +645,6 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		RouterOpts->doRouting = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
-		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
 			RouterOpts->doRouting = true;
 	}
 
@@ -718,7 +717,6 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 		PackerOpts->doPacking = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
-		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
 			PackerOpts->doPacking = true;
 	}
 
@@ -887,7 +885,6 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 		PlacerOpts->doPlacement = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
-		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
 			PlacerOpts->doPlacement = true;
 	}
 	if (PlacerOpts->doPlacement == false) {
@@ -899,9 +896,6 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation) {
 	*Operation = RUN_FLOW; /* DEFAULT */
-	if (Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY]) {
-		*Operation = TIMING_ANALYSIS_ONLY;
-	}
 }
 
 static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,

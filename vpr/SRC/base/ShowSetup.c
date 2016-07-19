@@ -208,9 +208,6 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 
 		vpr_printf_info("RouterOpts.base_cost_type: ");
 		switch (RouterOpts.base_cost_type) {
-		case INTRINSIC_DELAY:
-			vpr_printf_info("INTRINSIC_DELAY\n");
-			break;
 		case DELAY_NORMALIZED:
 			vpr_printf_info("DELAY_NORMALIZED\n");
 			break;
@@ -270,9 +267,6 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 
 		vpr_printf_info("RouterOpts.base_cost_type: ");
 		switch (RouterOpts.base_cost_type) {
-		case INTRINSIC_DELAY:
-			vpr_printf_info("INTRINSIC_DELAY\n");
-			break;
 		case DELAY_NORMALIZED:
 			vpr_printf_info("DELAY_NORMALIZED\n");
 			break;
