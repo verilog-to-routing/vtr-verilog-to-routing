@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "types.h"
 #include "ast_util.h"
 #include "ast_optimizations.h"
@@ -269,6 +270,9 @@ info_ast_visit_t *constantFold(ast_node_t *node)
 							break;
 						case MULTIPLY:
 							new_value = children_info[0]->value * children_info[1]->value;
+							break;
+						case OP_POW:
+							new_value = pow(children_info[0]->value,children_info[1]->value);
 							break;
 						case BITWISE_XOR:
 							new_value = children_info[0]->value ^ children_info[1]->value;

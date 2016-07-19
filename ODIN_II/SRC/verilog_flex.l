@@ -94,6 +94,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>"xor"			{ MP; return vXOR;}
 
 	/* Operators */
+<INITIAL>"**"			{ MP; return voPOWER;}
 <INITIAL>"&&"			{ MP; return voANDAND;}
 <INITIAL>"||"			{ MP; return voOROR;}
 <INITIAL>"<="			{ MP; return voLTE;}

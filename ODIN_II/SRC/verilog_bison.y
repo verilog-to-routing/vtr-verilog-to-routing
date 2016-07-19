@@ -83,7 +83,8 @@ int yywrap()
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL 
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT 
+%left voSLEFT voSRIGHT
+%left voPOWER 
 %left '+' '-'   
 %left '*' '/' '%'
 %left '~' '!'
@@ -399,6 +400,7 @@ expression: primary								{$$ = $1;}
 	| '!' expression %prec ULNOT						{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
 	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
 	| expression '^' expression						{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
+	| expression voPOWER expression						{$$ = newBinaryOperation(OP_POW, $1, $3, yylineno);}
 	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
 	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
 	| expression '%' expression						{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}
@@ -428,6 +430,7 @@ expression: primary								{$$ = $1;}
 	;
 
 primary: vNUMBER_ID								{$$ = newNumberNode($1, yylineno);}
+	| vSYMBOL_ID								{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID								{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'						{$$ = newArrayRef($1, $3, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']'				{$$ = newRangeRef($1, $3, $5, yylineno);}
