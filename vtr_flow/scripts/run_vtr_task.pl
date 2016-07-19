@@ -36,6 +36,7 @@ use Cwd;
 use File::Spec;
 use File::Basename;
 use File::Path qw(make_path);
+use List::MoreUtils qw(uniq);
 use IPC::Open2;
 use POSIX qw(strftime);
 
@@ -125,9 +126,8 @@ foreach (@task_files) {
 	close(FH);
 }
 
-# Remove duplicate tasks
-my %hash = map { $_, 1 } @tasks;
-@tasks = keys %hash;
+# Remove duplicate tasks, use uniq() to preserve ordering
+@tasks = uniq(@tasks);
 
 #print "Processors: $processors\n";
 #print "Tasks: @tasks\n";
