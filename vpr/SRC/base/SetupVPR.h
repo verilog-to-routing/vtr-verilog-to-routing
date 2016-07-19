@@ -35,9 +35,6 @@ void CheckSetup(INP enum e_operation Operation,
 void CheckArch(INP t_arch Arch,
 		INP bool TimingEnabled);
 
-void CheckOptions(INP t_options Options,
-		INP bool TimingEnabled);
-
 void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup);
 void printClusteredNetlistStats(void);
 

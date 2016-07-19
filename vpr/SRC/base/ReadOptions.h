@@ -94,8 +94,8 @@ struct s_options {
 	enum e_routing_failure_predictor routing_failure_predictor;
 
 	/* State and metadata about various settings */
-	int Count[OT_BASE_UNKNOWN];
-	int Provenance[OT_BASE_UNKNOWN];
+	int Count[OT_BASE_UNKNOWN+1];
+	int Provenance[OT_BASE_UNKNOWN+1];
 
 	/* Last read settings file */
 	int read_settings;

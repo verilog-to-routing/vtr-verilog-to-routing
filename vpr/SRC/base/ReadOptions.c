@@ -270,7 +270,6 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			Args = ProcessOption(Args, Options);
 		} else if (NULL == Options->ArchFile) {
 			Options->ArchFile = my_strdup(*Args);
-			vpr_printf_info("Architecture file: %s\n", Options->ArchFile);
 			++Args;
 		} else if (NULL == Options->CircuitName) {
 			Options->CircuitName = my_strdup(*Args);
@@ -279,8 +278,6 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
 				Options->CircuitName[offset] = '\0';
 			}
-			vpr_printf_info("Circuit name: %s.blif\n", Options->CircuitName);
-			vpr_printf_info("\n");
 			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */

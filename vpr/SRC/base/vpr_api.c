@@ -34,6 +34,7 @@ using namespace std;
 #include "ReadOptions.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
+#include "CheckOptions.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "ReadOptions.h"
@@ -183,6 +184,14 @@ void vpr_init(INP int argc, INP char **argv,
 		/* Timing option priorities */
 		vpr_setup->TimingEnabled = IsTimingEnabled(options);
 
+        /* Verify the rest of the options */
+		CheckOptions(*options, vpr_setup->TimingEnabled);
+
+        vpr_printf_info("\n");
+        vpr_printf_info("Architecture file: %s\n", options->ArchFile);
+        vpr_printf_info("Circuit name: %s.blif\n", options->CircuitName);
+        vpr_printf_info("\n");
+
 		/* Determine whether echo is on or off */
 		setEchoEnabled(IsEchoEnabled(options));
 		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
@@ -200,7 +209,6 @@ void vpr_init(INP int argc, INP char **argv,
 				&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
 
 		/* Check inputs are reasonable */
-		CheckOptions(*options, vpr_setup->TimingEnabled);
 		CheckArch(*arch, vpr_setup->TimingEnabled);
 
 		/* Verify settings don't conflict or otherwise not make sense */
