@@ -457,7 +457,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     To disable, set value to a value higher than the largest fanout of any net.
 
-    **Default:** 64
+    **Default:** ``64``
 
 .. _timing_driven_router_options:
 
@@ -509,13 +509,13 @@ Power Estimation Options
 ----------------------------
 The following options are used to enable power estimation in VPR.
 
-.. seealso: ref:`power_estimation` for more details.
+.. seealso:: :ref:`power_estimation` for more details.
 
 .. option:: --power
 
     Enable power estimation
 
-    **Default:** off
+    **Default:** ``off``
 
 .. option:: --tech_properties <file>
 
@@ -530,5 +530,5 @@ The following options are used to enable power estimation in VPR.
         <net name2> <signal probability> <transition density>
         ...
 
-    Instructions on generating this file are provided in ref:`power_estimation`.
+    Instructions on generating this file are provided in :ref:`power_estimation`.
 
