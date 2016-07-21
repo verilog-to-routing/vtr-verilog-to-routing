@@ -82,6 +82,7 @@ my $stage_idx_vpr    = 5;
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
 my $architecture_file_path = expand_user_path( shift(@ARGV) );
 my $sdc_file_path;
+my $pad_file_path;
 
 my $token;
 my $ext;
@@ -120,6 +121,9 @@ my @forwarded_vpr_args;   # VPR arguments that pass through the script
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
 		$sdc_file_path = expand_user_path( shift(@ARGV) );
+	}
+	elsif ( $token eq "-fix_pins" and $ARGV[0] ne "random") {
+		$pad_file_path = $vtr_flow_path . shift(@ARGV);
 	}
 	elsif ( $token eq "-starting_stage" ) {
 		$starting_stage = stage_index( shift(@ARGV) );
@@ -272,6 +276,12 @@ if ( !-e $sdc_file_path ) {
 	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
 	# close ( OUTPUT_FILE );
 	my $sdc_file_path;
+}
+
+if ( !-e $pad_file_path ) {
+	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
+	# close ( OUTPUT_FILE );
+	my $pad_file_path;
 }
 
 my $vpr_path; if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) { $vpr_path = "$vtr_flow_path/../vpr/vpr"; ( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)"; } my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
@@ -538,6 +548,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "--sdc_file" );				  
 			push( @vpr_args, "$sdc_file_path");
 		}
+		if (-e $pad_file_path){
+			push( @vpr_args, "-fix_pins" );				  
+			push( @vpr_args, "$pad_file_path");
+		}
 		push( @vpr_args, "--seed");			 		  
 		push( @vpr_args, "$seed");
 		push( @vpr_args, "$congestion_analysis");
@@ -643,6 +657,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "--sdc_file" );				  
 			push( @vpr_args, "$sdc_file_path");
 		}
+		if (-e $pad_file_path){
+			push( @vpr_args, "-fix_pins" );				  
+			push( @vpr_args, "$pad_file_path");
+		}
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
@@ -654,8 +672,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			@vpr_args
 		);
 	}
-	  					
-	if (-e $vpr_route_output_file_path and $q eq "success") {
+	
+	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			
+	if ($q eq "success") {
 		if($check_equivalent eq "on") {
 			if($abc_path eq "") {
 				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
