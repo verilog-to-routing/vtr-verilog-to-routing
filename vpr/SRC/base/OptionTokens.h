@@ -85,7 +85,6 @@ enum e_OptionBaseToken {
             OT_RECOMPUTE_CRIT_ITER,
             OT_SEED,
             OT_PLACE_COST_EXP,
-            OT_BLOCK_DIST,
             OT_PLACE_CHAN_WIDTH,
             OT_FIX_PINS,
             OT_READ_PLACE_ONLY,
