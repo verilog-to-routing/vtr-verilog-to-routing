@@ -515,8 +515,13 @@ void build_rr_graph(
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
 		for (int i = 0; i < num_rr_nodes; i++) {
-			if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-				rr_node[i].set_capacity(chan_width.max);
+			if (rr_node[i].type == CHANX) {
+				int ylow = rr_node[i].get_ylow();
+				rr_node[i].set_capacity( chan_width.x_list[ylow] );
+			}
+			if (rr_node[i].type == CHANY) {
+				int xlow = rr_node[i].get_xlow();
+				rr_node[i].set_capacity( chan_width.y_list[xlow] );
 			}
 		}
 	}
