@@ -101,41 +101,6 @@ static inline bool triangle_LOD_screen_area_test(float arrow_size);
 
 /********************** Subroutine definitions ******************************/
 
-bool is_inode_an_interposer_wire(int inode)
-{
-	int ix = rr_node[inode].get_xlow();
-	int itrack = rr_node[inode].get_ptc_num();
-	if( rr_node[inode].type==CHANY && itrack >= chan_width.y_list[ix] )
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-/* This Funtion draws an interposer wire
- * The interposer wires are shifted up in the channel to show the effect that they are not
- * part of the channel tracks.
- * Also, the interposer wires are drawn in RED so that it's clear where cuts are happening
-*/
-void draw_shifted_line(int inode)
-{
-	t_bound_box bound_box = draw_get_rr_chan_bbox(inode);
-	int ix = rr_node[inode].get_xlow();
-	t_color savecolor = getcolor();
-	int bottom_shift_y = 0; 
-	int top_shift_y = 0;
-	if(is_inode_an_interposer_wire(inode))
-	{
-		setcolor(RED);
-		bottom_shift_y = get_draw_coords_vars()->get_tile_width() + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
-		top_shift_y = chan_width.y_list[ix]   + chan_width.y_list[ix] - 0.25*chan_width.y_list[ix];
-	}
-	drawline(bound_box.left(), bound_box.bottom()+bottom_shift_y, bound_box.right(), bound_box.top()+top_shift_y);
-	setcolor(savecolor);
-}
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 		enum e_route_type route_type) 
@@ -1462,10 +1427,6 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 	else {
 		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
 			if (to_track % 2 == 0) { /* INC wire starts at bottom edge */
-			
-				// for interposer-based architectures, the interposer node will have
-				// the same y_low and y_high as the cutline y-coordinate
-				// so, for connections from CHANY wire just below the cut to the interposer node,
 
 				y2 = to_chan.bottom();
 				/* since no U-turns from_track must be INC as well */
