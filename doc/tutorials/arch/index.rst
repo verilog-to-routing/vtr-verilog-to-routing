@@ -1,7 +1,7 @@
 .. _arch_tutorial:
 
-Architecture Modeling Tutorial
----------------------------------
+Architecture Modeling
+---------------------
 
 This page provides information on the FPGA architecture description language used by VPR.
 This page is geared towards both new and experienced users of vpr.
