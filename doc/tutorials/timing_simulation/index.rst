@@ -42,7 +42,7 @@ We also need to provide the :option:`vpr -gen_postsynthesis_netlist` option to g
 
     $ vpr k6_N10_40nm.xml stereovision3.blif -gen_postsynthesis_netlist on
 
-Once VPR is completed we should see the generated verilog netlist and SDF:
+Once VPR has completed we should see the generated verilog netlist and SDF:
 
 .. code-block:: console
 
@@ -54,8 +54,6 @@ Inspecting the Post-Implementation Netlist
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Lets take a quick look at the generated files.
-
-*Verilog*
 
 First is a snippet of the verilog netlist:
 
@@ -95,17 +93,20 @@ First is a snippet of the verilog netlist:
 
 Here we see three primitives instantiated:
 
- * ``fpga_interconnect`` represents connections between netlist primitives
- * ``LUT_K`` represent look-up tables (LUTs) (corresponding to ``.names`` in the BLIF netlist). They haves two parameters:
+* ``fpga_interconnect`` represent connections between netlist primitives
+* ``LUT_K`` represent look-up tables (LUTs) (corresponding to ``.names`` in the BLIF netlist). Two parameters define the LUTs functionality:
+
      * ``K`` the number of inputs, and 
      * ``LUT_MASK`` which defines the logic function.
- * ``DFF`` represents a D-Flip-Flop (corresponding to ``.latch`` in the BLIF netlist).  The ``INITIAL_VALUE`` parameter defines the Flip-Flops initial state
 
-Different circuits may produce other types of netlist primitives corresponding to primitive hard-blocks on the FPGA such as adders, multipliers and single or dual port RAM blocks.
+* ``DFF`` represents a D-Flip-Flop (corresponding to ``.latch`` in the BLIF netlist).
+   
+    * The ``INITIAL_VALUE`` parameter defines the Flip-Flop's initial state.
+
+Different circuits may produce other types of netlist primitives corresponding to hardened primitive blocks in the FPGA such as adders, multipliers and single or dual port RAM blocks.
 
 .. note:: The different primitives produced by VPR are defined in ``<vtr>/vtr_flow/primitives.v``
 
-The SDF defines all the delays in the circuit using the delays calculated by VPR's STA engine from the architecture file we provided.
 
 Lets now take a look at the Standard Delay Fromat (SDF) file:
 
@@ -151,9 +152,11 @@ Lets now take a look at the Standard Delay Fromat (SDF) file:
         )
     )
 
+The SDF defines all the delays in the circuit using the delays calculated by VPR's STA engine from the architecture file we provided.
+
 Here we see the timing description of the cells listed in the :ref:`Verilog netlist snippet <post_imp_verilog>`.
 
-In this case the routing segment ``routing_segment_lut_n616_output_0_0_to_lut_n497_input_0_4`` has a delay of 312.648 ps, while the LUT ``lut_n452`` has a delay of 261 ps from each input to the output.  
+In this case the routing segment ``routing_segment_lut_n616_output_0_0_to_lut_n497_input_0_4`` has a delay of 312.648 ps, while the LUT ``lut_n452`` has a delay of 261 ps from each input to the output.
 The DFF ``latch_top\^FF_NODE\~387`` has a clock-to-q delay of 124 ps and a setup time of 66ps.
 
 Creating a Test Bench
@@ -329,7 +332,7 @@ The simulation is then configured on line 17, some of the options are worth disc
 
 * ``+bitblast``: Ensures Modelsim interprets the primitives in ``primitives.v`` correctly for SDF back-annotation.
 
-.. warning:: Failing to provide ``+bitblast`` can cause errors during SDF back annotation
+.. warning:: Failing to provide ``+bitblast`` can cause errors during SDF back-annotation
 
 * ``+sdf_verbose``: Produces more information about SDF back-annotation, useful for verifying that back-annotation succeeded.
 
@@ -348,4 +351,4 @@ and then run our ``.do`` file from the internal console:
 
     ModelSim> do tb.do
 
-Once the simulation completes we can view the results in the waveform view as shown in :ref:`at the top of the page <fig_timing_simulation>`, process the generated VCD file ``sim.vcd``.
+Once the simulation completes we can view the results in the waveform view as shown in :ref:`at the top of the page <fig_timing_simulation>`, or process the generated VCD file ``sim.vcd``.
