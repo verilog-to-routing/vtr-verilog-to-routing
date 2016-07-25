@@ -21,13 +21,13 @@ circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
 arch_list_add=stratixiv_arch.timing.xml
 
 # Parse info and how to parse
-parse_file=vpr_standard.txt
+parse_file=vpr_fixed_chan_width.txt
 
 # How to parse QoR info
-qor_parse_file=qor_standard.txt
+qor_parse_file=qor_fixed_chan_width.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 script_params=-starting_stage vpr -track_memory_usage -vpr_route_chan_width 300
 
