@@ -154,7 +154,7 @@ Lets now take a look at the Standard Delay Fromat (SDF) file:
 
 The SDF defines all the delays in the circuit using the delays calculated by VPR's STA engine from the architecture file we provided.
 
-Here we see the timing description of the cells listed in the :ref:`Verilog netlist snippet <post_imp_verilog>`.
+Here we see the timing description of the cells in :numref:`post_imp_verilog`.
 
 In this case the routing segment ``routing_segment_lut_n616_output_0_0_to_lut_n497_input_0_4`` has a delay of 312.648 ps, while the LUT ``lut_n452`` has a delay of 261 ps from each input to the output.
 The DFF ``latch_top\^FF_NODE\~387`` has a clock-to-q delay of 124 ps and a setup time of 66ps.
