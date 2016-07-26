@@ -417,6 +417,46 @@ ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
  * Basically this functions emulates verilog replication: {5{1'b0}} by concatenating that many
  * children together -- certainly not the most elegant solution, but was the easiest
  *-------------------------------------------------------------------------------------------*/
+ast_node_t *markAndProcessSymbolListWithDec(ids top_type, ids id,ast_node_t *symbol_list)
+{ 
+
+	long sc_spot;
+	if(top_type == MODULE) 
+	{ 
+	 switch(id)
+		{	case INPUT:
+			            symbol_list->children[0]->types.variable.is_input = TRUE;
+			            /* add this input to the modules string cache */
+			            if ((sc_spot = sc_add_string(modules_inputs_sc, symbol_list->children[0]->types.identifier)) == -1)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[0]->types.identifier);
+			            }
+			            /* store the data which is an idx here */
+			            modules_inputs_sc->data[sc_spot] = (void*)symbol_list->children[0];
+			            break;
+		            case OUTPUT:
+			            symbol_list->children[0]->types.variable.is_output = TRUE;
+			            /* add this output to the modules string cache */
+			            if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[0]->types.identifier)) == -1)
+			            {
+				            error_message(PARSE_ERROR, symbol_list->children[0]->line_number, current_parse_file, "Module already has input with this name %s\n", symbol_list->children[0]->types.identifier);
+			            }
+			            /* store the data which is an idx here */
+			            modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[0];
+			            break;
+		            case INOUT:
+			            symbol_list->children[0]->types.variable.is_inout = TRUE;
+			            error_message(PARSE_ERROR, symbol_list->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[0]->types.identifier);
+			            break;
+				default:
+				error_message(PARSE_ERROR, symbol_list->children[0]->line_number, current_parse_file, "Input or Output expected (%s)\n", symbol_list->children[0]->types.identifier);
+				
+    		 }
+	}
+
+   return symbol_list;
+}
+
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 {
 	/* create a node for this array reference */
@@ -435,6 +475,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 
 	return new_node;
 }
+
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
 	int i;
@@ -1522,6 +1563,55 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	return new_node;
 }
 
+ast_node_t *newDecModule(char* module_name, ast_node_t *list_of_dec_module_items, ast_node_t *list_of_non_dec_module_items, int line_number)
+{
+	int i, j, k;
+	long sc_spot;
+	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 3, symbol_node, list_of_dec_module_items, list_of_non_dec_module_items);
+
+	/* store the list of modules this module instantiates */
+	new_node->types.module.module_instantiations_instance = module_instantiations_instance;
+	new_node->types.module.size_module_instantiations = size_module_instantiations;
+	new_node->types.module.is_instantiated = FALSE;
+	new_node->types.module.index = num_modules;
+
+	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
+	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
+	new_node->types.function.is_instantiated = FALSE;
+	new_node->types.function.index = num_functions;
+	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
+	ast_modules = (ast_node_t **)realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
+	ast_modules[num_modules] = new_node;
+	for(i = 0; i < size_module_variables_not_defined; i++){
+		short variable_found = FALSE;
+		for(j = 0; j < list_of_dec_module_items->num_children && variable_found == FALSE; j++){
+		if(list_of_dec_module_items->children[j]->type == VAR_DECLARE_LIST){
+			for(k = 0; k < list_of_dec_module_items->children[j]->num_children; k++){
+				if(strcmp(list_of_dec_module_items->children[j]->children[k]->children[0]->types.identifier,module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0) variable_found = TRUE;
+				}
+			}
+		}
+		if(!variable_found) add_child_at_the_beginning_of_the_node(list_of_dec_module_items, module_variables_not_defined[i]);
+	}
+
+	if ((sc_spot = sc_add_string(module_names_to_idx, module_name)) == -1)
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
+	}
+	/* store the data which is an idx here */
+	module_names_to_idx->data[sc_spot] = (void*)new_node;
+
+	/* now that we've bottom up built the parse tree for this module, go to the next module */
+	next_module();
+
+	return new_node;
+}
+
 /*-----------------------------------------
  * ----------------------------------------------------
  * (function: newFunction)
@@ -1806,6 +1896,12 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 				break;
 			case MODULE_ITEMS:
 				fprintf(fp, "\t%d [label=\"MODULE_ITEMS\"];\n", my_label);
+				break;
+			case NON_DEC_MODULE_ITEMS:
+				fprintf(fp, "\t%d [label=\"NON_DEC_MODULE_ITEMS\"];\n", my_label);
+				break;
+			case DEC_MODULE_ITEMS:
+				fprintf(fp, "\t%d [label=\"DEC_MODULE_ITEMS\"];\n", my_label);
 				break;
 			case VAR_DECLARE:
 				{

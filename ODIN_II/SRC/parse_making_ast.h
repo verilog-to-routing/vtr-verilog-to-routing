@@ -15,6 +15,7 @@ ast_node_t *newNumberNode(char *num, int line_number);
 ast_node_t *newList(ids type_id, ast_node_t *expression);
 ast_node_t *newList_entry(ast_node_t *concat_node, ast_node_t *expression);
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child );
+ast_node_t *markAndProcessSymbolListWithDec(ids top_type, ids id, ast_node_t *symbol_list);
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list);
 
 /* EXPRESSIONS */
@@ -64,6 +65,7 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_
 
 /* HIGH LEVEL ITEMS */
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
+ast_node_t *newDecModule(char* module_name, ast_node_t *dec_module_item, ast_node_t *list_of_non_dec_module_items, int line_number);
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number);
 void next_module();
 void next_function();

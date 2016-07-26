@@ -103,6 +103,7 @@ void connect_hard_block_and_alias(ast_node_t* module_instance, char *instance_na
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 signal_list_t * connect_function_instantiation_and_alias(short PASS, ast_node_t* module_instance, char *instance_name_prefix);
 void create_symbol_table_for_module(ast_node_t* module_items, char *module_name);
+void create_symbol_table_for_dec_module(ast_node_t* module_items, char *module_name);
 void create_symbol_table_for_function(ast_node_t* module_items, char *module_name);
 int check_for_initial_reg_value(ast_node_t* var_declare, long long *value);
 void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix);
@@ -154,7 +155,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	int i, j, k;
 	char *temp_string;
 	long sc_spot;
-	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS);
+	oassert(module_items->type == MODULE_ITEMS || module_items->type == FUNCTION_ITEMS || module_items->type == DEC_MODULE_ITEMS || module_items->type == NON_DEC_MODULE_ITEMS);
 	int parameter_num = 0;
 	int parameter_count = 0;
 	STRING_CACHE *local_param_table_sc;
@@ -306,6 +307,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	}
 }
 
+	
 
 
 /*---------------------------------------------------------------------------------------------
@@ -377,6 +379,7 @@ void create_netlist()
 
 	// create the parameter table for the top module
 	create_param_table_for_module(NULL, top_module->children[2], top_string);
+	
 
 	/* now recursively parse the modules by going through the tree of modules starting at top */
 	create_top_driver_nets(top_module, top_string);
@@ -489,7 +492,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 		//check for defparam
 		for(i = 0; i <current_module->num_children; i++)
 		{
-			if(current_module->children[i]->type == MODULE_ITEMS || current_module->children[i]->type == FUNCTION_ITEMS) 
+			if(current_module->children[i]->type == MODULE_ITEMS || current_module->children[i]->type == DEC_MODULE_ITEMS || current_module->children[i]->type == NON_DEC_MODULE_ITEMS || current_module->children[i]->type == FUNCTION_ITEMS) 
 			{
 				for(j = 0; j < current_module->children[i]->num_children; j++)
 				{
@@ -552,9 +555,9 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 			ast_node_t *parent_parameter_list = current_module->types.module.module_instantiations_instance[i]->children[1]->children[2];
 			// create the parameter table for the instantiated module
 			create_param_table_for_module(parent_parameter_list,
-				/* module_items */
 				((ast_node_t*)module_names_to_idx->data[sc_spot])->children[2],
 				temp_instance_name);
+			
 
 			/* recursive call point */
 			convert_ast_to_netlist_recursing_via_modules(((ast_node_t*)module_names_to_idx->data[sc_spot]), temp_instance_name, level+1);
@@ -666,6 +669,77 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				{
 					if(node->children[i]->type == INITIALS)
 					{
+					define_latchs_initial_value_inside_initial_statement(node->children[i]->children[0], instance_name_prefix);
+					}
+				}
+
+				/* create all the driven nets based on the "reg" registers */		
+				create_all_driver_nets_in_this_module(instance_name_prefix);
+
+				/* process elements in the list */
+				if (node->num_children > 0)
+				{
+					for (i = 0; i < node->num_children; i++)
+					{   
+						/*if (node->children[i]->type == VAR_DECLARE_LIST)
+						{							
+							child_skip_list[i] = TRUE;  
+						}*/
+						if (node->children[i]->type == MODULE_INSTANCE)
+						{
+                            /* ELSE IF - we deal with instantiations of modules twice to alias input and output nets.  In this
+							 * pass we are looking for any drivers emerging from a module */
+                            int j;
+                            for(j = 0; j < node->children[i]->num_children; j++){
+
+							    /* make the aliases for all the drivers as they're passed through modules */
+			    connect_module_instantiation_and_alias(INSTANTIATE_DRIVERS, node->children[i]->children[j], instance_name_prefix);
+                            }
+
+                            /* is a call site for another module.  Alias names to nets and pins */
+							child_skip_list[i] = TRUE;
+						}      
+						else if (node->children[i]->type == FUNCTION)
+						{
+							child_skip_list[i] = TRUE;
+						}
+                        
+					}
+				}
+				break;
+	  		  case DEC_MODULE_ITEMS: 
+				/* items include: input, outputs, inouts */
+				int i;
+				/* make the symbol table */
+				local_symbol_table_sc = sc_new_string_cache();
+				local_symbol_table = NULL;
+				num_local_symbol_table = 0;
+				create_symbol_table_for_dec_module(node, instance_name_prefix);
+				local_clock_found = FALSE;
+				/* create all the driven nets based on the "reg" registers */		
+				create_all_driver_nets_in_this_module(instance_name_prefix);
+				for (i = 0; i < node->num_children; i++)
+				{				
+					if (node->children[i]->type == VAR_DECLARE_LIST)
+					{							
+			 		child_skip_list[i] = TRUE;  
+					}
+				}
+				break;
+	  		  case NON_DEC_MODULE_ITEMS: 
+				/* items include: wire, reg, assign, gate, module_instance, always  */
+
+				/* make the symbol table */
+				local_symbol_table_sc = sc_new_string_cache();
+				local_symbol_table = NULL;
+				num_local_symbol_table = 0;
+				create_symbol_table_for_module(node, instance_name_prefix);
+				local_clock_found = FALSE;
+				/* check for initial register values set in initial block.*/ 
+				for (i = 0; i < node->num_children; i++)
+				{
+					if(node->children[i]->type == INITIALS)
+					{
 						define_latchs_initial_value_inside_initial_statement(node->children[i]->children[0], instance_name_prefix);
 					}
 				}
@@ -704,6 +778,8 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 					}
 				}
 				break;
+
+			
             case VAR_DECLARE_LIST:
                 for(i = 0; i < node->num_children; i++) {
                     if(node->children[i]->types.variable.is_parameter == 1 || !node->children[i]->children[5]){
@@ -858,7 +934,8 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			case CONCATENATE:
 				return_sig_list = concatenate_signal_lists(children_signal_list, node->num_children);
 				break;
-			case MODULE_ITEMS: 
+			case MODULE_ITEMS:
+			case DEC_MODULE_ITEMS:
 			{
 				if (node->num_children > 0)
 				{
@@ -1085,7 +1162,7 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	ast_node_t *module_items = module->children[2];
 	npin_t *new_pin;
 
-	oassert(module_items->type == MODULE_ITEMS);
+	oassert(module_items->type == MODULE_ITEMS || module_items->type == DEC_MODULE_ITEMS || module_items->type == NON_DEC_MODULE_ITEMS);
 
 	/* search for VAR_DECLARE_LISTS */
 	if (module_items->num_children > 0)
@@ -1195,7 +1272,7 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 	ast_node_t *module_items = module->children[2];
 	nnode_t *new_node;
 
-	oassert(module_items->type == MODULE_ITEMS);
+	oassert(module_items->type == MODULE_ITEMS || module_items->type == DEC_MODULE_ITEMS || module_items->type == NON_DEC_MODULE_ITEMS);
 
 	/* search for VAR_DECLARE_LISTS */
 	if (module_items->num_children > 0)
@@ -1549,7 +1626,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 	int i, j;
 	char *temp_string;
 	long sc_spot;
-	oassert(module_items->type == MODULE_ITEMS);
+	oassert(module_items->type == MODULE_ITEMS || module_items->type == NON_DEC_MODULE_ITEMS);
 
 	/* search for VAR_DECLARE_LISTS */
 	if (module_items->num_children > 0)
@@ -1568,7 +1645,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 						continue;
 
 					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
-					oassert(	(var_declare->types.variable.is_input) ||
+					oassert((var_declare->types.variable.is_input) ||
 						(var_declare->types.variable.is_output) ||
 						(var_declare->types.variable.is_reg) ||
 						(var_declare->types.variable.is_integer) ||
@@ -1584,12 +1661,9 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 						 * output with reg is fine
 						 * output with wire is fine 
 						 * Then update the stored string cache entry with information */
-						if ((var_declare->types.variable.is_input)
-								&& (
-									   (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg)
-									|| (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire)
-								)
-						)
+						if ( (var_declare->types.variable.is_input)
+						     && (( ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg)
+							|| (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire)) )
 						{
 							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
 									"Input defined as wire or reg means it is a driver in this module.  Not possible\n");
@@ -1653,6 +1727,95 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
 	}
 }
+
+void create_symbol_table_for_dec_module(ast_node_t* module_items, char *module_name)
+{
+	/* with the top module we need to visit the entire ast tree */
+	int i, j;
+	char *temp_string;
+	long sc_spot;
+	oassert(module_items->type == DEC_MODULE_ITEMS);
+
+	/* search for VAR_DECLARE_LISTS */
+	if (module_items->num_children > 0)
+	{
+		for (i = 0; i < module_items->num_children; i++)
+		{
+			if (module_items->children[i]->type == VAR_DECLARE_LIST)
+			{
+				/* go through the vars in this declare list */
+				for (j = 0; j < module_items->children[i]->num_children; j++)
+				{	
+					ast_node_t *var_declare = module_items->children[i]->children[j];
+
+					/* parameters are already dealt with */
+					if (var_declare->types.variable.is_parameter)
+						continue;
+
+					oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
+					oassert((var_declare->types.variable.is_input) ||
+						(var_declare->types.variable.is_output));
+
+					/* make the string to add to the string cache */
+					temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
+					/* look for that element */
+					sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
+					if (local_symbol_table_sc->data[sc_spot] != NULL)
+					{
+						/* ERROR checks here 
+						 * output with reg is fine
+						 * output with wire is fine 
+						 * Then update the stored string cache entry with information */
+						if ( (var_declare->types.variable.is_input)
+						     && (( ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg)
+							|| (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire)) )
+						{
+							error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
+									"Input defined as wire or reg means it is a driver in this module.  Not possible\n");
+						}
+						/* MORE ERRORS ... could check for same declaration name ... */
+						else if (var_declare->types.variable.is_output)
+						{
+							/* copy all the reg and wire info over */
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = TRUE;
+							
+							/* check for an initial value and copy it over if found */
+							long long initial_value;
+							if(check_for_initial_reg_value(var_declare, &initial_value)){
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = TRUE;
+								((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
+							}
+						}
+						
+					}
+					else
+					{
+						/* store the data which is an idx here */
+						local_symbol_table_sc->data[sc_spot] = (void *)var_declare;
+
+						/* store the symbol */		
+						local_symbol_table = (ast_node_t **)realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
+						local_symbol_table[num_local_symbol_table] = (ast_node_t *)var_declare;
+						num_local_symbol_table ++;
+						
+						/* check for an initial value and store it if found */
+						long long initial_value;
+						if(check_for_initial_reg_value(var_declare, &initial_value)){
+							var_declare->types.variable.is_initialized = TRUE;
+							var_declare->types.variable.initial_value = initial_value;
+						}
+					}
+					free(temp_string);
+				}
+			}
+		}
+	}
+	else
+	{
+		error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "Empty module\n");
+	}
+}
+
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_symbol_table_for_function)
