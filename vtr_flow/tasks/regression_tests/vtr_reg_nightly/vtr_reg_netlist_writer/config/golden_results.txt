@@ -1,5 +1,0 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k6_frac_N10_frac_chain_mem32K_40nm.xml	or1200.v	642aba0-dirty	success	78	9.30416	23.0962	13.307	122.675	3.25904	60034	33100	41332	185252	5049	4882	2644	257	385	394	2	1		
-k6_frac_N10_frac_chain_mem32K_40nm.xml	sha.v	642aba0-dirty	success	62	10.2065	9.28899	5.5055	14.9518	1.21556	20566	48368	80776	152824	3539	3288	1176	200	38	36	0	0		
-k6_frac_N10_frac_chain_mem32K_40nm.xml	boundtop.v	642aba0-dirty	success	54	6.54966	24.4158	8.93412	10.5798	1.33941	26993	35712	46004	167940	5374	5325	2175	233	275	192	1	0		
-k6_frac_N10_frac_chain_mem32K_40nm.xml	raygentop.v	642aba0-dirty	success	78	5.03796	16.5986	7.76725	18.9947	2.23201	32445	24844	45464	161400	4746	4364	2138	179	239	305	1	7		
