@@ -51,6 +51,8 @@ The VTR benchmarks are also included as pre-synthesized BLIF files under: ::
 
     <vtr>/vtr_flow/benchmarks/vtr_benchmarks_blif
 
+.. _titan_benchmarks:
+
 Titan Benchmarks
 ----------------
 The Titan benchmarks :cite:`murray_titan,murray_timing_driven_titan` are a set of large modern FPGA benchmarks.
