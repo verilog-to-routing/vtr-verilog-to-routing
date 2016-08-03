@@ -425,7 +425,7 @@ ast_node_t *markAndProcessSymbolListWithDec(ids top_type, ids id,ast_node_t *sym
 	{ 
 	 switch(id)
 		{	case INPUT:
-			            symbol_list->children[0]->types.variable.is_input = TRUE;
+			            symbol_list->types.variable.is_input = TRUE;
 			            /* add this input to the modules string cache */
 			            if ((sc_spot = sc_add_string(modules_inputs_sc, symbol_list->children[0]->types.identifier)) == -1)
 			            {
@@ -435,7 +435,7 @@ ast_node_t *markAndProcessSymbolListWithDec(ids top_type, ids id,ast_node_t *sym
 			            modules_inputs_sc->data[sc_spot] = (void*)symbol_list->children[0];
 			            break;
 		            case OUTPUT:
-			            symbol_list->children[0]->types.variable.is_output = TRUE;
+			            symbol_list->types.variable.is_output = TRUE;
 			            /* add this output to the modules string cache */
 			            if ((sc_spot = sc_add_string(modules_outputs_sc, symbol_list->children[0]->types.identifier)) == -1)
 			            {
@@ -445,7 +445,7 @@ ast_node_t *markAndProcessSymbolListWithDec(ids top_type, ids id,ast_node_t *sym
 			            modules_outputs_sc->data[sc_spot] = (void*)symbol_list->children[0];
 			            break;
 		            case INOUT:
-			            symbol_list->children[0]->types.variable.is_inout = TRUE;
+			            symbol_list->types.variable.is_inout = TRUE;
 			            error_message(PARSE_ERROR, symbol_list->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[0]->types.identifier);
 			            break;
 				default:
@@ -924,6 +924,54 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	return new_node;
 }
 
+ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	info_ast_visit_t *node_details = NULL;
+	/* create a node for this array reference */
+	ast_node_t* new_node, *node;
+	ast_node_t *node_copy;
+	/* store the operation type */
+	char temp[256];
+	
+	/* allocate child nodes to this node */
+	if( expression2->type == NUMBERS ){
+		int len = expression2->types.number.value;
+		if( expression1->type == NUMBERS ){
+			int len1 = expression1->types.number.value;
+			long long powRes = pow(len1, len);
+			sprintf(temp, "%lld", powRes);
+			new_node = newNumberNode(strdup(temp), line_number);
+		} else {
+			if (len == 0){
+				new_node = newNumberNode(strdup("1"), line_number);
+			} else {	
+				new_node = expression1;
+				for(int i=1; i < len; ++i){ 	
+					node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
+					node->types.operation.op = op_id;
+
+					node_copy = ast_node_deep_copy(expression1);
+
+					allocate_children_to_node(node, 2, node_copy, new_node);
+					new_node = node;
+				}
+			}
+		}
+	}
+	else
+	{
+	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
+        }
+	/* see if this binary expression can have some constant folding */
+	node_details = constantFold(new_node);
+	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
+	{
+		new_node = node_details->from;
+		free(node_details);
+	}
+
+	return new_node;
+}
 /*---------------------------------------------------------------------------------------------
  * (function: newUnaryOperation)
  *-------------------------------------------------------------------------------------------*/

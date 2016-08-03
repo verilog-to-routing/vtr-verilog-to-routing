@@ -271,9 +271,6 @@ info_ast_visit_t *constantFold(ast_node_t *node)
 						case MULTIPLY:
 							new_value = children_info[0]->value * children_info[1]->value;
 							break;
-						case OP_POW:
-							new_value = pow(children_info[0]->value,children_info[1]->value);
-							break;
 						case BITWISE_XOR:
 							new_value = children_info[0]->value ^ children_info[1]->value;
 							break;
