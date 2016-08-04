@@ -84,9 +84,9 @@ int yywrap()
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL 
 %left voGTE voLTE '<' '>'
 %left voSLEFT voSRIGHT
-%right voPOWER 
 %left '+' '-'   
 %left '*' '/' '%'
+%right voPOWER 
 %left '~' '!'
 %left '{' '}'
 %left UOR
