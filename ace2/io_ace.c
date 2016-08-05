@@ -310,7 +310,7 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 
 				if (strlen(vector) != num_Pi) {
 					printf(
-							"Error: vector length (%d) doesn't match number of inputs (%d)\n",
+							"Error: vector length (%zu) doesn't match number of inputs (%d)\n",
 							strlen(vector), num_Pi);
 					error = ACE_ERROR;
 					break;
