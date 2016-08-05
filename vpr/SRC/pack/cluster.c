@@ -1767,7 +1767,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 				cur_pb->pb_stats->connectiongain[iblk] = 0;
 			}
 			if(cur_pb->pb_stats->sharinggain.count(iblk) == 0) {
-				cur_pb->pb_stats->connectiongain[iblk] = 0;
+				cur_pb->pb_stats->sharinggain[iblk] = 0;
 			}
 
 			/* Todo: This was used to explore different normalization options, can be made more efficient once we decide on which one to use*/
