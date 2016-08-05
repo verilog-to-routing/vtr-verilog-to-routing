@@ -504,48 +504,6 @@ static int pin_and_chan_adjacent(int pin_node, int chan_node) {
 	 Hence, I'm overriding this function
 	 */
 	 return true;
-
-	int num_adj = 0;
-
-	int pin_xlow = rr_node[pin_node].get_xlow();
-	int pin_ylow = rr_node[pin_node].get_ylow();
-	int pin_xhigh = rr_node[pin_node].get_xhigh();
-	int pin_yhigh = rr_node[pin_node].get_yhigh();
-	t_type_ptr pin_grid_type = grid[pin_xlow][pin_ylow].type;
-	int pin_ptc = rr_node[pin_node].get_ptc_num();
-
-	int chan_type = rr_node[chan_node].type;
-	int chan_xlow = rr_node[chan_node].get_xlow();
-	int chan_ylow = rr_node[chan_node].get_ylow();
-	int chan_xhigh = rr_node[chan_node].get_xhigh();
-	int chan_yhigh = rr_node[chan_node].get_yhigh();
-
-	if (chan_type == CHANX) {
-		for (int width = 0; width < pin_grid_type->width; ++width) {
-			if (chan_ylow == pin_yhigh) { /* CHANX above CLB */
-				if (pin_grid_type->pinloc[width][pin_grid_type->height - 1][TOP][pin_ptc] == 1
-						&& pin_xlow <= chan_xhigh && pin_xhigh >= chan_xlow)
-					num_adj++;
-			} else if (chan_ylow == pin_ylow - 1) { /* CHANX below CLB */
-				if (pin_grid_type->pinloc[width][0][BOTTOM][pin_ptc] == 1
-						&& pin_xlow <= chan_xhigh && pin_xhigh >= chan_xlow)
-					num_adj++;
-			}
-		}
-	} else if (chan_type == CHANY) {
-		for (int height = 0; height < pin_grid_type->height; ++height) {
-			if (chan_xlow == pin_xhigh) { /* CHANY to right of CLB */
-				if (pin_grid_type->pinloc[pin_grid_type->width-1][height][RIGHT][pin_ptc] == 1
-						&& pin_ylow <= chan_yhigh && pin_yhigh >= chan_ylow)
-					num_adj++;
-			} else if (chan_xlow == pin_xlow - 1) { /* CHANY to left of CLB */
-				if (pin_grid_type->pinloc[0][height][LEFT][pin_ptc] == 1
-						&& pin_ylow <= chan_yhigh && pin_yhigh >= chan_ylow)
-					num_adj++;
-			}
-		}
-	}
-	return (num_adj);
 }
 
 static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
