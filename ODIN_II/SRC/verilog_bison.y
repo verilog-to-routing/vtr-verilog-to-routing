@@ -103,7 +103,8 @@ int yywrap()
 %nonassoc LOWER_THAN_ELSE
 %nonassoc vELSE
 
-%type <node> source_text items define module list_of_module_items list_of_dec_module_items list_of_function_items  module_item non_dec_module_item dec_module_item function_item
+
+%type <node> source_text items define module list_of_module_items list_of_function_items module_item function_item
 %type <node> parameter_declaration input_declaration output_declaration defparam_declaration function_declaration 
 %type <node> function_input_declaration
 %type <node> inout_declaration variable_list function_output_variable function_id_and_output_variable
@@ -145,9 +146,8 @@ items: items module								{
 define: vDEFINE vSYMBOL_ID vNUMBER_ID						{$$ = NULL; newConstant($2, $3, yylineno);}
 	;
 
-module: vMODULE vSYMBOL_ID '(' list_of_dec_module_items ')' ';' list_of_module_items vENDMODULE	{$$ = newDecModule($2, $4, $7, yylineno);}
-	| vMODULE vSYMBOL_ID '(' list_of_dec_module_items ',' ')' ';' list_of_module_items vENDMODULE	{$$ = newDecModule($2, $4, $8, yylineno);}
-	|vMODULE vSYMBOL_ID '(' variable_list ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $7, yylineno);}
+
+module: vMODULE vSYMBOL_ID '(' variable_list ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $7, yylineno);}
 	| vMODULE vSYMBOL_ID '(' variable_list ',' ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $8, yylineno);}
 	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, NULL, $6, yylineno);}	
 	;
@@ -156,11 +156,10 @@ list_of_module_items: list_of_module_items module_item				{$$ = newList_entry($1
 	| module_item								{$$ = newList(MODULE_ITEMS, $1);}
 	;
 
-module_item: dec_module_item							{$$ = $1;}
-	| non_dec_module_item							{$$ = $1;}
-	;
-
-non_dec_module_item: parameter_declaration					{$$ = $1;}
+module_item: parameter_declaration						{$$ = $1;}
+	| input_declaration							{$$ = $1;}
+	| output_declaration							{$$ = $1;}
+	| inout_declaration							{$$ = $1;}
 	| net_declaration							{$$ = $1;}
 	| integer_declaration                       				{$$ = $1;}
 	| continuous_assign							{$$ = $1;}
@@ -173,14 +172,6 @@ non_dec_module_item: parameter_declaration					{$$ = $1;}
 	| specify_block                             				{$$ = $1;}
 	;
 
-list_of_dec_module_items: list_of_dec_module_items ',' dec_module_item 		{$$ = newList_entry($1, $3);}
-	| dec_module_item							{$$ = newList(DEC_MODULE_ITEMS, $1);}
-	;
-
-dec_module_item: input_declaration							{$$ = $1;}
-	| output_declaration								{$$ = $1;}
-	| inout_declaration								{$$ = $1;}
-	;
 
 function_declaration: 
     vFUNCTION function_output_variable ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($2, $4, yylineno); }
@@ -216,16 +207,13 @@ parameter_declaration: vPARAMETER variable_list ';'				{$$ = markAndProcessSymbo
 defparam_declaration: vDEFPARAM variable_list ';'               {$$ = newDefparam(MODULE_PARAMETER_LIST, $2, yylineno);}
 	;
 			
-input_declaration: vINPUT variable_list ';'			    		{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2);}   
-  	| vINPUT variable							{$$ = markAndProcessSymbolListWithDec(MODULE,INPUT, $2);}
+input_declaration: vINPUT variable_list ';'			    		{$$ = markAndProcessSymbolListWith(MODULE,INPUT, $2);}   	
 	;
 
 output_declaration: vOUTPUT variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE,OUTPUT, $2);}
-	| vOUTPUT variable							{$$ = markAndProcessSymbolListWithDec(MODULE,OUTPUT, $2);}
 	;
 
 inout_declaration: vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE,INOUT, $2);}
-	| vINOUT variable							{$$ = markAndProcessSymbolListWithDec(MODULE,INOUT, $2);}
 	;
 
 net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $2);}
@@ -239,7 +227,7 @@ function_id_and_output_variable : vSYMBOL_ID       {$$ = newVarDeclare($1, NULL,
     | '[' expression ':' expression ']' vSYMBOL_ID {$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
 
 variable_list: variable_list ',' variable					{$$ = newList_entry($1, $3);}
-	| variable_list '.' variable						{$$ = newList_entry($1, $3);}    //Only for parameter
+	| variable_list '.' variable					{$$ = newList_entry($1, $3);}    //Only for parameter
 	| variable								{$$ = newList(VAR_DECLARE_LIST, $1);}
 	;
 
