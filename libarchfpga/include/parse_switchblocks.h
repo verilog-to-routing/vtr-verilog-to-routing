@@ -2,8 +2,6 @@
 #define PARSE_SWITCHBLOCKS_H
 
 #include <vector>
-//#include "ezxml.h"
- 
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 

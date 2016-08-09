@@ -2,7 +2,6 @@
 #define READ_XML_UTIL_H
 
 #include "util.h"
-//#include "ezxml.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
