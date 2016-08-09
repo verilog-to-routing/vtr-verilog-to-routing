@@ -1663,7 +1663,7 @@ void next_module()
  *------------------------------------------------------------------------*/
 ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number)
 {
-	ast_node_t *new_node;
+	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
 	char *module_instance_name = (char*)malloc(1024 * sizeof(char));
 	module_instance_name = NULL;
