@@ -21,11 +21,12 @@
  *
  * This layout allows for easy checking of stage-specific options by checking if an option
  * falls within a sections OT_START_ and OT_END_ items.  For example detecting (and warning 
- * the user) when an option relevant to a stage not being run is provided but will have no 
- * effect (see CheckOptions.c for details).
+ * the user) when an option will have no effect because the relevant stage is not being run (see 
+ * CheckOptions.c for details).
  *
  * In general this layout supports specifying option groups in a tree-like structure, which
- * is made more explicit here in the source code by intentation.
+ * is encoded here as the trees pre-order traversal, and made more explicit in the source 
+ * code by intentation.
  */
 enum e_OptionBaseToken {
 	OT_NODISP,
