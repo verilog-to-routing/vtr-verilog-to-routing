@@ -104,7 +104,7 @@ void optimize_for_tree()
 			char *value_string;
 			int mark_variable = 0;
 			int *flash_variable = &mark_variable;
-			ast_node_t *temp_parent_node; //used to connect copied branches from the for loop
+			ast_node_t *temp_parent_node = NULL; //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
 			idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again
