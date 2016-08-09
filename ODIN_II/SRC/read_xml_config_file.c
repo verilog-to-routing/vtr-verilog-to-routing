@@ -60,8 +60,8 @@ void read_config_file(char *file_name)
 	try {
 		loc_data = pugiutil::load_xml(doc, file_name);
 	} catch (XmlError& e) {
-		vpr_throw(VPR_ERROR_ARCH, file_name, 0,
-				"Unable to find/load xml configuration file '%s'.\n", file_name, e.what());
+        printf("error: could not parse xml configuration file '%s'\n", file_name);
+        return;
 	}
 
 	/* Root element should be config */
