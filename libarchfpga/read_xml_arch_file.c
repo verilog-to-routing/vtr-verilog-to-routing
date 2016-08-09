@@ -287,13 +287,12 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
  * Pins and pin classses must already be setup by SetupPinClasses */
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiloc::loc_data& loc_data) {
-	int i, j, k, Count;//, Len;
+	int i, j, k, Count;
 	int capacity, pin_count;
 	int num_class;
 	const char * Prop;
 
 	pugi::xml_node Cur;
-	//char **CurTokens; //**Tokens, 
 
 	capacity = Type->capacity;
 
@@ -388,8 +387,6 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			Count = Tokens.size();
 			Type->num_pin_loc_assignments[0][height][side] = Count;
 			if (Count > 0) {
-				//Tokens = GetNodeTokens(Cur, loc_data);
-				//CurTokens = Tokens;
 				Type->pin_loc_assignments[0][height][side] = (char**) my_calloc(
 						Count, sizeof(char*));
 				for (int pin = 0; pin < Count; ++pin) {
@@ -398,9 +395,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 							Tokens[pin].c_str());
 
 					/* Advance through list of pins in this location */
-					//++CurTokens;
 				}
-				//FreeTokens(&Tokens);
 			}
 			Cur = Cur.next_sibling(Cur.name());
 		}
@@ -1453,8 +1448,6 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 							sizeof(t_interconnect_power));
 			mode->interconnect[i].interconnect_power->port_info_initialized =
 					false;
-
-			//ProcessInterconnectMuxArch(Cur, &mode->interconnect[i]);
 
 			/* get next iteration */
 			Cur = Cur.next_sibling(Cur.name());			
@@ -2589,7 +2582,6 @@ static void ProcessSwitches(INOUTP pugi::xml_node Parent,
 		(*Switches)[i].R = get_attribute(Node, "R", loc_data,TIMING_ENABLE_REQD).as_float(0);
 		(*Switches)[i].Cin = get_attribute(Node, "Cin", loc_data, TIMING_ENABLE_REQD).as_float(0);
 		(*Switches)[i].Cout = get_attribute(Node, "Cout", loc_data, TIMING_ENABLE_REQD).as_float(0);
-		//(*Switches)[i].Tdel = get_attribute(Node, "Tdel", timing_enabled, 0);
 		ProcessSwitchTdel(Node, timing_enabled, i, (*Switches), loc_data);
 		(*Switches)[i].buf_size = get_attribute(Node, "buf_size", loc_data,
 				has_buf_size).as_float(0);
@@ -2651,8 +2643,7 @@ static void ProcessSwitchTdel(INOUTP pugi::xml_node Node, INP bool timing_enable
 	if (has_Tdel_prop){
 		/* delay specified as a constant */
 		if (Tdel_map->count(UNDEFINED)){
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
-					"what the fuck");
+            assert(false);
 		} else {
 			(*Tdel_map)[UNDEFINED] = Tdel_prop_value;
 		}

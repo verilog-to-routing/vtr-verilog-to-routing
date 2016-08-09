@@ -17,6 +17,21 @@ using namespace std;
 enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
 		INP char cur);
 
+bool IsWhitespace(char c);
+
+/* Returns true if character is whatspace between tokens */
+bool IsWhitespace(char c) {
+	switch (c) {
+	case ' ':
+	case '\t':
+	case '\r':
+	case '\n':
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* Returns a token list of the text for a given string. */
 t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	const char *cur;
