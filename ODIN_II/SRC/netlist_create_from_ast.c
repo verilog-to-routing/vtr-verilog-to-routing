@@ -4290,8 +4290,8 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 
 			/* check if the current element for this case statement is defined */ 	
 			if (
-					   (per_case_statement_idx[j] < statement_lists[j]->count)
-					&& (strcmp(combined_lists->pins[i]->name, statement_lists[j]->pins[per_case_statement_idx[j]]->name) == 0)
+						(per_case_statement_idx[j] < (statement_lists[j] ? statement_lists[j]->count : 0))
+					&& (statement_lists[j] ? (strcmp(combined_lists->pins[i]->name, statement_lists[j]->pins[per_case_statement_idx[j]]->name) == 0) : 0)
 			)
 			{
 				/* If they match then we have a signal with this name and we can attach the pin */ 
