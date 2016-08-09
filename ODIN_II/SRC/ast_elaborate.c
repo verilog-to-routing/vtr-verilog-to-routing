@@ -301,6 +301,7 @@ int calculation(char *post_exp[])
     int data[Max_size];
     int top;
   }pop;
+  pop.data[Max_size] = -1;
   pop.top = -1;
   int i, num;
   for (i = 0; post_exp[i] != NULL; i++)
