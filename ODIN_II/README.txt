@@ -12,10 +12,6 @@ Odin will link the libarchfpga library located in:
 By default Odin II uses libarchfpga_6. To compile it, change directory to 
 ../libarchfpga_6 and type "make". 
 
-Note: 
-- for WIN32 compilation you'll have to edit the ezxml.c files
-to "#define WIN32" or not.
-
 2. Odin II
 
 Odin is compiled with a standard Makefile.  For the first time

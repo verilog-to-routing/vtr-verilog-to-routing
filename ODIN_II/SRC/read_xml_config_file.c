@@ -26,7 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include "types.h"
 #include "globals.h"
-//#include "ezxml.h"
 #include "read_xml_config_file.h"
 #include "read_xml_util.h"
 #include "pugixml.hpp"
@@ -66,18 +65,15 @@ void read_config_file(char *file_name)
 	}
 
 	/* Root element should be config */
-	//CheckElement(doc, "config");
 	config = get_single_child(doc, "config", loc_data);
 
 	/* Process the verilog files */
 	next = get_single_child(config, "verilog_files", loc_data);
 	read_verilog_files(next, &configuration, loc_data);
-	//FreeNode(next);
 
 	/* Process the output */
 	next = get_single_child(config, "output", loc_data);
 	read_outputs(next, &configuration, loc_data);
-	//FreeNode(next);
 
 	/* Process the optimizations */
 	set_default_optimization_settings(&configuration);
@@ -85,16 +81,13 @@ void read_config_file(char *file_name)
 	if (next)
 	{
 		read_optimizations(next, &configuration, loc_data);
-		//FreeNode(next);		
 	}
 
 	/* Process the debug switches */
 	next = get_single_child(config, "debug_outputs", loc_data);
 	read_debug_switches(next, &configuration, loc_data);
-	//FreeNode(next);
 
 	/* Release the full XML tree */
-	//FreeNode(doc);
 	return;
 }
 
@@ -115,10 +108,7 @@ void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiloc::
 			config->list_of_file_names[config->num_list_of_file_names] = strdup(child.child_value());
 			config->num_list_of_file_names ++;
 		}
-		//ezxml_set_txt(child, empty_string);
-		//junk = child;
 		child = child.next_sibling(child.name());
-		//FreeNode(junk);
 	}
 	return;
 }
@@ -134,23 +124,17 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_da
 	if (child != NULL)
 	{
 		config->output_type = strdup(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
 		global_args.output_file = strdup(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "target", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		//pugi::xml_node junk = child;
-
 		child = get_single_child(child, "arch_file", loc_data, OPTIONAL);
 		if (child != NULL)
 		{
@@ -161,10 +145,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_da
 				exit(-1);
 			}
 			global_args.arch_file = strdup(child.child_value());
-			//ezxml_set_txt(child, empty_string);
-			//FreeNode(child);
 		}
-		//FreeNode(junk);
 	}
 	return;
 }
@@ -180,40 +161,30 @@ void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiloc:
 	if (child != NULL)
 	{
 		config->output_ast_graphs = atoi(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "output_netlist_graphs", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
 		config->output_netlist_graphs = atoi(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
 		config->debug_output_path = strdup(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
 		config->print_parse_tokens = atoi(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "output_preproc_source", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
 		config->output_preproc_source = atoi(child.child_value());
-		//ezxml_set_txt(child, empty_string);
-		//FreeNode(child);
 	}
 
 	return;
@@ -252,7 +223,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 		if (prop != NULL)
 		{
 			config->min_hard_multiplier = atoi(prop);
-			//ezxml_set_attr(child, strdup("size"), NULL);
 		}
 		else /* Default: No minimum hard multiply size */
 			config->min_hard_multiplier = 0;
@@ -261,7 +231,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 		if (prop != NULL)
 		{
 			config->mult_padding = atoi(prop);
-			//ezxml_set_attr(child, strdup("padding"), NULL);
 		}
 		else /* Default: Pad to hbpad pins */
 			config->mult_padding = -1;
@@ -270,7 +239,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 		if (prop != NULL)
 		{
 			config->fixed_hard_multiplier = atoi(prop);
-			//ezxml_set_attr(child, strdup("fixed"), NULL);
 		}
 		else /* Default: No fixed hard multiply size */
 			config->fixed_hard_multiplier = 0;
@@ -279,11 +247,9 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 		if (prop != NULL)
 		{
 			config->split_hard_multiplier = atoi(prop);
-			//ezxml_set_attr(child, strdup("fracture"), NULL);
 		}
 		else /* Default: use fractured hard multiply size */
 			config->split_hard_multiplier = 1;
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "memory", loc_data, OPTIONAL);
@@ -293,7 +259,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 		if (prop != NULL)
 		{
 			config->split_memory_width = atoi(prop);
-			//ezxml_set_attr(child, strdup("split_memory_width"), NULL);
 		}
 		else /* Default: Do not split memory width! */
 			config->split_memory_width = 0;
@@ -307,12 +272,10 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 				config->split_memory_depth = -2;
 			else
 				config->split_memory_depth = atoi(prop);
-			//ezxml_set_attr(child, strdup("split_memory_depth"), NULL);
 		}
 		else /* Default: Do not split memory depth! */
 			config->split_memory_depth = 0;
 		
-		//FreeNode(child);
 	}
 
 	child = get_single_child(a_node, "adder", loc_data, OPTIONAL);
@@ -322,7 +285,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 			if (prop != NULL)
 			{
 				config->min_hard_adder = atoi(prop);
-				//ezxml_set_attr(child, strdup("size"), NULL);
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_hard_adder = 0;
@@ -331,7 +293,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 			if (prop != NULL)
 			{
 				config->min_threshold_adder = atoi(prop);
-				//ezxml_set_attr(child, strdup("threshold_size"), NULL);
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_threshold_adder = 0;
@@ -340,7 +301,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 			if (prop != NULL)
 			{
 				config->add_padding = atoi(prop);
-				//ezxml_set_attr(child, strdup("padding"), NULL);
 			}
 			else /* Default: Pad to hbpad pins */
 				config->add_padding = -1;
@@ -349,7 +309,6 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 			if (prop != NULL)
 			{
 				config->fixed_hard_adder = atoi(prop);
-				//ezxml_set_attr(child, strdup("fixed"), NULL);
 			}
 			else /* Default: Fixed hard adder size */
 				config->fixed_hard_adder = 1;
@@ -358,11 +317,9 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::
 			if (prop != NULL)
 			{
 				config->split_hard_adder = atoi(prop);
-				//ezxml_set_attr(child, strdup("fracture"), NULL);
 			}
 			else /* Default: use fractured hard adder size */
 				config->split_hard_adder = 1;
-			//FreeNode(child);
 		}
 
 	return;

@@ -49,7 +49,6 @@
 #include "util.h"
 #include "arch_types.h"
 #include "ReadLine.h"
-//#include "ezxml.h"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
@@ -2793,16 +2792,6 @@ static void ProcessPower( INOUTP pugi::xml_node parent,
 		power_arch->local_interc_factor = get_attribute(Cur, "factor", loc_data, OPTIONAL).as_float(0.5);
 
 	}
-
-	/* Get segment split */
-	/*
-	 power_arch->seg_buffer_split = 1;
-	 Cur = FindElement(parent, "segment_buffer_split", false);
-	 if (Cur) {
-	 power_arch->seg_buffer_split = GetIntProperty(Cur, "split_into", true,
-	 1);
-	 FreeNode(Cur);
-	 }*/
 
 	/* Get logical effort factor */
 	power_arch->logical_effort_factor = 4.0;

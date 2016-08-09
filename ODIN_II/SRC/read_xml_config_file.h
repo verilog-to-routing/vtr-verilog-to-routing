@@ -27,7 +27,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define READ_XML_CONFIG_FILE_H
 
 #include "types.h"
-//#include "ezxml.h"
 
 extern void read_config_file(char *file_name);
 #endif
