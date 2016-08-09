@@ -118,7 +118,7 @@ insert_in_hash_table(struct s_hash **hash_table, char *name,
 }
 
 struct s_hash *
-get_hash_entry(struct s_hash **hash_table, char *name) {
+get_hash_entry(struct s_hash **hash_table, const char *name) {
 
 	/* Returns the hash entry with this name, or NULL if there is no            *
 	 * corresponding entry.                                                     */
@@ -139,7 +139,7 @@ get_hash_entry(struct s_hash **hash_table, char *name) {
 	return (NULL);
 }
 
-int hash_value(char *name) {
+int hash_value(const char *name) {
 	/* Creates a hash key from a character string.  The absolute value is taken  *
 	 * for the final val to compensate for long strlen that cause val to 	     *
 	 * overflow.								     */

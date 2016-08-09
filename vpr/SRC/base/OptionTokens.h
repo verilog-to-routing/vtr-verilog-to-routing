@@ -28,8 +28,6 @@
  * is made more explicit here in the source code by intentation.
  */
 enum e_OptionBaseToken {
-    //General Options
-	OT_SETTINGS_FILE,
 	OT_NODISP,
 	OT_AUTO,
 	OT_GEN_NELIST_AS_BLIF,
