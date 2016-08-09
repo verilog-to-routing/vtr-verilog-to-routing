@@ -350,8 +350,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
 	/* TODO: make better estimate for nx and ny, was initializing nx = ny = 1 */
-	nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
+	nx = arch->clb_grid.W;
+	ny = arch->clb_grid.H;
 
 	check_clocks(is_clock);
 #if 0
@@ -2028,6 +2028,9 @@ static void start_new_cluster(
 
 		/* Expand FPGA size and recalculate number of available cluster types*/
 		if (!success) {
+			/* Do not expand FPGA if fixed layout specified in architecture file */
+			if(!arch->clb_grid.IsAuto)
+				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Not enough resources inside fixed FPGA size to x = %d y = %d.\n", nx, ny);
 			if (aspect >= 1.0) {
 				ny++;
 				nx = nint(ny * aspect);
