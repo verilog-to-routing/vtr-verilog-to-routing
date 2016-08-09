@@ -696,10 +696,12 @@ static void free_complex_block_types(void) {
 	free_all_pb_graph_nodes();
 
 	for (int i = 0; i < num_types; ++i) {
+		free(type_descriptors[i].name);
+
 		if (&type_descriptors[i] == EMPTY_TYPE) {
 			continue;
 		}
-		free(type_descriptors[i].name);
+
 		for (int width = 0; width < type_descriptors[i].width; ++width) {
 			for (int height = 0; height < type_descriptors[i].height; ++height) {
 				for (int side = 0; side < 4; ++side) {
