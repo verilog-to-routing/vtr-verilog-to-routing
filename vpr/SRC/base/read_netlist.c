@@ -590,7 +590,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
         }
 
         //Extract all the pins for this port
-        pins = vtrutil::split(Cur.text().get(), " \t\n");
+        pins = vtrutil::split(Cur.text().get());
         num_tokens = pins.size();
 
         //Check that the number of pins from the netlist file matches the pb port's number of pins
