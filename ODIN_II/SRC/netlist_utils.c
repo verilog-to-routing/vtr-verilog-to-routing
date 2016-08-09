@@ -628,8 +628,9 @@ signal_list_t *combine_lists_without_freeing_originals(signal_list_t **signal_li
 	for (i = 0; i < num_signal_lists; i++)
 	{
 		int j;
-		for (j = 0; j < signal_lists[i]->count; j++)
-			add_pin_to_signal_list(return_list, signal_lists[i]->pins[j]);
+		if(signal_lists[i])
+			for (j = 0; j < signal_lists[i]->count; j++)
+				add_pin_to_signal_list(return_list, signal_lists[i]->pins[j]);
 	}
 
 	return return_list;
@@ -678,7 +679,8 @@ static int compare_npin_t_names(const void *p1, const void *p2)
 
 void sort_signal_list_alphabetically(signal_list_t *list)
 {
-	qsort(list->pins, list->count,  sizeof(npin_t *), compare_npin_t_names);
+	if(list)
+		qsort(list->pins, list->count,  sizeof(npin_t *), compare_npin_t_names);
 }
 
 /*---------------------------------------------------------------------------------------------
