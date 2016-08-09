@@ -1529,7 +1529,7 @@ void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, in
  *-------------------------------------------------------------------------*/
 void delete_bracket(int begin, int end)
 {
-	enode *s1, *s2, *temp, *p;
+	enode *s1 = NULL, *s2, *temp, *p;
 	int mark = 0;
 	for (temp = head; temp != NULL; temp = temp->next)
 	{
