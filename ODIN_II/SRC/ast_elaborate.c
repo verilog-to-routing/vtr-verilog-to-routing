@@ -1034,7 +1034,7 @@ void create_enode(ast_node_t *node)
 void adjoin_constant(int *build)
 {
 	enode *t, *replace;
-	int a, b, result;
+	int a, b, result = 0;
 	int mark;
 	for (t = head; t->next!= NULL; )
 	{
