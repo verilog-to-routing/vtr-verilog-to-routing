@@ -1219,7 +1219,7 @@ void combine_constant(int *build)
  *-------------------------------------------------------------------------*/
 void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_num)
 {
-	enode *temp, *tail1, *tail2 = NULL;
+	enode *temp, *tail1 = NULL, *tail2 = NULL;
 	int prio = 0;
 
 	if (tail == NULL)
