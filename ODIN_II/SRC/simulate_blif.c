@@ -469,7 +469,7 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 
 		// Index its children.
 		for (j = 0; j < num_children; j++)
-			stage_children->add(stage_children, children[j], sizeof(nnode_t*), children[j]);
+			stage_children->add(stage_children, children[j], sizeof(nnode_t), children[j]);
 
 		// Record the number of children for computing the degree.
 		s->num_connections += num_children;
