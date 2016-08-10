@@ -25,8 +25,11 @@ specified by the switch block permutation functions into their numeric counterpa
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 
-using namespace std;
+#include "pugixml.hpp"
+#include "pugixml_util.hpp"
 
+using namespace std;
+using namespace pugiutil;
 
 /**** Enums ****/
 /* Used to identify the type of symbolic formula object */
@@ -141,46 +144,43 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, ezxml_t Node, t_switchblock_inf *sb ){
+void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
 	
 	/* Make sure that Node is a switchblock */
-	CheckElement(Node, "switchblock");
+	check_node(Node, "switchblock", loc_data);
 	
 	int num_wireconns;
-	ezxml_t SubElem;
+	pugi::xml_node SubElem;
 	const char *char_prop;
 
 	/* count the number of specified wire connections for this SB */
-	num_wireconns = CountChildren(Node, "wireconn", 0);
+	num_wireconns = count_children(Node, "wireconn", loc_data, OPTIONAL);
 	sb->wireconns.reserve(num_wireconns);
 
+	if (num_wireconns > 0) {
+		SubElem = get_first_child(Node, "wireconn", loc_data);	
+	}
 	for (int i = 0; i < num_wireconns; i++){
 		t_wireconn_inf wc;		
 
-		SubElem = ezxml_child(Node, "wireconn");
-
 		/* get from type */
-		char_prop = FindProperty(SubElem, "from_type", true);
+		char_prop = get_attribute(SubElem, "from_type", loc_data).value();
 		parse_comma_separated_wire_types(char_prop, &wc.from_type);
-		ezxml_set_attr(SubElem, "from_type", NULL);
 
 		/* get to type */
-		char_prop = FindProperty(SubElem, "to_type", true);
+		char_prop = get_attribute(SubElem, "to_type", loc_data).value();
 		parse_comma_separated_wire_types(char_prop, &wc.to_type);
-		ezxml_set_attr(SubElem, "to_type", NULL);
 
 		/* get the source wire point */
-		char_prop = FindProperty(SubElem, "from_switchpoint", true);
+		char_prop = get_attribute(SubElem, "from_switchpoint", loc_data).value();
 		parse_comma_separated_wire_points(char_prop, &(wc.from_point));
-		ezxml_set_attr(SubElem, "from_switchpoint", NULL);
 
 		/* get the destination wire point */
-		char_prop = FindProperty(SubElem, "to_switchpoint", true);
+		char_prop = get_attribute(SubElem, "to_switchpoint", loc_data).value();
 		parse_comma_separated_wire_points(char_prop, &(wc.to_point));
-		ezxml_set_attr(SubElem, "to_switchpoint", NULL);
 
 		sb->wireconns.push_back(wc);
-		FreeNode(SubElem);
+		SubElem = SubElem.next_sibling(SubElem.name());
 	}
 
 	return;
@@ -265,19 +265,19 @@ static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
    <switchfuncs> */
-void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
+void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
 	
 	/* Make sure the passed-in is correct */
-	CheckElement(Node, "switchfuncs");
+	check_node(Node, "switchfuncs", loc_data);
 	
-	ezxml_t SubElem;
+	pugi::xml_node SubElem;
 
 	/* Used to designate if a predifined function such as 'wilton' has been found.
 	   If a predifined function is specified, only one function entry is allowed */
 	bool predefined_sb_found = false;
 
 	/* get the number of specified permutation functions */
-	int num_funcs = CountChildren(Node, "func", 0);
+	int num_funcs = count_children(Node, "func", loc_data, OPTIONAL);
 
 	const char * func_type;
 	const char * func_formula;
@@ -288,22 +288,16 @@ void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 
 	/* now we iterate through all the specified permutation functions, and 
 	   load them into the switchblock structure as appropriate */
+	if (num_funcs > 0) {
+		SubElem = get_first_child(Node, "func", loc_data);	
+	}
 	for (int ifunc = 0; ifunc < num_funcs; ifunc++){
-		/* get the next switchblock function */
-		SubElem = ezxml_child(Node, "func");
-		/* get function type */
-		func_type = FindProperty(SubElem, "type", true);
-		if (!func_type){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "empty function specification in switchblock\n");
-		}
-		ezxml_set_attr(SubElem, "type", NULL);
-		/* get function formula */
-		func_formula = FindProperty(SubElem, "formula", true);
-		if (!func_formula){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "empty formula specification in switchblock\n");
-		}
-		ezxml_set_attr(SubElem, "formula", NULL);
 
+		/* get function type */
+		func_type = get_attribute(SubElem, "type", loc_data).as_string(NULL);
+
+		/* get function formula */
+		func_formula = get_attribute(SubElem, "formula", loc_data).as_string(NULL);
 
 		/* a predefined function should be the only entry */
 		if (predefined_sb_found && ifunc > 0){
@@ -345,7 +339,8 @@ void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 		func_ptr->push_back( string(func_formula) );
  
 		func_ptr = NULL;
-		FreeNode(SubElem);
+		/* get the next switchblock function */
+		SubElem = SubElem.next_sibling(SubElem.name());
 	}
 
 	return;

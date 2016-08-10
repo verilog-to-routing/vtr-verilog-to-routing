@@ -217,7 +217,7 @@ inout_declaration: vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWi
 	;
 
 net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $2);}
-	| vREG variable_list ';'						        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
+	| vREG variable_list ';'					        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
 	;
 integer_declaration: vINTEGER integer_type_variable_list ';' {$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2);}
 	;

@@ -20,11 +20,11 @@ ABC_INC = -I $(ABC_DIR)/src/bdd/cudd -I $(ABC_DIR)/src/bdd/epd -I $(ABC_DIR)/src
 # Use this value of OPT_FLAGS to simulate in parallel (requires GCC >= 4.2)
 #OPT_FLAGS = -O2 -fopenmp 
 
-INC_FLAGS =  -I../libarchfpga/include -I../libcommon_c++/SRC/TIO_InputOutputHandlers $(ABC_INC)
+INC_FLAGS =  -I../libarchfpga/include -I../libpugixml/src -I../libvtrutil/src -I../libcommon_c++/SRC/TIO_InputOutputHandlers $(ABC_INC)
 LIB = -L../libarchfpga -larchfpga -lm -ldl
 C_DIRECTIVE = -DVPR6 -DUSING_BISON
 
-FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(INC_FLAGS)
+FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(INC_FLAGS) -std=c++0x
 C_FLAGS = $(C_DIRECTIVE)
 
 YFILES = $(SRC_DIR)/verilog_bison.y

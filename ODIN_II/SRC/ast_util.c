@@ -776,7 +776,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
             }
 			free(temp_string);
 
-			if (sym_node->children[1] == NULL)
+			if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT)
 			{
 				width = 1;
 				return_string = (char**)malloc(sizeof(char*)*width);

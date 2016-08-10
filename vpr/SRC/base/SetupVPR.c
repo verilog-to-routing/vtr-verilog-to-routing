@@ -16,6 +16,7 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 #include "ReadOptions.h"
 #include "rr_graph_area.h"
+#include "echo_arch.h"
 
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation);

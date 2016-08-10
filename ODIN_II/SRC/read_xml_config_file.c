@@ -26,17 +26,20 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include "types.h"
 #include "globals.h"
-#include "ezxml.h"
 #include "read_xml_config_file.h"
 #include "read_xml_util.h"
+#include "pugixml.hpp"
+#include "pugixml_util.hpp"
+
+using namespace pugiutil;
 
 config_t configuration;
 char empty_string[] = "";
 
-void read_verilog_files(ezxml_t a_node, config_t *config);
-void read_outputs(ezxml_t a_node, config_t *config);
-void read_debug_switches(ezxml_t a_node, config_t *config);
-void read_optimizations(ezxml_t a_node, config_t *config);
+void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
+void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
+void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
+void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
 void set_default_optimization_settings(config_t *config);
 
 /*-------------------------------------------------------------------------
@@ -47,71 +50,65 @@ void set_default_optimization_settings(config_t *config);
  *-----------------------------------------------------------------------*/
 void read_config_file(char *file_name)
 {
-	ezxml_t doc, next;
+	pugi::xml_node config, next;
 
 	/* Parse the xml file */
 	oassert(file_name != NULL);
-	doc = ezxml_parse_file(file_name);
-
-	if (doc == NULL) 
-	{
-		printf("error: could not parse xml configuration file\n");
-		return;
+	
+	pugi::xml_document doc;
+	pugiloc::loc_data loc_data;
+	try {
+		loc_data = pugiutil::load_xml(doc, file_name);
+	} catch (XmlError& e) {
+        printf("error: could not parse xml configuration file '%s'\n", file_name);
+        return;
 	}
 
 	/* Root element should be config */
-	CheckElement(doc, "config");
+	config = get_single_child(doc, "config", loc_data);
 
 	/* Process the verilog files */
-	next = FindElement(doc, "verilog_files", true);
-	read_verilog_files(next, &configuration);
-	FreeNode(next);
+	next = get_single_child(config, "verilog_files", loc_data);
+	read_verilog_files(next, &configuration, loc_data);
 
 	/* Process the output */
-	next = FindElement(doc, "output", true);
-	read_outputs(next, &configuration);
-	FreeNode(next);
+	next = get_single_child(config, "output", loc_data);
+	read_outputs(next, &configuration, loc_data);
 
 	/* Process the optimizations */
 	set_default_optimization_settings(&configuration);
-	next = FindElement(doc, "optimizations", false);
+	next = get_single_child(config, "optimizations", loc_data, OPTIONAL);
 	if (next)
 	{
-		read_optimizations(next, &configuration);
-		FreeNode(next);		
+		read_optimizations(next, &configuration, loc_data);
 	}
 
 	/* Process the debug switches */
-	next = FindElement(doc, "debug_outputs", true);
-	read_debug_switches(next, &configuration);
-	FreeNode(next);
+	next = get_single_child(config, "debug_outputs", loc_data);
+	read_debug_switches(next, &configuration, loc_data);
 
 	/* Release the full XML tree */
-	FreeNode(doc);
 	return;
 }
 
 /*-------------------------------------------------------------------------
  * (function: read_verilog_files)
  *-----------------------------------------------------------------------*/
-void read_verilog_files(ezxml_t a_node, config_t *config)
+void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
 {
-	ezxml_t child;
-	ezxml_t junk;
+	pugi::xml_node child;
+	pugi::xml_node junk;
 
-	child = ezxml_child(a_node, "verilog_file");
+	child = get_first_child(a_node, "verilog_file", loc_data, OPTIONAL);
 	while (child != NULL)
 	{
 		if (global_args.verilog_file == NULL)
 		{
 			config->list_of_file_names = (char**)realloc(config->list_of_file_names, sizeof(char*)*(config->num_list_of_file_names+1));
-			config->list_of_file_names[config->num_list_of_file_names] = strdup(ezxml_txt(child));
+			config->list_of_file_names[config->num_list_of_file_names] = strdup(child.child_value());
 			config->num_list_of_file_names ++;
 		}
-		ezxml_set_txt(child, empty_string);
-		junk = child;
-		child = ezxml_next(child);
-		FreeNode(junk);
+		child = child.next_sibling(child.name());
 	}
 	return;
 }
@@ -119,32 +116,26 @@ void read_verilog_files(ezxml_t a_node, config_t *config)
 /*--------------------------------------------------------------------------
  * (function: read_outputs)
  *------------------------------------------------------------------------*/
-void read_outputs(ezxml_t a_node, config_t *config)
+void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
 {
-	ezxml_t child;
+	pugi::xml_node child;
 
-	child = ezxml_child(a_node, "output_type");
+	child = get_single_child(a_node, "output_type", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->output_type = strdup(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		config->output_type = strdup(child.child_value());
 	}
 
-	child = ezxml_child(a_node, "output_path_and_name");
+	child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		global_args.output_file = strdup(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		global_args.output_file = strdup(child.child_value());
 	}
 
-	child = ezxml_child(a_node, "target");
+	child = get_single_child(a_node, "target", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		ezxml_t junk = child;
-
-		child = ezxml_child(child, "arch_file");
+		child = get_single_child(child, "arch_file", loc_data, OPTIONAL);
 		if (child != NULL)
 		{
 			/* Two arch files specified? */
@@ -153,11 +144,8 @@ void read_outputs(ezxml_t a_node, config_t *config)
 				printf("Error: Arch file specified in config file AND command line\n");
 				exit(-1);
 			}
-			global_args.arch_file = strdup(ezxml_txt(child));
-			ezxml_set_txt(child, empty_string);
-			FreeNode(child);
+			global_args.arch_file = strdup(child.child_value());
 		}
-		FreeNode(junk);
 	}
 	return;
 }
@@ -165,48 +153,38 @@ void read_outputs(ezxml_t a_node, config_t *config)
 /*--------------------------------------------------------------------------
  * (function: read_workload_generation)
  *------------------------------------------------------------------------*/
-void read_debug_switches(ezxml_t a_node, config_t *config)
+void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
 {
-	ezxml_t child;
+	pugi::xml_node child;
 
-	child = ezxml_child(a_node, "output_ast_graphs");
+	child = get_single_child(a_node, "output_ast_graphs", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->output_ast_graphs = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		config->output_ast_graphs = atoi(child.child_value());
 	}
 
-	child = ezxml_child(a_node, "output_netlist_graphs");
+	child = get_single_child(a_node, "output_netlist_graphs", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->output_netlist_graphs = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		config->output_netlist_graphs = atoi(child.child_value());
 	}
 
-	child = ezxml_child(a_node, "debug_output_path");
+	child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->debug_output_path = strdup(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		config->debug_output_path = strdup(child.child_value());
 	}
 
-	child = ezxml_child(a_node, "print_parse_tokens");
+	child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->print_parse_tokens = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		config->print_parse_tokens = atoi(child.child_value());
 	}
 
-	child = ezxml_child(a_node, "output_preproc_source");
+	child = get_single_child(a_node, "output_preproc_source", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->output_preproc_source = atoi(ezxml_txt(child));
-		ezxml_set_txt(child, empty_string);
-		FreeNode(child);
+		config->output_preproc_source = atoi(child.child_value());
 	}
 
 	return;
@@ -233,65 +211,59 @@ void set_default_optimization_settings(config_t *config)
 /*--------------------------------------------------------------------------
  * (function: read_optimizations)
  *------------------------------------------------------------------------*/
-void read_optimizations(ezxml_t a_node, config_t *config)
+void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
 {
 	const char *prop;
-	ezxml_t child;
+	pugi::xml_node child;
 
-	child = ezxml_child(a_node, "multiply");
+	child = get_single_child(a_node, "multiply", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		prop = FindProperty(child, "size", false);
+		prop = get_attribute(child, "size", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
 			config->min_hard_multiplier = atoi(prop);
-			ezxml_set_attr(child, strdup("size"), NULL);
 		}
 		else /* Default: No minimum hard multiply size */
 			config->min_hard_multiplier = 0;
 		
-		prop = FindProperty(child, "padding", false);
+		prop = get_attribute(child, "padding", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
 			config->mult_padding = atoi(prop);
-			ezxml_set_attr(child, strdup("padding"), NULL);
 		}
 		else /* Default: Pad to hbpad pins */
 			config->mult_padding = -1;
 
-		prop = FindProperty(child, "fixed", false);
+		prop = get_attribute(child, "fixed", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
 			config->fixed_hard_multiplier = atoi(prop);
-			ezxml_set_attr(child, strdup("fixed"), NULL);
 		}
 		else /* Default: No fixed hard multiply size */
 			config->fixed_hard_multiplier = 0;
 
-		prop = FindProperty(child, "fracture", false);
+		prop = get_attribute(child, "fracture", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
 			config->split_hard_multiplier = atoi(prop);
-			ezxml_set_attr(child, strdup("fracture"), NULL);
 		}
 		else /* Default: use fractured hard multiply size */
 			config->split_hard_multiplier = 1;
-		FreeNode(child);
 	}
 
-	child = ezxml_child(a_node, "memory");
+	child = get_single_child(a_node, "memory", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		prop = FindProperty(child, "split_memory_width", false);
+		prop = get_attribute(child, "split_memory_width", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
 			config->split_memory_width = atoi(prop);
-			ezxml_set_attr(child, strdup("split_memory_width"), NULL);
 		}
 		else /* Default: Do not split memory width! */
 			config->split_memory_width = 0;
 		
-		prop = FindProperty(child, "split_memory_depth", false);
+		prop = get_attribute(child, "split_memory_depth", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
 			if (strcmp(prop, "min") == 0)
@@ -300,62 +272,54 @@ void read_optimizations(ezxml_t a_node, config_t *config)
 				config->split_memory_depth = -2;
 			else
 				config->split_memory_depth = atoi(prop);
-			ezxml_set_attr(child, strdup("split_memory_depth"), NULL);
 		}
 		else /* Default: Do not split memory depth! */
 			config->split_memory_depth = 0;
 		
-		FreeNode(child);
 	}
 
-	child = ezxml_child(a_node, "adder");
+	child = get_single_child(a_node, "adder", loc_data, OPTIONAL);
 		if (child != NULL)
 		{
-			prop = FindProperty(child, "size", false);
+			prop = get_attribute(child, "size", loc_data, OPTIONAL).as_string(NULL);
 			if (prop != NULL)
 			{
 				config->min_hard_adder = atoi(prop);
-				ezxml_set_attr(child, strdup("size"), NULL);
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_hard_adder = 0;
 
-			prop = FindProperty(child, "threshold_size", false);
+			prop = get_attribute(child, "threshold_size", loc_data, OPTIONAL).as_string(NULL);
 			if (prop != NULL)
 			{
 				config->min_threshold_adder = atoi(prop);
-				ezxml_set_attr(child, strdup("threshold_size"), NULL);
 			}
 			else /* Default: No minimum hard adder size */
 				config->min_threshold_adder = 0;
 
-			prop = FindProperty(child, "padding", false);
+			prop = get_attribute(child, "padding", loc_data, OPTIONAL).as_string(NULL);
 			if (prop != NULL)
 			{
 				config->add_padding = atoi(prop);
-				ezxml_set_attr(child, strdup("padding"), NULL);
 			}
 			else /* Default: Pad to hbpad pins */
 				config->add_padding = -1;
 
-			prop = FindProperty(child, "fixed", false);
+			prop = get_attribute(child, "fixed", loc_data, OPTIONAL).as_string(NULL);
 			if (prop != NULL)
 			{
 				config->fixed_hard_adder = atoi(prop);
-				ezxml_set_attr(child, strdup("fixed"), NULL);
 			}
 			else /* Default: Fixed hard adder size */
 				config->fixed_hard_adder = 1;
 
-			prop = FindProperty(child, "fracture", false);
+			prop = get_attribute(child, "fracture", loc_data, OPTIONAL).as_string(NULL);
 			if (prop != NULL)
 			{
 				config->split_hard_adder = atoi(prop);
-				ezxml_set_attr(child, strdup("fracture"), NULL);
 			}
 			else /* Default: use fractured hard adder size */
 				config->split_hard_adder = 1;
-			FreeNode(child);
 		}
 
 	return;

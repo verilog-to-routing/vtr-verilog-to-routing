@@ -43,8 +43,6 @@ using namespace std;
 #include "globals.h"
 #include "rr_graph.h"
 #include "vpr_utils.h"
-#include "ezxml.h"
-#include "read_xml_util.h"
 
 /************************* DEFINES **********************************/
 #define CONVERT_NM_PER_M 1000000000
