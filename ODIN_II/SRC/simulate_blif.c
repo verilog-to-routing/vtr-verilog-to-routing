@@ -465,7 +465,7 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 		s->stages[stage][s->counts[stage]++] = node;
 
 		// Index the node.
-		stage_nodes->add(stage_nodes, node, sizeof(nnode_t*), node);
+		stage_nodes->add(stage_nodes, node, sizeof(nnode_t), node);
 
 		// Index its children.
 		for (j = 0; j < num_children; j++)
