@@ -1124,7 +1124,7 @@ void iterate_multipliers(netlist_t *netlist)
 		{
 			b1 = sizeb;
 			b0 = mulb - sizeb;
-			split_multiplier_b(node, mula, b0, b1);
+			split_multiplier_b(node, mula, b1, b0);
 		}
 		else if ((sizea >= min_mult) && (sizeb >= min_mult))
 		{
