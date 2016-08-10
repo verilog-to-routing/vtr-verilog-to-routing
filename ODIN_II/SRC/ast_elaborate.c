@@ -104,7 +104,7 @@ void optimize_for_tree()
 			char *value_string;
 			int mark_variable = 0;
 			int *flash_variable = &mark_variable;
-			ast_node_t *temp_parent_node; //used to connect copied branches from the for loop
+			ast_node_t *temp_parent_node = NULL; //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
 			idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again
@@ -301,6 +301,7 @@ int calculation(char *post_exp[])
     int data[Max_size];
     int top;
   }pop;
+  pop.data[Max_size] = -1;
   pop.top = -1;
   int i, num;
   for (i = 0; post_exp[i] != NULL; i++)
@@ -1033,7 +1034,7 @@ void create_enode(ast_node_t *node)
 void adjoin_constant(int *build)
 {
 	enode *t, *replace;
-	int a, b, result;
+	int a, b, result = 0;
 	int mark;
 	for (t = head; t->next!= NULL; )
 	{
@@ -1218,7 +1219,7 @@ void combine_constant(int *build)
  *-------------------------------------------------------------------------*/
 void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_num)
 {
-	enode *temp, *tail1, *tail2;
+	enode *temp, *tail1 = NULL, *tail2 = NULL;
 	int prio = 0;
 
 	if (tail == NULL)
@@ -1528,7 +1529,7 @@ void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, in
  *-------------------------------------------------------------------------*/
 void delete_bracket(int begin, int end)
 {
-	enode *s1, *s2, *temp, *p;
+	enode *s1 = NULL, *s2 = NULL, *temp, *p;
 	int mark = 0;
 	for (temp = head; temp != NULL; temp = temp->next)
 	{

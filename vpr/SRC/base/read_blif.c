@@ -681,8 +681,11 @@ static void add_subckt(bool doall, t_model *user_models) {
 			/* determine the port name and the pin_number of the subckt */
 			port_name = my_strdup(subckt_signal_name[i]);
 			pin_number = strrchr(port_name, '[');
+
+            bool free_pin_number = false;
 			if (pin_number == NULL) {
 				pin_number = my_strdup("0"); /* default to 0 */
+                free_pin_number = true;
 			} else {
 				/* The pin numbering is port_name[pin_number] so need to go one to the right of [ then NULL out ] */
 				*pin_number = '\0';
@@ -764,6 +767,10 @@ static void add_subckt(bool doall, t_model *user_models) {
 						"Unknown subckt port %s.\n", subckt_signal_name[i]);
 			}
 			free(port_name);
+
+            if(free_pin_number) {
+                free(pin_number);
+            }
 		}
 	}
 

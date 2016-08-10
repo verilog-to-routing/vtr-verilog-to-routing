@@ -221,6 +221,7 @@ typedef enum
 	MULTIPLY, // * 
 	DIVIDE, // /
 	MODULO, // %
+	OP_POW, // **
 	LT, // <
 	GT, // >
 	LOGICAL_EQUAL, // == 

@@ -18,7 +18,7 @@ circuit_list_add=or1200.v
 circuit_list_add=raygentop.v
 circuit_list_add=sha.v
 
-# The boundtop.v circuit will not work with architectures without ram blocks. Odin will synthesize huge LUTs that will a variable to overflow in current version of abc
+# The boundtop.v circuit will not work with architectures without ram blocks. Odin will synthesize large LUTs that will cause a variable to overflow in current version of abc
 # It should work with the updated version (change from "char" to "int" which solves overflow problem) 
 #circuit_list_add=boundtop.v
 

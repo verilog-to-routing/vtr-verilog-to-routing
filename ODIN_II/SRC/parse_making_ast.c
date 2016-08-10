@@ -417,6 +417,7 @@ ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
  * Basically this functions emulates verilog replication: {5{1'b0}} by concatenating that many
  * children together -- certainly not the most elegant solution, but was the easiest
  *-------------------------------------------------------------------------------------------*/
+
 ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 {
 	/* create a node for this array reference */
@@ -883,6 +884,54 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	return new_node;
 }
 
+ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	info_ast_visit_t *node_details = NULL;
+	/* create a node for this array reference */
+	ast_node_t* new_node, *node;
+	ast_node_t *node_copy;
+	/* store the operation type */
+	char temp[256];
+	
+	/* allocate child nodes to this node */
+	if( expression2->type == NUMBERS ){
+		int len = expression2->types.number.value;
+		if( expression1->type == NUMBERS ){
+			int len1 = expression1->types.number.value;
+			long long powRes = pow(len1, len);
+			sprintf(temp, "%lld", powRes);
+			new_node = newNumberNode(strdup(temp), line_number);
+		} else {
+			if (len == 0){
+				new_node = newNumberNode(strdup("1"), line_number);
+			} else {	
+				new_node = expression1;
+				for(int i=1; i < len; ++i){ 	
+					node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
+					node->types.operation.op = op_id;
+
+					node_copy = ast_node_deep_copy(expression1);
+
+					allocate_children_to_node(node, 2, node_copy, new_node);
+					new_node = node;
+				}
+			}
+		}
+	}
+	else
+	{
+	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
+        }
+	/* see if this binary expression can have some constant folding */
+	node_details = constantFold(new_node);
+	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
+	{
+		new_node = node_details->from;
+		free(node_details);
+	}
+
+	return new_node;
+}
 /*---------------------------------------------------------------------------------------------
  * (function: newUnaryOperation)
  *-------------------------------------------------------------------------------------------*/
@@ -1663,9 +1712,10 @@ void next_module()
  *------------------------------------------------------------------------*/
 ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number)
 {
-	ast_node_t *new_node;
+	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
 	char *module_instance_name = (char*)malloc(1024 * sizeof(char));
+	module_instance_name = NULL;
 	int i, j;
 	//long sc_spot;
 	if(val)

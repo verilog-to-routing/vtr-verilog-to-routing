@@ -432,14 +432,14 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 		nnode_t **children = get_children_of(node, &num_children);
 
 		// Determine if the node is a child of any node in the current stage.
-		int is_child_of_stage = stage_children->get(stage_children, node, sizeof(nnode_t*))?1:0;
+		int is_child_of_stage = stage_children->get(stage_children, node, sizeof(nnode_t))?1:0;
 
 		// Determine if any node in the current stage is a child of this node.
 		int is_stage_child_of = FALSE;
 		int j;
 		if (!is_child_of_stage)
 			for (j = 0; j < num_children; j++)
-				if ((is_stage_child_of = stage_nodes->get(stage_nodes, children[j], sizeof(nnode_t*))?1:0))
+				if ((is_stage_child_of = stage_nodes->get(stage_nodes, children[j], sizeof(nnode_t))?1:0))
 					break;
 
 		// Start a new stage if this node is related to any node in the current stage.
@@ -465,11 +465,11 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 		s->stages[stage][s->counts[stage]++] = node;
 
 		// Index the node.
-		stage_nodes->add(stage_nodes, node, sizeof(nnode_t*), node);
+		stage_nodes->add(stage_nodes, node, sizeof(nnode_t), node);
 
 		// Index its children.
 		for (j = 0; j < num_children; j++)
-			stage_children->add(stage_children, children[j], sizeof(nnode_t*), children[j]);
+			stage_children->add(stage_children, children[j], sizeof(nnode_t), children[j]);
 
 		// Record the number of children for computing the degree.
 		s->num_connections += num_children;

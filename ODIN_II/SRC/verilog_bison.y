@@ -83,9 +83,10 @@ int yywrap()
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL 
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT 
+%left voSLEFT voSRIGHT
 %left '+' '-'   
 %left '*' '/' '%'
+%right voPOWER 
 %left '~' '!'
 %left '{' '}'
 %left UOR
@@ -101,6 +102,7 @@ int yywrap()
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc vELSE
+
 
 %type <node> source_text items define module list_of_module_items list_of_function_items module_item function_item
 %type <node> parameter_declaration input_declaration output_declaration defparam_declaration function_declaration 
@@ -144,6 +146,7 @@ items: items module								{
 define: vDEFINE vSYMBOL_ID vNUMBER_ID						{$$ = NULL; newConstant($2, $3, yylineno);}
 	;
 
+
 module: vMODULE vSYMBOL_ID '(' variable_list ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $7, yylineno);}
 	| vMODULE vSYMBOL_ID '(' variable_list ',' ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $8, yylineno);}
 	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, NULL, $6, yylineno);}	
@@ -168,6 +171,7 @@ module_item: parameter_declaration						{$$ = $1;}
 	| defparam_declaration							{$$ = $1;}
 	| specify_block                             				{$$ = $1;}
 	;
+
 
 function_declaration: 
     vFUNCTION function_output_variable ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($2, $4, yylineno); }
@@ -213,7 +217,7 @@ inout_declaration: vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWi
 	;
 
 net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $2);}
-	| vREG variable_list ';'						        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
+	| vREG variable_list ';'					        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
 	;
 integer_declaration: vINTEGER integer_type_variable_list ';' {$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2);}
 	;
@@ -399,6 +403,7 @@ expression: primary								{$$ = $1;}
 	| '!' expression %prec ULNOT						{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
 	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
 	| expression '^' expression						{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
+	| expression voPOWER expression						{$$ = newExpandPower(MULTIPLY,$1, $3, yylineno);}
 	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
 	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
 	| expression '%' expression						{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}

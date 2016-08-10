@@ -97,7 +97,6 @@
   <ItemGroup>
     <ClInclude Include="include\arch_types.h" />
     <ClInclude Include="include\cad_types.h" />
-    <ClInclude Include="include\ezxml.h" />
     <ClInclude Include="include\logic_types.h" />
     <ClInclude Include="include\physical_types.h" />
     <ClInclude Include="include\ReadLine.h" />
@@ -106,7 +105,6 @@
     <ClInclude Include="include\util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ezxml.c" />
     <ClCompile Include="ReadLine.c" />
     <ClCompile Include="read_xml_arch_file.c" />
     <ClCompile Include="read_xml_util.c" />

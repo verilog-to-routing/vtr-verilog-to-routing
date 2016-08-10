@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "types.h"
 #include "ast_util.h"
 #include "ast_optimizations.h"

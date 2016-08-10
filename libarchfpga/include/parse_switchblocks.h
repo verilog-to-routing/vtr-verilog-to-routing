@@ -2,8 +2,8 @@
 #define PARSE_SWITCHBLOCKS_H
 
 #include <vector>
-#include "ezxml.h"
-
+#include "pugixml.hpp"
+#include "pugixml_util.hpp"
 
 /**** Structs ****/
 /* contains data passed in to the switchblock parser */
@@ -15,10 +15,10 @@ struct s_formula_data{
 
 /**** Function Declarations ****/
 /* Loads permutation funcs specified under Node into t_switchblock_inf */
-void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb );
+void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data );
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, ezxml_t Node, t_switchblock_inf *sb );
+void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data );
 
 /* checks for correctness of switch block read-in from the XML architecture file */
 void check_switchblock( t_switchblock_inf *sb );
