@@ -7,6 +7,8 @@
 #include <math.h>
 #include <map>
 
+#include "vtr_error.h"
+
 /* Parameter tags for preprocessor to strip */
 #define INP
 #define OUTP
@@ -83,12 +85,20 @@ typedef struct s_chunk {
 /* This structure is thrown back to highest level of VPR flow if an *
  * internal VPR or user input error occurs. */
 
-typedef struct s_vpr_error {
-	char* message;
-	char* file_name;
-	int line_num;
-	enum e_vpr_error type;
-} t_vpr_error;
+class VprError : public VtrError {
+    public:
+        VprError(t_vpr_error_type err_type,
+                 std::string msg="",
+                 std::string file="",
+                 size_t linenum=-1)
+            : VtrError(msg, file, linenum)
+            , type_(err_type) {}
+
+        t_vpr_error_type type() const { return type_; }
+
+    private:
+        t_vpr_error_type type_;
+};
 
 #ifdef __cplusplus 
 extern "C" {
@@ -195,9 +205,11 @@ int ipow(int base, int exp);
 
 template<typename X, typename Y> Y linear_interpolate_or_extrapolate(INP std::map<X,Y> *xy_map, INP X requested_x);
 
+/********************* String Formatting *************************************/
+std::string string_fmt(const char* fmt, ...);
+std::string vstring_fmt(const char* fmt, va_list args);
+
 /*********************** Error-related ***************************************/
-void Print_VPR_Error(t_vpr_error* vpr_error, char* arch_filename);
-t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, char* file_name);
 void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
 void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
 

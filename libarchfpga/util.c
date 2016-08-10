@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <memory>
 #include "util.h"
 #include "log.h"
 
@@ -784,22 +785,46 @@ int ipow(int base, int exp) {
 	return result;
 }
 
-/* Author: Daniel Chen */
-/* Allocate and load partial data into t_vpr_error structure */
-/* Note: can also set breakpoint in this function to view callstack prior *
- * to VPR failure														  */
-t_vpr_error* alloc_and_load_vpr_error(enum e_vpr_error type, unsigned int line, char* file_name){
-	t_vpr_error* vpr_error;
+//Returns a std::string formatted using a printf-style format string
+std::string string_fmt(const char* fmt, ...) {
+	// Make a variable argument list
+	va_list va_args;
 
-	vpr_error = (t_vpr_error*)my_calloc(1, sizeof(t_vpr_error));
-	vpr_error->file_name = (char*)my_calloc(strlen(file_name) + 1, sizeof(char));
-	vpr_error->message = (char*)my_calloc(1000, sizeof(char));
+	// Initialize variable argument list
+	va_start(va_args, fmt);
 
-	sprintf(vpr_error->file_name, "%s", file_name);
-	vpr_error->line_num = line;
-	vpr_error->type = type;
+    //Format string
+    std::string str = vstring_fmt(fmt, va_args);
 
-	return vpr_error;
+	// Reset variable argument list
+	va_end(va_args);
+
+    return str;
+}
+
+//Returns a std::string formatted using a printf-style format string taking
+//an explicit va_list
+std::string vstring_fmt(const char* fmt, va_list args) {
+    
+    //Determine the formatted length
+    int len = snprintf(nullptr, 0, fmt, args); 
+
+    //Negative if there is a problem with the format string
+    assert(len >= 0 && "Problem decoding format string");
+
+    size_t buf_size = len + 1; //For terminator
+
+    //Allocate a buffer
+    //  unique_ptr will free buffer automatically
+    std::unique_ptr<char[]> buf(new char[buf_size]);
+
+    //Format into the buffer
+    len = snprintf(buf.get(), buf_size, fmt, args);
+
+    assert(len >= 0 && "Problem decoding format string");
+
+    //Build the string from the buffer
+    return std::string(buf.get(), len);
 }
 
 /* Date:June 15th, 2013								
@@ -820,36 +845,27 @@ void vpr_throw(enum e_vpr_error type,
 	va_list va_args;
 
 	// Initialize variable argument list
-	va_start( va_args, psz_message );
+	va_start(va_args, psz_message);
 
-	// Generate the actual error object and throw it
-	vvpr_throw(type, psz_file_name, line_num, psz_message, va_args);
+    //Format the message
+    std::string msg = vstring_fmt(psz_message, va_args);
 
 	// Reset variable argument list
-	va_end( va_args );
+	va_end(va_args);
 
+    throw VprError(type, msg, psz_file_name, line_num);
 }
 
-/*
- * Version of vpr_throw that takes an explicit va_list.
- *
- *  This allows functions that have variable numbers of
- *  inputs to throw t_vpr_error objects. 
- */
 void vvpr_throw(enum e_vpr_error type,
 		const char* psz_file_name,
 		unsigned int line_num,
 		const char* psz_message,
-		va_list args) {
+		va_list va_args) {
 
-	// Allocate the error struct
-	t_vpr_error* vpr_error = alloc_and_load_vpr_error(type,
-              line_num, const_cast<char*>(psz_file_name));
+    //Format the message
+    std::string msg = vstring_fmt(psz_message, va_args);
 
-	// Extract and format message based on variable argument list
-	vsprintf(vpr_error->message, psz_message, args );
-
-	throw vpr_error;
+    throw VprError(type, msg, psz_file_name, line_num);
 }
 
 /* Date:July 17th, 2013								

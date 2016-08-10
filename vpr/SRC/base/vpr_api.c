@@ -1069,11 +1069,11 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	vpr_printf_info("\n");
 }
 
-void vpr_print_error(t_vpr_error* vpr_error){
+void vpr_print_error(const VprError& vpr_error){
 
 	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
 	char* error_type = (char *)my_calloc(1000, sizeof(char));
-	switch(vpr_error->type){
+	switch(vpr_error.type()){
 	case VPR_ERROR_UNKNOWN:
 		strcpy(error_type, "Unknown");
 		break;
@@ -1115,10 +1115,13 @@ void vpr_print_error(t_vpr_error* vpr_error){
 		break;
 	}
 
+    //We can't pass std::string's through va_args functions,
+    //so we need to copy them and pass via c_str()
+    std::string msg = vpr_error.what();
+    std::string filename = vpr_error.filename();
+
 	vpr_printf_error(__FILE__, __LINE__,
 		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
-		error_type, vpr_error->file_name, vpr_error->line_num,
-		vpr_error->message);
-
-	free (error_type);
+		error_type, filename.c_str(), vpr_error.line(),
+		msg.c_str());
 }

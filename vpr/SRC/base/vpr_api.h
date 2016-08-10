@@ -36,6 +36,8 @@
 #include "vpr_utils.h"
 #include "place_macro.h"
 
+#include "vtr_error.h"
+
 /* Main VPR Operations */
 void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 		OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch);
@@ -99,7 +101,7 @@ void vpr_set_output_file_name(enum e_output_files ename, const char *name,
 char *vpr_get_output_file_name(enum e_output_files ename);
 
 /* Prints user file or internal errors for VPR */
-void vpr_print_error(t_vpr_error* vpr_error);
+void vpr_print_error(const VprError& vpr_error);
 
 
 #endif
