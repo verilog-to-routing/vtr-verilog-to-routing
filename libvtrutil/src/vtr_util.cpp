@@ -25,7 +25,12 @@ std::vector<std::string> split(const std::string& text, const std::string delims
             curr_tok += c;
         }
     }
-
+    
+    //Add last token
+    if(!curr_tok.empty()) {
+        //Save it
+        tokens.push_back(curr_tok);
+    } 
     return tokens;
 }
 

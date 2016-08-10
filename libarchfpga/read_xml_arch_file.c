@@ -383,7 +383,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 
 			/* Go through lists of pins */
-			const std::vector<std::string> Tokens = vtrutil::split(Cur.child_value(), " ");
+			const std::vector<std::string> Tokens = vtrutil::split(Cur.child_value());
 			Count = Tokens.size();
 			Type->num_pin_loc_assignments[0][height][side] = Count;
 			if (Count > 0) {
