@@ -439,7 +439,7 @@ stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 		int j;
 		if (!is_child_of_stage)
 			for (j = 0; j < num_children; j++)
-				if ((is_stage_child_of = stage_nodes->get(stage_nodes, children[j], sizeof(nnode_t*))?1:0))
+				if ((is_stage_child_of = stage_nodes->get(stage_nodes, children[j], sizeof(nnode_t))?1:0))
 					break;
 
 		// Start a new stage if this node is related to any node in the current stage.
