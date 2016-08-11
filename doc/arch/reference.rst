@@ -816,6 +816,12 @@ The ``<switch>`` tag and its contents are described below.
     Describes a type of switch.
     This statement defines what a certain type of switch is -- segment statements refer to a switch types by their number (the number right after the switch keyword).
 
+    **Example:**
+
+    .. code-block:: xml
+
+        <switch type="mux" name="my_awsome_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+
 .. arch:tag:: <Tdel num_inputs="int" delay="float"/>
 
     :req_param num_inputs: The number of switch inputs
