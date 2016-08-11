@@ -791,10 +791,12 @@ The ``<switch>`` tag and its contents are described below.
     :req_param R: Resistance of the switch.
     :req_param Cin:  Input capacitance of the switch.
     :req_param Cout:  Output capacitance of the switch.
-    :req_param Tdel:  
+
+    :opt_param Tdel:  
         Intrinsic delay through the switch.
         If this switch was driven by a zero resistance source, and drove a zero capacitance load, its delay would be Tdel + R * Cout.
         The ‘switch’ includes both the mux and buffer when in unidirectional mode. 
+        *Required if no <Tdel/> tags are specified*
 
     :opt_param buf_size:  
         *Only for unidirectional routing.*
@@ -820,6 +822,7 @@ The ``<switch>`` tag and its contents are described below.
     :req_param delay: The intrinsic switch delay when the switch topology has the specified number of switch inputs
 
     Instead of specifying a single Tdel value, a list of Tdel values may be specified for different values of switch fan-in.
+    Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
     
     **Example:**
 
