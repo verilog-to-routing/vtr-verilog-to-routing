@@ -822,6 +822,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     len = snprintf(buf.get(), buf_size, fmt, args);
 
     assert(len >= 0 && "Problem decoding format string");
+    assert(static_cast<size_t>(len) == buf_size - 1);
 
     //Build the string from the buffer
     return std::string(buf.get(), len);
