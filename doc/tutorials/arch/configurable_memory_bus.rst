@@ -223,10 +223,10 @@ Configurable Memory Bus-Based Complete Example
             <output name="dout" num_pins="4" port_class="data_out"/>
           </pb_type>
           <interconnect>
-            <direct input="mem_reconfig.addr[9:0]" output="mem_512x4.addr"/>
+            <direct input="mem_reconfig.addr[8:0]" output="mem_512x4.addr"/>
             <direct input="mem_reconfig.din[3:0]" output="mem_512x4.din"/>
             <direct input="mem_reconfig.wen" output="mem_512x4.wen"/>
-            <direct input="mem_2048x1.dout" output="mem_reconfig.dout[3:0]"/>
+            <direct input="mem_512x4.dout" output="mem_reconfig.dout[3:0]"/>
           </interconnect>
         </mode>
       </pb_type>
