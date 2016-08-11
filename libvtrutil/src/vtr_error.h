@@ -13,6 +13,7 @@ class VtrError : public std::runtime_error {
         //Returns the filename associated with this error
         //returns an empty string if none is specified
         std::string filename() const { return filename_; }
+        const char* filename_c_str() const { return filename_.c_str(); }
 
         //Returns the line number associated with this error
         //returns zero if none is specified
