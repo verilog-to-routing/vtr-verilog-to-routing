@@ -100,7 +100,11 @@ int main(int argc, char **argv)
 		XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types, &ClockDetails, &PowerDetails);
 		#endif
 		#ifdef VPR6
-		XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
+        try {
+            XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
+        } catch(VtrError& vtr_error) {
+            printf("Failed to load architecture file: %s\n", vtr_error.what());
+        }
 		#endif
 	}
 

@@ -41,7 +41,12 @@ int main(int argc, char **argv) {
 	printf("Reading in architecture\n");
 
 	/* function declarations */
-	XmlReadArch(argv[1], atoi(argv[2]), arch, &types, &numTypes);
+    try {
+        XmlReadArch(argv[1], atoi(argv[2]), arch, &types, &numTypes);
+    } catch (VtrError& vtr_error) {
+        printf("Faild to load architecture %s: %s\n", argv[1], vtr_error.what());
+        return 1;
+    }
 
 	printf("Printing Results\n");
 

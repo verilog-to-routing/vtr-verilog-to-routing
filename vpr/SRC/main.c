@@ -75,12 +75,12 @@ int main(int argc, char **argv) {
         /* Return 1 to signal error to scripts */
         return 1;
 	} catch(VtrError& vtr_error){
-        vpr_printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename().c_str(), vtr_error.line(), vtr_error.what());
+        vpr_printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
         /* Return 1 to signal error to scripts */
         return 1;
 	}
 	
-	/* Return 0 to single success to scripts */
+	/* Return 0 to signal success to scripts */
 	return 0;
 }
 
