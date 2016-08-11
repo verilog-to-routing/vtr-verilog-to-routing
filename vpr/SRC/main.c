@@ -21,6 +21,14 @@ using namespace std;
 #include "util.h" /* for CLOCKS_PER_SEC */
 #include "path_delay.h" /* for timing_analysis_runtime */
 
+/*
+ * Exit codes to signal success/failure to scripts
+ * calling vpr
+ */
+constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
+constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
+constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unroutable)
+
 /**
  * VPR program
  * Generate FPGA architecture given architecture description
@@ -33,7 +41,6 @@ using namespace std;
  * 3.  Place-and-route and timing analysis
  * 4.  Clean up
  */
-
 int main(int argc, char **argv) {
 	t_options Options;
 	t_arch Arch;
@@ -54,7 +61,12 @@ int main(int argc, char **argv) {
 
 		if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
 			vpr_init_pre_place_and_route(vpr_setup, Arch);
-			vpr_place_and_route(&vpr_setup, Arch);
+			bool place_route_succeeded = vpr_place_and_route(&vpr_setup, Arch);
+
+            /* Signal implementation failure */
+            if(!place_route_succeeded) {
+                return UNIMPLEMENTABLE_EXIT_CODE;
+            }
 		}
 
 		if (vpr_setup.PowerOpts.do_power) {
@@ -72,16 +84,16 @@ int main(int argc, char **argv) {
 
 	} catch(VprError& vpr_error){
 		vpr_print_error(vpr_error);
-        /* Return 1 to signal error to scripts */
-        return 1;
+        /* Signal error to scripts */
+        return ERROR_EXIT_CODE;
 	} catch(VtrError& vtr_error){
         vpr_printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
-        /* Return 1 to signal error to scripts */
-        return 1;
+        /* Signal error to scripts */
+        return ERROR_EXIT_CODE;
 	}
 	
-	/* Return 0 to signal success to scripts */
-	return 0;
+	/* Signal success to scripts */
+	return SUCCESS_EXIT_CODE;
 }
 
 
