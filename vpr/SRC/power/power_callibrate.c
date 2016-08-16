@@ -285,7 +285,10 @@ void power_print_spice_comparison(void) {
 //	 (sb_power_usage.dynamic + sb_power_usage.leakage)
 //	 * g_solution_inf.T_crit);
 //}
-
+	//free variables
+	free(dens);
+	free(prob);
+	free(SRAM_bits);
 }
 
 static char binary_not(char c) {
