@@ -195,6 +195,12 @@ sub setup_single_test {
 		$run_params = "$test_dir";
 		$parse_params = "$test_dir ";
 	}
+	
+	# Use 2 threads for weekly regression test
+	if ($test_name eq "vtr_reg_weekly") {
+		my $threads = "2 ";
+		$run_params = "-p " . $threads . $run_params;	
+	}
 }
 
 sub check_override {

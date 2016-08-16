@@ -18,14 +18,14 @@ circuit_list_add=des90_stratixiv_arch_timing.blif
 circuit_list_add=SLAM_spheric_stratixiv_arch_timing.blif
 circuit_list_add=segmentation_stratixiv_arch_timing.blif
 circuit_list_add=bitonic_mesh_stratixiv_arch_timing.blif
-circuit_list_add=dart_stratixiv_arch_timing.blif
-circuit_list_add=openCV_stratixiv_arch_timing.blif
+#circuit_list_add=dart_stratixiv_arch_timing.blif
+#circuit_list_add=openCV_stratixiv_arch_timing.blif
 circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
-circuit_list_add=minres_stratixiv_arch_timing.blif
 circuit_list_add=cholesky_bdti_stratixiv_arch_timing.blif
 circuit_list_add=denoise_stratixiv_arch_timing.blif
-circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
-circuit_list_add=mes_noc_stratixiv_arch_timing.blif
+#circuit_list_add=minres_stratixiv_arch_timing.blif
+#circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
+#circuit_list_add=mes_noc_stratixiv_arch_timing.blif
 #circuit_list_add=sparcT2_core_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
@@ -40,5 +40,5 @@ qor_parse_file=qor_fixed_chan_width.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
-script_params=-starting_stage vpr -no_timing -vpr_route_chan_width 300 -track_memory_usage -vpr_max_router_iterations 400
+script_params=-starting_stage vpr -vpr_route_chan_width 300 -track_memory_usage -vpr_max_router_iterations 400
 
