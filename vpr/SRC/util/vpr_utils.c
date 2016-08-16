@@ -1420,6 +1420,9 @@ void print_switch_usage() {
             float Tdel = g_rr_switch_inf[switch_index].Tdel;
             int status = convert_switch_index(&switch_index, &fanin);
             if (status == -1)
+	    	delete[] switch_fanin_count;
+		delete[] switch_fanin_delay;
+  		delete[] inward_switch_inf;
                 return;
             if (fanin == -1)
                 fanin = itr->second;
