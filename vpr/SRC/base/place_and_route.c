@@ -559,8 +559,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
             netlist_writer(blif_circuit_name);
 		  }
 
-		free_timing_graph(slacks);
-		free_net_delay(net_delay, &net_delay_ch);
+		//free_timing_graph(slacks);
+		//free_net_delay(net_delay, &net_delay_ch);
 	}
 	
 	for (i = 0; i < num_blocks; i++) {
@@ -572,6 +572,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	free_saved_routing(best_routing, saved_clb_opins_used_locally);
 	fflush(stdout);
+	
+	free_timing_graph(slacks);
+	free_net_delay(net_delay, &net_delay_ch);
 
 	return (final);
 

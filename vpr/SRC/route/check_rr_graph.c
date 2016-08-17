@@ -361,7 +361,6 @@ void check_node(int inode, enum e_route_type route_type) {
 
 	case CHANY:
 		if (route_type == DETAILED) {
-			nodes_per_chan = chan_width.y_list[xlow];
 			nodes_per_chan = chan_width.max;
 			tracks_per_node = 1;
 		} else {

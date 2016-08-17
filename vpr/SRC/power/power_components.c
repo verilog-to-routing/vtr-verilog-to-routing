@@ -617,6 +617,8 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 		free(in_prob);
 		free(in_dens);
 	}
+	
+	free(v_in);
 }
 
 /**

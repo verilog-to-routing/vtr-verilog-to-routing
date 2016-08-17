@@ -148,7 +148,9 @@ struct t_draw_coords {
 	float pin_size;
 
 	vector<t_draw_pb_type_info> blk_info;
-
+	
+	t_draw_coords();
+	
 	float get_tile_width();
 
 	/**
