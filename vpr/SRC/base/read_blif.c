@@ -302,7 +302,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 			}
 		}
 
-		if (model_lines > 0) {
+		if (model_lines > 0 && ptr != NULL) {
 			check_and_count_models(doall, ptr, user_models);
 		} else {
 			dum_parse(buffer);
@@ -1013,7 +1013,8 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 		}
 		cur = cur->next;
 	}
-
+	
+	assert(logic_model != NULL);
 	lut_distribution = (int*) my_calloc(logic_model->inputs[0].size + 1,
 			sizeof(int));
 	num_absorbable_latch = 0;
@@ -1022,8 +1023,8 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 			continue;
 
 		if (logical_block[i].model == logic_model) {
-			if (logic_model == NULL)
-				continue;
+			//if (logic_model == NULL)
+			//	continue;
 			for (j = 0; j < logic_model->inputs[0].size; j++) {
 				if (logical_block[i].input_nets[0][j] == OPEN) {
 					break;
