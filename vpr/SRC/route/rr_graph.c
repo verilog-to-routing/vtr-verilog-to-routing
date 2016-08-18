@@ -1111,6 +1111,7 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 				directs, num_directs, clb_to_clb_directs);
 
 		int node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
+		assert(node_index >= 0);
 		alloc_and_load_edges_and_switches(L_rr_node, node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
@@ -1360,6 +1361,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
 			L_rr_node[inode].z = z;
 			if(iporttype == 0) {
+				assert(pb_graph_node != NULL);
 				L_rr_node[inode].pb_graph_pin = &pb_graph_node->input_pins[iport][ipb_pin];
 				ipb_pin++;
 				if(ipb_pin >= pb_graph_node->num_input_pins[iport]) {
@@ -1401,6 +1403,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
 			L_rr_node[inode].type = OPIN;
 			
+			assert(pb_graph_node != NULL);
 			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[oport][opb_pin];
 			opb_pin++;
 			if(opb_pin >= pb_graph_node->num_output_pins[oport]) {
@@ -1559,6 +1562,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 
 
 		int node = get_rr_node_index(x_coord, y_coord, chan_type, track, L_rr_node_indices);
+		assert(node >= 0);
 		alloc_and_load_edges_and_switches(L_rr_node, node, num_edges,
 				L_rr_edge_done, edge_list);
 
@@ -2452,6 +2456,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 		/* Add the edges */
 		int opin_node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
+		assert(opin_node_index >= 0);
 		alloc_and_load_edges_and_switches(rr_node, opin_node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
