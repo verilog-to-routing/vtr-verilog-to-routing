@@ -389,7 +389,8 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 				transistors sizes larger than what is defined in the <nmos_leakages> \
 				section of the technology file.");
 	}
-
+	
+	assert(nmos_low != NULL);
 	power_find_nmos_leakage(nmos_low, &lower, &upper, v_ds);
 	if (lower->v_ds == v_ds || !upper) {
 		i_ds = lower->i_ds;
@@ -402,6 +403,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
     if (over_range) {
         return power_low;
     } else {
+		assert(nmos_high != NULL);
 		power_find_nmos_leakage(nmos_high, &lower, &upper, v_ds);
 		if (lower->v_ds == v_ds || !upper) {
 			i_ds = lower->i_ds;

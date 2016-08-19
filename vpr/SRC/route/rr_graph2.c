@@ -2058,6 +2058,7 @@ static void get_switch_type(
 
 		/* Take the smaller index unless the other 
 		 * pass_trans is bigger (smaller R). */
+		assert(used < 2);
 		switch_types[used] = min_switch;
 		if (g_arch_switch_inf[max_switch].R < g_arch_switch_inf[min_switch].R) {
 			switch_types[used] = max_switch;
