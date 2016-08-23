@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cassert>
 
+#include "vtr_util.h"
 #include "arch_types.h"
 #include "read_xml_arch_file.h"
 
@@ -60,7 +61,7 @@ void SetupEmptyType(struct s_type_descriptor* cb_type_descriptors,
                     t_type_ptr EMPTY_TYPE) {
 	t_type_descriptor * type;
 	type = &cb_type_descriptors[EMPTY_TYPE->index];
-	type->name = my_strdup("<EMPTY>");
+	type->name = vtr::strdup("<EMPTY>");
 	type->num_pins = 0;
 	type->width = 1;
 	type->height = 1;
@@ -90,8 +91,8 @@ void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 
 	assert(pb_type->blif_model != NULL);
 
-	copy->name = my_strdup(new_name);
-	copy->blif_model = my_strdup(pb_type->blif_model);
+	copy->name = vtr::strdup(new_name);
+	copy->blif_model = vtr::strdup(pb_type->blif_model);
 	copy->class_type = pb_type->class_type;
 	copy->depth = pb_type->depth;
 	copy->model = pb_type->model;
@@ -117,8 +118,8 @@ void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 		copy->ports[i].type = pb_type->ports[i].type;
 		copy->ports[i].num_pins = pb_type->ports[i].num_pins;
 		copy->ports[i].parent_pb_type = copy;
-		copy->ports[i].name = my_strdup(pb_type->ports[i].name);
-		copy->ports[i].port_class = my_strdup(pb_type->ports[i].port_class);
+		copy->ports[i].name = vtr::strdup(pb_type->ports[i].name);
+		copy->ports[i].port_class = vtr::strdup(pb_type->ports[i].port_class);
 		copy->ports[i].port_index_by_type = pb_type->ports[i].port_index_by_type;
 
 		copy->ports[i].port_power = (t_port_power*) my_calloc(1,
@@ -139,7 +140,7 @@ void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 			pb_type->num_annotations, sizeof(t_pin_to_pin_annotation));
 	copy->num_annotations = pb_type->num_annotations;
 	for (i = 0; i < copy->num_annotations; i++) {
-		copy->annotations[i].clock = my_strdup(pb_type->annotations[i].clock);
+		copy->annotations[i].clock = vtr::strdup(pb_type->annotations[i].clock);
 		dot = strstr(pb_type->annotations[i].input_pins, ".");
 		copy->annotations[i].input_pins = (char*) my_malloc(
 				sizeof(char) * (strlen(new_name) + strlen(dot) + 1));
@@ -167,7 +168,7 @@ void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 				sizeof(char *) * pb_type->annotations[i].num_value_prop_pairs);
 		for (j = 0; j < pb_type->annotations[i].num_value_prop_pairs; j++) {
 			copy->annotations[i].prop[j] = pb_type->annotations[i].prop[j];
-			copy->annotations[i].value[j] = my_strdup(
+			copy->annotations[i].value[j] = vtr::strdup(
 					pb_type->annotations[i].value[j]);
 		}
 	}
@@ -182,9 +183,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	int i, j;
 
 	if (strcmp(lut_pb_type->name, "lut") != 0) {
-		default_name = my_strdup("lut");
+		default_name = vtr::strdup("lut");
 	} else {
-		default_name = my_strdup("lut_child");
+		default_name = vtr::strdup("lut_child");
 	}
 
 	lut_pb_type->num_modes = 2;
@@ -193,7 +194,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			sizeof(t_mode));
 
 	/* First mode, route_through */
-	lut_pb_type->modes[0].name = my_strdup("wire");
+	lut_pb_type->modes[0].name = vtr::strdup("wire");
 	lut_pb_type->modes[0].parent_pb_type = lut_pb_type;
 	lut_pb_type->modes[0].index = 0;
 	lut_pb_type->modes[0].num_pb_type_children = 0;
@@ -244,12 +245,12 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			lut_pb_type->num_annotations;
 	for (i = 0; i < lut_pb_type->modes[0].interconnect[0].num_annotations;
 			i++) {
-		lut_pb_type->modes[0].interconnect[0].annotations[i].clock = my_strdup(
+		lut_pb_type->modes[0].interconnect[0].annotations[i].clock = vtr::strdup(
 				lut_pb_type->annotations[i].clock);
 		lut_pb_type->modes[0].interconnect[0].annotations[i].input_pins =
-				my_strdup(lut_pb_type->annotations[i].input_pins);
+				vtr::strdup(lut_pb_type->annotations[i].input_pins);
 		lut_pb_type->modes[0].interconnect[0].annotations[i].output_pins =
-				my_strdup(lut_pb_type->annotations[i].output_pins);
+				vtr::strdup(lut_pb_type->annotations[i].output_pins);
 		lut_pb_type->modes[0].interconnect[0].annotations[i].line_num =
 				lut_pb_type->annotations[i].line_num;
 		lut_pb_type->modes[0].interconnect[0].annotations[i].format =
@@ -270,13 +271,13 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			lut_pb_type->modes[0].interconnect[0].annotations[i].prop[j] =
 					lut_pb_type->annotations[i].prop[j];
 			lut_pb_type->modes[0].interconnect[0].annotations[i].value[j] =
-					my_strdup(lut_pb_type->annotations[i].value[j]);
+					vtr::strdup(lut_pb_type->annotations[i].value[j]);
 		}
 	}
 
 	/* Second mode, LUT */
 
-	lut_pb_type->modes[1].name = my_strdup(lut_pb_type->name);
+	lut_pb_type->modes[1].name = vtr::strdup(lut_pb_type->name);
 	lut_pb_type->modes[1].parent_pb_type = lut_pb_type;
 	lut_pb_type->modes[1].index = 1;
 	lut_pb_type->modes[1].num_pb_type_children = 1;
@@ -378,13 +379,13 @@ void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 	int i, j, i_inter, num_pb;
 
 	if (strcmp(mem_pb_type->name, "memory_slice") != 0) {
-		default_name = my_strdup("memory_slice");
+		default_name = vtr::strdup("memory_slice");
 	} else {
-		default_name = my_strdup("memory_slice_1bit");
+		default_name = vtr::strdup("memory_slice_1bit");
 	}
 
 	mem_pb_type->modes = (t_mode*) my_calloc(1, sizeof(t_mode));
-	mem_pb_type->modes[0].name = my_strdup(default_name);
+	mem_pb_type->modes[0].name = vtr::strdup(default_name);
 	mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
 	mem_pb_type->modes[0].index = 0;
 	mem_pb_type->modes[0].mode_power = (t_mode_power*) my_calloc(1,
@@ -596,7 +597,7 @@ void CreateModelLibrary(OUTP struct s_arch *arch) {
 	t_model* model_library;
 
 	model_library = (t_model*) my_calloc(4, sizeof(t_model));
-	model_library[0].name = my_strdup("input");
+	model_library[0].name = vtr::strdup("input");
 	model_library[0].index = 0;
 	model_library[0].inputs = NULL;
 	model_library[0].instances = NULL;
@@ -604,19 +605,19 @@ void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[0].outputs = (t_model_ports*) my_calloc(1,
 			sizeof(t_model_ports));
 	model_library[0].outputs->dir = OUT_PORT;
-	model_library[0].outputs->name = my_strdup("inpad");
+	model_library[0].outputs->name = vtr::strdup("inpad");
 	model_library[0].outputs->next = NULL;
 	model_library[0].outputs->size = 1;
 	model_library[0].outputs->min_size = 1;
 	model_library[0].outputs->index = 0;
 	model_library[0].outputs->is_clock = false;
 
-	model_library[1].name = my_strdup("output");
+	model_library[1].name = vtr::strdup("output");
 	model_library[1].index = 1;
 	model_library[1].inputs = (t_model_ports*) my_calloc(1,
 			sizeof(t_model_ports));
 	model_library[1].inputs->dir = IN_PORT;
-	model_library[1].inputs->name = my_strdup("outpad");
+	model_library[1].inputs->name = vtr::strdup("outpad");
 	model_library[1].inputs->next = NULL;
 	model_library[1].inputs->size = 1;
 	model_library[1].inputs->min_size = 1;
@@ -626,19 +627,19 @@ void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[1].next = &model_library[2];
 	model_library[1].outputs = NULL;
 
-	model_library[2].name = my_strdup("latch");
+	model_library[2].name = vtr::strdup("latch");
 	model_library[2].index = 2;
 	model_library[2].inputs = (t_model_ports*) my_calloc(2,
 			sizeof(t_model_ports));
 	model_library[2].inputs[0].dir = IN_PORT;
-	model_library[2].inputs[0].name = my_strdup("D");
+	model_library[2].inputs[0].name = vtr::strdup("D");
 	model_library[2].inputs[0].next = &model_library[2].inputs[1];
 	model_library[2].inputs[0].size = 1;
 	model_library[2].inputs[0].min_size = 1;
 	model_library[2].inputs[0].index = 0;
 	model_library[2].inputs[0].is_clock = false;
 	model_library[2].inputs[1].dir = IN_PORT;
-	model_library[2].inputs[1].name = my_strdup("clk");
+	model_library[2].inputs[1].name = vtr::strdup("clk");
 	model_library[2].inputs[1].next = NULL;
 	model_library[2].inputs[1].size = 1;
 	model_library[2].inputs[1].min_size = 1;
@@ -649,19 +650,19 @@ void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[2].outputs = (t_model_ports*) my_calloc(1,
 			sizeof(t_model_ports));
 	model_library[2].outputs->dir = OUT_PORT;
-	model_library[2].outputs->name = my_strdup("Q");
+	model_library[2].outputs->name = vtr::strdup("Q");
 	model_library[2].outputs->next = NULL;
 	model_library[2].outputs->size = 1;
 	model_library[2].outputs->min_size = 1;
 	model_library[2].outputs->index = 0;
 	model_library[2].outputs->is_clock = false;
 
-	model_library[3].name = my_strdup("names");
+	model_library[3].name = vtr::strdup("names");
 	model_library[3].index = 3;
 	model_library[3].inputs = (t_model_ports*) my_calloc(1,
 			sizeof(t_model_ports));
 	model_library[3].inputs->dir = IN_PORT;
-	model_library[3].inputs->name = my_strdup("in");
+	model_library[3].inputs->name = vtr::strdup("in");
 	model_library[3].inputs->next = NULL;
 	model_library[3].inputs->size = 1;
 	model_library[3].inputs->min_size = 1;
@@ -672,7 +673,7 @@ void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[3].outputs = (t_model_ports*) my_calloc(1,
 			sizeof(t_model_ports));
 	model_library[3].outputs->dir = OUT_PORT;
-	model_library[3].outputs->name = my_strdup("out");
+	model_library[3].outputs->name = vtr::strdup("out");
 	model_library[3].outputs->next = NULL;
 	model_library[3].outputs->size = 1;
 	model_library[3].outputs->min_size = 1;
@@ -697,7 +698,7 @@ void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 	int i, j, p;
 	t_model *model_match_prim, *cur_model;
 	t_model_ports *model_port;
-	struct s_linked_vptr *old;
+    vtr::t_linked_vptr *old;
 	char* blif_model_name;
 
 	bool found;
@@ -746,8 +747,8 @@ void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 
 		pb_type->model = model_match_prim;
 		old = model_match_prim->pb_types;
-		model_match_prim->pb_types = (struct s_linked_vptr*) my_malloc(
-				sizeof(struct s_linked_vptr));
+		model_match_prim->pb_types = (vtr::t_linked_vptr*) my_malloc(
+				sizeof(vtr::t_linked_vptr));
 		model_match_prim->pb_types->next = old;
 		model_match_prim->pb_types->data_vptr = pb_type;
 

@@ -9,6 +9,7 @@
 #ifndef LOGIC_TYPES_H
 #define LOGIC_TYPES_H
 
+#include "vtr_list.h"
 #include "util.h"
 
 /* 
@@ -36,7 +37,7 @@ typedef struct s_model {
 	t_model_ports *outputs; /* linked list of output ports */
 	void *instances;
 	int used;
-	struct s_linked_vptr *pb_types; /* Physical block types that implement this model */
+    vtr::t_linked_vptr *pb_types; /* Physical block types that implement this model */
 	struct s_model *next; /* next model (linked list) */
 
 	int index;

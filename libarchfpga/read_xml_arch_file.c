@@ -44,7 +44,9 @@
 
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
+
 #include "vtr_util.h"
+#include "vtr_matrix.h"
 
 #include "util.h"
 #include "arch_types.h"
@@ -149,7 +151,7 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 	pugi::xml_node Next;
 	ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
-	if (check_file_name_extension(ArchFile, ".xml") == false) {
+	if (vtr::check_file_name_extension(ArchFile, ".xml") == false) {
 		vpr_printf_warning(__FILE__, __LINE__,
 				"Architecture file '%s' may be in incorrect format. "
 						"Expecting .xml format for architecture files.\n",
@@ -383,7 +385,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 
 			/* Go through lists of pins */
-			const std::vector<std::string> Tokens = vtrutil::split(Cur.child_value());
+			const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
 			Count = Tokens.size();
 			Type->num_pin_loc_assignments[0][height][side] = Count;
 			if (Count > 0) {
@@ -391,7 +393,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 						Count, sizeof(char*));
 				for (int pin = 0; pin < Count; ++pin) {
 					/* Store location assignment */
-					Type->pin_loc_assignments[0][height][side][pin] = my_strdup(
+					Type->pin_loc_assignments[0][height][side][pin] = vtr::strdup(
 							Tokens[pin].c_str());
 
 					/* Advance through list of pins in this location */
@@ -519,7 +521,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
 						"grid location property 'start' must be specified for grid location type 'col'.\n");
 			}
-			Type->grid_loc_def[i].start_col = my_atoi(Prop);
+			Type->grid_loc_def[i].start_col = vtr::atoi(Prop);
 		} else if (Prop != NULL) {
 			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
 					"grid location property 'start' valid for grid location type 'col' only.\n");
@@ -527,7 +529,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 		Prop = get_attribute(Cur, "repeat", loc_data, OPTIONAL).as_string(NULL);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
 			if (Prop != NULL) {
-				Type->grid_loc_def[i].repeat = my_atoi(Prop);
+				Type->grid_loc_def[i].repeat = vtr::atoi(Prop);
 			}
 		} else if (Prop != NULL) {
 			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
@@ -587,26 +589,26 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		Prop = get_attribute(Parent, "max", loc_data, OPTIONAL).as_string(NULL);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MAX;
-			annotation->value[i] = my_strdup(Prop);
+			annotation->value[i] = vtr::strdup(Prop);
 			i++;
 		}
 		Prop = get_attribute(Parent, "min",loc_data, OPTIONAL).as_string(NULL);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MIN;
-			annotation->value[i] = my_strdup(Prop);
+			annotation->value[i] = vtr::strdup(Prop);
 			i++;
 		}
 		Prop = get_attribute(Parent, "in_port", loc_data).value();
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "out_port", loc_data).value();
-		annotation->output_pins = my_strdup(Prop);
+		annotation->output_pins = vtr::strdup(Prop);
 
 	} else if (0 == strcmp(Parent.name(), "delay_matrix")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
 		Prop = get_attribute(Parent, "type", loc_data).value();
-		annotation->value[i] = my_strdup(Parent.child_value());
+		annotation->value[i] = vtr::strdup(Parent.child_value());
 
 		if (0 == strcmp(Prop, "max")) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MAX;
@@ -617,39 +619,39 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
 		i++;
 		Prop = get_attribute(Parent, "in_port", loc_data).value();
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "out_port", loc_data).value();
-		annotation->output_pins = my_strdup(Prop);
+		annotation->output_pins = vtr::strdup(Prop);
 
 	} else if (0 == strcmp(Parent.name(), "C_constant")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = get_attribute(Parent, "C", loc_data).value();
-		annotation->value[i] = my_strdup(Prop);
+		annotation->value[i] = vtr::strdup(Prop);
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
 		i++;
 
 		Prop = get_attribute(Parent, "in_port", loc_data, OPTIONAL).as_string(NULL);
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "out_port", loc_data,OPTIONAL).as_string(NULL);
-		annotation->output_pins = my_strdup(Prop);
+		annotation->output_pins = vtr::strdup(Prop);
 		assert(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 
 	} else if (0 == strcmp(Parent.name(), "C_matrix")) {
 		annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
 		annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
-		annotation->value[i] = my_strdup(Parent.child_value());
+		annotation->value[i] = vtr::strdup(Parent.child_value());
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
 		i++;
 
 		Prop = get_attribute(Parent, "in_port", loc_data, OPTIONAL).as_string(NULL);
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "out_port", loc_data, OPTIONAL).as_string(NULL);
-		annotation->output_pins = my_strdup(Prop);
+		annotation->output_pins = vtr::strdup(Prop);
 		assert(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 
@@ -658,14 +660,14 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = get_attribute(Parent, "value", loc_data).value();
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
-		annotation->value[i] = my_strdup(Prop);
+		annotation->value[i] = vtr::strdup(Prop);
 
 		i++;
 		Prop = get_attribute(Parent, "port", loc_data).value();
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "clock", loc_data).value();
-		annotation->clock = my_strdup(Prop);
+		annotation->clock = vtr::strdup(Prop);
 
 		primitives_annotation_clock_match(annotation, parent_pb_type);
 
@@ -675,21 +677,21 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		Prop = get_attribute(Parent, "max", loc_data, OPTIONAL).as_string(NULL);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
-			annotation->value[i] = my_strdup(Prop);
+			annotation->value[i] = vtr::strdup(Prop);
 			i++;
 		}
 		Prop = get_attribute(Parent, "min", loc_data, OPTIONAL).as_string(NULL);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
-			annotation->value[i] = my_strdup(Prop);
+			annotation->value[i] = vtr::strdup(Prop);
 			i++;
 		}
 
 		Prop = get_attribute(Parent, "port", loc_data).value();
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "clock", loc_data).value();
-		annotation->clock = my_strdup(Prop);
+		annotation->clock = vtr::strdup(Prop);
 
 		primitives_annotation_clock_match(annotation, parent_pb_type);
 
@@ -698,14 +700,14 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = get_attribute(Parent, "value", loc_data).value();
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
-		annotation->value[i] = my_strdup(Prop);
+		annotation->value[i] = vtr::strdup(Prop);
 		i++;
 
 		Prop = get_attribute(Parent, "port", loc_data).value();
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "clock", loc_data).value();
-		annotation->clock = my_strdup(Prop);
+		annotation->clock = vtr::strdup(Prop);
 
 		primitives_annotation_clock_match(annotation, parent_pb_type);
 
@@ -714,14 +716,14 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = get_attribute(Parent, "name", loc_data).value();
 		annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
-		annotation->value[i] = my_strdup(Prop);
+		annotation->value[i] = vtr::strdup(Prop);
 		i++;
 
 		Prop = get_attribute(Parent, "in_port", loc_data).value();
-		annotation->input_pins = my_strdup(Prop);
+		annotation->input_pins = vtr::strdup(Prop);
 
 		Prop = get_attribute(Parent, "out_port", loc_data).value();
-		annotation->output_pins = my_strdup(Prop);
+		annotation->output_pins = vtr::strdup(Prop);
 
 	} else {
 		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
@@ -903,18 +905,18 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 	if (mode != NULL && mode->parent_pb_type != NULL) {
 		pb_type->depth = mode->parent_pb_type->depth + 1;
 		Prop = get_attribute(Parent, "name", loc_data).value();
-		pb_type->name = my_strdup(Prop);
+		pb_type->name = vtr::strdup(Prop);
 	} else {
 		pb_type->depth = 0;
 		/* same name as type */
 	}
 
 	Prop = get_attribute(Parent, "blif_model", loc_data, OPTIONAL).as_string(NULL);
-	pb_type->blif_model = my_strdup(Prop);
+	pb_type->blif_model = vtr::strdup(Prop);
 
 	pb_type->class_type = UNKNOWN_CLASS;
 	Prop = get_attribute(Parent, "class", loc_data, OPTIONAL).as_string(NULL);
-	class_name = my_strdup(Prop);
+	class_name = vtr::strdup(Prop);
 
 	if (class_name) {
 
@@ -1240,13 +1242,13 @@ static void ProcessPb_TypePort(INOUTP pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiloc::loc_data& loc_data) {
 	const char *Prop;
 	Prop = get_attribute(Parent, "name", loc_data).value();
-	port->name = my_strdup(Prop);
+	port->name = vtr::strdup(Prop);
 
 	Prop = get_attribute(Parent, "port_class", loc_data, OPTIONAL).as_string(NULL);
-	port->port_class = my_strdup(Prop);
+	port->port_class = vtr::strdup(Prop);
 
 	Prop = get_attribute(Parent, "chain", loc_data, OPTIONAL).as_string(NULL);
-	port->chain_name = my_strdup(Prop);
+	port->chain_name = vtr::strdup(Prop);
 
 	port->equivalent = get_attribute(Parent, "equivalent", loc_data, OPTIONAL).as_bool(false);
 	port->num_pins = get_attribute(Parent, "num_pins", loc_data).as_int(0);
@@ -1386,13 +1388,13 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 			mode->interconnect[i].parent_mode = mode;
 
 			Prop = get_attribute(Cur, "input", loc_data).value();
-			mode->interconnect[i].input_string = my_strdup(Prop);
+			mode->interconnect[i].input_string = vtr::strdup(Prop);
 
 			Prop = get_attribute(Cur, "output", loc_data).value();
-			mode->interconnect[i].output_string = my_strdup(Prop);
+			mode->interconnect[i].output_string = vtr::strdup(Prop);
 
 			Prop = get_attribute(Cur, "name", loc_data).value();
-			mode->interconnect[i].name = my_strdup(Prop);
+			mode->interconnect[i].name = vtr::strdup(Prop);
 
 			ret_interc_names = interc_names.insert(
 					pair<string, int>(mode->interconnect[i].name, 0));
@@ -1469,10 +1471,10 @@ static void ProcessMode(INOUTP pugi::xml_node Parent, t_mode * mode,
 
 	if (0 == strcmp(Parent.name(), "pb_type")) {
 		/* implied mode */
-		mode->name = my_strdup(mode->parent_pb_type->name);
+		mode->name = vtr::strdup(mode->parent_pb_type->name);
 	} else {
 		Prop = get_attribute(Parent, "name", loc_data).value();
-		mode->name = my_strdup(Prop);
+		mode->name = vtr::strdup(Prop);
 	}
 
 	mode->num_pb_type_children = count_children(Parent, "pb_type", loc_data, OPTIONAL);
@@ -1532,7 +1534,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 	Type->is_Fc_frac = (bool *) my_malloc(Type->num_pins * sizeof(bool));
 	Type->is_Fc_full_flex = (bool *) my_malloc(
 			Type->num_pins * sizeof(bool));
-	Type->Fc = (float **) alloc_matrix(0, Type->num_pins-1, 0, num_segments-1, sizeof(float));
+	Type->Fc = vtr::alloc_matrix<float>(0, Type->num_pins-1, 0, num_segments-1);
 
 	/* Load the default fc_in, if specified */
 	Prop = get_attribute(Node, "default_in_type", loc_data, OPTIONAL).as_string(NULL);
@@ -1826,7 +1828,7 @@ static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Ty
 
 	/* Load type name */
 	Prop = get_attribute(Node, "name", loc_data).value();
-	Type->name = my_strdup(Prop);
+	Type->name = vtr::strdup(Prop);
 
 	/* Load properties */
 	Type->capacity = get_attribute(Node, "capacity", loc_data, OPTIONAL).as_int(1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
@@ -1865,7 +1867,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 		temp->inputs = temp->outputs = NULL;
 		temp->instances = NULL;
 		Prop = get_attribute(child, "name", loc_data).value();
-		temp->name = my_strdup(Prop);
+		temp->name = vtr::strdup(Prop);
 		temp->pb_types = NULL;
 		temp->index = L_index;
 		L_index++;
@@ -1885,7 +1887,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 			while (p != NULL) {
 				tp = (t_model_ports*) my_calloc(1, sizeof(t_model_ports));
 				Prop = get_attribute(p, "name", loc_data).value();
-				tp->name = my_strdup(Prop);
+				tp->name = vtr::strdup(Prop);
 				tp->size = -1; /* determined later by pb_types */
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->inputs;
@@ -1894,7 +1896,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 						"is_non_clock_global", loc_data, OPTIONAL).as_bool(false);
 				tp->is_clock = false;
 				Prop = get_attribute(p, "is_clock", loc_data, OPTIONAL).as_string(NULL);
-				if (Prop && my_atoi(Prop) != 0) {
+				if (Prop && vtr::atoi(Prop) != 0) {
 					tp->is_clock = true;
 				}
 
@@ -1924,13 +1926,13 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 			while (p != NULL) {
 				tp = (t_model_ports*) my_calloc(1, sizeof(t_model_ports));
 				Prop = get_attribute(p, "name", loc_data).value();
-				tp->name = my_strdup(Prop);
+				tp->name = vtr::strdup(Prop);
 				tp->size = -1; /* determined later by pb_types */
 				tp->min_size = -1; /* determined later by pb_types */
 				tp->next = temp->outputs;
 				tp->dir = OUT_PORT;
 				Prop = get_attribute(p, "is_clock", loc_data, OPTIONAL).as_string(NULL);
-				if (Prop && my_atoi(Prop) != 0) {
+				if (Prop && vtr::atoi(Prop) != 0) {
 					tp->is_clock = true;
 				}
 
@@ -1978,7 +1980,7 @@ static void ProcessLayout(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 	Prop = get_attribute(Node, "width", loc_data, OPTIONAL).as_string(NULL);
 	if (Prop != NULL) {
 		arch->clb_grid.IsAuto = false;
-		arch->clb_grid.W = my_atoi(Prop);
+		arch->clb_grid.W = vtr::atoi(Prop);
 
 		arch->clb_grid.H = get_attribute(Node, "height", loc_data).as_int(UNDEFINED);
 	}
@@ -2172,7 +2174,7 @@ static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
 
 		/* Load pb_type info */
 		Type->pb_type = (t_pb_type*) my_malloc(sizeof(t_pb_type));
-		Type->pb_type->name = my_strdup(Type->name);
+		Type->pb_type->name = vtr::strdup(Type->name);
 		if (i == IO_TYPE_INDEX) {
 			if (strcmp(Type->name, "io") != 0) {
 				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(CurType),
@@ -2245,7 +2247,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 		/* Get segment name */
 		tmp = get_attribute(Node, "name", loc_data, OPTIONAL).as_string(NULL);
 		if (tmp) {
-			(*Segs)[i].name = my_strdup(tmp);
+			(*Segs)[i].name = vtr::strdup(tmp);
 		} else {
 			/* if swich block is "custom", then you have to provide a name for segment */
 			if (switchblocklist_required) {
@@ -2258,7 +2260,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 			ss << "unnamed_segment_" << i;
 			string dummy = ss.str();
 			tmp = dummy.c_str();
-			(*Segs)[i].name = my_strdup(tmp);
+			(*Segs)[i].name = vtr::strdup(tmp);
 		}
 
 		/* Get segment length */
@@ -2268,7 +2270,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 			if (strcmp(tmp, "longline") == 0) {
 				(*Segs)[i].longline = true;
 			} else {
-				length = my_atoi(tmp);
+				length = vtr::atoi(tmp);
 			}
 		}
 		(*Segs)[i].length = length;
@@ -2557,7 +2559,7 @@ static void ProcessSwitches(INOUTP pugi::xml_node Parent,
 						switch_name);
 			}
 		}
-		(*Switches)[i].name = my_strdup(switch_name);
+		(*Switches)[i].name = vtr::strdup(switch_name);
 
 		/* Figure out the type of switch. */
 		if (0 == strcmp(type_name, "mux")) {
@@ -2714,7 +2716,7 @@ static void ProcessDirects(INOUTP pugi::xml_node Parent, OUTP t_direct_inf **Dir
 						direct_name);
 			}
 		}
-		(*Directs)[i].name = my_strdup(direct_name);
+		(*Directs)[i].name = vtr::strdup(direct_name);
 
 		/* Figure out the source pin and sink pin name */
 		from_pin_name = get_attribute(Node, "from_pin",  loc_data).value();
@@ -2726,8 +2728,8 @@ static void ProcessDirects(INOUTP pugi::xml_node Parent, OUTP t_direct_inf **Dir
 					"The source pin and sink pin are the same: %s.\n",
 					to_pin_name);
 		}
-		(*Directs)[i].from_pin = my_strdup(from_pin_name);
-		(*Directs)[i].to_pin = my_strdup(to_pin_name);
+		(*Directs)[i].from_pin = vtr::strdup(from_pin_name);
+		(*Directs)[i].to_pin = vtr::strdup(to_pin_name);
 
 		(*Directs)[i].x_offset = get_attribute(Node, "x_offset", loc_data).as_int(0);
 		(*Directs)[i].y_offset = get_attribute(Node, "y_offset", loc_data).as_int(0);

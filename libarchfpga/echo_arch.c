@@ -1,8 +1,11 @@
-#include "echo_arch.h"
-
 #include <cstring>
 
+#include "echo_arch.h"
+#include "vtr_list.h"
+#include "vtr_util.h"
 #include "arch_types.h"
+
+using vtr::t_linked_vptr;
 
 static void PrintArchInfo(FILE* Echo, const struct s_arch *arch);
 static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
@@ -18,9 +21,9 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 	FILE * Echo;
 	t_model * cur_model;
 	t_model_ports * model_port;
-	struct s_linked_vptr *cur_vptr;
+	t_linked_vptr *cur_vptr;
 
-	Echo = my_fopen(EchoFile, "w", 0);
+	Echo = vtr::fopen(EchoFile, "w");
 	cur_model = NULL;
 
 	//Print all layout device switch/segment list info first

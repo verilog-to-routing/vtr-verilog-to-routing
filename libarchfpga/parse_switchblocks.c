@@ -25,6 +25,8 @@ specified by the switch block permutation functions into their numeric counterpa
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 
+#include "vtr_util.h"
+
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
@@ -668,7 +670,7 @@ static void get_formula_object( const char *ch, int &ichar, const s_formula_data
 		}
 		ichar --;
 		fobj->type = E_FML_NUMBER;
-		fobj->data.num = my_atoi(ss.str().c_str());
+		fobj->data.num = vtr::atoi(ss.str().c_str());
 	} else {
 		switch ((*ch)){
 			case 'W':

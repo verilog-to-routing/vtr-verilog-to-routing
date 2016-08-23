@@ -26,7 +26,7 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-SRC = src/vtr_util.cpp
+SRC = $(wildcard src/*.cpp)
 OBJS = $(SRC:.cpp=.o)
 
 DEPS = $(OBJS:.o=.d)

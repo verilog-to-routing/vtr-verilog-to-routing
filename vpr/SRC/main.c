@@ -19,6 +19,8 @@ using namespace std;
 
 #include "vpr_api.h"
 #include "util.h" /* for CLOCKS_PER_SEC */
+/*#include "vtr_util.h"*/
+#include "vtr_memory.h"
 #include "path_delay.h" /* for timing_analysis_runtime */
 
 /*
