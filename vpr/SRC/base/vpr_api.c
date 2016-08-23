@@ -11,9 +11,12 @@
 #include <cstring>
 #include <ctime>
 #include <chrono>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+
+#include "vtr_list.h"
+#include "vtr_matrix.h"
 
 #include "util.h"
 #include "vpr_types.h"
@@ -607,9 +610,9 @@ void free_arch(t_arch* Arch) {
 			free(prev_port->name);
 			free(prev_port);
 		}
-		struct s_linked_vptr *vptr = model->pb_types;
+		vtr::t_linked_vptr *vptr = model->pb_types;
 		while (vptr) {
-			struct s_linked_vptr *vptr_prev = vptr;
+			vtr::t_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
 			free(vptr_prev);
 		}
@@ -623,9 +626,9 @@ void free_arch(t_arch* Arch) {
 	}
 
 	for (int i = 0; i < 4; ++i) {
-		struct s_linked_vptr *vptr = Arch->model_library[i].pb_types;
+		vtr::t_linked_vptr *vptr = Arch->model_library[i].pb_types;
 		while (vptr) {
-			struct s_linked_vptr *vptr_prev = vptr;
+			vtr::t_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
 			free(vptr_prev);
 		}
@@ -737,7 +740,7 @@ static void free_complex_block_types(void) {
 
 		free(type_descriptors[i].is_Fc_frac);
 		free(type_descriptors[i].is_Fc_full_flex);
-		free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0, sizeof(float));
+        vtr::free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0);
 
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);
@@ -872,7 +875,7 @@ void free_circuit() {
 	free(default_output_name);
 	blif_circuit_name = NULL;
 
-	struct s_linked_vptr *p_io_removed = circuit_p_io_removed;
+	vtr::t_linked_vptr *p_io_removed = circuit_p_io_removed;
 	while (p_io_removed != NULL) {
 		circuit_p_io_removed = p_io_removed->next;
 		free(p_io_removed->data_vptr);

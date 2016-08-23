@@ -197,8 +197,8 @@ typedef struct s_logical_block {
 	struct s_tnode ***output_net_tnodes; /* [0..num_output_ports-1][0..num_pins -1] correspnding output net tnode */
 	struct s_tnode *clock_net_tnode; /* correspnding clock net tnode */
 
-	struct s_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
-	struct s_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
+    vtr::t_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
+	vtr::t_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
 
@@ -905,7 +905,7 @@ typedef struct s_seg_details {
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
 
-typedef struct s_seg_details** t_chan_details;
+typedef t_seg_details** t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */

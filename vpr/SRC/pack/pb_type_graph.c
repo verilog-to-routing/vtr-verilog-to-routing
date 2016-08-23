@@ -13,9 +13,10 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "util.h"
 #include "token.h"
@@ -31,8 +32,8 @@ using namespace std;
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
 static int pin_count_in_cluster;
-static struct s_linked_vptr *edges_head;
-static struct s_linked_vptr *num_edges_head;
+static vtr::t_linked_vptr *edges_head;
+static vtr::t_linked_vptr *num_edges_head;
 
 /* TODO: Software engineering decision needed: Move this file to libarch?
 
@@ -163,7 +164,7 @@ void echo_pb_graph(char * filename) {
 	FILE *fp;
 	int i;
 
-	fp = my_fopen(filename, "w", 0);
+	fp = vtr::fopen(filename, "w");
 
 	fprintf(fp, "Physical Blocks Graph\n");
 	fprintf(fp, "--------------------------------------------\n\n");
@@ -385,7 +386,7 @@ static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
 
 	int i, j, k;
 	const t_pb_type *pb_type;
-	struct s_linked_vptr *cur, *cur_num;
+	vtr::t_linked_vptr *cur, *cur_num;
 	t_pb_graph_edge *edges;
 
 	pb_type = pb_graph_node->pb_type;
@@ -853,7 +854,7 @@ static void alloc_and_load_complete_interc_edges(
 	int in_count, out_count;
 	t_pb_graph_edge *edges;
 	int i_edge;
-	struct s_linked_vptr *cur;
+	vtr::t_linked_vptr *cur;
 
 	assert(interconnect->infer_annotations == false);
 
@@ -868,11 +869,11 @@ static void alloc_and_load_complete_interc_edges(
 	}
 
 	edges = (t_pb_graph_edge*) my_calloc(in_count * out_count, sizeof(t_pb_graph_edge));
-	cur = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+	cur = (vtr::t_linked_vptr*) my_malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = edges_head;
 	edges_head = cur;
 	cur->data_vptr = (void *) edges;
-	cur = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+	cur = (vtr::t_linked_vptr*) my_malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
 	cur->data_vptr = (void *) ((long) in_count * out_count);
@@ -940,7 +941,7 @@ static void alloc_and_load_direct_interc_edges(
 
 	int i;
 	t_pb_graph_edge *edges;
-	struct s_linked_vptr *cur;
+	vtr::t_linked_vptr *cur;
 
 	/* Allocate memory for edges */
 	if (!(num_input_sets == 1 && num_output_sets == 1)) {
@@ -956,11 +957,11 @@ static void alloc_and_load_direct_interc_edges(
 
 	edges = (t_pb_graph_edge*) my_calloc(num_input_ptrs[0],
 			sizeof(t_pb_graph_edge));
-	cur = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+	cur = (vtr::t_linked_vptr*) my_malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = edges_head;
 	edges_head = cur;
 	cur->data_vptr = (void *) edges;
-	cur = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+	cur = (vtr::t_linked_vptr*) my_malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
 	cur->data_vptr = (void *) ((long) num_input_ptrs[0]);
@@ -1007,7 +1008,7 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 
 	int i_inset, i_inpin, i_outpin;
 	t_pb_graph_edge *edges;
-	struct s_linked_vptr *cur;
+	vtr::t_linked_vptr *cur;
 
 	assert(interconnect->infer_annotations == false);
 
@@ -1018,11 +1019,11 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
 	}
 
 	edges = (t_pb_graph_edge*) my_calloc(num_input_sets, sizeof(t_pb_graph_edge));
-	cur = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+	cur = (vtr::t_linked_vptr*) my_malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = edges_head;
 	edges_head = cur;
 	cur->data_vptr = (void *) edges;
-	cur = (struct s_linked_vptr*) my_malloc(sizeof(struct s_linked_vptr));
+	cur = (vtr::t_linked_vptr*) my_malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
 	cur->data_vptr = (void *) ((long) num_input_sets);
@@ -1127,7 +1128,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 				return false; //clb[abc
 			}
-			pb_msb = my_atoi(tokens[*token_index].data); 
+			pb_msb = vtr::atoi(tokens[*token_index].data); 
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 				if (!checkTokenType(tokens[*token_index],
@@ -1141,7 +1142,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 				if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 					return false; //clb[9:abc
 				}
-				pb_lsb = my_atoi(tokens[*token_index].data);
+				pb_lsb = vtr::atoi(tokens[*token_index].data);
 				(*token_index)++;
 				if (!checkTokenType(tokens[*token_index],
 						TOKEN_CLOSE_SQUARE_BRACKET)) {
@@ -1183,7 +1184,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 					if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 						return false;
 					}
-					pb_msb = my_atoi(tokens[*token_index].data);
+					pb_msb = vtr::atoi(tokens[*token_index].data);
 					(*token_index)++;
 					if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 						if (!checkTokenType(tokens[*token_index],
@@ -1197,7 +1198,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 						if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 							return false;
 						}
-						pb_lsb = my_atoi(tokens[*token_index].data);
+						pb_lsb = vtr::atoi(tokens[*token_index].data);
 						(*token_index)++;
 						if (!checkTokenType(tokens[*token_index],
 								TOKEN_CLOSE_SQUARE_BRACKET)) {
@@ -1253,7 +1254,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 		if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 			return false;
 		}
-		pin_msb = my_atoi(tokens[*token_index].data);
+		pin_msb = vtr::atoi(tokens[*token_index].data);
 		(*token_index)++;
 		if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
 			if (!checkTokenType(tokens[*token_index],
@@ -1267,7 +1268,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 			if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
 				return false;
 			}
-			pin_lsb = my_atoi(tokens[*token_index].data);
+			pin_lsb = vtr::atoi(tokens[*token_index].data);
 			(*token_index)++;
 			if (!checkTokenType(tokens[*token_index],
 					TOKEN_CLOSE_SQUARE_BRACKET)) {

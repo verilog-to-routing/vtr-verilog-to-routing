@@ -24,10 +24,6 @@
 #include <string.h>
 #include <ctime>
 #include <utility>
-#include "util.h"
-#include "vpr_types.h"
-#include "vpr_utils.h"
-#include "cb_metrics.h"
 
 #include <string>
 #include <iostream>
@@ -37,6 +33,13 @@
 
 #include <map>
 #include <iterator>
+
+#include "vtr_random.h"
+
+#include "util.h"
+#include "vpr_types.h"
+#include "vpr_utils.h"
+#include "cb_metrics.h"
 
 using namespace std;
 
@@ -728,8 +731,8 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 	set_of_tracks.clear();
 
 	/* choose a random side, random pin, and a random switch */
-	int rand_side = my_irand(3);
-	int rand_pin_index = my_irand( cb_metrics->pin_locations.at(rand_side).size()-1 );
+	int rand_side = vtr::irand(3);
+	int rand_pin_index = vtr::irand( cb_metrics->pin_locations.at(rand_side).size()-1 );
 	int rand_pin = cb_metrics->pin_locations.at(rand_side).at(rand_pin_index);
 	set<int> *tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
 
@@ -759,12 +762,12 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 			new_cost = cost;
 		} else {
 			/* now choose a random track from the returned set of qualifying tracks */
-			int old_track = my_irand(set_of_tracks.size()-1);
+			int old_track = vtr::irand(set_of_tracks.size()-1);
 			old_track = set_of_tracks.at(old_track);
 
 			/* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
 			find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
-			int new_track = my_irand(set_of_tracks.size()-1);
+			int new_track = vtr::irand(set_of_tracks.size()-1);
 			new_track = set_of_tracks.at(new_track);
 
 			/* move the rand_pin's connection from the old track to the new track and see what the new cost is */
@@ -984,7 +987,7 @@ static bool accept_move(INP double del_cost, INP double temp){
 	} else {
 		/* determine probabilistically whether or not to accept */
 		double probability = pow(2.718, -( del_cost / temp ) );
-		double rand_value = (double)my_frand();
+		double rand_value = (double)vtr::frand();
 		if (rand_value < probability){
 			accept = true;
 		} else {

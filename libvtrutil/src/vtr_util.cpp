@@ -11,7 +11,6 @@
 
 namespace vtr {
 
-constexpr size_t BUFSIZE = 32768; /* Maximum line length for various parsing proc. */
 
 char *out_file_prefix = NULL; /* used by fopen */
 static int file_line_number = 0; /* file in line number being parsed (used by fgets) */
@@ -139,7 +138,7 @@ int atoi(const char *str) {
             throw VtrError(string_fmt("Expected integer instead of '%s'", str), __FILE__, __LINE__);
 		}
 	}
-	return (atoi(str));
+	return std::atoi(str);
 }
 
 char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
@@ -213,9 +212,9 @@ char* fgets(char *buf, int max_size, FILE * fp) {
 
 	for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
 
-		ch = fgetc(fp);
+		ch = std::fgetc(fp);
 
-		if (feof(fp)) { /* end of file */
+		if (std::feof(fp)) { /* end of file */
 			if (i == 0) {
 				return NULL ; /* required so we can write while (vtr::fgets(...) != NULL) */
 			} else { /* no newline before end of file - last line must be returned */

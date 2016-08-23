@@ -4,6 +4,8 @@ using namespace std;
 #include <assert.h>
 #include <vector>
 
+#include "vtr_util.h"
+
 #include "util.h"
 #include "vpr_types.h"
 #include "OptionTokens.h"
@@ -17,6 +19,8 @@ using namespace std;
 #include "ReadOptions.h"
 #include "rr_graph_area.h"
 #include "echo_arch.h"
+#include "vtr_util.h"
+#include "vtr_random.h"
 
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation);
@@ -214,7 +218,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
 
 	/* init global variables */
-	out_file_prefix = Options->out_file_prefix;
+    vtr::out_file_prefix = Options->out_file_prefix;
 	grid_logic_tile_area = Arch->grid_logic_tile_area;
 
 	/* Set seed for pseudo-random placement, default seed to 1 */
@@ -222,7 +226,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	if (Options->Count[OT_SEED]) {
 		PlacerOpts->seed = Options->Seed;
 	}
-	my_srandom(PlacerOpts->seed);
+	vtr::srandom(PlacerOpts->seed);
 
 	vpr_printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
@@ -277,7 +281,7 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 				sizeof(char)); /* circuit_name.sdc/0*/
 		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
 	} else {
-		Timing->SDCFile = (char*) my_strdup(Options.SDCFile);
+		Timing->SDCFile = (char*) vtr::strdup(Options.SDCFile);
 	}
 
     if (Options.SlackDefinition != '\0') {
@@ -740,7 +744,7 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 	PlacerOpts->pad_loc_file = NULL; /* DEFAULT */
 	if (Options.Count[OT_FIX_PINS]) {
 		if (Options.PinFile) {
-			PlacerOpts->pad_loc_file = my_strdup(Options.PinFile);
+			PlacerOpts->pad_loc_file = vtr::strdup(Options.PinFile);
 		}
 	}
 

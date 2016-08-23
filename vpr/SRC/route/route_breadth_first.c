@@ -23,7 +23,7 @@ static void breadth_first_add_source_to_heap(int inet);
 /************************ Subroutine definitions ****************************/
 
 bool try_breadth_first_route(struct s_router_opts router_opts,
-		t_ivec ** clb_opins_used_locally, int width_fac) {
+		vtr::t_ivec ** clb_opins_used_locally, int width_fac) {
 
 	/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
 	 * (FPGA 95 p. 111).  Returns true if it can route this FPGA, false if   *

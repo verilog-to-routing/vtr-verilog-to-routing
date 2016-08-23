@@ -2,6 +2,8 @@
 #include <cstring>
 using namespace std;
 
+#include "vtr_memory.h"
+
 #include "hash.h"
 #include "util.h"
 

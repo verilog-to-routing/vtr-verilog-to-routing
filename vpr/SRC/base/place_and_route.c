@@ -29,6 +29,9 @@ using namespace std;
 #include "netlist_writer.h"
 #include "power.h"
 
+#include "vtr_util.h"
+#include "vtr_memory.h"
+
 /******************* Subroutines local to this module ************************/
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
@@ -60,13 +63,13 @@ bool place_and_route(enum e_operation operation,
 		t_direct_inf *directs, int num_directs) {
 
 	/* This routine controls the overall placement and routing of a circuit. */
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 
 	bool success = false;
-	t_chunk net_delay_ch = {NULL, 0, NULL};
+	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
-	t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
+	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
 	int max_pins_per_clb = 0;
@@ -250,14 +253,14 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	int current, low, high, final;
 	int max_pins_per_clb, i;
 	bool success, prev_success, prev2_success, Fc_clipped = false;
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	float **net_delay = NULL;
 	t_slack * slacks = NULL;
 
-	t_chunk net_delay_ch = {NULL, 0, NULL};
+	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
-	t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
+	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
 	/* [0..num_blocks-1][0..num_class-1] */
 	int attempt_count;

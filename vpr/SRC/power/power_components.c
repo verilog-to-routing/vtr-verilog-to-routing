@@ -22,9 +22,10 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_math.h"
 
 #include "power_components.h"
 #include "power_lowlevel.h"
@@ -286,8 +287,8 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 			float out_prob;
 			float out_dens;
 			float sum_prob = 0;
-			int sram_offset = MUX_idx * ipow(2, level_idx + 1);
-			int sram_per_branch = ipow(2, level_idx);
+			int sram_offset = MUX_idx * vtr::ipow(2, level_idx + 1);
+			int sram_per_branch = vtr::ipow(2, level_idx);
 			int branch_lvl_idx;
 			int sram_idx;
 			float v_out;
@@ -319,7 +320,7 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 				for (branch_lvl_idx = 0; branch_lvl_idx < level_idx;
 						branch_lvl_idx++) {
 					int branch_lvl_reverse_idx = lut_size - branch_lvl_idx - 1;
-					int even_odd = sram_idx / ipow(2, branch_lvl_idx);
+					int even_odd = sram_idx / vtr::ipow(2, branch_lvl_idx);
 					if (even_odd % 2 == 0) {
 						branch_prob *= (1 - input_prob[branch_lvl_reverse_idx]);
 					} else {

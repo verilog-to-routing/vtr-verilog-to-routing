@@ -11,6 +11,8 @@
 #include <memory>
 #include <unordered_set>
 
+#include "vtr_util.h"
+
 #include "netlist_walker.h"
 #include "netlist_writer.h"
 
@@ -1626,7 +1628,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Each row of the table (i.e. a c-string) is stored in a linked list 
             //
             //The c-string is the literal row from BLIF, e.g. "0 1" for an inverter, "11 1" for an AND2
-            t_linked_vptr* names_row_ptr = logical_block[atom->logical_block].truth_table;
+            vtr::t_linked_vptr* names_row_ptr = logical_block[atom->logical_block].truth_table;
             
             //Determine the truth (output value) for this .names
             bool encoding_on_set = names_encodes_on_set(names_row_ptr);
@@ -1757,7 +1759,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Helper function for load_lut_mask() which determines if the
         //names is encodeing the ON (returns true) or OFF (returns false)
         //set.
-        bool names_encodes_on_set(t_linked_vptr* names_row_ptr) {
+        bool names_encodes_on_set(vtr::t_linked_vptr* names_row_ptr) {
             //Determine the truth (output value) for this row
             // By default we assume the on-set is encoded to correctly handle
             // constant true/false

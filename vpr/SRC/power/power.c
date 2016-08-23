@@ -26,10 +26,11 @@
 #include <csignal>
 #include <ctime>
 #include <cmath>
+#include <cassert>
+#include <ctype.h>
 using namespace std;
 
-#include <ctype.h>
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "power.h"
 #include "power_components.h"
@@ -188,7 +189,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		power_add_usage(power_usage, &sub_power_usage);
 
 	} else {
-		char msg[BUFSIZE];
+		char msg[vtr::BUFSIZE];
 		sprintf(msg, "No dynamic power defined for BLIF model: %s",
 				pb_graph_node->pb_type->blif_model);
 		power_log_msg(POWER_LOG_WARNING, msg);
@@ -1283,13 +1284,13 @@ bool power_init(char * power_out_filepath,
 	g_power_output->num_logs = POWER_LOG_NUM_TYPES;
 	g_power_output->logs = (t_log*) my_calloc(g_power_output->num_logs,
 			sizeof(t_log));
-	g_power_output->logs[POWER_LOG_ERROR].name = my_strdup("Errors");
-	g_power_output->logs[POWER_LOG_WARNING].name = my_strdup("Warnings");
+	g_power_output->logs[POWER_LOG_ERROR].name = vtr::strdup("Errors");
+	g_power_output->logs[POWER_LOG_WARNING].name = vtr::strdup("Warnings");
 
 	/* Initialize output file */
 	if (!error) {
 		g_power_output->out = NULL;
-		g_power_output->out = my_fopen(power_out_filepath, "w", 0);
+		g_power_output->out = vtr::fopen(power_out_filepath, "w");
 		if (!g_power_output->out) {
 			error = true;
 		}

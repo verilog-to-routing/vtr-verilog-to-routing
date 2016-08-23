@@ -1,6 +1,8 @@
 #ifndef VTR_MATH_H
 #define VTR_MATH_H
 
+#include <map>
+
 namespace vtr {
     /*********************** Math operations *************************************/
     int ipow(int base, int exp);

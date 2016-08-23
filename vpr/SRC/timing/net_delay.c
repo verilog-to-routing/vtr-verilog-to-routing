@@ -1,6 +1,8 @@
 #include <cstdio>
 using namespace std;
 
+#include "vtr_memory.h"
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -101,7 +103,7 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 /*************************** Subroutine definitions **************************/
 
 float **
-alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
+alloc_net_delay(vtr::t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 		unsigned int n_nets){
 
 	/* Allocates space for the net_delay data structure                          *
@@ -115,7 +117,7 @@ alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 	net_delay = (float **) my_malloc(n_nets * sizeof(float *));
 
 	for (inet = 0; inet < n_nets; inet++) {
-		tmp_ptr = (float *) my_chunk_malloc(
+		tmp_ptr = (float *) vtr::chunk_malloc(
 				nets[inet].num_sinks() * sizeof(float),
 				chunk_list_ptr);
 
@@ -126,12 +128,12 @@ alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 }
 
 void free_net_delay(float **net_delay,
-		t_chunk *chunk_list_ptr){
+		vtr::t_chunk *chunk_list_ptr){
 
 	/* Frees the net_delay structure.  Assumes it was chunk allocated.          */
 
 	free(net_delay);
-	free_chunk_memory(chunk_list_ptr);
+    vtr::free_chunk_memory(chunk_list_ptr);
 }
 
 void load_net_delay_from_routing(float **net_delay, vector<t_vnet> & nets,

@@ -21,10 +21,12 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
+#include <cassert>
 #include <map>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_list.h"
+
 
 #include "power_util.h"
 #include "globals.h"
@@ -269,7 +271,7 @@ static void int_2_binary_str(char * binary_str, int value, int str_length) {
  *  - truth_table: The logic terms saved from the BLIF file, in a linked list format
  */
 char * alloc_SRAM_values_from_truth_table(int LUT_size,
-		t_linked_vptr * truth_table) {
+		vtr::t_linked_vptr * truth_table) {
 	char * SRAM_values;
 	int i;
 	int num_SRAM_bits;
@@ -278,7 +280,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	char * buffer;
 	char * str_loc;
 	bool on_set;
-	t_linked_vptr * list_ptr;
+	vtr::t_linked_vptr * list_ptr;
 	int num_terms;
 	int term_idx;
 	int bit_idx;

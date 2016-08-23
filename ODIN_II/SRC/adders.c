@@ -36,10 +36,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "subtractions.h"
 
+#include "vtr_list.h"
+
+using vtr::t_linked_vptr;
+
 t_model *hard_adders = NULL;
-struct s_linked_vptr *add_list = NULL;
-struct s_linked_vptr *processed_adder_list = NULL;
-struct s_linked_vptr *chain_list = NULL;
+t_linked_vptr *add_list = NULL;
+t_linked_vptr *processed_adder_list = NULL;
+t_linked_vptr *chain_list = NULL;
 int total = 0;
 int *adder = NULL;
 int min_add = 0;
@@ -978,7 +982,7 @@ void clean_adders()
  *-----------------------------------------------------------------------*/
 void reduce_operations(netlist_t *netlist, operation_list op)
 {
-	struct s_linked_vptr *place = NULL;
+	t_linked_vptr *place = NULL;
 	operation_list oper;
 	switch (op)
 	{
@@ -1012,7 +1016,7 @@ void reduce_operations(netlist_t *netlist, operation_list op)
  *
  * traverse the operation lists
  *-----------------------------------------------------------------------*/
-void traverse_list(operation_list oper, struct s_linked_vptr *place)
+void traverse_list(operation_list oper, t_linked_vptr *place)
 {
 		while (place != NULL && place->next != NULL)
 		{
@@ -1024,14 +1028,14 @@ void traverse_list(operation_list oper, struct s_linked_vptr *place)
 /*---------------------------------------------------------------------------
  * (function: match_node)
  *-------------------------------------------------------------------------*/
-void match_node(struct s_linked_vptr *place, operation_list oper)
+void match_node(t_linked_vptr *place, operation_list oper)
 {
 	int flag, mark;
 	nnode_t *node = NULL;
 	nnode_t *next_node = NULL;
 	node = (nnode_t*)place->data_vptr;
-	struct s_linked_vptr *pre = place;
-	struct s_linked_vptr *next = NULL;
+	t_linked_vptr *pre = place;
+	t_linked_vptr *next = NULL;
 	if (place->next != NULL)
 		next = place->next;
 	while (next != NULL)
@@ -1178,7 +1182,7 @@ void merge_nodes(nnode_t *node, nnode_t *next_node)
 /*---------------------------------------------------------------------------
  * (function: remove_list_node)
  *-------------------------------------------------------------------------*/
-void remove_list_node(struct s_linked_vptr *pre, struct s_linked_vptr *next)
+void remove_list_node(t_linked_vptr *pre, t_linked_vptr *next)
 {
 	if (next->next != NULL)
 		pre->next = next->next;

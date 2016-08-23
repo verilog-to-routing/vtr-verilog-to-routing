@@ -12,6 +12,8 @@ using namespace std;
 #include "arch_types.h"
 #include "ReadOptions.h"
 #include "hash.h"
+#include "vtr_util.h"
+#include "vtr_list.h"
 
 /* PRINT_PIN_NETS */
 
@@ -82,13 +84,13 @@ static bool add_activity_to_net(char * net_name, float probability,
 static void read_blif(char *blif_file, bool sweep_hanging_nets_and_inputs,
 		t_model *user_models, t_model *library_models,
 		bool read_activity_file, char * activity_file) {
-	char buffer[BUFSIZE];
+	char buffer[vtr::BUFSIZE];
 	bool done;
 	bool add_truth_table;
 	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
     int error_count = 0;
 
-	blif = fopen(blif_file, "r");
+	blif = vtr::fopen(blif_file, "r");
 	if (blif == NULL) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"Failed to open blif file '%s'.\n", blif_file);
@@ -107,7 +109,7 @@ static void read_blif(char *blif_file, bool sweep_hanging_nets_and_inputs,
 		done = false;
 		add_truth_table = false;
 		model_lines = 0;
-		while (my_fgets(buffer, BUFSIZE, blif) != NULL) {
+		while (vtr::fgets(buffer, vtr::BUFSIZE, blif) != NULL) {
 			get_blif_tok(buffer, doall, &done, &add_truth_table, inpad_model,
 					outpad_model, logic_model, latch_model, user_models);
 		}
@@ -195,7 +197,7 @@ static void init_parse(bool doall, bool init_vpack_net_power) {
 
 				/* For avoiding assigning values beyond end of pins array. */
 				temp_num_pins[h_ptr->index] = h_ptr->count;
-				vpack_net[h_ptr->index].name = my_strdup(h_ptr->name);
+				vpack_net[h_ptr->index].name = vtr::strdup(h_ptr->name);
 				h_ptr = h_ptr->next;
 			}
 		}
@@ -234,18 +236,18 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 #define BLIF_TOKENS " \t\n"
 	char *ptr;
 	char *fn;
-	struct s_linked_vptr *data;
+	vtr::t_linked_vptr *data;
 
-	ptr = my_strtok(buffer, TOKENS, blif, buffer);
+	ptr = vtr::strtok(buffer, TOKENS, blif, buffer);
 	if (ptr == NULL)
 		return;
 
 	if (*add_truth_table) {
 		if (ptr[0] == '0' || ptr[0] == '1' || ptr[0] == '-') {
-			data = (struct s_linked_vptr*) my_malloc(
-					sizeof(struct s_linked_vptr));
+			data = (vtr::t_linked_vptr*) my_malloc(
+					sizeof(vtr::t_linked_vptr));
 			fn = ptr;
-			ptr = my_strtok(NULL, BLIF_TOKENS, blif, buffer);
+			ptr = vtr::strtok(NULL, BLIF_TOKENS, blif, buffer);
 			if (!ptr || strlen(ptr) != 1) {
 				if (strlen(fn) == 1) {
 					/* constant generator */
@@ -282,7 +284,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 
 	if (strcmp(ptr, ".model") == 0) {
 		*add_truth_table = false;
-		ptr = my_strtok(NULL, TOKENS, blif, buffer);
+		ptr = vtr::strtok(NULL, TOKENS, blif, buffer);
 		if (doall) {
 			if (ptr != NULL) {
 				if (model != NULL) {
@@ -291,7 +293,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 				model = (char *) my_malloc((strlen(ptr) + 1) * sizeof(char));
 				strcpy(model, ptr);
 				if (blif_circuit_name == NULL) {
-					blif_circuit_name = my_strdup(model);
+					blif_circuit_name = vtr::strdup(model);
 				}
 			} else {
 				if (model != NULL) {
@@ -357,7 +359,7 @@ void dum_parse(char *buf) {
 
 	/* Continue parsing to the end of this (possibly continued) line. */
 
-	while (my_strtok(NULL, TOKENS, blif, buf) != NULL)
+	while (vtr::strtok(NULL, TOKENS, blif, buf) != NULL)
 		;
 }
 
@@ -368,21 +370,20 @@ static bool add_lut(bool doall, t_model *logic_model) {
 	 * zero this is a counting pass; if it is 1 this is the final (loading) *
 	 * pass.                                                                */
 
-	char *ptr, **saved_names, buf[BUFSIZE];
+	char *ptr, **saved_names, buf[vtr::BUFSIZE];
 	int i, j, output_net_index;
 
-	saved_names = (char**) alloc_matrix(0, logic_model->inputs->size, 0,
-	BUFSIZE - 1, sizeof(char));
+	saved_names = vtr::alloc_matrix<char>(0, logic_model->inputs->size, 0, vtr::BUFSIZE - 1);
 
 	num_logical_blocks++;
 
 	/* Count # nets connecting */
 	i = 0;
-	while ((ptr = my_strtok(NULL, TOKENS, blif, buf)) != NULL) {
+	while ((ptr = vtr::strtok(NULL, TOKENS, blif, buf)) != NULL) {
 		if (i > logic_model->inputs->size) {
 			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 					"[LINE %d] .names %s ... %s has a LUT size that exceeds the maximum LUT size (%d) of the architecture.\n",
-					get_file_line_number_of_last_opened_file(), saved_names[0], ptr,
+					vtr::get_file_line_number_of_last_opened_file(), saved_names[0], ptr,
 					logic_model->inputs->size);
 		}
 		strcpy(saved_names[i], ptr);
@@ -391,7 +392,7 @@ static bool add_lut(bool doall, t_model *logic_model) {
 	output_net_index = i - 1;
 	if (strcmp(saved_names[output_net_index], "unconn") == 0) {
 		/* unconn is a keyword to pad unused pins, ignore this block */
-		free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
+        vtr::free_matrix(saved_names, 0, logic_model->inputs->size, 0);
 		num_logical_blocks--;
 		return false;
 	}
@@ -401,7 +402,7 @@ static bool add_lut(bool doall, t_model *logic_model) {
 			/* On this pass it doesn't matter if RECEIVER or DRIVER.  Just checking if in hash.  [0] should be DRIVER */
 			add_vpack_net(saved_names[j], RECEIVER, num_logical_blocks - 1, 0,
 					j, false, doall);
-		free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
+        vtr::free_matrix(saved_names, 0, logic_model->inputs->size, 0);
 		return false;
 	}
 
@@ -439,12 +440,12 @@ static bool add_lut(bool doall, t_model *logic_model) {
 	for (i = output_net_index; i < logic_model->inputs->size; i++)
 		logical_block[num_logical_blocks - 1].input_nets[0][i] = OPEN;
 
-	logical_block[num_logical_blocks - 1].name = my_strdup(
+	logical_block[num_logical_blocks - 1].name = vtr::strdup(
 			saved_names[output_net_index]);
 	logical_block[num_logical_blocks - 1].truth_table = NULL;
 	num_luts++;
 
-	free_matrix(saved_names, 0, logic_model->inputs->size, 0, sizeof(char));
+    vtr::free_matrix(saved_names, 0, logic_model->inputs->size, 0);
 	return doall;
 }
 
@@ -457,7 +458,7 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 	 * .latch <input> <output> <type (latch on)> <control (clock)> <init_val> *
 	 * The latch pins are in .nets 0 to 2 in the order: Q D CLOCK.            */
 
-	char *ptr, buf[BUFSIZE], saved_names[6][BUFSIZE];
+	char *ptr, buf[vtr::BUFSIZE], saved_names[6][vtr::BUFSIZE];
 	int i;
 
 	num_logical_blocks++;
@@ -466,7 +467,7 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 	/* Note that we can't rely on the tokens being around unless we copy them.  */
 
 	for (i = 0; i < 6; i++) {
-		ptr = my_strtok(NULL, TOKENS, blif, buf);
+		ptr = vtr::strtok(NULL, TOKENS, blif, buf);
 		if (ptr == NULL)
 			break;
 		strcpy(saved_names[i], ptr);
@@ -475,7 +476,7 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 	if (i != 5) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				".latch does not have 5 parameters.\n"
-						"Check netlist, line %d.\n", get_file_line_number_of_last_opened_file());
+						"Check netlist, line %d.\n", vtr::get_file_line_number_of_last_opened_file());
 	}
 
 	if (!doall) { /* If only a counting pass ... */
@@ -510,7 +511,7 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 			saved_names[3], RECEIVER, num_logical_blocks - 1, 0, 0, true,
 			doall); /* Clock */
 
-	logical_block[num_logical_blocks - 1].name = my_strdup(saved_names[1]);
+	logical_block[num_logical_blocks - 1].name = vtr::strdup(saved_names[1]);
 	logical_block[num_logical_blocks - 1].truth_table = NULL;
 	num_latches++;
 }
@@ -518,8 +519,8 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 static void add_subckt(bool doall, t_model *user_models) {
 	char *ptr;
 	char *close_bracket;
-	char subckt_name[BUFSIZE];
-	char buf[BUFSIZE];
+	char subckt_name[vtr::BUFSIZE];
+	char buf[vtr::BUFSIZE];
 	//fpos_t current_subckt_pos;
 	int i, j, iparse;
 	int subckt_index_signals = 0;
@@ -538,13 +539,13 @@ static void add_subckt(bool doall, t_model *user_models) {
 
 	/* now we have to find the matching subckt */
 	/* find the name we are looking for */
-	strcpy(subckt_name, my_strtok(NULL, TOKENS, blif, buf));
+	strcpy(subckt_name, vtr::strtok(NULL, TOKENS, blif, buf));
 	/* get all the signals in the form z=r */
 	iparse = 0;
 	while (iparse < MAX_ATOM_PARSE) {
 		iparse++;
 		/* Assumption is that it will be "signal1, =, signal1b, spacing, and repeat" */
-		ptr = my_strtok(NULL, " \t\n=", blif, buf);
+		ptr = vtr::strtok(NULL, " \t\n=", blif, buf);
 
 		if (ptr == NULL && toggle == 0)
 			break;
@@ -561,12 +562,12 @@ static void add_subckt(bool doall, t_model *user_models) {
 					(subckt_index_signals + 1) * sizeof(char**));
 
 			/* copy in the subckt_signal name */
-			subckt_signal_name[subckt_index_signals] = my_strdup(ptr);
+			subckt_signal_name[subckt_index_signals] = vtr::strdup(ptr);
 
 			toggle = 1;
 		} else if (toggle == 1) {
 			/* copy in the circuit_signal name */
-			circuit_signal_name[subckt_index_signals] = my_strdup(ptr);
+			circuit_signal_name[subckt_index_signals] = vtr::strdup(ptr);
 			if (!doall) {
 				/* Counting pass, does not matter if driver or receiver and pin number does not matter */
 				add_vpack_net(circuit_signal_name[subckt_index_signals],
@@ -679,12 +680,12 @@ static void add_subckt(bool doall, t_model *user_models) {
 		for (i = 0; i < subckt_index_signals; i++) {
 			found_subckt_signal = false;
 			/* determine the port name and the pin_number of the subckt */
-			port_name = my_strdup(subckt_signal_name[i]);
+			port_name = vtr::strdup(subckt_signal_name[i]);
 			pin_number = strrchr(port_name, '[');
 
             bool free_pin_number = false;
 			if (pin_number == NULL) {
-				pin_number = my_strdup("0"); /* default to 0 */
+				pin_number = vtr::strdup("0"); /* default to 0 */
                 free_pin_number = true;
 			} else {
 				/* The pin numbering is port_name[pin_number] so need to go one to the right of [ then NULL out ] */
@@ -710,21 +711,21 @@ static void add_subckt(bool doall, t_model *user_models) {
 						assert(
 								logical_block[num_logical_blocks - 1].clock_net
 										== OPEN);
-						assert(my_atoi(pin_number) == 0);
+						assert(vtr::atoi(pin_number) == 0);
 						logical_block[num_logical_blocks - 1].clock_net =
 								add_vpack_net(circuit_signal_name[i], RECEIVER,
 										num_logical_blocks - 1, port->index,
-										my_atoi(pin_number), true, doall);
+										vtr::atoi(pin_number), true, doall);
 						assert(logical_block[num_logical_blocks - 1].clock_pin_name == NULL);
-						logical_block[num_logical_blocks - 1].clock_pin_name = my_strdup(circuit_signal_name[i]);
+						logical_block[num_logical_blocks - 1].clock_pin_name = vtr::strdup(circuit_signal_name[i]);
 					} else {
-						logical_block[num_logical_blocks - 1].input_nets[port->index][my_atoi(
+						logical_block[num_logical_blocks - 1].input_nets[port->index][vtr::atoi(
 								pin_number)] = add_vpack_net(
 								circuit_signal_name[i], RECEIVER,
 								num_logical_blocks - 1, port->index,
-								my_atoi(pin_number), false, doall);
-						logical_block[num_logical_blocks - 1].input_pin_names[port->index][my_atoi(
-							pin_number)] = my_strdup(circuit_signal_name[i]);
+								vtr::atoi(pin_number), false, doall);
+						logical_block[num_logical_blocks - 1].input_pin_names[port->index][vtr::atoi(
+							pin_number)] = vtr::strdup(circuit_signal_name[i]);
 						input_net_count++;
 					}
 				}
@@ -740,17 +741,17 @@ static void add_subckt(bool doall, t_model *user_models) {
 								subckt_signal_name[i], subckt_name);
 					}
 					found_subckt_signal = true;
-					logical_block[num_logical_blocks - 1].output_nets[port->index][my_atoi(
+					logical_block[num_logical_blocks - 1].output_nets[port->index][vtr::atoi(
 							pin_number)] = add_vpack_net(circuit_signal_name[i],
 							DRIVER, num_logical_blocks - 1, port->index,
-							my_atoi(pin_number), false, doall);
+							vtr::atoi(pin_number), false, doall);
 					if (subckt_logical_block_name == NULL
 							&& circuit_signal_name[i] != NULL) {
 						subckt_logical_block_name = circuit_signal_name[i];
 					}
 
-					logical_block[num_logical_blocks - 1].output_pin_names[port->index][my_atoi(
-						pin_number)] = my_strdup(circuit_signal_name[i]);
+					logical_block[num_logical_blocks - 1].output_pin_names[port->index][vtr::atoi(
+						pin_number)] = vtr::strdup(circuit_signal_name[i]);
 					output_net_count++;
 				}
 				port = port->next;
@@ -758,7 +759,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 
 			/* record the name to be first output net parsed */
 			if (logical_block[num_logical_blocks - 1].name == NULL) {
-				logical_block[num_logical_blocks - 1].name = my_strdup(
+				logical_block[num_logical_blocks - 1].name = vtr::strdup(
 						subckt_logical_block_name);
 			}
 
@@ -796,13 +797,13 @@ static void io_line(int in_or_out, bool doall, t_model *io_model) {
 	 * first pass when hash table is built and pins, nets, etc. are counted. */
 
 	char *ptr;
-	char buf2[BUFSIZE];
+	char buf2[vtr::BUFSIZE];
 	int nindex, len, iparse;
 
 	iparse = 0;
 	while (iparse < MAX_ATOM_PARSE) {
 		iparse++;
-		ptr = my_strtok(NULL, TOKENS, blif, buf2);
+		ptr = vtr::strtok(NULL, TOKENS, blif, buf2);
 		if (ptr == NULL)
 			return;
 		num_logical_blocks++;
@@ -981,7 +982,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	h_ptr->next = NULL;
 	h_ptr->index = num_logical_nets - 1;
 	h_ptr->count = 1;
-	h_ptr->name = my_strdup(ptr);
+	h_ptr->name = vtr::strdup(ptr);
 	return (h_ptr->index);
 }
 
@@ -1060,7 +1061,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	vpr_printf_info("Total blocks: %d, total nets: %d\n", num_logical_blocks,
 			num_logical_nets);
 
-	fp = my_fopen(echo_file, "w", 0);
+	fp = vtr::fopen(echo_file, "w");
 
 	fprintf(fp, "Input netlist file: '%s', model: %s\n", blif_file, model);
 	fprintf(fp,
@@ -1211,7 +1212,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 	int count_inputs, count_outputs;
 	int explicit_vpack_models;
 	t_model_ports *port;
-	struct s_linked_vptr *p_io_removed;
+	vtr::t_linked_vptr *p_io_removed;
 	int removed_nets;
 	int count_unconn_blocks;
 
@@ -1355,9 +1356,9 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 					&& (logical_block[i].type == VPACK_INPAD)) {
 				logical_block[i].type = VPACK_EMPTY;
 				vpr_printf_info("Removing input.\n");
-				p_io_removed = (struct s_linked_vptr*) my_malloc(
-						sizeof(struct s_linked_vptr));
-				p_io_removed->data_vptr = my_strdup(logical_block[i].name);
+				p_io_removed = (vtr::t_linked_vptr*) my_malloc(
+						sizeof(vtr::t_linked_vptr));
+				p_io_removed->data_vptr = vtr::strdup(logical_block[i].name);
 				p_io_removed->next = circuit_p_io_removed;
 				circuit_p_io_removed = p_io_removed;
 				continue;
@@ -1653,7 +1654,7 @@ static void compress_netlist(void) {
 	int *net_remap, *block_remap;
 	int L_num_nets;
 	t_model_ports *port;
-	struct s_linked_vptr *tvptr, *next;
+	vtr::t_linked_vptr *tvptr, *next;
 
 	new_num_nets = 0;
 	new_num_blocks = 0;
@@ -1974,7 +1975,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 static void read_activity(char * activity_file) {
 	int net_idx;
 	bool fail;
-	char buf[BUFSIZE];
+	char buf[vtr::BUFSIZE];
 	char * ptr;
 	char * word1;
 	char * word2;
@@ -1992,14 +1993,14 @@ static void read_activity(char * activity_file) {
 		vpack_net_power[net_idx].density = -1.0;
 	}
 
-	act_file_hdl = my_fopen(activity_file, "r", false);
+	act_file_hdl = vtr::fopen(activity_file, "r");
 	if (act_file_hdl == NULL) {
 		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
 				"Error: could not open activity file: %s\n", activity_file);
 	}
 
 	fail = false;
-	ptr = my_fgets(buf, BUFSIZE, act_file_hdl);
+	ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
 	while (ptr != NULL) {
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
@@ -2007,7 +2008,7 @@ static void read_activity(char * activity_file) {
 		//printf("word1:%s|word2:%s|word3:%s\n", word1, word2, word3);
 		fail |= add_activity_to_net(word1, atof(word2), atof(word3));
 
-		ptr = my_fgets(buf, BUFSIZE, act_file_hdl);
+		ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
 	}
 	fclose(act_file_hdl);
 

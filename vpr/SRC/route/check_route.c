@@ -21,14 +21,14 @@ static bool check_adjacent(int from_node, int to_node);
 static int pin_and_chan_adjacent(int pin_node, int chan_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
-static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally);
-static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
+static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally);
+static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 		enum e_route_type route_type);
 
 /************************ Subroutine definitions ****************************/
 
 void check_route(enum e_route_type route_type, int num_switches,
-		t_ivec ** clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -506,7 +506,7 @@ static int pin_and_chan_adjacent(int pin_node, int chan_node) {
 	 return true;
 }
 
-static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
+static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* This routine updates the occ field in the rr_node structure according to *
 	 * the resource usage of the current routing.  It does a brute force        *
@@ -562,7 +562,7 @@ static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
 	}
 }
 
-static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
+static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 		enum e_route_type route_type) {
 
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *

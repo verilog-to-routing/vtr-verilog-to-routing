@@ -2,6 +2,9 @@
 #include <cmath>
 using namespace std;
 
+#include "vtr_util.h"
+#include "vtr_memory.h"
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -13,24 +16,17 @@ using namespace std;
 
 float **timing_place_crit; /*available externally */
 
-static t_chunk timing_place_crit_ch = {NULL, 0, NULL};
-static t_chunk net_delay_ch = {NULL, 0, NULL};
-
-/*static struct s_linked_vptr *timing_place_crit_chunk_list_head;
-static struct s_linked_vptr *net_delay_chunk_list_head;*/
+static vtr::t_chunk timing_place_crit_ch = {NULL, 0, NULL};
+static vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 /******** prototypes ******************/
-/*static float **alloc_crit(struct s_linked_vptr **chunk_list_head_ptr);
+static float **alloc_crit(vtr::t_chunk *chunk_list_ptr);
 
-static void free_crit(struct s_linked_vptr **chunk_list_head_ptr);*/
-
-static float **alloc_crit(t_chunk *chunk_list_ptr);
-
-static void free_crit(t_chunk *chunk_list_ptr);
+static void free_crit(vtr::t_chunk *chunk_list_ptr);
 
 /**************************************/
 
-static float ** alloc_crit(t_chunk *chunk_list_ptr) {
+static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 
 	/* Allocates space for the timing_place_crit data structure *
 	 * [0..g_clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
@@ -43,7 +39,7 @@ static float ** alloc_crit(t_chunk *chunk_list_ptr) {
 	local_crit = (float **) my_malloc(g_clbs_nlist.net.size() * sizeof(float *));
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		tmp_ptr = (float *) my_chunk_malloc(
+		tmp_ptr = (float *) vtr::chunk_malloc(
 				(g_clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
@@ -52,8 +48,8 @@ static float ** alloc_crit(t_chunk *chunk_list_ptr) {
 }
 
 /**************************************/
-static void free_crit(t_chunk *chunk_list_ptr){
-	free_chunk_memory(chunk_list_ptr);
+static void free_crit(vtr::t_chunk *chunk_list_ptr){
+    vtr::free_chunk_memory(chunk_list_ptr);
 }
 
 /**************************************/
@@ -62,7 +58,7 @@ void print_sink_delays(const char *fname) {
 	int num_at_level, num_edges, inode, ilevel, i;
 	FILE *fp;
 
-	fp = my_fopen(fname, "w", 0);
+	fp = vtr::fopen(fname, "w");
 
 	for (ilevel = num_tnode_levels - 1; ilevel >= 0; ilevel--) {
 		num_at_level = tnodes_at_level[ilevel].nelem;

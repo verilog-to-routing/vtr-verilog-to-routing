@@ -5,6 +5,8 @@ using namespace std;
 
 #include <assert.h>
 
+#include "vtr_matrix.h"
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -172,8 +174,8 @@ static void get_channel_occupancy_stats(void) {
 	int **chanx_occ; /* [1..nx][0..ny] */
 	int **chany_occ; /* [0..nx][1..ny] */
 
-	chanx_occ = (int **) alloc_matrix(1, nx, 0, ny, sizeof(int));
-	chany_occ = (int **) alloc_matrix(0, nx, 1, ny, sizeof(int));
+	chanx_occ = vtr::alloc_matrix<int>(1, nx, 0, ny);
+	chany_occ = vtr::alloc_matrix<int>(0, nx, 1, ny);
 	load_channel_occupancies(chanx_occ, chany_occ);
 
 	vpr_printf_info("\n");
@@ -215,8 +217,8 @@ static void get_channel_occupancy_stats(void) {
 	vpr_printf_info("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
 	vpr_printf_info("\n");
 
-	free_matrix(chanx_occ, 1, nx, 0, sizeof(int));
-	free_matrix(chany_occ, 0, nx, 1, sizeof(int));
+    vtr::free_matrix(chanx_occ, 1, nx, 0);
+	vtr::free_matrix(chany_occ, 0, nx, 1);
 }
 
 static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {

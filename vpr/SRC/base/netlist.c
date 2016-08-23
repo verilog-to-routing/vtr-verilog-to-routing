@@ -14,6 +14,8 @@
 #include "util.h"
 #include "vpr_api.h"
 
+#include "vtr_util.h"
+
 using namespace std;
 
 
@@ -40,7 +42,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 	g_nlist->net.resize(num_net_arr);
 
 	for(i = 0; i < num_net_arr; i++){
-		g_nlist->net[i].name = my_strdup(net_arr[i].name);
+		g_nlist->net[i].name = vtr::strdup(net_arr[i].name);
 		g_nlist->net[i].is_routed = net_arr[i].is_routed;
 		g_nlist->net[i].is_fixed = net_arr[i].is_fixed;
 		g_nlist->net[i].is_global = net_arr[i].is_global;

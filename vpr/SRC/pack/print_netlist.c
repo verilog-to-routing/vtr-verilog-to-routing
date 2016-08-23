@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "util.h"
 #include "vpr_types.h"
@@ -56,7 +57,7 @@ void print_netlist(char *foutput, char *net_file) {
 		}
 	}
 
-	fp = my_fopen(foutput, "w", 0);
+	fp = vtr::fopen(foutput, "w");
 
 	fprintf(fp, "Input netlist file: %s\n", net_file);
 	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",

@@ -18,7 +18,7 @@ enum e_seg_details_type {
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-struct s_ivec ***alloc_and_load_rr_node_indices(
+vtr::t_ivec ***alloc_and_load_rr_node_indices(
 		INP int max_chan_width,
 		INP int L_nx, INP int L_ny, 
 		INOUTP int *index, 
@@ -26,17 +26,17 @@ struct s_ivec ***alloc_and_load_rr_node_indices(
 		INP t_chan_details *chan_details_y);
 
 void free_rr_node_indices(
-		INP t_ivec ***L_rr_node_indices);
+		INP vtr::t_ivec ***L_rr_node_indices);
 
 int get_rr_node_index(
 		int x, int y, 
 		t_rr_type rr_type, int ptc,
-		t_ivec ***L_rr_node_indices);
+		vtr::t_ivec ***L_rr_node_indices);
 
 int find_average_rr_node_index(
 		int L_nx, int L_ny,
 		t_rr_type rr_type, int ptc,
-		t_ivec ***L_rr_node_indices);
+		vtr::t_ivec ***L_rr_node_indices);
 
 t_seg_details *alloc_and_load_seg_details(
 		INOUTP int *max_chan_width,
@@ -124,7 +124,7 @@ int get_bidir_opin_connections(
 		INP int ******opin_to_track_map,
 		INP int Fc,
 		INP bool *L_rr_edge_done,
-		INP t_ivec ***L_rr_node_indices,
+		INP vtr::t_ivec ***L_rr_node_indices,
 		INP t_seg_details *seg_details);
 
 int get_unidir_opin_connections(
@@ -140,13 +140,13 @@ int get_unidir_opin_connections(
 		INOUTP bool *L_rr_edge_done,
 		INP int max_len,
 		INP int max_chan_width,
-		INP t_ivec ***L_rr_node_indices,
+		INP vtr::t_ivec ***L_rr_node_indices,
 		OUTP bool *Fc_clipped);
 
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
-		t_linked_edge **edge_list_ptr, t_ivec ***L_rr_node_indices,
-		struct s_ivec *****track_to_pin_lookup, t_seg_details *seg_details,
+		t_linked_edge **edge_list_ptr, vtr::t_ivec ***L_rr_node_indices,
+		vtr::t_ivec *****track_to_pin_lookup, t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 
@@ -167,9 +167,9 @@ int get_track_to_tracks(
 		INP t_seg_details *to_seg_details,
 		INP t_chan_details *to_chan_details,
 		INP enum e_directionality directionality,
-		INP t_ivec ***L_rr_node_indices,
+		INP vtr::t_ivec ***L_rr_node_indices,
 		INOUTP bool *L_rr_edge_done,
-		INP struct s_ivec ***switch_block_conn,
+		INP vtr::t_ivec ***switch_block_conn,
 		INP t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
@@ -210,6 +210,6 @@ void dump_sblock_pattern(
 		INP int L_nx, int INP L_ny,
 		const char *fname);
 
-void print_rr_node_indices(int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
+void print_rr_node_indices(int L_nx, int L_ny, vtr::t_ivec ***L_rr_node_indices);
+void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vtr::t_ivec ***L_rr_node_indices);
 #endif

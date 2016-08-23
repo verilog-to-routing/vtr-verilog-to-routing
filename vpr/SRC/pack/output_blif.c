@@ -12,9 +12,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "util.h"
 #include "vpr_types.h"
@@ -147,7 +148,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 				fprintf(fpout, "%s\n", logical_block[ilogical_block].name);
 			}
 		}
-		struct s_linked_vptr *truth_table = logical_block[ilogical_block].truth_table;
+		vtr::t_linked_vptr *truth_table = logical_block[ilogical_block].truth_table;
 		while (truth_table) {
 			fprintf(fpout, "%s\n", (char *) truth_table->data_vptr);
 			truth_table = truth_table->next;
@@ -394,13 +395,13 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	FILE *fpout;
 	int bnum, column;
-	struct s_linked_vptr *p_io_removed;
+	vtr::t_linked_vptr *p_io_removed;
 	
 	if(clb[0].pb_route == NULL) {
 		return;
 	}
 
-	fpout = my_fopen(out_fname, "w", 0);
+	fpout = vtr::fopen(out_fname, "w");
 
 	column = 0;
 	fprintf(fpout, ".model %s\n", blif_circuit_name);

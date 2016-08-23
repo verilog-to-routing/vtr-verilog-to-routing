@@ -8,6 +8,8 @@ using namespace std;
 
 #include <assert.h>
 
+#include "vtr_util.h"
+
 #include "stats.h"
 #include "util.h"
 #include "vpr_types.h"
@@ -56,12 +58,12 @@ static int heap_tail; /* Index of first unused slot in the heap array */
 /* For managing my own list of currently free heap data structures.     */
 static struct s_heap *heap_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the heap*/
-static t_chunk heap_ch = {NULL, 0, NULL};
+static vtr::t_chunk heap_ch = {NULL, 0, NULL};
 
 /* For managing my own list of currently free trace data structures.    */
 static struct s_trace *trace_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the trace*/
-static t_chunk trace_ch = {NULL, 0, NULL};
+static vtr::t_chunk trace_ch = {NULL, 0, NULL};
 
 #ifdef DEBUG
 static int num_trace_allocated = 0; /* To watch for memory leaks. */
@@ -72,7 +74,7 @@ static int num_linked_f_pointer_allocated = 0;
 static struct s_linked_f_pointer *rr_modified_head = NULL;
 static struct s_linked_f_pointer *linked_f_pointer_free_head = NULL;
 
-static t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
+static vtr::t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -111,15 +113,15 @@ static void add_to_heap(struct s_heap *hptr);
 static struct s_heap *alloc_heap_data(void);
 static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
 
-static t_ivec **alloc_and_load_clb_opins_used_locally(void);
+static vtr::t_ivec **alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 		float pres_fac, float acc_fac);
 
 /************************** Subroutine definitions ***************************/
 
 void save_routing(struct s_trace **best_routing,
-		t_ivec ** clb_opins_used_locally,
-		t_ivec ** saved_clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally,
+		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* This routing frees any routing currently held in best routing,       *
 	 * then copies over the current routing (held in trace_head), and       *
@@ -169,8 +171,8 @@ void save_routing(struct s_trace **best_routing,
 }
 
 void restore_routing(struct s_trace **best_routing,
-		t_ivec ** clb_opins_used_locally,
-		t_ivec ** saved_clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally,
+		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* Deallocates any current routing in trace_head, and replaces it with    *
 	 * the routing in best_routing.  Best_routing is set to NULL to show that *
@@ -289,7 +291,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 bool try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
-		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
+		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
 		bool * Fc_clipped, t_direct_inf *directs, int num_directs) {
 
 	/* Attempts a routing via an iterated maze router algorithm.  Width_fac *
@@ -713,12 +715,12 @@ void free_traceback(int inet) {
 	trace_tail[inet] = NULL;
 }
 
-t_ivec **
+vtr::t_ivec **
 alloc_route_structs(void) {
 
 	/* Allocates the data structures needed for routing.    */
 
-	t_ivec **clb_opins_used_locally;
+	vtr::t_ivec **clb_opins_used_locally;
 
 	alloc_route_static_structs();
 	clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
@@ -741,28 +743,28 @@ void alloc_route_static_structs(void) {
 }
 
 struct s_trace **
-alloc_saved_routing(t_ivec ** clb_opins_used_locally,
-		t_ivec *** saved_clb_opins_used_locally_ptr) {
+alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
+		vtr::t_ivec *** saved_clb_opins_used_locally_ptr) {
 
 	/* Allocates data structures into which the key routing data can be saved,   *
 	 * allowing the routing to be recovered later (e.g. after a another routing  *
 	 * is attempted).                                                            */
 
 	struct s_trace **best_routing;
-	t_ivec **saved_clb_opins_used_locally;
+	vtr::t_ivec **saved_clb_opins_used_locally;
 	int iblk, iclass, num_local_opins;
 	t_type_ptr type;
 
 	best_routing = (struct s_trace **) my_calloc(g_clbs_nlist.net.size(),
 			sizeof(struct s_trace *));
 
-	saved_clb_opins_used_locally = (t_ivec **) my_malloc(
-			num_blocks * sizeof(t_ivec *));
+	saved_clb_opins_used_locally = (vtr::t_ivec **) my_malloc(
+			num_blocks * sizeof(vtr::t_ivec *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
-		saved_clb_opins_used_locally[iblk] = (t_ivec *) my_malloc(
-				type->num_class * sizeof(t_ivec));
+		saved_clb_opins_used_locally[iblk] = (vtr::t_ivec *) my_malloc(
+				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			saved_clb_opins_used_locally[iblk][iclass].nelem = num_local_opins;
@@ -781,26 +783,26 @@ alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 }
 
 /* TODO: super hacky, jluu comment, I need to rethink this whole function, without it, logically equivalent output pins incorrectly use more pins than needed.  I force that CLB output pin uses at most one output pin  */
-static t_ivec **
+static vtr::t_ivec **
 alloc_and_load_clb_opins_used_locally(void) {
 
 	/* Allocates and loads the data needed to make the router reserve some CLB  *
 	 * output pins for connections made locally within a CLB (if the netlist    *
 	 * specifies that this is necessary).                                       */
 
-	t_ivec **clb_opins_used_locally;
+	vtr::t_ivec **clb_opins_used_locally;
 	int iblk, clb_pin, iclass, num_local_opins;
 	int class_low, class_high;
 	t_type_ptr type;
 
-	clb_opins_used_locally = (t_ivec **) my_malloc(
-			num_blocks * sizeof(t_ivec *));
+	clb_opins_used_locally = (vtr::t_ivec **) my_malloc(
+			num_blocks * sizeof(vtr::t_ivec *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		clb_opins_used_locally[iblk] = (t_ivec *) my_malloc(
-				type->num_class * sizeof(t_ivec));
+		clb_opins_used_locally[iblk] = (vtr::t_ivec *) my_malloc(
+				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++)
 			clb_opins_used_locally[iblk][iclass].nelem = 0;
 
@@ -874,7 +876,7 @@ void free_route_structs() {
 }
 
 void free_saved_routing(struct s_trace **best_routing,
-		t_ivec ** saved_clb_opins_used_locally) {
+		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* Frees the data structures needed to save a routing.                     */
 	int i;
@@ -1203,7 +1205,7 @@ alloc_heap_data(void) {
 	struct s_heap *temp_ptr;
 
 	if (heap_free_head == NULL) { /* No elements on the free list */
-		heap_free_head = (struct s_heap *) my_chunk_malloc(sizeof(struct s_heap),&heap_ch);
+		heap_free_head = (struct s_heap *) vtr::chunk_malloc(sizeof(struct s_heap),&heap_ch);
 		heap_free_head->u.next = NULL;
 	}
 
@@ -1242,7 +1244,7 @@ alloc_trace_data(void) {
 	struct s_trace *temp_ptr;
 
 	if (trace_free_head == NULL) { /* No elements on the free list */
-		trace_free_head = (struct s_trace *) my_chunk_malloc(sizeof(struct s_trace),&trace_ch);
+		trace_free_head = (struct s_trace *) vtr::chunk_malloc(sizeof(struct s_trace),&trace_ch);
 		trace_free_head->next = NULL;
 	}
 	temp_ptr = trace_free_head;
@@ -1275,7 +1277,7 @@ alloc_linked_f_pointer(void) {
 
 	if (linked_f_pointer_free_head == NULL) {
 		/* No elements on the free list */	
-	linked_f_pointer_free_head = (struct s_linked_f_pointer *) my_chunk_malloc(sizeof(struct s_linked_f_pointer),&linked_f_pointer_ch);
+	linked_f_pointer_free_head = (struct s_linked_f_pointer *) vtr::chunk_malloc(sizeof(struct s_linked_f_pointer),&linked_f_pointer_ch);
 	linked_f_pointer_free_head->next = NULL;
 	}
 
@@ -1402,7 +1404,7 @@ void print_route(char *route_file) {
 	fclose(fp);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
-		fp = my_fopen(getEchoFileName(E_ECHO_MEM), "w", 0);
+		fp = vtr::fopen(getEchoFileName(E_ECHO_MEM), "w");
 		fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
 				num_heap_allocated, num_trace_allocated);
 		fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
@@ -1414,7 +1416,7 @@ void print_route(char *route_file) {
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		t_ivec ** clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
 	 This was especially important for logical equivalence; however, now that we have a very general

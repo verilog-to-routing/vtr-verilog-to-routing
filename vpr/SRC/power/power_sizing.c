@@ -22,9 +22,10 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "power_sizing.h"
 #include "power.h"
@@ -396,7 +397,7 @@ static double power_count_transistors_primitive(t_pb_type * pb_type) {
 		transistor_cnt = power_count_transistors_FF(g_power_arch->FF_size);
 	} else {
 		/* Other */
-		char msg[BUFSIZE];
+		char msg[vtr::BUFSIZE];
 
 		sprintf(msg, "No transistor counter function for BLIF model: %s",
 				pb_type->blif_model);

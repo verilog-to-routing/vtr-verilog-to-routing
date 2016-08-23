@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_math.h"
 
 #include "read_xml_arch_file.h"
 #include "util.h"
@@ -120,7 +121,7 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	if (Tdel_map->size() == 1){
 		Tdel_switch = (Tdel_map->begin())->second;
 	} else {
-		Tdel_switch = linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
+		Tdel_switch = vtr::linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
 	}
 	R_switch = g_arch_switch_inf[switch_index].R;
 	Cout_switch = g_arch_switch_inf[switch_index].Cout;

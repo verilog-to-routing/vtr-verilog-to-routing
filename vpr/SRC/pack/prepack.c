@@ -12,9 +12,10 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "read_xml_arch_file.h"
 #include "util.h"
@@ -310,7 +311,7 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount,
 	curr_pattern = get_next_hash(nhash, &hash_iter);
 	while (curr_pattern != NULL) {
 		assert(nlist[curr_pattern->index].name == NULL);
-		nlist[curr_pattern->index].name = my_strdup(curr_pattern->name);
+		nlist[curr_pattern->index].name = vtr::strdup(curr_pattern->name);
 		nlist[curr_pattern->index].root_block = NULL;
 		nlist[curr_pattern->index].is_chain = false;
 		nlist[curr_pattern->index].index = curr_pattern->index;
@@ -835,8 +836,8 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
 
-			logical_block[i].packed_molecules = (struct s_linked_vptr*) my_calloc(1,
-					sizeof(struct s_linked_vptr));
+			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) my_calloc(1,
+					sizeof(vtr::t_linked_vptr));
 			logical_block[i].packed_molecules->data_vptr = (void*) cur_molecule;
 		}
 	}
@@ -882,7 +883,7 @@ static t_pack_molecule *try_create_molecule(
 		INP int block_index) {
 	int i;
 	t_pack_molecule *molecule;
-	struct s_linked_vptr *molecule_linked_list;
+	vtr::t_linked_vptr *molecule_linked_list;
 
 	bool failed = false;
 
@@ -923,7 +924,7 @@ static t_pack_molecule *try_create_molecule(
 				assert(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
-			molecule_linked_list = (struct s_linked_vptr*) my_calloc(1, sizeof(struct s_linked_vptr));
+			molecule_linked_list = (vtr::t_linked_vptr*) my_calloc(1, sizeof(vtr::t_linked_vptr));
 			molecule_linked_list->data_vptr = (void *) molecule;
 			molecule_linked_list->next =
 					molecule->logical_block_ptrs[i]->packed_molecules;
@@ -1044,7 +1045,7 @@ static void print_pack_molecules(INP const char *fname,
 	FILE *fp;
 	t_pack_molecule *list_of_molecules_current;
 
-	fp = my_fopen(fname, "w", 0);
+	fp = std::fopen(fname, "w");
 	fprintf(fp, "# of pack patterns %d\n", num_pack_patterns);
 		
 	for (i = 0; i < num_pack_patterns; i++) {

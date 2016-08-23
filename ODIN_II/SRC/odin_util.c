@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 #include "odin_util.h"
+#include "vtr_util.h"
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -684,12 +685,12 @@ void string_to_lower(char *string)
  */
 char *append_string(const char *string, const char *appendage, ...)
 {
-	char buffer[BUFSIZE];
+	char buffer[vtr::BUFSIZE];
 
 	va_list ap;
 
 	va_start(ap, appendage);
-	vsnprintf(buffer, BUFSIZE * sizeof(char), appendage, ap);
+	vsnprintf(buffer, vtr::BUFSIZE * sizeof(char), appendage, ap);
 	va_end(ap);
 
 

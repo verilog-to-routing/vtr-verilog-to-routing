@@ -21,6 +21,7 @@ namespace vtr {
      * Legacy c-style function replacements, typically these add extra error checking
      * and/or correct 'unexpected' behaviour of the standard c-functions
      */
+    constexpr size_t BUFSIZE = 32768; /* Maximum line length for various parsing proc. */
     char* strncpy(char *dest, const char *src, size_t size);
     char* strdup(const char *str);
     int atoi(const char *str);
@@ -36,6 +37,7 @@ namespace vtr {
     bool check_file_name_extension(const char* file_name, 
                                    const char* file_extension);
 
+    extern char *out_file_prefix;
 }
 
 #endif

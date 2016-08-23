@@ -1,8 +1,11 @@
 #include <cstdio>
 #include <cmath>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
+#include "vtr_random.h"
+#include "vtr_matrix.h"
 
 #include "util.h"
 #include "vpr_types.h"
@@ -319,7 +322,7 @@ void try_place(struct s_placer_opts placer_opts,
 	float reject_rate;
 	float accept_rate;
 	float abort_rate;
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
 	t_slack * slacks = NULL;
 
@@ -1166,7 +1169,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	delay_delta_c = 0.0;
 	
 	/* Pick a random block to be swapped with another random block    */
-	b_from = my_irand(num_blocks - 1);
+	b_from = vtr::irand(num_blocks - 1);
 
 	/* If the pins are fixed we never move them from their initial    *
 	 * random locations.  The code below could be made more efficient *
@@ -1175,7 +1178,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * broken if I ever change the parser so that the pins aren't     *
 	 * necessarily at the start of the block list.                    */
 	while (block[b_from].is_fixed == true) {
-		b_from = my_irand(num_blocks - 1);
+		b_from = vtr::irand(num_blocks - 1);
 	}
 
 	x_from = block[b_from].x;
@@ -1463,7 +1466,7 @@ static bool find_to(t_type_ptr type, float rlim,
 			/* Find z_to and test to validate that the "to" block is *not* fixed */
 			*pz_to = 0;
 			if (grid[*px_to][*py_to].type->capacity > 1) {
-				*pz_to = my_irand(grid[*px_to][*py_to].type->capacity - 1);
+				*pz_to = vtr::irand(grid[*px_to][*py_to].type->capacity - 1);
 			}
 			int b_to = grid[*px_to][*py_to].blocks[*pz_to];
 			if ((b_to != EMPTY) && (block[b_to].is_fixed == true)) {
@@ -1502,13 +1505,13 @@ static void find_to_location(t_type_ptr type, float rlim,
 
 	*pz_to = 0;
 	if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[itype] < active_area) {
-		int ipos = my_irand(num_legal_pos[itype] - 1);
+		int ipos = vtr::irand(num_legal_pos[itype] - 1);
 		*px_to = legal_pos[itype][ipos].x;
 		*py_to = legal_pos[itype][ipos].y;
 		*pz_to = legal_pos[itype][ipos].z;
 	} else {
-		int x_rel = my_irand(max(0, max_x - min_x));
-		int y_rel = my_irand(max(0, max_y - min_y));
+		int x_rel = vtr::irand(max(0, max_x - min_x));
+		int y_rel = vtr::irand(max(0, max_y - min_y));
 		*px_to = min_x + x_rel;
 		*py_to = min_y + y_rel;
 		*px_to = (*px_to) - grid[*px_to][*py_to].width_offset; /* align it */
@@ -1526,7 +1529,7 @@ static enum swap_result assess_swap(float delta_c, float t) {
 	if (delta_c <= 0) {
 
 #ifdef SPEC			/* Reduce variation in final solution due to round off */
-		fnum = my_frand();
+		fnum = vtr::frand();
 #endif
 
 		accept = ACCEPTED;
@@ -1536,7 +1539,7 @@ static enum swap_result assess_swap(float delta_c, float t) {
 	if (t == 0.)
 		return (REJECTED);
 
-	fnum = my_frand();
+	fnum = vtr::frand();
 	prob_fac = exp(-delta_c / t);
 	if (prob_fac > fnum) {
 		accept = ACCEPTED;
@@ -1868,7 +1871,7 @@ static void free_placement_structs(
 		free(point_to_point_timing_cost);
 		free(temp_point_to_point_timing_cost);
 
-		free_matrix(net_pin_index, 0, num_blocks - 1, 0, sizeof(int));
+        vtr::free_matrix(net_pin_index, 0, num_blocks - 1, 0);
 	}
 
 	free(net_cost);
@@ -2598,7 +2601,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
 			
 			// Choose a random position for the head
-			ipos = my_irand(free_locations[itype] - 1);
+			ipos = vtr::irand(free_locations[itype] - 1);
 
 			// Try to place the macro
 			macro_placed = try_place_macro(itype, ipos, imacro, free_locations);
@@ -2706,7 +2709,7 @@ static void initial_placement_location(int * free_locations, int iblk,
 
 	int itype = block[iblk].type->index;
 
-	*pipos = my_irand(free_locations[itype] - 1);
+	*pipos = vtr::irand(free_locations[itype] - 1);
 	*px_to = legal_pos[itype][*pipos].x;
 	*py_to = legal_pos[itype][*pipos].y;
 	*pz_to = legal_pos[itype][*pipos].z;
@@ -3049,7 +3052,7 @@ static void print_clb_placement(const char *fname) {
 	FILE *fp;
 	int i;
 	
-	fp = my_fopen(fname, "w", 0);
+	fp = vtr::fopen(fname, "w");
 	fprintf(fp, "Complex block placements:\n\n");
 
 	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");

@@ -16,9 +16,11 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+
+#include "vtr_matrix.h"
 
 #include "vpr_utils.h"
 #include "globals.h"
@@ -166,7 +168,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 	}
 	/* Save the main message. */
 
-	my_strncpy(draw_state->default_message, msg, BUFSIZE);
+	vtr::strncpy(draw_state->default_message, msg, vtr::BUFSIZE);
 
 	draw_state->pic_on_screen = pic_on_screen_val;
 	update_message(msg);
@@ -329,7 +331,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	/* Turns the congestion display on and off.   */
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	int inode, num_congested;
 
 	e_draw_congestion new_state = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
@@ -377,10 +379,10 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
 
-	t_linked_int *critical_path_head, *critical_path_node;
+	vtr::t_linked_int *critical_path_head, *critical_path_node;
 	int inode, iblk, inet, num_nets_seen;
 	static int nets_to_highlight = 1;
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 
 	sel_subblk_info.clear_critical_path();
 
@@ -1570,7 +1572,7 @@ static void draw_rr_pin(int inode, const t_color& color) {
 
 	int ipin, i, j, iside;
 	float xcen, ycen;
-	char str[BUFSIZE];
+	char str[vtr::BUFSIZE];
 	t_type_ptr type;
 
 	i = rr_node[inode].get_xlow();
@@ -1685,11 +1687,11 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	if (draw_state->draw_route_type == GLOBAL) {
 		/* Allocate some temporary storage if it's not already available. */
 		if (chanx_track == NULL) {
-			chanx_track = (int **) alloc_matrix(1, nx, 0, ny, sizeof(int));
+			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
 		}
 
 		if (chany_track == NULL) {
-			chany_track = (int **) alloc_matrix(0, nx, 1, ny, sizeof(int));
+			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
 		}
 
 		for (i = 1; i <= nx; i++)
@@ -2126,7 +2128,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	int clb_index = -2;
 
 	/* Control + mouse click to select multiple nets. */

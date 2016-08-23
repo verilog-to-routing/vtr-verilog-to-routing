@@ -6,9 +6,12 @@
 
 #include <cstring>
 #include <cassert>
+#include <cassert>
 using namespace std;
 
-#include <assert.h>
+
+#include "vtr_util.h"
+#include "vtr_memory.h"
 
 #include "util.h"
 #include "token.h"
@@ -88,7 +91,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 			}
 			if (new_token_type != TOKEN_NULL) {
 				tokens[i].type = new_token_type;
-				tokens[i].data = my_strdup(inString + in_string_index);
+				tokens[i].data = vtr::strdup(inString + in_string_index);
 				prev_in_string_index = in_string_index;
 				has_null = false;
 				i++;
@@ -153,7 +156,7 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
 	int i, j;
 	char *cur, *cur2, *copy, *final;
 
-	copy = my_strdup(instring);
+	copy = vtr::strdup(instring);
 	final = copy;
 	while (*final != '\0') {
 		final++;

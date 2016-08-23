@@ -5,6 +5,8 @@
 #include "util.h"
 #include "ReadLine.h"
 
+#include "vtr_memory.h"
+
 /* Pass in a pointer to a token list. Is freed and then set to null */
 void FreeTokens(INOUTP char ***TokensPtr) {
 	assert(*TokensPtr);

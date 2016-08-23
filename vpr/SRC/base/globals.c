@@ -71,7 +71,7 @@ struct s_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
 
 int num_rr_nodes = 0;
 t_rr_node *rr_node = NULL; /* [0..(num_rr_nodes-1)] */
-t_ivec ***rr_node_indices = NULL;
+vtr::t_ivec ***rr_node_indices = NULL;
 
 int num_rr_indexed_data = 0;
 t_rr_indexed_data *rr_indexed_data = NULL; /* [0..(num_rr_indexed_data-1)] */
@@ -95,7 +95,7 @@ map<int, int> *g_switch_fanin_remap = NULL; /* an array of map. array index: [0.
 int **rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */
 
 /* primiary inputs removed from circuit */
-struct s_linked_vptr *circuit_p_io_removed = NULL;
+vtr::t_linked_vptr *circuit_p_io_removed = NULL;
 
 /********** Structures representing timing graph information */
 float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */

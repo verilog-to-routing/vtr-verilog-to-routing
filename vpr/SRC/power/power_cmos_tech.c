@@ -24,11 +24,14 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-
-#include <assert.h>
+#include <cassert>
 
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
+
+#include "vtr_util.h"
+#include "vtr_memory.h"
+#include "vtr_math.h"
 
 #include "power_cmos_tech.h"
 #include "power.h"
@@ -72,9 +75,9 @@ void power_tech_init(char * cmos_tech_behavior_filepath) {
  * Reads the transistor properties from the .xml file
  */
 void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 
-	if (!file_exists(cmos_tech_behavior_filepath)) {
+	if (!vtr::file_exists(cmos_tech_behavior_filepath)) {
 		/* .xml transistor characteristics is missing */
 		sprintf(msg,
 				"The CMOS technology behavior file ('%s') does not exist.  No power information will be calculated.",

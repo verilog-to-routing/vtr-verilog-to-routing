@@ -1,9 +1,10 @@
 #include <cstring>
 
 #include "echo_arch.h"
+#include "arch_types.h"
 #include "vtr_list.h"
 #include "vtr_util.h"
-#include "arch_types.h"
+#include "vtr_memory.h"
 
 using vtr::t_linked_vptr;
 

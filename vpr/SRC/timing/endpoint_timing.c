@@ -1,6 +1,9 @@
 #include <cassert>
 
+#include "vtr_util.h"
+
 #include "endpoint_timing.h"
+
 
 #include "path_delay.h"
 #include "globals.h"
@@ -8,7 +11,7 @@
 void print_tnode_info(FILE* fp, int inode, char* identifier);
 
 void print_endpoint_timing(char* filename) {
-    FILE* fp = my_fopen(filename, "w", 0);
+    FILE* fp = vtr::fopen(filename, "w");
 
     int** tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
     

@@ -5,6 +5,8 @@
 #include <algorithm>
 
 
+#include "vtr_list.h"
+
 #include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -16,7 +18,7 @@
 
 int num_tnode_levels; /* Number of levels in the timing graph. */
 
-struct s_ivec *tnodes_at_level;
+vtr::t_ivec *tnodes_at_level;
 /* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    
  * the timing graph, to make topological searches easier. Level-0 nodes are
  * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
@@ -109,7 +111,7 @@ int alloc_and_load_timing_graph_levels(void) {
 	 * it.  This allows subsequent traversals to be done topologically for speed. *
 	 * Also returns the number of sinks in the graph (nodes with no fanout).      */
 
-	t_linked_int *free_list_head, *nodes_at_level_head;
+	vtr::t_linked_int *free_list_head, *nodes_at_level_head;
 	int inode, num_at_level, iedge, to_node, num_edges, num_sinks, num_levels,
 			i;
 	t_tedge *tedge;
@@ -128,8 +130,8 @@ int alloc_and_load_timing_graph_levels(void) {
 	 * Temporarily need one extra level on the end because I look at the first  *
 	 * empty level.                                                             */
 
-	tnodes_at_level = (struct s_ivec *) my_malloc(
-			(num_tnodes + 1) * sizeof(struct s_ivec));
+	tnodes_at_level = (vtr::t_ivec *) my_malloc(
+			(num_tnodes + 1) * sizeof(vtr::t_ivec));
 
 	/* Scan through the timing graph, putting all the primary input nodes (no    *
 	 * fanin) into level 0 of the level structure.                               */
@@ -176,8 +178,8 @@ int alloc_and_load_timing_graph_levels(void) {
 				&tnodes_at_level[num_levels], &free_list_head);
 	}
 
-	tnodes_at_level = (struct s_ivec *) my_realloc(tnodes_at_level,
-			num_levels * sizeof(struct s_ivec));
+	tnodes_at_level = (vtr::t_ivec *) my_realloc(tnodes_at_level,
+			num_levels * sizeof(vtr::t_ivec));
 	num_tnode_levels = num_levels;
 
 	free(tnode_fanin_left);
@@ -234,7 +236,7 @@ void check_timing_graph(int num_sinks) {
 	}
 }
 
-float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node, t_pb*** pin_id_to_pb_mapping) {
+float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, t_pb*** pin_id_to_pb_mapping) {
 
 	/* Prints one tnode on the critical path out to fp. Returns the delay to the next node. */
 
@@ -246,7 +248,7 @@ float print_critical_path_node(FILE * fp, t_linked_int * critical_path_node, t_p
 			"TN_INTERMEDIATE_NODE", "TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN",
 			"TN_FF_OPIN", "TN_FF_SINK", "TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
 
-	t_linked_int *next_crit_node;
+	vtr::t_linked_int *next_crit_node;
 	float Tdel;
 
 	inode = critical_path_node->data;

@@ -11,6 +11,7 @@ using namespace std;
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 #include "ReadLine.h"
+#include "vtr_util.h"
 
 /* extern, should be a header */
 char **ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum);
@@ -96,10 +97,10 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, "'%s' - Bad FPGA size specification line in placement file.\n",
 				place_file);
 	}
-	if ((my_atoi(tokens[2]) != L_nx) || (my_atoi(tokens[4]) != L_ny)) {
+	if ((vtr::atoi(tokens[2]) != L_nx) || (vtr::atoi(tokens[4]) != L_ny)) {
 		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Current FPGA size (%d x %d) is different from size when placement generated (%d x %d).\n", 
-				place_file, L_nx, L_ny, my_atoi(tokens[2]), my_atoi(tokens[4]));
+				place_file, L_nx, L_ny, vtr::atoi(tokens[2]), vtr::atoi(tokens[4]));
 	}
 	free(*tokens);
 	free(tokens);
@@ -122,9 +123,9 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		}
 
 		/* Set pad coords */
-		cur_blk->x = my_atoi(tokens[1]);
-		cur_blk->y = my_atoi(tokens[2]);
-		cur_blk->z = my_atoi(tokens[3]);
+		cur_blk->x = vtr::atoi(tokens[1]);
+		cur_blk->y = vtr::atoi(tokens[2]);
+		cur_blk->z = vtr::atoi(tokens[3]);
 
 		/* Get next line */
 		assert(*tokens);
@@ -143,7 +144,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 	struct s_hash **hash_table, *h_ptr;
 	int iblk, i, j, xtmp, ytmp, bnum, k;
 	FILE *fp;
-	char buf[BUFSIZE], bname[BUFSIZE], *ptr;
+	char buf[vtr::BUFSIZE], bname[vtr::BUFSIZE], *ptr;
 
 	vpr_printf_info("\n");
 	vpr_printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
@@ -172,49 +173,49 @@ void read_user_pad_loc(char *pad_loc_file) {
 		}
 	}
 
-	ptr = my_fgets(buf, BUFSIZE, fp);
+	ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 
 	while (ptr != NULL) {
-		ptr = my_strtok(buf, TOKENS, fp, buf);
+		ptr = vtr::strtok(buf, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			ptr = my_fgets(buf, BUFSIZE, fp);
+			ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 			continue; /* Skip blank or comment lines. */
 		}
 
 		strcpy(bname, ptr);
 
-		ptr = my_strtok(NULL, TOKENS, fp, buf);
+		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &xtmp);
 
-		ptr = my_strtok(NULL, TOKENS, fp, buf);
+		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &ytmp);
 
-		ptr = my_strtok(NULL, TOKENS, fp, buf);
+		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
 		sscanf(ptr, "%d", &k);
 
-		ptr = my_strtok(NULL, TOKENS, fp, buf);
+		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
 		if (ptr != NULL) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Extra characters at end of line.\n");
 		}
 
 		h_ptr = get_hash_entry(hash_table, bname);
 		if (h_ptr == NULL) {
 			vpr_printf_warning(__FILE__, __LINE__, 
-					"[Line %d] Block %s invalid, no such IO pad.\n", get_file_line_number_of_last_opened_file(), bname);
-			ptr = my_fgets(buf, BUFSIZE, fp);
+					"[Line %d] Block %s invalid, no such IO pad.\n", vtr::get_file_line_number_of_last_opened_file(), bname);
+			ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 			continue;
 		}
 		bnum = h_ptr->index;
@@ -222,7 +223,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 		j = ytmp;
 
 		if (block[bnum].x != OPEN) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
 
@@ -242,13 +243,13 @@ void read_user_pad_loc(char *pad_loc_file) {
 		}
 
 		if (k >= IO_TYPE->capacity || k < 0) {
-			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, get_file_line_number_of_last_opened_file(), 
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
 		grid[i][j].blocks[k] = bnum;
 		grid[i][j].usage++;
 
-		ptr = my_fgets(buf, BUFSIZE, fp);
+		ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 	}
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {

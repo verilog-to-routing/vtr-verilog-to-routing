@@ -30,14 +30,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "partial_map.h"
 
+using vtr::t_linked_vptr;
+
 t_model *single_port_rams = NULL;
 t_model *dual_port_rams = NULL;
 
-struct s_linked_vptr *sp_memory_list;
-struct s_linked_vptr *dp_memory_list;
-struct s_linked_vptr *split_list;
-struct s_linked_vptr *memory_instances = NULL;
-struct s_linked_vptr *memory_port_size_list = NULL;
+t_linked_vptr *sp_memory_list;
+t_linked_vptr *dp_memory_list;
+t_linked_vptr *split_list;
+t_linked_vptr *memory_instances = NULL;
+t_linked_vptr *memory_port_size_list = NULL;
 int split_size = 0;
 
 
@@ -83,7 +85,7 @@ int get_dp_ram_width(nnode_t *node)
 
 int get_memory_port_size(const char *name)
 {
-	struct s_linked_vptr *mpl;
+	t_linked_vptr *mpl;
 
 	mpl = memory_port_size_list;
 	while (mpl != NULL)
@@ -265,7 +267,7 @@ void check_memories_and_report_distribution()
 	int memory_max_width = 0;
 	int memory_max_depth = 0;
 	
-	struct s_linked_vptr *temp = sp_memory_list;
+	t_linked_vptr *temp = sp_memory_list;
 	while (temp != NULL)
 	{
 		nnode_t *node = (nnode_t *)temp->data_vptr;
@@ -985,7 +987,7 @@ void filter_memories_by_soft_logic_cutoff()
 {
 	if (single_port_rams)
 	{
-		struct s_linked_vptr *temp = sp_memory_list;
+		t_linked_vptr *temp = sp_memory_list;
 		sp_memory_list = NULL;
 		while (temp != NULL)
 		{
@@ -1004,7 +1006,7 @@ void filter_memories_by_soft_logic_cutoff()
 
 	if (dual_port_rams)
 	{
-		struct s_linked_vptr *temp = dp_memory_list;
+		t_linked_vptr *temp = dp_memory_list;
 		dp_memory_list = NULL;
 		while (temp != NULL)
 		{
@@ -1043,7 +1045,7 @@ void iterate_memories(netlist_t *netlist)
 	{
 		// Depth split
 		int split_depth = get_sp_ram_split_depth();
-		struct s_linked_vptr *temp = sp_memory_list;
+		t_linked_vptr *temp = sp_memory_list;
 		sp_memory_list = NULL;
 		while (temp != NULL)
 		{
@@ -1088,7 +1090,7 @@ void iterate_memories(netlist_t *netlist)
 	{
 		// Depth split
 		int split_depth = get_dp_ram_split_depth();
-		struct s_linked_vptr *temp = dp_memory_list;
+		t_linked_vptr *temp = dp_memory_list;
 		dp_memory_list = NULL;
 		while (temp != NULL)
 		{

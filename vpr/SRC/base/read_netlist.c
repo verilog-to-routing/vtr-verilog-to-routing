@@ -135,13 +135,13 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
     //Collect top level I/Os
     auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
-    circuit_inputs = vtrutil::split(top_inputs.text().get());
+    circuit_inputs = vtr::split(top_inputs.text().get());
 
     auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
-    circuit_outputs = vtrutil::split(top_outputs.text().get());
+    circuit_outputs = vtr::split(top_outputs.text().get());
 
     auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
-    circuit_clocks = vtrutil::split(top_clocks.text().get());
+    circuit_clocks = vtr::split(top_clocks.text().get());
 
 	/* Parse all CLB blocks and all nets*/
 
@@ -257,8 +257,8 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 	cb[index].pb = (t_pb*) my_calloc(1, sizeof(t_pb));
 
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
-	cb[index].name = my_strdup(block_name.value());
-	cb[index].pb->name = my_strdup(block_name.value());
+	cb[index].name = vtr::strdup(block_name.value());
+	cb[index].pb->name = vtr::strdup(block_name.value());
 
 
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
@@ -272,7 +272,7 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 				"Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 				block_inst.value(), clb_block.name());
 	}
-	assert(my_atoi(tokens[2].data) == index);
+	assert(vtr::atoi(tokens[2].data) == index);
 
 	found = false;
 	for (i = 0; i < num_types; i++) {
@@ -398,13 +398,13 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
                 if (strcmp(
                         pb_type->modes[pb->mode].pb_type_children[i].name,
                         tokens[0].data) == 0) {
-                    if (my_atoi(tokens[2].data)
+                    if (vtr::atoi(tokens[2].data)
                             >= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                 "Instance number exceeds # of pb available for instance %s in %s.\n",
                                 instance_type.value(), child.name());
                     }
-                    pb_index = my_atoi(tokens[2].data);
+                    pb_index = vtr::atoi(tokens[2].data);
                     if (pb->child_pbs[i][pb_index].pb_graph_node != NULL) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                 "node is used by two different blocks %s and %s.\n",
@@ -424,7 +424,7 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
 
             auto name = pugiutil::get_attribute(child, "name", loc_data);
             if (0 != strcmp(name.value(), "open")) {
-                pb->child_pbs[i][pb_index].name = my_strdup(name.value());
+                pb->child_pbs[i][pb_index].name = vtr::strdup(name.value());
 
                 /* Parse all pbs and CB internal nets*/
                 pb->child_pbs[i][pb_index].logical_block = OPEN;
@@ -504,7 +504,7 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 	curr_net = get_next_hash(nhash, &hash_iter);
 	while (curr_net != NULL) {
 		assert(nlist[curr_net->index].name == NULL);
-		nlist[curr_net->index].name = my_strdup(curr_net->name);
+		nlist[curr_net->index].name = vtr::strdup(curr_net->name);
 		nlist[curr_net->index].num_sinks = curr_net->count - 1;
 
 		nlist[curr_net->index].node_block = (int *) my_malloc(
@@ -590,7 +590,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
         }
 
         //Extract all the pins for this port
-        pins = vtrutil::split(Cur.text().get());
+        pins = vtr::split(Cur.text().get());
         num_tokens = pins.size();
 
         //Check that the number of pins from the netlist file matches the pb port's number of pins
@@ -962,7 +962,7 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_pb_route *pb_route,
 void free_logical_blocks(void) {
 	int iblk, i;
 	t_model_ports *port;
-	struct s_linked_vptr *tvptr, *next;
+	vtr::t_linked_vptr *tvptr, *next;
 
 	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
 		port = logical_block[iblk].model->inputs;

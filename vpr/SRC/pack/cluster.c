@@ -448,7 +448,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			/* Score seed gain of each block as a weighted sum of timing criticality, number of tightly coupled blocks connected to it, and number of external inputs */
 			float seed_blend_fac = 0.5;
 			float max_blend_gain = 0;
-			struct s_linked_vptr *blk_molecules;
+			vtr::t_linked_vptr *blk_molecules;
 			blk_molecules = logical_block[iblk].packed_molecules;
 			while(blk_molecules != NULL) {
 				int blocks_of_molecule = 0;
@@ -1250,7 +1250,7 @@ static enum e_block_pack_status try_pack_molecule(
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
-	struct s_linked_vptr *cur_molecule;
+	vtr::t_linked_vptr *cur_molecule;
 	t_pb *parent;
 	t_pb *cur_pb;
 	t_logical_block *chain_root_block;
@@ -1316,7 +1316,7 @@ static enum e_block_pack_status try_pack_molecule(
 						cur_pb = chain_root_block->pb->parent_pb;
 						while(cur_pb != NULL) {
 							free(cur_pb->name);
-							cur_pb->name = my_strdup(chain_root_block->name);
+							cur_pb->name = vtr::strdup(chain_root_block->name);
 							cur_pb = cur_pb->parent_pb;
 						}
 					}
@@ -1398,7 +1398,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	if (parent_pb->child_pbs == NULL) {
 		assert(parent_pb->name == NULL);
 		parent_pb->logical_block = OPEN;
-		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
+		parent_pb->name = vtr::strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
 		parent_pb->child_pbs =
@@ -1450,7 +1450,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	if (is_primitive) {
 		assert(pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
 		/* try pack to location */
-		pb->name = my_strdup(logical_block[ilogical_block].name);
+		pb->name = vtr::strdup(logical_block[ilogical_block].name);
 		pb->logical_block = ilogical_block;
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
@@ -2070,7 +2070,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 
 	int i, j, iblk, index, inet, count;
 	bool success;
-	struct s_linked_vptr *cur;
+	vtr::t_linked_vptr *cur;
 
 	t_pack_molecule *molecule;
 	molecule = NULL;
@@ -2349,7 +2349,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool get
 
 	int blkidx;
 	t_pack_molecule *molecule, *best;
-	struct s_linked_vptr *cur;
+	vtr::t_linked_vptr *cur;
 
 	while (*seedindex < num_logical_blocks) {
 
@@ -2849,7 +2849,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 								} else {
 									pb_stats->gain[tatom] += 0.001;									
 								}
-								struct s_linked_vptr *cur;
+								vtr::t_linked_vptr *cur;
 								cur = logical_block[tatom].packed_molecules;
 								while (cur != NULL) {
 									t_pack_molecule *molecule = (t_pack_molecule *) cur->data_vptr;
@@ -2885,7 +2885,7 @@ static void print_block_criticalities(const char * fname) {
 	FILE * fp;
 	char * name;
 
-	fp = my_fopen(fname, "w", 0);
+	fp = vtr::fopen(fname, "w");
 	fprintf(fp, "Index \tLogical block name \tCriticality \tCritindexarray\n\n");
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		name = logical_block[iblock].name;

@@ -716,7 +716,7 @@ void free_pb(t_pb *pb) {
 
 	const t_pb_type * pb_type;
 	int i, j, mode;
-	struct s_linked_vptr *revalid_molecule;
+	vtr::t_linked_vptr *revalid_molecule;
 	t_pack_molecule *cur_molecule;
 
 	pb_type = pb->pb_graph_node->pb_type;
@@ -826,8 +826,7 @@ int ** alloc_and_load_net_pin_index() {
 		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
 	
 	/* Allocate for maximum size. */
-	temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
-				max_pins_per_clb - 1, sizeof(int));
+	temp_net_pin_index = vtr::alloc_matrix<int>(0, num_blocks - 1, 0, max_pins_per_clb - 1);
 
 	/* Initialize values to OPEN */
 	for (iblk = 0; iblk < num_blocks; iblk++) {

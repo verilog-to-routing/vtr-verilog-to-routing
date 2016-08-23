@@ -1,6 +1,8 @@
 #ifndef VTR_MATRIX_H
 #define VTR_MATRIX_H
 
+#include <cstdlib>
+
 #include "vtr_memory.h"
 #include "vtr_list.h"
 
@@ -19,7 +21,7 @@ namespace vtr {
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = (T *) my_malloc((ncmax - ncmin + 1) * sizeof(T));
-            ptr[i] -= ncmin * sizeof(T);
+            ptr[i] -= ncmin;
         }
         return ptr;
     }
@@ -31,7 +33,7 @@ namespace vtr {
          * element of size elsize. i.e. returns a pointer to a storage block *
          * [nrmin..nrmax][ncmin..ncmax][ndmin..ndmax].                       */
 
-        int i, j;
+        int i;
         T*** ptr;
 
         ptr = (T***) my_malloc((nrmax - nrmin + 1) * sizeof(T**));
@@ -80,9 +82,9 @@ namespace vtr {
     void free_matrix(T* ptr, int nrmin, int nrmax, int ncmin) {
         int i;
         for (i = nrmin; i <= nrmax; i++) {
-            free(ptr[i] + ncmin);
+            std::free(ptr[i] + ncmin);
         }
-        free(ptr + nrmin);
+        std::free(ptr + nrmin);
     }
 
     template<typename T>
@@ -91,7 +93,7 @@ namespace vtr {
         for (i = nrmin; i <= nrmax; i++) {
             free_matrix(ptr[i], ncmin, ncmax, ndmin);
         }
-        free(ptr + nrmin);
+        std::free(ptr + nrmin);
     }
 
     template<typename T>
@@ -101,7 +103,7 @@ namespace vtr {
         for (i = nrmin; i <= nrmax; i++) {
             free_matrix3(ptr[i], ncmin, ncmax, ndmin, ndmax, nemin);
         }
-        free(ptr + nrmin);
+        std::free(ptr + nrmin);
     }
 
     template<typename T>
@@ -111,7 +113,7 @@ namespace vtr {
         for (i = nrmin; i <= nrmax; i++) {
             free_matrix4(ptr[i], ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin);
         }
-        free(ptr + nrmin);
+        std::free(ptr + nrmin);
     }
 
     /* Integer vector.  nelem stores length, list[0..nelem-1] stores list of    *

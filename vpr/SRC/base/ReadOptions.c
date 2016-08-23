@@ -9,6 +9,8 @@ using namespace std;
 #include "ReadOptions.h"
 #include "globals.h"
 
+#include "vtr_util.h"
+
 static bool EchoEnabled;
 
 static bool Generate_PostSynthesis_Netlist;
@@ -110,7 +112,7 @@ void setEchoFileName(enum e_echo_files echo_option, const char *name) {
 	if(echoFileNames[(int)echo_option] != NULL) {
 		free(echoFileNames[(int)echo_option]);
 	}
-	echoFileNames[(int)echo_option] = my_strdup(name);
+	echoFileNames[(int)echo_option] = vtr::strdup(name);
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {
@@ -194,7 +196,7 @@ void setOutputFileName(enum e_output_files ename, const char *name, const char *
 	if(outputFileNames[(int)ename] != NULL) {
 		free(outputFileNames[(int)ename]);
 	}
-	outputFileNames[(int)ename] = my_strdup(name);
+	outputFileNames[(int)ename] = vtr::strdup(name);
 }
 
 char *getOutputFileName(enum e_output_files ename) {
@@ -267,10 +269,10 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			*Args += 1; /* Skip the prefix */
 			Args = ProcessOption(Args, Options);
 		} else if (NULL == Options->ArchFile) {
-			Options->ArchFile = my_strdup(*Args);
+			Options->ArchFile = vtr::strdup(*Args);
 			++Args;
 		} else if (NULL == Options->CircuitName) {
-			Options->CircuitName = my_strdup(*Args);
+			Options->CircuitName = vtr::strdup(*Args);
 			/*if the user entered the circuit name with the .blif extension, remove it now*/
 			offset = strlen(Options->CircuitName) - 5;
 			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
@@ -757,7 +759,7 @@ ReadString(INP char **Args, OUTP char **Val) {
 		Error(*Args);
 	}
 
-	*Val = my_strdup(*Args);
+	*Val = vtr::strdup(*Args);
 
 	return ++Args;
 }

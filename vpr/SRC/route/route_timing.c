@@ -68,7 +68,7 @@ struct more_sinks_than {
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
-		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
+		float **net_delay, t_slack * slacks, vtr::t_ivec ** clb_opins_used_locally, 
 		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
@@ -1150,7 +1150,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	unsigned int inet, ipin;
 	float **net_delay_check;
 
-	t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
+	vtr::t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *ch_list_head_net_delay_check;*/
 

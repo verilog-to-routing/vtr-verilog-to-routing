@@ -1,10 +1,11 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <cassert>
+#include <time.h>
 using namespace std;
 
-#include <assert.h>
-#include <time.h>
+#include "vtr_matrix.h"
 
 #include "util.h"
 #include "vpr_types.h"
@@ -90,7 +91,7 @@ static t_type_descriptor *type_descriptors_backup;
 static struct s_grid_tile **grid_backup;
 static int num_types_backup;
 
-static t_ivec **clb_opins_used_locally;
+vtr::t_ivec **clb_opins_used_locally;
 
 #ifdef PRINT_ARRAYS
 static FILE *lookup_dump; /* If debugging mode is on, print out to
@@ -334,8 +335,7 @@ static void load_simplified_device(void) {
 
 	/* Fill in homogeneous core grid info */
 	grid_backup = grid;
-	grid = (struct s_grid_tile **) alloc_matrix(0, nx + 1, 0, ny + 1,
-			sizeof(struct s_grid_tile));
+	grid = vtr::alloc_matrix<struct s_grid_tile>(0, nx + 1, 0, ny + 1);
 	for (i = 0; i < nx + 2; i++) {
 		for (j = 0; j < ny + 2; j++) {
 			if ((i == 0 && j == 0) || (i == nx + 1 && j == 0)
@@ -372,7 +372,7 @@ static void restore_original_device(void) {
 			free(grid[i][j].blocks);
 		}
 	}
-	free_matrix(grid, 0, nx + 1, 0, sizeof(struct s_grid_tile));
+    vtr::free_matrix(grid, 0, nx + 1, 0);
 	grid = grid_backup;
 }
 
@@ -412,8 +412,7 @@ static void alloc_and_assign_internal_structures(struct s_net **original_net,
 	alloc_block();
 
 	/* [0..num_nets-1][1..num_pins-1] */
-	net_delay = (float **) alloc_matrix(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1,
-			sizeof(float));
+	net_delay = vtr::alloc_matrix<float>(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1);
 
 	reset_placement();
 }
@@ -450,7 +449,7 @@ static void free_and_reset_internal_structures(struct s_net *original_net,
 	num_nets = original_num_nets;
 	num_blocks = original_num_blocks;
 
-	free_matrix(net_delay, 0, NET_COUNT - 1, 1, sizeof(float));
+    vtr::free_matrix(net_delay, 0, NET_COUNT - 1, 1);
 
 }
 
@@ -641,12 +640,10 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 static void alloc_delta_arrays(void) {
 	int id_x, id_y;
 
-	delta_clb_to_clb = (float **) alloc_matrix(0, nx - 1, 0, ny - 1,
-			sizeof(float));
-	delta_io_to_clb = (float **) alloc_matrix(0, nx, 0, ny, sizeof(float));
-	delta_clb_to_io = (float **) alloc_matrix(0, nx, 0, ny, sizeof(float));
-	delta_io_to_io = (float **) alloc_matrix(0, nx + 1, 0, ny + 1,
-			sizeof(float));
+	delta_clb_to_clb = vtr::alloc_matrix<float>(0, nx - 1, 0, ny - 1);
+	delta_io_to_clb = vtr::alloc_matrix<float>(0, nx, 0, ny);
+	delta_clb_to_io = vtr::alloc_matrix<float>(0, nx, 0, ny);
+	delta_io_to_io = vtr::alloc_matrix<float>(0, nx + 1, 0, ny + 1);
 
 	/*initialize all of the array locations to -1 */
 
@@ -675,10 +672,10 @@ static void alloc_delta_arrays(void) {
 /**************************************/
 static void free_delta_arrays(void) {
 
-	free_matrix(delta_io_to_clb, 0, nx, 0, sizeof(float));
-	free_matrix(delta_clb_to_clb, 0, nx - 1, 0, sizeof(float));
-	free_matrix(delta_clb_to_io, 0, nx, 0, sizeof(float));
-	free_matrix(delta_io_to_io, 0, nx + 1, 0, sizeof(float));
+    vtr::free_matrix(delta_io_to_clb, 0, nx, 0);
+	vtr::free_matrix(delta_clb_to_clb, 0, nx - 1, 0);
+	vtr::free_matrix(delta_clb_to_io, 0, nx, 0);
+	vtr::free_matrix(delta_io_to_io, 0, nx + 1, 0);
 
 }
 

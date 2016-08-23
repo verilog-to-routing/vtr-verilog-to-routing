@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cassert>
 
+#include "vtr_memory.h"
 #include "vtr_util.h"
 #include "arch_types.h"
 #include "read_xml_arch_file.h"

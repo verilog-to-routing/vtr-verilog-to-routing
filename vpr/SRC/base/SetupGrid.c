@@ -17,6 +17,7 @@ using namespace std;
 #include "globals.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
+#include "vtr_matrix.h"
 
 static void CheckGrid(void);
 static t_type_ptr find_type_col(INP int x);
@@ -42,8 +43,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 
 	assert(nx >= 1 && ny >= 1);
 
-	grid = (struct s_grid_tile **) alloc_matrix(0, (nx + 1), 0, (ny + 1),
-			sizeof(struct s_grid_tile));
+	grid = vtr::alloc_matrix<struct s_grid_tile>(0, (nx + 1), 0, (ny + 1));
 
 	/* Clear the full grid to have no type (NULL), no capacity, etc */
 	for (int x = 0; x <= (nx + 1); ++x) {
@@ -193,7 +193,7 @@ void freeGrid(void) {
 			free(grid[i][j].blocks);
 		}
 	}
-	free_matrix(grid, 0, nx + 1, 0, sizeof(struct s_grid_tile));
+    vtr::free_matrix(grid, 0, nx + 1, 0);
 	grid = NULL;
 }
 
