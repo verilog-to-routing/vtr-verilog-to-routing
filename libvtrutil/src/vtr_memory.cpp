@@ -10,42 +10,42 @@
 
 namespace vtr {
 
-void *calloc_impl(size_t nelem, size_t size, const char* const file, const int line) {
+void* calloc(size_t nelem, size_t size) {
 	void *ret;
 	if (nelem == 0) {
 		return NULL ;
 	}
 
-	if ((ret = calloc(nelem, size)) == NULL ) {
-		throw VtrError("Unable to calloc memory.", file, line);
+	if ((ret = std::calloc(nelem, size)) == NULL ) {
+		throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
 	}
 	return (ret);
 }
 
-void *malloc_impl(size_t size, const char* const file, const int line) {
+void* malloc(size_t size) {
 	void *ret;
 	if (size == 0) {
 		return NULL ;
 	}
 
-	if ((ret = malloc(size)) == NULL ) {
-		throw VtrError("Unable to malloc memory.", file, line);
+	if ((ret = std::malloc(size)) == NULL ) {
+		throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
 	}
 	return (ret);
 }
 
-void *realloc_impl(void *ptr, size_t size, const char* const file, const int line) {
+void* realloc(void *ptr, size_t size) {
 	void *ret;
 
-	ret = realloc(ptr, size);
+	ret = std::realloc(ptr, size);
 	if (NULL == ret) {
 		throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
-                        file, line);
+                        __FILE__, __LINE__);
 	}
 	return (ret);
 }
 
-void *chunk_malloc(size_t size, t_chunk *chunk_info) {
+void* chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 	/* This routine should be used for allocating fairly small data             *
 	 * structures where memory-efficiency is crucial.  This routine allocates   *
@@ -69,8 +69,8 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 	typedef long Align;
 
-#define CHUNK_SIZE 32768
-#define FRAGMENT_THRESHOLD 100
+    constexpr int CHUNK_SIZE = 32768;
+    constexpr int FRAGMENT_THRESHOLD = 100;
 
 	char *tmp_ptr;
 	int aligned_size;
@@ -79,13 +79,13 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 	if ((size_t) (chunk_info->mem_avail) < size) { /* Need to malloc more memory. */
 		if (size > CHUNK_SIZE) { /* Too big, use standard routine. */
-			tmp_ptr = (char *) my_malloc(size);
+			tmp_ptr = (char *) vtr::malloc(size);
 
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			//#ifdef DEBUG
 			// vpr_printf("NB: my_chunk_malloc got a request for %d bytes.\n", size);
-			// vpr_printf("You should consider using my_malloc for such big requests.\n");
+			// vpr_printf("You should consider using vtr::malloc for such big requests.\n");
 			// #endif
 
 			VTR_ASSERT(chunk_info != NULL);
@@ -95,7 +95,7 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 		}
 
 		if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
-			chunk_info->next_mem_loc_ptr = (char *) my_malloc(CHUNK_SIZE);
+			chunk_info->next_mem_loc_ptr = (char *) vtr::malloc(CHUNK_SIZE);
 			chunk_info->mem_avail = CHUNK_SIZE;
 			VTR_ASSERT(chunk_info != NULL);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
@@ -107,7 +107,7 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 		 * to allocate normally.                                           */
 
 		else {
-			tmp_ptr = (char *) my_malloc(size);
+			tmp_ptr = (char *) vtr::malloc(size);
 			VTR_ASSERT(chunk_info != NULL);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, tmp_ptr);

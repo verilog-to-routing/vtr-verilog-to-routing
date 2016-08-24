@@ -118,7 +118,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 										prev_pin->port->name)
 								+ prev_pin->pin_number
 										/ 10 + strlen(name) + 11;
-				str_ptr = (char*)my_malloc(len * sizeof(char));
+				str_ptr = (char*)vtr::malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
 						prev_pin->parent_node->pb_type->name,
 						prev_pin->parent_node->placement_index,
@@ -132,7 +132,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 										prev_pin->port->name)
 								+ prev_pin->pin_number
 										/ 10 + strlen(name) + 8;
-				str_ptr = (char*)my_malloc(len * sizeof(char));
+				str_ptr = (char*)vtr::malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s.%s[%d]->%s ",
 						prev_pin->parent_node->pb_type->name,
 						prev_pin->port->name,
@@ -469,12 +469,12 @@ static void print_stats(t_block *clb, int num_clusters) {
 	nets_absorbed = NULL;
 	num_clb_types = num_clb_inputs_used = num_clb_outputs_used = NULL;
 
-	num_clb_types = (int*) my_calloc(num_types, sizeof(int));
-	num_clb_inputs_used = (int*) my_calloc(num_types, sizeof(int));
-	num_clb_outputs_used = (int*) my_calloc(num_types, sizeof(int));
+	num_clb_types = (int*) vtr::calloc(num_types, sizeof(int));
+	num_clb_inputs_used = (int*) vtr::calloc(num_types, sizeof(int));
+	num_clb_outputs_used = (int*) vtr::calloc(num_types, sizeof(int));
 
 
-	nets_absorbed = (bool *) my_calloc(g_atoms_nlist.net.size(), sizeof(bool));
+	nets_absorbed = (bool *) vtr::calloc(g_atoms_nlist.net.size(), sizeof(bool));
 	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
 		nets_absorbed[inet] = true;
 	}

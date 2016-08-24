@@ -102,8 +102,8 @@ int *get_seg_track_counts(
 	int i, imax, freq_sum, assigned, size;
 	double scale, max, reduce;
 
-	result = (int *) my_malloc(sizeof(int) * num_seg_types);
-	demand = (double *) my_malloc(sizeof(double) * num_seg_types);
+	result = (int *) vtr::malloc(sizeof(int) * num_seg_types);
+	demand = (double *) vtr::malloc(sizeof(double) * num_seg_types);
 
 	/* Scale factor so we can divide by any length
 	 * and still use integers */
@@ -204,7 +204,7 @@ t_seg_details *alloc_and_load_seg_details(
 	VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
 	*max_chan_width = tmp;
 
-	seg_details = (t_seg_details *) my_malloc(
+	seg_details = (t_seg_details *) vtr::malloc(
 			*max_chan_width * sizeof(t_seg_details));
 
 	/* Setup the seg_details data */
@@ -266,8 +266,8 @@ t_seg_details *alloc_and_load_seg_details(
 
 			/* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
 			 * since this is a property of a detailed route. */
-			seg_details[cur_track].cb = (bool *) my_malloc(length * sizeof(bool));
-			seg_details[cur_track].sb = (bool *) my_malloc((length + 1) * sizeof(bool));
+			seg_details[cur_track].cb = (bool *) vtr::malloc(length * sizeof(bool));
+			seg_details[cur_track].sb = (bool *) vtr::malloc((length + 1) * sizeof(bool));
 			for (j = 0; j < length; ++j) {
 				if (is_global_graph) {
 					seg_details[cur_track].cb[j] = true;
@@ -392,7 +392,7 @@ t_chan_details* init_chan_details(
 		for (int y = 0; y <= L_ny; ++y) {
 
 			t_seg_details* p_seg_details = 0;
-			p_seg_details = (t_seg_details*) my_calloc(nodes_per_chan->max, sizeof(t_seg_details));
+			p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof(t_seg_details));
 			for (int i = 0; i < num_seg_details; ++i) {
 
 				p_seg_details[i].length = seg_details[i].length;
@@ -416,8 +416,8 @@ t_chan_details* init_chan_details(
 				}
 
 				int length = seg_details[i].length;
-				p_seg_details[i].cb = (bool*)my_malloc(length * sizeof(bool));
-				p_seg_details[i].sb = (bool*)my_malloc((length + 1) * sizeof(bool));
+				p_seg_details[i].cb = (bool*)vtr::malloc(length * sizeof(bool));
+				p_seg_details[i].sb = (bool*)vtr::malloc((length + 1) * sizeof(bool));
 				for (int j = 0; j < length; ++j) {
 					p_seg_details[i].cb[j] = seg_details[i].cb[j];
 				}
@@ -1162,16 +1162,16 @@ static void load_chan_rr_indices(
 		INP t_chan_details * chan_details,
 		INOUTP int *index, INOUTP vtr::t_ivec *** indices) {
 
-	indices[type] = (vtr::t_ivec **) my_calloc(num_chans, sizeof(vtr::t_ivec *));
+	indices[type] = (vtr::t_ivec **) vtr::calloc(num_chans, sizeof(vtr::t_ivec *));
 	for (int chan = 0; chan < num_chans-1; ++chan) {
 
-		indices[type][chan] = (vtr::t_ivec *) my_calloc(chan_len, sizeof(vtr::t_ivec));
+		indices[type][chan] = (vtr::t_ivec *) vtr::calloc(chan_len, sizeof(vtr::t_ivec));
 
 		for (int seg = 1; seg < chan_len-1; ++seg) {
 
 			/* Alloc the track inode lookup list */
 			indices[type][chan][seg].nelem = max_chan_width;
-			indices[type][chan][seg].list = (int *) my_calloc(max_chan_width, sizeof(int));
+			indices[type][chan][seg].list = (int *) vtr::calloc(max_chan_width, sizeof(int));
 
 			for (int track = 0; track < max_chan_width; ++track) {
 				indices[type][chan][seg].list[track] = OPEN;
@@ -1225,13 +1225,13 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	t_type_ptr type;
 
 	/* Alloc the lookup table */
-	indices = (vtr::t_ivec ***) my_calloc(NUM_RR_TYPES, sizeof(vtr::t_ivec **));
+	indices = (vtr::t_ivec ***) vtr::calloc(NUM_RR_TYPES, sizeof(vtr::t_ivec **));
 
-	indices[IPIN] = (vtr::t_ivec **) my_calloc((L_nx + 2), sizeof(vtr::t_ivec *));
-	indices[SINK] = (vtr::t_ivec **) my_calloc((L_nx + 2), sizeof(vtr::t_ivec *));
+	indices[IPIN] = (vtr::t_ivec **) vtr::calloc((L_nx + 2), sizeof(vtr::t_ivec *));
+	indices[SINK] = (vtr::t_ivec **) vtr::calloc((L_nx + 2), sizeof(vtr::t_ivec *));
 	for (i = 0; i <= (L_nx + 1); ++i) {
-		indices[IPIN][i] = (vtr::t_ivec *) my_calloc((L_ny + 2), sizeof(vtr::t_ivec));
-		indices[SINK][i] = (vtr::t_ivec *) my_calloc((L_ny + 2), sizeof(vtr::t_ivec));
+		indices[IPIN][i] = (vtr::t_ivec *) vtr::calloc((L_ny + 2), sizeof(vtr::t_ivec));
+		indices[SINK][i] = (vtr::t_ivec *) vtr::calloc((L_ny + 2), sizeof(vtr::t_ivec));
 	}
 
 	/* Count indices for block nodes */
@@ -1245,7 +1245,7 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 				tmp.nelem = type->num_class;
 				tmp.list = NULL;
 				if (tmp.nelem > 0) {
-					tmp.list = (int *) my_calloc(tmp.nelem, sizeof(int));
+					tmp.list = (int *) vtr::calloc(tmp.nelem, sizeof(int));
 					for (k = 0; k < tmp.nelem; ++k) {
 						tmp.list[k] = *index;
 						++(*index);
@@ -1258,7 +1258,7 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 				tmp.nelem = type->num_pins;
 				tmp.list = NULL;
 				if (tmp.nelem > 0) {
-					tmp.list = (int *) my_calloc(tmp.nelem, sizeof(int));
+					tmp.list = (int *) vtr::calloc(tmp.nelem, sizeof(int));
 					for (k = 0; k < tmp.nelem; ++k) {
 						tmp.list[k] = *index;
 						++(*index);
@@ -2111,17 +2111,17 @@ short ******alloc_sblock_pattern_lookup(
 	 * with each new dimension of the matrix. */
 	size_t items = 1;
 	items *= (L_nx + 1);
-	short ******i_list = (short ******) my_malloc(sizeof(short *****) * items);
+	short ******i_list = (short ******) vtr::malloc(sizeof(short *****) * items);
 	items *= (L_ny + 1);
-	short *****j_list = (short *****) my_malloc(sizeof(short ****) * items);
+	short *****j_list = (short *****) vtr::malloc(sizeof(short ****) * items);
 	items *= (4);
-	short ****from_side_list = (short ****) my_malloc(sizeof(short ***) * items);
+	short ****from_side_list = (short ****) vtr::malloc(sizeof(short ***) * items);
 	items *= (4);
-	short ***to_side_list = (short ***) my_malloc(sizeof(short **) * items);
+	short ***to_side_list = (short ***) vtr::malloc(sizeof(short **) * items);
 	items *= (max_chan_width);
-	short **from_track_list = (short **) my_malloc(sizeof(short *) * items);
+	short **from_track_list = (short **) vtr::malloc(sizeof(short *) * items);
 	items *= (4);
-	short *from_track_types = (short *) my_malloc(sizeof(short) * items);
+	short *from_track_types = (short *) vtr::malloc(sizeof(short) * items);
 
 	/* Build the pointer lists to form the multidimensional array */
 	short ******sblock_pattern = i_list;
@@ -2493,7 +2493,7 @@ static int *label_wire_muxes(
 	for (pass = 0; pass < 2; ++pass) {
 		/* Alloc the list on LOAD pass */
 		if (pass > 0) {
-			labels = (int *) my_malloc(sizeof(int) * num_labels);
+			labels = (int *) vtr::malloc(sizeof(int) * num_labels);
 			num_labels = 0;
 		}
 
@@ -2567,7 +2567,7 @@ static int *label_incoming_wires(
 	bool sblock_exists, is_endpoint;
 
 	/* Alloc the list of labels for the tracks */
-	labels = (int *) my_malloc(max_chan_width * sizeof(int));
+	labels = (int *) vtr::malloc(max_chan_width * sizeof(int));
 	for (i = 0; i < max_chan_width; ++i) {
 		labels[i] = UN_SET; /* crash hard if unset */
 	}

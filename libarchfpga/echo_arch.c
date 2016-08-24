@@ -326,7 +326,7 @@ static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 	int i, j, k;
 	char *tabs;
 
-	tabs = (char*) my_malloc((level + 1) * sizeof(char));
+	tabs = (char*) vtr::malloc((level + 1) * sizeof(char));
 	for (i = 0; i < level; i++) {
 		tabs[i] = '\t';
 	}

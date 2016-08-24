@@ -147,25 +147,25 @@ static void init_parse(bool doall, bool init_vpack_net_power) {
 
 	if (!doall) { /* Initialization before first (counting) pass */
 		num_logical_nets = 0;
-		blif_hash = (struct s_hash **) my_calloc(sizeof(struct s_hash *),
+		blif_hash = (struct s_hash **) vtr::calloc(sizeof(struct s_hash *),
 		HASHSIZE);
 	}
 	/* Allocate memory for second (load) pass */
 	else {
-		vpack_net = (struct s_net *) my_calloc(num_logical_nets,
+		vpack_net = (struct s_net *) vtr::calloc(num_logical_nets,
 				sizeof(struct s_net));
 		if (init_vpack_net_power) {
-			vpack_net_power = (t_net_power *) my_calloc(num_logical_nets,
+			vpack_net_power = (t_net_power *) vtr::calloc(num_logical_nets,
 					sizeof(t_net_power));
 		}
-		logical_block = (struct s_logical_block *) my_calloc(num_logical_blocks,
+		logical_block = (struct s_logical_block *) vtr::calloc(num_logical_blocks,
 				sizeof(struct s_logical_block));
-		num_driver = (int *) my_malloc(num_logical_nets * sizeof(int));
-		temp_num_pins = (int *) my_malloc(num_logical_nets * sizeof(int));
+		num_driver = (int *) vtr::malloc(num_logical_nets * sizeof(int));
+		temp_num_pins = (int *) vtr::malloc(num_logical_nets * sizeof(int));
 
-		logical_block_input_count = (int *) my_calloc(num_logical_blocks,
+		logical_block_input_count = (int *) vtr::calloc(num_logical_blocks,
 				sizeof(int));
-		logical_block_output_count = (int *) my_calloc(num_logical_blocks,
+		logical_block_output_count = (int *) vtr::calloc(num_logical_blocks,
 				sizeof(int));
 
 		for (i = 0; i < num_logical_nets; i++) {
@@ -187,11 +187,11 @@ static void init_parse(bool doall, bool init_vpack_net_power) {
 		for (i = 0; i < HASHSIZE; i++) {
 			h_ptr = blif_hash[i];
 			while (h_ptr != NULL) {
-				vpack_net[h_ptr->index].node_block = (int *) my_malloc(
+				vpack_net[h_ptr->index].node_block = (int *) vtr::malloc(
 						h_ptr->count * sizeof(int));
-				vpack_net[h_ptr->index].node_block_port = (int *) my_malloc(
+				vpack_net[h_ptr->index].node_block_port = (int *) vtr::malloc(
 						h_ptr->count * sizeof(int));
-				vpack_net[h_ptr->index].node_block_pin = (int *) my_malloc(
+				vpack_net[h_ptr->index].node_block_pin = (int *) vtr::malloc(
 						h_ptr->count * sizeof(int));
 
 				/* For avoiding assigning values beyond end of pins array. */
@@ -243,7 +243,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 
 	if (*add_truth_table) {
 		if (ptr[0] == '0' || ptr[0] == '1' || ptr[0] == '-') {
-			data = (vtr::t_linked_vptr*) my_malloc(
+			data = (vtr::t_linked_vptr*) vtr::malloc(
 					sizeof(vtr::t_linked_vptr));
 			fn = ptr;
 			ptr = vtr::strtok(NULL, BLIF_TOKENS, blif, buffer);
@@ -252,7 +252,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 					/* constant generator */
 					data->next =
 							logical_block[num_logical_blocks - 1].truth_table;
-					data->data_vptr = my_malloc(strlen(fn) + 4);
+					data->data_vptr = vtr::malloc(strlen(fn) + 4);
 					sprintf((char*) (data->data_vptr), " %s", fn);
 					logical_block[num_logical_blocks - 1].truth_table = data;
 					ptr = fn;
@@ -262,7 +262,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 				}
 			} else {
 				data->next = logical_block[num_logical_blocks - 1].truth_table;
-				data->data_vptr = my_malloc(strlen(fn) + 3);
+				data->data_vptr = vtr::malloc(strlen(fn) + 3);
 				sprintf((char*) data->data_vptr, "%s %s", fn, ptr);
 				logical_block[num_logical_blocks - 1].truth_table = data;
 			}
@@ -289,7 +289,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 				if (model != NULL) {
 					free(model);
 				}
-				model = (char *) my_malloc((strlen(ptr) + 1) * sizeof(char));
+				model = (char *) vtr::malloc((strlen(ptr) + 1) * sizeof(char));
 				strcpy(model, ptr);
 				if (blif_circuit_name == NULL) {
 					blif_circuit_name = vtr::strdup(model);
@@ -298,7 +298,7 @@ static void get_blif_tok(char *buffer, bool doall, bool *done,
 				if (model != NULL) {
 					free(model);
 				}
-				model = (char *) my_malloc(sizeof(char));
+				model = (char *) vtr::malloc(sizeof(char));
 				model[0] = '\0';
 			}
 		}
@@ -416,15 +416,15 @@ static bool add_lut(bool doall, t_model *logic_model) {
 	VTR_ASSERT(logic_model->outputs->next == NULL);
 	VTR_ASSERT(logic_model->outputs->size == 1);
 
-	logical_block[num_logical_blocks - 1].input_nets = (int **) my_malloc(
+	logical_block[num_logical_blocks - 1].input_nets = (int **) vtr::malloc(
 			sizeof(int*));
-	logical_block[num_logical_blocks - 1].output_nets = (int **) my_malloc(
+	logical_block[num_logical_blocks - 1].output_nets = (int **) vtr::malloc(
 			sizeof(int*));
 	logical_block[num_logical_blocks - 1].clock_net = OPEN;
 
-	logical_block[num_logical_blocks - 1].input_nets[0] = (int *) my_malloc(
+	logical_block[num_logical_blocks - 1].input_nets[0] = (int *) vtr::malloc(
 			logic_model->inputs->size * sizeof(int));
-	logical_block[num_logical_blocks - 1].output_nets[0] = (int *) my_malloc(
+	logical_block[num_logical_blocks - 1].output_nets[0] = (int *) vtr::malloc(
 			sizeof(int));
 
 	logical_block[num_logical_blocks - 1].type = VPACK_COMB;
@@ -491,14 +491,14 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 	logical_block[num_logical_blocks - 1].model = latch_model;
 	logical_block[num_logical_blocks - 1].type = VPACK_LATCH;
 
-	logical_block[num_logical_blocks - 1].input_nets = (int **) my_malloc(
+	logical_block[num_logical_blocks - 1].input_nets = (int **) vtr::malloc(
 			sizeof(int*));
-	logical_block[num_logical_blocks - 1].output_nets = (int **) my_malloc(
+	logical_block[num_logical_blocks - 1].output_nets = (int **) vtr::malloc(
 			sizeof(int*));
 
-	logical_block[num_logical_blocks - 1].input_nets[0] = (int *) my_malloc(
+	logical_block[num_logical_blocks - 1].input_nets[0] = (int *) vtr::malloc(
 			sizeof(int));
-	logical_block[num_logical_blocks - 1].output_nets[0] = (int *) my_malloc(
+	logical_block[num_logical_blocks - 1].output_nets[0] = (int *) vtr::malloc(
 			sizeof(int));
 
 	logical_block[num_logical_blocks - 1].output_nets[0][0] = add_vpack_net(
@@ -555,9 +555,9 @@ static void add_subckt(bool doall, t_model *user_models) {
 		} else if (toggle == 0) {
 			/* ELSE - parse in one or the other */
 			/* allocate a new spot for both the circuit_signal name and the subckt_signal name */
-			subckt_signal_name = (char**) my_realloc(subckt_signal_name,
+			subckt_signal_name = (char**) vtr::realloc(subckt_signal_name,
 					(subckt_index_signals + 1) * sizeof(char**));
-			circuit_signal_name = (char**) my_realloc(circuit_signal_name,
+			circuit_signal_name = (char**) vtr::realloc(circuit_signal_name,
 					(subckt_index_signals + 1) * sizeof(char**));
 
 			/* copy in the subckt_signal name */
@@ -617,9 +617,9 @@ static void add_subckt(bool doall, t_model *user_models) {
 			}
 			port = port->next;
 		}
-		logical_block[num_logical_blocks - 1].input_nets = (int**) my_malloc(
+		logical_block[num_logical_blocks - 1].input_nets = (int**) vtr::malloc(
 				input_port_count * sizeof(int *));
-		logical_block[num_logical_blocks - 1].input_pin_names = (char***)my_calloc(input_port_count, sizeof(char **));
+		logical_block[num_logical_blocks - 1].input_pin_names = (char***)vtr::calloc(input_port_count, sizeof(char **));
 
 		port = cur_model->inputs;
 		while (port) {
@@ -630,8 +630,8 @@ static void add_subckt(bool doall, t_model *user_models) {
 			}
 			VTR_ASSERT(port->size >= 0);
 			logical_block[num_logical_blocks - 1].input_nets[port->index] =
-					(int*) my_malloc(port->size * sizeof(int));
-			logical_block[num_logical_blocks - 1].input_pin_names[port->index] = (char**)my_calloc(port->size, sizeof(char *));
+					(int*) vtr::malloc(port->size * sizeof(int));
+			logical_block[num_logical_blocks - 1].input_pin_names[port->index] = (char**)vtr::calloc(port->size, sizeof(char *));
 
 			for (j = 0; j < port->size; j++) {
 				logical_block[num_logical_blocks - 1].input_nets[port->index][j] =
@@ -648,17 +648,17 @@ static void add_subckt(bool doall, t_model *user_models) {
 			port = port->next;
 			output_port_count++;
 		}
-		logical_block[num_logical_blocks - 1].output_nets = (int**) my_malloc(
+		logical_block[num_logical_blocks - 1].output_nets = (int**) vtr::malloc(
 				output_port_count * sizeof(int *));
 
-		logical_block[num_logical_blocks - 1].output_pin_names = (char***)my_calloc(output_port_count, sizeof(char **));
+		logical_block[num_logical_blocks - 1].output_pin_names = (char***)vtr::calloc(output_port_count, sizeof(char **));
 
 		port = cur_model->outputs;
 		while (port) {
 			VTR_ASSERT(port->size >= 0);
 			logical_block[num_logical_blocks - 1].output_nets[port->index] =
-					(int*) my_malloc(port->size * sizeof(int));
-			logical_block[num_logical_blocks - 1].output_pin_names[port->index] = (char**)my_calloc(port->size, sizeof(char *));
+					(int*) vtr::malloc(port->size * sizeof(int));
+			logical_block[num_logical_blocks - 1].output_pin_names[port->index] = (char**)vtr::calloc(port->size, sizeof(char *));
 			for (j = 0; j < port->size; j++) {
 				logical_block[num_logical_blocks - 1].output_nets[port->index][j] =
 						OPEN;
@@ -821,24 +821,24 @@ static void io_line(int in_or_out, bool doall, t_model *io_model) {
 		len = strlen(ptr);
 		if (in_or_out == RECEIVER) { /* output pads need out: prefix 
 		 * to make names unique from LUTs */
-			logical_block[num_logical_blocks - 1].name = (char *) my_malloc(
+			logical_block[num_logical_blocks - 1].name = (char *) vtr::malloc(
 					(len + 1 + 4) * sizeof(char)); /* Space for out: at start */
 			strcpy(logical_block[num_logical_blocks - 1].name, "out:");
 			strcat(logical_block[num_logical_blocks - 1].name, ptr);
 			logical_block[num_logical_blocks - 1].input_nets =
-					(int **) my_malloc(sizeof(int*));
+					(int **) vtr::malloc(sizeof(int*));
 			logical_block[num_logical_blocks - 1].input_nets[0] =
-					(int *) my_malloc(sizeof(int));
+					(int *) vtr::malloc(sizeof(int));
 			logical_block[num_logical_blocks - 1].input_nets[0][0] = OPEN;
 		} else {
 			VTR_ASSERT(in_or_out == DRIVER);
-			logical_block[num_logical_blocks - 1].name = (char *) my_malloc(
+			logical_block[num_logical_blocks - 1].name = (char *) vtr::malloc(
 					(len + 1) * sizeof(char));
 			strcpy(logical_block[num_logical_blocks - 1].name, ptr);
 			logical_block[num_logical_blocks - 1].output_nets =
-					(int **) my_malloc(sizeof(int*));
+					(int **) vtr::malloc(sizeof(int*));
 			logical_block[num_logical_blocks - 1].output_nets[0] =
-					(int *) my_malloc(sizeof(int));
+					(int *) vtr::malloc(sizeof(int));
 			logical_block[num_logical_blocks - 1].output_nets[0][0] = OPEN;
 		}
 
@@ -972,7 +972,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	/* Add the vpack_net (only counting pass will add nets to symbol table). */
 
 	num_logical_nets++;
-	h_ptr = (struct s_hash *) my_malloc(sizeof(struct s_hash));
+	h_ptr = (struct s_hash *) vtr::malloc(sizeof(struct s_hash));
 	if (prev_ptr == NULL) {
 		blif_hash[index] = h_ptr;
 	} else {
@@ -1015,7 +1015,7 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	}
 	
 	VTR_ASSERT(logic_model != NULL);
-	lut_distribution = (int*) my_calloc(logic_model->inputs[0].size + 1,
+	lut_distribution = (int*) vtr::calloc(logic_model->inputs[0].size + 1,
 			sizeof(int));
 	num_absorbable_latch = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
@@ -1355,7 +1355,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 					&& (logical_block[i].type == VPACK_INPAD)) {
 				logical_block[i].type = VPACK_EMPTY;
 				vpr_printf_info("Removing input.\n");
-				p_io_removed = (vtr::t_linked_vptr*) my_malloc(
+				p_io_removed = (vtr::t_linked_vptr*) vtr::malloc(
 						sizeof(vtr::t_linked_vptr));
 				p_io_removed->data_vptr = vtr::strdup(logical_block[i].name);
 				p_io_removed->next = circuit_p_io_removed;
@@ -1657,8 +1657,8 @@ static void compress_netlist(void) {
 
 	new_num_nets = 0;
 	new_num_blocks = 0;
-	net_remap = (int *) my_malloc(num_logical_nets * sizeof(int));
-	block_remap = (int *) my_malloc(num_logical_blocks * sizeof(int));
+	net_remap = (int *) vtr::malloc(num_logical_nets * sizeof(int));
+	block_remap = (int *) vtr::malloc(num_logical_blocks * sizeof(int));
 
 	for (inet = 0; inet < num_logical_nets; inet++) {
 		if (vpack_net[inet].node_block[0] != OPEN) {
@@ -1701,9 +1701,9 @@ static void compress_netlist(void) {
 		}
 
 		num_logical_nets = new_num_nets;
-		vpack_net = (struct s_net *) my_realloc(vpack_net,
+		vpack_net = (struct s_net *) vtr::realloc(vpack_net,
 				num_logical_nets * sizeof(struct s_net));
-		vpack_net_power = (t_net_power *) my_realloc(vpack_net_power,
+		vpack_net_power = (t_net_power *) vtr::realloc(vpack_net_power,
 				num_logical_nets * sizeof(t_net_power));
 
 		for (iblk = 0; iblk < num_logical_blocks; iblk++) {
@@ -1799,7 +1799,7 @@ static void compress_netlist(void) {
 				num_logical_blocks - new_num_blocks);
 
 		num_logical_blocks = new_num_blocks;
-		logical_block = (struct s_logical_block *) my_realloc(logical_block,
+		logical_block = (struct s_logical_block *) vtr::realloc(logical_block,
 				num_logical_blocks * sizeof(struct s_logical_block));
 	}
 
@@ -1902,7 +1902,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 		cur = cur->next;
 	}
 
-	model_stats = (struct s_model_stats*) my_calloc(num_model_stats,
+	model_stats = (struct s_model_stats*) vtr::calloc(num_model_stats,
 			sizeof(struct s_model_stats));
 
 	num_model_stats = 0;
@@ -1933,7 +1933,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 			break;
 		}
 	}
-	num_lut_of_size = (int*) my_calloc(MAX_LUT_INPUTS + 1, sizeof(int));
+	num_lut_of_size = (int*) vtr::calloc(MAX_LUT_INPUTS + 1, sizeof(int));
 
 	for (i = 0; i < num_logical_blocks; i++) {
 		for (j = 0; j < num_model_stats; j++) {

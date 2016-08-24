@@ -103,7 +103,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 			if (L_grid[i][j].type) {
 				/* If already allocated, leave it since size doesn't change */
 				if (NULL == L_grid[i][j].blocks) {
-					L_grid[i][j].blocks = (int *) my_malloc(
+					L_grid[i][j].blocks = (int *) vtr::malloc(
 							sizeof(int) * L_grid[i][j].type->capacity);
 
 					/* Set them as unconnected */
@@ -937,14 +937,14 @@ static void alloc_and_load_port_pin_from_blk_pin(void) {
 	int blk_pin_count, num_port_pins, num_ports;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_port_from_blk_pin = (int **) my_malloc(num_types* sizeof(int*));
-	temp_port_pin_from_blk_pin = (int **) my_malloc(num_types* sizeof(int*));
+	temp_port_from_blk_pin = (int **) vtr::malloc(num_types* sizeof(int*));
+	temp_port_pin_from_blk_pin = (int **) vtr::malloc(num_types* sizeof(int*));
 	for (itype = 1; itype < num_types; itype++) {
 		
 		blk_pin_count = type_descriptors[itype].num_pins;
 
-		temp_port_from_blk_pin[itype] = (int *) my_malloc(blk_pin_count* sizeof(int));
-		temp_port_pin_from_blk_pin[itype] = (int *) my_malloc(blk_pin_count* sizeof(int));
+		temp_port_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
+		temp_port_pin_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
 
 		for (iblk_pin = 0; iblk_pin < blk_pin_count; iblk_pin++) {
 			temp_port_from_blk_pin[itype][iblk_pin] = OPEN;
@@ -1035,13 +1035,13 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
 	int blk_pin_count, num_port_pins, num_ports;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_blk_pin_from_port_pin = (int ***) my_malloc(num_types * sizeof(int**));
+	temp_blk_pin_from_port_pin = (int ***) vtr::malloc(num_types * sizeof(int**));
 	for (itype = 1; itype < num_types; itype++) {
 		num_ports = type_descriptors[itype].pb_type->num_ports;
-		temp_blk_pin_from_port_pin[itype] = (int **) my_malloc(num_ports * sizeof(int*));
+		temp_blk_pin_from_port_pin[itype] = (int **) vtr::malloc(num_ports * sizeof(int*));
 		for (iport = 0; iport < num_ports; iport++) {
 			num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
-			temp_blk_pin_from_port_pin[itype][iport] = (int *) my_malloc(num_port_pins * sizeof(int));
+			temp_blk_pin_from_port_pin[itype][iport] = (int *) vtr::malloc(num_port_pins * sizeof(int));
 			
 			for(iport_pin = 0; iport_pin < num_port_pins; iport_pin ++) {
 				temp_blk_pin_from_port_pin[itype][iport][iport_pin] = OPEN;
@@ -1282,14 +1282,14 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	int from_start_pin_index = -1, from_end_pin_index = -1;
 		
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_idirect_from_blk_pin = (int **) my_malloc(num_types * sizeof(int *));
-	temp_direct_type_from_blk_pin = (int **) my_malloc(num_types * sizeof(int *));
+	temp_idirect_from_blk_pin = (int **) vtr::malloc(num_types * sizeof(int *));
+	temp_direct_type_from_blk_pin = (int **) vtr::malloc(num_types * sizeof(int *));
 	for (itype = 1; itype < num_types; itype++) {
 		
 		num_type_pins = type_descriptors[itype].num_pins;
 
-		temp_idirect_from_blk_pin[itype] = (int *) my_malloc(num_type_pins * sizeof(int));
-		temp_direct_type_from_blk_pin[itype] = (int *) my_malloc(num_type_pins * sizeof(int));
+		temp_idirect_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
+		temp_direct_type_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
 	
 		/* Initialize values to OPEN */
 		for (iblk_pin = 0; iblk_pin < num_type_pins; iblk_pin++) {

@@ -53,7 +53,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 				if (from_side != to_side) {
 					switch_block_conn[from_side][to_side][from_track].nelem = 1;
 					switch_block_conn[from_side][to_side][from_track].list =
-							(int *) my_malloc(sizeof(int));
+							(int *) vtr::malloc(sizeof(int));
 
 					switch_block_conn[from_side][to_side][from_track].list[0] =
 							get_simple_switch_block_track(from_side, to_side,

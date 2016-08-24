@@ -54,7 +54,7 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 	int *tnode_num_fanin;
 	t_tedge *tedge;
 
-	tnode_num_fanin = (int *) my_calloc(num_tnodes, sizeof(int));
+	tnode_num_fanin = (int *) vtr::calloc(num_tnodes, sizeof(int));
 	error = 0;
 	num_sinks = 0;
 
@@ -129,7 +129,7 @@ int alloc_and_load_timing_graph_levels(void) {
 	 * Temporarily need one extra level on the end because I look at the first  *
 	 * empty level.                                                             */
 
-	tnodes_at_level = (vtr::t_ivec *) my_malloc(
+	tnodes_at_level = (vtr::t_ivec *) vtr::malloc(
 			(num_tnodes + 1) * sizeof(vtr::t_ivec));
 
 	/* Scan through the timing graph, putting all the primary input nodes (no    *
@@ -177,7 +177,7 @@ int alloc_and_load_timing_graph_levels(void) {
 				&tnodes_at_level[num_levels], &free_list_head);
 	}
 
-	tnodes_at_level = (vtr::t_ivec *) my_realloc(tnodes_at_level,
+	tnodes_at_level = (vtr::t_ivec *) vtr::realloc(tnodes_at_level,
 			num_levels * sizeof(vtr::t_ivec));
 	num_tnode_levels = num_levels;
 
@@ -419,9 +419,9 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
     std::vector<std::vector<int> > tnode_sccs;
 
     //Allocate book-keeping information
-    int* tnode_indexes = (int*) my_calloc(num_tnodes, sizeof(int));
-    int* tnode_lowlinks = (int*) my_calloc(num_tnodes, sizeof(int));
-    bool* tnode_instack = (bool*) my_calloc(num_tnodes, sizeof(bool));
+    int* tnode_indexes = (int*) vtr::calloc(num_tnodes, sizeof(int));
+    int* tnode_lowlinks = (int*) vtr::calloc(num_tnodes, sizeof(int));
+    bool* tnode_instack = (bool*) vtr::calloc(num_tnodes, sizeof(bool));
 
     //Initialize everything to unvisited
     for(i = 0; i < num_tnodes; i++) {

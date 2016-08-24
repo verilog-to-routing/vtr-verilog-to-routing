@@ -31,13 +31,13 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 					segment_inf[seg_type].length);
 	}
 
-	seg_occ_by_length = (int *) my_calloc((max_segment_length + 1),
+	seg_occ_by_length = (int *) vtr::calloc((max_segment_length + 1),
 			sizeof(int));
-	seg_cap_by_length = (int *) my_calloc((max_segment_length + 1),
+	seg_cap_by_length = (int *) vtr::calloc((max_segment_length + 1),
 			sizeof(int));
 
-	seg_occ_by_type = (int *) my_calloc(num_segment, sizeof(int));
-	seg_cap_by_type = (int *) my_calloc(num_segment, sizeof(int));
+	seg_occ_by_type = (int *) vtr::calloc(num_segment, sizeof(int));
+	seg_cap_by_type = (int *) vtr::calloc(num_segment, sizeof(int));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {

@@ -482,19 +482,19 @@ void alloc_draw_structs(void) {
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
 
-	draw_coords->tile_x = (float *) my_malloc((nx + 2) * sizeof(float));
-	draw_coords->tile_y = (float *) my_malloc((ny + 2) * sizeof(float));
+	draw_coords->tile_x = (float *) vtr::malloc((nx + 2) * sizeof(float));
+	draw_coords->tile_y = (float *) vtr::malloc((ny + 2) * sizeof(float));
 
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
 
-	draw_state->net_color = (t_color *) my_malloc(g_clbs_nlist.net.size() * sizeof(t_color));
+	draw_state->net_color = (t_color *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(t_color));
 
-	draw_state->block_color = (t_color *) my_malloc(num_blocks * sizeof(t_color));
+	draw_state->block_color = (t_color *) vtr::malloc(num_blocks * sizeof(t_color));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
-	draw_state->draw_rr_node = (t_draw_rr_node *) my_malloc(
+	draw_state->draw_rr_node = (t_draw_rr_node *) vtr::malloc(
 									num_rr_nodes * sizeof(t_draw_rr_node));
 
 	deselect_all(); /* Set initial colors */
@@ -545,7 +545,7 @@ void init_draw_coords(float width_val) {
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
 	if (num_rr_nodes != 0) {
-		draw_state->draw_rr_node = (t_draw_rr_node *) my_realloc(draw_state->draw_rr_node,
+		draw_state->draw_rr_node = (t_draw_rr_node *) vtr::realloc(draw_state->draw_rr_node,
 										(num_rr_nodes) * sizeof(t_draw_rr_node));
 		for (i = 0; i < num_rr_nodes; i++) {
 			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;

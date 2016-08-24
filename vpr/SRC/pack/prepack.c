@@ -109,7 +109,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 
 			/* Default settings: A section of a netlist must match all blocks in a pack pattern before it can be made a molecule except for carry-chains.  For carry-chains, since carry-chains are typically
 			quite flexible in terms of size, it is optional whether or not an atom in a netlist matches any particular block inside the chain */
-			list_of_packing_patterns[i].is_block_optional = (bool*) my_malloc(L_num_blocks * sizeof(bool));
+			list_of_packing_patterns[i].is_block_optional = (bool*) vtr::malloc(L_num_blocks * sizeof(bool));
 			for(k = 0; k < L_num_blocks; k++) {
 				list_of_packing_patterns[i].is_block_optional[k] = false;
 				if(list_of_packing_patterns[i].is_chain && list_of_packing_patterns[i].root_block->block_id != k) {
@@ -180,7 +180,7 @@ static void discover_pattern_names_in_pb_graph_node(
 					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices
 							== NULL) {
 						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								my_malloc(
+								vtr::malloc(
 										pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
 												* sizeof(int));
 					}
@@ -212,7 +212,7 @@ static void discover_pattern_names_in_pb_graph_node(
 					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices
 							== NULL) {
 						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								my_malloc(
+								vtr::malloc(
 										pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
 												* sizeof(int));
 					}
@@ -244,7 +244,7 @@ static void discover_pattern_names_in_pb_graph_node(
 					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices
 							== NULL) {
 						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								my_malloc(
+								vtr::malloc(
 										pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
 												* sizeof(int));
 					}
@@ -304,7 +304,7 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount,
 	struct s_hash_iterator hash_iter;
 	struct s_hash *curr_pattern;
 
-	nlist = (t_pack_patterns*)my_calloc(ncount, sizeof(t_pack_patterns));
+	nlist = (t_pack_patterns*)vtr::calloc(ncount, sizeof(t_pack_patterns));
 
 	hash_iter = start_hash_table_iterator();
 	curr_pattern = get_next_hash(nhash, &hash_iter);
@@ -325,7 +325,7 @@ void free_list_of_pack_patterns(INP t_pack_patterns *list_of_pack_patterns, INP 
 	if (list_of_pack_patterns != NULL) {
 		for (i = 0; i < num_packing_patterns; i++) {
 			num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
-			pattern_block_list = (t_pack_pattern_block **)my_calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block *));
+			pattern_block_list = (t_pack_pattern_block **)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block *));
 			free(list_of_pack_patterns[i].name);
 			free(list_of_pack_patterns[i].is_block_optional);
 			free_pack_pattern(list_of_pack_patterns[i].root_block, pattern_block_list);
@@ -461,7 +461,7 @@ static void forward_expand_pack_pattern_from_edge(
 			if (destination_pb_graph_node->temp_scratch_pad == NULL
 					|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index
 							!= curr_pattern_index) {
-				destination_block = (t_pack_pattern_block*)my_calloc(1, sizeof(t_pack_pattern_block));
+				destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				list_of_packing_patterns[curr_pattern_index].base_cost +=
 						compute_primitive_base_cost(destination_pb_graph_node);
 				destination_block->block_id = *L_num_blocks;
@@ -618,7 +618,7 @@ static void backward_expand_pack_pattern_from_edge(
 					(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
 			if (source_block == NULL
 					|| source_block->pattern_index != curr_pattern_index) {
-				source_block = (t_pack_pattern_block *)my_calloc(1, sizeof(t_pack_pattern_block));
+				source_block = (t_pack_pattern_block *)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
 				list_of_packing_patterns[curr_pattern_index].base_cost +=
@@ -691,7 +691,7 @@ static void backward_expand_pack_pattern_from_edge(
 						((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
 				source_block =
 						(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
-				pack_pattern_connection = (t_pack_pattern_connections *)my_calloc(1,
+				pack_pattern_connection = (t_pack_pattern_connections *)vtr::calloc(1,
 						sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
 				pack_pattern_connection->from_pin =
@@ -701,7 +701,7 @@ static void backward_expand_pack_pattern_from_edge(
 				pack_pattern_connection->next = source_block->connections;
 				source_block->connections = pack_pattern_connection;
 
-				pack_pattern_connection = (t_pack_pattern_connections *)my_calloc(1,
+				pack_pattern_connection = (t_pack_pattern_connections *)vtr::calloc(1,
 						sizeof(t_pack_pattern_connections));
 				pack_pattern_connection->from_block = source_block;
 				pack_pattern_connection->from_pin =
@@ -774,7 +774,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	t_pack_molecule *cur_molecule;
 	bool *is_used;
 
-	is_used = (bool*)my_calloc(num_packing_patterns, sizeof(bool));
+	is_used = (bool*)vtr::calloc(num_packing_patterns, sizeof(bool));
 
 	cur_molecule = list_of_molecules_head = NULL;
 
@@ -819,7 +819,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	for (i = 0; i < num_logical_blocks; i++) {
 		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_logical_block(i);
 		if (logical_block[i].packed_molecules == NULL) {
-			cur_molecule = (t_pack_molecule*) my_calloc(1,
+			cur_molecule = (t_pack_molecule*) vtr::calloc(1,
 					sizeof(t_pack_molecule));
 			cur_molecule->valid = true;
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
@@ -828,14 +828,14 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
-			cur_molecule->logical_block_ptrs = (t_logical_block**) my_malloc(
+			cur_molecule->logical_block_ptrs = (t_logical_block**) vtr::malloc(
 					1 * sizeof(t_logical_block*));
 			cur_molecule->logical_block_ptrs[0] = &logical_block[i];
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
 
-			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) my_calloc(1,
+			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) vtr::calloc(1,
 					sizeof(vtr::t_linked_vptr));
 			logical_block[i].packed_molecules->data_vptr = (void*) cur_molecule;
 		}
@@ -887,13 +887,13 @@ static t_pack_molecule *try_create_molecule(
 	bool failed = false;
 
 	{
-		molecule = (t_pack_molecule*)my_calloc(1, sizeof(t_pack_molecule));
+		molecule = (t_pack_molecule*)vtr::calloc(1, sizeof(t_pack_molecule));
 		molecule->valid = true;
 		molecule->type = MOLECULE_FORCED_PACK;
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 		if (molecule->pack_pattern == NULL) {failed = true; goto end_prolog;}
 
-		molecule->logical_block_ptrs = (t_logical_block **)my_calloc(
+		molecule->logical_block_ptrs = (t_logical_block **)vtr::calloc(
 			molecule->pack_pattern->num_blocks,
 			sizeof(t_logical_block *)
 		);
@@ -923,7 +923,7 @@ static t_pack_molecule *try_create_molecule(
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
-			molecule_linked_list = (vtr::t_linked_vptr*) my_calloc(1, sizeof(vtr::t_linked_vptr));
+			molecule_linked_list = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
 			molecule_linked_list->data_vptr = (void *) molecule;
 			molecule_linked_list->next =
 					molecule->logical_block_ptrs[i]->packed_molecules;

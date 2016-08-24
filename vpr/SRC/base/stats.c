@@ -344,7 +344,7 @@ void print_wirelen_prob_dist(void) {
 	int prob_dist_size, i, incr;
 
 	prob_dist_size = nx + ny + 10;
-	prob_dist = (float *) my_calloc(prob_dist_size, sizeof(float));
+	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
@@ -366,7 +366,7 @@ void print_wirelen_prob_dist(void) {
 				vpr_printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
-				prob_dist = (float *)my_realloc(prob_dist,
+				prob_dist = (float *)vtr::realloc(prob_dist,
 						prob_dist_size * sizeof(float));
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
@@ -383,7 +383,7 @@ void print_wirelen_prob_dist(void) {
 				vpr_printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
-				prob_dist = (float *)my_realloc(prob_dist,
+				prob_dist = (float *)vtr::realloc(prob_dist,
 						prob_dist_size * sizeof(float));
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
@@ -474,7 +474,7 @@ int count_netlist_clocks(void) {
 			}
 			if (!found) {
 				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-				clock_names = (char **) my_realloc (clock_names, ++num_clocks * sizeof(char *));
+				clock_names = (char **) vtr::realloc (clock_names, ++num_clocks * sizeof(char *));
 				clock_names[num_clocks - 1] = name;
 			}
 		}

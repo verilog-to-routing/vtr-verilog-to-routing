@@ -141,7 +141,7 @@ bool *alloc_and_load_is_clock(bool global_clocks) {
 
 	num_clocks = 0;
 
-	is_clock = (bool *) my_calloc(g_atoms_nlist.net.size(), sizeof(bool));
+	is_clock = (bool *) vtr::calloc(g_atoms_nlist.net.size(), sizeof(bool));
 
 	/* Want to identify all the clock nets.  */
 

@@ -297,9 +297,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 
 	/* TODO: This is memory inefficient, fix if causes problems */
-	clb = (t_block*)my_calloc(num_logical_blocks, sizeof(t_block));
+	clb = (t_block*)vtr::calloc(num_logical_blocks, sizeof(t_block));
 	num_clb = 0;
-	clb_inter_blk_nets = (t_lb_net_stats*) my_calloc(num_logical_blocks, sizeof(t_lb_net_stats));
+	clb_inter_blk_nets = (t_lb_net_stats*) vtr::calloc(num_logical_blocks, sizeof(t_lb_net_stats));
 
 	istart = NULL;
 
@@ -342,7 +342,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
 	if (hill_climbing_flag) {
-		hill_climbing_inputs_avail = (int *) my_calloc(max_cluster_size + 1,
+		hill_climbing_inputs_avail = (int *) vtr::calloc(max_cluster_size + 1,
 				sizeof(int));
 	} else {
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
@@ -364,8 +364,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	blocks_since_last_analysis = 0;
 	early_exit = false;
 	num_blocks_hill_added = 0;
-	num_used_instances_type = (int*) my_calloc(num_types, sizeof(int));
-	num_instances_type = (int*) my_calloc(num_types, sizeof(int));
+	num_used_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
+	num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
@@ -388,12 +388,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_criticality(slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
-		block_criticality = (float*) my_calloc(num_logical_blocks, sizeof(float));
+		block_criticality = (float*) vtr::calloc(num_logical_blocks, sizeof(float));
 
-		critindexarray = (int*) my_malloc(num_logical_blocks * sizeof(int));
+		critindexarray = (int*) vtr::malloc(num_logical_blocks * sizeof(int));
 
-		seed_blend_gain = (float*) my_calloc(num_logical_blocks, sizeof(float));
-		seed_blend_index_array = (int*) my_malloc(num_logical_blocks * sizeof(int));
+		seed_blend_gain = (float*) vtr::calloc(num_logical_blocks, sizeof(float));
+		seed_blend_index_array = (int*) vtr::malloc(num_logical_blocks * sizeof(int));
 
 		for (i = 0; i < num_logical_blocks; i++) {
 			VTR_ASSERT(logical_block[i].index == i);
@@ -624,7 +624,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				
 				/* store info that will be used later in packing from pb_stats and free the rest */
 				t_pb_stats *pb_stats = clb[num_clb - 1].pb->pb_stats;
-				clb_inter_blk_nets[num_clb - 1].nets_in_lb = (int*)my_malloc(sizeof(int) * pb_stats->num_marked_nets);
+				clb_inter_blk_nets[num_clb - 1].nets_in_lb = (int*)vtr::malloc(sizeof(int) * pb_stats->num_marked_nets);
 				for(int inet = 0; inet < pb_stats->num_marked_nets; inet++) {
 					int mnet = pb_stats->marked_nets[inet];
 					int external_terminals = g_atoms_nlist.net[mnet].pins.size() - pb_stats->num_pins_of_net_in_pb[inet];
@@ -830,7 +830,7 @@ static void alloc_and_init_clustering(bool global_clocks, float alpha,
 	}
 
 	/* alloc and load list of molecules to pack */
-	unclustered_list_head = (struct s_molecule_link *) my_calloc(
+	unclustered_list_head = (struct s_molecule_link *) vtr::calloc(
 			max_molecule_inputs + 1, sizeof(struct s_molecule_link));
 	unclustered_list_head_size = max_molecule_inputs + 1;
 
@@ -838,7 +838,7 @@ static void alloc_and_init_clustering(bool global_clocks, float alpha,
 		unclustered_list_head[i].next = NULL;
 	}
 
-	molecule_array = (t_pack_molecule **) my_malloc(
+	molecule_array = (t_pack_molecule **) vtr::malloc(
 			num_molecules * sizeof(t_pack_molecule*));
 	cur_molecule = molecules_head;
 	for (i = 0; i < num_molecules; i++) {
@@ -850,7 +850,7 @@ static void alloc_and_init_clustering(bool global_clocks, float alpha,
 	qsort((void*) molecule_array, num_molecules, sizeof(t_pack_molecule*),
 			compare_molecule_gain);
 
-	memory_pool = (struct s_molecule_link *) my_malloc(
+	memory_pool = (struct s_molecule_link *) vtr::malloc(
 			num_molecules * sizeof(struct s_molecule_link));
 	next_ptr = memory_pool;
 
@@ -864,7 +864,7 @@ static void alloc_and_init_clustering(bool global_clocks, float alpha,
 	free(molecule_array);
 
 	/* alloc and load net info */
-	net_output_feeds_driving_block_input = (int *) my_malloc(
+	net_output_feeds_driving_block_input = (int *) vtr::malloc(
 		g_atoms_nlist.net.size() * sizeof(int));
 
 	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
@@ -892,7 +892,7 @@ static void alloc_and_init_clustering(bool global_clocks, float alpha,
 		}
 		cur_molecule = cur_molecule->next;
 	}
-	*primitives_list = (t_pb_graph_node **)my_calloc(max_molecule_size, sizeof(t_pb_graph_node *));
+	*primitives_list = (t_pb_graph_node **)vtr::calloc(max_molecule_size, sizeof(t_pb_graph_node *));
 }
 
 /*****************************************/
@@ -1188,19 +1188,19 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 	 * only those logical_block structures will be fastest.  If almost all blocks    *
 	 * have been touched it should be faster to just run through them all    *
 	 * in order (less addressing and better cache locality).                 */
-	pb->pb_stats->input_pins_used = (int **) my_malloc(
+	pb->pb_stats->input_pins_used = (int **) vtr::malloc(
 			pb->pb_graph_node->num_input_pin_class * sizeof(int*));
-	pb->pb_stats->output_pins_used = (int **) my_malloc(
+	pb->pb_stats->output_pins_used = (int **) vtr::malloc(
 			pb->pb_graph_node->num_output_pin_class * sizeof(int*));
 	pb->pb_stats->lookahead_input_pins_used = new vector<int> [pb->pb_graph_node->num_input_pin_class];
 	pb->pb_stats->lookahead_output_pins_used = new vector<int> [pb->pb_graph_node->num_output_pin_class];
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
-	pb->pb_stats->feasible_blocks = (t_pack_molecule**) my_calloc(
+	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(
 			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
 	pb->pb_stats->tie_break_high_fanout_net = OPEN;
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
-		pb->pb_stats->input_pins_used[i] = (int*) my_malloc(
+		pb->pb_stats->input_pins_used[i] = (int*) vtr::malloc(
 				pb->pb_graph_node->input_pin_class_size[i] * sizeof(int));
 		for (j = 0; j < pb->pb_graph_node->input_pin_class_size[i]; j++) {
 			pb->pb_stats->input_pins_used[i][j] = OPEN;
@@ -1208,7 +1208,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 	}
 
 	for (i = 0; i < pb->pb_graph_node->num_output_pin_class; i++) {
-		pb->pb_stats->output_pins_used[i] = (int*) my_malloc(
+		pb->pb_stats->output_pins_used[i] = (int*) vtr::malloc(
 				pb->pb_graph_node->output_pin_class_size[i] * sizeof(int));
 		for (j = 0; j < pb->pb_graph_node->output_pin_class_size[i]; j++) {
 			pb->pb_stats->output_pins_used[i][j] = OPEN;
@@ -1223,9 +1223,9 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_models,
 
 	pb->pb_stats->num_pins_of_net_in_pb.clear();
 
-	pb->pb_stats->marked_nets = (int *) my_malloc(
+	pb->pb_stats->marked_nets = (int *) vtr::malloc(
 			max_nets_in_pb_type * sizeof(int));
-	pb->pb_stats->marked_blocks = (int *) my_malloc(
+	pb->pb_stats->marked_blocks = (int *) vtr::malloc(
 			num_logical_blocks * sizeof(int));
 
 	pb->pb_stats->num_marked_nets = 0;
@@ -1401,7 +1401,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
 		parent_pb->child_pbs =
-				(t_pb **) my_calloc(
+				(t_pb **) vtr::calloc(
 						parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,
 						sizeof(t_pb *));
 		for (i = 0;
@@ -1409,7 +1409,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 						< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;
 				i++) {
 			parent_pb->child_pbs[i] =
-					(t_pb *) my_calloc(
+					(t_pb *) vtr::calloc(
 							parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb,
 							sizeof(t_pb));
 			for (j = 0;
@@ -1957,7 +1957,7 @@ static void start_new_cluster(
 	/* Check if this cluster is really empty */
 
 	/* Allocate a dummy initial cluster and load a logical block as a seed and check if it is legal */
-	new_cluster->name = (char*) my_malloc(
+	new_cluster->name = (char*) vtr::malloc(
 			(strlen(molecule->logical_block_ptrs[molecule->root]->name) + 4) * sizeof(char));
 	sprintf(new_cluster->name, "cb.%s",
 			molecule->logical_block_ptrs[molecule->root]->name);
@@ -1982,7 +1982,7 @@ static void start_new_cluster(
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
-				new_cluster->pb = (t_pb*)my_calloc(1, sizeof(t_pb));
+				new_cluster->pb = (t_pb*)vtr::calloc(1, sizeof(t_pb));
 				new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
 				alloc_and_load_pb_stats(new_cluster->pb, num_models, max_nets_in_pb_type);
 				new_cluster->pb->parent_pb = NULL;
@@ -2261,7 +2261,7 @@ static void check_clustering(int num_clb, t_block *clb, bool *is_clock) {
 	t_pb * cur_pb;
 	bool * blocks_checked;
 
-	blocks_checked = (bool*)my_calloc(num_logical_blocks, sizeof(bool));
+	blocks_checked = (bool*)vtr::calloc(num_logical_blocks, sizeof(bool));
 
 	/* 
 	 * Check that each logical block connects to one primitive and that the primitive links up to the parent clb

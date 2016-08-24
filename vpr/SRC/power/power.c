@@ -140,8 +140,8 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 
 		LUT_size = pb_graph_node->num_input_pins[0];
 
-		input_probabilities = (float*) my_calloc(LUT_size, sizeof(float));
-		input_densities = (float*) my_calloc(LUT_size, sizeof(float));
+		input_probabilities = (float*) vtr::calloc(LUT_size, sizeof(float));
+		input_densities = (float*) vtr::calloc(LUT_size, sizeof(float));
 
 		for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
 			t_pb_graph_pin * pin = &pb_graph_node->input_pins[0][pin_idx];
@@ -1150,7 +1150,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 
 	/* Copy probability/density values to new netlist */
 	if (!clb_net_power) {
-		clb_net_power = (t_net_power*) my_calloc(num_nets, sizeof(t_net_power));
+		clb_net_power = (t_net_power*) vtr::calloc(num_nets, sizeof(t_net_power));
 	}
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
 		clb_net_power[net_idx].probability =
@@ -1160,7 +1160,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 	}
 
 	/* Initialize RR Graph Structures */
-	rr_node_power = (t_rr_node_power*) my_calloc(num_rr_nodes,
+	rr_node_power = (t_rr_node_power*) vtr::calloc(num_rr_nodes,
 			sizeof(t_rr_node_power));
 	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
 		rr_node_power[rr_node_idx].driver_switch_type = OPEN;
@@ -1185,9 +1185,9 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 					static_cast<int>(node->get_fan_in()));
 			max_fanin = max(max_fanin, static_cast<int>(node->get_fan_in()));
 
-			node_power->in_dens = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_dens = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
-			node_power->in_prob = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_prob = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
 			break;
 		case CHANX:
@@ -1206,9 +1206,9 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
 			max_fanin = max(max_fanin, static_cast<int>(node->get_fan_in()));
 
-			node_power->in_dens = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_dens = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
-			node_power->in_prob = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_prob = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
 			break;
 		default:
@@ -1277,12 +1277,12 @@ bool power_init(char * power_out_filepath,
 	/* Set global power architecture & options */
 	g_power_arch = arch->power;
 	g_power_commonly_used = new t_power_commonly_used;
-	g_power_tech = (t_power_tech*) my_malloc(sizeof(t_power_tech));
-	g_power_output = (t_power_output*) my_malloc(sizeof(t_power_output));
+	g_power_tech = (t_power_tech*) vtr::malloc(sizeof(t_power_tech));
+	g_power_output = (t_power_output*) vtr::malloc(sizeof(t_power_output));
 
 	/* Set up Logs */
 	g_power_output->num_logs = POWER_LOG_NUM_TYPES;
-	g_power_output->logs = (t_log*) my_calloc(g_power_output->num_logs,
+	g_power_output->logs = (t_log*) vtr::calloc(g_power_output->num_logs,
 			sizeof(t_log));
 	g_power_output->logs[POWER_LOG_ERROR].name = vtr::strdup("Errors");
 	g_power_output->logs[POWER_LOG_WARNING].name = vtr::strdup("Warnings");

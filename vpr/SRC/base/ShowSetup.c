@@ -51,7 +51,7 @@ void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {
 void printClusteredNetlistStats() {
 	int i, j, L_num_p_inputs, L_num_p_outputs;
 	int *num_blocks_type;
-	num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
+	num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
 
 	vpr_printf_info("\n");
 	vpr_printf_info("Netlist num_nets: %d\n", (int) g_clbs_nlist.net.size());

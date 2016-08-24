@@ -376,9 +376,9 @@ void build_rr_graph(
 
 	rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
 			&num_rr_nodes, chan_details_x, chan_details_y);
-	rr_node = (t_rr_node *) my_malloc(sizeof(t_rr_node) * num_rr_nodes);
+	rr_node = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * num_rr_nodes);
 	memset(rr_node, 0, sizeof(t_rr_node) * num_rr_nodes);
-	bool *L_rr_edge_done = (bool *) my_malloc(sizeof(bool) * num_rr_nodes);
+	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * num_rr_nodes);
 	memset(L_rr_edge_done, 0, sizeof(bool) * num_rr_nodes);
 
 	/* These are data structures used by the the unidir opin mapping. They are used 
@@ -451,8 +451,8 @@ void build_rr_graph(
 	int ******ipin_to_track_map = NULL; /* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 	vtr::t_ivec *****track_to_pin_lookup = NULL; /* [0..num_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
 
-	ipin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
-	track_to_pin_lookup = (vtr::t_ivec *****) my_malloc(sizeof(vtr::t_ivec ****) * L_num_types);
+	ipin_to_track_map = (int ******) vtr::malloc(sizeof(int *****) * L_num_types);
+	track_to_pin_lookup = (vtr::t_ivec *****) vtr::malloc(sizeof(vtr::t_ivec ****) * L_num_types);
 	for (int itype = 0; itype < L_num_types; ++itype) {
 		
 		ipin_to_track_map[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
@@ -470,7 +470,7 @@ void build_rr_graph(
 
 	if (BI_DIRECTIONAL == directionality) {
 		//bool test_metrics_outp = false;
-		opin_to_track_map = (int ******) my_malloc(sizeof(int *****) * L_num_types);
+		opin_to_track_map = (int ******) vtr::malloc(sizeof(int *****) * L_num_types);
 		for (int i = 0; i < L_num_types; ++i) {
 			bool *perturb_opins = alloc_and_load_perturb_opins(&types[i], Fc_out[i],
 					max_chan_width,	num_seg_types, segment_inf);
@@ -861,7 +861,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 		INP int global_route_switch,
 		OUTP int * num_seg_details) {
 
-	t_seg_details *seg_details = (t_seg_details *) my_malloc(sizeof(t_seg_details));
+	t_seg_details *seg_details = (t_seg_details *) vtr::malloc(sizeof(t_seg_details));
 
 	seg_details->index = 0;
 	seg_details->length = 1;
@@ -873,9 +873,9 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 	seg_details->Rmetal = 0.0;
 	seg_details->start = 1;
 	seg_details->drivers = MULTI_BUFFERED;
-	seg_details->cb = (bool *) my_malloc(sizeof(bool) * 1);
+	seg_details->cb = (bool *) vtr::malloc(sizeof(bool) * 1);
 	seg_details->cb[0] = true;
-	seg_details->sb = (bool *) my_malloc(sizeof(bool) * 2);
+	seg_details->sb = (bool *) vtr::malloc(sizeof(bool) * 2);
 	seg_details->sb[0] = true;
 	seg_details->sb[1] = true;
 	seg_details->group_size = 1;
@@ -1037,7 +1037,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 
 	/* We make a copy of the current fanin values for the nodes to 
 	 * know the number of OPINs driving each mux presently */
-	int *opin_mux_size = (int *) my_malloc(sizeof(int) * num_nodes);
+	int *opin_mux_size = (int *) vtr::malloc(sizeof(int) * num_nodes);
 	for (int i = 0; i < num_nodes; ++i) {
 		opin_mux_size[i] = L_rr_node[i].get_fan_in();
 	}
@@ -1176,7 +1176,7 @@ void free_rr_graph(void) {
 static void alloc_net_rr_terminals(void) {
 	unsigned int inet;
 
-	net_rr_terminals = (int **) my_malloc(g_clbs_nlist.net.size() * sizeof(int *));
+	net_rr_terminals = (int **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(int *));
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
@@ -1230,12 +1230,12 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 
-	rr_blk_source = (int **) my_malloc(num_blocks * sizeof(int *));
+	rr_blk_source = (int **) vtr::malloc(num_blocks * sizeof(int *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		rr_blk_source[iblk] = (int *) my_malloc(type->num_class * sizeof(int));
+		rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof(int));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			if (iclass >= class_low && iclass <= class_high) {
 				i = block[iblk].x;
@@ -1282,8 +1282,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 
 			int num_edges = class_inf[iclass].num_pins;
 			L_rr_node[inode].set_num_edges(num_edges);
-			L_rr_node[inode].edges = (int *) my_malloc(num_edges * sizeof(int));
-			L_rr_node[inode].switches = (short *) my_malloc(num_edges * sizeof(short));
+			L_rr_node[inode].edges = (int *) vtr::malloc(num_edges * sizeof(int));
+			L_rr_node[inode].switches = (short *) vtr::malloc(num_edges * sizeof(short));
 
 			for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
 				int pin_num = class_inf[iclass].pinlist[ipin];
@@ -1350,8 +1350,8 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
 			L_rr_node[inode].set_num_edges(1);
-			L_rr_node[inode].edges = (int *) my_malloc(sizeof(int));
-			L_rr_node[inode].switches = (short *) my_malloc(sizeof(short));
+			L_rr_node[inode].edges = (int *) vtr::malloc(sizeof(int));
+			L_rr_node[inode].switches = (short *) vtr::malloc(sizeof(short));
 
 			L_rr_node[inode].edges[0] = to_node;
 			L_rr_node[inode].switches[0] = delayless_switch;
@@ -1634,8 +1634,8 @@ void alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node, INP int inode,
 	VTR_ASSERT(NULL == L_rr_node[inode].switches);
 
 	L_rr_node[inode].set_num_edges(num_edges);
-	L_rr_node[inode].edges = (int *) my_malloc(num_edges * sizeof(int));
-	L_rr_node[inode].switches = (short *) my_malloc(num_edges * sizeof(short));
+	L_rr_node[inode].edges = (int *) vtr::malloc(num_edges * sizeof(int));
+	L_rr_node[inode].switches = (short *) vtr::malloc(num_edges * sizeof(short));
 
 	i = 0;
 	list_ptr = edge_list_head;
@@ -1859,10 +1859,10 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 			}
 		}
 	}
-	int *pin_num_ordering = (int *) my_malloc(num_phys_pins * sizeof(int));
-	int *side_ordering = (int *) my_malloc(num_phys_pins * sizeof(int));
-	int *width_ordering = (int *) my_malloc(num_phys_pins * sizeof(int));
-	int *height_ordering = (int *) my_malloc(num_phys_pins * sizeof(int));
+	int *pin_num_ordering = (int *) vtr::malloc(num_phys_pins * sizeof(int));
+	int *side_ordering = (int *) vtr::malloc(num_phys_pins * sizeof(int));
+	int *width_ordering = (int *) vtr::malloc(num_phys_pins * sizeof(int));
+	int *height_ordering = (int *) vtr::malloc(num_phys_pins * sizeof(int));
 
 	/* Connection block I use distributes pins evenly across the tracks      *
 	 * of ALL sides of the clb at once.  Ensures that each pin connects      *
@@ -2136,7 +2136,7 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 	VTR_ASSERT(max_chan_width > 0);
 
 	int *num_conns_to_track; /* [0..max_chan_width-1] */
-	num_conns_to_track = (int *) my_calloc(max_chan_width, sizeof(int));
+	num_conns_to_track = (int *) vtr::calloc(max_chan_width, sizeof(int));
 
 	for (int pin = 0; pin < type->num_pins; ++pin) {
 		for (int width = 0; width < type->width; ++width) {
@@ -2237,7 +2237,7 @@ static vtr::t_ivec ****alloc_and_load_track_to_pin_lookup(
 					track_to_pin_lookup[track][width][height][side].list = NULL; /* Defensive code */
 					if (track_to_pin_lookup[track][width][height][side].nelem != 0) {
 						track_to_pin_lookup[track][width][height][side].list =
-							(int *) my_malloc(track_to_pin_lookup[track][width][height][side].nelem * sizeof(int));
+							(int *) vtr::malloc(track_to_pin_lookup[track][width][height][side].nelem * sizeof(int));
 						track_to_pin_lookup[track][width][height][side].nelem = 0;
 					}
 				}
@@ -2482,14 +2482,14 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 	int start_pin_index, end_pin_index;
 	t_pb_type *pb_type;
 
-	clb_to_clb_directs = (t_clb_to_clb_directs*)my_calloc(num_directs, sizeof(t_clb_to_clb_directs));
+	clb_to_clb_directs = (t_clb_to_clb_directs*)vtr::calloc(num_directs, sizeof(t_clb_to_clb_directs));
 
 	pb_type_name = NULL;
 	port_name = NULL;
 
 	for (i = 0; i < num_directs; i++) {
-		pb_type_name = (char*)my_malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
-		port_name = (char*)my_malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
+		pb_type_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
+		port_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
 
 		// Load from pins
 		// Parse out the pb_type name, port name, and pin range
@@ -2670,7 +2670,7 @@ static bool* alloc_and_load_perturb_opins(INP t_type_ptr type, INP int **Fc_out,
 	float n = 0;
 	float threshold = 0.07;
 
-	bool *perturb_opins = (bool *) my_calloc( num_seg_types, sizeof(bool) );
+	bool *perturb_opins = (bool *) vtr::calloc( num_seg_types, sizeof(bool) );
 
 	i = Fc_max = iclass = 0;
 	if (num_seg_types > 1){
@@ -2707,7 +2707,7 @@ static bool* alloc_and_load_perturb_opins(INP t_type_ptr type, INP int **Fc_out,
 	
 	/* get an upper bound on the number of prime factors of num_wire_types	*/
 	max_primes = (int)floor(log((float)num_wire_types)/log(2.0));
-	prime_factors = (int *) my_malloc(max_primes * sizeof(int));
+	prime_factors = (int *) vtr::malloc(max_primes * sizeof(int));
 	for (i = 0; i < max_primes; i++){
 		prime_factors[i] = 0;
 	}

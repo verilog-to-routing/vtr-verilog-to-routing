@@ -235,22 +235,22 @@ static void alloc_net(void) {
 
 	int i, len;
 
-	clb_net = (struct s_net *) my_malloc(num_nets * sizeof(struct s_net));
+	clb_net = (struct s_net *) vtr::malloc(num_nets * sizeof(struct s_net));
 	for (i = 0; i < NET_COUNT; i++) {
 		/* FIXME: We *really* shouldn't be allocating write-once copies */
 		len = strlen("TEMP_NET");
-		clb_net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
+		clb_net[i].name = (char *) vtr::malloc((len + 1) * sizeof(char));
 		clb_net[i].is_routed = false;
 		clb_net[i].is_fixed = false;
 		clb_net[i].is_global = false;
 		strcpy(clb_net[NET_USED].name, "TEMP_NET");
 
 		clb_net[i].num_sinks = (BLOCK_COUNT - 1);
-		clb_net[i].node_block = (int *) my_malloc(BLOCK_COUNT * sizeof(int));
+		clb_net[i].node_block = (int *) vtr::malloc(BLOCK_COUNT * sizeof(int));
 		clb_net[i].node_block[NET_USED_SOURCE_BLOCK] = NET_USED_SOURCE_BLOCK; /*driving block */
 		clb_net[i].node_block[NET_USED_SINK_BLOCK] = NET_USED_SINK_BLOCK; /*target block */
 
-		clb_net[i].node_block_pin = (int *) my_malloc(
+		clb_net[i].node_block_pin = (int *) vtr::malloc(
 				BLOCK_COUNT * sizeof(int));
 		/*the values for this are assigned in assign_blocks_and_route_net */
 
@@ -264,7 +264,7 @@ static void alloc_vnet(){
 	g_clbs_nlist.net.resize(NET_COUNT);
 	for(i = 0; i < NET_COUNT; i++){
 		len = strlen("TEMP_NET");
-		g_clbs_nlist.net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
+		g_clbs_nlist.net[i].name = (char *) vtr::malloc((len + 1) * sizeof(char));
 		g_clbs_nlist.net[i].is_routed = false;
 		g_clbs_nlist.net[i].is_fixed = false;
 		g_clbs_nlist.net[i].is_global = false;
@@ -294,14 +294,14 @@ static void alloc_block(void) {
 		max_pins = max(max_pins, type_descriptors[i].num_pins);
 	}
 
-	block = (struct s_block *) my_malloc(num_blocks * sizeof(struct s_block));
+	block = (struct s_block *) vtr::malloc(num_blocks * sizeof(struct s_block));
 
 	for (ix_b = 0; ix_b < BLOCK_COUNT; ix_b++) {
 		len = strlen("TEMP_BLOCK");
-		block[ix_b].name = (char *) my_malloc((len + 1) * sizeof(char));
+		block[ix_b].name = (char *) vtr::malloc((len + 1) * sizeof(char));
 		strcpy(block[ix_b].name, "TEMP_BLOCK");
 
-		block[ix_b].nets = (int *) my_malloc(max_pins * sizeof(int));
+		block[ix_b].nets = (int *) vtr::malloc(max_pins * sizeof(int));
 		block[ix_b].nets[0] = 0;
 		for (ix_p = 1; ix_p < max_pins; ix_p++)
 			block[ix_b].nets[ix_p] = OPEN;
@@ -348,7 +348,7 @@ static void load_simplified_device(void) {
 			}
 			grid[i][j].width_offset = 0;
 			grid[i][j].height_offset = 0;
-			grid[i][j].blocks = (int*)my_malloc(grid[i][j].type->capacity * sizeof(int));
+			grid[i][j].blocks = (int*)vtr::malloc(grid[i][j].type->capacity * sizeof(int));
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				grid[i][j].blocks[k] = EMPTY;
 			}

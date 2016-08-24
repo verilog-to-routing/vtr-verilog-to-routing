@@ -369,12 +369,12 @@ static t_slack * alloc_slacks(void) {
 
 	int inet;
 	vector<t_vnet> & tnets = *timing_nets; 
-	t_slack * slacks = (t_slack *) my_malloc(sizeof(t_slack));
+	t_slack * slacks = (t_slack *) vtr::malloc(sizeof(t_slack));
 	
-	slacks->slack   = (float **) my_malloc(num_timing_nets * sizeof(float *));
-	slacks->timing_criticality = (float **) my_malloc(num_timing_nets * sizeof(float *));
+	slacks->slack   = (float **) vtr::malloc(num_timing_nets * sizeof(float *));
+	slacks->timing_criticality = (float **) vtr::malloc(num_timing_nets * sizeof(float *));
 #ifdef PATH_COUNTING
-	slacks->path_criticality = (float **) my_malloc(num_timing_nets * sizeof(float *));
+	slacks->path_criticality = (float **) vtr::malloc(num_timing_nets * sizeof(float *));
 #endif
 	for (inet = 0; inet < num_timing_nets; inet++) {
 		slacks->slack[inet]	  = (float *) vtr::chunk_malloc(tnets[inet].pins.size() * sizeof(float), &tedge_ch);
@@ -763,7 +763,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	t_pb_graph_pin*** intra_lb_pb_pin_lookup; 
 	int **lookup_tnode_from_pin_id;
 
-	f_net_to_driver_tnode = (int*)my_malloc(num_timing_nets * sizeof(int));
+	f_net_to_driver_tnode = (int*)vtr::malloc(num_timing_nets * sizeof(int));
 
 	intra_lb_pb_pin_lookup = new t_pb_graph_pin**[num_types];
 	for (i = 0; i < num_types; i++) {
@@ -794,7 +794,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		}
 		num_tnodes += num_nodes_in_block;
 	}
-	tnode = (t_tnode*)my_calloc(num_tnodes, sizeof(t_tnode));
+	tnode = (t_tnode*)vtr::calloc(num_tnodes, sizeof(t_tnode));
 
 	/* load tnodes with all info except edge info */
 	/* populate tnode lookups for edge info */
@@ -1048,7 +1048,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	int incr;
 	int count;
 
-	f_net_to_driver_tnode = (int*)my_malloc(g_atoms_nlist.net.size() * sizeof(int));
+	f_net_to_driver_tnode = (int*)vtr::malloc(g_atoms_nlist.net.size() * sizeof(int));
 
 	for (i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
 		f_net_to_driver_tnode[i] = OPEN;
@@ -1060,11 +1060,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		model = logical_block[i].model;
 		logical_block[i].clock_net_tnode = NULL;
 		if (logical_block[i].type == VPACK_INPAD) {
-			logical_block[i].output_net_tnodes = (t_tnode***)my_calloc(1,
+			logical_block[i].output_net_tnodes = (t_tnode***)vtr::calloc(1,
 					sizeof(t_tnode**));
 			num_tnodes += 2;
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
-			logical_block[i].input_net_tnodes = (t_tnode***)my_calloc(1, sizeof(t_tnode**));
+			logical_block[i].input_net_tnodes = (t_tnode***)vtr::calloc(1, sizeof(t_tnode**));
 			num_tnodes += 2;
 		} else {
 			if (logical_block[i].clock_net == OPEN) {
@@ -1087,7 +1087,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				}
 				model_port = model_port->next;
 			}
-			logical_block[i].input_net_tnodes = (t_tnode ***)my_calloc(j, sizeof(t_tnode**));
+			logical_block[i].input_net_tnodes = (t_tnode ***)vtr::calloc(j, sizeof(t_tnode**));
 
 			j = 0;
 			model_port = model->outputs;
@@ -1100,14 +1100,14 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 				j++;
 				model_port = model_port->next;
 			}
-			logical_block[i].output_net_tnodes = (t_tnode ***)my_calloc(j, sizeof(t_tnode**));
+			logical_block[i].output_net_tnodes = (t_tnode ***)vtr::calloc(j, sizeof(t_tnode**));
 		}
 	}
-	tnode = (t_tnode *)my_calloc(num_tnodes, sizeof(t_tnode));
+	tnode = (t_tnode *)vtr::calloc(num_tnodes, sizeof(t_tnode));
 	
 	/* Allocate space for prepacked_data, which is only used pre-packing. */
 	for (inode = 0; inode < num_tnodes; inode++) {
-		tnode[inode].prepacked_data = (t_prepacked_tnode_data *) my_malloc(sizeof(t_prepacked_tnode_data));
+		tnode[inode].prepacked_data = (t_prepacked_tnode_data *) vtr::malloc(sizeof(t_prepacked_tnode_data));
 	}
 
 	/* load tnodes, alloc edges for tnodes, load all known tnodes */
@@ -1115,7 +1115,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	for (i = 0; i < num_logical_blocks; i++) {
 		model = logical_block[i].model;
 		if (logical_block[i].type == VPACK_INPAD) {
-			logical_block[i].output_net_tnodes[0] = (t_tnode **)my_calloc(1,
+			logical_block[i].output_net_tnodes[0] = (t_tnode **)vtr::calloc(1,
 					sizeof(t_tnode*));
 			logical_block[i].output_net_tnodes[0][0] = &tnode[inode];
 			f_net_to_driver_tnode[logical_block[i].output_nets[0][0]] = inode;
@@ -1139,7 +1139,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			tnode[inode + 1].block = i;
 			inode += 2;
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
-			logical_block[i].input_net_tnodes[0] = (t_tnode **)my_calloc(1,
+			logical_block[i].input_net_tnodes[0] = (t_tnode **)vtr::calloc(1,
 					sizeof(t_tnode*));
 			logical_block[i].input_net_tnodes[0][0] = &tnode[inode];
 			tnode[inode].prepacked_data->model_pin = 0;
@@ -1161,7 +1161,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			j = 0;
 			model_port = model->outputs;
 			while (model_port) {
-                logical_block[i].output_net_tnodes[j] = (t_tnode **)my_calloc( model_port->size, sizeof(t_tnode*));
+                logical_block[i].output_net_tnodes[j] = (t_tnode **)vtr::calloc( model_port->size, sizeof(t_tnode*));
 				if (model_port->is_clock == false) {
                     for (k = 0; k < model_port->size; k++) {
                         if (logical_block[i].output_nets[j][k] != OPEN) {
@@ -1246,7 +1246,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			model_port = model->inputs;
 			while (model_port) {
 				if (model_port->is_clock == false) {
-					logical_block[i].input_net_tnodes[j] = (t_tnode **)my_calloc(
+					logical_block[i].input_net_tnodes[j] = (t_tnode **)vtr::calloc(
 							model_port->size, sizeof(t_tnode*));
 					for (k = 0; k < model_port->size; k++) {
 						if (logical_block[i].input_nets[j][k] != OPEN) {
@@ -1607,7 +1607,7 @@ static void process_constraints(void) {
 		num_edges, iedge, to_node, icf, ifc, iff;
 	t_tedge * tedge;
 	float constraint;
-	bool * constraint_used = (bool *) my_malloc(g_sdc->num_constrained_clocks * sizeof(bool));
+	bool * constraint_used = (bool *) vtr::malloc(g_sdc->num_constrained_clocks * sizeof(bool));
 
 	for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
 		/* We're going to use arrival time to flag which nodes we've reached, 
@@ -1712,12 +1712,12 @@ static void alloc_timing_stats(void) {
 
 	int i;
 
-	f_timing_stats = (t_timing_stats *) my_malloc(sizeof(t_timing_stats));
-	f_timing_stats->cpd = (float **) my_malloc(g_sdc->num_constrained_clocks * sizeof(float *));
-	f_timing_stats->least_slack = (float **) my_malloc(g_sdc->num_constrained_clocks * sizeof(float *));
+	f_timing_stats = (t_timing_stats *) vtr::malloc(sizeof(t_timing_stats));
+	f_timing_stats->cpd = (float **) vtr::malloc(g_sdc->num_constrained_clocks * sizeof(float *));
+	f_timing_stats->least_slack = (float **) vtr::malloc(g_sdc->num_constrained_clocks * sizeof(float *));
 	for (i = 0; i < g_sdc->num_constrained_clocks; i++) {
-		f_timing_stats->cpd[i] = (float *) my_malloc(g_sdc->num_constrained_clocks * sizeof(float));
-		f_timing_stats->least_slack[i] = (float *) my_malloc(g_sdc->num_constrained_clocks * sizeof(float));
+		f_timing_stats->cpd[i] = (float *) vtr::malloc(g_sdc->num_constrained_clocks * sizeof(float));
+		f_timing_stats->least_slack[i] = (float *) vtr::malloc(g_sdc->num_constrained_clocks * sizeof(float));
 	}
 }
 
@@ -2863,7 +2863,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 			}
 		}
 	}
-	critical_path_head = (vtr::t_linked_int *) my_malloc(sizeof(vtr::t_linked_int));
+	critical_path_head = (vtr::t_linked_int *) vtr::malloc(sizeof(vtr::t_linked_int));
 	critical_path_head->data = crit_node;
 	VTR_ASSERT(crit_node != OPEN);
 	prev_crit_node = critical_path_head;
@@ -2873,7 +2873,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	to our critical path linked list, then jump to that tnode and repeat, until
 	we hit a tnode with no edges, which is the sink of the critical path. */
 	while (num_edges != 0) { 
-		curr_crit_node = (vtr::t_linked_int *) my_malloc(sizeof(vtr::t_linked_int));
+		curr_crit_node = (vtr::t_linked_int *) vtr::malloc(sizeof(vtr::t_linked_int));
 		prev_crit_node->next = curr_crit_node;
 		tedge = tnode[crit_node].out_edges;
 		min_slack = HUGE_POSITIVE_FLOAT;
@@ -3462,7 +3462,7 @@ static void print_timing_constraint_info(const char *fname) {
 	
 	FILE * fp;
 	int source_clock_domain, sink_clock_domain, i, j;
-	int * clock_name_length = (int *) my_malloc(g_sdc->num_constrained_clocks * sizeof(int)); /* Array of clock name lengths */
+	int * clock_name_length = (int *) vtr::malloc(g_sdc->num_constrained_clocks * sizeof(int)); /* Array of clock name lengths */
 	int max_clock_name_length = INT_MIN;
 	char * clock_name;
 

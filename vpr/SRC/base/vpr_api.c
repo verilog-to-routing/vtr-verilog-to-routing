@@ -257,7 +257,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		check_netlist();
 
 		if(vpr_setup.gen_netlist_as_blif) {
-			char *name = (char*)my_malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
+			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
 			output_blif(&Arch, block, num_blocks, name);
 			free(name);
@@ -274,8 +274,8 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		int low = 1;
 		int high = -1;
 
-		int *num_instances_type = (int*) my_calloc(num_types, sizeof(int));
-		int *num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
+		int *num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
+		int *num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
 
 		for (int i = 0; i < num_blocks; ++i) {
 			num_blocks_type[block[i].type->index]++;
@@ -373,8 +373,8 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		vpr_printf_info("\n");
 		chan_width.x_max = chan_width.y_max = 0;
 		chan_width.x_min = chan_width.y_min = 0;
-		chan_width.x_list = (int *) my_malloc((ny + 1) * sizeof(int));
-		chan_width.y_list = (int *) my_malloc((nx + 1) * sizeof(int));
+		chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
+		chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
 
 		free(num_blocks_type);
 		free(num_instances_type);
@@ -1074,7 +1074,7 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 void vpr_print_error(const VprError& vpr_error){
 
 	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-	char* error_type = (char *)my_calloc(1000, sizeof(char));
+	char* error_type = (char *)vtr::calloc(1000, sizeof(char));
 	switch(vpr_error.type()){
 	case VPR_ERROR_UNKNOWN:
 		strcpy(error_type, "Unknown");

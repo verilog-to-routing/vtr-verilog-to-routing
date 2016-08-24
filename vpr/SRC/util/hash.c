@@ -14,7 +14,7 @@ alloc_hash_table(void) {
 
 	struct s_hash **hash_table;
 
-	hash_table = (struct s_hash **) my_calloc(sizeof(struct s_hash *),
+	hash_table = (struct s_hash **) vtr::calloc(sizeof(struct s_hash *),
 			HASHSIZE);
 	return (hash_table);
 }
@@ -105,7 +105,7 @@ insert_in_hash_table(struct s_hash **hash_table, char *name,
 
 	/* Name string wasn't in the hash table.  Add it. */
 
-	h_ptr = (struct s_hash *) my_malloc(sizeof(struct s_hash));
+	h_ptr = (struct s_hash *) vtr::malloc(sizeof(struct s_hash));
 	if (prev_ptr == NULL) {
 		hash_table[i] = h_ptr;
 	} else {
@@ -114,7 +114,7 @@ insert_in_hash_table(struct s_hash **hash_table, char *name,
 	h_ptr->next = NULL;
 	h_ptr->index = next_free_index;
 	h_ptr->count = 1;
-	h_ptr->name = (char *) my_malloc((strlen(name) + 1) * sizeof(char));
+	h_ptr->name = (char *) vtr::malloc((strlen(name) + 1) * sizeof(char));
 	strcpy(h_ptr->name, name);
 	return (h_ptr);
 }

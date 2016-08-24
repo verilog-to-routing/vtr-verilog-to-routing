@@ -66,7 +66,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	if (Options->out_file_prefix != NULL ) {
 		len += strlen(Options->out_file_prefix);
 	}
-	default_output_name = (char*) my_calloc(len, sizeof(char));
+	default_output_name = (char*) vtr::calloc(len, sizeof(char));
 	if (Options->out_file_prefix == NULL ) {
 		sprintf(default_output_name, "%s", Options->CircuitName);
 	} else {
@@ -80,7 +80,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->BlifFile = (char*) my_calloc(len, sizeof(char));
+		Options->BlifFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
 		} else {
@@ -94,7 +94,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->NetFile = (char*) my_calloc(len, sizeof(char));
+		Options->NetFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->NetFile, "%s.net", Options->CircuitName);
 		} else {
@@ -108,7 +108,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PlaceFile = (char*) my_calloc(len, sizeof(char));
+		Options->PlaceFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->PlaceFile, "%s.place", Options->CircuitName);
 		} else {
@@ -122,7 +122,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->RouteFile = (char*) my_calloc(len, sizeof(char));
+		Options->RouteFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->RouteFile, "%s.route", Options->CircuitName);
 		} else {
@@ -135,7 +135,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->ActFile = (char*) my_calloc(len, sizeof(char));
+		Options->ActFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->ActFile, "%s.act", Options->CircuitName);
 		} else {
@@ -149,7 +149,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PowerFile = (char*) my_calloc(len, sizeof(char));
+		Options->PowerFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->PowerFile, "%s.power", Options->CircuitName);
 		} else {
@@ -276,7 +276,7 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 
 	/* If the user specified an SDC filename on the command line, look for specified_name.sdc, otherwise look for circuit_name.sdc*/
 	if (Options.SDCFile == NULL ) {
-		Timing->SDCFile = (char*) my_calloc(strlen(Options.CircuitName) + 5,
+		Timing->SDCFile = (char*) vtr::calloc(strlen(Options.CircuitName) + 5,
 				sizeof(char)); /* circuit_name.sdc/0*/
 		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
 	} else {
@@ -811,9 +811,9 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 
 	if (power_opts->do_power) {
 		if (!Arch->power)
-			Arch->power = (t_power_arch*) my_malloc(sizeof(t_power_arch));
+			Arch->power = (t_power_arch*) vtr::malloc(sizeof(t_power_arch));
 		if (!Arch->clocks)
-			Arch->clocks = (t_clock_arch*) my_malloc(sizeof(t_clock_arch));
+			Arch->clocks = (t_clock_arch*) vtr::malloc(sizeof(t_clock_arch));
 		g_clock_arch = Arch->clocks;
 	} else {
 		Arch->power = NULL;

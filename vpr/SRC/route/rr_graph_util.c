@@ -12,7 +12,7 @@ insert_in_edge_list(INP t_linked_edge * head, INP int edge, INP short iswitch) {
 
 	t_linked_edge *linked_edge;
 
-	linked_edge = (t_linked_edge *) my_malloc(sizeof(t_linked_edge));
+	linked_edge = (t_linked_edge *) vtr::malloc(sizeof(t_linked_edge));
 
 	linked_edge->edge = edge;
 	linked_edge->iswitch = iswitch;

@@ -35,7 +35,7 @@ static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 	float *tmp_ptr;
 	unsigned int inet;
 
-	local_crit = (float **) my_malloc(g_clbs_nlist.net.size() * sizeof(float *));
+	local_crit = (float **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float *));
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		tmp_ptr = (float *) vtr::chunk_malloc(

@@ -247,7 +247,7 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 			/* This information still needs to be read, even if it is just
 			 * thrown away.
 			 */
-			t_power_arch * power_arch_fake = (t_power_arch*) my_calloc(1,
+			t_power_arch * power_arch_fake = (t_power_arch*) vtr::calloc(1,
 					sizeof(t_power_arch));
 			ProcessPower(Next, power_arch_fake, *Types, *NumTypes, loc_data);
 			free(power_arch_fake);
@@ -263,7 +263,7 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 			/* This information still needs to be read, even if it is just
 			 * thrown away.
 			 */
-			t_clock_arch * clocks_fake = (t_clock_arch*) my_calloc(1,
+			t_clock_arch * clocks_fake = (t_clock_arch*) vtr::calloc(1,
 					sizeof(t_clock_arch));
 			ProcessClocks(Next, clocks_fake, loc_data);
 			free(clocks_fake->clock_inf);
@@ -308,15 +308,15 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	}
 
 	/* Alloc and clear pin locations */
-	Type->pin_width = (int *) my_calloc(Type->num_pins, sizeof(int));
-	Type->pin_height = (int *) my_calloc(Type->num_pins, sizeof(int));
-	Type->pinloc = (int ****) my_malloc(Type->width * sizeof(int **));
+	Type->pin_width = (int *) vtr::calloc(Type->num_pins, sizeof(int));
+	Type->pin_height = (int *) vtr::calloc(Type->num_pins, sizeof(int));
+	Type->pinloc = (int ****) vtr::malloc(Type->width * sizeof(int **));
 	for (int width = 0; width < Type->width; ++width) {
-		Type->pinloc[width] = (int ***) my_malloc(Type->height * sizeof(int *));
+		Type->pinloc[width] = (int ***) vtr::malloc(Type->height * sizeof(int *));
 		for (int height = 0; height < Type->height; ++height) {
-			Type->pinloc[width][height] = (int **) my_malloc(4 * sizeof(int *));
+			Type->pinloc[width][height] = (int **) vtr::malloc(4 * sizeof(int *));
 			for (int side = 0; side < 4; ++side) {
-				Type->pinloc[width][height][side] = (int *) my_malloc(
+				Type->pinloc[width][height][side] = (int *) vtr::malloc(
 						Type->num_pins * sizeof(int));
 				for (int pin = 0; pin < Type->num_pins; ++pin) {
 					Type->pinloc[width][height][side][pin] = 0;
@@ -325,19 +325,19 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		}
 	}
 
-	Type->pin_loc_assignments = (char *****) my_malloc(
+	Type->pin_loc_assignments = (char *****) vtr::malloc(
 			Type->width * sizeof(char ****));
-	Type->num_pin_loc_assignments = (int ***) my_malloc(
+	Type->num_pin_loc_assignments = (int ***) vtr::malloc(
 			Type->width * sizeof(int **));
 	for (int width = 0; width < Type->width; ++width) {
-		Type->pin_loc_assignments[width] = (char ****) my_calloc(Type->height,
+		Type->pin_loc_assignments[width] = (char ****) vtr::calloc(Type->height,
 				sizeof(char ***));
-		Type->num_pin_loc_assignments[width] = (int **) my_calloc(Type->height,
+		Type->num_pin_loc_assignments[width] = (int **) vtr::calloc(Type->height,
 				sizeof(int *));
 		for (int height = 0; height < Type->height; ++height) {
-			Type->pin_loc_assignments[width][height] = (char ***) my_calloc(4,
+			Type->pin_loc_assignments[width][height] = (char ***) vtr::calloc(4,
 					sizeof(char **));
-			Type->num_pin_loc_assignments[width][height] = (int *) my_calloc(4,
+			Type->num_pin_loc_assignments[width][height] = (int *) vtr::calloc(4,
 					sizeof(int));
 		}
 	}
@@ -388,7 +388,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			Count = Tokens.size();
 			Type->num_pin_loc_assignments[0][height][side] = Count;
 			if (Count > 0) {
-				Type->pin_loc_assignments[0][height][side] = (char**) my_calloc(
+				Type->pin_loc_assignments[0][height][side] = (char**) vtr::calloc(
 						Count, sizeof(char*));
 				for (int pin = 0; pin < Count; ++pin) {
 					/* Store location assignment */
@@ -411,11 +411,11 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			num_class += capacity * Type->pb_type->ports[i].num_pins;
 		}
 	}
-	Type->class_inf = (struct s_class*) my_calloc(num_class,
+	Type->class_inf = (struct s_class*) vtr::calloc(num_class,
 			sizeof(struct s_class));
 	Type->num_class = num_class;
-	Type->pin_class = (int*) my_malloc(Type->num_pins * sizeof(int) * capacity);
-	Type->is_global_pin = (bool*) my_malloc(
+	Type->pin_class = (int*) vtr::malloc(Type->num_pins * sizeof(int) * capacity);
+	Type->is_global_pin = (bool*) vtr::malloc(
         Type->num_pins * sizeof(bool)* capacity);
 	for (i = 0; i < Type->num_pins * capacity; i++) {
 		Type->pin_class[i] = OPEN;
@@ -431,14 +431,14 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			if (Type->pb_type->ports[j].equivalent) {
 				Type->class_inf[num_class].num_pins =
 						Type->pb_type->ports[j].num_pins;
-				Type->class_inf[num_class].pinlist = (int *) my_malloc(
+				Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
 						sizeof(int) * Type->pb_type->ports[j].num_pins);
 			}
 
 			for (k = 0; k < Type->pb_type->ports[j].num_pins; ++k) {
 				if (!Type->pb_type->ports[j].equivalent) {
 					Type->class_inf[num_class].num_pins = 1;
-					Type->class_inf[num_class].pinlist = (int *) my_malloc(
+					Type->class_inf[num_class].pinlist = (int *) vtr::malloc(
 							sizeof(int) * 1);
 					Type->class_inf[num_class].pinlist[0] = pin_count;
 				} else {
@@ -477,7 +477,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 	const char *Prop;
 
 	Type->num_grid_loc_def = count_children(Locations, "loc", loc_data);
-	Type->grid_loc_def = (struct s_grid_loc_def *) my_calloc(
+	Type->grid_loc_def = (struct s_grid_loc_def *) vtr::calloc(
 			Type->num_grid_loc_def, sizeof(struct s_grid_loc_def));
 
 	/* Load the pin locations */
@@ -577,8 +577,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 	}
 
 	annotation->num_value_prop_pairs = i;
-	annotation->prop = (int*) my_calloc(i, sizeof(int));
-	annotation->value = (char**) my_calloc(i, sizeof(char *));
+	annotation->prop = (int*) vtr::calloc(i, sizeof(int));
+	annotation->value = (char**) vtr::calloc(i, sizeof(char *));
 	annotation->line_num = loc_data.line(Parent);
 	/* Todo: This is slow, I should use a case lookup */
 	i = 0;
@@ -945,7 +945,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 	num_out_ports = count_children(Parent, "output", loc_data, OPTIONAL);
 	num_clock_ports = count_children(Parent, "clock", loc_data, OPTIONAL);
 	num_ports = num_in_ports + num_out_ports + num_clock_ports;
-	pb_type->ports = (t_port*) my_calloc(num_ports, sizeof(t_port));
+	pb_type->ports = (t_port*) vtr::calloc(num_ports, sizeof(t_port));
 	pb_type->num_ports = num_ports;
 
 	/* Enforce VPR's definition of LUT/FF by checking number of ports */
@@ -962,7 +962,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 
 
 	/* Initialize Power Structure */
-	pb_type->pb_type_power = (t_pb_type_power*) my_calloc(1,
+	pb_type->pb_type_power = (t_pb_type_power*) vtr::calloc(1,
 			sizeof(t_pb_type_power));
 	ProcessPb_TypePowerEstMethod(Parent, pb_type, loc_data);
 
@@ -1045,7 +1045,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 		num_annotations = num_delay_constant + num_delay_matrix + num_C_constant
 				+ num_C_matrix + num_T_setup + num_T_cq + num_T_hold;
 
-		pb_type->annotations = (t_pin_to_pin_annotation*) my_calloc(
+		pb_type->annotations = (t_pin_to_pin_annotation*) vtr::calloc(
 				num_annotations, sizeof(t_pin_to_pin_annotation));
 		pb_type->num_annotations = num_annotations;
 
@@ -1098,14 +1098,14 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 		if (pb_type->num_modes == 0) {
 			/* The pb_type operates in an implied one mode */
 			pb_type->num_modes = 1;
-			pb_type->modes = (t_mode*) my_calloc(pb_type->num_modes,
+			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
 					sizeof(t_mode));
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
 			ProcessMode(Parent, &pb_type->modes[i], &default_leakage_mode, loc_data);
 			i++;
 		} else {
-			pb_type->modes = (t_mode*) my_calloc(pb_type->num_modes,
+			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
 					sizeof(t_mode));
 
 			Cur = get_first_child(Parent, "mode", loc_data);
@@ -1147,7 +1147,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 	const char * prop;
 	bool wire_defined = false;
 
-	port->port_power = (t_port_power*) my_calloc(1, sizeof(t_port_power));
+	port->port_power = (t_port_power*) vtr::calloc(1, sizeof(t_port_power));
 
 	//Defaults
 	if (power_method == POWER_METHOD_AUTO_SIZES) {
@@ -1359,7 +1359,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 	num_interconnect = num_complete + num_direct + num_mux;
 
 	mode->num_interconnect = num_interconnect;
-	mode->interconnect = (t_interconnect*) my_calloc(num_interconnect,
+	mode->interconnect = (t_interconnect*) vtr::calloc(num_interconnect,
 			sizeof(t_interconnect));
 
 	i = 0;
@@ -1415,7 +1415,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 
 
 			mode->interconnect[i].annotations =
-					(t_pin_to_pin_annotation*) my_calloc(num_annotations,
+					(t_pin_to_pin_annotation*) vtr::calloc(num_annotations,
 							sizeof(t_pin_to_pin_annotation));
 			mode->interconnect[i].num_annotations = num_annotations;
 
@@ -1445,7 +1445,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 
 			/* Power */
 			mode->interconnect[i].interconnect_power =
-					(t_interconnect_power*) my_calloc(1,
+					(t_interconnect_power*) vtr::calloc(1,
 							sizeof(t_interconnect_power));
 			mode->interconnect[i].interconnect_power->port_info_initialized =
 					false;
@@ -1478,7 +1478,7 @@ static void ProcessMode(INOUTP pugi::xml_node Parent, t_mode * mode,
 
 	mode->num_pb_type_children = count_children(Parent, "pb_type", loc_data, OPTIONAL);
 	if (mode->num_pb_type_children > 0) {
-		mode->pb_type_children = (t_pb_type*) my_calloc(
+		mode->pb_type_children = (t_pb_type*) vtr::calloc(
 				mode->num_pb_type_children, sizeof(t_pb_type));
 
 		i = 0;
@@ -1505,7 +1505,7 @@ static void ProcessMode(INOUTP pugi::xml_node Parent, t_mode * mode,
 	}
 
 	/* Allocate power structure */
-	mode->mode_power = (t_mode_power*) my_calloc(1, sizeof(t_mode_power));
+	mode->mode_power = (t_mode_power*) vtr::calloc(1, sizeof(t_mode_power));
 
 	/* Clear STL map used for duplicate checks */
 	pb_type_names.clear();
@@ -1530,8 +1530,8 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 	def_in_val = OPEN;
 	def_out_val = OPEN;
 
-	Type->is_Fc_frac = (bool *) my_malloc(Type->num_pins * sizeof(bool));
-	Type->is_Fc_full_flex = (bool *) my_malloc(
+	Type->is_Fc_frac = (bool *) vtr::malloc(Type->num_pins * sizeof(bool));
+	Type->is_Fc_full_flex = (bool *) vtr::malloc(
 			Type->num_pins * sizeof(bool));
 	Type->Fc = vtr::alloc_matrix<float>(0, Type->num_pins-1, 0, num_segments-1);
 
@@ -1861,7 +1861,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 	arch->models = NULL;
 	child = get_first_child(Node, "model", loc_data, OPTIONAL);
 	while (child != NULL) {
-		temp = (t_model*) my_calloc(1, sizeof(t_model));
+		temp = (t_model*) vtr::calloc(1, sizeof(t_model));
 		temp->used = 0;
 		temp->inputs = temp->outputs = NULL;
 		temp->instances = NULL;
@@ -1884,7 +1884,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 		p = get_first_child(p, "port", loc_data);
 		if (p != NULL) {
 			while (p != NULL) {
-				tp = (t_model_ports*) my_calloc(1, sizeof(t_model_ports));
+				tp = (t_model_ports*) vtr::calloc(1, sizeof(t_model_ports));
 				Prop = get_attribute(p, "name", loc_data).value();
 				tp->name = vtr::strdup(Prop);
 				tp->size = -1; /* determined later by pb_types */
@@ -1923,7 +1923,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 		p = get_first_child(p, "port", loc_data);
 		if (p != NULL) {
 			while (p != NULL) {
-				tp = (t_model_ports*) my_calloc(1, sizeof(t_model_ports));
+				tp = (t_model_ports*) vtr::calloc(1, sizeof(t_model_ports));
 				Prop = get_attribute(p, "name", loc_data).value();
 				tp->name = vtr::strdup(Prop);
 				tp->size = -1; /* determined later by pb_types */
@@ -2137,7 +2137,7 @@ static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
 	 * 1: empty psuedo-type
 	 */
 	*NumTypes = count_children(Node, "pb_type", loc_data) + 1;
-	*Types = (t_type_descriptor *) my_malloc(
+	*Types = (t_type_descriptor *) vtr::malloc(
 			sizeof(t_type_descriptor) * (*NumTypes));
 
 	cb_type_descriptors = *Types;
@@ -2172,7 +2172,7 @@ static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
 		}
 
 		/* Load pb_type info */
-		Type->pb_type = (t_pb_type*) my_malloc(sizeof(t_pb_type));
+		Type->pb_type = (t_pb_type*) vtr::malloc(sizeof(t_pb_type));
 		Type->pb_type->name = vtr::strdup(Type->name);
 		if (i == IO_TYPE_INDEX) {
 			if (strcmp(Type->name, "io") != 0) {
@@ -2234,7 +2234,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 	/* Alloc segment list */
 	*Segs = NULL;
 	if (*NumSegs > 0) {
-		*Segs = (struct s_segment_inf *) my_malloc(
+		*Segs = (struct s_segment_inf *) vtr::malloc(
 				*NumSegs * sizeof(struct s_segment_inf));
 		memset(*Segs, 0, (*NumSegs * sizeof(struct s_segment_inf)));
 	}
@@ -2363,7 +2363,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 
 		/* Setup the CB list if they give one, otherwise use full */
 		(*Segs)[i].cb_len = length;
-		(*Segs)[i].cb = (bool *) my_malloc(length * sizeof(bool));
+		(*Segs)[i].cb = (bool *) vtr::malloc(length * sizeof(bool));
 		for (j = 0; j < length; ++j) {
 			(*Segs)[i].cb[j] = true;
 		}
@@ -2374,7 +2374,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 
 		/* Setup the SB list if they give one, otherwise use full */
 		(*Segs)[i].sb_len = (length + 1);
-		(*Segs)[i].sb = (bool *) my_malloc((length + 1) * sizeof(bool));
+		(*Segs)[i].sb = (bool *) vtr::malloc((length + 1) * sizeof(bool));
 		for (j = 0; j < (length + 1); ++j) {
 			(*Segs)[i].sb[j] = true;
 		}
@@ -2697,7 +2697,7 @@ static void ProcessDirects(INOUTP pugi::xml_node Parent, OUTP t_direct_inf **Dir
 	/* Alloc direct list */
 	*Directs = NULL;
 	if (*NumDirects > 0) {
-		*Directs = (t_direct_inf *) my_malloc(
+		*Directs = (t_direct_inf *) vtr::malloc(
 				*NumDirects * sizeof(t_direct_inf));
 		memset(*Directs, 0, (*NumDirects * sizeof(t_direct_inf)));
 	}
@@ -2836,7 +2836,7 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch * clocks, const pu
 	/* Alloc the clockdetails */
 	clocks->clock_inf = NULL;
 	if (clocks->num_global_clocks > 0) {
-		clocks->clock_inf = (t_clock_network *) my_malloc(
+		clocks->clock_inf = (t_clock_network *) vtr::malloc(
 				clocks->num_global_clocks * sizeof(t_clock_network));
 		memset(clocks->clock_inf, 0,
 				clocks->num_global_clocks * sizeof(t_clock_network));

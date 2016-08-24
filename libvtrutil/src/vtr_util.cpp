@@ -122,7 +122,7 @@ char* strdup(const char *str) {
 	}
 
 	Len = 1 + strlen(str);
-	Dst = (char *) my_malloc(Len * sizeof(char));
+	Dst = (char *) vtr::malloc(Len * sizeof(char));
 	memcpy(Dst, str, Len);
 
 	return Dst;
@@ -179,7 +179,7 @@ FILE* fopen(const char *fname, const char *flag) {
 			Len = 1; /* NULL char */
 			Len += strlen(out_file_prefix);
 			Len += strlen(fname);
-			new_fname = (char *) my_malloc(Len * sizeof(char));
+			new_fname = (char *) vtr::malloc(Len * sizeof(char));
 			strcpy(new_fname, out_file_prefix);
 			strcat(new_fname, fname);
 			fname = new_fname;

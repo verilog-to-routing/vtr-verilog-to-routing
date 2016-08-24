@@ -58,13 +58,13 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	check_locally_used_clb_opins(clb_opins_used_locally, route_type);
 
-	connected_to_route = (bool *) my_calloc(num_rr_nodes, sizeof(bool));
+	connected_to_route = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
 		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].pins.size());
 
-	pin_done = (bool *) my_malloc(max_pins * sizeof(bool));
+	pin_done = (bool *) vtr::malloc(max_pins * sizeof(bool));
 
 	/* Now check that all nets are indeed connected. */
 

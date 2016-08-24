@@ -80,7 +80,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 						grid[x+x_offset][y+y_offset].type = type;
 						grid[x+x_offset][y+y_offset].width_offset = x_offset;
 						grid[x+x_offset][y+y_offset].height_offset = y_offset;
-						grid[x+x_offset][y+y_offset].blocks = (int *) my_malloc(sizeof(int) * max(1,type->capacity));
+						grid[x+x_offset][y+y_offset].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 						for (int i = 0; i < max(1,type->capacity); ++i) {
 							grid[x+x_offset][y+y_offset].blocks[i] = EMPTY;
 						}
@@ -88,13 +88,13 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 				}
 			} else if (type == IO_TYPE ) {
 				grid[x][y].type = type;
-				grid[x][y].blocks = (int *) my_malloc(sizeof(int) * max(1,type->capacity));
+				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 				for (int i = 0; i < max(1,type->capacity); ++i) {
 					grid[x][y].blocks[i] = EMPTY;
 				}
 			} else {
 				grid[x][y].type = EMPTY_TYPE;
-				grid[x][y].blocks = (int *) my_malloc(sizeof(int));
+				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int));
 				grid[x][y].blocks[0] = EMPTY;
 			}
 		}

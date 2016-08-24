@@ -36,10 +36,10 @@ void check_rr_graph(INP t_graph_type graph_type,
 		route_type = GLOBAL;
 	}
 
-	total_edges_to_node = (int *) my_calloc(num_rr_nodes, sizeof(int));
-	num_edges_from_current_to_node = (int *) my_calloc(num_rr_nodes,
+	total_edges_to_node = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
+	num_edges_from_current_to_node = (int *) vtr::calloc(num_rr_nodes,
 			sizeof(int));
-	switch_types_from_current_to_node = (char *) my_calloc(num_rr_nodes,
+	switch_types_from_current_to_node = (char *) vtr::calloc(num_rr_nodes,
 			sizeof(char));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {

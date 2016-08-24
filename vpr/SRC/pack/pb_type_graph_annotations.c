@@ -155,7 +155,7 @@ static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_no
 					if (iedge != in_port[i][j]->num_output_edges) {
 						in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
 						in_port[i][j]->output_edges[iedge]->pack_pattern_names = (char**)
-								my_realloc(
+								vtr::realloc(
 										in_port[i][j]->output_edges[iedge]->pack_pattern_names,
 										sizeof(char*)
 												* in_port[i][j]->output_edges[iedge]->num_pack_patterns);
@@ -261,9 +261,9 @@ static void load_critical_path_annotations(INP int line_num,
 		num_outputs = 1;
 	}
 
-	delay_matrix = (float**)my_malloc(sizeof(float*) * num_inputs);
+	delay_matrix = (float**)vtr::malloc(sizeof(float*) * num_inputs);
 	for (i = 0; i < num_inputs; i++) {
-		delay_matrix[i] = (float*)my_malloc(sizeof(float) * num_outputs);
+		delay_matrix[i] = (float*)vtr::malloc(sizeof(float) * num_outputs);
 	}
 
 	if (input_format == E_ANNOT_PIN_TO_PIN_MATRIX) {
@@ -339,9 +339,9 @@ static void load_critical_path_annotations(INP int line_num,
 					}
 					prior_offset = in_port[i][j]->num_pin_timing;
 					in_port[i][j]->num_pin_timing = prior_offset + count;
-					in_port[i][j]->pin_timing_del_max = (float*) my_realloc(in_port[i][j]->pin_timing_del_max,
+					in_port[i][j]->pin_timing_del_max = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_max,
 							sizeof(float) * in_port[i][j]->num_pin_timing);
-					in_port[i][j]->pin_timing = (t_pb_graph_pin**)my_realloc(in_port[i][j]->pin_timing,
+					in_port[i][j]->pin_timing = (t_pb_graph_pin**)vtr::realloc(in_port[i][j]->pin_timing,
 							sizeof(t_pb_graph_pin*) * in_port[i][j]->num_pin_timing);
 					p = 0;
 					count = 0;

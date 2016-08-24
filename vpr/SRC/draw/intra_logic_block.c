@@ -389,7 +389,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 			int type_len = strlen(pb_type->name);
 			int name_len = strlen(pb->name);
 			int tot_len = type_len + name_len;
-			char* blk_tag = (char *)my_malloc((tot_len + 8) * sizeof(char));
+			char* blk_tag = (char *)vtr::malloc((tot_len + 8) * sizeof(char));
 
 			sprintf (blk_tag, "%s(%s)", pb_type->name, pb->name);
 

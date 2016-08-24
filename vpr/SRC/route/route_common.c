@@ -728,17 +728,17 @@ alloc_route_structs(void) {
 }
 
 void alloc_route_static_structs(void) {
-	trace_head = (struct s_trace **) my_calloc(num_nets,
+	trace_head = (struct s_trace **) vtr::calloc(num_nets,
 			sizeof(struct s_trace *));
-	trace_tail = (struct s_trace **) my_malloc(
+	trace_tail = (struct s_trace **) vtr::malloc(
 			num_nets * sizeof(struct s_trace *));
 
 	heap_size = nx * ny;
-	heap = (struct s_heap **) my_malloc(heap_size * sizeof(struct s_heap *));
+	heap = (struct s_heap **) vtr::malloc(heap_size * sizeof(struct s_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
 
-	route_bb = (struct s_bb *) my_malloc(num_nets * sizeof(struct s_bb));
+	route_bb = (struct s_bb *) vtr::malloc(num_nets * sizeof(struct s_bb));
 }
 
 struct s_trace **
@@ -754,15 +754,15 @@ alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
 	int iblk, iclass, num_local_opins;
 	t_type_ptr type;
 
-	best_routing = (struct s_trace **) my_calloc(g_clbs_nlist.net.size(),
+	best_routing = (struct s_trace **) vtr::calloc(g_clbs_nlist.net.size(),
 			sizeof(struct s_trace *));
 
-	saved_clb_opins_used_locally = (vtr::t_ivec **) my_malloc(
+	saved_clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
 			num_blocks * sizeof(vtr::t_ivec *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
-		saved_clb_opins_used_locally[iblk] = (vtr::t_ivec *) my_malloc(
+		saved_clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
 				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
@@ -772,7 +772,7 @@ alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
 				saved_clb_opins_used_locally[iblk][iclass].list = NULL;
 			} else {
 				saved_clb_opins_used_locally[iblk][iclass].list =
-						(int *) my_malloc(num_local_opins * sizeof(int));
+						(int *) vtr::malloc(num_local_opins * sizeof(int));
 			}
 		}
 	}
@@ -794,13 +794,13 @@ alloc_and_load_clb_opins_used_locally(void) {
 	int class_low, class_high;
 	t_type_ptr type;
 
-	clb_opins_used_locally = (vtr::t_ivec **) my_malloc(
+	clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
 			num_blocks * sizeof(vtr::t_ivec *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		clb_opins_used_locally[iblk] = (vtr::t_ivec *) my_malloc(
+		clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
 				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++)
 			clb_opins_used_locally[iblk][iclass].nelem = 0;
@@ -828,7 +828,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 			if (num_local_opins == 0)
 				clb_opins_used_locally[iblk][iclass].list = NULL;
 			else
-				clb_opins_used_locally[iblk][iclass].list = (int *) my_malloc(
+				clb_opins_used_locally[iblk][iclass].list = (int *) vtr::malloc(
 						num_local_opins * sizeof(int));
 		}
 	}
@@ -900,7 +900,7 @@ void alloc_and_load_rr_node_route_structs(void) {
 			"in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
 	}
 
-	rr_node_route_inf = (t_rr_node_route_inf *) my_malloc(num_rr_nodes * sizeof(t_rr_node_route_inf));
+	rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(num_rr_nodes * sizeof(t_rr_node_route_inf));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
@@ -1066,7 +1066,7 @@ namespace heap_ {
 	void expand_heap_if_full() {
 		if (heap_tail > heap_size) { /* Heap is full */
 			heap_size *= 2;
-			heap = (struct s_heap **) my_realloc((void *) (heap + 1),
+			heap = (struct s_heap **) vtr::realloc((void *) (heap + 1),
 					heap_size * sizeof(struct s_heap *));
 			heap--; /* heap goes from [1..heap_size] */
 		}		

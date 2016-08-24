@@ -16,10 +16,9 @@
 void print_help();
 
 int main(int argc, char **argv) {
-	t_arch* arch = (t_arch *)my_calloc(1,sizeof(t_arch));
+	t_arch* arch = (t_arch *) vtr::calloc(1,sizeof(t_arch));
 	t_type_descriptor *types;
 	int numTypes;
-	;
 
 	if (argc - 1 != 3) {
 		printf(

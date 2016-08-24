@@ -357,13 +357,13 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 
 	int max_pins_per_net = get_max_pins_per_net();
 
-	float *pin_criticality = (float *) my_malloc((max_pins_per_net - 1) * sizeof(float));
+	float *pin_criticality = (float *) vtr::malloc((max_pins_per_net - 1) * sizeof(float));
 	*pin_criticality_ptr = pin_criticality - 1; /* First sink is pin #1. */
 
-	int *sink_order = (int *) my_malloc((max_pins_per_net - 1) * sizeof(int));
+	int *sink_order = (int *) vtr::malloc((max_pins_per_net - 1) * sizeof(int));
 	*sink_order_ptr = sink_order - 1;
 
-	t_rt_node **rt_node_of_sink = (t_rt_node **) my_malloc((max_pins_per_net - 1) * sizeof(t_rt_node *));
+	t_rt_node **rt_node_of_sink = (t_rt_node **) vtr::malloc((max_pins_per_net - 1) * sizeof(t_rt_node *));
 	*rt_node_of_sink_ptr = rt_node_of_sink - 1;
 
 	alloc_route_tree_timing_structs();

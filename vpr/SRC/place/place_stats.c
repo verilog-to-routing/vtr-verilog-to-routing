@@ -33,14 +33,14 @@ print_relative_pos_distr(void)
 	unsigned int sink_pin
 	double **relapos_distr;
 
-	total_conn = (int *)my_malloc((nx + ny + 1) * sizeof(int));
-	relapos = (int **)my_malloc((nx + ny + 1) * sizeof(int *));
-	relapos_distr = (double **)my_malloc((nx + ny + 1) * sizeof(double *));
+	total_conn = (int *)vtr::malloc((nx + ny + 1) * sizeof(int));
+	relapos = (int **)vtr::malloc((nx + ny + 1) * sizeof(int *));
+	relapos_distr = (double **)vtr::malloc((nx + ny + 1) * sizeof(double *));
 	for (len = 0; len <= nx + ny; len++)
 	{
-		relapos[len] = (int *)my_calloc(len / 2 + 1, sizeof(int));
+		relapos[len] = (int *)vtr::calloc(len / 2 + 1, sizeof(int));
 		relapos_distr[len] =
-		(double *)my_calloc((len / 2 + 1), sizeof(double));
+		(double *)vtr::calloc((len / 2 + 1), sizeof(double));
 	}
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)

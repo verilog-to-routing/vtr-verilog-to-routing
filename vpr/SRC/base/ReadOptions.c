@@ -126,8 +126,8 @@ char *getEchoFileName(enum e_echo_files echo_option) {
 }
 
 void alloc_and_load_echo_file_info() {
-	echoFileEnabled = (bool*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
-	echoFileNames = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
+	echoFileEnabled = (bool*)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
+	echoFileNames = (char**)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
 
 	setAllEchoFileEnabled(true);
 
@@ -207,9 +207,9 @@ void alloc_and_load_output_file_names(const char *default_name) {
 
 	if(outputFileNames == NULL) {
 
-		outputFileNames = (char**)my_calloc((int)E_FILE_END_TOKEN, sizeof(char*));
+		outputFileNames = (char**)vtr::calloc((int)E_FILE_END_TOKEN, sizeof(char*));
 
-		name = (char*)my_malloc((strlen(default_name) + 40) * sizeof(char));
+		name = (char*)vtr::malloc((strlen(default_name) + 40) * sizeof(char));
 		sprintf(name, "%s.critical_path.out", default_name);
 		setOutputFileName(E_CRIT_PATH_FILE, name, default_name);
 	
@@ -253,7 +253,7 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 	 * Skips the first arg as it is the program image path */
 	--argc;
 	++argv;
-	head = Args = (char **) my_malloc(sizeof(char *) * (argc + 1));
+	head = Args = (char **) vtr::malloc(sizeof(char *) * (argc + 1));
 	memcpy(Args, argv, (sizeof(char *) * argc));
 	Args[argc] = NULL;
 
@@ -698,7 +698,7 @@ ReadFixPins(INP char **Args, OUTP char **PinFile) {
 	Args = ReadToken(Args, &Token);
 	if (OT_RANDOM != Token) {
 		Len = 1 + strlen(*PrevArgs);
-		*PinFile = (char *) my_malloc(Len * sizeof(char));
+		*PinFile = (char *) vtr::malloc(Len * sizeof(char));
 		memcpy(*PinFile, *PrevArgs, Len);
 	}
 	return Args;

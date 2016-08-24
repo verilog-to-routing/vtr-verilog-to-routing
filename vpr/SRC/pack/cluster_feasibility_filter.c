@@ -90,7 +90,7 @@ static void alloc_pin_classes_in_pb_graph_node(
 		for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 			for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 				pb_graph_node->input_pins[i][j].parent_pin_class =
-						(int *) my_calloc(pb_graph_node->pb_type->depth,
+						(int *) vtr::calloc(pb_graph_node->pb_type->depth,
 								sizeof(int*));
 				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
 					pb_graph_node->input_pins[i][j].parent_pin_class[k] = OPEN;
@@ -100,14 +100,14 @@ static void alloc_pin_classes_in_pb_graph_node(
 		for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 			for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 				pb_graph_node->output_pins[i][j].parent_pin_class =
-						(int *) my_calloc(pb_graph_node->pb_type->depth,
+						(int *) vtr::calloc(pb_graph_node->pb_type->depth,
 								sizeof(int*));
 				pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs =
-						(t_pb_graph_pin ***) my_calloc(
+						(t_pb_graph_pin ***) vtr::calloc(
 								pb_graph_node->pb_type->depth,
 								sizeof(t_pb_graph_pin**));
 				pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins =
-						(int*) my_calloc(pb_graph_node->pb_type->depth,
+						(int*) vtr::calloc(pb_graph_node->pb_type->depth,
 								sizeof(int));
 				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
 					pb_graph_node->output_pins[i][j].parent_pin_class[k] = OPEN;
@@ -117,7 +117,7 @@ static void alloc_pin_classes_in_pb_graph_node(
 		for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 			for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
 				pb_graph_node->clock_pins[i][j].parent_pin_class =
-						(int *) my_calloc(pb_graph_node->pb_type->depth,
+						(int *) vtr::calloc(pb_graph_node->pb_type->depth,
 								sizeof(int));
 				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
 					pb_graph_node->clock_pins[i][j].parent_pin_class[k] = OPEN;
@@ -294,10 +294,10 @@ static void load_pin_class_by_depth(INOUTP t_pb_graph_node *pb_graph_node,
 			&& pb_graph_node->pb_type->num_modes != 0) {
 		/* Record pin class information for cluster */
 		pb_graph_node->num_input_pin_class = *input_count + 1; /* number of input pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
-		pb_graph_node->input_pin_class_size = (int*) my_calloc(*input_count + 1,
+		pb_graph_node->input_pin_class_size = (int*) vtr::calloc(*input_count + 1,
 				sizeof(int));
 		pb_graph_node->num_output_pin_class = *output_count + 1; /* number of output pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
-		pb_graph_node->output_pin_class_size = (int*) my_calloc(*output_count + 1,
+		pb_graph_node->output_pin_class_size = (int*) vtr::calloc(*output_count + 1,
 				sizeof(int));
 		sum_pin_class(pb_graph_node);
 	}
@@ -359,7 +359,7 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(
 				&& current_pb_graph_pin->port->type == IN_PORT) {
 			reference_pin->num_connectable_primtive_input_pins[depth]++;
 			reference_pin->list_of_connectable_input_pin_ptrs[depth] =
-					(t_pb_graph_pin**) my_realloc(
+					(t_pb_graph_pin**) vtr::realloc(
 							reference_pin->list_of_connectable_input_pin_ptrs[depth],
 							reference_pin->num_connectable_primtive_input_pins[depth]
 									* sizeof(t_pb_graph_pin*));

@@ -12,7 +12,7 @@ struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr
 
 	struct s_linked_vptr *linked_vptr;
 
-	linked_vptr = (struct s_linked_vptr *) my_malloc(
+	linked_vptr = (struct s_linked_vptr *) vtr::malloc(
 			sizeof(struct s_linked_vptr));
 
 	linked_vptr->data_vptr = vptr_to_add;
@@ -46,7 +46,7 @@ t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 		linked_int = *free_list_head_ptr;
 		*free_list_head_ptr = linked_int->next;
 	} else {
-		linked_int = (t_linked_int *) my_malloc(sizeof(t_linked_int));
+		linked_int = (t_linked_int *) vtr::malloc(sizeof(t_linked_int));
 	}
 
 	linked_int->data = data;

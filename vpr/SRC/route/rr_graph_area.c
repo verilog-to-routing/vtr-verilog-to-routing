@@ -138,11 +138,11 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
 
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
-	shared_buffer_trans = (float *) my_calloc(maxlen, sizeof(float));
+	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
+	shared_buffer_trans = (float *) vtr::calloc(maxlen, sizeof(float));
 
 	unsharable_switch_trans = alloc_and_load_unsharable_switch_trans(num_switch,
 			trans_sram_bit, R_minW_nmos);
@@ -314,7 +314,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	   switches of all rr nodes. Thus we keep track of which muxes we have already
 	   counted via the variable below. */
 	bool *chan_node_switch_done;
-	chan_node_switch_done = (bool *) my_calloc(num_rr_nodes, sizeof(bool));
+	chan_node_switch_done = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
 
 	/* The variable below is an accumulator variable that will add up all the   *
 	 * transistors in the routing.  Make double so that it doesn't stop         *
@@ -345,9 +345,9 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
+	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
 	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
@@ -469,7 +469,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 	float *trans_per_cblock; /* [0..max_inputs_to_cblock] */
 	float trans_count;
 	int i, num_inputs;
-	trans_per_cblock = (float *) my_malloc(
+	trans_per_cblock = (float *) vtr::malloc(
 			(max_inputs_to_cblock + 1) * sizeof(float));
 
 	trans_per_cblock[0] = 0.; /* i.e., not an IPIN or no inputs */
@@ -507,7 +507,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 	float *unsharable_switch_trans, Rpass;
 	int i;
 
-	unsharable_switch_trans = (float *) my_malloc(num_switch * sizeof(float));
+	unsharable_switch_trans = (float *) vtr::malloc(num_switch * sizeof(float));
 
 	for (i = 0; i < num_switch; i++) {
 
@@ -537,7 +537,7 @@ alloc_and_load_sharable_switch_trans(int num_switch, float trans_sram_bit,
 	float *sharable_switch_trans, Rbuf;
 	int i;
 
-	sharable_switch_trans = (float *) my_malloc(num_switch * sizeof(float));
+	sharable_switch_trans = (float *) vtr::malloc(num_switch * sizeof(float));
 
 	for (i = 0; i < num_switch; i++) {
 

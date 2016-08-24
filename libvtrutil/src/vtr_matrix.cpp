@@ -106,7 +106,7 @@ void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 	}
 
 	ivec->nelem = num_items;
-	list = (int *) my_malloc(num_items * sizeof(int));
+	list = (int *) vtr::malloc(num_items * sizeof(int));
 	ivec->list = list;
 	linked_int = list_head;
 

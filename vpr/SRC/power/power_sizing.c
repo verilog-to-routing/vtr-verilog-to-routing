@@ -128,7 +128,7 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 	float * max_inputs;
 
 	/* SRAM bits */
-	max_inputs = (float*) my_calloc(mux_arch->levels, sizeof(float));
+	max_inputs = (float*) vtr::calloc(mux_arch->levels, sizeof(float));
 	for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
 		max_inputs[lvl_idx] = 0.;
 	}
@@ -714,7 +714,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 
 		if (!found) {
 			list_cnt++;
-			list = (t_interconnect**) my_realloc(list,
+			list = (t_interconnect**) vtr::realloc(list,
 					list_cnt * sizeof(t_interconnect*));
 			list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
 		}
@@ -731,9 +731,9 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		int * fanout_per_mode;
 		float * wirelength_out_per_mode;
 
-		fanout_per_mode = (int*) my_calloc(this_pb_type->num_modes,
+		fanout_per_mode = (int*) vtr::calloc(this_pb_type->num_modes,
 				sizeof(int));
-		wirelength_out_per_mode = (float *) my_calloc(this_pb_type->num_modes,
+		wirelength_out_per_mode = (float *) vtr::calloc(this_pb_type->num_modes,
 				sizeof(float));
 
 		for (i = 0; i < list_cnt; i++) {

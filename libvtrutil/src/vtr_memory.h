@@ -2,11 +2,6 @@
 #define VTR_MEMORY_H
 #include <cstddef>
 
-//Legacy macros
-#define my_calloc(nelem, size) vtr::calloc_impl(nelem, size, __FILE__, __LINE__)
-#define my_malloc(size) vtr::malloc_impl(size, __FILE__, __LINE__)
-#define my_realloc(ptr, size) vtr::realloc_impl(ptr, size, __FILE__, __LINE__)
-
 namespace vtr {
 
     /* This structure is to keep track of chunks of memory that is being	*
@@ -22,11 +17,11 @@ namespace vtr {
                     * byte in the current chunk		*/
     } t_chunk;
 
-    void *calloc_impl(size_t nelem, size_t size, const char* const file, const int line);
-    void *malloc_impl(size_t size, const char* const file, const int line);
-    void *realloc_impl(void *ptr, size_t size, const char* const file, const int line);
+    void* calloc(size_t nelem, size_t size);
+    void* malloc(size_t size);
+    void* realloc(void *ptr, size_t size);
 
-    void *chunk_malloc(size_t size, t_chunk *chunk_info);
+    void* chunk_malloc(size_t size, t_chunk *chunk_info);
     void free_chunk_memory(t_chunk *chunk_info);
 
 }

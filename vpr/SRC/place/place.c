@@ -1919,33 +1919,33 @@ static void alloc_and_load_placement_structs(
 			|| placer_opts.enable_timing_computations) {
 		/* Allocate structures associated with timing driven placement */
 		/* [0..g_clbs_nlist.net.size()-1][1..num_pins-1]  */
-		point_to_point_delay_cost = (float **) my_malloc(
+		point_to_point_delay_cost = (float **) vtr::malloc(
 				g_clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_delay_cost = (float **) my_malloc(
+		temp_point_to_point_delay_cost = (float **) vtr::malloc(
 				g_clbs_nlist.net.size() * sizeof(float *));
 
-		point_to_point_timing_cost = (float **) my_malloc(
+		point_to_point_timing_cost = (float **) vtr::malloc(
 				g_clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_timing_cost = (float **) my_malloc(
+		temp_point_to_point_timing_cost = (float **) vtr::malloc(
 				g_clbs_nlist.net.size() * sizeof(float *));
 
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
 			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
-			point_to_point_delay_cost[inet] = (float *) my_malloc(
+			point_to_point_delay_cost[inet] = (float *) vtr::malloc(
 					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			point_to_point_delay_cost[inet]--;
 
-			temp_point_to_point_delay_cost[inet] = (float *) my_malloc(
+			temp_point_to_point_delay_cost[inet] = (float *) vtr::malloc(
 					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			temp_point_to_point_delay_cost[inet]--;
 
-			point_to_point_timing_cost[inet] = (float *) my_malloc(
+			point_to_point_timing_cost[inet] = (float *) vtr::malloc(
 					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			point_to_point_timing_cost[inet]--;
 
-			temp_point_to_point_timing_cost[inet] = (float *) my_malloc(
+			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(
 					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			temp_point_to_point_timing_cost[inet]--;
 		}
@@ -1957,9 +1957,9 @@ static void alloc_and_load_placement_structs(
 		}
 	}
 
-	net_cost = (float *) my_malloc(g_clbs_nlist.net.size() * sizeof(float));
-	temp_net_cost = (float *) my_malloc(g_clbs_nlist.net.size() * sizeof(float));
-	bb_updated_before = (char*)my_calloc(g_clbs_nlist.net.size(), sizeof(char));
+	net_cost = (float *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float));
+	temp_net_cost = (float *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float));
+	bb_updated_before = (char*)vtr::calloc(g_clbs_nlist.net.size(), sizeof(char));
 	
 	/* Used to store costs for moves not yet made and to indicate when a net's   *
 	 * cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
@@ -1970,8 +1970,8 @@ static void alloc_and_load_placement_structs(
 		temp_net_cost[inet] = -1.;
 	}
 	
-	bb_coords = (struct s_bb *) my_malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
-	bb_num_on_edges = (struct s_bb *) my_malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
+	bb_coords = (struct s_bb *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
+	bb_num_on_edges = (struct s_bb *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
 
 	/* Shouldn't use them; crash hard if I do!   */
 	*old_region_occ_x = NULL;
@@ -1989,14 +1989,14 @@ static void alloc_and_load_placement_structs(
 static void alloc_and_load_try_swap_structs() {
 	/* Allocate the local bb_coordinate storage, etc. only once. */
 	/* Allocate with size g_clbs_nlist.net.size() for any number of nets affected. */
-	ts_bb_coord_new = (struct s_bb *) my_calloc(
+	ts_bb_coord_new = (struct s_bb *) vtr::calloc(
 			g_clbs_nlist.net.size(), sizeof(struct s_bb));
-	ts_bb_edge_new = (struct s_bb *) my_calloc(
+	ts_bb_edge_new = (struct s_bb *) vtr::calloc(
 			g_clbs_nlist.net.size(), sizeof(struct s_bb));
-	ts_nets_to_update = (int *) my_calloc(g_clbs_nlist.net.size(), sizeof(int));
+	ts_nets_to_update = (int *) vtr::calloc(g_clbs_nlist.net.size(), sizeof(int));
 		
 	/* Allocate with size num_blocks for any number of moved block. */
-	blocks_affected.moved_blocks = (t_pl_moved_block*)my_calloc(
+	blocks_affected.moved_blocks = (t_pl_moved_block*)vtr::calloc(
 			num_blocks, sizeof(t_pl_moved_block) );
 	blocks_affected.num_moved_blocks = 0;
 	
@@ -2432,8 +2432,8 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 static void alloc_legal_placements() {
 	int i, j, k;
 
-	legal_pos = (t_legal_pos **) my_malloc(num_types * sizeof(t_legal_pos *));
-	num_legal_pos = (int *) my_calloc(num_types, sizeof(int));
+	legal_pos = (t_legal_pos **) vtr::malloc(num_types * sizeof(t_legal_pos *));
+	num_legal_pos = (int *) vtr::calloc(num_types, sizeof(int));
 	
 	/* Initialize all occupancy to zero. */
 
@@ -2452,7 +2452,7 @@ static void alloc_legal_placements() {
 	}
 
 	for (i = 0; i < num_types; i++) {
-		legal_pos[i] = (t_legal_pos *) my_malloc(num_legal_pos[i] * sizeof(t_legal_pos));
+		legal_pos[i] = (t_legal_pos *) vtr::malloc(num_legal_pos[i] * sizeof(t_legal_pos));
 	}
 }
 
@@ -2460,7 +2460,7 @@ static void load_legal_placements() {
 	int i, j, k, itype;
 	int *index;
 
-	index = (int *) my_calloc(num_types, sizeof(int));
+	index = (int *) vtr::calloc(num_types, sizeof(int));
 
 	for (i = 0; i <= nx + 1; i++) {
 		for (j = 0; j <= ny + 1; j++) {
@@ -2729,7 +2729,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 						  * as you look for a free location.
 						  */
 
-	free_locations = (int *) my_malloc(num_types * sizeof(int));
+	free_locations = (int *) vtr::malloc(num_types * sizeof(int));
 	for (itype = 0; itype < num_types; itype++) {
 		free_locations[itype] = num_legal_pos[itype];
 	}
@@ -2832,13 +2832,13 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	 * subhigh must be greater than or equal to sublow, we only need to       *
 	 * allocate storage for the lower half of a matrix.                       */
 
-	chanx_place_cost_fac = (float **) my_malloc((ny + 1) * sizeof(float *));
+	chanx_place_cost_fac = (float **) vtr::malloc((ny + 1) * sizeof(float *));
 	for (i = 0; i <= ny; i++)
-		chanx_place_cost_fac[i] = (float *) my_malloc((i + 1) * sizeof(float));
+		chanx_place_cost_fac[i] = (float *) vtr::malloc((i + 1) * sizeof(float));
 
-	chany_place_cost_fac = (float **) my_malloc((nx + 1) * sizeof(float *));
+	chany_place_cost_fac = (float **) vtr::malloc((nx + 1) * sizeof(float *));
 	for (i = 0; i <= nx; i++)
-		chany_place_cost_fac[i] = (float *) my_malloc((i + 1) * sizeof(float));
+		chany_place_cost_fac[i] = (float *) vtr::malloc((i + 1) * sizeof(float));
 
 	/* First compute the number of tracks between channel high and channel *
 	 * low, inclusive, in an efficient manner.                             */
@@ -2940,7 +2940,7 @@ static void check_place(float bb_cost, float timing_cost,
 		}
 	}
 
-	bdone = (int *) my_malloc(num_blocks * sizeof(int));
+	bdone = (int *) vtr::malloc(num_blocks * sizeof(int));
 	for (i = 0; i < num_blocks; i++)
 		bdone[i] = 0;
 

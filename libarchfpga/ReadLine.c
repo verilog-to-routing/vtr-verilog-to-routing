@@ -145,8 +145,8 @@ ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
 
 	/* Alloc the pointer list and data list. Count the final 
 	 * empty string we will use as list terminator */
-	Tokens = (char **) my_malloc(sizeof(char *) * (TokenCount + 1));
-	*Tokens = (char *) my_malloc(sizeof(char) * Len);
+	Tokens = (char **) vtr::malloc(sizeof(char *) * (TokenCount + 1));
+	*Tokens = (char *) vtr::malloc(sizeof(char) * Len);
 
 	/* Copy tokens to result */
 	Cur = Buffer;

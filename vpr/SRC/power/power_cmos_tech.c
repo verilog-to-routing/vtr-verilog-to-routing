@@ -185,7 +185,7 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiloc::
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
 
 	g_power_commonly_used->component_callibration =
-			(PowerSpicedComponent**) my_calloc(POWER_CALLIB_COMPONENT_MAX,
+			(PowerSpicedComponent**) vtr::calloc(POWER_CALLIB_COMPONENT_MAX,
 					sizeof(PowerSpicedComponent*));
 
 	power_tech_xml_load_component(parent, loc_data,
@@ -222,7 +222,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
 	g_power_tech->num_nmos_leakage_info = num_nmos_sizes;
-	g_power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) my_calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
+	g_power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
 	nmos_idx = 0;
@@ -232,7 +232,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 
         num_leakage_pairs = count_children(me, "nmos_leakage", loc_data);
 		nmos_info->num_leakage_pairs = num_leakage_pairs;
-		nmos_info->leakage_pairs = (t_power_nmos_leakage_pair*) my_calloc(num_leakage_pairs, sizeof(t_power_nmos_leakage_pair));
+		nmos_info->leakage_pairs = (t_power_nmos_leakage_pair*) vtr::calloc(num_leakage_pairs, sizeof(t_power_nmos_leakage_pair));
 
 		auto child = get_first_child(me, "nmos_leakage", loc_data);
 		i = 0;
@@ -263,7 +263,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
     VTR_ASSERT(num_nmos_sizes > 0);
 	g_power_tech->num_nmos_mux_info = num_nmos_sizes;
-	g_power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) my_calloc(
+	g_power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) vtr::calloc(
 	        num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
@@ -279,7 +279,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 		 * they will never be used
 		 */
 		nmos_inf->max_mux_sl_size = 1 + num_mux_sizes;
-		nmos_inf->mux_voltage_inf = (t_power_mux_volt_inf*) my_calloc(
+		nmos_inf->mux_voltage_inf = (t_power_mux_volt_inf*) vtr::calloc(
 				nmos_inf->max_mux_sl_size + 1, sizeof(t_power_mux_volt_inf));
 
         auto child = get_first_child(me, "multiplexer", loc_data);
@@ -294,7 +294,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 
 			nmos_inf->mux_voltage_inf[i].num_voltage_pairs = num_voltages;
 			nmos_inf->mux_voltage_inf[i].mux_voltage_pairs =
-					(t_power_mux_volt_pair*) my_calloc(num_voltages,
+					(t_power_mux_volt_pair*) vtr::calloc(num_voltages,
 							sizeof(t_power_mux_volt_pair));
 
             auto gc = get_first_child(child, "voltages", loc_data);
@@ -342,7 +342,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
 	}
 
 	/* Get long transistor information (W=1,L=2) */
-	trans_inf->long_trans_inf = (t_transistor_size_inf*) my_malloc(
+	trans_inf->long_trans_inf = (t_transistor_size_inf*) vtr::malloc(
 			sizeof(t_transistor_size_inf));
 
     auto child = get_single_child(parent, "long_size", loc_data);
@@ -359,7 +359,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
 
 	/* Process all transistor sizes */
     trans_inf->num_size_entries = count_children(parent, "size", loc_data);
-	trans_inf->size_inf = (t_transistor_size_inf*) my_calloc(
+	trans_inf->size_inf = (t_transistor_size_inf*) vtr::calloc(
 			trans_inf->num_size_entries, sizeof(t_transistor_size_inf));
 
     child = get_first_child(parent, "size", loc_data);

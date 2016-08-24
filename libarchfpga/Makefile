@@ -34,12 +34,14 @@ OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d
 
+.PHONY: clean liblog.a libpugixml libvtrutil
+
 # Standalone executable to test architecture reader
 $(EXE): main.o libarchfpga.a
 	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
  
 
-libarchfpga.a: $(OBJS) ../liblog/liblog.a libpugixml libvtrutil
+libarchfpga.a: $(OBJS) liblog libpugixml libvtrutil
 	 cp ../liblog/liblog.a $@
 	 ar rcs $@ $(OBJS)
 	@#Extract libpugixml.a into OBJ/libpugixml and then have ar archive results
@@ -53,7 +55,7 @@ libarchfpga.a: $(OBJS) ../liblog/liblog.a libpugixml libvtrutil
 	@ cd OBJ/libvtrutil && ar x ../../libvtrutil.a 
 	@ ar rcs $@ $(OBJ) OBJ/libvtrutil/*.o
 
-../liblog/liblog.a:
+liblog:
 	@ cd ../liblog && make
 
 libpugixml:
@@ -75,5 +77,7 @@ clean :
 	@ rm -f read_arch
 	@ rm -f main.o main.d
 	@ cd ../libpugixml && make clean
-	@ rm -f $(OBJ_DIR)/libpugixml/*
+	@ rm -rf $(OBJ_DIR)/libpugixml
+	@ cd ../libvtrutil && make clean
+	@ rm -rf $(OBJ_DIR)/libvtrutil
 

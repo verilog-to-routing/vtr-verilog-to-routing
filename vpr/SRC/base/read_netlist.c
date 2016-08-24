@@ -145,7 +145,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
     //Count the number of blocks for allocation
     bcount = pugiutil::count_children(top, "block", loc_data);
-	blist = (struct s_block *) my_calloc(bcount, sizeof(t_block));
+	blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
 
 	/* create quick hash look up for vpack_net and logical_block 
 	 Also reset logical block data structure for pb
@@ -198,8 +198,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	/* load mapping between external nets and all nets */
 	/* jluu TODO: Should use local variables here then assign to globals later, clean up later */
-	clb_to_vpack_net_mapping = (int *) my_malloc(ext_ncount * sizeof(int));
-	vpack_to_clb_net_mapping = (int *) my_malloc(
+	clb_to_vpack_net_mapping = (int *) vtr::malloc(ext_ncount * sizeof(int));
+	vpack_to_clb_net_mapping = (int *) vtr::malloc(
 			num_logical_nets * sizeof(int));
 	for (i = 0; i < num_logical_nets; i++) {
 		vpack_to_clb_net_mapping[i] = OPEN;
@@ -252,7 +252,7 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 	const t_pb_type * pb_type = NULL;
 
 	/* parse cb attributes */
-	cb[index].pb = (t_pb*) my_calloc(1, sizeof(t_pb));
+	cb[index].pb = (t_pb*) vtr::calloc(1, sizeof(t_pb));
 
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
 	cb[index].name = vtr::strdup(block_name.value());
@@ -310,7 +310,7 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 	processPb(clb_block, cb, index, cb[index].pb, cb[index].pb_route, num_primitives, vpack_net_hash,
 			logical_block_hash, loc_data);
 
-	cb[index].nets = (int *) my_malloc(cb[index].type->num_pins * sizeof(int));
+	cb[index].nets = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
 		cb[index].nets[i] = OPEN;
 	}
@@ -363,10 +363,10 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
 	} else {
 		/* process children of child if exists */
 
-		pb->child_pbs = (t_pb **) my_calloc(
+		pb->child_pbs = (t_pb **) vtr::calloc(
 				pb_type->modes[pb->mode].num_pb_type_children, sizeof(t_pb*));
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			pb->child_pbs[i] = (t_pb *) my_calloc(
+			pb->child_pbs[i] = (t_pb *) vtr::calloc(
 					pb_type->modes[pb->mode].pb_type_children[i].num_pb,
 					sizeof(t_pb));
 			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
@@ -496,7 +496,7 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 	struct s_hash *curr_net;
 	int i;
 
-	nlist = (struct s_net *) my_calloc(ncount, sizeof(struct s_net));
+	nlist = (struct s_net *) vtr::calloc(ncount, sizeof(struct s_net));
 
 	hash_iter = start_hash_table_iterator();
 	curr_net = get_next_hash(nhash, &hash_iter);
@@ -505,9 +505,9 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 		nlist[curr_net->index].name = vtr::strdup(curr_net->name);
 		nlist[curr_net->index].num_sinks = curr_net->count - 1;
 
-		nlist[curr_net->index].node_block = (int *) my_malloc(
+		nlist[curr_net->index].node_block = (int *) vtr::malloc(
 				curr_net->count * sizeof(int));
-		nlist[curr_net->index].node_block_pin = (int *) my_malloc(
+		nlist[curr_net->index].node_block_pin = (int *) vtr::malloc(
 				curr_net->count * sizeof(int));
 		nlist[curr_net->index].is_routed = false;
 		nlist[curr_net->index].is_fixed = false;
@@ -847,7 +847,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 	/* Load global nets */
 	num_tokens = circuit_clocks.size();
 
-	count = (int *) my_calloc(*ext_ncount, sizeof(int));
+	count = (int *) vtr::calloc(*ext_ncount, sizeof(int));
 
 	/* complete load of external nets so that each net points back to the blocks */
 	for (i = 0; i < L_num_blocks; i++) {

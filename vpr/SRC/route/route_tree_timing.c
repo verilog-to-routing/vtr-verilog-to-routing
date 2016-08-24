@@ -72,7 +72,7 @@ void alloc_route_tree_timing_structs(void) {
 				"in alloc_route_tree_timing_structs: old structures already exist.\n");
 	}
 
-	rr_node_to_rt_node = (t_rt_node **) my_malloc(
+	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(
 			num_rr_nodes * sizeof(t_rt_node *));
 }
 
@@ -121,7 +121,7 @@ alloc_rt_node(void) {
 	if (rt_node != NULL) {
 		rt_node_free_list = rt_node->u.next;
 	} else {
-		rt_node = (t_rt_node *) my_malloc(sizeof(t_rt_node));
+		rt_node = (t_rt_node *) vtr::malloc(sizeof(t_rt_node));
 	}
 
 	return (rt_node);
@@ -148,7 +148,7 @@ alloc_linked_rt_edge(void) {
 	if (linked_rt_edge != NULL) {
 		rt_edge_free_list = linked_rt_edge->next;
 	} else {
-		linked_rt_edge = (t_linked_rt_edge *) my_malloc(
+		linked_rt_edge = (t_linked_rt_edge *) vtr::malloc(
 				sizeof(t_linked_rt_edge));
 	}
 

@@ -17,10 +17,10 @@ namespace vtr {
         int i;
         T** ptr;
 
-        ptr = (T**) my_malloc((nrmax - nrmin + 1) * sizeof(T*));
+        ptr = (T**) vtr::malloc((nrmax - nrmin + 1) * sizeof(T*));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
-            ptr[i] = (T *) my_malloc((ncmax - ncmin + 1) * sizeof(T));
+            ptr[i] = (T *) vtr::malloc((ncmax - ncmin + 1) * sizeof(T));
             ptr[i] -= ncmin;
         }
         return ptr;
@@ -36,7 +36,7 @@ namespace vtr {
         int i;
         T*** ptr;
 
-        ptr = (T***) my_malloc((nrmax - nrmin + 1) * sizeof(T**));
+        ptr = (T***) vtr::malloc((nrmax - nrmin + 1) * sizeof(T**));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = alloc_matrix<T>(ncmin, ncmax, ndmin, ndmax);
@@ -53,7 +53,7 @@ namespace vtr {
         int i;
         T ****ptr;
 
-        ptr = (T ****) my_malloc((nrmax - nrmin + 1) * sizeof(T ***));
+        ptr = (T ****) vtr::malloc((nrmax - nrmin + 1) * sizeof(T ***));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = alloc_matrix3<T>(ncmin, ncmax, ndmin, ndmax, nemin, nemax);
@@ -70,7 +70,7 @@ namespace vtr {
         int i;
         T *****ptr;
 
-        ptr = (T *****) my_malloc((nrmax - nrmin + 1) * sizeof(T ****));
+        ptr = (T *****) vtr::malloc((nrmax - nrmin + 1) * sizeof(T ****));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = alloc_matrix4<T>(ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin, nfmax);
