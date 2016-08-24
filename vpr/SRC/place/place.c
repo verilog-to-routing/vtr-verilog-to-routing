@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <cmath>
-#include "vtr_assert.h"
 using namespace std;
 
+#include "vtr_assert.h"
+#include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_random.h"
 #include "vtr_matrix.h"
@@ -368,9 +369,9 @@ void try_place(struct s_placer_opts placer_opts,
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
 		num_connections = count_connections();
-		vpr_printf_info("\n");
-		vpr_printf_info("There are %d point to point connections in this circuit.\n", num_connections);
-		vpr_printf_info("\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("There are %d point to point connections in this circuit.\n", num_connections);
+		vtr::printf_info("\n");
 
 		place_delay_value = 0;
 
@@ -396,7 +397,7 @@ void try_place(struct s_placer_opts placer_opts,
 		outer_crit_iter_count = 1;
 
 		/*now we can properly compute costs  */
-		comp_td_costs(&timing_cost, &delay_cost); /*also vpr_printf proper values into point_to_point_delay_cost */
+		comp_td_costs(&timing_cost, &delay_cost); /*also vtr::printf proper values into point_to_point_delay_cost */
 
 		/* Timing cost appears to be 0 for small circuits without any critical paths, this will cause costs to be
 		indefinite values later, so set timing_cost to a small number to prevent it						*/
@@ -451,19 +452,19 @@ void try_place(struct s_placer_opts placer_opts,
 
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
-	vpr_printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
+	vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
 			cost, bb_cost, timing_cost, delay_cost);
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 
 #ifndef SPEC
-	vpr_printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
 			"-------", "-------", "-------", "-------", "------", "---------", "------");
-	vpr_printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
 			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
 			"P to P Del", "d_max", "Ac Rate", "Std Dev", "R limit", "Exp",
 			"Tot Moves", "Alpha");
-	vpr_printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
 			"-------", "-------", "-------", "-------", "------", "---------", "------");
 #endif
@@ -546,17 +547,17 @@ void try_place(struct s_placer_opts placer_opts,
 #ifndef SPEC
 		critical_path_delay = get_critical_path_delay();
 		if(oldt >= 100.0 - EPSILON) {
-			vpr_printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+			vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
 					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
 					stats.av_delay_cost, place_delay_value, critical_path_delay, 
 					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 		} else if(oldt >= 10.0 - EPSILON) {
-			vpr_printf_info("%7.4f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+			vtr::printf_info("%7.4f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
 					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
 					stats.av_delay_cost, place_delay_value, critical_path_delay, 
 					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 		} else {
-			vpr_printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+			vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
 					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
 					stats.av_delay_cost, place_delay_value, critical_path_delay, 
 					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
@@ -612,7 +613,7 @@ void try_place(struct s_placer_opts placer_opts,
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
 #ifndef SPEC
-	vpr_printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
+	vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
 			t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
 			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
 #endif
@@ -663,13 +664,13 @@ void try_place(struct s_placer_opts placer_opts,
 
 		/* Print critical path delay. */
 		critical_path_delay = get_critical_path_delay();
-		vpr_printf_info("\n");
-		vpr_printf_info("Placement estimated critical path delay: %g ns\n", critical_path_delay);
+		vtr::printf_info("\n");
+		vtr::printf_info("Placement estimated critical path delay: %g ns\n", critical_path_delay);
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
 			cost, bb_cost, timing_cost, width_fac);
-	vpr_printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
+	vtr::printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
 			cost, bb_cost, timing_cost, delay_cost);
 	update_screen(MAJOR, msg, PLACEMENT, false, timing_inf);
 	 
@@ -678,14 +679,14 @@ void try_place(struct s_placer_opts placer_opts,
 	reject_rate = num_swap_rejected / total_swap_attempts;
 	accept_rate = num_swap_accepted / total_swap_attempts;
 	abort_rate = num_swap_aborted / total_swap_attempts;
-	vpr_printf_info("Placement total # of swap attempts: %d\n", total_swap_attempts);
-	vpr_printf_info("\tSwap reject rate: %g\n", reject_rate);
-	vpr_printf_info("\tSwap accept rate: %g\n", accept_rate);
-	vpr_printf_info("\tSwap abort rate: %g\n",	abort_rate);
+	vtr::printf_info("Placement total # of swap attempts: %d\n", total_swap_attempts);
+	vtr::printf_info("\tSwap reject rate: %g\n", reject_rate);
+	vtr::printf_info("\tSwap accept rate: %g\n", accept_rate);
+	vtr::printf_info("\tSwap abort rate: %g\n",	abort_rate);
 	
 
 #ifdef SPEC
-	vpr_printf_info("Total moves attempted: %d.0\n", tot_iter);
+	vtr::printf_info("Total moves attempted: %d.0\n", tot_iter);
 #endif
 
 	free_placement_structs(
@@ -716,7 +717,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
 			|| placer_opts.inner_loop_recompute_divider != 0) {
 #ifdef VERBOSE
-		vpr_printf_info("Outer loop recompute criticalities\n");
+		vtr::printf_info("Outer loop recompute criticalities\n");
 #endif
 		*place_delay_value = (*delay_cost) / num_connections;
 
@@ -792,7 +793,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 
 				inner_crit_iter_count = 0;
 #ifdef VERBOSE
-				vpr_printf_trace("Inner loop recompute criticalities\n");
+				vtr::printf_trace("Inner loop recompute criticalities\n");
 #endif
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
@@ -805,7 +806,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 			inner_crit_iter_count++;
 		}
 #ifdef VERBOSE
-		vpr_printf_trace("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
+		vtr::printf_trace("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
 				t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
 		if (fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL)
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
@@ -982,13 +983,13 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 #ifdef DEBUG
 	if (num_accepted != move_lim) {
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
 	}
 #endif
 
 #ifdef VERBOSE
-	vpr_printf_info("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
+	vtr::printf_info("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
 	/* Set the initial temperature to 20 times the standard of deviation */
@@ -1189,7 +1190,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 #if 0
 	int b_to = grid[x_to][y_to].blocks[z_to];
-	vpr_printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
+	vtr::printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
 		x_from, y_from, z_from, grid[x_from][y_from].type->name, b_from != -1 ? block[b_from].name : "",
 		x_to, y_to, z_to, grid[x_to][y_to].type->name, b_to != -1 ? block[b_to].name : "");
 #endif
@@ -1828,8 +1829,8 @@ static float comp_bb_cost(enum cost_methods method) {
 	}
 
 	if (method == CHECK) {
-		vpr_printf_info("\n");
-		vpr_printf_info("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
+		vtr::printf_info("\n");
+		vtr::printf_info("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
 	}
 	return (cost);
 }
@@ -2790,7 +2791,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	load_legal_placements();
 
 #ifdef VERBOSE
-	vpr_printf_info("At end of initial_placement.\n");
+	vtr::printf_info("At end of initial_placement.\n");
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
 		print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
 	}
@@ -2914,9 +2915,9 @@ static void check_place(float bb_cost, float timing_cost,
 	int imacro, imember, head_iblk, member_iblk, member_x, member_y, member_z;
 
 	bb_cost_check = comp_bb_cost(CHECK);
-	vpr_printf_info("bb_cost recomputed from scratch: %g\n", bb_cost_check);
+	vtr::printf_info("bb_cost recomputed from scratch: %g\n", bb_cost_check);
 	if (fabs(bb_cost_check - bb_cost) > bb_cost * ERROR_TOL) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"bb_cost_check: %g and bb_cost: %g differ in check_place.\n", 
 				bb_cost_check, bb_cost);
 		error++;
@@ -2924,16 +2925,16 @@ static void check_place(float bb_cost, float timing_cost,
 
 	if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		comp_td_costs(&timing_cost_check, &delay_cost_check);
-		vpr_printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
+		vtr::printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
 		if (fabs(timing_cost_check - timing_cost) > timing_cost * ERROR_TOL) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"timing_cost_check: %g and timing_cost: %g differ in check_place.\n", 
 					timing_cost_check, timing_cost);
 			error++;
 		}
-		vpr_printf_info("delay_cost recomputed from scratch: %g\n", delay_cost_check);
+		vtr::printf_info("delay_cost recomputed from scratch: %g\n", delay_cost_check);
 		if (fabs(delay_cost_check - delay_cost) > delay_cost * ERROR_TOL) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"delay_cost_check: %g and delay_cost: %g differ in check_place.\n", 
 					delay_cost_check, delay_cost);
 			error++;
@@ -2948,7 +2949,7 @@ static void check_place(float bb_cost, float timing_cost,
 	for (i = 0; i <= (nx + 1); i++)
 		for (j = 0; j <= (ny + 1); j++) {
 			if (grid[i][j].usage > grid[i][j].type->capacity) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Block at grid location (%d,%d) overused. Usage is %d.\n", 
 						i, j, grid[i][j].usage);
 				error++;
@@ -2960,13 +2961,13 @@ static void check_place(float bb_cost, float timing_cost,
 					continue;
 
 				if (block[bnum].type != grid[i][j].type) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d type does not match grid location (%d,%d) type.\n",
 							bnum, i, j);
 					error++;
 				}
 				if ((block[bnum].x != i) || (block[bnum].y != j)) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d location conflicts with grid(%d,%d) data.\n", 
 							bnum, i, j);
 					error++;
@@ -2975,7 +2976,7 @@ static void check_place(float bb_cost, float timing_cost,
 				bdone[bnum]++;
 			}
 			if (usage_check != grid[i][j].usage) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Location (%d,%d) usage is %d, but has actual usage %d.\n",
 						i, j, grid[i][j].usage, usage_check);
 				error++;
@@ -2985,7 +2986,7 @@ static void check_place(float bb_cost, float timing_cost,
 	/* Check that every block exists in the grid and block arrays somewhere. */
 	for (i = 0; i < num_blocks; i++)
 		if (bdone[i] != 1) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Block %d listed %d times in data structures.\n",
 					i, bdone[i]);
 			error++;
@@ -3010,7 +3011,7 @@ static void check_place(float bb_cost, float timing_cost,
 			if (block[member_iblk].x != member_x 
 					|| block[member_iblk].y != member_y 
 					|| block[member_iblk].z != member_z) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
 						member_iblk, imacro);
 				error++;
@@ -3018,7 +3019,7 @@ static void check_place(float bb_cost, float timing_cost,
 
 			// Then check the grid data structure
 			if (grid[member_x][member_y].blocks[member_z] != member_iblk) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
 						member_iblk, imacro);
 				error++;
@@ -3027,10 +3028,10 @@ static void check_place(float bb_cost, float timing_cost,
 	} // Finish going through all the macros
 
 	if (error == 0) {
-		vpr_printf_info("\n");
-		vpr_printf_info("Completed placement consistency check successfully.\n");
-		vpr_printf_info("\n");
-		vpr_printf_info("Swaps called: %d\n", num_ts_called);
+		vtr::printf_info("\n");
+		vtr::printf_info("Completed placement consistency check successfully.\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Swaps called: %d\n", num_ts_called);
 
 #ifdef PRINT_REL_POS_DISTR
 		print_relative_pos_distr(void);

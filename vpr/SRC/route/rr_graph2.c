@@ -1,8 +1,9 @@
 #include <cstdio>
-#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -1148,10 +1149,10 @@ void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vtr::t_ivec **
 		for (int j = 0; j <= L_ny; ++j) {
 			vtr::t_ivec rr_node_index = L_rr_node_indices[rr_type][i][j];
 
-			vpr_printf_info("rr_node_indices[%s][%d][%d] =", psz_rr_type, i, j);
+			vtr::printf_info("rr_node_indices[%s][%d][%d] =", psz_rr_type, i, j);
 			for (int k = 0; k < rr_node_index.nelem; ++k)
-				vpr_printf_info(" %d", rr_node_index.list[k]);
-			vpr_printf_info("\n");
+				vtr::printf_info(" %d", rr_node_index.list[k]);
+			vtr::printf_info("\n");
 		}
 	}
 }

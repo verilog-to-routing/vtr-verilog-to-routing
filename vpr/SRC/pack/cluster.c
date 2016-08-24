@@ -12,6 +12,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -504,9 +505,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					&clb[num_clb], num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
 					max_nets_in_pb_type, lb_type_rr_graphs, &router_data, detailed_routing_stage);
-			vpr_printf_info("Complex block %d: %s, type: %s\n", 
+			vtr::printf_info("Complex block %d: %s, type: %s\n", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
-			vpr_printf_info("\t");
+			vtr::printf_info("\t");
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, is_clock, global_clocks, alpha,
 					beta, timing_driven, connection_driven, slacks);
@@ -537,22 +538,22 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					if (next_molecule != NULL) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
 #ifdef DEBUG_FAILED_PACKING_CANDIDATES
-							vpr_printf_direct("\tNO_ROUTE:%s type %s/n", 
+							vtr::printf_direct("\tNO_ROUTE:%s type %s/n", 
 									next_molecule->logical_block_ptrs[next_molecule->root]->name, 
 									next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
 							fflush(stdout);
 	#else
-							vpr_printf_direct(".");
+							vtr::printf_direct(".");
 	#endif
 						} else {
 	#ifdef DEBUG_FAILED_PACKING_CANDIDATES
-							vpr_printf_direct("\tFAILED_CHECK:%s type %s check %d\n", 
+							vtr::printf_direct("\tFAILED_CHECK:%s type %s check %d\n", 
 									next_molecule->logical_block_ptrs[next_molecule->root]->name, 
 									next_molecule->logical_block_ptrs[next_molecule->root]->model->name, 
 									block_pack_status);
 							fflush(stdout);
 	#else
-							vpr_printf_direct(".");
+							vtr::printf_direct(".");
 	#endif
 						}
 					}
@@ -567,12 +568,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				} else {
 					/* Continue packing by filling smallest cluster */
 	#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
-					vpr_printf_direct("\tPASSED:%s type %s\n", 
+					vtr::printf_direct("\tPASSED:%s type %s\n", 
 							next_molecule->logical_block_ptrs[next_molecule->root]->name, 
 							next_molecule->logical_block_ptrs[next_molecule->root]->model->name);
 					fflush(stdout);
 	#else
-					vpr_printf_direct(".");
+					vtr::printf_direct(".");
 	#endif
 				}
 				update_cluster_stats(next_molecule, num_clb - 1, is_clock,
@@ -590,13 +591,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						clb_inter_blk_nets,
 						num_clb - 1);
 			}
-			vpr_printf_direct("\n");
+			vtr::printf_direct("\n");
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_intra_lb_route(router_data);
 				if (is_cluster_legal == true) {
-					vpr_printf_info("Passed route at end.\n");
+					vtr::printf_info("Passed route at end.\n");
 				} else {
-					vpr_printf_info("Failed route at end, repack cluster trying detailed routing at each stage.\n");
+					vtr::printf_info("Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
 			} else {
 				is_cluster_legal = true;
@@ -2034,7 +2035,7 @@ static void start_new_cluster(
 				nx++;
 				ny = nint(nx / aspect);
 			}
-			vpr_printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
+			vtr::printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
 					nx, ny);
 			if ((nx > MAX_SHORT) || (ny > MAX_SHORT)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,

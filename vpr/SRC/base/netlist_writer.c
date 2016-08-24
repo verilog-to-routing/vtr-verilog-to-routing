@@ -6,12 +6,13 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "vtr_assert.h"
 #include <bitset>
 #include <memory>
 #include <unordered_set>
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #include "netlist_walker.h"
 #include "netlist_writer.h"
@@ -1911,9 +1912,9 @@ void netlist_writer(const std::string basename) {
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
 
-    vpr_printf_info("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
-    vpr_printf_info("Writting Implementation Netlist: %s\n", blif_filename.c_str());
-    vpr_printf_info("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
+    vtr::printf_info("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
+    vtr::printf_info("Writting Implementation Netlist: %s\n", blif_filename.c_str());
+    vtr::printf_info("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
 
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);

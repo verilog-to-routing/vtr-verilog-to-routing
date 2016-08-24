@@ -9,11 +9,14 @@
 
 #include <cstdio>
 #include <cstring>
+
 #include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
+
 #include "netlist.h"
 #include "vpr_api.h"
 
-#include "vtr_util.h"
 
 using namespace std;
 
@@ -81,25 +84,25 @@ void echo_global_nlist_net(INP t_netlist* g_nlist){
 			"Global netlist variable has not been allocated!");
 	}
 
-	vpr_printf_info("********Dumping clb netlist info contained in vectors*******\n");
+	vtr::printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
 	for(i = 0; i < g_nlist->net.size(); i++){
-		vpr_printf_info("Net name %s\n", g_nlist->net[i].name);
-		vpr_printf_info("Routed %d fixed %d global %d const_gen %d\n", 
+		vtr::printf_info("Net name %s\n", g_nlist->net[i].name);
+		vtr::printf_info("Routed %d fixed %d global %d const_gen %d\n", 
 			g_nlist->net[i].is_routed,
 			g_nlist->net[i].is_fixed ,
 			g_nlist->net[i].is_global, 
 			g_nlist->net[i].is_const_gen);
 		for(j = 0; j < g_nlist->net[i].pins.size(); j++){
-			vpr_printf_info("Block index %d port %d pin %d \n", 
+			vtr::printf_info("Block index %d port %d pin %d \n", 
 				g_nlist->net[i].pins[j].block, 
 				g_nlist->net[i].pins[j].block_port,  
 				g_nlist->net[i].pins[j].block_pin);
 		
 		}
-		vpr_printf_info("\n");
+		vtr::printf_info("\n");
 	}
-	vpr_printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
+	vtr::printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
 }
 
 static bool check_global_net_with_array(INP t_net* net_arr,

@@ -3,9 +3,9 @@
 using namespace std;
 
 #include "vtr_memory.h"
+#include "vtr_log.h"
 
 #include "hash.h"
-#include "util.h"
 
 struct s_hash **
 alloc_hash_table(void) {
@@ -195,11 +195,11 @@ void get_hash_stats(struct s_hash **hash_table, char *hash_table_name){
 
 	avg_num = (float) total_elements / ((float)HASHSIZE - (float)num_NULL);
 	
-	vpr_printf_info("\n");
-	vpr_printf_info("The hash table '%s' is of size %d.\n",
+	vtr::printf_info("\n");
+	vtr::printf_info("The hash table '%s' is of size %d.\n",
 			hash_table_name, HASHSIZE);
-	vpr_printf_info("It has: %d keys that are never used; total of %d elements; "
+	vtr::printf_info("It has: %d keys that are never used; total of %d elements; "
 			"an average linked-list length of %.1f; and a maximum linked-list length of %d.\n", 
 			num_NULL, total_elements, avg_num, max_num); 
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }

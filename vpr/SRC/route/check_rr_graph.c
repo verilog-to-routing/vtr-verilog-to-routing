@@ -1,3 +1,5 @@
+#include "vtr_log.h"
+
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph.h"
@@ -154,10 +156,10 @@ void check_rr_graph(INP t_graph_type graph_type,
 						|| rr_node[inode].type == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 						  	"in check_rr_graph: node %d has no fanin.\n", inode);
 				} else if (!is_chain && !is_fringe_warning_sent) {
-					vpr_printf_warning(__FILE__, __LINE__, 
+					vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
 						inode);
@@ -168,7 +170,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 		else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
 			if (total_edges_to_node[inode] != 0) {
-				vpr_printf_error(__FILE__, __LINE__, 
+				vtr::printf_error(__FILE__, __LINE__, 
 						"in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n",
 						inode, total_edges_to_node[inode]);
 			}
@@ -388,7 +390,7 @@ void check_node(int inode, enum e_route_type route_type) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
-			vpr_printf_warning(__FILE__, __LINE__, "in check_node: node %d has no edges.\n", inode);
+			vtr::printf_warning(__FILE__, __LINE__, "in check_node: node %d has no edges.\n", inode);
 		}
 	}
 

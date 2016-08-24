@@ -45,10 +45,10 @@
 #include "pugixml_util.hpp"
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_matrix.h"
 
-#include "util.h"
 #include "arch_types.h"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
@@ -151,7 +151,7 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 	ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
 	if (vtr::check_file_name_extension(ArchFile, ".xml") == false) {
-		vpr_printf_warning(__FILE__, __LINE__,
+		vtr::printf_warning(__FILE__, __LINE__,
 				"Architecture file '%s' may be in incorrect format. "
 						"Expecting .xml format for architecture files.\n",
 				ArchFile);
@@ -176,7 +176,7 @@ void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
 	Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
 	if (Prop != NULL) {
 		if (atof(Prop) > atof(VPR_VERSION)) {
-			vpr_printf_warning(__FILE__, __LINE__,
+			vtr::printf_warning(__FILE__, __LINE__,
 					"This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
 					atof(Prop));
 		}

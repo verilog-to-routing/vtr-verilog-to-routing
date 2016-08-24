@@ -1,10 +1,11 @@
 #include <cstring>
+#include <vector>
 using namespace std;
 
 #include "vtr_assert.h"
-#include <vector>
-
 #include "vtr_util.h"
+#include "vtr_random.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "OptionTokens.h"
@@ -18,8 +19,6 @@ using namespace std;
 #include "ReadOptions.h"
 #include "rr_graph_area.h"
 #include "echo_arch.h"
-#include "vtr_util.h"
-#include "vtr_random.h"
 
 static void SetupOperation(INP t_options Options,
 		OUTP enum e_operation *Operation);
@@ -227,7 +226,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	}
 	vtr::srandom(PlacerOpts->seed);
 
-	vpr_printf_info("Building complex block graph.\n");
+	vtr::printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {

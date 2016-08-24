@@ -7,8 +7,6 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include "util.h"
-
 enum e_token_type {
 	TOKEN_NULL,
 	TOKEN_STRING,

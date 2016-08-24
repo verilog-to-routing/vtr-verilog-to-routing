@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <cstring>
-#include "vtr_assert.h"
 using namespace std;
 
+#include "vtr_assert.h"
+#include "vtr_log.h"
 #include "vtr_math.h"
 
 #include "read_xml_arch_file.h"
@@ -31,7 +32,7 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 	int num_pack_molecules;
 
-	vpr_printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
+	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
 
 	/* determine number of models in the architecture */
 	num_models = 0;
@@ -49,22 +50,22 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 	
-	vpr_printf_info("\n");
-	vpr_printf_info("After removing unused inputs...\n");
-	vpr_printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
+	vtr::printf_info("\n");
+	vtr::printf_info("After removing unused inputs...\n");
+	vtr::printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
 		num_logical_blocks, (int) g_atoms_nlist.net.size(), num_p_inputs, num_p_outputs);
 
-	vpr_printf_info("Begin prepacking.\n");
+	vtr::printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(
 			&num_packing_patterns);
 	list_of_pack_molecules = alloc_and_load_pack_molecules(
 			list_of_packing_patterns, num_packing_patterns,
 			&num_pack_molecules);
-	vpr_printf_info("Finish prepacking.\n");
+	vtr::printf_info("Finish prepacking.\n");
 
 	if(packer_opts->auto_compute_inter_cluster_net_delay) {
 		packer_opts->inter_cluster_net_delay = interc_delay;
-		vpr_printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
+		vtr::printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
 	}
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
@@ -104,9 +105,9 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		list_of_pack_molecules = cur_pack_molecule;
 	}
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Netlist conversion complete.\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Netlist conversion complete.\n");
+	vtr::printf_info("\n");
 }
 
 float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_switch, float &R_switch, float &Cout_switch){
@@ -169,7 +170,7 @@ bool *alloc_and_load_is_clock(bool global_clocks) {
 	 * locally generated clocks.                                             */
 
 	if (num_clocks > 1 && global_clocks) {
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Circuit contains %d clocks. All clocks will be marked global.\n", num_clocks);
 	}
 

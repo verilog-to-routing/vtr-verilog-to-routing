@@ -66,7 +66,7 @@ print_relative_pos_distr(void)
 
 				if (!(min_del <= (len / 2)))
 				{
-					vpr_printf_error(VPR_ERROR_PLACE, __FILE__, __LINE__,
+					vtr::printf_error(VPR_ERROR_PLACE, __FILE__, __LINE__,
 							"Error calculating relative location min_del = %d, len = %d\n",
 							min_del, len);
 				}
@@ -106,9 +106,9 @@ print_relative_pos_distr(void)
 
 				/* updating the binary record at "len" */
 #ifdef PRINT_REL_POS_DISTR
-				vpr_printf_error(__FILE__, __LINE__, "old %d increased by %d\n", rp_rec.num_rp[rp], relapos[len][rp]);
+				vtr::printf_error(__FILE__, __LINE__, "old %d increased by %d\n", rp_rec.num_rp[rp], relapos[len][rp]);
 				rp_rec.num_rp[rp] += relapos[len][rp];
-				vpr_printf_error(__FILE__, __LINE__,"becomes %d\n", rp_rec.num_rp[rp]);
+				vtr::printf_error(__FILE__, __LINE__,"becomes %d\n", rp_rec.num_rp[rp]);
 #endif /* PRINT_REL_POS_DISTR */
 			}
 #ifdef PRINT_REL_POS_DISTR

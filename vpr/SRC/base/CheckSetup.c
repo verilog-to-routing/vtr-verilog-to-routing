@@ -1,3 +1,5 @@
+#include "vtr_log.h"
+
 #include "vpr_types.h"
 #include "globals.h"
 #include "OptionTokens.h"
@@ -26,7 +28,7 @@ void CheckSetup(INP enum e_operation Operation,
 
 		/* Works, but very weird.  Can't optimize timing well, since you're
 		 * not doing proper architecture delay modelling. */
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Using global routing with timing-driven placement. "
 				"This is allowed, but strange, and circuit speed will suffer.\n");
 	}

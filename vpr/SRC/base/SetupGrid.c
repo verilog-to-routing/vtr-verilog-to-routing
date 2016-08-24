@@ -109,7 +109,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 #if 0
 	for (int y = 0; y <= ny + 1; ++y) {
 		for (int x = 0; x <= nx + 1; ++x) {
-			vpr_printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
+			vtr::printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
 		}
 	}
 #endif

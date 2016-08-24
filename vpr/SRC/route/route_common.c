@@ -7,8 +7,8 @@
 using namespace std;
 
 #include "vtr_assert.h"
-
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #include "stats.h"
 #include "vpr_types.h"
@@ -239,7 +239,7 @@ void get_serial_num(void) {
 			tptr = tptr->next;
 		}
 	}
-	vpr_printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
+	vtr::printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
 void try_graph(int width_fac, struct s_router_opts router_opts,
@@ -284,7 +284,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 	clock_t end = clock();
 
-	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 bool try_route(int width_fac, struct s_router_opts router_opts,
@@ -337,7 +337,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	clock_t end = clock();
 
-	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
 	bool success = true;
 
@@ -347,11 +347,11 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
+		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
 				width_fac);
 	} else { /* TIMING_DRIVEN route */
-		vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
+		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
@@ -404,7 +404,7 @@ int predict_success_route_iter(int router_iteration, const std::vector<double>& 
 	int expected_success_route_iter = (itry*congestion_slope - historical_overuse_ratio.back()) / congestion_slope;
 
 	if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations) {
-		vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
+		vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
 		return UNDEFINED;
 	}
 	return expected_success_route_iter;
@@ -1109,13 +1109,13 @@ namespace heap_ {
 	}
 	// extract every element and print it
 	void pop_heap() {
-		while (!is_empty_heap()) vpr_printf_info("%e ", get_heap_head()->cost);
-		vpr_printf_info("\n");
+		while (!is_empty_heap()) vtr::printf_info("%e ", get_heap_head()->cost);
+		vtr::printf_info("\n");
 	}
 	// print every element; not necessarily in order for minheap
 	void print_heap() {
-		for (int i = 1; i < heap_tail >> 1; ++i) vpr_printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
-		vpr_printf_info("\n");
+		for (int i = 1; i < heap_tail >> 1; ++i) vtr::printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
+		vtr::printf_info("\n");
 	}
 	// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
 	void verify_extract_top() {
@@ -1166,8 +1166,8 @@ get_heap_head(void) {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			vpr_printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
-			vpr_printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
+			vtr::printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
+			vtr::printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
 			return (NULL);
 		}
 
@@ -1505,15 +1505,15 @@ void free_chunk_memory_trace(void) {
 // utility and debugging functions -----------------------
 void print_traceback(int inet) {
 	// linearly print linked list
-	vpr_printf_info("traceback %d: ", inet);
+	vtr::printf_info("traceback %d: ", inet);
 	t_trace* head = trace_head[inet];
 	while (head) {
 		int inode {head->index};
 		if (rr_node[inode].type == SINK) 
-			vpr_printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
+			vtr::printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
 		else 
-			vpr_printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
+			vtr::printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
 		head = head->next;
 	}
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }

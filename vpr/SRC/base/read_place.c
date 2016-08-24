@@ -3,6 +3,8 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -10,7 +12,6 @@ using namespace std;
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 #include "ReadLine.h"
-#include "vtr_util.h"
 
 /* extern, should be a header */
 char **ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum);
@@ -145,8 +146,8 @@ void read_user_pad_loc(char *pad_loc_file) {
 	FILE *fp;
 	char buf[vtr::BUFSIZE], bname[vtr::BUFSIZE], *ptr;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
+	vtr::printf_info("\n");
+	vtr::printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
 	fp = fopen(pad_loc_file, "r");
 	if (!fp) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Cannot find IO pads location file.\n", 
@@ -212,7 +213,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 		h_ptr = get_hash_entry(hash_table, bname);
 		if (h_ptr == NULL) {
-			vpr_printf_warning(__FILE__, __LINE__, 
+			vtr::printf_warning(__FILE__, __LINE__, 
 					"[Line %d] Block %s invalid, no such IO pad.\n", vtr::get_file_line_number_of_last_opened_file(), bname);
 			ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 			continue;
@@ -260,8 +261,8 @@ void read_user_pad_loc(char *pad_loc_file) {
 
 	fclose(fp);
 	free_hash_table(hash_table);
-	vpr_printf_info("Successfully read %s.\n", pad_loc_file);
-	vpr_printf_info("\n");
+	vtr::printf_info("Successfully read %s.\n", pad_loc_file);
+	vtr::printf_info("\n");
 }
 
 void print_place(char *place_file, char *net_file, char *arch_file) {

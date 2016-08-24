@@ -11,12 +11,13 @@
 #include <cstring>
 #include <ctime>
 #include <chrono>
-#include "vtr_assert.h"
 using namespace std;
 
 
+#include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_matrix.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -71,86 +72,86 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb
 /* Display general VPR information */
 void vpr_print_title(void) {
 
-	vpr_printf_info("\n");
-	vpr_printf_info("VPR FPGA Placement and Routing.\n");
-	vpr_printf_info("Version: v" VPR_VERSION "\n");
-	vpr_printf_info("Revision: " BUILD_VERSION "\n");
-	vpr_printf_info("Compiled: " BUILD_DATE ".\n");
-	vpr_printf_info("University of Toronto\n");
-	vpr_printf_info("vtr-users@googlegroups.com\n");
-	vpr_printf_info("This is free open source code under MIT license.\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("VPR FPGA Placement and Routing.\n");
+	vtr::printf_info("Version: v" VPR_VERSION "\n");
+	vtr::printf_info("Revision: " BUILD_VERSION "\n");
+	vtr::printf_info("Compiled: " BUILD_DATE ".\n");
+	vtr::printf_info("University of Toronto\n");
+	vtr::printf_info("vtr-users@googlegroups.com\n");
+	vtr::printf_info("This is free open source code under MIT license.\n");
+	vtr::printf_info("\n");
 
 }
 
 /* Display help screen */
 void vpr_print_usage(void) {
 
-	vpr_printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vpr_printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
-	vpr_printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
-	vpr_printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
-	vpr_printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Packer Options:\n");
-	/* vpr_printf_info("\t[-global_clocks on | off]\n"); */
-	/* vpr_printf_info("\t[-hill_climbing on | off]\n"); */
-	/* vpr_printf_info("\t[-sweep_hanging_nets_and_inputs on | off]\n"); */
-	vpr_printf_info("\t[--timing_driven_clustering on | off]\n");
-	vpr_printf_info("\t[--cluster_seed_type blend|timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
-	/* vpr_printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
-	vpr_printf_info("\t[--allow_unrelated_clustering on | off]\n");
-	/* vpr_printf_info("\t[-allow_early_exit on | off]\n"); */
-	/* vpr_printf_info("\t[-intra_cluster_net_delay <float>] \n"); */
-	/* vpr_printf_info("\t[-inter_cluster_net_delay <float>] \n"); */
-	vpr_printf_info("\t[--connection_driven_clustering on | off] \n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Placer Options:\n");
-	vpr_printf_info("\t[--place_algorithm bounding_box | path_timing_driven]\n");
-	vpr_printf_info("\t[--init_t <float>] [--exit_t <float>]\n");
-	vpr_printf_info("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
-	vpr_printf_info("\t[--place_cost_exp <float>]\n");
-	vpr_printf_info("\t[--place_chan_width <int>] \n");
-	vpr_printf_info("\t[--fix_pins random | <file.pads>]\n");
-	vpr_printf_info("\t[--enable_timing_computations on | off]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Placement Options Valid Only for Timing-Driven Placement:\n");
-	vpr_printf_info("\t[--timing_tradeoff <float>]\n");
-	vpr_printf_info("\t[--recompute_crit_iter <int>]\n");
-	vpr_printf_info("\t[--inner_loop_recompute_divider <int>]\n");
-	vpr_printf_info("\t[--td_place_exp_first <float>]\n");
-	vpr_printf_info("\t[--td_place_exp_last <float>]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
-	vpr_printf_info("\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
-	vpr_printf_info("\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
-	vpr_printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");
-	vpr_printf_info("\t[--min_incremental_reroute_fanout <int>]\n");
-	vpr_printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
-	vpr_printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf_info("\t[--base_cost_type delay_normalized | demand_only]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Routing options valid only for timing-driven routing:\n");
-	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
-	vpr_printf_info("\t[--criticality_exp <float>]\n");
-	vpr_printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("VPR Developer Options:\n");
-	vpr_printf_info("\t[--gen_netlist_as_blif]\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
+	vtr::printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
+	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
+	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
+	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Packer Options:\n");
+	/* vtr::printf_info("\t[-global_clocks on | off]\n"); */
+	/* vtr::printf_info("\t[-hill_climbing on | off]\n"); */
+	/* vtr::printf_info("\t[-sweep_hanging_nets_and_inputs on | off]\n"); */
+	vtr::printf_info("\t[--timing_driven_clustering on | off]\n");
+	vtr::printf_info("\t[--cluster_seed_type blend|timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
+	/* vtr::printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
+	vtr::printf_info("\t[--allow_unrelated_clustering on | off]\n");
+	/* vtr::printf_info("\t[-allow_early_exit on | off]\n"); */
+	/* vtr::printf_info("\t[-intra_cluster_net_delay <float>] \n"); */
+	/* vtr::printf_info("\t[-inter_cluster_net_delay <float>] \n"); */
+	vtr::printf_info("\t[--connection_driven_clustering on | off] \n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Placer Options:\n");
+	vtr::printf_info("\t[--place_algorithm bounding_box | path_timing_driven]\n");
+	vtr::printf_info("\t[--init_t <float>] [--exit_t <float>]\n");
+	vtr::printf_info("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
+	vtr::printf_info("\t[--place_cost_exp <float>]\n");
+	vtr::printf_info("\t[--place_chan_width <int>] \n");
+	vtr::printf_info("\t[--fix_pins random | <file.pads>]\n");
+	vtr::printf_info("\t[--enable_timing_computations on | off]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Placement Options Valid Only for Timing-Driven Placement:\n");
+	vtr::printf_info("\t[--timing_tradeoff <float>]\n");
+	vtr::printf_info("\t[--recompute_crit_iter <int>]\n");
+	vtr::printf_info("\t[--inner_loop_recompute_divider <int>]\n");
+	vtr::printf_info("\t[--td_place_exp_first <float>]\n");
+	vtr::printf_info("\t[--td_place_exp_last <float>]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
+	vtr::printf_info("\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
+	vtr::printf_info("\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
+	vtr::printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");
+	vtr::printf_info("\t[--min_incremental_reroute_fanout <int>]\n");
+	vtr::printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
+	vtr::printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
+	vtr::printf_info("\t[--base_cost_type delay_normalized | demand_only]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Routing options valid only for timing-driven routing:\n");
+	vtr::printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
+	vtr::printf_info("\t[--criticality_exp <float>]\n");
+	vtr::printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("VPR Developer Options:\n");
+	vtr::printf_info("\t[--gen_netlist_as_blif]\n");
+	vtr::printf_info("\n");
 }
 
 void vpr_print_args(int argc, char** argv) {
-    vpr_printf_info("VPR was run with the following command-line:\n");
+    vtr::printf_info("VPR was run with the following command-line:\n");
     for(int i = 0; i < argc; i++) {
         if(i != 0) {
-            vpr_printf_info(" ");
+            vtr::printf_info(" ");
         }
-        vpr_printf_info("%s", argv[i]);
+        vtr::printf_info("%s", argv[i]);
     }
-    vpr_printf_info("\n\n");
+    vtr::printf_info("\n\n");
 }
 
 /* Initialize VPR
@@ -189,10 +190,10 @@ void vpr_init(INP int argc, INP char **argv,
         /* Verify the rest of the options */
 		CheckOptions(*options, vpr_setup->TimingEnabled);
 
-        vpr_printf_info("\n");
-        vpr_printf_info("Architecture file: %s\n", options->ArchFile);
-        vpr_printf_info("Circuit name: %s.blif\n", options->CircuitName);
-        vpr_printf_info("\n");
+        vtr::printf_info("\n");
+        vtr::printf_info("Architecture file: %s\n", options->ArchFile);
+        vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName);
+        vtr::printf_info("\n");
 
 		/* Determine whether echo is on or off */
 		setEchoEnabled(IsEchoEnabled(options));
@@ -236,7 +237,7 @@ void vpr_init(INP int argc, INP char **argv,
 	} else {
 		/* Print usage message if no args */
 		vpr_print_usage();
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 			"Missing arguments, see above and try again!\n");
 		exit(1);
 	}
@@ -295,7 +296,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					ny = nint(current / Arch.clb_grid.Aspect);
 				}
 #if DEBUG
-				vpr_printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
+				vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
 #endif
 				alloc_and_load_grid(num_instances_type);
 				freeGrid();
@@ -315,7 +316,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					if (high == -1) {
 						current = current * 2;
 						if (current > MAX_SHORT) {
-							vpr_printf_error(__FILE__, __LINE__,
+							vtr::printf_error(__FILE__, __LINE__,
 									"FPGA required is too large for current architecture settings.\n");
 							exit(1);
 						}
@@ -340,20 +341,20 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				ny = nint(current / Arch.clb_grid.Aspect);
 			}
 			alloc_and_load_grid(num_instances_type);
-			vpr_printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
+			vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
 		} else {
 			nx = Arch.clb_grid.W;
 			ny = Arch.clb_grid.H;
 			alloc_and_load_grid(num_instances_type);
 		}
 
-		vpr_printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
+		vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
 
 		/* Test if netlist fits in grid */
 		for (int i = 0; i < num_types; ++i) {
 			if (num_blocks_type[i] > num_instances_type[i]) {
 
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Not enough physical locations for type %s, "
 						"number of blocks is %d but number of locations is %d.\n",
 						type_descriptors[i].name, num_blocks_type[i],
@@ -362,15 +363,15 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 			}
 		}
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Resource usage...\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Resource usage...\n");
 		for (int i = 0; i < num_types; ++i) {
-			vpr_printf_info("\tNetlist      %d\tblocks of type: %s\n",
+			vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
 					num_blocks_type[i], type_descriptors[i].name);
-			vpr_printf_info("\tArchitecture %d\tblocks of type: %s\n",
+			vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
 					num_instances_type[i], type_descriptors[i].name);
 		}
-		vpr_printf_info("\n");
+		vtr::printf_info("\n");
 		chan_width.x_max = chan_width.y_max = 0;
 		chan_width.x_min = chan_width.y_min = 0;
 		chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
@@ -385,7 +386,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	std::chrono::high_resolution_clock::time_point end, begin;
 	begin = std::chrono::high_resolution_clock::now();
-	vpr_printf_info("Initialize packing.\n");
+	vtr::printf_info("Initialize packing.\n");
 
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of
 	 a block through an opin switch to a length-4 wire, then through a wire switch to another
@@ -1023,23 +1024,23 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
 	VTR_ASSERT(g_solution_inf.T_crit > 0.);
 
-	vpr_printf_info("\n\nPower Estimation:\n");
-	vpr_printf_info("-----------------\n");
+	vtr::printf_info("\n\nPower Estimation:\n");
+	vtr::printf_info("-----------------\n");
 
-	vpr_printf_info("Initializing power module\n");
+	vtr::printf_info("Initializing power module\n");
 
 	/* Initialize the power module */
 	bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
 			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"Power initialization failed.\n");
 	}
 
 	if (!power_error) {
 		float power_runtime_s;
 
-		vpr_printf_info("Running power estimation\n");
+		vtr::printf_info("Running power estimation\n");
 
 		/* Run power estimation */
 		e_power_ret_code power_ret_code = power_total(&power_runtime_s, vpr_setup,
@@ -1047,28 +1048,28 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 		/* Check for errors/warnings */
 		if (power_ret_code == POWER_RET_CODE_ERRORS) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Power estimation failed. See power output for error details.\n");
 		} else if (power_ret_code == POWER_RET_CODE_WARNINGS) {
-			vpr_printf_warning(__FILE__, __LINE__,
+			vtr::printf_warning(__FILE__, __LINE__,
 					"Power estimation completed with warnings. See power output for more details.\n");
 		} else if (power_ret_code == POWER_RET_CODE_SUCCESS) {
 		}
-		vpr_printf_info("Power estimation took %g seconds\n", power_runtime_s);
+		vtr::printf_info("Power estimation took %g seconds\n", power_runtime_s);
 	}
 
 	/* Uninitialize power module */
 	if (!power_error) {
-		vpr_printf_info("Uninitializing power module\n");
+		vtr::printf_info("Uninitializing power module\n");
 		power_error = power_uninit();
 		if (power_error) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Power uninitialization failed.\n");
 		} else {
 
 		}
 	}
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }
 
 void vpr_print_error(const VprError& vpr_error){
@@ -1122,7 +1123,7 @@ void vpr_print_error(const VprError& vpr_error){
     std::string msg = vpr_error.what();
     std::string filename = vpr_error.filename();
 
-	vpr_printf_error(__FILE__, __LINE__,
+	vtr::printf_error(__FILE__, __LINE__,
 		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
 		error_type, filename.c_str(), vpr_error.line(),
 		msg.c_str());

@@ -6,10 +6,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-using namespace std;
 #include <vector>
+using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -494,8 +495,8 @@ static void print_stats(t_block *clb, int num_clusters) {
 			}
 		}
 	}
-	vpr_printf_info("\n");
-	vpr_printf_info("%d FFs in input netlist not absorbable (ie. impossible to form BLE).\n", unabsorbable_ffs);
+	vtr::printf_info("\n");
+	vtr::printf_info("%d FFs in input netlist not absorbable (ie. impossible to form BLE).\n", unabsorbable_ffs);
 #endif
 
 	/* Counters used only for statistics purposes. */
@@ -536,10 +537,10 @@ static void print_stats(t_block *clb, int num_clusters) {
 
 	for (itype = 0; itype < num_types; itype++) {
 		if (num_clb_types[itype] == 0) {
-			vpr_printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
+			vtr::printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
 					type_descriptors[itype].name, num_clb_types[itype], 0.0, 0.0);
 		} else {
-			vpr_printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
+			vtr::printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
 					type_descriptors[itype].name, num_clb_types[itype],
 					(float) num_clb_inputs_used[itype] / (float) num_clb_types[itype],
 					(float) num_clb_outputs_used[itype] / (float) num_clb_types[itype]);
@@ -552,7 +553,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 			total_nets_absorbed++;
 		}
 	}
-	vpr_printf_info("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
+	vtr::printf_info("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
 			total_nets_absorbed, (int)g_atoms_nlist.net.size(), (int)g_atoms_nlist.net.size() - total_nets_absorbed);
 	free(nets_absorbed);
 	free(num_clb_types);
@@ -641,7 +642,7 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 			break;
 
 		default:
-			vpr_printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__, 
 					"in output_netlist: Unexpected type %d for logical_block %d.\n", 
 					logical_block[bnum].type, bnum);
 		}

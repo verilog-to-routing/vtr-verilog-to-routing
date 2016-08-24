@@ -2,6 +2,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -286,13 +287,13 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	ntrans_sharing += input_cblock_trans;
 	ntrans_no_sharing += input_cblock_trans;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Routing area (in minimum width transistor areas)...\n");
-	vpr_printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n", 
+	vtr::printf_info("\n");
+	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
+	vtr::printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n", 
 			ntrans_no_sharing, ntrans_no_sharing / (float) (nx * ny));
-	vpr_printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n", 
+	vtr::printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n", 
 			ntrans_sharing, ntrans_sharing / (float) (nx * ny));
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }
 
 void count_unidir_routing_transistors(t_segment_inf * segment_inf, 
@@ -453,9 +454,9 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 	ntrans += input_cblock_trans;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Routing area (in minimum width transistor areas)...\n");
-	vpr_printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (nx * ny));
+	vtr::printf_info("\n");
+	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
+	vtr::printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (nx * ny));
 }
 
 static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,

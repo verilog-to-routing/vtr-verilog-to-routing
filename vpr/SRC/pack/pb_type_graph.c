@@ -13,10 +13,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+
+#include "util.h" //For INP/OUTP/INOUTP
 
 #include "token.h"
 #include "arch_types.h"
@@ -127,7 +130,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
 	errors = check_pb_graph();
 	if (errors > 0) {
-		vpr_printf_error(__FILE__, __LINE__, "in pb graph");
+		vtr::printf_error(__FILE__, __LINE__, "in pb graph");
 		exit(1);
 	}
 	for (i = 0; i < num_types; i++) {
@@ -1670,7 +1673,7 @@ static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
 			if(pb_graph_node->input_pins[i][j].port->equivalent){
 				if(!check_input_pins_equivalence(&pb_graph_node->input_pins[i][j],
 					j, logic_equivalent_pins_map, &line_num)){
-						vpr_printf_warning(__FILE__, __LINE__,
+						vtr::printf_warning(__FILE__, __LINE__,
 							"[LINE %d] false logically-equivalent pin %s[%d].%s[%d].\n",
 							line_num, pb_graph_node->pb_type->name,
 							pb_graph_node->placement_index,

@@ -7,7 +7,7 @@
 
 #include "util.h"
 #include "vtr_util.h"
-#include "log.h"
+#include "vtr_log.h"
 
 /* This file contains utility functions widely used in *
  * my programs.  Many are simply versions of file and  *
@@ -15,17 +15,13 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
-vpr_PrintHandlerInfo vpr_printf_info = log_print_info;
-vpr_PrintHandlerWarning vpr_printf_warning = log_print_warning;
-vpr_PrintHandlerError vpr_printf_error = log_print_error;
-vpr_PrintHandlerDirect vpr_printf_direct = log_print_direct;
 
 
 /* Returns the min of cur and max. If cur > max, a warning
  * is emitted. */
 int limit_value(int cur, int max, const char *name) {
 	if (cur > max) {
-		vpr_printf_warning(__FILE__, __LINE__,
+        vtr::printf_warning(__FILE__, __LINE__,
 				"%s is being limited from [%d] to [%d]\n", name, cur, max);
 		return max;
 	}

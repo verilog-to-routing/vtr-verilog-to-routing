@@ -1,11 +1,15 @@
 #include <sys/types.h>
 
-#include "vtr_assert.h"
 #include <cstdio>
 #include <ctime>
 #include <climits>
 #include <cstdlib>
 using namespace std;
+
+#include "vtr_util.h"
+#include "vtr_memory.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -28,8 +32,6 @@ using namespace std;
 #include "netlist_writer.h"
 #include "power.h"
 
-#include "vtr_util.h"
-#include "vtr_memory.h"
 
 /******************* Subroutines local to this module ************************/
 
@@ -90,7 +92,7 @@ bool place_and_route(enum e_operation operation,
 		print_place(place_file, net_file, arch_file);
 		end = clock();
 
-		vpr_printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+		vtr::printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
 	}
 	begin = clock();
@@ -145,19 +147,19 @@ bool place_and_route(enum e_operation operation,
 				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
 
 		if (Fc_clipped) {
-			vpr_printf_warning(__FILE__, __LINE__, 
+			vtr::printf_warning(__FILE__, __LINE__, 
 					"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
 		}
 
 		if (success == false) {
             
-			vpr_printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
+			vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
 		} else {
 			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally);
 			get_serial_num();
 
-			vpr_printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
+			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
 			routing_stats(router_opts.full_stats, router_opts.route_type,
 					g_num_rr_switches, segment_inf,
@@ -215,7 +217,7 @@ bool place_and_route(enum e_operation operation,
 
 	end = clock();    
 
-	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
     if (router_opts.switch_usage_analysis) {
         print_switch_usage();
@@ -324,8 +326,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	while (final == -1) {
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
+		vtr::printf_info("\n");
+		vtr::printf_info("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
 		fflush(stdout);
 
 		/* Check if the channel width is huge to avoid overflow.  Assume the *
@@ -346,7 +348,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		}
 
 		if ((current * 3) < det_routing_arch->Fs) {
-			vpr_printf_info("Width factor is now below specified Fs. Stop search.\n");
+			vtr::printf_info("Width factor is now below specified Fs. Stop search.\n");
 			final = high;
 			break;
 		}
@@ -378,7 +380,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 			/* If Fc_output is too high, set to full connectivity but warn the user */
 			if (Fc_clipped) {
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
 			}
 
@@ -404,7 +406,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			}
 		} else { /* last route not successful */
 			if (success && Fc_clipped) {
-				vpr_printf_info("Routing rejected, Fc_output was too high.\n");
+				vtr::printf_info("Routing rejected, Fc_output was too high.\n");
 				success = false;
 			}
 			low = current;
@@ -442,8 +444,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	if (verify_binary_search) {
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Verifying that binary search found min channel width...\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Verifying that binary search found min channel width...\n");
 
 		prev_success = true; /* Actually final - 1 failed, but this makes router */
 		/* try final-2 and final-3 even if both fail: safer */
@@ -496,7 +498,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #if 0
 	if (placer_opts.place_freq == PLACE_ALWAYS)
 	{
-		vpr_printf_info("Reading best placement back in.\n");
+		vtr::printf_info("Reading best placement back in.\n");
 		placer_opts.place_chan_width = final;
 		read_place(place_file, net_file, arch_file, placer_opts,
 				router_opts, chan_width_dist, det_routing_arch,
@@ -529,10 +531,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	get_serial_num();
 
 	if (Fc_clipped) {
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
 	}
-	vpr_printf_info("Best routing used a channel width factor of %d.\n", final);
+	vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
 
 	routing_stats(full_stats, router_opts.route_type,
 			g_num_rr_switches, segment_inf,
@@ -645,15 +647,15 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 	}
 
 #ifdef VERBOSE
-	vpr_printf_info("\n");
-	vpr_printf_info("chan_width.x_list:\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("chan_width.x_list:\n");
 	for (int i = 0; i <= ny ; ++i)
-		vpr_printf_info("%d  ", chan_width.x_list[i]);
-	vpr_printf_info("\n");
-	vpr_printf_info("chan_width.y_list:\n");
+		vtr::printf_info("%d  ", chan_width.x_list[i]);
+	vtr::printf_info("\n");
+	vtr::printf_info("chan_width.y_list:\n");
 	for (int i = 0; i <= nx ; ++i)
-		vpr_printf_info("%d  ", chan_width.y_list[i]);
-	vpr_printf_info("\n");
+		vtr::printf_info("%d  ", chan_width.y_list[i]);
+	vtr::printf_info("\n");
 #endif
 }
 static float comp_width(t_chan * chan, float x, float separation) {

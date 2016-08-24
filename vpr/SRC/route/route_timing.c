@@ -1,10 +1,13 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-#include "vtr_assert.h"
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+
+#include "vtr_assert.h"
+#include "vtr_log.h"
+
 #include "vpr_utils.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -165,9 +168,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                 return false;
             }
 
-            vpr_printf_info("--------- ---------- ----------- ---------------------\n");
-            vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
-            vpr_printf_info("--------- ---------- ----------- ---------------------\n");	
+            vtr::printf_info("--------- ---------- ----------- ---------------------\n");
+            vtr::printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
+            vtr::printf_info("--------- ---------- ----------- ---------------------\n");	
         }
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
@@ -198,11 +201,11 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
 			double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
 			if (router_opts.congestion_analysis)
-				vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
+				vtr::printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
 			// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
 			if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
 				&& time_per_iteration_slope > 1) {	// filter out noise
-				vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
+				vtr::printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
 								 while congestion grows at %f %/iteration, unlikely to finish.\n",
 					time_per_iteration_slope, congestion_per_iteration_slope);
 
@@ -221,13 +224,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
 				float critical_path_delay = get_critical_path_delay();
-                vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
+                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+				vtr::printf_info("Critical path: %g ns\n", critical_path_delay);
 			} else {
-                vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+                vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 			}
 
-			vpr_printf_info("Successfully routed after %d routing iterations.\n", itry);
+			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
 #ifdef DEBUG
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
@@ -289,9 +292,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				if (stable_routing_configuration)
 					connections_inf.set_stable_critical_path_delay(critical_path_delay);
 			}
-            vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 		} else {
-            vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
         if (router_opts.congestion_analysis) profiling::congestion_analysis();
@@ -300,7 +303,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		fflush(stdout);
 	}
-	vpr_printf_info("Routing failed.\n");
+	vtr::printf_info("Routing failed.\n");
 
 	return (false);
 }
@@ -340,7 +343,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 			g_clbs_nlist.net[inet].is_routed = true;
 			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = true;
 		} else {
-			vpr_printf_info("Routing failed.\n");
+			vtr::printf_info("Routing failed.\n");
 		}
 	}
 	return (is_routed);
@@ -569,7 +572,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	struct s_heap* cheapest {get_heap_head()};
 
 	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
-		vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+		vtr::printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
 				   inet, g_clbs_nlist.net[inet].name, target_node);
 		reset_path_costs();
 		free_route_tree(rt_root);
@@ -617,7 +620,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 		cheapest = get_heap_head();
 
 		if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-			vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+			vtr::printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
 					 inet, g_clbs_nlist.net[inet].name, target_node);
 			reset_path_costs();
 			free_route_tree(rt_root);
@@ -1178,7 +1181,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	}
 
 	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
-	vpr_printf_info("Completed net delay value cross check successfully.\n");
+	vtr::printf_info("Completed net delay value cross check successfully.\n");
 }
 
 
@@ -1242,12 +1245,12 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 	}
     float used_wirelength_ratio = (float) (total_wirelength) / (float) (available_wirelength);
 
-	vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
+	vtr::printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
 			total_wirelength, available_wirelength,
 			used_wirelength_ratio);
 
 	if (used_wirelength_ratio > FIRST_ITER_WIRELENTH_LIMIT) {
-		vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
+		vtr::printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 				FIRST_ITER_WIRELENTH_LIMIT);
         return true;
 	}
@@ -1351,7 +1354,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
 		for (auto mapping : net_node_to_pin) {
 			auto sanity = net_node_to_pin.find(mapping.first);
 			if (sanity == net_node_to_pin.end()) {
-				vpr_printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
+				vtr::printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
 				return false;
 			}
 			VTR_ASSERT(net_rr_terminals[inet][mapping.second] == mapping.first);
@@ -1411,7 +1414,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			// update if more optimal connection found
 			if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
 				if (net_delay[inet][ipin] == 0) {
-					// vpr_printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
+					// vtr::printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
 				}
 				lower_bound_connection_delay[inet][ipin - 1] = net_delay[inet][ipin];
 				continue;

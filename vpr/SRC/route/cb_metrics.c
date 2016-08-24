@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "vtr_assert.h"
 #include <string.h>
 #include <ctime>
 #include <utility>
@@ -35,6 +34,8 @@
 #include <iterator>
 
 #include "vtr_random.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -177,7 +178,7 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 	bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target, 
 			target_tolerance, pin_to_track_connections, &cb_metrics);
 	if (!success){
-		vpr_printf_info("Failed to adjust specified connection block metric\n");
+		vtr::printf_info("Failed to adjust specified connection block metric\n");
 	}
 
 	print_switch_histogram(nodes_per_chan, &cb_metrics);
@@ -1014,10 +1015,10 @@ static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metric
 		}
 	}
 
-	vpr_printf_info("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
+	vtr::printf_info("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
 	map<int,int>::const_iterator it;
 	for (it = switch_histogram.begin(); it != switch_histogram.end(); it++){
-		vpr_printf_info("\t%d ==> %d\n", it->first, it->second);
+		vtr::printf_info("\t%d ==> %d\n", it->first, it->second);
 	}
 }
 
@@ -1308,11 +1309,11 @@ static void print_xbar( t_xbar_matrix *xbar ){
 	int cols = (int)xbar->at(0).size();
 
 	for (int irow = 0; irow < rows; irow++){
-		vpr_printf_info("\t\t|\t");
+		vtr::printf_info("\t\t|\t");
 		for (int icol = 0; icol < cols; icol++){
-			vpr_printf_info("%.2f\t", xbar->at(irow).at(icol));
+			vtr::printf_info("%.2f\t", xbar->at(irow).at(icol));
 		}
-		vpr_printf_info(" |\n");
+		vtr::printf_info(" |\n");
 	}
 }
 

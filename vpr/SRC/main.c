@@ -16,9 +16,10 @@
 using namespace std;
 
 #include "vtr_error.h"
+#include "vtr_memory.h"
+#include "vtr_log.h"
 
 #include "vpr_api.h"
-#include "vtr_memory.h"
 #include "path_delay.h" /* for timing_analysis_runtime */
 
 /*
@@ -75,8 +76,8 @@ int main(int argc, char **argv) {
 	
 		entire_flow_end = clock();
 
-        vpr_printf_info("Timing analysis took %g seconds.\n", float(timing_analysis_runtime) / CLOCKS_PER_SEC);
-		vpr_printf_info("The entire flow of VPR took %g seconds.\n", 
+        vtr::printf_info("Timing analysis took %g seconds.\n", float(timing_analysis_runtime) / CLOCKS_PER_SEC);
+		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
 		/* free data structures */
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
         /* Signal error to scripts */
         return ERROR_EXIT_CODE;
 	} catch(VtrError& vtr_error){
-        vpr_printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
+        vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
         /* Signal error to scripts */
         return ERROR_EXIT_CODE;
 	}

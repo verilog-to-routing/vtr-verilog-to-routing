@@ -1,4 +1,5 @@
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -123,7 +124,7 @@ void check_for_stage_options(const t_options& options, e_OptionBaseToken start, 
             //the check
 
             //Warn the user that the specified option will not do anything
-            vpr_printf_warning(__FILE__, __LINE__, 
+            vtr::printf_warning(__FILE__, __LINE__, 
                                 "Command-line option '%s' has no effect since %s will not run.\n", Cur->Str, stage_name);
         }
         ++Cur;

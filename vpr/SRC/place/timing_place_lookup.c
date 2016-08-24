@@ -1,11 +1,12 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
-#include "vtr_assert.h"
 #include <time.h>
 using namespace std;
 
+#include "vtr_assert.h"
 #include "vtr_matrix.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -1019,13 +1020,13 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, int longest_length) {
 
-	vpr_printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_io(router_opts, det_routing_arch, segment_inf, timing_inf);
-	vpr_printf_info("Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_clb(router_opts, det_routing_arch, segment_inf, timing_inf);
-	vpr_printf_info("Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_io(router_opts, det_routing_arch, segment_inf, timing_inf);
-	vpr_printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_clb(router_opts, det_routing_arch, segment_inf, timing_inf, longest_length);
 
 #ifdef PRINT_ARRAYS
@@ -1051,7 +1052,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, INP t_direct_inf *directs, 
 		INP int num_directs) {
 
-	vpr_printf_info("\nStarting placement delay look-up...\n");
+	vtr::printf_info("\nStarting placement delay look-up...\n");
     clock_t begin = clock();
 
 	static struct s_net *original_net; /*this will be used as a pointer to remember what */
@@ -1096,7 +1097,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
     clock_t end = clock();
 
     float time = (float) (end - begin) / CLOCKS_PER_SEC;
-	vpr_printf_info("Placement delay look-up took %g seconds\n", time);
+	vtr::printf_info("Placement delay look-up took %g seconds\n", time);
 }
 
 /**************************************/

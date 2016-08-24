@@ -9,13 +9,14 @@
 #include <cstring>
 using namespace std;
 
-#include "vtr_assert.h"
-
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
 #include "pugixml_util.hpp"
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
+
 
 #include "hash.h"
 #include "vpr_types.h"
@@ -91,7 +92,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	int num_primitives = 0;
 
 	/* Parse the file */
-	vpr_printf_info("Begin loading packed FPGA netlist file.\n");
+	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
 
     pugi::xml_document doc;
     pugiloc::loc_data loc_data;
@@ -120,7 +121,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
                   "Root element must have a 'name' attribute.\n");
     }
 
-	vpr_printf_info("Netlist generated from file '%s'.\n", top_name.value());
+	vtr::printf_info("Netlist generated from file '%s'.\n", top_name.value());
 
     //Verify top level attributes
     auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
@@ -227,7 +228,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	clock_t end = clock();
 
-	vpr_printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 /**
@@ -944,7 +945,7 @@ static void mark_constant_generators_rec(INP t_pb *pb, INP t_pb_route *pb_route,
 			}
 		}
 		if (const_gen == true) {
-			vpr_printf_info("%s is a constant generator.\n", pb->name);
+			vtr::printf_info("%s is a constant generator.\n", pb->name);
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
 					if (pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx != OPEN) {

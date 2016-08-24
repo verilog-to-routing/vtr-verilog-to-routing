@@ -2,6 +2,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -42,8 +43,8 @@ void check_route(enum e_route_type route_type, int num_switches,
 	struct s_trace *tptr;
 	bool * pin_done;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Checking to ensure routing is legal...\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Checking to ensure routing is legal...\n");
 
 	/* Recompute the occupancy from scratch and check for overuse of routing *
 	 * resources.  This was already checked in order to determine that this  *
@@ -153,8 +154,8 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	free(pin_done);
 	free(connected_to_route);
-	vpr_printf_info("Completed routing consistency check successfully.\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("Completed routing consistency check successfully.\n");
+	vtr::printf_info("\n");
 }
 
 static void check_sink(int inode, int inet, bool * pin_done) {

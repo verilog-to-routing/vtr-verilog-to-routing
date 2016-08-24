@@ -4,6 +4,9 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_list.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -11,8 +14,6 @@ using namespace std;
 #include "arch_types.h"
 #include "ReadOptions.h"
 #include "hash.h"
-#include "vtr_util.h"
-#include "vtr_list.h"
 
 /* PRINT_PIN_NETS */
 
@@ -201,11 +202,11 @@ static void init_parse(bool doall, bool init_vpack_net_power) {
 			}
 		}
 #ifdef PRINT_PIN_NETS
-		vpr_printf_info("i\ttemp_num_pins\n");
+		vtr::printf_info("i\ttemp_num_pins\n");
 		for (i = 0;i < num_logical_nets;i++) {
-			vpr_printf_info("%d\t%d\n",i,temp_num_pins[i]);
+			vtr::printf_info("%d\t%d\n",i,temp_num_pins[i]);
 		}
-		vpr_printf_info("num_logical_nets %d\n", num_logical_nets);
+		vtr::printf_info("num_logical_nets %d\n", num_logical_nets);
 #endif
 	}
 
@@ -580,7 +581,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 	VTR_ASSERT(iparse < MAX_ATOM_PARSE);
 	/* record the position of the parse so far so when we resume we will move to the next item */
 	//if (fgetpos(blif, &current_subckt_pos) != 0) {
-	//	vpr_printf_error(__FILE__, __LINE__, "In file pointer read - read_blif.c\n");
+	//	vtr::printf_error(__FILE__, __LINE__, "In file pointer read - read_blif.c\n");
 	//	exit(-1);
 	//}
 	input_net_count = 0;
@@ -783,7 +784,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 
 	/* now that you've done the analysis, move the file pointer back */
 	//if (fsetpos(blif, &current_subckt_pos) != 0) {
-	//	vpr_printf_error(__FILE__, __LINE__, "In moving back file pointer - read_blif.c\n");
+	//	vtr::printf_error(__FILE__, __LINE__, "In moving back file pointer - read_blif.c\n");
 	//	exit(-1);
 	//}
 }
@@ -1043,21 +1044,21 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 		}
 	}
 
-	vpr_printf_info("Input netlist file: '%s', model: %s\n", blif_file, model);
-	vpr_printf_info("Primary inputs: %d, primary outputs: %d\n", num_p_inputs,
+	vtr::printf_info("Input netlist file: '%s', model: %s\n", blif_file, model);
+	vtr::printf_info("Primary inputs: %d, primary outputs: %d\n", num_p_inputs,
 			num_p_outputs);
-	vpr_printf_info("LUTs: %d, latches: %d, subckts: %d\n", num_luts,
+	vtr::printf_info("LUTs: %d, latches: %d, subckts: %d\n", num_luts,
 			num_latches, num_subckts);
-	vpr_printf_info("# standard absorbable latches: %d\n",
+	vtr::printf_info("# standard absorbable latches: %d\n",
 			num_absorbable_latch);
-	vpr_printf_info("\t");
+	vtr::printf_info("\t");
 	for (i = 0; i < logic_model->inputs[0].size + 1; i++) {
 		if (i > 0)
-			vpr_printf_direct(", ");
-		vpr_printf_direct("LUT size %d = %d", i, lut_distribution[i]);
+			vtr::printf_direct(", ");
+		vtr::printf_direct("LUT size %d = %d", i, lut_distribution[i]);
 	}
-	vpr_printf_direct("\n");
-	vpr_printf_info("Total blocks: %d, total nets: %d\n", num_logical_blocks,
+	vtr::printf_direct("\n");
+	vtr::printf_info("Total blocks: %d, total nets: %d\n", num_logical_blocks,
 			num_logical_nets);
 
 	fp = vtr::fopen(echo_file, "w");
@@ -1192,7 +1193,7 @@ static int check_blocks() {
             // calculator asserts on an obscure condition. Better
             // to warn the user now
             if(logical_block[iblk].clock_net == OPEN) {
-                vpr_printf_error(__FILE__, __LINE__, "Block '%s' (%s) at index %d has an invalid clock net.\n", logical_block[iblk].name, block_model->name, iblk);
+                vtr::printf_error(__FILE__, __LINE__, "Block '%s' (%s) at index %d has an invalid clock net.\n", logical_block[iblk].name, block_model->name, iblk);
                 error_count++;
             }
         }
@@ -1221,28 +1222,28 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 	removed_nets = 0;
 
 	if (ilines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"Found %d .inputs lines; expected %d.\n", ilines,
 				explicit_vpack_models);
 		error++;
 	}
 
 	if (olines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"Found %d .outputs lines; expected %d.\n", olines,
 				explicit_vpack_models);
 		error++;
 	}
 
 	if (model_lines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"Found %d .model lines; expected %d.\n", model_lines,
 				num_blif_models + 1);
 		error++;
 	}
 
 	if (endlines != explicit_vpack_models) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"Found %d .end lines; expected %d.\n", endlines,
 				explicit_vpack_models);
 		error++;
@@ -1250,7 +1251,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 	for (i = 0; i < num_logical_nets; i++) {
 
 		if (num_driver[i] != 1) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"vpack_net %s has %d signals driving it.\n",
 					vpack_net[i].name, num_driver[i]);
 			error++;
@@ -1280,7 +1281,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 					logical_block[iblk].output_nets[iport][ipin] = OPEN;
 					logical_block_output_count[iblk]--;
 				} else {
-					vpr_printf_warning(__FILE__, __LINE__,
+					vtr::printf_warning(__FILE__, __LINE__,
 							"vpack_net %s has no fanout.\n", vpack_net[i].name);
 				}
 				continue;
@@ -1289,7 +1290,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 
 		if (strcmp(vpack_net[i].name, "open") == 0
 				|| strcmp(vpack_net[i].name, "unconn") == 0) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"vpack_net #%d has the reserved name %s.\n", i,
 					vpack_net[i].name);
 			error++;
@@ -1303,7 +1304,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 				/* Clocks are not connected to regular pins on a block hence open */
 				L_check_net = logical_block[iblk].clock_net;
 				if (L_check_net != i) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 							"Clock net for block %s #%d is net %s #%d but connecting net is %s #%d.\n",
 							logical_block[iblk].name, iblk,
 							vpack_net[L_check_net].name, L_check_net,
@@ -1315,7 +1316,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 				if (j == 0) {
 					L_check_net = logical_block[iblk].output_nets[iport][ipin];
 					if (L_check_net != i) {
-						vpr_printf_error(__FILE__, __LINE__,
+						vtr::printf_error(__FILE__, __LINE__,
 								"Output net for block %s #%d is net %s #%d but connecting net is %s #%d.\n",
 								logical_block[iblk].name, iblk,
 								vpack_net[L_check_net].name, L_check_net,
@@ -1330,7 +1331,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 								logical_block[iblk].input_nets[iport][ipin];
 					}
 					if (L_check_net != i) {
-						vpr_printf_error(__FILE__, __LINE__,
+						vtr::printf_error(__FILE__, __LINE__,
 								"You have a signal that enters both clock ports and normal input ports.\n"
 										"Input net for block %s #%d is net %s #%d but connecting net is %s #%d.\n",
 								logical_block[iblk].name, iblk,
@@ -1342,19 +1343,19 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 			}
 		}
 	}
-	vpr_printf_info("Swept away %d nets with no fanout.\n", removed_nets);
+	vtr::printf_info("Swept away %d nets with no fanout.\n", removed_nets);
 	count_unconn_blocks = 0;
 	for (i = 0; i < num_logical_blocks; i++) {
 		/* This block has no output and is not an output pad so it has no use, hence we remove it */
 		if ((logical_block_output_count[i] == 0)
 				&& (logical_block[i].type != VPACK_OUTPAD)) {
-			vpr_printf_warning(__FILE__, __LINE__,
+			vtr::printf_warning(__FILE__, __LINE__,
 					"logical_block %s #%d has no fanout.\n",
 					logical_block[i].name, i);
 			if (sweep_hanging_nets_and_inputs
 					&& (logical_block[i].type == VPACK_INPAD)) {
 				logical_block[i].type = VPACK_EMPTY;
-				vpr_printf_info("Removing input.\n");
+				vtr::printf_info("Removing input.\n");
 				p_io_removed = (vtr::t_linked_vptr*) vtr::malloc(
 						sizeof(vtr::t_linked_vptr));
 				p_io_removed->data_vptr = vtr::strdup(logical_block[i].name);
@@ -1363,7 +1364,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 				continue;
 			} else {
 				count_unconn_blocks++;
-				vpr_printf_warning(__FILE__, __LINE__,
+				vtr::printf_warning(__FILE__, __LINE__,
 						"Sweep hanging nodes in your logic synthesis tool because VPR can not do this yet.\n");
 			}
 		}
@@ -1409,7 +1410,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 				if (count_inputs == 0 && logical_block[i].type != VPACK_INPAD
 						&& logical_block[i].type != VPACK_OUTPAD
 						&& logical_block[i].clock_net == OPEN) {
-					vpr_printf_info("Net is a constant generator: %s.\n",
+					vtr::printf_info("Net is a constant generator: %s.\n",
 							vpack_net[inet].name);
 					vpack_net[inet].is_const_gen = true;
 				}
@@ -1429,20 +1430,20 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 
 		if (logical_block[i].type == VPACK_LATCH) {
 			if (logical_block_input_count[i] != 1) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Latch #%d with output %s has %d input pin(s), expected one (D).\n",
 						i, logical_block[i].name, logical_block_input_count[i]);
 				error++;
 			}
 			if (logical_block_output_count[i] != 1) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Latch #%d with output %s has %d output pin(s), expected one (Q).\n",
 						i, logical_block[i].name,
 						logical_block_output_count[i]);
 				error++;
 			}
 			if (logical_block[i].clock_net == OPEN) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Latch #%d with output %s has no clock.\n", i,
 						logical_block[i].name);
 				error++;
@@ -1451,49 +1452,49 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 
 		else if (logical_block[i].type == VPACK_INPAD) {
 			if (logical_block_input_count[i] != 0) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"IO inpad logical_block #%d name %s of type %d" "has %d input pins.\n",
 						i, logical_block[i].name, logical_block[i].type,
 						logical_block_input_count[i]);
 				error++;
 			}
 			if (logical_block_output_count[i] != 1) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"IO inpad logical_block #%d name %s of type %d" "has %d output pins.\n",
 						i, logical_block[i].name, logical_block[i].type,
 						logical_block_output_count[i]);
 				error++;
 			}
 			if (logical_block[i].clock_net != OPEN) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"IO inpad #%d with output %s has clock.\n", i,
 						logical_block[i].name);
 				error++;
 			}
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
 			if (logical_block_input_count[i] != 1) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"io outpad logical_block #%d name %s of type %d" "has %d input pins.\n",
 						i, logical_block[i].name, logical_block[i].type,
 						logical_block_input_count[i]);
 				error++;
 			}
 			if (logical_block_output_count[i] != 0) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"io outpad logical_block #%d name %s of type %d" "has %d output pins.\n",
 						i, logical_block[i].name, logical_block[i].type,
 						logical_block_output_count[i]);
 				error++;
 			}
 			if (logical_block[i].clock_net != OPEN) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"io outpad #%d with name %s has clock.\n", i,
 						logical_block[i].name);
 				error++;
 			}
 		} else if (logical_block[i].type == VPACK_COMB) {
 			if (logical_block_input_count[i] <= 0) {
-				vpr_printf_warning(__FILE__, __LINE__,
+				vtr::printf_warning(__FILE__, __LINE__,
 						"logical_block #%d with output %s has only %d pin.\n",
 						i, logical_block[i].name, logical_block_input_count[i]);
 
@@ -1501,10 +1502,10 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 					error++;
 				} else {
 					if (logical_block_output_count[i] > 0) {
-						vpr_printf_warning(__FILE__, __LINE__,
+						vtr::printf_warning(__FILE__, __LINE__,
 								"Block contains output -- may be a constant generator.\n");
 					} else {
-						vpr_printf_warning(__FILE__, __LINE__,
+						vtr::printf_warning(__FILE__, __LINE__,
 								"Block contains no output.\n");
 					}
 				}
@@ -1512,7 +1513,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 
 			if (strcmp(logical_block[i].model->name, MODEL_LOGIC) == 0) {
 				if (logical_block_output_count[i] != 1) {
-					vpr_printf_warning(__FILE__, __LINE__,
+					vtr::printf_warning(__FILE__, __LINE__,
 							"Logical_block #%d name %s of model %s has %d output pins instead of 1.\n",
 							i, logical_block[i].name,
 							logical_block[i].model->name,
@@ -1527,7 +1528,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 	}
 
 	if (count_unconn_blocks > 0) {
-		vpr_printf_info("%d unconnected blocks in input netlist.\n",
+		vtr::printf_info("%d unconnected blocks in input netlist.\n",
 				count_unconn_blocks);
 	}
 
@@ -1637,7 +1638,7 @@ static void do_absorb_buffer_luts(void) {
 			}
 		}
 	}
-	vpr_printf_info("Removed %d LUT buffers.\n", removed);
+	vtr::printf_info("Removed %d LUT buffers.\n", removed);
 }
 
 static void compress_netlist(void) {
@@ -1795,7 +1796,7 @@ static void compress_netlist(void) {
 			}
 		}
 
-		vpr_printf_info("Sweeped away %d nodes.\n",
+		vtr::printf_info("Sweeped away %d nodes.\n",
 				num_logical_blocks - new_num_blocks);
 
 		num_logical_blocks = new_num_blocks;
@@ -1838,7 +1839,7 @@ void read_and_process_blif(char *blif_file,
 	 eg. 
 	 for (i = 0; i < num_logical_blocks; i++) {
 	 if (logical_block[i].model->num_inputs > max_subblock_inputs) {
-	 vpr_printf_error(__FILE__, __LINE__, 
+	 vtr::printf_error(__FILE__, __LINE__, 
 	 "logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs.\n",
 	 logical_block[i].name, logical_block[i].model->name, logical_block[i].model->num_inputs, max_subblock_inputs);
 	 }
@@ -1957,13 +1958,13 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 
 	/* Print blif circuit stats */
 
-	vpr_printf_info("BLIF circuit stats:\n");
+	vtr::printf_info("BLIF circuit stats:\n");
 
 	for (i = 0; i <= MAX_LUT_INPUTS; i++) {
-		vpr_printf_info("\t%d LUTs of size %d\n", num_lut_of_size[i], i);
+		vtr::printf_info("\t%d LUTs of size %d\n", num_lut_of_size[i], i);
 	}
 	for (i = 0; i < num_model_stats; i++) {
-		vpr_printf_info("\t%d of type %s\n", model_stats[i].count,
+		vtr::printf_info("\t%d of type %s\n", model_stats[i].count,
 				model_stats[i].model->name);
 	}
 

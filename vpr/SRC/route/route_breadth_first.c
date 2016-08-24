@@ -1,6 +1,8 @@
 #include <cstdio>
 using namespace std;
 
+#include "vtr_log.h"
+
 #include "vpr_types.h"
 #include "globals.h"
 #include "route_export.h"
@@ -68,7 +70,7 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 
 		success = feasible_routing();
 		if (success) {
-			vpr_printf_info("Successfully routed after %d routing iterations.\n", itry);
+			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
 			return (true);
 		}
 
@@ -82,7 +84,7 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
 
-	vpr_printf_info("Routing failed.\n");
+	vtr::printf_info("Routing failed.\n");
 	return (false);
 }
 
@@ -109,7 +111,7 @@ bool try_breadth_first_route_net(int inet, int itry, float pres_fac,
 			g_clbs_nlist.net[inet].is_routed = true;
 			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = true;
 		} else {
-			vpr_printf_info("Routing failed.\n");
+			vtr::printf_info("Routing failed.\n");
 		}
 
 		pathfinder_update_path_cost(trace_head[inet], 1, pres_fac);
@@ -150,7 +152,7 @@ static bool breadth_first_route_net(int inet, int itry, float bend_cost) {
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-			vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+			vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 					inet, g_clbs_nlist.net[inet].name, i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (false);
@@ -178,7 +180,7 @@ static bool breadth_first_route_net(int inet, int itry, float bend_cost) {
 			current = get_heap_head();
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
-				vpr_printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
+				vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
 						inet, g_clbs_nlist.net[inet].name, i);
 				reset_path_costs();
 				return (false);

@@ -2,10 +2,11 @@
 #include <cstring>
 #include <cstdlib>
 #include <climits>
-#include "vtr_assert.h"
 using namespace std;
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -143,15 +144,15 @@ void read_sdc(t_timing_inf timing_inf) {
 	use default behaviour of cutting paths between domains and optimizing each clock separately */
 
 	if (!timing_inf.timing_analysis_enabled) {
-		vpr_printf_info("\n");
-		vpr_printf_info("Timing analysis off; using default timing constraints.\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Timing analysis off; using default timing constraints.\n");
 		use_default_timing_constraints();
 		return;
 	}
 	
 	if ((sdc = fopen(timing_inf.SDCFile, "r")) == NULL) {
-		vpr_printf_info("\n");
-		vpr_printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vtr::printf_info("\n");
+		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
 		return;
 	}
@@ -171,8 +172,8 @@ void read_sdc(t_timing_inf timing_inf) {
     t_sdc_commands* sdc_commands = sdc_parse_file(sdc);
 
 	if (sdc_commands->has_commands == false) { /* blank file or only comments found */
-		vpr_printf_info("\n");
-		vpr_printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vtr::printf_info("\n");
+		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
 		free(netlist_clocks);
 		free(netlist_ios);
@@ -247,12 +248,12 @@ void read_sdc(t_timing_inf timing_inf) {
 		}
 	}
 
-	vpr_printf_info("\n");
-	vpr_printf_info("SDC file '%s' parsed successfully.\n",
+	vtr::printf_info("\n");
+	vtr::printf_info("SDC file '%s' parsed successfully.\n",
 			 timing_inf.SDCFile ); 
-	vpr_printf_info("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
+	vtr::printf_info("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
 			 g_sdc->num_constrained_clocks, g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 	
 	/* Since all the information we need is stored in g_sdc->domain_constraint, g_sdc->constrained_clocks, 
 	and constrained_ios, free other data structures used in this routine */
@@ -658,7 +659,7 @@ static void use_default_timing_constraints(void) {
 		g_sdc->domain_constraint = vtr::alloc_matrix<float>(0, 0, 0, 0);
 		g_sdc->domain_constraint[0][0] = 0.;
 		
-        vpr_printf_info("\n");
+        vtr::printf_info("\n");
 
 		if (g_sdc->num_constrained_clocks == 0) {
 			/* We need to create a virtual clock to constrain I/Os on. */
@@ -670,16 +671,16 @@ static void use_default_timing_constraints(void) {
             /* Constrain all I/Os on the virtual clock, with I/O delay 0. */
             count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
 
-			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
+			vtr::printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-			vpr_printf_info("Optimize this virtual clock to run as fast as possible.\n");
+			vtr::printf_info("Optimize this virtual clock to run as fast as possible.\n");
 		} else {
             /* Constrain all I/Os on the single netlist clock, with I/O delay 0. */
             count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
 
-			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
+			vtr::printf_info("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-			vpr_printf_info("Optimize this clock to run as fast as possible.\n");
+			vtr::printf_info("Optimize this clock to run as fast as possible.\n");
 		}
 	} else { /* Multiclock circuit */
 
@@ -706,11 +707,11 @@ static void use_default_timing_constraints(void) {
 			}
 		}
 		
-		vpr_printf_info("\n");
-		vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
+		vtr::printf_info("\n");
+		vtr::printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
 				g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-		vpr_printf_info("\tcut paths between netlist clock domains; and\n");
-		vpr_printf_info("\toptimize all clocks to run as fast as possible.\n");
+		vtr::printf_info("\tcut paths between netlist clock domains; and\n");
+		vtr::printf_info("\toptimize all clocks to run as fast as possible.\n");
 	}
 }
 

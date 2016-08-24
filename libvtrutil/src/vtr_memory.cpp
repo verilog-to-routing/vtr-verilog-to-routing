@@ -84,8 +84,8 @@ void* chunk_malloc(size_t size, t_chunk *chunk_info) {
 			/* When debugging, uncomment the code below to see if memory allocation size */
 			/* makes sense */
 			//#ifdef DEBUG
-			// vpr_printf("NB: my_chunk_malloc got a request for %d bytes.\n", size);
-			// vpr_printf("You should consider using vtr::malloc for such big requests.\n");
+			// vtr_printf("NB: my_chunk_malloc got a request for %d bytes.\n", size);
+			// vtr_printf("You should consider using vtr::malloc for such big requests.\n");
 			// #endif
 
 			VTR_ASSERT(chunk_info != NULL);

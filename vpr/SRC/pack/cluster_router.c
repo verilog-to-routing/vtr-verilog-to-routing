@@ -14,13 +14,14 @@
 
 #include <cstdio>
 #include <cstring>
-using namespace std;
-
-#include "vtr_assert.h"
 #include <vector>
 #include <map>
 #include <queue>
 #include <cmath>
+using namespace std;
+
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "physical_types.h"
 #include "vpr_types.h"
@@ -404,7 +405,7 @@ bool try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-			vpr_printf_info("Routing net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
+			vtr::printf_info("Routing net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
 			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;

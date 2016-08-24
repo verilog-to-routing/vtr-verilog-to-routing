@@ -21,6 +21,7 @@
  */
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "read_xml_arch_file.h"
 #include "vpr_types.h"
@@ -497,7 +498,7 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 			VTR_ASSERT(
 					pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
 			if (pb_graph_node->input_pins[i][j].pin_class == OPEN) {
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"%s[%d].%s[%d] unconnected pin in architecture.\n",
 						pb_graph_node->pb_type->name,
 						pb_graph_node->placement_index,
@@ -513,7 +514,7 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 			VTR_ASSERT(
 					pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
 			if (pb_graph_node->output_pins[i][j].pin_class == OPEN) {
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"%s[%d].%s[%d] unconnected pin in architecture.\n",
 						pb_graph_node->pb_type->name,
 						pb_graph_node->placement_index,
@@ -529,7 +530,7 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 			VTR_ASSERT(
 					pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
 			if (pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"%s[%d].%s[%d] unconnected pin in architecture.\n",
 						pb_graph_node->pb_type->name,
 						pb_graph_node->placement_index,

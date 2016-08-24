@@ -354,11 +354,11 @@ void build_rr_graph(
 			for (j = 0; j < type_descriptors[i].num_pins; ++j) {
 				for (k = 0; k < num_seg_types; k++){
 					if (type_descriptors[i].is_Fc_full_flex[j]) {
-						vpr_printf_info("Fc Actual Values: type = %s, pin = %d, seg_index = %d, Fc_out = full, Fc_in = %d.\n",
+						vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg_index = %d, Fc_out = full, Fc_in = %d.\n",
 								type_descriptors[i].name, j, k, Fc_in[i][j][k]);
 					}
 					else {
-						vpr_printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d, Fc_out = %d, Fc_in = %d.\n",
+						vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d, Fc_out = %d, Fc_in = %d.\n",
 								type_descriptors[i].name, j, k, Fc_out[i][j][k], Fc_in[i][j][k]);
 					}
 				}
@@ -494,7 +494,7 @@ void build_rr_graph(
 
 			//	Conn_Block_Metrics cb_metrics;
 			//	get_conn_block_metrics(&types[i], opin_to_track_map[i], num_seg_types, segment_inf, DRIVER, Fc_out[i], nodes_per_chan, &cb_metrics);
-			//	vpr_printf_info("Block Type: %s   Pin Diversity: %f   Wire Homogeneity: %f   Hamming Distance: %f  Hamming Proximity: %f\n",
+			//	vtr::printf_info("Block Type: %s   Pin Diversity: %f   Wire Homogeneity: %f   Hamming Distance: %f  Hamming Proximity: %f\n",
 			//		types[i].name, cb_metrics.pin_diversity, cb_metrics.wire_homogeneity,
 			//		cb_metrics.lemieux_cost_func, cb_metrics.hamming_proximity);
 			//	
@@ -2155,7 +2155,7 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 
 	for (int track = 0; track < max_chan_width; ++track) {
 		if (num_conns_to_track[track] <= 0) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 				"check_all_tracks_reach_pins: Track %d does not connect to any CLB %ss.\n", 
 				track, (ipin_or_opin == DRIVER ? "OPIN" : "IPIN"));
 		}
