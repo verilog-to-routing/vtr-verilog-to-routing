@@ -9,9 +9,8 @@
 
 #include <cstdio>
 #include <cstring>
-#include <assert.h>
+#include "vtr_assert.h"
 #include "netlist.h"
-#include "util.h"
 #include "vpr_api.h"
 
 #include "vtr_util.h"
@@ -51,7 +50,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 		// Power info may be removed from net ?
 		//g_nlist->nets[i].net_power = new t_net_power(*net_arr[i].net_power);
 
-		assert(g_nlist->net[i].pins.empty());
+		VTR_ASSERT(g_nlist->net[i].pins.empty());
 		g_nlist->net[i].pins.resize(net_arr[i].num_sinks + 1);
 		for(j = 0; j <= net_arr[i].num_sinks; j++){
 
@@ -134,7 +133,7 @@ static bool check_global_net_with_array(INP t_net* net_arr,
 	
 	}
 
-	assert(num_net_arr == (int)g_nlist->net.size());
+	VTR_ASSERT(num_net_arr == (int)g_nlist->net.size());
 
 	return true;
 }

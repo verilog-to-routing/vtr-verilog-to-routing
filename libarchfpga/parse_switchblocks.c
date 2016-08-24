@@ -12,7 +12,6 @@ specified by the switch block permutation functions into their numeric counterpa
 
 
 #include <string.h>
-#include <assert.h>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -25,6 +24,7 @@ specified by the switch block permutation functions into their numeric counterpa
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
 
 #include "pugixml.hpp"
@@ -359,7 +359,7 @@ void check_switchblock( t_switchblock_inf *sb ){
 	if (UNI_DIRECTIONAL == directionality){
 		check_unidir_switchblock( sb );
 	} else {
-		assert(BI_DIRECTIONAL == directionality);
+		VTR_ASSERT(BI_DIRECTIONAL == directionality);
 		check_bidir_switchblock( &(sb->permutation_map) );
 	}
 

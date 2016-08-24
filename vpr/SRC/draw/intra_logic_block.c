@@ -20,7 +20,7 @@
 
 #include <cstdio>
 #include <algorithm>
-#include <assert.h>
+#include "vtr_assert.h"
 #include <string.h>
 using namespace std;
 

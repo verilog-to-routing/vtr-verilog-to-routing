@@ -1,4 +1,3 @@
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph_util.h"

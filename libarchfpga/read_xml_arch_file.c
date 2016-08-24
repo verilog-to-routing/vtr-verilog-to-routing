@@ -37,7 +37,6 @@
  */
 
 #include <string.h>
-#include <assert.h>
 #include <map>
 #include <string>
 #include <sstream>
@@ -45,12 +44,12 @@
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_matrix.h"
 
 #include "util.h"
 #include "arch_types.h"
-#include "ReadLine.h"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
@@ -449,7 +448,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 				if (Type->pb_type->ports[j].type == IN_PORT) {
 					Type->class_inf[num_class].type = RECEIVER;
 				} else {
-					assert(Type->pb_type->ports[j].type == OUT_PORT);
+					VTR_ASSERT(Type->pb_type->ports[j].type == OUT_PORT);
 					Type->class_inf[num_class].type = DRIVER;
 				}
 				Type->pin_class[pin_count] = num_class;
@@ -466,8 +465,8 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 		}
 	}
-	assert(num_class == Type->num_class);
-	assert(pin_count == Type->num_pins);
+	VTR_ASSERT(num_class == Type->num_class);
+	VTR_ASSERT(pin_count == Type->num_pins);
 }
 
 /* Sets up the grid_loc_def for the type. */
@@ -496,7 +495,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 							"Another loc specified for perimeter.\n");
 				}
 				Type->grid_loc_def[i].grid_loc_type = BOUNDARY;
-				assert(IO_TYPE == Type);
+				VTR_ASSERT(IO_TYPE == Type);
 				/* IO goes to boundary */
 			} else if (strcmp(Prop, "fill") == 0) {
 				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {
@@ -613,7 +612,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		if (0 == strcmp(Prop, "max")) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MAX;
 		} else {
-			assert(0 == strcmp(Prop, "min"));
+			VTR_ASSERT(0 == strcmp(Prop, "min"));
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_MIN;
 		}
 
@@ -637,7 +636,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
 		Prop = get_attribute(Parent, "out_port", loc_data,OPTIONAL).as_string(NULL);
 		annotation->output_pins = vtr::strdup(Prop);
-		assert(
+		VTR_ASSERT(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 
 	} else if (0 == strcmp(Parent.name(), "C_matrix")) {
@@ -652,7 +651,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
 		Prop = get_attribute(Parent, "out_port", loc_data, OPTIONAL).as_string(NULL);
 		annotation->output_pins = vtr::strdup(Prop);
-		assert(
+		VTR_ASSERT(
 				annotation->output_pins != NULL || annotation->input_pins != NULL);
 
 	} else if (0 == strcmp(Parent.name(), "T_setup")) {
@@ -730,7 +729,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 				"Unknown port type %s in %s in %s", Parent.name(),
 				Parent.parent().name(), Parent.parent().parent().name() );
 	} 
-	assert(i == annotation->num_value_prop_pairs);
+	VTR_ASSERT(i == annotation->num_value_prop_pairs);
 }
 
 static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type * pb_type, const pugiloc::loc_data& loc_data) {
@@ -940,7 +939,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 		pb_type->num_pb = get_attribute(Parent, "num_pb", loc_data).as_int(0);
 	}
 
-	assert(pb_type->num_pb > 0);
+	VTR_ASSERT(pb_type->num_pb > 0);
 	num_ports = num_in_ports = num_out_ports = num_clock_ports = 0;
 	num_in_ports = count_children(Parent, "input", loc_data, OPTIONAL);
 	num_out_ports = count_children(Parent, "output", loc_data, OPTIONAL);
@@ -1003,7 +1002,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 		}
 	}
 
-	assert(j == num_ports);
+	VTR_ASSERT(j == num_ports);
 
 	/* Count stats on the number of each type of pin */
 	pb_type->num_clock_pins = pb_type->num_input_pins =
@@ -1015,7 +1014,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 		} else if (pb_type->ports[i].type == OUT_PORT) {
 			pb_type->num_output_pins += pb_type->ports[i].num_pins;
 		} else {
-			assert(
+			VTR_ASSERT(
 					pb_type->ports[i].is_clock
 							&& pb_type->ports[i].type == IN_PORT);
 			pb_type->num_clock_pins += pb_type->ports[i].num_pins;
@@ -1076,7 +1075,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 				Cur = Cur.next_sibling(Cur.name());
 			}
 		}
-		assert(j == num_annotations);
+		VTR_ASSERT(j == num_annotations);
 
 		/* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
 		if (pb_type->class_type == LUT_CLASS) {
@@ -1086,13 +1085,13 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 		} else {
 			/* other leaf pb_type do not have modes */
 			pb_type->num_modes = 0;
-			assert(count_children(Parent, "mode", loc_data, OPTIONAL) == 0);
+			VTR_ASSERT(count_children(Parent, "mode", loc_data, OPTIONAL) == 0);
 		}
 	} else {
 		bool default_leakage_mode = false;
 
 		/* container pb_type, process modes */
-		assert(pb_type->class_type == UNKNOWN_CLASS);
+		VTR_ASSERT(pb_type->class_type == UNKNOWN_CLASS);
 		pb_type->num_modes = count_children(Parent, "mode", loc_data, OPTIONAL);
 		pb_type->pb_type_power->leakage_default_mode = 0;
 
@@ -1133,7 +1132,7 @@ static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
 				}
 			}
 		}
-		assert(i == pb_type->num_modes);
+		VTR_ASSERT(i == pb_type->num_modes);
 	}
 
 	pb_port_names.clear();
@@ -1378,7 +1377,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 			} else if (0 == strcmp(Cur.name(), "direct")) {
 				mode->interconnect[i].type = DIRECT_INTERC;
 			} else {
-				assert(0 == strcmp(Cur.name(), "mux"));
+				VTR_ASSERT(0 == strcmp(Cur.name(), "mux"));
 				mode->interconnect[i].type = MUX_INTERC;
 			}
 
@@ -1442,7 +1441,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 					Cur2 = Cur2.next_sibling(Cur2.name());
 				}
 			}
-			assert(k == num_annotations);
+			VTR_ASSERT(k == num_annotations);
 
 			/* Power */
 			mode->interconnect[i].interconnect_power =
@@ -1458,7 +1457,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 	}
 
 	interc_names.clear();
-	assert(i == num_interconnect);
+	VTR_ASSERT(i == num_interconnect);
 }
 
 static void ProcessMode(INOUTP pugi::xml_node Parent, t_mode * mode,
@@ -2151,8 +2150,8 @@ static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
 
 	/* Process the types */
 	/* TODO: I should make this more flexible but release is soon and I don't have time so assert values for empty and io types*/
-	assert(EMPTY_TYPE_INDEX == 0);
-	assert(IO_TYPE_INDEX == 1);
+	VTR_ASSERT(EMPTY_TYPE_INDEX == 0);
+	VTR_ASSERT(IO_TYPE_INDEX == 1);
 	i = 1; /* Skip over 'empty' type */
 
 	CurType = Node.first_child();
@@ -2331,7 +2330,7 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 		}
 
 		else {
-			assert(BI_DIRECTIONAL == (*Segs)[i].directionality);
+			VTR_ASSERT(BI_DIRECTIONAL == (*Segs)[i].directionality);
 			SubElem = get_single_child(Node, "wire_switch", loc_data);
 			tmp = get_attribute(SubElem, "name", loc_data).value();
 
@@ -2645,7 +2644,7 @@ static void ProcessSwitchTdel(INOUTP pugi::xml_node Node, INP bool timing_enable
 	if (has_Tdel_prop){
 		/* delay specified as a constant */
 		if (Tdel_map->count(UNDEFINED)){
-            assert(false);
+            VTR_ASSERT(false);
 		} else {
 			(*Tdel_map)[UNDEFINED] = Tdel_prop_value;
 		}

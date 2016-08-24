@@ -2,12 +2,11 @@
 #include <cstring>
 #include <cstdlib>
 #include <climits>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "read_sdc.h"
@@ -134,7 +133,7 @@ void read_sdc(t_timing_inf timing_inf) {
 	int source_clock_domain, sink_clock_domain, iinput, ioutput, icc, isource, isink;
 	
 	/* Make sure we haven't called this subroutine before. */
-	assert(!g_sdc);
+	VTR_ASSERT(!g_sdc);
 
 	/* Allocate container structure for SDC constraints. */
 	g_sdc = (t_timing_constraints *) my_calloc(1, sizeof(t_timing_constraints));
@@ -337,7 +336,7 @@ static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
         g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock->name);
         g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = false;
     } else {
-        assert(!sdc_create_clock->is_virtual);
+        VTR_ASSERT(!sdc_create_clock->is_virtual);
 
         for(int itarget = 0; itarget < sdc_create_clock->targets->num_strings; itarget++) {
 
@@ -384,8 +383,8 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
     int num_exclusive_groups = 0;
 	t_sdc_exclusive_group *exclusive_groups = NULL;
 
-    assert(sdc_set_clock_groups->num_clock_groups >= 2); //Should have already been caught by parser
-    assert(sdc_set_clock_groups->type == SDC_CG_EXCLUSIVE); //Currently only form supported
+    VTR_ASSERT(sdc_set_clock_groups->num_clock_groups >= 2); //Should have already been caught by parser
+    VTR_ASSERT(sdc_set_clock_groups->type == SDC_CG_EXCLUSIVE); //Currently only form supported
 
     for(int igroup = 0; igroup < sdc_set_clock_groups->num_clock_groups; igroup++) {
         t_sdc_string_group* clock_group = sdc_set_clock_groups->clock_groups[igroup];
@@ -568,7 +567,7 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
                     g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay->max_delay;
                     g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].file_line_number = sdc_set_io_delay->file_line_number; /* global var */
                 } else {
-                    assert(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
+                    VTR_ASSERT(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
 					/* We've found a new output! */
 					g_sdc->num_constrained_outputs++;
 					found = true;
@@ -587,7 +586,7 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
             if(sdc_set_io_delay->cmd_type == SDC_INPUT_DELAY) {
                 io_type = "Input";
             } else {
-                assert(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
+                VTR_ASSERT(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
                 io_type = "Output";
             }
 
@@ -727,7 +726,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			name = g_atoms_nlist.net[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = false;
@@ -772,7 +771,7 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			name = g_atoms_nlist.net[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = false;
@@ -1009,7 +1008,7 @@ static bool regex_match (char * string, char * regular_expression) {
 
 	const char * error;
 	
-	assert(string && regular_expression);
+	VTR_ASSERT(string && regular_expression);
 
 	/* The regex library reports a match if regular_expression is a substring of string
 	AND not equal to string. This is not appropriate for our purposes. For example, 

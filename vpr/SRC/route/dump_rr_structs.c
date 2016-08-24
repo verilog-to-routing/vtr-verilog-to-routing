@@ -11,7 +11,6 @@ See comment of "dump_rr_structs" function for formate
 #include <string>
 #include "dump_rr_structs.h"
 #include "globals.h"
-#include "util.h"
 
 using namespace std;
 

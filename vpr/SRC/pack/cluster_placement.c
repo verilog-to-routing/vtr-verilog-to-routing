@@ -16,10 +16,9 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
@@ -113,7 +112,7 @@ bool get_next_primitive_list(
 			cur->next_primitive = cluster_placement_stats->tried;
 			cluster_placement_stats->tried = cur;
 			/* should have only one block in flight at any point in time */
-			assert(next == NULL);
+			VTR_ASSERT(next == NULL);
 			cluster_placement_stats->in_flight = NULL;
 		}
 	}
@@ -166,7 +165,7 @@ bool get_next_primitive_list(
 	} else {
 		/* populate primitive list with best */
 		cost = try_place_molecule(molecule, best->pb_graph_node, primitives_list, clb_index);
-		assert(cost == lowest_cost);
+		VTR_ASSERT(cost == lowest_cost);
 
 		/* take out best node and put it in flight */
 		cluster_placement_stats->in_flight = best;
@@ -199,7 +198,7 @@ void reset_cluster_placement_stats(
 	cur = cluster_placement_stats->invalid = NULL;
 	/* reset flags and cost */
 	for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-		assert(
+		VTR_ASSERT(
 				cluster_placement_stats->valid_primitives[i] != NULL && cluster_placement_stats->valid_primitives[i]->next_primitive != NULL);
 		cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
 		while (cur != NULL) {
@@ -280,7 +279,7 @@ static void requeue_primitive(
 		}
 	}
 	if (success == false) {
-		assert(null_index != OPEN);
+		VTR_ASSERT(null_index != OPEN);
 		cluster_placement_primitive->next_primitive =
 				cluster_placement_stats->valid_primitives[null_index]->next_primitive;
 		cluster_placement_stats->valid_primitives[null_index]->next_primitive =
@@ -360,7 +359,7 @@ void commit_primitive(INOUTP t_cluster_placement_stats *cluster_placement_stats,
 
 	/* commit primitive as used, invalidate it */
 	cur = primitive->cluster_placement_primitive;
-	assert(cur->valid == true);
+	VTR_ASSERT(cur->valid == true);
 
 	cur->valid = false;
 	incr_cost = -0.01; /* cost of using a node drops as its neighbours are used, this drop should be small compared to scarcity values */
@@ -479,7 +478,7 @@ static float try_place_molecule(INP t_pack_molecule *molecule,
 					}
 				}
 				for (i = 0; i < list_size; i++) {
-					assert(
+					VTR_ASSERT(
 							(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
 					for (int j = 0; j < list_size; j++) {
 						if(i != j) {
@@ -531,7 +530,7 @@ static bool expand_forced_pack_molecule_placement(
 						pack_pattern_block->pattern_index, cur_pin, true);
 			} else {
 				/* backward expand to find next block */
-				assert(cur->to_block == pack_pattern_block);
+				VTR_ASSERT(cur->to_block == pack_pattern_block);
 				int to_pin, to_port;
 				to_pin = cur->to_pin->pin_number;
 				to_port = cur->to_pin->port->port_index_by_type;
@@ -602,7 +601,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id,
 					}
 				}
 				if (temp_pin != NULL) {
-					assert(dest_pin == NULL || dest_pin == temp_pin);
+					VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
 					dest_pin = temp_pin;
 				}
 			} else {
@@ -626,7 +625,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id,
 							}
 						}
 						if (temp_pin != NULL) {
-							assert(dest_pin == NULL || dest_pin == temp_pin);
+							VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
 							dest_pin = temp_pin;
 						}
 					}
@@ -648,7 +647,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id,
 					}
 				}
 				if (temp_pin != NULL) {
-					assert(dest_pin == NULL || dest_pin == temp_pin);
+					VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
 					dest_pin = temp_pin;
 				}
 			} else {
@@ -670,7 +669,7 @@ static t_pb_graph_pin *expand_pack_molecule_pin_edge(INP int pattern_id,
 							}
 						}
 						if (temp_pin != NULL) {
-							assert(dest_pin == NULL || dest_pin == temp_pin);
+							VTR_ASSERT(dest_pin == NULL || dest_pin == temp_pin);
 							dest_pin = temp_pin;
 						}
 					}
@@ -697,7 +696,7 @@ static void flush_intermediate_queues(
 		next = cur->next_primitive;
 		requeue_primitive(cluster_placement_stats, cur);
 		/* should have at most one block in flight at any point in time */
-		assert(next == NULL);
+		VTR_ASSERT(next == NULL);
 	}
 	cluster_placement_stats->in_flight = NULL;
 }
@@ -796,8 +795,8 @@ static bool root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molec
 							if(logical_block[isink].clb_index == clb_index) {
 								sink_pb_graph_pin = &root->output_pins[i][j];
 								while(sink_pb_graph_pin->num_output_edges != 0) {
-									assert(sink_pb_graph_pin->num_output_edges == 1);
-									assert(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
+									VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
+									VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
 									sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
 								}
 								if(sink_pb_graph_pin->parent_node == logical_block[isink].pb->pb_graph_node) {

@@ -1,6 +1,5 @@
-#include <cassert>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "OptionTokens.h"
@@ -107,8 +106,8 @@ void check_for_stage_options(const t_options& options, e_OptionBaseToken start, 
 
     //The start and end are special markers in e_OptionBaseToken
     //which should never be specified
-    assert(options.Count[start] == 0);
-    assert(options.Count[end] == 0);
+    VTR_ASSERT(options.Count[start] == 0);
+    VTR_ASSERT(options.Count[end] == 0);
 
     //Walk through all possible options and see if any in the exclusive interval (start, end)
     //have been set

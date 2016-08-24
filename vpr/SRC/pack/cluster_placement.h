@@ -6,7 +6,6 @@
 #ifndef CLUSTER_PLACEMENT_H
 #define CLUSTER_PLACEMENT_H
 #include "arch_types.h"
-#include "util.h"
 
 t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void);
 bool get_next_primitive_list(

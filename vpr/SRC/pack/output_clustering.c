@@ -9,9 +9,8 @@
 using namespace std;
 #include <vector>
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "pack_types.h"
@@ -90,7 +89,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 		if (prev_node == OPEN) {
 			/* No previous driver implies that this is either a top-level input pin or a primitive output pin */
 			t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
-			assert(cur_pin->parent_node->pb_type->parent_mode == NULL || 
+			VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == NULL || 
 					(cur_pin->parent_node->pb_type->num_modes == 0 && cur_pin->port->type == OUT_PORT)
 					);
 			print_net_name(pb_route[inode].atom_net_idx, column, num_tabs, fpout);
@@ -99,12 +98,12 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 			t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 			
 			for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-				assert(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
+				VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
 				if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) {
 					break;
 				}
 			}
-			assert(prev_edge < prev_pin->num_output_edges);
+			VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
 
 			name =	prev_pin->output_edges[prev_edge]->interconnect->name;
 			if (prev_pin->port->parent_pb_type->depth
@@ -166,7 +165,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 		port_index = 0;
 		for (i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == OUT_PORT) {
-				assert(!pb_type->ports[i].is_clock);
+				VTR_ASSERT(!pb_type->ports[i].is_clock);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index =
 							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
@@ -175,17 +174,17 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 						prev_node = pb_route[node_index].prev_pb_pin_id;
 						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
-							assert(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
+							VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
 							if(prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == node_index) {
 								break;
 							}
 						}
-						assert(prev_edge < prev_pin->num_output_edges);
+						VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
 						mode_of_edge =
 								prev_pin->output_edges[prev_edge]->interconnect->parent_mode_index;
-						assert(
+						VTR_ASSERT(
 								mode == NULL || &pb_type->modes[mode_of_edge] == mode);
-						assert(mode_of_edge == 0); /* for now, unused blocks must always default to use mode 0 */
+						VTR_ASSERT(mode_of_edge == 0); /* for now, unused blocks must always default to use mode 0 */
 						mode = &pb_type->modes[mode_of_edge];
 					}
 				}
@@ -193,7 +192,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 			}
 		}
 
-		assert(mode != NULL && mode_of_edge != UNDEFINED);
+		VTR_ASSERT(mode != NULL && mode_of_edge != UNDEFINED);
 		fprintf(fpout,
 				"<block name=\"open\" instance=\"%s[%d]\" mode=\"%s\">\n",
 				pb_graph_node->pb_type->name, pb_index, mode->name);
@@ -229,7 +228,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 				print_tabs(fpout, tab_depth);
 				fprintf(fpout, "\t\t<port name=\"%s\">",
 						pb_graph_node->pb_type->ports[i].name);
-				assert(!pb_type->ports[i].is_clock);
+				VTR_ASSERT(!pb_type->ports[i].is_clock);
 				for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 					node_index =
 							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
@@ -357,7 +356,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	port_index = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		if (pb_type->ports[i].type == OUT_PORT) {
-			assert(!pb_type->ports[i].is_clock);
+			VTR_ASSERT(!pb_type->ports[i].is_clock);
 			print_tabs(fpout, tab_depth);
 			fprintf(fpout, "\t\t<port name=\"%s\">",
 					pb_graph_node->pb_type->ports[i].name);
@@ -575,7 +574,7 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 	unsigned netnum;
 
 	if(!intra_lb_routing.empty()) {
-		assert((int)intra_lb_routing.size() == num_clusters);
+		VTR_ASSERT((int)intra_lb_routing.size() == num_clusters);
 		for(int icluster = 0; icluster < num_clusters; icluster++) {
 			clb[icluster].pb_route = alloc_and_load_pb_route(intra_lb_routing[icluster], clb[icluster].pb->pb_graph_node);
 		}
@@ -631,7 +630,7 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 		case VPACK_COMB:
 		case VPACK_LATCH:
 			if (skip_clustering) {
-				assert(0);
+				VTR_ASSERT(0);
 			}
 			break;
 

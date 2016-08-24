@@ -7,9 +7,8 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "arch_types.h"
 #include "vpr_types.h"
 #include "globals.h"
@@ -53,7 +52,7 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 								annotations[i].output_pins,
 								annotations[i].value[j]);
 					} else {
-						assert(
+						VTR_ASSERT(
 								annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
 					}
 				}
@@ -88,13 +87,13 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 										annotations[k].output_pins,
 										annotations[k].value[m]);
 							} else {
-								assert(
+								VTR_ASSERT(
 										annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
 							}
 						}
 					} else if (annotations[k].type
 							== E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
-						assert(annotations[k].num_value_prop_pairs == 1);
+						VTR_ASSERT(annotations[k].num_value_prop_pairs == 1);
 						load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
 								annotations[k].input_pins,
 								annotations[k].output_pins,
@@ -229,17 +228,17 @@ static void load_critical_path_annotations(INP int line_num,
 		children = pb_graph_node->child_pb_graph_nodes[mode];
 	}
 	if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-		assert(pb_graph_node->pb_type->blif_model != NULL);
+		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
 	} else if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
-		assert(pb_graph_node->pb_type->blif_model != NULL);
+		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
 	} else {
-		assert(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX);
+		VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
@@ -275,7 +274,7 @@ static void load_critical_path_annotations(INP int line_num,
 		}
 		my_atof_2D(delay_matrix, num_inputs, num_outputs, value);
 	} else {
-		assert(input_format == E_ANNOT_PIN_TO_PIN_CONSTANT);
+		VTR_ASSERT(input_format == E_ANNOT_PIN_TO_PIN_CONSTANT);
 		for (i = 0; i < num_inputs; i++) {
 			for (j = 0; j < num_outputs; j++) {
 				delay_matrix[i][j] = atof(value);
@@ -306,7 +305,7 @@ static void load_critical_path_annotations(INP int line_num,
 									iedge++) {
 								if (in_port[i][j]->output_edges[iedge]->output_pins[0]
 										== out_port[m][n]) {
-									assert(
+									VTR_ASSERT(
 											in_port[i][j]->output_edges[iedge]->delay_max == 0);
 									break;
 								}
@@ -358,7 +357,7 @@ static void load_critical_path_annotations(INP int line_num,
 							p++;
 						}
 					}
-					assert(in_port[i][j]->num_pin_timing == prior_offset + count);
+					VTR_ASSERT(in_port[i][j]->num_pin_timing == prior_offset + count);
 					k++;
 				}
 			}

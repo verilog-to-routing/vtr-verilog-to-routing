@@ -1,13 +1,12 @@
 #include <cstdio>
 #include <cmath>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_random.h"
 #include "vtr_matrix.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "place.h"
@@ -1422,7 +1421,7 @@ static bool find_to(t_type_ptr type, float rlim,
 	bool is_legal;
 	int itype;
 
-	assert(type == grid[x_from][y_from].type);
+	VTR_ASSERT(type == grid[x_from][y_from].type);
 
 	rlx = (int)min((float)nx + 1, rlim); 
 	rly = (int)min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
@@ -1474,8 +1473,8 @@ static bool find_to(t_type_ptr type, float rlim,
 			}
 		}
 
-		assert(*px_to >= 0 && *px_to <= nx + 1);
-		assert(*py_to >= 0 && *py_to <= ny + 1);
+		VTR_ASSERT(*px_to >= 0 && *px_to <= nx + 1);
+		VTR_ASSERT(*py_to >= 0 && *py_to <= ny + 1);
 	} while (is_legal == false);
 
 #ifdef DEBUG
@@ -1483,7 +1482,7 @@ static bool find_to(t_type_ptr type, float rlim,
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *px_to, *py_to);
 	}
 #endif
-	assert(type == grid[*px_to][*py_to].type);
+	VTR_ASSERT(type == grid[*px_to][*py_to].type);
 	return true;
 }
 
@@ -1588,8 +1587,8 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 	sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
 	sink_type = block[sink_block].type;
 
-	assert(source_type != NULL);
-	assert(sink_type != NULL);
+	VTR_ASSERT(source_type != NULL);
+	VTR_ASSERT(sink_type != NULL);
 
 	delta_x = abs(block[sink_block].x - block[source_block].x);
 	delta_y = abs(block[sink_block].y - block[source_block].y);
@@ -2678,7 +2677,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
 
 			// Make sure that the position is EMPTY before placing the block down
-			assert (grid[x][y].blocks[z] == EMPTY);
+			VTR_ASSERT(grid[x][y].blocks[z] == EMPTY);
 
 			grid[x][y].blocks[z] = iblk;
 			grid[x][y].usage++;
@@ -2761,7 +2760,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 	// All the macros are placed, update the legal_pos[][] array
 	for (itype = 0; itype < num_types; itype++) {
-		assert (free_locations[itype] >= 0);
+		VTR_ASSERT(free_locations[itype] >= 0);
 		for (ipos = 0; ipos < free_locations[itype]; ipos++) {
 			x = legal_pos[itype][ipos].x;
 			y = legal_pos[itype][ipos].y;

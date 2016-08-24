@@ -22,7 +22,7 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_math.h"
@@ -418,11 +418,11 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 	/* Ensure port/pins are structured as expected */
 	switch (interc_pins->interconnect->type) {
 	case DIRECT_INTERC:
-		assert(interc_power->num_input_ports == 1);
-		assert(interc_power->num_output_ports == 1);
+		VTR_ASSERT(interc_power->num_input_ports == 1);
+		VTR_ASSERT(interc_power->num_output_ports == 1);
 		break;
 	case MUX_INTERC:
-		assert(interc_power->num_output_ports == 1);
+		VTR_ASSERT(interc_power->num_output_ports == 1);
 		break;
 	case COMPLETE_INTERC:
 		break;
@@ -489,7 +489,7 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 						}
 
 						/* Check that the input pin was found with a matching net to the output pin */
-						assert(selected_input != OPEN);
+						VTR_ASSERT(selected_input != OPEN);
 					}
 				} else {
 					selected_input = 0;
@@ -510,7 +510,7 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 		free(in_prob);
 		break;
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	power_add_usage(&interc_pins->interconnect->interconnect_power->power_usage,
@@ -537,7 +537,7 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 	float scale_factor;
 	int * selector_values = (int*) my_calloc(mux_arch->levels, sizeof(int));
 
-	assert(selected_input != OPEN);
+	VTR_ASSERT(selected_input != OPEN);
 
 	power_zero_usage(power_usage);
 
@@ -545,7 +545,7 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 	found = mux_find_selector_values(selector_values, mux_arch->mux_graph_head,
 			selected_input);
 
-	assert(found);
+	VTR_ASSERT(found);
 
 	/* Calculate power of the multiplexor stages, from final stage, to first stages */
 	power_usage_mux_rec(power_usage, &output_density, &output_prob, &V_out,
@@ -581,7 +581,7 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 	/* Single input mux is really just a wire, and has no power.
 	 * Ensure that it has no children before returning. */
 	if (mux_node->num_inputs == 1) {
-		assert(mux_node->level == 0);
+		VTR_ASSERT(mux_node->level == 0);
 		return;
 	}
 

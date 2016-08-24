@@ -1,10 +1,9 @@
 #include <cstdio>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph_util.h"
@@ -188,10 +187,10 @@ t_seg_details *alloc_and_load_seg_details(
 	if (directionality == BI_DIRECTIONAL) {
 		fac = 1;
 	} else {
-		assert(directionality == UNI_DIRECTIONAL);
+		VTR_ASSERT(directionality == UNI_DIRECTIONAL);
 		fac = 2;
 	}
-	assert(*max_chan_width % fac == 0);
+	VTR_ASSERT(*max_chan_width % fac == 0);
 
 	/* Map segment type fractions and groupings to counts of tracks */
 	sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
@@ -202,7 +201,7 @@ t_seg_details *alloc_and_load_seg_details(
 	for (i = 0; i < num_seg_types; ++i) {
 		tmp += sets_per_seg_type[i] * fac;
 	}
-	assert(use_full_seg_groups || (tmp == *max_chan_width));
+	VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
 	*max_chan_width = tmp;
 
 	seg_details = (t_seg_details *) my_malloc(
@@ -227,7 +226,7 @@ t_seg_details *alloc_and_load_seg_details(
 
 		arch_wire_switch = segment_inf[i].arch_wire_switch;
 		arch_opin_switch = segment_inf[i].arch_opin_switch;
-		assert((arch_wire_switch == arch_opin_switch) || (directionality != UNI_DIRECTIONAL));
+		VTR_ASSERT((arch_wire_switch == arch_opin_switch) || (directionality != UNI_DIRECTIONAL));
 
 		/* Set up the tracks of same type */
 		group_start = 0;
@@ -257,7 +256,7 @@ t_seg_details *alloc_and_load_seg_details(
 			seg_details[cur_track].group_start = group_start;
 			seg_details[cur_track].group_size = 
 					min(ntracks + first_track - group_start, length * fac);
-			assert(0 == seg_details[cur_track].group_size % fac);
+			VTR_ASSERT(0 == seg_details[cur_track].group_size % fac);
 			if (0 == seg_details[cur_track].group_size) {
 				seg_details[cur_track].group_size = length * fac;
 			}
@@ -322,7 +321,7 @@ t_seg_details *alloc_and_load_seg_details(
 			if (BI_DIRECTIONAL == directionality) {
 				seg_details[cur_track].direction = BI_DIRECTION;
 			} else {
-				assert(UNI_DIRECTIONAL == directionality);
+				VTR_ASSERT(UNI_DIRECTIONAL == directionality);
 				seg_details[cur_track].direction =
 						(itrack % 2) ? DEC_DIRECTION : INC_DIRECTION;
 			}
@@ -668,8 +667,8 @@ int get_seg_start(
 			/* Start is guaranteed to be between 1 and length.  Hence adding length to *
 			 * the quantity in brackets below guarantees it will be nonnegative.       */
 
-			assert(start > 0);
-			assert(start <= length);
+			VTR_ASSERT(start > 0);
+			VTR_ASSERT(start <= length);
 
 			/* NOTE: Start points are staggered between different channels.
 			 * The start point must stagger backwards as chan_num increases.
@@ -776,7 +775,7 @@ int get_bidir_opin_connections(
 			/* Skip unconnected connections */
 			if (OPEN == to_track || is_connected_track) {
 				is_connected_track = true;
-				assert( OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][iside][0]);
+				VTR_ASSERT( OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][iside][0]);
 				continue;
 			}
 
@@ -821,7 +820,7 @@ int get_unidir_opin_connections(
 	*Fc_clipped = false;
 
 	/* Fc is assigned in pairs so check it is even. */
-	assert(Fc % 2 == 0);
+	VTR_ASSERT(Fc % 2 == 0);
 
 	/* get_rr_node_indices needs x and y coords. */
 	x = ((CHANX == chan_type) ? seg : chan);
@@ -897,8 +896,8 @@ bool is_cblock(INP int chan, INP int seg, INP int track,
 
 	ofs = seg - start_seg;
 
-	assert(ofs >= 0);
-	assert(ofs < length);
+	VTR_ASSERT(ofs >= 0);
+	VTR_ASSERT(ofs < length);
 
 	/* If unidir segment that is going backwards, we need to flip the ofs */
 	if (DEC_DIRECTION == seg_details[track].direction) {
@@ -1380,9 +1379,9 @@ int get_rr_node_index(
 	t_type_ptr type;
 	vtr::t_ivec lookup;
 
-	assert(ptc >= 0);
-	assert(x >= 0 && x <= (nx + 1));
-	assert(y >= 0 && y <= (ny + 1));
+	VTR_ASSERT(ptc >= 0);
+	VTR_ASSERT(x >= 0 && x <= (nx + 1));
+	VTR_ASSERT(y >= 0 && y <= (ny + 1));
 
 	type = grid[x][y].type;
 
@@ -1397,30 +1396,30 @@ int get_rr_node_index(
 	lookup = L_rr_node_indices[rr_type][x][y];
 
 	/* Check valid ptc num */
-	assert(ptc >= 0);
+	VTR_ASSERT(ptc >= 0);
 
 #ifdef DEBUG
 	switch (rr_type) {
 	case SOURCE:
-		assert(ptc < type->num_class);
-		assert(type->class_inf[ptc].type == DRIVER);
+		VTR_ASSERT(ptc < type->num_class);
+		VTR_ASSERT(type->class_inf[ptc].type == DRIVER);
 		break;
 
 	case SINK:
-		assert(ptc < type->num_class);
-		assert(type->class_inf[ptc].type == RECEIVER);
+		VTR_ASSERT(ptc < type->num_class);
+		VTR_ASSERT(type->class_inf[ptc].type == RECEIVER);
 		break;
 
 	case OPIN:
-		assert(ptc < type->num_pins);
+		VTR_ASSERT(ptc < type->num_pins);
 		iclass = type->pin_class[ptc];
-		assert(type->class_inf[iclass].type == DRIVER);
+		VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
 		break;
 
 	case IPIN:
-		assert(ptc < type->num_pins);
+		VTR_ASSERT(ptc < type->num_pins);
 		iclass = type->pin_class[ptc];
-		assert(type->class_inf[iclass].type == RECEIVER);
+		VTR_ASSERT(type->class_inf[iclass].type == RECEIVER);
 		break;
 
 	case CHANX:
@@ -1507,7 +1506,7 @@ int get_track_to_pins(
 					y = chan + pass;
 					side = (0 == pass ? TOP : BOTTOM);
 				} else {
-					assert(CHANY == chan_type);
+					VTR_ASSERT(CHANY == chan_type);
 					x = chan + pass;
 					y = j;
 					side = (0 == pass ? RIGHT : LEFT);
@@ -1590,10 +1589,10 @@ int get_track_to_tracks(
 	custom_switch_block = false;
 	if (sb_conn_map){
 		custom_switch_block = true;
-		assert(switch_block_conn == NULL);
+		VTR_ASSERT(switch_block_conn == NULL);
 	}
 
-	assert(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
+	VTR_ASSERT(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
 
 	from_switch = from_seg_details[from_track].arch_wire_switch;
 	end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
@@ -1606,7 +1605,7 @@ int get_track_to_tracks(
 		from_side_a = RIGHT;
 		from_side_b = LEFT;
 	} else {
-		assert(CHANY == from_type);
+		VTR_ASSERT(CHANY == from_type);
 		from_side_a = TOP;
 		from_side_b = BOTTOM;
 	}
@@ -1670,7 +1669,7 @@ int get_track_to_tracks(
 				is_behind = false;
 			}
 		} else {
-			assert((to_seg == from_chan) || (to_seg == (from_chan + 1)));
+			VTR_ASSERT((to_seg == from_chan) || (to_seg == (from_chan + 1)));
 			if (to_seg > from_chan) {
 				is_behind = true;
 			}
@@ -1680,7 +1679,7 @@ int get_track_to_tracks(
 		if (CHANX == to_type) {
 			to_side = (is_behind ? RIGHT : LEFT);
 		} else {
-			assert(CHANY == to_type);
+			VTR_ASSERT(CHANY == to_type);
 			to_side = (is_behind ? TOP : BOTTOM);
 		}
 
@@ -1787,7 +1786,7 @@ static int get_bidir_track_to_chan_seg(
 		to_x = to_seg;
 		to_y = to_chan;
 	} else {
-		assert(CHANY == to_type);
+		VTR_ASSERT(CHANY == to_type);
 		to_x = to_chan;
 		to_y = to_seg;
 	}
@@ -1859,7 +1858,7 @@ static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
 			tile_x--;
 		}
 	} else {
-		assert(CHANY == to_chan_type);
+		VTR_ASSERT(CHANY == to_chan_type);
 		to_x = tile_x = to_chan;
 		to_y = tile_y = to_seg;
 		if (TOP == to_side){
@@ -2000,8 +1999,8 @@ bool is_sblock(INP int chan, INP int wire_seg, INP int sb_seg, INP int track,
 
 	ofs = sb_seg - wire_seg + 1; /* Ofset 0 is behind us, so add 1 */
 
-	assert(ofs >= 0);
-	assert(ofs < (length + 1));
+	VTR_ASSERT(ofs >= 0);
+	VTR_ASSERT(ofs < (length + 1));
 
 	/* If unidir segment that is going backwards, we need to flip the ofs */
 	if ((ofs % fac) > 0) {
@@ -2058,7 +2057,7 @@ static void get_switch_type(
 
 		/* Take the smaller index unless the other 
 		 * pass_trans is bigger (smaller R). */
-		assert(used < 2);
+		VTR_ASSERT(used < 2);
 		switch_types[used] = min_switch;
 		if (g_arch_switch_inf[max_switch].R < g_arch_switch_inf[min_switch].R) {
 			switch_types[used] = max_switch;
@@ -2199,10 +2198,10 @@ void load_sblock_pattern_lookup(
 	}
 
 	/* SB's have coords from (0, 0) to (nx, ny) */
-	assert(i >= 0);
-	assert(i <= nx);
-	assert(j >= 0);
-	assert(j <= ny);
+	VTR_ASSERT(i >= 0);
+	VTR_ASSERT(i <= nx);
+	VTR_ASSERT(j >= 0);
+	VTR_ASSERT(j <= ny);
 
 	/* May 12 - 15, 2007
 	 *
@@ -2321,7 +2320,7 @@ void load_sblock_pattern_lookup(
 			continue;
 
 		/* Figure out side rotations */
-		assert((TOP == 0) && (RIGHT == 1) && (BOTTOM == 2) && (LEFT == 3));
+		VTR_ASSERT((TOP == 0) && (RIGHT == 1) && (BOTTOM == 2) && (LEFT == 3));
 		int side_cw = (to_side + 1) % 4;
 		int side_opp = (to_side + 2) % 4;
 		int side_ccw = (to_side + 3) % 4;

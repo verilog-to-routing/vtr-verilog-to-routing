@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <cassert>
+#include "vtr_assert.h"
 #include <bitset>
 #include <memory>
 #include <unordered_set>
@@ -155,7 +155,7 @@ class LogicVec {
         //e.g. the new value at index i is the value currently
         //     at index permute[i]
         void rotate(std::vector<int> permute) {
-            assert(permute.size() == values_.size());
+            VTR_ASSERT(permute.size() == values_.size());
 
             auto orig_values = values_;
 
@@ -199,7 +199,7 @@ class LogicVec {
                     } else if(logic_vec.values_[i] == LogicVal::FALSE) {
                         //pass
                     } else {
-                        assert(false); //Unsupported values
+                        VTR_ASSERT(false); //Unsupported values
                     }
                 }
                 minterms_vec.push_back(minterm_number);
@@ -320,9 +320,9 @@ class LutInst : public Instance {
 
             os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
 
-            assert(port_conns_.count("in"));
-            assert(port_conns_.count("out"));
-            assert(port_conns_.size() == 2);
+            VTR_ASSERT(port_conns_.count("in"));
+            VTR_ASSERT(port_conns_.count("out"));
+            VTR_ASSERT(port_conns_.size() == 2);
 
             print_verilog_port(os, "in", port_conns_["in"], PortType::IN, depth+1);
             os << "," << "\n";
@@ -345,7 +345,7 @@ class LutInst : public Instance {
                 }
             }
 
-            assert(port_conns_["out"].size() == 1);
+            VTR_ASSERT(port_conns_["out"].size() == 1);
 
             //Output net
             auto out_net = port_conns_["out"][0];
@@ -409,7 +409,7 @@ class LutInst : public Instance {
                     //match multi-bit ports
                     os << escape_sdf_identifier(arc.source_name()) << "[" << arc.source_ipin() << "]" << " ";
 
-                    assert(arc.sink_ipin() == 0); //Should only be one output
+                    VTR_ASSERT(arc.sink_ipin() == 0); //Should only be one output
                     os << escape_sdf_identifier(arc.sink_name()) << " ";
                     os << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 }
@@ -448,7 +448,7 @@ class LatchInst : public Instance {
             else if(type == Type::ACTIVE_HIGH)  os << "ah";
             else if(type == Type::ACTIVE_LOW)   os << "al";
             else if(type == Type::ASYNCHRONOUS) os << "as";
-            else assert(false);
+            else VTR_ASSERT(false);
             return os;
         }
         friend std::istream& operator>>(std::istream& is, Type& type) {
@@ -459,7 +459,7 @@ class LatchInst : public Instance {
             else if(tok == "ah") type = Type::ACTIVE_HIGH;
             else if(tok == "al") type = Type::ACTIVE_LOW;
             else if(tok == "as") type = Type::ASYNCHRONOUS;
-            else assert(false);
+            else VTR_ASSERT(false);
             return is;
         }
     public:
@@ -484,12 +484,12 @@ class LatchInst : public Instance {
 
             //Input D port
             auto d_port_iter = port_connections_.find("D");
-            assert(d_port_iter != port_connections_.end());
+            VTR_ASSERT(d_port_iter != port_connections_.end());
             os << d_port_iter->second << " ";
 
             //Output Q port
             auto q_port_iter = port_connections_.find("Q");
-            assert(q_port_iter != port_connections_.end());
+            VTR_ASSERT(q_port_iter != port_connections_.end());
             os << q_port_iter->second << " ";
 
             //Latch type
@@ -497,7 +497,7 @@ class LatchInst : public Instance {
 
             //Control input
             auto control_port_iter = port_connections_.find("clock");
-            assert(control_port_iter != port_connections_.end());
+            VTR_ASSERT(control_port_iter != port_connections_.end());
             os << control_port_iter->second << " "; //e.g. clock
             os << (int) initial_value_ << " "; //Init value: e.g. 2=don't care
             os << "\n";
@@ -505,7 +505,7 @@ class LatchInst : public Instance {
 
         void print_verilog(std::ostream& os, int depth=0) override {
             //Currently assume a standard DFF
-            assert(type_ == Type::RISING_EDGE);
+            VTR_ASSERT(type_ == Type::RISING_EDGE);
 
             os << indent(depth) << "DFF" << " #(\n";
             os << indent(depth+1) << ".INITIAL_VALUE(";
@@ -513,7 +513,7 @@ class LatchInst : public Instance {
             else if(initial_value_ == LogicVal::FALSE)    os << "1'b0";
             else if(initial_value_ == LogicVal::DONTCARE) os << "1'bx";
             else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
-            else assert(false);
+            else VTR_ASSERT(false);
             os << ")\n";
             os << indent(depth) << ") " << escape_verilog_identifier(instance_name_) << " (\n";
 
@@ -530,7 +530,7 @@ class LatchInst : public Instance {
         }
 
         void print_sdf(std::ostream& os, int depth=0) override {
-            assert(type_ == Type::RISING_EDGE);
+            VTR_ASSERT(type_ == Type::RISING_EDGE);
 
             os << indent(depth) << "(CELL\n";
             os << indent(depth+1) << "(CELLTYPE \"" << "DFF" << "\")\n";
@@ -910,7 +910,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             for(const auto& kv : logical_net_sinks_) {
                 int atom_net_idx = kv.first;
                 auto driver_iter = logical_net_drivers_.find(atom_net_idx);
-                assert(driver_iter != logical_net_drivers_.end());
+                VTR_ASSERT(driver_iter != logical_net_drivers_.end());
                 const auto& driver_wire = driver_iter->second.first;
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
@@ -965,7 +965,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             for(const auto& kv : logical_net_sinks_) {
                 int atom_net_idx = kv.first;
                 auto driver_iter = logical_net_drivers_.find(atom_net_idx);
-                assert(driver_iter != logical_net_drivers_.end());
+                VTR_ASSERT(driver_iter != logical_net_drivers_.end());
                 const auto& driver_wire = driver_iter->second.first;
 
                 for(auto& sink_wire_tnode_pair : kv.second) {
@@ -1002,7 +1002,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             for(const auto& kv : logical_net_sinks_) {
                 int atom_net_idx = kv.first;
                 auto driver_iter = logical_net_drivers_.find(atom_net_idx);
-                assert(driver_iter != logical_net_drivers_.end());
+                VTR_ASSERT(driver_iter != logical_net_drivers_.end());
                 auto driver_wire = driver_iter->second.first;
                 auto driver_tnode = driver_iter->second.second;
 
@@ -1052,7 +1052,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             } else if(port_type == PortType::CLOCK) {
                 wire_name = join_identifier(wire_name, "clock");
             } else {
-                assert(port_type == PortType::OUT);
+                VTR_ASSERT(port_type == PortType::OUT);
                 wire_name = join_identifier(wire_name, "output");
             }
 
@@ -1066,10 +1066,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             } else {
                 //Add the driver
-                assert(port_type == PortType::OUT);
+                VTR_ASSERT(port_type == PortType::OUT);
 
                 auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_idx, value));
-                assert(ret.second); //Was inserted, drivers are unique
+                VTR_ASSERT(ret.second); //Was inserted, drivers are unique
             }
 
             return wire_name;
@@ -1086,15 +1086,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string io_name;
             int cluster_pin_idx = -1;
             if(dir == PortType::IN) {
-                assert(pb_graph_node->num_output_ports == 1); //One output port
-                assert(pb_graph_node->num_output_pins[0] == 1); //One output pin
+                VTR_ASSERT(pb_graph_node->num_output_ports == 1); //One output port
+                VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //One output pin
                 cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
                 
                 io_name = atom->name;  
 
             } else {
-                assert(pb_graph_node->num_input_ports == 1); //One input port
-                assert(pb_graph_node->num_input_pins[0] == 1); //One input pin
+                VTR_ASSERT(pb_graph_node->num_input_ports == 1); //One input port
+                VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1); //One input pin
                 cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
 
                 //Strip off the starting 'out:' that vpr adds to uniqify outputs
@@ -1139,7 +1139,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::map<std::string,std::vector<std::string>> port_conns;
 
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
-            assert(pb_graph_node->num_input_ports == 1); //LUT has one input port
+            VTR_ASSERT(pb_graph_node->num_input_ports == 1); //LUT has one input port
 
             const t_block* top_block = find_top_block(atom);
 
@@ -1162,7 +1162,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::IN, 0, pin_idx);
 
                     //Record the timing arc
-                    assert(tnode[tnode_id].num_edges == 1);
+                    VTR_ASSERT(tnode[tnode_id].num_edges == 1);
                     float delay = tnode[tnode_id].out_edges[0].Tdel;
                     Arc timing_arc("in", pin_idx, "out", 0, delay);
 
@@ -1173,8 +1173,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Add the single output connection
             {
-                assert(pb_graph_node->num_output_ports == 1); //LUT has one output port
-                assert(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
+                VTR_ASSERT(pb_graph_node->num_output_ports == 1); //LUT has one output port
+                VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
                 int cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
                 int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
 
@@ -1206,12 +1206,12 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
              
             //We expect a single input, output and clock ports
-            assert(pb_graph_node->num_input_ports == 1);
-            assert(pb_graph_node->num_output_ports == 1);
-            assert(pb_graph_node->num_clock_ports == 1);
-            assert(pb_graph_node->num_input_pins[0] == 1);
-            assert(pb_graph_node->num_output_pins[0] == 1);
-            assert(pb_graph_node->num_clock_pins[0] == 1);
+            VTR_ASSERT(pb_graph_node->num_input_ports == 1);
+            VTR_ASSERT(pb_graph_node->num_output_ports == 1);
+            VTR_ASSERT(pb_graph_node->num_clock_ports == 1);
+            VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1);
+            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);
+            VTR_ASSERT(pb_graph_node->num_clock_pins[0] == 1);
 
             //The connections
             std::map<std::string,std::string> port_conns;
@@ -1254,7 +1254,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
             const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-            assert(pb_type->class_type == MEMORY_CLASS);
+            VTR_ASSERT(pb_type->class_type == MEMORY_CLASS);
 
             std::string type = pb_type->model->name;
             std::string inst_name = join_identifier(type, atom->name);
@@ -1362,7 +1362,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Process the clock ports
             for(int iport = 0; iport < pb_graph_node->num_clock_ports; ++iport) {
-                assert(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock port
+                VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock port
 
                 for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ++ipin) {
                     const t_pb_graph_pin* pin = &pb_graph_node->clock_pins[iport][ipin];
@@ -1372,12 +1372,12 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     int cluster_pin_idx = pin->pin_count_in_cluster;
                     int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
 
-                    assert(atom_net_idx != OPEN); //Must have a clock
+                    VTR_ASSERT(atom_net_idx != OPEN); //Must have a clock
 
                     std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::CLOCK, iport, ipin);
 
                     if(port_class == "clock") {
-                        assert(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
+                        VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
                         input_port_conns["clock"].push_back(net);
                     } else {
                         vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
@@ -1478,7 +1478,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
             }
 
-            assert(pb_graph_node->num_clock_ports == 0); //No clocks
+            VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
             return std::make_shared<BlackBoxInst>(type_name, inst_name, params, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
         }
@@ -1580,12 +1580,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_block* find_top_block(const t_pb* curr) {
             const t_pb* top_pb = find_top_cb(curr); 
 
+            const t_block* top_block = nullptr;
             for(int i = 0; i < num_blocks; i++) {
                 if(block[i].pb == top_pb) {
-                    return &block[i];
+                    top_block = &block[i];
+                    break;
                 }
             }
-            assert(false);
+            VTR_ASSERT(top_block);
+            return top_block;
         }
 
         //Returns the top complex block which contains the given pb
@@ -1606,7 +1609,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             int clb_index = logical_block[atom->logical_block].clb_index;
             int tnode_id = pin_id_to_tnode_lookup_[clb_index][cluster_pin_idx];
 
-            assert(tnode_id != OPEN);
+            VTR_ASSERT(tnode_id != OPEN);
 
             return tnode_id;
         }
@@ -1615,7 +1618,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         LogicVec load_lut_mask(size_t num_inputs, //LUT size
                               const t_pb* atom) { //LUT primitive
             const t_model* model = logical_block[atom->logical_block].model;
-            assert(model->name == std::string("names"));
+            VTR_ASSERT(model->name == std::string("names"));
 
 #ifdef DEBUG_LUT_MASK
             std::cout << "Loading LUT mask for: " << atom->name << std::endl;
@@ -1723,7 +1726,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                             break;
                         }
                     }
-                    assert(atom_input_net == logical_net);
+                    VTR_ASSERT(atom_input_net == logical_net);
 
                     permute[j] = i;
                 }
@@ -1807,13 +1810,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Sanity-check, the 2nd last character should be a space
             auto space_iter = names_row.end() - 2;
-            assert(*space_iter == ' ');
+            VTR_ASSERT(*space_iter == ' ');
             
             //Extract the truth (output value) for this row
             if(*output_val_iter == '1') {
-                assert(encoding_on_set);
+                VTR_ASSERT(encoding_on_set);
             } else if (*output_val_iter == '0') {
-                assert(!encoding_on_set);
+                VTR_ASSERT(!encoding_on_set);
             } else {
                 vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                             "Invalid .names encoding both ON and OFF set\n");
@@ -1934,7 +1937,7 @@ std::ostream& operator<<(std::ostream& os, LogicVal val) {
     else if (val == LogicVal::DONTCARE) os << "-";
     else if (val == LogicVal::UNKOWN) os << "x";
     else if (val == LogicVal::HIGHZ) os << "z";
-    else assert(false);
+    else VTR_ASSERT(false);
     return os;
 }
 
@@ -2015,7 +2018,7 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
             if(type == PortType::IN || type == PortType::CLOCK) {
                 os << "1'b0";
             } else {
-                assert(type == PortType::OUT);
+                VTR_ASSERT(type == PortType::OUT);
                 os << "";
             }
         } else {
@@ -2033,7 +2036,7 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
                 if(type == PortType::IN || type == PortType::CLOCK) {
                     os << "1'b0";
                 } else {
-                    assert(type == PortType::OUT);
+                    VTR_ASSERT(type == PortType::OUT);
                     os << "";
                 }
             } else {

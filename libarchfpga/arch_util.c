@@ -1,10 +1,11 @@
 #include "arch_util.h"
 
 #include <cstring>
-#include <cassert>
 
+#include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+
 #include "arch_types.h"
 #include "read_xml_arch_file.h"
 
@@ -90,7 +91,7 @@ void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 	int i, j;
 	char *dot;
 
-	assert(pb_type->blif_model != NULL);
+	VTR_ASSERT(pb_type->blif_model != NULL);
 
 	copy->name = vtr::strdup(new_name);
 	copy->blif_model = vtr::strdup(pb_type->blif_model);
@@ -204,14 +205,14 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 
 	/* Process interconnect */
 	/* TODO: add timing annotations to route-through */
-	assert(lut_pb_type->num_ports == 2);
+	VTR_ASSERT(lut_pb_type->num_ports == 2);
 	if (strcmp(lut_pb_type->ports[0].port_class, "lut_in") == 0) {
-		assert(strcmp(lut_pb_type->ports[1].port_class, "lut_out") == 0);
+		VTR_ASSERT(strcmp(lut_pb_type->ports[1].port_class, "lut_out") == 0);
 		in_port = &lut_pb_type->ports[0];
 		out_port = &lut_pb_type->ports[1];
 	} else {
-		assert(strcmp(lut_pb_type->ports[0].port_class, "lut_out") == 0);
-		assert(strcmp(lut_pb_type->ports[1].port_class, "lut_in") == 0);
+		VTR_ASSERT(strcmp(lut_pb_type->ports[0].port_class, "lut_out") == 0);
+		VTR_ASSERT(strcmp(lut_pb_type->ports[1].port_class, "lut_in") == 0);
 		out_port = &lut_pb_type->ports[0];
 		in_port = &lut_pb_type->ports[1];
 	}
@@ -589,7 +590,7 @@ e_power_estimation_method power_method_inherited(
 		/* Just revert to the default */
 		return POWER_METHOD_AUTO_SIZES;
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 		return POWER_METHOD_UNDEFINED; // Should never get here, but avoids a compiler warning.
 	}
 }
@@ -767,8 +768,8 @@ void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 						model_port->min_size = pb_type->ports[p].num_pins;
 					}
 					pb_type->ports[p].model_port = model_port;
-					assert(pb_type->ports[p].type == model_port->dir);
-					assert(pb_type->ports[p].is_clock == model_port->is_clock);
+					VTR_ASSERT(pb_type->ports[p].type == model_port->dir);
+					VTR_ASSERT(pb_type->ports[p].is_clock == model_port->is_clock);
 					found = true;
 				}
 				model_port = model_port->next;
@@ -784,7 +785,7 @@ void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 						model_port->min_size = pb_type->ports[p].num_pins;
 					}
 					pb_type->ports[p].model_port = model_port;
-					assert(pb_type->ports[p].type == model_port->dir);
+					VTR_ASSERT(pb_type->ports[p].type == model_port->dir);
 					found = true;
 				}
 				model_port = model_port->next;

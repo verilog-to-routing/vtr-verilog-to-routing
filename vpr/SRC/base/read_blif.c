@@ -3,9 +3,8 @@
 #include <ctime>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "read_blif.h"
@@ -413,9 +412,9 @@ static bool add_lut(bool doall, t_model *logic_model) {
 				"LUT size of %d in .blif file is too big for FPGA which has a maximum LUT size of %d.\n",
 				output_net_index, logic_model->inputs->size);
 	}
-	assert(logic_model->inputs->next == NULL);
-	assert(logic_model->outputs->next == NULL);
-	assert(logic_model->outputs->size == 1);
+	VTR_ASSERT(logic_model->inputs->next == NULL);
+	VTR_ASSERT(logic_model->outputs->next == NULL);
+	VTR_ASSERT(logic_model->outputs->size == 1);
 
 	logical_block[num_logical_blocks - 1].input_nets = (int **) my_malloc(
 			sizeof(int*));
@@ -578,7 +577,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 			subckt_index_signals++;
 		}
 	}
-	assert(iparse < MAX_ATOM_PARSE);
+	VTR_ASSERT(iparse < MAX_ATOM_PARSE);
 	/* record the position of the parse so far so when we resume we will move to the next item */
 	//if (fgetpos(blif, &current_subckt_pos) != 0) {
 	//	vpr_printf_error(__FILE__, __LINE__, "In file pointer read - read_blif.c\n");
@@ -629,7 +628,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 				port = port->next;
 				continue;
 			}
-			assert(port->size >= 0);
+			VTR_ASSERT(port->size >= 0);
 			logical_block[num_logical_blocks - 1].input_nets[port->index] =
 					(int*) my_malloc(port->size * sizeof(int));
 			logical_block[num_logical_blocks - 1].input_pin_names[port->index] = (char**)my_calloc(port->size, sizeof(char *));
@@ -640,7 +639,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 			}
 			port = port->next;
 		}
-		assert(port == NULL || (port->is_clock && port->next == NULL));
+		VTR_ASSERT(port == NULL || (port->is_clock && port->next == NULL));
 
 		/* allocate space for outputs and initialize all output nets to OPEN */
 		output_port_count = 0;
@@ -656,7 +655,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 
 		port = cur_model->outputs;
 		while (port) {
-			assert(port->size >= 0);
+			VTR_ASSERT(port->size >= 0);
 			logical_block[num_logical_blocks - 1].output_nets[port->index] =
 					(int*) my_malloc(port->size * sizeof(int));
 			logical_block[num_logical_blocks - 1].output_pin_names[port->index] = (char**)my_calloc(port->size, sizeof(char *));
@@ -666,7 +665,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 			}
 			port = port->next;
 		}
-		assert(port == NULL);
+		VTR_ASSERT(port == NULL);
 
 		/* initialize clock data */
 		logical_block[num_logical_blocks - 1].clock_net = OPEN;
@@ -708,15 +707,15 @@ static void add_subckt(bool doall, t_model *user_models) {
 					}
 					found_subckt_signal = true;
 					if (port->is_clock) {
-						assert(
+						VTR_ASSERT(
 								logical_block[num_logical_blocks - 1].clock_net
 										== OPEN);
-						assert(vtr::atoi(pin_number) == 0);
+						VTR_ASSERT(vtr::atoi(pin_number) == 0);
 						logical_block[num_logical_blocks - 1].clock_net =
 								add_vpack_net(circuit_signal_name[i], RECEIVER,
 										num_logical_blocks - 1, port->index,
 										vtr::atoi(pin_number), true, doall);
-						assert(logical_block[num_logical_blocks - 1].clock_pin_name == NULL);
+						VTR_ASSERT(logical_block[num_logical_blocks - 1].clock_pin_name == NULL);
 						logical_block[num_logical_blocks - 1].clock_pin_name = vtr::strdup(circuit_signal_name[i]);
 					} else {
 						logical_block[num_logical_blocks - 1].input_nets[port->index][vtr::atoi(
@@ -832,7 +831,7 @@ static void io_line(int in_or_out, bool doall, t_model *io_model) {
 					(int *) my_malloc(sizeof(int));
 			logical_block[num_logical_blocks - 1].input_nets[0][0] = OPEN;
 		} else {
-			assert(in_or_out == DRIVER);
+			VTR_ASSERT(in_or_out == DRIVER);
 			logical_block[num_logical_blocks - 1].name = (char *) my_malloc(
 					(len + 1) * sizeof(char));
 			strcpy(logical_block[num_logical_blocks - 1].name, ptr);
@@ -854,7 +853,7 @@ static void io_line(int in_or_out, bool doall, t_model *io_model) {
 		}
 		logical_block[num_logical_blocks - 1].truth_table = NULL;
 	}
-	assert(iparse < MAX_ATOM_PARSE);
+	VTR_ASSERT(iparse < MAX_ATOM_PARSE);
 }
 
 static void check_and_count_models(bool doall, const char* model_name,
@@ -1007,15 +1006,15 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	while (cur) {
 		if (strcmp(cur->name, MODEL_LOGIC) == 0) {
 			logic_model = cur;
-			assert(logic_model->inputs->next == NULL);
+			VTR_ASSERT(logic_model->inputs->next == NULL);
 		} else if (strcmp(cur->name, MODEL_LATCH) == 0) {
 			latch_model = cur;
-			assert(latch_model->inputs->size == 1);
+			VTR_ASSERT(latch_model->inputs->size == 1);
 		}
 		cur = cur->next;
 	}
 	
-	assert(logic_model != NULL);
+	VTR_ASSERT(logic_model != NULL);
 	lut_distribution = (int*) my_calloc(logic_model->inputs[0].size + 1,
 			sizeof(int));
 	num_absorbable_latch = 0;
@@ -1144,26 +1143,26 @@ static void load_default_models(INP t_model *library_models,
 	*inpad_model = *outpad_model = *logic_model = *latch_model = NULL;
 	while (cur_model) {
 		if (strcmp(MODEL_INPUT, cur_model->name) == 0) {
-			assert(cur_model->inputs == NULL);
-			assert(cur_model->outputs->next == NULL);
-			assert(cur_model->outputs->size == 1);
+			VTR_ASSERT(cur_model->inputs == NULL);
+			VTR_ASSERT(cur_model->outputs->next == NULL);
+			VTR_ASSERT(cur_model->outputs->size == 1);
 			*inpad_model = cur_model;
 		} else if (strcmp(MODEL_OUTPUT, cur_model->name) == 0) {
-			assert(cur_model->outputs == NULL);
-			assert(cur_model->inputs->next == NULL);
-			assert(cur_model->inputs->size == 1);
+			VTR_ASSERT(cur_model->outputs == NULL);
+			VTR_ASSERT(cur_model->inputs->next == NULL);
+			VTR_ASSERT(cur_model->inputs->size == 1);
 			*outpad_model = cur_model;
 		} else if (strcmp(MODEL_LOGIC, cur_model->name) == 0) {
-			assert(cur_model->inputs->next == NULL);
-			assert(cur_model->outputs->next == NULL);
-			assert(cur_model->outputs->size == 1);
+			VTR_ASSERT(cur_model->inputs->next == NULL);
+			VTR_ASSERT(cur_model->outputs->next == NULL);
+			VTR_ASSERT(cur_model->outputs->size == 1);
 			*logic_model = cur_model;
 		} else if (strcmp(MODEL_LATCH, cur_model->name) == 0) {
-			assert(cur_model->outputs->next == NULL);
-			assert(cur_model->outputs->size == 1);
+			VTR_ASSERT(cur_model->outputs->next == NULL);
+			VTR_ASSERT(cur_model->outputs->size == 1);
 			*latch_model = cur_model;
 		} else {
-			assert(0);
+			VTR_ASSERT(0);
 		}
 		cur_model = cur_model->next;
 	}
@@ -1269,7 +1268,7 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 			iport = vpack_net[i].node_block_port[0];
 			ipin = vpack_net[i].node_block_pin[0];
 
-			assert((vpack_net[i].num_sinks - num_driver[i]) == -1);
+			VTR_ASSERT((vpack_net[i].num_sinks - num_driver[i]) == -1);
 
 			/* All nets should connect to inputs of block except output pads */
 			if (logical_block[iblk].type != VPACK_OUTPAD) {
@@ -1392,11 +1391,11 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 						}
 					}
 				}
-				assert(found == true);
+				VTR_ASSERT(found == true);
 			}
 			port = port->next;
 		}
-		assert(count_inputs == logical_block_input_count[i]);
+		VTR_ASSERT(count_inputs == logical_block_input_count[i]);
 		logical_block[i].used_input_pins = count_inputs;
 
 		port = logical_block[i].model->outputs;
@@ -1422,11 +1421,11 @@ static int check_net(bool sweep_hanging_nets_and_inputs) {
 						}
 					}
 				}
-				assert(found == true);
+				VTR_ASSERT(found == true);
 			}
 			port = port->next;
 		}
-		assert(count_outputs == logical_block_output_count[i]);
+		VTR_ASSERT(count_outputs == logical_block_output_count[i]);
 
 		if (logical_block[i].type == VPACK_LATCH) {
 			if (logical_block_input_count[i] != 1) {
@@ -1580,22 +1579,22 @@ static void do_absorb_buffer_luts(void) {
 						if (logical_block[bnum].input_nets[0][ipin] == OPEN)
 							break;
 					}
-					assert(ipin == 1);
+					VTR_ASSERT(ipin == 1);
 
-					assert(logical_block[bnum].clock_net == OPEN);
-					assert(logical_block[bnum].model->inputs->next == NULL);
-					assert(logical_block[bnum].model->outputs->size == 1);
-					assert(logical_block[bnum].model->outputs->next == NULL);
+					VTR_ASSERT(logical_block[bnum].clock_net == OPEN);
+					VTR_ASSERT(logical_block[bnum].model->inputs->next == NULL);
+					VTR_ASSERT(logical_block[bnum].model->outputs->size == 1);
+					VTR_ASSERT(logical_block[bnum].model->outputs->next == NULL);
 
 					in_net = logical_block[bnum].input_nets[0][0]; /* Net driving the buffer */
 					out_net = logical_block[bnum].output_nets[0][0]; /* Net the buffer us driving */
 					out_blk = vpack_net[out_net].node_block[1];
 					in_blk = vpack_net[in_net].node_block[0];
 
-					assert(in_net != OPEN);
-					assert(out_net != OPEN);
-					assert(out_blk != OPEN);
-					assert(in_blk != OPEN);
+					VTR_ASSERT(in_net != OPEN);
+					VTR_ASSERT(out_net != OPEN);
+					VTR_ASSERT(out_blk != OPEN);
+					VTR_ASSERT(in_blk != OPEN);
 
 					/* TODO: Make this handle general cases, due to time reasons I can only handle buffers with single outputs */
 					if (vpack_net[out_net].num_sinks == 1) {
@@ -1605,7 +1604,7 @@ static void do_absorb_buffer_luts(void) {
 								break;
 							}
 						}
-						assert(ipin <= vpack_net[in_net].num_sinks);
+						VTR_ASSERT(ipin <= vpack_net[in_net].num_sinks);
 
 						vpack_net[in_net].node_block[ipin] =
 								vpack_net[out_net].node_block[1]; /* New output */
@@ -1614,7 +1613,7 @@ static void do_absorb_buffer_luts(void) {
 						vpack_net[in_net].node_block_pin[ipin] =
 								vpack_net[out_net].node_block_pin[1];
 
-						assert(
+						VTR_ASSERT(
 								logical_block[out_blk].input_nets[vpack_net[out_net].node_block_port[1]][vpack_net[out_net].node_block_pin[1]]
 										== out_net);
 						logical_block[out_blk].input_nets[vpack_net[out_net].node_block_port[1]][vpack_net[out_net].node_block_pin[1]] =
@@ -1630,7 +1629,7 @@ static void do_absorb_buffer_luts(void) {
 						/* error checking */
 						for (ipin = 0; ipin <= vpack_net[out_net].num_sinks;
 								ipin++) {
-							assert(vpack_net[out_net].node_block[ipin] != bnum);
+							VTR_ASSERT(vpack_net[out_net].node_block[ipin] != bnum);
 						}
 						removed++;
 					}
@@ -1720,7 +1719,7 @@ static void compress_netlist(void) {
 				while (port) {
 					for (ipin = 0; ipin < port->size; ipin++) {
 						if (port->is_clock) {
-							assert(
+							VTR_ASSERT(
 									port->size == 1 && port->index == 0
 											&& ipin == 0);
 							if (logical_block[index].clock_net == OPEN)
@@ -1942,7 +1941,7 @@ static void show_blif_stats(t_model *user_models, t_model *library_models) {
 				break;
 			}
 		}
-		assert(j < num_model_stats);
+		VTR_ASSERT(j < num_model_stats);
 		model_stats[j].count++;
 		if (&model_stats[j] == lut_model) {
 			num_pins = 0;

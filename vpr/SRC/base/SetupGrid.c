@@ -10,9 +10,8 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "SetupGrid.h"
@@ -41,7 +40,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 			"nx: %d, ny: %d\n", nx, ny);
 	}
 
-	assert(nx >= 1 && ny >= 1);
+	VTR_ASSERT(nx >= 1 && ny >= 1);
 
 	grid = vtr::alloc_matrix<struct s_grid_tile>(0, (nx + 1), 0, (ny + 1));
 

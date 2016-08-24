@@ -3,11 +3,10 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "vtr_matrix.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph_area.h"
@@ -433,7 +432,7 @@ void print_lambda(void) {
 
 	for (bnum = 0; bnum < num_blocks; bnum++) {
 		type = block[bnum].type;
-		assert(type != NULL);
+		VTR_ASSERT(type != NULL);
 		if (type != IO_TYPE) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
@@ -464,7 +463,7 @@ int count_netlist_clocks(void) {
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			name = logical_block[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = false;

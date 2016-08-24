@@ -22,11 +22,10 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 #include <vector>
 #include <cmath>
 
-#include "util.h"
 #include "vtr_util.h"
 #include "physical_types.h"
 #include "vpr_types.h"
@@ -172,7 +171,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	int ext_source_index, ext_sink_index, ext_rr_index;
 	int ioutedges;
 	
-	assert(lb_type_rr_node_graph.empty());
+	VTR_ASSERT(lb_type_rr_node_graph.empty());
 
 	pb_type = lb_type->pb_type;
 	pb_graph_head = lb_type->pb_graph_head;
@@ -190,7 +189,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	ext_sink_index = pb_graph_head->total_pb_pins + 1;
 	ext_rr_index = pb_graph_head->total_pb_pins + 2;
 
-	assert(	lb_type_rr_node_graph[ext_source_index].type == NUM_LB_RR_TYPES && 
+	VTR_ASSERT(	lb_type_rr_node_graph[ext_source_index].type == NUM_LB_RR_TYPES && 
 			lb_type_rr_node_graph[ext_sink_index].type == NUM_LB_RR_TYPES);
 
 	/*******************************************************************************
@@ -227,7 +226,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
 	}
 	
 	/* Check that the fanout indices are correct */
-	assert(ioutedges == pb_type->num_input_pins + pb_type->num_clock_pins);
+	VTR_ASSERT(ioutedges == pb_type->num_input_pins + pb_type->num_clock_pins);
 
 	/*******************************************************************************
 	* Build logic block sink node 
@@ -354,7 +353,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				
 				/* Count number of mode-dependant fanout */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-					assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+					VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 					int pmode;
 					pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;
@@ -369,7 +368,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 				/* Load edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-					assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+					VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 					int pmode;
 					int ioutedges;
 					pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
@@ -451,7 +450,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				
 				/* Count number of mode-dependant out-going edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-					assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+					VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 					int pmode;
 					pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;
@@ -466,7 +465,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 				/* Load edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-					assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+					VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 					int pmode;
 					int ioutedges;
 					pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
@@ -528,7 +527,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				
 					/* Count number of mode-dependant out-going edges */
 					for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-						assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+						VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 						int pmode;
 						pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
 						lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;
@@ -543,7 +542,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 					/* Load edges */
 					for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-						assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+						VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 						int pmode;
 						int ioutedges;
 						pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
@@ -576,7 +575,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 				
 				/* Count number of mode-dependant out-going edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-					assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+					VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 					int pmode;
 					pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;
 					lb_type_rr_node_graph[pin_index].num_fanout[pmode]++;
@@ -591,7 +590,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_gra
 
 				/* Load edges */
 				for(int iedge = 0; iedge < pb_pin->num_output_edges; iedge++) {
-					assert(pb_pin->output_edges[iedge]->num_output_pins == 1);
+					VTR_ASSERT(pb_pin->output_edges[iedge]->num_output_pins == 1);
 					int pmode;
 					int ioutedges;
 					pmode = pb_pin->output_edges[iedge]->interconnect->parent_mode->index;

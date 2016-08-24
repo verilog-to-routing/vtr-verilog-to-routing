@@ -31,7 +31,6 @@
 #include "ReadOptions.h"
 #include "OptionTokens.h"
 #include "globals.h"
-#include "util.h"
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
 #include "place_macro.h"

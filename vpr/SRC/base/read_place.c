@@ -2,9 +2,8 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "hash.h"
@@ -128,7 +127,7 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 		cur_blk->z = vtr::atoi(tokens[3]);
 
 		/* Get next line */
-		assert(*tokens);
+		VTR_ASSERT(*tokens);
 		free(*tokens);
 		free(tokens);
 		tokens = ReadLineTokens(infile, &line);

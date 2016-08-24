@@ -1,9 +1,8 @@
 #include <cstdio>
-#include <cassert>
+#include "vtr_assert.h"
 #include <vector>
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -153,7 +152,7 @@ alloc_linked_rt_edge(void) {
 				sizeof(t_linked_rt_edge));
 	}
 
-	assert(linked_rt_edge != nullptr);
+	VTR_ASSERT(linked_rt_edge != nullptr);
 	return (linked_rt_edge);
 }
 
@@ -477,7 +476,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
 	/* Traverses down a route tree and updates rr_node_inf for all nodes
 	 * to reflect that these nodes have already been routed to 			 */
 
-	assert(root != nullptr);
+	VTR_ASSERT(root != nullptr);
 
 	t_linked_rt_edge* edge {root->u.child_list};
 	
@@ -486,7 +485,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		// path cost should be HUGE_POSITIVE_FLOAT to indicate it's unset
-		EXPENSIVE_ASSERT(equal_approx(rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
+		VTR_ASSERT_SAFE(equal_approx(rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
 
 		// reached a sink
 		if (!edge) {return;}
@@ -588,7 +587,7 @@ t_rt_node* traceback_to_route_tree(int inet) {
 
 	t_trace* head {trace_head[inet]};
 	// always called after the 1st iteration, so should exist
-	assert(head != nullptr);
+	VTR_ASSERT(head != nullptr);
 
 	t_rt_node* rt_root {init_route_tree_to_source(inet)};
 
@@ -621,8 +620,8 @@ t_rt_node* traceback_to_route_tree(int inet) {
 			// add to dangling edge (switch determined when edge was created)
 			prev_edge->child = rt_node;
 			// at this point parent and child should be set and mutual
-			assert(parent_node->u.child_list->child == rt_node);
-			assert(rt_node->parent_node == parent_node);
+			VTR_ASSERT(parent_node->u.child_list->child == rt_node);
+			VTR_ASSERT(rt_node->parent_node == parent_node);
 			// create new dangling edge belonging to the current node for its child (there exists one since new_node isn't tail (sink))
 			prev_edge = alloc_linked_rt_edge();
 			prev_edge->iswitch = new_node->iswitch;
@@ -642,8 +641,8 @@ t_rt_node* traceback_to_route_tree(int inet) {
 		prev_edge->child = rt_node;
 
 		// at this point parent and child should be set and mutual
-		assert(parent_node->u.child_list->child == rt_node);
-		assert(rt_node->parent_node == parent_node);
+		VTR_ASSERT(parent_node->u.child_list->child == rt_node);
+		VTR_ASSERT(rt_node->parent_node == parent_node);
 
 		rr_node_to_rt_node[tail->index] = rt_node;
 		// terminates this series of edges/branch
@@ -735,7 +734,7 @@ t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_rout
 	// the very last sink
 	auto tail = traceback_branch_from_route_tree(head, root, num_routed_sinks);
 	// should've reached all existing sinks
-	assert(num_routed_sinks == 0);
+	VTR_ASSERT(num_routed_sinks == 0);
 
 	// tag end of traceback
 	tail->next = nullptr;
@@ -798,7 +797,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	 *	Tdel for the entire tree after this function is still unset,
 	 *	call load_route_tree_Tdel(rt_root, 0) at SOURCE 					*/
 
-	assert(rt_root != nullptr);
+	VTR_ASSERT(rt_root != nullptr);
 
 	auto inode = rt_root->inode;
 
@@ -856,7 +855,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 		}
 	} while (edge);
 	// tree must never be entirely pruned here due to propagating illegality up to branch point for paths
-	assert(rt_root->u.child_list != nullptr);
+	VTR_ASSERT(rt_root->u.child_list != nullptr);
 
 	// the sum of its children and its own capacitance
 	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
@@ -873,8 +872,8 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, CBRR& connections_inf)
 	 * assumes R_upstream is already preset for SOURCE, and skip checking parent switch (index of -1) */
 
 	// SOURCE node should never be congested
-	assert(rt_root != nullptr);
-	assert(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
+	VTR_ASSERT(rt_root != nullptr);
+	VTR_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
 
 	// prune illegal branches from root
 	auto edge = rt_root->u.child_list;
@@ -910,7 +909,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 
 	/* Update pathfinder cost of all nodes rooted at rt_root, including rt_root itself */
 
-	assert(rt_root != nullptr);
+	VTR_ASSERT(rt_root != nullptr);
 
 	t_linked_rt_edge* edge {rt_root->u.child_list};
 	
@@ -946,7 +945,7 @@ static void traverse_indented_route_tree(const t_rt_node* rt_root, int branch_le
 	/* pretty print the route tree; what's printed depends on the printer Op passed in */
 
 	// rely on preorder depth first traversal
-	assert(rt_root != nullptr);
+	VTR_ASSERT(rt_root != nullptr);
 	t_linked_rt_edge* edges = rt_root->u.child_list;
 	// print branch indent
 	if (new_branch) vpr_printf_info("\n%*s", indent_level*branch_level, " \\ ");

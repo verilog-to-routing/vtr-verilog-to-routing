@@ -1,12 +1,11 @@
 #include <cstdio>
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_math.h"
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "prepack.h"
@@ -149,7 +148,7 @@ bool *alloc_and_load_is_clock(bool global_clocks) {
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
 		if (logical_block[bnum].type == VPACK_LATCH) {
 			clock_net = logical_block[bnum].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			if (is_clock[clock_net] == false) {
 				is_clock[clock_net] = true;
 				num_clocks++;

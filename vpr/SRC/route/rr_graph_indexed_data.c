@@ -1,7 +1,6 @@
 #include <cmath>		/* Needed only for sqrt call (remove if sqrt removed) */
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph_util.h"

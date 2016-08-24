@@ -1,12 +1,11 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 #include <vector>
 
 #include "vtr_util.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
@@ -198,13 +197,13 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		} else {
 			for (j = 0; j < type_descriptors[i].num_grid_loc_def; j++) {
 				if (type_descriptors[i].grid_loc_def[j].grid_loc_type == FILL) {
-					assert(FILL_TYPE == NULL);
+					VTR_ASSERT(FILL_TYPE == NULL);
 					FILL_TYPE = &type_descriptors[i];
 				}
 			}
 		}
 	}
-	assert(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
+	VTR_ASSERT(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
@@ -286,7 +285,7 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 
     if (Options.SlackDefinition != '\0') {
         Timing->slack_definition = Options.SlackDefinition;
-        assert(Timing->slack_definition == 'R' || Timing->slack_definition == 'I' ||
+        VTR_ASSERT(Timing->slack_definition == 'R' || Timing->slack_definition == 'I' ||
                Timing->slack_definition == 'S' || Timing->slack_definition == 'G' ||
                Timing->slack_definition == 'C' || Timing->slack_definition == 'N');
     } else {

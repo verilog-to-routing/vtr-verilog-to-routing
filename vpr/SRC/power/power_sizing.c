@@ -22,7 +22,7 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
@@ -73,7 +73,7 @@ static double power_count_transistors_connectionbox(void) {
 	int CLB_inputs;
 	float buffer_size;
 
-	assert(FILL_TYPE->pb_graph_head->num_input_ports == 1);
+	VTR_ASSERT(FILL_TYPE->pb_graph_head->num_input_ports == 1);
 	CLB_inputs = FILL_TYPE->pb_graph_head->num_input_pins[0];
 
 	/* Buffers from Tracks */
@@ -148,7 +148,7 @@ static double power_count_transistors_mux(t_mux_arch * mux_arch) {
 		 transistor_cnt += max_inputs[lvl_idx]
 		 * power_cnt_transistor_SRAM_bit();
 		 } else {
-		 assert(0);
+		 VTR_ASSERT(0);
 		 }
 		 */
 	}
@@ -228,7 +228,7 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 								g_power_arch->mux_transistor_size));
 		break;
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	interc->interconnect_power->transistor_cnt = transistor_cnt;
@@ -636,7 +636,7 @@ static void power_size_pin_to_interconnect(t_interconnect * interc,
 		//		* pb_interc_sidelength + this_interc_sidelength;
 		break;
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 		break;
 	}
 
@@ -777,7 +777,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 
 		if (top_level_pb) {
 			/* Outputs of top-level pb should not drive interconnect */
-			assert(list_cnt == 0);
+			VTR_ASSERT(list_cnt == 0);
 		}
 
 		/* Loop through all interconnect that this pin drives */
@@ -827,7 +827,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		break;
 	case POWER_WIRE_TYPE_UNDEFINED:
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 		break;
 	}
 
@@ -853,7 +853,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		break;
 	case POWER_BUFFER_TYPE_UNDEFINED:
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	pin->parent_node->pb_node_power->transistor_cnt_buffers +=

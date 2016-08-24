@@ -1,6 +1,5 @@
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "OptionTokens.h"
@@ -74,7 +73,7 @@ void printClusteredNetlistStats() {
 							== DRIVER) {
 						L_num_p_inputs++;
 					} else {
-						assert(
+						VTR_ASSERT(
 								IO_TYPE-> class_inf[IO_TYPE-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}
@@ -232,7 +231,7 @@ static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {
 		else if (RouterOpts.routing_failure_predictor == OFF)
 			vpr_printf_info("RouterOpts.routing_failure_predictor = OFF\n");
 	} else {
-		assert(GLOBAL == RouterOpts.route_type);
+		VTR_ASSERT(GLOBAL == RouterOpts.route_type);
 
 		vpr_printf_info("RouterOpts.router_algorithm: ");
 		switch (RouterOpts.router_algorithm) {

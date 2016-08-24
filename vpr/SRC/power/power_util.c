@@ -21,7 +21,7 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 #include <map>
 using namespace std;
 
@@ -329,7 +329,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	} else if (str_loc[0] == '0') {
 		on_set = false;
 	} else {
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	/* Count truth table terms */
@@ -356,9 +356,9 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 		/* Verify on/off consistency */
 		str_loc = strtok(NULL, " \t");
 		if (on_set) {
-			assert(str_loc[0] == '1');
+			VTR_ASSERT(str_loc[0] == '1');
 		} else {
-			assert(str_loc[0] == '0');
+			VTR_ASSERT(str_loc[0] == '0');
 		}
 	}
 
@@ -597,7 +597,7 @@ bool power_method_is_recursive(e_power_estimation_method method) {
 		return true;
 	case POWER_METHOD_UNDEFINED:
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 // to get rid of warning

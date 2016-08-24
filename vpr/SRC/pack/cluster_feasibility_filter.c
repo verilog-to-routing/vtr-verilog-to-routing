@@ -20,10 +20,9 @@
  Date: May 16, 2012
  */
 
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "hash.h"
@@ -351,7 +350,7 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(
 			&& current_pb_graph_pin->parent_node->pb_type->depth > depth) {
 		current_pb_graph_pin->scratch_pad = 1;
 		for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-			assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
+			VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
 			expand_pb_graph_node_and_load_output_to_input_connections(
 					current_pb_graph_pin->output_edges[i]->output_pins[0],
 					reference_pin, depth);
@@ -379,7 +378,7 @@ static void unmark_fanout_intermediate_nodes(
 	if (current_pb_graph_pin->scratch_pad != OPEN) {
 		current_pb_graph_pin->scratch_pad = OPEN;
 		for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-			assert(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
+			VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
 			unmark_fanout_intermediate_nodes(
 					current_pb_graph_pin->output_edges[i]->output_pins[0]);
 		}
@@ -404,9 +403,9 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 		marker = -10 - *output_count;
 		active_pin_class = *output_count;
 	}
-	assert(reference_pb_graph_pin->parent_node->pb_type->num_modes == 0);
-	assert(current_pb_graph_pin->parent_node->pb_type->depth >= depth);
-	assert(current_pb_graph_pin->port->type != INOUT_PORT);
+	VTR_ASSERT(reference_pb_graph_pin->parent_node->pb_type->num_modes == 0);
+	VTR_ASSERT(current_pb_graph_pin->parent_node->pb_type->depth >= depth);
+	VTR_ASSERT(current_pb_graph_pin->port->type != INOUT_PORT);
 	if (current_pb_graph_pin->scratch_pad != marker) {
 		if (current_pb_graph_pin->parent_node->pb_type->num_modes == 0) {
 			current_pb_graph_pin->scratch_pad = marker;
@@ -420,7 +419,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 						active_pin_class;
 			}
 			for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
-				assert(
+				VTR_ASSERT(
 						current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
 				expand_pb_graph_node_and_load_pin_class_by_depth(
 						current_pb_graph_pin->input_edges[i]->input_pins[0],
@@ -428,7 +427,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 						output_count);
 			}
 			for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-				assert(
+				VTR_ASSERT(
 						current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
 				expand_pb_graph_node_and_load_pin_class_by_depth(
 						current_pb_graph_pin->output_edges[i]->output_pins[0],
@@ -443,7 +442,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 					current_pb_graph_pin->pin_class = active_pin_class;
 				}
 				for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
-					assert(
+					VTR_ASSERT(
 							current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
 					expand_pb_graph_node_and_load_pin_class_by_depth(
 							current_pb_graph_pin->input_edges[i]->input_pins[0],
@@ -457,7 +456,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 					current_pb_graph_pin->pin_class = active_pin_class;
 				}
 				for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-					assert(
+					VTR_ASSERT(
 							current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
 					expand_pb_graph_node_and_load_pin_class_by_depth(
 							current_pb_graph_pin->output_edges[i]->output_pins[0],
@@ -469,7 +468,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 			/* Inside an intermediate cluster, traverse to either a primitive or to the cluster we're interested in populating */
 			current_pb_graph_pin->scratch_pad = marker;
 			for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
-				assert(
+				VTR_ASSERT(
 						current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
 				expand_pb_graph_node_and_load_pin_class_by_depth(
 						current_pb_graph_pin->input_edges[i]->input_pins[0],
@@ -477,7 +476,7 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(
 						output_count);
 			}
 			for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-				assert(
+				VTR_ASSERT(
 						current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
 				expand_pb_graph_node_and_load_pin_class_by_depth(
 						current_pb_graph_pin->output_edges[i]->output_pins[0],
@@ -495,7 +494,7 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 	/* This is a primitive, for each pin in primitive, sum appropriate pin class */
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-			assert(
+			VTR_ASSERT(
 					pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
 			if (pb_graph_node->input_pins[i][j].pin_class == OPEN) {
 				vpr_printf_warning(__FILE__, __LINE__, 
@@ -511,7 +510,7 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 	}
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-			assert(
+			VTR_ASSERT(
 					pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
 			if (pb_graph_node->output_pins[i][j].pin_class == OPEN) {
 				vpr_printf_warning(__FILE__, __LINE__, 
@@ -527,7 +526,7 @@ static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {
 	}
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-			assert(
+			VTR_ASSERT(
 					pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
 			if (pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
 				vpr_printf_warning(__FILE__, __LINE__, 

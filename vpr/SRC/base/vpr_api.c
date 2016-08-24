@@ -11,14 +11,13 @@
 #include <cstring>
 #include <ctime>
 #include <chrono>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 
 #include "vtr_list.h"
 #include "vtr_matrix.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -995,7 +994,7 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 		return;
 	}
 
-	assert(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
+	VTR_ASSERT(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
 
 	pb->pb_graph_node = pb_graph_node;
 	if (pb->child_pbs != NULL) {
@@ -1018,11 +1017,11 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 	/* Ensure we are only using 1 clock */
-	assert(count_netlist_clocks() == 1);
+	VTR_ASSERT(count_netlist_clocks() == 1);
 
 	/* Get the critical path of this clock */
 	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
-	assert(g_solution_inf.T_crit > 0.);
+	VTR_ASSERT(g_solution_inf.T_crit > 0.);
 
 	vpr_printf_info("\n\nPower Estimation:\n");
 	vpr_printf_info("-----------------\n");

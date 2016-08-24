@@ -6,13 +6,12 @@
 #include <cstring>
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "hash.h"
 #include "vpr_utils.h"
 #include "check_netlist.h"
-#include "assert.h"
+#include "vtr_assert.h"
 #include "read_xml_arch_file.h"
 
 #define ERROR_THRESHOLD 100

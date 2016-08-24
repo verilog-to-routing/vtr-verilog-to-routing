@@ -1,7 +1,6 @@
 #include <cstdio>
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "route_export.h"

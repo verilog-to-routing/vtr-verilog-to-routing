@@ -9,7 +9,7 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
@@ -17,11 +17,9 @@ using namespace std;
 
 #include "vtr_util.h"
 
-#include "util.h"
 #include "hash.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
-#include "ReadLine.h"
 #include "globals.h"
 #include "read_xml_util.h"
 #include "read_netlist.h"
@@ -156,7 +154,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 	logical_block_hash = alloc_hash_table();
 	for (i = 0; i < num_logical_nets; i++) {
 		temp_hash = insert_in_hash_table(vpack_net_hash, vpack_net[i].name, i);
-		assert(temp_hash->count == 1);
+		VTR_ASSERT(temp_hash->count == 1);
 	}
 	for (i = 0; i < num_logical_blocks; i++) {
 		temp_hash = insert_in_hash_table(logical_block_hash,
@@ -177,8 +175,8 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
         i++;
     }
-	assert(i == bcount);
-	assert(num_primitives == num_logical_blocks);
+	VTR_ASSERT(i == bcount);
+	VTR_ASSERT(num_primitives == num_logical_blocks);
 
 	/* Error check */
 	for (i = 0; i < num_logical_blocks; i++) {
@@ -209,7 +207,7 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
 
 	for (i = 0; i < ext_ncount; i++) {
 		temp_hash = get_hash_entry(vpack_net_hash, ext_nlist[i].name);
-		assert(temp_hash != NULL);
+		VTR_ASSERT(temp_hash != NULL);
 		clb_to_vpack_net_mapping[i] = temp_hash->index;
 		vpack_to_clb_net_mapping[temp_hash->index] = i;
 	}
@@ -272,7 +270,7 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
 				"Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 				block_inst.value(), clb_block.name());
 	}
-	assert(vtr::atoi(tokens[2].data) == index);
+	VTR_ASSERT(vtr::atoi(tokens[2].data) == index);
 
 	found = false;
 	for (i = 0; i < num_types; i++) {
@@ -358,7 +356,7 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
 					pb->name);
 		}
 		pb->logical_block = temp_hash->index;
-		assert(logical_block[temp_hash->index].pb == NULL);
+		VTR_ASSERT(logical_block[temp_hash->index].pb == NULL);
 		logical_block[temp_hash->index].pb = pb;
 		logical_block[temp_hash->index].clb_index = index;
 		(*num_primitives)++;
@@ -378,7 +376,7 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
 
 		/* Populate info for each physical block  */
         for(auto child = Parent.child("block"); child; child = child.next_sibling("block")) {
-            assert(strcmp(child.name(), "block") == 0);
+            VTR_ASSERT(strcmp(child.name(), "block") == 0);
 
             auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
             tokens = GetTokensFromString(instance_type.value(), &num_tokens);
@@ -503,7 +501,7 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
 	hash_iter = start_hash_table_iterator();
 	curr_net = get_next_hash(nhash, &hash_iter);
 	while (curr_net != NULL) {
-		assert(nlist[curr_net->index].name == NULL);
+		VTR_ASSERT(nlist[curr_net->index].name == NULL);
 		nlist[curr_net->index].name = vtr::strdup(curr_net->name);
 		nlist[curr_net->index].num_sinks = curr_net->count - 1;
 
@@ -537,7 +535,7 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 
 	hash_value = insert_in_hash_table(nhash, net_name, *ncount);
 	if (hash_value->count == 1) {
-		assert(*ncount == hash_value->index);
+		VTR_ASSERT(*ncount == hash_value->index);
 		(*ncount)++;
 	}
 	return hash_value->index;
@@ -578,7 +576,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
                 in_port++;
             } else {
-                assert( pb->pb_graph_node->pb_type->ports[i].type == OUT_PORT);
+                VTR_ASSERT( pb->pb_graph_node->pb_type->ports[i].type == OUT_PORT);
                 out_port++;
             }
         }
@@ -609,7 +607,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                         pb->pb_graph_node->placement_index);
             }
         } else {
-            assert(0 == strcmp(Parent.name(), "clocks"));
+            VTR_ASSERT(0 == strcmp(Parent.name(), "clocks"));
             if (num_tokens != pb->pb_graph_node->num_clock_pins[clock_port]) {
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                         "Incorrect # pins %d found for clock port %s for pb %s[%d].\n",
@@ -653,7 +651,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     //
                     //e.g. 'memory.addr1[0]->address1' becomes 'address1'
                     size_t loc = pins[i].find("->");
-                    assert(loc != std::string::npos);
+                    VTR_ASSERT(loc != std::string::npos);
 
                     std::string pin_name = pins[i].substr(0, loc);
 
@@ -666,7 +664,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                                     pb->pb_graph_node->parent_pb_graph_node->child_pb_graph_nodes[pb->parent_pb->mode],
                                     pin_name.c_str(), &num_ptrs, &num_sets, true,
                                     true);
-                    assert(num_sets == 1 && num_ptrs[0] == 1);
+                    VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
                     if (0 == strcmp(Parent.name(), "inputs"))
                         rr_node_index = pb->pb_graph_node->input_pins[in_port][i].pin_count_in_cluster;
                     else
@@ -717,7 +715,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                     //
                     //e.g. 'memory.addr1[0]->address1' becomes 'address1'
                     size_t loc = pins[i].find("->");
-                    assert(loc != std::string::npos);
+                    VTR_ASSERT(loc != std::string::npos);
 
                     std::string pin_name = pins[i].substr(0, loc);
 
@@ -730,7 +728,7 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
                                     pb->pb_graph_node->child_pb_graph_nodes[pb->mode],
                                     pin_name.c_str(), &num_ptrs, &num_sets, true,
                                     true);
-                    assert(num_sets == 1 && num_ptrs[0] == 1);
+                    VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
                     rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
                     pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     found = false;
@@ -782,10 +780,10 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 				+ block_list[i].type->pb_type->num_clock_pins
 				!= block_list[i].type->num_pins / block_list[i].type->capacity) {
 
-			assert(0);
+			VTR_ASSERT(0);
 		}
 
-		assert( block_list[i].type->pb_type->num_input_pins
+		VTR_ASSERT( block_list[i].type->pb_type->num_input_pins
 						+ block_list[i].type->pb_type->num_output_pins
 						+ block_list[i].type->pb_type->num_clock_pins
 						== block_list[i].type->num_pins / block_list[i].type->capacity);
@@ -794,7 +792,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_input_ports; j++) {
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_input_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->input_pins[j][k];
-				assert(pb_graph_pin->pin_count_in_cluster == ipin);
+				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
@@ -811,7 +809,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_output_ports; j++) {
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_output_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->output_pins[j][k];
-				assert(pb_graph_pin->pin_count_in_cluster == ipin);
+				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
@@ -827,7 +825,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_clock_ports; j++) {
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_clock_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->clock_pins[j][k];
-				assert(pb_graph_pin->pin_count_in_cluster == ipin);
+				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
@@ -872,8 +870,8 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 					(*ext_nets)[netnum].is_global =
 							block_list[i].type->is_global_pin[j]; /* Error check performed later to ensure no mixing of global and non-global signals */
 				} else {
-					assert(DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
-					assert((*ext_nets)[netnum].node_block[0] == OPEN);
+					VTR_ASSERT(DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
+					VTR_ASSERT((*ext_nets)[netnum].node_block[0] == OPEN);
 					(*ext_nets)[netnum].node_block[0] = i;
 					(*ext_nets)[netnum].node_block_pin[0] = j;
 				}
@@ -894,7 +892,7 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 		}
 		for (j = 0; j < num_tokens; j++) {
 			if (strcmp(circuit_clocks[j].c_str(), (*ext_nets)[i].name) == 0) {
-				assert((*ext_nets)[i].is_global == true); /* above code should have caught this case, if not, then bug in code */
+				VTR_ASSERT((*ext_nets)[i].is_global == true); /* above code should have caught this case, if not, then bug in code */
 			}
 		}
 	}
@@ -1067,7 +1065,7 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
 	t_pb_route *pb_route;
 	int num_pins = pb_graph_node->total_pb_pins;
 
-	assert(pb_graph_node->parent_pb_graph_node == NULL); /* This function only operates on top-level pb_graph_node */
+	VTR_ASSERT(pb_graph_node->parent_pb_graph_node == NULL); /* This function only operates on top-level pb_graph_node */
 
 	pb_route = new t_pb_route[num_pins];
 
@@ -1087,8 +1085,8 @@ static void load_interal_to_block_net_nums(INP t_type_ptr type, INOUTP t_pb_rout
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 	int driver = pb_route[ipin].prev_pb_pin_id;
 	
-	assert(driver != OPEN);
-	assert(pb_route[ipin].atom_net_idx == OPEN);
+	VTR_ASSERT(driver != OPEN);
+	VTR_ASSERT(pb_route[ipin].atom_net_idx == OPEN);
 
 	if (pb_route[driver].atom_net_idx == OPEN) {
 		load_atom_index_for_pb_pin(pb_route, driver);

@@ -26,7 +26,7 @@
 #include <csignal>
 #include <ctime>
 #include <cmath>
-#include <cassert>
+#include "vtr_assert.h"
 #include <ctype.h>
 using namespace std;
 
@@ -136,7 +136,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		int LUT_size;
 		int pin_idx;
 
-		assert(pb_graph_node->num_input_ports == 1);
+		VTR_ASSERT(pb_graph_node->num_input_ports == 1);
 
 		LUT_size = pb_graph_node->num_input_pins[0];
 
@@ -435,7 +435,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		break;
 	case POWER_METHOD_UNDEFINED:
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 		break;
 	}
 
@@ -452,7 +452,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 	if (pb_node->pb_type->num_modes == 0) {
 		/* This is a leaf node, which is a primitive (lut, ff, etc) */
 		if (estimate_primitives) {
-			assert(pb_node->pb_type->blif_model);
+			VTR_ASSERT(pb_node->pb_type->blif_model);
 			power_usage_primitive(&power_usage_sub, pb, pb_node, iblk);
 
 			// Add to power of this PB
@@ -702,7 +702,7 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 	/* Check if this clock is active - this is used for calculating leakage */
 	if (single_clock->dens) {
 	} else {
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	C_segment = g_power_commonly_used->tile_length * single_clock->C_wire;
@@ -828,7 +828,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 							printf("%d %d\n", next_node_power->num_inputs,
 									next_node->get_fan_in());
 							fflush(0);
-							assert(0);
+							VTR_ASSERT(0);
 						}
 						break;
 					default:
@@ -866,8 +866,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 			 *  - Multiplexor */
 
 			if (node->get_fan_in()) {
-				assert(node_power->in_dens);
-				assert(node_power->in_prob);
+				VTR_ASSERT(node_power->in_dens);
+				VTR_ASSERT(node_power->in_prob);
 
 				/* Multiplexor */
 				power_usage_mux_multilevel(&sub_power_usage,
@@ -888,8 +888,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 			 * 	- A buffer, after the mux to drive the wire
 			 * 	- The wire itself
 			 * 	- A buffer at the end of the wire, going to switchbox/connectionbox */
-			assert(node_power->in_dens);
-			assert(node_power->in_prob);
+			VTR_ASSERT(node_power->in_dens);
+			VTR_ASSERT(node_power->in_prob);
 
 			wire_length = 0;
 			if (node->type == CHANX) {
@@ -901,7 +901,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 					wire_length
 							* segment_inf[rr_indexed_data[node->get_cost_index()].seg_index].Cmetal;
 			//(double)g_power_commonly_used->tile_length);
-			assert(node_power->selected_input < node->get_fan_in());
+			VTR_ASSERT(node_power->selected_input < node->get_fan_in());
 
 			/* Multiplexor */
 			power_usage_mux_multilevel(&sub_power_usage,
@@ -937,7 +937,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 				break;
 			default:
 				buffer_size = 0.;
-				assert(0);
+				VTR_ASSERT(0);
 				break;
 			}
 
@@ -1015,7 +1015,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 			}
 			break;
 		case INTRA_CLUSTER_EDGE:
-			assert(0);
+			VTR_ASSERT(0);
 			break;
 		default:
 			power_log_msg(POWER_LOG_WARNING,
@@ -1077,9 +1077,9 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin) {
 				}
 			}
 		}
-		assert(found);
+		VTR_ASSERT(found);
 
-		assert(pin->pin_power->scaled_by_pin);
+		VTR_ASSERT(pin->pin_power->scaled_by_pin);
 	}
 }
 
@@ -1238,7 +1238,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 					rr_node_power[node->edges[edge_idx]].driver_switch_type =
 							node->switches[edge_idx];
 				} else {
-					assert(
+					VTR_ASSERT(
 							rr_node_power[node->edges[edge_idx]].driver_switch_type
 									== node->switches[edge_idx]);
 				}

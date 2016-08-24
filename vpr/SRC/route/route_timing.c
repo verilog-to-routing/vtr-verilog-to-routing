@@ -1,12 +1,11 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-#include <cassert>
+#include "vtr_assert.h"
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
 #include "vpr_utils.h"
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "route_export.h"
@@ -125,7 +124,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
 	CBRR connections_inf {};
-	EXPENSIVE_ASSERT(connections_inf.sanity_check_lookup());
+	VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
 
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
@@ -459,7 +458,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	auto& remaining_targets = connections_inf.get_remaining_targets();
 
 	// should always have targets to route to since some parts of the net are still congested
-	assert(!remaining_targets.empty());
+	VTR_ASSERT(!remaining_targets.empty());
 
 
 	// calculate criticality of remaining target pins
@@ -483,7 +482,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			(<0.01) get criticality 0 and are ignored entirely, and everything
 			else becomes a bit less critical. This effect becomes more pronounced if
 			max_criticality is set lower. */
-			// assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+			// VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
 			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
 			/* Take pin criticality to some power (1 by default). */
@@ -526,13 +525,13 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	if (!g_clbs_nlist.net[inet].is_global) {
 		for (unsigned ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 			if (net_delay[ipin] == 0) {	// should be SOURCE->OPIN->IPIN->SINK
-				assert(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
+				VTR_ASSERT(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
 			}
 		}
 	}
 
 	// SOURCE should never be congested
-	assert(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
+	VTR_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
 
 	// route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
 	free_route_tree(rt_root);
@@ -554,7 +553,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	
 	if (itarget > 0 && itry > 5) {
 		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-		assert(rr_node[rt_root->inode].type == SOURCE);
+		VTR_ASSERT(rr_node[rt_root->inode].type == SOURCE);
 		rt_root->re_expand = false;
 	}
 
@@ -564,7 +563,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
 	heap_::build_heap();	// via sifting down everything
 
-	EXPENSIVE_ASSERT(heap_::is_valid());
+	VTR_ASSERT_SAFE(heap_::is_valid());
 
 	// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
 	struct s_heap* cheapest {get_heap_head()};
@@ -694,9 +693,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		rt_root = traceback_to_route_tree(inet);
 
 		// check for edge correctness
-		EXPENSIVE_ASSERT(is_valid_skeleton_tree(rt_root));
-		EXPENSIVE_ASSERT(should_route_net(inet, connections_inf));
-		EXPENSIVE_ASSERT(!is_uncongested_route_tree(rt_root));
+		VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
+		VTR_ASSERT_SAFE(should_route_net(inet, connections_inf));
+		VTR_ASSERT_SAFE(!is_uncongested_route_tree(rt_root));
 
 		// prune the branches of the tree that don't legally lead to sinks
 		// destroyed represents whether the entire tree is illegal
@@ -726,9 +725,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		profiling::net_rebuild_end(num_sinks, remaining_targets.size());
 
 		// check for R_upstream C_downstream and edge correctness
-		EXPENSIVE_ASSERT(is_valid_route_tree(rt_root));
+		VTR_ASSERT_SAFE(is_valid_route_tree(rt_root));
 		// congestion should've been pruned away
-		EXPENSIVE_ASSERT(is_uncongested_route_tree(rt_root));
+		VTR_ASSERT_SAFE(is_uncongested_route_tree(rt_root));
 
 		// use the nodes to directly mark ends before they get converted to pins
 		mark_remaining_ends(inet, remaining_targets);
@@ -1311,7 +1310,7 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
 	/* Turn a vector of rr_node indices, assumed to be of sinks for a net *
 	 * into the pin indices of the same net. */
 
-	assert(current_inet != (unsigned)NO_PREVIOUS);	// not uninitialized
+	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);	// not uninitialized
 
 	const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
 
@@ -1319,7 +1318,7 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
 
 		auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
 		// should always expect it find a pin mapping for its own net
-		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+		VTR_ASSERT_SAFE(mapping != node_to_pin_mapping.end());
 
 		rr_sink_nodes[s] = mapping->second;
 	}
@@ -1331,7 +1330,7 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 	/* Load rt_node_of_sink (which maps a PIN index to a route tree node)
 	 * with a vector of route tree sink nodes. */
 
-	assert(current_inet != (unsigned)NO_PREVIOUS);
+	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);
 
 	// a net specific mapping from node index to pin index
 	const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
@@ -1339,7 +1338,7 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 	for (t_rt_node* rt_node : sink_rt_nodes) {
 		auto mapping = node_to_pin_mapping.find(rt_node->inode);
 		// element should be able to find itself
-		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+		VTR_ASSERT_SAFE(mapping != node_to_pin_mapping.end());
 
 		rt_node_of_sink[mapping->second] = rt_node;
 	}
@@ -1355,7 +1354,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
 				vpr_printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
 				return false;
 			}
-			assert(net_rr_terminals[inet][mapping.second] == mapping.first);
+			VTR_ASSERT(net_rr_terminals[inet][mapping.second] == mapping.first);
 		}		
 	}	
 	return true;
@@ -1402,7 +1401,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			auto rr_sink_node = net_rr_terminals[inet][ipin];
 
 			// should always be left unset or cleared by rerouting before the end of the iteration
-			assert(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
+			VTR_ASSERT(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
 
 
 			// skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
@@ -1446,7 +1445,7 @@ void Connection_based_routing_resources::clear_force_reroute_for_connection(int 
 
 void Connection_based_routing_resources::clear_force_reroute_for_net() {
 
-	assert(current_inet != (unsigned)NO_PREVIOUS);
+	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);
 
 	auto& net_flags = forcible_reroute_connection_flag[current_inet];
 	for (auto& force_reroute_flag : net_flags) {

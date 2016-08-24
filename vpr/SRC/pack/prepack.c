@@ -12,13 +12,12 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "hash.h"
@@ -137,7 +136,7 @@ static int add_pattern_name_to_hash(INOUTP struct s_hash **nhash,
 
 	hash_value = insert_in_hash_table(nhash, pattern_name, *ncount);
 	if (hash_value->count == 1) {
-		assert(*ncount == hash_value->index);
+		VTR_ASSERT(*ncount == hash_value->index);
 		(*ncount)++;
 	}
 	return hash_value->index;
@@ -310,7 +309,7 @@ static t_pack_patterns *alloc_and_init_pattern_list_from_hash(INP int ncount,
 	hash_iter = start_hash_table_iterator();
 	curr_pattern = get_next_hash(nhash, &hash_iter);
 	while (curr_pattern != NULL) {
-		assert(nlist[curr_pattern->index].name == NULL);
+		VTR_ASSERT(nlist[curr_pattern->index].name == NULL);
 		nlist[curr_pattern->index].name = vtr::strdup(curr_pattern->name);
 		nlist[curr_pattern->index].root_block = NULL;
 		nlist[curr_pattern->index].is_chain = false;
@@ -453,7 +452,7 @@ static void forward_expand_pack_pattern_from_edge(
 				== 0) {
 			destination_pb_graph_node =
 					expansion_edge->output_pins[i]->parent_node;
-			assert(found == false);
+			VTR_ASSERT(found == false);
 			/* Check assumption that each forced net has only one fan-out */
 			/* This is the destination node */
 			found = true;
@@ -609,7 +608,7 @@ static void backward_expand_pack_pattern_from_edge(
 		if (expansion_edge->input_pins[i]->parent_node->pb_type->num_modes
 				== 0) {
 			source_pb_graph_node = expansion_edge->input_pins[i]->parent_node;
-			assert(found == false);
+			VTR_ASSERT(found == false);
 			/* Check assumption that each forced net has only one fan-out */
 			/* This is the source node for destination */
 			found = true;
@@ -688,7 +687,7 @@ static void backward_expand_pack_pattern_from_edge(
 				}
 			}
 			if (destination_pin != NULL) {
-				assert(
+				VTR_ASSERT(
 						((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
 				source_block =
 						(t_pack_pattern_block*) source_pb_graph_node->temp_scratch_pad;
@@ -744,7 +743,7 @@ static void backward_expand_pack_pattern_from_edge(
 								k++) {
 							if (expansion_edge->input_pins[i]->input_edges[j]->pack_pattern_indices[k]
 									== curr_pattern_index) {
-								assert(found == false);
+								VTR_ASSERT(found == false);
 								/* Check assumption that each forced net has only one fan-out */
 								found = true;
 								backward_expand_pack_pattern_from_edge(
@@ -791,7 +790,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 				best_pattern = j;
 			}
 		}
-		assert(is_used[best_pattern] == false);
+		VTR_ASSERT(is_used[best_pattern] == false);
 		is_used[best_pattern] = true;
 		for (j = 0; j < num_logical_blocks; j++) {
 			cur_molecule = try_create_molecule(list_of_pack_patterns, best_pattern, j);
@@ -921,7 +920,7 @@ static t_pack_molecule *try_create_molecule(
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
 			if(molecule->logical_block_ptrs[i] == NULL) {
-				assert(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
+				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
 			molecule_linked_list = (vtr::t_linked_vptr*) my_calloc(1, sizeof(vtr::t_linked_vptr));
@@ -1008,7 +1007,7 @@ static bool try_expand_molecule(INOUTP t_pack_molecule *molecule,
 							cur_pack_pattern_connection->to_block);
 				}
 			} else {
-				assert(
+				VTR_ASSERT(
 						cur_pack_pattern_connection->to_block == current_pattern_block);
 				/* find net corresponding to pattern */
 				iport =
@@ -1083,7 +1082,7 @@ static void print_pack_molecules(INP const char *fname,
 				}
 			}
 		} else {
-			assert(0);
+			VTR_ASSERT(0);
 		}
 		list_of_molecules_current = list_of_molecules_current->next;
 	}
@@ -1191,7 +1190,7 @@ static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns
 	t_model_ports *model_port;
 	int driver_net, driver_block;
 	
-	assert(list_of_pack_pattern->is_chain == true);
+	VTR_ASSERT(list_of_pack_pattern->is_chain == true);
 	root_ipin = list_of_pack_pattern->chain_root_pin;
 	root_pb_graph_node = root_ipin->parent_node;
 

@@ -5,7 +5,6 @@
 #include <vector>
 #include "physical_types.h"
 #include "vpr_types.h"
-#include "util.h"
 
 
 /************ Classes, structs, typedefs ************/

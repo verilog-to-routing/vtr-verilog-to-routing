@@ -1,15 +1,15 @@
-#include <cassert>
 #include <map>
 
 #include "vtr_math.h"
 #include "vtr_error.h"
+#include "vtr_assert.h"
 
 namespace vtr {
 
 int ipow(int base, int exp) {
 	int result = 1;
 
-	assert(exp >= 0);
+	VTR_ASSERT(exp >= 0);
 
 	while (exp) {
 		if (exp & 1)

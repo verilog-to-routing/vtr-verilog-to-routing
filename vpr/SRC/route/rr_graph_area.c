@@ -1,9 +1,8 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph.h"
@@ -67,7 +66,7 @@ void count_routing_transistors(enum e_directionality directionality,
 	if (directionality == BI_DIRECTIONAL) {
 		count_bidir_routing_transistors(num_switch, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	} else {
-		assert(directionality == UNI_DIRECTIONAL);
+		VTR_ASSERT(directionality == UNI_DIRECTIONAL);
 		count_unidir_routing_transistors(segment_inf, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	}
 }

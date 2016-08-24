@@ -3,7 +3,6 @@ using namespace std;
 
 #include "vtr_memory.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "net_delay.h"

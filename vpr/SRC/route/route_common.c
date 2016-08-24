@@ -6,12 +6,11 @@
 #include <iostream>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "vtr_util.h"
 
 #include "stats.h"
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
@@ -452,7 +451,7 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	int occ = rr_node[inode].get_occ() + add_or_sub;
 	rr_node[inode].set_occ(occ);
 	// can't have negative occupancy
-	assert(occ >= 0);
+	VTR_ASSERT(occ >= 0);
 
 	int	capacity = rr_node[inode].get_capacity();
 	if (occ < capacity) {
@@ -817,7 +816,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 				iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
-					assert(iclass >= class_low && iclass <= class_high);
+					VTR_ASSERT(iclass >= class_low && iclass <= class_high);
 					clb_opins_used_locally[iblk][iclass].nelem++;
 				}
 			}
@@ -920,7 +919,7 @@ void reset_rr_node_route_structs(void) {
 
 	int inode;
 
-	assert(rr_node_route_inf != NULL);
+	VTR_ASSERT(rr_node_route_inf != NULL);
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
@@ -1124,7 +1123,7 @@ namespace heap_ {
 		std::cout << "copying heap\n";
 		std::vector<s_heap*> heap_copy {heap + 1, heap + heap_tail};
 		// sort based on cost with cheapest first
-		assert(heap_copy.size() == size());
+		VTR_ASSERT(heap_copy.size() == size());
 		std::sort(begin(heap_copy), end(heap_copy), 
 			[](const s_heap* a, const s_heap* b){
 			return a->cost < b->cost;
@@ -1367,7 +1366,7 @@ void print_route(char *route_file) {
 						int pin_num = rr_node[inode].get_ptc_num();
 						int offset = grid[ilow][jlow].height_offset;
 						int iblock = grid[ilow][jlow - offset].blocks[0];
-						assert(iblock != OPEN);
+						VTR_ASSERT(iblock != OPEN);
 						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
 						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);

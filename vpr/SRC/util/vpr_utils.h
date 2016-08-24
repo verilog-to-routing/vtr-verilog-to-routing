@@ -1,7 +1,6 @@
 #ifndef VPR_UTILS_H
 #define VPR_UTILS_H
 
-#include "util.h"
 #include "netlist.h"
 
 void print_tabs(FILE * fpout, int num_tab);
@@ -60,17 +59,7 @@ void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
 
 void print_switch_usage();
-//void print_usage_by_wire_length();
-
-
-// additional debugging tools
-#ifdef EXPENSIVE_ASSERTS
-#define EXPENSIVE_ASSERT(expr) assert(expr);
-#else
-#define EXPENSIVE_ASSERT(expr) 
-#endif
-
-
+void print_usage_by_wire_length();
 
 #endif
 

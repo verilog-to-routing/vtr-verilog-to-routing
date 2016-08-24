@@ -1,11 +1,10 @@
 #include <cstdio>
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "print_netlist.h"
@@ -48,7 +47,7 @@ void print_netlist(char *foutput, char *net_file) {
 							== DRIVER) {
 						L_num_p_inputs++;
 					} else {
-						assert(
+						VTR_ASSERT(
 								IO_TYPE-> class_inf[IO_TYPE-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}

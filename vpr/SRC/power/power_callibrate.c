@@ -20,7 +20,7 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <assert.h>
+#include "vtr_assert.h"
 #include <iostream>
 
 #include "power_callibrate.h"
@@ -302,7 +302,7 @@ static char binary_not(char c) {
 float power_usage_buf_for_callibration(int num_inputs, float transistor_size) {
 	t_power_usage power_usage;
 
-	assert(num_inputs == 1);
+	VTR_ASSERT(num_inputs == 1);
 
 	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, false,
 			power_callib_period);
@@ -314,7 +314,7 @@ float power_usage_buf_levr_for_callibration(int num_inputs,
 		float transistor_size) {
 	t_power_usage power_usage;
 
-	assert(num_inputs == 1);
+	VTR_ASSERT(num_inputs == 1);
 
 	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, true,
 			power_callib_period);
@@ -387,7 +387,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
 float power_usage_ff_for_callibration(int num_inputs, float transistor_size) {
 	t_power_usage power_usage;
 
-	assert(num_inputs == 1);
+	VTR_ASSERT(num_inputs == 1);
 
 	power_usage_ff(&power_usage, transistor_size, 0.5, 3, 0.5, 1, 0.5, 2,
 			power_callib_period);

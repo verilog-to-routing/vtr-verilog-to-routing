@@ -1,13 +1,12 @@
 #include <sys/types.h>
 
-#include <cassert>
+#include "vtr_assert.h"
 #include <cstdio>
 #include <ctime>
 #include <climits>
 #include <cstdlib>
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -84,7 +83,7 @@ bool place_and_route(enum e_operation operation,
 		read_place(place_file, net_file, arch_file, nx, ny, num_blocks, block);
 		sync_grid_to_blocks(num_blocks, block, nx, ny, grid);
 	} else {
-		assert((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
+		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
 		try_place(placer_opts, annealing_sched, chan_width_dist, router_opts,
 				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
@@ -181,7 +180,7 @@ bool place_and_route(enum e_operation operation,
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 		
 		if (timing_inf.timing_analysis_enabled) {
-			assert(slacks->slack);
+			VTR_ASSERT(slacks->slack);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
 				/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
@@ -194,7 +193,7 @@ bool place_and_route(enum e_operation operation,
 
 			free_timing_graph(slacks);
 
-			assert(net_delay);
+			VTR_ASSERT(net_delay);
 			free_net_delay(net_delay, &net_delay_ch);
 		}
 
@@ -720,14 +719,14 @@ void post_place_sync(INP int L_num_blocks,
 	/* Go through each block */
 	for (iblk = 0; iblk < L_num_blocks; ++iblk) {
 		type = block[iblk].type;
-		assert(type->num_pins % type->capacity == 0);
+		VTR_ASSERT(type->num_pins % type->capacity == 0);
 		max_num_block_pins = type->num_pins / type->capacity;
 		/* Logical location and physical location is offset by z * max_num_block_pins */
 		/* Sync blocks and nets */
 		for (j = 0; j < max_num_block_pins; j++) {
 			inet = block[iblk].nets[j];
 			if (inet != OPEN && block[iblk].z > 0) {
-				assert(
+				VTR_ASSERT(
 						block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
 				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
 						block[iblk].nets[j];
@@ -741,7 +740,7 @@ void post_place_sync(INP int L_num_blocks,
 						break;
 					}
 				}
-				assert(k < g_clbs_nlist.net[inet].pins.size());
+				VTR_ASSERT(k < g_clbs_nlist.net[inet].pins.size());
 			}
 		}
 	}

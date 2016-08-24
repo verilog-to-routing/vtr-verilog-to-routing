@@ -2,7 +2,6 @@
 #include <cstring>
 using namespace std;
 
-#include "util.h"
 #include "hash.h"
 #include "vpr_types.h"
 #include "OptionTokens.h"

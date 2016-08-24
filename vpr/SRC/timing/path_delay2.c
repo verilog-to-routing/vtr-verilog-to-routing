@@ -1,4 +1,4 @@
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include <stack>
 #include <vector>
@@ -7,7 +7,6 @@
 
 #include "vtr_list.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "path_delay2.h"
@@ -260,7 +259,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 		iblk, block[iblk].name);
 
 	if (pb_graph_pin == NULL) {
-		assert(
+		VTR_ASSERT(
 				type == TN_INPAD_SOURCE || type == TN_OUTPAD_SINK || type == TN_FF_SOURCE || type == TN_FF_SINK);
 	}
 
@@ -369,7 +368,7 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
     int i_edge;
     int i_to_tnode;
 
-    assert(loop_tnodes.size() >= 2); //Must have atleast 2 nodes for a valid cycle
+    VTR_ASSERT(loop_tnodes.size() >= 2); //Must have atleast 2 nodes for a valid cycle
 
     //Find an edge between two tnodes in the loop set 
     // arbitrarily decide that it will be the first edge
@@ -473,16 +472,16 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
         if(tnode_indexes[to_node_index] == -1) {
             //Haven't visited successor of inode (to_node) yet, recurse
             strongconnect(index, tnode_indexes, tnode_lowlinks, tnode_instack, tnode_stack, tnode_sccs, min_size, to_node_index);
-            assert(tnode_lowlinks[inode] >= 0);
-            assert(tnode_lowlinks[to_node_index] >= 0);
+            VTR_ASSERT(tnode_lowlinks[inode] >= 0);
+            VTR_ASSERT(tnode_lowlinks[to_node_index] >= 0);
 
             //We are connected to to_node, so our lowest link should be either ourselves, or
             //to_node's lowest link
             tnode_lowlinks[inode] = min(tnode_lowlinks[inode], tnode_lowlinks[to_node_index]);
         } else if (tnode_instack[to_node_index]) {
             //to_node was in the stack, and so is part of the current SCC 
-            assert(tnode_lowlinks[inode] >= 0);
-            assert(tnode_indexes[to_node_index] >= 0);
+            VTR_ASSERT(tnode_lowlinks[inode] >= 0);
+            VTR_ASSERT(tnode_indexes[to_node_index] >= 0);
 
             //to_node was on the stack, since we connect to it our lowest link is either ourselves
             //or the index of to_node (since it may have been traversed earlier)
@@ -490,7 +489,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
         }
     }
 
-    assert(tnode_indexes[inode] >= 0);
+    VTR_ASSERT(tnode_indexes[inode] >= 0);
 
     if(tnode_lowlinks[inode] == tnode_indexes[inode]) {
         //This inode is the root of a new SCC

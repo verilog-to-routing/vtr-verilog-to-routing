@@ -1,9 +1,9 @@
 #include <cstdlib>
-#include <cassert>
 #include <memory>
 
 #include "vtr_memory.h"
 
+#include "vtr_assert.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
 #include "vtr_list.h"
@@ -75,7 +75,7 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 	char *tmp_ptr;
 	int aligned_size;
 
-	assert(chunk_info->mem_avail >= 0);
+	VTR_ASSERT(chunk_info->mem_avail >= 0);
 
 	if ((size_t) (chunk_info->mem_avail) < size) { /* Need to malloc more memory. */
 		if (size > CHUNK_SIZE) { /* Too big, use standard routine. */
@@ -88,7 +88,7 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 			// vpr_printf("You should consider using my_malloc for such big requests.\n");
 			// #endif
 
-			assert(chunk_info != NULL);
+			VTR_ASSERT(chunk_info != NULL);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);
@@ -97,7 +97,7 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 		if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
 			chunk_info->next_mem_loc_ptr = (char *) my_malloc(CHUNK_SIZE);
 			chunk_info->mem_avail = CHUNK_SIZE;
-			assert(chunk_info != NULL);
+			VTR_ASSERT(chunk_info != NULL);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
 		}
@@ -108,7 +108,7 @@ void *chunk_malloc(size_t size, t_chunk *chunk_info) {
 
 		else {
 			tmp_ptr = (char *) my_malloc(size);
-			assert(chunk_info != NULL);
+			VTR_ASSERT(chunk_info != NULL);
 			chunk_info->chunk_ptr_head = insert_in_vptr_list(
 					chunk_info->chunk_ptr_head, tmp_ptr);
 			return (tmp_ptr);

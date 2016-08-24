@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <assert.h>
+#include "vtr_assert.h"
 #include <string.h>
 #include <ctime>
 #include <utility>
@@ -36,7 +36,6 @@
 
 #include "vtr_random.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "cb_metrics.h"

@@ -1,13 +1,12 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
-#include <cassert>
+#include "vtr_assert.h"
 #include <time.h>
 using namespace std;
 
 #include "vtr_matrix.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "place_and_route.h"
@@ -213,7 +212,7 @@ static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
 			currpin += type->class_inf[i].num_pins;
 	}
 
-    assert(best_class >= 0 && best_class < type->num_class);
+    VTR_ASSERT(best_class >= 0 && best_class < type->num_class);
     return (type->class_inf[best_class].pinlist[0]);
 }
 

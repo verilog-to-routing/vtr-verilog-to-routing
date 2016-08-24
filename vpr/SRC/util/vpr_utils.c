@@ -1,9 +1,8 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "physical_types.h"
 #include "globals.h"
@@ -158,8 +157,8 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 			for (int height = 0; height < block[i].type->height; ++height) {
 				L_grid[block[i].x + width][block[i].y + height].blocks[block[i].z] = i;
 				L_grid[block[i].x + width][block[i].y + height].usage++;
-				assert(L_grid[block[i].x + width][block[i].y + height].width_offset == width);
-				assert(L_grid[block[i].x + width][block[i].y + height].height_offset == height);
+				VTR_ASSERT(L_grid[block[i].x + width][block[i].y + height].width_offset == width);
+				VTR_ASSERT(L_grid[block[i].x + width][block[i].y + height].height_offset == height);
 			}
 		}
 	}
@@ -219,7 +218,7 @@ void get_class_range_for_block(INP int iblk,
 	t_type_ptr type;
 
 	type = block[iblk].type;
-	assert(type->num_class % type->capacity == 0);
+	VTR_ASSERT(type->num_class % type->capacity == 0);
 	*class_low = block[iblk].z * (type->num_class / type->capacity);
 	*class_high = (block[iblk].z + 1) * (type->num_class / type->capacity) - 1;
 }
@@ -326,8 +325,8 @@ bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 							return false;
 						}
 					} else {
-						assert(port->dir == IN_PORT && port->is_clock);
-						assert(j == 0);
+						VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
+						VTR_ASSERT(j == 0);
 						if (logical_block[iblk].clock_net != OPEN) {
 							return false;
 						}
@@ -382,7 +381,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 			}
 		}
 	} else {
-		assert(model_port->dir == OUT_PORT);
+		VTR_ASSERT(model_port->dir == OUT_PORT);
 		for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 			if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
 				if(pb_graph_node->num_output_pins[i] > model_pin) {
@@ -411,7 +410,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pi
 
 	ilogical_block = pin.block;
 
-	assert(ilogical_block != OPEN);
+	VTR_ASSERT(ilogical_block != OPEN);
 	if(logical_block[ilogical_block].pb == NULL) {
 		/* This net has not been packed yet thus pb_graph_pin does not exist */
 		return NULL;
@@ -449,7 +448,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pi
 		}
 	}
 
-	assert(port != NULL);
+	VTR_ASSERT(port != NULL);
 	return get_pb_graph_node_pin_from_model_port_pin(port, pin.block_pin, logical_block[ilogical_block].pb->pb_graph_node);
 }
 
@@ -508,7 +507,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
 			}
 		}
 	}
-	assert(0);
+	VTR_ASSERT(0);
 	return NULL;
 }
 
@@ -517,21 +516,21 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_p
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->input_pins[iport][ipin];
-			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->output_pins[iport][ipin];
-			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->clock_pins[iport][ipin];
-			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
@@ -563,7 +562,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) 
 	load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
 
 	for(int id = 0; id < num_pins; id++) {
-		assert(pb_graph_pin_lookup_from_type[id] != NULL);
+		VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != NULL);
 	}
 
 	return pb_graph_pin_lookup_from_type;
@@ -697,7 +696,7 @@ int num_ext_inputs_logical_block(int iblk) {
 		port = port->next;
 	}
 
-	assert(ext_inps >= 0);
+	VTR_ASSERT(ext_inps >= 0);
 
 	return (ext_inps);
 }
@@ -1407,7 +1406,7 @@ void print_switch_usage() {
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
             if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
                 inward_switch_inf[to_node_index][switch_index] = 0;
-            //assert(from_node.type != OPIN);
+            //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index] ++;
         }
     }

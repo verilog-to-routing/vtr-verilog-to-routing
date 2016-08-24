@@ -590,7 +590,7 @@ static const vector<t_color> predef_colors = {
 	t_color(0x32, 0xCD, 0x32)   // "limegreen"
 };
 
-// assert(predef_colors.size() == NUM_COLOR);
+// VTR_ASSERT(predef_colors.size() == NUM_COLOR);
 
 // Color names, also used in postscript generation
 static const char *ps_cnames[NUM_COLOR] = {

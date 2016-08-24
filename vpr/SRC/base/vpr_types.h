@@ -54,7 +54,6 @@ typedef struct s_net_power t_net_power;
 
 #ifdef SPEC
 #define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
-#define NDEBUG			/* Turns off assertion checking for extra speed */
 #endif
 
 #define TOKENS " \t\n"		/* Input file parsing. */

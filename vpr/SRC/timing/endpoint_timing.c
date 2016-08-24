@@ -1,4 +1,4 @@
-#include <cassert>
+#include "vtr_assert.h"
 
 #include "vtr_util.h"
 
@@ -53,7 +53,7 @@ void print_tnode_info(FILE* fp, int inode, char* identifier) {
     if(tnode[inode].type == TN_OUTPAD_SINK) {
         fprintf(fp, "      \"tnode_type\": \"TN_OUTPAD_SINK\",\n");
     } else {
-        assert(tnode[inode].type == TN_FF_SINK);
+        VTR_ASSERT(tnode[inode].type == TN_FF_SINK);
         fprintf(fp, "      \"tnode_type\": \"TN_FF_SINK\",\n");
     }
 

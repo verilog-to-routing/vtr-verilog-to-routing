@@ -5,15 +5,14 @@
  */
 
 #include <cstring>
-#include <cassert>
-#include <cassert>
+#include "vtr_assert.h"
+#include "vtr_assert.h"
 using namespace std;
 
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-#include "util.h"
 #include "token.h"
 #include "read_xml_util.h"
 
@@ -102,7 +101,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 		in_string_index++;
 	}
 
-	assert(i == *num_tokens);
+	VTR_ASSERT(i == *num_tokens);
 
 	tokens[*num_tokens].type = TOKEN_NULL;
 	tokens[*num_tokens].data = NULL;
@@ -180,14 +179,14 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
 			cur2++;
 		}
 		*cur2 = '\0';
-		assert(i < max_i && j < max_j);
+		VTR_ASSERT(i < max_i && j < max_j);
 		matrix[i][j] = atof(cur);
 		j++;
 		cur = cur2;
 		*cur = ' ';
 	}
 
-	assert((i == max_i && j == 0) || (i == max_i - 1 && j == max_j));
+	VTR_ASSERT((i == max_i && j == 0) || (i == max_i - 1 && j == max_j));
 
 	free(copy);
 }

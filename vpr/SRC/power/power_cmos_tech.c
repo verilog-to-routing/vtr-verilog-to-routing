@@ -24,7 +24,7 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-#include <cassert>
+#include "vtr_assert.h"
 
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
@@ -36,7 +36,6 @@
 #include "power_cmos_tech.h"
 #include "power.h"
 #include "power_util.h"
-#include "util.h"
 #include "read_xml_util.h"
 #include "PowerSpicedComponent.h"
 #include "power_callibrate.h"
@@ -262,7 +261,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 
 	/* Process all nmos sizes */
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
-    assert(num_nmos_sizes > 0);
+    VTR_ASSERT(num_nmos_sizes > 0);
 	g_power_tech->num_nmos_mux_info = num_nmos_sizes;
 	g_power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) my_calloc(
 	        num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
@@ -288,7 +287,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 		while (child) {
 			int num_voltages;
 
-            assert(i == get_attribute(child, "size", loc_data).as_int(0));
+            VTR_ASSERT(i == get_attribute(child, "size", loc_data).as_int(0));
 
 			/* For each mux size, process all of the Vin levels */
             num_voltages = count_children(child, "voltages", loc_data);
@@ -347,7 +346,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
 			sizeof(t_transistor_size_inf));
 
     auto child = get_single_child(parent, "long_size", loc_data);
-    assert(get_attribute(child, "L", loc_data).as_int(0) == 2);
+    VTR_ASSERT(get_attribute(child, "L", loc_data).as_int(0) == 2);
 	trans_inf->long_trans_inf->size = get_attribute(child, "W", loc_data).as_float(0.);
 
     auto grandchild = get_single_child(child, "leakage_current", loc_data);
@@ -366,7 +365,7 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
     child = get_first_child(parent, "size", loc_data);
 	i = 0;
 	while (child) {
-        assert(get_attribute(child, "L", loc_data).as_int(0) == 1);
+        VTR_ASSERT(get_attribute(child, "L", loc_data).as_int(0) == 1);
 
 		trans_inf->size_inf[i].size = get_attribute(child, "W", loc_data).as_float(0);
 
@@ -411,7 +410,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	} else if (type == PMOS) {
 		trans_info = &g_power_tech->PMOS_inf;
 	} else {
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	/* No transistor data exists */
@@ -430,11 +429,11 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	found = (t_transistor_size_inf*) bsearch(&key, trans_info->size_inf,
 			trans_info->num_size_entries, sizeof(t_transistor_size_inf),
 			&power_compare_transistor_size);
-	assert(found);
+	VTR_ASSERT(found);
 
 	if (size < min_size) {
 		/* Too small */
-		assert(found == &trans_info->size_inf[0]);
+		VTR_ASSERT(found == &trans_info->size_inf[0]);
 		sprintf(msg,
 				"Using %s transistor of size '%f', which is smaller than the smallest modeled transistor (%f) in the technology behavior file.",
 				transistor_type_name(type), size, min_size);
@@ -443,7 +442,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 		*upper = found;
 	} else if (size > max_size) {
 		/* Too large */
-		assert(
+		VTR_ASSERT(
 				found
 						== &trans_info->size_inf[trans_info->num_size_entries
 								- 1]);
@@ -483,7 +482,7 @@ void power_find_nmos_leakage(t_power_nmos_leakage_inf * nmos_leakage_info,
 			nmos_leakage_info->leakage_pairs,
 			nmos_leakage_info->num_leakage_pairs,
 			sizeof(t_power_nmos_leakage_pair), power_compare_leakage_pair);
-	assert(found);
+	VTR_ASSERT(found);
 
 	if (found == &nmos_leakage_info->leakage_pairs[nmos_leakage_info->num_leakage_pairs - 1]) {
 		/* The results equal to the max voltage (Vdd) */
@@ -513,7 +512,7 @@ void power_find_buffer_strength_inf(t_power_buffer_strength_inf ** lower,
 	min_size = size_inf->strength_inf[0].stage_gain;
 	max_size = size_inf->strength_inf[size_inf->num_strengths - 1].stage_gain;
 
-	assert(stage_gain >= min_size && stage_gain <= max_size);
+	VTR_ASSERT(stage_gain >= min_size && stage_gain <= max_size);
 
 	key.stage_gain = stage_gain;
 
@@ -546,7 +545,7 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf ** lower,
 	char msg[1024];
 	int max_size;
 
-	assert(input_mux_size >= 1);
+	VTR_ASSERT(input_mux_size >= 1);
 
 	key.mux_size = input_mux_size;
 
@@ -559,7 +558,7 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf ** lower,
 			- 1].mux_size;
 	if (input_mux_size > max_size) {
 		/* Input mux too large */
-		assert(
+		VTR_ASSERT(
 				found
 						== &buffer_strength->sc_levr_inf[buffer_strength->num_levr_entries
 								- 1]);
@@ -623,7 +622,7 @@ void power_find_mux_volt_inf(t_power_mux_volt_pair ** lower,
 	found = (t_power_mux_volt_pair*) bsearch(&key, volt_inf->mux_voltage_pairs,
 			volt_inf->num_voltage_pairs, sizeof(t_power_mux_volt_pair),
 			power_compare_voltage_pair);
-	assert(found);
+	VTR_ASSERT(found);
 
 	if (found
 			== &volt_inf->mux_voltage_pairs[volt_inf->num_voltage_pairs - 1]) {

@@ -2,7 +2,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <cassert>
+#include "vtr_assert.h"
 
 using namespace std;
 
@@ -11,7 +11,6 @@ using namespace std;
 #include "vtr_matrix.h"
 #include "vtr_math.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -254,7 +253,7 @@ void build_rr_graph(
 
 	/* Global routing uses a single longwire track */
 	int max_chan_width = (is_global_graph ? 1 : nodes_per_chan->max);
-	assert(max_chan_width > 0);
+	VTR_ASSERT(max_chan_width > 0);
 
 	t_clb_to_clb_directs *clb_to_clb_directs = NULL;
 	if(num_directs > 0) {
@@ -320,7 +319,7 @@ void build_rr_graph(
 	/* get the number of 'sets' for each segment type -- unidirectial architectures have two tracks in a set, bidirectional have one */
 	int total_sets = max_chan_width;
 	if (directionality == UNI_DIRECTIONAL){
-		assert(max_chan_width % 2 == 0);
+		VTR_ASSERT(max_chan_width % 2 == 0);
 		total_sets /= 2;
 	}
 	int *sets_per_seg_type = get_seg_track_counts(total_sets, num_seg_types, segment_inf, use_full_seg_groups);
@@ -418,7 +417,7 @@ void build_rr_graph(
 					sb_type, Fs);
 		}
 	} else {
-		assert(UNI_DIRECTIONAL == directionality);
+		VTR_ASSERT(UNI_DIRECTIONAL == directionality);
 
 		if (sb_type == CUSTOM){
 			sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x,
@@ -426,7 +425,7 @@ void build_rr_graph(
 					nodes_per_chan, directionality);
 		} else {
 			/* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
-			assert(Fs == 3);
+			VTR_ASSERT(Fs == 3);
 
 			unidir_sb_pattern = alloc_sblock_pattern_lookup(L_nx, L_ny, max_chan_width);
 			for (int i = 0; i <= L_nx; i++) {
@@ -848,7 +847,7 @@ static bool **alloc_and_load_perturb_ipins(INP int max_chan_width, INP int L_num
 	} else {
 		/* Unidirectional routing uses mux balancing patterns and 
 		 * thus shouldn't need perturbation. */
-		assert(UNI_DIRECTIONAL == directionality);
+		VTR_ASSERT(UNI_DIRECTIONAL == directionality);
 		for (int itype = 0; itype < L_num_types; ++itype) {
 			for (int iseg = 0; iseg < num_seg_types; ++iseg){
 				result[itype][iseg] = false;
@@ -908,7 +907,7 @@ static int ***alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types
 		fac = 2;
 	}
 
-	assert((max_chan_width % fac) == 0);
+	VTR_ASSERT((max_chan_width % fac) == 0);
 
 	Result = vtr::alloc_matrix3<int>(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1);
 
@@ -939,7 +938,7 @@ static int ***alloc_and_load_actual_fc(INP int L_num_types, INP t_type_ptr types
 						Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
 					}
 				}
-				assert(Result[itype][ipin][iseg] % fac == 0);
+				VTR_ASSERT(Result[itype][ipin][iseg] % fac == 0);
 			}
 		}
 	}
@@ -1023,7 +1022,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 						L_grid, delayless_switch,
 						directs, num_directs, clb_to_clb_directs, num_seg_types);
 			} else {
-				assert(UNI_DIRECTIONAL == directionality);
+				VTR_ASSERT(UNI_DIRECTIONAL == directionality);
 				bool clipped;
 				build_unidir_rr_opins(i, j, L_grid, Fc_out, max_chan_width,
 						chan_details_x, chan_details_y, Fc_xofs, Fc_yofs, L_rr_node,
@@ -1044,7 +1043,7 @@ static void alloc_and_load_rr_graph(INP int num_nodes,
 	}
 
 	/* Build channels */
-	assert(Fs % 3 == 0);
+	VTR_ASSERT(Fs % 3 == 0);
 	for (int i = 0; i <= L_nx; ++i) {
 		for (int j = 0; j <= L_ny; ++j) {
 			if (i > 0) {
@@ -1115,7 +1114,7 @@ static void build_bidir_rr_opins(INP int i, INP int j,
 				directs, num_directs, clb_to_clb_directs);
 
 		int node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
-		assert(node_index >= 0);
+		VTR_ASSERT(node_index >= 0);
 		alloc_and_load_edges_and_switches(L_rr_node, node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
@@ -1155,7 +1154,7 @@ void free_rr_graph(void) {
 		}
 	}
 
-	assert(rr_node_indices);
+	VTR_ASSERT(rr_node_indices);
 	free_rr_node_indices(rr_node_indices);
 	free(rr_node);
 	free(rr_indexed_data);
@@ -1298,7 +1297,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			L_rr_node[inode].set_cost_index(SOURCE_COST_INDEX);
 			L_rr_node[inode].type = SOURCE;
 		} else { /* SINK */
-			assert(class_inf[iclass].type == RECEIVER);
+			VTR_ASSERT(class_inf[iclass].type == RECEIVER);
 			inode = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
 			/* NOTE:  To allow route throughs through clbs, change the lines below to  *
@@ -1321,7 +1320,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 		L_rr_node[inode].set_occ(0);
 		//assuming that type->width is always 1.
 		//if this needs to change, rr_node.{h,c} need to be modified accordingly
-		assert(type->width == 1);
+		VTR_ASSERT(type->width == 1);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].C = 0;
@@ -1365,7 +1364,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
 			L_rr_node[inode].z = z;
 			if(iporttype == 0) {
-				assert(pb_graph_node != NULL);
+				VTR_ASSERT(pb_graph_node != NULL);
 				L_rr_node[inode].pb_graph_pin = &pb_graph_node->input_pins[iport][ipb_pin];
 				ipb_pin++;
 				if(ipb_pin >= pb_graph_node->num_input_pins[iport]) {
@@ -1380,7 +1379,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 					}
 				}
 			} else {
-				assert(iporttype == 1);
+				VTR_ASSERT(iporttype == 1);
 				L_rr_node[inode].pb_graph_pin = &pb_graph_node->clock_pins[iport][ipb_pin];
 				ipb_pin++;
 				if(ipb_pin >= pb_graph_node->num_clock_pins[iport]) {
@@ -1396,7 +1395,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 				}
 			}
 		} else {
-			assert(class_inf[iclass].type == DRIVER);
+			VTR_ASSERT(class_inf[iclass].type == DRIVER);
 			inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
 			
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
@@ -1407,7 +1406,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
 			L_rr_node[inode].type = OPIN;
 			
-			assert(pb_graph_node != NULL);
+			VTR_ASSERT(pb_graph_node != NULL);
 			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[oport][opb_pin];
 			opb_pin++;
 			if(opb_pin >= pb_graph_node->num_output_pins[oport]) {
@@ -1468,7 +1467,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 	   description */
 	bool custom_switch_block = false;
 	if (sb_conn_map != NULL){
-		assert(sblock_pattern == NULL && switch_block_conn == NULL);
+		VTR_ASSERT(sblock_pattern == NULL && switch_block_conn == NULL);
 		custom_switch_block = true;
 	}
 
@@ -1503,7 +1502,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 			if (chan_type == CHANX){
 				to_seg_details = chan_details_y[start][y_coord];
 			} else {
-				assert(chan_type == CHANY);
+				VTR_ASSERT(chan_type == CHANY);
 				to_seg_details = chan_details_x[x_coord][start];
 			}
 			if (to_seg_details->length > 0) {
@@ -1520,7 +1519,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 			if (chan_type == CHANX){
 				to_seg_details = chan_details_y[start][y_coord+1];
 			} else {
-				assert(chan_type == CHANY);
+				VTR_ASSERT(chan_type == CHANY);
 				to_seg_details = chan_details_x[x_coord+1][start];
 			}
 			if (to_seg_details->length > 0) {
@@ -1550,7 +1549,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 				if (chan_type == CHANX){
 					to_seg_details = chan_details_x[target_seg][y_coord];
 				} else {
-					assert(chan_type == CHANY);
+					VTR_ASSERT(chan_type == CHANY);
 					to_seg_details = chan_details_y[x_coord][target_seg];
 				}
 				if (to_seg_details->length > 0) {
@@ -1566,7 +1565,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 
 
 		int node = get_rr_node_index(x_coord, y_coord, chan_type, track, L_rr_node_indices);
-		assert(node >= 0);
+		VTR_ASSERT(node >= 0);
 		alloc_and_load_edges_and_switches(L_rr_node, node, num_edges,
 				L_rr_edge_done, edge_list);
 
@@ -1584,7 +1583,7 @@ static void build_rr_chan(INP int x_coord, INP int y_coord, INP t_rr_type chan_t
 		if (chan_type == CHANX){
 			L_rr_node[node].set_coordinates(start, y_coord, end, y_coord);
 		} else {
-			assert(chan_type == CHANY);
+			VTR_ASSERT(chan_type == CHANY);
 			L_rr_node[node].set_coordinates(x_coord, start, x_coord, end);
 		}
 
@@ -1630,9 +1629,9 @@ void alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node, INP int inode,
 	int i;
 
 	/* Check we aren't overwriting edges */
-	assert(L_rr_node[inode].get_num_edges() < 1);
-	assert(NULL == L_rr_node[inode].edges);
-	assert(NULL == L_rr_node[inode].switches);
+	VTR_ASSERT(L_rr_node[inode].get_num_edges() < 1);
+	VTR_ASSERT(NULL == L_rr_node[inode].edges);
+	VTR_ASSERT(NULL == L_rr_node[inode].switches);
 
 	L_rr_node[inode].set_num_edges(num_edges);
 	L_rr_node[inode].edges = (int *) my_malloc(num_edges * sizeof(int));
@@ -1652,8 +1651,8 @@ void alloc_and_load_edges_and_switches(INP t_rr_node * L_rr_node, INP int inode,
 		list_ptr = list_ptr->next;
 		++i;
 	}
-	assert(list_ptr == NULL);
-	assert(i == num_edges);
+	VTR_ASSERT(list_ptr == NULL);
+	VTR_ASSERT(i == num_edges);
 }
 
 
@@ -1954,7 +1953,7 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 		}
 
 
-		assert(pin_index < num_phys_pins);
+		VTR_ASSERT(pin_index < num_phys_pins);
 		/* Number of physical pins bounds number of logical pins */
 
 		if (num_done_per_dir[width][height][side] >= num_dir[width][height][side]){
@@ -1966,7 +1965,7 @@ static int *****alloc_and_load_pin_to_seg_type(INP e_pin_type pin_type,
 		side_ordering[pin] = side;
 		width_ordering[pin] = width;
 		height_ordering[pin] = height;
-		assert(Type->pinloc[width][height][side][dir_list[width][height][side][pin_index]]);
+		VTR_ASSERT(Type->pinloc[width][height][side][dir_list[width][height][side][pin_index]]);
 		num_done_per_dir[width][height][side]++;
 		pin++;
 	}
@@ -2029,11 +2028,11 @@ static void load_uniform_switch_pattern(INP t_type_ptr type,
 	if (directionality == BI_DIRECTIONAL) {
 		group_size = 1;
 	} else {
-		assert(directionality == UNI_DIRECTIONAL);
+		VTR_ASSERT(directionality == UNI_DIRECTIONAL);
 		group_size = 2;
 	}
 
-	assert((x_chan_width % group_size == 0) && (y_chan_width % group_size == 0) && (Fc % group_size == 0));
+	VTR_ASSERT((x_chan_width % group_size == 0) && (y_chan_width % group_size == 0) && (Fc % group_size == 0));
 
 	for (int i = 0; i < num_phys_pins; ++i) {
 
@@ -2081,7 +2080,7 @@ static void load_perturbed_switch_pattern(INP t_type_ptr type,
 	 * the channel and the other half put the "dense" part in the second half,  *
 	 * to make sure each track can connect to about the same number of ipins.   */
 
-	assert(directionality == BI_DIRECTIONAL);
+	VTR_ASSERT(directionality == BI_DIRECTIONAL);
 
 	int Fc_dense = (Fc / 2) + 1;
 	int Fc_sparse = Fc - Fc_dense; /* Works for even or odd Fc */
@@ -2134,7 +2133,7 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 		enum e_pin_type ipin_or_opin) {
 
 	/* Checks that all tracks can be reached by some pin.   */
-	assert(max_chan_width > 0);
+	VTR_ASSERT(max_chan_width > 0);
 
 	int *num_conns_to_track; /* [0..max_chan_width-1] */
 	num_conns_to_track = (int *) my_calloc(max_chan_width, sizeof(int));
@@ -2298,8 +2297,8 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	t_rr_type rr_type = L_rr_node[inode].type;
 
 	/* Make sure we don't overrun const arrays */
-	assert((L_rr_node[inode].get_direction() + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
-	assert((L_rr_node[inode].get_drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
+	VTR_ASSERT((L_rr_node[inode].get_direction() + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
+	VTR_ASSERT((L_rr_node[inode].get_drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
 	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].rr_get_type_string());
 	if ((L_rr_node[inode].get_xlow() == L_rr_node[inode].get_xhigh())
@@ -2395,7 +2394,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 			/* get Fc for this segment type */
 			int seg_type_Fc = Fc_out[type->index][pin_index][iseg];
-			assert( seg_type_Fc >= 0 );
+			VTR_ASSERT( seg_type_Fc >= 0 );
 			if (seg_type_Fc == 0){
 				continue;
 			}
@@ -2460,7 +2459,7 @@ static void build_unidir_rr_opins(INP int i, INP int j,
 
 		/* Add the edges */
 		int opin_node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
-		assert(opin_node_index >= 0);
+		VTR_ASSERT(opin_node_index >= 0);
 		alloc_and_load_edges_and_switches(rr_node, opin_node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
@@ -2502,7 +2501,7 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 				break;
 			}
 		}
-		assert(j < num_types);
+		VTR_ASSERT(j < num_types);
 		clb_to_clb_directs[i].from_clb_type = &type_descriptors[j];
 		pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
 
@@ -2511,10 +2510,10 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 				break;
 			}
 		}
-		assert(j < pb_type->num_ports);
+		VTR_ASSERT(j < pb_type->num_ports);
 
 		if(start_pin_index == OPEN) {
-			assert(start_pin_index == end_pin_index);
+			VTR_ASSERT(start_pin_index == end_pin_index);
 			start_pin_index = 0;
 			end_pin_index = pb_type->ports[j].num_pins - 1;
 		}
@@ -2531,7 +2530,7 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 				break;
 			}
 		}
-		assert(j < num_types);
+		VTR_ASSERT(j < num_types);
 		clb_to_clb_directs[i].to_clb_type = &type_descriptors[j];
 		pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
 
@@ -2540,10 +2539,10 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(INP t_direct_inf
 				break;
 			}
 		}
-		assert(j < pb_type->num_ports);
+		VTR_ASSERT(j < pb_type->num_ports);
 
 		if(start_pin_index == OPEN) {
-			assert(start_pin_index == end_pin_index);
+			VTR_ASSERT(start_pin_index == end_pin_index);
 			start_pin_index = 0;
 			end_pin_index = pb_type->ports[j].num_pins - 1;
 		}

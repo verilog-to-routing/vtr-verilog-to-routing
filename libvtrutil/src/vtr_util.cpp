@@ -1,10 +1,10 @@
 #include <cstdarg>
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 
 #include "vtr_util.h"
+#include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_error.h"
 
@@ -76,7 +76,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     int len = snprintf(nullptr, 0, fmt, args); 
 
     //Negative if there is a problem with the format string
-    assert(len >= 0 && "Problem decoding format string");
+    VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
 
     size_t buf_size = len + 1; //For terminator
 
@@ -87,8 +87,8 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     //Format into the buffer
     len = snprintf(buf.get(), buf_size, fmt, args);
 
-    assert(len >= 0 && "Problem decoding format string");
-    assert(static_cast<size_t>(len) == buf_size - 1);
+    VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
+    VTR_ASSERT(static_cast<size_t>(len) == buf_size - 1);
 
     //Build the string from the buffer
     return std::string(buf.get(), len);

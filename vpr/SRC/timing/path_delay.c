@@ -3,9 +3,8 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "path_delay.h"
@@ -536,7 +535,7 @@ void print_slack(float ** slack, bool slack_is_normalized, const char *fname) {
 				if (slk < HUGE_POSITIVE_FLOAT - 1) {
 					/* We have to watch out for the special case where slack = max_slack, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
 					ibucket = min(NUM_BUCKETS - 1, (int) ((slk - min_slack)/bucket_size));
-					assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
+					VTR_ASSERT(ibucket >= 0 && ibucket < NUM_BUCKETS);
 					slacks_in_bucket[ibucket]++;
 				}
 			}
@@ -670,7 +669,7 @@ static void print_global_criticality_stats(FILE * fp, float ** criticality, cons
 				crit = criticality[inet][iedge + 1];
 				/* We have to watch out for the special case where criticality = max_criticality, in which case ibucket = NUM_BUCKETS and we go out of bounds of the array. */
 				ibucket = min(NUM_BUCKETS - 1, (int) ((crit - min_criticality)/bucket_size));
-				assert(ibucket >= 0 && ibucket < NUM_BUCKETS);
+				VTR_ASSERT(ibucket >= 0 && ibucket < NUM_BUCKETS);
 				criticalities_in_bucket[ibucket]++;
 			}
 		}
@@ -804,13 +803,13 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		int itype = block[i].type->index;
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
 			if (block[i].pb_route[j].atom_net_idx != OPEN) {
-				assert(tnode[inode].pb_graph_pin == NULL);
+				VTR_ASSERT(tnode[inode].pb_graph_pin == NULL);
 				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode,
 						timing_inf);
 			}
 		}
 	}
-	assert(inode == num_tnodes);
+	VTR_ASSERT(inode == num_tnodes);
 	num_dangling_pins = 0;
 
 	lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
@@ -859,13 +858,13 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			}
 
 			for (j = 0; j < ipb_graph_pin->num_output_edges; j++) {
-				assert(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
+				VTR_ASSERT(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
 				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
 				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
 					count++;
 				}
 			}
-			assert(count >= 0);
+			VTR_ASSERT(count >= 0);
 			tnode[i].num_edges = count;
 			tnode[i].out_edges = (t_tedge *) vtr::chunk_malloc(
 					count * sizeof(t_tedge), &tedge_ch);
@@ -873,15 +872,15 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			/* Load edges */
 			count = 0;
 			for (j = 0; j < ipb_graph_pin->num_output_edges; j++) {
-				assert(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
+				VTR_ASSERT(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
 				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
 				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
-					assert(intra_lb_route[dnode].atom_net_idx == intra_lb_route[i_pin_id].atom_net_idx);
+					VTR_ASSERT(intra_lb_route[dnode].atom_net_idx == intra_lb_route[i_pin_id].atom_net_idx);
 
 					tnode[i].out_edges[count].Tdel =
 							ipb_graph_pin->output_edges[j]->delay_max;
 					tnode[i].out_edges[count].to_node = lookup_tnode_from_pin_id[iblock][dnode];
-					assert(tnode[i].out_edges[count].to_node != OPEN);
+					VTR_ASSERT(tnode[i].out_edges[count].to_node != OPEN);
 
 					if (g_atoms_nlist.net[intra_lb_route[i_pin_id].atom_net_idx].is_const_gen
 							== true && tnode[i].type == TN_PRIMITIVE_OPIN) {
@@ -892,7 +891,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					count++;
 				}
 			}
-			assert(count >= 0);
+			VTR_ASSERT(count >= 0);
 
 			break;
 		case TN_PRIMITIVE_IPIN:
@@ -917,7 +916,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 						tnode[i].out_edges[k].Tdel =
 								ipb_graph_pin->pin_timing_del_max[j];
 						tnode[i].out_edges[k].to_node = lookup_tnode_from_pin_id[tnode[i].block][ipb_graph_pin->pin_timing[j]->pin_count_in_cluster];
-						assert(tnode[i].out_edges[k].to_node != OPEN);
+						VTR_ASSERT(tnode[i].out_edges[k].to_node != OPEN);
 						k++;
 					}
 				}
@@ -934,9 +933,9 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			intra_lb_route = block[iblock].pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
-			assert(intra_lb_route[i_pin_id].atom_net_idx != OPEN);
+			VTR_ASSERT(intra_lb_route[i_pin_id].atom_net_idx != OPEN);
 			inet = vpack_to_clb_net_mapping[intra_lb_route[i_pin_id].atom_net_idx];
-			assert(inet != OPEN);
+			VTR_ASSERT(inet != OPEN);
 			f_net_to_driver_tnode[inet] = i;
 			tnode[i].num_edges = g_clbs_nlist.net[inet].num_sinks();
 			tnode[i].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -987,23 +986,23 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 						count +=
 								block[dblock].pb->pb_graph_node->num_clock_pins[k];
 					}
-					assert(dpin != OPEN);
-					assert(
+					VTR_ASSERT(dpin != OPEN);
+					VTR_ASSERT(
 						inet == vpack_to_clb_net_mapping[d_intra_lb_route[block[dblock].pb->pb_graph_node->clock_pins[dport][dpin].pin_count_in_cluster].atom_net_idx]);
 					tnode[i].out_edges[j - 1].to_node =
 						lookup_tnode_from_pin_id[dblock][block[dblock].pb->pb_graph_node->clock_pins[dport][dpin].pin_count_in_cluster];
-					assert(tnode[i].out_edges[j - 1].to_node != OPEN);
+					VTR_ASSERT(tnode[i].out_edges[j - 1].to_node != OPEN);
 				} else {
-					assert(dpin != OPEN);
-					assert(
+					VTR_ASSERT(dpin != OPEN);
+					VTR_ASSERT(
 						inet == vpack_to_clb_net_mapping[d_intra_lb_route[block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster].atom_net_idx]);
 					/* delays are assigned post routing */
 					tnode[i].out_edges[j - 1].to_node =
 						lookup_tnode_from_pin_id[dblock][block[dblock].pb->pb_graph_node->input_pins[dport][dpin].pin_count_in_cluster];
-					assert(tnode[i].out_edges[j - 1].to_node != OPEN);
+					VTR_ASSERT(tnode[i].out_edges[j - 1].to_node != OPEN);
 				}
 				tnode[i].out_edges[j - 1].Tdel = 0;
-				assert(inet != OPEN);
+				VTR_ASSERT(inet != OPEN);
 			}
 			break;
 		case TN_OUTPAD_IPIN:
@@ -1018,7 +1017,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		default:
 			vpr_printf_error(__FILE__, __LINE__, 
 					"Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
-			assert(0);
+			VTR_ASSERT(0);
 			break;
 		}
 	}
@@ -1299,7 +1298,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					j++;
 				} else {
 					if (logical_block[i].clock_net != OPEN) {
-						assert(logical_block[i].clock_net_tnode == NULL);
+						VTR_ASSERT(logical_block[i].clock_net_tnode == NULL);
 						logical_block[i].clock_net_tnode = &tnode[inode];
 						tnode[inode].block = i;
 						tnode[inode].prepacked_data->model_pin = 0;
@@ -1315,7 +1314,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			}
 		}
 	}
-	assert(inode == num_tnodes);
+	VTR_ASSERT(inode == num_tnodes);
 
 	/* load edge delays and initialize clock domains to OPEN. */
 	for (i = 0; i < num_tnodes; i++) {
@@ -1335,7 +1334,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 			/* Allocate space for edges  */
 			inet =
 					logical_block[tnode[i].block].output_nets[tnode[i].prepacked_data->model_port][tnode[i].prepacked_data->model_pin];
-			assert(inet != OPEN);
+			VTR_ASSERT(inet != OPEN);
 
 			for (j = 1; j < (int) g_atoms_nlist.net[inet].pins.size(); j++) {
 				if (g_atoms_nlist.net[inet].is_const_gen) {
@@ -1345,18 +1344,18 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 					tnode[i].out_edges[j - 1].Tdel = inter_cluster_net_delay;
 				}
 				if (g_atoms_nlist.net[inet].is_global) {
-					assert(
+					VTR_ASSERT(
 						logical_block[g_atoms_nlist.net[inet].pins[j].block].clock_net == inet);
 					tnode[i].out_edges[j - 1].to_node =
 						get_tnode_index(logical_block[g_atoms_nlist.net[inet].pins[j].block].clock_net_tnode);
 				} else {
-					assert(
+					VTR_ASSERT(
 						logical_block[g_atoms_nlist.net[inet].pins[j].block].input_net_tnodes[g_atoms_nlist.net[inet].pins[j].block_port][g_atoms_nlist.net[inet].pins[j].block_pin] != NULL);
 					tnode[i].out_edges[j - 1].to_node =
 						get_tnode_index(logical_block[g_atoms_nlist.net[inet].pins[j].block].input_net_tnodes[g_atoms_nlist.net[inet].pins[j].block_port][g_atoms_nlist.net[inet].pins[j].block_pin]);
 				}
 			}
-			assert(tnode[i].num_edges == g_atoms_nlist.net[inet].num_sinks());
+			VTR_ASSERT(tnode[i].num_edges == g_atoms_nlist.net[inet].num_sinks());
 			break;
 		case TN_PRIMITIVE_IPIN:
 		case TN_OUTPAD_IPIN:
@@ -1371,13 +1370,13 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		default:
 			vpr_printf_error(__FILE__, __LINE__, 
 					"Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
-			assert(0);
+			VTR_ASSERT(0);
 			break;
 		}
 	}
 
 	for (i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
-		assert(f_net_to_driver_tnode[i] != OPEN);
+		VTR_ASSERT(f_net_to_driver_tnode[i] != OPEN);
 	}
 }
 
@@ -1389,12 +1388,12 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 	tnode[i].block = iblock;
 
 	if (tnode[i].pb_graph_pin->parent_node->pb_type->blif_model == NULL) {
-		assert(tnode[i].pb_graph_pin->type == PB_PIN_NORMAL);
+		VTR_ASSERT(tnode[i].pb_graph_pin->type == PB_PIN_NORMAL);
 		if (tnode[i].pb_graph_pin->parent_node->parent_pb_graph_node == NULL) {
 			if (tnode[i].pb_graph_pin->port->type == IN_PORT) {
 				tnode[i].type = TN_CB_IPIN;
 			} else {
-				assert(tnode[i].pb_graph_pin->port->type == OUT_PORT);
+				VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
 				tnode[i].type = TN_CB_OPIN;
 			}
 		} else {
@@ -1402,7 +1401,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 		}
 	} else {
 		if (tnode[i].pb_graph_pin->type == PB_PIN_INPAD) {
-			assert(tnode[i].pb_graph_pin->port->type == OUT_PORT);
+			VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
 			tnode[i].type = TN_INPAD_OPIN;
 			tnode[i + 1].num_edges = 1;
 			tnode[i + 1].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -1414,7 +1413,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 			tnode[i + 1].block = iblock;
 			(*inode)++;
 		} else if (tnode[i].pb_graph_pin->type == PB_PIN_OUTPAD) {
-			assert(tnode[i].pb_graph_pin->port->type == IN_PORT);
+			VTR_ASSERT(tnode[i].pb_graph_pin->port->type == IN_PORT);
 			tnode[i].type = TN_OUTPAD_IPIN;
 			tnode[i].num_edges = 1;
 			tnode[i].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -1441,7 +1440,7 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 				tnode[i + 1].num_edges = 0;
 				tnode[i + 1].out_edges = NULL;
 			} else {
-				assert(tnode[i].pb_graph_pin->port->type == OUT_PORT);
+				VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
                 //Determine whether we are a standard clocked output pin (TN_FF_OPIN with TN_FF_SOURCE)
                 //or a clock source (TN_CLOCK_OPIN with TN_CLOCK_SOURCE)
                 t_model_ports* model_port = tnode[i].pb_graph_pin->port->model_port;
@@ -1476,11 +1475,11 @@ static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
 			tnode[i].out_edges = NULL;
 		} else {
 			if (tnode[i].pb_graph_pin->port->type == IN_PORT) {
-				assert(tnode[i].pb_graph_pin->type == PB_PIN_TERMINAL);
+				VTR_ASSERT(tnode[i].pb_graph_pin->type == PB_PIN_TERMINAL);
 				tnode[i].type = TN_PRIMITIVE_IPIN;
 			} else {
-				assert(tnode[i].pb_graph_pin->port->type == OUT_PORT);
-				assert(tnode[i].pb_graph_pin->type == PB_PIN_TERMINAL);
+				VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
+				VTR_ASSERT(tnode[i].pb_graph_pin->type == PB_PIN_TERMINAL);
 				tnode[i].type = TN_PRIMITIVE_OPIN;
 			}
 		}
@@ -1526,7 +1525,7 @@ void print_timing_graph(const char *fname) {
 		} else if (itype == TN_INPAD_SOURCE || itype ==TN_CLOCK_SOURCE) {
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode].out_edges ? tnode[inode].out_edges[0].Tdel : -1);
 		} else if (itype == TN_OUTPAD_SINK) {
-			assert(tnode[inode-1].type == TN_OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
+			VTR_ASSERT(tnode[inode-1].type == TN_OUTPAD_IPIN); /* Outpad ipins should be one prior in the tnode array */
 			fprintf(fp, "%d\t\t%.3e\t", tnode[inode].clock_domain, tnode[inode-1].out_edges[0].Tdel);
 		} else {
 			fprintf(fp, "\t\t\t\t");
@@ -2008,8 +2007,8 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 			    for (int iedge = 0; iedge < num_edges; iedge++) {
 				    if (slacks->slack[inet][iedge + 1] < HUGE_POSITIVE_FLOAT - 1) { /* if the slack is valid */
 					    slacks->timing_criticality[inet][iedge + 1] = 1 - slacks->slack[inet][iedge + 1]/criticality_denom_global; 
-					    assert(slacks->timing_criticality[inet][iedge + 1] > -0.01);
-					    assert(slacks->timing_criticality[inet][iedge + 1] <  1.01);
+					    VTR_ASSERT(slacks->timing_criticality[inet][iedge + 1] > -0.01);
+					    VTR_ASSERT(slacks->timing_criticality[inet][iedge + 1] <  1.01);
 				    }
 				    /* otherwise, criticality remains 0, as it was initialized */
 			    }
@@ -2290,7 +2289,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 		}
 	}
 	
-	assert(total == num_tnodes);
+	VTR_ASSERT(total == num_tnodes);
 	num_dangling_nodes = 0;
 	/* Compute required times with a backward topological traversal from sinks to sources. */
 	
@@ -2428,7 +2427,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 #endif
 			} else { /* not a sink */
 
-				assert(!(tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK || tnode[inode].type == TN_FF_CLOCK));
+				VTR_ASSERT(!(tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK || tnode[inode].type == TN_FF_CLOCK));
 
 				/* We need to skip this node unless it is on a path from source_clock_domain to 
 				sink_clock_domain.  We need to skip all nodes which:
@@ -2698,15 +2697,15 @@ static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_cl
                         slacks will be clipped to zero anyways, so we can just set the criticality to 1. */
                         timing_criticality = criticality_denom ? 1 - slack / criticality_denom : 1;
                     } else {
-                        // assert(criticality_denom);
+                        // VTR_ASSERT(criticality_denom);
                         timing_criticality = 1 - slack / criticality_denom;
                     }
 
                     // Criticality must be normalized to between 0 and 1 
                     // Note: floating-point error may be ~1e-5 since we are dividing by a small
                     // criticality_denom (~1e-9).
-                    assert(timing_criticality > -0.01);
-                    assert(timing_criticality <  1.01);
+                    VTR_ASSERT(timing_criticality > -0.01);
+                    VTR_ASSERT(timing_criticality <  1.01);
 
                     slacks->timing_criticality[inet][iedge + 1] =
                         max(timing_criticality, slacks->timing_criticality[inet][iedge + 1]);
@@ -2801,7 +2800,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
 	/* Make sure total_logic_delay and total_net_delay add 
 	up to critical path delay,within 5 decimal places. */
-	assert(total_logic_delay + total_net_delay - get_critical_path_delay()/1e9 < 1e-5);
+	VTR_ASSERT(total_logic_delay + total_net_delay - get_critical_path_delay()/1e9 < 1e-5);
 
 	fclose(fp);
 	free_pin_id_to_pb_mapping(pin_id_to_pb_mapping);
@@ -2866,7 +2865,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	}
 	critical_path_head = (vtr::t_linked_int *) my_malloc(sizeof(vtr::t_linked_int));
 	critical_path_head->data = crit_node;
-	assert(crit_node != OPEN);
+	VTR_ASSERT(crit_node != OPEN);
 	prev_crit_node = critical_path_head;
 	num_edges = tnode[crit_node].num_edges;
 
@@ -2916,7 +2915,7 @@ void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr) {
 	if (tnode_type == TN_CB_OPIN) {
 		ipin = tnode[inode].pb_graph_pin->pin_count_in_cluster;
 		inet = block[iblk].pb_route[ipin].atom_net_idx;
-		assert(inet != OPEN);
+		VTR_ASSERT(inet != OPEN);
 		inet = vpack_to_clb_net_mapping[inet];
 	} else {
 		inet = OPEN;
@@ -2972,7 +2971,7 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
     criticality when calculating block criticality for the clusterer. */
 
     if (timing_inf.slack_definition == 'R' || timing_inf.slack_definition == 'I') {
-        assert(criticality_denom != 0); /* Possible if timing analysis is being run pre-packing
+        VTR_ASSERT(criticality_denom != 0); /* Possible if timing analysis is being run pre-packing
                                         with all delays set to 0. This is not currently done, 
                                         but if you're going to do it, you need to decide how 
                                         best to normalize these values to suit your purposes. */
@@ -3042,7 +3041,7 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 			} else if (tnode[inode].type == TN_INPAD_SOURCE && (input_index = find_input(net_name)) != -1) {
 				/* We have a constrained non-clock inpad - find the clock it's constrained on. */
 				clock_index = find_clock(g_sdc->constrained_inputs[input_index].clock_name);
-				assert(clock_index != -1);
+				VTR_ASSERT(clock_index != -1);
 				/* The clock domain for this input is that of its virtual clock */
 				tnode[inode].clock_domain = clock_index;
 				/* Increment the fanout of this virtual clock domain. */
@@ -3062,13 +3061,13 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 			/*  Since the pb_graph_pin of TN_OUTPAD_SINK tnodes points to NULL, we have to find the net 
 			from the pb_graph_pin of the corresponding TN_OUTPAD_IPIN node. 
 			Exploit the fact that the TN_OUTPAD_IPIN node will always be one prior in the tnode array. */
-			assert(tnode[inode - 1].type == TN_OUTPAD_IPIN);
+			VTR_ASSERT(tnode[inode - 1].type == TN_OUTPAD_IPIN);
 			net_name = find_tnode_net_name(inode, is_prepacked, pin_id_to_pb_mapping);
 			output_index = find_output(net_name + 4); /* the + 4 removes the prefix "out:" automatically prepended to outputs */
 			if (output_index != -1) {
 				/* We have a constrained outpad, find the clock it's constrained on. */
 				clock_index = find_clock(g_sdc->constrained_outputs[output_index].clock_name);
-				assert(clock_index != -1);
+				VTR_ASSERT(clock_index != -1);
 				/* The clock doain for this output is that of its virtual clock */
 				tnode[inode].clock_domain = clock_index;
 				/* Increment the fanout of this virtual clock domain. */
@@ -3107,8 +3106,8 @@ static void propagate_clock_domain_and_skew(int inode) {
 	tedge = tnode[inode].out_edges;	/* Get the list of edges from the node we're visiting. */
 
 	if (!tedge) { /* Leaf/sink node; base case of the recursion. */
-		assert(tnode[inode].type == TN_FF_CLOCK);
-		assert(tnode[inode].clock_domain != -1); /* Make sure clock domain is valid. */
+		VTR_ASSERT(tnode[inode].type == TN_FF_CLOCK);
+		VTR_ASSERT(tnode[inode].clock_domain != -1); /* Make sure clock domain is valid. */
 		g_sdc->constrained_clocks[tnode[inode].clock_domain].fanout++;
 		return;
 	}
@@ -3140,7 +3139,7 @@ static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_t
             return logical_block[logic_block].name;
         } else {
             //Otherwise we need to look it up via the extra prepacked data
-            assert(tnode[inode].prepacked_data);
+            VTR_ASSERT(tnode[inode].prepacked_data);
 
             int iport = tnode[inode].prepacked_data->model_port;
             int ipin = tnode[inode].prepacked_data->model_pin;
@@ -3149,7 +3148,7 @@ static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_t
             if(tnode[inode].prepacked_data->model_port_ptr->dir == IN_PORT) {
                 inet = logical_block[logic_block].input_nets[iport][ipin];
             } else {
-                assert(tnode[inode].prepacked_data->model_port_ptr->dir == OUT_PORT);
+                VTR_ASSERT(tnode[inode].prepacked_data->model_port_ptr->dir == OUT_PORT);
                 inet = logical_block[logic_block].output_nets[iport][ipin];
             }
 
@@ -3168,16 +3167,16 @@ static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_t
             while(tnode[inode_search].type != TN_CB_IPIN && tnode[inode_search].type != TN_CB_OPIN ) { 
                 //Assume we don't have any internal fanout inside the block
                 //  Should be true for most source-types
-                assert(tnode[inode_search].num_edges == 1);
+                VTR_ASSERT(tnode[inode_search].num_edges == 1);
                 inode_search = tnode[inode_search].out_edges[0].to_node;
             }
-            assert(tnode[inode_search].type == TN_CB_IPIN || tnode[inode_search].type == TN_CB_OPIN);
+            VTR_ASSERT(tnode[inode_search].type == TN_CB_IPIN || tnode[inode_search].type == TN_CB_OPIN);
 
             //Now that we have a complex block pin, we can look-up its connected net in the CLB netlist
             pb_graph_pin = tnode[inode_search].pb_graph_pin;
             int ipin = pb_graph_pin->pin_count_in_cluster; //Pin into the CLB
             int inet = block[tnode[inode_search].block].nets[ipin]; //Net index into the clb netlist
-            assert(inet != OPEN);
+            VTR_ASSERT(inet != OPEN);
 
             return g_clbs_nlist.net[inet].name;
         }
@@ -3200,15 +3199,15 @@ static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_
 		ff_source_or_sink_pb_graph_pin = tnode[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
 		/* Make sure there's only one clock port and only one clock pin in that port */
-		assert(parent_pb_graph_node->num_clock_ports == 1);
-		assert(parent_pb_graph_node->num_clock_pins[0] == 1);
+		VTR_ASSERT(parent_pb_graph_node->num_clock_ports == 1);
+		VTR_ASSERT(parent_pb_graph_node->num_clock_pins[0] == 1);
 		clock_pb_graph_pin = &parent_pb_graph_node->clock_pins[0][0];
 		ff_tnode = lookup_tnode_from_pin_id[logic_block][clock_pb_graph_pin->pin_count_in_cluster];
-		assert(ff_tnode != OPEN);
+		VTR_ASSERT(ff_tnode != OPEN);
 		ff_clock_tnode = &tnode[ff_tnode];
 	}
-	assert(ff_clock_tnode != NULL);
-	assert(ff_clock_tnode->type == TN_FF_CLOCK);
+	VTR_ASSERT(ff_clock_tnode != NULL);
+	VTR_ASSERT(ff_clock_tnode->type == TN_FF_CLOCK);
 	return ff_clock_tnode;
 }
 
@@ -3718,7 +3717,7 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
 				) {
 				int pb_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
 				int iblk = tnode[i].block;
-				assert(tnode_lookup[iblk][pb_pin_id] == OPEN);				
+				VTR_ASSERT(tnode_lookup[iblk][pb_pin_id] == OPEN);				
 				tnode_lookup[iblk][pb_pin_id] = i;
 			}
 		}

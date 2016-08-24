@@ -16,7 +16,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <cassert>
+#include "vtr_assert.h"
 using namespace std;
 
 
@@ -615,7 +615,7 @@ static void drawplace(void) {
 
 			for (k = 0; k < num_sub_tiles; ++k) {
 				/* Graphics will look unusual for multiple height and capacity */
-				assert(height == 1 || num_sub_tiles == 1);
+				VTR_ASSERT(height == 1 || num_sub_tiles == 1);
 
 				/* Get coords of current sub_tile */
 				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
@@ -1339,12 +1339,12 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
 			/* must connect to to_node's wire beginning at x2 */
 			if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
-				assert(from_xlow < to_xlow);
+				VTR_ASSERT(from_xlow < to_xlow);
 				x2 = to_chan.left();
 				/* since no U-turns from_track must be INC as well */
 				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at rightmost edge */
-				assert(from_xhigh > to_xhigh);
+				VTR_ASSERT(from_xhigh > to_xhigh);
 				x2 = to_chan.right();
 				x1 = draw_coords->tile_x[to_xhigh + 1];
 			}
@@ -2449,7 +2449,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 		start = max(start, grid_x);
 		end = min(end, grid_x); /* Width is 1 always */
-		assert(end >= start);
+		VTR_ASSERT(end >= start);
 		/* Make sure we are nearby */
 
 
@@ -2459,7 +2459,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			height_offset = height - 1;
 			draw_pin_off = draw_coords->pin_size;
 		} else if ((grid_y - 1) == chan_ylow) {
-			//assert((grid_y - 1) == chan_ylow);
+			//VTR_ASSERT((grid_y - 1) == chan_ylow);
 
 			iside = BOTTOM;
 
@@ -2488,7 +2488,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			draw_pin_off = -draw_coords->pin_size;
 		}
 
-		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
+		VTR_ASSERT(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -2518,20 +2518,20 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 		start = max(start, grid_y);
 		end = min(end, (grid_y + height - 1)); /* Width is 1 always */
-		assert(end >= start);
+		VTR_ASSERT(end >= start);
 		/* Make sure we are nearby */
 
 		if ((grid_x) == chan_xlow) {
 			iside = RIGHT;
 			draw_pin_off = draw_coords->pin_size;
 		} else {
-			assert((grid_x - 1) == chan_xlow);
+			VTR_ASSERT((grid_x - 1) == chan_xlow);
 			iside = LEFT;
 			draw_pin_off = -draw_coords->pin_size;
 		}
 		for (i = start; i <= end; i++) {
 			height_offset = i - grid_y;
-			assert(height_offset >= 0 && height_offset < type->height);
+			VTR_ASSERT(height_offset >= 0 && height_offset < type->height);
 			/* Once we find the location, break out, this will leave ioff pointing
 			 * to the correct offset.  If an offset is not found, the assertion after
 			 * this will fail.  With the correct routing graph, the assertion will not
@@ -2541,7 +2541,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 				break;
 			}
 		}
-		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
+		VTR_ASSERT(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -2593,8 +2593,8 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	enum e_side iside, pin_side;
 	t_type_ptr type;
 
-	assert(rr_node[opin_node].type == OPIN);
-	assert(rr_node[ipin_node].type == IPIN);
+	VTR_ASSERT(rr_node[opin_node].type == OPIN);
+	VTR_ASSERT(rr_node[ipin_node].type == IPIN);
 	iside = (enum e_side)0;
 	x1 = y1 = x2 = y2 = 0;
 	width_offset = 0;
@@ -2624,7 +2624,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 			}
 		}
 	}
-	assert(found);
+	VTR_ASSERT(found);
 	draw_get_rr_pin_coords(opin_node, pin_side, width_offset, height_offset, &x1, &y1);
 
 	/* get ipin coordinate */
@@ -2650,7 +2650,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 			}
 		}
 	}
-	assert(found);
+	VTR_ASSERT(found);
 	draw_get_rr_pin_coords(ipin_node, pin_side, width_offset, height_offset, &x2, &y2);
 
 	drawline(x1, y1, x2, y2);	

@@ -1,9 +1,8 @@
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "vtr_matrix.h"
 #include "vtr_util.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_util.h"
@@ -44,7 +43,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 	vtr::t_ivec ***switch_block_conn = NULL;
 
 	/* Currently Fs must be 3 since each track maps once to each other side */
-	assert(3 == Fs);
+	VTR_ASSERT(3 == Fs);
 
 	switch_block_conn = vtr::alloc_matrix3<vtr::t_ivec>(0, 3, 0, 3, 0, (nodes_per_chan - 1));
 

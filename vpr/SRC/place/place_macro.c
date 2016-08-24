@@ -136,9 +136,8 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "physical_types.h"
 #include "globals.h"
@@ -241,11 +240,11 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							curr_inet = next_inet;
 							
 							// Assume that carry chains only has 1 sink - direct connection
-							assert(g_clbs_nlist.net[curr_inet].num_sinks() == 1);
+							VTR_ASSERT(g_clbs_nlist.net[curr_inet].num_sinks() == 1);
 							next_iblk = g_clbs_nlist.net[curr_inet].pins[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
-							assert (f_idirect_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == from_idirect
+							VTR_ASSERT(f_idirect_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == from_idirect
 									&& f_direct_type_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == SOURCE);
 							next_inet = block[next_iblk].nets[from_iblk_pin];
 
