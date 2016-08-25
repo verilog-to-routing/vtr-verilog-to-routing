@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 		#ifdef VPR6
         try {
             XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
-        } catch(VtrError& vtr_error) {
+        } catch(vtr::VtrError& vtr_error) {
             printf("Failed to load architecture file: %s\n", vtr_error.what());
         }
 		#endif

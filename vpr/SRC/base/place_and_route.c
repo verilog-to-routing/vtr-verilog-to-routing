@@ -13,6 +13,7 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "place_and_route.h"
 #include "place.h"

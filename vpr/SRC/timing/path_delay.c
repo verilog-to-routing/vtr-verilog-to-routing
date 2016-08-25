@@ -7,6 +7,8 @@ using namespace std;
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "path_delay.h"
 #include "path_delay2.h"

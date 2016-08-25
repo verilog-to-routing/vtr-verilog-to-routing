@@ -1,5 +1,3 @@
-#include "arch_util.h"
-
 #include <cstring>
 
 #include "vtr_assert.h"
@@ -7,6 +5,11 @@
 #include "vtr_util.h"
 
 #include "arch_types.h"
+#include "arch_util.h"
+#include "arch_error.h"
+
+
+
 #include "read_xml_arch_file.h"
 
 t_port * findPortByName(const char * name, t_pb_type * pb_type,
@@ -400,7 +403,7 @@ void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 			if (num_pb == OPEN) {
 				num_pb = mem_pb_type->ports[i].num_pins;
 			} else if (num_pb != mem_pb_type->ports[i].num_pins) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
+				archfpga_throw(get_arch_file_name(), 0,
 						"memory %s has inconsistent number of data bits %d and %d\n",
 						mem_pb_type->name, num_pb,
 						mem_pb_type->ports[i].num_pins);
@@ -716,7 +719,7 @@ void SyncModelsPbTypes_rec(struct s_arch *arch,
 		if (blif_model_name) {
 			blif_model_name++; /* get character after the '.' or ' ' */
 		} else {
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
+			archfpga_throw(get_arch_file_name(), 0,
 					"Unknown blif model %s in pb_type %s\n",
 					pb_type->blif_model, pb_type->name);
 		}
@@ -743,7 +746,7 @@ void SyncModelsPbTypes_rec(struct s_arch *arch,
 			cur_model = cur_model->next;
 		}
 		if (found != true) {
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
+			archfpga_throw(get_arch_file_name(), 0,
 					"No matching model for pb_type %s\n", pb_type->blif_model);
 		}
 
@@ -791,7 +794,7 @@ void SyncModelsPbTypes_rec(struct s_arch *arch,
 				model_port = model_port->next;
 			}
 			if (found != true) {
-				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
+				archfpga_throw(get_arch_file_name(), 0,
 						"No matching model port for port %s in pb_type %s\n",
 						pb_type->ports[p].name, pb_type->name);
 			}
@@ -813,7 +816,7 @@ void UpdateAndCheckModels(struct s_arch *arch) {
 	cur_model = arch->models;
 	while (cur_model) {
 		if (cur_model->pb_types == NULL) {
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
+			archfpga_throw(get_arch_file_name(), 0,
 					"No pb_type found for model %s\n", cur_model->name);
 		}
 		port = cur_model->inputs;
@@ -854,7 +857,7 @@ void primitives_annotation_clock_match(
 	bool clock_valid = false; //Determine if annotation's clock is same as primtive's clock
 
 	if (!parent_pb_type || !annotation) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+		archfpga_throw(__FILE__, __LINE__,
 				"Annotation_clock check encouters invalid annotation or primitive.\n");
 	}
 
@@ -869,7 +872,7 @@ void primitives_annotation_clock_match(
 	}
 
 	if (!clock_valid) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), annotation->line_num,
+		archfpga_throw(get_arch_file_name(), annotation->line_num,
 				"Clock '%s' does not match any clock defined in pb_type '%s'.\n",
 				annotation->clock, parent_pb_type->name);
 	}

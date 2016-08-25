@@ -19,6 +19,7 @@ using namespace std;
 #include "vtr_memory.h"
 #include "vtr_log.h"
 
+#include "vpr_error.h"
 #include "vpr_api.h"
 #include "path_delay.h" /* for timing_analysis_runtime */
 
@@ -87,7 +88,7 @@ int main(int argc, const char **argv) {
 		vpr_print_error(vpr_error);
         /* Signal error to scripts */
         return ERROR_EXIT_CODE;
-	} catch(VtrError& vtr_error){
+	} catch(vtr::VtrError& vtr_error){
         vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
         /* Signal error to scripts */
         return ERROR_EXIT_CODE;

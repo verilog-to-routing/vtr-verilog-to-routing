@@ -9,6 +9,8 @@
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "path_delay2.h"
 #include "read_xml_arch_file.h"

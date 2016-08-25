@@ -9,6 +9,9 @@ See comment of "dump_rr_structs" function for formate
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include "vpr_error.h"
+
 #include "dump_rr_structs.h"
 #include "globals.h"
 

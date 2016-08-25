@@ -10,10 +10,12 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_log.h"
 
-#include "stats.h"
 #include "vpr_types.h"
-#include "globals.h"
+#include "vpr_error.h"
 #include "vpr_utils.h"
+
+#include "stats.h"
+#include "globals.h"
 #include "route_export.h"
 #include "route_common.h"
 #include "route_tree_timing.h"

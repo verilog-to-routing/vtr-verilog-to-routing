@@ -6,8 +6,10 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_math.h"
 
-#include "read_xml_arch_file.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
+
+#include "read_xml_arch_file.h"
 #include "globals.h"
 #include "prepack.h"
 #include "pack_types.h"

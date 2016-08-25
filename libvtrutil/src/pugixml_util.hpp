@@ -24,10 +24,10 @@
 namespace pugiutil {
 
     //An error produced while getting an XML node/attribute
-    class XmlError : public VtrError {
+    class XmlError : public vtr::VtrError {
         public:
             XmlError(std::string msg="", std::string new_filename="", size_t new_linenumber=-1)
-                : VtrError(msg, new_filename, new_linenumber) {}
+                : vtr::VtrError(msg, new_filename, new_linenumber) {}
     };
 
     //Loads the XML file specified by filename into the passed pugi::xml_docment

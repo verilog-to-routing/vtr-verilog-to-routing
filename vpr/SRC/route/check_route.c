@@ -5,6 +5,8 @@ using namespace std;
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "route_export.h"
 #include "check_route.h"

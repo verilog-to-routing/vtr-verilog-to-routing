@@ -39,7 +39,9 @@
 #include "vtr_math.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "vpr_utils.h"
+
 #include "cb_metrics.h"
 
 using namespace std;

@@ -50,10 +50,12 @@
 #include "vtr_matrix.h"
 
 #include "arch_types.h"
+#include "arch_util.h"
+#include "arch_error.h"
+
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
-#include "arch_util.h"
 
 using namespace std;
 using namespace pugiutil;
@@ -163,7 +165,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	try {
 		loc_data = pugiutil::load_xml(doc, ArchFile);
 	} catch (XmlError& e) {
-		vpr_throw(VPR_ERROR_ARCH, ArchFile, 0,
+		archfpga_throw(ArchFile, 0,
 				"Unable to find/load architecture file '%s'.\n", ArchFile, e.what());
 	}
 
@@ -303,7 +305,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	} else if (strcmp(Prop, "custom") == 0) {
 		Type->pin_location_distribution = E_CUSTOM_PIN_DISTR;
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Locations),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
 				"%s is an invalid pin location pattern.\n", Prop);
 	}
 
@@ -351,7 +353,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			/* Get offset (ie. height) */
 			int height = get_attribute(Cur, "offset", loc_data, OPTIONAL).as_int(0);
 			if ((height < 0) || (height >= Type->height)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"'%d' is an invalid offset for type '%s'.\n", height,
 						Type->name);
 			}
@@ -368,18 +370,18 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			} else if (0 == strcmp(Prop, "bottom")) {
 				side = BOTTOM;
 			} else {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"'%s' is not a valid side.\n", Prop);
 			}
 
 			/* Check location is on perimeter */
 			if ((TOP == side) && (height != (Type->height - 1))) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Locations are only allowed on large block perimeter. 'top' side should be at offset %d only.\n",
 						(Type->height - 1));
 			}
 			if ((BOTTOM == side) && (height != 0)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Locations are only allowed on large block perimeter. 'bottom' side should be at offset 0 only.\n");
 			}
 
@@ -491,7 +493,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 		if (Prop) {
 			if (strcmp(Prop, "perimeter") == 0) {
 				if (Type->num_grid_loc_def != 1) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 							"Another loc specified for perimeter.\n");
 				}
 				Type->grid_loc_def[i].grid_loc_type = BOUNDARY;
@@ -499,7 +501,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 				/* IO goes to boundary */
 			} else if (strcmp(Prop, "fill") == 0) {
 				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 							"Another loc specified for fill.\n");
 				}
 				Type->grid_loc_def[i].grid_loc_type = FILL;
@@ -509,7 +511,7 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 			} else if (strcmp(Prop, "rel") == 0) {
 				Type->grid_loc_def[i].grid_loc_type = COL_REL;
 			} else {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Unknown grid location type '%s' for type '%s'.\n",
 						Prop, Type->name);
 			}
@@ -517,12 +519,12 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 		Prop = get_attribute(Cur, "start", loc_data, OPTIONAL).as_string(NULL);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
 			if (Prop == NULL) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"grid location property 'start' must be specified for grid location type 'col'.\n");
 			}
 			Type->grid_loc_def[i].start_col = vtr::atoi(Prop);
 		} else if (Prop != NULL) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 					"grid location property 'start' valid for grid location type 'col' only.\n");
 		}
 		Prop = get_attribute(Cur, "repeat", loc_data, OPTIONAL).as_string(NULL);
@@ -531,18 +533,18 @@ static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Typ
 				Type->grid_loc_def[i].repeat = vtr::atoi(Prop);
 			}
 		} else if (Prop != NULL) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 					"Grid location property 'repeat' valid for grid location type 'col' only.\n");
 		}
 		Prop = get_attribute(Cur, "pos", loc_data, OPTIONAL).as_string(NULL);
 		if (Type->grid_loc_def[i].grid_loc_type == COL_REL) {
 			if (Prop == NULL) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Grid location property 'pos' must be specified for grid location type 'rel'.\n");
 			}
 			Type->grid_loc_def[i].col_rel = (float) atof(Prop);
 		} else if (Prop != NULL) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 					"Grid location property 'pos' valid for grid location type 'rel' only.\n");
 		}
 
@@ -725,7 +727,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		annotation->output_pins = vtr::strdup(Prop);
 
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 				"Unknown port type %s in %s in %s", Parent.name(),
 				Parent.parent().name(), Parent.parent().parent().name() );
 	} 
@@ -744,17 +746,17 @@ static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type * pb_t
 
 		port = findPortByName(prop, pb_type, &high, &low);
 		if (!port) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 					"Could not find port '%s' needed for energy per toggle.",
 					prop);
 		}
 		if (high != port->num_pins - 1 || low != 0) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 					"Pin-toggle does not support pin indices (%s)", prop);
 		}
 
 		if (port->port_power->pin_toggle_initialized) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 					"Duplicate pin-toggle energy for port '%s'", port->name);
 		}
 		port->port_power->pin_toggle_initialized = true;
@@ -777,7 +779,7 @@ static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type * pb_t
 			port->port_power->scaled_by_port = findPortByName(prop, pb_type,
 					&high, &low);
 			if (high != low) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Pin-toggle 'scaled_by_static_prob' must be a single pin (%s)",
 						prop);
 			}
@@ -877,7 +879,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_t
 		pb_type->pb_type_power->estimation_method =
 				POWER_METHOD_SUM_OF_CHILDREN;
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 				"Invalid power estimation method for pb_type '%s'",
 				pb_type->name);
 	}
@@ -926,7 +928,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		} else if (0 == strcmp(class_name, "memory")) {
 			pb_type->class_type = MEMORY_CLASS;
 		} else {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 					"Unknown class '%s' in pb_type '%s'\n", class_name,
 					pb_type->name);
 		}
@@ -952,7 +954,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 	if (pb_type->class_type == LUT_CLASS
 			|| pb_type->class_type == LATCH_CLASS) {
 		if (num_in_ports != 1 || num_out_ports != 1) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 					"%s primitives must contain exactly one input port and one output port."
 							"Found '%d' input port(s) and '%d' output port(s) for '%s'",
 					(pb_type->class_type == LUT_CLASS) ? "LUT" : "Latch",
@@ -990,7 +992,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 			ret_pb_ports = pb_port_names.insert(
 					pair<string, int>(pb_type->ports[j].name, 0));
 			if (!ret_pb_ports.second) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Duplicate port names in pb_type '%s': port '%s'\n",
 						pb_type->name, pb_type->ports[j].name);
 			}
@@ -1121,7 +1123,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 					ret_mode_names = mode_names.insert(
 							pair<string, int>(pb_type->modes[i].name, 0));
 					if (!ret_mode_names.second) {
-						vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+						archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 								"Duplicate mode name: '%s' in pb_type '%s'.\n",
 								pb_type->modes[i].name, pb_type->name);
 					}
@@ -1168,7 +1170,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
 			} else {
@@ -1183,11 +1185,11 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
 			} else if (wire_defined) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Multiple wire properties defined for port '%s', pb_type '%s'.",
 						port->name, port->parent_pb_type->name);
 			} else if (strcmp(prop, "auto") == 0) {
@@ -1205,11 +1207,11 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Wire relative length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
 			} else if (wire_defined) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Multiple wire properties defined for port '%s', pb_type '%s'.",
 						port->name, port->parent_pb_type->name);
 			} else {
@@ -1224,7 +1226,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 		if (prop) {
 			if (!(power_method == POWER_METHOD_AUTO_SIZES
 					|| power_method == POWER_METHOD_SPECIFY_SIZES)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
 						"Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
 						port->name, port->parent_pb_type->name);
 			} else if (strcmp(prop, "auto") == 0) {
@@ -1261,19 +1263,19 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		/* Check if LUT/FF port class is lut_in/D */
 		if (port->parent_pb_type->class_type == LUT_CLASS) {
 			if ((!port->port_class) || strcmp("lut_in", port->port_class)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Inputs to LUT primitives must have a port class named "
 								"as \"lut_in\".");
 			}
 		} else if (port->parent_pb_type->class_type == LATCH_CLASS) {
 			if ((!port->port_class) || strcmp("D", port->port_class)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Input to flipflop primitives must have a port class named "
 								"as \"D\".");
 			}
 			/* Only allow one input pin for FF's */
 			if (port->num_pins != 1) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Input port of flipflop primitives must have exactly one pin. "
 								"Found %d.", port->num_pins);
 			}
@@ -1286,25 +1288,25 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		/* Check if LUT/FF port class is lut_out/Q */
 		if (port->parent_pb_type->class_type == LUT_CLASS) {
 			if ((!port->port_class) || strcmp("lut_out", port->port_class)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Output to LUT primitives must have a port class named "
 								"as \"lut_in\".");
 			}
 			/* Only allow one output pin for LUT's */
 			if (port->num_pins != 1) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Output port of LUT primitives must have exactly one pin. "
 								"Found %d.", port->num_pins);
 			}
 		} else if (port->parent_pb_type->class_type == LATCH_CLASS) {
 			if ((!port->port_class) || strcmp("Q", port->port_class)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Output to flipflop primitives must have a port class named "
 								"as \"D\".");
 			}
 			/* Only allow one output pin for FF's */
 			if (port->num_pins != 1) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Output port of flipflop primitives must have exactly one pin. "
 								"Found %d.", port->num_pins);
 			}
@@ -1313,26 +1315,26 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		port->type = IN_PORT;
 		port->is_clock = true;
 		if (port->is_non_clock_global == true) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 					"Port %s cannot be both a clock and a non-clock simultaneously\n",
 					Parent.name());
 		}
 
 		if (port->parent_pb_type->class_type == LATCH_CLASS) {
 			if ((!port->port_class) || strcmp("clock", port->port_class)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Clock to flipflop primitives must have a port class named "
 								"as \"clock\".");
 			}
 			/* Only allow one output pin for FF's */
 			if (port->num_pins != 1) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 						"Clock port of flipflop primitives must have exactly one pin. "
 								"Found %d.", port->num_pins);
 			}
 		}
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Parent),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
 				"Unknown port type %s", Parent.name());
 	}
 
@@ -1398,7 +1400,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 			ret_interc_names = interc_names.insert(
 					pair<string, int>(mode->interconnect[i].name, 0));
 			if (!ret_interc_names.second) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"Duplicate interconnect name: '%s' in mode: '%s'.\n",
 						mode->interconnect[i].name, mode->name);
 			}
@@ -1490,7 +1492,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 				ret_pb_types = pb_type_names.insert(
 						pair<string, int>(mode->pb_type_children[i].name, 0));
 				if (!ret_pb_types.second) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Cur),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 							"Duplicate pb_type name: '%s' in mode: '%s'.\n",
 							mode->pb_type_children[i].name, mode->name);
 				}
@@ -1545,7 +1547,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 		} else if (0 == strcmp(Prop, "full")) {
 			def_type_in = FC_FULL;
 		} else {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n",
 					Prop);
 		}
@@ -1573,7 +1575,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 		} else if (0 == strcmp(Prop, "full")) {
 			def_type_out = FC_FULL;
 		} else {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n",
 					Prop);
 		}
@@ -1617,7 +1619,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 
 	/* pin-based fc overrides and segment-based fc overrides should not exist at the same time */
 	if (get_first_child(Node, "pin", loc_data, OPTIONAL) != NULL && get_first_child(Node, "segment", loc_data, OPTIONAL) != NULL){
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 				"Complex block 'fc' is allowed to specify pin-based fc overrides OR segment-based fc overrides, not both.\n");
 	}
 
@@ -1636,7 +1638,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 			} else if (0 == strcmp(Prop2, "full")) {
 				ovr_type = FC_FULL;
 			} else {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 						"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n",
 						Prop2);
 			}
@@ -1669,16 +1671,16 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 				Prop = port_name;
 				if (match_count != 3
 						|| (match_count != 1 && port_name == NULL)) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 							"Invalid name for pin child, name should be in the format \"port_name\" or \"port_name [end_pin_index:start_pin_index]\","
 									"The end_pin_index and start_pin_index can be the same.\n");
 				}
 				if (end_pin_index < 0 || start_pin_index < 0) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 							"The pin_index should not be a negative value.\n");
 				}
 				if (end_pin_index < start_pin_index) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 							"The end_pin_index should be not be less than start_pin_index.\n");
 				}
 			}
@@ -1695,7 +1697,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 					 * here. The indices are inclusive. */
 					port_found = true;
 					if (end_pin_index > Type->pb_type->ports[iport].num_pins) {
-						vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+						archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 								"The end_pin_index for this port: %d cannot be greater than the number of pins in this port: %d.\n",
 								end_pin_index,
 								Type->pb_type->ports[iport].num_pins);
@@ -1736,7 +1738,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 
 						} else {
 
-							vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+							archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 									"Multiple Fc override detected!\n");
 						}
 					}
@@ -1749,14 +1751,14 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 
 			/* The override pin child is not in any of the ports in pb_type. */
 			if (port_found == false) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 						"The port \"%s\" cannot be found.\n", Prop);
 			}
 
 			/* End of case where fc_type of pin_child is specified. */
 		} else {
 			/* fc_type of pin_child is not specified. Error out. */
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 					"Pin child with no fc_type specified is not allowed.\n");
 		}
 
@@ -1797,7 +1799,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 			}
 		}
 		if (seg_ind == UNDEFINED){
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Child),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
 				"Segment-based Fc override specified segment name that cannot be found in segment list: %s\n", segment_name);
 		}
 
@@ -1836,7 +1838,7 @@ static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Ty
 	Type->area = get_attribute(Node, "area", loc_data, OPTIONAL).as_float(UNDEFINED);
 
 	if (atof(Prop) < 0) {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 				"Area for type %s must be non-negative\n", Type->name);
 	}
 }
@@ -1874,7 +1876,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
 		/* Try insert new model, check if already exist at the same time */
 		ret_map_name = model_name_map.insert(pair<string, int>(temp->name, 0));
 		if (!ret_map_name.second) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(child),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
 					"Duplicate model name: '%s'.\n", temp->name);
 		}
 
@@ -1900,7 +1902,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
 				}
 
 				if (tp->is_clock == true && tp->is_non_clock_global == true) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(p),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
 							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
 				}
 
@@ -1908,7 +1910,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
 				ret_map_port = model_port_map.insert(
 						pair<string, int>(tp->name, 0));
 				if (!ret_map_port.second) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(p),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
 							"Duplicate model input port name: '%s'.\n",
 							tp->name);
 				}
@@ -1936,7 +1938,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
 				}
 
 				if (tp->is_clock == true && tp->is_non_clock_global == true) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(p),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
 							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
 				}
 
@@ -1944,7 +1946,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
 				ret_map_port = model_port_map.insert(
 						pair<string, int>(tp->name, 0));
 				if (!ret_map_port.second) {
-					vpr_throw(VPR_ERROR_ARCH,loc_data.filename_c_str(), loc_data.line(p),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
 							"Duplicate model output port name: '%s'.\n",
 							tp->name);
 				}
@@ -1989,12 +1991,12 @@ static void ProcessLayout(pugi::xml_node Node, struct s_arch *arch, const pugilo
 	Prop = get_attribute(Node, "auto", loc_data, CLB_GRID_ISAUTO).as_string(NULL);
 	if (Prop != NULL) {
 		if (arch->clb_grid.IsAuto == false) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Auto-sizing, width and height cannot be specified\n");
 		}
 		arch->clb_grid.Aspect = (float) atof(Prop);
 		if (arch->clb_grid.Aspect <= 0) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Grid aspect ratio is less than or equal to zero %g\n",
 					arch->clb_grid.Aspect);
 		}
@@ -2032,7 +2034,7 @@ static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
 		arch->SBType = CUSTOM;
 		custom_switch_block = true;
 	} else {
-		vpr_throw(VPR_ERROR_ARCH,loc_data.filename_c_str(), loc_data.line(Cur),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 				"Unknown property %s for switch block type x\n", Prop);
 	}
 	
@@ -2110,7 +2112,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
 		hasXpeak = hasDc = REQUIRED;
 		chan->type = DELTA;
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 				"Unknown property %s for chan_width_distr x\n", Prop);
 	}
 
@@ -2167,7 +2169,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		ret_pb_type_descriptors = pb_type_descriptors.insert(
 				pair<string, int>(Type->name, 0));
 		if (!ret_pb_type_descriptors.second) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(CurType),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
 					"Duplicate pb_type descriptor name: '%s'.\n", Type->name);
 		}
 
@@ -2176,7 +2178,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Type->pb_type->name = vtr::strdup(Type->name);
 		if (i == IO_TYPE_INDEX) {
 			if (strcmp(Type->name, "io") != 0) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(CurType),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurType),
 						"First complex block must be named \"io\" and define the inputs and outputs for the FPGA");
 			}
 		}
@@ -2210,7 +2212,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
 	}
 	if (FILL_TYPE == NULL) {
-		vpr_throw(VPR_ERROR_ARCH, arch_file_name, 0,
+		archfpga_throw(arch_file_name, 0,
 				"grid location type 'fill' must be specified.\n");
 	}
 	pb_type_descriptors.clear();
@@ -2250,7 +2252,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		} else {
 			/* if swich block is "custom", then you have to provide a name for segment */
 			if (switchblocklist_required) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"No name specified for the segment #%d.\n", i);
 
 			}
@@ -2302,7 +2304,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		}
 
 		else {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", tmp);
 		}
 
@@ -2318,7 +2320,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 				}
 			}
 			if (j >= NumSwitches) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(SubElem),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid mux name.\n", tmp);
 			}
 
@@ -2341,7 +2343,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 				}
 			}
 			if (j >= NumSwitches) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(SubElem),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid wire_switch name.\n", tmp);
 			}
 			(*Segs)[i].arch_wire_switch = j;
@@ -2355,7 +2357,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 				}
 			}
 			if (j >= NumSwitches) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(SubElem),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
 						"'%s' is not a valid opin_switch name.\n", tmp);
 			}
 			(*Segs)[i].arch_opin_switch = j;
@@ -2423,7 +2425,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf>
 			} else if (0 == strcmp(tmp, "unidir")){
 				sb.directionality = UNI_DIRECTIONAL;
 			} else {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node), "Unsopported switchblock type: %s\n", tmp);
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported switchblock type: %s\n", tmp);
 			}
 		}
 
@@ -2442,7 +2444,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf>
 			} else if (strcmp(tmp, "FRINGE") == 0){
 				sb.location = E_FRINGE;
 			} else {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(SubElem), "unrecognized switchblock location: %s\n", tmp);
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "unrecognized switchblock location: %s\n", tmp);
 			}
 		}
 
@@ -2487,7 +2489,7 @@ static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 			case 'T':
 			case '1':
 				if (i >= len) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 							"CB or SB depopulation is too long. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
 				}
 				list[i] = true;
@@ -2496,27 +2498,27 @@ static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 			case 'F':
 			case '0':
 				if (i >= len) {
-					vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 							"CB or SB depopulation is too long. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
 				}
 				list[i] = false;
 				++i;
 				break;
 			default:
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 						"Invalid character %c in CB or SB depopulation list.\n",
 						*tmp);
 			}
 			++tmp;
 		}
 		if (i < len) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"CB or SB depopulation is too short. It should be (length) symbols for CBs and (length+1) symbols for SBs.\n");
 		}
 	}
 
 	else {
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 				"'%s' is not a valid type for specifying cb and sb depopulation.\n",
 				tmp);
 	}
@@ -2553,7 +2555,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		/* Check for switch name collisions */
 		for (j = 0; j < i; ++j) {
 			if (0 == strcmp((*Switches)[j].name, switch_name)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 						"Two switches with the same name '%s' were found.\n",
 						switch_name);
 			}
@@ -2575,7 +2577,7 @@ static void ProcessSwitches(pugi::xml_node Parent,
 		}
 
 		else {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Invalid switch type '%s'.\n", type_name);
 		}
 		
@@ -2635,7 +2637,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 
 	/* delay should not be specified as a Tdel property AND a Tdel child */
 	if (has_Tdel_prop && has_Tdel_children){
-		vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 				"Switch delay should be specified as EITHER a Tdel property OR as a child of the switch node, not both");
 	}
 
@@ -2659,7 +2661,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 			float Tdel_value = get_attribute(Tdel_child, "delay", loc_data).as_float(0.);
 
 			if (Tdel_map->count( num_inputs ) ){
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Tdel_child),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Tdel_child),
 					"Tdel node specified num_inputs (%d) that has already been specified by another Tdel node", num_inputs);
 			} else {
 				(*Tdel_map)[num_inputs] = Tdel_value;
@@ -2670,7 +2672,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 	} else {
 		/* No delay info specified for switch */
 		if (timing_enabled){
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"Switch should contain intrinsic delay information if timing is enabled");
 		} else {
 			/* set a default value */
@@ -2710,7 +2712,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		/* Check for direct name collisions */
 		for (j = 0; j < i; ++j) {
 			if (0 == strcmp((*Directs)[j].name, direct_name)) {
-				vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 						"Two directs with the same name '%s' were found.\n",
 						direct_name);
 			}
@@ -2723,7 +2725,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 
 		/* Check that to_pin and the from_pin are not the same */
 		if (0 == strcmp(to_pin_name, from_pin_name)) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"The source pin and sink pin are the same: %s.\n",
 					to_pin_name);
 		}
@@ -2744,7 +2746,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
                 }
             }
             if(j >= NumSwitches) {
-                vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                         "Could not find switch named '%s' in switch list.\n", switch_name);
 
             }
@@ -2759,7 +2761,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 
 		/* Check that the direct chain connection is not zero in both direction */
 		if ((*Directs)[i].x_offset == 0 && (*Directs)[i].y_offset == 0) {
-			vpr_throw(VPR_ERROR_ARCH, loc_data.filename_c_str(), loc_data.line(Node),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
 					"The x_offset and y_offset are both zero, this is a length 0 direct chain connection.\n");
 		}
 

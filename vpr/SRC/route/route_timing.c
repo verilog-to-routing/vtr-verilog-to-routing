@@ -10,6 +10,8 @@
 
 #include "vpr_utils.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "route_export.h"
 #include "route_common.h"

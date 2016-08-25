@@ -7,6 +7,8 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "route_common.h"
 #include "route_tree_timing.h"

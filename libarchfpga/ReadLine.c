@@ -6,6 +6,7 @@
 #include "ReadLine.h"
 
 #include "vtr_memory.h"
+#include "vtr_error.h"
 
 /* Pass in a pointer to a token list. Is freed and then set to null */
 void FreeTokens(char ***TokensPtr) {
@@ -62,8 +63,7 @@ ReadLineTokens(FILE * InFile, int *LineNum) {
 			if (feof(InFile)) {
 				return NULL; /* Return NULL on EOF */
 			} else {
-				vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__,
-					"Unexpected error reading file\n");
+				throw vtr::VtrError("Unexpected error reading file\n", __FILE__, __LINE__);
 			}
 		}
 		++(*LineNum);
@@ -88,8 +88,7 @@ ReadLineTokens(FILE * InFile, int *LineNum) {
 				if (feof(InFile)) {
 					return NULL; /* Return NULL on EOF */
 				} else {
-					vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__,
-						"Unexpected error reading file\n");
+					throw vtr::VtrError("Unexpected error reading file", __FILE__, __LINE__);
 				}
 			}
 			++(*LineNum);

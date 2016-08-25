@@ -18,9 +18,10 @@ using namespace std;
 #include "vtr_log.h"
 
 
-#include "hash.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "vpr_utils.h"
+#include "hash.h"
 #include "globals.h"
 #include "read_xml_util.h"
 #include "read_netlist.h"

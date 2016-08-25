@@ -12,12 +12,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "vtr_assert.h"
 using namespace std;
 
+#include "vtr_assert.h"
 #include "vtr_util.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "output_blif.h"
 #include "ReadOptions.h"

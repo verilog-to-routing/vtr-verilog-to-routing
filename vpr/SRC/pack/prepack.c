@@ -12,13 +12,15 @@
 
 #include <cstdio>
 #include <cstring>
-#include "vtr_assert.h"
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_assert.h"
+
+#include "vpr_types.h"
+#include "vpr_error.h"
 
 #include "read_xml_arch_file.h"
-#include "vpr_types.h"
 #include "globals.h"
 #include "hash.h"
 #include "prepack.h"

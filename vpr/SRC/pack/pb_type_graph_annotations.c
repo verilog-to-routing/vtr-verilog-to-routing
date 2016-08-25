@@ -9,8 +9,10 @@ using namespace std;
 
 #include "vtr_assert.h"
 
-#include "arch_types.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
+#include "arch_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "pb_type_graph.h"

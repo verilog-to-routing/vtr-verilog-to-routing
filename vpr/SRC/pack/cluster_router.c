@@ -23,8 +23,10 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
-#include "physical_types.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
+
+#include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "pack_types.h"

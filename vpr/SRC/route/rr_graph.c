@@ -13,6 +13,8 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "rr_graph_util.h"
 #include "rr_graph.h"

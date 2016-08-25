@@ -2,13 +2,16 @@
 #include <cstring>
 using namespace std;
 
-#include "hash.h"
+#include "vtr_util.h"
+
 #include "vpr_types.h"
+#include "vpr_error.h"
+
+#include "hash.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
 #include "globals.h"
 
-#include "vtr_util.h"
 
 static bool EchoEnabled;
 

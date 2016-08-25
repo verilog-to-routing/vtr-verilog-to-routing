@@ -126,14 +126,18 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 */
 
 #include <cstring>
-#include "vtr_assert.h"
 #include <algorithm>
 #include <iterator>
+#include <malloc.h>
+#include <iostream>
+
+#include "vtr_assert.h"
+
+#include "vpr_error.h"
+
 #include "build_switchblocks.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
-#include <malloc.h>
-#include <iostream>
 
 using namespace std;
 

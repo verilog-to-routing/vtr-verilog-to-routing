@@ -14,6 +14,8 @@
 #include "vtr_util.h"
 #include "vtr_log.h"
 
+#include "vpr_error.h"
+
 #include "netlist_walker.h"
 #include "netlist_writer.h"
 

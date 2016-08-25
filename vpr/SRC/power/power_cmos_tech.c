@@ -33,6 +33,8 @@
 #include "vtr_memory.h"
 #include "vtr_math.h"
 
+#include "vpr_error.h"
+
 #include "power_cmos_tech.h"
 #include "power.h"
 #include "power_util.h"

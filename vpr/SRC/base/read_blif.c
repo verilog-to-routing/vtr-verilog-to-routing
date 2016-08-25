@@ -9,6 +9,7 @@ using namespace std;
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "read_blif.h"
 #include "arch_types.h"

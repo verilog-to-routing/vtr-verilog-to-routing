@@ -35,7 +35,7 @@
 #include "vpr_utils.h"
 #include "place_macro.h"
 
-#include "vtr_error.h"
+#include "vpr_error.h"
 
 /* Main VPR Operations */
 void vpr_init(const int argc, const char **argv, t_options *options,

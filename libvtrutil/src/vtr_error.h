@@ -3,6 +3,8 @@
 
 #include <stdexcept>
 
+namespace vtr {
+
 class VtrError : public std::runtime_error {
     public:
         VtrError(std::string msg="", std::string new_filename="", size_t new_linenumber=-1)
@@ -23,5 +25,7 @@ class VtrError : public std::runtime_error {
         std::string filename_;
         size_t linenumber_;
 };
+
+}
 
 #endif

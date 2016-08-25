@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"

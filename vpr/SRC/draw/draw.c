@@ -16,13 +16,14 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include "vtr_assert.h"
 using namespace std;
 
-
+#include "vtr_assert.h"
 #include "vtr_matrix.h"
 
 #include "vpr_utils.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "graphics.h"
 #include "path_delay.h"
