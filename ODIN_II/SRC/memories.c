@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */ 
 
 #include <string.h>
+#include <math.h>
 #include "globals.h"
 #include "errors.h"
 #include "netlist_utils.h"

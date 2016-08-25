@@ -22,10 +22,11 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-#include "vtr_assert.h"
+#include <cmath>
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_assert.h"
 
 #include "power_sizing.h"
 #include "power.h"

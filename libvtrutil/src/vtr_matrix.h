@@ -3,8 +3,8 @@
 
 #include <cstdlib>
 
-#include "vtr_memory.h"
 #include "vtr_list.h"
+#include "vtr_memory.h"
 
 namespace vtr {
 

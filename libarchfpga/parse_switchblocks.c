@@ -27,7 +27,6 @@ specified by the switch block permutation functions into their numeric counterpa
 
 #include "arch_error.h"
 
-#include "util.h"
 #include "read_xml_util.h"
 #include "arch_types.h"
 #include "physical_types.h"

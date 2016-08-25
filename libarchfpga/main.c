@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "vtr_error.h"
 #include "vtr_memory.h"
 
 #include "read_xml_arch_file.h"

@@ -31,7 +31,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "ast_util.h"
 #include "string_cache.h"
-#include "util.h"
 #include "netlist_check.h"
 #include "netlist_visualizer.h"
 

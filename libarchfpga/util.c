@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <memory>
 
-#include "util.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
 

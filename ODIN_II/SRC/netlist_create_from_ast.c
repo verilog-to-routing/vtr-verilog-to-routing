@@ -35,7 +35,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_visualizer.h"
 #include "parse_making_ast.h"
 #include "node_creation_library.h"
-#include "util.h"
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "memories.h"

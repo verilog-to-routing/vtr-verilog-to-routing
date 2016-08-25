@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <climits>
+#include <cmath>
 using namespace std;
 
 #include "vtr_assert.h"

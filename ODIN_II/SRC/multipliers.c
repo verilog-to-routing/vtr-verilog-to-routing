@@ -33,6 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 #include "adders.h"
+#include "print_tags.h"
 
 #include "vtr_list.h"
 

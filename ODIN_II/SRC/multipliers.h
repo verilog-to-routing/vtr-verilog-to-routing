@@ -24,7 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define MULTIPLIERS_H
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 
 typedef struct s_multiplier
 {

@@ -1,9 +1,9 @@
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 
 #include "vtr_matrix.h"
-#include "vtr_error.h"
 #include "vtr_util.h"
+#include "vtr_error.h"
 
 namespace vtr {
 

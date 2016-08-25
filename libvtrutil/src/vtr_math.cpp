@@ -1,8 +1,8 @@
 #include <map>
 
-#include "vtr_math.h"
-#include "vtr_error.h"
 #include "vtr_assert.h"
+#include "vtr_error.h"
+#include "vtr_math.h"
 
 namespace vtr {
 

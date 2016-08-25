@@ -28,7 +28,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include "types.h"
 #include "globals.h"
-#include "util.h"
 
 /*---------------------------------------------------------------------------------------------
  * (function: error_message)

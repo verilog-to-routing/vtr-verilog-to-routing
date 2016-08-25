@@ -33,7 +33,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "outputs.h"
 #include "partial_map.h"
 #include "multipliers.h"
-#include "util.h"
 #include "hard_blocks.h"
 #include "math.h"
 #include "memories.h"

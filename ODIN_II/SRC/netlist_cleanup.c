@@ -27,7 +27,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 #include "netlist_utils.h"
-#include "util.h"
 
 
 /* Used in the nnode_t.node_data field to mark if the node was already visited

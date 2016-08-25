@@ -29,8 +29,8 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <map>
 #include "logic_types.h"
-#include "util.h"
 
 typedef struct s_clock_arch t_clock_arch;
 typedef struct s_clock_network t_clock_network;

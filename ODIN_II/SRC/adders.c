@@ -30,11 +30,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
-#include "util.h"
 #include "read_xml_arch_file.h"
 #include "globals.h"
 #include "errors.h"
 #include "subtractions.h"
+#include "print_tags.h"
 
 #include "vtr_list.h"
 

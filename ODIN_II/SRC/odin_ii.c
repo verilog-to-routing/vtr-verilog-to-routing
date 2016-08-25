@@ -24,9 +24,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
+#include "vtr_error.h"
+
 #include "globals.h"
 #include "types.h"
-#include "util.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"

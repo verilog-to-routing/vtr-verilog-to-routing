@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 #include "globals.h"
 #include "types.h"
 #include "errors.h"
@@ -34,7 +35,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_optimizations.h"
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
-#include "util.h"
 #include "hard_blocks.h" 
 
 extern int yylineno;

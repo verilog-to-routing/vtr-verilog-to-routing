@@ -8,7 +8,6 @@
 #include "errors.h"
 #include "ast_util.h"
 #include "odin_util.h"
-#include "util.h"
 #include "high_level_data.h"
 
 /*---------------------------------------------------------------------------------------------*/

@@ -26,7 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include "globals.h"
 #include "types.h"
-#include "util.h"
 #include "netlist_utils.h"
 #include "print_netlist.h"
 

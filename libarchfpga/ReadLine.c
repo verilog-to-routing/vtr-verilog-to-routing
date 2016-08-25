@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "util.h"
 #include "ReadLine.h"
 
 #include "vtr_memory.h"

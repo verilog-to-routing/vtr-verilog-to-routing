@@ -1,12 +1,11 @@
+#include <cstddef>
 #include <cstdlib>
-#include <memory>
-
-#include "vtr_memory.h"
 
 #include "vtr_assert.h"
+#include "vtr_list.h"
+#include "vtr_memory.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
-#include "vtr_list.h"
 
 namespace vtr {
 

@@ -26,7 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include<stdio.h>
 #include "globals.h"
 #include "read_blif.h"
-#include "util.h"
 #include "string_cache.h"
 #include "netlist_utils.h"
 #include "errors.h"

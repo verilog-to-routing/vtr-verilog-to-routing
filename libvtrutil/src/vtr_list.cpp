@@ -1,6 +1,6 @@
 #include <cstdlib>
-#include "vtr_list.h"
 
+#include "vtr_list.h"
 #include "vtr_memory.h"
 
 namespace vtr {
@@ -12,8 +12,7 @@ struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr
 
 	struct s_linked_vptr *linked_vptr;
 
-	linked_vptr = (struct s_linked_vptr *) vtr::malloc(
-			sizeof(struct s_linked_vptr));
+	linked_vptr = (struct s_linked_vptr *) vtr::malloc(sizeof(struct s_linked_vptr));
 
 	linked_vptr->data_vptr = vptr_to_add;
 	linked_vptr->next = head;

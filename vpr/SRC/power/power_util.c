@@ -21,11 +21,12 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
-#include "vtr_assert.h"
+#include <cmath>
 #include <map>
 using namespace std;
 
 #include "vtr_list.h"
+#include "vtr_assert.h"
 
 
 #include "power_util.h"

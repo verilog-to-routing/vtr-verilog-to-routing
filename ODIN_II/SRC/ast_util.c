@@ -33,7 +33,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "ast_util.h"
 #include "odin_util.h"
-#include "util.h"
 #include "ast_optimizations.h"
 
 /*---------------------------------------------------------------------------

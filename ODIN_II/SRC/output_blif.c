@@ -31,7 +31,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "odin_util.h"
 #include "outputs.h"
-#include "util.h"
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "adders.h"

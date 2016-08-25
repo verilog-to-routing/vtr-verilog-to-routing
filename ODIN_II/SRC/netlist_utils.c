@@ -30,7 +30,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
-#include "util.h"
 
 
 extern global_args_t global_args;

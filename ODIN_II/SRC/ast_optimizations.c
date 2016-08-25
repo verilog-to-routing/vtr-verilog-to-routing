@@ -32,7 +32,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
 #include "verilog_bison_user_defined.h"
-#include "util.h"
 
 /* --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------

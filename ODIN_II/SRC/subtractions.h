@@ -24,7 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define SUBS_H
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 #include "adders.h"
 
 extern vtr::t_linked_vptr *sub_list;

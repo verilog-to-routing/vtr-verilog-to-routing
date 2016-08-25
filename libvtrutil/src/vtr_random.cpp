@@ -1,4 +1,5 @@
 #include <cstddef>
+
 #include "vtr_random.h"
 #include "vtr_util.h"
 #include "vtr_error.h"

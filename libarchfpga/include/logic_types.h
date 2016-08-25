@@ -10,7 +10,6 @@
 #define LOGIC_TYPES_H
 
 #include "vtr_list.h"
-#include "util.h"
 
 /* 
  Logic model data types
