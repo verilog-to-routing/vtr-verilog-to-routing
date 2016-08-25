@@ -42,52 +42,52 @@ static vtr::t_linked_vptr *num_edges_head;
  */
 
 static int check_pb_graph(void);
-static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
-		INP t_pb_graph_node *parent_pb_graph_node, INP t_pb_type *pb_type,
-		INP int index, bool load_power_structures);
+static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
+		t_pb_graph_node *parent_pb_graph_node, t_pb_type *pb_type,
+		const int index, bool load_power_structures);
 
 static void alloc_and_load_mode_interconnect(
-		INOUTP t_pb_graph_node *pb_graph_parent_node,
-		INOUTP t_pb_graph_node **pb_graph_children_nodes,
-		INP const t_mode * mode, bool load_power_structures);
+		t_pb_graph_node *pb_graph_parent_node,
+		t_pb_graph_node **pb_graph_children_nodes,
+		const t_mode * mode, bool load_power_structures);
 
-static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
-		INP const t_pb_graph_node *pb_graph_parent_node,
-		INP t_pb_graph_node **pb_graph_children_nodes,
-		INP bool interconnect_error_check, INP bool is_input_to_interc,
-		INP const t_token *tokens, INOUTP int *token_index,
-		INOUTP int *num_pins, OUTP t_pb_graph_pin ***pb_graph_pins);
+static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
+		const t_pb_graph_node *pb_graph_parent_node,
+		t_pb_graph_node **pb_graph_children_nodes,
+		const bool interconnect_error_check, const bool is_input_to_interc,
+		const t_token *tokens, int *token_index,
+		int *num_pins, t_pb_graph_pin ***pb_graph_pins);
 
-static t_pb_graph_pin * get_pb_graph_pin_from_name(INP const char * port_name,
-		INP const t_pb_graph_node * pb, INP int pin);
+static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
+		const t_pb_graph_node * pb, const int pin);
 
 static void alloc_and_load_complete_interc_edges(
-		INP t_interconnect * interconnect,
-		INOUTP t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
-		INP int num_input_sets, INP int *num_input_ptrs,
-		INOUTP t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
-		INP int num_output_sets, INP int *num_output_ptrs);
+		t_interconnect * interconnect,
+		t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
+		const int num_input_sets, const int *num_input_ptrs,
+		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
+		const int num_output_sets, const int *num_output_ptrs);
 
 static void alloc_and_load_direct_interc_edges(
-		INP t_interconnect * interconnect,
-		INOUTP t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
-		INP int num_input_sets, INP int *num_input_ptrs,
-		INOUTP t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
-		INP int num_output_sets, INP int *num_output_ptrs);
+		t_interconnect * interconnect,
+		t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
+		const int num_input_sets, const int *num_input_ptrs,
+		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
+		const int num_output_sets, const int *num_output_ptrs);
 
-static void alloc_and_load_mux_interc_edges(INP t_interconnect * interconnect,
-		INOUTP t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
-		INP int num_input_sets, INP int *num_input_ptrs,
-		INOUTP t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
-		INP int num_output_sets, INP int *num_output_ptrs);
+static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
+		t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
+		const int num_input_sets, const int *num_input_ptrs,
+		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
+		const int num_output_sets, const int *num_output_ptrs);
 
 static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type);
 
-static void echo_pb_rec(INP const t_pb_graph_node *pb, INP int level,
-		INP FILE * fp);
-static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports,
-		INP int level, INP FILE * fp);
-static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node);
+static void echo_pb_rec(const t_pb_graph_node *pb, const int level,
+		FILE * fp);
+static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
+		const int level, FILE * fp);
+static void free_pb_graph(t_pb_graph_node *pb_graph_node);
 
 static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 		t_interconnect * interconnect, t_pb_graph_pin *** input_pins,
@@ -95,12 +95,12 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 		t_pb_graph_pin *** output_pins, int num_output_sets,
 		int * num_output_pins);
 
-static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node);
+static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
 				const struct s_pb_graph_edge_comparator & edge2);
-static bool check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
-	INP int i_pin, INOUTP map<int, int>& edges_map, OUTP int* line_num);
+static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin, 
+	const int i_pin, map<int, int>& edges_map, int* line_num);
 
 /**
  * Allocate memory into types and load the pb graph with interconnect edges 
@@ -201,9 +201,9 @@ static int check_pb_graph(void) {
 	return num_errors;
 }
 
-static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
-		INP t_pb_graph_node *parent_pb_graph_node, INP t_pb_type *pb_type,
-		INP int index, bool load_power_structures) {
+static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
+		t_pb_graph_node *parent_pb_graph_node, t_pb_type *pb_type,
+		const int index, bool load_power_structures) {
 
 	int i, j, k, i_input, i_output, i_clockport;
 
@@ -384,7 +384,7 @@ static void alloc_and_load_pb_graph(INOUTP t_pb_graph_node *pb_graph_node,
 	}
 }
 
-static void free_pb_graph(INOUTP t_pb_graph_node *pb_graph_node) {
+static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 
 	int i, j, k;
 	const t_pb_type *pb_type;
@@ -656,9 +656,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
  * mode: mode of operation
  */
 static void alloc_and_load_mode_interconnect(
-		INOUTP t_pb_graph_node *pb_graph_parent_node,
-		INOUTP t_pb_graph_node **pb_graph_children_nodes,
-		INP const t_mode * mode, bool load_power_structures) {
+		t_pb_graph_node *pb_graph_parent_node,
+		t_pb_graph_node **pb_graph_children_nodes,
+		const t_mode * mode, bool load_power_structures) {
 
 	int i, j;
 	int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
@@ -749,11 +749,11 @@ static void alloc_and_load_mode_interconnect(
  * creates an array of pointers to the pb graph node pins in order from the port string
  * returns t_pb_graph_pin ptr indexed by [0..num_sets_in_port - 1][0..num_ptrs - 1]
  */
-t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
-		INP const t_pb_graph_node *pb_graph_parent_node,
-		INP t_pb_graph_node **pb_graph_children_nodes,
-		INP const char * port_string, OUTP int ** num_ptrs, OUTP int * num_sets,
-		INP bool is_input_to_interc, INP bool interconnect_error_check) {
+t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
+		const t_pb_graph_node *pb_graph_parent_node,
+		t_pb_graph_node **pb_graph_children_nodes,
+		const char * port_string, int ** num_ptrs, int * num_sets,
+		const bool is_input_to_interc, const bool interconnect_error_check) {
 
 	t_token * tokens;
 	int num_tokens, curr_set;
@@ -846,11 +846,11 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(INP int line_num,
  * Creates edges to connect all input pins to output pins 
  */
 static void alloc_and_load_complete_interc_edges(
-		INP t_interconnect *interconnect,
-		INOUTP t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
-		INP int num_input_sets, INP int *num_input_ptrs,
-		INOUTP t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
-		INP int num_output_sets, INP int *num_output_ptrs) {
+		t_interconnect *interconnect,
+		t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
+		const int num_input_sets, const int *num_input_ptrs,
+		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
+		const int num_output_sets, const int *num_output_ptrs) {
 
 	int i_inset, i_outset, i_inpin, i_outpin;
 	int in_count, out_count;
@@ -935,11 +935,11 @@ static void alloc_and_load_complete_interc_edges(
 }
 
 static void alloc_and_load_direct_interc_edges(
-		INP t_interconnect *interconnect,
-		INOUTP t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
-		INP int num_input_sets, INP int *num_input_ptrs,
-		INOUTP t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
-		INP int num_output_sets, INP int *num_output_ptrs) {
+		t_interconnect *interconnect,
+		t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
+		const int num_input_sets, const int *num_input_ptrs,
+		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
+		const int num_output_sets, const int *num_output_ptrs) {
 
 	int i;
 	t_pb_graph_edge *edges;
@@ -1002,11 +1002,11 @@ static void alloc_and_load_direct_interc_edges(
 	}
 }
 
-static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
-		INOUTP t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
-		INP int num_input_sets, INP int *num_input_ptrs,
-		INOUTP t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
-		INP int num_output_sets, INP int *num_output_ptrs) {
+static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
+		t_pb_graph_pin *** input_pb_graph_node_pin_ptrs,
+		const int num_input_sets, const int *num_input_ptrs,
+		t_pb_graph_pin *** output_pb_graph_node_pin_ptrs,
+		const int num_output_sets, const int *num_output_ptrs) {
 
 	int i_inset, i_inpin, i_outpin;
 	t_pb_graph_edge *edges;
@@ -1088,12 +1088,12 @@ static void alloc_and_load_mux_interc_edges( INP t_interconnect * interconnect,
  * tokens: array of tokens to scan
  * num_pins: current number of pins in pb_graph_pin array 
  */
-static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
-		INP const t_pb_graph_node *pb_graph_parent_node,
-		INP t_pb_graph_node **pb_graph_children_nodes,
-		INP bool interconnect_error_check, INP bool is_input_to_interc,
-		INP const t_token *tokens, INOUTP int *token_index,
-		INOUTP int *num_pins, OUTP t_pb_graph_pin ***pb_graph_pins) {
+static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
+		const t_pb_graph_node *pb_graph_parent_node,
+		t_pb_graph_node **pb_graph_children_nodes,
+		const bool interconnect_error_check, const bool is_input_to_interc,
+		const t_token *tokens, int *token_index,
+		int *num_pins, t_pb_graph_pin ***pb_graph_pins) {
 
 	int i, j, ipin, ipb;
 	int pb_msb, pb_lsb;
@@ -1366,8 +1366,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(INP int line_num,
 	return true;
 }
 
-static t_pb_graph_pin * get_pb_graph_pin_from_name(INP const char * port_name,
-		INP const t_pb_graph_node * pb, INP int pin) {
+static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
+		const t_pb_graph_node * pb, const int pin) {
 	int i;
 
 	for (i = 0; i < pb->num_input_ports; i++) {
@@ -1488,8 +1488,8 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 	}
 }
 
-static void echo_pb_rec(const INP t_pb_graph_node *pb_graph_node, INP int level,
-		INP FILE *fp) {
+static void echo_pb_rec(const t_pb_graph_node *pb_graph_node, const int level,
+		FILE *fp) {
 
 	int i, j, k;
 
@@ -1547,8 +1547,8 @@ static void echo_pb_rec(const INP t_pb_graph_node *pb_graph_node, INP int level,
 	}
 }
 
-static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports,
-		INP int level, INP FILE * fp) {
+static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
+		const int level, FILE * fp) {
 
 	int i, j, k, m;
 	t_port *port;
@@ -1660,7 +1660,7 @@ static void echo_pb_pins(INP t_pb_graph_pin **pb_graph_pins, INP int num_ports,
  *			such as repeated edges between two pins. 
  */
 
-static void check_pb_node_rec(INP const t_pb_graph_node* pb_graph_node){
+static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node){
 	
 	int i, j, k;
 	int line_num = 0;
@@ -1777,8 +1777,8 @@ static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
  *			pin of an logically-equivalent port, we use its outgoing edges
  *			to compare with the rest of the pins in the port. 
  */
-static bool check_input_pins_equivalence(INP t_pb_graph_pin* cur_pin, 
-	INP int i_pin, INOUTP map<int, int>& logic_equivalent_pins_map, OUTP int* line_num){
+static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin, 
+	const int i_pin, map<int, int>& logic_equivalent_pins_map, int* line_num){
 
 	int i, j, edge_count;
 	t_pb_graph_edge* cur_edge; 

@@ -89,10 +89,10 @@ static void parse_comma_separated_wire_types(const char *ch, vector<string> *wir
 static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec);
 
 /* checks for correctness of a unidir switchblock. hard exit if error found (to be changed to throw later) */
-static void check_unidir_switchblock( t_switchblock_inf *sb );
+static void check_unidir_switchblock(const t_switchblock_inf *sb );
 
 /* checks for correctness of a bidir switchblock. hard exit if error found (to be changed to throw later) */
-static void check_bidir_switchblock( t_permutation_map *permutation_map );
+static void check_bidir_switchblock(const t_permutation_map *permutation_map );
 
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
@@ -146,7 +146,7 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
+void read_sb_wireconns(const t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
 	
 	/* Make sure that Node is a switchblock */
 	check_node(Node, "switchblock", loc_data);
@@ -350,7 +350,7 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 
 
 /* checks for correctness of switch block read-in from the XML architecture file */
-void check_switchblock( t_switchblock_inf *sb ){
+void check_switchblock(const t_switchblock_inf *sb ){
 
 	/* get directionality */
 	enum e_directionality directionality = sb->directionality;
@@ -373,10 +373,10 @@ void check_switchblock( t_switchblock_inf *sb ){
 
 
 /* checks for correctness of a unidirectional switchblock. hard exit if error found (to be changed to throw later) */
-static void check_unidir_switchblock( t_switchblock_inf *sb ){
+static void check_unidir_switchblock(const t_switchblock_inf *sb ){
 
 	/* Check that the destination wire points are always the starting points (i.e. of wire point 0) */
-	vector<t_wireconn_inf> &wireconns = sb->wireconns;
+	const vector<t_wireconn_inf> &wireconns = sb->wireconns;
 	int num_wireconns = (int)wireconns.size();
 	for (int iconn = 0; iconn < num_wireconns; iconn++){
 		if ( wireconns[iconn].to_point.size() > 1 || wireconns[iconn].to_point[0] != 0 ){
@@ -387,7 +387,7 @@ static void check_unidir_switchblock( t_switchblock_inf *sb ){
 
 
 /* checks for correctness of a bidirectional switchblock */
-static void check_bidir_switchblock( t_permutation_map *permutation_map ){
+static void check_bidir_switchblock(const t_permutation_map *permutation_map ){
 	/**** check that if side1->side2 is specified, then side2->side1 is not, as it is implicit ****/
 
 	/* variable used to index into the permutation map */

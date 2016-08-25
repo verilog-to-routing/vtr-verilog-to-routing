@@ -8,7 +8,7 @@
 #include "vtr_memory.h"
 
 /* Pass in a pointer to a token list. Is freed and then set to null */
-void FreeTokens(INOUTP char ***TokensPtr) {
+void FreeTokens(char ***TokensPtr) {
 	assert(*TokensPtr);
 	assert(**TokensPtr);
 
@@ -18,7 +18,7 @@ void FreeTokens(INOUTP char ***TokensPtr) {
 }
 
 /* Returns number of tokens in list. Zero if null list */
-int CountTokens(INP char **Tokens) {
+int CountTokens(const char **Tokens) {
 	int count = 0;
 
 	if (NULL == Tokens) {
@@ -38,7 +38,7 @@ int CountTokens(INP char **Tokens) {
  * and one for character array. Free what pointer points to and then
  * free the pointer itself */
 char **
-ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
+ReadLineTokens(FILE * InFile, int *LineNum) {
 
 	enum {
 		BUFFSIZE = 65536

@@ -122,8 +122,8 @@ static void setup_chan_width(struct s_router_opts router_opts,
 
 static void alloc_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, INP t_direct_inf *directs, 
-		INP int num_directs);
+		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const int num_directs);
 
 static void free_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
@@ -479,8 +479,8 @@ static void setup_chan_width(struct s_router_opts router_opts,
 /**************************************/
 static void alloc_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, INP t_direct_inf *directs, 
-		INP int num_directs) {
+		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const int num_directs) {
 
 	int bb_factor;
 	int warnings;
@@ -1049,8 +1049,8 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 /**************************************/
 void compute_delay_lookup_tables(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, INP t_direct_inf *directs, 
-		INP int num_directs) {
+		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, const t_direct_inf *directs, 
+		const int num_directs) {
 
 	vtr::printf_info("\nStarting placement delay look-up...\n");
     clock_t begin = clock();

@@ -46,8 +46,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 static float comp_width(t_chan * chan, float x, float separation);
 
-void post_place_sync(INP int L_num_blocks,
-		INOUTP const struct s_block block_list[]);
+void post_place_sync(const int L_num_blocks,
+		const struct s_block block_list[]);
 
 void free_pb_data(t_pb *pb);
 
@@ -711,8 +711,8 @@ static float comp_width(t_chan * chan, float x, float separation) {
 
 /* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
 /* This function should only be called once */
-void post_place_sync(INP int L_num_blocks,
-		INOUTP const struct s_block block_list[]) {
+void post_place_sync(const int L_num_blocks,
+		const struct s_block block_list[]) {
 	int iblk, j, inet;
 	unsigned k;
 	t_type_ptr type;

@@ -30,42 +30,42 @@ using namespace std;
 
 static const char* netlist_file_name = NULL;
 
-static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_route *pb_route,		
-		INP struct s_hash **vpack_net_hash,
+static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
+		struct s_hash **vpack_net_hash,
         const pugiloc::loc_data& loc_data);
 
-static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
-		INOUTP t_pb* pb, INOUTP t_pb_route *pb_route, INOUTP int *num_primitives,
-		INP struct s_hash **vpack_net_hash,
-		INP struct s_hash **logical_block_hash,
+static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
+		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
+		struct s_hash **vpack_net_hash,
+		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data);
 
-static void processComplexBlock(pugi::xml_node Parent, INOUTP t_block *cb,
-		INP int index, INOUTP int *num_primitives, INP const t_arch *arch,
-		INP struct s_hash **vpack_net_hash,
-		INP struct s_hash **logical_block_hash,
+static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
+		const int index, int *num_primitives, const t_arch *arch,
+		struct s_hash **vpack_net_hash,
+		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data);
 
-static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
-		INOUTP struct s_hash **nhash);
+static struct s_net *alloc_and_init_netlist_from_hash(const int ncount,
+		struct s_hash **nhash);
 
-static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
-		INOUTP int *ncount);
+static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
+		int *ncount);
 
-static void load_external_nets_and_cb(INP int L_num_blocks,
-		INP struct s_block block_list[], INP int ncount,
-		INP struct s_net nlist[], OUTP int *ext_ncount,
-		OUTP struct s_net **ext_nets, const std::vector<std::string>& circuit_clocks);
+static void load_external_nets_and_cb(const int L_num_blocks,
+		const struct s_block block_list[], const int ncount,
+		const struct s_net nlist[], int *ext_ncount,
+		struct s_net **ext_nets, const std::vector<std::string>& circuit_clocks);
 
-static void load_interal_to_block_net_nums(INP t_type_ptr type, INOUTP t_pb_route *pb_route);
+static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route);
 
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
-static void mark_constant_generators(INP int L_num_blocks,
-		INP struct s_block block_list[], INP int ncount,
-		INOUTP struct s_net nlist[]);
+static void mark_constant_generators(const int L_num_blocks,
+		const struct s_block block_list[], const int ncount,
+		struct s_net nlist[]);
 
-static void mark_constant_generators_rec(INP t_pb *pb, INP t_pb_route *pb_route, INOUTP struct s_net nlist[]);
+static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route, struct s_net nlist[]);
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
 
@@ -77,9 +77,9 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
  * num_nets - number of nets in netlist
  * net_list - nets in netlist [0..num_nets - 1]
  */
-void read_netlist(INP const char *net_file, INP const t_arch *arch,
-		OUTP int *L_num_blocks, OUTP struct s_block *block_list[],
-		OUTP int *L_num_nets, OUTP struct s_net *net_list[]) {
+void read_netlist(const char *net_file, const t_arch *arch,
+		int *L_num_blocks, struct s_block *block_list[],
+		int *L_num_nets, struct s_net *net_list[]) {
 	clock_t begin = clock();
 	int i;
 	int bcount = 0;
@@ -240,10 +240,10 @@ void read_netlist(INP const char *net_file, INP const t_arch *arch,
  * logical_block_hash - hashtable of all atoms in blif netlist
  * loc_data - xml location info for error reporting
  */
-static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
-		INP int index, INOUTP int *num_primitives, INP const t_arch *arch,
-		INP struct s_hash **vpack_net_hash,
-		INP struct s_hash **logical_block_hash,
+static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
+		const int index, int *num_primitives, const t_arch *arch,
+		struct s_hash **vpack_net_hash,
+		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data) {
 
 	bool found;
@@ -327,10 +327,10 @@ static void processComplexBlock(pugi::xml_node clb_block, INOUTP t_block *cb,
  * logical_block_hash - hashtable of original blif atom names and indices
  * loc_data - xml location info for error reporting
  */
-static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
-	INOUTP t_pb* pb, INOUTP t_pb_route *pb_route, INOUTP int *num_primitives,
-		INP struct s_hash **vpack_net_hash,
-		INP struct s_hash **logical_block_hash,
+static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
+	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
+		struct s_hash **vpack_net_hash,
+		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data) {
 	int i, j, pb_index;
 	bool found;
@@ -490,8 +490,8 @@ static void processPb(pugi::xml_node Parent, INOUTP t_block *cb, INP int index,
  * nhash - hashtable of nets
  * returns array of nets stored in hashtable
  */
-static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
-		INOUTP struct s_hash **nhash) {
+static struct s_net *alloc_and_init_netlist_from_hash(const int ncount,
+		struct s_hash **nhash) {
 	struct s_net *nlist;
 	struct s_hash_iterator hash_iter;
 	struct s_hash *curr_net;
@@ -526,8 +526,8 @@ static struct s_net *alloc_and_init_netlist_from_hash(INP int ncount,
  * Adds net to hashtable of nets.  If the net is "open", then this is a keyword so do not add it.  
  * If the net already exists, increase the count on that net 
  */
-static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
-		INOUTP int *ncount) {
+static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
+		int *ncount) {
 	struct s_hash *hash_value;
 
 	if (strcmp(net_name, "open") == 0) {
@@ -542,8 +542,8 @@ static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,
 	return hash_value->index;
 }
 
-static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_route *pb_route,
-		INP struct s_hash **vpack_net_hash,
+static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
+		struct s_hash **vpack_net_hash,
         const pugiloc::loc_data& loc_data) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
@@ -758,10 +758,10 @@ static void processPorts(pugi::xml_node Parent, INOUTP t_pb* pb, INOUTP t_pb_rou
 /**  
  * This function updates the nets list and the connections between that list and the complex block
  */
-static void load_external_nets_and_cb(INP int L_num_blocks,
-		INP struct s_block block_list[], INP int ncount,
-		INP struct s_net nlist[], OUTP int *ext_ncount,
-		OUTP struct s_net **ext_nets, const std::vector<std::string>& circuit_clocks) {
+static void load_external_nets_and_cb(const int L_num_blocks,
+		const struct s_block block_list[], const int ncount,
+		const struct s_net nlist[], int *ext_ncount,
+		struct s_net **ext_nets, const std::vector<std::string>& circuit_clocks) {
 	int i, j, k, ipin;
 	struct s_hash **ext_nhash;
 	t_pb_graph_pin *pb_graph_pin;
@@ -902,9 +902,9 @@ static void load_external_nets_and_cb(INP int L_num_blocks,
 }
 
 
-static void mark_constant_generators(INP int L_num_blocks,
-		INP struct s_block block_list[], INP int ncount,
-		INOUTP struct s_net nlist[]) {
+static void mark_constant_generators(const int L_num_blocks,
+		const struct s_block block_list[], const int ncount,
+		struct s_net nlist[]) {
 	int i;
 	for (i = 0; i < L_num_blocks; i++) {
 		mark_constant_generators_rec(block_list[i].pb,
@@ -912,8 +912,8 @@ static void mark_constant_generators(INP int L_num_blocks,
 	}
 }
 
-static void mark_constant_generators_rec(INP t_pb *pb, INP t_pb_route *pb_route,
-		INOUTP struct s_net nlist[]) {
+static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route,
+		struct s_net nlist[]) {
 	int i, j;
 	t_pb_type *pb_type;
 	bool const_gen;
@@ -1073,7 +1073,7 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
 	return pb_route;
 }
 
-static void load_interal_to_block_net_nums(INP t_type_ptr type, INOUTP t_pb_route *pb_route) {
+static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route) {
 	int num_pins = type->pb_graph_head->total_pb_pins;
 
 	for (int i = 0; i < num_pins; i++) {

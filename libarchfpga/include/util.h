@@ -9,11 +9,6 @@
 
 #include "vtr_error.h"
 
-/* Parameter tags for preprocessor to strip */
-#define INP
-#define OUTP
-#define INOUTP
-
 #define nint(a) ((int) floor (a + 0.5))
 
 #define ERRTAG "ERROR:\t"

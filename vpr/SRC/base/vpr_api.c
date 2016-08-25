@@ -61,8 +61,8 @@ static void free_arch(t_arch* Arch);
 static void free_options(t_options *options);
 static void free_circuit(void);
 
-static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
-			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin);
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup, const int wire_segment_length,
+			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
@@ -143,7 +143,7 @@ void vpr_print_usage(void) {
 	vtr::printf_info("\n");
 }
 
-void vpr_print_args(int argc, char** argv) {
+void vpr_print_args(int argc, const char** argv) {
     vtr::printf_info("VPR was run with the following command-line:\n");
     for(int i = 0; i < argc; i++) {
         if(i != 0) {
@@ -160,10 +160,10 @@ void vpr_print_args(int argc, char** argv) {
  3. Read Circuit
  4. Sanity check all three
  */
-void vpr_init(INP int argc, INP char **argv,
-		OUTP t_options *options,
-		OUTP t_vpr_setup *vpr_setup,
-		OUTP t_arch *arch) {
+void vpr_init(const int argc, const char **argv,
+		t_options *options,
+		t_vpr_setup *vpr_setup,
+		t_arch *arch) {
 
 	log_set_output_file("vpr_stdout.log");
 
@@ -247,7 +247,7 @@ void vpr_init(INP int argc, INP char **argv,
  * Sets globals: nx, ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
-void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
+void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch) {
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
@@ -383,7 +383,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 }
 
 
-void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+void vpr_pack(t_vpr_setup vpr_setup, const t_arch arch) {
 	std::chrono::high_resolution_clock::time_point end, begin;
 	begin = std::chrono::high_resolution_clock::now();
 	vtr::printf_info("Initialize packing.\n");
@@ -455,8 +455,8 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	3) wire to ipin switch
    We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
    a logic block, and the switch block Fs value */
-static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
-			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin){
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup, const int wire_segment_length,
+			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin){
 	e_directionality directionality;
 	int Fs;
 	float Fc_in, Fc_out;
@@ -539,7 +539,7 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 	}
 }
 
-bool vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch) {
+bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch arch) {
 
 	/* Startup X graphics */
 	init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
@@ -884,9 +884,9 @@ void free_circuit() {
 	}
 }
 
-void vpr_free_vpr_data_structures(INOUTP t_arch Arch,
-		INOUTP t_options options,
-		INOUTP t_vpr_setup vpr_setup) {
+void vpr_free_vpr_data_structures(t_arch Arch,
+		t_options options,
+		t_vpr_setup vpr_setup) {
 
 	if (vpr_setup.Timing.SDCFile != NULL) {
 		free(vpr_setup.Timing.SDCFile);
@@ -903,9 +903,9 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch,
 	free_sdc_related_structs();
 }
 
-void vpr_free_all(INOUTP t_arch Arch,
-		INOUTP t_options options,
-		INOUTP t_vpr_setup vpr_setup) {
+void vpr_free_all(t_arch Arch,
+		t_options options,
+		t_vpr_setup vpr_setup) {
 
 	free_rr_graph();
 	if (vpr_setup.RouterOpts.doRouting) {
@@ -922,23 +922,23 @@ void vpr_free_all(INOUTP t_arch Arch,
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
 /* Read in user options */
-void vpr_read_options(INP int argc, INP char **argv, OUTP t_options * options) {
+void vpr_read_options(const int argc, const char **argv, t_options * options) {
 	ReadOptions(argc, argv, options);
 }
 
 /* Read in arch and circuit */
-void vpr_setup_vpr(INP t_options *Options, INP bool TimingEnabled,
-		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
-		OUTP t_model ** user_models, OUTP t_model ** library_models,
-		OUTP struct s_packer_opts *PackerOpts,
-		OUTP struct s_placer_opts *PlacerOpts,
-		OUTP struct s_annealing_sched *AnnealSched,
-		OUTP struct s_router_opts *RouterOpts,
-		OUTP struct s_det_routing_arch *RoutingArch,
-		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
-		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP bool * ShowGraphics, OUTP int *GraphPause,
+void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
+		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
+		t_arch * Arch, enum e_operation *Operation,
+		t_model ** user_models, t_model ** library_models,
+		struct s_packer_opts *PackerOpts,
+		struct s_placer_opts *PlacerOpts,
+		struct s_annealing_sched *AnnealSched,
+		struct s_router_opts *RouterOpts,
+		struct s_det_routing_arch *RoutingArch,
+		vector <t_lb_type_rr_node> **PackerRRGraph,
+		t_segment_inf ** Segments, t_timing_inf * Timing,
+		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			Operation, user_models, library_models, PackerOpts, PlacerOpts,
@@ -946,33 +946,33 @@ void vpr_setup_vpr(INP t_options *Options, INP bool TimingEnabled,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */
-void vpr_check_options(INP t_options Options, INP bool TimingEnabled) {
+void vpr_check_options(const t_options Options, const bool TimingEnabled) {
 	CheckOptions(Options, TimingEnabled);
 }
-void vpr_check_arch(INP t_arch Arch, INP bool TimingEnabled) {
+void vpr_check_arch(const t_arch Arch, const bool TimingEnabled) {
 	CheckArch(Arch, TimingEnabled);
 }
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
+void vpr_check_setup(const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_annealing_sched AnnealSched,
+		const struct s_router_opts RouterOpts,
+		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	CheckSetup(Operation, PlacerOpts, AnnealSched, RouterOpts, RoutingArch,
 			Segments, Timing, Chans);
 }
 /* Read blif file and sweep unused components */
-void vpr_read_and_process_blif(INP char *blif_file,
-		INP bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
-        INP t_model *user_models,
-		INP t_model *library_models, bool read_activity_file,
+void vpr_read_and_process_blif(const char *blif_file,
+		const bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
+        const t_model *user_models,
+		const t_model *library_models, bool read_activity_file,
 		char * activity_file) {
 	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, absorb_buffer_luts, user_models,
 			library_models, read_activity_file, activity_file);
 }
 /* Show current setup */
-void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup) {
+void vpr_show_setup(const t_options options, const t_vpr_setup vpr_setup) {
 	ShowSetup(options, vpr_setup);
 }
 

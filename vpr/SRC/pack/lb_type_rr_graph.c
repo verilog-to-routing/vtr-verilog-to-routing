@@ -36,11 +36,11 @@ using namespace std;
 /*****************************************************************************************
 * Internal functions declarations
 ******************************************************************************************/
-static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type, 
-													 INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
-static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_graph_node *pb_graph_node,
-														INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
-														INP int ext_rr_index);
+static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type, 
+													 vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
+static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
+														vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
+														const int ext_rr_index);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
 static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb_type_rr_graph);
 
@@ -67,7 +67,7 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 }
 
 /* Free routing resource graph for all logic block types */
-void free_all_lb_type_rr_graph(INOUTP vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void free_all_lb_type_rr_graph(vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 	for(int itype = 0; itype < num_types; itype++) {
 		if(&type_descriptors[itype] != EMPTY_TYPE) {
 			int graph_size = lb_type_rr_graphs[itype].size();
@@ -164,8 +164,8 @@ void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_r
    Extra sources and sinks in lb_type_rr_node_graph that do not correspond to a pb_graph_pin are appended in indices following total_pb_pins
    of the pb_type
 */
-static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type, 
-													 INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph) {
+static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type, 
+													 vector<t_lb_type_rr_node> &lb_type_rr_node_graph) {
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_head;
 	int ext_source_index, ext_sink_index, ext_rr_index;
@@ -284,9 +284,9 @@ static void alloc_and_load_lb_type_rr_graph_for_type(INP t_type_ptr lb_type,
    This function populates the rr node for the pb_graph_pin of the current pb_graph_node then recursively
    repeats this on all children of the pb_graph_node
 */
-static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(INP const t_pb_graph_node *pb_graph_node,
-													INOUTP vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
-													INP int ext_rr_index) {
+static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
+													vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
+													const int ext_rr_index) {
 	t_pb_type *pb_type;
 	int pin_index;
 	t_pb_graph_pin *pb_pin;

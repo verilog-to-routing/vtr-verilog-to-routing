@@ -150,9 +150,9 @@ enum e_output_files {
 };
 
 
-void ReadOptions(INP int argc,
-		INP char **argv,
-		OUTP t_options * Options);
+void ReadOptions(int argc,
+		const char **argv,
+		t_options * Options);
 
 bool getEchoEnabled(void);
 void setEchoEnabled(bool echo_enabled);
@@ -172,11 +172,11 @@ char *getOutputFileName(enum e_output_files ename);
 void alloc_and_load_output_file_names(const char* default_name);
 void free_output_file_names();
 
-bool IsTimingEnabled(INP t_options *Options);
-bool IsEchoEnabled(INP t_options *Options);
+bool IsTimingEnabled(const t_options *Options);
+bool IsEchoEnabled(const t_options *Options);
 
 bool GetPostSynthesisOption(void);
 void SetPostSynthesisOption(bool post_synthesis_enabled);
 
-bool IsPostSynthesisEnabled(INP t_options *Options);
+bool IsPostSynthesisEnabled(const t_options *Options);
 #endif

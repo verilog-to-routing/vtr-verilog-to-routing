@@ -84,48 +84,48 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
 static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
 /*    Process XML hiearchy */
-static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
+static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const pugiloc::loc_data& loc_data);
-static void ProcessPb_TypePort(INOUTP pugi::xml_node Parent, t_port * port,
+static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiloc::loc_data& loc_data);
 static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiloc::loc_data& loc_data);
-static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data);
-static void ProcessMode(INOUTP pugi::xml_node Parent, t_mode * mode,
+static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data);
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 		bool * default_leakage_mode, const pugiloc::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
-static void ProcessSizingTimingIpinCblock(INOUTP pugi::xml_node Node,
-		OUTP struct s_arch *arch, INP bool timing_enabled, const pugiloc::loc_data& loc_data);
-static void ProcessChanWidthDistr(INOUTP pugi::xml_node Node,
-		OUTP struct s_arch *arch, const pugiloc::loc_data& loc_data);
-static void ProcessChanWidthDistrDir(INOUTP pugi::xml_node Node, OUTP t_chan * chan, const pugiloc::loc_data& loc_data);
-static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, const pugiloc::loc_data& loc_data);
-static void ProcessLayout(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, const pugiloc::loc_data& loc_data);
-static void ProcessDevice(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch,
-		INP bool timing_enabled, const pugiloc::loc_data& loc_data);
-static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
-		OUTP t_type_descriptor ** Types, OUTP int *NumTypes,
-		INP bool timing_enabled, s_arch arch, const pugiloc::loc_data& loc_data);
-static void ProcessSwitches(INOUTP pugi::xml_node Node,
-		OUTP struct s_arch_switch_inf **Switches, OUTP int *NumSwitches,
-		INP bool timing_enabled, const pugiloc::loc_data& loc_data);
-static void ProcessSwitchTdel(INOUTP pugi::xml_node Node, INP bool timing_enabled,
-		INP int switch_index, OUTP s_arch_switch_inf *Switches, const pugiloc::loc_data& loc_data);
-static void ProcessDirects(INOUTP pugi::xml_node Parent, OUTP t_direct_inf **Directs,
-		 OUTP int *NumDirects, INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
-		 INP bool timing_enabled, const pugiloc::loc_data& loc_data);
-static void ProcessSegments(INOUTP pugi::xml_node Parent,
-		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
-		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
-		INP bool timing_enabled, INP bool switchblocklist_required, const pugiloc::loc_data& loc_data);
-static void ProcessSwitchblocks(INOUTP pugi::xml_node Parent, OUTP vector<t_switchblock_inf> *switchblocks,
-				INP t_arch_switch_inf *switches, INP int num_switches, const pugiloc::loc_data& loc_data);
-static void ProcessCB_SB(INOUTP pugi::xml_node Node, INOUTP bool * list,
-		INP int len, const pugiloc::loc_data& loc_data);
-static void ProcessPower( INOUTP pugi::xml_node parent,
-		INOUTP t_power_arch * power_arch, INP t_type_descriptor * Types,
-		INP int NumTypes,  const pugiloc::loc_data& loc_data);
+static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
+		struct s_arch *arch, const bool timing_enabled, const pugiloc::loc_data& loc_data);
+static void ProcessChanWidthDistr(pugi::xml_node Node,
+		struct s_arch *arch, const pugiloc::loc_data& loc_data);
+static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const pugiloc::loc_data& loc_data);
+static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data);
+static void ProcessLayout(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data);
+static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
+		const bool timing_enabled, const pugiloc::loc_data& loc_data);
+static void ProcessComplexBlocks(pugi::xml_node Node,
+		t_type_descriptor ** Types, int *NumTypes,
+		const bool timing_enabled, s_arch arch, const pugiloc::loc_data& loc_data);
+static void ProcessSwitches(pugi::xml_node Node,
+		struct s_arch_switch_inf **Switches, int *NumSwitches,
+		const bool timing_enabled, const pugiloc::loc_data& loc_data);
+static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
+		const int switch_index, s_arch_switch_inf *Switches, const pugiloc::loc_data& loc_data);
+static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
+		 int *NumDirects, const struct s_arch_switch_inf *Switches, const int NumSwitches,
+		 const bool timing_enabled, const pugiloc::loc_data& loc_data);
+static void ProcessSegments(pugi::xml_node Parent,
+		struct s_segment_inf **Segs, int *NumSegs,
+		const struct s_arch_switch_inf *Switches, const int NumSwitches,
+		const bool timing_enabled, const bool switchblocklist_required, const pugiloc::loc_data& loc_data);
+static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf> *switchblocks,
+				const t_arch_switch_inf *switches, const int num_switches, const pugiloc::loc_data& loc_data);
+static void ProcessCB_SB(pugi::xml_node Node, bool * list,
+		const int len, const pugiloc::loc_data& loc_data);
+static void ProcessPower( pugi::xml_node parent,
+		t_power_arch * power_arch, const t_type_descriptor * Types,
+		const int NumTypes,  const pugiloc::loc_data& loc_data);
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch * clocks, const pugiloc::loc_data& loc_data);
 
@@ -142,9 +142,9 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
  */
 
 /* Loads the given architecture file. */
-void XmlReadArch(INP const char *ArchFile, INP bool timing_enabled,
-		OUTP struct s_arch *arch, OUTP t_type_descriptor ** Types,
-		OUTP int *NumTypes) {
+void XmlReadArch(const char *ArchFile, const bool timing_enabled,
+		struct s_arch *arch, t_type_descriptor ** Types,
+		int *NumTypes) {
 
 	const char *Prop;
 	pugi::xml_node Next;
@@ -884,7 +884,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_t
 }
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
-static void ProcessPb_Type(INOUTP pugi::xml_node Parent, t_pb_type * pb_type,
+static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const pugiloc::loc_data& loc_data) {
 	int num_ports, i, j, k, num_annotations;
 	const char *Prop;
@@ -1237,7 +1237,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 	}
 }
 
-static void ProcessPb_TypePort(INOUTP pugi::xml_node Parent, t_port * port,
+static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiloc::loc_data& loc_data) {
 	const char *Prop;
 	Prop = get_attribute(Parent, "name", loc_data).value();
@@ -1339,7 +1339,7 @@ static void ProcessPb_TypePort(INOUTP pugi::xml_node Parent, t_port * port,
 	ProcessPb_TypePort_Power(Parent, port, power_method, loc_data);
 }
 
-static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data) {
+static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data) {
 	int num_interconnect = 0;
 	int num_complete, num_direct, num_mux;
 	int i, j, k, L_index, num_annotations;
@@ -1460,7 +1460,7 @@ static void ProcessInterconnect(INOUTP pugi::xml_node Parent, t_mode * mode, con
 	VTR_ASSERT(i == num_interconnect);
 }
 
-static void ProcessMode(INOUTP pugi::xml_node Parent, t_mode * mode,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 		bool * default_leakage_mode, const pugiloc::loc_data& loc_data) {
 	int i;
 	const char *Prop;
@@ -1843,7 +1843,7 @@ static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Ty
 
 /* Takes in node pointing to <models> and loads all the
  * child type objects.  */
-static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, const pugiloc::loc_data& loc_data) {
+static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data) {
 	const char *Prop;
 	pugi::xml_node child;
 	pugi::xml_node p;
@@ -1969,7 +1969,7 @@ static void ProcessModels(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 
 /* Takes in node pointing to <layout> and loads all the
  * child type objects. */
-static void ProcessLayout(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, const pugiloc::loc_data& loc_data) {
+static void ProcessLayout(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data) {
 	const char *Prop;
 
 	arch->clb_grid.IsAuto = true;
@@ -2003,8 +2003,8 @@ static void ProcessLayout(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch, 
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
-static void ProcessDevice(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch,
-		INP bool timing_enabled, const pugiloc::loc_data& loc_data) {
+static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
+		const bool timing_enabled, const pugiloc::loc_data& loc_data) {
 	const char *Prop;
 	pugi::xml_node Cur;
 	bool custom_switch_block = false;
@@ -2044,8 +2044,8 @@ static void ProcessDevice(INOUTP pugi::xml_node Node, OUTP struct s_arch *arch,
 /* Processes the sizing, timing, and ipin_cblock child objects of the 'device' node.
    We can specify an ipin cblock's info through the sizing/timing nodes (legacy),
    OR through the ipin_cblock node which specifies the info using the index of a switch. */
-static void ProcessSizingTimingIpinCblock(INOUTP pugi::xml_node Node,
-		OUTP struct s_arch *arch, INP bool timing_enabled, const pugiloc::loc_data& loc_data) {
+static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
+		struct s_arch *arch, const bool timing_enabled, const pugiloc::loc_data& loc_data) {
 
 	pugi::xml_node Cur;
 
@@ -2075,8 +2075,8 @@ static void ProcessSizingTimingIpinCblock(INOUTP pugi::xml_node Node,
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
  * child type objects. */
-static void ProcessChanWidthDistr(INOUTP pugi::xml_node Node,
-		OUTP struct s_arch *arch, const pugiloc::loc_data& loc_data) {
+static void ProcessChanWidthDistr(pugi::xml_node Node,
+		struct s_arch *arch, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node Cur;
 
 	Cur = get_single_child(Node, "io", loc_data);
@@ -2091,7 +2091,7 @@ static void ProcessChanWidthDistr(INOUTP pugi::xml_node Node,
 
 /* Takes in node within <chan_width_distr> and loads all the
  * child type objects. */
-static void ProcessChanWidthDistrDir(INOUTP pugi::xml_node Node, OUTP t_chan * chan, const pugiloc::loc_data& loc_data) {
+static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const pugiloc::loc_data& loc_data) {
 	const char *Prop;
 
 	ReqOpt hasXpeak, hasWidth, hasDc;
@@ -2124,8 +2124,8 @@ static void ProcessChanWidthDistrDir(INOUTP pugi::xml_node Node, OUTP t_chan * c
 
 /* Takes in node pointing to <typelist> and loads all the
  * child type objects. */
-static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
-		OUTP t_type_descriptor ** Types, OUTP int *NumTypes,
+static void ProcessComplexBlocks(pugi::xml_node Node,
+		t_type_descriptor ** Types, int *NumTypes,
 		bool timing_enabled, s_arch arch, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
@@ -2217,10 +2217,10 @@ static void ProcessComplexBlocks(INOUTP pugi::xml_node Node,
 }
 
 
-static void ProcessSegments(INOUTP pugi::xml_node Parent,
-		OUTP struct s_segment_inf **Segs, OUTP int *NumSegs,
-		INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
-		INP bool timing_enabled, INP bool switchblocklist_required, const pugiloc::loc_data& loc_data) {
+static void ProcessSegments(pugi::xml_node Parent,
+		struct s_segment_inf **Segs, int *NumSegs,
+		const struct s_arch_switch_inf *Switches, const int NumSwitches,
+		const bool timing_enabled, const bool switchblocklist_required, const pugiloc::loc_data& loc_data) {
 	int i, j, length;
 	const char *tmp;
 
@@ -2391,8 +2391,8 @@ static void ProcessSegments(INOUTP pugi::xml_node Parent,
 /* Processes the switchblocklist section from the xml architecture file. 
    See vpr/SRC/route/build_switchblocks.c for a detailed description of this 
    switch block format */
-static void ProcessSwitchblocks(INOUTP pugi::xml_node Parent, OUTP vector<t_switchblock_inf> *switchblocks,
-				INP t_arch_switch_inf *switches, INP int num_switches, const pugiloc::loc_data& loc_data){
+static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf> *switchblocks,
+				const t_arch_switch_inf *switches, const int num_switches, const pugiloc::loc_data& loc_data){
 
 	pugi::xml_node Node;
 	pugi::xml_node SubElem;
@@ -2465,8 +2465,8 @@ static void ProcessSwitchblocks(INOUTP pugi::xml_node Parent, OUTP vector<t_swit
 }
 
 
-static void ProcessCB_SB(INOUTP pugi::xml_node Node, INOUTP bool * list,
-		INP int len, const pugiloc::loc_data& loc_data) {
+static void ProcessCB_SB(pugi::xml_node Node, bool * list,
+		const int len, const pugiloc::loc_data& loc_data) {
 	const char *tmp = NULL;
 	int i;
 
@@ -2522,9 +2522,9 @@ static void ProcessCB_SB(INOUTP pugi::xml_node Node, INOUTP bool * list,
 	}
 }
 
-static void ProcessSwitches(INOUTP pugi::xml_node Parent,
-		OUTP struct s_arch_switch_inf **Switches, OUTP int *NumSwitches,
-		INP bool timing_enabled, const pugiloc::loc_data& loc_data) {
+static void ProcessSwitches(pugi::xml_node Parent,
+		struct s_arch_switch_inf **Switches, int *NumSwitches,
+		const bool timing_enabled, const pugiloc::loc_data& loc_data) {
 	int i, j;
 	const char *type_name;
 	const char *switch_name;
@@ -2613,8 +2613,8 @@ static void ProcessSwitches(INOUTP pugi::xml_node Parent,
 
                are specified as children of the switch node. In this case, Tdel
                is not included as a property of the switch node (first way). */
-static void ProcessSwitchTdel(INOUTP pugi::xml_node Node, INP bool timing_enabled,
-		INP int switch_index, OUTP s_arch_switch_inf *Switches, const pugiloc::loc_data& loc_data){
+static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
+		const int switch_index, s_arch_switch_inf *Switches, const pugiloc::loc_data& loc_data){
 
 	float Tdel_prop_value;
 	int num_Tdel_children;
@@ -2679,10 +2679,10 @@ static void ProcessSwitchTdel(INOUTP pugi::xml_node Node, INP bool timing_enable
 	}
 }
 
-static void ProcessDirects(INOUTP pugi::xml_node Parent, OUTP t_direct_inf **Directs,
-		 OUTP int *NumDirects, INP struct s_arch_switch_inf *Switches, INP int NumSwitches,
+static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
+		 int *NumDirects, const struct s_arch_switch_inf *Switches, const int NumSwitches,
 
-		 INP bool timing_enabled, const pugiloc::loc_data& loc_data) {
+		 const bool timing_enabled, const pugiloc::loc_data& loc_data) {
 	int i, j;
 	const char *direct_name;
 	const char *from_pin_name;
@@ -2771,9 +2771,9 @@ static void ProcessDirects(INOUTP pugi::xml_node Parent, OUTP t_direct_inf **Dir
 	}
 }
 
-static void ProcessPower( INOUTP pugi::xml_node parent,
-		INOUTP t_power_arch * power_arch, INP t_type_descriptor * Types,
-		INP int NumTypes, const pugiloc::loc_data& loc_data) {
+static void ProcessPower( pugi::xml_node parent,
+		t_power_arch * power_arch, const t_type_descriptor * Types,
+		const int NumTypes, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node Cur;
 
 	/* Get the local interconnect capacitances */

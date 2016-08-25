@@ -21,57 +21,57 @@ static void get_switch_type(
 		short from_node_switch, short to_node_switch, short switch_types[2]);
 
 static void load_chan_rr_indices(
-		INP int max_chan_width, INP int chan_len,
-		INP int num_chans, INP t_rr_type type, 
-		INP t_chan_details * chan_details,
-		INOUTP int *index, INOUTP vtr::t_ivec *** indices);
+		const int max_chan_width, const int chan_len,
+		const int num_chans, const t_rr_type type, 
+		const t_chan_details * chan_details,
+		int *index, vtr::t_ivec *** indices);
 
 static int get_bidir_track_to_chan_seg(
-		INP vtr::t_ivec conn_tracks,
-		INP vtr::t_ivec *** L_rr_node_indices, INP int to_chan, INP int to_seg,
-		INP int to_sb, INP t_rr_type to_type, INP t_seg_details * seg_details,
-		INP bool from_is_sblock, INP int from_switch,
-		INOUTP bool * L_rr_edge_done,
-		INP enum e_directionality directionality,
-		INOUTP struct s_linked_edge **edge_list);
+		const vtr::t_ivec conn_tracks,
+		vtr::t_ivec *** L_rr_node_indices, const int to_chan, const int to_seg,
+		const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
+		const bool from_is_sblock, const int from_switch,
+		bool * L_rr_edge_done,
+		const enum e_directionality directionality,
+		struct s_linked_edge **edge_list);
 
 static int get_unidir_track_to_chan_seg(
-		INP bool is_end_sb,
-		INP int from_track, INP int to_chan, INP int to_seg, INP int to_sb,
-		INP t_rr_type to_type, INP int max_chan_width, INP int L_nx,
-		INP int L_ny, INP enum e_side from_side, INP enum e_side to_side,
-		INP int Fs_per_side, INP int *opin_mux_size,
-		INP short ******sblock_pattern, INP vtr::t_ivec *** L_rr_node_indices,
-		INP t_seg_details * seg_details, INOUTP bool * L_rr_edge_done,
-		OUTP bool * Fs_clipped, INOUTP struct s_linked_edge **edge_list);
+		const bool is_end_sb,
+		const int from_track, const int to_chan, const int to_seg, const int to_sb,
+		const t_rr_type to_type, const int max_chan_width, const int L_nx,
+		const int L_ny, const enum e_side from_side, const enum e_side to_side,
+		const int Fs_per_side, const int *opin_mux_size,
+		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
+		const t_seg_details * seg_details, bool * L_rr_edge_done,
+		bool * Fs_clipped, struct s_linked_edge **edge_list);
 
-static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
-		INP int from_track, INP int to_chan, INP int to_seg,
-		INP t_rr_type to_chan_type,
-		INP e_side from_side, INP e_side to_side,
-		INP vtr::t_ivec ***L_rr_node_indices, 
-		INP t_seg_details *dest_seg_details,
-		INP e_directionality directionality,
-		INP t_sb_connection_map *sb_conn_map,
-		INOUTP bool * L_rr_edge_done, 
-		INOUTP s_linked_edge **edge_list);
+static int get_track_to_chan_seg(const int L_nx, const int L_ny,
+		const int from_track, const int to_chan, const int to_seg,
+		const t_rr_type to_chan_type,
+		const e_side from_side, const e_side to_side,
+		vtr::t_ivec ***L_rr_node_indices, 
+		const t_seg_details *dest_seg_details,
+		const e_directionality directionality,
+		t_sb_connection_map *sb_conn_map,
+		bool * L_rr_edge_done, 
+		s_linked_edge **edge_list);
 
 static int vpr_to_phy_track(
-		INP int itrack, INP int chan_num, INP int seg_num,
-		INP t_seg_details * seg_details,
-		INP enum e_directionality directionality);
+		const int itrack, const int chan_num, const int seg_num,
+		const t_seg_details * seg_details,
+		const enum e_directionality directionality);
 
 static int *label_wire_muxes(
-		INP int chan_num, INP int seg_num,
-		INP t_seg_details * seg_details, INP int seg_type_index, INP int max_len,
-		INP enum e_direction dir, INP int max_chan_width,
-		INP bool check_cb, OUTP int *num_wire_muxes, OUTP int *num_wire_muxes_cb_restricted);
+		const int chan_num, const int seg_num,
+		const t_seg_details * seg_details, const int seg_type_index, const int max_len,
+		const enum e_direction dir, const int max_chan_width,
+		const bool check_cb, int *num_wire_muxes, int *num_wire_muxes_cb_restricted);
 
 static int *label_incoming_wires(
-		INP int chan_num, INP int seg_num,
-		INP int sb_seg, INP t_seg_details * seg_details, INP int max_len,
-		INP enum e_direction dir, INP int max_chan_width,
-		OUTP int *num_incoming_wires, OUTP int *num_ending_wires);
+		const int chan_num, const int seg_num,
+		const int sb_seg, const t_seg_details * seg_details, const int max_len,
+		const enum e_direction dir, const int max_chan_width,
+		int *num_incoming_wires, int *num_ending_wires);
 
 static int find_label_of_track(
 		int *wire_mux_on_track, int num_wire_muxes,
@@ -94,9 +94,9 @@ static int find_label_of_track(
  * step, if we were closer to target before last more, undo it
  * and end up with a result that uses fewer tracks than given. */
 int *get_seg_track_counts(
-		INP int num_sets, INP int num_seg_types,
-		INP t_segment_inf * segment_inf, 
-		INP bool use_full_seg_groups) {
+		const int num_sets, const int num_seg_types,
+		const t_segment_inf * segment_inf, 
+		const bool use_full_seg_groups) {
 
 	int *result;
 	double *demand;
@@ -162,11 +162,11 @@ int *get_seg_track_counts(
 }
 
 t_seg_details *alloc_and_load_seg_details(
-		INOUTP int *max_chan_width, INP int max_len,
-		INP int num_seg_types, INP t_segment_inf * segment_inf,
-		INP bool use_full_seg_groups, INP bool is_global_graph,
-		INP enum e_directionality directionality,
-		OUTP int * num_seg_details) {
+		int *max_chan_width, const int max_len,
+		const int num_seg_types, const t_segment_inf * segment_inf,
+		const bool use_full_seg_groups, const bool is_global_graph,
+		const enum e_directionality directionality,
+		int * num_seg_details) {
 
 	/* Allocates and loads the seg_details data structure.  Max_len gives the   *
 	 * maximum length of a segment (dimension of array).  The code below tries  *
@@ -356,14 +356,14 @@ t_seg_details *alloc_and_load_seg_details(
    (ie. channel segments) for each horizontal and vertical channel. */
 
 void alloc_and_load_chan_details( 
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width* nodes_per_chan,
-		INP bool trim_empty_channels,
-		INP bool trim_obs_channels,
-		INP int num_seg_details,
-		INP const t_seg_details* seg_details,
-		OUTP t_chan_details** chan_details_x,
-		OUTP t_chan_details** chan_details_y) {
+		const int L_nx, const int L_ny,
+		const t_chan_width* nodes_per_chan,
+		const bool trim_empty_channels,
+		const bool trim_obs_channels,
+		const int num_seg_details,
+		const t_seg_details* seg_details,
+		t_chan_details** chan_details_x,
+		t_chan_details** chan_details_y) {
 
 	*chan_details_x = init_chan_details(L_nx, L_ny, nodes_per_chan,
 			num_seg_details, seg_details, SEG_DETAILS_X);
@@ -381,11 +381,11 @@ void alloc_and_load_chan_details(
 }
 
 t_chan_details* init_chan_details( 
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width* nodes_per_chan,
-		INP int num_seg_details,
-		INP const t_seg_details* seg_details,
-		INP enum e_seg_details_type seg_details_type) {
+		const int L_nx, const int L_ny,
+		const t_chan_width* nodes_per_chan,
+		const int num_seg_details,
+		const t_seg_details* seg_details,
+		const enum e_seg_details_type seg_details_type) {
 
 	t_chan_details* pa_chan_details = vtr::alloc_matrix3<t_seg_details>(0, L_nx, 0, L_ny, 0, 1);
 
@@ -457,12 +457,12 @@ t_chan_details* init_chan_details(
 }
 
 void obstruct_chan_details(
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width* nodes_per_chan,
-		INP bool trim_empty_channels,
-		INP bool trim_obs_channels,
-		INOUTP t_chan_details* chan_details_x,
-		INOUTP t_chan_details* chan_details_y) {
+		const int L_nx, const int L_ny,
+		const t_chan_width* nodes_per_chan,
+		const bool trim_empty_channels,
+		const bool trim_obs_channels,
+		t_chan_details* chan_details_x,
+		t_chan_details* chan_details_y) {
 
 	/* Iterate grid to find and obstruct based on multi-width/height blocks */
 	for (int x = 0; x <= L_nx; ++x) {
@@ -536,10 +536,10 @@ void obstruct_chan_details(
 }
 
 void adjust_chan_details(
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width* nodes_per_chan,
-		INOUTP t_chan_details* chan_details_x,
-		INOUTP t_chan_details* chan_details_y) {
+		const int L_nx, const int L_ny,
+		const t_chan_width* nodes_per_chan,
+		t_chan_details* chan_details_x,
+		t_chan_details* chan_details_y) {
 
 	for (int y = 0; y <= L_ny; ++y) {
 		for (int x = 0; x <= L_nx; ++x) {
@@ -567,11 +567,11 @@ void adjust_chan_details(
 }
 
 void adjust_seg_details(
-		INP int x, INP int y,
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width* nodes_per_chan,
-		INOUTP t_chan_details* chan_details,
-		INP enum e_seg_details_type seg_details_type) {
+		const int x, const int y,
+		const int L_nx, const int L_ny,
+		const t_chan_width* nodes_per_chan,
+		t_chan_details* chan_details,
+		const enum e_seg_details_type seg_details_type) {
 
 	int seg_index = (seg_details_type == SEG_DETAILS_X ? x : y);
 
@@ -610,7 +610,7 @@ void adjust_seg_details(
 
 void free_seg_details(
 		t_seg_details * seg_details, 
-		INP int max_chan_width) {
+		const int max_chan_width) {
 
 	/* Frees all the memory allocated to an array of seg_details structures. */
 	for (int i = 0; i < max_chan_width; ++i) {
@@ -623,8 +623,8 @@ void free_seg_details(
 void free_chan_details(
 		t_chan_details * pa_chan_details_x, 
 		t_chan_details * pa_chan_details_y, 
-		INP int max_chan_width,
-		INP int L_nx, INP int L_ny) {
+		const int max_chan_width,
+		const int L_nx, const int L_ny) {
 
 	/* Frees all the memory allocated to an array of chan_details structures. */
 	for (int x = 0; x <= L_nx; ++x) {
@@ -649,8 +649,8 @@ void free_chan_details(
 /* Returns the segment number at which the segment this track lies on        *
  * started.                                                                  */
 int get_seg_start(
-		INP t_seg_details * seg_details, INP int itrack,
-		INP int chan_num, INP int seg_num) {
+		const t_seg_details * seg_details, const int itrack,
+		const int chan_num, const int seg_num) {
 
 	int seg_start = 0;
 	if (seg_details[itrack].seg_start >= 0) {
@@ -684,8 +684,8 @@ int get_seg_start(
 	return seg_start;
 }
 
-int get_seg_end(INP t_seg_details * seg_details, INP int itrack, INP int istart,
-		INP int chan_num, INP int seg_max) {
+int get_seg_end(const t_seg_details * seg_details, const int itrack, const int istart,
+		const int chan_num, const int seg_max) {
 
 	int seg_end = 0;
 	if (seg_details[itrack].seg_end >= 0) {
@@ -723,11 +723,11 @@ int get_seg_end(INP t_seg_details * seg_details, INP int itrack, INP int istart,
  * Also stores the nodes to which this pin connects in the linked list       *
  * pointed to by *edge_list_ptr.                                             */
 int get_bidir_opin_connections(
-		INP int i, INP int j, INP int ipin,
-		INP struct s_linked_edge **edge_list, 
-		INP int ******opin_to_track_map,
-		INP int Fc, INP bool * L_rr_edge_done,
-		INP vtr::t_ivec *** L_rr_node_indices, INP t_seg_details * seg_details) {
+		const int i, const int j, const int ipin,
+		struct s_linked_edge **edge_list, 
+		int ******opin_to_track_map,
+		const int Fc, bool * L_rr_edge_done,
+		vtr::t_ivec *** L_rr_node_indices, const t_seg_details * seg_details) {
 
 	int iside, num_conn, tr_i, tr_j, chan, seg;
 	int to_track, to_switch, to_node, iconn;
@@ -783,11 +783,9 @@ int get_bidir_opin_connections(
 			/* Only connect to wire if there is a CB */
 			if (is_cblock(chan, seg, to_track, seg_details, BI_DIRECTIONAL)) {
 				to_switch = seg_details[to_track].arch_wire_switch;
-				to_node = get_rr_node_index(tr_i, tr_j, to_type, to_track,
-						L_rr_node_indices);
+				to_node = get_rr_node_index(tr_i, tr_j, to_type, to_track, L_rr_node_indices);
 
-				*edge_list = insert_in_edge_list(*edge_list, to_node,
-						to_switch);
+				*edge_list = insert_in_edge_list(*edge_list, to_node, to_switch);
 				L_rr_edge_done[to_node] = true;
 				++num_conn;
 			}
@@ -798,13 +796,13 @@ int get_bidir_opin_connections(
 }
 
 int get_unidir_opin_connections(
-		INP t_type_ptr type,
-		INP int chan, INP int seg, INP int Fc, INP int seg_type_index,
-		INP t_rr_type chan_type, INP t_seg_details * seg_details,
-		INOUTP t_linked_edge ** edge_list_ptr, INOUTP int ***Fc_ofs,
-		INOUTP bool * L_rr_edge_done, INP int max_len,
-		INP int max_chan_width, INP vtr::t_ivec *** L_rr_node_indices,
-		OUTP bool * Fc_clipped) {
+		const t_type_ptr type,
+		const int chan, const int seg, int Fc, const int seg_type_index,
+		const t_rr_type chan_type, const t_seg_details * seg_details,
+		t_linked_edge ** edge_list_ptr, int ***Fc_ofs,
+		bool * L_rr_edge_done, const int max_len,
+		const int max_chan_width, vtr::t_ivec *** L_rr_node_indices,
+		bool * Fc_clipped) {
 
 	/* Gets a linked list of Fc nodes of specified seg_type_index to connect 
 	 * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
@@ -853,10 +851,8 @@ int get_unidir_opin_connections(
 		dec_track = dec_muxes[dec_mux];
 
 		/* Figure the inodes of those muxes */
-		inc_inode_index = get_rr_node_index(x, y, chan_type, inc_track,
-				L_rr_node_indices);
-		dec_inode_index = get_rr_node_index(x, y, chan_type, dec_track,
-				L_rr_node_indices);
+		inc_inode_index = get_rr_node_index(x, y, chan_type, inc_track, L_rr_node_indices);
+		dec_inode_index = get_rr_node_index(x, y, chan_type, dec_track, L_rr_node_indices);
 		/* Add to the list. */
 		if (false == L_rr_edge_done[inc_inode_index]) {
 			L_rr_edge_done[inc_inode_index] = true;
@@ -884,9 +880,9 @@ int get_unidir_opin_connections(
 	return num_edges;
 }
 
-bool is_cblock(INP int chan, INP int seg, INP int track,
-		INP t_seg_details * seg_details,
-		INP enum e_directionality directionality) {
+bool is_cblock(const int chan, const int seg, const int track,
+		const t_seg_details * seg_details,
+		const enum e_directionality directionality) {
 
 	int length, ofs, start_seg;
 
@@ -1019,7 +1015,7 @@ void dump_chan_details(
 		const t_chan_details* pa_chan_details_x,
 		const t_chan_details* pa_chan_details_y,
 		int max_chan_width,
-		INP int L_nx, int INP L_ny,
+		const int L_nx, int const L_ny,
 		const char *fname) {
 
 	FILE *fp = vtr::fopen(fname, "w");
@@ -1053,9 +1049,9 @@ void dump_chan_details(
 /* Dumps out a 2D array of switch block pattern structures to file fname. *
  * Used for debugging purposes only.                                      */
 void dump_sblock_pattern(
-		INP short ******sblock_pattern,
+		short ******sblock_pattern,
 		int max_chan_width,
-		INP int L_nx, int INP L_ny,
+		const int L_nx, int const L_ny,
 		const char *fname) {
 
 	FILE *fp = vtr::fopen(fname, "w");
@@ -1158,10 +1154,10 @@ void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vtr::t_ivec **
 }
 
 static void load_chan_rr_indices(
-		INP int max_chan_width, INP int chan_len, 
-		INP int num_chans, INP t_rr_type type, 
-		INP t_chan_details * chan_details,
-		INOUTP int *index, INOUTP vtr::t_ivec *** indices) {
+		const int max_chan_width, const int chan_len, 
+		const int num_chans, const t_rr_type type, 
+		const t_chan_details * chan_details,
+		int *index, vtr::t_ivec *** indices) {
 
 	indices[type] = (vtr::t_ivec **) vtr::calloc(num_chans, sizeof(vtr::t_ivec *));
 	for (int chan = 0; chan < num_chans-1; ++chan) {
@@ -1213,8 +1209,8 @@ static void load_chan_rr_indices(
 }
 
 vtr::t_ivec ***alloc_and_load_rr_node_indices(
-		INP int max_chan_width, INP int L_nx, INP int L_ny, INOUTP int *index,
-		INP t_chan_details * chan_details_x, INP t_chan_details * chan_details_y) {
+		const int max_chan_width, const int L_nx, const int L_ny, int *index,
+		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y) {
 
 	/* Allocates and loads all the structures needed for fast lookups of the   *
 	 * index of an rr_node.  rr_node_indices is a matrix containing the index  *
@@ -1294,8 +1290,7 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	return indices;
 }
 
-void free_rr_node_indices(
-		INP vtr::t_ivec *** L_rr_node_indices) {
+void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	int i, j;
 
 	/* This function must unallocate the structure allocated in 
@@ -1564,18 +1559,18 @@ int get_track_to_pins(
  * switches are marked as being of the types of the larger (lower R) pass   *
  * transistor.                                                              */
 int get_track_to_tracks(
-		INP int from_chan, INP int from_seg, INP int from_track,
-		INP t_rr_type from_type, INP int to_seg, INP t_rr_type to_type,
-		INP int chan_len, INP int max_chan_width, INP int *opin_mux_size,
-		INP int Fs_per_side, INP short ******sblock_pattern,
-		INOUTP struct s_linked_edge **edge_list,
-		INP t_seg_details * from_seg_details,
-		INP t_seg_details * to_seg_details,
-		INP t_chan_details * to_chan_details,
-		INP enum e_directionality directionality,
-		INP vtr::t_ivec *** L_rr_node_indices, INOUTP bool * L_rr_edge_done,
-		INP vtr::t_ivec ***switch_block_conn, 
-		INP t_sb_connection_map *sb_conn_map) {
+		const int from_chan, const int from_seg, const int from_track,
+		const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
+		const int chan_len, const int max_chan_width, const int *opin_mux_size,
+		const int Fs_per_side, short ******sblock_pattern,
+		struct s_linked_edge **edge_list,
+		const t_seg_details * from_seg_details,
+		const t_seg_details * to_seg_details,
+		const t_chan_details * to_chan_details,
+		const enum e_directionality directionality,
+		vtr::t_ivec *** L_rr_node_indices, bool * L_rr_edge_done,
+		vtr::t_ivec ***switch_block_conn, 
+		t_sb_connection_map *sb_conn_map) {
 
 	int num_conn;
 	int from_switch, sb_seg, start_sb_seg, end_sb_seg;
@@ -1770,13 +1765,13 @@ int get_track_to_tracks(
 }
 
 static int get_bidir_track_to_chan_seg(
-		INP vtr::t_ivec conn_tracks,
-		INP vtr::t_ivec *** L_rr_node_indices, INP int to_chan, INP int to_seg,
-		INP int to_sb, INP t_rr_type to_type, INP t_seg_details * seg_details,
-		INP bool from_is_sblock, INP int from_switch,
-		INOUTP bool * L_rr_edge_done,
-		INP enum e_directionality directionality,
-		INOUTP struct s_linked_edge **edge_list) {
+		const vtr::t_ivec conn_tracks,
+		vtr::t_ivec *** L_rr_node_indices, const int to_chan, const int to_seg,
+		const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
+		const bool from_is_sblock, const int from_switch,
+		bool * L_rr_edge_done,
+		const enum e_directionality directionality,
+		struct s_linked_edge **edge_list) {
 
 	int iconn, to_track, to_node, to_switch, num_conn, to_x, to_y, i;
 	bool to_is_sblock;
@@ -1796,8 +1791,7 @@ static int get_bidir_track_to_chan_seg(
 	num_conn = 0;
 	for (iconn = 0; iconn < conn_tracks.nelem; ++iconn) {
 		to_track = conn_tracks.list[iconn];
-		to_node = get_rr_node_index(to_x, to_y, to_type, to_track,
-				L_rr_node_indices);
+		to_node = get_rr_node_index(to_x, to_y, to_type, to_track, L_rr_node_indices);
 
 		/* Skip edge if already done */
 		if (L_rr_edge_done[to_node]) {
@@ -1836,16 +1830,16 @@ static int get_bidir_track_to_chan_seg(
    edges added .
    See route/build_switchblocks.c for a detailed description of how the switch block
    connection map sb_conn_map is generated. */
-static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
-		INP int from_wire, INP int to_chan, INP int to_seg,
-		INP t_rr_type to_chan_type,
-		INP e_side from_side, INP e_side to_side,
-		INP vtr::t_ivec ***L_rr_node_indices, 
-		INP t_seg_details *dest_seg_details,
-		INP e_directionality directionality,
-		INP t_sb_connection_map *sb_conn_map,
-		INOUTP bool * L_rr_edge_done, 
-		INOUTP s_linked_edge **edge_list){
+static int get_track_to_chan_seg(const int L_nx, const int L_ny,
+		const int from_wire, const int to_chan, const int to_seg,
+		const t_rr_type to_chan_type,
+		const e_side from_side, const e_side to_side,
+		vtr::t_ivec ***L_rr_node_indices, 
+		const t_seg_details *dest_seg_details,
+		const e_directionality directionality,
+		t_sb_connection_map *sb_conn_map,
+		bool * L_rr_edge_done, 
+		s_linked_edge **edge_list){
 
 	int edge_count = 0;
 	int to_x, to_y;
@@ -1901,14 +1895,14 @@ static int get_track_to_chan_seg(INP int L_nx, INP int L_ny,
 
 
 static int get_unidir_track_to_chan_seg(
-		INP bool is_end_sb,
-		INP int from_track, INP int to_chan, INP int to_seg, INP int to_sb,
-		INP t_rr_type to_type, INP int max_chan_width, INP int L_nx,
-		INP int L_ny, INP enum e_side from_side, INP enum e_side to_side,
-		INP int Fs_per_side, INP int *opin_mux_size,
-		INP short ******sblock_pattern, INP vtr::t_ivec *** L_rr_node_indices,
-		INP t_seg_details * seg_details, INOUTP bool * L_rr_edge_done,
-		OUTP bool * Fs_clipped, INOUTP struct s_linked_edge **edge_list) {
+		const bool is_end_sb,
+		const int from_track, const int to_chan, const int to_seg, const int to_sb,
+		const t_rr_type to_type, const int max_chan_width, const int L_nx,
+		const int L_ny, const enum e_side from_side, const enum e_side to_side,
+		const int Fs_per_side, const int *opin_mux_size,
+		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
+		const t_seg_details * seg_details, bool * L_rr_edge_done,
+		bool * Fs_clipped, struct s_linked_edge **edge_list) {
 
 	int num_labels = 0;
 	int *mux_labels = NULL;
@@ -1982,9 +1976,9 @@ static int get_unidir_track_to_chan_seg(
 	return count;
 }
 
-bool is_sblock(INP int chan, INP int wire_seg, INP int sb_seg, INP int track,
-		INP t_seg_details * seg_details,
-		INP enum e_directionality directionality) {
+bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track,
+		const t_seg_details * seg_details,
+		const enum e_directionality directionality) {
 
 	int length, ofs, fac;
 
@@ -2068,9 +2062,9 @@ static void get_switch_type(
 }
 
 static int vpr_to_phy_track(
-		INP int itrack, INP int chan_num, INP int seg_num,
-		INP t_seg_details * seg_details,
-		INP enum e_directionality directionality) {
+		const int itrack, const int chan_num, const int seg_num,
+		const t_seg_details * seg_details,
+		const enum e_directionality directionality) {
 
 	int group_start, group_size;
 	int vpr_offset_for_first_phy_track;
@@ -2098,7 +2092,7 @@ static int vpr_to_phy_track(
 }
 
 short ******alloc_sblock_pattern_lookup(
-		INP int L_nx, INP int L_ny, INP int max_chan_width) {
+		const int L_nx, const int L_ny, const int max_chan_width) {
 
 	/* loading up the sblock connection pattern matrix. It's a huge matrix because
 	 * for nonquantized W, it's impossible to make simple permutations to figure out
@@ -2165,7 +2159,7 @@ short ******alloc_sblock_pattern_lookup(
 }
 
 void free_sblock_pattern_lookup(
-		INOUTP short ******sblock_pattern) {
+		short ******sblock_pattern) {
 
 	/* This free function corresponds to the chunked matrix 
 	 * allocation above and there should only be one free
@@ -2184,10 +2178,10 @@ void free_sblock_pattern_lookup(
 }
 
 void load_sblock_pattern_lookup(
-		INP int i, INP int j, INP t_chan_width *nodes_per_chan,
-		INP t_chan_details *chan_details_x, INP t_chan_details *chan_details_y, 
-		INP int Fs, INP enum e_switch_block_type switch_block_type,
-		INOUTP short ******sblock_pattern) {
+		const int i, const int j, const t_chan_width *nodes_per_chan,
+		const t_chan_details *chan_details_x, const t_chan_details *chan_details_y, 
+		const int Fs, const enum e_switch_block_type switch_block_type,
+		short ******sblock_pattern) {
 
 	/* This routine loads a lookup table for sblock topology. The lookup table is huge
 	 * because the sblock varies from location to location. The i, j means the owning
@@ -2473,10 +2467,10 @@ void load_sblock_pattern_lookup(
 }
 
 static int *label_wire_muxes(
-		INP int chan_num, INP int seg_num,
-		INP t_seg_details * seg_details, INP int seg_type_index, INP int max_len,
-		INP enum e_direction dir, INP int max_chan_width,
-		INP bool check_cb, OUTP int *num_wire_muxes, OUTP int *num_wire_muxes_cb_restricted) {
+		const int chan_num, const int seg_num,
+		const t_seg_details * seg_details, const int seg_type_index, const int max_len,
+		const enum e_direction dir, const int max_chan_width,
+		const bool check_cb, int *num_wire_muxes, int *num_wire_muxes_cb_restricted) {
 
 	/* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
 	 * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux> 
@@ -2554,10 +2548,10 @@ static int *label_wire_muxes(
 }
 
 static int *label_incoming_wires(
-		INP int chan_num, INP int seg_num, INP int sb_seg,
-		INP t_seg_details * seg_details, INP int max_len,
-		INP enum e_direction dir, INP int max_chan_width,
-		OUTP int *num_incoming_wires, OUTP int *num_ending_wires) {
+		const int chan_num, const int seg_num, const int sb_seg,
+		const t_seg_details * seg_details, const int max_len,
+		const enum e_direction dir, const int max_chan_width,
+		int *num_incoming_wires, int *num_ending_wires) {
 
 	/* Labels the incoming wires on that side (seg_num, chan_num, direction). 
 	 * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,

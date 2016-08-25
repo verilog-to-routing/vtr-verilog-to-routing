@@ -21,11 +21,11 @@
 using namespace std;
 
 
-static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist);
+static bool check_global_net_with_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist);
 
-void load_global_net_from_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist){
+void load_global_net_from_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist){
 
 	int i, j;
 		
@@ -75,7 +75,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 	return;
 }
 
-void echo_global_nlist_net(INP t_netlist* g_nlist){
+void echo_global_nlist_net(const t_netlist* g_nlist){
 
 	unsigned int i, j;
 
@@ -105,8 +105,8 @@ void echo_global_nlist_net(INP t_netlist* g_nlist){
 	vtr::printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
 }
 
-static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist){
+static bool check_global_net_with_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist){
 
 	int i, j;
 
@@ -141,7 +141,7 @@ static bool check_global_net_with_array(INP t_net* net_arr,
 	return true;
 }
 
-void free_global_nlist_net(INP t_netlist* g_nlist){
+void free_global_nlist_net(t_netlist* g_nlist){
 	
 	if(g_nlist == NULL){
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,

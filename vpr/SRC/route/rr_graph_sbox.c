@@ -28,16 +28,16 @@
  * For simple switch boxes this is overkill, but it will allow complicated  *
  * switch boxes with Fs > 3, etc. without trouble.                          */
 
-int get_simple_switch_block_track(INP enum e_side from_side,
-		INP enum e_side to_side, INP int from_track,
-		INP enum e_switch_block_type switch_block_type, INP int nodes_per_chan);
+int get_simple_switch_block_track(const enum e_side from_side,
+		const enum e_side to_side, const int from_track,
+		const enum e_switch_block_type switch_block_type, const int nodes_per_chan);
 
 /* Allocates and loads the switch_block_conn data structure.  This structure *
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */
 vtr::t_ivec ***
-alloc_and_load_switch_block_conn(INP int nodes_per_chan,
-		INP enum e_switch_block_type switch_block_type, INP int Fs) {
+alloc_and_load_switch_block_conn(const int nodes_per_chan,
+		const enum e_switch_block_type switch_block_type, const int Fs) {
 	enum e_side from_side, to_side;
 	int from_track;
 	vtr::t_ivec ***switch_block_conn = NULL;
@@ -104,9 +104,9 @@ void free_switch_block_conn(vtr::t_ivec ***switch_block_conn,
  * SUBSET, UNIVERSAL, and WILTON. I added FULL (for fully flexible topology)
  * but the returned value is simply a dummy, since we don't need to permute
  * what connections to make for FULL (connect to EVERYTHING) */
-int get_simple_switch_block_track(INP enum e_side from_side,
-		INP enum e_side to_side, INP int from_track,
-		INP enum e_switch_block_type switch_block_type, INP int nodes_per_chan) {
+int get_simple_switch_block_track(const enum e_side from_side,
+		const enum e_side to_side, const int from_track,
+		const enum e_switch_block_type switch_block_type, const int nodes_per_chan) {
 
 	/* This routine returns the track number to which the from_track should     *
 	 * connect.  It supports three simple, Fs = 3, switch blocks.               */

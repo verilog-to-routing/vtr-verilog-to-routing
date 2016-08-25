@@ -38,7 +38,7 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node *p
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
 									  int num_pb_types, int type_index, int num_pb, int pb_index, 
 									  float parent_width, float parent_height, 
-									  OUTP float *blk_width, OUTP float *blk_height);
+									  float *blk_width, float *blk_height);
 static int draw_internal_find_max_lvl(t_pb_type pb_type);
 static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox);
 static bool is_top_lvl_block_highlighted(const t_block& clb);
@@ -243,7 +243,7 @@ static void
 draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node, 
 						  int num_pb_types, int type_index, int num_pb, int pb_index, 
 						  float parent_width, float parent_height, 
-						  OUTP float *blk_width, OUTP float *blk_height) 
+						  float *blk_width, float *blk_height) 
 {
 	float parent_drawing_width, parent_drawing_height;
 	float sub_tile_x, sub_tile_y;
@@ -521,7 +521,7 @@ void draw_logical_connections() {
  */
 void find_pin_index_at_model_scope(
 	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
-	OUTP int* pin_index, OUTP int* total_pins) {
+	int* pin_index, int* total_pins) {
 
 	// printf("looking for pin {blk: %d, port: %d, pin: %d}\n",
 		// the_pin.block, the_pin.block_port, the_pin.block_pin);
@@ -799,7 +799,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 			// find the logical block that corrisponds to this pb.
 			if ( is_in_selected_subtree(lblk->pb->pb_graph_node, &block[lblk->clb_index]) ) {
 
-				t_model* model = lblk->model;
+				const t_model* model = lblk->model;
 
 				t_model_ports* model_ports = model->inputs;
 				// iterate over the input ports

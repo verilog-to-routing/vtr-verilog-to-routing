@@ -18,10 +18,10 @@ struct s_formula_data{
 void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data );
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data );
+void read_sb_wireconns(const t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data );
 
 /* checks for correctness of switch block read-in from the XML architecture file */
-void check_switchblock( t_switchblock_inf *sb );
+void check_switchblock(const t_switchblock_inf *sb );
 
 /* returns integer result according to the specified formula and data */
 int get_sb_formula_result( const char* formula, const s_formula_data &mydata );

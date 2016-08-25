@@ -489,7 +489,7 @@ struct s_pb_graph_edge {
 	int driver_pin;
 
 	/* pack pattern info */
-	char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
+	const char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
 	int *pack_pattern_indices; /*[0..num_pack_patterns(of_edge)-1]*/
 	int num_pack_patterns;
 	bool infer_pattern; /*If true, infer pattern based on patterns connected to it*/

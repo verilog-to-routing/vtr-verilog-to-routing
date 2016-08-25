@@ -9,26 +9,26 @@ t_port * findPortByName(const char * name, t_pb_type * pb_type,
 void SetupEmptyType(struct s_type_descriptor* cb_type_descriptors,
                     t_type_ptr EMPTY_TYPE);
 
-void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
+void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
 		char *new_name, t_pb_type *copy);
 
-void ProcessLutClass(INOUTP t_pb_type *lut_pb_type);
+void ProcessLutClass(t_pb_type *lut_pb_type);
 
 
-void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type);
+void ProcessMemoryClass(t_pb_type *mem_pb_type);
 
 e_power_estimation_method power_method_inherited(
 		e_power_estimation_method parent_power_method);
 
-void CreateModelLibrary(OUTP struct s_arch *arch);
+void CreateModelLibrary(struct s_arch *arch);
 
-void SyncModelsPbTypes(INOUTP struct s_arch *arch,
-		INP t_type_descriptor * Types, INP int NumTypes);
+void SyncModelsPbTypes(struct s_arch *arch,
+		const t_type_descriptor * Types, const int NumTypes);
 
-void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
-		INOUTP t_pb_type * pb_type);
+void SyncModelsPbTypes_rec(struct s_arch *arch,
+		t_pb_type * pb_type);
 
-void UpdateAndCheckModels(INOUTP struct s_arch *arch);
+void UpdateAndCheckModels(struct s_arch *arch);
 
 
 void primitives_annotation_clock_match(

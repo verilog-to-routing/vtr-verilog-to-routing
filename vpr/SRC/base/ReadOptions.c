@@ -21,33 +21,33 @@ static char **outputFileNames = NULL;
 
 /******** Function prototypes ********/
 
-static char **ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token);
-static void Error(INP const char *Token);
-static char **ProcessOption(INP char **Args, INOUTP t_options * Options);
-static char **ReadFloat(INP char **Args, OUTP float *Val);
-static char **ReadInt(INP char **Args, OUTP int *Val);
-static char **ReadOnOff(INP char **Args, OUTP bool * Val);
-static char **ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type);
-static char **ReadFixPins(INP char **Args, OUTP char **PinFile);
-static char **ReadPlaceAlgorithm(INP char **Args,
-		OUTP enum e_place_algorithm *Algo);
-static char **ReadRouterAlgorithm(INP char **Args,
-		OUTP enum e_router_algorithm *Algo);
-static char **ReadPackerAlgorithm(INP char **Args,
-		OUTP enum e_packer_algorithm *Algo);
-static char **ReadRoutingPredictor(INP char **Args,
-		OUTP enum e_routing_failure_predictor *RoutingPred);
-static char **ReadBaseCostType(INP char **Args,
-		OUTP enum e_base_cost_type *BaseCostType);
-static char **ReadRouteType(INP char **Args, OUTP enum e_route_type *Type);
-static char **ReadString(INP char **Args, OUTP char **Val);
-static char **ReadChar(INP char **Args, OUTP char *Val);
+static char **ReadBaseToken(char **Args, enum e_OptionBaseToken *Token);
+static void Error(const char *Token);
+static char **ProcessOption(char **Args, t_options * Options);
+static char **ReadFloat(char **Args, float *Val);
+static char **ReadInt(char **Args, int *Val);
+static char **ReadOnOff(char **Args, bool * Val);
+static char **ReadClusterSeed(char **Args, enum e_cluster_seed *Type);
+static char **ReadFixPins(char **Args, char **PinFile);
+static char **ReadPlaceAlgorithm(char **Args,
+		enum e_place_algorithm *Algo);
+static char **ReadRouterAlgorithm(char **Args,
+		enum e_router_algorithm *Algo);
+static char **ReadPackerAlgorithm(char **Args,
+		enum e_packer_algorithm *Algo);
+static char **ReadRoutingPredictor(char **Args,
+		enum e_routing_failure_predictor *RoutingPred);
+static char **ReadBaseCostType(char **Args,
+		enum e_base_cost_type *BaseCostType);
+static char **ReadRouteType(char **Args, enum e_route_type *Type);
+static char **ReadString(char **Args, char **Val);
+static char **ReadChar(char **Args, char *Val);
 
 /******** Globally Accessible Function ********/
 /* Determines whether timing analysis should be on or off. 
  Unless otherwise specified, always default to timing.
  */
-bool IsTimingEnabled(INP t_options *Options) {
+bool IsTimingEnabled(const t_options *Options) {
 	/* First priority to the '--timing_analysis' flag */
 	if (Options->Count[OT_TIMING_ANALYSIS]) {
 		return Options->TimingAnalysis;
@@ -58,7 +58,7 @@ bool IsTimingEnabled(INP t_options *Options) {
 /* Determines whether file echo should be on or off. 
  Unless otherwise specified, always default to on.
  */
-bool IsEchoEnabled(INP t_options *Options) {
+bool IsEchoEnabled(const t_options *Options) {
 	/* First priority to the '--echo_file' flag */
 	if (Options->Count[OT_CREATE_ECHO_FILE]) {
 		return Options->CreateEchoFile;
@@ -88,7 +88,7 @@ void SetPostSynthesisOption(bool post_synthesis_enabled){
   Generate_PostSynthesis_Netlist = post_synthesis_enabled;
 }
 
-bool IsPostSynthesisEnabled(INP t_options *Options) {
+bool IsPostSynthesisEnabled(const t_options *Options) {
   /* First priority to the '--generate_postsynthesis_netlist' flag */
   if (Options->Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
     return Options->Generate_Post_Synthesis_Netlist;
@@ -241,7 +241,7 @@ void free_output_file_names() {
 
 /******** Subroutine implementations ********/
 
-void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
+void ReadOptions(int argc, const char **argv, t_options * Options) {
 	char **Args, **head;
 	int offset;
 	
@@ -287,7 +287,7 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 }
 
 static char **
-ProcessOption(INP char **Args, INOUTP t_options * Options) {
+ProcessOption(char **Args, t_options * Options) {
 	enum e_OptionBaseToken Token;
 	char **PrevArgs;
 
@@ -478,7 +478,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 }
 
 static char **
-ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token) {
+ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
 	struct s_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
@@ -500,7 +500,7 @@ ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token) {
 }
 
 static char **
-ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
+ReadToken(char **Args, enum e_OptionArgToken *Token) {
 	struct s_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
@@ -522,7 +522,7 @@ ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
 }
 
 /* Called for parse errors. Spits out a message and then exits program. */
-static void Error(INP const char *Token) {
+static void Error(const char *Token) {
 	if (Token) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 		"Unexpected token '%s' on command line.\n", Token);
@@ -533,7 +533,7 @@ static void Error(INP const char *Token) {
 }
 
 static char **
-ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
+ReadClusterSeed(char **Args, enum e_cluster_seed *Type) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -557,7 +557,7 @@ ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
 }
 
 static char **
-ReadPackerAlgorithm(INP char **Args, OUTP enum e_packer_algorithm *Algo) {
+ReadPackerAlgorithm(char **Args, enum e_packer_algorithm *Algo) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -579,7 +579,7 @@ ReadPackerAlgorithm(INP char **Args, OUTP enum e_packer_algorithm *Algo) {
 
 
 static char **
-ReadRouterAlgorithm(INP char **Args, OUTP enum e_router_algorithm *Algo) {
+ReadRouterAlgorithm(char **Args, enum e_router_algorithm *Algo) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -603,7 +603,7 @@ ReadRouterAlgorithm(INP char **Args, OUTP enum e_router_algorithm *Algo) {
 }
 
 static char **
-ReadRoutingPredictor(INP char **Args, OUTP enum e_routing_failure_predictor *RoutingPred) {
+ReadRoutingPredictor(char **Args, enum e_routing_failure_predictor *RoutingPred) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -627,7 +627,7 @@ ReadRoutingPredictor(INP char **Args, OUTP enum e_routing_failure_predictor *Rou
 }
 
 static char **
-ReadBaseCostType(INP char **Args, OUTP enum e_base_cost_type *BaseCostType) {
+ReadBaseCostType(char **Args, enum e_base_cost_type *BaseCostType) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -648,7 +648,7 @@ ReadBaseCostType(INP char **Args, OUTP enum e_base_cost_type *BaseCostType) {
 }
 
 static char **
-ReadRouteType(INP char **Args, OUTP enum e_route_type *Type) {
+ReadRouteType(char **Args, enum e_route_type *Type) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -669,7 +669,7 @@ ReadRouteType(INP char **Args, OUTP enum e_route_type *Type) {
 }
 
 static char **
-ReadPlaceAlgorithm(INP char **Args, OUTP enum e_place_algorithm *Algo) {
+ReadPlaceAlgorithm(char **Args, enum e_place_algorithm *Algo) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -690,7 +690,7 @@ ReadPlaceAlgorithm(INP char **Args, OUTP enum e_place_algorithm *Algo) {
 }
 
 static char **
-ReadFixPins(INP char **Args, OUTP char **PinFile) {
+ReadFixPins(char **Args, char **PinFile) {
 	enum e_OptionArgToken Token;
 	int Len;
 	char **PrevArgs = Args;
@@ -705,7 +705,7 @@ ReadFixPins(INP char **Args, OUTP char **PinFile) {
 }
 
 static char **
-ReadOnOff(INP char **Args, OUTP bool * Val) {
+ReadOnOff(char **Args, bool * Val) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -725,7 +725,7 @@ ReadOnOff(INP char **Args, OUTP bool * Val) {
 }
 
 static char **
-ReadInt(INP char **Args, OUTP int *Val) {
+ReadInt(char **Args, int *Val) {
 	if (NULL == *Args)
 		Error(*Args);
 	if ((**Args > '9') || (**Args < '0'))
@@ -737,7 +737,7 @@ ReadInt(INP char **Args, OUTP int *Val) {
 }
 
 static char **
-ReadFloat(INP char ** Args, OUTP float *Val) {
+ReadFloat(char ** Args, float *Val) {
 	if (NULL == *Args) {
 		Error(*Args);
 	}
@@ -753,7 +753,7 @@ ReadFloat(INP char ** Args, OUTP float *Val) {
 }
 
 static char **
-ReadString(INP char **Args, OUTP char **Val) {
+ReadString(char **Args, char **Val) {
 	if (NULL == *Args) {
 		Error(*Args);
 	}
@@ -764,7 +764,7 @@ ReadString(INP char **Args, OUTP char **Val) {
 }
 
 static char **
-ReadChar(INP char **Args, OUTP char *Val) {
+ReadChar(char **Args, char *Val) {
     if (NULL == *Args) {
         Error(*Args);
     }

@@ -19,9 +19,9 @@ static void check_pass_transistors(int from_node);
 
 /************************ Subroutine definitions ****************************/
 
-void check_rr_graph(INP t_graph_type graph_type, 
-		INP int L_nx, INP int L_ny,
-		INP int num_rr_switches, INP int ***Fc_in) {
+void check_rr_graph(const t_graph_type graph_type, 
+		const int L_nx, const int L_ny,
+		const int num_rr_switches, int ***Fc_in) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */

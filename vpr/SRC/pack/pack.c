@@ -22,11 +22,11 @@ using namespace std;
 
 static bool *alloc_and_load_is_clock(bool global_clocks);
 
-void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
-		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
+		const t_model *user_models, const t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 	bool *is_clock;
 	int num_models;
-	t_model *cur_model;
+	const t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;

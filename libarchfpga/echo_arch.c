@@ -9,10 +9,10 @@
 using vtr::t_linked_vptr;
 
 static void PrintArchInfo(FILE* Echo, const struct s_arch *arch);
-static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
+static void PrintPb_types_rec(FILE* Echo, const t_pb_type * pb_type,
 		int level);
-static void PrintPb_types_recPower(INP FILE * Echo,
-		INP const t_pb_type * pb_type, const char* tabs);
+static void PrintPb_types_recPower(FILE* Echo,
+		const t_pb_type * pb_type, const char* tabs);
 
 /* Output the data from architecture data so user can verify it
  * was interpretted correctly. */
@@ -321,7 +321,7 @@ static void PrintArchInfo(FILE * Echo, const struct s_arch *arch) {
 	fprintf(Echo, "*************************************************\n\n");
 }
 
-static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
+static void PrintPb_types_rec(FILE* Echo, const t_pb_type * pb_type,
 		int level) {
 	int i, j, k;
 	char *tabs;
@@ -401,8 +401,8 @@ static void PrintPb_types_rec(INP FILE * Echo, INP const t_pb_type * pb_type,
 }
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML
-static void PrintPb_types_recPower(INP FILE * Echo,
-		INP const t_pb_type * pb_type, const char* tabs) {
+static void PrintPb_types_recPower(FILE* Echo,
+		const t_pb_type * pb_type, const char* tabs) {
 
 	int i = 0;
 	/*Print power information for each pb if available*/

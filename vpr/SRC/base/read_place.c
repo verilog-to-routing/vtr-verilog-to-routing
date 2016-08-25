@@ -14,11 +14,11 @@ using namespace std;
 #include "ReadLine.h"
 
 /* extern, should be a header */
-char **ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum);
+char **ReadLineTokens(FILE * InFile, int *LineNum);
 
-void read_place(INP const char *place_file, INP const char *arch_file,
-		INP const char *net_file, INP int L_nx, INP int L_ny,
-		INP int L_num_blocks, INOUTP struct s_block block_list[]) {
+void read_place(const char *place_file, const char *arch_file,
+		const char *net_file, const int L_nx, const int L_ny,
+		const int L_num_blocks, struct s_block block_list[]) {
 
 	FILE *infile;
 	char **tokens;
@@ -137,7 +137,7 @@ void read_place(INP const char *place_file, INP const char *arch_file,
 	fclose(infile);
 }
 
-void read_user_pad_loc(char *pad_loc_file) {
+void read_user_pad_loc(const char *pad_loc_file) {
 
 	/* Reads in the locations of the IO pads from a file. */
 
@@ -265,7 +265,7 @@ void read_user_pad_loc(char *pad_loc_file) {
 	vtr::printf_info("\n");
 }
 
-void print_place(char *place_file, char *net_file, char *arch_file) {
+void print_place(const char *place_file, const char *net_file, const char *arch_file) {
 
 	/* Prints out the placement of the circuit.  The architecture and    *
 	 * netlist files used to generate this placement are recorded in the *

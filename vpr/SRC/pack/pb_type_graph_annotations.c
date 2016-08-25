@@ -18,17 +18,17 @@ using namespace std;
 #include "pb_type_graph_annotations.h"
 #include "read_xml_arch_file.h"
 
-static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
-		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
-		INP char *value);
+static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *pb_graph_node,
+		const int mode, const char *annot_in_pins, const char *annot_out_pins,
+		const char *value);
 
-static void load_critical_path_annotations(INP int line_num, 
-		INOUTP t_pb_graph_node *pb_graph_node, INP int mode,
-		INP enum e_pin_to_pin_annotation_format input_format,
-		INP enum e_pin_to_pin_delay_annotations delay_type,
-		INP char *annot_in_pins, INP char *annot_out_pins, INP char* value);
+static void load_critical_path_annotations(const int line_num, 
+		t_pb_graph_node *pb_graph_node, const int mode,
+		const enum e_pin_to_pin_annotation_format input_format,
+		const enum e_pin_to_pin_delay_annotations delay_type,
+		const char *annot_in_pins, const char *annot_out_pins, const char* value);
 
-void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node) {
+void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 	int i, j, k, m;
 	const t_pb_type *pb_type;
 	t_pin_to_pin_annotation *annotations;
@@ -122,9 +122,9 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 /*
  Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
-static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
-		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
-		INP char *value) {
+static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *pb_graph_node,
+		const int mode, const char *annot_in_pins, const char *annot_out_pins,
+		const char *value) {
 	int i, j, k, m, n, p, iedge;
 	t_pb_graph_pin ***in_port, ***out_port;
 	int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
@@ -154,13 +154,10 @@ static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_no
 					 can use this info to only annotate existing edges */
 					if (iedge != in_port[i][j]->num_output_edges) {
 						in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
-						in_port[i][j]->output_edges[iedge]->pack_pattern_names = (char**)
-								vtr::realloc(
+						in_port[i][j]->output_edges[iedge]->pack_pattern_names = (const char**) vtr::realloc(
 										in_port[i][j]->output_edges[iedge]->pack_pattern_names,
-										sizeof(char*)
-												* in_port[i][j]->output_edges[iedge]->num_pack_patterns);
-						in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns
-								- 1] = value;
+										sizeof(char*) * in_port[i][j]->output_edges[iedge]->num_pack_patterns);
+						in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value;
 					}
 					p++;
 				}
@@ -185,11 +182,11 @@ static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_no
 	}
 }
 
-static void load_critical_path_annotations(INP int line_num, 
-		INOUTP t_pb_graph_node *pb_graph_node, INP int mode,
-		INP enum e_pin_to_pin_annotation_format input_format,
-		INP enum e_pin_to_pin_delay_annotations delay_type,
-		INP char *annot_in_pins, INP char *annot_out_pins, INP char* value) {
+static void load_critical_path_annotations(const int line_num, 
+		t_pb_graph_node *pb_graph_node, const int mode,
+		const enum e_pin_to_pin_annotation_format input_format,
+		const enum e_pin_to_pin_delay_annotations delay_type,
+		const char *annot_in_pins, const char *annot_out_pins, const char* value) {
 
 	int i, j, k, m, n, p, iedge;
 	t_pb_graph_pin ***in_port, ***out_port;

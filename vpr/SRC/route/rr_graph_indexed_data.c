@@ -19,7 +19,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 
 static void load_rr_indexed_data_T_values(int index_start,
 		int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-		vtr::t_ivec *** L_rr_node_indices, t_segment_inf * segment_inf);
+		vtr::t_ivec *** L_rr_node_indices);
 
 /******************** Subroutine definitions *********************************/
 
@@ -36,9 +36,9 @@ static void load_rr_indexed_data_T_values(int index_start,
  * etc. more expensive than others.  I give each segment type in an          *
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
-void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
-		INP int num_segment, INP vtr::t_ivec *** L_rr_node_indices,
-		INP int nodes_per_chan, int wire_to_ipin_switch,
+void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
+		const int num_segment, vtr::t_ivec *** L_rr_node_indices,
+		const int nodes_per_chan, int wire_to_ipin_switch,
 		enum e_base_cost_type base_cost_type) {
 
 	int iseg, length, i, index;
@@ -81,7 +81,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 	}
 
 	load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
-			nodes_per_chan, L_rr_node_indices, segment_inf);
+			nodes_per_chan, L_rr_node_indices);
 
 	/* Y-directed segments. */
 
@@ -100,7 +100,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 	}
 
 	load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
-			num_segment, CHANY, nodes_per_chan, L_rr_node_indices, segment_inf);
+			num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
 	load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
 			base_cost_type, wire_to_ipin_switch);
@@ -204,7 +204,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 
 static void load_rr_indexed_data_T_values(int index_start,
 		int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-		vtr::t_ivec *** L_rr_node_indices, t_segment_inf * segment_inf) {
+		vtr::t_ivec *** L_rr_node_indices) {
 
 	/* Loads the average propagation times through segments of each index type  *
 	 * for either all CHANX segment types or all CHANY segment types.  It does  *

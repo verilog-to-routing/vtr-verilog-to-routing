@@ -18,7 +18,7 @@ using namespace std;
 /* PRINT_PIN_NETS */
 
 struct s_model_stats {
-	t_model * model;
+	const t_model * model;
 	int count;
 };
 
@@ -53,41 +53,41 @@ static FILE *blif;
 static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 		bool is_global, bool doall);
 static void get_blif_tok(char *buffer, bool doall, bool *done,
-		bool *add_truth_table, INP t_model* inpad_model,
-		INP t_model* outpad_model, INP t_model* logic_model,
-		INP t_model* latch_model, INP t_model* user_models);
+		bool *add_truth_table, const t_model* inpad_model,
+		const t_model* outpad_model, const t_model* logic_model,
+		const t_model* latch_model, const t_model* user_models);
 static void init_parse(bool doall, bool init_vpack_net_power);
-static t_model_ports* find_clock_port(t_model* model);
+static t_model_ports* find_clock_port(const t_model* model);
 static int check_blocks();
 static int check_net(bool sweep_hanging_nets_and_inputs);
 static void free_parse(void);
-static void io_line(int in_or_out, bool doall, t_model *io_model);
-static bool add_lut(bool doall, t_model *logic_model);
-static void add_latch(bool doall, INP t_model *latch_model);
-static void add_subckt(bool doall, INP t_model *user_models);
+static void io_line(int in_or_out, bool doall, const t_model *io_model);
+static bool add_lut(bool doall, const t_model *logic_model);
+static void add_latch(bool doall, const t_model *latch_model);
+static void add_subckt(bool doall, const t_model *user_models);
 static void check_and_count_models(bool doall, const char* model_name,
-		t_model* user_models);
-static void load_default_models(INP t_model *library_models,
-		OUTP t_model** inpad_model, OUTP t_model** outpad_model,
-		OUTP t_model** logic_model, OUTP t_model** latch_model);
+		const t_model* user_models);
+static void load_default_models(const t_model *library_models,
+		const t_model** inpad_model, const t_model** outpad_model,
+		const t_model** logic_model, const t_model** latch_model);
 static void read_activity(char * activity_file);
-static void read_blif(char *blif_file, bool sweep_hanging_nets_and_inputs,
-		t_model *user_models, t_model *library_models,
+static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
+		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
 
 static void do_absorb_buffer_luts(void);
 static void compress_netlist(void);
-static void show_blif_stats(t_model *user_models, t_model *library_models);
+static void show_blif_stats(const t_model *user_models, const t_model *library_models);
 static bool add_activity_to_net(char * net_name, float probability,
 		float density);
 
-static void read_blif(char *blif_file, bool sweep_hanging_nets_and_inputs,
-		t_model *user_models, t_model *library_models,
+static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
+		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file) {
 	char buffer[vtr::BUFSIZE];
 	bool done;
 	bool add_truth_table;
-	t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
+	const t_model *inpad_model, *outpad_model, *logic_model, *latch_model;
     int error_count = 0;
 
 	blif = vtr::fopen(blif_file, "r");
@@ -226,9 +226,9 @@ static void init_parse(bool doall, bool init_vpack_net_power) {
 }
 
 static void get_blif_tok(char *buffer, bool doall, bool *done,
-		bool *add_truth_table, INP t_model* inpad_model,
-		INP t_model* outpad_model, INP t_model* logic_model,
-		INP t_model* latch_model, INP t_model* user_models) {
+		bool *add_truth_table, const t_model* inpad_model,
+		const t_model* outpad_model, const t_model* logic_model,
+		const t_model* latch_model, const t_model* user_models) {
 
 	/* Figures out which, if any token is at the start of this line and *
 	 * takes the appropriate action.                                    */
@@ -363,7 +363,7 @@ void dum_parse(char *buf) {
 		;
 }
 
-static bool add_lut(bool doall, t_model *logic_model) {
+static bool add_lut(bool doall, const t_model *logic_model) {
 
 	/* Adds a LUT as VPACK_COMB from (.names) currently being parsed to the logical_block array.  Adds *
 	 * its pins to the nets data structure by calling add_vpack_net.  If doall is *
@@ -449,7 +449,7 @@ static bool add_lut(bool doall, t_model *logic_model) {
 	return doall;
 }
 
-static void add_latch(bool doall, INP t_model *latch_model) {
+static void add_latch(bool doall, const t_model *latch_model) {
 
 	/* Adds the flipflop (.latch) currently being parsed to the logical_block array.  *
 	 * Adds its pins to the nets data structure by calling add_vpack_net.  If doall *
@@ -516,7 +516,7 @@ static void add_latch(bool doall, INP t_model *latch_model) {
 	num_latches++;
 }
 
-static void add_subckt(bool doall, t_model *user_models) {
+static void add_subckt(bool doall, const t_model *user_models) {
 	char *ptr;
 	char *close_bracket;
 	char subckt_name[vtr::BUFSIZE];
@@ -530,7 +530,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 	char *subckt_logical_block_name = NULL;
 	short toggle = 0;
 	int input_net_count, output_net_count, input_port_count, output_port_count;
-	t_model *cur_model;
+	const t_model *cur_model;
 	t_model_ports *port;
 	bool found_subckt_signal;
 
@@ -789,7 +789,7 @@ static void add_subckt(bool doall, t_model *user_models) {
 	//}
 }
 
-static void io_line(int in_or_out, bool doall, t_model *io_model) {
+static void io_line(int in_or_out, bool doall, const t_model *io_model) {
 
 	/* Adds an input or output logical_block to the logical_block data structures.           *
 	 * in_or_out:  DRIVER for input, RECEIVER for output.                    *
@@ -858,9 +858,9 @@ static void io_line(int in_or_out, bool doall, t_model *io_model) {
 }
 
 static void check_and_count_models(bool doall, const char* model_name,
-		t_model *user_models) {
+		const t_model *user_models) {
 	fpos_t start_pos;
-	t_model *user_model;
+	const t_model *user_model;
 
 	num_blif_models++;
 	if (doall) {
@@ -986,7 +986,7 @@ static int add_vpack_net(char *ptr, int type, int bnum, int bport, int bpin,
 	return (h_ptr->index);
 }
 
-void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
+void echo_input(const char *blif_file, const char *echo_file, const t_model *library_models) {
 
 	/* Echo back the netlist data structures to file input.echo to *
 	 * allow the user to look at the internal state of the program *
@@ -995,9 +995,9 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 	int i, j;
 	FILE *fp;
 	t_model_ports *port;
-	t_model *latch_model;
-	t_model *logic_model;
-	t_model *cur;
+	const t_model *latch_model;
+	const t_model *logic_model;
+	const t_model *cur;
 	int *lut_distribution;
 	int num_absorbable_latch;
 	int inet;
@@ -1136,10 +1136,10 @@ void echo_input(char *blif_file, char *echo_file, t_model *library_models) {
 }
 
 /* load default vpack models (inpad, outpad, logic) */
-static void load_default_models(INP t_model *library_models,
-		OUTP t_model** inpad_model, OUTP t_model** outpad_model,
-		OUTP t_model** logic_model, OUTP t_model** latch_model) {
-	t_model *cur_model;
+static void load_default_models(const t_model *library_models,
+		const t_model** inpad_model, const t_model** outpad_model,
+		const t_model** logic_model, const t_model** latch_model) {
+	const t_model *cur_model;
 	cur_model = library_models;
 	*inpad_model = *outpad_model = *logic_model = *latch_model = NULL;
 	while (cur_model) {
@@ -1169,7 +1169,7 @@ static void load_default_models(INP t_model *library_models,
 	}
 }
 
-static t_model_ports* find_clock_port(t_model* block_model) {
+static t_model_ports* find_clock_port(const t_model* block_model) {
     t_model_ports* port = block_model->inputs;
     while(port != NULL && !port->is_clock) {
         port = port->next;
@@ -1181,7 +1181,7 @@ static int check_blocks() {
 
     int error_count = 0;
     for(int iblk = 0; iblk < num_logical_blocks; iblk++) {
-        t_model* block_model = logical_block[iblk].model;
+        const t_model* block_model = logical_block[iblk].model;
 
         //Check if this type has a clock port
         t_model_ports* clk_port = find_clock_port(block_model);
@@ -1825,10 +1825,10 @@ static void compress_netlist(void) {
 /* Read blif file and perform basic sweep/accounting on it
  * - power_opts: Power options, can be NULL
  */
-void read_and_process_blif(char *blif_file,
+void read_and_process_blif(const char *blif_file,
 		bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
-        t_model *user_models,
-		t_model *library_models, bool read_activity_file,
+        const t_model *user_models,
+		const t_model *library_models, bool read_activity_file,
 		char * activity_file) {
 
 	/* begin parsing blif input file */
@@ -1879,11 +1879,11 @@ void read_and_process_blif(char *blif_file,
 }
 
 /* Output blif statistics */
-static void show_blif_stats(t_model *user_models, t_model *library_models) {
+static void show_blif_stats(const t_model *user_models, const t_model *library_models) {
 	struct s_model_stats *model_stats;
 	struct s_model_stats *lut_model;
 	int num_model_stats;
-	t_model *cur;
+	const t_model *cur;
 	int MAX_LUT_INPUTS;
 	int i, j, iblk, ipin, num_pins;
 	int *num_lut_of_size;

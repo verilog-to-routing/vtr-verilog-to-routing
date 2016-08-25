@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-char **ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum);
-int CountTokens(INP char **Tokens);
-void FreeTokens(INOUTP char ***TokensPtr);
+char **ReadLineTokens(FILE * InFile, int *LineNum);
+int CountTokens(const char **Tokens);
+void FreeTokens(char ***TokensPtr);
 
 #ifdef __cplusplus 
 }

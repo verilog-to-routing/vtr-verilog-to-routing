@@ -199,7 +199,7 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 			}
 		}
 	} else {
-		t_model *cur = logical_block[ilogical_block].model;
+		const t_model *cur = logical_block[ilogical_block].model;
 		fprintf(fpout, ".subckt %s \\\n", cur->name);
 
 		/* Print input ports */

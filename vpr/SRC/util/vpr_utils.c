@@ -75,7 +75,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node);
 
-static void load_pin_id_to_pb_mapping_rec(INP t_pb *cur_pb, INOUTP t_pb **pin_id_to_pb_mapping);
+static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapping);
 
 /******************** Subroutine definitions *********************************/
 
@@ -91,9 +91,9 @@ void print_tabs(FILE * fpout, int num_tab) {
 }
 
 /* Points the grid structure back to the blocks list */
-void sync_grid_to_blocks(INP int L_num_blocks,
-		INP const struct s_block block_list[], INP int L_nx, INP int L_ny,
-		INOUTP struct s_grid_tile **L_grid) {
+void sync_grid_to_blocks(const int L_num_blocks,
+		const struct s_block block_list[], const int L_nx, const int L_ny,
+		struct s_grid_tile **L_grid) {
 
 	int i, j, k;
 
@@ -211,9 +211,9 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 }
 
 
-void get_class_range_for_block(INP int iblk, 
-		OUTP int *class_low,
-		OUTP int *class_high) {
+void get_class_range_for_block(const int iblk, 
+		int *class_low,
+		int *class_high) {
 
 	/* Assumes that the placement has been done so each block has a set of pins allocated to it */
 	t_type_ptr type;
@@ -598,7 +598,7 @@ t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
 /**
 * Recursively create lookup table that returns a pointer to the pb given a pb_graph_pin id.
 */
-static void load_pin_id_to_pb_mapping_rec(INP t_pb *cur_pb, INOUTP t_pb **pin_id_to_pb_mapping) {
+static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapping) {
 	t_pb_graph_node *pb_graph_node = cur_pb->pb_graph_node;
 	t_pb_type *pb_type = pb_graph_node->pb_type;
 	int mode = cur_pb->mode;
@@ -646,7 +646,7 @@ void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping) {
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
  */
-float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
+float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 
 	return (primitive->pb_type->num_input_pins
 			+ primitive->pb_type->num_output_pins

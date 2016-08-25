@@ -178,7 +178,7 @@ struct s_tnode;
 typedef struct s_logical_block {
 	char *name; /* Taken from the first g_atoms_nlist.net which it drives. */
 	enum logical_block_types type; /* I/O, combinational logic, or latch */
-	t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
+	const t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
 
 	int **input_nets; /* [0..num_input_ports-1][0..num_port_pins-1] List of input nets connected to this logical_block. */
 	int **output_nets; /* [0..num_output_ports-1][0..num_port_pins-1] List of output nets connected to this logical_block. */
@@ -240,7 +240,7 @@ typedef struct s_pack_molecule {
  */
 typedef struct s_cluster_placement_stats {
 	int num_pb_types; /* num primitive pb_types inside complex block */
-	t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
+	const t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
 	t_cluster_placement_primitive **valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
 	t_cluster_placement_primitive *tried; /* ptrs to primitives that are open but current logic block unable to pack to */
@@ -621,9 +621,9 @@ enum e_packer_algorithm {
 };
 
 struct s_packer_opts {
-	char *blif_file_name;
-	char *sdc_file_name;
-	char *output_file;
+	const char *blif_file_name;
+	const char *sdc_file_name;
+	const char *output_file;
 	bool global_clocks;
 	bool hill_climbing_flag;
 	bool sweep_hanging_nets_and_inputs;

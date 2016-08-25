@@ -42,7 +42,7 @@ constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unrouta
  * 3.  Place-and-route and timing analysis
  * 4.  Clean up
  */
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
 	t_options Options;
 	t_arch Arch;
 	t_vpr_setup vpr_setup;

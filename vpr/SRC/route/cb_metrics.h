@@ -69,17 +69,17 @@ public:
    that are in between. here we return the number of wire types. 
    the current connection block metrics code can only deal with channel segments that carry wires of only one length (i.e. L=4).
    this may be enhanced in the future. */
-int get_num_wire_types(INP int num_segments, INP t_segment_inf *segment_inf);
+int get_num_wire_types(const int num_segments, const t_segment_inf *segment_inf);
 
 /* calculates all the connection block metrics and returns them through the cb_metrics variable */
-void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_connected_to_pin, INP int num_segments, INP t_segment_inf *segment_inf, 
-		INP e_pin_type pin_type, INP int *Fc_array, INP t_chan_width *chan_width_inf, INOUTP Conn_Block_Metrics *cb_metrics);
+void get_conn_block_metrics(const t_type_ptr block_type, int *****tracks_connected_to_pin, const int num_segments, const t_segment_inf *segment_inf, 
+		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, Conn_Block_Metrics *cb_metrics);
 /* adjusts the connection block until the appropriate wire metric has hit it's target value. the pin metric is kept constant
    within some tolerance */
-void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_tolerance, INP float pin_tolerance,
-		INP t_type_ptr block_type, INOUTP int *****pin_to_track_connections, 
-		INP e_pin_type pin_type, INP int *Fc_array, INP t_chan_width *chan_width_inf, 
-		INP int num_segments, INP t_segment_inf *segment_inf);
+void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const float pin_tolerance,
+		const t_type_ptr block_type, int *****pin_to_track_connections, 
+		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, 
+		const int num_segments, const t_segment_inf *segment_inf);
 
 
 
@@ -106,13 +106,13 @@ public:
 typedef std::vector< std::vector<float> > t_xbar_matrix;
 
 /* perform a probabilistic analysis on the compound crossbar formed by the input and output connection blocks */
-void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_ptr block_type, INP int *Fc_array_out,
-		 INP int *Fc_array_in, INP t_chan_width *chan_width_inf);
+void analyze_conn_blocks(const int *****opin_cb, const int *****ipin_cb, const t_type_ptr block_type, const int *Fc_array_out,
+		 const int *Fc_array_in, const t_chan_width *chan_width_inf);
 
 
 /* make a poor cb pattern. */
-void make_poor_cb_pattern(INP e_pin_type pin_type, INP t_type_ptr block_type, INP int *Fc_array,
-		 INP t_chan_width *chan_width_inf, INOUTP int *****cb);
+void make_poor_cb_pattern(const e_pin_type pin_type, const t_type_ptr block_type, const int *Fc_array,
+		 const t_chan_width *chan_width_inf, int *****cb);
 
 
 /**** END EXPERIMENTAL ****/

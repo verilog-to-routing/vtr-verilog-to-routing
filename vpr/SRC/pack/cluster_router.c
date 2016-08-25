@@ -85,8 +85,8 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 static bool is_route_success(t_lb_router_data *router_data);
 static t_lb_trace *find_node_in_rt(t_lb_trace *rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data *router_data);
-static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data);
-static void load_trace_to_pb_route(INOUTP t_pb_route *pb_route, INP int total_pins, INP int atom_net, INP int prev_pin_id, INP const t_lb_trace *trace);
+static void save_and_reset_lb_route(t_lb_router_data *router_data);
+static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const int atom_net, const int prev_pin_id, const t_lb_trace *trace);
 
 /*****************************************************************************************
 * Debug functions declarations
@@ -103,7 +103,7 @@ static void print_trace(FILE *fp, t_lb_trace *trace);
 /**
  Build data structures used by intra-logic block router
  */
-t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_type_graph, t_type_ptr type) {
+t_lb_router_data *alloc_and_load_router_data(vector<t_lb_type_rr_node> *lb_type_graph, t_type_ptr type) {
 	t_lb_router_data *router_data = new t_lb_router_data;
 	int size;
 
@@ -119,7 +119,7 @@ t_lb_router_data *alloc_and_load_router_data(INP vector<t_lb_type_rr_node> *lb_t
 }
 
 /* free data used by router */
-void free_router_data(INOUTP t_lb_router_data *router_data) {
+void free_router_data(t_lb_router_data *router_data) {
 	if(router_data != NULL && router_data->lb_type_graph != NULL) {
 		delete [] router_data->lb_rr_node_stats;
 		router_data->lb_rr_node_stats = NULL;
@@ -141,9 +141,9 @@ void free_router_data(INOUTP t_lb_router_data *router_data) {
 ******************************************************************************************/
 
 /* Add pins of netlist atom to to current routing drivers/targets */
-void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
+void add_atom_as_target(t_lb_router_data *router_data, const int iatom) {
 	t_pb *pb;
-	t_model *model;
+	const t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
 	map <int, bool> & atoms_added = *router_data->atoms_added;
@@ -206,9 +206,9 @@ void add_atom_as_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
 }
 
 /* Remove pins of netlist atom from current routing drivers/targets */
-void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom) {
+void remove_atom_from_target(t_lb_router_data *router_data, const int iatom) {
 	t_pb *pb;
-	t_model *model;
+	const t_model *model;
 	t_model_ports *model_ports;
 	int iport, inet;
 	map <int, bool> & atoms_added = *router_data->atoms_added;
@@ -274,7 +274,7 @@ void remove_atom_from_target(INOUTP t_lb_router_data *router_data, INP int iatom
 
 /* Set/Reset mode of rr nodes to the pb used.  If set == true, then set all modes of the rr nodes affected by pb to the mode of the pb.
    Set all modes related to pb to 0 otherwise */
-void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP bool set) {
+void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const bool set) {
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
 	int mode = pb->mode;
@@ -318,7 +318,7 @@ void set_reset_pb_modes(INOUTP t_lb_router_data *router_data, INP t_pb *pb, INP 
 /* Attempt to route routing driver/targets on the current architecture 
    Follows pathfinder negotiated congestion algorithm
 */
-bool try_intra_lb_route(INOUTP t_lb_router_data *router_data) {
+bool try_intra_lb_route(t_lb_router_data *router_data) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	bool is_routed = false;
@@ -476,7 +476,7 @@ Internal Functions
 ****************************************************************************/
 
 /* Recurse through route tree trace to populate pb pin to atom net lookup array */
-static void load_trace_to_pb_route(INOUTP t_pb_route *pb_route, INP int total_pins, INP int atom_net, INP int prev_pin_id, INP const t_lb_trace *trace) {
+static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const int atom_net, const int prev_pin_id, const t_lb_trace *trace) {
 	int ipin = trace->current_node;
 	int prev_pb_pin_id = prev_pin_id;
 	int cur_pin_id = OPEN;
@@ -1031,7 +1031,7 @@ static void reset_explored_node_tb(t_lb_router_data *router_data) {
 
 
 /* Save last successful intra-logic block route and reset current traceback */
-static void save_and_reset_lb_route(INOUTP t_lb_router_data *router_data) {
+static void save_and_reset_lb_route(t_lb_router_data *router_data) {
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 
 	/* Free old saved lb nets if exist */

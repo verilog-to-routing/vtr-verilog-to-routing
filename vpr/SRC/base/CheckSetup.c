@@ -7,12 +7,12 @@
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 
-void CheckSetup(INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
+void CheckSetup(const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_annealing_sched AnnealSched,
+		const struct s_router_opts RouterOpts,
+		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	int i;
 	int Tmp;
 

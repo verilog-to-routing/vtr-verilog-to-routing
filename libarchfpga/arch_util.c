@@ -86,7 +86,7 @@ void SetupEmptyType(struct s_type_descriptor* cb_type_descriptors,
 	type->num_grid_loc_def = 0;
 }
 
-void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
+void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
 		char *new_name, t_pb_type *copy) {
 	int i, j;
 	char *dot;
@@ -178,7 +178,7 @@ void alloc_and_load_default_child_for_pb_type( INOUTP t_pb_type *pb_type,
 }
 
 /* populate special lut class */
-void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
+void ProcessLutClass(t_pb_type *lut_pb_type) {
 	char *default_name;
 	t_port *in_port;
 	t_port *out_port;
@@ -375,7 +375,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 }
 
 /* populate special memory class */
-void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
+void ProcessMemoryClass(t_pb_type *mem_pb_type) {
 	char *default_name;
 	char *input_name, *input_port_name, *output_name, *output_port_name;
 	int i, j, i_inter, num_pb;
@@ -595,7 +595,7 @@ e_power_estimation_method power_method_inherited(
 	}
 }
 
-void CreateModelLibrary(OUTP struct s_arch *arch) {
+void CreateModelLibrary(struct s_arch *arch) {
 	t_model* model_library;
 
 	model_library = (t_model*) vtr::calloc(4, sizeof(t_model));
@@ -685,8 +685,8 @@ void CreateModelLibrary(OUTP struct s_arch *arch) {
 	arch->model_library = model_library;
 }
 
-void SyncModelsPbTypes(INOUTP struct s_arch *arch,
-		INP t_type_descriptor * Types, INP int NumTypes) {
+void SyncModelsPbTypes(struct s_arch *arch,
+		const t_type_descriptor * Types, const int NumTypes) {
 	int i;
 	for (i = 0; i < NumTypes; i++) {
 		if (Types[i].pb_type != NULL) {
@@ -695,8 +695,8 @@ void SyncModelsPbTypes(INOUTP struct s_arch *arch,
 	}
 }
 
-void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
-		INOUTP t_pb_type * pb_type) {
+void SyncModelsPbTypes_rec(struct s_arch *arch,
+		t_pb_type * pb_type) {
 	int i, j, p;
 	t_model *model_match_prim, *cur_model;
 	t_model_ports *model_port;
@@ -806,7 +806,7 @@ void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,
 	}
 }
 
-void UpdateAndCheckModels(INOUTP struct s_arch *arch) {
+void UpdateAndCheckModels(struct s_arch *arch) {
 	t_model * cur_model;
 	t_model_ports *port;
 	int i, j;

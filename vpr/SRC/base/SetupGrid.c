@@ -19,14 +19,14 @@ using namespace std;
 #include "vtr_matrix.h"
 
 static void CheckGrid(void);
-static t_type_ptr find_type_col(INP int x);
+static t_type_ptr find_type_col(const int x);
 
 static void alloc_and_load_num_instances_type(
 		t_grid_tile** L_grid, int L_nx, int L_ny,
 		int* L_num_instances_type, int L_num_types);
 
 /* Create and fill FPGA architecture grid.         */
-void alloc_and_load_grid(INOUTP int *num_instances_type) {
+void alloc_and_load_grid(int *num_instances_type) {
 
 #ifdef SHOW_ARCH
 	FILE *dump;
@@ -228,7 +228,7 @@ static void CheckGrid(void) {
 	}
 }
 
-static t_type_ptr find_type_col(INP int x) {
+static t_type_ptr find_type_col(const int x) {
 
 	int i, j;
 	int start, repeat;

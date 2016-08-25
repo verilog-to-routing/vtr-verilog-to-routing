@@ -77,7 +77,7 @@ get_next_hash(struct s_hash **hash_table, struct s_hash_iterator *hash_iterator)
 }
 
 struct s_hash *
-insert_in_hash_table(struct s_hash **hash_table, char *name,
+insert_in_hash_table(struct s_hash **hash_table, const char *name,
 		int next_free_index) {
 
 	/* Adds the string pointed to by name to the hash table, and returns the    *

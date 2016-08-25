@@ -18,8 +18,8 @@ using namespace std;
 #include "token.h"
 #include "read_xml_util.h"
 
-enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
-		INP char cur);
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+		const char cur);
 
 bool IsWhitespace(char c);
 
@@ -37,7 +37,7 @@ bool IsWhitespace(char c) {
 }
 
 /* Returns a token list of the text for a given string. */
-t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
+t_token *GetTokensFromString(const char* inString, int * num_tokens) {
 	const char *cur;
 	t_token * tokens;
 	int i, in_string_index, prev_in_string_index;
@@ -112,7 +112,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	return tokens;
 }
 
-void freeTokens(INP t_token *tokens, INP int num_tokens) {
+void freeTokens(t_token *tokens, const int num_tokens) {
 	int i;
 	for (i = 0; i < num_tokens; i++) {
 		free(tokens[i].data);
@@ -120,8 +120,8 @@ void freeTokens(INP t_token *tokens, INP int num_tokens) {
 	free(tokens);
 }
 
-enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
-		INP char cur) {
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+		const char cur) {
 	if (IsWhitespace(cur)) {
 		return TOKEN_NULL;
 	} else {
@@ -145,15 +145,15 @@ enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
 	}
 }
 
-bool checkTokenType(INP t_token token, OUTP enum e_token_type token_type) {
+bool checkTokenType(const t_token token, enum e_token_type token_type) {
 	if (token.type != token_type) {
 		return false;
 	}
 	return true;
 }
 
-void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
-		INP char *instring) {
+void my_atof_2D(float **matrix, const int max_i, const int max_j,
+		const char *instring) {
 	int i, j;
 	char *cur, *cur2, *copy, *final;
 
@@ -198,11 +198,11 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
  * Purpose: Checks if the number of entries (separated by whitespace)	*
  *	        matches the the expected number (max_i * max_j),			*
  *			can be used before calling my_atof_2D						*/
-bool check_my_atof_2D(INP int max_i, INP int max_j,
-		INP char *instring, OUTP int * num_entries){
+bool check_my_atof_2D(const int max_i, const int max_j,
+		const char *instring, int * num_entries){
 
 	/* Check if max_i * max_j matches number of entries in instring */
-	char *cur = instring;
+	const char *cur = instring;
 	bool in_str = false;
 	int entry_count = 0;
 

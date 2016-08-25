@@ -38,16 +38,16 @@
 #include "vtr_error.h"
 
 /* Main VPR Operations */
-void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
-		OUTP t_vpr_setup *vpr_setup, OUTP t_arch *arch);
-void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch);
-void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch);
-bool vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch);
+void vpr_init(const int argc, const char **argv, t_options *options,
+		t_vpr_setup *vpr_setup, t_arch *arch);
+void vpr_pack(t_vpr_setup vpr_setup, const t_arch arch);
+void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch);
+bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch arch);
 void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch);
-void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,
-		INOUTP t_vpr_setup vpr_setup);
-void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options,
-		INOUTP t_vpr_setup vpr_setup);
+void vpr_free_vpr_data_structures(t_arch Arch, t_options options,
+		t_vpr_setup vpr_setup);
+void vpr_free_all(t_arch Arch, t_options options,
+		t_vpr_setup vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title(void);
@@ -59,39 +59,39 @@ void vpr_print_usage(void);
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
 /* Read in user options */
-void vpr_read_options(INP int argc, INP char **argv, OUTP t_options * options);
+void vpr_read_options(const int argc, const char **argv, t_options * options);
 /* Read in arch and circuit */
-void vpr_setup_vpr(INP t_options *Options, INP bool TimingEnabled,
-		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
-		OUTP t_model ** user_models, OUTP t_model ** library_models,
-		OUTP struct s_packer_opts *PackerOpts,
-		OUTP struct s_placer_opts *PlacerOpts,
-		OUTP struct s_annealing_sched *AnnealSched,
-		OUTP struct s_router_opts *RouterOpts,
-		OUTP struct s_det_routing_arch *RoutingArch,
-		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
-		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP bool * ShowGraphics, OUTP int *GraphPause,
+void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
+		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
+		t_arch * Arch, enum e_operation *Operation,
+		t_model ** user_models, t_model ** library_models,
+		struct s_packer_opts *PackerOpts,
+		struct s_placer_opts *PlacerOpts,
+		struct s_annealing_sched *AnnealSched,
+		struct s_router_opts *RouterOpts,
+		struct s_det_routing_arch *RoutingArch,
+		vector <t_lb_type_rr_node> **PackerRRGraph,
+		t_segment_inf ** Segments, t_timing_inf * Timing,
+		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
-void vpr_check_options(INP t_options Options, INP bool TimingEnabled);
-void vpr_check_arch(INP t_arch Arch, INP bool TimingEnabled);
+void vpr_check_options(const t_options Options, const bool TimingEnabled);
+void vpr_check_arch(const t_arch Arch, const bool TimingEnabled);
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing, INP t_chan_width_dist Chans);
+void vpr_check_setup(const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_annealing_sched AnnealSched,
+		const struct s_router_opts RouterOpts,
+		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+		const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Read blif file and sweep unused components */
-void vpr_read_and_process_blif(INP char *blif_file,
-		INP bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
-        INP t_model *user_models,
-		INP t_model *library_models, bool read_activity_file,
+void vpr_read_and_process_blif(const char *blif_file,
+		const bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
+        const t_model *user_models,
+		const t_model *library_models, bool read_activity_file,
 		char * activity_file);
 /* Show current setup */
-void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup);
+void vpr_show_setup(const t_options options, const t_vpr_setup vpr_setup);
 
 /* Output file names management */
 void vpr_alloc_and_load_output_file_names(const char* default_name);

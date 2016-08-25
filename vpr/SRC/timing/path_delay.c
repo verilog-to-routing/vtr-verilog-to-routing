@@ -197,8 +197,8 @@ static void do_path_counting(float criticality_denom);
 
 static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping);
 
-static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
-		INOUTP int *inode, INP t_timing_inf timing_inf);
+static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
+		int *inode, const t_timing_inf timing_inf);
 
 #ifndef PATH_COUNTING
 static void update_normalized_costs(float T_arr_max_this_domain, long max_critical_input_paths,
@@ -1042,7 +1042,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 		float inter_cluster_net_delay) {
 	int i, j, k;
-	t_model *model;
+	const t_model *model;
 	t_model_ports *model_port;
 	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
 	int inode, inet;
@@ -1381,8 +1381,8 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 	}
 }
 
-static void load_tnode(INP t_pb_graph_pin *pb_graph_pin, INP int iblock,
-		INOUTP int *inode, INP t_timing_inf timing_inf) {
+static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
+		int *inode, const t_timing_inf timing_inf) {
 	int i;
 	i = *inode;
 	tnode[i].pb_graph_pin = pb_graph_pin;

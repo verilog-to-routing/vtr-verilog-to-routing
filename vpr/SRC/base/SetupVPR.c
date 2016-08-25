@@ -20,43 +20,43 @@ using namespace std;
 #include "rr_graph_area.h"
 #include "echo_arch.h"
 
-static void SetupOperation(INP t_options Options,
-		OUTP enum e_operation *Operation);
-static void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
-		INP t_arch Arch, INP char *net_file,
-		OUTP struct s_packer_opts *PackerOpts);
-static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_placer_opts *PlacerOpts);
-static void SetupAnnealSched(INP t_options Options,
-		OUTP struct s_annealing_sched *AnnealSched);
-static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_router_opts *RouterOpts);
-static void SetupRoutingArch(INP t_arch Arch,
-		OUTP struct s_det_routing_arch *RoutingArch);
-static void SetupTiming(INP t_options Options, INP t_arch Arch,
-		INP bool TimingEnabled, INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing);
-static void SetupSwitches(INP t_arch Arch,
-		INOUTP struct s_det_routing_arch *RoutingArch,
-		INP struct s_arch_switch_inf *ArchSwitches, INP int NumArchSwitches);
+static void SetupOperation(const t_options Options,
+		enum e_operation *Operation);
+static void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
+		const t_arch Arch, const char *net_file,
+		struct s_packer_opts *PackerOpts);
+static void SetupPlacerOpts(const t_options Options, const bool TimingEnabled,
+		struct s_placer_opts *PlacerOpts);
+static void SetupAnnealSched(const t_options Options,
+		struct s_annealing_sched *AnnealSched);
+static void SetupRouterOpts(const t_options Options, const bool TimingEnabled,
+		struct s_router_opts *RouterOpts);
+static void SetupRoutingArch(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch);
+static void SetupTiming(const t_options Options, const t_arch Arch,
+		const bool TimingEnabled, const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_router_opts RouterOpts, t_timing_inf * Timing);
+static void SetupSwitches(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch,
+		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches);
 static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 		t_arch * Arch);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
-		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
-		OUTP t_model ** user_models, OUTP t_model ** library_models,
-		OUTP struct s_packer_opts *PackerOpts,
-		OUTP struct s_placer_opts *PlacerOpts,
-		OUTP struct s_annealing_sched *AnnealSched,
-		OUTP struct s_router_opts *RouterOpts,
-		OUTP struct s_det_routing_arch *RoutingArch,
-		OUTP vector <t_lb_type_rr_node> **PackerRRGraphs,
-		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP bool * ShowGraphics, OUTP int *GraphPause,
+void SetupVPR(t_options *Options, const bool TimingEnabled,
+		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
+		t_arch * Arch, enum e_operation *Operation,
+		t_model ** user_models, t_model ** library_models,
+		struct s_packer_opts *PackerOpts,
+		struct s_placer_opts *PlacerOpts,
+		struct s_annealing_sched *AnnealSched,
+		struct s_router_opts *RouterOpts,
+		struct s_det_routing_arch *RoutingArch,
+		vector <t_lb_type_rr_node> **PackerRRGraphs,
+		t_segment_inf ** Segments, t_timing_inf * Timing,
+		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts) {
 	int i, j, len;
 
@@ -257,10 +257,10 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 
 }
 
-static void SetupTiming(INP t_options Options, INP t_arch Arch,
-		INP bool TimingEnabled, INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing) {
+static void SetupTiming(const t_options Options, const t_arch Arch,
+		const bool TimingEnabled, const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_router_opts RouterOpts, t_timing_inf * Timing) {
 
 	/* Don't do anything if they don't want timing */
 	if (false == TimingEnabled) {
@@ -294,9 +294,9 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 
 /* This loads up VPR's arch_switch_inf data by combining the switches from 
  * the arch file with the special switches that VPR needs. */
-static void SetupSwitches(INP t_arch Arch,
-		INOUTP struct s_det_routing_arch *RoutingArch,
-		INP struct s_arch_switch_inf *ArchSwitches, INP int NumArchSwitches) {
+static void SetupSwitches(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch,
+		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches) {
 
 	int switches_to_copy = NumArchSwitches;
 	g_num_arch_switches = NumArchSwitches;
@@ -371,8 +371,8 @@ static void SetupSwitches(INP t_arch Arch,
 
 /* Sets up routing structures. Since checks are already done, this
  * just copies values across */
-static void SetupRoutingArch(INP t_arch Arch,
-		OUTP struct s_det_routing_arch *RoutingArch) {
+static void SetupRoutingArch(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch) {
 
 	RoutingArch->switch_block_type = Arch.SBType;
 	RoutingArch->R_minW_nmos = Arch.R_minW_nmos;
@@ -387,8 +387,8 @@ static void SetupRoutingArch(INP t_arch Arch,
 	RoutingArch->switchblocks = Arch.switchblocks;
 }
 
-static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_router_opts *RouterOpts) {
+static void SetupRouterOpts(const t_options Options, const bool TimingEnabled,
+		struct s_router_opts *RouterOpts) {
 	RouterOpts->astar_fac = 1.2; /* DEFAULT */
 	if (Options.Count[OT_ASTAR_FAC]) {
 		RouterOpts->astar_fac = Options.astar_fac;
@@ -557,8 +557,8 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 
 }
 
-static void SetupAnnealSched(INP t_options Options,
-		OUTP struct s_annealing_sched *AnnealSched) {
+static void SetupAnnealSched(const t_options Options,
+		struct s_annealing_sched *AnnealSched) {
 	AnnealSched->alpha_t = 0.8; /* DEFAULT */
 	if (Options.Count[OT_ALPHA_T]) {
 		AnnealSched->alpha_t = Options.PlaceAlphaT;
@@ -600,9 +600,9 @@ static void SetupAnnealSched(INP t_options Options,
 /* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.  
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
-void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
-		INP t_arch Arch, INP char *net_file,
-		OUTP struct s_packer_opts *PackerOpts) {
+void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
+		const t_arch Arch, const char *net_file,
+		struct s_packer_opts *PackerOpts) {
 
 	if (Arch.clb_grid.IsAuto) {
 		PackerOpts->aspect = Arch.clb_grid.Aspect;
@@ -707,8 +707,8 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,
  * such as checking for conflicting params is assumed to be done beforehand */
-static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_placer_opts *PlacerOpts) {
+static void SetupPlacerOpts(const t_options Options, const bool TimingEnabled,
+		struct s_placer_opts *PlacerOpts) {
 
 	PlacerOpts->inner_loop_recompute_divider = 0; /* DEFAULT */
 	if (Options.Count[OT_INNER_LOOP_RECOMPUTE_DIVIDER]) {
@@ -794,8 +794,8 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 
 }
 
-static void SetupOperation(INP t_options Options,
-		OUTP enum e_operation *Operation) {
+static void SetupOperation(const t_options Options,
+		enum e_operation *Operation) {
 	*Operation = RUN_FLOW; /* DEFAULT */
 }
 
