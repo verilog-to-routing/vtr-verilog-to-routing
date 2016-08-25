@@ -3,6 +3,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -571,7 +572,7 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 		/* Target stage ratio = 4.  1 minimum width buffer, then num_stage bigger *
 		 * ones.                                                                  */
 
-		num_stage = nint(log10(R_minW_nmos / Rbuf) / log10(4.));
+		num_stage = vtr::nint(log10(R_minW_nmos / Rbuf) / log10(4.));
 		num_stage = max(num_stage, 1);
 		stage_ratio = pow((float)(R_minW_nmos / Rbuf), (float)( 1. / (float) num_stage));
 

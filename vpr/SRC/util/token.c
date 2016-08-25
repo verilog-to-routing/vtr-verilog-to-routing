@@ -13,8 +13,6 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-#include "util.h" //For INP/OUTP/INOUTP
-
 #include "token.h"
 #include "read_xml_util.h"
 

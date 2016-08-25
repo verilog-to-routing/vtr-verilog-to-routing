@@ -17,6 +17,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_matrix.h"
+#include "vtr_math.h"
 #include "vtr_log.h"
 
 #include "vpr_types.h"
@@ -271,7 +272,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch
 	if (vpr_setup.Operation == TIMING_ANALYSIS_ONLY) {
 		do_constant_net_delay_timing_analysis(vpr_setup.Timing,	vpr_setup.constant_net_delay);
 	} else {
-		int current = nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
+		int current = vtr::nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
 		int low = 1;
 		int high = -1;
 
@@ -290,10 +291,10 @@ void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch
 				/* Generate grid */
 				if (Arch.clb_grid.Aspect >= 1.0) {
 					ny = current;
-					nx = nint(current * Arch.clb_grid.Aspect);
+					nx = vtr::nint(current * Arch.clb_grid.Aspect);
 				} else {
 					nx = current;
-					ny = nint(current / Arch.clb_grid.Aspect);
+					ny = vtr::nint(current / Arch.clb_grid.Aspect);
 				}
 #if DEBUG
 				vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
@@ -335,10 +336,10 @@ void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch
 			/* Generate grid */
 			if (Arch.clb_grid.Aspect >= 1.0) {
 				ny = current;
-				nx = nint(current * Arch.clb_grid.Aspect);
+				nx = vtr::nint(current * Arch.clb_grid.Aspect);
 			} else {
 				nx = current;
-				ny = nint(current / Arch.clb_grid.Aspect);
+				ny = vtr::nint(current / Arch.clb_grid.Aspect);
 			}
 			alloc_and_load_grid(num_instances_type);
 			vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);

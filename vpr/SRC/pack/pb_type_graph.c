@@ -19,8 +19,6 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
-#include "util.h" //For INP/OUTP/INOUTP
-
 #include "token.h"
 #include "arch_types.h"
 #include "vpr_types.h"

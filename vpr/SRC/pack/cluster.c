@@ -13,6 +13,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -2030,10 +2031,10 @@ static void start_new_cluster(
 		if (!success) {
 			if (aspect >= 1.0) {
 				ny++;
-				nx = nint(ny * aspect);
+				nx = vtr::nint(ny * aspect);
 			} else {
 				nx++;
-				ny = nint(nx / aspect);
+				ny = vtr::nint(nx / aspect);
 			}
 			vtr::printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
 					nx, ny);

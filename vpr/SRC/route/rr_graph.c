@@ -838,7 +838,7 @@ static bool **alloc_and_load_perturb_ipins(const int max_chan_width, const int L
 				}
 
 				if ((Fc_in[itype][0][iseg] <= tracks_in_seg_type - 2)
-						&& (fabs(Fc_ratio - nint(Fc_ratio))
+						&& (fabs(Fc_ratio - vtr::nint(Fc_ratio))
 								< (0.5 / (float) tracks_in_seg_type))) {
 					result[itype][iseg] = true;
 				}
@@ -923,7 +923,7 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 				} else {
 					/* General case indicating that this pin connects to general-purpose routing */
 					if (types[itype].is_Fc_frac[ipin]) {
-						Result[itype][ipin][iseg] = fac * nint(sets_per_seg_type[iseg] * Fc[ipin][iseg]);
+						Result[itype][ipin][iseg] = fac * vtr::nint(sets_per_seg_type[iseg] * Fc[ipin][iseg]);
 					} else {
 						Result[itype][ipin][iseg] = (int)Fc[ipin][iseg];
 					}
@@ -2735,13 +2735,13 @@ static bool* alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out,
 	*  threshold is used because step size may not be an integer.			*/
 	step_size = (float)max_chan_width / Fc_max;
 	for (i = 0; i < num_factors; i++){
-		if ( nint(step_size) < prime_factors[i] ){
+		if ( vtr::nint(step_size) < prime_factors[i] ){
 			perturb_opins[0] = false;
 			break;
 		}
 	
 		n = step_size / prime_factors[i]; 
-		n = n - (float)nint(n);			/* fractinal part */	
+		n = n - (float)vtr::nint(n);			/* fractinal part */	
 		if ( fabs(n) < threshold ){
 			perturb_opins[0] = true;
 			break;

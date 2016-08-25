@@ -11,12 +11,13 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_matrix.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "globals.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
-#include "vtr_matrix.h"
 
 static void CheckGrid(void);
 static t_type_ptr find_type_col(const int x);
@@ -266,7 +267,7 @@ static t_type_ptr find_type_col(const int x) {
 				} else if (type_descriptors[i].grid_loc_def[j].grid_loc_type
 						== COL_REL) {
 					rel = type_descriptors[i].grid_loc_def[j].col_rel;
-					if (nint(rel * nx) == x) {
+					if (vtr::nint(rel * nx) == x) {
 						match = true;
 					}
 				}

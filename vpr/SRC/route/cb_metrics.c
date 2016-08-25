@@ -36,6 +36,7 @@
 #include "vtr_random.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -1256,7 +1257,7 @@ static void normalize_xbar( const int nodes_per_chan, const float fraction_wires
 	}
 
 	/* the nuber of wires that are used */
-	int wires_used = nint(fraction_wires_used * (float)capacity);
+	int wires_used = vtr::nint(fraction_wires_used * (float)capacity);
 
 	long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);
 
