@@ -389,7 +389,7 @@ t_chan_details* init_chan_details(
 		const t_seg_details* seg_details,
 		const enum e_seg_details_type seg_details_type) {
 
-	t_chan_details* pa_chan_details = vtr::alloc_matrix3<t_seg_details>(0, L_nx, 0, L_ny, 0, 1);
+	t_chan_details* pa_chan_details = (t_chan_details*) vtr::alloc_matrix<t_seg_details>(0, L_nx, 0, L_ny);
 
 	for (int x = 0; x <= L_nx; ++x) {
 		for (int y = 0; y <= L_ny; ++y) {
