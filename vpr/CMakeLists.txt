@@ -6,9 +6,6 @@ file(GLOB_RECURSE LIB_SOURCES SRC/*/*.c)
 file(GLOB_RECURSE LIB_HEADERS SRC/*/*.h)
 get_include_directories(LIB_HEADERS LIB_INCLUDE_DIRS)
 
-add_definitions(-DBUILD_VERSION="0.0.0")
-add_definitions(-DBUILD_DATE="0-0-0")
-
 #Treat .c as CXX
 set_source_files_properties(${LIB_SOURCES} ${EXEC_SOURCES} PROPERTIES LANGUAGE CXX)
 

@@ -1,0 +1,15 @@
+#include "vtr_version.h"
+
+namespace vtr {
+    const char* VERSION = "@VTR_VERSION@";
+    const char* VERSION_SHORT = "@VTR_VERSION_SHORT@";
+
+    size_t VERSION_MAJOR = @VTR_VERSION_MAJOR@;
+    size_t VERSION_MINOR = @VTR_VERSION_MINOR@;
+    size_t VERSION_PATCH = @VTR_VERSION_PATCH@;
+
+    const char* VCS_REVISION = "@VTR_VCS_REVISION@";
+    const char* COMPILER = "@VTR_COMPILER_INFO@";
+    const char* TIMESTAMP = "@VTR_TIMESTAMP@";
+    const char* PRERELEASE_TAG = "@VTR_VERSION_PRERELEASE@";
+}

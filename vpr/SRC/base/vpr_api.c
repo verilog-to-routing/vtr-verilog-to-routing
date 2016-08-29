@@ -19,6 +19,7 @@ using namespace std;
 #include "vtr_matrix.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
+#include "vtr_version.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -75,9 +76,9 @@ void vpr_print_title(void) {
 
 	vtr::printf_info("\n");
 	vtr::printf_info("VPR FPGA Placement and Routing.\n");
-	vtr::printf_info("Version: v" VPR_VERSION "\n");
-	vtr::printf_info("Revision: " BUILD_VERSION "\n");
-	vtr::printf_info("Compiled: " BUILD_DATE ".\n");
+	vtr::printf_info("Version: %s\n", vtr::VERSION_SHORT);
+	vtr::printf_info("Revision: %s\n", vtr::VCS_REVISION);
+	vtr::printf_info("Compiled: %s\n", vtr::TIMESTAMP);
 	vtr::printf_info("University of Toronto\n");
 	vtr::printf_info("vtr-users@googlegroups.com\n");
 	vtr::printf_info("This is free open source code under MIT license.\n");
