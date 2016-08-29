@@ -1,13 +1,4 @@
 project("vpr")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules") #For FindFontconfig
-
-#Handle graphics
-find_package(X11 COMPONENTS Xft)
-find_package(Freetype)
-find_package(Fontconfig)
-include_directories(${X11_INCLUDE_DIRS})
-include_directories(${FREETYPE_INCLUDE_DIRS})
-include_directories(${FONTCONFIG_INCLUDE_DIRS})
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES SRC/main.c)
@@ -33,10 +24,7 @@ target_link_libraries(libvpr
                         libvtrutil
                         libarchfpga
                         libsdcparse
-                        ${X11_LIBRARIES}
-                        ${X11_Xft_LIB}
-                        ${FREETYPE_LIBRARIES}
-                        ${FONTCONFIG_LIBRARIES})
+                        libeasygl)
 
 #Create the executable
 add_executable(vpr ${EXEC_SOURCES})
