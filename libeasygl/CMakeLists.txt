@@ -76,3 +76,5 @@ set_target_properties(libeasygl PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 target_link_libraries(libeasygl 
                         ${GRAPHICS_LIBRARIES})
+
+install(TARGETS libeasygl DESTINATION bin)

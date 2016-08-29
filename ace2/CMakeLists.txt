@@ -12,3 +12,5 @@ target_link_libraries(ace
                         m #C math library
                         ${CMAKE_DL_LIBS}
                         )
+
+install(TARGETS ace DESTINATION bin)

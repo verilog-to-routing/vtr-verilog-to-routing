@@ -8,6 +8,7 @@ libarchfpga/read_arch
 liblog/test_log
 libsdc_parse/sdc_parse_test
 vpr/vpr
+bin/*
 
 #
 #VTR Tasks

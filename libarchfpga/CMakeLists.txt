@@ -26,3 +26,5 @@ target_link_libraries(libarchfpga
 #Create the test executable
 add_executable(read_arch ${EXEC_SOURCES})
 target_link_libraries(read_arch libarchfpga)
+
+install(TARGETS libarchfpga read_arch DESTINATION bin)

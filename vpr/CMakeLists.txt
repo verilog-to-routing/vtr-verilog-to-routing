@@ -27,3 +27,5 @@ target_link_libraries(libvpr
 add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr 
                         libvpr)
+
+install(TARGETS vpr libvpr DESTINATION bin)

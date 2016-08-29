@@ -17,3 +17,5 @@ target_link_libraries(odin_II.exe
                         libarchfpga
                         libabc
                         ${CMAKE_DL_LIBS})
+
+install(TARGETS odin_II.exe DESTINATION bin)

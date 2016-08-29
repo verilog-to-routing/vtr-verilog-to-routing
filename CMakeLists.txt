@@ -2,8 +2,14 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("VTR")
 
+#We install to the source directory
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set (CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "default install path" FORCE)
+endif()
+message("CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+
 #Allow the user to configure how much assertion checking should occure
-set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 3: all assertions (including those with significant performance impact)")
+set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1, 2, 3: all assertions (including those with significant performance impact)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3)
 add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}") #Set assertion level
 
@@ -13,6 +19,7 @@ set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
 
 message(STATUS "CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
+
 #
 #
 # Determine compiler configuration
@@ -131,7 +138,7 @@ endfunction(get_include_directories)
 #ABC as external
 set(ABC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support)
 include(ExternalProject)
-ExternalProject_Add(abc
+ExternalProject_Add(abc_external
     SOURCE_DIR ${ABC_SOURCE_DIR}
     CONFIGURE_COMMAND ""
     BUILD_COMMAND make abc libabc.a
@@ -140,7 +147,7 @@ ExternalProject_Add(abc
     INSTALL_COMMAND ""
     TEST_COMMAND ""
 )
-ExternalProject_Get_Property(abc install_dir)
+ExternalProject_Get_Property(abc_external install_dir)
 
 add_library(libabc STATIC IMPORTED GLOBAL)
 set_property(TARGET libabc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/libabc.a)
@@ -170,8 +177,12 @@ include_directories(
                     ${ABC_SOURCE_DIR}/src/bdd/mtr 
                     ${ABC_SOURCE_DIR}/src/bdd/epd 
                     ${ABC_SOURCE_DIR}/src/map/if 
-                    ${ABC_SOURCE_DIR}/src/sat/bsat
-                    )
+                    ${ABC_SOURCE_DIR}/src/sat/bsat)
+
+add_executable(abc IMPORTED GLOBAL)
+set_property(TARGET abc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/abc)
+
+#install(FILES ${ABC_SOURCE_DIR}/abc ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
 
 add_subdirectory(liblog)
 add_subdirectory(libpugixml)
@@ -183,3 +194,54 @@ add_subdirectory(vpr)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
+#Set output locations to be in the main source tree under the relvant folder
+set_target_properties(liblog test_log
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/liblog"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/liblog"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/liblog")
+set_target_properties(libpugixml
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugixml"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugixml"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugixml")
+set_target_properties(libvtrutil
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libvtrutil"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libvtrutil"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libvtrutil")
+set_target_properties(libarchfpga read_arch
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga")
+set_target_properties(libsdcparse sdc_parse_test
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib_sdcparse"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib_sdcparse"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib_sdcparse")
+set_target_properties(libeasygl
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl")
+set_target_properties(libabc abc 
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support")
+set_target_properties(libvpr vpr
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vpr")
+set_target_properties(ace
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ace2"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ace2"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ace2")
+set_target_properties(odin_II.exe
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")

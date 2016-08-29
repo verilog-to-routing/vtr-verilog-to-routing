@@ -21,3 +21,5 @@ set_target_properties(liblog PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 #Create the test executable
 add_executable(test_log ${EXEC_SOURCES})
 target_link_libraries(test_log liblog)
+
+install(TARGETS test_log liblog DESTINATION bin)

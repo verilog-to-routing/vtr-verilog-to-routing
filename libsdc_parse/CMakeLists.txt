@@ -17,3 +17,5 @@ set_target_properties(libsdcparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefi
 #Create the test executable
 add_executable(sdc_parse_test src/main.c)
 target_link_libraries(sdc_parse_test libsdcparse)
+
+install(TARGETS libsdcparse sdc_parse_test DESTINATION bin)
