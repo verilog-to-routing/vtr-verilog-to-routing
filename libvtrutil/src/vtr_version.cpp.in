@@ -1,5 +1,8 @@
 #include "vtr_version.h"
 
+//This file is automatically processed by CMAKE and replaces
+//the values between ampersand's with the releveant CMAKE variable
+//before being compiled.
 namespace vtr {
     const char* VERSION = "@VTR_VERSION@";
     const char* VERSION_SHORT = "@VTR_VERSION_SHORT@";
@@ -10,6 +13,6 @@ namespace vtr {
 
     const char* VCS_REVISION = "@VTR_VCS_REVISION@";
     const char* COMPILER = "@VTR_COMPILER_INFO@";
-    const char* TIMESTAMP = "@VTR_TIMESTAMP@";
+    const char* BUILD_TIMESTAMP = "@VTR_BUILD_TIMESTAMP@";
     const char* PRERELEASE_TAG = "@VTR_VERSION_PRERELEASE@";
 }

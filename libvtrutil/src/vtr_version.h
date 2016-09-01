@@ -12,7 +12,7 @@ namespace vtr {
 
     extern const char* VCS_REVISION;
     extern const char* COMPILER;
-    extern const char* TIMESTAMP;
+    extern const char* BUILD_TIMESTAMP;
     extern const char* PRERELEASE_TAG;
 }
 
