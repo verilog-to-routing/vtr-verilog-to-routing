@@ -30,6 +30,8 @@ file(GLOB_RECURSE LIB_SOURCES src/*.cpp ${VTR_VERSION_FILE_OUT})
 file(GLOB_RECURSE LIB_HEADERS src/*.hpp src/*.h)
 get_include_directories(LIB_HEADERS LIB_INCLUDE_DIRS)
 
+message("VTR UTIL SOURCES HEADERS: ${LIB_SOURCES} ${LIB_HEADERS}")
+
 #Create the library
 add_library(libvtrutil STATIC
              ${LIB_HEADERS}
