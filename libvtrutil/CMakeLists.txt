@@ -28,7 +28,8 @@ add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
                     -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
                     -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
                     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
-    MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN})
+    MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 #
@@ -40,8 +41,6 @@ get_include_directories(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Add the version file to the sources
 list(APPEND LIB_SOURCES ${VTR_VERSION_FILE_OUT})
-
-message("VTR UTIL SOURCES HEADERS: ${LIB_SOURCES} ${LIB_HEADERS}")
 
 #Create the library
 add_library(libvtrutil STATIC

@@ -2,14 +2,19 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("VTR")
 
-#We install to the source directory
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+    message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+    message("CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+    message(FATAL_ERROR "In-source builds not allowed. Use the Makefile-cmake wrapper (e.g. make -f Makefile-cmake), or create a new build directory and call cmake manually from there (e.g. mkdir -p build && cd build && cmake .. && make). You will need to 'rm -rf CMakeCache.txt CMakeFiles' first.")
+endif()
+
+#We install to the source directory by default
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "default install path" FORCE)
 endif()
-message("CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 
 #Allow the user to configure how much assertion checking should occure
-set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1, 2, 3: all assertions (including those with significant performance impact)")
+set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1, 2, 3: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3)
 add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}") #Set assertion level
 
@@ -17,8 +22,6 @@ set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
-
-message(STATUS "CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
 
 #
 #
@@ -149,6 +152,7 @@ ExternalProject_Add(abc_external
 )
 ExternalProject_Get_Property(abc_external install_dir)
 
+add_executable(abc IMPORTED GLOBAL)
 add_library(libabc STATIC IMPORTED GLOBAL)
 set_property(TARGET libabc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/libabc.a)
 include_directories(
@@ -179,10 +183,10 @@ include_directories(
                     ${ABC_SOURCE_DIR}/src/map/if 
                     ${ABC_SOURCE_DIR}/src/sat/bsat)
 
-add_executable(abc IMPORTED GLOBAL)
 set_property(TARGET abc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/abc)
 
-#install(FILES ${ABC_SOURCE_DIR}/abc ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
+install(FILES ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
+install(PROGRAMS ${ABC_SOURCE_DIR}/abc DESTINATION bin)
 
 add_subdirectory(liblog)
 add_subdirectory(libpugixml)
@@ -194,7 +198,7 @@ add_subdirectory(vpr)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
-#Set output locations to be in the main source tree under the relvant folder
+#Set output locations to be in the main source tree under the relevant folder
 set_target_properties(liblog test_log
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/liblog"
@@ -217,9 +221,9 @@ set_target_properties(libarchfpga read_arch
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga")
 set_target_properties(libsdcparse sdc_parse_test
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib_sdcparse"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib_sdcparse"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib_sdcparse")
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdc_parse"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdc_parse"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdc_parse")
 set_target_properties(libeasygl
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
