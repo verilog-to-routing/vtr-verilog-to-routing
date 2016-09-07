@@ -73,7 +73,7 @@ std::string string_fmt(const char* fmt, ...) {
 std::string vstring_fmt(const char* fmt, va_list args) {
     
     //Determine the formatted length
-    int len = snprintf(nullptr, 0, fmt, args); 
+    int len = vsnprintf(nullptr, 0, fmt, args); 
 
     //Negative if there is a problem with the format string
     VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
@@ -85,7 +85,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     std::unique_ptr<char[]> buf(new char[buf_size]);
 
     //Format into the buffer
-    len = snprintf(buf.get(), buf_size, fmt, args);
+    len = vsnprintf(buf.get(), buf_size, fmt, args);
 
     VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
     VTR_ASSERT(static_cast<size_t>(len) == buf_size - 1);
@@ -268,7 +268,7 @@ bool file_exists(const char* filename) {
 		return false;
 	}
 
-	file = fopen(filename, "r");
+	file = std::fopen(filename, "r");
 	if (file) {
 		fclose(file);
 		return true;
