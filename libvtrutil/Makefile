@@ -18,7 +18,7 @@ DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 LIB_FLAGS = rcs
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -I ../liblog/src -MD -MP -std=c++0x
+FLAGS = $(WARN_FLAGS) $(DEBUG_FLAGS) $(OPT_FLAGS) -I ../liblog/src -MD -MP -std=c++0x
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
