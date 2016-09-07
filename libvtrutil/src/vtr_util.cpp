@@ -72,8 +72,11 @@ std::string string_fmt(const char* fmt, ...) {
 //an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
     
-    //Determine the formatted length
-    int len = vsnprintf(nullptr, 0, fmt, args); 
+    //Determine the formatted length using a copy of the args
+    // We need to copy the args so we don't change them before the true formating
+    va_list va_args_copy;
+    va_copy(va_args_copy, args);
+    int len = vsnprintf(nullptr, 0, fmt, va_args_copy); 
 
     //Negative if there is a problem with the format string
     VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
@@ -84,7 +87,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     //  unique_ptr will free buffer automatically
     std::unique_ptr<char[]> buf(new char[buf_size]);
 
-    //Format into the buffer
+    //Format into the buffer using the original args
     len = vsnprintf(buf.get(), buf_size, fmt, args);
 
     VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
