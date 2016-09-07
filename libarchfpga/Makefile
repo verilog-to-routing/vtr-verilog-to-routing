@@ -13,11 +13,14 @@
 CC = g++
 AR = ar
 
+OBJ_DIR = OBJ
+
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -Iinclude -I../liblog/src -I../libpugixml/src -I../libvtrutil/src
 LIB_FLAGS = rcs
+
 
 EXE = read_arch
 
@@ -34,7 +37,7 @@ OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d
 
-.PHONY: clean liblog.a libpugixml libvtrutil
+.PHONY: clean liblog libpugixml libvtrutil
 
 # Standalone executable to test architecture reader
 $(EXE): main.o libarchfpga.a
@@ -42,27 +45,28 @@ $(EXE): main.o libarchfpga.a
  
 
 libarchfpga.a: $(OBJS) liblog libpugixml libvtrutil
-	 cp ../liblog/liblog.a $@
-	 ar rcs $@ $(OBJS)
-	@#Extract libpugixml.a into OBJ/libpugixml and then have ar archive results
-	@ cp ../libpugixml/libpugixml.a .
-	@ mkdir -p  OBJ/libpugixml/
-	@ cd OBJ/libpugixml && ar x ../../libpugixml.a 
-	@ ar rcs $@ $(OBJ) OBJ/libpugixml/*.o
-	@#Extract libvtrutil.a into OBJ/libvtrutil and then have ar archive results
-	@ cp ../libvtrutil/libvtrutil.a .
-	@ mkdir -p  OBJ/libvtrutil/
-	@ cd OBJ/libvtrutil && ar x ../../libvtrutil.a 
-	@ ar rcs $@ $(OBJ) OBJ/libvtrutil/*.o
+	ar rcs $@ $(OBJS) $(OBJ_DIR)/*/*.o
 
 liblog:
 	@ cd ../liblog && make
+	@#We copy and extract the libraries and then put them all in libarchfpga
+	@ mkdir -p  $(OBJ_DIR)/liblog/
+	@ cp ../liblog/liblog.a $(OBJ_DIR)/liblog/.
+	@ cd $(OBJ_DIR)/liblog && ar x liblog.a 
 
 libpugixml:
 	@ cd ../libpugixml && make
+	@#We copy and extract the libraries and then put them all in libarchfpga
+	@ mkdir -p  $(OBJ_DIR)/libpugixml/
+	@ cp ../libpugixml/libpugixml.a $(OBJ_DIR)/libpugixml/.
+	@ cd $(OBJ_DIR)/libpugixml && ar x libpugixml.a 
 
 libvtrutil:
 	@ cd ../libvtrutil && make
+	@#We copy and extract the libraries and then put them all in libarchfpga
+	@ mkdir -p  $(OBJ_DIR)/libvtrutil/
+	@ cp ../libvtrutil/libvtrutil.a $(OBJ_DIR)/libvtrutil/.
+	@ cd $(OBJ_DIR)/libvtrutil && ar x libvtrutil.a 
 
 %.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@ 
@@ -72,12 +76,12 @@ libvtrutil:
 
 
 clean :
-	@ rm -f libarchfpga.a
-	@ rm -f $(OBJS) $(OBJS:.o=.d)
-	@ rm -f read_arch
-	@ rm -f main.o main.d
-	@ cd ../libpugixml && make clean
-	@ rm -rf $(OBJ_DIR)/libpugixml
-	@ cd ../libvtrutil && make clean
-	@ rm -rf $(OBJ_DIR)/libvtrutil
+	rm -f libarchfpga.a
+	rm -f $(OBJS) $(OBJS:.o=.d)
+	rm -f read_arch
+	rm -f main.o main.d
+	cd ../libpugixml && make clean
+	cd ../libvtrutil && make clean
+	cd ../liblog && make clean
+	rm -rf $(OBJ_DIR)
 
