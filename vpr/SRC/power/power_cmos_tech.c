@@ -76,36 +76,14 @@ void power_tech_init(char * cmos_tech_behavior_filepath) {
  * Reads the transistor properties from the .xml file
  */
 void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
-	char msg[vtr::BUFSIZE];
-
-	if (!vtr::file_exists(cmos_tech_behavior_filepath)) {
-		/* .xml transistor characteristics is missing */
-		sprintf(msg,
-				"The CMOS technology behavior file ('%s') does not exist.  No power information will be calculated.",
-				cmos_tech_behavior_filepath);
-		power_log_msg(POWER_LOG_ERROR, msg);
-
-		g_power_tech->NMOS_inf.num_size_entries = 0;
-		g_power_tech->NMOS_inf.long_trans_inf = NULL;
-		g_power_tech->NMOS_inf.size_inf = NULL;
-
-		g_power_tech->PMOS_inf.num_size_entries = 0;
-		g_power_tech->PMOS_inf.long_trans_inf = NULL;
-		g_power_tech->PMOS_inf.size_inf = NULL;
-
-		g_power_tech->Vdd = 0.;
-		g_power_tech->temperature = 85;
-		g_power_tech->PN_ratio = 1.;
-		return;
-	}
 
     pugi::xml_document doc;
     pugiloc::loc_data loc_data;
     try {
         loc_data = pugiutil::load_xml(doc, cmos_tech_behavior_filepath);
-    } catch(XmlError& e) {
+    } catch(const XmlError& e) {
         vpr_throw(VPR_ERROR_POWER, cmos_tech_behavior_filepath, 0,
-                  "Failed to load CMOS Tech Properties file '%s' (%s).\n", cmos_tech_behavior_filepath, e.what());
+                  "Failed to load CMOS Tech Properties file '%s' (%s).", cmos_tech_behavior_filepath, e.what());
     }
 
     auto technology = get_single_child(doc, "technology", loc_data);
