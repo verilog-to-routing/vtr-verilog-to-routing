@@ -32,6 +32,7 @@ use strict;
 use Cwd;
 use File::Spec;
 use List::Util;
+use List::MoreUtils qw(uniq);
 use Scalar::Util;
 
 # Function Prototypes
@@ -102,8 +103,7 @@ while ( $token = shift(@ARGV) ) {
 }
 
 # Remove duplicate tests
-my %hash = map { $_, 1 } @tests;
-@tests = keys %hash;
+@tests = uniq(@tests);
 
 if ( $#tests == -1 and !$can_quit ) {
 	die "\n"
@@ -194,6 +194,12 @@ sub setup_single_test {
 	else {
 		$run_params = "$test_dir";
 		$parse_params = "$test_dir ";
+	}
+	
+	# Use 2 threads for weekly regression test
+	if ($test_name eq "vtr_reg_weekly") {
+		my $threads = "2 ";
+		$run_params = "-p " . $threads . $run_params;	
 	}
 }
 

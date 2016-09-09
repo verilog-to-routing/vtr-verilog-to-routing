@@ -1,17 +1,19 @@
-#include "util.h"
+#include "vtr_log.h"
+
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 
-void CheckSetup(INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
+void CheckSetup(const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_annealing_sched AnnealSched,
+		const struct s_router_opts RouterOpts,
+		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	int i;
 	int Tmp;
 
@@ -27,14 +29,13 @@ void CheckSetup(INP enum e_operation Operation,
 
 		/* Works, but very weird.  Can't optimize timing well, since you're
 		 * not doing proper architecture delay modelling. */
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Using global routing with timing-driven placement. "
 				"This is allowed, but strange, and circuit speed will suffer.\n");
 	}
 
 	if ((false == Timing.timing_analysis_enabled)
-			&& ((PlacerOpts.place_algorithm == NET_TIMING_DRIVEN_PLACE)
-					|| (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE))) {
+			&& (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE)) {
 
 		/* May work, not tested */
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 

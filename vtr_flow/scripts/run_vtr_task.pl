@@ -35,6 +35,8 @@ my $threaded = eval 'use threads; use Thread::Queue; 1';
 use Cwd;
 use File::Spec;
 use File::Basename;
+use File::Path qw(make_path);
+use List::MoreUtils qw(uniq);
 use IPC::Open2;
 use POSIX qw(strftime);
 
@@ -124,9 +126,8 @@ foreach (@task_files) {
 	close(FH);
 }
 
-# Remove duplicate tasks
-my %hash = map { $_, 1 } @tasks;
-@tasks = keys %hash;
+# Remove duplicate tasks, use uniq() to preserve ordering
+@tasks = uniq(@tasks);
 
 #print "Processors: $processors\n";
 #print "Tasks: @tasks\n";
@@ -237,7 +238,7 @@ sub run_single_task {
 		if ( !( $script_params =~ /-temp_dir/ ) ) {
             #-temp_dir must come before the script_params, so that it gets picked up by run_vtr_flow
             # and not passed on as an argument to a tool (e.g. VPR)
-			$script_params = " -temp_dir . " . $script_params;
+ 			$script_params = " -temp_dir . " . $script_params;
 		}
 	}
 	else {
@@ -349,7 +350,8 @@ sub run_single_task {
 	# Make this seperately from file script
 	# just in case failure occurs creating directory
 	foreach my $arch (@archs) {
-		mkdir( "$arch", 0775 ) or die "Failed to create directory ($arch): $!";
+		#mkdir( "$arch", 0775 ) or die "Failed to create directory ($arch): $!";
+		make_path( "$arch", { mode => 0775 } ) or die "Failed to create directory ($arch): $!";
 		chmod( 0775, "$arch" );
 		foreach my $circuit (@circuits) {
 			mkdir( "$arch/$circuit", 0775 )
@@ -592,23 +594,38 @@ sub ret_expected_runtime {
 
 	my $location = $index{"pack_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"place_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"min_chan_width_route_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"crit_path_route_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 	my $location = $index{"route_time"};
 	if ($location) {
-		$seconds += @line_array[$location];
+        my $val = @line_array[$location];
+        if($val > 0.) {
+            $seconds += $val;
+        }
 	}
 
 	if ( $seconds != 0 ) {

@@ -166,7 +166,7 @@ The tags within the ``<device>`` tag are:
 
     **Custom Switch Blocks:**
 
-    Specifying ``custom`` allows custom switch blocks to be described under the ``<switchblocklist>`` XML node, the format for which is described in Section 3.1.8.
+    Specifying ``custom`` allows custom switch blocks to be described under the ``<switchblocklist>`` XML node, the format for which is described in :ref:`custom_switch_blocks`.
     If the switch block is specified as ``custom``, the ``fs`` field does not have to be specified, and will be ignored if present. 
 
 .. arch:tag:: <chan_width_distr>content</chan_width_distr>
@@ -340,6 +340,8 @@ They describe how a complex block interfaces with the inter-block world.
 
     Sets the number of tracks to which each logic block pin connects in each channel bordering the pin.
     The :math:`F_c` value :cite:`brown_fpgas` used is always the minimum of the specified :math:`F_c` and the channel width, :math:`W`.
+
+    When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
 
 
     **Special Case:**
@@ -789,10 +791,12 @@ The ``<switch>`` tag and its contents are described below.
     :req_param R: Resistance of the switch.
     :req_param Cin:  Input capacitance of the switch.
     :req_param Cout:  Output capacitance of the switch.
-    :req_param Tdel:  
+
+    :opt_param Tdel:  
         Intrinsic delay through the switch.
         If this switch was driven by a zero resistance source, and drove a zero capacitance load, its delay would be Tdel + R * Cout.
         The ‘switch’ includes both the mux and buffer when in unidirectional mode. 
+        *Required if no <Tdel/> tags are specified*
 
     :opt_param buf_size:  
         *Only for unidirectional routing.*
@@ -812,12 +816,19 @@ The ``<switch>`` tag and its contents are described below.
     Describes a type of switch.
     This statement defines what a certain type of switch is -- segment statements refer to a switch types by their number (the number right after the switch keyword).
 
+    **Example:**
+
+    .. code-block:: xml
+
+        <switch type="mux" name="my_awsome_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+
 .. arch:tag:: <Tdel num_inputs="int" delay="float"/>
 
     :req_param num_inputs: The number of switch inputs
     :req_param delay: The intrinsic switch delay when the switch topology has the specified number of switch inputs
 
     Instead of specifying a single Tdel value, a list of Tdel values may be specified for different values of switch fan-in.
+    Delay is linearly extrapolated/interpolated for any unspecified fanins based on the two closest fanins.
     
     **Example:**
 
@@ -886,6 +897,8 @@ The ``<direct>`` tag and its contents are described below.
     .. code-block:: xml
 
         <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+
+.. _custom_switch_blocks:
 
 Custom Switch Blocks
 --------------------

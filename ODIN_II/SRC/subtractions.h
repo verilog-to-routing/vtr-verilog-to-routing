@@ -24,11 +24,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define SUBS_H
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 #include "adders.h"
 
-extern struct s_linked_vptr *sub_list;
-extern struct s_linked_vptr *sub_chain_list;
+extern vtr::t_linked_vptr *sub_list;
+extern vtr::t_linked_vptr *sub_chain_list;
 
 extern void init_sub_distribution();
 extern void report_sub_distribution();

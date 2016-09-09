@@ -1,10 +1,13 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include "vtr_math.h"
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "rr_graph.h"
 #include "rr_graph_util.h"
@@ -67,7 +70,7 @@ void count_routing_transistors(enum e_directionality directionality,
 	if (directionality == BI_DIRECTIONAL) {
 		count_bidir_routing_transistors(num_switch, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	} else {
-		assert(directionality == UNI_DIRECTIONAL);
+		VTR_ASSERT(directionality == UNI_DIRECTIONAL);
 		count_unidir_routing_transistors(segment_inf, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
 	}
 }
@@ -139,11 +142,11 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
 
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
-	shared_buffer_trans = (float *) my_calloc(maxlen, sizeof(float));
+	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
+	shared_buffer_trans = (float *) vtr::calloc(maxlen, sizeof(float));
 
 	unsharable_switch_trans = alloc_and_load_unsharable_switch_trans(num_switch,
 			trans_sram_bit, R_minW_nmos);
@@ -287,13 +290,13 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	ntrans_sharing += input_cblock_trans;
 	ntrans_no_sharing += input_cblock_trans;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Routing area (in minimum width transistor areas)...\n");
-	vpr_printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n", 
+	vtr::printf_info("\n");
+	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
+	vtr::printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n", 
 			ntrans_no_sharing, ntrans_no_sharing / (float) (nx * ny));
-	vpr_printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n", 
+	vtr::printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n", 
 			ntrans_sharing, ntrans_sharing / (float) (nx * ny));
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }
 
 void count_unidir_routing_transistors(t_segment_inf * segment_inf, 
@@ -315,7 +318,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	   switches of all rr nodes. Thus we keep track of which muxes we have already
 	   counted via the variable below. */
 	bool *chan_node_switch_done;
-	chan_node_switch_done = (bool *) my_calloc(num_rr_nodes, sizeof(bool));
+	chan_node_switch_done = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
 
 	/* The variable below is an accumulator variable that will add up all the   *
 	 * transistors in the routing.  Make double so that it doesn't stop         *
@@ -346,9 +349,9 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
 	maxlen = max(nx, ny) + 1;
-	cblock_counted = (bool *) my_calloc(maxlen, sizeof(bool));
+	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
 	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
@@ -454,9 +457,9 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 	ntrans += input_cblock_trans;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Routing area (in minimum width transistor areas)...\n");
-	vpr_printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (nx * ny));
+	vtr::printf_info("\n");
+	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
+	vtr::printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (nx * ny));
 }
 
 static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,
@@ -470,7 +473,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 	float *trans_per_cblock; /* [0..max_inputs_to_cblock] */
 	float trans_count;
 	int i, num_inputs;
-	trans_per_cblock = (float *) my_malloc(
+	trans_per_cblock = (float *) vtr::malloc(
 			(max_inputs_to_cblock + 1) * sizeof(float));
 
 	trans_per_cblock[0] = 0.; /* i.e., not an IPIN or no inputs */
@@ -508,7 +511,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 	float *unsharable_switch_trans, Rpass;
 	int i;
 
-	unsharable_switch_trans = (float *) my_malloc(num_switch * sizeof(float));
+	unsharable_switch_trans = (float *) vtr::malloc(num_switch * sizeof(float));
 
 	for (i = 0; i < num_switch; i++) {
 
@@ -538,7 +541,7 @@ alloc_and_load_sharable_switch_trans(int num_switch, float trans_sram_bit,
 	float *sharable_switch_trans, Rbuf;
 	int i;
 
-	sharable_switch_trans = (float *) my_malloc(num_switch * sizeof(float));
+	sharable_switch_trans = (float *) vtr::malloc(num_switch * sizeof(float));
 
 	for (i = 0; i < num_switch; i++) {
 
@@ -571,7 +574,7 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 		/* Target stage ratio = 4.  1 minimum width buffer, then num_stage bigger *
 		 * ones.                                                                  */
 
-		num_stage = nint(log10(R_minW_nmos / Rbuf) / log10(4.));
+		num_stage = vtr::nint(log10(R_minW_nmos / Rbuf) / log10(4.));
 		num_stage = max(num_stage, 1);
 		stage_ratio = pow((float)(R_minW_nmos / Rbuf), (float)( 1. / (float) num_stage));
 

@@ -1,6 +1,8 @@
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
+#include "vtr_matrix.h"
+#include "vtr_util.h"
+
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_util.h"
@@ -26,25 +28,24 @@
  * For simple switch boxes this is overkill, but it will allow complicated  *
  * switch boxes with Fs > 3, etc. without trouble.                          */
 
-int get_simple_switch_block_track(INP enum e_side from_side,
-		INP enum e_side to_side, INP int from_track,
-		INP enum e_switch_block_type switch_block_type, INP int nodes_per_chan);
+int get_simple_switch_block_track(const enum e_side from_side,
+		const enum e_side to_side, const int from_track,
+		const enum e_switch_block_type switch_block_type, const int nodes_per_chan);
 
 /* Allocates and loads the switch_block_conn data structure.  This structure *
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */
-struct s_ivec ***
-alloc_and_load_switch_block_conn(INP int nodes_per_chan,
-		INP enum e_switch_block_type switch_block_type, INP int Fs) {
+vtr::t_ivec ***
+alloc_and_load_switch_block_conn(const int nodes_per_chan,
+		const enum e_switch_block_type switch_block_type, const int Fs) {
 	enum e_side from_side, to_side;
 	int from_track;
-	struct s_ivec ***switch_block_conn = NULL;
+	vtr::t_ivec ***switch_block_conn = NULL;
 
 	/* Currently Fs must be 3 since each track maps once to each other side */
-	assert(3 == Fs);
+	VTR_ASSERT(3 == Fs);
 
-	switch_block_conn = (struct s_ivec ***) alloc_matrix3(0, 3, 0, 3, 0,
-			(nodes_per_chan - 1), sizeof(struct s_ivec));
+	switch_block_conn = vtr::alloc_matrix3<vtr::t_ivec>(0, 3, 0, 3, 0, (nodes_per_chan - 1));
 
 	for (from_side = (enum e_side)0; from_side < 4; from_side = (enum e_side)(from_side + 1)) {
 		for (to_side = (enum e_side)0; to_side < 4; to_side = (enum e_side)(to_side + 1)) {
@@ -52,7 +53,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 				if (from_side != to_side) {
 					switch_block_conn[from_side][to_side][from_track].nelem = 1;
 					switch_block_conn[from_side][to_side][from_track].list =
-							(int *) my_malloc(sizeof(int));
+							(int *) vtr::malloc(sizeof(int));
 
 					switch_block_conn[from_side][to_side][from_track].list[0] =
 							get_simple_switch_block_track(from_side, to_side,
@@ -71,7 +72,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 		int i, j, k, l;
 		FILE *out;
 
-		out = my_fopen("switch_block_conn.echo", "w", 0);
+		out = vtr::fopen("switch_block_conn.echo", "w");
 		for (l = 0; l < 4; ++l) {
 			for (k = 0; k < 4; ++k) {
 				fprintf(out, "Side %d to %d\n", l, k);
@@ -90,7 +91,7 @@ alloc_and_load_switch_block_conn(INP int nodes_per_chan,
 	return switch_block_conn;
 }
 
-void free_switch_block_conn(struct s_ivec ***switch_block_conn,
+void free_switch_block_conn(vtr::t_ivec ***switch_block_conn,
 		int nodes_per_chan) {
 	/* Frees the switch_block_conn data structure. */
 
@@ -103,9 +104,9 @@ void free_switch_block_conn(struct s_ivec ***switch_block_conn,
  * SUBSET, UNIVERSAL, and WILTON. I added FULL (for fully flexible topology)
  * but the returned value is simply a dummy, since we don't need to permute
  * what connections to make for FULL (connect to EVERYTHING) */
-int get_simple_switch_block_track(INP enum e_side from_side,
-		INP enum e_side to_side, INP int from_track,
-		INP enum e_switch_block_type switch_block_type, INP int nodes_per_chan) {
+int get_simple_switch_block_track(const enum e_side from_side,
+		const enum e_side to_side, const int from_track,
+		const enum e_switch_block_type switch_block_type, const int nodes_per_chan) {
 
 	/* This routine returns the track number to which the from_track should     *
 	 * connect.  It supports three simple, Fs = 3, switch blocks.               */

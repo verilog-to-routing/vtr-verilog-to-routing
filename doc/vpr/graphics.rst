@@ -5,7 +5,9 @@ VPR includes easy-to-use graphics for visualizing both the targetted FPGA archit
 Enabling Graphics
 -----------------
 Graphics are disabled by default.
-To enable them compile VPR with the flag ENABLE_GRAPHICS in the Makefile set to true.
+To enable them compile VPR with the flag ``ENABLE_GRAPHICS`` in the Makefile set to ``true``.  
+
+.. note:: Once the ``ENABLE_GRAPHICS`` flag is set VPR will need to be re-built (e.g. ``make clean`` followed by ``make``) for graphics to be enable.
 
 .. note:: If compiling VPR with Microsoft Visual Studio, set WIN32 as a preprocessor definition in VPR Properties.
 

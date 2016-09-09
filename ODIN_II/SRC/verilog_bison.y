@@ -83,9 +83,10 @@ int yywrap()
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL 
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT 
+%left voSLEFT voSRIGHT
 %left '+' '-'   
 %left '*' '/' '%'
+%right voPOWER 
 %left '~' '!'
 %left '{' '}'
 %left UOR
@@ -102,6 +103,7 @@ int yywrap()
 %nonassoc LOWER_THAN_ELSE
 %nonassoc vELSE
 
+
 %type <node> source_text items define module list_of_module_items list_of_function_items module_item function_item
 %type <node> parameter_declaration input_declaration output_declaration defparam_declaration function_declaration 
 %type <node> function_input_declaration
@@ -116,7 +118,7 @@ int yywrap()
 %type <node> module_connection always statement function_statement blocking_assignment 
 %type <node> non_blocking_assignment case_item_list case_items seq_block 
 %type <node> stmt_list delay_control event_expression_list event_expression 
-%type <node> expression primary expression_list module_parameter
+%type <node> expression primary probable_expression_list expression_list module_parameter
 %type <node> list_of_module_parameters specify_block list_of_specify_statement specify_statement
 %type <node> initial_block parallel_connection list_of_blocking_assignment
 
@@ -144,6 +146,7 @@ items: items module								{
 define: vDEFINE vSYMBOL_ID vNUMBER_ID						{$$ = NULL; newConstant($2, $3, yylineno);}
 	;
 
+
 module: vMODULE vSYMBOL_ID '(' variable_list ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $7, yylineno);}
 	| vMODULE vSYMBOL_ID '(' variable_list ',' ')' ';' list_of_module_items vENDMODULE	{$$ = newModule($2, $4, $8, yylineno);}
 	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, NULL, $6, yylineno);}	
@@ -168,6 +171,7 @@ module_item: parameter_declaration						{$$ = $1;}
 	| defparam_declaration							{$$ = $1;}
 	| specify_block                             				{$$ = $1;}
 	;
+
 
 function_declaration: 
     vFUNCTION function_output_variable ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($2, $4, yylineno); }
@@ -213,7 +217,7 @@ inout_declaration: vINOUT variable_list ';'					{$$ = markAndProcessSymbolListWi
 	;
 
 net_declaration: vWIRE variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, WIRE, $2);}
-	| vREG variable_list ';'						        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
+	| vREG variable_list ';'					        {$$ = markAndProcessSymbolListWith(MODULE, REG, $2);}
 	;
 integer_declaration: vINTEGER integer_type_variable_list ';' {$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2);}
 	;
@@ -378,6 +382,7 @@ delay_control: '@' '(' event_expression_list ')' 				{$$ = $3;}
 
 // 7 Expressions	{$$ = NULL;}
 event_expression_list: event_expression_list vOR event_expression		{$$ = newList_entry($1, $3);}
+        | event_expression_list ',' event_expression	                 	{$$ = newList_entry($1, $3);}
 	| event_expression							{$$ = newList(DELAY_CONTROL, $1);}
 	;
 
@@ -398,6 +403,7 @@ expression: primary								{$$ = $1;}
 	| '!' expression %prec ULNOT						{$$ = newUnaryOperation(LOGICAL_NOT, $2, yylineno);}
 	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, yylineno);}
 	| expression '^' expression						{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, yylineno);}
+	| expression voPOWER expression						{$$ = newExpandPower(MULTIPLY,$1, $3, yylineno);}
 	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, yylineno);}
 	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, yylineno);}
 	| expression '%' expression						{$$ = newBinaryOperation(MODULO, $1, $3, yylineno);}
@@ -423,19 +429,18 @@ expression: primary								{$$ = $1;}
 	| expression '?' expression ':' expression				{$$ = newIfQuestion($1, $3, $5, yylineno);}
 	| function_instantiation                            			{$$ = $1;}
 	| '(' expression ')'							{$$ = $2;}
-										/* rule below is strictly unnecessary, causes a bison conflict, 
-										but simplifies the AST so that expression_lists with one child 
-										(i.e. just an expression) does not create a CONCATENATE parent) */
-	| '{' expression '{' expression '}' '}'					{$$ = newListReplicate( $2, $4 ); }
-	| '{' expression '{' expression_list '}' '}'				{$$ = newListReplicate( $2, $4 ); }
+	| '{' expression '{' probable_expression_list '}' '}'				{$$ = newListReplicate( $2, $4 ); }
 	;
 
 primary: vNUMBER_ID								{$$ = newNumberNode($1, yylineno);}
 	| vSYMBOL_ID								{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'						{$$ = newArrayRef($1, $3, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']'				{$$ = newRangeRef($1, $3, $5, yylineno);}
-	| '{' expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
+	| '{' probable_expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
+	
+probable_expression_list: expression						{$$ = $1;}
+	| expression_list ',' expression						{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
 	 
 expression_list: expression_list ',' expression					{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
 	| expression								{$$ = newList(CONCATENATE, $1);}

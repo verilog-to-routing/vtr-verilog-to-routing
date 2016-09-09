@@ -26,7 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "util.h"
 #include "globals.h"
 #include "netlist_utils.h"
 #include "errors.h"

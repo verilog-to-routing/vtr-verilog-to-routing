@@ -2,8 +2,10 @@
 #include <cstring>
 using namespace std;
 
+#include "vtr_memory.h"
+#include "vtr_log.h"
+
 #include "hash.h"
-#include "util.h"
 
 struct s_hash **
 alloc_hash_table(void) {
@@ -12,7 +14,7 @@ alloc_hash_table(void) {
 
 	struct s_hash **hash_table;
 
-	hash_table = (struct s_hash **) my_calloc(sizeof(struct s_hash *),
+	hash_table = (struct s_hash **) vtr::calloc(sizeof(struct s_hash *),
 			HASHSIZE);
 	return (hash_table);
 }
@@ -75,7 +77,7 @@ get_next_hash(struct s_hash **hash_table, struct s_hash_iterator *hash_iterator)
 }
 
 struct s_hash *
-insert_in_hash_table(struct s_hash **hash_table, char *name,
+insert_in_hash_table(struct s_hash **hash_table, const char *name,
 		int next_free_index) {
 
 	/* Adds the string pointed to by name to the hash table, and returns the    *
@@ -103,7 +105,7 @@ insert_in_hash_table(struct s_hash **hash_table, char *name,
 
 	/* Name string wasn't in the hash table.  Add it. */
 
-	h_ptr = (struct s_hash *) my_malloc(sizeof(struct s_hash));
+	h_ptr = (struct s_hash *) vtr::malloc(sizeof(struct s_hash));
 	if (prev_ptr == NULL) {
 		hash_table[i] = h_ptr;
 	} else {
@@ -112,13 +114,13 @@ insert_in_hash_table(struct s_hash **hash_table, char *name,
 	h_ptr->next = NULL;
 	h_ptr->index = next_free_index;
 	h_ptr->count = 1;
-	h_ptr->name = (char *) my_malloc((strlen(name) + 1) * sizeof(char));
+	h_ptr->name = (char *) vtr::malloc((strlen(name) + 1) * sizeof(char));
 	strcpy(h_ptr->name, name);
 	return (h_ptr);
 }
 
 struct s_hash *
-get_hash_entry(struct s_hash **hash_table, char *name) {
+get_hash_entry(struct s_hash **hash_table, const char *name) {
 
 	/* Returns the hash entry with this name, or NULL if there is no            *
 	 * corresponding entry.                                                     */
@@ -139,7 +141,7 @@ get_hash_entry(struct s_hash **hash_table, char *name) {
 	return (NULL);
 }
 
-int hash_value(char *name) {
+int hash_value(const char *name) {
 	/* Creates a hash key from a character string.  The absolute value is taken  *
 	 * for the final val to compensate for long strlen that cause val to 	     *
 	 * overflow.								     */
@@ -193,11 +195,11 @@ void get_hash_stats(struct s_hash **hash_table, char *hash_table_name){
 
 	avg_num = (float) total_elements / ((float)HASHSIZE - (float)num_NULL);
 	
-	vpr_printf_info("\n");
-	vpr_printf_info("The hash table '%s' is of size %d.\n",
+	vtr::printf_info("\n");
+	vtr::printf_info("The hash table '%s' is of size %d.\n",
 			hash_table_name, HASHSIZE);
-	vpr_printf_info("It has: %d keys that are never used; total of %d elements; "
+	vtr::printf_info("It has: %d keys that are never used; total of %d elements; "
 			"an average linked-list length of %.1f; and a maximum linked-list length of %d.\n", 
 			num_NULL, total_elements, avg_num, max_num); 
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }

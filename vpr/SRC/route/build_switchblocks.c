@@ -126,15 +126,18 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 */
 
 #include <cstring>
-#include <cassert>
 #include <algorithm>
 #include <iterator>
+#include <malloc.h>
+#include <iostream>
+
+#include "vtr_assert.h"
+
+#include "vpr_error.h"
+
 #include "build_switchblocks.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
-#include "util.h"
-#include <malloc.h>
-#include <iostream>
 
 using namespace std;
 
@@ -721,7 +724,7 @@ static void get_switchpoint_wires( e_directionality directionality, int nx, int 
 					continue;
 				}
 			} else {
-				assert(side == LEFT || side == BOTTOM);
+				VTR_ASSERT(side == LEFT || side == BOTTOM);
 				if (seg_direction == DEC_DIRECTION && !is_dest){
 					continue;
 				}
@@ -826,7 +829,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 			return;
 		}
 	} else {
-		assert( from_wire_direction = BI_DIRECTION );
+		VTR_ASSERT( from_wire_direction == BI_DIRECTION );
 	}
 
 	/* name of the source wire type */
@@ -1097,7 +1100,7 @@ static int get_wire_subsegment_num(int nx, int ny, e_rr_type chan_type,
 	}
 
 	/* if this wire is going in the decreasing direction, reverse the subsegment num */
-	assert(seg_end >= seg_start);
+	VTR_ASSERT(seg_end >= seg_start);
 	if (direction == DEC_DIRECTION){
 		subsegment_num = wire_length-1 - subsegment_num;
 	}
@@ -1178,7 +1181,7 @@ static int get_switchpoint_of_wire(int nx, int ny, e_rr_type chan_type,
 				switchpoint = subsegment_num;
 			}
 		} else {
-			assert(RIGHT == sb_side || TOP == sb_side);
+			VTR_ASSERT(RIGHT == sb_side || TOP == sb_side);
 			switchpoint = subsegment_num;
 			if (direction == DEC_DIRECTION){
 				switchpoint = (subsegment_num + 1) % wire_length;

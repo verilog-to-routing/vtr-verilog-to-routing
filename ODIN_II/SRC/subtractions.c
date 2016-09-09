@@ -30,13 +30,17 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "subtractions.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
-#include "util.h"
 #include "read_xml_arch_file.h"
 #include "globals.h"
 #include "errors.h"
+#include "print_tags.h"
 
-struct s_linked_vptr *sub_list = NULL;
-struct s_linked_vptr *sub_chain_list = NULL;
+#include "vtr_util.h"
+
+using vtr::t_linked_vptr;
+
+t_linked_vptr *sub_list = NULL;
+t_linked_vptr *sub_chain_list = NULL;
 int subchaintotal = 0;
 int *sub = NULL;
 

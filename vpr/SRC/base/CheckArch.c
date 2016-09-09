@@ -1,7 +1,7 @@
 #include <string.h>
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
@@ -9,18 +9,18 @@
 #include "SetupVPR.h"
 
 /******** Function Prototypes ********/
-static void CheckSwitches(INP t_arch Arch, INP bool TimingEnabled);
+static void CheckSwitches(const t_arch Arch, const bool TimingEnabled);
 
-static void CheckSegments(INP t_arch Arch);
+static void CheckSegments(const t_arch Arch);
 
 /******** Function Implementations ********/
 
-void CheckArch(INP t_arch Arch, INP bool TimingEnabled) {
+void CheckArch(const t_arch Arch, const bool TimingEnabled) {
 	CheckSwitches(Arch, TimingEnabled);
 	CheckSegments(Arch);
 }
 
-static void CheckSwitches(INP t_arch Arch, INP bool TimingEnabled) {
+static void CheckSwitches(const t_arch Arch, const bool TimingEnabled) {
 	struct s_arch_switch_inf *CurSwitch;
 	int i;
 	int ipin_cblock_switch_index = UNDEFINED;
@@ -74,7 +74,7 @@ static void CheckSwitches(INP t_arch Arch, INP bool TimingEnabled) {
  
 }
 
-static void CheckSegments(INP t_arch Arch) {
+static void CheckSegments(const t_arch Arch) {
 	t_segment_inf *CurSeg;
 	int i;
 

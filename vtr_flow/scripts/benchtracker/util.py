@@ -29,7 +29,7 @@ def get_result_file(params, run):
     return os.path.join(params.task_dir, run, params.result_file)
 
 def get_task_table_name(params):
-    return '[' + "|".join([params.task_name, socket.gethostname(), getpass.getuser(), params.task_path]) + ']'
+    return params.task_name
 
 def immediate_subdir(root):
     return [name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))]

@@ -1,0 +1,3 @@
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v	d46f2cb	success	50	3.93307	24.8379	7.98476	13.6132	2.15115	4299	-1	-1	-1	765	895	413	36	99	130	1	0		
+k6_frac_N10_frac_chain_mem32K_40nm.xml	stereovision3.v	d46f2cb	success	34	2.70805	4.75207	3.34121	9.17769	0.919821	868	-1	-1	-1	337	345	126	13	11	30	0	0		

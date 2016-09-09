@@ -22,6 +22,7 @@ Contents:
    vpr/index
    odin/index
    abc/index
+   tutorials/index
    contact
    references
 

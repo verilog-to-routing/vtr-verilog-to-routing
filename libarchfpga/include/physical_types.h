@@ -29,8 +29,8 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <map>
 #include "logic_types.h"
-#include "util.h"
 
 typedef struct s_clock_arch t_clock_arch;
 typedef struct s_clock_network t_clock_network;
@@ -489,7 +489,7 @@ struct s_pb_graph_edge {
 	int driver_pin;
 
 	/* pack pattern info */
-	char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
+	const char **pack_pattern_names; /*[0..num_pack_patterns(of_edge)-1]*/
 	int *pack_pattern_indices; /*[0..num_pack_patterns(of_edge)-1]*/
 	int num_pack_patterns;
 	bool infer_pattern; /*If true, infer pattern based on patterns connected to it*/
@@ -952,10 +952,6 @@ struct s_arch {
 	float T_ipin_cblock;
 	float ipin_mux_trans_size;
 
-	#ifdef INTERPOSER_BASED_ARCHITECTURE
-	// this is used to make sure a cutline does not go through a physical block
-	int lcm_of_block_heights;
-	#endif
 };
 
 #endif

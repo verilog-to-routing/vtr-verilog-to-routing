@@ -33,7 +33,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "ast_util.h"
 #include "odin_util.h"
-#include "util.h"
 #include "ast_optimizations.h"
 
 /*---------------------------------------------------------------------------
@@ -776,7 +775,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
             }
 			free(temp_string);
 
-			if (sym_node->children[1] == NULL)
+			if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT)
 			{
 				width = 1;
 				return_string = (char**)malloc(sizeof(char*)*width);
@@ -1016,3 +1015,31 @@ void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node)
 	add_child_to_node(dest, node);
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: ast_node_deep_copy)
+ * copy node and its children recursively; return new subtree
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *ast_node_deep_copy(ast_node_t *node){
+	ast_node_t *node_copy;
+	int i;
+
+	if(node == NULL){
+		return NULL;
+	}
+
+	//Copy node
+	node_copy = (ast_node_t *)malloc(sizeof(ast_node_t));
+	memcpy(node_copy, node, sizeof(ast_node_t));
+
+	//Copy contents
+	if(node_copy->types.identifier != NULL){
+		node_copy->types.identifier = strdup(node_copy->types.identifier);
+	}
+
+	//Recursively copy its children
+	for(i = 0; i < node->num_children; i++){
+		node_copy->children[i] = ast_node_deep_copy(node_copy->children[i]);
+	}
+
+	return node_copy;
+}

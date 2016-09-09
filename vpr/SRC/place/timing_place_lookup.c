@@ -1,12 +1,13 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <time.h>
 using namespace std;
 
-#include <assert.h>
-#include <time.h>
+#include "vtr_assert.h"
+#include "vtr_matrix.h"
+#include "vtr_log.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "place_and_route.h"
@@ -90,7 +91,7 @@ static t_type_descriptor *type_descriptors_backup;
 static struct s_grid_tile **grid_backup;
 static int num_types_backup;
 
-static t_ivec **clb_opins_used_locally;
+vtr::t_ivec **clb_opins_used_locally;
 
 #ifdef PRINT_ARRAYS
 static FILE *lookup_dump; /* If debugging mode is on, print out to
@@ -121,8 +122,8 @@ static void setup_chan_width(struct s_router_opts router_opts,
 
 static void alloc_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, INP t_direct_inf *directs, 
-		INP int num_directs);
+		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const int num_directs);
 
 static void free_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
@@ -212,7 +213,7 @@ static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
 			currpin += type->class_inf[i].num_pins;
 	}
 
-    assert(best_class >= 0 && best_class < type->num_class);
+    VTR_ASSERT(best_class >= 0 && best_class < type->num_class);
     return (type->class_inf[best_class].pinlist[0]);
 }
 
@@ -235,22 +236,22 @@ static void alloc_net(void) {
 
 	int i, len;
 
-	clb_net = (struct s_net *) my_malloc(num_nets * sizeof(struct s_net));
+	clb_net = (struct s_net *) vtr::malloc(num_nets * sizeof(struct s_net));
 	for (i = 0; i < NET_COUNT; i++) {
 		/* FIXME: We *really* shouldn't be allocating write-once copies */
 		len = strlen("TEMP_NET");
-		clb_net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
+		clb_net[i].name = (char *) vtr::malloc((len + 1) * sizeof(char));
 		clb_net[i].is_routed = false;
 		clb_net[i].is_fixed = false;
 		clb_net[i].is_global = false;
 		strcpy(clb_net[NET_USED].name, "TEMP_NET");
 
 		clb_net[i].num_sinks = (BLOCK_COUNT - 1);
-		clb_net[i].node_block = (int *) my_malloc(BLOCK_COUNT * sizeof(int));
+		clb_net[i].node_block = (int *) vtr::malloc(BLOCK_COUNT * sizeof(int));
 		clb_net[i].node_block[NET_USED_SOURCE_BLOCK] = NET_USED_SOURCE_BLOCK; /*driving block */
 		clb_net[i].node_block[NET_USED_SINK_BLOCK] = NET_USED_SINK_BLOCK; /*target block */
 
-		clb_net[i].node_block_pin = (int *) my_malloc(
+		clb_net[i].node_block_pin = (int *) vtr::malloc(
 				BLOCK_COUNT * sizeof(int));
 		/*the values for this are assigned in assign_blocks_and_route_net */
 
@@ -264,7 +265,7 @@ static void alloc_vnet(){
 	g_clbs_nlist.net.resize(NET_COUNT);
 	for(i = 0; i < NET_COUNT; i++){
 		len = strlen("TEMP_NET");
-		g_clbs_nlist.net[i].name = (char *) my_malloc((len + 1) * sizeof(char));
+		g_clbs_nlist.net[i].name = (char *) vtr::malloc((len + 1) * sizeof(char));
 		g_clbs_nlist.net[i].is_routed = false;
 		g_clbs_nlist.net[i].is_fixed = false;
 		g_clbs_nlist.net[i].is_global = false;
@@ -294,14 +295,14 @@ static void alloc_block(void) {
 		max_pins = max(max_pins, type_descriptors[i].num_pins);
 	}
 
-	block = (struct s_block *) my_malloc(num_blocks * sizeof(struct s_block));
+	block = (struct s_block *) vtr::malloc(num_blocks * sizeof(struct s_block));
 
 	for (ix_b = 0; ix_b < BLOCK_COUNT; ix_b++) {
 		len = strlen("TEMP_BLOCK");
-		block[ix_b].name = (char *) my_malloc((len + 1) * sizeof(char));
+		block[ix_b].name = (char *) vtr::malloc((len + 1) * sizeof(char));
 		strcpy(block[ix_b].name, "TEMP_BLOCK");
 
-		block[ix_b].nets = (int *) my_malloc(max_pins * sizeof(int));
+		block[ix_b].nets = (int *) vtr::malloc(max_pins * sizeof(int));
 		block[ix_b].nets[0] = 0;
 		for (ix_p = 1; ix_p < max_pins; ix_p++)
 			block[ix_b].nets[ix_p] = OPEN;
@@ -334,8 +335,7 @@ static void load_simplified_device(void) {
 
 	/* Fill in homogeneous core grid info */
 	grid_backup = grid;
-	grid = (struct s_grid_tile **) alloc_matrix(0, nx + 1, 0, ny + 1,
-			sizeof(struct s_grid_tile));
+	grid = vtr::alloc_matrix<struct s_grid_tile>(0, nx + 1, 0, ny + 1);
 	for (i = 0; i < nx + 2; i++) {
 		for (j = 0; j < ny + 2; j++) {
 			if ((i == 0 && j == 0) || (i == nx + 1 && j == 0)
@@ -349,7 +349,7 @@ static void load_simplified_device(void) {
 			}
 			grid[i][j].width_offset = 0;
 			grid[i][j].height_offset = 0;
-			grid[i][j].blocks = (int*)my_malloc(grid[i][j].type->capacity * sizeof(int));
+			grid[i][j].blocks = (int*)vtr::malloc(grid[i][j].type->capacity * sizeof(int));
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				grid[i][j].blocks[k] = EMPTY;
 			}
@@ -372,7 +372,7 @@ static void restore_original_device(void) {
 			free(grid[i][j].blocks);
 		}
 	}
-	free_matrix(grid, 0, nx + 1, 0, sizeof(struct s_grid_tile));
+    vtr::free_matrix(grid, 0, nx + 1, 0);
 	grid = grid_backup;
 }
 
@@ -412,8 +412,7 @@ static void alloc_and_assign_internal_structures(struct s_net **original_net,
 	alloc_block();
 
 	/* [0..num_nets-1][1..num_pins-1] */
-	net_delay = (float **) alloc_matrix(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1,
-			sizeof(float));
+	net_delay = vtr::alloc_matrix<float>(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1);
 
 	reset_placement();
 }
@@ -450,7 +449,7 @@ static void free_and_reset_internal_structures(struct s_net *original_net,
 	num_nets = original_num_nets;
 	num_blocks = original_num_blocks;
 
-	free_matrix(net_delay, 0, NET_COUNT - 1, 1, sizeof(float));
+    vtr::free_matrix(net_delay, 0, NET_COUNT - 1, 1);
 
 }
 
@@ -480,8 +479,8 @@ static void setup_chan_width(struct s_router_opts router_opts,
 /**************************************/
 static void alloc_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, INP t_direct_inf *directs, 
-		INP int num_directs) {
+		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const int num_directs) {
 
 	int bb_factor;
 	int warnings;
@@ -641,12 +640,10 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 static void alloc_delta_arrays(void) {
 	int id_x, id_y;
 
-	delta_clb_to_clb = (float **) alloc_matrix(0, nx - 1, 0, ny - 1,
-			sizeof(float));
-	delta_io_to_clb = (float **) alloc_matrix(0, nx, 0, ny, sizeof(float));
-	delta_clb_to_io = (float **) alloc_matrix(0, nx, 0, ny, sizeof(float));
-	delta_io_to_io = (float **) alloc_matrix(0, nx + 1, 0, ny + 1,
-			sizeof(float));
+	delta_clb_to_clb = vtr::alloc_matrix<float>(0, nx - 1, 0, ny - 1);
+	delta_io_to_clb = vtr::alloc_matrix<float>(0, nx, 0, ny);
+	delta_clb_to_io = vtr::alloc_matrix<float>(0, nx, 0, ny);
+	delta_io_to_io = vtr::alloc_matrix<float>(0, nx + 1, 0, ny + 1);
 
 	/*initialize all of the array locations to -1 */
 
@@ -675,10 +672,10 @@ static void alloc_delta_arrays(void) {
 /**************************************/
 static void free_delta_arrays(void) {
 
-	free_matrix(delta_io_to_clb, 0, nx, 0, sizeof(float));
-	free_matrix(delta_clb_to_clb, 0, nx - 1, 0, sizeof(float));
-	free_matrix(delta_clb_to_io, 0, nx, 0, sizeof(float));
-	free_matrix(delta_io_to_io, 0, nx + 1, 0, sizeof(float));
+    vtr::free_matrix(delta_io_to_clb, 0, nx, 0);
+	vtr::free_matrix(delta_clb_to_clb, 0, nx - 1, 0);
+	vtr::free_matrix(delta_clb_to_io, 0, nx, 0);
+	vtr::free_matrix(delta_io_to_io, 0, nx + 1, 0);
 
 }
 
@@ -1023,13 +1020,13 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, int longest_length) {
 
-	vpr_printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_io(router_opts, det_routing_arch, segment_inf, timing_inf);
-	vpr_printf_info("Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_clb(router_opts, det_routing_arch, segment_inf, timing_inf);
-	vpr_printf_info("Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_io(router_opts, det_routing_arch, segment_inf, timing_inf);
-	vpr_printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
+	vtr::printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_clb(router_opts, det_routing_arch, segment_inf, timing_inf, longest_length);
 
 #ifdef PRINT_ARRAYS
@@ -1052,10 +1049,10 @@ static void compute_delta_arrays(struct s_router_opts router_opts,
 /**************************************/
 void compute_delay_lookup_tables(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, INP t_direct_inf *directs, 
-		INP int num_directs) {
+		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, const t_direct_inf *directs, 
+		const int num_directs) {
 
-	vpr_printf_info("\nStarting placement delay look-up...\n");
+	vtr::printf_info("\nStarting placement delay look-up...\n");
     clock_t begin = clock();
 
 	static struct s_net *original_net; /*this will be used as a pointer to remember what */
@@ -1076,21 +1073,10 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 			&original_num_nets, &original_num_blocks, original_vnet);
 	setup_chan_width(router_opts, chan_width_dist);
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	/* Change the number of cuts to zero to avoid running the cut routine
-	 * at build_rr_graph. This is because placement uses only deltas to estimate
-	 * the delay between two points, and having a non-homogeneous chip only
-	 * generates noise */
-	int temp_num_cuts = num_cuts;
-	num_cuts = 0;
-#endif
 
 	alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
 			timing_inf, directs, num_directs);
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	num_cuts = temp_num_cuts;
-#endif
 
 	longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
 
@@ -1111,7 +1097,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
     clock_t end = clock();
 
     float time = (float) (end - begin) / CLOCKS_PER_SEC;
-	vpr_printf_info("Placement delay look-up took %g seconds\n", time);
+	vtr::printf_info("Placement delay look-up took %g seconds\n", time);
 }
 
 /**************************************/

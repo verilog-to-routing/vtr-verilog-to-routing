@@ -136,9 +136,8 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "physical_types.h"
 #include "globals.h"
@@ -241,11 +240,11 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							curr_inet = next_inet;
 							
 							// Assume that carry chains only has 1 sink - direct connection
-							assert(g_clbs_nlist.net[curr_inet].num_sinks() == 1);
+							VTR_ASSERT(g_clbs_nlist.net[curr_inet].num_sinks() == 1);
 							next_iblk = g_clbs_nlist.net[curr_inet].pins[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
-							assert (f_idirect_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == from_idirect
+							VTR_ASSERT(f_idirect_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == from_idirect
 									&& f_direct_type_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == SOURCE);
 							next_inet = block[next_iblk].nets[from_iblk_pin];
 
@@ -260,7 +259,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 
 						// Allocate the second dimension of the blk_num array since I now know the size
 						pl_macro_member_blk_num[num_macro] = 
-								(int *) my_calloc (pl_macro_num_members[num_macro] , sizeof(int));
+								(int *) vtr::calloc (pl_macro_num_members[num_macro] , sizeof(int));
 						// Copy the data from the temporary array to the newly allocated array.
 						for (imember = 0; imember < pl_macro_num_members[num_macro]; imember ++)
 							pl_macro_member_blk_num[num_macro][imember] = pl_macro_member_blk_num_of_this_blk[imember];
@@ -311,10 +310,10 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, int 
 			&f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
 	/* Allocate maximum memory for temporary variables. */
-	pl_macro_num_members = (int *) my_calloc (num_blocks , sizeof(int));
-	pl_macro_idirect = (int *) my_calloc (num_blocks , sizeof(int));
-	pl_macro_member_blk_num = (int **) my_calloc (num_blocks , sizeof(int*));
-	pl_macro_member_blk_num_of_this_blk = (int *) my_calloc (num_blocks , sizeof(int));
+	pl_macro_num_members = (int *) vtr::calloc (num_blocks , sizeof(int));
+	pl_macro_idirect = (int *) vtr::calloc (num_blocks , sizeof(int));
+	pl_macro_member_blk_num = (int **) vtr::calloc (num_blocks , sizeof(int*));
+	pl_macro_member_blk_num_of_this_blk = (int *) vtr::calloc (num_blocks , sizeof(int));
 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
@@ -327,13 +326,13 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, int 
 			pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
 
 	/* Allocate the memories for the macro. */
-	macro = (t_pl_macro *) my_malloc (num_macro * sizeof(t_pl_macro));
+	macro = (t_pl_macro *) vtr::malloc (num_macro * sizeof(t_pl_macro));
 
 	/* Allocate the memories for the chaim members.             *
 	 * Load the values from the temporary data structures.      */
 	for (imacro = 0; imacro < num_macro; imacro++) {
 		macro[imacro].num_blocks = pl_macro_num_members[imacro];
-		macro[imacro].members = (t_pl_macro_member *) my_malloc(macro[imacro].num_blocks * sizeof(t_pl_macro_member));
+		macro[imacro].members = (t_pl_macro_member *) vtr::malloc(macro[imacro].num_blocks * sizeof(t_pl_macro_member));
 
 		/* Load the values for each member of the macro */
 		for (imember = 0; imember < macro[imacro].num_blocks; imember++) {
@@ -401,7 +400,7 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros)
 	int imacro, imember, iblk;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_imacro_from_iblk = (int *)my_malloc(num_blocks * sizeof(int));
+	temp_imacro_from_iblk = (int *)vtr::malloc(num_blocks * sizeof(int));
 	for(iblk = 0; iblk < num_blocks; iblk ++) {
 		temp_imacro_from_iblk[iblk] = OPEN;
 	}

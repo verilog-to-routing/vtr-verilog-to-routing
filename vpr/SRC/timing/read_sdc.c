@@ -2,12 +2,16 @@
 #include <cstring>
 #include <cstdlib>
 #include <climits>
+#include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "read_sdc.h"
 #include "read_blif.h"
@@ -133,25 +137,25 @@ void read_sdc(t_timing_inf timing_inf) {
 	int source_clock_domain, sink_clock_domain, iinput, ioutput, icc, isource, isink;
 	
 	/* Make sure we haven't called this subroutine before. */
-	assert(!g_sdc);
+	VTR_ASSERT(!g_sdc);
 
 	/* Allocate container structure for SDC constraints. */
-	g_sdc = (t_timing_constraints *) my_calloc(1, sizeof(t_timing_constraints));
+	g_sdc = (t_timing_constraints *) vtr::calloc(1, sizeof(t_timing_constraints));
 	
 
 	/* If no SDC file is included or specified, or timing analysis is off,
 	use default behaviour of cutting paths between domains and optimizing each clock separately */
 
 	if (!timing_inf.timing_analysis_enabled) {
-		vpr_printf_info("\n");
-		vpr_printf_info("Timing analysis off; using default timing constraints.\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Timing analysis off; using default timing constraints.\n");
 		use_default_timing_constraints();
 		return;
 	}
 	
 	if ((sdc = fopen(timing_inf.SDCFile, "r")) == NULL) {
-		vpr_printf_info("\n");
-		vpr_printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vtr::printf_info("\n");
+		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
 		return;
 	}
@@ -171,8 +175,8 @@ void read_sdc(t_timing_inf timing_inf) {
     t_sdc_commands* sdc_commands = sdc_parse_file(sdc);
 
 	if (sdc_commands->has_commands == false) { /* blank file or only comments found */
-		vpr_printf_info("\n");
-		vpr_printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vtr::printf_info("\n");
+		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
 		free(netlist_clocks);
 		free(netlist_ios);
@@ -220,7 +224,7 @@ void read_sdc(t_timing_inf timing_inf) {
 	}
 
 	/* Allocate matrix of timing constraints [0..g_sdc->num_constrained_clocks-1][0..g_sdc->num_constrained_clocks-1] and initialize to 0 */
-	g_sdc->domain_constraint = (float **) alloc_matrix(0, g_sdc->num_constrained_clocks-1, 0, g_sdc->num_constrained_clocks-1, sizeof(float));
+	g_sdc->domain_constraint = vtr::alloc_matrix<float>(0, g_sdc->num_constrained_clocks-1, 0, g_sdc->num_constrained_clocks-1);
 	
 	/* Based on the information from sdc_clocks, calculate constraints for all paths except ones with an override constraint. */
 	for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
@@ -247,12 +251,12 @@ void read_sdc(t_timing_inf timing_inf) {
 		}
 	}
 
-	vpr_printf_info("\n");
-	vpr_printf_info("SDC file '%s' parsed successfully.\n",
+	vtr::printf_info("\n");
+	vtr::printf_info("SDC file '%s' parsed successfully.\n",
 			 timing_inf.SDCFile ); 
-	vpr_printf_info("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
+	vtr::printf_info("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
 			 g_sdc->num_constrained_clocks, g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 	
 	/* Since all the information we need is stored in g_sdc->domain_constraint, g_sdc->constrained_clocks, 
 	and constrained_ios, free other data structures used in this routine */
@@ -325,18 +329,18 @@ static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
 
     if(sdc_create_clock->is_virtual) { 
         /* Store the clock's name, period and edges in the local array sdc_clocks. */
-        sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_sdc_clock));
-        sdc_clocks[g_sdc->num_constrained_clocks - 1].name = my_strdup(sdc_create_clock->name);
+        sdc_clocks = (t_sdc_clock *) vtr::realloc(sdc_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_sdc_clock));
+        sdc_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock->name);
         sdc_clocks[g_sdc->num_constrained_clocks - 1].period = sdc_create_clock->period;
         sdc_clocks[g_sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock->rise_edge; 
         sdc_clocks[g_sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock->fall_edge; 
 
         /* Also store the clock's name, and the fact that it is not a netlist clock, in g_sdc->constrained_clocks. */
-        g_sdc->constrained_clocks = (t_clock *) my_realloc (g_sdc->constrained_clocks, g_sdc->num_constrained_clocks * sizeof(t_clock));
-        g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = my_strdup(sdc_create_clock->name);
+        g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, g_sdc->num_constrained_clocks * sizeof(t_clock));
+        g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock->name);
         g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = false;
     } else {
-        assert(!sdc_create_clock->is_virtual);
+        VTR_ASSERT(!sdc_create_clock->is_virtual);
 
         for(int itarget = 0; itarget < sdc_create_clock->targets->num_strings; itarget++) {
 
@@ -350,15 +354,15 @@ static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
                     found = true;
 
                     /* Store the clock's name, period and edges in the local array sdc_clocks. */
-                    sdc_clocks = (t_sdc_clock *) my_realloc(sdc_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_sdc_clock));
+                    sdc_clocks = (t_sdc_clock *) vtr::realloc(sdc_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_sdc_clock));
                     sdc_clocks[g_sdc->num_constrained_clocks - 1].name = netlist_clocks[iclock];
                     sdc_clocks[g_sdc->num_constrained_clocks - 1].period = sdc_create_clock->period;
                     sdc_clocks[g_sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock->rise_edge; 
                     sdc_clocks[g_sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock->fall_edge; 
 
                     /* Also store the clock's name, and the fact that it is a netlist clock, in g_sdc->constrained_clocks. */
-                    g_sdc->constrained_clocks = (t_clock *) my_realloc (g_sdc->constrained_clocks, g_sdc->num_constrained_clocks * sizeof(t_clock));
-                    g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = my_strdup(netlist_clocks[iclock]);
+                    g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, g_sdc->num_constrained_clocks * sizeof(t_clock));
+                    g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(netlist_clocks[iclock]);
                     g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = true;
                     /* Fanout will be filled out once the timing graph has been constructed. */
                 }
@@ -383,14 +387,14 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
     int num_exclusive_groups = 0;
 	t_sdc_exclusive_group *exclusive_groups = NULL;
 
-    assert(sdc_set_clock_groups->num_clock_groups >= 2); //Should have already been caught by parser
-    assert(sdc_set_clock_groups->type == SDC_CG_EXCLUSIVE); //Currently only form supported
+    VTR_ASSERT(sdc_set_clock_groups->num_clock_groups >= 2); //Should have already been caught by parser
+    VTR_ASSERT(sdc_set_clock_groups->type == SDC_CG_EXCLUSIVE); //Currently only form supported
 
     for(int igroup = 0; igroup < sdc_set_clock_groups->num_clock_groups; igroup++) {
         t_sdc_string_group* clock_group = sdc_set_clock_groups->clock_groups[igroup];
         
         /* Create a new entry in exclusive groups */
-        exclusive_groups = (t_sdc_exclusive_group *) my_realloc(
+        exclusive_groups = (t_sdc_exclusive_group *) vtr::realloc(
             exclusive_groups, ++num_exclusive_groups * sizeof(t_sdc_exclusive_group));
         exclusive_groups[num_exclusive_groups - 1].clock_names = NULL;
         exclusive_groups[num_exclusive_groups - 1].num_clock_names = 0;
@@ -403,11 +407,11 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
             for (iclock = 0; iclock < num_netlist_clocks; iclock++) {
                 if (regex_match(netlist_clocks[iclock], clk_name)) {
                     found = true;
-                    exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_realloc(
+                    exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) vtr::realloc(
                         exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
                     exclusive_groups[num_exclusive_groups - 1].clock_names
                         [exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] = 
-                        my_strdup(netlist_clocks[iclock]);
+                        vtr::strdup(netlist_clocks[iclock]);
                 }
             }
             if (!found) {
@@ -417,9 +421,9 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
                             clk_name);
                 } else {
                     /* The clock_name is a valid non-netlist clock (i.e. a virtual clock), so add it to the list.  */
-                    exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) my_realloc(
+                    exclusive_groups[num_exclusive_groups - 1].clock_names = (char **) vtr::realloc(
                         exclusive_groups[num_exclusive_groups - 1].clock_names, ++exclusive_groups[num_exclusive_groups - 1].num_clock_names * sizeof(char *));
-                    exclusive_groups[num_exclusive_groups - 1].clock_names[exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] = my_strdup(clk_name);
+                    exclusive_groups[num_exclusive_groups - 1].clock_names[exclusive_groups[num_exclusive_groups - 1].num_clock_names - 1] = vtr::strdup(clk_name);
                 }
             }
         }
@@ -561,21 +565,21 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
                     found = true;
 
                     /* Fill in input information in the permanent array g_sdc->constrained_inputs. */
-                    g_sdc->constrained_inputs = (t_io *) my_realloc (g_sdc->constrained_inputs, g_sdc->num_constrained_inputs * sizeof(t_io));
-                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = my_strdup(netlist_ios[iio]);
-                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = my_strdup(clock_name);
+                    g_sdc->constrained_inputs = (t_io *) vtr::realloc (g_sdc->constrained_inputs, g_sdc->num_constrained_inputs * sizeof(t_io));
+                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = vtr::strdup(netlist_ios[iio]);
+                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
                     g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay->max_delay;
                     g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].file_line_number = sdc_set_io_delay->file_line_number; /* global var */
                 } else {
-                    assert(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
+                    VTR_ASSERT(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
 					/* We've found a new output! */
 					g_sdc->num_constrained_outputs++;
 					found = true;
 
 					/* Fill in output information in the permanent array g_sdc->constrained_outputs. */
-					g_sdc->constrained_outputs = (t_io *) my_realloc (g_sdc->constrained_outputs, g_sdc->num_constrained_outputs * sizeof(t_io));
-					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = my_strdup(netlist_ios[iio]);
-					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = my_strdup(clock_name);
+					g_sdc->constrained_outputs = (t_io *) vtr::realloc (g_sdc->constrained_outputs, g_sdc->num_constrained_outputs * sizeof(t_io));
+					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = vtr::strdup(netlist_ios[iio]);
+					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
 					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = sdc_set_io_delay->max_delay;
 					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].file_line_number = sdc_set_io_delay->file_line_number; /* global var */
                 }
@@ -586,7 +590,7 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
             if(sdc_set_io_delay->cmd_type == SDC_INPUT_DELAY) {
                 io_type = "Input";
             } else {
-                assert(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
+                VTR_ASSERT(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
                 io_type = "Output";
             }
 
@@ -622,8 +626,8 @@ static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_l
     }
     for(int i = 0; i < from_group->num_strings; i++) {
         /* Keep adding clock names to from_list */
-        (*from_list) = (char **) my_realloc((*from_list), ++(*num_from) * sizeof(**from_list));
-        (*from_list)[(*num_from) - 1] = my_strdup(from_group->strings[i]);
+        (*from_list) = (char **) vtr::realloc((*from_list), ++(*num_from) * sizeof(**from_list));
+        (*from_list)[(*num_from) - 1] = vtr::strdup(from_group->strings[i]);
     }
 
     /*
@@ -637,8 +641,8 @@ static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_l
     }
     for(int i = 0; i < to_group->num_strings; i++) {
         /* Keep adding clock names to to_list */
-        (*to_list) = (char **) my_realloc((*to_list), ++(*num_to) * sizeof(**to_list));
-        (*to_list)[(*num_to) - 1] = my_strdup(to_group->strings[i]);
+        (*to_list) = (char **) vtr::realloc((*to_list), ++(*num_to) * sizeof(**to_list));
+        (*to_list)[(*num_to) - 1] = vtr::strdup(to_group->strings[i]);
     }
 
     return true;
@@ -655,31 +659,31 @@ static void use_default_timing_constraints(void) {
 
 	if (g_sdc->num_constrained_clocks <= 1) {
 		/* Create one constrained clock with period 0... */
-		g_sdc->domain_constraint = (float **) alloc_matrix(0, 0, 0, 0, sizeof(float));
+		g_sdc->domain_constraint = vtr::alloc_matrix<float>(0, 0, 0, 0);
 		g_sdc->domain_constraint[0][0] = 0.;
 		
-        vpr_printf_info("\n");
+        vtr::printf_info("\n");
 
 		if (g_sdc->num_constrained_clocks == 0) {
 			/* We need to create a virtual clock to constrain I/Os on. */
 			g_sdc->num_constrained_clocks = 1;
-			g_sdc->constrained_clocks = (t_clock *) my_malloc(sizeof(t_clock));
-			g_sdc->constrained_clocks[0].name = my_strdup("virtual_io_clock");
+			g_sdc->constrained_clocks = (t_clock *) vtr::malloc(sizeof(t_clock));
+			g_sdc->constrained_clocks[0].name = vtr::strdup("virtual_io_clock");
 			g_sdc->constrained_clocks[0].is_netlist_clock = false;
 
             /* Constrain all I/Os on the virtual clock, with I/O delay 0. */
             count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
 
-			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
+			vtr::printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-			vpr_printf_info("Optimize this virtual clock to run as fast as possible.\n");
+			vtr::printf_info("Optimize this virtual clock to run as fast as possible.\n");
 		} else {
             /* Constrain all I/Os on the single netlist clock, with I/O delay 0. */
             count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[0].name, 0.);
 
-			vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
+			vtr::printf_info("Defaulting to: constrain all %d inputs and %d outputs on the netlist clock.\n", 
 					g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-			vpr_printf_info("Optimize this clock to run as fast as possible.\n");
+			vtr::printf_info("Optimize this clock to run as fast as possible.\n");
 		}
 	} else { /* Multiclock circuit */
 
@@ -687,13 +691,13 @@ static void use_default_timing_constraints(void) {
 		 clocks, but analyse all paths between the virtual I/O clock and netlist clocks
 		 and optimize all clocks to go as fast as possible. */
 
-		g_sdc->constrained_clocks = (t_clock *) my_realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
-		g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = my_strdup("virtual_io_clock");
+		g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
+		g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup("virtual_io_clock");
 		g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = false;
 		count_netlist_ios_as_constrained_ios(g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name, 0.);
 
 		/* Allocate matrix of timing constraints [0..g_sdc->num_constrained_clocks-1][0..g_sdc->num_constrained_clocks-1] */
-		g_sdc->domain_constraint = (float **) alloc_matrix(0, g_sdc->num_constrained_clocks-1, 0, g_sdc->num_constrained_clocks-1, sizeof(float));
+		g_sdc->domain_constraint = vtr::alloc_matrix<float>(0, g_sdc->num_constrained_clocks-1, 0, g_sdc->num_constrained_clocks-1);
 
 		for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
 			for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
@@ -706,11 +710,11 @@ static void use_default_timing_constraints(void) {
 			}
 		}
 		
-		vpr_printf_info("\n");
-		vpr_printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
+		vtr::printf_info("\n");
+		vtr::printf_info("Defaulting to: constrain all %d inputs and %d outputs on a virtual external clock;\n",
 				g_sdc->num_constrained_inputs, g_sdc->num_constrained_outputs);
-		vpr_printf_info("\tcut paths between netlist clock domains; and\n");
-		vpr_printf_info("\toptimize all clocks to run as fast as possible.\n");
+		vtr::printf_info("\tcut paths between netlist clock domains; and\n");
+		vtr::printf_info("\toptimize all clocks to run as fast as possible.\n");
 	}
 }
 
@@ -726,7 +730,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			name = g_atoms_nlist.net[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = false;
@@ -737,7 +741,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 			}
 			if (!found) {
 				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-				netlist_clocks = (char **) my_realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
+				netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
 				netlist_clocks[num_netlist_clocks - 1] = name;
 			}
 		} else if (logical_block[iblock].type == VPACK_INPAD || logical_block[iblock].type == VPACK_OUTPAD) {
@@ -751,7 +755,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 			}
 			if (!found) {
 				/* If we get here, the I/O is new and so we dynamically grow the array netlist_ios by one. */
-				netlist_ios = (char **) my_realloc (netlist_ios, ++num_netlist_ios * sizeof(char *));
+				netlist_ios = (char **) vtr::realloc (netlist_ios, ++num_netlist_ios * sizeof(char *));
 				netlist_ios[num_netlist_ios - 1] = logical_block[iblock].type == VPACK_OUTPAD ? name + 4 : name; 
 				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
 			}
@@ -771,7 +775,7 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			name = g_atoms_nlist.net[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = false;
@@ -782,8 +786,8 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 			}
 			if (!found) {
 				/* If we get here, the clock is new and so we dynamically grow the array g_sdc->constrained_clocks by one. */
-				g_sdc->constrained_clocks = (t_clock *) my_realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
-				g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = my_strdup(name);
+				g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
+				g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(name);
 				g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = true;
 				/* Fanout will be filled out once the timing graph has been constructed. */
 			}
@@ -811,9 +815,9 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 			}
 			if (!found) {
 				/* If we get here, the input is new and so we add it to g_sdc->constrained_inputs. */
-				g_sdc->constrained_inputs = (t_io *) my_realloc (g_sdc->constrained_inputs, ++g_sdc->num_constrained_inputs * sizeof(t_io));
-				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = my_strdup(name); 
-				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = my_strdup(clock_name);
+				g_sdc->constrained_inputs = (t_io *) vtr::realloc (g_sdc->constrained_inputs, ++g_sdc->num_constrained_inputs * sizeof(t_io));
+				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = vtr::strdup(name); 
+				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
 				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = 0.;
 			}
 		} else if (logical_block[iblock].type == VPACK_OUTPAD) {
@@ -827,10 +831,10 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 			}
 			if (!found) {
 				/* If we get here, the output is new and so we add it to g_sdc->constrained_outputs. */
-				g_sdc->constrained_outputs = (t_io *) my_realloc (g_sdc->constrained_outputs, ++g_sdc->num_constrained_outputs * sizeof(t_io));
-				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = my_strdup(name + 4); 
+				g_sdc->constrained_outputs = (t_io *) vtr::realloc (g_sdc->constrained_outputs, ++g_sdc->num_constrained_outputs * sizeof(t_io));
+				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = vtr::strdup(name + 4); 
 				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
-				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = my_strdup(clock_name);
+				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
 				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = 0.;
 			}
 		}
@@ -903,17 +907,17 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 		}
 	}
 
-	*constraint_array = (t_override_constraint *) my_realloc(*constraint_array, num_constraints * sizeof(t_override_constraint));
+	*constraint_array = (t_override_constraint *) vtr::realloc(*constraint_array, num_constraints * sizeof(t_override_constraint));
 	
 	if (make_copies) {
 		/* Copy from_list and to_list to constraint_array[num_constraints - 1].source_list and .sink_list. */
-		(*constraint_array)[num_constraints - 1].source_list = (char **) my_malloc(num_from * sizeof(char *));
-		(*constraint_array)[num_constraints - 1].sink_list = (char **) my_malloc(num_to * sizeof(char *));
+		(*constraint_array)[num_constraints - 1].source_list = (char **) vtr::malloc(num_from * sizeof(char *));
+		(*constraint_array)[num_constraints - 1].sink_list = (char **) vtr::malloc(num_to * sizeof(char *));
 		for (i = 0; i < num_from; i++) {
-			(*constraint_array)[num_constraints - 1].source_list[i] = my_strdup(from_list[i]);
+			(*constraint_array)[num_constraints - 1].source_list[i] = vtr::strdup(from_list[i]);
 		}
 		for (i = 0; i < num_to; i++) {
-			(*constraint_array)[num_constraints - 1].sink_list[i] = my_strdup(to_list[i]);
+			(*constraint_array)[num_constraints - 1].sink_list[i] = vtr::strdup(to_list[i]);
 		}
 	} else {
 		/* Just set constraint array to point to from_list and to_list. */
@@ -924,7 +928,7 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 	(*constraint_array)[num_constraints - 1].num_sink = num_to;	
 	(*constraint_array)[num_constraints - 1].constraint = constraint;
 	(*constraint_array)[num_constraints - 1].num_multicycles = num_multicycles;
-	(*constraint_array)[num_constraints - 1].file_line_number = get_file_line_number_of_last_opened_file(); /* global var */
+	(*constraint_array)[num_constraints - 1].file_line_number = vtr::get_file_line_number_of_last_opened_file(); /* global var */
 }
 
 static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain) {
@@ -965,8 +969,8 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	num_source_edges = lcm_period/source_period + 1; 
 	num_sink_edges = lcm_period/sink_period + 1;
 
-	source_edges = (int *) my_malloc((num_source_edges + 1) * sizeof(int));
-	sink_edges = (int *) my_malloc((num_sink_edges + 1) * sizeof(int));
+	source_edges = (int *) vtr::malloc((num_source_edges + 1) * sizeof(int));
+	sink_edges = (int *) vtr::malloc((num_sink_edges + 1) * sizeof(int));
 	
 	for (i = 0, time = source_rising_edge; i < num_source_edges + 1; i++) {
 		source_edges[i] = time;
@@ -1008,7 +1012,7 @@ static bool regex_match (char * string, char * regular_expression) {
 
 	const char * error;
 	
-	assert(string && regular_expression);
+	VTR_ASSERT(string && regular_expression);
 
 	/* The regex library reports a match if regular_expression is a substring of string
 	AND not equal to string. This is not appropriate for our purposes. For example, 
@@ -1027,7 +1031,7 @@ static bool regex_match (char * string, char * regular_expression) {
 	else if (strcmp(error, "No match") == 0) 
 		return false;
 	else {
-		vpr_throw(VPR_ERROR_SDC, sdc_file_name, get_file_line_number_of_last_opened_file(), 
+		vpr_throw(VPR_ERROR_SDC, sdc_file_name, vtr::get_file_line_number_of_last_opened_file(), 
 				"Error matching regular expression \"%s\".\n", regular_expression);
 		return false;
 	}
@@ -1045,7 +1049,7 @@ void free_sdc_related_structs(void) {
 	free_io_constraint(g_sdc->constrained_inputs, g_sdc->num_constrained_inputs);
 	free_io_constraint(g_sdc->constrained_outputs, g_sdc->num_constrained_outputs);
 	free_clock_constraint(g_sdc->constrained_clocks, g_sdc->num_constrained_clocks);
-	free_matrix(g_sdc->domain_constraint, 0, g_sdc->num_constrained_clocks - 1, 0, sizeof(float));
+    vtr::free_matrix(g_sdc->domain_constraint, 0, g_sdc->num_constrained_clocks - 1, 0);
 	free(g_sdc);
 	g_sdc = NULL;
 }

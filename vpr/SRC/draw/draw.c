@@ -18,9 +18,12 @@
 #include <algorithm>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_matrix.h"
 
 #include "vpr_utils.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "graphics.h"
 #include "path_delay.h"
@@ -101,41 +104,6 @@ static inline bool triangle_LOD_screen_area_test(float arrow_size);
 
 /********************** Subroutine definitions ******************************/
 
-bool is_inode_an_interposer_wire(int inode)
-{
-	int ix = rr_node[inode].get_xlow();
-	int itrack = rr_node[inode].get_ptc_num();
-	if( rr_node[inode].type==CHANY && itrack >= chan_width.y_list[ix] )
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-/* This Funtion draws an interposer wire
- * The interposer wires are shifted up in the channel to show the effect that they are not
- * part of the channel tracks.
- * Also, the interposer wires are drawn in RED so that it's clear where cuts are happening
-*/
-void draw_shifted_line(int inode)
-{
-	t_bound_box bound_box = draw_get_rr_chan_bbox(inode);
-	int ix = rr_node[inode].get_xlow();
-	t_color savecolor = getcolor();
-	int bottom_shift_y = 0; 
-	int top_shift_y = 0;
-	if(is_inode_an_interposer_wire(inode))
-	{
-		setcolor(RED);
-		bottom_shift_y = get_draw_coords_vars()->get_tile_width() + chan_width.y_list[ix] + 0.25*chan_width.y_list[ix];
-		top_shift_y = chan_width.y_list[ix]   + chan_width.y_list[ix] - 0.25*chan_width.y_list[ix];
-	}
-	drawline(bound_box.left(), bound_box.bottom()+bottom_shift_y, bound_box.right(), bound_box.top()+top_shift_y);
-	setcolor(savecolor);
-}
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 		enum e_route_type route_type) 
@@ -201,7 +169,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 	}
 	/* Save the main message. */
 
-	my_strncpy(draw_state->default_message, msg, BUFSIZE);
+	vtr::strncpy(draw_state->default_message, msg, vtr::BUFSIZE);
 
 	draw_state->pic_on_screen = pic_on_screen_val;
 	update_message(msg);
@@ -364,7 +332,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	/* Turns the congestion display on and off.   */
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	int inode, num_congested;
 
 	e_draw_congestion new_state = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
@@ -412,10 +380,10 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
 
-	t_linked_int *critical_path_head, *critical_path_node;
+	vtr::t_linked_int *critical_path_head, *critical_path_node;
 	int inode, iblk, inet, num_nets_seen;
 	static int nets_to_highlight = 1;
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 
 	sel_subblk_info.clear_critical_path();
 
@@ -515,19 +483,19 @@ void alloc_draw_structs(void) {
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
 
-	draw_coords->tile_x = (float *) my_malloc((nx + 2) * sizeof(float));
-	draw_coords->tile_y = (float *) my_malloc((ny + 2) * sizeof(float));
+	draw_coords->tile_x = (float *) vtr::malloc((nx + 2) * sizeof(float));
+	draw_coords->tile_y = (float *) vtr::malloc((ny + 2) * sizeof(float));
 
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
 
-	draw_state->net_color = (t_color *) my_malloc(g_clbs_nlist.net.size() * sizeof(t_color));
+	draw_state->net_color = (t_color *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(t_color));
 
-	draw_state->block_color = (t_color *) my_malloc(num_blocks * sizeof(t_color));
+	draw_state->block_color = (t_color *) vtr::malloc(num_blocks * sizeof(t_color));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
-	draw_state->draw_rr_node = (t_draw_rr_node *) my_malloc(
+	draw_state->draw_rr_node = (t_draw_rr_node *) vtr::malloc(
 									num_rr_nodes * sizeof(t_draw_rr_node));
 
 	deselect_all(); /* Set initial colors */
@@ -578,7 +546,7 @@ void init_draw_coords(float width_val) {
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
 	if (num_rr_nodes != 0) {
-		draw_state->draw_rr_node = (t_draw_rr_node *) my_realloc(draw_state->draw_rr_node,
+		draw_state->draw_rr_node = (t_draw_rr_node *) vtr::realloc(draw_state->draw_rr_node,
 										(num_rr_nodes) * sizeof(t_draw_rr_node));
 		for (i = 0; i < num_rr_nodes; i++) {
 			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
@@ -599,11 +567,6 @@ void init_draw_coords(float width_val) {
 	for (i = 0; i < (nx + 1); i++) {
 		draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
 		j += chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
-
-		// to show the interposer wires, we need more space between the blocks
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		j += (chan_width.y_list[i] + 1);
-		#endif
 	}
 	draw_coords->tile_x[nx + 1] = ((nx + 1) * draw_coords->get_tile_width()) + j;
 
@@ -611,11 +574,6 @@ void init_draw_coords(float width_val) {
 	for (i = 0; i < (ny + 1); ++i) {
 		draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
 		j += chan_width.x_list[i] + 1;
-
-		// to show the interposer wires, we need more space between the blocks
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		j += (chan_width.x_list[i] + 1);
-		#endif
 	}
 	draw_coords->tile_y[ny + 1] = ((ny + 1) * draw_coords->get_tile_width()) + j;
 
@@ -658,7 +616,7 @@ static void drawplace(void) {
 
 			for (k = 0; k < num_sub_tiles; ++k) {
 				/* Graphics will look unusual for multiple height and capacity */
-				assert(height == 1 || num_sub_tiles == 1);
+				VTR_ASSERT(height == 1 || num_sub_tiles == 1);
 
 				/* Get coords of current sub_tile */
 				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
@@ -997,35 +955,14 @@ static void draw_rr_chany(int inode, int itrack, const t_color& color) {
 		// If wire is highlighted, then draw with thicker linewidth.
 		setlinewidth(3);
 
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		if(is_inode_an_interposer_wire(inode))
-		{
-			draw_shifted_line(inode);
-		}
-		else
-		{
-			drawline(bound_box.bottom_left(), bound_box.top_right());
-		}
-		#else
 		drawline(bound_box.bottom_left(), bound_box.top_right());
-		#endif		
 		
 		setlinewidth(0);
 	}
 	else
 	{
-		#ifdef INTERPOSER_BASED_ARCHITECTURE
-		if(is_inode_an_interposer_wire(inode))
-		{
-			draw_shifted_line(inode);
-		}
-		else
-		{
-			drawline(bound_box.bottom_left(), bound_box.top_right());
-		}
-		#else
 		drawline(bound_box.bottom_left(), bound_box.top_right());
-		#endif
+
 	}
 
 	wire_start_x1 = bound_box.left() - WIRE_DRAWING_WIDTH/2;
@@ -1335,15 +1272,6 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		y2 = chany_bbox.bottom();
 	}
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	// handle CHANY connections to interposer wires
-	// connect to the bottom of an interposer wire
-	if(chany_track >= chan_width.y_list[chany_x])
-	{
-		y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width() + chan_width.y_list[chany_x] + 0.25*chan_width.y_list[chany_x];
-	}
-#endif 
-
 	drawline(x1, y1, x2, y2);
 
 	if (draw_state->draw_rr_toggle != DRAW_ALL_RR) {
@@ -1412,12 +1340,12 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
 			/* must connect to to_node's wire beginning at x2 */
 			if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
-				assert(from_xlow < to_xlow);
+				VTR_ASSERT(from_xlow < to_xlow);
 				x2 = to_chan.left();
 				/* since no U-turns from_track must be INC as well */
 				x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at rightmost edge */
-				assert(from_xhigh > to_xhigh);
+				VTR_ASSERT(from_xhigh > to_xhigh);
 				x2 = to_chan.right();
 				x1 = draw_coords->tile_x[to_xhigh + 1];
 			}
@@ -1502,37 +1430,11 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 	else {
 		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
 			if (to_track % 2 == 0) { /* INC wire starts at bottom edge */
-			
-				// for interposer-based architectures, the interposer node will have
-				// the same y_low and y_high as the cutline y-coordinate
-				// so, for connections from CHANY wire just below the cut to the interposer node,
-				// from_ylow can be equal to to_ylow
-				#ifndef INTERPOSER_BASED_ARCHITECTURE
-				assert(from_ylow < to_ylow);
-				#endif
-				
+
 				y2 = to_chan.bottom();
 				/* since no U-turns from_track must be INC as well */
 				y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_width();
 			} else { /* DEC wire starts at top edge */
-			
-				// for interposer-based architectures, the interposer node is marked as CHANY
-				// so, it is possible to have from_yhigh equal to to_yhigh
-				#ifndef INTERPOSER_BASED_ARCHITECTURE
-				if (!(from_yhigh > to_yhigh)) {
-					vpr_printf_info("from_yhigh (%d) !> to_yhigh (%d).\n", 
-							from_yhigh, to_yhigh);
-					vpr_printf_info("from is (%d, %d) to (%d, %d) track %d.\n",
-							rr_node[from_node].get_xhigh(), rr_node[from_node].get_yhigh(),
-							rr_node[from_node].get_xlow(), rr_node[from_node].get_ylow(),
-							rr_node[from_node].get_ptc_num());
-					vpr_printf_info("to is (%d, %d) to (%d, %d) track %d.\n",
-							rr_node[to_node].get_xhigh(), rr_node[to_node].get_yhigh(),
-							rr_node[to_node].get_xlow(), rr_node[to_node].get_ylow(),
-							rr_node[to_node].get_ptc_num());
-					exit(1);
-				}
-				#endif
 				
 				y2 = to_chan.top();
 				y1 = draw_coords->tile_y[to_yhigh + 1];
@@ -1557,31 +1459,6 @@ static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
 		}
 	}
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	//handle CHANX connections to and from interposer wires
-	if(is_inode_an_interposer_wire(from_node))
-	{
-		if(rr_node[from_node].direction == DEC_DIRECTION)
-		{
-			y1 = draw_coords->tile_y[from_ylow] + draw_coords->get_tile_width() + chan_width.y_list[from_x] + 0.25*chan_width.y_list[from_x];
-		}
-		else if(rr_node[from_node].direction == INC_DIRECTION)
-		{
-			y1 = draw_coords->tile_y[from_ylow] + draw_coords->get_tile_width() + 2*chan_width.y_list[from_x] - 0.25*chan_width.y_list[from_x];
-		}
-	}
-	if(is_inode_an_interposer_wire(to_node))
-	{
-		if(rr_node[to_node].direction == INC_DIRECTION)
-		{
-			y2 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() + chan_width.y_list[to_x] + 0.25*chan_width.y_list[to_x];
-		}
-		else if(rr_node[to_node].direction == DEC_DIRECTION)
-		{
-			y2 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() + 2*chan_width.y_list[to_x] - 0.25*chan_width.y_list[to_x];
-		}
-	}
-#endif
 
 	/* UDSD Modification by WMF End */
 	drawline(x1, y1, x2, y2);
@@ -1696,7 +1573,7 @@ static void draw_rr_pin(int inode, const t_color& color) {
 
 	int ipin, i, j, iside;
 	float xcen, ycen;
-	char str[BUFSIZE];
+	char str[vtr::BUFSIZE];
 	t_type_ptr type;
 
 	i = rr_node[inode].get_xlow();
@@ -1811,11 +1688,11 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	if (draw_state->draw_route_type == GLOBAL) {
 		/* Allocate some temporary storage if it's not already available. */
 		if (chanx_track == NULL) {
-			chanx_track = (int **) alloc_matrix(1, nx, 0, ny, sizeof(int));
+			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
 		}
 
 		if (chany_track == NULL) {
-			chany_track = (int **) alloc_matrix(0, nx, 1, ny, sizeof(int));
+			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
 		}
 
 		for (i = 1; i <= nx; i++)
@@ -2252,7 +2129,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	int clb_index = -2;
 
 	/* Control + mouse click to select multiple nets. */
@@ -2573,7 +2450,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 		start = max(start, grid_x);
 		end = min(end, grid_x); /* Width is 1 always */
-		assert(end >= start);
+		VTR_ASSERT(end >= start);
 		/* Make sure we are nearby */
 
 
@@ -2583,7 +2460,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			height_offset = height - 1;
 			draw_pin_off = draw_coords->pin_size;
 		} else if ((grid_y - 1) == chan_ylow) {
-			//assert((grid_y - 1) == chan_ylow);
+			//VTR_ASSERT((grid_y - 1) == chan_ylow);
 
 			iside = BOTTOM;
 
@@ -2612,7 +2489,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			draw_pin_off = -draw_coords->pin_size;
 		}
 
-		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
+		VTR_ASSERT(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -2642,20 +2519,20 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 		start = max(start, grid_y);
 		end = min(end, (grid_y + height - 1)); /* Width is 1 always */
-		assert(end >= start);
+		VTR_ASSERT(end >= start);
 		/* Make sure we are nearby */
 
 		if ((grid_x) == chan_xlow) {
 			iside = RIGHT;
 			draw_pin_off = draw_coords->pin_size;
 		} else {
-			assert((grid_x - 1) == chan_xlow);
+			VTR_ASSERT((grid_x - 1) == chan_xlow);
 			iside = LEFT;
 			draw_pin_off = -draw_coords->pin_size;
 		}
 		for (i = start; i <= end; i++) {
 			height_offset = i - grid_y;
-			assert(height_offset >= 0 && height_offset < type->height);
+			VTR_ASSERT(height_offset >= 0 && height_offset < type->height);
 			/* Once we find the location, break out, this will leave ioff pointing
 			 * to the correct offset.  If an offset is not found, the assertion after
 			 * this will fail.  With the correct routing graph, the assertion will not
@@ -2665,7 +2542,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 				break;
 			}
 		}
-		assert(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
+		VTR_ASSERT(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -2717,8 +2594,8 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	enum e_side iside, pin_side;
 	t_type_ptr type;
 
-	assert(rr_node[opin_node].type == OPIN);
-	assert(rr_node[ipin_node].type == IPIN);
+	VTR_ASSERT(rr_node[opin_node].type == OPIN);
+	VTR_ASSERT(rr_node[ipin_node].type == IPIN);
 	iside = (enum e_side)0;
 	x1 = y1 = x2 = y2 = 0;
 	width_offset = 0;
@@ -2748,7 +2625,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 			}
 		}
 	}
-	assert(found);
+	VTR_ASSERT(found);
 	draw_get_rr_pin_coords(opin_node, pin_side, width_offset, height_offset, &x1, &y1);
 
 	/* get ipin coordinate */
@@ -2774,7 +2651,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 			}
 		}
 	}
-	assert(found);
+	VTR_ASSERT(found);
 	draw_get_rr_pin_coords(ipin_node, pin_side, width_offset, height_offset, &x2, &y2);
 
 	drawline(x1, y1, x2, y2);	

@@ -6,13 +6,15 @@
 #include <cstring>
 using namespace std;
 
-#include "util.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "hash.h"
 #include "vpr_utils.h"
 #include "check_netlist.h"
-#include "assert.h"
 #include "read_xml_arch_file.h"
 
 #define ERROR_THRESHOLD 100
@@ -47,13 +49,13 @@ void check_netlist() {
 	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, g_clbs_nlist.net[i].name, i);
 		if (h_net_ptr->count != 1) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__, 
 					"Net %s has multiple drivers.\n", g_clbs_nlist.net[i].name);
 			error++;
 		}
 		error += check_connections_to_global_clb_pins(i);
 		if (error >= ERROR_THRESHOLD) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__, 
 					"Too many errors in netlist, exiting.\n");
 		}
 	}
@@ -117,25 +119,25 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
 			if (ipin == 0 && g_clbs_nlist.net[inet].is_global) {
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n", 
 						inet, g_clbs_nlist.net[inet].name, node_block_pin, iblk, block[iblk].name);
 			} else { /* Otherwise -> Error */
-				vpr_printf_error(__FILE__, __LINE__, 
+				vtr::printf_error(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
-				vpr_printf_error(__FILE__, __LINE__, 
+				vtr::printf_error(__FILE__, __LINE__, 
 						"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n", 
 						ipin, inet, g_clbs_nlist.net[inet].name, node_block_pin, iblk, block[iblk].name);
 				error++;
 			}
 
 			if (g_clbs_nlist.net[inet].is_global)
-				vpr_printf_info("Net is global, but CLB pin is not.\n");
+				vtr::printf_info("Net is global, but CLB pin is not.\n");
 			else
-				vpr_printf_info("CLB pin is global, but net is not.\n");
-			vpr_printf_info("\n");
+				vtr::printf_info("CLB pin is global, but net is not.\n");
+			vtr::printf_info("\n");
 		}
 	} /* End for all pins */
 
@@ -156,13 +158,13 @@ static int check_clb_conn(int iblk, int num_conn) {
 	    /*
 		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__, 
 					"IO blk #%d (%s) has %d pins.\n", iblk, block[iblk].name, num_conn);
 			error++;
 		}
              */
 	} else if (num_conn < 2) {
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Logic block #%d (%s) has only %d pin.\n", iblk, block[iblk].name, num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
@@ -176,11 +178,11 @@ static int check_clb_conn(int iblk, int num_conn) {
 					iclass = type->pin_class[ipin];
 
 					if (type->class_inf[iclass].type != DRIVER) {
-						vpr_printf_info("Pin is an input -- this whole block is hanging logic that should be swept in logic synthesis.\n");
-						vpr_printf_info("\tNon-fatal, but check this.\n");
+						vtr::printf_info("Pin is an input -- this whole block is hanging logic that should be swept in logic synthesis.\n");
+						vtr::printf_info("\tNon-fatal, but check this.\n");
 					} else {
-						vpr_printf_info("Pin is an output -- may be a constant generator.\n");
-						vpr_printf_info("\tNon-fatal, but check this.\n");
+						vtr::printf_info("Pin is an output -- may be a constant generator.\n");
+						vtr::printf_info("\tNon-fatal, but check this.\n");
 					}
 
 					break;
@@ -193,7 +195,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 	 * just a redundant double check.                                    */
 
 	if (num_conn > type->num_pins) {
-		vpr_printf_error(__FILE__, __LINE__, 
+		vtr::printf_error(__FILE__, __LINE__, 
 				"logic block #%d with output %s has %d pins.\n", iblk, block[iblk].name, num_conn);
 		error++;
 	}
@@ -219,21 +221,21 @@ static int check_clb_internal_nets(unsigned int iblk) {
 				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->pb_type->num_modes == 0)
 				) {
 				if (pb_route[i].prev_pb_pin_id != OPEN) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, block[iblk].name, i);
 					error++;
 				}
 			}
 			else {
 				if (pb_route[i].atom_net_idx == OPEN || pb_route[i].prev_pb_pin_id == OPEN) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, block[iblk].name, i);
 					error++;
 				}
 				else {
 					int prev_pin = pb_route[i].prev_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_idx != pb_route[i].atom_net_idx) {
-						vpr_printf_error(__FILE__, __LINE__,
+						vtr::printf_error(__FILE__, __LINE__,
 							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, block[iblk].name, i, prev_pin);
 						error++;
 					}
@@ -259,7 +261,7 @@ static int check_for_duplicated_names(void) {
 	{
 		clb_h_ptr = insert_in_hash_table(clb_hash_table, block[iblk].name, clb_count);
 		if (clb_h_ptr->count > 1) {
-			vpr_printf_error(__FILE__, __LINE__, 
+			vtr::printf_error(__FILE__, __LINE__, 
 					"Block %s has duplicated name.\n", block[iblk].name);
 			error++;
 		} else {

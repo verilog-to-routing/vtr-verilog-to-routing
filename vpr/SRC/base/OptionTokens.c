@@ -1,11 +1,9 @@
-#include "util.h"
 #include "vpr_types.h"
 #include "OptionTokens.h"
 
 /* OptionBaseTokenList is for command line arg tokens. We will track how 
  * many times each of these things exist in a file */
 struct s_TokenPair OptionBaseTokenList[] = {
-		{ "settings_file", OT_SETTINGS_FILE }, 
 		{ "nodisp", OT_NODISP }, 
 		{ "congestion_analysis", OT_CONGESTION_ANALYSIS },
 		{ "fanout_analysis", OT_FANOUT_ANALYSIS },
@@ -20,7 +18,6 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "echo_file", OT_CREATE_ECHO_FILE }, 
 		{ "gen_postsynthesis_netlist", OT_GENERATE_POST_SYNTHESIS_NETLIST }, 
 		{ "timing_analysis", OT_TIMING_ANALYSIS }, 
-		{ "timing_analyze_only_with_net_delay", OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY },
         { "slack_definition", OT_SLACK_DEFINITION },
 		{ "init_t", OT_INIT_T }, 
 		{ "alpha_t", OT_ALPHA_T }, 
@@ -33,7 +30,6 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "place_algorithm", OT_PLACE_ALGORITHM }, 
 		{ "timing_tradeoff", OT_TIMING_TRADEOFF }, 
 		{ "enable_timing_computations", OT_ENABLE_TIMING_COMPUTATIONS },
-		{ "block_dist", OT_BLOCK_DIST }, 
 		{ "place_chan_width", OT_PLACE_CHAN_WIDTH }, 
 		{ "max_router_iterations", OT_MAX_ROUTER_ITERATIONS }, 
 		{ "min_incremental_reroute_fanout", OT_MIN_INCREMENTAL_REROUTE_FANOUT },
@@ -64,6 +60,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "global_clocks", OT_GLOBAL_CLOCKS }, 
 		{ "hill_climbing", OT_HILL_CLIMBING_FLAG }, 
 		{ "sweep_hanging_nets_and_inputs", OT_SWEEP_HANGING_NETS_AND_INPUTS }, 
+		{ "absorb_buffer_luts", OT_ABSORB_BUFFER_LUTS }, 
 		{ "no_clustering", OT_SKIP_CLUSTERING }, 
 		{ "allow_unrelated_clustering", OT_ALLOW_UNRELATED_CLUSTERING }, 
 		{ "allow_early_exit", OT_ALLOW_EARLY_EXIT }, 
@@ -85,21 +82,6 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "routing_failure_predictor", OT_ROUTING_FAILURE_PREDICTOR }, /* Routing failure predictor */
 		{ "dump_rr_structs_file", OT_DUMP_RR_STRUCTS_FILE },
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-		{ "percent_wires_cut", OT_PERCENT_WIRES_CUT },
-		{ "num_cuts", OT_NUM_CUTS },
-		{ "delay_increase", OT_DELAY_INCREASE },
-		{ "placer_cost_constant", OT_PLACER_COST_CONSTANT },
-		{ "constant_type", OT_CONSTANT_TYPE },
-		{ "allow_chanx_conn", OT_ALLOW_CHANX_CONN },
-		{ "allow_fanin_transfer", OT_ALLOW_FANIN_TRANSFER },
-		{ "allow_additional_fanin", OT_ALLOW_ADDITIONAL_FANIN },
-		{ "allow_fanout_transfer", OT_ALLOW_FANOUT_TRANSFER },
-		{ "allow_additional_fanout", OT_ALLOW_ADDITIONAL_FANOUT },
-		{ "pct_interp_to_drive", OT_PCT_INTERP_TO_DRIVE },
-		{ "pct_interp_to_be_driven_by", OT_PCT_INTERP_TO_BE_DRIVEN_BY },
-#endif
-
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };
 
@@ -108,12 +90,10 @@ struct s_TokenPair OptionArgTokenList[] = {
 		{ "off", OT_OFF },
 		{ "random", OT_RANDOM }, 
 		{ "bounding_box", OT_BOUNDING_BOX }, 
-		{ "net_timing_driven", OT_NET_TIMING_DRIVEN }, 
 		{ "path_timing_driven", OT_PATH_TIMING_DRIVEN }, 
 		{ "breadth_first", OT_BREADTH_FIRST }, 
 		{ "timing_driven", OT_TIMING_DRIVEN }, 
 		{ "NO_TIMING", OT_NO_TIMING }, 
-		{ "intrinsic_delay", OT_INTRINSIC_DELAY }, 
 		{ "delay_normalized", OT_DELAY_NORMALIZED }, 
 		{ "demand_only", OT_DEMAND_ONLY }, 
 		{ "global", OT_GLOBAL }, 

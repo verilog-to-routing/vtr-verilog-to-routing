@@ -24,10 +24,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MEMORIES_H
 #define MEMORIES_H
 
-extern struct s_linked_vptr *sp_memory_list;
-extern struct s_linked_vptr *dp_memory_list;
-extern struct s_linked_vptr *memory_instances;
-extern struct s_linked_vptr *memory_port_size_list;
+extern vtr::t_linked_vptr *sp_memory_list;
+extern vtr::t_linked_vptr *dp_memory_list;
+extern vtr::t_linked_vptr *memory_instances;
+extern vtr::t_linked_vptr *memory_port_size_list;
 extern t_model *single_port_rams;
 extern t_model *dual_port_rams;
 

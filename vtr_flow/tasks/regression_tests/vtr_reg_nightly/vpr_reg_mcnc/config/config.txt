@@ -10,7 +10,7 @@ circuits_dir=benchmarks/blif/wiremap6
 archs_dir=arch/timing
 
 # Path to directory of SDC files to use
-sdc_dir=tasks/regression_tests/sdc
+sdc_dir=sdc
 
 # Add circuits to list to sweep
 circuit_list_add=alu4.pre-vpr.blif
@@ -47,5 +47,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-no_mem -starting_stage vpr -routing_failure_predictor safe -track_memory_usage
+script_params=-starting_stage vpr -track_memory_usage
 

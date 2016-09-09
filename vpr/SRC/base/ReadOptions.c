@@ -2,13 +2,16 @@
 #include <cstring>
 using namespace std;
 
-#include "util.h"
-#include "hash.h"
+#include "vtr_util.h"
+
 #include "vpr_types.h"
+#include "vpr_error.h"
+
+#include "hash.h"
 #include "OptionTokens.h"
 #include "ReadOptions.h"
-#include "read_settings.h"
 #include "globals.h"
+
 
 static bool EchoEnabled;
 
@@ -21,35 +24,33 @@ static char **outputFileNames = NULL;
 
 /******** Function prototypes ********/
 
-static char **ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token);
-static void Error(INP const char *Token);
-static void Error(const char *Token, const char* msg);
-static char **ProcessOption(INP char **Args, INOUTP t_options * Options);
-static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id);
-static char **ReadFloat(INP char **Args, OUTP float *Val);
-static char **ReadInt(INP char **Args, OUTP int *Val);
-static char **ReadOnOff(INP char **Args, OUTP bool * Val);
-static char **ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type);
-static char **ReadFixPins(INP char **Args, OUTP char **PinFile);
-static char **ReadPlaceAlgorithm(INP char **Args,
-		OUTP enum e_place_algorithm *Algo);
-static char **ReadRouterAlgorithm(INP char **Args,
-		OUTP enum e_router_algorithm *Algo);
-static char **ReadPackerAlgorithm(INP char **Args,
-		OUTP enum e_packer_algorithm *Algo);
-static char **ReadRoutingPredictor(INP char **Args,
-		OUTP enum e_routing_failure_predictor *RoutingPred);
-static char **ReadBaseCostType(INP char **Args,
-		OUTP enum e_base_cost_type *BaseCostType);
-static char **ReadRouteType(INP char **Args, OUTP enum e_route_type *Type);
-static char **ReadString(INP char **Args, OUTP char **Val);
-static char **ReadChar(INP char **Args, OUTP char *Val);
+static char **ReadBaseToken(char **Args, enum e_OptionBaseToken *Token);
+static void Error(const char *Token);
+static char **ProcessOption(char **Args, t_options * Options);
+static char **ReadFloat(char **Args, float *Val);
+static char **ReadInt(char **Args, int *Val);
+static char **ReadOnOff(char **Args, bool * Val);
+static char **ReadClusterSeed(char **Args, enum e_cluster_seed *Type);
+static char **ReadFixPins(char **Args, char **PinFile);
+static char **ReadPlaceAlgorithm(char **Args,
+		enum e_place_algorithm *Algo);
+static char **ReadRouterAlgorithm(char **Args,
+		enum e_router_algorithm *Algo);
+static char **ReadPackerAlgorithm(char **Args,
+		enum e_packer_algorithm *Algo);
+static char **ReadRoutingPredictor(char **Args,
+		enum e_routing_failure_predictor *RoutingPred);
+static char **ReadBaseCostType(char **Args,
+		enum e_base_cost_type *BaseCostType);
+static char **ReadRouteType(char **Args, enum e_route_type *Type);
+static char **ReadString(char **Args, char **Val);
+static char **ReadChar(char **Args, char *Val);
 
 /******** Globally Accessible Function ********/
 /* Determines whether timing analysis should be on or off. 
  Unless otherwise specified, always default to timing.
  */
-bool IsTimingEnabled(INP t_options *Options) {
+bool IsTimingEnabled(const t_options *Options) {
 	/* First priority to the '--timing_analysis' flag */
 	if (Options->Count[OT_TIMING_ANALYSIS]) {
 		return Options->TimingAnalysis;
@@ -60,7 +61,7 @@ bool IsTimingEnabled(INP t_options *Options) {
 /* Determines whether file echo should be on or off. 
  Unless otherwise specified, always default to on.
  */
-bool IsEchoEnabled(INP t_options *Options) {
+bool IsEchoEnabled(const t_options *Options) {
 	/* First priority to the '--echo_file' flag */
 	if (Options->Count[OT_CREATE_ECHO_FILE]) {
 		return Options->CreateEchoFile;
@@ -90,7 +91,7 @@ void SetPostSynthesisOption(bool post_synthesis_enabled){
   Generate_PostSynthesis_Netlist = post_synthesis_enabled;
 }
 
-bool IsPostSynthesisEnabled(INP t_options *Options) {
+bool IsPostSynthesisEnabled(const t_options *Options) {
   /* First priority to the '--generate_postsynthesis_netlist' flag */
   if (Options->Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
     return Options->Generate_Post_Synthesis_Netlist;
@@ -113,7 +114,7 @@ void setEchoFileName(enum e_echo_files echo_option, const char *name) {
 	if(echoFileNames[(int)echo_option] != NULL) {
 		free(echoFileNames[(int)echo_option]);
 	}
-	echoFileNames[(int)echo_option] = my_strdup(name);
+	echoFileNames[(int)echo_option] = vtr::strdup(name);
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {
@@ -128,8 +129,8 @@ char *getEchoFileName(enum e_echo_files echo_option) {
 }
 
 void alloc_and_load_echo_file_info() {
-	echoFileEnabled = (bool*)my_calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
-	echoFileNames = (char**)my_calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
+	echoFileEnabled = (bool*)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
+	echoFileNames = (char**)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
 
 	setAllEchoFileEnabled(true);
 
@@ -172,6 +173,7 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
 	setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
 	setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
+	setEchoFileName(E_ECHO_ENDPOINT_TIMING, "endpoint_timing.echo.json");
 }
 
 void free_echo_file_info() {
@@ -196,7 +198,7 @@ void setOutputFileName(enum e_output_files ename, const char *name, const char *
 	if(outputFileNames[(int)ename] != NULL) {
 		free(outputFileNames[(int)ename]);
 	}
-	outputFileNames[(int)ename] = my_strdup(name);
+	outputFileNames[(int)ename] = vtr::strdup(name);
 }
 
 char *getOutputFileName(enum e_output_files ename) {
@@ -208,9 +210,9 @@ void alloc_and_load_output_file_names(const char *default_name) {
 
 	if(outputFileNames == NULL) {
 
-		outputFileNames = (char**)my_calloc((int)E_FILE_END_TOKEN, sizeof(char*));
+		outputFileNames = (char**)vtr::calloc((int)E_FILE_END_TOKEN, sizeof(char*));
 
-		name = (char*)my_malloc((strlen(default_name) + 40) * sizeof(char));
+		name = (char*)vtr::malloc((strlen(default_name) + 40) * sizeof(char));
 		sprintf(name, "%s.critical_path.out", default_name);
 		setOutputFileName(E_CRIT_PATH_FILE, name, default_name);
 	
@@ -242,7 +244,7 @@ void free_output_file_names() {
 
 /******** Subroutine implementations ********/
 
-void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
+void ReadOptions(int argc, const char **argv, t_options * Options) {
 	char **Args, **head;
 	int offset;
 	
@@ -254,7 +256,7 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 	 * Skips the first arg as it is the program image path */
 	--argc;
 	++argv;
-	head = Args = (char **) my_malloc(sizeof(char *) * (argc + 1));
+	head = Args = (char **) vtr::malloc(sizeof(char *) * (argc + 1));
 	memcpy(Args, argv, (sizeof(char *) * argc));
 	Args[argc] = NULL;
 
@@ -269,47 +271,26 @@ void ReadOptions(INP int argc, INP char **argv, OUTP t_options * Options) {
 			*Args += 1; /* Skip the prefix */
 			Args = ProcessOption(Args, Options);
 		} else if (NULL == Options->ArchFile) {
-			Options->ArchFile = my_strdup(*Args);
-			vpr_printf_info("Architecture file: %s\n", Options->ArchFile);
+			Options->ArchFile = vtr::strdup(*Args);
 			++Args;
 		} else if (NULL == Options->CircuitName) {
-			Options->CircuitName = my_strdup(*Args);
+			Options->CircuitName = vtr::strdup(*Args);
 			/*if the user entered the circuit name with the .blif extension, remove it now*/
 			offset = strlen(Options->CircuitName) - 5;
 			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
 				Options->CircuitName[offset] = '\0';
 			}
-			vpr_printf_info("Circuit name: %s.blif\n", Options->CircuitName);
-			vpr_printf_info("\n");
 			++Args;
 		} else {
 			/* Not an option and arch and net already specified so fail */
 			Error(*Args);
-		}
-
-		if (Options->Count[OT_SETTINGS_FILE] != Options->read_settings)
-		{
-			int tmp_argc = 0;
-			char **tmp_argv = NULL;
-			t_options SettingsFileOptions;
-
-			tmp_argc = read_settings_file(Options->SettingsFile, &tmp_argv);
-
-			ReadOptions(tmp_argc, tmp_argv, &SettingsFileOptions);
-
-			MergeOptions(Options, &SettingsFileOptions, Options->Count[OT_SETTINGS_FILE]);
-
-			Options->read_settings = Options->Count[OT_SETTINGS_FILE];
-
-			/* clean up local data structures */
-			free(tmp_argv);
 		}
 	}
 	free(head);
 }
 
 static char **
-ProcessOption(INP char **Args, INOUTP t_options * Options) {
+ProcessOption(char **Args, t_options * Options) {
 	enum e_OptionBaseToken Token;
 	char **PrevArgs;
 
@@ -341,8 +322,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadString(Args, &Options->RouteFile);
 	case OT_SDC_FILE:
 		return ReadString(Args, &Options->SDCFile);
-	case OT_SETTINGS_FILE:
-		return ReadString(Args, &Options->SettingsFile);
 	case OT_DUMP_RR_STRUCTS_FILE:
 		return ReadString(Args, &Options->dump_rr_structs_file);
 		/* General Options */
@@ -359,8 +338,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return Args;
     case OT_SLACK_DEFINITION:
         return ReadChar(Args, &Options->SlackDefinition);
-	case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
-		return ReadFloat(Args, &Options->constant_net_delay);
 	case OT_FAST:
 	case OT_FULL_STATS:
 		return Args;
@@ -381,6 +358,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadOnOff(Args, &Options->hill_climbing_flag);
 	case OT_SWEEP_HANGING_NETS_AND_INPUTS:
 		return ReadOnOff(Args, &Options->sweep_hanging_nets_and_inputs);
+	case OT_ABSORB_BUFFER_LUTS:
+		return ReadOnOff(Args, &Options->absorb_buffer_luts);
 	case OT_TIMING_DRIVEN_CLUSTERING:
 		return ReadOnOff(Args, &Options->timing_driven);
 	case OT_CLUSTER_SEED:
@@ -429,8 +408,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 		return ReadFixPins(Args, &Options->PinFile);
 	case OT_ENABLE_TIMING_COMPUTATIONS:
 		return ReadOnOff(Args, &Options->ShowPlaceTiming);
-	case OT_BLOCK_DIST:
-		return ReadInt(Args, &Options->block_dist);
 
 		/* Placement Options Valid Only for Timing-Driven Placement */
 	case OT_TIMING_TRADEOFF:
@@ -486,35 +463,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_ROUTING_FAILURE_PREDICTOR:
 		return ReadRoutingPredictor(Args, &Options->routing_failure_predictor);
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	case OT_PERCENT_WIRES_CUT:
-		return ReadInt(Args, &Options->percent_wires_cut);
-	case OT_NUM_CUTS:
-		return ReadInt(Args, &Options->num_cuts);
-	case OT_DELAY_INCREASE:
-		return ReadInt(Args, &Options->delay_increase);
-	case OT_PLACER_COST_CONSTANT:
-		return ReadFloat(Args, &Options->placer_cost_constant);
-	case OT_CONSTANT_TYPE:
-		return ReadInt(Args, &Options->constant_type);
-		
-	/* used for interposer-based architecture experiments */
-	case OT_ALLOW_CHANX_CONN:
-		return ReadOnOff(Args, &Options->allow_chanx_interposer_connections);
-	case OT_ALLOW_FANIN_TRANSFER:
-		return ReadOnOff(Args, &Options->transfer_interposer_fanins);
-	case OT_ALLOW_ADDITIONAL_FANIN:
-		return ReadOnOff(Args, &Options->allow_additional_interposer_fanins);
-	case OT_ALLOW_FANOUT_TRANSFER:
-		return ReadOnOff(Args, &Options->transfer_interposer_fanouts);
-	case OT_ALLOW_ADDITIONAL_FANOUT:
-		return ReadOnOff(Args, &Options->allow_additional_interposer_fanouts);
-	case OT_PCT_INTERP_TO_DRIVE:
-		return ReadInt(Args, &Options->pct_of_interposer_nodes_each_chany_can_drive);
-	case OT_PCT_INTERP_TO_BE_DRIVEN_BY:
-		return ReadInt(Args, &Options->pct_of_chany_wires_an_interposer_node_can_drive);
-#endif
-
 		/* Power options */
 	case OT_POWER:
 		return Args;
@@ -532,243 +480,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	}
 }
 
-/*
- * Map options set in the source t_options to a target t_options
- * structure.  Existing values in the destination have priority
- * and will not be overwritten
- */
-static void MergeOptions(INOUTP t_options * dest, INP t_options * src, int id)
-{
-	int Token;
-
-	for (Token = 0; Token < OT_BASE_UNKNOWN; Token++)
-	{
-		/* Don't override values already set in the
-		 * target destination.  Also do not process
-		 * Tokens that are not present in the source.
-		 */
-		if ((dest->Count[Token] || (!src->Count[Token])))
-			continue;
-
-		dest->Count[Token] = src->Count[Token];
-		dest->Provenance[Token] = id;
-
-		switch (Token) {
-			/* File naming options */
-		case OT_BLIF_FILE:
-			dest->BlifFile = src->BlifFile;
-			break;
-		case OT_NET_FILE:
-			dest->NetFile = src->NetFile;
-			break;
-		case OT_PLACE_FILE:
-			dest->PlaceFile = src->PlaceFile;
-			break;
-		case OT_ROUTE_FILE:
-			dest->RouteFile = src->RouteFile;
-			break;
-		case OT_SETTINGS_FILE:
-			dest->SettingsFile = src->SettingsFile;
-			break;
-		case OT_SDC_FILE:
-			dest->SDCFile = src->SDCFile;
-			break;
-			/* General Options */
-		case OT_NODISP:
-		case OT_CONGESTION_ANALYSIS:
-		case OT_FANOUT_ANALYSIS:
-        case OT_SWITCH_USAGE_ANALYSIS:
-			break;
-		case OT_AUTO:
-			dest->GraphPause = src->GraphPause;
-			break;
-		case OT_PACK:
-		case OT_ROUTE:
-		case OT_PLACE:
-			break;
-		case OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY:
-			dest->constant_net_delay = src->constant_net_delay;
-			break;
-		case OT_GEN_NELIST_AS_BLIF:
-			break;
-		case OT_FAST:
-		case OT_FULL_STATS:
-			break;
-		case OT_TIMING_ANALYSIS:
-			dest->TimingAnalysis = src->TimingAnalysis;
-			break;
-		case OT_OUTFILE_PREFIX:
-			dest->out_file_prefix = src->out_file_prefix;
-			break;
-		case OT_CREATE_ECHO_FILE:
-			dest->CreateEchoFile = src->CreateEchoFile;
-			break;
-
-			/* Clustering Options */
-		case OT_GLOBAL_CLOCKS:
-			dest->global_clocks = src->global_clocks;
-			break;
-		case OT_HILL_CLIMBING_FLAG:
-			dest->hill_climbing_flag = src->hill_climbing_flag;
-			break;
-		case OT_SWEEP_HANGING_NETS_AND_INPUTS:
-			dest->sweep_hanging_nets_and_inputs = src->sweep_hanging_nets_and_inputs;
-			break;
-		case OT_TIMING_DRIVEN_CLUSTERING:
-			dest->timing_driven = src->timing_driven;
-			break;
-		case OT_CLUSTER_SEED:
-			dest->cluster_seed_type = src->cluster_seed_type;
-			break;
-		case OT_ALPHA_CLUSTERING:
-			dest->alpha = src->alpha;
-			break;
-		case OT_BETA_CLUSTERING:
-			dest->beta = src->beta;
-			break;
-		case OT_RECOMPUTE_TIMING_AFTER:
-			dest->recompute_timing_after = src->recompute_timing_after;
-			break;
-		case OT_CLUSTER_BLOCK_DELAY:
-			dest->block_delay = src->block_delay;
-			break;
-		case OT_ALLOW_UNRELATED_CLUSTERING:
-			dest->allow_unrelated_clustering = src->allow_unrelated_clustering;
-			break;
-		case OT_ALLOW_EARLY_EXIT:
-			dest->allow_early_exit = src->allow_early_exit;
-			break;
-		case OT_INTRA_CLUSTER_NET_DELAY:
-			dest->intra_cluster_net_delay = src->intra_cluster_net_delay;
-			break;
-		case OT_INTER_CLUSTER_NET_DELAY:
-			dest->inter_cluster_net_delay = src->inter_cluster_net_delay;
-			break;
-		case OT_CONNECTION_DRIVEN_CLUSTERING:
-			dest->connection_driven = src->connection_driven;
-			break;
-		case OT_SKIP_CLUSTERING:
-			break;
-		case OT_PACKER_ALGORITHM:
-			dest->packer_algorithm = src->packer_algorithm;
-			break;
-
-			/* Placer Options */
-		case OT_PLACE_ALGORITHM:
-			dest->PlaceAlgorithm = src->PlaceAlgorithm;
-			break;
-		case OT_INIT_T:
-			dest->PlaceInitT = src->PlaceInitT;
-			break;
-		case OT_EXIT_T:
-			dest->PlaceExitT = src->PlaceExitT;
-			break;
-		case OT_ALPHA_T:
-			dest->PlaceAlphaT = src->PlaceAlphaT;
-			break;
-		case OT_INNER_NUM:
-			dest->PlaceInnerNum = src->PlaceInnerNum;
-			break;
-		case OT_SEED:
-			dest->Seed = src->Seed;
-			break;
-		case OT_PLACE_COST_EXP:
-			dest->place_cost_exp = src->place_cost_exp;
-			break;
-		case OT_PLACE_CHAN_WIDTH:
-			dest->PlaceChanWidth = src->PlaceChanWidth;
-			break;
-		case OT_FIX_PINS:
-			dest->PinFile = src->PinFile;
-			break;
-		case OT_ENABLE_TIMING_COMPUTATIONS:
-			dest->ShowPlaceTiming = src->ShowPlaceTiming;
-			break;
-		case OT_BLOCK_DIST:
-			dest->block_dist = src->block_dist;
-			break;
-
-			/* Placement Options Valid Only for Timing-Driven Placement */
-		case OT_TIMING_TRADEOFF:
-			dest->PlaceTimingTradeoff = src->PlaceTimingTradeoff;
-			break;
-		case OT_RECOMPUTE_CRIT_ITER:
-			dest->RecomputeCritIter = src->RecomputeCritIter;
-			break;
-		case OT_INNER_LOOP_RECOMPUTE_DIVIDER:
-			dest->inner_loop_recompute_divider = src->inner_loop_recompute_divider;
-			break;
-		case OT_TD_PLACE_EXP_FIRST:
-			dest->place_exp_first = src->place_exp_first;
-			break;
-		case OT_TD_PLACE_EXP_LAST:
-			dest->place_exp_last = src->place_exp_last;
-			break;
-
-			/* Router Options */
-		case OT_MAX_ROUTER_ITERATIONS:
-			dest->max_router_iterations = src->max_router_iterations;
-			break;
-		case OT_MIN_INCREMENTAL_REROUTE_FANOUT:
-			dest->min_incremental_reroute_fanout = src->min_incremental_reroute_fanout;
-			break;
-		case OT_BB_FACTOR:
-			dest->bb_factor = src->bb_factor;
-			break;
-		case OT_INITIAL_PRES_FAC:
-			dest->initial_pres_fac = src->initial_pres_fac;
-			break;
-		case OT_PRES_FAC_MULT:
-			dest->pres_fac_mult = src->pres_fac_mult;
-			break;
-		case OT_ACC_FAC:
-			dest->acc_fac = src->acc_fac;
-			break;
-		case OT_FIRST_ITER_PRES_FAC:
-			dest->first_iter_pres_fac = src->first_iter_pres_fac;
-			break;
-		case OT_BEND_COST:
-			dest->bend_cost = src->bend_cost;
-			break;
-		case OT_ROUTE_TYPE:
-			dest->RouteType = src->RouteType;
-			break;
-		case OT_VERIFY_BINARY_SEARCH:
-			break;
-		case OT_ROUTE_CHAN_WIDTH:
-			dest->RouteChanWidth = src->RouteChanWidth;
-			break;
-		case OT_TRIM_EMPTY_CHAN:
-			dest->TrimEmptyChan = src->TrimEmptyChan;
-			break;
-		case OT_TRIM_OBS_CHAN:
-			dest->TrimObsChan = src->TrimObsChan;
-			break;
-		case OT_ROUTER_ALGORITHM:
-			dest->RouterAlgorithm = src->RouterAlgorithm;
-			break;
-		case OT_BASE_COST_TYPE:
-			dest->base_cost_type = src->base_cost_type;
-			break;
-
-			/* Routing options valid only for timing-driven routing */
-		case OT_ASTAR_FAC:
-			dest->astar_fac = src->astar_fac;
-			break;
-		case OT_MAX_CRITICALITY:
-			dest->max_criticality = src->max_criticality;
-			break;
-		case OT_CRITICALITY_EXP:
-			dest->criticality_exp = src->criticality_exp;
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 static char **
-ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token) {
+ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
 	struct s_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
@@ -790,7 +503,7 @@ ReadBaseToken(INP char **Args, OUTP enum e_OptionBaseToken *Token) {
 }
 
 static char **
-ReadToken(INP char **Args, OUTP enum e_OptionArgToken *Token) {
+ReadToken(char **Args, enum e_OptionArgToken *Token) {
 	struct s_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
@@ -822,19 +535,8 @@ static void Error(const char *Token) {
 	}
 }
 
-//Same as above, but with a context-dependant message
-static void Error(INP const char *Token, const char* msg) {
-	if (Token) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-		"Unexpected token '%s' on command line. %s\n", Token, msg);
-	} else {
-		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, 
-		"Missing token at end of command line. %s\n", msg);
-	}
-}
-
 static char **
-ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
+ReadClusterSeed(char **Args, enum e_cluster_seed *Type) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -851,14 +553,14 @@ ReadClusterSeed(INP char **Args, OUTP enum e_cluster_seed *Type) {
 		*Type = VPACK_BLEND;
 		break;
 	default:
-		Error(*PrevArgs, "Expected cluster seed specification.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
 }
 
 static char **
-ReadPackerAlgorithm(INP char **Args, OUTP enum e_packer_algorithm *Algo) {
+ReadPackerAlgorithm(char **Args, enum e_packer_algorithm *Algo) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -872,7 +574,7 @@ ReadPackerAlgorithm(INP char **Args, OUTP enum e_packer_algorithm *Algo) {
 		*Algo = PACK_BRUTE_FORCE;
 		break;
 	default:
-		Error(*PrevArgs, "Expected packing algorithm specification.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
@@ -880,7 +582,7 @@ ReadPackerAlgorithm(INP char **Args, OUTP enum e_packer_algorithm *Algo) {
 
 
 static char **
-ReadRouterAlgorithm(INP char **Args, OUTP enum e_router_algorithm *Algo) {
+ReadRouterAlgorithm(char **Args, enum e_router_algorithm *Algo) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -897,14 +599,14 @@ ReadRouterAlgorithm(INP char **Args, OUTP enum e_router_algorithm *Algo) {
 		*Algo = TIMING_DRIVEN;
 		break;
 	default:
-		Error(*PrevArgs, "Expected routing algorithm specification.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
 }
 
 static char **
-ReadRoutingPredictor(INP char **Args, OUTP enum e_routing_failure_predictor *RoutingPred) {
+ReadRoutingPredictor(char **Args, enum e_routing_failure_predictor *RoutingPred) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -921,23 +623,20 @@ ReadRoutingPredictor(INP char **Args, OUTP enum e_routing_failure_predictor *Rou
 		*RoutingPred = AGGRESSIVE;
 		break;
 	default:
-		Error(*PrevArgs, "Expected routing predictor specification.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
 }
 
 static char **
-ReadBaseCostType(INP char **Args, OUTP enum e_base_cost_type *BaseCostType) {
+ReadBaseCostType(char **Args, enum e_base_cost_type *BaseCostType) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
 	PrevArgs = Args;
 	Args = ReadToken(Args, &Token);
 	switch (Token) {
-	case OT_INTRINSIC_DELAY:
-		*BaseCostType = INTRINSIC_DELAY;
-		break;
 	case OT_DELAY_NORMALIZED:
 		*BaseCostType = DELAY_NORMALIZED;
 		break;
@@ -945,14 +644,14 @@ ReadBaseCostType(INP char **Args, OUTP enum e_base_cost_type *BaseCostType) {
 		*BaseCostType = DEMAND_ONLY;
 		break;
 	default:
-		Error(*PrevArgs, "Expected router base cost type specification.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
 }
 
 static char **
-ReadRouteType(INP char **Args, OUTP enum e_route_type *Type) {
+ReadRouteType(char **Args, enum e_route_type *Type) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -966,14 +665,14 @@ ReadRouteType(INP char **Args, OUTP enum e_route_type *Type) {
 		*Type = DETAILED;
 		break;
 	default:
-		Error(*PrevArgs, "Expected routing type specification.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
 }
 
 static char **
-ReadPlaceAlgorithm(INP char **Args, OUTP enum e_place_algorithm *Algo) {
+ReadPlaceAlgorithm(char **Args, enum e_place_algorithm *Algo) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -983,21 +682,18 @@ ReadPlaceAlgorithm(INP char **Args, OUTP enum e_place_algorithm *Algo) {
 	case OT_BOUNDING_BOX:
 		*Algo = BOUNDING_BOX_PLACE;
 		break;
-	case OT_NET_TIMING_DRIVEN:
-		*Algo = NET_TIMING_DRIVEN_PLACE;
-		break;
 	case OT_PATH_TIMING_DRIVEN:
 		*Algo = PATH_TIMING_DRIVEN_PLACE;
 		break;
 	default:
-		Error(*PrevArgs, "Expected placement algorithm specifcation.");
+		Error(*PrevArgs);
 	}
 
 	return Args;
 }
 
 static char **
-ReadFixPins(INP char **Args, OUTP char **PinFile) {
+ReadFixPins(char **Args, char **PinFile) {
 	enum e_OptionArgToken Token;
 	int Len;
 	char **PrevArgs = Args;
@@ -1005,14 +701,14 @@ ReadFixPins(INP char **Args, OUTP char **PinFile) {
 	Args = ReadToken(Args, &Token);
 	if (OT_RANDOM != Token) {
 		Len = 1 + strlen(*PrevArgs);
-		*PinFile = (char *) my_malloc(Len * sizeof(char));
+		*PinFile = (char *) vtr::malloc(Len * sizeof(char));
 		memcpy(*PinFile, *PrevArgs, Len);
 	}
 	return Args;
 }
 
 static char **
-ReadOnOff(INP char **Args, OUTP bool * Val) {
+ReadOnOff(char **Args, bool * Val) {
 	enum e_OptionArgToken Token;
 	char **PrevArgs;
 
@@ -1026,17 +722,17 @@ ReadOnOff(INP char **Args, OUTP bool * Val) {
 		*Val = false;
 		break;
 	default:
-		Error(*PrevArgs, "Expected 'on' or 'off'.");
+		Error(*PrevArgs);
 	}
 	return Args;
 }
 
 static char **
-ReadInt(INP char **Args, OUTP int *Val) {
+ReadInt(char **Args, int *Val) {
 	if (NULL == *Args)
-		Error(*Args, "Expected integer.");
+		Error(*Args);
 	if ((**Args > '9') || (**Args < '0'))
-		Error(*Args, "Expected integer.");
+		Error(*Args);
 
 	*Val = atoi(*Args);
 
@@ -1044,14 +740,14 @@ ReadInt(INP char **Args, OUTP int *Val) {
 }
 
 static char **
-ReadFloat(INP char ** Args, OUTP float *Val) {
+ReadFloat(char ** Args, float *Val) {
 	if (NULL == *Args) {
-		Error(*Args, "Expected float.");
+		Error(*Args);
 	}
 
 	if ((**Args != '-') && (**Args != '.')
 			&& ((**Args > '9') || (**Args < '0'))) {
-		Error(*Args, "Expected float.");
+		Error(*Args);
 	}
 
 	*Val = atof(*Args);
@@ -1060,20 +756,20 @@ ReadFloat(INP char ** Args, OUTP float *Val) {
 }
 
 static char **
-ReadString(INP char **Args, OUTP char **Val) {
+ReadString(char **Args, char **Val) {
 	if (NULL == *Args) {
-		Error(*Args, "Expected string.");
+		Error(*Args);
 	}
 
-	*Val = my_strdup(*Args);
+	*Val = vtr::strdup(*Args);
 
 	return ++Args;
 }
 
 static char **
-ReadChar(INP char **Args, OUTP char *Val) {
+ReadChar(char **Args, char *Val) {
     if (NULL == *Args) {
-        Error(*Args, "Expected character.");
+        Error(*Args);
     }
 
     *Val = (*Args)[0];

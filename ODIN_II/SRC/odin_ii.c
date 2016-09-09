@@ -24,9 +24,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
+#include "vtr_error.h"
+
 #include "globals.h"
 #include "types.h"
-#include "util.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
@@ -100,7 +102,11 @@ int main(int argc, char **argv)
 		XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types, &ClockDetails, &PowerDetails);
 		#endif
 		#ifdef VPR6
-		XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
+        try {
+            XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
+        } catch(vtr::VtrError& vtr_error) {
+            printf("Failed to load architecture file: %s\n", vtr_error.what());
+        }
 		#endif
 	}
 

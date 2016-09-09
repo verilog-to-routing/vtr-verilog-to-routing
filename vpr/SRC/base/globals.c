@@ -71,7 +71,7 @@ struct s_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
 
 int num_rr_nodes = 0;
 t_rr_node *rr_node = NULL; /* [0..(num_rr_nodes-1)] */
-t_ivec ***rr_node_indices = NULL;
+vtr::t_ivec ***rr_node_indices = NULL;
 
 int num_rr_indexed_data = 0;
 t_rr_indexed_data *rr_indexed_data = NULL; /* [0..(num_rr_indexed_data-1)] */
@@ -95,7 +95,7 @@ map<int, int> *g_switch_fanin_remap = NULL; /* an array of map. array index: [0.
 int **rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */
 
 /* primiary inputs removed from circuit */
-struct s_linked_vptr *circuit_p_io_removed = NULL;
+vtr::t_linked_vptr *circuit_p_io_removed = NULL;
 
 /********** Structures representing timing graph information */
 float pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */
@@ -103,25 +103,3 @@ const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with h
 
 /********** Structures representing the global clock network */
 t_clock_arch * g_clock_arch;
-
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-/********** Interposer-based architecture parameters **************************/
-int percent_wires_cut = 0;
-int num_cuts = 0;
-int delay_increase = 0;
-float placer_cost_constant = 0.0;
-int constant_type = 0;
-
-/* Mapping from edges to edges with increased delay */
-int *increased_delay_edge_map = NULL;
-
-/* architecture experimentation */
-bool allow_chanx_interposer_connections = true;
-bool transfer_interposer_fanins = false;
-bool allow_additional_interposer_fanins = false;
-int  pct_of_interposer_nodes_each_chany_can_drive = 0;
-bool transfer_interposer_fanouts = false;
-bool allow_additional_interposer_fanouts = false;
-int  pct_of_chany_wires_an_interposer_node_can_drive= 0;
-int* arch_cut_locations = 0;
-#endif

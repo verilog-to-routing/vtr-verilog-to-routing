@@ -43,6 +43,8 @@ use File::Spec;
 use POSIX;
 use File::Copy;
 use FindBin;
+use File::Find;
+use File::Basename;
 
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
 use XML::TreePP;
@@ -80,6 +82,7 @@ my $stage_idx_vpr    = 5;
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
 my $architecture_file_path = expand_user_path( shift(@ARGV) );
 my $sdc_file_path;
+my $pad_file_path;
 
 my $token;
 my $ext;
@@ -110,13 +113,17 @@ my $memory_tracker          = "/usr/bin/time";
 my @memory_tracker_args     = ("-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
-
+my $valgrind 		    = 0;		
+my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
 		$sdc_file_path = expand_user_path( shift(@ARGV) );
+	}
+	elsif ( $token eq "-fix_pins" and $ARGV[0] ne "random") {
+		$pad_file_path = $vtr_flow_path . shift(@ARGV);
 	}
 	elsif ( $token eq "-starting_stage" ) {
 		$starting_stage = stage_index( shift(@ARGV) );
@@ -148,6 +155,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-timeout" ) {
         $timeout = shift(@ARGV);
+    }
+    elsif ( $token eq "-valgrind" ) {
+        $valgrind = 1;
     }
 	elsif ( $token eq "-no_mem" ) {
 		$has_memory = 0;
@@ -187,6 +197,7 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ( $token eq "-check_equivalent" ) {
 		$check_equivalent = "on";
+		$keep_intermediate_files = 1;
 	}
 	elsif ( $token eq "-gen_postsynthesis_netlist" ) {
 		$gen_postsynthesis_netlist = "on";
@@ -267,6 +278,12 @@ if ( !-e $sdc_file_path ) {
 	my $sdc_file_path;
 }
 
+if ( !-e $pad_file_path ) {
+	# open( OUTPUT_FILE, ">$sdc_file_path" ); 
+	# close ( OUTPUT_FILE );
+	my $pad_file_path;
+}
+
 my $vpr_path; if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) { $vpr_path = "$vtr_flow_path/../vpr/vpr"; ( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)"; } my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
 if (    $stage_idx_odin >= $starting_stage
 	and $stage_idx_odin <= $ending_stage )
@@ -307,18 +324,13 @@ if ( $stage_idx_ace >= $starting_stage and $stage_idx_ace <= $ending_stage and $
 	  or die "Cannot find ACE executable ($ace_path)";
 }
 
-# Get circuit name (everything up to the first '.' in the circuit file)
-my ( $vol, $path, $circuit_file_name ) =
-  File::Spec->splitpath($circuit_file_path);
-$circuit_file_name =~ m/(.*)[.].*?/;
-my $benchmark_name = $1;
+#Extract the circuit/architecture name and filename
+my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path, '\.[^\.]*');
+my $circuit_file_name = $benchmark_name . $circuit_suffix;
 
-# Get architecture name
-$architecture_file_path =~ m/.*\/(.*?.xml)/;
-my $architecture_file_name = $1;
+my ($architecture_name, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
+my $architecture_file_name = $architecture_name . $arch_suffix;
 
-$architecture_file_name =~ m/(.*).xml$/;
-my $architecture_name = $1;
 print "$architecture_name/$benchmark_name...";
 
 # Get Memory Size
@@ -341,27 +353,24 @@ if ( $lut_size < 1 ) {
 # Get memory size
 $mem_size = xml_find_mem_size($xml_tree);
 
-my $odin_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
+my $odin_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_odin);
 my $odin_output_file_path = "$temp_dir$odin_output_file_name";
 
-my $abc_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
+my $abc_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_abc);
 my $abc_output_file_path = "$temp_dir$abc_output_file_name";
 
-my $ace_output_blif_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_ace);
+my $ace_output_blif_name = "$benchmark_name" . file_ext_for_stage($stage_idx_ace);
 my $ace_output_blif_path = "$temp_dir$ace_output_blif_name";
 
 my $ace_output_act_name = "$benchmark_name" . ".act";
 my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 
-my $prevpr_output_file_name =
-  "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr);
+my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr);
 my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
+my $vpr_postsynthesis_netlist = "";
 
 #system"cp $abc_rc_path $temp_dir";
 #system "cp $architecture_path $temp_dir";
@@ -372,8 +381,7 @@ my $architecture_file_path_new = "$temp_dir$architecture_file_name";
 copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
-my $circuit_file_path_new =
-  "$temp_dir$benchmark_name" . file_ext_for_stage( $starting_stage - 1 );
+my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage( $starting_stage - 1 );
 copy( $circuit_file_path, $circuit_file_path_new );
 $circuit_file_path = $circuit_file_path_new;
 
@@ -393,20 +401,17 @@ if ( $starting_stage <= $stage_idx_odin and !$error_code ) {
 	#system "sed 's/PPP/$mem_size/g' < temp3.xml > circuit_config.xml";
 
 	file_find_and_replace( $odin_config_file_path, "XXX", $circuit_file_name );
-	file_find_and_replace( $odin_config_file_path, "YYY",
-		$architecture_file_name );
-	file_find_and_replace( $odin_config_file_path, "ZZZ",
-		$odin_output_file_name );
+	file_find_and_replace( $odin_config_file_path, "YYY", $architecture_file_name );
+	file_find_and_replace( $odin_config_file_path, "ZZZ", $odin_output_file_name );
 	file_find_and_replace( $odin_config_file_path, "PPP", $mem_size );
 	file_find_and_replace( $odin_config_file_path, "MMM", $min_hard_mult_size );
 	file_find_and_replace( $odin_config_file_path, "AAA", $min_hard_adder_size );
 
 	if ( !$error_code ) {
-		$q =
-		  &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
+		$q = &system_with_timeout( "$odin2_path", "odin.out", $timeout, $temp_dir,
 			"-c", $odin_config_file_name );
 
-		if ( -e $odin_output_file_path ) {
+		if ( -e $odin_output_file_path and $q eq "success") {
 			if ( !$keep_intermediate_files ) {
 				system "rm -f ${temp_dir}*.dot";
 				system "rm -f ${temp_dir}*.v";
@@ -430,11 +435,20 @@ if (    $starting_stage <= $stage_idx_abc
     my $abc_commands="read $odin_output_file_name; time; resyn; resyn2; if -K $lut_size; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; write_hie $odin_output_file_name $abc_output_file_name; print_stats";
 
     if ($abc_quote_addition) {$abc_commands = "'" . $abc_commands . "'";}
+    
+    #added so that valgrind will not run on abc because of existing memory errors 
+    if ($valgrind) {
+            $valgrind = 0;
+	    $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+		$abc_commands);
+            $valgrind = 1;
+    }
+    else {
+	$q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
+            $abc_commands);
+    }
 
-    $q = &system_with_timeout( $abc_path, "abc.out", $timeout, $temp_dir, "-c",
-        $abc_commands);
-
-	if ( -e $abc_output_file_path ) {
+	if ( -e $abc_output_file_path and $q eq "success") {
 
 		#system "rm -f abc.out";
 		if ( !$keep_intermediate_files ) {
@@ -462,8 +476,8 @@ if (    $starting_stage <= $stage_idx_ace
 		"-o",      $ace_output_act_name,
 		"-s", $seed
 	);
-
-	if ( -e $ace_output_blif_path ) {
+	
+	if ( -e $ace_output_blif_path and $q eq "success") {
 		if ( !$keep_intermediate_files ) {
 			system "rm -f $abc_output_file_path";
 			#system "rm -f ${temp_dir}*.rc";
@@ -534,6 +548,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "--sdc_file" );				  
 			push( @vpr_args, "$sdc_file_path");
 		}
+		if (-e $pad_file_path){
+			push( @vpr_args, "-fix_pins" );				  
+			push( @vpr_args, "$pad_file_path");
+		}
 		push( @vpr_args, "--seed");			 		  
 		push( @vpr_args, "$seed");
 		push( @vpr_args, "$congestion_analysis");
@@ -558,10 +576,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				my $content = <VPROUT>;
 				close(VPROUT);
 				$/ = "\n";    # Restore for normal behaviour later in script
-
-				if ( $content =~ m/(.*Error.*)/i ) {
-					$error = $1;
-				}
 
 				if ( $content =~
 					/Best routing used a channel width factor of (\d+)/m )
@@ -643,6 +657,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "--sdc_file" );				  
 			push( @vpr_args, "$sdc_file_path");
 		}
+		if (-e $pad_file_path){
+			push( @vpr_args, "-fix_pins" );				  
+			push( @vpr_args, "$pad_file_path");
+		}
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
@@ -654,21 +672,68 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			@vpr_args
 		);
 	}
-	  					
-	if (-e $vpr_route_output_file_path and $q eq "success")
-	{
+	
+	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			
+	if ($q eq "success") {
 		if($check_equivalent eq "on") {
 			if($abc_path eq "") {
 				$abc_path = "$vtr_flow_path/../abc_with_bb_support/abc";
 			}
+			
+			find(\&find_postsynthesis_netlist, ".");
+
+
+            #First try ABC's Sequentail Equivalence Check (SEC)
 			$q = &system_with_timeout($abc_path, 
-							"equiv.out",
+							"abc.sec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"cec $prevpr_output_file_name post_pack_netlist.blif;sec $prevpr_output_file_name post_pack_netlist.blif"
+							"sec $odin_output_file_name $vpr_postsynthesis_netlist"
 			);
-		}
+
+            # Parse ABC verification output
+            if ( open( SECOUT, "< abc.sec.out" ) ) {
+                undef $/;
+                my $sec_content = <SECOUT>;
+                close(SECOUT);
+                $/ = "\n";    # Restore for normal behaviour later in script
+			
+                if ( $sec_content =~ m/(.*The network has no latches. Used combinational command "cec".*)/i ) {
+                    # This circuit has no latches, ABC's 'sec' command only supports circuits with latches.
+                    # Re-try using ABC's Combinational Equivalence Check (CEC)
+                    $q = &system_with_timeout($abc_path, 
+                                    "abc.cec.out",
+                                    $timeout,
+                                    $temp_dir,
+                                    "-c", 
+                                    "cec $odin_output_file_name $vpr_postsynthesis_netlist;"
+                    );
+
+                    if ( open( CECOUT, "< abc.cec.out" ) ) {
+                        undef $/;
+                        my $cec_content = <CECOUT>;
+                        close(CECOUT);
+                        $/ = "\n";    # Restore for normal behaviour later in script
+
+                        if ( $cec_content !~ m/(.*Networks are equivalent.*)/i ) {
+                            print("failed: formal verification");
+                            $error_code = 1;
+                        }
+                    } else {
+                        print("failed: no CEC output");
+                        $error_code = 1;
+                    }
+                } elsif ( $sec_content !~ m/(.*Networks are equivalent.*)/i ) {
+                    print("failed: formal verification");
+                    $error_code = 1;
+                }
+            } else {
+                print("failed: no SEC output");
+                $error_code = 1;
+            }
+        }
+
 		if (! $keep_intermediate_files)
 		{
 			system "rm -f $prevpr_output_file_name";
@@ -710,10 +775,6 @@ if ( open( VPROUT, "< vpr.out" ) ) {
 	my $content = <VPROUT>;
 	close(VPROUT);
 	$/ = "\n";    # Restore for normal behaviour later in script
-
-	if ( $content =~ m/(.*Error.*)/i ) {
-		$error = $1;
-	}
 }
 print RESULTS "error=$error\n";
 
@@ -744,6 +805,11 @@ sub system_with_timeout {
 
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
+    if ($valgrind) {
+        my $program = shift @_;        
+	unshift @_, "valgrind";
+        splice @_, 4, 0, , @valgrind_args, $program;
+    }
     # Use a memory tracker to call executable if checking for memory usage
     if ($track_memory_usage) {
         my $program = shift @_;
@@ -759,6 +825,11 @@ sub system_with_timeout {
     }
 	# ( -f $_[0] )  or die "system_with_timeout: can't find executable $_[0]\n";
 	( $_[2] > 0 ) or die "system_with_timeout: invalid timeout\n";
+	
+	#start valgrind output on new line 
+	if ($valgrind) {
+		print "\n";
+	}
 
 	# Save the pid of child process
 	my $pid = fork;
@@ -769,9 +840,10 @@ sub system_with_timeout {
 		chdir $_[3];
 
 		
-		open( STDOUT, "> $_[1]" );
-		open( STDERR, ">&STDOUT" );
-		
+		open( STDOUT, "> $_[1]" );	
+		if (!$valgrind) {		
+			open( STDERR, ">&STDOUT" );
+		}
 
 		# Copy the args and cut out first four
 		my @VPRARGS = @_;
@@ -1044,4 +1116,12 @@ sub find_and_move_newest {
 
     # negate bash exit truth for perl
     return 1;
+}
+
+sub find_postsynthesis_netlist {
+    my $file_name = $_;
+    if ($file_name =~ /_post_synthesis\.blif/) {
+        $vpr_postsynthesis_netlist = $file_name;
+        return;
+    }
 }

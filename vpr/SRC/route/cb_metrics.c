@@ -20,14 +20,9 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <assert.h>
 #include <string.h>
 #include <ctime>
 #include <utility>
-#include "util.h"
-#include "vpr_types.h"
-#include "vpr_utils.h"
-#include "cb_metrics.h"
 
 #include <string>
 #include <iostream>
@@ -38,12 +33,23 @@
 #include <map>
 #include <iterator>
 
+#include "vtr_random.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include "vtr_math.h"
+
+#include "vpr_types.h"
+#include "vpr_error.h"
+#include "vpr_utils.h"
+
+#include "cb_metrics.h"
+
 using namespace std;
 
 
 /* TODO: move to libarchfpga/include/util.h after ODIN II has been converted to use g++ */
 /* a generic function for determining if a given map key exists */
-template< typename F, typename T > bool map_has_key( INP F key, INP std::map< F, T > *my_map ){
+template< typename F, typename T > bool map_has_key( const F key, const std::map< F, T > *my_map ){
 	bool exists;
 	typename std::map< F, T >::const_iterator it = my_map->find(key);
 	if (my_map->end() != it){
@@ -54,7 +60,7 @@ template< typename F, typename T > bool map_has_key( INP F key, INP std::map< F,
 	return exists;
 }
 /* a generic function for determining if a given set element exists */
-template< typename T > bool set_has_element( INP T elem, INP std::set< T > *my_set ){
+template< typename T > bool set_has_element( const T elem, const std::set< T > *my_set ){
 	bool exists;
 	typename std::set< T >::const_iterator it = my_set->find(elem);
 	if (my_set->end() != it){
@@ -69,71 +75,71 @@ template< typename T > bool set_has_element( INP T elem, INP std::set< T > *my_s
 /**** Function Declarations ****/
 /* goes through each pin of pin_type and determines which side of the block it comes out on. results are stored in 
    the 'pin_locations' 2d-vector */
-static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int num_pin_type_pins, INP int *****tracks_connected_to_pin, 
-		INOUTP t_2d_int_vec *pin_locations);
+static void get_pin_locations(const t_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int *****tracks_connected_to_pin, 
+		t_2d_int_vec *pin_locations);
 
 /* Gets the maximum Fc value from the Fc_array of this pin type. Errors out if the pins of this pin_type don't all have the same Fc */
-static int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_type);
+static int get_max_Fc(const int *Fc_array, const t_type_ptr block_type, const e_pin_type pin_type);
 
 /* initializes the fields of the cb_metrics class */
-static void init_cb_structs( INP t_type_ptr block_type, INP int *****tracks_connected_to_pin, INP int num_segments, INP t_segment_inf *segment_inf, 
-		INP e_pin_type pin_type, INP int num_pin_type_pins, INP int nodes_per_chan, INP int Fc, 
-		INOUTP Conn_Block_Metrics *cb_metrics);
+static void init_cb_structs( const t_type_ptr block_type, int *****tracks_connected_to_pin, const int num_segments, const t_segment_inf *segment_inf, 
+		const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc, 
+		Conn_Block_Metrics *cb_metrics);
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
    greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
-static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP t_vec_vec_set *track_to_pins, INP int side, 
-		INP bool both_sides, INP int criteria, INOUTP vector<int> *result );
+static void find_tracks_with_more_switches_than( const set<int> *pin_tracks, const t_vec_vec_set *track_to_pins, const int side, 
+		const bool both_sides, const int criteria, vector<int> *result );
 /* given a pin on some side of a block, we'd like to find the set of tracks that is NOT connected to that pin on that side. This set of tracks
    is passed back in the 'result' vector */
-static void find_tracks_unconnected_to_pin( INP set<int> *pin_tracks, INP vector< set<int> > *track_to_pins, INOUTP vector<int> *result );
+static void find_tracks_unconnected_to_pin( const set<int> *pin_tracks, const vector< set<int> > *track_to_pins, vector<int> *result );
 
 /* iterates through the elements of set 1 and returns the number of elements in set1 that are 
    also in set2 (in terms of bit vectors, this looks for the number of positions where both bit vectors 
    have a value of 1; values of 0 not counted... so, not quite true hamming proximity). Analogously, if we 
    wanted the hamming distance of these two sets, (in terms of bit vectors, the number of bit positions that are 
    different... i.e. the actual definition of hamming disatnce) that would be 2(set_size - returned_value) */
-static int hamming_proximity_of_two_sets(INP set<int> *set1, INP set<int> *set2);
+static int hamming_proximity_of_two_sets(const set<int> *set1, const set<int> *set2);
 /* returns the pin diversity metric of a block */
-static float get_pin_diversity(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP Conn_Block_Metrics *cb_metrics);
+static float get_pin_diversity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const Conn_Block_Metrics *cb_metrics);
 /* Returns the wire homogeneity of a block's connection to tracks */
-static float get_wire_homogeneity(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP int exponent, INP bool both_sides, INP Conn_Block_Metrics *cb_metrics);
+static float get_wire_homogeneity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
 /* Returns the hamming proximity of a block's connection to tracks */
-static float get_hamming_proximity(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP int exponent, INP bool both_sides, INP Conn_Block_Metrics *cb_metrics);
+static float get_hamming_proximity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
 /* Returns Lemieux's cost function for sparse crossbars (see his 2001 book) applied here to the connection block */
-static float get_lemieux_cost_func(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP int exponent, INP bool both_sides, INP Conn_Block_Metrics *cb_metrics);
+static float get_lemieux_cost_func(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
    relatively constant */
-static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr block_type, 
-		INP e_pin_type pin_type, INP int Fc, INP int num_pin_type_pins, INP float target_metric, 
-		INP float target_metric_tolerance, INOUTP int *****pin_to_track_connections, INOUTP Conn_Block_Metrics *cb_metrics);
+static bool annealer(const e_metric metric, const int nodes_per_chan, const t_type_ptr block_type, 
+		const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, 
+		const float target_metric_tolerance, int *****pin_to_track_connections, Conn_Block_Metrics *cb_metrics);
 /* updates temperature based on current temperature and the annealer's outer loop iteration */
-static double update_temp(INP double temp, INP int i_outer);
+static double update_temp(const double temp, const int i_outer);
 /* determines whether to accept or reject a proposed move based on the resulting delta of the cost and current temperature */
-static bool accept_move(INP double del_cost, INP double temp);
+static bool accept_move(const double del_cost, const double temp);
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
    same pin as before. */
-static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float initial_orthogonal_metric, 
-		INP float orthogonal_metric_tolerance, INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc,
-		INP int num_pin_type_pins, INP double cost, INP double temp, INP float target_metric, 
-		INOUTP int *****pin_to_track_connections, INOUTP Conn_Block_Metrics *cb_metrics);
+static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, 
+		const float orthogonal_metric_tolerance, const t_type_ptr block_type, const e_pin_type pin_type, const int Fc,
+		const int num_pin_type_pins, const double cost, const double temp, const float target_metric, 
+		int *****pin_to_track_connections, Conn_Block_Metrics *cb_metrics);
 
-static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metrics *cb_metrics);
+static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Metrics *cb_metrics);
 
 
 /**** Function Definitions ****/
 
 /* adjusts the connection block until the appropriate metric has hit its target value. the other orthogonal metric is kept constant
    within some tolerance */
-void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_tolerance, INP float pin_tolerance,
-		INP t_type_ptr block_type, INOUTP int *****pin_to_track_connections, 
-		INP e_pin_type pin_type, INP int *Fc_array, INP t_chan_width *chan_width_inf, 
-		INP int num_segments, INP t_segment_inf *segment_inf){
+void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const float pin_tolerance,
+		const t_type_ptr block_type, int *****pin_to_track_connections, 
+		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, 
+		const int num_segments, const t_segment_inf *segment_inf){
 	
 	Conn_Block_Metrics cb_metrics;
 
@@ -175,15 +181,15 @@ void adjust_cb_metric(INP e_metric metric, INP float target, INP float target_to
 	bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target, 
 			target_tolerance, pin_to_track_connections, &cb_metrics);
 	if (!success){
-		vpr_printf_info("Failed to adjust specified connection block metric\n");
+		vtr::printf_info("Failed to adjust specified connection block metric\n");
 	}
 
 	print_switch_histogram(nodes_per_chan, &cb_metrics);
 }
 
 /* calculates all the connection block metrics and returns them through the cb_metrics variable */
-void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_connected_to_pin, INP int num_segments, INP t_segment_inf *segment_inf, 
-		INP e_pin_type pin_type, INP int *Fc_array, INP t_chan_width *chan_width_inf, INOUTP Conn_Block_Metrics *cb_metrics){
+void get_conn_block_metrics(const t_type_ptr block_type, int *****tracks_connected_to_pin, const int num_segments, const t_segment_inf *segment_inf, 
+		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, Conn_Block_Metrics *cb_metrics){
 
 	if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max 
 		|| chan_width_inf->x_max != chan_width_inf->y_max){
@@ -240,9 +246,9 @@ void get_conn_block_metrics(INP t_type_ptr block_type, INP int *****tracks_conne
 }
 
 /* initializes the fields of the cb_metrics class */
-static void init_cb_structs(INP t_type_ptr block_type, INP int *****tracks_connected_to_pin, INP int num_segments, INP t_segment_inf *segment_inf, 
-		INP e_pin_type pin_type, INP int num_pin_type_pins, INP int nodes_per_chan, INP int Fc,
-		INOUTP Conn_Block_Metrics *cb_metrics){
+static void init_cb_structs(const t_type_ptr block_type, int *****tracks_connected_to_pin, const int num_segments, const t_segment_inf *segment_inf, 
+		const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc,
+		Conn_Block_Metrics *cb_metrics){
 	
 	/* can not calculate CB metrics for open pins */
 	if(OPEN == pin_type){
@@ -333,7 +339,7 @@ static void init_cb_structs(INP t_type_ptr block_type, INP int *****tracks_conne
    that are in between. here we return the number of wire types. 
    the current connection block metrics code can only deal with channel segments that carry wires of only one length (i.e. L=4).
    this may be enhanced in the future. */
-int get_num_wire_types(INP int num_segments, INP t_segment_inf *segment_inf){
+int get_num_wire_types(const int num_segments, const t_segment_inf *segment_inf){
 
 	int num_wire_types = 0;
 
@@ -348,7 +354,7 @@ int get_num_wire_types(INP int num_segments, INP t_segment_inf *segment_inf){
 }
 
 /* Gets the maximum Fc value from the Fc_array of this pin type. Errors out if the pins of this pin_type don't all have the same Fc */
-int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_type){
+int get_max_Fc(const int *Fc_array, const t_type_ptr block_type, const e_pin_type pin_type){
 	int Fc = 0;
 	for (int ipin = 0; ipin < block_type->num_pins; ++ipin) {
 		int iclass = block_type->pin_class[ipin];
@@ -364,8 +370,8 @@ int get_max_Fc(INP int *Fc_array, INP t_type_ptr block_type, INP e_pin_type pin_
 }
 
 /* returns the pin diversity metric of a block */
-static float get_pin_diversity(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP Conn_Block_Metrics *cb_metrics){
+static float get_pin_diversity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const Conn_Block_Metrics *cb_metrics){
 
 	float total_pin_diversity = 0;
 	float exp_factor = 3.3;
@@ -392,13 +398,13 @@ static float get_pin_diversity(INP t_type_ptr block_type, INP e_pin_type pin_typ
 }
 
 /* Returns Lemieux's cost function for sparse crossbars (see his 2001 book) applied here to the connection block */
-static float get_lemieux_cost_func(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP int exponent, INP bool both_sides, INP Conn_Block_Metrics *cb_metrics){
+static float get_lemieux_cost_func(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
 
 	float lcf = 0;
 
-	t_2d_int_vec *pin_locations = &cb_metrics->pin_locations;
-	t_vec_vec_set *pin_to_tracks = &cb_metrics->pin_to_tracks;
+	const t_2d_int_vec *pin_locations = &cb_metrics->pin_locations;
+	const t_vec_vec_set *pin_to_tracks = &cb_metrics->pin_to_tracks;
 
 	/* may want to calculate LCF for two sides at once to simulate presence of neighboring blocks */
 	int mult = (both_sides) ? 2 : 1;
@@ -461,13 +467,13 @@ static float get_lemieux_cost_func(INP t_type_ptr block_type, INP e_pin_type pin
 }
 
 /* Returns the hamming proximity of a block's connection to tracks */
-static float get_hamming_proximity(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP int exponent, INP bool both_sides, INP Conn_Block_Metrics *cb_metrics){
+static float get_hamming_proximity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
 
 	float hamming_proximity = 0;
 
-	t_2d_int_vec *pin_locations = &cb_metrics->pin_locations;
-	t_vec_vec_set *pin_to_tracks = &cb_metrics->pin_to_tracks;
+	const t_2d_int_vec *pin_locations = &cb_metrics->pin_locations;
+	const t_vec_vec_set *pin_to_tracks = &cb_metrics->pin_to_tracks;
 
 	/* may want to calculate HP for two sides at once to simulate presence of neighboring blocks */
 	int mult = (both_sides) ? 2 : 1;
@@ -530,7 +536,7 @@ static float get_hamming_proximity(INP t_type_ptr block_type, INP e_pin_type pin
    have a value of 1; values of 0 not counted... so, not quite true hamming proximity). Analogously, if we 
    wanted the hamming distance of these two sets, (in terms of bit vectors, the number of bit positions that are 
    different... i.e. the actual definition of hamming disatnce) that would be 2(set_size - returned_value) */
-static int hamming_proximity_of_two_sets(INP set<int> *set1, INP set<int> *set2){
+static int hamming_proximity_of_two_sets(const set<int> *set1, const set<int> *set2){
 	int result = 0;
 	
 	set<int>::const_iterator it;
@@ -544,15 +550,15 @@ static int hamming_proximity_of_two_sets(INP set<int> *set1, INP set<int> *set2)
 }
 
 /* Returns the wire homogeneity of a block's connection to tracks */
-static float get_wire_homogeneity(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc, INP int nodes_per_chan,
-		INP int num_pin_type_pins, INP int exponent, INP bool both_sides, INP Conn_Block_Metrics *cb_metrics){
+static float get_wire_homogeneity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
 	
 	float total_wire_homogeneity = 0;
 	float wire_homogeneity[4];
 	int counted_pins_per_side[4];
 	
 	/* get the number of pins on each side */
-	t_2d_int_vec *pin_locations = &cb_metrics->pin_locations;
+	const t_2d_int_vec *pin_locations = &cb_metrics->pin_locations;
 	for (int iside = 0; iside < 4; iside++){
 		counted_pins_per_side[iside] = (int)pin_locations->at(iside).size();
 	}
@@ -605,7 +611,7 @@ static float get_wire_homogeneity(INP t_type_ptr block_type, INP e_pin_type pin_
 
 /* goes through each pin of pin_type and determines which side of the block it comes out on. results are stored in 
    the 'pin_locations' 2d-vector */
-static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type, INP int num_pin_type_pins, INP int *****tracks_connected_to_pin, INOUTP t_2d_int_vec *pin_locations){
+static void get_pin_locations(const t_type_ptr block_type, const e_pin_type pin_type, const int num_pin_type_pins, int *****tracks_connected_to_pin, t_2d_int_vec *pin_locations){
 	set<int> counted_pins;	
 
 	pin_locations->clear();
@@ -648,8 +654,8 @@ static void get_pin_locations(INP t_type_ptr block_type, INP e_pin_type pin_type
 
 /* given a set of tracks connected to a pin, we'd like to find which of these tracks are connected to a number of switches
    greater than 'criteria'. The resulting set of tracks is passed back in the 'result' vector */
-static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP t_vec_vec_set *track_to_pins, INP int side, 
-		INP bool both_sides, INP int criteria, INOUTP vector<int> *result ){
+static void find_tracks_with_more_switches_than( const set<int> *pin_tracks, const t_vec_vec_set *track_to_pins, const int side, 
+		const bool both_sides, const int criteria, vector<int> *result ){
 	result->clear();
 
 	if (both_sides && side >= 2){
@@ -675,7 +681,7 @@ static void find_tracks_with_more_switches_than( INP set<int> *pin_tracks, INP t
 
 /* given a pin on some side of a block, we'd like to find the set of tracks that is NOT connected to that pin on that side. This set of tracks
    is passed back in the 'result' vector */
-static void find_tracks_unconnected_to_pin( INP set<int> *pin_tracks, INP vector< set<int> > *track_to_pins, INOUTP vector<int> *result ){
+static void find_tracks_unconnected_to_pin( const set<int> *pin_tracks, const vector< set<int> > *track_to_pins, vector<int> *result ){
 	result->clear();
 	/* for each track in the channel segment */
 	for (int itrack = 0; itrack < (int)track_to_pins->size(); itrack++){
@@ -688,10 +694,10 @@ static void find_tracks_unconnected_to_pin( INP set<int> *pin_tracks, INP vector
 
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
    same pin as before. */
-static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float initial_orthogonal_metric, 
-		INP float orthogonal_metric_tolerance, INP t_type_ptr block_type, INP e_pin_type pin_type, INP int Fc,
-		INP int num_pin_type_pins, INP double cost, INP double temp, INP float target_metric, 
-		INOUTP int *****pin_to_track_connections, INOUTP Conn_Block_Metrics *cb_metrics){
+static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, 
+		const float orthogonal_metric_tolerance, const t_type_ptr block_type, const e_pin_type pin_type, const int Fc,
+		const int num_pin_type_pins, const double cost, const double temp, const float target_metric, 
+		int *****pin_to_track_connections, Conn_Block_Metrics *cb_metrics){
 
 	double new_cost = 0;
 	float new_orthogonal_metric = 0;
@@ -728,8 +734,8 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 	set_of_tracks.clear();
 
 	/* choose a random side, random pin, and a random switch */
-	int rand_side = my_irand(3);
-	int rand_pin_index = my_irand( cb_metrics->pin_locations.at(rand_side).size()-1 );
+	int rand_side = vtr::irand(3);
+	int rand_pin_index = vtr::irand( cb_metrics->pin_locations.at(rand_side).size()-1 );
 	int rand_pin = cb_metrics->pin_locations.at(rand_side).at(rand_pin_index);
 	set<int> *tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
 
@@ -759,12 +765,12 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 			new_cost = cost;
 		} else {
 			/* now choose a random track from the returned set of qualifying tracks */
-			int old_track = my_irand(set_of_tracks.size()-1);
+			int old_track = vtr::irand(set_of_tracks.size()-1);
 			old_track = set_of_tracks.at(old_track);
 
 			/* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
 			find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
-			int new_track = my_irand(set_of_tracks.size()-1);
+			int new_track = vtr::irand(set_of_tracks.size()-1);
 			new_track = set_of_tracks.at(new_track);
 
 			/* move the rand_pin's connection from the old track to the new track and see what the new cost is */
@@ -878,9 +884,9 @@ static double try_move(INP e_metric metric, INP int nodes_per_chan, INP float in
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
    relatively constant */
-static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr block_type, 
-		INP e_pin_type pin_type, INP int Fc, INP int num_pin_type_pins, INP float target_metric, 
-		INP float target_metric_tolerance, INOUTP int *****pin_to_track_connections, INOUTP Conn_Block_Metrics *cb_metrics){
+static bool annealer(const e_metric metric, const int nodes_per_chan, const t_type_ptr block_type, 
+		const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, 
+		const float target_metric_tolerance, int *****pin_to_track_connections, Conn_Block_Metrics *cb_metrics){
 
 	bool success = false;
 	double temp = INITIAL_TEMP;
@@ -959,7 +965,7 @@ static bool annealer(INP e_metric metric, INP int nodes_per_chan, INP t_type_ptr
 }
  
 /* updates temperature based on current temperature and the annealer's outer loop iteration */
-static double update_temp(INP double temp, INP int i_outer){
+static double update_temp(const double temp, const int i_outer){
 	double new_temp;
 	double fac = TEMP_DECREASE_FAC;
 	double temp_threshold = LOWEST_TEMP;
@@ -975,7 +981,7 @@ static double update_temp(INP double temp, INP int i_outer){
 }
 
 /* determines whether to accept or reject a proposed move based on the resulting delta of the cost and current temperature */
-static bool accept_move(INP double del_cost, INP double temp){
+static bool accept_move(const double del_cost, const double temp){
 	bool accept = false;
 
 	if (del_cost < 0){
@@ -984,7 +990,7 @@ static bool accept_move(INP double del_cost, INP double temp){
 	} else {
 		/* determine probabilistically whether or not to accept */
 		double probability = pow(2.718, -( del_cost / temp ) );
-		double rand_value = (double)my_frand();
+		double rand_value = (double)vtr::frand();
 		if (rand_value < probability){
 			accept = true;
 		} else {
@@ -995,11 +1001,11 @@ static bool accept_move(INP double del_cost, INP double temp){
 	return accept;
 }
 
-static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metrics *cb_metrics){
+static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Metrics *cb_metrics){
 	/* key: number of switches; element: number of tracks with that switch count */
 	map<int, int> switch_histogram;
 
-	t_vec_vec_set *track_to_pins = &cb_metrics->track_to_pins;
+	const t_vec_vec_set *track_to_pins = &cb_metrics->track_to_pins;
 
 	for (int iside = 0; iside < 2; iside++){
 		for (int itrack = 0; itrack < nodes_per_chan; itrack++){
@@ -1012,10 +1018,10 @@ static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metric
 		}
 	}
 
-	vpr_printf_info("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
+	vtr::printf_info("\t===CB Metrics Switch Histogram===\n\t#switches ==> #num tracks carrying that number of switches\n");
 	map<int,int>::const_iterator it;
 	for (it = switch_histogram.begin(); it != switch_histogram.end(); it++){
-		vpr_printf_info("\t%d ==> %d\n", it->first, it->second);
+		vtr::printf_info("\t%d ==> %d\n", it->first, it->second);
 	}
 }
 
@@ -1025,8 +1031,8 @@ static void print_switch_histogram(INP int nodes_per_chan, INP Conn_Block_Metric
 /* constructs a crossbar matrix from the connection block 'conn_block'. rows correspond to the pins,
    columns correspond to the wires. entry (i,j) is set to 1 if that pin and track are connected. the 
    only pins accounted for here are the pins that actually have switches on the conn block side in question */
-static void get_xbar_matrix(INP int *****conn_block, INP t_type_ptr block_type, e_pin_type pin_type, INP int side, INP bool both_sides, 
-		INP int nodes_per_chan, INP int Fc, INOUTP t_xbar_matrix *xbar_matrix){
+static void get_xbar_matrix(const int *****conn_block, const t_type_ptr block_type, e_pin_type pin_type, const int side, const bool both_sides, 
+		const int nodes_per_chan, const int Fc, t_xbar_matrix *xbar_matrix){
 	xbar_matrix->clear();
 	if (both_sides && side >= 2){
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "If analyzing both sides of a conn block, the initial side should have index < 2");
@@ -1079,7 +1085,7 @@ static void get_xbar_matrix(INP int *****conn_block, INP t_type_ptr block_type, 
 }
 
 /* returns a transposed version of the specified crossbar matrix */
-static t_xbar_matrix transpose_xbar( INP t_xbar_matrix *xbar ){
+static t_xbar_matrix transpose_xbar( const t_xbar_matrix *xbar ){
 	t_xbar_matrix result;
 	
 	int new_cols = (int)xbar->size();
@@ -1096,7 +1102,7 @@ static t_xbar_matrix transpose_xbar( INP t_xbar_matrix *xbar ){
 
 /* calculates the factorial of 'num'. result is a long double. some precision may be lost, but that's
    OK for my purposes */
-static long double factorial(INP int num){
+static long double factorial(const int num){
 	long double result = 1;
 	if (num <= 1){
 		result = 1;
@@ -1110,7 +1116,7 @@ static long double factorial(INP int num){
 
 /* calculates n choose k. some precision may be lost, but for my purposes
    that doesn't really matter */
-static long double binomial_coefficient(INP int n, INP int k){
+static long double binomial_coefficient(const int n, const int k){
 	if (n < k){
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "calculating the binomial coefficient requires that n >= k");
 	}
@@ -1121,8 +1127,8 @@ static long double binomial_coefficient(INP int n, INP int k){
 
 
 
-static long double count_switch_configurations(INP int level, INP int signals_left, INP int capacity_left, INP vector<int> *config, 
-		INOUTP map<int, Wire_Counting> *count_map){
+static long double count_switch_configurations(const int level, const int signals_left, const int capacity_left, vector<int> *config, 
+		map<int, Wire_Counting> *count_map){
 	long double result = 0;
 
 	if (capacity_left < signals_left){
@@ -1199,7 +1205,7 @@ static long double count_switch_configurations(INP int level, INP int signals_le
 
 /* 'normalizes' the given crossbar. normalization is done in a way such that an entry which was formerly equal to '1'
     will now equal to the probability of that switch being available */
-static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_used, INOUTP t_xbar_matrix *xbar ){
+static void normalize_xbar( const int nodes_per_chan, const float fraction_wires_used, t_xbar_matrix *xbar ){
 
 
 	int rows = (int)xbar->size();		/* rows correspond to pins */
@@ -1253,7 +1259,7 @@ static void normalize_xbar( INP int nodes_per_chan, INP float fraction_wires_use
 	}
 
 	/* the nuber of wires that are used */
-	int wires_used = nint(fraction_wires_used * (float)capacity);
+	int wires_used = vtr::nint(fraction_wires_used * (float)capacity);
 
 	long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);
 
@@ -1306,22 +1312,22 @@ static void print_xbar( t_xbar_matrix *xbar ){
 	int cols = (int)xbar->at(0).size();
 
 	for (int irow = 0; irow < rows; irow++){
-		vpr_printf_info("\t\t|\t");
+		vtr::printf_info("\t\t|\t");
 		for (int icol = 0; icol < cols; icol++){
-			vpr_printf_info("%.2f\t", xbar->at(irow).at(icol));
+			vtr::printf_info("%.2f\t", xbar->at(irow).at(icol));
 		}
-		vpr_printf_info(" |\n");
+		vtr::printf_info(" |\n");
 	}
 }
 
-static float probabilistic_or(INP float a, INP float b){
+static float probabilistic_or(const float a, const float b){
 	float result;
 	result = a + b - a*b;	/* assuming a & b are not mutually exclusive */
 	return result;
 }
 
 /* allocates an xbar with specified number of rows and columns where each element is set to 'num' */
-static void allocate_xbar(INP int rows, INP int cols, INP float num, INOUTP t_xbar_matrix *xbar){
+static void allocate_xbar(const int rows, const int cols, const float num, t_xbar_matrix *xbar){
 	xbar->clear();
 	for (int irow = 0; irow < rows; irow++){
 		xbar->push_back(vector<float>());
@@ -1332,7 +1338,7 @@ static void allocate_xbar(INP int rows, INP int cols, INP float num, INOUTP t_xb
 }
 
 /* combines xbar1 followed by xbar2 into a compound xbar returned via the return value */
-static t_xbar_matrix combine_two_xbars(INP t_xbar_matrix *xbar1, INP t_xbar_matrix *xbar2){
+static t_xbar_matrix combine_two_xbars(const t_xbar_matrix *xbar1, const t_xbar_matrix *xbar2){
 	
 	t_xbar_matrix xbar_out;
 
@@ -1367,8 +1373,8 @@ static t_xbar_matrix combine_two_xbars(INP t_xbar_matrix *xbar1, INP t_xbar_matr
 	return xbar_out;
 }
 
-void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_ptr block_type, INP int *Fc_array_out,
-		 INP int *Fc_array_in, INP t_chan_width *chan_width_inf){
+void analyze_conn_blocks(const int *****opin_cb, const int *****ipin_cb, const t_type_ptr block_type, const int *Fc_array_out,
+		 const int *Fc_array_in, const t_chan_width *chan_width_inf){
 	
 	if (0 != strcmp(block_type->name, "clb")){
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "This code currently works for CLB blocks only");
@@ -1420,8 +1426,8 @@ void analyze_conn_blocks(INP int *****opin_cb, INP int *****ipin_cb, INP t_type_
 }
 
 /* make a poor cb pattern. */
-void make_poor_cb_pattern(INP e_pin_type pin_type, INP t_type_ptr block_type, INP int *Fc_array,
-		 INP t_chan_width *chan_width_inf, INOUTP int *****cb){
+void make_poor_cb_pattern(const e_pin_type pin_type, const t_type_ptr block_type, const int *Fc_array,
+		 const t_chan_width *chan_width_inf, int *****cb){
 
 	if (block_type->num_pins == 0){
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Trying to adjust CB metrics for a block with no pins!\n");

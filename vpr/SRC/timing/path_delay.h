@@ -1,5 +1,7 @@
 #ifndef PATH_DELAY
 #define PATH_DELAY
+#include "vpr_types.h"
+#include "vtr_util.h"
 
 #define DO_NOT_ANALYSE -1
 
@@ -33,7 +35,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf);
 t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 		float inter_cluster_net_delay, t_model *models, t_timing_inf timing_inf);
 
-t_linked_int *allocate_and_load_critical_path(const t_timing_inf &timing_inf);
+vtr::t_linked_int *allocate_and_load_critical_path(const t_timing_inf &timing_inf);
 
 void load_timing_graph_net_delays(float **net_delay);
 

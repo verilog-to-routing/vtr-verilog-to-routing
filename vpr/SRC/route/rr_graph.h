@@ -26,40 +26,40 @@ enum {
 };
 
 void build_rr_graph(
-		INP t_graph_type graph_type, 
-		INP int L_num_types,
-		INP t_type_ptr types, 
-		INP int L_nx, 
-		INP int L_ny,
-		INP struct s_grid_tile **L_grid, 
-		INP struct s_chan_width *nodes_per_chan,
-		INP struct s_chan_width_dist *chan_capacity_inf,
-		INP enum e_switch_block_type sb_type, 
-		INP int Fs,
-		INP std::vector<t_switchblock_inf> switchblocks,
-		INP int num_seg_types,
-		INP int num_arch_switches, 
-		INP t_segment_inf * segment_inf,
-		INP int global_route_switch, 
-		INP int delayless_switch,
-		INP t_timing_inf timing_inf, 
-		INP int wire_to_ipin_switch,
-		INP enum e_base_cost_type base_cost_type, 
-		INP bool trim_empty_channels,
-		INP bool trim_obs_channels,
-		INP t_direct_inf *directs, 
-		INP int num_directs,
-		INP bool ignore_Fc_0,
-		INP const char *dump_rr_structs_file,
-		OUTP int *wire_to_rr_ipin_switch,
-		OUTP int *num_rr_switches,
-		OUTP int *Warnings);
+		const t_graph_type graph_type, 
+		const int L_num_types,
+		const t_type_ptr types, 
+		const int L_nx, 
+		const int L_ny,
+		struct s_grid_tile **L_grid, 
+		struct s_chan_width *nodes_per_chan,
+		const struct s_chan_width_dist *chan_capacity_inf,
+		const enum e_switch_block_type sb_type, 
+		const int Fs,
+		const std::vector<t_switchblock_inf> switchblocks,
+		const int num_seg_types,
+		const int num_arch_switches, 
+		const t_segment_inf * segment_inf,
+		const int global_route_switch, 
+		const int delayless_switch,
+		const t_timing_inf timing_inf, 
+		const int wire_to_ipin_switch,
+		const enum e_base_cost_type base_cost_type, 
+		const bool trim_empty_channels,
+		const bool trim_obs_channels,
+		const t_direct_inf *directs, 
+		const int num_directs,
+		const bool ignore_Fc_0,
+		const char *dump_rr_structs_file,
+		int *wire_to_rr_ipin_switch,
+		int *num_rr_switches,
+		int *Warnings);
 
 void free_rr_graph(void);
 
-void dump_rr_graph(INP const char *file_name);
+void dump_rr_graph(const char *file_name);
 void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */
-void load_net_rr_terminals(t_ivec *** L_rr_node_indices);
+void load_net_rr_terminals(vtr::t_ivec*** L_rr_node_indices);
 
 void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 

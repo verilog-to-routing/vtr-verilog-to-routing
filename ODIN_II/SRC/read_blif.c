@@ -26,7 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include<stdio.h>
 #include "globals.h"
 #include "read_blif.h"
-#include "util.h"
 #include "string_cache.h"
 #include "netlist_utils.h"
 #include "errors.h"
@@ -35,6 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hashtable.h"
 #include "netlist_check.h"
 #include "simulate_blif.h"
+#include "vtr_util.h"
 
 #define TOKENS     " \t\n"
 #define GND_NAME   "gnd"
@@ -141,7 +141,7 @@ void read_blif(char * blif_file)
 
 	verilog_netlist = allocate_netlist();
 	/*Opening the blif file */
-	FILE *file = my_fopen (local_blif, "r", 0);
+	FILE *file = vtr::fopen (local_blif, "r");
 
 	int num_lines = count_blif_lines(file);
 
@@ -162,7 +162,7 @@ void read_blif(char * blif_file)
 	hard_block_models *models = create_hard_block_models();
 	printf("\n");
 	char buffer[READ_BLIF_BUFFER];
-	while (my_fgets(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models, file, output_nets_hash))
+	while (vtr::fgets(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models, file, output_nets_hash))
 	{	// Print a progress bar indicating completeness.
 		position = print_progress_bar((++line_count)/(double)num_lines, position, 50, wall_time() - time);
 	}
@@ -191,7 +191,7 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_
 {
 	/* Figures out which, if any token is at the start of this line and *
 	 * takes the appropriate action.                                    */
-	char *token = my_strtok (buffer, TOKENS, file, buffer);
+	char *token = vtr::strtok (buffer, TOKENS, file, buffer);
 
 	if (token)
 	{
@@ -323,7 +323,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	/*input_token_count=3 it is not and =5 it is */
 	char *ptr;
 	char buffer[READ_BLIF_BUFFER];
-	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)) != NULL)
+	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
 		if(input_token_count == 0)
 			names = (char**)malloc((sizeof(char*)));
@@ -439,14 +439,14 @@ char* search_clock_name(FILE* file)
 	while(!found)
 	{
 		char buffer[READ_BLIF_BUFFER];
-		my_fgets(buffer,READ_BLIF_BUFFER,file);
+		vtr::fgets(buffer,READ_BLIF_BUFFER,file);
 
 		// not sure if this is needed
 		if(feof(file))
 			break;
 
 		char *ptr;
-		if((ptr = my_strtok(buffer, TOKENS, file, buffer)))
+		if((ptr = vtr::strtok(buffer, TOKENS, file, buffer)))
 		{
 			if(!strcmp(ptr,".end"))
 				break;
@@ -454,7 +454,7 @@ char* search_clock_name(FILE* file)
 			if(!strcmp(ptr,".inputs"))
 			{
 				/* store the inputs in array of string */
-				while((ptr = my_strtok (NULL, TOKENS, file, buffer)))
+				while((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 				{
 					input_names = (char**)realloc(input_names,sizeof(char*) * (input_names_count + 1));
 					input_names[input_names_count++] = strdup(ptr);
@@ -462,7 +462,7 @@ char* search_clock_name(FILE* file)
 			}
 			else if(!strcmp(ptr,".names") || !strcmp(ptr,".latch"))
 			{
-				while((ptr = my_strtok (NULL, TOKENS,file, buffer)))
+				while((ptr = vtr::strtok (NULL, TOKENS,file, buffer)))
 				{
 					int i;
 					for(i = 0; i < input_names_count; i++)
@@ -497,14 +497,14 @@ char* search_clock_name(FILE* file)
 void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t *output_nets_hash)
 {
 	char buffer[READ_BLIF_BUFFER];
-	char *subcircuit_name = my_strtok (NULL, TOKENS, file, buffer);
+	char *subcircuit_name = vtr::strtok (NULL, TOKENS, file, buffer);
 
 	/* storing the names on the formal-actual parameter */
 	char *token;
 	int count = 0;
 	// Contains strings of the form port[pin]=port~pin
 	char **names_parameters = NULL;
-	while ((token = my_strtok (NULL, TOKENS, file, buffer)) != NULL)
+	while ((token = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
   	{
 		names_parameters          = (char**)realloc(names_parameters, sizeof(char*)*(count + 1));
 		names_parameters[count++] = strdup(token);
@@ -653,7 +653,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	char **names = NULL; // stores the names of the input and the output, last name stored would be of the output
 	int input_count = 0;
 	char buffer[READ_BLIF_BUFFER];
-	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)))
+	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 	{
 		names = (char**)realloc(names, sizeof(char*) * (input_count + 1));
 		names[input_count++]= strdup(ptr);
@@ -788,12 +788,12 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 	if(!input_count)
 	{
 		char buffer[READ_BLIF_BUFFER];
-		my_fgets (buffer, READ_BLIF_BUFFER, file);
+		vtr::fgets (buffer, READ_BLIF_BUFFER, file);
 
 		file_line_number = last_line;
 		fsetpos(file,&pos);
 
-		char *ptr = my_strtok(buffer,"\t\n", file, buffer);
+		char *ptr = vtr::strtok(buffer,"\t\n", file, buffer);
 		if      (!strcmp(ptr," 0")) return GND_NODE;
 		else if (!strcmp(ptr," 1")) return VCC_NODE;
 		else if (!ptr)              return GND_NODE;
@@ -806,14 +806,14 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 	char buffer[READ_BLIF_BUFFER];
 	while(1)
 	{
-		my_fgets (buffer, READ_BLIF_BUFFER, file);
+		vtr::fgets (buffer, READ_BLIF_BUFFER, file);
 		if(!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
 			break;
 
 		bit_map = (char**)realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
-		bit_map[line_count_bitmap++] = strdup(my_strtok(buffer,TOKENS, file, buffer));
+		bit_map[line_count_bitmap++] = strdup(vtr::strtok(buffer,TOKENS, file, buffer));
 		if (output_bit_map != NULL) free(output_bit_map);
-		output_bit_map = strdup(my_strtok(NULL,TOKENS, file, buffer));
+		output_bit_map = strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 	}
 
 	if (!strcmp(output_bit_map, One))
@@ -1011,7 +1011,7 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 {
 	char *ptr;
 	char buffer[READ_BLIF_BUFFER];
-	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)))
+	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 	{
 		char *temp_string = make_full_ref_name(ptr, NULL, NULL,NULL, -1);
 
@@ -1064,7 +1064,7 @@ void rb_create_top_output_nodes(FILE *file)
 	char *ptr;
 	char buffer[READ_BLIF_BUFFER];
 
-	while ((ptr = my_strtok (NULL, TOKENS, file, buffer)))
+	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 	{
 		char *temp_string = make_full_ref_name(ptr, NULL, NULL,NULL, -1);;
 
@@ -1189,7 +1189,7 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 static void dum_parse (char *buffer, FILE *file)
 {
 	/* Continue parsing to the end of this (possibly continued) line. */
-	while (my_strtok (NULL, TOKENS, file, buffer));
+	while (vtr::strtok (NULL, TOKENS, file, buffer));
 }
 
 
@@ -1256,11 +1256,11 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 
 		// Search the file for .model followed buy the subcircuit name.
 		char buffer[READ_BLIF_BUFFER];
-		while (my_fgets(buffer, READ_BLIF_BUFFER, file))
+		while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 		{
-			char *token = my_strtok(buffer,TOKENS, file, buffer);
+			char *token = vtr::strtok(buffer,TOKENS, file, buffer);
 			// match .model followed buy the subcircuit name.
-			if (token && !strcmp(token,".model") && !strcmp(my_strtok(NULL,TOKENS, file, buffer), name_subckt))
+			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
 				model = (hard_block_model *)malloc(sizeof(hard_block_model));
 				model->name = strdup(name_subckt);
@@ -1273,13 +1273,13 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 				model->outputs->names = NULL;
 
 				// Read the inputs and outputs.
-				while (my_fgets(buffer, READ_BLIF_BUFFER, file))
+				while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 				{
-					char *first_word = my_strtok(buffer, TOKENS, file, buffer);
+					char *first_word = vtr::strtok(buffer, TOKENS, file, buffer);
 					if(!strcmp(first_word, ".inputs"))
 					{
 						char *name;
-						while ((name = my_strtok(NULL, TOKENS, file, buffer)))
+						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
 						{
 							model->inputs->names = (char **)realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
 							model->inputs->names[model->inputs->count++] = strdup(name);
@@ -1288,7 +1288,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 					else if(!strcmp(first_word, ".outputs"))
 					{
 						char *name;
-						while ((name = my_strtok(NULL, TOKENS, file, buffer)))
+						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
 						{
 							model->outputs->names = (char **)realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
 							model->outputs->names[model->outputs->count++] = strdup(name);
@@ -1603,7 +1603,7 @@ int count_blif_lines(FILE *file)
 {
 	int num_lines = 0;
 	char buffer[READ_BLIF_BUFFER];
-	while (my_fgets(buffer, READ_BLIF_BUFFER, file))
+	while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 	{
 		if (strstr(buffer, ".end"))
 			break;

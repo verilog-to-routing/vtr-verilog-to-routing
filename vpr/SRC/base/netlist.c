@@ -9,19 +9,23 @@
 
 #include <cstdio>
 #include <cstring>
-#include <assert.h>
+
+#include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
+
 #include "netlist.h"
-#include "util.h"
 #include "vpr_api.h"
+
 
 using namespace std;
 
 
-static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist);
+static bool check_global_net_with_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist);
 
-void load_global_net_from_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist){
+void load_global_net_from_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist){
 
 	int i, j;
 		
@@ -40,7 +44,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 	g_nlist->net.resize(num_net_arr);
 
 	for(i = 0; i < num_net_arr; i++){
-		g_nlist->net[i].name = my_strdup(net_arr[i].name);
+		g_nlist->net[i].name = vtr::strdup(net_arr[i].name);
 		g_nlist->net[i].is_routed = net_arr[i].is_routed;
 		g_nlist->net[i].is_fixed = net_arr[i].is_fixed;
 		g_nlist->net[i].is_global = net_arr[i].is_global;
@@ -49,7 +53,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 		// Power info may be removed from net ?
 		//g_nlist->nets[i].net_power = new t_net_power(*net_arr[i].net_power);
 
-		assert(g_nlist->net[i].pins.empty());
+		VTR_ASSERT(g_nlist->net[i].pins.empty());
 		g_nlist->net[i].pins.resize(net_arr[i].num_sinks + 1);
 		for(j = 0; j <= net_arr[i].num_sinks; j++){
 
@@ -71,7 +75,7 @@ void load_global_net_from_array(INP t_net* net_arr,
 	return;
 }
 
-void echo_global_nlist_net(INP t_netlist* g_nlist){
+void echo_global_nlist_net(const t_netlist* g_nlist){
 
 	unsigned int i, j;
 
@@ -80,29 +84,29 @@ void echo_global_nlist_net(INP t_netlist* g_nlist){
 			"Global netlist variable has not been allocated!");
 	}
 
-	vpr_printf_info("********Dumping clb netlist info contained in vectors*******\n");
+	vtr::printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
 	for(i = 0; i < g_nlist->net.size(); i++){
-		vpr_printf_info("Net name %s\n", g_nlist->net[i].name);
-		vpr_printf_info("Routed %d fixed %d global %d const_gen %d\n", 
+		vtr::printf_info("Net name %s\n", g_nlist->net[i].name);
+		vtr::printf_info("Routed %d fixed %d global %d const_gen %d\n", 
 			g_nlist->net[i].is_routed,
 			g_nlist->net[i].is_fixed ,
 			g_nlist->net[i].is_global, 
 			g_nlist->net[i].is_const_gen);
 		for(j = 0; j < g_nlist->net[i].pins.size(); j++){
-			vpr_printf_info("Block index %d port %d pin %d \n", 
+			vtr::printf_info("Block index %d port %d pin %d \n", 
 				g_nlist->net[i].pins[j].block, 
 				g_nlist->net[i].pins[j].block_port,  
 				g_nlist->net[i].pins[j].block_pin);
 		
 		}
-		vpr_printf_info("\n");
+		vtr::printf_info("\n");
 	}
-	vpr_printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
+	vtr::printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
 }
 
-static bool check_global_net_with_array(INP t_net* net_arr,
-	INP int num_net_arr, OUTP t_netlist* g_nlist){
+static bool check_global_net_with_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist){
 
 	int i, j;
 
@@ -132,12 +136,12 @@ static bool check_global_net_with_array(INP t_net* net_arr,
 	
 	}
 
-	assert(num_net_arr == (int)g_nlist->net.size());
+	VTR_ASSERT(num_net_arr == (int)g_nlist->net.size());
 
 	return true;
 }
 
-void free_global_nlist_net(INP t_netlist* g_nlist){
+void free_global_nlist_net(t_netlist* g_nlist){
 	
 	if(g_nlist == NULL){
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,

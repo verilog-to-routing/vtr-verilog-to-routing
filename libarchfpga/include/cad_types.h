@@ -6,7 +6,6 @@
 
 #include "logic_types.h"
 #include "physical_types.h"
-#include "util.h"
 
 struct s_pack_pattern_connections;
 typedef struct s_pack_pattern_block {

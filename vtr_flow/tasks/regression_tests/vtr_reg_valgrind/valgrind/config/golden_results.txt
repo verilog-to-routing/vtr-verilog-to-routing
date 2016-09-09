@@ -1,0 +1,13 @@
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+timing/k6_frac_N10_frac_chain_mem32K_40nm.xml	mkSMAdapter4B.v	0ebf929-dirty	success	-1	-1	77.5537	37.8242	16.6399	-1	24299	-1	-1	-1	3912	3786	1775	183	195	205	5	0		
+timing/k6_frac_N10_frac_chain_mem32K_40nm.xml	or1200.v	0ebf929-dirty	success	-1	-1	104.962	68.893	31.695	-1	49084	-1	-1	-1	5049	4882	2644	257	385	394	2	1		
+timing/k6_frac_N10_frac_chain_mem32K_40nm.xml	raygentop.v	0ebf929-dirty	success	-1	-1	74.9574	39.9994	20.333	-1	26900	-1	-1	-1	4746	4364	2138	179	239	305	1	7		
+timing/k6_frac_N10_frac_chain_mem32K_40nm.xml	sha.v	0ebf929-dirty	success	-1	-1	53.9387	38.2917	18.1513	-1	17702	-1	-1	-1	3539	3288	1176	200	38	36	0	0		
+bidir/k4_n4_v7_bidir.xml	mkSMAdapter4B.v	0ebf929-dirty	success	-1	-1	75.26	221.355	152.401	-1	132843	-1	-1	-1	16025	16230	6572	2639	195	205	-1	-1		
+bidir/k4_n4_v7_bidir.xml	or1200.v	0ebf929-dirty	success	-1	-1	64.3679	304.334	202.262	-1	170933	-1	-1	-1	14303	14697	7863	2845	385	394	-1	-1		
+bidir/k4_n4_v7_bidir.xml	raygentop.v	0ebf929-dirty	success	-1	-1	114.344	525.139	279.625	-1	232274	-1	-1	-1	26249	26554	13031	4877	239	305	-1	-1		
+bidir/k4_n4_v7_bidir.xml	sha.v	0ebf929-dirty	success	-1	-1	20.9725	71.418	65.2371	-1	37701	-1	-1	-1	4053	4089	1978	793	38	36	-1	-1		
+complex_switch/k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	mkSMAdapter4B.v	0ebf929-dirty	success	-1	-1	13.0189	320.733	319.965	-1	49214	-1	-1	-1	4222	4427	3244	362	195	205	10	0		
+complex_switch/k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	or1200.v	0ebf929-dirty	success	-1	-1	21.1419	240.217	200.71	-1	77403	-1	-1	-1	5523	5854	4833	540	385	394	4	1		
+complex_switch/k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	raygentop.v	0ebf929-dirty	success	-1	-1	15.2163	213.414	207.035	-1	49891	-1	-1	-1	4685	4801	3544	385	239	305	1	7		
+complex_switch/k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml	sha.v	0ebf929-dirty	success	-1	-1	15.2461	151.626	145.541	-1	47158	-1	-1	-1	4053	4089	3143	389	38	36	0	0		

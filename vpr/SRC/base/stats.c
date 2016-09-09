@@ -3,10 +3,13 @@
 #include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_matrix.h"
+#include "vtr_log.h"
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "rr_graph_area.h"
 #include "segment_stats.h"
@@ -15,6 +18,7 @@ using namespace std;
 #include "path_delay.h"
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
+#include "endpoint_timing.h"
 
 /********************** Subroutines local to this module *********************/
 
@@ -42,7 +46,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	get_length_and_bends_stats();
 	get_channel_occupancy_stats();
 
-	vpr_printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
+	vtr::printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
 	area = 0;
 	for (i = 1; i <= nx; i++) {
@@ -57,7 +61,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		}
 	}
 	/* Todo: need to add pitch of routing to blocks with height > 3 */
-	vpr_printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
+	vtr::printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
 	used_area = 0;
 	for (i = 0; i < num_blocks; i++) {
@@ -69,7 +73,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 			}
 		}
 	}
-	vpr_printf_info("\tTotal used logic block area: %g\n", used_area);
+	vtr::printf_info("\tTotal used logic block area: %g\n", used_area);
 
 	if (route_type == DETAILED) {
 		count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch, 
@@ -92,6 +96,10 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 
 			print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
 			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
+
+			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
+                print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
+            }
 
 			print_timing_stats();
 		}
@@ -142,22 +150,22 @@ void get_length_and_bends_stats(void) {
 	}
 
 	av_bends = (float) total_bends / (float) ((int) g_clbs_nlist.net.size() - num_global_nets);
-	vpr_printf_info("\n");
-	vpr_printf_info("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
+	vtr::printf_info("\n");
 
 	av_length = (float) total_length / (float) ((int) g_clbs_nlist.net.size() - num_global_nets);
-	vpr_printf_info("Number of routed nets (nonglobal): %d\n", (int) g_clbs_nlist.net.size() - num_global_nets);
-	vpr_printf_info("Wire length results (in units of 1 clb segments)...\n");
-	vpr_printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
-	vpr_printf_info("\tMaximum net length: %d\n", max_length);
-	vpr_printf_info("\n");
+	vtr::printf_info("Number of routed nets (nonglobal): %d\n", (int) g_clbs_nlist.net.size() - num_global_nets);
+	vtr::printf_info("Wire length results (in units of 1 clb segments)...\n");
+	vtr::printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
+	vtr::printf_info("\tMaximum net length: %d\n", max_length);
+	vtr::printf_info("\n");
 
 	av_segments = (float) total_segments / (float) ((int) g_clbs_nlist.net.size() - num_global_nets);
-	vpr_printf_info("Wire length results in terms of physical segments...\n");
-	vpr_printf_info("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
-	vpr_printf_info("\tMaximum segments used by a net: %d\n", max_segments);
-	vpr_printf_info("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
+	vtr::printf_info("Wire length results in terms of physical segments...\n");
+	vtr::printf_info("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
+	vtr::printf_info("\tMaximum segments used by a net: %d\n", max_segments);
+	vtr::printf_info("\tTotal local nets with reserved CLB opins: %d\n", num_clb_opins_reserved);
 }
 
 static void get_channel_occupancy_stats(void) {
@@ -167,13 +175,13 @@ static void get_channel_occupancy_stats(void) {
 	int **chanx_occ; /* [1..nx][0..ny] */
 	int **chany_occ; /* [0..nx][1..ny] */
 
-	chanx_occ = (int **) alloc_matrix(1, nx, 0, ny, sizeof(int));
-	chany_occ = (int **) alloc_matrix(0, nx, 1, ny, sizeof(int));
+	chanx_occ = vtr::alloc_matrix<int>(1, nx, 0, ny);
+	chany_occ = vtr::alloc_matrix<int>(0, nx, 1, ny);
 	load_channel_occupancies(chanx_occ, chany_occ);
 
-	vpr_printf_info("\n");
-	vpr_printf_info("X - Directed channels: j max occ ave occ capacity\n");
-	vpr_printf_info("                      -- ------- ------- --------\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("X - Directed channels: j max occ ave occ capacity\n");
+	vtr::printf_info("                      -- ------- ------- --------\n");
 
 	int total_x = 0;
 	for (int j = 0; j <= ny; ++j) {
@@ -186,11 +194,11 @@ static void get_channel_occupancy_stats(void) {
 			ave_occ += chanx_occ[i][j];
 		}
 		ave_occ /= nx;
-		vpr_printf_info("                      %2d %7d %7.4f %8d\n", j, max_occ, ave_occ, chan_width.x_list[j]);
+		vtr::printf_info("                      %2d %7d %7.4f %8d\n", j, max_occ, ave_occ, chan_width.x_list[j]);
 	}
 
-	vpr_printf_info("Y - Directed channels: i max occ ave occ capacity\n");
-	vpr_printf_info("                      -- ------- ------- --------\n");
+	vtr::printf_info("Y - Directed channels: i max occ ave occ capacity\n");
+	vtr::printf_info("                      -- ------- ------- --------\n");
 
 	int total_y = 0;
 	for (int i = 0; i <= nx; ++i) {
@@ -203,15 +211,15 @@ static void get_channel_occupancy_stats(void) {
 			ave_occ += chany_occ[i][j];
 		}
 		ave_occ /= ny;
-		vpr_printf_info("                      %2d %7d %7.4f %8d\n", i, max_occ, ave_occ, chan_width.y_list[i]);
+		vtr::printf_info("                      %2d %7d %7.4f %8d\n", i, max_occ, ave_occ, chan_width.y_list[i]);
 	}
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
+	vtr::printf_info("\n");
 
-	free_matrix(chanx_occ, 1, nx, 0, sizeof(int));
-	free_matrix(chany_occ, 0, nx, 1, sizeof(int));
+    vtr::free_matrix(chanx_occ, 1, nx, 0);
+	vtr::free_matrix(chany_occ, 0, nx, 1);
 }
 
 static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
@@ -338,7 +346,7 @@ void print_wirelen_prob_dist(void) {
 	int prob_dist_size, i, incr;
 
 	prob_dist_size = nx + ny + 10;
-	prob_dist = (float *) my_calloc(prob_dist_size, sizeof(float));
+	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
@@ -354,13 +362,13 @@ void print_wirelen_prob_dist(void) {
 			index = (int) two_point_length;
 			if (index >= prob_dist_size) {
 
-				vpr_printf_warning(__FILE__, __LINE__,
+				vtr::printf_warning(__FILE__, __LINE__,
 						"Index (%d) to prob_dist exceeds its allocated size (%d).\n",
 						index, prob_dist_size);
-				vpr_printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
+				vtr::printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
-				prob_dist = (float *)my_realloc(prob_dist,
+				prob_dist = (float *)vtr::realloc(prob_dist,
 						prob_dist_size * sizeof(float));
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
@@ -371,13 +379,13 @@ void print_wirelen_prob_dist(void) {
 			index++;
 			if (index >= prob_dist_size) {
 
-				vpr_printf_warning(__FILE__, __LINE__,
+				vtr::printf_warning(__FILE__, __LINE__,
 						"Index (%d) to prob_dist exceeds its allocated size (%d).\n",
 						index, prob_dist_size);
-				vpr_printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
+				vtr::printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
-				prob_dist = (float *)my_realloc(prob_dist,
+				prob_dist = (float *)vtr::realloc(prob_dist,
 						prob_dist_size * sizeof(float));
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
@@ -391,23 +399,23 @@ void print_wirelen_prob_dist(void) {
 
 	/* Normalize so total probability is 1 and print out. */
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Probability distribution of 2-pin net lengths:\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Length    p(Lenth)\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Probability distribution of 2-pin net lengths:\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Length    p(Lenth)\n");
 
 	av_length = 0;
 
 	for (index = 0; index < prob_dist_size; index++) {
 		prob_dist[index] /= norm_fac;
-		vpr_printf_info("%6d  %10.6f\n", index, prob_dist[index]);
+		vtr::printf_info("%6d  %10.6f\n", index, prob_dist[index]);
 		av_length += prob_dist[index] * index;
 	}
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Number of 2-pin nets: ;%g;\n", norm_fac);
-	vpr_printf_info("Expected value of 2-pin net length (R): ;%g;\n", av_length);
-	vpr_printf_info("Total wirelength: ;%g;\n", norm_fac * av_length);
+	vtr::printf_info("\n");
+	vtr::printf_info("Number of 2-pin nets: ;%g;\n", norm_fac);
+	vtr::printf_info("Expected value of 2-pin net length (R): ;%g;\n", av_length);
+	vtr::printf_info("Total wirelength: ;%g;\n", norm_fac * av_length);
 
 	free(prob_dist);
 }
@@ -426,7 +434,7 @@ void print_lambda(void) {
 
 	for (bnum = 0; bnum < num_blocks; bnum++) {
 		type = block[bnum].type;
-		assert(type != NULL);
+		VTR_ASSERT(type != NULL);
 		if (type != IO_TYPE) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
@@ -441,7 +449,7 @@ void print_lambda(void) {
 	}
 
 	lambda = (float) num_inputs_used / (float) num_blocks;
-	vpr_printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
+	vtr::printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
 int count_netlist_clocks(void) {
@@ -457,7 +465,7 @@ int count_netlist_clocks(void) {
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
 		if (logical_block[iblock].clock_net != OPEN) {
 			clock_net = logical_block[iblock].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			name = logical_block[clock_net].name;
 			/* Now that we've found a clock, let's see if we've counted it already */
 			found = false;
@@ -468,7 +476,7 @@ int count_netlist_clocks(void) {
 			}
 			if (!found) {
 				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-				clock_names = (char **) my_realloc (clock_names, ++num_clocks * sizeof(char *));
+				clock_names = (char **) vtr::realloc (clock_names, ++num_clocks * sizeof(char *));
 				clock_names[num_clocks - 1] = name;
 			}
 		}

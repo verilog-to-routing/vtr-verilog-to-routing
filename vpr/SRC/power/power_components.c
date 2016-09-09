@@ -22,9 +22,11 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
+#include <cmath>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_math.h"
+#include "vtr_assert.h"
 
 #include "power_components.h"
 #include "power_lowlevel.h"
@@ -52,7 +54,7 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 void power_components_init(void) {
 	int i;
 
-	g_power_by_component.components = (t_power_usage*) my_calloc(
+	g_power_by_component.components = (t_power_usage*) vtr::calloc(
 			POWER_COMPONENT_MAX_NUM, sizeof(t_power_usage));
 	for (i = 0; i < POWER_COMPONENT_MAX_NUM; i++) {
 		power_zero_usage(&g_power_by_component.components[i]);
@@ -225,15 +227,15 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 	num_SRAM_bits = 1 << lut_size;
 
 	/* Initialize internal node data */
-	internal_prob = (float**) my_calloc(lut_size + 1, sizeof(float*));
-	internal_dens = (float**) my_calloc(lut_size + 1, sizeof(float*));
-	internal_v = (float**) my_calloc(lut_size + 1, sizeof(float*));
+	internal_prob = (float**) vtr::calloc(lut_size + 1, sizeof(float*));
+	internal_dens = (float**) vtr::calloc(lut_size + 1, sizeof(float*));
+	internal_v = (float**) vtr::calloc(lut_size + 1, sizeof(float*));
 	for (i = 0; i <= lut_size; i++) {
-		internal_prob[i] = (float*) my_calloc(1 << (lut_size - i),
+		internal_prob[i] = (float*) vtr::calloc(1 << (lut_size - i),
 				sizeof(float));
-		internal_dens[i] = (float*) my_calloc(1 << (lut_size - i),
+		internal_dens[i] = (float*) vtr::calloc(1 << (lut_size - i),
 				sizeof(float));
-		internal_v[i] = (float*) my_calloc(1 << (lut_size - i), sizeof(float));
+		internal_v[i] = (float*) vtr::calloc(1 << (lut_size - i), sizeof(float));
 	}
 
 	/* Initialize internal probabilities/densities from SRAM bits */
@@ -286,8 +288,8 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 			float out_prob;
 			float out_dens;
 			float sum_prob = 0;
-			int sram_offset = MUX_idx * ipow(2, level_idx + 1);
-			int sram_per_branch = ipow(2, level_idx);
+			int sram_offset = MUX_idx * vtr::ipow(2, level_idx + 1);
+			int sram_per_branch = vtr::ipow(2, level_idx);
 			int branch_lvl_idx;
 			int sram_idx;
 			float v_out;
@@ -319,7 +321,7 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 				for (branch_lvl_idx = 0; branch_lvl_idx < level_idx;
 						branch_lvl_idx++) {
 					int branch_lvl_reverse_idx = lut_size - branch_lvl_idx - 1;
-					int even_odd = sram_idx / ipow(2, branch_lvl_idx);
+					int even_odd = sram_idx / vtr::ipow(2, branch_lvl_idx);
 					if (even_odd % 2 == 0) {
 						branch_prob *= (1 - input_prob[branch_lvl_reverse_idx]);
 					} else {
@@ -417,11 +419,11 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 	/* Ensure port/pins are structured as expected */
 	switch (interc_pins->interconnect->type) {
 	case DIRECT_INTERC:
-		assert(interc_power->num_input_ports == 1);
-		assert(interc_power->num_output_ports == 1);
+		VTR_ASSERT(interc_power->num_input_ports == 1);
+		VTR_ASSERT(interc_power->num_output_ports == 1);
 		break;
 	case MUX_INTERC:
-		assert(interc_power->num_output_ports == 1);
+		VTR_ASSERT(interc_power->num_output_ports == 1);
 		break;
 	case COMPLETE_INTERC:
 		break;
@@ -437,9 +439,9 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 		/* Many-to-1, or Many-to-Many
 		 * Implemented as a multiplexer for each output
 		 * */
-		in_dens = (float*) my_calloc(
+		in_dens = (float*) vtr::calloc(
 				interc->interconnect_power->num_input_ports, sizeof(float));
-		in_prob = (float*) my_calloc(
+		in_prob = (float*) vtr::calloc(
 				interc->interconnect_power->num_input_ports, sizeof(float));
 
 		for (out_port_idx = 0;
@@ -488,7 +490,7 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 						}
 
 						/* Check that the input pin was found with a matching net to the output pin */
-						assert(selected_input != OPEN);
+						VTR_ASSERT(selected_input != OPEN);
 					}
 				} else {
 					selected_input = 0;
@@ -509,7 +511,7 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 		free(in_prob);
 		break;
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	power_add_usage(&interc_pins->interconnect->interconnect_power->power_usage,
@@ -534,9 +536,9 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 	bool found;
 	PowerSpicedComponent * callibration;
 	float scale_factor;
-	int * selector_values = (int*) my_calloc(mux_arch->levels, sizeof(int));
+	int * selector_values = (int*) vtr::calloc(mux_arch->levels, sizeof(int));
 
-	assert(selected_input != OPEN);
+	VTR_ASSERT(selected_input != OPEN);
 
 	power_zero_usage(power_usage);
 
@@ -544,7 +546,7 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 	found = mux_find_selector_values(selector_values, mux_arch->mux_graph_head,
 			selected_input);
 
-	assert(found);
+	VTR_ASSERT(found);
 
 	/* Calculate power of the multiplexor stages, from final stage, to first stages */
 	power_usage_mux_rec(power_usage, &output_density, &output_prob, &V_out,
@@ -580,11 +582,11 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 	/* Single input mux is really just a wire, and has no power.
 	 * Ensure that it has no children before returning. */
 	if (mux_node->num_inputs == 1) {
-		assert(mux_node->level == 0);
+		VTR_ASSERT(mux_node->level == 0);
 		return;
 	}
 
-	v_in = (float*) my_calloc(mux_node->num_inputs, sizeof(float));
+	v_in = (float*) vtr::calloc(mux_node->num_inputs, sizeof(float));
 	if (mux_node->level == 0) {
 		/* First level of mux - inputs are primar inputs */
 		in_prob = &primary_input_prob[mux_node->starting_pin_idx];
@@ -595,8 +597,8 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 		}
 	} else {
 		/* Higher level of mux - inputs recursive from lower levels */
-		in_prob = (float*) my_calloc(mux_node->num_inputs, sizeof(float));
-		in_dens = (float*) my_calloc(mux_node->num_inputs, sizeof(float));
+		in_prob = (float*) vtr::calloc(mux_node->num_inputs, sizeof(float));
+		in_dens = (float*) vtr::calloc(mux_node->num_inputs, sizeof(float));
 
 		for (input_idx = 0; input_idx < mux_node->num_inputs; input_idx++) {
 			/* Call recursively for multiplexer driving the input */
@@ -617,6 +619,8 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 		free(in_prob);
 		free(in_dens);
 	}
+	
+	free(v_in);
 }
 
 /**

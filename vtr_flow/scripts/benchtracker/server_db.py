@@ -174,7 +174,7 @@ def get_csv_data():
 def get_view():
     database = parse_db()
     print(real_db(database))
-    tasks = {task_name: task_context for (task_name, task_context) in [t.split('|',1) for t in d.list_tasks(real_db(database))]}
+    tasks = {task_name for (task_name) in d.list_tasks(real_db(database))}
     queried_tasks = parse_tasks()
     x = y = filters = ""
     # only pass other argument values if valid tasks selected

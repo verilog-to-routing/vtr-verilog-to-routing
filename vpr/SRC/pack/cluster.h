@@ -1,6 +1,6 @@
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, bool *is_clock,
-		bool hill_climbing_flag, char *out_fname, bool timing_driven,
+		bool hill_climbing_flag, const char *out_fname, bool timing_driven,
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
 		int recompute_timing_after, float block_delay,
 		float intra_cluster_net_delay, float inter_cluster_net_delay,

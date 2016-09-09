@@ -29,7 +29,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
-#include "util.h"
 
 long unique_node_name_id = 0;
 

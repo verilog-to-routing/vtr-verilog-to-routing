@@ -7,11 +7,12 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
-#include "arch_types.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
+#include "arch_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "pb_type_graph.h"
@@ -19,17 +20,17 @@ using namespace std;
 #include "pb_type_graph_annotations.h"
 #include "read_xml_arch_file.h"
 
-static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
-		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
-		INP char *value);
+static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *pb_graph_node,
+		const int mode, const char *annot_in_pins, const char *annot_out_pins,
+		const char *value);
 
-static void load_critical_path_annotations(INP int line_num, 
-		INOUTP t_pb_graph_node *pb_graph_node, INP int mode,
-		INP enum e_pin_to_pin_annotation_format input_format,
-		INP enum e_pin_to_pin_delay_annotations delay_type,
-		INP char *annot_in_pins, INP char *annot_out_pins, INP char* value);
+static void load_critical_path_annotations(const int line_num, 
+		t_pb_graph_node *pb_graph_node, const int mode,
+		const enum e_pin_to_pin_annotation_format input_format,
+		const enum e_pin_to_pin_delay_annotations delay_type,
+		const char *annot_in_pins, const char *annot_out_pins, const char* value);
 
-void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node) {
+void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 	int i, j, k, m;
 	const t_pb_type *pb_type;
 	t_pin_to_pin_annotation *annotations;
@@ -53,7 +54,7 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 								annotations[i].output_pins,
 								annotations[i].value[j]);
 					} else {
-						assert(
+						VTR_ASSERT(
 								annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
 					}
 				}
@@ -88,13 +89,13 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 										annotations[k].output_pins,
 										annotations[k].value[m]);
 							} else {
-								assert(
+								VTR_ASSERT(
 										annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
 							}
 						}
 					} else if (annotations[k].type
 							== E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
-						assert(annotations[k].num_value_prop_pairs == 1);
+						VTR_ASSERT(annotations[k].num_value_prop_pairs == 1);
 						load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
 								annotations[k].input_pins,
 								annotations[k].output_pins,
@@ -123,9 +124,9 @@ void load_pb_graph_pin_to_pin_annotations(INOUTP t_pb_graph_node *pb_graph_node)
 /*
  Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
-static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_node *pb_graph_node,
-		INP int mode, INP char *annot_in_pins, INP char *annot_out_pins,
-		INP char *value) {
+static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *pb_graph_node,
+		const int mode, const char *annot_in_pins, const char *annot_out_pins,
+		const char *value) {
 	int i, j, k, m, n, p, iedge;
 	t_pb_graph_pin ***in_port, ***out_port;
 	int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
@@ -155,13 +156,10 @@ static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_no
 					 can use this info to only annotate existing edges */
 					if (iedge != in_port[i][j]->num_output_edges) {
 						in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
-						in_port[i][j]->output_edges[iedge]->pack_pattern_names = (char**)
-								my_realloc(
+						in_port[i][j]->output_edges[iedge]->pack_pattern_names = (const char**) vtr::realloc(
 										in_port[i][j]->output_edges[iedge]->pack_pattern_names,
-										sizeof(char*)
-												* in_port[i][j]->output_edges[iedge]->num_pack_patterns);
-						in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns
-								- 1] = value;
+										sizeof(char*) * in_port[i][j]->output_edges[iedge]->num_pack_patterns);
+						in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value;
 					}
 					p++;
 				}
@@ -186,11 +184,11 @@ static void load_pack_pattern_annotations(INP int line_num, INOUTP t_pb_graph_no
 	}
 }
 
-static void load_critical_path_annotations(INP int line_num, 
-		INOUTP t_pb_graph_node *pb_graph_node, INP int mode,
-		INP enum e_pin_to_pin_annotation_format input_format,
-		INP enum e_pin_to_pin_delay_annotations delay_type,
-		INP char *annot_in_pins, INP char *annot_out_pins, INP char* value) {
+static void load_critical_path_annotations(const int line_num, 
+		t_pb_graph_node *pb_graph_node, const int mode,
+		const enum e_pin_to_pin_annotation_format input_format,
+		const enum e_pin_to_pin_delay_annotations delay_type,
+		const char *annot_in_pins, const char *annot_out_pins, const char* value) {
 
 	int i, j, k, m, n, p, iedge;
 	t_pb_graph_pin ***in_port, ***out_port;
@@ -229,17 +227,17 @@ static void load_critical_path_annotations(INP int line_num,
 		children = pb_graph_node->child_pb_graph_nodes[mode];
 	}
 	if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-		assert(pb_graph_node->pb_type->blif_model != NULL);
+		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
 	} else if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
-		assert(pb_graph_node->pb_type->blif_model != NULL);
+		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
 	} else {
-		assert(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX);
+		VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
@@ -262,9 +260,9 @@ static void load_critical_path_annotations(INP int line_num,
 		num_outputs = 1;
 	}
 
-	delay_matrix = (float**)my_malloc(sizeof(float*) * num_inputs);
+	delay_matrix = (float**)vtr::malloc(sizeof(float*) * num_inputs);
 	for (i = 0; i < num_inputs; i++) {
-		delay_matrix[i] = (float*)my_malloc(sizeof(float) * num_outputs);
+		delay_matrix[i] = (float*)vtr::malloc(sizeof(float) * num_outputs);
 	}
 
 	if (input_format == E_ANNOT_PIN_TO_PIN_MATRIX) {
@@ -275,7 +273,7 @@ static void load_critical_path_annotations(INP int line_num,
 		}
 		my_atof_2D(delay_matrix, num_inputs, num_outputs, value);
 	} else {
-		assert(input_format == E_ANNOT_PIN_TO_PIN_CONSTANT);
+		VTR_ASSERT(input_format == E_ANNOT_PIN_TO_PIN_CONSTANT);
 		for (i = 0; i < num_inputs; i++) {
 			for (j = 0; j < num_outputs; j++) {
 				delay_matrix[i][j] = atof(value);
@@ -306,7 +304,7 @@ static void load_critical_path_annotations(INP int line_num,
 									iedge++) {
 								if (in_port[i][j]->output_edges[iedge]->output_pins[0]
 										== out_port[m][n]) {
-									assert(
+									VTR_ASSERT(
 											in_port[i][j]->output_edges[iedge]->delay_max == 0);
 									break;
 								}
@@ -340,9 +338,9 @@ static void load_critical_path_annotations(INP int line_num,
 					}
 					prior_offset = in_port[i][j]->num_pin_timing;
 					in_port[i][j]->num_pin_timing = prior_offset + count;
-					in_port[i][j]->pin_timing_del_max = (float*) my_realloc(in_port[i][j]->pin_timing_del_max,
+					in_port[i][j]->pin_timing_del_max = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_max,
 							sizeof(float) * in_port[i][j]->num_pin_timing);
-					in_port[i][j]->pin_timing = (t_pb_graph_pin**)my_realloc(in_port[i][j]->pin_timing,
+					in_port[i][j]->pin_timing = (t_pb_graph_pin**)vtr::realloc(in_port[i][j]->pin_timing,
 							sizeof(t_pb_graph_pin*) * in_port[i][j]->num_pin_timing);
 					p = 0;
 					count = 0;
@@ -358,7 +356,7 @@ static void load_critical_path_annotations(INP int line_num,
 							p++;
 						}
 					}
-					assert(in_port[i][j]->num_pin_timing == prior_offset + count);
+					VTR_ASSERT(in_port[i][j]->num_pin_timing == prior_offset + count);
 					k++;
 				}
 			}

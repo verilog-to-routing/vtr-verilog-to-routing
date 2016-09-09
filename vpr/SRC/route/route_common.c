@@ -6,13 +6,16 @@
 #include <iostream>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
+
+#include "vpr_types.h"
+#include "vpr_error.h"
+#include "vpr_utils.h"
 
 #include "stats.h"
-#include "util.h"
-#include "vpr_types.h"
 #include "globals.h"
-#include "vpr_utils.h"
 #include "route_export.h"
 #include "route_common.h"
 #include "route_tree_timing.h"
@@ -31,6 +34,13 @@ using namespace std;
 // metric, and this is also somewhat larger than largest circuit observed to have
 // inaccurate predictions, thought this is still only affects quite small circuits.
 #define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
+// Routing failure predictor will take into account this number of past iterations:
+#define PREDICTOR_ITERATIONS 5
+// XXX: Congestion can take a little longer to resolve once the fraction of overused nodes is low.
+//	Once the overuse ratio is lower than the following value, the predictor will take into account
+//	the previous 2*PREDICTOR_ITERATIONS iterations instead.
+//	This is just a placeholder; the exact value should be investigated
+#define OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK 0.0002
 
 /***************** Variables shared only by route modules *******************/
 
@@ -49,12 +59,12 @@ static int heap_tail; /* Index of first unused slot in the heap array */
 /* For managing my own list of currently free heap data structures.     */
 static struct s_heap *heap_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the heap*/
-static t_chunk heap_ch = {NULL, 0, NULL};
+static vtr::t_chunk heap_ch = {NULL, 0, NULL};
 
 /* For managing my own list of currently free trace data structures.    */
 static struct s_trace *trace_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the trace*/
-static t_chunk trace_ch = {NULL, 0, NULL};
+static vtr::t_chunk trace_ch = {NULL, 0, NULL};
 
 #ifdef DEBUG
 static int num_trace_allocated = 0; /* To watch for memory leaks. */
@@ -65,7 +75,7 @@ static int num_linked_f_pointer_allocated = 0;
 static struct s_linked_f_pointer *rr_modified_head = NULL;
 static struct s_linked_f_pointer *linked_f_pointer_free_head = NULL;
 
-static t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
+static vtr::t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -104,15 +114,15 @@ static void add_to_heap(struct s_heap *hptr);
 static struct s_heap *alloc_heap_data(void);
 static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
 
-static t_ivec **alloc_and_load_clb_opins_used_locally(void);
+static vtr::t_ivec **alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 		float pres_fac, float acc_fac);
 
 /************************** Subroutine definitions ***************************/
 
 void save_routing(struct s_trace **best_routing,
-		t_ivec ** clb_opins_used_locally,
-		t_ivec ** saved_clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally,
+		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* This routing frees any routing currently held in best routing,       *
 	 * then copies over the current routing (held in trace_head), and       *
@@ -162,8 +172,8 @@ void save_routing(struct s_trace **best_routing,
 }
 
 void restore_routing(struct s_trace **best_routing,
-		t_ivec ** clb_opins_used_locally,
-		t_ivec ** saved_clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally,
+		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* Deallocates any current routing in trace_head, and replaces it with    *
 	 * the routing in best_routing.  Best_routing is set to NULL to show that *
@@ -231,7 +241,7 @@ void get_serial_num(void) {
 			tptr = tptr->next;
 		}
 	}
-	vpr_printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
+	vtr::printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
 void try_graph(int width_fac, struct s_router_opts router_opts,
@@ -276,13 +286,13 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 	clock_t end = clock();
 
-	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
 bool try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
-		t_chan_width_dist chan_width_dist, t_ivec ** clb_opins_used_locally,
+		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
 		bool * Fc_clipped, t_direct_inf *directs, int num_directs) {
 
 	/* Attempts a routing via an iterated maze router algorithm.  Width_fac *
@@ -329,7 +339,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	clock_t end = clock();
 
-	vpr_printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
 	bool success = true;
 
@@ -339,14 +349,15 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	init_route_structs(router_opts.bb_factor);
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
-		vpr_printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
+		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
 				width_fac);
 	} else { /* TIMING_DRIVEN route */
-		vpr_printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
-		assert(router_opts.route_type != GLOBAL);
+		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
+
 		success = try_timing_driven_route(router_opts, net_delay, slacks,
 			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
+
 		profiling::time_on_fanout_analysis();
 	}
 
@@ -371,20 +382,31 @@ bool feasible_routing(void) {
 	return (true);
 }
 
-int predict_success_route_iter(const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
+int predict_success_route_iter(int router_iteration, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
+
+	if (router_iteration <= PREDICTOR_ITERATIONS) 
+		return 0;
 
 	// invalid condition for prediction
-	if (router_opts.routing_failure_predictor == OFF || num_nets < MIN_NETS_TO_ACTIVATE_PREDICTOR) return 0;
+	if (router_opts.routing_failure_predictor == OFF || num_nets < MIN_NETS_TO_ACTIVATE_PREDICTOR) 
+		return 0;
 
-	// use the last 5 iterations in prediction
-	size_t itry {historical_overuse_ratio.size() - 1};
-	double congestion_slope {linear_regression_vector(historical_overuse_ratio, itry - 5)};
+	// compute slope 
+	size_t itry = historical_overuse_ratio.size() - 1;
+	size_t start_iteration = itry - PREDICTOR_ITERATIONS;
+	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK){
+		start_iteration = itry - 2*PREDICTOR_ITERATIONS;
+		if (2*PREDICTOR_ITERATIONS > itry)
+			start_iteration = 0;
+	}
+	double congestion_slope = linear_regression_vector(historical_overuse_ratio, start_iteration);
 
 	// linear extrapolation
+	// FIXME: if congestion increases compared to previous iterations, this can return a positive slope
 	int expected_success_route_iter = (itry*congestion_slope - historical_overuse_ratio.back()) / congestion_slope;
 
 	if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations) {
-		vpr_printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
+		vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
 		return UNDEFINED;
 	}
 	return expected_success_route_iter;
@@ -431,7 +453,7 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	int occ = rr_node[inode].get_occ() + add_or_sub;
 	rr_node[inode].set_occ(occ);
 	// can't have negative occupancy
-	assert(occ >= 0);
+	VTR_ASSERT(occ >= 0);
 
 	int	capacity = rr_node[inode].get_capacity();
 	if (occ < capacity) {
@@ -694,12 +716,12 @@ void free_traceback(int inet) {
 	trace_tail[inet] = NULL;
 }
 
-t_ivec **
+vtr::t_ivec **
 alloc_route_structs(void) {
 
 	/* Allocates the data structures needed for routing.    */
 
-	t_ivec **clb_opins_used_locally;
+	vtr::t_ivec **clb_opins_used_locally;
 
 	alloc_route_static_structs();
 	clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
@@ -708,42 +730,42 @@ alloc_route_structs(void) {
 }
 
 void alloc_route_static_structs(void) {
-	trace_head = (struct s_trace **) my_calloc(num_nets,
+	trace_head = (struct s_trace **) vtr::calloc(num_nets,
 			sizeof(struct s_trace *));
-	trace_tail = (struct s_trace **) my_malloc(
+	trace_tail = (struct s_trace **) vtr::malloc(
 			num_nets * sizeof(struct s_trace *));
 
 	heap_size = nx * ny;
-	heap = (struct s_heap **) my_malloc(heap_size * sizeof(struct s_heap *));
+	heap = (struct s_heap **) vtr::malloc(heap_size * sizeof(struct s_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
 
-	route_bb = (struct s_bb *) my_malloc(num_nets * sizeof(struct s_bb));
+	route_bb = (struct s_bb *) vtr::malloc(num_nets * sizeof(struct s_bb));
 }
 
 struct s_trace **
-alloc_saved_routing(t_ivec ** clb_opins_used_locally,
-		t_ivec *** saved_clb_opins_used_locally_ptr) {
+alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
+		vtr::t_ivec *** saved_clb_opins_used_locally_ptr) {
 
 	/* Allocates data structures into which the key routing data can be saved,   *
 	 * allowing the routing to be recovered later (e.g. after a another routing  *
 	 * is attempted).                                                            */
 
 	struct s_trace **best_routing;
-	t_ivec **saved_clb_opins_used_locally;
+	vtr::t_ivec **saved_clb_opins_used_locally;
 	int iblk, iclass, num_local_opins;
 	t_type_ptr type;
 
-	best_routing = (struct s_trace **) my_calloc(g_clbs_nlist.net.size(),
+	best_routing = (struct s_trace **) vtr::calloc(g_clbs_nlist.net.size(),
 			sizeof(struct s_trace *));
 
-	saved_clb_opins_used_locally = (t_ivec **) my_malloc(
-			num_blocks * sizeof(t_ivec *));
+	saved_clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
+			num_blocks * sizeof(vtr::t_ivec *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
-		saved_clb_opins_used_locally[iblk] = (t_ivec *) my_malloc(
-				type->num_class * sizeof(t_ivec));
+		saved_clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
+				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			saved_clb_opins_used_locally[iblk][iclass].nelem = num_local_opins;
@@ -752,7 +774,7 @@ alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 				saved_clb_opins_used_locally[iblk][iclass].list = NULL;
 			} else {
 				saved_clb_opins_used_locally[iblk][iclass].list =
-						(int *) my_malloc(num_local_opins * sizeof(int));
+						(int *) vtr::malloc(num_local_opins * sizeof(int));
 			}
 		}
 	}
@@ -762,26 +784,26 @@ alloc_saved_routing(t_ivec ** clb_opins_used_locally,
 }
 
 /* TODO: super hacky, jluu comment, I need to rethink this whole function, without it, logically equivalent output pins incorrectly use more pins than needed.  I force that CLB output pin uses at most one output pin  */
-static t_ivec **
+static vtr::t_ivec **
 alloc_and_load_clb_opins_used_locally(void) {
 
 	/* Allocates and loads the data needed to make the router reserve some CLB  *
 	 * output pins for connections made locally within a CLB (if the netlist    *
 	 * specifies that this is necessary).                                       */
 
-	t_ivec **clb_opins_used_locally;
+	vtr::t_ivec **clb_opins_used_locally;
 	int iblk, clb_pin, iclass, num_local_opins;
 	int class_low, class_high;
 	t_type_ptr type;
 
-	clb_opins_used_locally = (t_ivec **) my_malloc(
-			num_blocks * sizeof(t_ivec *));
+	clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
+			num_blocks * sizeof(vtr::t_ivec *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		clb_opins_used_locally[iblk] = (t_ivec *) my_malloc(
-				type->num_class * sizeof(t_ivec));
+		clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
+				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++)
 			clb_opins_used_locally[iblk][iclass].nelem = 0;
 
@@ -796,7 +818,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 				iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
-					assert(iclass >= class_low && iclass <= class_high);
+					VTR_ASSERT(iclass >= class_low && iclass <= class_high);
 					clb_opins_used_locally[iblk][iclass].nelem++;
 				}
 			}
@@ -808,7 +830,7 @@ alloc_and_load_clb_opins_used_locally(void) {
 			if (num_local_opins == 0)
 				clb_opins_used_locally[iblk][iclass].list = NULL;
 			else
-				clb_opins_used_locally[iblk][iclass].list = (int *) my_malloc(
+				clb_opins_used_locally[iblk][iclass].list = (int *) vtr::malloc(
 						num_local_opins * sizeof(int));
 		}
 	}
@@ -855,7 +877,7 @@ void free_route_structs() {
 }
 
 void free_saved_routing(struct s_trace **best_routing,
-		t_ivec ** saved_clb_opins_used_locally) {
+		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* Frees the data structures needed to save a routing.                     */
 	int i;
@@ -880,7 +902,7 @@ void alloc_and_load_rr_node_route_structs(void) {
 			"in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
 	}
 
-	rr_node_route_inf = (t_rr_node_route_inf *) my_malloc(num_rr_nodes * sizeof(t_rr_node_route_inf));
+	rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(num_rr_nodes * sizeof(t_rr_node_route_inf));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
@@ -899,7 +921,7 @@ void reset_rr_node_route_structs(void) {
 
 	int inode;
 
-	assert(rr_node_route_inf != NULL);
+	VTR_ASSERT(rr_node_route_inf != NULL);
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
@@ -1046,7 +1068,7 @@ namespace heap_ {
 	void expand_heap_if_full() {
 		if (heap_tail > heap_size) { /* Heap is full */
 			heap_size *= 2;
-			heap = (struct s_heap **) my_realloc((void *) (heap + 1),
+			heap = (struct s_heap **) vtr::realloc((void *) (heap + 1),
 					heap_size * sizeof(struct s_heap *));
 			heap--; /* heap goes from [1..heap_size] */
 		}		
@@ -1089,13 +1111,13 @@ namespace heap_ {
 	}
 	// extract every element and print it
 	void pop_heap() {
-		while (!is_empty_heap()) vpr_printf_info("%e ", get_heap_head()->cost);
-		vpr_printf_info("\n");
+		while (!is_empty_heap()) vtr::printf_info("%e ", get_heap_head()->cost);
+		vtr::printf_info("\n");
 	}
 	// print every element; not necessarily in order for minheap
 	void print_heap() {
-		for (int i = 1; i < heap_tail >> 1; ++i) vpr_printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
-		vpr_printf_info("\n");
+		for (int i = 1; i < heap_tail >> 1; ++i) vtr::printf_info("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
+		vtr::printf_info("\n");
 	}
 	// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
 	void verify_extract_top() {
@@ -1103,7 +1125,7 @@ namespace heap_ {
 		std::cout << "copying heap\n";
 		std::vector<s_heap*> heap_copy {heap + 1, heap + heap_tail};
 		// sort based on cost with cheapest first
-		assert(heap_copy.size() == size());
+		VTR_ASSERT(heap_copy.size() == size());
 		std::sort(begin(heap_copy), end(heap_copy), 
 			[](const s_heap* a, const s_heap* b){
 			return a->cost < b->cost;
@@ -1146,8 +1168,8 @@ get_heap_head(void) {
 
 	do {
 		if (heap_tail == 1) { /* Empty heap. */
-			vpr_printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
-			vpr_printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
+			vtr::printf_warning(__FILE__, __LINE__, "Empty heap occurred in get_heap_head.\n");
+			vtr::printf_warning(__FILE__, __LINE__, "Some blocks are impossible to connect in this architecture.\n");
 			return (NULL);
 		}
 
@@ -1184,7 +1206,7 @@ alloc_heap_data(void) {
 	struct s_heap *temp_ptr;
 
 	if (heap_free_head == NULL) { /* No elements on the free list */
-		heap_free_head = (struct s_heap *) my_chunk_malloc(sizeof(struct s_heap),&heap_ch);
+		heap_free_head = (struct s_heap *) vtr::chunk_malloc(sizeof(struct s_heap),&heap_ch);
 		heap_free_head->u.next = NULL;
 	}
 
@@ -1223,7 +1245,7 @@ alloc_trace_data(void) {
 	struct s_trace *temp_ptr;
 
 	if (trace_free_head == NULL) { /* No elements on the free list */
-		trace_free_head = (struct s_trace *) my_chunk_malloc(sizeof(struct s_trace),&trace_ch);
+		trace_free_head = (struct s_trace *) vtr::chunk_malloc(sizeof(struct s_trace),&trace_ch);
 		trace_free_head->next = NULL;
 	}
 	temp_ptr = trace_free_head;
@@ -1256,7 +1278,7 @@ alloc_linked_f_pointer(void) {
 
 	if (linked_f_pointer_free_head == NULL) {
 		/* No elements on the free list */	
-	linked_f_pointer_free_head = (struct s_linked_f_pointer *) my_chunk_malloc(sizeof(struct s_linked_f_pointer),&linked_f_pointer_ch);
+	linked_f_pointer_free_head = (struct s_linked_f_pointer *) vtr::chunk_malloc(sizeof(struct s_linked_f_pointer),&linked_f_pointer_ch);
 	linked_f_pointer_free_head->next = NULL;
 	}
 
@@ -1346,7 +1368,7 @@ void print_route(char *route_file) {
 						int pin_num = rr_node[inode].get_ptc_num();
 						int offset = grid[ilow][jlow].height_offset;
 						int iblock = grid[ilow][jlow - offset].blocks[0];
-						assert(iblock != OPEN);
+						VTR_ASSERT(iblock != OPEN);
 						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
 						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
@@ -1383,7 +1405,7 @@ void print_route(char *route_file) {
 	fclose(fp);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
-		fp = my_fopen(getEchoFileName(E_ECHO_MEM), "w", 0);
+		fp = vtr::fopen(getEchoFileName(E_ECHO_MEM), "w");
 		fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
 				num_heap_allocated, num_trace_allocated);
 		fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
@@ -1395,7 +1417,7 @@ void print_route(char *route_file) {
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		t_ivec ** clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
 	 This was especially important for logical equivalence; however, now that we have a very general
@@ -1485,15 +1507,15 @@ void free_chunk_memory_trace(void) {
 // utility and debugging functions -----------------------
 void print_traceback(int inet) {
 	// linearly print linked list
-	vpr_printf_info("traceback %d: ", inet);
+	vtr::printf_info("traceback %d: ", inet);
 	t_trace* head = trace_head[inet];
 	while (head) {
 		int inode {head->index};
 		if (rr_node[inode].type == SINK) 
-			vpr_printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
+			vtr::printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
 		else 
-			vpr_printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
+			vtr::printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
 		head = head->next;
 	}
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }

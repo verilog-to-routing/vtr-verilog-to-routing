@@ -13,9 +13,13 @@
 #include <chrono>
 using namespace std;
 
-#include <assert.h>
 
-#include "util.h"
+#include "vtr_assert.h"
+#include "vtr_list.h"
+#include "vtr_matrix.h"
+#include "vtr_math.h"
+#include "vtr_log.h"
+
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -34,6 +38,7 @@ using namespace std;
 #include "ReadOptions.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
+#include "CheckOptions.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "ReadOptions.h"
@@ -57,8 +62,8 @@ static void free_arch(t_arch* Arch);
 static void free_options(t_options *options);
 static void free_circuit(void);
 
-static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
-			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin);
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup, const int wire_segment_length,
+			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
@@ -68,95 +73,86 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb
 /* Display general VPR information */
 void vpr_print_title(void) {
 
-	vpr_printf_info("\n");
-	vpr_printf_info("VPR FPGA Placement and Routing.\n");
-	vpr_printf_info("Version: Version " VPR_VERSION "\n");
-	vpr_printf_info("Revision: " BUILD_VERSION "\n");
-	vpr_printf_info("Compiled: " BUILD_DATE ".\n");
-	vpr_printf_info("University of Toronto\n");
-	vpr_printf_info("vpr@eecg.utoronto.ca\n");
-	vpr_printf_info("This is free open source code under MIT license.\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("VPR FPGA Placement and Routing.\n");
+	vtr::printf_info("Version: v" VPR_VERSION "\n");
+	vtr::printf_info("Revision: " BUILD_VERSION "\n");
+	vtr::printf_info("Compiled: " BUILD_DATE ".\n");
+	vtr::printf_info("University of Toronto\n");
+	vtr::printf_info("vtr-users@googlegroups.com\n");
+	vtr::printf_info("This is free open source code under MIT license.\n");
+	vtr::printf_info("\n");
 
 }
 
 /* Display help screen */
 void vpr_print_usage(void) {
 
-	vpr_printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vpr_printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
-	vpr_printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
-	vpr_printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
-	vpr_printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Packer Options:\n");
-	/* vpr_printf_info("\t[-global_clocks on | off]\n"); */
-	/* vpr_printf_info("\t[-hill_climbing on | off]\n"); */
-	/* vpr_printf_info("\t[-sweep_hanging_nets_and_inputs on | off]\n"); */
-	vpr_printf_info("\t[--timing_driven_clustering on | off]\n");
-	vpr_printf_info("\t[--cluster_seed_type blend|timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
-	/* vpr_printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
-	vpr_printf_info("\t[--allow_unrelated_clustering on | off]\n");
-	/* vpr_printf_info("\t[-allow_early_exit on | off]\n"); */
-	/* vpr_printf_info("\t[-intra_cluster_net_delay <float>] \n"); */
-	/* vpr_printf_info("\t[-inter_cluster_net_delay <float>] \n"); */
-	vpr_printf_info("\t[--connection_driven_clustering on | off] \n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Placer Options:\n");
-	vpr_printf_info("\t[--place_algorithm bounding_box | net_timing_driven | path_timing_driven]\n");
-	vpr_printf_info("\t[--init_t <float>] [--exit_t <float>]\n");
-	vpr_printf_info("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
-	vpr_printf_info("\t[--place_cost_exp <float>]\n");
-	vpr_printf_info("\t[--place_chan_width <int>] \n");
-	vpr_printf_info("\t[--fix_pins random | <file.pads>]\n");
-	vpr_printf_info("\t[--enable_timing_computations on | off]\n");
-	vpr_printf_info("\t[--block_dist <int>]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Placement Options Valid Only for Timing-Driven Placement:\n");
-	vpr_printf_info("\t[--timing_tradeoff <float>]\n");
-	vpr_printf_info("\t[--recompute_crit_iter <int>]\n");
-	vpr_printf_info("\t[--inner_loop_recompute_divider <int>]\n");
-	vpr_printf_info("\t[--td_place_exp_first <float>]\n");
-	vpr_printf_info("\t[--td_place_exp_last <float>]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
-	vpr_printf_info("\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
-	vpr_printf_info("\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
-	vpr_printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");
-	vpr_printf_info("\t[--min_incremental_reroute_fanout <int>]\n");
-	vpr_printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
-	vpr_printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
-	vpr_printf_info("\t[--base_cost_type intrinsic_delay | delay_normalized | demand_only]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("Routing options valid only for timing-driven routing:\n");
-	vpr_printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
-	vpr_printf_info("\t[--criticality_exp <float>]\n");
-	vpr_printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
-	vpr_printf_info("\n");
-	vpr_printf_info("VPR Developer Options:\n");
-	vpr_printf_info("\t[--gen_netlist_as_blif]\n");
-	vpr_printf_info("\n");
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	vpr_printf_info("Options for controlling the interposer-based architectures:\n");
-	vpr_printf_info("\t[--percent_wires_cut <int>]\n");
-	vpr_printf_info("\t[--num_cuts <int>]\n");
-	vpr_printf_info("\t[--delay_increase <int>]\n");
-	vpr_printf_info("\t[--placer_cost_constant <float>]\n");
-	vpr_printf_info("\n");
-#endif
+	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
+	vtr::printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
+	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
+	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
+	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Packer Options:\n");
+	/* vtr::printf_info("\t[-global_clocks on | off]\n"); */
+	/* vtr::printf_info("\t[-hill_climbing on | off]\n"); */
+	/* vtr::printf_info("\t[-sweep_hanging_nets_and_inputs on | off]\n"); */
+	vtr::printf_info("\t[--timing_driven_clustering on | off]\n");
+	vtr::printf_info("\t[--cluster_seed_type blend|timing|max_inputs] [--alpha_clustering <float>] [--beta_clustering <float>]\n");
+	/* vtr::printf_info("\t[-recompute_timing_after <int>] [-cluster_block_delay <float>]\n"); */
+	vtr::printf_info("\t[--allow_unrelated_clustering on | off]\n");
+	/* vtr::printf_info("\t[-allow_early_exit on | off]\n"); */
+	/* vtr::printf_info("\t[-intra_cluster_net_delay <float>] \n"); */
+	/* vtr::printf_info("\t[-inter_cluster_net_delay <float>] \n"); */
+	vtr::printf_info("\t[--connection_driven_clustering on | off] \n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Placer Options:\n");
+	vtr::printf_info("\t[--place_algorithm bounding_box | path_timing_driven]\n");
+	vtr::printf_info("\t[--init_t <float>] [--exit_t <float>]\n");
+	vtr::printf_info("\t[--alpha_t <float>] [--inner_num <float>] [--seed <int>]\n");
+	vtr::printf_info("\t[--place_cost_exp <float>]\n");
+	vtr::printf_info("\t[--place_chan_width <int>] \n");
+	vtr::printf_info("\t[--fix_pins random | <file.pads>]\n");
+	vtr::printf_info("\t[--enable_timing_computations on | off]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Placement Options Valid Only for Timing-Driven Placement:\n");
+	vtr::printf_info("\t[--timing_tradeoff <float>]\n");
+	vtr::printf_info("\t[--recompute_crit_iter <int>]\n");
+	vtr::printf_info("\t[--inner_loop_recompute_divider <int>]\n");
+	vtr::printf_info("\t[--td_place_exp_first <float>]\n");
+	vtr::printf_info("\t[--td_place_exp_last <float>]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Router Options:  [-max_router_iterations <int>] [-bb_factor <int>]\n");
+	vtr::printf_info("\t[--initial_pres_fac <float>] [--pres_fac_mult <float>]\n");
+	vtr::printf_info("\t[--acc_fac <float>] [--first_iter_pres_fac <float>]\n");
+	vtr::printf_info("\t[--bend_cost <float>] [--route_type global | detailed]\n");
+	vtr::printf_info("\t[--min_incremental_reroute_fanout <int>]\n");
+	vtr::printf_info("\t[--verify_binary_search] [--route_chan_width <int>] [--route_chan_trim on | off]\n");
+	vtr::printf_info("\t[--router_algorithm breadth_first | timing_driven]\n");
+	vtr::printf_info("\t[--base_cost_type delay_normalized | demand_only]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Routing options valid only for timing-driven routing:\n");
+	vtr::printf_info("\t[--astar_fac <float>] [--max_criticality <float>]\n");
+	vtr::printf_info("\t[--criticality_exp <float>]\n");
+	vtr::printf_info("\t[--routing_failure_predictor safe | aggressive | off]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("VPR Developer Options:\n");
+	vtr::printf_info("\t[--gen_netlist_as_blif]\n");
+	vtr::printf_info("\n");
 }
 
-void vpr_print_args(int argc, char** argv) {
-    vpr_printf_info("VPR was run with the following command-line:\n");
+void vpr_print_args(int argc, const char** argv) {
+    vtr::printf_info("VPR was run with the following command-line:\n");
     for(int i = 0; i < argc; i++) {
         if(i != 0) {
-            vpr_printf_info(" ");
+            vtr::printf_info(" ");
         }
-        vpr_printf_info("%s", argv[i]);
+        vtr::printf_info("%s", argv[i]);
     }
-    vpr_printf_info("\n\n");
+    vtr::printf_info("\n\n");
 }
 
 /* Initialize VPR
@@ -165,10 +161,10 @@ void vpr_print_args(int argc, char** argv) {
  3. Read Circuit
  4. Sanity check all three
  */
-void vpr_init(INP int argc, INP char **argv,
-		OUTP t_options *options,
-		OUTP t_vpr_setup *vpr_setup,
-		OUTP t_arch *arch) {
+void vpr_init(const int argc, const char **argv,
+		t_options *options,
+		t_vpr_setup *vpr_setup,
+		t_arch *arch) {
 
 	log_set_output_file("vpr_stdout.log");
 
@@ -192,6 +188,14 @@ void vpr_init(INP int argc, INP char **argv,
 		/* Timing option priorities */
 		vpr_setup->TimingEnabled = IsTimingEnabled(options);
 
+        /* Verify the rest of the options */
+		CheckOptions(*options, vpr_setup->TimingEnabled);
+
+        vtr::printf_info("\n");
+        vtr::printf_info("Architecture file: %s\n", options->ArchFile);
+        vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName);
+        vtr::printf_info("\n");
+
 		/* Determine whether echo is on or off */
 		setEchoEnabled(IsEchoEnabled(options));
 		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
@@ -209,7 +213,6 @@ void vpr_init(INP int argc, INP char **argv,
 				&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
 
 		/* Check inputs are reasonable */
-		CheckOptions(*options, vpr_setup->TimingEnabled);
 		CheckArch(*arch, vpr_setup->TimingEnabled);
 
 		/* Verify settings don't conflict or otherwise not make sense */
@@ -224,6 +227,7 @@ void vpr_init(INP int argc, INP char **argv,
 		/* Read blif file and sweep unused components */
 		read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
 				vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs,
+				vpr_setup->PackerOpts.absorb_buffer_luts,
 				vpr_setup->user_models, vpr_setup->library_models,
 				vpr_setup->PowerOpts.do_power, vpr_setup->FileNameOpts.ActFile);
 		fflush(stdout);
@@ -234,7 +238,7 @@ void vpr_init(INP int argc, INP char **argv,
 	} else {
 		/* Print usage message if no args */
 		vpr_print_usage();
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 			"Missing arguments, see above and try again!\n");
 		exit(1);
 	}
@@ -244,7 +248,7 @@ void vpr_init(INP int argc, INP char **argv,
  * Sets globals: nx, ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
-void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
+void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch) {
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
@@ -255,7 +259,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 		check_netlist();
 
 		if(vpr_setup.gen_netlist_as_blif) {
-			char *name = (char*)my_malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
+			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
 			output_blif(&Arch, block, num_blocks, name);
 			free(name);
@@ -268,12 +272,12 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 	if (vpr_setup.Operation == TIMING_ANALYSIS_ONLY) {
 		do_constant_net_delay_timing_analysis(vpr_setup.Timing,	vpr_setup.constant_net_delay);
 	} else {
-		int current = nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
+		int current = vtr::nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
 		int low = 1;
 		int high = -1;
 
-		int *num_instances_type = (int*) my_calloc(num_types, sizeof(int));
-		int *num_blocks_type = (int*) my_calloc(num_types, sizeof(int));
+		int *num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
+		int *num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
 
 		for (int i = 0; i < num_blocks; ++i) {
 			num_blocks_type[block[i].type->index]++;
@@ -287,13 +291,13 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				/* Generate grid */
 				if (Arch.clb_grid.Aspect >= 1.0) {
 					ny = current;
-					nx = nint(current * Arch.clb_grid.Aspect);
+					nx = vtr::nint(current * Arch.clb_grid.Aspect);
 				} else {
 					nx = current;
-					ny = nint(current / Arch.clb_grid.Aspect);
+					ny = vtr::nint(current / Arch.clb_grid.Aspect);
 				}
 #if DEBUG
-				vpr_printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
+				vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
 #endif
 				alloc_and_load_grid(num_instances_type);
 				freeGrid();
@@ -313,7 +317,7 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 					if (high == -1) {
 						current = current * 2;
 						if (current > MAX_SHORT) {
-							vpr_printf_error(__FILE__, __LINE__,
+							vtr::printf_error(__FILE__, __LINE__,
 									"FPGA required is too large for current architecture settings.\n");
 							exit(1);
 						}
@@ -332,26 +336,26 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 			/* Generate grid */
 			if (Arch.clb_grid.Aspect >= 1.0) {
 				ny = current;
-				nx = nint(current * Arch.clb_grid.Aspect);
+				nx = vtr::nint(current * Arch.clb_grid.Aspect);
 			} else {
 				nx = current;
-				ny = nint(current / Arch.clb_grid.Aspect);
+				ny = vtr::nint(current / Arch.clb_grid.Aspect);
 			}
 			alloc_and_load_grid(num_instances_type);
-			vpr_printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
+			vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
 		} else {
 			nx = Arch.clb_grid.W;
 			ny = Arch.clb_grid.H;
 			alloc_and_load_grid(num_instances_type);
 		}
 
-		vpr_printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
+		vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
 
 		/* Test if netlist fits in grid */
 		for (int i = 0; i < num_types; ++i) {
 			if (num_blocks_type[i] > num_instances_type[i]) {
 
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"Not enough physical locations for type %s, "
 						"number of blocks is %d but number of locations is %d.\n",
 						type_descriptors[i].name, num_blocks_type[i],
@@ -360,124 +364,30 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 			}
 		}
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Resource usage...\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Resource usage...\n");
 		for (int i = 0; i < num_types; ++i) {
-			vpr_printf_info("\tNetlist      %d\tblocks of type: %s\n",
+			vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
 					num_blocks_type[i], type_descriptors[i].name);
-			vpr_printf_info("\tArchitecture %d\tblocks of type: %s\n",
+			vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
 					num_instances_type[i], type_descriptors[i].name);
 		}
-		vpr_printf_info("\n");
+		vtr::printf_info("\n");
 		chan_width.x_max = chan_width.y_max = 0;
 		chan_width.x_min = chan_width.y_min = 0;
-		chan_width.x_list = (int *) my_malloc((ny + 1) * sizeof(int));
-		chan_width.y_list = (int *) my_malloc((nx + 1) * sizeof(int));
+		chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
+		chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
 
 		free(num_blocks_type);
 		free(num_instances_type);
 	}
 }
 
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-/* This function determines locations where cuts should happen for an
- * interposer-based architecture.
- * Notice that a cut cannot go through a block.
- *
- * For instance: here we have DSP blocks of height 4, and RAM blocks of height 6.
- * A cut at y=4 would split two DSP blocks nicely, but it would cut through a RAM block.
- * Similarly, a cut at y=6 would split 2 RAM blocks nicely, but it would cut through a DSP block.
- * The first possible place to have a cut without cutting through a block is the Least Common Multiple of
- * Block Heights of the blocks in the architecture
- *
- *
- * _______    ______ ______________________> y = 12 OK. = LCM (4,6)
- * |     |    |    |
- * | DSP |    | RAM|
- * |     |    |    |
- * |_____|    |    | ______________________> y = 8 Not OK.
- * |     |    |    |
- * | DSP |    |____| ______________________> y = 6 Not OK.
- * |     |    |    |
- * |_____|    |    | ______________________> y = 4 Not OK.
- * |     |    |    |
- * | DSP |    | RAM|
- * |     |    |    |
- * |     |    |    |
- * -------    ------ ----------------------> y = 0
- *
- * Suppose ny = 98. LCM = 4 (e.g. both DSP and RAM are height 4). num_cuts = 2 ==> num_slices = 3.
- * 98 / 4 = 24, so at most you can make 23 cuts (24 slices without cutting through a block).
- * You want each slice to be as tall as possible.
- * 24 / 3 = 8. So, you can have at most 8 of the tallest block in each slice.
- * So,
- * Slice #1 = y=0  --> y= 8*4= 32     (heigh of slice#1 = 32)
- * Slice #2 = y=32 --> y= 8*4*2 = 64  (heigh of slice#2 = 32)
- * Slice #3 = y=64 --> y=98           (heigh of slice#3 = 34)
- */
-void vpr_setup_interposer_cut_locations(t_arch Arch)
-{
-	if(Arch.lcm_of_block_heights >= ny)
-	{
-		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-		"Given the specifications of block heights in the architecture, it is not possible to "
-		"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
-	}
 
-
-	int num_slices = num_cuts + 1;
-
-	// see explanation above for slice_height
-	int slice_height = ((int)(((int)(ny / Arch.lcm_of_block_heights)) / num_slices )) * Arch.lcm_of_block_heights;
-
-	if(slice_height == 0)
-	{
-		// there's still hope
-		slice_height = Arch.lcm_of_block_heights;
-	}
-
-	arch_cut_locations = (int*) my_malloc(num_cuts * sizeof(int));
-	for(int cut_counter=0; cut_counter<num_cuts; ++cut_counter)
-	{
-		arch_cut_locations[cut_counter] = (cut_counter+1)*slice_height;
-		if( arch_cut_locations[cut_counter] >= ny)
-		{
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-			"Given the specifications of block heights in the architecture, it is not possible to "
-			"use this architecture with %d cuts because a cut would go through a physical block!\n", num_cuts);
-		}
-		assert(arch_cut_locations[cut_counter]%Arch.lcm_of_block_heights==0);
-	}
-
-	vpr_printf_info("Info: Interposer cuts are located at the following coordinates:\n");
-	for(int cut_counter=0; cut_counter<num_cuts; ++cut_counter)
-	{
-		vpr_printf_info("\tInfo: Cut#%d: y=%d\n", cut_counter+1, arch_cut_locations[cut_counter]);
-	}
-
-	vpr_printf_info("Info: Height of each SLR (Super Logic Region) is:\n");
-	for(int cut_counter=0; cut_counter<=num_cuts; ++cut_counter)
-	{
-		if(cut_counter==0)
-		{
-			vpr_printf_info("\tInfo: Region#%d height: %d\n", cut_counter+1, arch_cut_locations[cut_counter]);
-		}
-		else if(cut_counter==num_cuts)
-		{
-			vpr_printf_info("\tInfo: Region#%d height: %d\n", cut_counter+1, ny-arch_cut_locations[cut_counter-1]);
-		}
-		else
-		{
-			vpr_printf_info("\tInfo: Region#%d height: %d\n", cut_counter+1, arch_cut_locations[cut_counter]-arch_cut_locations[cut_counter-1]);
-		}
-	}
-}
-#endif
-
-void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
+void vpr_pack(t_vpr_setup vpr_setup, const t_arch arch) {
 	std::chrono::high_resolution_clock::time_point end, begin;
 	begin = std::chrono::high_resolution_clock::now();
-	vpr_printf_info("Initialize packing.\n");
+	vtr::printf_info("Initialize packing.\n");
 
 	/* If needed, estimate inter-cluster delay. Assume the average routing hop goes out of
 	 a block through an opin switch to a length-4 wire, then through a wire switch to another
@@ -546,8 +456,8 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 	3) wire to ipin switch
    We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
    a logic block, and the switch block Fs value */
-static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, INP int wire_segment_length,
-			OUTP int *opin_switch_fanin, OUTP int *wire_switch_fanin, OUTP int *ipin_switch_fanin){
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup, const int wire_segment_length,
+			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin){
 	e_directionality directionality;
 	int Fs;
 	float Fc_in, Fc_out;
@@ -630,7 +540,7 @@ static void get_intercluster_switch_fanin_estimates(INP t_vpr_setup vpr_setup, I
 	}
 }
 
-bool vpr_place_and_route(INP t_vpr_setup *vpr_setup, INP t_arch arch) {
+bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch arch) {
 
 	/* Startup X graphics */
 	init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
@@ -701,9 +611,9 @@ void free_arch(t_arch* Arch) {
 			free(prev_port->name);
 			free(prev_port);
 		}
-		struct s_linked_vptr *vptr = model->pb_types;
+		vtr::t_linked_vptr *vptr = model->pb_types;
 		while (vptr) {
-			struct s_linked_vptr *vptr_prev = vptr;
+			vtr::t_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
 			free(vptr_prev);
 		}
@@ -717,9 +627,9 @@ void free_arch(t_arch* Arch) {
 	}
 
 	for (int i = 0; i < 4; ++i) {
-		struct s_linked_vptr *vptr = Arch->model_library[i].pb_types;
+		vtr::t_linked_vptr *vptr = Arch->model_library[i].pb_types;
 		while (vptr) {
-			struct s_linked_vptr *vptr_prev = vptr;
+			vtr::t_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
 			free(vptr_prev);
 		}
@@ -790,10 +700,12 @@ static void free_complex_block_types(void) {
 	free_all_pb_graph_nodes();
 
 	for (int i = 0; i < num_types; ++i) {
+		free(type_descriptors[i].name);
+
 		if (&type_descriptors[i] == EMPTY_TYPE) {
 			continue;
 		}
-		free(type_descriptors[i].name);
+
 		for (int width = 0; width < type_descriptors[i].width; ++width) {
 			for (int height = 0; height < type_descriptors[i].height; ++height) {
 				for (int side = 0; side < 4; ++side) {
@@ -829,7 +741,7 @@ static void free_complex_block_types(void) {
 
 		free(type_descriptors[i].is_Fc_frac);
 		free(type_descriptors[i].is_Fc_full_flex);
-		free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0, sizeof(float));
+        vtr::free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0);
 
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);
@@ -964,7 +876,7 @@ void free_circuit() {
 	free(default_output_name);
 	blif_circuit_name = NULL;
 
-	struct s_linked_vptr *p_io_removed = circuit_p_io_removed;
+	vtr::t_linked_vptr *p_io_removed = circuit_p_io_removed;
 	while (p_io_removed != NULL) {
 		circuit_p_io_removed = p_io_removed->next;
 		free(p_io_removed->data_vptr);
@@ -973,9 +885,9 @@ void free_circuit() {
 	}
 }
 
-void vpr_free_vpr_data_structures(INOUTP t_arch Arch,
-		INOUTP t_options options,
-		INOUTP t_vpr_setup vpr_setup) {
+void vpr_free_vpr_data_structures(t_arch Arch,
+		t_options options,
+		t_vpr_setup vpr_setup) {
 
 	if (vpr_setup.Timing.SDCFile != NULL) {
 		free(vpr_setup.Timing.SDCFile);
@@ -992,9 +904,9 @@ void vpr_free_vpr_data_structures(INOUTP t_arch Arch,
 	free_sdc_related_structs();
 }
 
-void vpr_free_all(INOUTP t_arch Arch,
-		INOUTP t_options options,
-		INOUTP t_vpr_setup vpr_setup) {
+void vpr_free_all(t_arch Arch,
+		t_options options,
+		t_vpr_setup vpr_setup) {
 
 	free_rr_graph();
 	if (vpr_setup.RouterOpts.doRouting) {
@@ -1011,23 +923,23 @@ void vpr_free_all(INOUTP t_arch Arch,
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
 /* Read in user options */
-void vpr_read_options(INP int argc, INP char **argv, OUTP t_options * options) {
+void vpr_read_options(const int argc, const char **argv, t_options * options) {
 	ReadOptions(argc, argv, options);
 }
 
 /* Read in arch and circuit */
-void vpr_setup_vpr(INP t_options *Options, INP bool TimingEnabled,
-		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
-		OUTP t_model ** user_models, OUTP t_model ** library_models,
-		OUTP struct s_packer_opts *PackerOpts,
-		OUTP struct s_placer_opts *PlacerOpts,
-		OUTP struct s_annealing_sched *AnnealSched,
-		OUTP struct s_router_opts *RouterOpts,
-		OUTP struct s_det_routing_arch *RoutingArch,
-		OUTP vector <t_lb_type_rr_node> **PackerRRGraph,
-		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP bool * ShowGraphics, OUTP int *GraphPause,
+void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
+		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
+		t_arch * Arch, enum e_operation *Operation,
+		t_model ** user_models, t_model ** library_models,
+		struct s_packer_opts *PackerOpts,
+		struct s_placer_opts *PlacerOpts,
+		struct s_annealing_sched *AnnealSched,
+		struct s_router_opts *RouterOpts,
+		struct s_det_routing_arch *RoutingArch,
+		vector <t_lb_type_rr_node> **PackerRRGraph,
+		t_segment_inf ** Segments, t_timing_inf * Timing,
+		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			Operation, user_models, library_models, PackerOpts, PlacerOpts,
@@ -1035,32 +947,33 @@ void vpr_setup_vpr(INP t_options *Options, INP bool TimingEnabled,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */
-void vpr_check_options(INP t_options Options, INP bool TimingEnabled) {
+void vpr_check_options(const t_options Options, const bool TimingEnabled) {
 	CheckOptions(Options, TimingEnabled);
 }
-void vpr_check_arch(INP t_arch Arch, INP bool TimingEnabled) {
+void vpr_check_arch(const t_arch Arch, const bool TimingEnabled) {
 	CheckArch(Arch, TimingEnabled);
 }
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_annealing_sched AnnealSched,
-		INP struct s_router_opts RouterOpts,
-		INP struct s_det_routing_arch RoutingArch, INP t_segment_inf * Segments,
-		INP t_timing_inf Timing, INP t_chan_width_dist Chans) {
+void vpr_check_setup(const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_annealing_sched AnnealSched,
+		const struct s_router_opts RouterOpts,
+		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	CheckSetup(Operation, PlacerOpts, AnnealSched, RouterOpts, RoutingArch,
 			Segments, Timing, Chans);
 }
 /* Read blif file and sweep unused components */
-void vpr_read_and_process_blif(INP char *blif_file,
-		INP bool sweep_hanging_nets_and_inputs, INP t_model *user_models,
-		INP t_model *library_models, bool read_activity_file,
+void vpr_read_and_process_blif(const char *blif_file,
+		const bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
+        const t_model *user_models,
+		const t_model *library_models, bool read_activity_file,
 		char * activity_file) {
-	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
+	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, absorb_buffer_luts, user_models,
 			library_models, read_activity_file, activity_file);
 }
 /* Show current setup */
-void vpr_show_setup(INP t_options options, INP t_vpr_setup vpr_setup) {
+void vpr_show_setup(const t_options options, const t_vpr_setup vpr_setup) {
 	ShowSetup(options, vpr_setup);
 }
 
@@ -1083,7 +996,7 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 		return;
 	}
 
-	assert(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
+	VTR_ASSERT(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
 
 	pb->pb_graph_node = pb_graph_node;
 	if (pb->child_pbs != NULL) {
@@ -1106,29 +1019,29 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 	/* Ensure we are only using 1 clock */
-	assert(count_netlist_clocks() == 1);
+	VTR_ASSERT(count_netlist_clocks() == 1);
 
 	/* Get the critical path of this clock */
 	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
-	assert(g_solution_inf.T_crit > 0.);
+	VTR_ASSERT(g_solution_inf.T_crit > 0.);
 
-	vpr_printf_info("\n\nPower Estimation:\n");
-	vpr_printf_info("-----------------\n");
+	vtr::printf_info("\n\nPower Estimation:\n");
+	vtr::printf_info("-----------------\n");
 
-	vpr_printf_info("Initializing power module\n");
+	vtr::printf_info("Initializing power module\n");
 
 	/* Initialize the power module */
 	bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
 			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
-		vpr_printf_error(__FILE__, __LINE__,
+		vtr::printf_error(__FILE__, __LINE__,
 				"Power initialization failed.\n");
 	}
 
 	if (!power_error) {
 		float power_runtime_s;
 
-		vpr_printf_info("Running power estimation\n");
+		vtr::printf_info("Running power estimation\n");
 
 		/* Run power estimation */
 		e_power_ret_code power_ret_code = power_total(&power_runtime_s, vpr_setup,
@@ -1136,35 +1049,35 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 
 		/* Check for errors/warnings */
 		if (power_ret_code == POWER_RET_CODE_ERRORS) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Power estimation failed. See power output for error details.\n");
 		} else if (power_ret_code == POWER_RET_CODE_WARNINGS) {
-			vpr_printf_warning(__FILE__, __LINE__,
+			vtr::printf_warning(__FILE__, __LINE__,
 					"Power estimation completed with warnings. See power output for more details.\n");
 		} else if (power_ret_code == POWER_RET_CODE_SUCCESS) {
 		}
-		vpr_printf_info("Power estimation took %g seconds\n", power_runtime_s);
+		vtr::printf_info("Power estimation took %g seconds\n", power_runtime_s);
 	}
 
 	/* Uninitialize power module */
 	if (!power_error) {
-		vpr_printf_info("Uninitializing power module\n");
+		vtr::printf_info("Uninitializing power module\n");
 		power_error = power_uninit();
 		if (power_error) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Power uninitialization failed.\n");
 		} else {
 
 		}
 	}
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
 }
 
-void vpr_print_error(t_vpr_error* vpr_error){
+void vpr_print_error(const VprError& vpr_error){
 
 	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-	char* error_type = (char *)my_calloc(1000, sizeof(char));
-	switch(vpr_error->type){
+	char* error_type = (char *)vtr::calloc(1000, sizeof(char));
+	switch(vpr_error.type()){
 	case VPR_ERROR_UNKNOWN:
 		strcpy(error_type, "Unknown");
 		break;
@@ -1195,18 +1108,24 @@ void vpr_print_error(t_vpr_error* vpr_error){
 	case VPR_ERROR_PLACE_F:
 		strcpy(error_type, "Placement file");
 		break;
+	case VPR_ERROR_IMPL_NETLIST_WRITER:
+		strcpy(error_type, "Implementation Netlist Writer");
+		break;
 	case VPR_ERROR_OTHER:
 		strcpy(error_type, "Other");
 		break;
 	default:
-		strcpy(error_type, "");
+		strcpy(error_type, "Unrecognized Error");
 		break;
 	}
 
-	vpr_printf_error(__FILE__, __LINE__,
-		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
-		error_type, vpr_error->file_name, vpr_error->line_num,
-		vpr_error->message);
+    //We can't pass std::string's through va_args functions,
+    //so we need to copy them and pass via c_str()
+    std::string msg = vpr_error.what();
+    std::string filename = vpr_error.filename();
 
-	free (error_type);
+	vtr::printf_error(__FILE__, __LINE__,
+		"\nType: %s\nFile: %s\nLine: %d\nMessage: %s\n",
+		error_type, filename.c_str(), vpr_error.line(),
+		msg.c_str());
 }

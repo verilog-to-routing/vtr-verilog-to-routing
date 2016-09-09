@@ -1,4 +1,4 @@
-How to build documentation
+Overview
 --------------------------
 
 The VTR documentaion is generated using sphinx, a python based documenation generator.
@@ -8,31 +8,53 @@ is a lightwieght mark-up language for text documents.
 
 Currently VTR's documenation is automatically built by www.readthedocs.org and is served at:
 
-    https://vtr.readthedocs.org/en/latest/
+    https://vtr.readthedocs.io/
 
-To build the documentation locally you need sphinx installed.
 
-For ubuntu/debian based systems:
+How to build documentation
+--------------------------
 
-    apt-get install python-sphinx
+To build the documentation locally you need sphinx installed:
 
-To properly build citations and the bibliography, we use the sphinxcontrib-bibtex extension:
+    For ubuntu/debian based systems:
 
-    pip install sphinxcontrib-bibtex
+        $ apt-get install python-sphinx
+
+    To properly build citations and the bibliography, we use the sphinxcontrib-bibtex extension:
+
+        $ pip install sphinxcontrib-bibtex
+
+To build the documentation just run:
+
+    $ make html
+
+from the main documentation directory (i.e. <vtr_root>/doc).
+
+This will produce the output html in the _build directory.
+
+You can then view the resulting documention with the web-browser of your choice.
+For instance:
+
+    $ firefox _build/index.html
+
 
 Documentation Layout
--------------------
+--------------------
 
 The root of the VTR documentation is the index.rst file in the current directory.
 
 This file references other files using the toctree directive.
 
-Key sub-systems of VTR have their documentation located in a sub-directy (e.g. vpr, arch), with thier own index.rst.
+Key sub-systems of VTR have their documentation located in a sub-directory (e.g. vpr, arch), with thier own index.rst.
 
-Useful links:
--------------
+Within each sub-directory there are usually several other .rst files which containing actual documentation for the subsystem.
+Each of these files must be referred to in the sub-system's index.rst in order to be included in the generated documentation.
 
-Re-Structured Text Syntax: 
+
+Useful Resources:
+-----------------
+
+Re-Structured Text syntax: 
     http://www.sphinx-doc.org/en/stable/rest.html
 
 Paragraph-level markup: 

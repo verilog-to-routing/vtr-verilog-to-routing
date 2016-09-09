@@ -1,8 +1,9 @@
 #include <cmath>		/* Needed only for sqrt call (remove if sqrt removed) */
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "rr_graph_util.h"
 #include "rr_graph2.h"
@@ -12,18 +13,15 @@ using namespace std;
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-		t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type,
+		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type,
 		int wire_to_ipin_switch);
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-		t_ivec *** L_rr_node_indices);
-
-static float get_average_opin_delay(t_ivec *** L_rr_node_indices,
-		int nodes_per_chan);
+		vtr::t_ivec *** L_rr_node_indices);
 
 static void load_rr_indexed_data_T_values(int index_start,
 		int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-		t_ivec *** L_rr_node_indices, t_segment_inf * segment_inf);
+		vtr::t_ivec *** L_rr_node_indices);
 
 /******************** Subroutine definitions *********************************/
 
@@ -40,15 +38,15 @@ static void load_rr_indexed_data_T_values(int index_start,
  * etc. more expensive than others.  I give each segment type in an          *
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
-void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
-		INP int num_segment, INP t_ivec *** L_rr_node_indices,
-		INP int nodes_per_chan, int wire_to_ipin_switch,
+void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
+		const int num_segment, vtr::t_ivec *** L_rr_node_indices,
+		const int nodes_per_chan, int wire_to_ipin_switch,
 		enum e_base_cost_type base_cost_type) {
 
 	int iseg, length, i, index;
 
 	num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
-	rr_indexed_data = (t_rr_indexed_data *) my_malloc(
+	rr_indexed_data = (t_rr_indexed_data *) vtr::malloc(
 			num_rr_indexed_data * sizeof(t_rr_indexed_data));
 
 	/* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
@@ -85,7 +83,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 	}
 
 	load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
-			nodes_per_chan, L_rr_node_indices, segment_inf);
+			nodes_per_chan, L_rr_node_indices);
 
 	/* Y-directed segments. */
 
@@ -104,7 +102,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 	}
 
 	load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
-			num_segment, CHANY, nodes_per_chan, L_rr_node_indices, segment_inf);
+			num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
 	load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
 			base_cost_type, wire_to_ipin_switch);
@@ -112,7 +110,7 @@ void alloc_and_load_rr_indexed_data(INP t_segment_inf * segment_inf,
 }
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-		t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type,
+		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type,
 		int wire_to_ipin_switch) {
 
 	/* Loads the base_cost member of rr_indexed_data according to the specified *
@@ -142,26 +140,13 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 #endif
 	}
 
-	else if (base_cost_type == INTRINSIC_DELAY) {
-		rr_indexed_data[SOURCE_COST_INDEX].base_cost = 0.;
-		rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
-		rr_indexed_data[OPIN_COST_INDEX].base_cost = get_average_opin_delay(
-				L_rr_node_indices, nodes_per_chan);
-		rr_indexed_data[IPIN_COST_INDEX].base_cost =
-				g_rr_switch_inf[wire_to_ipin_switch].Tdel;
-	}
-
 	/* Load base costs for CHANX and CHANY segments */
 
 	for (index = CHANX_COST_INDEX_START; index < num_rr_indexed_data; index++) {
-		if (base_cost_type == INTRINSIC_DELAY)
-			rr_indexed_data[index].base_cost = rr_indexed_data[index].T_linear
-					+ rr_indexed_data[index].T_quadratic;
-		else
 			/*       rr_indexed_data[index].base_cost = delay_normalization_fac /
 			 rr_indexed_data[index].inv_length;  */
 
-			rr_indexed_data[index].base_cost = delay_normalization_fac;
+		rr_indexed_data[index].base_cost = delay_normalization_fac;
 		/*       rr_indexed_data[index].base_cost = delay_normalization_fac *
 		 sqrt (1. / rr_indexed_data[index].inv_length);  */
 		/*       rr_indexed_data[index].base_cost = delay_normalization_fac *
@@ -179,7 +164,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 }
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-		t_ivec *** L_rr_node_indices) {
+		vtr::t_ivec *** L_rr_node_indices) {
 
 	/* Returns the average delay to go 1 CLB distance along a wire.  */
 
@@ -219,48 +204,9 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	return (Tdel_sum / (2. * nodes_per_chan));
 }
 
-static float get_average_opin_delay(t_ivec *** L_rr_node_indices,
-		int nodes_per_chan) {
-
-	/* Returns the average delay from an OPIN to a wire in an adjacent channel. */
-	/* RESEARCH TODO: Got to think if this heuristic needs to change for hetero, right now, I'll calculate
-	 * the average delay of non-IO blocks */
-	int inode, ipin, iclass, iedge, itype, num_edges, to_switch, to_node,
-			num_conn;
-	float Cload, Tdel;
-
-	Tdel = 0.;
-	num_conn = 0;
-	for (itype = 0; itype < num_types && &type_descriptors[itype] != IO_TYPE;
-			itype++) {
-		for (ipin = 0; ipin < type_descriptors[itype].num_pins; ipin++) {
-			iclass = type_descriptors[itype].pin_class[ipin];
-			if (type_descriptors[itype].class_inf[iclass].type == DRIVER) { /* OPIN */
-				inode = find_average_rr_node_index(nx, ny, OPIN,
-						ipin, L_rr_node_indices);
-				if (inode == -1)
-					continue;
-				num_edges = rr_node[inode].get_num_edges();
-
-				for (iedge = 0; iedge < num_edges; iedge++) {
-					to_node = rr_node[inode].edges[iedge];
-					to_switch = rr_node[inode].switches[iedge];
-					Cload = rr_node[to_node].C;
-					Tdel += Cload * g_rr_switch_inf[to_switch].R
-							+ g_rr_switch_inf[to_switch].Tdel;
-					num_conn++;
-				}
-			}
-		}
-	}
-
-	Tdel /= (float) num_conn;
-	return (Tdel);
-}
-
 static void load_rr_indexed_data_T_values(int index_start,
 		int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-		t_ivec *** L_rr_node_indices, t_segment_inf * segment_inf) {
+		vtr::t_ivec *** L_rr_node_indices) {
 
 	/* Loads the average propagation times through segments of each index type  *
 	 * for either all CHANX segment types or all CHANY segment types.  It does  *
@@ -275,9 +221,9 @@ static void load_rr_indexed_data_T_values(int index_start,
 	int *num_nodes_of_index; /* [0..num_rr_indexed_data - 1] */
 	float Rnode, Cnode, Rsw, Tsw;
 
-	num_nodes_of_index = (int *) my_calloc(num_rr_indexed_data, sizeof(int));
-	C_total = (float *) my_calloc(num_rr_indexed_data, sizeof(float));
-	R_total = (float *) my_calloc(num_rr_indexed_data, sizeof(float));
+	num_nodes_of_index = (int *) vtr::calloc(num_rr_indexed_data, sizeof(int));
+	C_total = (float *) vtr::calloc(num_rr_indexed_data, sizeof(float));
+	R_total = (float *) vtr::calloc(num_rr_indexed_data, sizeof(float));
 
 	/* August 2014: Not all wire-to-wire switches connecting from some wire segment will 
 	   necessarily have the same delay. i.e. a mux with less inputs will have smaller delay 
@@ -285,9 +231,9 @@ static void load_rr_indexed_data_T_values(int index_start,
 	   get the average R/Tdel values by first averaging them for a single wire segment (first
 	   for loop below), and then by averaging this value over all wire segments in the channel
 	   (second for loop below) */
-	switch_R_total = (double *) my_calloc(num_rr_indexed_data, sizeof(double));
-	switch_T_total = (double *) my_calloc(num_rr_indexed_data, sizeof(double));
-	switches_buffered = (short *) my_calloc(num_rr_indexed_data, sizeof(short));
+	switch_R_total = (double *) vtr::calloc(num_rr_indexed_data, sizeof(double));
+	switch_T_total = (double *) vtr::calloc(num_rr_indexed_data, sizeof(double));
+	switches_buffered = (short *) vtr::calloc(num_rr_indexed_data, sizeof(short));
 
 	/* initialize switches_buffered array */
 	for (int i = index_start; i < index_start + num_indices_to_load; i++){

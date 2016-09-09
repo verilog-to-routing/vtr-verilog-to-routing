@@ -1,7 +1,6 @@
 #ifndef VPR_UTILS_H
 #define VPR_UTILS_H
 
-#include "util.h"
 #include "netlist.h"
 
 void print_tabs(FILE * fpout, int num_tab);
@@ -9,12 +8,12 @@ void print_tabs(FILE * fpout, int num_tab);
 bool is_opin(int ipin, t_type_ptr type);
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 
-void get_class_range_for_block(INP int iblk, OUTP int *class_low,
-		OUTP int *class_high);
+void get_class_range_for_block(const int iblk, int *class_low,
+		int *class_high);
 
-void sync_grid_to_blocks(INP int L_num_blocks,
-		INP const struct s_block block_list[], INP int L_nx, INP int L_ny,
-		INOUTP struct s_grid_tile **L_grid);
+void sync_grid_to_blocks(const int L_num_blocks,
+		const struct s_block block_list[], const int L_nx, const int L_ny,
+		struct s_grid_tile **L_grid);
 
 /**************************************************************
 * Intra-Logic Block Utility Functions
@@ -35,7 +34,7 @@ t_pb ***alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping);
 
 
-float compute_primitive_base_cost(INP t_pb_graph_node *primitive);
+float compute_primitive_base_cost(const t_pb_graph_node *primitive);
 int num_ext_inputs_logical_block(int iblk);
 
 int ** alloc_and_load_net_pin_index();
@@ -60,17 +59,7 @@ void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
 
 void print_switch_usage();
-//void print_usage_by_wire_length();
-
-
-// additional debugging tools
-#ifdef EXPENSIVE_ASSERTS
-#define EXPENSIVE_ASSERT(expr) assert(expr);
-#else
-#define EXPENSIVE_ASSERT(expr) 
-#endif
-
-
+void print_usage_by_wire_length();
 
 #endif
 

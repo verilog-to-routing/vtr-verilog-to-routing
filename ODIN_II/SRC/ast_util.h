@@ -25,3 +25,5 @@ ast_node_t *resolve_node(char *module_name, ast_node_t *node);
 char *make_module_param_name(ast_node_t *module_param_list, char *module_name);
 long calculate(long operand0, long operand1, short type);
 void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node);
+
+ast_node_t *ast_node_deep_copy(ast_node_t *node);

@@ -2,11 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "util.h"
 #include "ReadLine.h"
 
+#include "vtr_memory.h"
+#include "vtr_error.h"
+
 /* Pass in a pointer to a token list. Is freed and then set to null */
-void FreeTokens(INOUTP char ***TokensPtr) {
+void FreeTokens(char ***TokensPtr) {
 	assert(*TokensPtr);
 	assert(**TokensPtr);
 
@@ -16,7 +18,7 @@ void FreeTokens(INOUTP char ***TokensPtr) {
 }
 
 /* Returns number of tokens in list. Zero if null list */
-int CountTokens(INP char **Tokens) {
+int CountTokens(const char **Tokens) {
 	int count = 0;
 
 	if (NULL == Tokens) {
@@ -36,7 +38,7 @@ int CountTokens(INP char **Tokens) {
  * and one for character array. Free what pointer points to and then
  * free the pointer itself */
 char **
-ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
+ReadLineTokens(FILE * InFile, int *LineNum) {
 
 	enum {
 		BUFFSIZE = 65536
@@ -60,8 +62,7 @@ ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
 			if (feof(InFile)) {
 				return NULL; /* Return NULL on EOF */
 			} else {
-				vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__,
-					"Unexpected error reading file\n");
+				throw vtr::VtrError("Unexpected error reading file\n", __FILE__, __LINE__);
 			}
 		}
 		++(*LineNum);
@@ -86,8 +87,7 @@ ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
 				if (feof(InFile)) {
 					return NULL; /* Return NULL on EOF */
 				} else {
-					vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__,
-						"Unexpected error reading file\n");
+					throw vtr::VtrError("Unexpected error reading file", __FILE__, __LINE__);
 				}
 			}
 			++(*LineNum);
@@ -143,8 +143,8 @@ ReadLineTokens(INOUTP FILE * InFile, INOUTP int *LineNum) {
 
 	/* Alloc the pointer list and data list. Count the final 
 	 * empty string we will use as list terminator */
-	Tokens = (char **) my_malloc(sizeof(char *) * (TokenCount + 1));
-	*Tokens = (char *) my_malloc(sizeof(char) * Len);
+	Tokens = (char **) vtr::malloc(sizeof(char *) * (TokenCount + 1));
+	*Tokens = (char *) vtr::malloc(sizeof(char) * Len);
 
 	/* Copy tokens to result */
 	Cur = Buffer;

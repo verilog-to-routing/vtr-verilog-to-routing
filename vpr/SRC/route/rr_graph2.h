@@ -18,177 +18,176 @@ enum e_seg_details_type {
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-struct s_ivec ***alloc_and_load_rr_node_indices(
-		INP int max_chan_width,
-		INP int L_nx, INP int L_ny, 
-		INOUTP int *index, 
-		INP t_chan_details *chan_details_x,
-		INP t_chan_details *chan_details_y);
+vtr::t_ivec ***alloc_and_load_rr_node_indices(
+		const int max_chan_width,
+		const int L_nx, const int L_ny, 
+		int *index, 
+		const t_chan_details *chan_details_x,
+		const t_chan_details *chan_details_y);
 
-void free_rr_node_indices(
-		INP t_ivec ***L_rr_node_indices);
+void free_rr_node_indices(vtr::t_ivec ***L_rr_node_indices);
 
 int get_rr_node_index(
 		int x, int y, 
 		t_rr_type rr_type, int ptc,
-		t_ivec ***L_rr_node_indices);
+		vtr::t_ivec ***L_rr_node_indices);
 
 int find_average_rr_node_index(
 		int L_nx, int L_ny,
 		t_rr_type rr_type, int ptc,
-		t_ivec ***L_rr_node_indices);
+		vtr::t_ivec ***L_rr_node_indices);
 
 t_seg_details *alloc_and_load_seg_details(
-		INOUTP int *max_chan_width,
-		INP int max_len,
-		INP int num_seg_types,
-		INP t_segment_inf *segment_inf,
-		INP bool use_full_seg_groups,
-		INP bool is_global_graph,
-		INP enum e_directionality directionality,
-		OUTP int *num_seg_details = 0);
+		int *max_chan_width,
+		const int max_len,
+		const int num_seg_types,
+		const t_segment_inf *segment_inf,
+		const bool use_full_seg_groups,
+		const bool is_global_graph,
+		const enum e_directionality directionality,
+		int *num_seg_details = 0);
 
 void alloc_and_load_chan_details( 
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width *nodes_per_chan,
-		INP bool trim_empty_channels,
-		INP bool trim_obs_channels,
-		INP int num_seg_details,
-		INP const t_seg_details *seg_details,
-		OUTP t_chan_details **chan_details_x,
-		OUTP t_chan_details **chan_details_y);
+		const int L_nx, const int L_ny,
+		const t_chan_width *nodes_per_chan,
+		const bool trim_empty_channels,
+		const bool trim_obs_channels,
+		const int num_seg_details,
+		const t_seg_details *seg_details,
+		t_chan_details **chan_details_x,
+		t_chan_details **chan_details_y);
 t_chan_details *init_chan_details( 
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width *nodes_per_chan,
-		INP int num_seg_details,
-		INP const t_seg_details *seg_details,
-		INP enum e_seg_details_type seg_details_type);
+		const int L_nx, const int L_ny,
+		const t_chan_width *nodes_per_chan,
+		const int num_seg_details,
+		const t_seg_details *seg_details,
+		const enum e_seg_details_type seg_details_type);
 void obstruct_chan_details( 
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width *nodes_per_chan,
-		INP bool trim_empty_channels,
-		INP bool trim_obs_channels,
-		INOUTP t_chan_details *chan_details_x,
-		INOUTP t_chan_details *chan_details_y);
+		const int L_nx, const int L_ny,
+		const t_chan_width *nodes_per_chan,
+		const bool trim_empty_channels,
+		const bool trim_obs_channels,
+		t_chan_details *chan_details_x,
+		t_chan_details *chan_details_y);
 void adjust_chan_details(
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width *nodes_per_chan,
-		INOUTP t_chan_details *chan_details_x,
-		INOUTP t_chan_details *chan_details_y);
+		const int L_nx, const int L_ny,
+		const t_chan_width *nodes_per_chan,
+		t_chan_details *chan_details_x,
+		t_chan_details *chan_details_y);
 void adjust_seg_details(
-		INP int x, INP int y,
-		INP int L_nx, INP int L_ny,
-		INP t_chan_width *nodes_per_chan,
-		INOUTP t_chan_details *chan_details,
-		INP enum e_seg_details_type seg_details_type);
+		const int x, const int y,
+		const int L_nx, const int L_ny,
+		const t_chan_width *nodes_per_chan,
+		t_chan_details *chan_details,
+		const enum e_seg_details_type seg_details_type);
 
 void free_seg_details(
 		t_seg_details *seg_details,
-		INP int max_chan_width); 
+		const int max_chan_width); 
 void free_chan_details(
 		t_chan_details *chan_details_x,
 		t_chan_details *chan_details_y,
-		INP int max_chan_width,
-		INP int L_nx, INP int L_ny);
+		const int max_chan_width,
+		const int L_nx, const int L_ny);
 
 int get_seg_start(
-		INP t_seg_details *seg_details,
-		INP int itrack,
-		INP int chan_num,
-		INP int seg_num);
-int get_seg_end(INP t_seg_details *seg_details,
-		INP int itrack,
-		INP int istart,
-		INP int chan_num,
-		INP int seg_max);
+		const t_seg_details *seg_details,
+		const int itrack,
+		const int chan_num,
+		const int seg_num);
+int get_seg_end(const t_seg_details *seg_details,
+		const int itrack,
+		const int istart,
+		const int chan_num,
+		const int seg_max);
 
 bool is_cblock(
-		INP int chan,
-		INP int seg,
-		INP int track,
-		INP t_seg_details *seg_details,
-		INP enum e_directionality directionality);
+		const int chan,
+		const int seg,
+		const int track,
+		const t_seg_details *seg_details,
+		const enum e_directionality directionality);
 
 bool is_sblock(
-		INP int chan,
-		INP int wire_seg,
-		INP int sb_seg,
-		INP int track,
-		INP t_seg_details *seg_details,
-		INP enum e_directionality directionality);
+		const int chan,
+		int wire_seg,
+		const int sb_seg,
+		const int track,
+		const t_seg_details *seg_details,
+		const enum e_directionality directionality);
 
 int get_bidir_opin_connections(
-		INP int i, INP int j,
-		INP int ipin,
-		INP struct s_linked_edge **edge_list,
-		INP int ******opin_to_track_map,
-		INP int Fc,
-		INP bool *L_rr_edge_done,
-		INP t_ivec ***L_rr_node_indices,
-		INP t_seg_details *seg_details);
+		const int i, const int j,
+		const int ipin,
+		struct s_linked_edge **edge_list,
+		int ******opin_to_track_map,
+		const int Fc,
+		bool *L_rr_edge_done,
+		vtr::t_ivec ***L_rr_node_indices,
+		const t_seg_details *seg_details);
 
 int get_unidir_opin_connections(
-		INP t_type_ptr type,
-		INP int chan,
-		INP int seg,
-		INP int Fc,
-		INP int seg_type_index,
-		INP t_rr_type chan_type,
-		INP t_seg_details *seg_details,
-		INOUTP t_linked_edge **edge_list_ptr,
-		INOUTP int ***Fc_ofs,
-		INOUTP bool *L_rr_edge_done,
-		INP int max_len,
-		INP int max_chan_width,
-		INP t_ivec ***L_rr_node_indices,
-		OUTP bool *Fc_clipped);
+		const t_type_ptr type,
+		const int chan,
+		const int seg,
+		int Fc,
+		const int seg_type_index,
+		const t_rr_type chan_type,
+		const t_seg_details *seg_details,
+		t_linked_edge **edge_list_ptr,
+		int ***Fc_ofs,
+		bool *L_rr_edge_done,
+		const int max_len,
+		const int max_chan_width,
+		vtr::t_ivec ***L_rr_node_indices,
+		bool *Fc_clipped);
 
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
-		t_linked_edge **edge_list_ptr, t_ivec ***L_rr_node_indices,
-		struct s_ivec *****track_to_pin_lookup, t_seg_details *seg_details,
+		t_linked_edge **edge_list_ptr, vtr::t_ivec ***L_rr_node_indices,
+		vtr::t_ivec *****track_to_pin_lookup, t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 
 int get_track_to_tracks(
-		INP int from_chan,
-		INP int from_seg,
-		INP int from_track,
-		INP t_rr_type from_type,
-		INP int to_seg,
-		INP t_rr_type to_type,
-		INP int chan_len,
-		INP int max_chan_width,
-		INP int *opin_mux_size,
-		INP int Fs_per_side,
-		INP short ******sblock_pattern,
-		INOUTP struct s_linked_edge **edge_list,
-		INP t_seg_details *from_seg_details,
-		INP t_seg_details *to_seg_details,
-		INP t_chan_details *to_chan_details,
-		INP enum e_directionality directionality,
-		INP t_ivec ***L_rr_node_indices,
-		INOUTP bool *L_rr_edge_done,
-		INP struct s_ivec ***switch_block_conn,
-		INP t_sb_connection_map *sb_conn_map);
+		const int from_chan,
+		const int from_seg,
+		const int from_track,
+		const t_rr_type from_type,
+		const int to_seg,
+		const t_rr_type to_type,
+		const int chan_len,
+		const int max_chan_width,
+		const int *opin_mux_size,
+		const int Fs_per_side,
+		short ******sblock_pattern,
+		struct s_linked_edge **edge_list,
+		const t_seg_details *from_seg_details,
+		const t_seg_details *to_seg_details,
+		const t_chan_details *to_chan_details,
+		const enum e_directionality directionality,
+		vtr::t_ivec ***L_rr_node_indices,
+		bool *L_rr_edge_done,
+		vtr::t_ivec ***switch_block_conn,
+		t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
-		INP int L_nx, INP int L_ny,
-		INP int max_chan_width);
+		const int L_nx, const int L_ny,
+		const int max_chan_width);
 void free_sblock_pattern_lookup(
-		INOUTP short ******sblock_pattern);
+		short ******sblock_pattern);
 void load_sblock_pattern_lookup(
-		INP int i, INP int j,
-		INP t_chan_width *nodes_per_chan,
-		INP t_chan_details *chan_details_x,
-		INP t_chan_details *chan_details_y,
-		INP int Fs,
-		INP enum e_switch_block_type switch_block_type,
-		INOUTP short ******sblock_pattern);
+		const int i, const int j,
+		const t_chan_width *nodes_per_chan,
+		const t_chan_details *chan_details_x,
+		const t_chan_details *chan_details_y,
+		const int Fs,
+		const enum e_switch_block_type switch_block_type,
+		short ******sblock_pattern);
 
 int *get_seg_track_counts(
-		INP int num_sets, INP int num_seg_types,
-		INP t_segment_inf * segment_inf, INP bool use_full_seg_groups);
+		const int num_sets, const int num_seg_types,
+		const t_segment_inf * segment_inf, const bool use_full_seg_groups);
 
 void dump_seg_details(
 		const t_seg_details *seg_details,
@@ -202,14 +201,14 @@ void dump_chan_details(
 		const t_chan_details *chan_details_x,
 		const t_chan_details *chan_details_y,
 		int max_chan_width,
-		INP int L_nx, int INP L_ny,
+		const int L_nx, int const L_ny,
 		const char *fname);
 void dump_sblock_pattern(
-		INP short ******sblock_pattern,
+		short ******sblock_pattern,
 		int max_chan_width,
-		INP int L_nx, int INP L_ny,
+		const int L_nx, int const L_ny,
 		const char *fname);
 
-void print_rr_node_indices(int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, t_ivec ***L_rr_node_indices);
+void print_rr_node_indices(int L_nx, int L_ny, vtr::t_ivec ***L_rr_node_indices);
+void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vtr::t_ivec ***L_rr_node_indices);
 #endif

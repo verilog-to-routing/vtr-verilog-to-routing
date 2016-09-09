@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 
 #include <stdio.h>
-#include <assert.h>
+#include "vtr_assert.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -84,7 +84,7 @@ static const char *meta_characters = "|.*+?()[\\";
 static const char *error_no_match = "No match";
 
 static void set_jump_offset(struct slre *r, int pc, int offset) {
-  assert(offset < r->code_size);
+  VTR_ASSERT(offset < r->code_size);
   if (r->code_size - offset > 0xff) {
     r->error_string = "Jump offset is too big";
   } else {
@@ -409,8 +409,8 @@ static const char *match(const struct slre *r, int pc, const char *s, int len,
 
   while (error_string == NULL && r->code[pc] != END) {
 
-    assert(pc < r->code_size);
-    assert(pc < (int) (sizeof(r->code) / sizeof(r->code[0])));
+    VTR_ASSERT(pc < r->code_size);
+    VTR_ASSERT(pc < (int) (sizeof(r->code) / sizeof(r->code[0])));
 
     switch (r->code[pc]) {
       case BRANCH:
@@ -552,7 +552,7 @@ static const char *match(const struct slre *r, int pc, const char *s, int len,
 
       default:
         printf("unknown cmd (%d) at %d\n", r->code[pc], pc);
-        assert(0);
+        VTR_ASSERT(0);
         break;
     }
   }

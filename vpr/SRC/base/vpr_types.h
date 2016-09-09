@@ -54,7 +54,6 @@ typedef struct s_net_power t_net_power;
 
 #ifdef SPEC
 #define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
-#define NDEBUG			/* Turns off assertion checking for extra speed */
 #endif
 
 #define TOKENS " \t\n"		/* Input file parsing. */
@@ -179,7 +178,7 @@ struct s_tnode;
 typedef struct s_logical_block {
 	char *name; /* Taken from the first g_atoms_nlist.net which it drives. */
 	enum logical_block_types type; /* I/O, combinational logic, or latch */
-	t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
+	const t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
 
 	int **input_nets; /* [0..num_input_ports-1][0..num_port_pins-1] List of input nets connected to this logical_block. */
 	int **output_nets; /* [0..num_output_ports-1][0..num_port_pins-1] List of output nets connected to this logical_block. */
@@ -197,8 +196,8 @@ typedef struct s_logical_block {
 	struct s_tnode ***output_net_tnodes; /* [0..num_output_ports-1][0..num_pins -1] correspnding output net tnode */
 	struct s_tnode *clock_net_tnode; /* correspnding clock net tnode */
 
-	struct s_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
-	struct s_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
+    vtr::t_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
+	vtr::t_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
 
 	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
 
@@ -241,7 +240,7 @@ typedef struct s_pack_molecule {
  */
 typedef struct s_cluster_placement_stats {
 	int num_pb_types; /* num primitive pb_types inside complex block */
-	t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
+	const t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
 	t_cluster_placement_primitive **valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
 	t_cluster_placement_primitive *tried; /* ptrs to primitives that are open but current logic block unable to pack to */
@@ -622,12 +621,13 @@ enum e_packer_algorithm {
 };
 
 struct s_packer_opts {
-	char *blif_file_name;
-	char *sdc_file_name;
-	char *output_file;
+	const char *blif_file_name;
+	const char *sdc_file_name;
+	const char *output_file;
 	bool global_clocks;
 	bool hill_climbing_flag;
 	bool sweep_hanging_nets_and_inputs;
+	bool absorb_buffer_luts;
 	bool timing_driven;
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;
@@ -661,12 +661,9 @@ struct s_annealing_sched {
 };
 
 /* Various options for the placer.                                           *
- * place_algorithm:  BOUNDING_BOX_PLACE or NET_TIMING_DRIVEN_PLACE, or       *
- *                   PATH_TIMING_DRIVEN_PLACE                                *
+ * place_algorithm:  BOUNDING_BOX_PLACE or PATH_TIMING_DRIVEN_PLACE          *
  * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff     *
  *                   timing driven and BOUNDING_BOX_PLACE.                   *
- * block_dist:  Initial guess of how far apart blocks on the critical path   *
- *              This is used to compute the initial slacks and criticalities *
  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
@@ -689,13 +686,12 @@ struct s_annealing_sched {
  * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
 
 enum e_place_algorithm {
-	BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE
+	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
 struct s_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
-	int block_dist;
 	float place_cost_exp;
 	int place_chan_width;
 	enum e_pad_loc_type pad_loc_type;
@@ -736,8 +732,7 @@ struct s_placer_opts {
  * router_algorithm:  BREADTH_FIRST or TIMING_DRIVEN.  Selects the desired  *
  *                    routing algorithm.                                    *
  * base_cost_type: Specifies how to compute the base cost of each type of   *
- *                 rr_node.  INTRINSIC_DELAY -> base_cost = intrinsic delay *
- *                 of each node.  DELAY_NORMALIZED -> base_cost = "demand"  *
+ *                 rr_node.  DELAY_NORMALIZED -> base_cost = "demand"       *
  *                 x average delay to route past 1 CLB.  DEMAND_ONLY ->     *
  *                 expected demand of this node (old breadth-first costs).  *
  *                                                                          *
@@ -764,7 +759,7 @@ enum e_router_algorithm {
 	BREADTH_FIRST, TIMING_DRIVEN, NO_TIMING
 };
 enum e_base_cost_type {
-	INTRINSIC_DELAY, DELAY_NORMALIZED, DEMAND_ONLY
+	DELAY_NORMALIZED, DEMAND_ONLY
 };
 enum e_routing_failure_predictor {
 	OFF, SAFE, AGGRESSIVE
@@ -909,7 +904,7 @@ typedef struct s_seg_details {
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
 
-typedef struct s_seg_details** t_chan_details;
+typedef t_seg_details** t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */

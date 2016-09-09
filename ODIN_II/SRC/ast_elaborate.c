@@ -25,13 +25,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "types.h"
 #include "ast_util.h"
 #include "ast_elaborate.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
 #include "verilog_bison_user_defined.h"
-#include "util.h"
 #include "netlist_create_from_ast.h"
 #include "ctype.h"
 
@@ -104,7 +104,7 @@ void optimize_for_tree()
 			char *value_string;
 			int mark_variable = 0;
 			int *flash_variable = &mark_variable;
-			ast_node_t *temp_parent_node; //used to connect copied branches from the for loop
+			ast_node_t *temp_parent_node = NULL; //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
 			idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again
@@ -301,6 +301,7 @@ int calculation(char *post_exp[])
     int data[Max_size];
     int top;
   }pop;
+  pop.data[Max_size] = -1;
   pop.top = -1;
   int i, num;
   for (i = 0; post_exp[i] != NULL; i++)
@@ -858,42 +859,55 @@ void reduce_enode_list()
 {
 	enode *temp;
 	int a;
-	for (temp = head; temp != NULL; temp = temp->next)
+	
+	while(head != NULL && (head->type.data == 0) && (head->next->priority == 2) && (head->next->type.operation == '+')){
+		temp=head;
+		head = head->next->next;
+		head->pre = NULL;
+		
+		free(temp->next);
+		free(temp);
+	}
+	
+	if(head == NULL){
+		return;
+	}
+	
+	temp = head->next;
+	while (temp != NULL)
 	{
-		if (temp == head)
+		if ((temp->flag == 1) && (temp->pre->priority == 2))
 		{
-			if ((temp->type.data == 0) && (temp->next->priority == 2) && (temp->next->type.operation == '+'))
+			if (temp->type.data == 0)
 			{
-				head = temp->next->next;
-				free(temp->next);
-				free(temp);
+				if (temp->next == NULL)
+					temp->pre->pre->next = NULL;
+				else
+				{
+					temp->pre->pre->next = temp->next;
+					temp->next->pre = temp->pre->pre;
+				}
+				free(temp->pre);
+				
+				enode *toBeDeleted = temp;
+				temp = temp->next;
+				free(toBeDeleted);
+			} else if (temp->type.data < 0)
+			{
+				if (temp->pre->type.operation == '+')
+					temp->pre->type.operation = '-';
+				else
+					temp->pre->type.operation = '+';
+				a = temp->type.data;
+				temp->type.data = -a;
+				
+				temp = temp->next;
+			} else {
+				temp = temp->next;
 			}
+		} else {
+			temp = temp->next;
 		}
-		else
-			if ((temp->flag == 1) && (temp->pre->priority == 2))
-			{
-				if (temp->type.data == 0)
-				{
-					if (temp->next == NULL)
-						temp->pre->pre->next = NULL;
-					else
-					{
-						temp->pre->pre->next = temp->next;
-						temp->next->pre = temp->pre->pre;
-					}
-					free(temp->pre);
-					free(temp);
-				}
-				if (temp->type.data < 0)
-				{
-					if (temp->pre->type.operation == '+')
-						temp->pre->type.operation = '-';
-					else
-						temp->pre->type.operation = '+';
-					a = temp->type.data;
-					temp->type.data = -a;
-				}
-			}
 	}
 }
 
@@ -1020,7 +1034,7 @@ void create_enode(ast_node_t *node)
 void adjoin_constant(int *build)
 {
 	enode *t, *replace;
-	int a, b, result;
+	int a, b, result = 0;
 	int mark;
 	for (t = head; t->next!= NULL; )
 	{
@@ -1205,7 +1219,7 @@ void combine_constant(int *build)
  *-------------------------------------------------------------------------*/
 void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_num)
 {
-	enode *temp, *tail1, *tail2;
+	enode *temp, *tail1 = NULL, *tail2 = NULL;
 	int prio = 0;
 
 	if (tail == NULL)
@@ -1515,7 +1529,7 @@ void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, in
  *-------------------------------------------------------------------------*/
 void delete_bracket(int begin, int end)
 {
-	enode *s1, *s2, *temp, *p;
+	enode *s1 = NULL, *s2 = NULL, *temp, *p;
 	int mark = 0;
 	for (temp = head; temp != NULL; temp = temp->next)
 	{
@@ -1998,7 +2012,6 @@ void change_bit_size(ast_node_t *node, int module_num, long long size)
 	char *name;
 	top= ast_modules[module_num];
 	name = node->types.identifier;
-	sprintf(name, "%s", node->types.identifier);
 	search_var_declare_list(top, name, size);
 
 }

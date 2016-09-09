@@ -206,6 +206,25 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``blend`` if timing_driven_clustering is on; ``max_inputs`` otherwise.
 
+
+.. option:: -sweep_hanging_nets_and_inputs {on | off}
+
+    Controls whether hanging/dangling nets and inputs (i.e. those that do not drive anything)) are swept and removed from the netlist.
+
+    **Default**: ``on``
+
+.. option:: -absorb_buffer_luts {on | off}
+
+    Controls whether LUTs programmed as wires (i.e. implementing logical identity) should be absorbed into the downstream logic.
+
+    Usually buffer LUTS are introduced in BLIF circuits by upstream tools in order to rename signals (like ``assign`` statements in Verilog). 
+    Absorbing these buffers reduces the number of LUTs required to implement the circuit.
+
+    Ocassionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
+    Disabling buffer absorption can also improve the matching between the input and post-synthesis netlist/SDF.
+
+    **Default**: ``on``
+
 .. _placer_options:
 
 Placer Options
@@ -217,8 +236,6 @@ This schedule is generally superior to any user-specified schedule.
 If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixed initial temperature, final temperature and temperature update factor is used. 
 
 .. seealso:: :ref:`timing_driven_placer_options`
-
-.. note:: The non-linear congestion option for placement has been deprecated.
 
 .. option:: -seed <int>
 
@@ -232,15 +249,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     This setting affects statistics output only, not optimization behaviour. 
 
     **Default:** ``on`` if timing-driven placement is specified, ``off`` otherwise.
-
-.. option:: -block_dist <int> 
-
-    .. deprecated:: 7.0
-
-    Specifies that the placement algorithm should print out an estimate of the circuit critical path, assuming that each inter-block connection is between blocks a (horizontal) distance of block_dist logic blocks apart.
-    This setting affects statistics output only, not optimization  behaviour.
-
-    **Default:** ``1`` (Currently the code that prints out this lower bound is #ifdef ’ed out in place.c -- define PRINT_LOWER_BOUND in place.c to reactivate it.)
 
 .. option:: -inner_num <float>
 
@@ -281,7 +289,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** off (i.e. placer chooses pad locations).
 
-.. option:: -place_algorithm {bounding_box | net_timing_driven | path_timing_driven}
+.. option:: -place_algorithm {bounding_box | path_timing_driven}
 
     Controls the algorithm used by the placer.
 
@@ -289,7 +297,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     ``path_timing_driven`` focuses on minimizing both wirelength and the critical path delay.
 
-    ``net_timing_driven`` is similar to path_timing_driven, but assumes that all nets have the same delay when estimating the critical path during placement, rather than using the current placement to obtain delay estimates.
 
     **Default:**  ``path_timing_driven``
 
@@ -400,17 +407,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``3``
 
-.. option:: -base_cost_type {demand_only | delay_normalized | intrinsic_delay} 
+.. option:: -base_cost_type {demand_only | delay_normalized} 
 
     Sets the basic cost of using a routing node (resource).
 
     ``demand_only`` sets the basic cost of a node according to how much demand is expected for that type of node.
 
     ``delay_normalized`` is similar, but normalizes all these basic costs to be of the same magnitude as the typical delay through a routing resource.
-
-    ``intrinsic_delay`` sets the basic cost of a node to its intrinsic delay.
-
-    .. warning:: ``intrinsic_delay`` is no longer supported and may give unusual results
 
     **Default:** ``delay_normalized`` for the timing-driven router and ``demand_only`` for the breadth-first router
 
@@ -454,7 +457,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     To disable, set value to a value higher than the largest fanout of any net.
 
-    **Default:** 64
+    **Default:** ``64``
 
 .. _timing_driven_router_options:
 
@@ -506,13 +509,13 @@ Power Estimation Options
 ----------------------------
 The following options are used to enable power estimation in VPR.
 
-.. seealso: ref:`power_estimation` for more details.
+.. seealso:: :ref:`power_estimation` for more details.
 
 .. option:: --power
 
     Enable power estimation
 
-    **Default:** off
+    **Default:** ``off``
 
 .. option:: --tech_properties <file>
 
@@ -527,5 +530,5 @@ The following options are used to enable power estimation in VPR.
         <net name2> <signal probability> <transition density>
         ...
 
-    Instructions on generating this file are provided in ref:`power_estimation`.
+    Instructions on generating this file are provided in :ref:`power_estimation`.
 

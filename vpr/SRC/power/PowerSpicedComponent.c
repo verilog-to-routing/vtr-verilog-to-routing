@@ -7,9 +7,8 @@
 
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
 
-#include "util.h"
 #include "PowerSpicedComponent.h"
 
 PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent * parent_,
@@ -38,7 +37,7 @@ void PowerCallibInputs::sort_me() {
 }
 
 void PowerCallibInputs::callibrate() {
-	assert(entries.size() >= 2);
+	VTR_ASSERT(entries.size() >= 2);
 
 	for (vector<PowerCallibSize*>::iterator it = entries.begin() + 1;
 			it != entries.end() - 1; it++) {
@@ -60,7 +59,7 @@ PowerCallibSize * PowerCallibInputs::get_entry_bound(bool lower,
 		float transistor_size) {
 	PowerCallibSize * prev = entries[0];
 
-	assert(sorted);
+	VTR_ASSERT(sorted);
 	for (vector<PowerCallibSize*>::iterator it = entries.begin() + 1;
 			it != entries.end(); it++) {
 		if ((*it)->transistor_size > transistor_size) {
@@ -114,7 +113,7 @@ PowerCallibInputs * PowerSpicedComponent::get_entry_bound(bool lower,
 		int num_inputs) {
 	PowerCallibInputs * prev = entries[0];
 
-	assert(sorted);
+	VTR_ASSERT(sorted);
 	for (vector<PowerCallibInputs*>::iterator it = entries.begin() + 1;
 			it != entries.end(); it++) {
 		if ((*it)->num_inputs > num_inputs) {
@@ -137,7 +136,7 @@ PowerCallibInputs * PowerSpicedComponent::get_entry_bound(bool lower,
 
 void PowerSpicedComponent::add_data_point(int num_inputs, float transistor_size,
 		float power) {
-	assert(!done_callibration);
+	VTR_ASSERT(!done_callibration);
 	PowerCallibInputs * inputs_entry = get_entry(num_inputs);
 	inputs_entry->add_size(transistor_size, power);
 	sorted = false;
@@ -158,14 +157,14 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
 
 	float perc_upper;
 
-	assert(done_callibration);
+	VTR_ASSERT(done_callibration);
 
 	inputs_lower = get_entry_bound(true, num_inputs);
 	inputs_upper = get_entry_bound(false, num_inputs);
 
 	if (inputs_lower) {
 		/* Interpolation of factor between sizes for lower # inputs */
-		assert(inputs_lower->done_callibration);
+		VTR_ASSERT(inputs_lower->done_callibration);
 		size_lower = inputs_lower->get_entry_bound(true, transistor_size);
 		size_upper = inputs_lower->get_entry_bound(false, transistor_size);
 
@@ -177,7 +176,7 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
 
 	if (inputs_upper) {
 		/* Interpolation of factor between sizes for upper # inputs */
-		assert(inputs_upper->done_callibration);
+		VTR_ASSERT(inputs_upper->done_callibration);
 		size_lower = inputs_upper->get_entry_bound(true, transistor_size);
 		size_upper = inputs_upper->get_entry_bound(false, transistor_size);
 

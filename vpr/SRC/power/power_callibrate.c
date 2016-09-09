@@ -20,7 +20,7 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <assert.h>
+#include "vtr_assert.h"
 #include <iostream>
 
 #include "power_callibrate.h"
@@ -87,8 +87,8 @@ void power_print_spice_comparison(void) {
 //
 //	 power_zero_usage(&mux_power_usage);
 //
-//	 dens = (float*) my_realloc(dens, mux_sizes[i] * sizeof(float));
-//	 prob = (float*) my_realloc(prob, mux_sizes[i] * sizeof(float));
+//	 dens = (float*) vtr::realloc(dens, mux_sizes[i] * sizeof(float));
+//	 prob = (float*) vtr::realloc(prob, mux_sizes[i] * sizeof(float));
 //	 for (j = 0; j < mux_sizes[i]; j++) {
 //	 dens[j] = 2;
 //	 prob[j] = 0.5;
@@ -107,8 +107,8 @@ void power_print_spice_comparison(void) {
 //
 //	 power_zero_usage(&mux_power_usage);
 //
-//	dens = (float*) my_realloc(dens, mux_sizes[i] * sizeof(float));
-//	prob = (float*) my_realloc(prob, mux_sizes[i] * sizeof(float));
+//	dens = (float*) vtr::realloc(dens, mux_sizes[i] * sizeof(float));
+//	prob = (float*) vtr::realloc(prob, mux_sizes[i] * sizeof(float));
 //	for (j = 0; j < mux_sizes[i]; j++) {
 //		if (j == 0) {
 //			dens[j] = 0;
@@ -147,7 +147,7 @@ void power_print_spice_comparison(void) {
 	fprintf(g_power_output->out, "Energy of LUT (High Activity)\n");
 	for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
 		for (j = 1; j <= LUT_sizes[i]; j++) {
-			SRAM_bits = (char*) my_realloc(SRAM_bits,
+			SRAM_bits = (char*) vtr::realloc(SRAM_bits,
 					((1 << j) + 1) * sizeof(char));
 			if (j == 1) {
 				SRAM_bits[0] = '1';
@@ -161,8 +161,8 @@ void power_print_spice_comparison(void) {
 			SRAM_bits[1 << j] = '\0';
 		}
 
-		dens = (float*) my_realloc(dens, LUT_sizes[i] * sizeof(float));
-		prob = (float*) my_realloc(prob, LUT_sizes[i] * sizeof(float));
+		dens = (float*) vtr::realloc(dens, LUT_sizes[i] * sizeof(float));
+		prob = (float*) vtr::realloc(prob, LUT_sizes[i] * sizeof(float));
 		for (j = 0; j < LUT_sizes[i]; j++) {
 			dens[j] = 1.0 / (float) LUT_sizes[i];
 			prob[j] = 0.5;
@@ -186,7 +186,7 @@ void power_print_spice_comparison(void) {
 //	 fprintf(g_power_output->out, "Energy of LUT (No Activity)\n");
 //	 for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
 //	 for (j = 1; j <= LUT_sizes[i]; j++) {
-//	 SRAM_bits = (char*) my_realloc(SRAM_bits,
+//	 SRAM_bits = (char*) vtr::realloc(SRAM_bits,
 //	 ((1 << j) + 1) * sizeof(char));
 //	 if (j == 1) {
 //	 SRAM_bits[0] = '1';
@@ -200,8 +200,8 @@ void power_print_spice_comparison(void) {
 //	 SRAM_bits[1 << j] = '\0';
 //	 }
 //
-//	 dens = (float*) my_realloc(dens, LUT_sizes[i] * sizeof(float));
-//	 prob = (float*) my_realloc(prob, LUT_sizes[i] * sizeof(float));
+//	 dens = (float*) vtr::realloc(dens, LUT_sizes[i] * sizeof(float));
+//	 prob = (float*) vtr::realloc(prob, LUT_sizes[i] * sizeof(float));
 //	 for (j = 0; j < LUT_sizes[i]; j++) {
 //	 dens[j] = 0;
 //	 prob[j] = 1;
@@ -231,8 +231,8 @@ void power_print_spice_comparison(void) {
 //
 //	 power_zero_usage(&sb_power_usage);
 //
-//	 dens = (float*) my_realloc(dens, sb_mux_sizes[i] * sizeof(float));
-//	 prob = (float*) my_realloc(prob, sb_mux_sizes[i] * sizeof(float));
+//	 dens = (float*) vtr::realloc(dens, sb_mux_sizes[i] * sizeof(float));
+//	 prob = (float*) vtr::realloc(prob, sb_mux_sizes[i] * sizeof(float));
 //	 for (j = 0; j < sb_mux_sizes[i]; j++) {
 //	 dens[j] = 2;
 //	 prob[j] = 0.5;
@@ -259,8 +259,8 @@ void power_print_spice_comparison(void) {
 //
 //	 power_zero_usage(&sb_power_usage);
 //
-//	 dens = (float*) my_realloc(dens, sb_mux_sizes[i] * sizeof(float));
-//	 prob = (float*) my_realloc(prob, sb_mux_sizes[i] * sizeof(float));
+//	 dens = (float*) vtr::realloc(dens, sb_mux_sizes[i] * sizeof(float));
+//	 prob = (float*) vtr::realloc(prob, sb_mux_sizes[i] * sizeof(float));
 //	 for (j = 0; j < sb_mux_sizes[i]; j++) {
 //	 if (j == 0) {
 //	 dens[j] = 0;
@@ -285,7 +285,10 @@ void power_print_spice_comparison(void) {
 //	 (sb_power_usage.dynamic + sb_power_usage.leakage)
 //	 * g_solution_inf.T_crit);
 //}
-
+	//free variables
+	free(dens);
+	free(prob);
+	free(SRAM_bits);
 }
 
 static char binary_not(char c) {
@@ -299,7 +302,7 @@ static char binary_not(char c) {
 float power_usage_buf_for_callibration(int num_inputs, float transistor_size) {
 	t_power_usage power_usage;
 
-	assert(num_inputs == 1);
+	VTR_ASSERT(num_inputs == 1);
 
 	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, false,
 			power_callib_period);
@@ -311,7 +314,7 @@ float power_usage_buf_levr_for_callibration(int num_inputs,
 		float transistor_size) {
 	t_power_usage power_usage;
 
-	assert(num_inputs == 1);
+	VTR_ASSERT(num_inputs == 1);
 
 	power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, true,
 			power_callib_period);
@@ -324,8 +327,8 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
 	float * dens;
 	float * prob;
 
-	dens = (float*) my_malloc(num_inputs * sizeof(float));
-	prob = (float*) my_malloc(num_inputs * sizeof(float));
+	dens = (float*) vtr::malloc(num_inputs * sizeof(float));
+	prob = (float*) vtr::malloc(num_inputs * sizeof(float));
 	for (int i = 0; i < num_inputs; i++) {
 		dens[i] = 2;
 		prob[i] = 0.5;
@@ -351,7 +354,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
 	/* Initialize an SRAM pattern that guarantees the outputs toggle with
 	 * every input toggle.
 	 */
-	SRAM_bits = (char*) my_malloc(((1 << lut_size) + 1) * sizeof(char));
+	SRAM_bits = (char*) vtr::malloc(((1 << lut_size) + 1) * sizeof(char));
 	for (int i = 1; i <= lut_size; i++) {
 		if (i == 1) {
 			SRAM_bits[0] = '1';
@@ -365,8 +368,8 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
 		SRAM_bits[1 << i] = '\0';
 	}
 
-	dens = (float*) my_malloc(lut_size * sizeof(float));
-	prob = (float*) my_malloc(lut_size * sizeof(float));
+	dens = (float*) vtr::malloc(lut_size * sizeof(float));
+	prob = (float*) vtr::malloc(lut_size * sizeof(float));
 	for (int i = 0; i < lut_size; i++) {
 		dens[i] = 1;
 		prob[i] = 0.5;
@@ -384,7 +387,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
 float power_usage_ff_for_callibration(int num_inputs, float transistor_size) {
 	t_power_usage power_usage;
 
-	assert(num_inputs == 1);
+	VTR_ASSERT(num_inputs == 1);
 
 	power_usage_ff(&power_usage, transistor_size, 0.5, 3, 0.5, 1, 0.5, 2,
 			power_callib_period);

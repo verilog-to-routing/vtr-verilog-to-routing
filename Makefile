@@ -2,7 +2,7 @@
 # Makefile to build CAD tools in Verilog-to-Routing (VTR) Framework #
 #####################################################################
 
-SUBDIRS = abc_with_bb_support ODIN_II vpr libarchfpga liblog ace2 libsdc_parse
+SUBDIRS = abc_with_bb_support ODIN_II vpr ace2 libarchfpga liblog libpugixml libsdc_parse libvtrutil
 
 all: notifications subdirs
 
@@ -26,23 +26,34 @@ packages:
 	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep g++ -c >>/dev/null; then sudo apt-get install g++; fi; fi
 	@ cd vpr && make packages
 
-ODIN_II: libarchfpga
+ODIN_II: libarchfpga libvtrutil
 
-vpr: libarchfpga libsdc_parse
+vpr: libarchfpga libsdc_parse libvtrutil
 
-libarchfpga: liblog
+libarchfpga: liblog libvtrutil libpugixml
 
 ace2: abc_with_bb_support
+
 clean:
 	@ cd ODIN_II && make clean
 	@ cd abc_with_bb_support && make clean
 	@ cd ace2 && make clean
 	@ cd vpr && make clean
 	@ cd libarchfpga && make clean
-	@ cd libsdc_parse && make clean
 	@ cd liblog && make clean
+	@ cd libpugixml && make clean
+	@ cd libsdc_parse && make clean
+	@ cd libvtrutil && make clean
 
 clean_vpr:
 	@ cd vpr && make clean
+
+get_titan_benchmarks:
+	@ echo "Warning: A typical Titan release is a ~1GB download, and uncompresses to ~10GB."
+	@ echo "Starting download in 15 seconds..."
+	@ sleep 15
+	@ ./vtr_flow/scripts/download_titan.py --vtr_flow_dir ./vtr_flow
+	@ echo "Titan architectures: vtr_flow/arch/titan"
+	@ echo "Titan benchmarks: vtr_flow/benchmarks/titan_blif"
 
 .PHONY: packages subdirs $(SUBDIRS)

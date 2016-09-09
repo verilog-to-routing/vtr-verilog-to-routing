@@ -12,6 +12,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include "vtr_matrix.h"
 #include "netlist.h"
 #include "rr_node.h"
 
@@ -92,7 +93,7 @@ extern t_netlist g_atoms_nlist;
 
 
 /* primiary inputs removed from circuit */
-extern struct s_linked_vptr *circuit_p_io_removed;
+extern vtr::t_linked_vptr *circuit_p_io_removed;
 
 /* Relationship between external-to-complex block nets and internal-to-complex block nets */
 extern int *clb_to_vpack_net_mapping; /* [0..num_clb_nets - 1] */
@@ -114,7 +115,7 @@ extern int num_rr_nodes;
 extern t_rr_node *rr_node; /* [0..num_rr_nodes-1]          */
 extern int num_rr_indexed_data;
 extern t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */
-extern t_ivec ***rr_node_indices;
+extern vtr::t_ivec ***rr_node_indices;
 extern int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 extern int g_num_arch_switches;
 extern s_arch_switch_inf *g_arch_switch_inf; /* [0..(g_num_arch_switches-1)] */
@@ -145,27 +146,6 @@ extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest in
  Clock Network
  ********************************************************************/
 extern t_clock_arch * g_clock_arch;
-
-
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-/******************************************************************
- * Interposer related stuff
- * ****************************************************************/
-extern int percent_wires_cut;
-extern int num_cuts;
-extern int delay_increase; 
-extern float placer_cost_constant;
-extern int constant_type;
-extern int *increased_delay_edge_map;
-extern bool allow_chanx_interposer_connections;
-extern bool transfer_interposer_fanins;
-extern bool allow_additional_interposer_fanins;
-extern int  pct_of_interposer_nodes_each_chany_can_drive;
-extern bool transfer_interposer_fanouts;
-extern bool allow_additional_interposer_fanouts;
-extern int  pct_of_chany_wires_an_interposer_node_can_drive;
-extern int* arch_cut_locations;
-#endif
 
 #endif
 

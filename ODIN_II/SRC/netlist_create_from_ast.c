@@ -35,7 +35,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_visualizer.h"
 #include "parse_making_ast.h"
 #include "node_creation_library.h"
-#include "util.h"
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "memories.h"
@@ -200,6 +199,7 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					free(temp_string);
 				}
 			}
+
 		}
 
 		if(parent_parameter_list)
@@ -324,7 +324,7 @@ void create_netlist()
 	for (i = 0; i < num_modules; i++)
 	{
 		if (ast_modules[i]->type == IDENTIFIERS)
-		{
+		{	
 			// double check that it's in modules_names_to_idx
 			char *module_param_name = ast_modules[i]->types.identifier;
 			long sc_spot = sc_lookup_string(module_names_to_idx, module_param_name);
@@ -1009,7 +1009,7 @@ void create_all_driver_nets_in_this_module(char *instance_name_prefix)
 	/* use the symbol table to decide if driver */
 	for (i = 0; i < num_local_symbol_table; i++)
 	{
-		oassert(local_symbol_table[i]->type == VAR_DECLARE);
+		oassert(local_symbol_table[i]->type == VAR_DECLARE || local_symbol_table[i]->type == BLOCKING_STATEMENT);
 		if (
 			/* all registers are drivers */
 				(local_symbol_table[i]->types.variable.is_reg) || (local_symbol_table[i]->types.variable.is_integer)
@@ -1315,7 +1315,9 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	long sc_spot;
 	nnet_t *new_net = NULL;
 			
-	if (var_declare->children[1] == NULL)
+
+
+	if (var_declare->children[1] == NULL || var_declare->type == BLOCKING_STATEMENT)
 	{
 		/* FOR single driver signal since spots 1, 2, 3, 4 are NULL */
 
@@ -1646,7 +1648,40 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
 					free(temp_string);
 				}
 			}
-		}
+		if(module_items->children[i]->type == ASSIGN)
+			{
+				if((module_items->children[i]->children[0]) && (module_items->children[i]->children[0]->type == BLOCKING_STATEMENT))
+				{
+					if((module_items->children[i]->children[0]->children[0]) && (module_items->children[i]->children[0]->children[0]->type == IDENTIFIERS))
+					{ temp_string = make_full_ref_name(NULL, NULL, NULL, module_items->children[i]->children[0]->children[0]->types.identifier, -1);
+						/* look for that element */
+						sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+						if( sc_spot == -1 )
+						{
+							sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
+
+							/* store the data which is an idx here */
+							local_symbol_table_sc->data[sc_spot]= module_items->children[i]->children[0];
+
+							/* store the symbol */		
+							local_symbol_table = (ast_node_t **)realloc(local_symbol_table, sizeof(ast_node_t*)*(num_local_symbol_table+1));
+							local_symbol_table[num_local_symbol_table] = (ast_node_t *)module_items->children[i]->children[0];
+							num_local_symbol_table ++;
+
+							
+							/* copy the output status over */
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = TRUE;
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = FALSE;
+							
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = FALSE;
+							((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_input = FALSE;
+							
+						}
+											
+					}
+				}		
+			}
+		}	
 	}
 	else
 	{
@@ -4254,8 +4289,8 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 
 			/* check if the current element for this case statement is defined */ 	
 			if (
-					   (per_case_statement_idx[j] < statement_lists[j]->count)
-					&& (strcmp(combined_lists->pins[i]->name, statement_lists[j]->pins[per_case_statement_idx[j]]->name) == 0)
+						(per_case_statement_idx[j] < (statement_lists[j] ? statement_lists[j]->count : 0))
+					&& (statement_lists[j] ? (strcmp(combined_lists->pins[i]->name, statement_lists[j]->pins[per_case_statement_idx[j]]->name) == 0) : 0)
 			)
 			{
 				/* If they match then we have a signal with this name and we can attach the pin */ 

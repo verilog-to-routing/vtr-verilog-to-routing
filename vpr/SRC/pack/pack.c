@@ -2,11 +2,14 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include "vtr_math.h"
+
+#include "vpr_error.h"
+#include "vpr_types.h"
 
 #include "read_xml_arch_file.h"
-#include "util.h"
-#include "vpr_types.h"
 #include "globals.h"
 #include "prepack.h"
 #include "pack_types.h"
@@ -21,17 +24,17 @@ using namespace std;
 
 static bool *alloc_and_load_is_clock(bool global_clocks);
 
-void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
-		INP t_model *user_models, INP t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
+		const t_model *user_models, const t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 	bool *is_clock;
 	int num_models;
-	t_model *cur_model;
+	const t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 	int num_pack_molecules;
 
-	vpr_printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
+	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
 
 	/* determine number of models in the architecture */
 	num_models = 0;
@@ -49,22 +52,22 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 	
-	vpr_printf_info("\n");
-	vpr_printf_info("After removing unused inputs...\n");
-	vpr_printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
+	vtr::printf_info("\n");
+	vtr::printf_info("After removing unused inputs...\n");
+	vtr::printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
 		num_logical_blocks, (int) g_atoms_nlist.net.size(), num_p_inputs, num_p_outputs);
 
-	vpr_printf_info("Begin prepacking.\n");
+	vtr::printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(
 			&num_packing_patterns);
 	list_of_pack_molecules = alloc_and_load_pack_molecules(
 			list_of_packing_patterns, num_packing_patterns,
 			&num_pack_molecules);
-	vpr_printf_info("Finish prepacking.\n");
+	vtr::printf_info("Finish prepacking.\n");
 
 	if(packer_opts->auto_compute_inter_cluster_net_delay) {
 		packer_opts->inter_cluster_net_delay = interc_delay;
-		vpr_printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
+		vtr::printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
 	}
 
 	/* Uncomment line below if you want a dump of compressed netlist. */
@@ -104,9 +107,9 @@ void try_pack(INP struct s_packer_opts *packer_opts, INP const t_arch * arch,
 		list_of_pack_molecules = cur_pack_molecule;
 	}
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Netlist conversion complete.\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Netlist conversion complete.\n");
+	vtr::printf_info("\n");
 }
 
 float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_switch, float &R_switch, float &Cout_switch){
@@ -120,7 +123,7 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	if (Tdel_map->size() == 1){
 		Tdel_switch = (Tdel_map->begin())->second;
 	} else {
-		Tdel_switch = linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
+		Tdel_switch = vtr::linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
 	}
 	R_switch = g_arch_switch_inf[switch_index].R;
 	Cout_switch = g_arch_switch_inf[switch_index].Cout;
@@ -141,14 +144,14 @@ bool *alloc_and_load_is_clock(bool global_clocks) {
 
 	num_clocks = 0;
 
-	is_clock = (bool *) my_calloc(g_atoms_nlist.net.size(), sizeof(bool));
+	is_clock = (bool *) vtr::calloc(g_atoms_nlist.net.size(), sizeof(bool));
 
 	/* Want to identify all the clock nets.  */
 
 	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
 		if (logical_block[bnum].type == VPACK_LATCH) {
 			clock_net = logical_block[bnum].clock_net;
-			assert(clock_net != OPEN);
+			VTR_ASSERT(clock_net != OPEN);
 			if (is_clock[clock_net] == false) {
 				is_clock[clock_net] = true;
 				num_clocks++;
@@ -169,7 +172,7 @@ bool *alloc_and_load_is_clock(bool global_clocks) {
 	 * locally generated clocks.                                             */
 
 	if (num_clocks > 1 && global_clocks) {
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Circuit contains %d clocks. All clocks will be marked global.\n", num_clocks);
 	}
 

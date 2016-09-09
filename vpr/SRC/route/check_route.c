@@ -1,10 +1,12 @@
 #include <cstdio>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "route_export.h"
 #include "check_route.h"
@@ -21,14 +23,14 @@ static bool check_adjacent(int from_node, int to_node);
 static int pin_and_chan_adjacent(int pin_node, int chan_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
-static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally);
-static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
+static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally);
+static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 		enum e_route_type route_type);
 
 /************************ Subroutine definitions ****************************/
 
 void check_route(enum e_route_type route_type, int num_switches,
-		t_ivec ** clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -43,8 +45,8 @@ void check_route(enum e_route_type route_type, int num_switches,
 	struct s_trace *tptr;
 	bool * pin_done;
 
-	vpr_printf_info("\n");
-	vpr_printf_info("Checking to ensure routing is legal...\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("Checking to ensure routing is legal...\n");
 
 	/* Recompute the occupancy from scratch and check for overuse of routing *
 	 * resources.  This was already checked in order to determine that this  *
@@ -59,13 +61,13 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	check_locally_used_clb_opins(clb_opins_used_locally, route_type);
 
-	connected_to_route = (bool *) my_calloc(num_rr_nodes, sizeof(bool));
+	connected_to_route = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
 		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].pins.size());
 
-	pin_done = (bool *) my_malloc(max_pins * sizeof(bool));
+	pin_done = (bool *) vtr::malloc(max_pins * sizeof(bool));
 
 	/* Now check that all nets are indeed connected. */
 
@@ -154,8 +156,8 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	free(pin_done);
 	free(connected_to_route);
-	vpr_printf_info("Completed routing consistency check successfully.\n");
-	vpr_printf_info("\n");
+	vtr::printf_info("Completed routing consistency check successfully.\n");
+	vtr::printf_info("\n");
 }
 
 static void check_sink(int inode, int inet, bool * pin_done) {
@@ -167,7 +169,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	unsigned int ipin;
 	t_type_ptr type;
 
-	assert(rr_node[inode].type == SINK);
+	VTR_ASSERT(rr_node[inode].type == SINK);
 	i = rr_node[inode].get_xlow();
 	j = rr_node[inode].get_ylow();
 	type = grid[i][j].type;
@@ -319,7 +321,7 @@ static bool check_adjacent(int from_node, int to_node) {
 		}
 	}
 
-	assert(reached==1);
+	VTR_ASSERT(reached==1);
 	if (!reached)
 		return (false);
 
@@ -344,13 +346,13 @@ static bool check_adjacent(int from_node, int to_node) {
 	switch (from_type) {
 
 	case SOURCE:
-		assert(to_type == OPIN);
+		VTR_ASSERT(to_type == OPIN);
 		if (from_xlow == to_xlow && from_ylow == to_ylow
 				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
 
 			from_grid_type = grid[from_xlow][from_ylow].type;
 			to_grid_type = grid[to_xlow][to_ylow].type;
-			assert(from_grid_type == to_grid_type);
+			VTR_ASSERT(from_grid_type == to_grid_type);
 
 			iclass = to_grid_type->pin_class[to_ptc];
 			if (iclass == from_ptc)
@@ -368,20 +370,20 @@ static bool check_adjacent(int from_node, int to_node) {
 		if(to_type == CHANX || to_type == CHANY) {
 			num_adj += pin_and_chan_adjacent(from_node, to_node);
 		} else {
-			assert(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
+			VTR_ASSERT(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
 			return true; /* Special case, direct OPIN to IPIN connections need not be adjacent */
 		}
 
 		break;
 
 	case IPIN:
-		assert(to_type == SINK);
+		VTR_ASSERT(to_type == SINK);
 		if (from_xlow == to_xlow && from_ylow == to_ylow
 				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
 
 			from_grid_type = grid[from_xlow][from_ylow].type;
 			to_grid_type = grid[to_xlow][to_ylow].type;
-			assert(from_grid_type == to_grid_type);
+			VTR_ASSERT(from_grid_type == to_grid_type);
 
 			iclass = from_grid_type->pin_class[from_ptc];
 			if (iclass == to_ptc)
@@ -417,7 +419,7 @@ static bool check_adjacent(int from_node, int to_node) {
 		} else if (to_type == CHANY) {
 			num_adj += chanx_chany_adjacent(from_node, to_node);
 		} else {
-			assert(0);
+			VTR_ASSERT(0);
 		}
 		break;
 
@@ -448,7 +450,7 @@ static bool check_adjacent(int from_node, int to_node) {
 		} else if (to_type == CHANX) {
 			num_adj += chanx_chany_adjacent(to_node, from_node);
 		} else {
-			assert(0);
+			VTR_ASSERT(0);
 		}
 		break;
 
@@ -504,51 +506,9 @@ static int pin_and_chan_adjacent(int pin_node, int chan_node) {
 	 Hence, I'm overriding this function
 	 */
 	 return true;
-
-	int num_adj = 0;
-
-	int pin_xlow = rr_node[pin_node].get_xlow();
-	int pin_ylow = rr_node[pin_node].get_ylow();
-	int pin_xhigh = rr_node[pin_node].get_xhigh();
-	int pin_yhigh = rr_node[pin_node].get_yhigh();
-	t_type_ptr pin_grid_type = grid[pin_xlow][pin_ylow].type;
-	int pin_ptc = rr_node[pin_node].get_ptc_num();
-
-	int chan_type = rr_node[chan_node].type;
-	int chan_xlow = rr_node[chan_node].get_xlow();
-	int chan_ylow = rr_node[chan_node].get_ylow();
-	int chan_xhigh = rr_node[chan_node].get_xhigh();
-	int chan_yhigh = rr_node[chan_node].get_yhigh();
-
-	if (chan_type == CHANX) {
-		for (int width = 0; width < pin_grid_type->width; ++width) {
-			if (chan_ylow == pin_yhigh) { /* CHANX above CLB */
-				if (pin_grid_type->pinloc[width][pin_grid_type->height - 1][TOP][pin_ptc] == 1
-						&& pin_xlow <= chan_xhigh && pin_xhigh >= chan_xlow)
-					num_adj++;
-			} else if (chan_ylow == pin_ylow - 1) { /* CHANX below CLB */
-				if (pin_grid_type->pinloc[width][0][BOTTOM][pin_ptc] == 1
-						&& pin_xlow <= chan_xhigh && pin_xhigh >= chan_xlow)
-					num_adj++;
-			}
-		}
-	} else if (chan_type == CHANY) {
-		for (int height = 0; height < pin_grid_type->height; ++height) {
-			if (chan_xlow == pin_xhigh) { /* CHANY to right of CLB */
-				if (pin_grid_type->pinloc[pin_grid_type->width-1][height][RIGHT][pin_ptc] == 1
-						&& pin_ylow <= chan_yhigh && pin_yhigh >= chan_ylow)
-					num_adj++;
-			} else if (chan_xlow == pin_xlow - 1) { /* CHANY to left of CLB */
-				if (pin_grid_type->pinloc[0][height][LEFT][pin_ptc] == 1
-						&& pin_ylow <= chan_yhigh && pin_yhigh >= chan_ylow)
-					num_adj++;
-			}
-		}
-	}
-	return (num_adj);
 }
 
-static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
+static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* This routine updates the occ field in the rr_node structure according to *
 	 * the resource usage of the current routing.  It does a brute force        *
@@ -604,7 +564,7 @@ static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
 	}
 }
 
-static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
+static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 		enum e_route_type route_type) {
 
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *

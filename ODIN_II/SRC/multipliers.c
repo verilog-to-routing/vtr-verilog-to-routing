@@ -29,14 +29,19 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "multipliers.h"
 #include "netlist_utils.h"
 #include "partial_map.h"
-#include "util.h"
 #include "read_xml_arch_file.h"
 #include "globals.h"
 #include "errors.h"
 #include "adders.h"
+#include "print_tags.h"
+
+#include "vtr_list.h"
+
+using vtr::t_linked_vptr;
+using vtr::insert_in_vptr_list;
 
 t_model *hard_multipliers = NULL;
-struct s_linked_vptr *mult_list = NULL;
+t_linked_vptr *mult_list = NULL;
 int min_mult = 0;
 int *mults = NULL;
 
@@ -980,7 +985,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 
 	if (configuration.split_hard_multiplier == 1)
 	{
-		struct s_linked_vptr *plist = hard_multipliers->pb_types;
+		t_linked_vptr *plist = hard_multipliers->pb_types;
 		while ((diffa + diffb) && plist)
 		{
 			t_pb_type *physical = (t_pb_type *)(plist->data_vptr);
@@ -1124,7 +1129,7 @@ void iterate_multipliers(netlist_t *netlist)
 		{
 			b1 = sizeb;
 			b0 = mulb - sizeb;
-			split_multiplier_b(node, mula, b0, b1);
+			split_multiplier_b(node, mula, b1, b0);
 		}
 		else if ((sizea >= min_mult) && (sizeb >= min_mult))
 		{

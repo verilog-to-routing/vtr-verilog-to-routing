@@ -1,10 +1,11 @@
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "rr_graph_util.h"
 
 t_linked_edge *
-insert_in_edge_list(INP t_linked_edge * head, INP int edge, INP short iswitch) {
+insert_in_edge_list(t_linked_edge * head, const int edge, const short iswitch) {
 
 	/* Inserts a new element at the head of a linked list.  Returns the new head *
 	 * of the list.  One argument is the address of the head of a list of free   *
@@ -13,7 +14,7 @@ insert_in_edge_list(INP t_linked_edge * head, INP int edge, INP short iswitch) {
 
 	t_linked_edge *linked_edge;
 
-	linked_edge = (t_linked_edge *) my_malloc(sizeof(t_linked_edge));
+	linked_edge = (t_linked_edge *) vtr::malloc(sizeof(t_linked_edge));
 
 	linked_edge->edge = edge;
 	linked_edge->iswitch = iswitch;

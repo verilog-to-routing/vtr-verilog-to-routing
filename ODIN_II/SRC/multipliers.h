@@ -24,7 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define MULTIPLIERS_H
 
 #include "read_xml_arch_file.h"
-#include "util.h"
 
 typedef struct s_multiplier
 {
@@ -35,7 +34,7 @@ typedef struct s_multiplier
 } t_multiplier;
 
 extern t_model *hard_multipliers;
-extern struct s_linked_vptr *mult_list;
+extern vtr::t_linked_vptr *mult_list;
 extern int min_mult;
 
 extern void init_mult_distribution();

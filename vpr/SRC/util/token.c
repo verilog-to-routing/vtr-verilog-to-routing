@@ -5,21 +5,37 @@
  */
 
 #include <cstring>
-#include <cassert>
 using namespace std;
 
-#include <assert.h>
 
-#include "util.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include "vtr_util.h"
+#include "vtr_memory.h"
+
 #include "token.h"
-#include "ezxml.h"
 #include "read_xml_util.h"
 
-enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
-		INP char cur);
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+		const char cur);
+
+bool IsWhitespace(char c);
+
+/* Returns true if character is whatspace between tokens */
+bool IsWhitespace(char c) {
+	switch (c) {
+	case ' ':
+	case '\t':
+	case '\r':
+	case '\n':
+		return true;
+	default:
+		return false;
+	}
+}
 
 /* Returns a token list of the text for a given string. */
-t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
+t_token *GetTokensFromString(const char* inString, int * num_tokens) {
 	const char *cur;
 	t_token * tokens;
 	int i, in_string_index, prev_in_string_index;
@@ -49,7 +65,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	*num_tokens = i;
 
 	if (*num_tokens > 0) {
-		tokens = (t_token*)my_calloc(*num_tokens + 1, sizeof(t_token));
+		tokens = (t_token*)vtr::calloc(*num_tokens + 1, sizeof(t_token));
 	} else {
 		return NULL;
 	}
@@ -74,7 +90,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 			}
 			if (new_token_type != TOKEN_NULL) {
 				tokens[i].type = new_token_type;
-				tokens[i].data = my_strdup(inString + in_string_index);
+				tokens[i].data = vtr::strdup(inString + in_string_index);
 				prev_in_string_index = in_string_index;
 				has_null = false;
 				i++;
@@ -85,7 +101,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 		in_string_index++;
 	}
 
-	assert(i == *num_tokens);
+	VTR_ASSERT(i == *num_tokens);
 
 	tokens[*num_tokens].type = TOKEN_NULL;
 	tokens[*num_tokens].data = NULL;
@@ -94,7 +110,7 @@ t_token *GetTokensFromString(INP const char* inString, OUTP int * num_tokens) {
 	return tokens;
 }
 
-void freeTokens(INP t_token *tokens, INP int num_tokens) {
+void freeTokens(t_token *tokens, const int num_tokens) {
 	int i;
 	for (i = 0; i < num_tokens; i++) {
 		free(tokens[i].data);
@@ -102,8 +118,8 @@ void freeTokens(INP t_token *tokens, INP int num_tokens) {
 	free(tokens);
 }
 
-enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
-		INP char cur) {
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+		const char cur) {
 	if (IsWhitespace(cur)) {
 		return TOKEN_NULL;
 	} else {
@@ -127,19 +143,19 @@ enum e_token_type GetTokenTypeFromChar(INP enum e_token_type cur_token_type,
 	}
 }
 
-bool checkTokenType(INP t_token token, OUTP enum e_token_type token_type) {
+bool checkTokenType(const t_token token, enum e_token_type token_type) {
 	if (token.type != token_type) {
 		return false;
 	}
 	return true;
 }
 
-void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
-		INP char *instring) {
+void my_atof_2D(float **matrix, const int max_i, const int max_j,
+		const char *instring) {
 	int i, j;
 	char *cur, *cur2, *copy, *final;
 
-	copy = my_strdup(instring);
+	copy = vtr::strdup(instring);
 	final = copy;
 	while (*final != '\0') {
 		final++;
@@ -163,14 +179,14 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
 			cur2++;
 		}
 		*cur2 = '\0';
-		assert(i < max_i && j < max_j);
+		VTR_ASSERT(i < max_i && j < max_j);
 		matrix[i][j] = atof(cur);
 		j++;
 		cur = cur2;
 		*cur = ' ';
 	}
 
-	assert((i == max_i && j == 0) || (i == max_i - 1 && j == max_j));
+	VTR_ASSERT((i == max_i && j == 0) || (i == max_i - 1 && j == max_j));
 
 	free(copy);
 }
@@ -180,11 +196,11 @@ void my_atof_2D(INOUTP float **matrix, INP int max_i, INP int max_j,
  * Purpose: Checks if the number of entries (separated by whitespace)	*
  *	        matches the the expected number (max_i * max_j),			*
  *			can be used before calling my_atof_2D						*/
-bool check_my_atof_2D(INP int max_i, INP int max_j,
-		INP char *instring, OUTP int * num_entries){
+bool check_my_atof_2D(const int max_i, const int max_j,
+		const char *instring, int * num_entries){
 
 	/* Check if max_i * max_j matches number of entries in instring */
-	char *cur = instring;
+	const char *cur = instring;
 	bool in_str = false;
 	int entry_count = 0;
 

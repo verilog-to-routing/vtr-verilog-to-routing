@@ -9,9 +9,11 @@ See comment of "dump_rr_structs" function for formate
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include "vpr_error.h"
+
 #include "dump_rr_structs.h"
 #include "globals.h"
-#include "util.h"
 
 using namespace std;
 
@@ -224,7 +226,7 @@ static void dump_grid( fstream &file ){
 static void dump_rr_node_indices( fstream &file ){
 	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
-	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..nx+2][0..ny+2]. each entry then contains a t_ivec with nelem entries */
+	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..nx+2][0..ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
 	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << nx+2 << ", " << ny+2 << ")" << endl;
 
 	/* note that the rr_node_indices structure uses the chan/seg convention. in terms of coordinates, this affects CHANX nodes
@@ -253,7 +255,7 @@ static void dump_rr_node_indices( fstream &file ){
 					continue;
 				}
 
-				t_ivec vec = rr_node_indices[rr_type][ix][iy];
+				vtr::t_ivec vec = rr_node_indices[rr_type][ix][iy];
 
 				if (vec.nelem == 0){
 					/* skip if vector not allocated */

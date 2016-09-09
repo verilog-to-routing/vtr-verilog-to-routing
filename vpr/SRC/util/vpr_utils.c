@@ -1,9 +1,9 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "physical_types.h"
 #include "globals.h"
@@ -75,7 +75,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node);
 
-static void load_pin_id_to_pb_mapping_rec(INP t_pb *cur_pb, INOUTP t_pb **pin_id_to_pb_mapping);
+static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapping);
 
 /******************** Subroutine definitions *********************************/
 
@@ -91,9 +91,9 @@ void print_tabs(FILE * fpout, int num_tab) {
 }
 
 /* Points the grid structure back to the blocks list */
-void sync_grid_to_blocks(INP int L_num_blocks,
-		INP const struct s_block block_list[], INP int L_nx, INP int L_ny,
-		INOUTP struct s_grid_tile **L_grid) {
+void sync_grid_to_blocks(const int L_num_blocks,
+		const struct s_block block_list[], const int L_nx, const int L_ny,
+		struct s_grid_tile **L_grid) {
 
 	int i, j, k;
 
@@ -104,7 +104,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 			if (L_grid[i][j].type) {
 				/* If already allocated, leave it since size doesn't change */
 				if (NULL == L_grid[i][j].blocks) {
-					L_grid[i][j].blocks = (int *) my_malloc(
+					L_grid[i][j].blocks = (int *) vtr::malloc(
 							sizeof(int) * L_grid[i][j].type->capacity);
 
 					/* Set them as unconnected */
@@ -123,7 +123,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 				|| (block[i].x + block[i].type->width - 1) > (L_nx + 1)
 				|| (block[i].y + block[i].type->height - 1) > (L_ny + 1)
 				|| block[i].z < 0 || block[i].z > (block[i].type->capacity)) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Block %d is at invalid location (%d, %d, %d).\n", 
 					i, block[i].x, block[i].y, block[i].z);
 			exit(1);
@@ -131,7 +131,7 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 
 		/* Check types match */
 		if (block[i].type != L_grid[block[i].x][block[i].y].type) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"A block is in a grid location (%d x %d) with a conflicting type.\n", 
 					block[i].x, block[i].y);
 			exit(1);
@@ -140,14 +140,14 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 		/* Check already in use */
 		if ((EMPTY != L_grid[block[i].x][block[i].y].blocks[block[i].z])
 				&& (INVALID != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Location (%d, %d, %d) is used more than once.\n", 
 					block[i].x, block[i].y, block[i].z);
 			exit(1);
 		}
 
 		if (L_grid[block[i].x][block[i].y].width_offset != 0 || L_grid[block[i].x][block[i].y].height_offset != 0) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"Large block not aligned in placment for block %d at (%d, %d, %d).",
 					i, block[i].x, block[i].y, block[i].z);
 			exit(1);
@@ -158,8 +158,8 @@ void sync_grid_to_blocks(INP int L_num_blocks,
 			for (int height = 0; height < block[i].type->height; ++height) {
 				L_grid[block[i].x + width][block[i].y + height].blocks[block[i].z] = i;
 				L_grid[block[i].x + width][block[i].y + height].usage++;
-				assert(L_grid[block[i].x + width][block[i].y + height].width_offset == width);
-				assert(L_grid[block[i].x + width][block[i].y + height].height_offset == height);
+				VTR_ASSERT(L_grid[block[i].x + width][block[i].y + height].width_offset == width);
+				VTR_ASSERT(L_grid[block[i].x + width][block[i].y + height].height_offset == height);
 			}
 		}
 	}
@@ -211,15 +211,15 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 }
 
 
-void get_class_range_for_block(INP int iblk, 
-		OUTP int *class_low,
-		OUTP int *class_high) {
+void get_class_range_for_block(const int iblk, 
+		int *class_low,
+		int *class_high) {
 
 	/* Assumes that the placement has been done so each block has a set of pins allocated to it */
 	t_type_ptr type;
 
 	type = block[iblk].type;
-	assert(type->num_class % type->capacity == 0);
+	VTR_ASSERT(type->num_class % type->capacity == 0);
 	*class_low = block[iblk].z * (type->num_class / type->capacity);
 	*class_high = (block[iblk].z + 1) * (type->num_class / type->capacity) - 1;
 }
@@ -326,8 +326,8 @@ bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
 							return false;
 						}
 					} else {
-						assert(port->dir == IN_PORT && port->is_clock);
-						assert(j == 0);
+						VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
+						VTR_ASSERT(j == 0);
 						if (logical_block[iblk].clock_net != OPEN) {
 							return false;
 						}
@@ -382,7 +382,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 			}
 		}
 	} else {
-		assert(model_port->dir == OUT_PORT);
+		VTR_ASSERT(model_port->dir == OUT_PORT);
 		for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 			if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
 				if(pb_graph_node->num_output_pins[i] > model_pin) {
@@ -411,7 +411,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pi
 
 	ilogical_block = pin.block;
 
-	assert(ilogical_block != OPEN);
+	VTR_ASSERT(ilogical_block != OPEN);
 	if(logical_block[ilogical_block].pb == NULL) {
 		/* This net has not been packed yet thus pb_graph_pin does not exist */
 		return NULL;
@@ -449,7 +449,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pi
 		}
 	}
 
-	assert(port != NULL);
+	VTR_ASSERT(port != NULL);
 	return get_pb_graph_node_pin_from_model_port_pin(port, pin.block_pin, logical_block[ilogical_block].pb->pb_graph_node);
 }
 
@@ -508,7 +508,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
 			}
 		}
 	}
-	assert(0);
+	VTR_ASSERT(0);
 	return NULL;
 }
 
@@ -517,21 +517,21 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_p
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->input_pins[iport][ipin];
-			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_output_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->output_pins[iport][ipin];
-			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
 	for(int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
 		for(int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
 			t_pb_graph_pin * pb_pin = &pb_graph_node->clock_pins[iport][ipin];
-			assert(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
+			VTR_ASSERT(pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] == NULL);
 			pb_graph_pin_lookup_from_index[pb_pin->pin_count_in_cluster] = pb_pin;
 		}
 	}
@@ -563,7 +563,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) 
 	load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
 
 	for(int id = 0; id < num_pins; id++) {
-		assert(pb_graph_pin_lookup_from_type[id] != NULL);
+		VTR_ASSERT(pb_graph_pin_lookup_from_type[id] != NULL);
 	}
 
 	return pb_graph_pin_lookup_from_type;
@@ -598,7 +598,7 @@ t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
 /**
 * Recursively create lookup table that returns a pointer to the pb given a pb_graph_pin id.
 */
-static void load_pin_id_to_pb_mapping_rec(INP t_pb *cur_pb, INOUTP t_pb **pin_id_to_pb_mapping) {
+static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapping) {
 	t_pb_graph_node *pb_graph_node = cur_pb->pb_graph_node;
 	t_pb_type *pb_type = pb_graph_node->pb_type;
 	int mode = cur_pb->mode;
@@ -646,7 +646,7 @@ void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping) {
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more
  */
-float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {
+float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 
 	return (primitive->pb_type->num_input_pins
 			+ primitive->pb_type->num_output_pins
@@ -697,7 +697,7 @@ int num_ext_inputs_logical_block(int iblk) {
 		port = port->next;
 	}
 
-	assert(ext_inps >= 0);
+	VTR_ASSERT(ext_inps >= 0);
 
 	return (ext_inps);
 }
@@ -716,7 +716,7 @@ void free_pb(t_pb *pb) {
 
 	const t_pb_type * pb_type;
 	int i, j, mode;
-	struct s_linked_vptr *revalid_molecule;
+	vtr::t_linked_vptr *revalid_molecule;
 	t_pack_molecule *cur_molecule;
 
 	pb_type = pb->pb_graph_node->pb_type;
@@ -826,8 +826,7 @@ int ** alloc_and_load_net_pin_index() {
 		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
 	
 	/* Allocate for maximum size. */
-	temp_net_pin_index = (int **) alloc_matrix(0, num_blocks - 1, 0,
-				max_pins_per_clb - 1, sizeof(int));
+	temp_net_pin_index = vtr::alloc_matrix<int>(0, num_blocks - 1, 0, max_pins_per_clb - 1);
 
 	/* Initialize values to OPEN */
 	for (iblk = 0; iblk < num_blocks; iblk++) {
@@ -939,14 +938,14 @@ static void alloc_and_load_port_pin_from_blk_pin(void) {
 	int blk_pin_count, num_port_pins, num_ports;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_port_from_blk_pin = (int **) my_malloc(num_types* sizeof(int*));
-	temp_port_pin_from_blk_pin = (int **) my_malloc(num_types* sizeof(int*));
+	temp_port_from_blk_pin = (int **) vtr::malloc(num_types* sizeof(int*));
+	temp_port_pin_from_blk_pin = (int **) vtr::malloc(num_types* sizeof(int*));
 	for (itype = 1; itype < num_types; itype++) {
 		
 		blk_pin_count = type_descriptors[itype].num_pins;
 
-		temp_port_from_blk_pin[itype] = (int *) my_malloc(blk_pin_count* sizeof(int));
-		temp_port_pin_from_blk_pin[itype] = (int *) my_malloc(blk_pin_count* sizeof(int));
+		temp_port_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
+		temp_port_pin_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
 
 		for (iblk_pin = 0; iblk_pin < blk_pin_count; iblk_pin++) {
 			temp_port_from_blk_pin[itype][iblk_pin] = OPEN;
@@ -1037,13 +1036,13 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
 	int blk_pin_count, num_port_pins, num_ports;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_blk_pin_from_port_pin = (int ***) my_malloc(num_types * sizeof(int**));
+	temp_blk_pin_from_port_pin = (int ***) vtr::malloc(num_types * sizeof(int**));
 	for (itype = 1; itype < num_types; itype++) {
 		num_ports = type_descriptors[itype].pb_type->num_ports;
-		temp_blk_pin_from_port_pin[itype] = (int **) my_malloc(num_ports * sizeof(int*));
+		temp_blk_pin_from_port_pin[itype] = (int **) vtr::malloc(num_ports * sizeof(int*));
 		for (iport = 0; iport < num_ports; iport++) {
 			num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
-			temp_blk_pin_from_port_pin[itype][iport] = (int *) my_malloc(num_port_pins * sizeof(int));
+			temp_blk_pin_from_port_pin[itype][iport] = (int *) vtr::malloc(num_port_pins * sizeof(int));
 			
 			for(iport_pin = 0; iport_pin < num_port_pins; iport_pin ++) {
 				temp_blk_pin_from_port_pin[itype][iport][iport_pin] = OPEN;
@@ -1111,7 +1110,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 
 		match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
 		if (match_count != 2){
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n", 
@@ -1134,7 +1133,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 								pb_type_name, port_name, 
 								end_pin_index, start_pin_index);
 		if (match_count != 4){
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, name should be in the format "
 					"\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
 					"The end_pin_index and start_pin_index can be the same.\n", 
@@ -1142,14 +1141,14 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 			exit(1);
 		}
 		if (*end_pin_index < 0 || *start_pin_index < 0) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid pin - %s, the pin_index in "
 					"[end_pin_index:start_pin_index] should not be a negative value.\n", 
 					line, src_string);
 			exit(1);
 		}
 		if ( *end_pin_index < *start_pin_index) {
-			vpr_printf_error(__FILE__, __LINE__,
+			vtr::printf_error(__FILE__, __LINE__,
 					"[LINE %d] Invalid from_pin - %s, the end_pin_index in "
 					"[end_pin_index:start_pin_index] should not be less than start_pin_index.\n", 
 					line, src_string);
@@ -1188,7 +1187,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 							
 			// Check whether the pins are marked, errors out if so
 			if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
-				vpr_printf_error(__FILE__, __LINE__,
+				vtr::printf_error(__FILE__, __LINE__,
 						"[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n", 
 						line, src_string);
 				exit(1);
@@ -1227,7 +1226,7 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 
 					// Check whether the end_pin_index is valid
 					if (end_pin_index > num_port_pins) {
-						vpr_printf_error(__FILE__, __LINE__,
+						vtr::printf_error(__FILE__, __LINE__,
 								"[LINE %d] Invalid pin - %s, the end_pin_index in "
 								"[end_pin_index:start_pin_index] should "
 								"be less than the num_port_pins %d.\n", 
@@ -1284,14 +1283,14 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	int from_start_pin_index = -1, from_end_pin_index = -1;
 		
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_idirect_from_blk_pin = (int **) my_malloc(num_types * sizeof(int *));
-	temp_direct_type_from_blk_pin = (int **) my_malloc(num_types * sizeof(int *));
+	temp_idirect_from_blk_pin = (int **) vtr::malloc(num_types * sizeof(int *));
+	temp_direct_type_from_blk_pin = (int **) vtr::malloc(num_types * sizeof(int *));
 	for (itype = 1; itype < num_types; itype++) {
 		
 		num_type_pins = type_descriptors[itype].num_pins;
 
-		temp_idirect_from_blk_pin[itype] = (int *) my_malloc(num_type_pins * sizeof(int));
-		temp_direct_type_from_blk_pin[itype] = (int *) my_malloc(num_type_pins * sizeof(int));
+		temp_idirect_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
+		temp_direct_type_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
 	
 		/* Initialize values to OPEN */
 		for (iblk_pin = 0; iblk_pin < num_type_pins; iblk_pin++) {
@@ -1387,7 +1386,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  */ 
 void print_switch_usage() {
     if (g_switch_fanin_remap == NULL) {
-        vpr_printf_warning(__FILE__, __LINE__, "Cannot print switch usage stats: g_switch_fanin_remap is NULL\n");
+        vtr::printf_warning(__FILE__, __LINE__, "Cannot print switch usage stats: g_switch_fanin_remap is NULL\n");
         return;
     }
     map<int, int> *switch_fanin_count;
@@ -1408,7 +1407,7 @@ void print_switch_usage() {
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
             if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
                 inward_switch_inf[to_node_index][switch_index] = 0;
-            //assert(from_node.type != OPIN);
+            //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index] ++;
         }
     }
@@ -1420,6 +1419,9 @@ void print_switch_usage() {
             float Tdel = g_rr_switch_inf[switch_index].Tdel;
             int status = convert_switch_index(&switch_index, &fanin);
             if (status == -1)
+	    	delete[] switch_fanin_count;
+		delete[] switch_fanin_delay;
+  		delete[] inward_switch_inf;
                 return;
             if (fanin == -1)
                 fanin = itr->second;

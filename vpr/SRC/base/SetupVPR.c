@@ -1,11 +1,15 @@
 #include <cstring>
+#include <vector>
 using namespace std;
 
-#include <assert.h>
-#include <vector>
+#include "vtr_assert.h"
+#include "vtr_util.h"
+#include "vtr_random.h"
+#include "vtr_log.h"
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "OptionTokens.h"
 #include "ReadOptions.h"
 #include "globals.h"
@@ -16,44 +20,45 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 #include "ReadOptions.h"
 #include "rr_graph_area.h"
+#include "echo_arch.h"
 
-static void SetupOperation(INP t_options Options,
-		OUTP enum e_operation *Operation);
-static void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
-		INP t_arch Arch, INP char *net_file,
-		OUTP struct s_packer_opts *PackerOpts);
-static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_placer_opts *PlacerOpts);
-static void SetupAnnealSched(INP t_options Options,
-		OUTP struct s_annealing_sched *AnnealSched);
-static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_router_opts *RouterOpts);
-static void SetupRoutingArch(INP t_arch Arch,
-		OUTP struct s_det_routing_arch *RoutingArch);
-static void SetupTiming(INP t_options Options, INP t_arch Arch,
-		INP bool TimingEnabled, INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing);
-static void SetupSwitches(INP t_arch Arch,
-		INOUTP struct s_det_routing_arch *RoutingArch,
-		INP struct s_arch_switch_inf *ArchSwitches, INP int NumArchSwitches);
+static void SetupOperation(const t_options Options,
+		enum e_operation *Operation);
+static void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
+		const t_arch Arch, const char *net_file,
+		struct s_packer_opts *PackerOpts);
+static void SetupPlacerOpts(const t_options Options, const bool TimingEnabled,
+		struct s_placer_opts *PlacerOpts);
+static void SetupAnnealSched(const t_options Options,
+		struct s_annealing_sched *AnnealSched);
+static void SetupRouterOpts(const t_options Options, const bool TimingEnabled,
+		struct s_router_opts *RouterOpts);
+static void SetupRoutingArch(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch);
+static void SetupTiming(const t_options Options, const t_arch Arch,
+		const bool TimingEnabled, const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_router_opts RouterOpts, t_timing_inf * Timing);
+static void SetupSwitches(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch,
+		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches);
 static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 		t_arch * Arch);
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
-		INP bool readArchFile, OUTP struct s_file_name_opts *FileNameOpts,
-		INOUTP t_arch * Arch, OUTP enum e_operation *Operation,
-		OUTP t_model ** user_models, OUTP t_model ** library_models,
-		OUTP struct s_packer_opts *PackerOpts,
-		OUTP struct s_placer_opts *PlacerOpts,
-		OUTP struct s_annealing_sched *AnnealSched,
-		OUTP struct s_router_opts *RouterOpts,
-		OUTP struct s_det_routing_arch *RoutingArch,
-		OUTP vector <t_lb_type_rr_node> **PackerRRGraphs,
-		OUTP t_segment_inf ** Segments, OUTP t_timing_inf * Timing,
-		OUTP bool * ShowGraphics, OUTP int *GraphPause,
+void SetupVPR(t_options *Options, const bool TimingEnabled,
+		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
+		t_arch * Arch, enum e_operation *Operation,
+		t_model ** user_models, t_model ** library_models,
+		struct s_packer_opts *PackerOpts,
+		struct s_placer_opts *PlacerOpts,
+		struct s_annealing_sched *AnnealSched,
+		struct s_router_opts *RouterOpts,
+		struct s_det_routing_arch *RoutingArch,
+		vector <t_lb_type_rr_node> **PackerRRGraphs,
+		t_segment_inf ** Segments, t_timing_inf * Timing,
+		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts) {
 	int i, j, len;
 
@@ -62,7 +67,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	if (Options->out_file_prefix != NULL ) {
 		len += strlen(Options->out_file_prefix);
 	}
-	default_output_name = (char*) my_calloc(len, sizeof(char));
+	default_output_name = (char*) vtr::calloc(len, sizeof(char));
 	if (Options->out_file_prefix == NULL ) {
 		sprintf(default_output_name, "%s", Options->CircuitName);
 	} else {
@@ -76,7 +81,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->BlifFile = (char*) my_calloc(len, sizeof(char));
+		Options->BlifFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
 		} else {
@@ -90,7 +95,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->NetFile = (char*) my_calloc(len, sizeof(char));
+		Options->NetFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->NetFile, "%s.net", Options->CircuitName);
 		} else {
@@ -104,7 +109,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PlaceFile = (char*) my_calloc(len, sizeof(char));
+		Options->PlaceFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->PlaceFile, "%s.place", Options->CircuitName);
 		} else {
@@ -118,7 +123,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->RouteFile = (char*) my_calloc(len, sizeof(char));
+		Options->RouteFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->RouteFile, "%s.route", Options->CircuitName);
 		} else {
@@ -131,7 +136,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->ActFile = (char*) my_calloc(len, sizeof(char));
+		Options->ActFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->ActFile, "%s.act", Options->CircuitName);
 		} else {
@@ -145,7 +150,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PowerFile = (char*) my_calloc(len, sizeof(char));
+		Options->PowerFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
 			sprintf(Options->PowerFile, "%s.power", Options->CircuitName);
 		} else {
@@ -193,34 +198,16 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 		} else {
 			for (j = 0; j < type_descriptors[i].num_grid_loc_def; j++) {
 				if (type_descriptors[i].grid_loc_def[j].grid_loc_type == FILL) {
-					assert(FILL_TYPE == NULL);
+					VTR_ASSERT(FILL_TYPE == NULL);
 					FILL_TYPE = &type_descriptors[i];
 				}
 			}
 		}
 	}
-	assert(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
+	VTR_ASSERT(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
-
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	/* getting the data from the options struct  for interposer-based architectures*/
-	percent_wires_cut = Options->percent_wires_cut;
-	num_cuts = Options->num_cuts;
-	delay_increase = Options->delay_increase;
-	placer_cost_constant = Options->placer_cost_constant;
-	constant_type = Options->constant_type;
-
-	/* used for experiments of interposer-based architectures */
-	allow_chanx_interposer_connections = Options->allow_chanx_interposer_connections? true: false;
-	transfer_interposer_fanins = Options->transfer_interposer_fanins? true: false;
-	allow_additional_interposer_fanins = Options->allow_additional_interposer_fanins? true: false;
-	pct_of_interposer_nodes_each_chany_can_drive = Options->pct_of_interposer_nodes_each_chany_can_drive;
-	transfer_interposer_fanouts = Options->transfer_interposer_fanouts? true: false;
-	allow_additional_interposer_fanouts = Options->allow_additional_interposer_fanouts? true: false;
-	pct_of_chany_wires_an_interposer_node_can_drive = Options->pct_of_chany_wires_an_interposer_node_can_drive;
-#endif
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
@@ -231,7 +218,7 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
 
 	/* init global variables */
-	out_file_prefix = Options->out_file_prefix;
+    vtr::out_file_prefix = Options->out_file_prefix;
 	grid_logic_tile_area = Arch->grid_logic_tile_area;
 
 	/* Set seed for pseudo-random placement, default seed to 1 */
@@ -239,9 +226,9 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 	if (Options->Count[OT_SEED]) {
 		PlacerOpts->seed = Options->Seed;
 	}
-	my_srandom(PlacerOpts->seed);
+	vtr::srandom(PlacerOpts->seed);
 
-	vpr_printf_info("Building complex block graph.\n");
+	vtr::printf_info("Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 	*PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
@@ -272,10 +259,10 @@ void SetupVPR(INP t_options *Options, INP bool TimingEnabled,
 
 }
 
-static void SetupTiming(INP t_options Options, INP t_arch Arch,
-		INP bool TimingEnabled, INP enum e_operation Operation,
-		INP struct s_placer_opts PlacerOpts,
-		INP struct s_router_opts RouterOpts, OUTP t_timing_inf * Timing) {
+static void SetupTiming(const t_options Options, const t_arch Arch,
+		const bool TimingEnabled, const enum e_operation Operation,
+		const struct s_placer_opts PlacerOpts,
+		const struct s_router_opts RouterOpts, t_timing_inf * Timing) {
 
 	/* Don't do anything if they don't want timing */
 	if (false == TimingEnabled) {
@@ -290,16 +277,16 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 
 	/* If the user specified an SDC filename on the command line, look for specified_name.sdc, otherwise look for circuit_name.sdc*/
 	if (Options.SDCFile == NULL ) {
-		Timing->SDCFile = (char*) my_calloc(strlen(Options.CircuitName) + 5,
+		Timing->SDCFile = (char*) vtr::calloc(strlen(Options.CircuitName) + 5,
 				sizeof(char)); /* circuit_name.sdc/0*/
 		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
 	} else {
-		Timing->SDCFile = (char*) my_strdup(Options.SDCFile);
+		Timing->SDCFile = (char*) vtr::strdup(Options.SDCFile);
 	}
 
     if (Options.SlackDefinition != '\0') {
         Timing->slack_definition = Options.SlackDefinition;
-        assert(Timing->slack_definition == 'R' || Timing->slack_definition == 'I' ||
+        VTR_ASSERT(Timing->slack_definition == 'R' || Timing->slack_definition == 'I' ||
                Timing->slack_definition == 'S' || Timing->slack_definition == 'G' ||
                Timing->slack_definition == 'C' || Timing->slack_definition == 'N');
     } else {
@@ -309,9 +296,9 @@ static void SetupTiming(INP t_options Options, INP t_arch Arch,
 
 /* This loads up VPR's arch_switch_inf data by combining the switches from 
  * the arch file with the special switches that VPR needs. */
-static void SetupSwitches(INP t_arch Arch,
-		INOUTP struct s_det_routing_arch *RoutingArch,
-		INP struct s_arch_switch_inf *ArchSwitches, INP int NumArchSwitches) {
+static void SetupSwitches(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch,
+		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches) {
 
 	int switches_to_copy = NumArchSwitches;
 	g_num_arch_switches = NumArchSwitches;
@@ -340,89 +327,6 @@ static void SetupSwitches(INP t_arch Arch,
 
 		RoutingArch->wire_to_arch_ipin_switch = ipin_cblock_switch_index;
 	}
-
-
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	/* Order of the switches will be as follows:
-	 * 0..NumArchSwitches-1: Original switches from arch file (including wire to ipin switch)
-	 * NumArchSwitches...2*NumArchSwitches-1: switches with increased delay
-	 * 2*NumArchSwitches: delayless switch */
-	int i;
-	double d_delay_increase;
-
-	/* Convert the delay to seconds, as it is given as int in ps */
-	d_delay_increase = (double)delay_increase * 1e-12;
-	vpr_printf_info("delay_increase:%d d_delay_increase: %g\n", delay_increase, d_delay_increase);
-	
-
-	/* ANDRE: Adds the extra switch types with increased delay */
-	g_num_arch_switches *= 2;
-
-	/* Depends on RoutingArch->num_arch_switches */
-	RoutingArch->delayless_switch = g_num_arch_switches;
-	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
-	++g_num_arch_switches;
-
-	/* Alloc the list now that we know the final num_arch_switches value */
-	g_arch_switch_inf = new s_arch_switch_inf[g_num_arch_switches];
-
-	/* Mapping of the switches to their respective increased delay versions */
-	increased_delay_edge_map = (int *) my_malloc(sizeof(int) * g_num_arch_switches);
-	
-	/* create delay edge map which maps from a normal switch to its increased-delay counterpart */
-	for(i = 0; i < switches_to_copy; i++){
-		increased_delay_edge_map[i] = i + NumArchSwitches;
-		increased_delay_edge_map[i+NumArchSwitches] = i + NumArchSwitches;
-	}
-	increased_delay_edge_map[RoutingArch->delayless_switch] = RoutingArch->delayless_switch;
-
-	/* copy switches that were specified in the architecture file */
-	for (int iswitch = 0; iswitch < NumArchSwitches; iswitch++){
-		g_arch_switch_inf[iswitch] = ArchSwitches[iswitch];
-	}
-
-	/* If ipin cblock info has *not* been read in from a switch, then we have
-	   created a new switch for it, and now need to set its values */
-	if (NULL == Arch.ipin_cblock_switch_name){
-		/* The wire to ipin switch for all types. Curently all types
-		 * must share ipin switch. Some of the timing code would
-		 * need to be changed otherwise. */
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = true;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Tdel_map[UNDEFINED] = Arch.T_ipin_cblock;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].mux_trans_size = Arch.ipin_mux_trans_size;
-
-		/* Assume the ipin cblock output to lblock input buffer below is 4x     *
-		 * minimum drive strength (enough to drive a fanout of up to 16 pretty  * 
-		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
-	}
-
-	/* Actually create the new switch types for the switch boxes */
-	for(i = NumArchSwitches; i < 2*NumArchSwitches; i++){
-		g_arch_switch_inf[i] = g_arch_switch_inf[i-NumArchSwitches];
-		std::map<int, double> *Tdel_map = &g_arch_switch_inf[i].Tdel_map;
-		std::map<int, double>::iterator it;
-
-		for (it = Tdel_map->begin(); it != Tdel_map->end(); it++){
-			it->second += d_delay_increase;
-		}
-	}
-
-	/* Delayless switch for connecting sinks and sources with their pins. */
-	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = true;
-	g_arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].Tdel_map[UNDEFINED] = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-	g_arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
-
-#else
-
 
 	/* Depends on g_num_arch_switches */
 	RoutingArch->delayless_switch = g_num_arch_switches;
@@ -463,15 +367,14 @@ static void SetupSwitches(INP t_arch Arch,
 		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
 		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
 	}
-#endif
 
 
 }
 
 /* Sets up routing structures. Since checks are already done, this
  * just copies values across */
-static void SetupRoutingArch(INP t_arch Arch,
-		OUTP struct s_det_routing_arch *RoutingArch) {
+static void SetupRoutingArch(const t_arch Arch,
+		struct s_det_routing_arch *RoutingArch) {
 
 	RoutingArch->switch_block_type = Arch.SBType;
 	RoutingArch->R_minW_nmos = Arch.R_minW_nmos;
@@ -486,8 +389,8 @@ static void SetupRoutingArch(INP t_arch Arch,
 	RoutingArch->switchblocks = Arch.switchblocks;
 }
 
-static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_router_opts *RouterOpts) {
+static void SetupRouterOpts(const t_options Options, const bool TimingEnabled,
+		struct s_router_opts *RouterOpts) {
 	RouterOpts->astar_fac = 1.2; /* DEFAULT */
 	if (Options.Count[OT_ASTAR_FAC]) {
 		RouterOpts->astar_fac = Options.astar_fac;
@@ -645,7 +548,6 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 		RouterOpts->doRouting = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
-		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
 			RouterOpts->doRouting = true;
 	}
 
@@ -657,8 +559,8 @@ static void SetupRouterOpts(INP t_options Options, INP bool TimingEnabled,
 
 }
 
-static void SetupAnnealSched(INP t_options Options,
-		OUTP struct s_annealing_sched *AnnealSched) {
+static void SetupAnnealSched(const t_options Options,
+		struct s_annealing_sched *AnnealSched) {
 	AnnealSched->alpha_t = 0.8; /* DEFAULT */
 	if (Options.Count[OT_ALPHA_T]) {
 		AnnealSched->alpha_t = Options.PlaceAlphaT;
@@ -700,9 +602,9 @@ static void SetupAnnealSched(INP t_options Options,
 /* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.  
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
-void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
-		INP t_arch Arch, INP char *net_file,
-		OUTP struct s_packer_opts *PackerOpts) {
+void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
+		const t_arch Arch, const char *net_file,
+		struct s_packer_opts *PackerOpts) {
 
 	if (Arch.clb_grid.IsAuto) {
 		PackerOpts->aspect = Arch.clb_grid.Aspect;
@@ -718,7 +620,6 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 		PackerOpts->doPacking = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
-		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
 			PackerOpts->doPacking = true;
 	}
 
@@ -736,6 +637,12 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 	if (Options.Count[OT_SWEEP_HANGING_NETS_AND_INPUTS]) {
 		PackerOpts->sweep_hanging_nets_and_inputs =
 				Options.sweep_hanging_nets_and_inputs;
+	}
+
+	PackerOpts->absorb_buffer_luts = true;
+	if (Options.Count[OT_ABSORB_BUFFER_LUTS]) {
+		PackerOpts->absorb_buffer_luts =
+				Options.absorb_buffer_luts;
 	}
 
 	PackerOpts->skip_clustering = false; /* DEFAULT */
@@ -802,12 +709,8 @@ void SetupPackerOpts(INP t_options Options, INP bool TimingEnabled,
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,
  * such as checking for conflicting params is assumed to be done beforehand */
-static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
-		OUTP struct s_placer_opts *PlacerOpts) {
-	PlacerOpts->block_dist = 1; /* DEFAULT */
-	if (Options.Count[OT_BLOCK_DIST]) {
-		PlacerOpts->block_dist = Options.block_dist;
-	}
+static void SetupPlacerOpts(const t_options Options, const bool TimingEnabled,
+		struct s_placer_opts *PlacerOpts) {
 
 	PlacerOpts->inner_loop_recompute_divider = 0; /* DEFAULT */
 	if (Options.Count[OT_INNER_LOOP_RECOMPUTE_DIVIDER]) {
@@ -841,7 +744,7 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 	PlacerOpts->pad_loc_file = NULL; /* DEFAULT */
 	if (Options.Count[OT_FIX_PINS]) {
 		if (Options.PinFile) {
-			PlacerOpts->pad_loc_file = my_strdup(Options.PinFile);
+			PlacerOpts->pad_loc_file = vtr::strdup(Options.PinFile);
 		}
 	}
 
@@ -867,8 +770,7 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 
 	/* Depends on PlacerOpts->place_algorithm */
 	PlacerOpts->enable_timing_computations = false; /* DEFAULT */
-	if ((PlacerOpts->place_algorithm == PATH_TIMING_DRIVEN_PLACE)
-			|| (PlacerOpts->place_algorithm == NET_TIMING_DRIVEN_PLACE)) {
+	if (PlacerOpts->place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		PlacerOpts->enable_timing_computations = true; /* DEFAULT */
 	}
 	if (Options.Count[OT_ENABLE_TIMING_COMPUTATIONS]) {
@@ -886,7 +788,6 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 		PlacerOpts->doPlacement = true;
 	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
 			&& !Options.Count[OT_ROUTE]) {
-		if (!Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY])
 			PlacerOpts->doPlacement = true;
 	}
 	if (PlacerOpts->doPlacement == false) {
@@ -895,12 +796,9 @@ static void SetupPlacerOpts(INP t_options Options, INP bool TimingEnabled,
 
 }
 
-static void SetupOperation(INP t_options Options,
-		OUTP enum e_operation *Operation) {
+static void SetupOperation(const t_options Options,
+		enum e_operation *Operation) {
 	*Operation = RUN_FLOW; /* DEFAULT */
-	if (Options.Count[OT_TIMING_ANALYZE_ONLY_WITH_NET_DELAY]) {
-		*Operation = TIMING_ANALYSIS_ONLY;
-	}
 }
 
 static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
@@ -914,9 +812,9 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 
 	if (power_opts->do_power) {
 		if (!Arch->power)
-			Arch->power = (t_power_arch*) my_malloc(sizeof(t_power_arch));
+			Arch->power = (t_power_arch*) vtr::malloc(sizeof(t_power_arch));
 		if (!Arch->clocks)
-			Arch->clocks = (t_clock_arch*) my_malloc(sizeof(t_clock_arch));
+			Arch->clocks = (t_clock_arch*) vtr::malloc(sizeof(t_clock_arch));
 		g_clock_arch = Arch->clocks;
 	} else {
 		Arch->power = NULL;

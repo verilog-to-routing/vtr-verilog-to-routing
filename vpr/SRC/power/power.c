@@ -26,10 +26,11 @@
 #include <csignal>
 #include <ctime>
 #include <cmath>
+#include "vtr_assert.h"
+#include <ctype.h>
 using namespace std;
 
-#include <ctype.h>
-#include <assert.h>
+#include "vtr_util.h"
 
 #include "power.h"
 #include "power_components.h"
@@ -43,8 +44,6 @@ using namespace std;
 #include "globals.h"
 #include "rr_graph.h"
 #include "vpr_utils.h"
-#include "ezxml.h"
-#include "read_xml_util.h"
 
 /************************* DEFINES **********************************/
 #define CONVERT_NM_PER_M 1000000000
@@ -137,12 +136,12 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		int LUT_size;
 		int pin_idx;
 
-		assert(pb_graph_node->num_input_ports == 1);
+		VTR_ASSERT(pb_graph_node->num_input_ports == 1);
 
 		LUT_size = pb_graph_node->num_input_pins[0];
 
-		input_probabilities = (float*) my_calloc(LUT_size, sizeof(float));
-		input_densities = (float*) my_calloc(LUT_size, sizeof(float));
+		input_probabilities = (float*) vtr::calloc(LUT_size, sizeof(float));
+		input_densities = (float*) vtr::calloc(LUT_size, sizeof(float));
 
 		for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
 			t_pb_graph_pin * pin = &pb_graph_node->input_pins[0][pin_idx];
@@ -190,7 +189,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		power_add_usage(power_usage, &sub_power_usage);
 
 	} else {
-		char msg[BUFSIZE];
+		char msg[vtr::BUFSIZE];
 		sprintf(msg, "No dynamic power defined for BLIF model: %s",
 				pb_graph_node->pb_type->blif_model);
 		power_log_msg(POWER_LOG_WARNING, msg);
@@ -436,7 +435,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 		break;
 	case POWER_METHOD_UNDEFINED:
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 		break;
 	}
 
@@ -453,7 +452,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 	if (pb_node->pb_type->num_modes == 0) {
 		/* This is a leaf node, which is a primitive (lut, ff, etc) */
 		if (estimate_primitives) {
-			assert(pb_node->pb_type->blif_model);
+			VTR_ASSERT(pb_node->pb_type->blif_model);
 			power_usage_primitive(&power_usage_sub, pb, pb_node, iblk);
 
 			// Add to power of this PB
@@ -703,7 +702,7 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 	/* Check if this clock is active - this is used for calculating leakage */
 	if (single_clock->dens) {
 	} else {
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	C_segment = g_power_commonly_used->tile_length * single_clock->C_wire;
@@ -829,7 +828,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 							printf("%d %d\n", next_node_power->num_inputs,
 									next_node->get_fan_in());
 							fflush(0);
-							assert(0);
+							VTR_ASSERT(0);
 						}
 						break;
 					default:
@@ -867,8 +866,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 			 *  - Multiplexor */
 
 			if (node->get_fan_in()) {
-				assert(node_power->in_dens);
-				assert(node_power->in_prob);
+				VTR_ASSERT(node_power->in_dens);
+				VTR_ASSERT(node_power->in_prob);
 
 				/* Multiplexor */
 				power_usage_mux_multilevel(&sub_power_usage,
@@ -889,8 +888,8 @@ static void power_usage_routing(t_power_usage * power_usage,
 			 * 	- A buffer, after the mux to drive the wire
 			 * 	- The wire itself
 			 * 	- A buffer at the end of the wire, going to switchbox/connectionbox */
-			assert(node_power->in_dens);
-			assert(node_power->in_prob);
+			VTR_ASSERT(node_power->in_dens);
+			VTR_ASSERT(node_power->in_prob);
 
 			wire_length = 0;
 			if (node->type == CHANX) {
@@ -902,7 +901,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 					wire_length
 							* segment_inf[rr_indexed_data[node->get_cost_index()].seg_index].Cmetal;
 			//(double)g_power_commonly_used->tile_length);
-			assert(node_power->selected_input < node->get_fan_in());
+			VTR_ASSERT(node_power->selected_input < node->get_fan_in());
 
 			/* Multiplexor */
 			power_usage_mux_multilevel(&sub_power_usage,
@@ -938,7 +937,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 				break;
 			default:
 				buffer_size = 0.;
-				assert(0);
+				VTR_ASSERT(0);
 				break;
 			}
 
@@ -1016,7 +1015,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 			}
 			break;
 		case INTRA_CLUSTER_EDGE:
-			assert(0);
+			VTR_ASSERT(0);
 			break;
 		default:
 			power_log_msg(POWER_LOG_WARNING,
@@ -1078,9 +1077,9 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin) {
 				}
 			}
 		}
-		assert(found);
+		VTR_ASSERT(found);
 
-		assert(pin->pin_power->scaled_by_pin);
+		VTR_ASSERT(pin->pin_power->scaled_by_pin);
 	}
 }
 
@@ -1151,7 +1150,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 
 	/* Copy probability/density values to new netlist */
 	if (!clb_net_power) {
-		clb_net_power = (t_net_power*) my_calloc(num_nets, sizeof(t_net_power));
+		clb_net_power = (t_net_power*) vtr::calloc(num_nets, sizeof(t_net_power));
 	}
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
 		clb_net_power[net_idx].probability =
@@ -1161,7 +1160,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 	}
 
 	/* Initialize RR Graph Structures */
-	rr_node_power = (t_rr_node_power*) my_calloc(num_rr_nodes,
+	rr_node_power = (t_rr_node_power*) vtr::calloc(num_rr_nodes,
 			sizeof(t_rr_node_power));
 	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
 		rr_node_power[rr_node_idx].driver_switch_type = OPEN;
@@ -1186,9 +1185,9 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 					static_cast<int>(node->get_fan_in()));
 			max_fanin = max(max_fanin, static_cast<int>(node->get_fan_in()));
 
-			node_power->in_dens = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_dens = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
-			node_power->in_prob = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_prob = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
 			break;
 		case CHANX:
@@ -1207,9 +1206,9 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 			max_seg_to_seg_fanout = max(max_seg_to_seg_fanout, fanout_to_seg);
 			max_fanin = max(max_fanin, static_cast<int>(node->get_fan_in()));
 
-			node_power->in_dens = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_dens = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
-			node_power->in_prob = (float*) my_calloc(node->get_fan_in(),
+			node_power->in_prob = (float*) vtr::calloc(node->get_fan_in(),
 					sizeof(float));
 			break;
 		default:
@@ -1239,7 +1238,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 					rr_node_power[node->edges[edge_idx]].driver_switch_type =
 							node->switches[edge_idx];
 				} else {
-					assert(
+					VTR_ASSERT(
 							rr_node_power[node->edges[edge_idx]].driver_switch_type
 									== node->switches[edge_idx]);
 				}
@@ -1278,20 +1277,20 @@ bool power_init(char * power_out_filepath,
 	/* Set global power architecture & options */
 	g_power_arch = arch->power;
 	g_power_commonly_used = new t_power_commonly_used;
-	g_power_tech = (t_power_tech*) my_malloc(sizeof(t_power_tech));
-	g_power_output = (t_power_output*) my_malloc(sizeof(t_power_output));
+	g_power_tech = (t_power_tech*) vtr::malloc(sizeof(t_power_tech));
+	g_power_output = (t_power_output*) vtr::malloc(sizeof(t_power_output));
 
 	/* Set up Logs */
 	g_power_output->num_logs = POWER_LOG_NUM_TYPES;
-	g_power_output->logs = (t_log*) my_calloc(g_power_output->num_logs,
+	g_power_output->logs = (t_log*) vtr::calloc(g_power_output->num_logs,
 			sizeof(t_log));
-	g_power_output->logs[POWER_LOG_ERROR].name = my_strdup("Errors");
-	g_power_output->logs[POWER_LOG_WARNING].name = my_strdup("Warnings");
+	g_power_output->logs[POWER_LOG_ERROR].name = vtr::strdup("Errors");
+	g_power_output->logs[POWER_LOG_WARNING].name = vtr::strdup("Warnings");
 
 	/* Initialize output file */
 	if (!error) {
 		g_power_output->out = NULL;
-		g_power_output->out = my_fopen(power_out_filepath, "w", 0);
+		g_power_output->out = vtr::fopen(power_out_filepath, "w");
 		if (!g_power_output->out) {
 			error = true;
 		}

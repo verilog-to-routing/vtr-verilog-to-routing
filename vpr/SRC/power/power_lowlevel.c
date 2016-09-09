@@ -21,7 +21,7 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <assert.h>
+#include "vtr_assert.h"
 
 #include "power_lowlevel.h"
 #include "power_util.h"
@@ -361,7 +361,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 	float power_high;
 	bool over_range = false;
 
-	assert(size >= 1.0);
+	VTR_ASSERT(size >= 1.0);
 
 	// Check if nmos size is beyond range
 	if (size
@@ -389,7 +389,8 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 				transistors sizes larger than what is defined in the <nmos_leakages> \
 				section of the technology file.");
 	}
-
+	
+	VTR_ASSERT(nmos_low != NULL);
 	power_find_nmos_leakage(nmos_low, &lower, &upper, v_ds);
 	if (lower->v_ds == v_ds || !upper) {
 		i_ds = lower->i_ds;
@@ -402,6 +403,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
     if (over_range) {
         return power_low;
     } else {
+		VTR_ASSERT(nmos_high != NULL);
 		power_find_nmos_leakage(nmos_high, &lower, &upper, v_ds);
 		if (lower->v_ds == v_ds || !upper) {
 			i_ds = lower->i_ds;
@@ -499,7 +501,7 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 
 	power_zero_usage(power_usage);
 
-	assert(transistor_size >= 1.0);
+	VTR_ASSERT(transistor_size >= 1.0);
 
 	if (selected_idx < num_inputs) {
 		*out_prob = in_prob[selected_idx];
@@ -589,7 +591,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 	float v_out_high;
 	bool over_range = false;
 
-	assert(transistor_size >= 1.0);
+	VTR_ASSERT(transistor_size >= 1.0);
 
 	t_power_nmos_mux_inf * mux_nmos_inf_lower = NULL;
 	t_power_nmos_mux_inf * mux_nmos_inf_upper = NULL;
@@ -686,7 +688,7 @@ void power_usage_mux_singlelevel_dynamic(t_power_usage * power_usage,
 		float * in_dens, float * v_in, float sel_dens, float sel_prob,
 		float transistor_size, float period) {
 
-	assert(num_inputs == 2);
+	VTR_ASSERT(num_inputs == 2);
 
 	power_zero_usage(power_usage);
 
@@ -852,7 +854,7 @@ float power_calc_buffer_size_from_Cout(float C_out) {
 	t_transistor_inf * nmos_info = &g_power_tech->NMOS_inf;
 	t_transistor_inf * pmos_info = &g_power_tech->PMOS_inf;
 
-	assert(nmos_info->num_size_entries == pmos_info->num_size_entries);
+	VTR_ASSERT(nmos_info->num_size_entries == pmos_info->num_size_entries);
 
 	for (i = 0; i < nmos_info->num_size_entries; i++) {
 		C_found = nmos_info->size_inf[i].C_d + pmos_info->size_inf[i].C_d;

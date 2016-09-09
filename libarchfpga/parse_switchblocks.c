@@ -12,21 +12,29 @@ specified by the switch block permutation functions into their numeric counterpa
 
 
 #include <string.h>
-#include <assert.h>
 #include <string>
 #include <sstream>
 #include <vector>
 #include <stack>
 #include <utility>
 #include <algorithm>
-#include "util.h"
+
+#include "vtr_assert.h"
+#include "vtr_util.h"
+
+#include "pugixml.hpp"
+#include "pugixml_util.hpp"
+
+#include "arch_error.h"
+
 #include "read_xml_util.h"
 #include "arch_types.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 
-using namespace std;
 
+using namespace std;
+using namespace pugiutil;
 
 /**** Enums ****/
 /* Used to identify the type of symbolic formula object */
@@ -84,10 +92,10 @@ static void parse_comma_separated_wire_types(const char *ch, vector<string> *wir
 static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec);
 
 /* checks for correctness of a unidir switchblock. hard exit if error found (to be changed to throw later) */
-static void check_unidir_switchblock( t_switchblock_inf *sb );
+static void check_unidir_switchblock(const t_switchblock_inf *sb );
 
 /* checks for correctness of a bidir switchblock. hard exit if error found (to be changed to throw later) */
-static void check_bidir_switchblock( t_permutation_map *permutation_map );
+static void check_bidir_switchblock(const t_permutation_map *permutation_map );
 
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
@@ -141,46 +149,43 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns( t_arch_switch_inf *switches, int num_switches, ezxml_t Node, t_switchblock_inf *sb ){
+void read_sb_wireconns(const t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
 	
 	/* Make sure that Node is a switchblock */
-	CheckElement(Node, "switchblock");
+	check_node(Node, "switchblock", loc_data);
 	
 	int num_wireconns;
-	ezxml_t SubElem;
+	pugi::xml_node SubElem;
 	const char *char_prop;
 
 	/* count the number of specified wire connections for this SB */
-	num_wireconns = CountChildren(Node, "wireconn", 0);
+	num_wireconns = count_children(Node, "wireconn", loc_data, OPTIONAL);
 	sb->wireconns.reserve(num_wireconns);
 
+	if (num_wireconns > 0) {
+		SubElem = get_first_child(Node, "wireconn", loc_data);	
+	}
 	for (int i = 0; i < num_wireconns; i++){
 		t_wireconn_inf wc;		
 
-		SubElem = ezxml_child(Node, "wireconn");
-
 		/* get from type */
-		char_prop = FindProperty(SubElem, "from_type", true);
+		char_prop = get_attribute(SubElem, "from_type", loc_data).value();
 		parse_comma_separated_wire_types(char_prop, &wc.from_type);
-		ezxml_set_attr(SubElem, "from_type", NULL);
 
 		/* get to type */
-		char_prop = FindProperty(SubElem, "to_type", true);
+		char_prop = get_attribute(SubElem, "to_type", loc_data).value();
 		parse_comma_separated_wire_types(char_prop, &wc.to_type);
-		ezxml_set_attr(SubElem, "to_type", NULL);
 
 		/* get the source wire point */
-		char_prop = FindProperty(SubElem, "from_switchpoint", true);
+		char_prop = get_attribute(SubElem, "from_switchpoint", loc_data).value();
 		parse_comma_separated_wire_points(char_prop, &(wc.from_point));
-		ezxml_set_attr(SubElem, "from_switchpoint", NULL);
 
 		/* get the destination wire point */
-		char_prop = FindProperty(SubElem, "to_switchpoint", true);
+		char_prop = get_attribute(SubElem, "to_switchpoint", loc_data).value();
 		parse_comma_separated_wire_points(char_prop, &(wc.to_point));
-		ezxml_set_attr(SubElem, "to_switchpoint", NULL);
 
 		sb->wireconns.push_back(wc);
-		FreeNode(SubElem);
+		SubElem = SubElem.next_sibling(SubElem.name());
 	}
 
 	return;
@@ -197,7 +202,7 @@ static void parse_comma_separated_wire_types(const char *ch, vector<string> *wir
 	int ind = 0;
 
 	if (0 == str_size){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_comma_separated_wire_types: found empty wireconn wire type entry\n");
+		archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_types: found empty wireconn wire type entry\n");
 	}
 
 	while (ch_start <= str_size - 1){
@@ -229,12 +234,12 @@ static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_
 	/* walk through ch and check that all characters are legal */
 	while ('\0' != ch[ind]){
 		if (',' != ch[ind] && ' ' != ch[ind] && !is_char_number(ch[ind])){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_comma_separated_wire_points: found wireconn wire point entry with illegal character: %c\n", ch[ind]);
+			archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_points: found wireconn wire point entry with illegal character: %c\n", ch[ind]);
 		}
 		ind++;
 	}
 	if (0 == ind){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
+		archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
 	}
 
 	/* error checking done, move on to parsing */ 
@@ -265,19 +270,19 @@ static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
    <switchfuncs> */
-void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
+void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
 	
 	/* Make sure the passed-in is correct */
-	CheckElement(Node, "switchfuncs");
+	check_node(Node, "switchfuncs", loc_data);
 	
-	ezxml_t SubElem;
+	pugi::xml_node SubElem;
 
 	/* Used to designate if a predifined function such as 'wilton' has been found.
 	   If a predifined function is specified, only one function entry is allowed */
 	bool predefined_sb_found = false;
 
 	/* get the number of specified permutation functions */
-	int num_funcs = CountChildren(Node, "func", 0);
+	int num_funcs = count_children(Node, "func", loc_data, OPTIONAL);
 
 	const char * func_type;
 	const char * func_formula;
@@ -288,26 +293,20 @@ void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 
 	/* now we iterate through all the specified permutation functions, and 
 	   load them into the switchblock structure as appropriate */
+	if (num_funcs > 0) {
+		SubElem = get_first_child(Node, "func", loc_data);	
+	}
 	for (int ifunc = 0; ifunc < num_funcs; ifunc++){
-		/* get the next switchblock function */
-		SubElem = ezxml_child(Node, "func");
-		/* get function type */
-		func_type = FindProperty(SubElem, "type", true);
-		if (!func_type){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "empty function specification in switchblock\n");
-		}
-		ezxml_set_attr(SubElem, "type", NULL);
-		/* get function formula */
-		func_formula = FindProperty(SubElem, "formula", true);
-		if (!func_formula){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "empty formula specification in switchblock\n");
-		}
-		ezxml_set_attr(SubElem, "formula", NULL);
 
+		/* get function type */
+		func_type = get_attribute(SubElem, "type", loc_data).as_string(NULL);
+
+		/* get function formula */
+		func_formula = get_attribute(SubElem, "formula", loc_data).as_string(NULL);
 
 		/* a predefined function should be the only entry */
 		if (predefined_sb_found && ifunc > 0){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Predefined switchblock function should be the only entry in the switchfuncs section. Other entry found: %s = %s\n", func_type, func_formula);
+			archfpga_throw( __FILE__, __LINE__, "Predefined switchblock function should be the only entry in the switchfuncs section. Other entry found: %s = %s\n", func_type, func_formula);
 		}
 
 		/* go through all the possible cases of func_type */
@@ -337,7 +336,7 @@ void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 			conn.set_sides(BOTTOM, RIGHT);
 		} else {
 			/* unknown permutation function */
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
+			archfpga_throw( __FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
 		}
 		func_ptr = &(sb->permutation_map[conn]);
 
@@ -345,7 +344,8 @@ void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 		func_ptr->push_back( string(func_formula) );
  
 		func_ptr = NULL;
-		FreeNode(SubElem);
+		/* get the next switchblock function */
+		SubElem = SubElem.next_sibling(SubElem.name());
 	}
 
 	return;
@@ -353,7 +353,7 @@ void read_sb_switchfuncs( ezxml_t Node, t_switchblock_inf *sb ){
 
 
 /* checks for correctness of switch block read-in from the XML architecture file */
-void check_switchblock( t_switchblock_inf *sb ){
+void check_switchblock(const t_switchblock_inf *sb ){
 
 	/* get directionality */
 	enum e_directionality directionality = sb->directionality;
@@ -362,7 +362,7 @@ void check_switchblock( t_switchblock_inf *sb ){
 	if (UNI_DIRECTIONAL == directionality){
 		check_unidir_switchblock( sb );
 	} else {
-		assert(BI_DIRECTIONAL == directionality);
+		VTR_ASSERT(BI_DIRECTIONAL == directionality);
 		check_bidir_switchblock( &(sb->permutation_map) );
 	}
 
@@ -376,21 +376,21 @@ void check_switchblock( t_switchblock_inf *sb ){
 
 
 /* checks for correctness of a unidirectional switchblock. hard exit if error found (to be changed to throw later) */
-static void check_unidir_switchblock( t_switchblock_inf *sb ){
+static void check_unidir_switchblock(const t_switchblock_inf *sb ){
 
 	/* Check that the destination wire points are always the starting points (i.e. of wire point 0) */
-	vector<t_wireconn_inf> &wireconns = sb->wireconns;
+	const vector<t_wireconn_inf> &wireconns = sb->wireconns;
 	int num_wireconns = (int)wireconns.size();
 	for (int iconn = 0; iconn < num_wireconns; iconn++){
 		if ( wireconns[iconn].to_point.size() > 1 || wireconns[iconn].to_point[0] != 0 ){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Unidirectional switch blocks are currently only allowed to drive the start points of wire segments\n");
+			archfpga_throw( __FILE__, __LINE__, "Unidirectional switch blocks are currently only allowed to drive the start points of wire segments\n");
 		}
 	}
 }
 
 
 /* checks for correctness of a bidirectional switchblock */
-static void check_bidir_switchblock( t_permutation_map *permutation_map ){
+static void check_bidir_switchblock(const t_permutation_map *permutation_map ){
 	/**** check that if side1->side2 is specified, then side2->side1 is not, as it is implicit ****/
 
 	/* variable used to index into the permutation map */
@@ -415,7 +415,7 @@ static void check_bidir_switchblock( t_permutation_map *permutation_map ){
 				conn.set_sides(to_side, from_side);
 				it = (*permutation_map).find(conn);
 				if (it != (*permutation_map).end()){
-					vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "If a bidirectional switch block specifies a connection from side1->side2, no connection should be specified from side2->side1 as it is implicit.\n");
+					archfpga_throw( __FILE__, __LINE__, "If a bidirectional switch block specifies a connection from side1->side2, no connection should be specified from side2->side1 as it is implicit.\n");
 				}
 			}
 		}
@@ -434,9 +434,9 @@ int get_sb_formula_result( const char* formula, const s_formula_data &mydata ){
 
 	/* check formula */
 	if (NULL == formula){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in get_sb_formula_result: SB formula pointer NULL\n");
+		archfpga_throw( __FILE__, __LINE__, "in get_sb_formula_result: SB formula pointer NULL\n");
 	} else if ('\0' == formula[0]){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in get_sb_formula_result: SB formula empty\n");
+		archfpga_throw( __FILE__, __LINE__, "in get_sb_formula_result: SB formula empty\n");
 	}
 
 	/* parse based on whether formula is piece-wise or not */
@@ -496,7 +496,7 @@ static int parse_piecewise_formula( const char *formula, const s_formula_data &m
 	str_size = pw_formula.size();
 
 	if (pw_formula[str_ind] != '{'){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n");
+		archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n");
 	}
 	
 	/* find the range to which t corresponds */
@@ -514,7 +514,7 @@ static int parse_piecewise_formula( const char *formula, const s_formula_data &m
 		tmp_ind_start = str_ind + 1;
 		char_found = goto_next_char(&str_ind, pw_formula, ':');
 		if (!char_found){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", ':');
+			archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", ':');
 		}
 		tmp_ind_count = str_ind - tmp_ind_start;			/* range start is between { and : */
 		substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
@@ -524,14 +524,14 @@ static int parse_piecewise_formula( const char *formula, const s_formula_data &m
 		tmp_ind_start = str_ind + 1;
 		char_found = goto_next_char(&str_ind, pw_formula, '}');
 		if (!char_found){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '}');
+			archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '}');
 		}
 		tmp_ind_count = str_ind - tmp_ind_start;			/* range end is between : and } */
 		substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
 		range_end = parse_formula(substr.c_str(), mydata);
 
 		if (range_start > range_end){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end);
+			archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end);
 		}
 
 		/* is the incoming wire within this range? (inclusive) */
@@ -547,13 +547,13 @@ static int parse_piecewise_formula( const char *formula, const s_formula_data &m
 		}
 		char_found = goto_next_char(&str_ind, pw_formula, '{');
 		if (!char_found){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '{');
+			archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '{');
 		}
 	}
 	/* the string index should never actually get to the end of the string because we should have found the range to which the 
 	   current wire number corresponds */
 	if (str_ind == str_size-1){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_piecewise_formula: could not find a closing '}'?\n");
+		archfpga_throw( __FILE__, __LINE__, "parse_piecewise_formula: could not find a closing '}'?\n");
 	}
 
 	/* at this point str_ind should point to '}' right before the formula we're interested in starts */
@@ -575,7 +575,7 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch){
 	bool result = true;
 	int str_size = pw_formula.size();	
 	if ((*str_ind) == str_size-1){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "goto_next_char: passed-in str_ind is already at the end of string\n");
+		archfpga_throw( __FILE__, __LINE__, "goto_next_char: passed-in str_ind is already at the end of string\n");
 	}
 
 	do{
@@ -629,7 +629,7 @@ static void formula_to_rpn( const char* formula, const s_formula_data &mydata,
 					handle_bracket( fobj, rpn_output, op_stack);
 					break;
 				default:
-					vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in formula_to_rpn: unknown formula object type: %d\n", fobj.type);
+					archfpga_throw( __FILE__, __LINE__, "in formula_to_rpn: unknown formula object type: %d\n", fobj.type);
 					break;
 			}
 		}
@@ -642,7 +642,7 @@ static void formula_to_rpn( const char* formula, const s_formula_data &mydata,
 		fobj_dummy = op_stack.top();
 
 		if (E_FML_BRACKET == fobj_dummy.type){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in formula_to_rpn: Mismatched brackets in user-provided formula\n");
+			archfpga_throw( __FILE__, __LINE__, "in formula_to_rpn: Mismatched brackets in user-provided formula\n");
 		}		
 
 		rpn_output.push_back( fobj_dummy );
@@ -673,7 +673,7 @@ static void get_formula_object( const char *ch, int &ichar, const s_formula_data
 		}
 		ichar --;
 		fobj->type = E_FML_NUMBER;
-		fobj->data.num = my_atoi(ss.str().c_str());
+		fobj->data.num = vtr::atoi(ss.str().c_str());
 	} else {
 		switch ((*ch)){
 			case 'W':
@@ -709,7 +709,7 @@ static void get_formula_object( const char *ch, int &ichar, const s_formula_data
 				fobj->data.left_bracket = false;
 				break;
 			default:
-				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in get_formula_object: unsupported character: %c\n", *ch);
+				archfpga_throw( __FILE__, __LINE__, "in get_formula_object: unsupported character: %c\n", *ch);
 				break; 
 		}	
 	}
@@ -741,11 +741,11 @@ static int get_fobj_precedence( const Formula_Object &fobj ){
 				precedence = 3;
 				break;
 			default:
-				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in get_fobj_precedence: unrecognized operator: %d\n", op);
+				archfpga_throw( __FILE__, __LINE__, "in get_fobj_precedence: unrecognized operator: %d\n", op);
 				break; 
 		}
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type);
+		archfpga_throw( __FILE__, __LINE__, "in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type);
 	}
 	
 	return precedence;
@@ -768,7 +768,7 @@ static bool op_associativity_is_left( const t_operator &op ){
 static void handle_operator( const Formula_Object &fobj, vector<Formula_Object> &rpn_output,
 				stack<Formula_Object> &op_stack){
 	if ( E_FML_OPERATOR != fobj.type){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in handle_operator: passed in formula object not of type operator\n");
+		archfpga_throw( __FILE__, __LINE__, "in handle_operator: passed in formula object not of type operator\n");
 	}
 
 	int op_pr = get_fobj_precedence( fobj );
@@ -812,7 +812,7 @@ static void handle_operator( const Formula_Object &fobj, vector<Formula_Object> 
 static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &rpn_output,
 				stack<Formula_Object> &op_stack ){
 	if ( E_FML_BRACKET != fobj.type){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in handle_bracket: passed-in formula object not of type bracket\n");
+		archfpga_throw( __FILE__, __LINE__, "in handle_bracket: passed-in formula object not of type bracket\n");
 	}
 
 	/* check if left or right bracket */
@@ -827,7 +827,7 @@ static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &
 
 			if ( op_stack.empty() ){
 				/* didn't find an opening bracket - mismatched brackets */
-				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
+				archfpga_throw( __FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
 				keep_going = false;
 			}
 	
@@ -839,7 +839,7 @@ static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &
 					keep_going = false;
 				} else {
 					/* should not find two right brackets without a left bracket in-between */
-					vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
+					archfpga_throw( __FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
 					keep_going = false;
 				}
 			} else if (E_FML_OPERATOR == next_fobj.type){
@@ -849,7 +849,7 @@ static void handle_bracket( const Formula_Object &fobj, vector<Formula_Object> &
 				op_stack.pop();
 				keep_going = true;
 			} else {
-				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
+				archfpga_throw( __FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
 				keep_going = false;
 			}
 		} while (keep_going);
@@ -865,7 +865,7 @@ static int parse_rpn_vector( vector<Formula_Object> &rpn_vec ){
 
 	/* first entry should always be a number */
 	if (E_FML_NUMBER != rpn_vec[0].type){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_rpn_vector: first entry is not a number\n");
+		archfpga_throw( __FILE__, __LINE__, "parse_rpn_vector: first entry is not a number\n");
 	}
 
 	if (rpn_vec.size() == 1){
@@ -882,7 +882,7 @@ static int parse_rpn_vector( vector<Formula_Object> &rpn_vec ){
 			do{
 				ivec++;		/* first item should never be operator anyway */
 				if (ivec == (int)rpn_vec.size()){
-					vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "parse_rpn_vector(): found multiple numbers in switchblock formula, but no operator\n");
+					archfpga_throw( __FILE__, __LINE__, "parse_rpn_vector(): found multiple numbers in switchblock formula, but no operator\n");
 				}
 			} while ( E_FML_OPERATOR != rpn_vec[ivec].type );
 
@@ -915,12 +915,12 @@ static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 	/* arguments must be numbers */
 	if ( E_FML_NUMBER != arg1.type || 
 	     E_FML_NUMBER != arg2.type){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number\n");
+		archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number\n");
 	}
 
 	/* check that op is actually an operation */
 	if ( E_FML_OPERATOR != op.type ){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in apply_rpn_op: the object specified as the operation is not of operation type\n");
+		archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: the object specified as the operation is not of operation type\n");
 	}
 
 	/* apply operation to arguments */
@@ -938,7 +938,7 @@ static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 			result = arg1.data.num / arg2.data.num;
 			break;
 		default:
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "in apply_rpn_op: invalid operation: %d\n", op.data.op);
+			archfpga_throw( __FILE__, __LINE__, "in apply_rpn_op: invalid operation: %d\n", op.data.op);
 			break;
 	}
 	

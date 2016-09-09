@@ -30,7 +30,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "odin_util.h"
 #include "ast_util.h"
-#include "util.h"
 #include "activity_estimation.h"
 #include "netlist_check.h"
 

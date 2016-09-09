@@ -1,15 +1,19 @@
 #include <sys/types.h>
 
-#include <cassert>
 #include <cstdio>
 #include <ctime>
 #include <climits>
 #include <cstdlib>
 using namespace std;
 
-#include "util.h"
+#include "vtr_util.h"
+#include "vtr_memory.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "place_and_route.h"
 #include "place.h"
@@ -26,8 +30,9 @@ using namespace std;
 #include "ReadOptions.h"
 #include "route_common.h"
 #include "place_macro.h"
-#include "verilog_writer.h"
+#include "netlist_writer.h"
 #include "power.h"
+
 
 /******************* Subroutines local to this module ************************/
 
@@ -42,8 +47,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 static float comp_width(t_chan * chan, float x, float separation);
 
-void post_place_sync(INP int L_num_blocks,
-		INOUTP const struct s_block block_list[]);
+void post_place_sync(const int L_num_blocks,
+		const struct s_block block_list[]);
 
 void free_pb_data(t_pb *pb);
 
@@ -60,13 +65,13 @@ bool place_and_route(enum e_operation operation,
 		t_direct_inf *directs, int num_directs) {
 
 	/* This routine controls the overall placement and routing of a circuit. */
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 
 	bool success = false;
-	t_chunk net_delay_ch = {NULL, 0, NULL};
+	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
-	t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
+	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
 	int max_pins_per_clb = 0;
@@ -81,14 +86,14 @@ bool place_and_route(enum e_operation operation,
 		read_place(place_file, net_file, arch_file, nx, ny, num_blocks, block);
 		sync_grid_to_blocks(num_blocks, block, nx, ny, grid);
 	} else {
-		assert((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
+		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
 		try_place(placer_opts, annealing_sched, chan_width_dist, router_opts,
 				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
 		print_place(place_file, net_file, arch_file);
 		end = clock();
 
-		vpr_printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+		vtr::printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
 	}
 	begin = clock();
@@ -111,6 +116,7 @@ bool place_and_route(enum e_operation operation,
 
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
+        //Binary search for the min channel width
 		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, place_file, net_file,
 				arch_file, route_file, router_opts.full_stats,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
@@ -118,6 +124,7 @@ bool place_and_route(enum e_operation operation,
 				models, directs, num_directs);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
+        //Route at the specified channel width
 		g_solution_inf.channel_width = width_fac;
 		if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
@@ -141,21 +148,19 @@ bool place_and_route(enum e_operation operation,
 				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
 
 		if (Fc_clipped) {
-			vpr_printf_warning(__FILE__, __LINE__, 
+			vtr::printf_warning(__FILE__, __LINE__, 
 					"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
 		}
 
 		if (success == false) {
             
-			vpr_printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
+			vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
-		}
-
-		else {
+		} else {
 			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally);
 			get_serial_num();
 
-			vpr_printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
+			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
 			routing_stats(router_opts.full_stats, router_opts.route_type,
 					g_num_rr_switches, segment_inf,
@@ -178,20 +183,20 @@ bool place_and_route(enum e_operation operation,
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 		
 		if (timing_inf.timing_analysis_enabled) {
-			assert(slacks->slack);
+			VTR_ASSERT(slacks->slack);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-				print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);
+				/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
 			}
 
 			if(GetPostSynthesisOption())
 			{
-				verilog_writer();
+				netlist_writer(blif_circuit_name);
 			}
 
 			free_timing_graph(slacks);
 
-			assert(net_delay);
+			VTR_ASSERT(net_delay);
 			free_net_delay(net_delay, &net_delay_ch);
 		}
 
@@ -213,7 +218,7 @@ bool place_and_route(enum e_operation operation,
 
 	end = clock();    
 
-	vpr_printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
+	vtr::printf_info("Routing took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
     if (router_opts.switch_usage_analysis) {
         print_switch_usage();
@@ -250,14 +255,14 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	int current, low, high, final;
 	int max_pins_per_clb, i;
 	bool success, prev_success, prev2_success, Fc_clipped = false;
-	char msg[BUFSIZE];
+	char msg[vtr::BUFSIZE];
 	float **net_delay = NULL;
 	t_slack * slacks = NULL;
 
-	t_chunk net_delay_ch = {NULL, 0, NULL};
+	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
-	t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
+	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
 	/* [0..num_blocks-1][0..num_class-1] */
 	int attempt_count;
@@ -271,9 +276,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	if (router_opts.route_type == GLOBAL) {
 		graph_type = GRAPH_GLOBAL;
 	} else {
-		graph_type = (
-				det_routing_arch->directionality == BI_DIRECTIONAL ?
-						GRAPH_BIDIR : GRAPH_UNIDIR);
+		graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?  GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
 	max_pins_per_clb = 0;
@@ -310,9 +313,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					"in pack_place_and_route.c: Tried odd chan width (%d) for udsd architecture.\n",
 					current);
 		}
-	}
-
-	else {
+	} else {
 		if (det_routing_arch->Fs % 3) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					"Fs must be three in bidirectional mode.\n");
@@ -326,8 +327,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	while (final == -1) {
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
+		vtr::printf_info("\n");
+		vtr::printf_info("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
 		fflush(stdout);
 
 		/* Check if the channel width is huge to avoid overflow.  Assume the *
@@ -348,7 +349,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		}
 
 		if ((current * 3) < det_routing_arch->Fs) {
-			vpr_printf_info("Width factor is now below specified Fs. Stop search.\n");
+			vtr::printf_info("Width factor is now below specified Fs. Stop search.\n");
 			final = high;
 			break;
 		}
@@ -380,7 +381,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 			/* If Fc_output is too high, set to full connectivity but warn the user */
 			if (Fc_clipped) {
-				vpr_printf_warning(__FILE__, __LINE__, 
+				vtr::printf_warning(__FILE__, __LINE__, 
 						"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
 			}
 
@@ -406,7 +407,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			}
 		} else { /* last route not successful */
 			if (success && Fc_clipped) {
-				vpr_printf_info("Routing rejected, Fc_output was too high.\n");
+				vtr::printf_info("Routing rejected, Fc_output was too high.\n");
 				success = false;
 			}
 			low = current;
@@ -444,8 +445,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	if (verify_binary_search) {
 
-		vpr_printf_info("\n");
-		vpr_printf_info("Verifying that binary search found min channel width...\n");
+		vtr::printf_info("\n");
+		vtr::printf_info("Verifying that binary search found min channel width...\n");
 
 		prev_success = true; /* Actually final - 1 failed, but this makes router */
 		/* try final-2 and final-3 even if both fail: safer */
@@ -498,7 +499,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #if 0
 	if (placer_opts.place_freq == PLACE_ALWAYS)
 	{
-		vpr_printf_info("Reading best placement back in.\n");
+		vtr::printf_info("Reading best placement back in.\n");
 		placer_opts.place_chan_width = final;
 		read_place(place_file, net_file, arch_file, placer_opts,
 				router_opts, chan_width_dist, det_routing_arch,
@@ -531,10 +532,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	get_serial_num();
 
 	if (Fc_clipped) {
-		vpr_printf_warning(__FILE__, __LINE__, 
+		vtr::printf_warning(__FILE__, __LINE__, 
 				"Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
 	}
-	vpr_printf_info("Best routing used a channel width factor of %d.\n", final);
+	vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
 
 	routing_stats(full_stats, router_opts.route_type,
 			g_num_rr_switches, segment_inf,
@@ -555,16 +556,16 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	if (timing_inf.timing_analysis_enabled) {
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-			print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);
+			/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
 		}
 		
 		if(GetPostSynthesisOption())
 		  {
-		    verilog_writer();
+            netlist_writer(blif_circuit_name);
 		  }
 
-		free_timing_graph(slacks);
-		free_net_delay(net_delay, &net_delay_ch);
+		//free_timing_graph(slacks);
+		//free_net_delay(net_delay, &net_delay_ch);
 	}
 	
 	for (i = 0; i < num_blocks; i++) {
@@ -576,6 +577,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	free_saved_routing(best_routing, saved_clb_opins_used_locally);
 	fflush(stdout);
+	
+	free_timing_graph(slacks);
+	free_net_delay(net_delay, &net_delay_ch);
 
 	return (final);
 
@@ -644,15 +648,15 @@ void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width
 	}
 
 #ifdef VERBOSE
-	vpr_printf_info("\n");
-	vpr_printf_info("chan_width.x_list:\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("chan_width.x_list:\n");
 	for (int i = 0; i <= ny ; ++i)
-		vpr_printf_info("%d  ", chan_width.x_list[i]);
-	vpr_printf_info("\n");
-	vpr_printf_info("chan_width.y_list:\n");
+		vtr::printf_info("%d  ", chan_width.x_list[i]);
+	vtr::printf_info("\n");
+	vtr::printf_info("chan_width.y_list:\n");
 	for (int i = 0; i <= nx ; ++i)
-		vpr_printf_info("%d  ", chan_width.y_list[i]);
-	vpr_printf_info("\n");
+		vtr::printf_info("%d  ", chan_width.y_list[i]);
+	vtr::printf_info("\n");
 #endif
 }
 static float comp_width(t_chan * chan, float x, float separation) {
@@ -708,8 +712,8 @@ static float comp_width(t_chan * chan, float x, float separation) {
 
 /* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
 /* This function should only be called once */
-void post_place_sync(INP int L_num_blocks,
-		INOUTP const struct s_block block_list[]) {
+void post_place_sync(const int L_num_blocks,
+		const struct s_block block_list[]) {
 	int iblk, j, inet;
 	unsigned k;
 	t_type_ptr type;
@@ -718,14 +722,14 @@ void post_place_sync(INP int L_num_blocks,
 	/* Go through each block */
 	for (iblk = 0; iblk < L_num_blocks; ++iblk) {
 		type = block[iblk].type;
-		assert(type->num_pins % type->capacity == 0);
+		VTR_ASSERT(type->num_pins % type->capacity == 0);
 		max_num_block_pins = type->num_pins / type->capacity;
 		/* Logical location and physical location is offset by z * max_num_block_pins */
 		/* Sync blocks and nets */
 		for (j = 0; j < max_num_block_pins; j++) {
 			inet = block[iblk].nets[j];
 			if (inet != OPEN && block[iblk].z > 0) {
-				assert(
+				VTR_ASSERT(
 						block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
 				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
 						block[iblk].nets[j];
@@ -739,7 +743,7 @@ void post_place_sync(INP int L_num_blocks,
 						break;
 					}
 				}
-				assert(k < g_clbs_nlist.net[inet].pins.size());
+				VTR_ASSERT(k < g_clbs_nlist.net[inet].pins.size());
 			}
 		}
 	}

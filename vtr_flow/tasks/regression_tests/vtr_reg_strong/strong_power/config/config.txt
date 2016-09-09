@@ -13,7 +13,7 @@ circuits_dir=benchmarks/verilog
 archs_dir=arch/timing
 
 # Path to directory of SDC files to use
-sdc_dir=tasks/regression_tests/sdc
+sdc_dir=sdc
 
 # Add circuits to list to sweep
 circuit_list_add=ch_intrinsics.v

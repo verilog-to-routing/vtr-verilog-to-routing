@@ -1,0 +1,2 @@
+arch	circuit	vpr_revision	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_N10_mem32K_40nm.xml	stereovision3.v	1043aaf-dirty	success	2.8721 	0.079309	0.098045	0.066448	0.066448	581	293	323	130	20	11	30	0	0		

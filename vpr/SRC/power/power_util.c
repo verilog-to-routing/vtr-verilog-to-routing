@@ -21,10 +21,13 @@
 
 /************************* INCLUDES *********************************/
 #include <cstring>
+#include <cmath>
 #include <map>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_list.h"
+#include "vtr_assert.h"
+
 
 #include "power_util.h"
 #include "globals.h"
@@ -149,7 +152,7 @@ static void log_msg(t_log * log_ptr, const char * msg) {
 
 	if (log_ptr->num_messages <= MAX_LOGS) {
 		log_ptr->num_messages++;
-		log_ptr->messages = (char**) my_realloc(log_ptr->messages,
+		log_ptr->messages = (char**) vtr::realloc(log_ptr->messages,
 				log_ptr->num_messages * sizeof(char*));
 	} else {
 		/* Can't add any more messages */
@@ -158,12 +161,12 @@ static void log_msg(t_log * log_ptr, const char * msg) {
 
 	if (log_ptr->num_messages == (MAX_LOGS + 1)) {
 		const char * full_msg = "\n***LOG IS FULL***\n";
-		log_ptr->messages[log_ptr->num_messages - 1] = (char*) my_calloc(
+		log_ptr->messages[log_ptr->num_messages - 1] = (char*) vtr::calloc(
 				strlen(full_msg) + 1, sizeof(char));
 		strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg,
 				strlen(full_msg));
 	} else {
-		log_ptr->messages[log_ptr->num_messages - 1] = (char*) my_calloc(
+		log_ptr->messages[log_ptr->num_messages - 1] = (char*) vtr::calloc(
 				strlen(msg) + 1, sizeof(char));
 		strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, strlen(msg));
 	}
@@ -269,7 +272,7 @@ static void int_2_binary_str(char * binary_str, int value, int str_length) {
  *  - truth_table: The logic terms saved from the BLIF file, in a linked list format
  */
 char * alloc_SRAM_values_from_truth_table(int LUT_size,
-		t_linked_vptr * truth_table) {
+		vtr::t_linked_vptr * truth_table) {
 	char * SRAM_values;
 	int i;
 	int num_SRAM_bits;
@@ -278,14 +281,14 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	char * buffer;
 	char * str_loc;
 	bool on_set;
-	t_linked_vptr * list_ptr;
+	vtr::t_linked_vptr * list_ptr;
 	int num_terms;
 	int term_idx;
 	int bit_idx;
 	int dont_care_start_pos;
 
 	num_SRAM_bits = 1 << LUT_size;
-	SRAM_values = (char*) my_calloc(num_SRAM_bits + 1, sizeof(char));
+	SRAM_values = (char*) vtr::calloc(num_SRAM_bits + 1, sizeof(char));
 	SRAM_values[num_SRAM_bits] = '\0';
 
 	if (!truth_table) {
@@ -295,8 +298,8 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 		return SRAM_values;
 	}
 
-	binary_str = (char*) my_calloc(LUT_size + 1, sizeof(char));
-	buffer = (char*) my_calloc(LUT_size + 10, sizeof(char));
+	binary_str = (char*) vtr::calloc(LUT_size + 1, sizeof(char));
+	buffer = (char*) vtr::calloc(LUT_size + 10, sizeof(char));
 
 	strcpy(buffer, (char*) truth_table->data_vptr);
 
@@ -327,7 +330,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	} else if (str_loc[0] == '0') {
 		on_set = false;
 	} else {
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 	/* Count truth table terms */
@@ -335,12 +338,12 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 	for (list_ptr = truth_table; list_ptr != NULL; list_ptr = list_ptr->next) {
 		num_terms++;
 	}
-	terms = (char**) my_calloc(num_terms, sizeof(char *));
+	terms = (char**) vtr::calloc(num_terms, sizeof(char *));
 
 	/* Extract truth table terms */
 	for (list_ptr = truth_table, term_idx = 0; list_ptr != NULL; list_ptr =
 			list_ptr->next, term_idx++) {
-		terms[term_idx] = (char*) my_calloc(LUT_size + 1, sizeof(char));
+		terms[term_idx] = (char*) vtr::calloc(LUT_size + 1, sizeof(char));
 
 		strcpy(buffer, (char*) list_ptr->data_vptr);
 		str_loc = strtok(buffer, " \t");
@@ -354,9 +357,9 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
 		/* Verify on/off consistency */
 		str_loc = strtok(NULL, " \t");
 		if (on_set) {
-			assert(str_loc[0] == '1');
+			VTR_ASSERT(str_loc[0] == '1');
 		} else {
-			assert(str_loc[0] == '0');
+			VTR_ASSERT(str_loc[0] == '0');
 		}
 	}
 
@@ -505,7 +508,7 @@ t_mux_arch * power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 	}
 
 	if (num_mux_inputs > mux_info->mux_arch_max_size) {
-		mux_info->mux_arch = (t_mux_arch*) my_realloc(mux_info->mux_arch,
+		mux_info->mux_arch = (t_mux_arch*) vtr::realloc(mux_info->mux_arch,
 				(num_mux_inputs + 1) * sizeof(t_mux_arch));
 
 		for (i = mux_info->mux_arch_max_size + 1; i <= num_mux_inputs; i++) {
@@ -540,7 +543,7 @@ static void init_mux_arch_default(t_mux_arch * mux_arch, int levels,
 static t_mux_node * alloc_and_load_mux_graph(int num_inputs, int levels) {
 	t_mux_node * node;
 
-	node = (t_mux_node*) my_malloc(sizeof(t_mux_node));
+	node = (t_mux_node*) vtr::malloc(sizeof(t_mux_node));
 	alloc_and_load_mux_graph_recursive(node, num_inputs, levels - 1, 0);
 
 	return node;
@@ -557,7 +560,7 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node * node,
 	node->starting_pin_idx = starting_pin_idx;
 
 	if (level != 0) {
-		node->children = (t_mux_node*) my_calloc(node->num_inputs,
+		node->children = (t_mux_node*) vtr::calloc(node->num_inputs,
 				sizeof(t_mux_node));
 		for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
 			int num_child_pi = num_primary_inputs / node->num_inputs;
@@ -595,7 +598,7 @@ bool power_method_is_recursive(e_power_estimation_method method) {
 		return true;
 	case POWER_METHOD_UNDEFINED:
 	default:
-		assert(0);
+		VTR_ASSERT(0);
 	}
 
 // to get rid of warning

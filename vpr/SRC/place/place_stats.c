@@ -2,7 +2,6 @@
 #include <cmath>
 using namespace std;
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 
@@ -34,14 +33,14 @@ print_relative_pos_distr(void)
 	unsigned int sink_pin
 	double **relapos_distr;
 
-	total_conn = (int *)my_malloc((nx + ny + 1) * sizeof(int));
-	relapos = (int **)my_malloc((nx + ny + 1) * sizeof(int *));
-	relapos_distr = (double **)my_malloc((nx + ny + 1) * sizeof(double *));
+	total_conn = (int *)vtr::malloc((nx + ny + 1) * sizeof(int));
+	relapos = (int **)vtr::malloc((nx + ny + 1) * sizeof(int *));
+	relapos_distr = (double **)vtr::malloc((nx + ny + 1) * sizeof(double *));
 	for (len = 0; len <= nx + ny; len++)
 	{
-		relapos[len] = (int *)my_calloc(len / 2 + 1, sizeof(int));
+		relapos[len] = (int *)vtr::calloc(len / 2 + 1, sizeof(int));
 		relapos_distr[len] =
-		(double *)my_calloc((len / 2 + 1), sizeof(double));
+		(double *)vtr::calloc((len / 2 + 1), sizeof(double));
 	}
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
@@ -67,7 +66,7 @@ print_relative_pos_distr(void)
 
 				if (!(min_del <= (len / 2)))
 				{
-					vpr_printf_error(VPR_ERROR_PLACE, __FILE__, __LINE__,
+					vtr::printf_error(VPR_ERROR_PLACE, __FILE__, __LINE__,
 							"Error calculating relative location min_del = %d, len = %d\n",
 							min_del, len);
 				}
@@ -107,9 +106,9 @@ print_relative_pos_distr(void)
 
 				/* updating the binary record at "len" */
 #ifdef PRINT_REL_POS_DISTR
-				vpr_printf_error(__FILE__, __LINE__, "old %d increased by %d\n", rp_rec.num_rp[rp], relapos[len][rp]);
+				vtr::printf_error(__FILE__, __LINE__, "old %d increased by %d\n", rp_rec.num_rp[rp], relapos[len][rp]);
 				rp_rec.num_rp[rp] += relapos[len][rp];
-				vpr_printf_error(__FILE__, __LINE__,"becomes %d\n", rp_rec.num_rp[rp]);
+				vtr::printf_error(__FILE__, __LINE__,"becomes %d\n", rp_rec.num_rp[rp]);
 #endif /* PRINT_REL_POS_DISTR */
 			}
 #ifdef PRINT_REL_POS_DISTR

@@ -1,3 +1,12 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-stratixiv_arch.simple.xml	sudoku_check_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	47.9069	6.21362	6.50133	-1	243874	-1	-1	653088	16792	16781	11621	-1	2	52	-1	-1		
-stratixiv_arch.simple.xml	wb_conmax_stratixiv_arch_simple.blif	a6e4991-dirty	success	-1	-1	60.8079	10.973	18.6662	-1	200100	-1	-1	1709884	15377	16083	7903	-1	403	704	-1	-1		
+arch	circuit	vpr_revision	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif	20424d7-dirty	success	9.81049 	131.357	206.786	204.863	204.863	1301343	123883	90858	56112	-1	42	35	-1	-1		
+stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif	20424d7-dirty	success	11.8931 	313.874	369.493	270.313	270.313	1559038	92461	91581	60738	-1	173	137	-1	-1		
+stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	20424d7-dirty	success	11.0044 	93.8937	261.575	148.783	148.783	972074	126400	93171	63798	-1	353	707	-1	-1		
+stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif	20424d7-dirty	success	8.47763 	196.93	320.54	322.15	322.15	1485082	140194	108500	64046	-1	111	151	-1	-1		
+stratixiv_arch.timing.xml	des90_stratixiv_arch_timing.blif	20424d7-dirty	success	13.7824 	383.349	458.07	966.551	966.551	3659499	138584	109930	90665	-1	85	32	-1	-1		
+stratixiv_arch.timing.xml	SLAM_spheric_stratixiv_arch_timing.blif	20424d7-dirty	success	78.9947 	388.95	924.683	653.392	653.392	2588103	156159	125680	92290	-1	323	156	-1	-1		
+stratixiv_arch.timing.xml	segmentation_stratixiv_arch_timing.blif	20424d7-dirty	success	868.046 	491.058	1678.66	4522.49	4522.49	2995851	206053	168365	125732	-1	72	369	-1	-1		
+stratixiv_arch.timing.xml	bitonic_mesh_stratixiv_arch_timing.blif	20424d7-dirty	success	15.7964 	825.361	1128.16	1962.11	1962.11	7346301	235691	191785	153265	-1	87	32	-1	-1		
+stratixiv_arch.timing.xml	stap_qrd_stratixiv_arch_timing.blif	20424d7-dirty	success	9.02878 	615.355	2076.47	840.37	840.37	4151063	287273	237349	146382	-1	68	82	-1	-1		
+stratixiv_arch.timing.xml	cholesky_bdti_stratixiv_arch_timing.blif	20424d7-dirty	success	12.0757 	541.378	1268.91	694.603	694.603	3605858	332534	256236	153052	-1	94	68	-1	-1		
+stratixiv_arch.timing.xml	denoise_stratixiv_arch_timing.blif	20424d7-dirty	success	941.46 	1385.15	4371.08	2060.89	2060.89	5639324	425585	343756	257636	-1	264	588	-1	-1		

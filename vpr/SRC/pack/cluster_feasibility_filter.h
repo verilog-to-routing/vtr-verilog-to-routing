@@ -22,8 +22,7 @@
 #ifndef CLUSTER_FEASIBILITY_CHECK_H
 #define CLUSTER_FEASIBILITY_CHECK_H
 #include "arch_types.h"
-#include "util.h"
 
-void load_pin_classes_in_pb_graph_head(INOUTP t_pb_graph_node *pb_graph_node);
+void load_pin_classes_in_pb_graph_head(t_pb_graph_node *pb_graph_node);
 
 #endif

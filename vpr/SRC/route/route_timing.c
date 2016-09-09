@@ -1,13 +1,17 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
-#include <cassert>
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+
+#include "vtr_assert.h"
+#include "vtr_log.h"
+
 #include "vpr_utils.h"
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "route_export.h"
 #include "route_common.h"
@@ -43,9 +47,6 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
 		float criticality_fac, float R_upstream);
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-static int get_num_expected_interposer_hops_to_target(int inode, int target_node);
-#endif
 
 static int get_expected_segs_to_target(int inode, int target_node,
 		int *num_segs_ortho_dir_ptr);
@@ -71,7 +72,7 @@ struct more_sinks_than {
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
-		float **net_delay, t_slack * slacks, t_ivec ** clb_opins_used_locally, 
+		float **net_delay, t_slack * slacks, vtr::t_ivec ** clb_opins_used_locally, 
 		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
@@ -128,7 +129,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
 	CBRR connections_inf {};
-	EXPENSIVE_ASSERT(connections_inf.sanity_check_lookup());
+	VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
 
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
@@ -162,7 +163,17 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
 		time_per_iteration.push_back(time);
 
-		if (itry == 1 && early_exit_heuristic(router_opts)) return false;
+		if (itry == 1) {
+            
+            if(early_exit_heuristic(router_opts)) {
+                //Abort
+                return false;
+            }
+
+            vtr::printf_info("--------- ---------- ----------- ---------------------\n");
+            vtr::printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
+            vtr::printf_info("--------- ---------- ----------- ---------------------\n");	
+        }
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
 		   to them are reserved for that purpose. */
@@ -180,33 +191,31 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		overused_ratio = get_overused_ratio();
 		historical_overuse_ratio.push_back(overused_ratio);
 
-		/* Determine when routing is impossible hence should be aborted */
-		if (itry > 5){
-			
-			int expected_success_route_iter = predict_success_route_iter(historical_overuse_ratio, router_opts);
-			if (expected_success_route_iter == UNDEFINED) {
-				return false;
-			}
+		/**** Routing Predictor -- Determine when routing success is unlikely, and routing should be aborted ****/
+		int expected_success_route_iter = predict_success_route_iter(itry, historical_overuse_ratio, router_opts);
+		if (expected_success_route_iter == UNDEFINED) {
+			return false;
+		}
 
 #ifdef REGRESSION_EXIT
-			if (itry > 15) {
-				// compare their slopes over the last 5 iterations
-				double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
-				double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
-				if (router_opts.congestion_analysis)
-					vpr_printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
-				// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
-				if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
-					&& time_per_iteration_slope > 1) {	// filter out noise
-					vpr_printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
-									 while congestion grows at %f %/iteration, unlikely to finish.\n",
-						time_per_iteration_slope, congestion_per_iteration_slope);
+		if (itry > 15) {
+			// compare their slopes over the last 5 iterations
+			double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
+			double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
+			if (router_opts.congestion_analysis)
+				vtr::printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
+			// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
+			if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
+				&& time_per_iteration_slope > 1) {	// filter out noise
+				vtr::printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
+								 while congestion grows at %f %/iteration, unlikely to finish.\n",
+					time_per_iteration_slope, congestion_per_iteration_slope);
 
-					return false;
-				}
+				return false;
 			}
-#endif
 		}
+#endif
+		/**** END Routing Predictor ****/
 
         //print_usage_by_wire_length();
 
@@ -217,13 +226,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
 				float critical_path_delay = get_critical_path_delay();
-                vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-				vpr_printf_info("Critical path: %g ns\n", critical_path_delay);
+                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+				vtr::printf_info("Critical path: %g ns\n", critical_path_delay);
 			} else {
-                vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+                vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 			}
 
-			vpr_printf_info("Successfully routed after %d routing iterations.\n", itry);
+			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
 #ifdef DEBUG
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
@@ -285,9 +294,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				if (stable_routing_configuration)
 					connections_inf.set_stable_critical_path_delay(critical_path_delay);
 			}
-            vpr_printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 		} else {
-            vpr_printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
 
         if (router_opts.congestion_analysis) profiling::congestion_analysis();
@@ -296,7 +305,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		fflush(stdout);
 	}
-	vpr_printf_info("Routing failed.\n");
+	vtr::printf_info("Routing failed.\n");
 
 	return (false);
 }
@@ -336,7 +345,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 			g_clbs_nlist.net[inet].is_routed = true;
 			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = true;
 		} else {
-			vpr_printf_info("Routing failed.\n");
+			vtr::printf_info("Routing failed.\n");
 		}
 	}
 	return (is_routed);
@@ -353,13 +362,13 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 
 	int max_pins_per_net = get_max_pins_per_net();
 
-	float *pin_criticality = (float *) my_malloc((max_pins_per_net - 1) * sizeof(float));
+	float *pin_criticality = (float *) vtr::malloc((max_pins_per_net - 1) * sizeof(float));
 	*pin_criticality_ptr = pin_criticality - 1; /* First sink is pin #1. */
 
-	int *sink_order = (int *) my_malloc((max_pins_per_net - 1) * sizeof(int));
+	int *sink_order = (int *) vtr::malloc((max_pins_per_net - 1) * sizeof(int));
 	*sink_order_ptr = sink_order - 1;
 
-	t_rt_node **rt_node_of_sink = (t_rt_node **) my_malloc((max_pins_per_net - 1) * sizeof(t_rt_node *));
+	t_rt_node **rt_node_of_sink = (t_rt_node **) vtr::malloc((max_pins_per_net - 1) * sizeof(t_rt_node *));
 	*rt_node_of_sink_ptr = rt_node_of_sink - 1;
 
 	alloc_route_tree_timing_structs();
@@ -454,7 +463,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	auto& remaining_targets = connections_inf.get_remaining_targets();
 
 	// should always have targets to route to since some parts of the net are still congested
-	assert(!remaining_targets.empty());
+	VTR_ASSERT(!remaining_targets.empty());
 
 
 	// calculate criticality of remaining target pins
@@ -478,7 +487,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			(<0.01) get criticality 0 and are ignored entirely, and everything
 			else becomes a bit less critical. This effect becomes more pronounced if
 			max_criticality is set lower. */
-			// assert(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+			// VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
 			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
 			/* Take pin criticality to some power (1 by default). */
@@ -521,13 +530,13 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	if (!g_clbs_nlist.net[inet].is_global) {
 		for (unsigned ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 			if (net_delay[ipin] == 0) {	// should be SOURCE->OPIN->IPIN->SINK
-				assert(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
+				VTR_ASSERT(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
 			}
 		}
 	}
 
 	// SOURCE should never be congested
-	assert(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
+	VTR_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
 
 	// route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
 	free_route_tree(rt_root);
@@ -549,7 +558,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	
 	if (itarget > 0 && itry > 5) {
 		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-		assert(rr_node[rt_root->inode].type == SOURCE);
+		VTR_ASSERT(rr_node[rt_root->inode].type == SOURCE);
 		rt_root->re_expand = false;
 	}
 
@@ -559,13 +568,13 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	add_route_tree_to_heap(rt_root, target_node, target_criticality, astar_fac);
 	heap_::build_heap();	// via sifting down everything
 
-	EXPENSIVE_ASSERT(heap_::is_valid());
+	VTR_ASSERT_SAFE(heap_::is_valid());
 
 	// cheapest s_heap (gives index to rr_node) in current route tree to be expanded on
 	struct s_heap* cheapest {get_heap_head()};
 
 	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
-		vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+		vtr::printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
 				   inet, g_clbs_nlist.net[inet].name, target_node);
 		reset_path_costs();
 		free_route_tree(rt_root);
@@ -613,7 +622,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 		cheapest = get_heap_head();
 
 		if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-			vpr_printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
+			vtr::printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
 					 inet, g_clbs_nlist.net[inet].name, target_node);
 			reset_path_costs();
 			free_route_tree(rt_root);
@@ -689,9 +698,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		rt_root = traceback_to_route_tree(inet);
 
 		// check for edge correctness
-		EXPENSIVE_ASSERT(is_valid_skeleton_tree(rt_root));
-		EXPENSIVE_ASSERT(should_route_net(inet, connections_inf));
-		EXPENSIVE_ASSERT(!is_uncongested_route_tree(rt_root));
+		VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
+		VTR_ASSERT_SAFE(should_route_net(inet, connections_inf));
+		VTR_ASSERT_SAFE(!is_uncongested_route_tree(rt_root));
 
 		// prune the branches of the tree that don't legally lead to sinks
 		// destroyed represents whether the entire tree is illegal
@@ -721,9 +730,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		profiling::net_rebuild_end(num_sinks, remaining_targets.size());
 
 		// check for R_upstream C_downstream and edge correctness
-		EXPENSIVE_ASSERT(is_valid_route_tree(rt_root));
+		VTR_ASSERT_SAFE(is_valid_route_tree(rt_root));
 		// congestion should've been pruned away
-		EXPENSIVE_ASSERT(is_uncongested_route_tree(rt_root));
+		VTR_ASSERT_SAFE(is_uncongested_route_tree(rt_root));
 
 		// use the nodes to directly mark ends before they get converted to pins
 		mark_remaining_ends(inet, remaining_targets);
@@ -880,9 +889,6 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	rr_type = rr_node[inode].type;
 
 	if (rr_type == CHANX || rr_type == CHANY) {
-#ifdef INTERPOSER_BASED_ARCHITECTURE		
-		int num_interposer_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-#endif
 
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
 				&num_segs_ortho_dir);
@@ -910,10 +916,6 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 												* rr_indexed_data[ortho_cost_index].C_load);
 
 		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-		float interposer_hop_delay = (float)delay_increase * 1e-12;
-		Tdel += num_interposer_hops * interposer_hop_delay;
-#endif
 
 		expected_cost = criticality_fac * Tdel
 				+ (1. - criticality_fac) * cong_cost;
@@ -928,93 +930,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		return (0.);
 	}
 }
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-static int get_num_expected_interposer_hops_to_target(int inode, int target_node) 
-{
-	/* 
-	Description:
-		returns the expected number of times you have to cross the 
-		interposer in order to go from inode to target_node.
-		This does not include inode itself.
-	
-	Assumptions: 
-		1- Cuts are horizontal
-		2- target_node is a terminal pin (hence its ylow==yhigh)
-		3- wires that go through the interposer are uni-directional
 
-		---------	y=150
-		|		|
-		---------	y=100
-		|		|
-		---------	y=50
-		|		|
-		---------	y=0
-
-		num_cuts = 2, cut_step = 50, cut_locations = {50, 100}
-	*/
-	int y_start; /* start point y-coordinate. (y-coordinate at the *end* of wire 'i') */
-	int y_end;   /* destination (target) y-coordinate */
-	int cut_i, y_cut_location, num_expected_hops;
-	t_rr_type rr_type;
-
-	num_expected_hops = 0;
-	y_end   = rr_node[target_node].get_ylow(); 
-	rr_type = rr_node[inode].type;
-
-	if(rr_type == CHANX) 
-	{	/* inode is a horizontal wire */
-		/* the ylow and yhigh are the same */
-		assert(rr_node[inode].get_ylow() == rr_node[inode].get_yhigh());
-		y_start = rr_node[inode].get_ylow();
-	}
-	else
-	{	/* inode is a CHANY */
-		if(rr_node[inode].direction == INC_DIRECTION)
-		{
-			y_start = rr_node[inode].get_yhigh();
-		}
-		else if(rr_node[inode].direction == DEC_DIRECTION)
-		{
-			y_start = rr_node[inode].get_ylow();
-		}
-		else
-		{
-			/*	this means direction is BIDIRECTIONAL! Error out. */
-			y_start = -1;
-			assert(rr_node[inode].direction!=BI_DIRECTION);
-		}
-	}
-
-	/* for every cut, is it between 'i' and 'target'? */
-	for(cut_i=0 ; cut_i<num_cuts; ++cut_i) 
-	{
-		y_cut_location = arch_cut_locations[cut_i];
-		if( (y_start < y_cut_location &&  y_cut_location < y_end) ||
-			(y_end   < y_cut_location &&  y_cut_location < y_start)) 
-		{
-			++num_expected_hops;
-		}
-	}
-
-	/* Make there is no off-by-1 error.For current node i: 
-	   if it's a vertical wire, node 'i' itself may be crossing the interposer.
-	*/
-	if(rr_type == CHANY)
-	{	
-		/* for every cut, does it cut wire 'i'? */
-		for(cut_i=0 ; cut_i<num_cuts; ++cut_i) 
-		{
-			y_cut_location = arch_cut_locations[cut_i];
-			if(rr_node[inode].get_ylow() < y_cut_location && y_cut_location < rr_node[inode].get_yhigh())
-			{
-				++num_expected_hops;
-			}
-		}
-	}
-
-	return num_expected_hops;
-}
-#endif
 
 /* Macro used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
@@ -1031,9 +947,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
 	int no_need_to_pass_by_clb;
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-	int num_expected_hops = get_num_expected_interposer_hops_to_target(inode, target_node);
-#endif
+
 	
 	target_x = rr_node[target_node].get_xlow();
 	target_y = rr_node[target_node].get_ylow();
@@ -1062,9 +976,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 			*num_segs_ortho_dir_ptr = 0;
 			no_need_to_pass_by_clb = 0;
 		}
-#ifdef INTERPOSER_BASED_ARCHITECTURE		
-		(*num_segs_ortho_dir_ptr) = (*num_segs_ortho_dir_ptr) + 2*num_expected_hops;
-#endif
+
 		
 		/* Now count horizontal (same dir. as inode) segs. */
 
@@ -1110,9 +1022,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		} else {
 			num_segs_same_dir = 0;
 		}
-#ifdef INTERPOSER_BASED_ARCHITECTURE		
-		num_segs_same_dir = num_segs_same_dir + 2*num_expected_hops;
-#endif
+
 	}
 
 	return (num_segs_same_dir);
@@ -1244,7 +1154,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	unsigned int inet, ipin;
 	float **net_delay_check;
 
-	t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
+	vtr::t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
 
 	/*struct s_linked_vptr *ch_list_head_net_delay_check;*/
 
@@ -1273,7 +1183,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 	}
 
 	free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
-	vpr_printf_info("Completed net delay value cross check successfully.\n");
+	vtr::printf_info("Completed net delay value cross check successfully.\n");
 }
 
 
@@ -1320,7 +1230,7 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 
 	for (int i = 0; i < num_rr_nodes; ++i) {
 		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-			available_wirelength += 1 + 
+			available_wirelength += rr_node[i].get_capacity() + 
 					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
 					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
 		}
@@ -1335,17 +1245,17 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 			total_wirelength += wirelength;
 		}
 	}
-	vpr_printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
+    float used_wirelength_ratio = (float) (total_wirelength) / (float) (available_wirelength);
+
+	vtr::printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
 			total_wirelength, available_wirelength,
-			(float) (total_wirelength) / (float) (available_wirelength));
-	if ((float) (total_wirelength) / (float) (available_wirelength)> FIRST_ITER_WIRELENTH_LIMIT) {
-		vpr_printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
+			used_wirelength_ratio);
+
+	if (used_wirelength_ratio > FIRST_ITER_WIRELENTH_LIMIT) {
+		vtr::printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 				FIRST_ITER_WIRELENTH_LIMIT);
-		return true;
+        return true;
 	}
-	vpr_printf_info("--------- ---------- ----------- ---------------------\n");
-	vpr_printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
-	vpr_printf_info("--------- ---------- ----------- ---------------------\n");	
 	return false;
 }
 
@@ -1353,9 +1263,10 @@ static bool early_exit_heuristic(const t_router_opts& router_opts) {
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources() : 
 	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
+	last_stable_critical_path_delay {0.0},
 	critical_path_growth_tolerance {1.001},
 	connection_criticality_tolerance {0.9},
-	connection_delay_optimality_tolerance {1.1}	 {	
+	connection_delay_optimality_tolerance {1.1}	{	
 
 	/* Initialize the persistent data structures for incremental rerouting
 	 * this includes rr_sink_node_to_pin, which provides pin lookup given a
@@ -1404,7 +1315,7 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
 	/* Turn a vector of rr_node indices, assumed to be of sinks for a net *
 	 * into the pin indices of the same net. */
 
-	assert(current_inet != (unsigned)NO_PREVIOUS);	// not uninitialized
+	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);	// not uninitialized
 
 	const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
 
@@ -1412,7 +1323,7 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
 
 		auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
 		// should always expect it find a pin mapping for its own net
-		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+		VTR_ASSERT_SAFE(mapping != node_to_pin_mapping.end());
 
 		rr_sink_nodes[s] = mapping->second;
 	}
@@ -1424,7 +1335,7 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 	/* Load rt_node_of_sink (which maps a PIN index to a route tree node)
 	 * with a vector of route tree sink nodes. */
 
-	assert(current_inet != (unsigned)NO_PREVIOUS);
+	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);
 
 	// a net specific mapping from node index to pin index
 	const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
@@ -1432,7 +1343,7 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 	for (t_rt_node* rt_node : sink_rt_nodes) {
 		auto mapping = node_to_pin_mapping.find(rt_node->inode);
 		// element should be able to find itself
-		EXPENSIVE_ASSERT(mapping != node_to_pin_mapping.end());
+		VTR_ASSERT_SAFE(mapping != node_to_pin_mapping.end());
 
 		rt_node_of_sink[mapping->second] = rt_node;
 	}
@@ -1445,10 +1356,10 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
 		for (auto mapping : net_node_to_pin) {
 			auto sanity = net_node_to_pin.find(mapping.first);
 			if (sanity == net_node_to_pin.end()) {
-				vpr_printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
+				vtr::printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
 				return false;
 			}
-			assert(net_rr_terminals[inet][mapping.second] == mapping.first);
+			VTR_ASSERT(net_rr_terminals[inet][mapping.second] == mapping.first);
 		}		
 	}	
 	return true;
@@ -1495,7 +1406,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			auto rr_sink_node = net_rr_terminals[inet][ipin];
 
 			// should always be left unset or cleared by rerouting before the end of the iteration
-			assert(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
+			VTR_ASSERT(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
 
 
 			// skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
@@ -1505,7 +1416,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			// update if more optimal connection found
 			if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
 				if (net_delay[inet][ipin] == 0) {
-					// vpr_printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
+					// vtr::printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
 				}
 				lower_bound_connection_delay[inet][ipin - 1] = net_delay[inet][ipin];
 				continue;
@@ -1539,7 +1450,7 @@ void Connection_based_routing_resources::clear_force_reroute_for_connection(int 
 
 void Connection_based_routing_resources::clear_force_reroute_for_net() {
 
-	assert(current_inet != (unsigned)NO_PREVIOUS);
+	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);
 
 	auto& net_flags = forcible_reroute_connection_flag[current_inet];
 	for (auto& force_reroute_flag : net_flags) {

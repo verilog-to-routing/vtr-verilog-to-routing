@@ -10,23 +10,26 @@
 #include <cstring>
 using namespace std;
 
-#include <assert.h>
+#include "vtr_assert.h"
+#include "vtr_matrix.h"
+#include "vtr_math.h"
 
-#include "util.h"
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
 
 static void CheckGrid(void);
-static t_type_ptr find_type_col(INP int x);
+static t_type_ptr find_type_col(const int x);
 
 static void alloc_and_load_num_instances_type(
 		t_grid_tile** L_grid, int L_nx, int L_ny,
 		int* L_num_instances_type, int L_num_types);
 
 /* Create and fill FPGA architecture grid.         */
-void alloc_and_load_grid(INOUTP int *num_instances_type) {
+void alloc_and_load_grid(int *num_instances_type) {
 
 #ifdef SHOW_ARCH
 	FILE *dump;
@@ -40,10 +43,9 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 			"nx: %d, ny: %d\n", nx, ny);
 	}
 
-	assert(nx >= 1 && ny >= 1);
+	VTR_ASSERT(nx >= 1 && ny >= 1);
 
-	grid = (struct s_grid_tile **) alloc_matrix(0, (nx + 1), 0, (ny + 1),
-			sizeof(struct s_grid_tile));
+	grid = vtr::alloc_matrix<struct s_grid_tile>(0, (nx + 1), 0, (ny + 1));
 
 	/* Clear the full grid to have no type (NULL), no capacity, etc */
 	for (int x = 0; x <= (nx + 1); ++x) {
@@ -81,7 +83,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 						grid[x+x_offset][y+y_offset].type = type;
 						grid[x+x_offset][y+y_offset].width_offset = x_offset;
 						grid[x+x_offset][y+y_offset].height_offset = y_offset;
-						grid[x+x_offset][y+y_offset].blocks = (int *) my_malloc(sizeof(int) * max(1,type->capacity));
+						grid[x+x_offset][y+y_offset].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 						for (int i = 0; i < max(1,type->capacity); ++i) {
 							grid[x+x_offset][y+y_offset].blocks[i] = EMPTY;
 						}
@@ -89,13 +91,13 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 				}
 			} else if (type == IO_TYPE ) {
 				grid[x][y].type = type;
-				grid[x][y].blocks = (int *) my_malloc(sizeof(int) * max(1,type->capacity));
+				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 				for (int i = 0; i < max(1,type->capacity); ++i) {
 					grid[x][y].blocks[i] = EMPTY;
 				}
 			} else {
 				grid[x][y].type = EMPTY_TYPE;
-				grid[x][y].blocks = (int *) my_malloc(sizeof(int));
+				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int));
 				grid[x][y].blocks[0] = EMPTY;
 			}
 		}
@@ -110,7 +112,7 @@ void alloc_and_load_grid(INOUTP int *num_instances_type) {
 #if 0
 	for (int y = 0; y <= ny + 1; ++y) {
 		for (int x = 0; x <= nx + 1; ++x) {
-			vpr_printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
+			vtr::printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
 		}
 	}
 #endif
@@ -193,7 +195,7 @@ void freeGrid(void) {
 			free(grid[i][j].blocks);
 		}
 	}
-	free_matrix(grid, 0, nx + 1, 0, sizeof(struct s_grid_tile));
+    vtr::free_matrix(grid, 0, nx + 1, 0);
 	grid = NULL;
 }
 
@@ -229,7 +231,7 @@ static void CheckGrid(void) {
 	}
 }
 
-static t_type_ptr find_type_col(INP int x) {
+static t_type_ptr find_type_col(const int x) {
 
 	int i, j;
 	int start, repeat;
@@ -267,7 +269,7 @@ static t_type_ptr find_type_col(INP int x) {
 				} else if (type_descriptors[i].grid_loc_def[j].grid_loc_type
 						== COL_REL) {
 					rel = type_descriptors[i].grid_loc_def[j].col_rel;
-					if (nint(rel * nx) == x) {
+					if (vtr::nint(rel * nx) == x) {
 						match = true;
 					}
 				}

@@ -1,8 +1,12 @@
 #include <cstdio>
 using namespace std;
 
-#include "util.h"
+#include "vtr_memory.h"
+#include "vtr_log.h"
+
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "net_delay.h"
 /***************** Types and defines local to this module ********************/
@@ -101,7 +105,7 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 /*************************** Subroutine definitions **************************/
 
 float **
-alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
+alloc_net_delay(vtr::t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 		unsigned int n_nets){
 
 	/* Allocates space for the net_delay data structure                          *
@@ -112,10 +116,10 @@ alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 	float *tmp_ptr;
 	unsigned int inet;
 
-	net_delay = (float **) my_malloc(n_nets * sizeof(float *));
+	net_delay = (float **) vtr::malloc(n_nets * sizeof(float *));
 
 	for (inet = 0; inet < n_nets; inet++) {
-		tmp_ptr = (float *) my_chunk_malloc(
+		tmp_ptr = (float *) vtr::chunk_malloc(
 				nets[inet].num_sinks() * sizeof(float),
 				chunk_list_ptr);
 
@@ -126,12 +130,12 @@ alloc_net_delay(t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 }
 
 void free_net_delay(float **net_delay,
-		t_chunk *chunk_list_ptr){
+		vtr::t_chunk *chunk_list_ptr){
 
 	/* Frees the net_delay structure.  Assumes it was chunk allocated.          */
 
 	free(net_delay);
-	free_chunk_memory(chunk_list_ptr);
+    vtr::free_chunk_memory(chunk_list_ptr);
 }
 
 void load_net_delay_from_routing(float **net_delay, vector<t_vnet> & nets,
@@ -148,7 +152,7 @@ void load_net_delay_from_routing(float **net_delay, vector<t_vnet> & nets,
 	unsigned int inet;
 	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..num_rr_nodes-1]  */
 
-	rr_node_to_rc_node = (t_linked_rc_ptr *) my_calloc(num_rr_nodes,
+	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(num_rr_nodes,
 			sizeof(t_linked_rc_ptr));
 
 	rc_node_free_list = NULL;
@@ -242,7 +246,7 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 #ifdef DEBUG
 			prev_node = prev_rc->inode;
 			if (rr_node[prev_node].type != SINK) {
-				vpr_printf_info("prev node %d, type is actually %d\n", prev_node, rr_node[prev_node].type);
+				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, rr_node[prev_node].type);
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 						"in alloc_and_load_rc_tree: Routing of net %d is not a tree.\n", inet);
 			}
@@ -264,7 +268,7 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 			add_to_rc_tree(prev_rc, curr_rc, iswitch, inode,
 					rc_edge_free_list_ptr);
 
-			linked_rc_ptr = (t_linked_rc_ptr *) my_malloc(
+			linked_rc_ptr = (t_linked_rc_ptr *) vtr::malloc(
 					sizeof(t_linked_rc_ptr));
 			linked_rc_ptr->next = rr_node_to_rc_node[inode].next;
 			rr_node_to_rc_node[inode].next = linked_rc_ptr;
@@ -313,7 +317,7 @@ alloc_rc_node(t_rc_node ** rc_node_free_list_ptr) {
 	if (rc_node != NULL) {
 		*rc_node_free_list_ptr = rc_node->u.next;
 	} else {
-		rc_node = (t_rc_node *) my_malloc(sizeof(t_rc_node));
+		rc_node = (t_rc_node *) vtr::malloc(sizeof(t_rc_node));
 	}
 
 	return (rc_node);
@@ -341,7 +345,7 @@ alloc_linked_rc_edge(t_linked_rc_edge ** rc_edge_free_list_ptr) {
 	if (linked_rc_edge != NULL) {
 		*rc_edge_free_list_ptr = linked_rc_edge->next;
 	} else {
-		linked_rc_edge = (t_linked_rc_edge *) my_malloc(
+		linked_rc_edge = (t_linked_rc_edge *) vtr::malloc(
 				sizeof(t_linked_rc_edge));
 	}
 

@@ -12,6 +12,5 @@ For a detailed reference on the supported options see the :ref:`arch_reference`.
 .. toctree::
    :maxdepth: 2
 
-   tutorial/index.rst
    reference
    example_arch

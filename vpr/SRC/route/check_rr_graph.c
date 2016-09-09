@@ -1,5 +1,8 @@
-#include "util.h"
+#include "vtr_log.h"
+
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "globals.h"
 #include "rr_graph.h"
 #include "check_rr_graph.h"
@@ -18,9 +21,9 @@ static void check_pass_transistors(int from_node);
 
 /************************ Subroutine definitions ****************************/
 
-void check_rr_graph(INP t_graph_type graph_type, 
-		INP int L_nx, INP int L_ny,
-		INP int num_rr_switches, INP int ***Fc_in) {
+void check_rr_graph(const t_graph_type graph_type, 
+		const int L_nx, const int L_ny,
+		const int num_rr_switches, int ***Fc_in) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
@@ -37,10 +40,10 @@ void check_rr_graph(INP t_graph_type graph_type,
 		route_type = GLOBAL;
 	}
 
-	total_edges_to_node = (int *) my_calloc(num_rr_nodes, sizeof(int));
-	num_edges_from_current_to_node = (int *) my_calloc(num_rr_nodes,
+	total_edges_to_node = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
+	num_edges_from_current_to_node = (int *) vtr::calloc(num_rr_nodes,
 			sizeof(int));
-	switch_types_from_current_to_node = (char *) my_calloc(num_rr_nodes,
+	switch_types_from_current_to_node = (char *) vtr::calloc(num_rr_nodes,
 			sizeof(char));
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
@@ -155,10 +158,10 @@ void check_rr_graph(INP t_graph_type graph_type,
 						|| rr_node[inode].type == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
-					vpr_printf_error(__FILE__, __LINE__,
+					vtr::printf_error(__FILE__, __LINE__,
 						  	"in check_rr_graph: node %d has no fanin.\n", inode);
 				} else if (!is_chain && !is_fringe_warning_sent) {
-					vpr_printf_warning(__FILE__, __LINE__, 
+					vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
 						inode);
@@ -169,7 +172,7 @@ void check_rr_graph(INP t_graph_type graph_type,
 
 		else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
 			if (total_edges_to_node[inode] != 0) {
-				vpr_printf_error(__FILE__, __LINE__, 
+				vtr::printf_error(__FILE__, __LINE__, 
 						"in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n",
 						inode, total_edges_to_node[inode]);
 			}
@@ -361,29 +364,12 @@ void check_node(int inode, enum e_route_type route_type) {
 
 	case CHANY:
 		if (route_type == DETAILED) {
-			nodes_per_chan = chan_width.y_list[xlow];
 			nodes_per_chan = chan_width.max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
 			tracks_per_node = chan_width.y_list[xlow];
 		}
-
-
-#ifdef INTERPOSER_BASED_ARCHITECTURE
-		// in the interposer-based architectures, we are using [ptc_num..2*nodes_per_chan-1] for interposer nodes
-		if (ptc_num >= 2*nodes_per_chan)
-		{
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in check_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-		}
-#endif
-#ifndef INTERPOSER_BASED_ARCHITECTURE
-		if (ptc_num >= nodes_per_chan) {
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in check_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-		}
-#endif
 
 
 		if (capacity != tracks_per_node) {
@@ -406,7 +392,7 @@ void check_node(int inode, enum e_route_type route_type) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
-			vpr_printf_warning(__FILE__, __LINE__, "in check_node: node %d has no edges.\n", inode);
+			vtr::printf_warning(__FILE__, __LINE__, "in check_node: node %d has no edges.\n", inode);
 		}
 	}
 

@@ -1,10 +1,10 @@
 #include <cstdio>
 #include <cstring>
+#include "vtr_assert.h"
 using namespace std;
 
-#include <assert.h>
+#include "vtr_util.h"
 
-#include "util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "print_netlist.h"
@@ -47,7 +47,7 @@ void print_netlist(char *foutput, char *net_file) {
 							== DRIVER) {
 						L_num_p_inputs++;
 					} else {
-						assert(
+						VTR_ASSERT(
 								IO_TYPE-> class_inf[IO_TYPE-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}
@@ -56,7 +56,7 @@ void print_netlist(char *foutput, char *net_file) {
 		}
 	}
 
-	fp = my_fopen(foutput, "w", 0);
+	fp = vtr::fopen(foutput, "w");
 
 	fprintf(fp, "Input netlist file: %s\n", net_file);
 	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
