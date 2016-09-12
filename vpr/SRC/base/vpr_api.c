@@ -914,7 +914,6 @@ void vpr_free_all(t_arch Arch,
 	}
 	free_trace_structs();
 	vpr_free_vpr_data_structures(Arch, options, vpr_setup);
-	log_close();
 }
 
 
