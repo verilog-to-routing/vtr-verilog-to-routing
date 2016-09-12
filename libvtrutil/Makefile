@@ -20,26 +20,66 @@ LIB_FLAGS = rcs
 
 FLAGS = $(WARN_FLAGS) $(DEBUG_FLAGS) $(OPT_FLAGS) -I ../liblog/src -MD -MP -std=c++0x
 
+#Utility
+join-width = $(subst " ",$1,$(strip $2))
+
+#Version info
+VTR_VERSION_MAJOR := 8
+VTR_VERSION_MINOR := 0
+VTR_VERSION_PATCH := 0
+VTR_VERSION_PRERELEASE := dev
+VTR_VCS_REVISION := $(shell git describe --always --long --dirty)
+VTR_VERSION_SHORT := $(VTR_VERSION_MAJOR).$(VTR_VERSION_MINOR).$(VTR_VERSION_PATCH)-$(VTR_VERSION_PRERELEASE)
+VTR_VERSION := $(VTR_VERSION_SHORT)+$(VTR_VCS_REVISION)
+VTR_BUILD_TIMESTAMP := $(shell date -R)
+VTR_COMPILER := $(CC) on $(shell uname -s -p -r -v)
+
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
 else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-SRC = $(wildcard src/*.cpp)
-OBJS = $(SRC:.cpp=.o)
-
-DEPS = $(OBJS:.o=.d)
+SRC_DIR = src
+OBJ_DIR = obj
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(wildcard $(SRC_DIR)/*.cpp))
+VERSION_SRC = $(OBJ_DIR)/vtr_version.cpp
+VERSION_OBJ = $(VERSION_SRC:.cpp=.o)
+DEPS = $(OBJS:.o=.d) $(VERSION_OBJ:.o=.d)
  
+.PHONY: clean liblog $(OBJ_DIR)/vtr_version.cpp
 
-libvtrutil.a: $(OBJS)
-	 ar rcs $@ $(OBJS)
+libvtrutil.a: $(OBJS) $(VERSION_OBJ) liblog
+	 ar rcs $@ $(OBJS) $(VERSION_OBJ)
 
-%.o: %.cpp
+liblog:
+	cd ../liblog && make liblog.a
+
+$(OBJS): $(OBJ_DIR)/%.o:$(SRC_DIR)/%.cpp
+	mkdir -p $(dir $@)
 	$(CC) $(FLAGS) -c $< -o $@ 
+
+$(OBJ_DIR)/vtr_version.cpp: $(SRC_DIR)/vtr_version.cpp.in
+	 @ echo "VTR_VERSION: $(VTR_VERSION)"
+	 @ mkdir -p $(dir $@)
+	 @ cp $^ $@
+	 @ sed -i 's/@VTR_VERSION@/$(VTR_VERSION)/' $@
+	 @ sed -i 's/@VTR_VERSION_SHORT@/$(VTR_VERSION_SHORT)/' $@
+	 @ sed -i 's/@VTR_VERSION_MAJOR@/$(VTR_VERSION_MAJOR)/' $@
+	 @ sed -i 's/@VTR_VERSION_MINOR@/$(VTR_VERSION_MINOR)/' $@
+	 @ sed -i 's/@VTR_VERSION_PATCH@/$(VTR_VERSION_PATCH)/' $@
+	 @ sed -i 's/@VTR_VERSION_PRERELEASE@/$(VTR_VERSION_PRERELEASE)/' $@
+	 @ sed -i 's/@VTR_VCS_REVISION@/$(VTR_VCS_REVISION)/' $@
+	 @ sed -i 's/@VTR_COMPILER_INFO@/$(VTR_COMPILER)/' $@
+	 @ sed -i 's/@VTR_BUILD_TIMESTAMP@/$(VTR_BUILD_TIMESTAMP)/' $@
+
+$(OBJ_DIR)/vtr_version.o: $(OBJ_DIR)/vtr_version.cpp
+	mkdir -p $(dir $@)
+	$(CC) $(FLAGS) -I src -c $< -o $@ 
  
 -include $(DEPS)
 
-clean :
+clean:
 	@ rm -f libvtrutil.a
-	@ rm -f $(OBJS) $(OBJS:.o=.d)
+	@ rm -rf $(OBJ_DIR) $(OBJS) $(DEPS) $(VERSION_OBJ)
+	@ cd ../liblog && make clean

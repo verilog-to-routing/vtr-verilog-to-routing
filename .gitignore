@@ -13,11 +13,16 @@ vpr/vpr
 bin/
 
 #
-# Build system
+# Cmake build system
 #
 CMakeCache.txt
 CMakeFiles
 build
+
+#
+# Make build system
+#
+libvtrutil/obj
 
 #
 #VTR Tasks

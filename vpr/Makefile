@@ -27,14 +27,15 @@ BUILD_VERSION := $(shell git describe --always --long --dirty && touch SRC/base/
 BUILD_DATE := $(shell date -R)
 
 CC = $(COMPILER)
-LIB_DIR = -L.
-LIB = -lm -lvpr
+LIB_DIR = -L. -L../libsdc_parse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
+LIB = -lm -lvpr -leasygl -lsdc_parse -larchfpga -lpugixml -lvtrutil -llog #-leasygl -larchfpga -lpugixml -llog -lvtrutil 
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
 OTHER_DIR := $(OTHER_DIR) \
 	-I../libsdc_parse/src \
-	 -I../liblog/src \
+	-I../liblog/src \
+	-I../libeasygl/src \
 	$(shell pkg-config --cflags freetype2)
 
 WARN_FLAGS = -Wall  -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
@@ -74,14 +75,8 @@ ifneq (,$(findstring true, $(ENABLE_GRAPHICS)))
     LIB_DIR := $(LIB_DIR) -L/usr/X11/lib -L/opt/X11/lib
   else  
     LIB_DIR := $(LIB_DIR) -L/usr/lib/X11
-    PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then sudo apt-get install libx11-dev; fi; fi;
-    PACKAGEINSTALL := if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libxft-dev -c >>/dev/null; then sudo apt-get install libxft-dev; fi; fi;
-    PACKAGENOTIFICATION :=                        if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libx11-dev -c >>/dev/null; then printf "\n\n\n\n*****************************************************\n* VPR has detected that graphics are enabled,       *\n* but the required graphics package libx11-dev      *\n* is missing. Try:                                  *\n* a) Type 'make packages' to install libx11-dev     *\n*    automatically if not already installed.        *\n* b) Type 'sudo apt-get install libx11-dev' to      *\n*    install manually.                              *\n* c) If libx11-dev is installed, point the Makefile *\n*    to where your X11 libraries are installed.     *\n* d) If you wish to run VPR without graphics, set   *\n*    the flag ENABLE_GRAPHICS = false at the top    *\n*    of the Makefile in VPR's parent directory.     *\n*****************************************************\n\n\n\n"; fi; fi;
-    PACKAGENOTIFICATION := $(PACKAGENOTIFICATION) if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep libxft-dev -c >>/dev/null; then printf "\n\n\n\n*****************************************************\n* VPR has detected that graphics are enabled,       *\n* but the required graphics package libxft-dev      *\n* is missing. Try:                                  *\n* a) Type 'make packages' to install libxft-dev     *\n*    automatically if not already installed.        *\n* b) Type 'sudo apt-get install libxft-dev' to      *\n*    install manually.                              *\n* c) If libxft-dev is installed, point the Makefile *\n*    to where your X11 libraries are installed.     *\n* d) If you wish to run VPR without graphics, set   *\n*    the flag ENABLE_GRAPHICS = false at the top    *\n*    of the Makefile in VPR's parent directory.     *\n*****************************************************\n\n\n\n"; fi; fi;
   endif
   LIB := $(LIB) -lX11 -lXft -lfontconfig
-else
-  FLAGS := $(FLAGS) -DNO_GRAPHICS
 endif
 
 EXE = vpr
@@ -89,6 +84,8 @@ EXE = vpr
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c))
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
+
+.PHONY: clean libeasygl libsdc_parse libarchfpga libpugixml libvtrutil liblog 
 
 
 # notify is an order-only prerequisite - note the "|"
@@ -105,37 +102,16 @@ packages:
 	@ $(PACKAGEINSTALL)
 
 libarchfpga:
-	@ cd ../libarchfpga && make
-
-libpugixml:
-	@ cd ../libpugixml && make
-
-libvtrutil:
-	@ cd ../libvtrutil && make
+	@ cd ../libarchfpga && make libarchfpga.a
 
 libsdc_parse:
-	@ cd ../libsdc_parse && make VERBOSITY=0
+	@ cd ../libsdc_parse && make VERBOSITY=0 libsdc_parse.a
 
-liblog:
-	@ cd ../liblog && make liblog.a
+libeasygl:
+	@ cd ../libeasygl && make libeasygl.a
 
-libvpr.a: $(OBJ) Makefile libarchfpga libsdc_parse liblog libpugixml libvtrutil
-	@ cp ../libarchfpga/libarchfpga.a $@
-	@ cp ../libsdc_parse/libsdc_parse.a .
-	@#Extract libsdc_parse.a into OBJ/libsdc_parse and then have ar archive results
-	@ mkdir -p  OBJ/libsdc_parse/
-	@ cd OBJ/libsdc_parse && ar x ../../libsdc_parse.a 
-	@ ar rcs $@ $(OBJ) OBJ/libsdc_parse/*.o
-	@#Extract libpugixml.a into OBJ/libpugixml and then have ar archive results
-	@ cp ../libpugixml/libpugixml.a .
-	@ mkdir -p  OBJ/libpugixml/
-	@ cd OBJ/libpugixml && ar x ../../libpugixml.a 
-	@ ar rcs $@ $(OBJ) OBJ/libpugixml/*.o
-	@#Extract libvtrutil.a into OBJ/libvtrutil and then have ar archive results
-	@ cp ../libvtrutil/libvtrutil.a .
-	@ mkdir -p  OBJ/libvtrutil/
-	@ cd OBJ/libvtrutil && ar x ../../libvtrutil.a 
-	@ ar rcs $@ $(OBJ) OBJ/libvtrutil/*.o
+libvpr.a: $(OBJ) Makefile libsdc_parse libeasgy libarchfpga
+	@ ar rcs $@ $(OBJ)
 	@#Remove main
 	@ ar d $@ main.o
 
@@ -159,11 +135,8 @@ $(OBJ_DIRS):
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
 	cd ../libarchfpga && make clean
-	cd ../libpugixml && make clean
 	cd ../libsdc_parse && make clean
-	cd ../liblog && make clean
-	rm -f $(OBJ_DIR)/libsdc_parse/*
-	rm -f $(OBJ_DIR)/libpugixml/*
+	cd ../libeasygl && make clean
 
 clean_coverage: clean
 	rm -rf ./usr

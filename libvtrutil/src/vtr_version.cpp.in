@@ -7,12 +7,12 @@ namespace vtr {
     const char* VERSION = "@VTR_VERSION@";
     const char* VERSION_SHORT = "@VTR_VERSION_SHORT@";
 
-    size_t VERSION_MAJOR = @VTR_VERSION_MAJOR@;
-    size_t VERSION_MINOR = @VTR_VERSION_MINOR@;
-    size_t VERSION_PATCH = @VTR_VERSION_PATCH@;
+    const size_t VERSION_MAJOR = @VTR_VERSION_MAJOR@;
+    const size_t VERSION_MINOR = @VTR_VERSION_MINOR@;
+    const size_t VERSION_PATCH = @VTR_VERSION_PATCH@;
+    const char* VERSION_PRERELEASE = "@VTR_VERSION_PRERELEASE@";
 
     const char* VCS_REVISION = "@VTR_VCS_REVISION@";
     const char* COMPILER = "@VTR_COMPILER_INFO@";
     const char* BUILD_TIMESTAMP = "@VTR_BUILD_TIMESTAMP@";
-    const char* PRERELEASE_TAG = "@VTR_VERSION_PRERELEASE@";
 }

@@ -117,7 +117,7 @@ $(PARSER_GEN_OBJ): $(PARSER_GEN_SRC)
 	@$(vecho) "Compiling Parser $<..."
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(OBJ_DIR)
 	@$(vecho) "Compiling Source $<..."
 	$(AT) $(CXX) $(CFLAGS) -c $< -o $@
 

@@ -21,7 +21,7 @@ ABC_INC = -I $(ABC_DIR)/src/bdd/cudd -I $(ABC_DIR)/src/bdd/epd -I $(ABC_DIR)/src
 #OPT_FLAGS = -O2 -fopenmp 
 
 INC_FLAGS =  -I../libarchfpga/include -I../libpugixml/src -I../libvtrutil/src -I../libcommon_c++/SRC/TIO_InputOutputHandlers $(ABC_INC)
-LIB = -L../libarchfpga -larchfpga -lm -ldl
+LIB = -L../libarchfpga -L../libvtrutil -L../liblog -L ../libpugixml -larchfpga -lpugixml -lvtrutil -llog -lm -ldl
 C_DIRECTIVE = -DVPR6 -DUSING_BISON
 
 FLAGS = $(DEBUG_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(INC_FLAGS) -std=c++0x

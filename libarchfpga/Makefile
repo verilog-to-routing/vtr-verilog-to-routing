@@ -37,51 +37,31 @@ OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d
 
-.PHONY: clean liblog libpugixml libvtrutil
+.PHONY: clean libpugixml libvtrutil
 
 # Standalone executable to test architecture reader
-$(EXE): main.o libarchfpga.a
-	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
+$(EXE): main.o libarchfpga.a libpugixml libvtrutil
+	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -L../libpugixml -L../libvtrutil -L ../liblog -lm -larchfpga -lpugixml -lvtrutil -llog 
  
 
-libarchfpga.a: $(OBJS) liblog libpugixml libvtrutil
-	ar rcs $@ $(OBJS) $(OBJ_DIR)/*/*.o
-
-liblog:
-	@ cd ../liblog && make
-	@#We copy and extract the libraries and then put them all in libarchfpga
-	@ mkdir -p  $(OBJ_DIR)/liblog/
-	@ cp ../liblog/liblog.a $(OBJ_DIR)/liblog/.
-	@ cd $(OBJ_DIR)/liblog && ar x liblog.a 
+libarchfpga.a: $(OBJS)
+	ar rcs $@ $(OBJS)
 
 libpugixml:
-	@ cd ../libpugixml && make
-	@#We copy and extract the libraries and then put them all in libarchfpga
-	@ mkdir -p  $(OBJ_DIR)/libpugixml/
-	@ cp ../libpugixml/libpugixml.a $(OBJ_DIR)/libpugixml/.
-	@ cd $(OBJ_DIR)/libpugixml && ar x libpugixml.a 
+	@ cd ../libpugixml && make libpugixml.a
 
 libvtrutil:
-	@ cd ../libvtrutil && make
-	@#We copy and extract the libraries and then put them all in libarchfpga
-	@ mkdir -p  $(OBJ_DIR)/libvtrutil/
-	@ cp ../libvtrutil/libvtrutil.a $(OBJ_DIR)/libvtrutil/.
-	@ cd $(OBJ_DIR)/libvtrutil && ar x libvtrutil.a 
+	@ cd ../libvtrutil && make libvtrutil.a
 
 %.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@ 
  
 -include $(DEPS)
 
-
-
 clean :
-	rm -f libarchfpga.a
-	rm -f $(OBJS) $(OBJS:.o=.d)
-	rm -f read_arch
-	rm -f main.o main.d
-	cd ../libpugixml && make clean
-	cd ../libvtrutil && make clean
-	cd ../liblog && make clean
-	rm -rf $(OBJ_DIR)
-
+	@ rm -f libarchfpga.a
+	@ rm -f $(OBJS) $(OBJS:.o=.d)
+	@ rm -f read_arch
+	@ rm -f main.o main.d
+	@ cd ../libpugixml && make clean
+	@ cd ../libvtrutil && make clean

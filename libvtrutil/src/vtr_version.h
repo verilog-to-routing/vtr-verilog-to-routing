@@ -6,9 +6,9 @@ namespace vtr {
     extern const char* VERSION;
     extern const char* VERSION_SHORT;
 
-    extern size_t VERSION_MAJOR;
-    extern size_t VERSION_MINOR;
-    extern size_t VERSION_PATCH;
+    extern const size_t VERSION_MAJOR;
+    extern const size_t VERSION_MINOR;
+    extern const size_t VERSION_PATCH;
 
     extern const char* VCS_REVISION;
     extern const char* COMPILER;
