@@ -21,11 +21,6 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 
 #############################################################################################
 
-#Build information to expose to program
-# We touch vpr_api.c to force a re-compile, ensuring the build version and date are always are up to date
-BUILD_VERSION := $(shell git describe --always --long --dirty && touch SRC/base/vpr_api.c)
-BUILD_DATE := $(shell date -R)
-
 CC = $(COMPILER)
 LIB_DIR = -L. -L../libsdc_parse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
 LIB = -lm -lvpr -leasygl -lsdc_parse -larchfpga -lpugixml -lvtrutil -llog
@@ -38,7 +33,7 @@ OTHER_DIR := $(OTHER_DIR) \
 	-I../libeasygl/src \
 	$(shell pkg-config --cflags freetype2)
 
-WARN_FLAGS = -Wall  -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall  -Wpointer-arith -Wcast-qual -ansi -pedantic -Wshadow -Wcast-align -Wno-write-strings
 
 DEBUG_FLAGS = -g -O0 
 #Potentially expensive asserts that should only be used if you're really scared
@@ -46,9 +41,9 @@ ADDITIONAL_DEBUG_FLAGS = -DEXPENSIVE_ASSERTS
 PROFILE_FLAGS = -DPROFILE
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
 INC_FLAGS = -I../libarchfpga/include -I ../libpugixml/src -I ../libvtrutil/src
-DEFINES := -D BUILD_VERSION=\""$(BUILD_VERSION)"\" -D BUILD_DATE=\""$(BUILD_DATE)"\"
+DEFINES := 
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) $(DEFINES) -D EZXML_NOMMAP -D_POSIX_C_SOURCE -std=c++0x
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) $(DEFINES) -std=c++0x
 
 UNAME := $(shell uname)
 # determine build env
@@ -108,7 +103,7 @@ libsdc_parse:
 	@ cd ../libsdc_parse && make VERBOSITY=0 libsdc_parse.a
 
 libeasygl:
-	@ cd ../libeasygl && make libeasygl.a
+	@ cd ../libeasygl && make ENABLE_GRAPHICS=$(ENABLE_GRAPHICS) libeasygl.a
 
 libvpr.a: $(OBJ) Makefile libsdc_parse libeasygl libarchfpga
 	@ ar rcs $@ $(OBJ)

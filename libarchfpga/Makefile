@@ -15,7 +15,7 @@ AR = ar
 
 OBJ_DIR = OBJ
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -pedantic -Wshadow -Wcast-align -Wno-write-strings
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 INC_FLAGS = -Iinclude -I../liblog/src -I../libpugixml/src -I../libvtrutil/src
@@ -40,11 +40,11 @@ DEPS = $(OBJS:.o=.d) main.d
 .PHONY: clean libpugixml libvtrutil
 
 # Standalone executable to test architecture reader
-$(EXE): main.o libarchfpga.a libpugixml libvtrutil
+$(EXE): main.o libarchfpga.a 
 	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -L../libpugixml -L../libvtrutil -L ../liblog -lm -larchfpga -lpugixml -lvtrutil -llog 
  
 
-libarchfpga.a: $(OBJS)
+libarchfpga.a: $(OBJS) libpugixml libvtrutil
 	ar rcs $@ $(OBJS)
 
 libpugixml:
