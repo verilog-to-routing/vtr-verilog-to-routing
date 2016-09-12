@@ -32,7 +32,7 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-SRC = read_xml_arch_file.c read_xml_util.c ReadLine.c util.c parse_switchblocks.c echo_arch.c arch_util.c arch_error.c
+SRC = read_xml_arch_file.c read_xml_util.c ReadLine.c parse_switchblocks.c echo_arch.c arch_util.c arch_error.c
 OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d

@@ -28,7 +28,7 @@ BUILD_DATE := $(shell date -R)
 
 CC = $(COMPILER)
 LIB_DIR = -L. -L../libsdc_parse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
-LIB = -lm -lvpr -leasygl -lsdc_parse -larchfpga -lpugixml -lvtrutil -llog #-leasygl -larchfpga -lpugixml -llog -lvtrutil 
+LIB = -lm -lvpr -leasygl -lsdc_parse -larchfpga -lpugixml -lvtrutil -llog
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
@@ -110,7 +110,7 @@ libsdc_parse:
 libeasygl:
 	@ cd ../libeasygl && make libeasygl.a
 
-libvpr.a: $(OBJ) Makefile libsdc_parse libeasgy libarchfpga
+libvpr.a: $(OBJ) Makefile libsdc_parse libeasygl libarchfpga
 	@ ar rcs $@ $(OBJ)
 	@#Remove main
 	@ ar d $@ main.o
