@@ -20,11 +20,11 @@ Running a Single Benchmark
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 The :ref:`run_vtr_flow` script is provided to execute the VTR flow for a single benchmark and architecture.
 
-.. note:: In the following ``<vtr>`` means the root directory of the VTR source code tree.
+.. note:: In the following ``$VTR_ROOT`` means the root directory of the VTR source code tree.
 
 .. code-block:: none
 
-    <vtr>/vtr_flow/scripts/run_vtr_flow.pl <circuit_file> <architecture_file>
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl <circuit_file> <architecture_file>
 
 It requires two arguments:
 
@@ -33,11 +33,11 @@ It requires two arguments:
 
 Circuits can be found under::
 
-    <vtr>/vtr_flow/benchmarks/
+    $VTR_ROOT/vtr_flow/benchmarks/
 
 Architecture files can be found under::
 
-    <vtr>/vtr_flow/arch/
+    $VTR_ROOT/vtr_flow/arch/
 
 The script can also be used to run parts of the VTR flow.
 
@@ -51,12 +51,12 @@ By default, tasks execute the :ref:`run_vtr_flow` for every circuit/architecture
 
 VTR provides a variety of standard tasks which can be found under::
 
-    <vtr>/vtr_flow/tasks
+    $VTR_ROOT/vtr_flow/tasks
 
 
 Tasks can be executed using :ref:`run_vtr_task`::
 
-    <vtr>/vtr_flow/scripts/run_vtr_task.pl <task_name>
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.pl <task_name>
 
 .. seealso:: :ref:`run_vtr_task` for the detailed command line options of ``run_vtr_task.pl``.
 

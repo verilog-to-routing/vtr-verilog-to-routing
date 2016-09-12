@@ -59,9 +59,9 @@ which downloads and extracts the benchmarks into the VTR source tree:
     Titan architectures: vtr_flow/arch/titan
     Titan benchmarks: vtr_flow/benchmarks/titan_blif
 
-Once completed all the Titan benchmark BLIF netlists can be found under ``<vtr>/vtr_flow/benchmarks/titan_blif``, and the Titan architectures under ``<vtr>/vtr_flow/arch/titan``.
+Once completed all the Titan benchmark BLIF netlists can be found under ``$VTR_ROOT/vtr_flow/benchmarks/titan_blif``, and the Titan architectures under ``$VTR_ROOT/vtr_flow/arch/titan``.
 
-.. note:: ``<vtr>`` corresponds to the root of the VTR source tree.
+.. note:: ``$VTR_ROOT`` corresponds to the root of the VTR source tree.
 
 Running benchmarks manually
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,4 +72,4 @@ For example, the follow uses :ref:`VPR` to implement the ``neuron`` benchmark on
 
 .. code-block:: console
     
-    $ vpr <vtr>/vtr_flow/arch/titan/stratixiv_arch.timing.xml <vtr>/vtr_flow/benchmarks/titan_blif/neuron_stratixiv_arch_timing.blif --route_chan_width 300
+    $ vpr $VTR_ROOT/vtr_flow/arch/titan/stratixiv_arch.timing.xml $VTR_ROOT/vtr_flow/benchmarks/titan_blif/neuron_stratixiv_arch_timing.blif --route_chan_width 300

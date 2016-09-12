@@ -39,7 +39,7 @@ In order to perform power estimation, you must add the following options:
 The CMOS technology properties file is an XML file that contains relevant process-dependent information needed for power estimation. 
 XML files for 22nm, 45nm, and 130nm PTM models can be found here::
 
-<vtr>/vtrflow/tech/*
+$VTR_ROOT/vtrflow/tech/*
 
 See :ref:`power_technology_properties` for information on how to generate an XML file for your own SPICE technology model.
 
@@ -70,7 +70,7 @@ This XML file is generated using a script which automatically runs HSPICE, perfo
 
 Some of these technology XML files are included with the release, and are located here::
 
-    <vtr>/vtr_flow/tech/*
+    $VTR_ROOT/vtr_flow/tech/*
 
 If the user wishes to use a different CMOS technology file, they must run the following script:
 
@@ -78,7 +78,7 @@ If the user wishes to use a different CMOS technology file, they must run the fo
     
 .. code-block:: none
 
-    <vtr>/vtr_flow/scripts/generate_cmos_tech_data.pl <tech_file> <tech_size> <vdd> <temp>
+    $VTR_ROOT/vtr_flow/scripts/generate_cmos_tech_data.pl <tech_file> <tech_size> <vdd> <temp>
 
 
 where:
@@ -120,11 +120,11 @@ The default tool used to perform activity estimation in VTR is ACE 2.0 :cite:`la
 This tool was originally designed to work with the (now obsolete) Berkeley SIS tool
 ACE 2.0 was modifed to use ABC, and is included in the VTR package here::
 
-    <vtr>/ace2
+    $VTR_ROOT/ace2
 
 The tool can be run using the following command-line arguments::
 
-    <vtr>/ace2/ace -b <abc.blif> -o <activities.act> -n <new.blif>
+    $VTR_ROOT/ace2/ace -b <abc.blif> -o <activities.act> -n <new.blif>
 
 where
 

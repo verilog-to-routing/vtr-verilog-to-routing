@@ -32,10 +32,10 @@ Next we'll copy over the ``stereovision3`` benchmark netlist in BLIF format and 
 
 .. code-block:: console
 
-    $ cp <vtr>/vtr_flow/benchmarks/vtr_benchmarks_blif/stereovision3.blif .
-    $ cp <vtr>/vtr_flow/arch/timing/k6_N10_40nm.xml .
+    $ cp $VTR_ROOT/vtr_flow/benchmarks/vtr_benchmarks_blif/stereovision3.blif .
+    $ cp $VTR_ROOT/vtr_flow/arch/timing/k6_N10_40nm.xml .
 
-.. note:: Replace ``<vtr>`` with the root directory of the VTR source tree
+.. note:: Replace ``$VTR_ROOT`` with the root directory of the VTR source tree
 
 Now we can run VPR to implement the circuit onto the ``k6_N10_40nm`` architecture.
 We also need to provide the :option:`vpr -gen_postsynthesis_netlist` option to generate the post-implementation netlist and dump the timing information in Standard Delay Format (SDF)::
@@ -105,7 +105,7 @@ Here we see three primitives instantiated:
 
 Different circuits may produce other types of netlist primitives corresponding to hardened primitive blocks in the FPGA such as adders, multipliers and single or dual port RAM blocks.
 
-.. note:: The different primitives produced by VPR are defined in ``<vtr>/vtr_flow/primitives.v``
+.. note:: The different primitives produced by VPR are defined in ``$VTR_ROOT/vtr_flow/primitives.v``
 
 
 Lets now take a look at the Standard Delay Fromat (SDF) file:
@@ -292,7 +292,7 @@ It is easiest to write a ``tb.do`` file to setup and configure the simulation:
 
 .. code-block:: tcl
     :linenos:
-    :caption: Modelsim do file ``tb.do``. Note that ``<vtr>`` should be replaced with the relevant path.
+    :caption: Modelsim do file ``tb.do``. Note that ``$VTR_ROOT`` should be replaced with the relevant path.
     :emphasize-lines: 12-14,17,31
 
     #Enable command logging
@@ -308,7 +308,7 @@ It is easiest to write a ``tb.do`` file to setup and configure the simulation:
     #Load the verilog files
     vlog -sv -work work {sv_chip3_hierarchy_no_mem_post_synthesis.v}
     vlog -sv -work work {tb.sv}
-    vlog -sv -work work {<vtr>/vtr_flow/primitives.v}
+    vlog -sv -work work {$VTR_ROOT/vtr_flow/primitives.v}
 
     #Setup the simulation
     vsim -t 1ps -L gate_work -L work -voptargs="+acc" +sdf_verbose +bitblast tb

@@ -2,8 +2,8 @@ Install VTR
 -----------
 
 #. :ref:`Download <get_vtr>` the VTR release
-#. Unpack the release in a directory of your choice (herafter referred to as ``<vtr>``)
-#. Navigate to ``<vtr>`` and run ::
+#. Unpack the release in a directory of your choice (herafter referred to as ``$VTR_ROOT``)
+#. Navigate to ``$VTR_ROOT`` and run ::
 
     make
 
@@ -22,7 +22,7 @@ Verifying Installation
 ~~~~~~~~~~~~~~~~~~~~~~
 To verfiy that VTR has been installed correctly run::
 
-    <vtr>/vtr_flow/scripts/run_vtr_task.pl basic_flow
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.pl basic_flow
 
 The expected output is::
 

@@ -27,13 +27,13 @@ File Layout
 
 All of VTR's included tasks are located here::
 
-    <vtr>/vtr_flow/tasks
+    $VTR_ROOT/vtr_flow/tasks
 
 If users wishes to create their own task, they must do so in this location.
 
 All tasks must contain a configuration file located here::
 
-    <vtr>/vtr_flow/tasks/<task_name>/config/config.txt
+    $VTR_ROOT/vtr_flow/tasks/<task_name>/config/config.txt
 
 
 :numref:`fig_vtr_tasks_file_layout` illustrates the file layout for a VTR task.
@@ -48,9 +48,9 @@ Every time the task is run a new ``run<#>`` directory is created to store the ou
 Creating a New Task
 ~~~~~~~~~~~~~~~~~~~
 
-#. Create the folder ``<vtr>/vtr_flow/tasks/<task_name>``
-#. Create the folder ``<vtr>/vtr_flow/tasks/<task_name>/config``
-#. Create and configure the file ``<vtr>/vtr_flow/tasks/<task_name>/config/config.txt``
+#. Create the folder ``$VTR_ROOT/vtr_flow/tasks/<task_name>``
+#. Create the folder ``$VTR_ROOT/vtr_flow/tasks/<task_name>/config``
+#. Create and configure the file ``$VTR_ROOT/vtr_flow/tasks/<task_name>/config/config.txt``
 
 
 Task Configuration File
@@ -83,11 +83,11 @@ Required Fields
 
 * **circuit_dir**: Directory path of the benchmark circuits. 
     
-    Absolute path or relative to ``<vtr>/vtr_flow/``.
+    Absolute path or relative to ``$VTR_ROOT/vtr_flow/``.
 
 * **arch_dir**: Directory path of the architecture XML files. 
   
-    Absolute path or relative to ``<vtr>/vtr_flow/``.
+    Absolute path or relative to ``$VTR_ROOT/vtr_flow/``.
 
 * **circuit_list_add**: Name of a benchmark circuit file. 
   
@@ -99,14 +99,14 @@ Required Fields
 
 * **parse_file**: :ref:`vtr_parse_config` file used for parsing and extracting the statistics. 
   
-    Absolute path or relative to ``<vtr>/vtr_flow/parse/parse_config``.
+    Absolute path or relative to ``$VTR_ROOT/vtr_flow/parse/parse_config``.
 
 Optional Fields
 ~~~~~~~~~~~~~~~
 
 * **script_path**: Script to run for each architecture/circuit combination.
 
-    Absolute path or relative to ``<vtr>/vtr_flow/scripts/`` or ``<vtr>/vtr_flow/tasks/<task_name>/config/``)
+    Absolute path or relative to ``$VTR_ROOT/vtr_flow/scripts/`` or ``$VTR_ROOT/vtr_flow/tasks/<task_name>/config/``)
 
     **Default:** :ref:`run_vtr_flow`
 
@@ -121,6 +121,6 @@ Optional Fields
 
 * **pass_requirements_file**: :ref:`vtr_pass_requirements` file. 
   
-    Absolute path or relative to ``<vtr>/vtr_flow/parse/pass_requirements/`` or ``<vtr>/vtr_flow/tasks/<task_name>/config/``
+    Absolute path or relative to ``$VTR_ROOT/vtr_flow/parse/pass_requirements/`` or ``$VTR_ROOT/vtr_flow/tasks/<task_name>/config/``
 
     **Default:** none

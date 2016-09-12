@@ -10,7 +10,7 @@ This script runs the VTR flow for a single benchmark circuit and architecture fi
 
 The script is located at::
 
-    <vtr>/vtr_flow/scripts/run_vtr_task.pl
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.pl
 
 .. program:: run_vtr_task.pl
 

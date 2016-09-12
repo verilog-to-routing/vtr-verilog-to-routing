@@ -15,7 +15,7 @@ File Location
 ~~~~~~~~~~~~~
 All provided pass requirements files are located here::
 
-    <vtr>/vtr_flow/parse/pass_requirements
+    $VTR_ROOT/vtr_flow/parse/pass_requirements
 
 Users can also create their own pass requirement files.
 

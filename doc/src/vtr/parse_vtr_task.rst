@@ -10,7 +10,7 @@ The script will always parse the results of the latest execution of the task.
 
 The script is located at::
 
-    <vtr>/vtr_flow/scripts/parse_vtr_task.pl
+    $VTR_ROOT/vtr_flow/scripts/parse_vtr_task.pl
 
 .. program:: parse_vtr_task.pl
 
@@ -30,7 +30,7 @@ By default this script produces no standard output.
 A tab delimited file containing the parse results will be produced for each task.
 The file will be located here::
 
-    <vtr>/vtr_flow/tasks/<task_name>/run<#>/parse_results.txt
+    $VTR_ROOT/vtr_flow/tasks/<task_name>/run<#>/parse_results.txt
 
 If the :option:`-check_golden` is used, the script will output one line for each task in the format::
 
@@ -54,7 +54,7 @@ Detailed Command-line Options
     
     The golden results are located here::
 
-        <vtr>/vtr_flow/tasks/<task_name>/config/golden_results.txt
+        $VTR_ROOT/vtr_flow/tasks/<task_name>/config/golden_results.txt
 
 .. option:: -check_golden
     

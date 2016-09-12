@@ -43,13 +43,13 @@ They are suitable for FPGA architecture research and medium-scale CAD research.
 
 The VTR benchmarks are provided as Verilog under: ::
 
-    <vtr>/vtr_flow/benchmarks/verilog
+    $VTR_ROOT/vtr_flow/benchmarks/verilog
 
 This provides full flexibility to modify and change how the designs are implemented (including the creation of new netlist primitives).
 
 The VTR benchmarks are also included as pre-synthesized BLIF files under: ::
 
-    <vtr>/vtr_flow/benchmarks/vtr_benchmarks_blif
+    $VTR_ROOT/vtr_flow/benchmarks/vtr_benchmarks_blif
 
 .. _titan_benchmarks:
 
@@ -74,11 +74,11 @@ They consist primarily of logic (i.e. LUTs) with few registers and no hard block
 
 The MCNC20 benchmarks included with VTR are available as ``.blif`` files under::
 
-    <vtr>/vtr_flow/benchmarks/blif/
+    $VTR_ROOT/vtr_flow/benchmarks/blif/
 
 The versions used in the VPR 4.3 release, which were mapped to :math:`K`-input look-up tables using FlowMap :cite:`cong_flowmap`, are available under::
 
-    <vtr>/vtr_flow/benchmarks/blif/<#>
+    $VTR_ROOT/vtr_flow/benchmarks/blif/<#>
 
 where :math:`K=` ``<#>``.
 
