@@ -8,7 +8,7 @@ is a lightwieght mark-up language for text documents.
 
 Currently VTR's documenation is automatically built by www.readthedocs.org and is served at:
 
-    https://vtr.readthedocs.io/
+    https://docs.verilogtorouting.org/
 
 
 How to build documentation
@@ -41,7 +41,7 @@ For instance:
 Documentation Layout
 --------------------
 
-The root of the VTR documentation is the index.rst file in the current directory.
+The root of the VTR documentation is the 'src/index.rst' file.
 
 This file references other files using the toctree directive.
 
