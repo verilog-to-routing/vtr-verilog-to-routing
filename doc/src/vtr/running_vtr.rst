@@ -20,7 +20,7 @@ Running a Single Benchmark
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 The :ref:`run_vtr_flow` script is provided to execute the VTR flow for a single benchmark and architecture.
 
-.. note:: In the following ``$VTR_ROOT`` means the root directory of the VTR source code tree.
+.. note:: In the following :term:`$VTR_ROOT` means the root directory of the VTR source code tree.
 
 .. code-block:: none
 

@@ -61,7 +61,7 @@ which downloads and extracts the benchmarks into the VTR source tree:
 
 Once completed all the Titan benchmark BLIF netlists can be found under ``$VTR_ROOT/vtr_flow/benchmarks/titan_blif``, and the Titan architectures under ``$VTR_ROOT/vtr_flow/arch/titan``.
 
-.. note:: ``$VTR_ROOT`` corresponds to the root of the VTR source tree.
+.. note:: :term:`$VTR_ROOT` corresponds to the root of the VTR source tree.
 
 Running benchmarks manually
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

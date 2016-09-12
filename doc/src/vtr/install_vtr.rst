@@ -2,12 +2,14 @@ Install VTR
 -----------
 
 #. :ref:`Download <get_vtr>` the VTR release
-#. Unpack the release in a directory of your choice (herafter referred to as ``$VTR_ROOT``)
-#. Navigate to ``$VTR_ROOT`` and run ::
+#. Unpack the release in a directory of your choice (herafter referred to as :term:``$VTR_ROOT``)
+#. Navigate to :term:`$VTR_ROOT` and run ::
 
     make
 
    which will build all the required tools.
+
+.. warning:: Replace :term:`$VTR_ROOT` with the path to the root of VTR source tree on your machine).
 
 The complete VTR flow has been tested on 64-bit Linux systems.
 The flow should work in other platforms (32-bit Linux, Windows with cygwin) but this is untested.

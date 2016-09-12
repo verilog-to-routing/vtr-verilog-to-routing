@@ -24,6 +24,7 @@ Contents:
    abc/index
    tutorials/index
    contact
+   glossary
    references
 
 Indices and tables

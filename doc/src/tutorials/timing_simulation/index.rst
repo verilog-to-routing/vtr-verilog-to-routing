@@ -35,7 +35,7 @@ Next we'll copy over the ``stereovision3`` benchmark netlist in BLIF format and 
     $ cp $VTR_ROOT/vtr_flow/benchmarks/vtr_benchmarks_blif/stereovision3.blif .
     $ cp $VTR_ROOT/vtr_flow/arch/timing/k6_N10_40nm.xml .
 
-.. note:: Replace ``$VTR_ROOT`` with the root directory of the VTR source tree
+.. note:: Replace :term:`$VTR_ROOT` with the root directory of the VTR source tree
 
 Now we can run VPR to implement the circuit onto the ``k6_N10_40nm`` architecture.
 We also need to provide the :option:`vpr -gen_postsynthesis_netlist` option to generate the post-implementation netlist and dump the timing information in Standard Delay Format (SDF)::
@@ -292,7 +292,7 @@ It is easiest to write a ``tb.do`` file to setup and configure the simulation:
 
 .. code-block:: tcl
     :linenos:
-    :caption: Modelsim do file ``tb.do``. Note that ``$VTR_ROOT`` should be replaced with the relevant path.
+    :caption: Modelsim do file ``tb.do``. Note that :term`$VTR_ROOT` should be replaced with the relevant path.
     :emphasize-lines: 12-14,17,31
 
     #Enable command logging
