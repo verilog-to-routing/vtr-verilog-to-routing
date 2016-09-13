@@ -178,11 +178,11 @@ ExternalProject_Add(abc_external
     INSTALL_COMMAND ""
     TEST_COMMAND ""
 )
-ExternalProject_Get_Property(abc_external install_dir)
 
 add_executable(abc IMPORTED GLOBAL)
 add_library(libabc STATIC IMPORTED GLOBAL)
 set_property(TARGET libabc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/libabc.a)
+
 include_directories(
                     #For ODIN
                     ${ABC_SOURCE_DIR}/src/bdd/cudd 
