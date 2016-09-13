@@ -1,3 +1,6 @@
+#ifndef NETLIST_UTILS_H_FUNCTIONS
+#define NETLIST_UTILS_H_FUNCTIONS
+
 #include "types.h"
 
 // PROTOTYPES
@@ -64,3 +67,5 @@ int get_input_pin_index_from_mapping(nnode_t *node, const char *name);
 int get_input_port_index_from_mapping(nnode_t *node, const char *name);
 chain_information_t* allocate_chain_info();
 void remove_fanout_pins_from_net(nnet_t *net, npin_t *pin, int id);
+
+#endif

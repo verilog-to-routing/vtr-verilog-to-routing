@@ -36,6 +36,9 @@ void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_
 void forward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
 void backward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
 
+void graphVizOutputNetlist(char* path, const char* name, short marker_value, netlist_t *netlist);
+void graphVizOutputCombinationalNet(char* path, const char* name, short marker_value, nnode_t *current_node);
+
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputNetlist)
  *-------------------------------------------------------------------------------------------*/

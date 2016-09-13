@@ -1170,25 +1170,25 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 
 	/* CREATE the driver for the ZERO */
 	BLIF_ZERO_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
-	verilog_netlist->gnd_node->name = (char *)GND_NAME;
+	verilog_netlist->gnd_node->name = strdup(GND_NAME);
 
-	output_nets_hash->add(output_nets_hash, (void *)GND_NAME, strlen(GND_NAME)*sizeof(char), verilog_netlist->zero_net);
+	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->gnd_node->name, strlen(verilog_netlist->gnd_node->name)*sizeof(char), verilog_netlist->zero_net);
 
 	verilog_netlist->zero_net->name = strdup(BLIF_ZERO_STRING);
 
 	/* CREATE the driver for the ONE and store twice */
 	BLIF_ONE_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
-	verilog_netlist->vcc_node->name = (char *)VCC_NAME;
+	verilog_netlist->vcc_node->name = strdup(VCC_NAME);
 
-	output_nets_hash->add(output_nets_hash, (char *)VCC_NAME, strlen(VCC_NAME)*sizeof(char), verilog_netlist->one_net);
+	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->vcc_node->name, strlen(verilog_netlist->vcc_node->name)*sizeof(char), verilog_netlist->one_net);
 
 	verilog_netlist->one_net->name = strdup(BLIF_ONE_STRING);
 
 	/* CREATE the driver for the PAD */
 	BLIF_PAD_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
-	verilog_netlist->pad_node->name = (char *)HBPAD_NAME;
+	verilog_netlist->pad_node->name = strdup(HBPAD_NAME);
 
-	output_nets_hash->add(output_nets_hash, (void *)HBPAD_NAME, strlen(HBPAD_NAME)*sizeof(char), verilog_netlist->pad_net);
+	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->pad_node->name, strlen(verilog_netlist->pad_node->name)*sizeof(char), verilog_netlist->pad_net);
 
 	verilog_netlist->pad_net->name = strdup(BLIF_PAD_STRING);
 }

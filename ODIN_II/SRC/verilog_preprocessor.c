@@ -11,6 +11,10 @@
 struct veri_Includes veri_includes;
 struct veri_Defines veri_defines;
 
+/* Function declarations */
+FILE* open_source_file(char* filename);
+FILE *remove_comments(FILE *source);
+
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
@@ -412,7 +416,6 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		//fprintf(stderr, "%s:%d\t%s", current_include->path,line_number, line);
 		char proc_line[MaxLine] ;
 		char symbol[MaxLine] ;
-		char *value ;
 		char *p_proc_line = proc_line ;
 		char *last_pch, *pch, *pch_end ;
 		// advance past all whitespace
@@ -434,7 +437,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			// copy symbol into array
 			strncpy( symbol, pch+1, pch_end - (pch+1) ) ;
 			*(symbol + (pch_end - (pch+1))) = '\0' ;
-			value = ret_veri_definedval( symbol ) ;
+			char* value = ret_veri_definedval( symbol ) ;
 			if ( value ) {
 				strcpy( p_proc_line, value ) ;
 				p_proc_line += strlen( value ) ;

@@ -43,12 +43,6 @@ typedef struct node_list_t_t{
 	struct node_list_t_t *next;
 } node_list_t;
 
-node_list_t* insert_node_list(node_list_t* node_list, nnode_t *node){
-	node_list->node = node;
-	node_list->next = (node_list_t*)calloc(1, sizeof(node_list_t));
-	return node_list->next;
-}
-
 node_list_t useless_nodes; // List of the nodes to be removed
 node_list_t *removal_list_next = &useless_nodes; // Tail of the nodes to be removed
 
@@ -56,6 +50,24 @@ node_list_t addsub_nodes; // List of the adder/subtractor nodes
 node_list_t *addsub_list_next = &addsub_nodes; // Tail of the adder/subtractor node list
 
 
+/* Function declarations */
+node_list_t* insert_node_list(node_list_t* node_list, nnode_t *node);
+void traverse_backward(nnode_t *node);
+void traverse_forward(nnode_t *node, int toplevel, int remove_me);
+void mark_output_dependencies(netlist_t *netlist);
+void identify_unused_nodes(netlist_t *netlist);
+void remove_unused_nodes(node_list_t *remove);
+void calculate_addsub_statistics(node_list_t *addsub);
+void remove_unused_logic(netlist_t *netlist);
+
+
+
+
+node_list_t* insert_node_list(node_list_t* node_list, nnode_t *node){
+	node_list->node = node;
+	node_list->next = (node_list_t*)calloc(1, sizeof(node_list_t));
+	return node_list->next;
+}
 
 /* Traverse the netlist backwards, moving from outputs to inputs */
 void traverse_backward(nnode_t *node){

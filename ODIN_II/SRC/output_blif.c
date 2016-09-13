@@ -44,6 +44,7 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 void define_ff(nnode_t *node, FILE *out);
 void define_decoded_mux(nnode_t *node, FILE *out);
 void output_blif_pin_connect(nnode_t *node, FILE *out);
+void output_blif(char *file_name, netlist_t *netlist);
 
 /*---------------------------------------------------------------------------
  * (function: output_blif)

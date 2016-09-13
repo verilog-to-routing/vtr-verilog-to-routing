@@ -91,7 +91,7 @@ typedef struct {
 	int    num_connections;    // The sum of the number of children found under every node.
 	int    *num_children;      // Number of children per stage.
 	int    num_parallel_nodes; // The number of nodes while will be computed in parallel.
-} stages;
+} stages_t;
 
 typedef struct {
 	signed char  **values;
@@ -100,13 +100,13 @@ typedef struct {
 } test_vector;
 
 void simulate_netlist(netlist_t *netlist);
-void simulate_cycle(int cycle, stages *s);
-stages *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *output_lines);
+void simulate_cycle(int cycle, stages_t *s);
+stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *output_lines);
 
-stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
-void free_stages(stages *s);
+stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes);
+void free_stages(stages_t *s);
 
-int get_num_covered_nodes(stages *s);
+int get_num_covered_nodes(stages_t *s);
 int get_clock_ratio(nnode_t *node);
 void set_clock_ratio(int rat, nnode_t *node);
 nnode_t **get_children_of(nnode_t *node, int *count);
@@ -201,8 +201,8 @@ void trim_string(char* string, const char *chars);
 char *vector_value_to_hex(signed char *value, int length);
 
 int  print_progress_bar(double completion, int position, int length, double time);
-void print_netlist_stats(stages *stages, int num_vectors);
-void print_simulation_stats(stages *stages, int num_vectors, double total_time, double simulation_time);
+void print_netlist_stats(stages_t *stages, int num_vectors);
+void print_simulation_stats(stages_t *stages, int num_vectors, double total_time, double simulation_time);
 void print_time(double time);
 
 double wall_time();

@@ -37,11 +37,11 @@ struct hashtable_t_t
 	hashtable_node_t **store;	
 
 	// Adds an item to the hashtable.
-	void   (*add)                (hashtable_t *h, void *key, size_t key_length, void *item);
+	void   (*add)                (hashtable_t *h, const void *key, size_t key_length, void *item);
 	// Removes an item from the hashtable. If the item is not present, a null pointer is returned.
-	void*  (*remove)             (hashtable_t *h, void *key, size_t key_length);
+	void*  (*remove)             (hashtable_t *h, const void *key, size_t key_length);
 	// Gets an item from the hashtable without removing it. If the item is not present, a null pointer is returned.
-	void*  (*get)                (hashtable_t *h, void *key, size_t key_length);
+	void*  (*get)                (hashtable_t *h, const void *key, size_t key_length);
 	// Gets an array of all items in the hastable.
 	void** (*get_all)            (hashtable_t *h);
 	// Check to see if the hashtable is empty.

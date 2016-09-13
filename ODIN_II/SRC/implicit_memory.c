@@ -35,6 +35,7 @@ void finalize_implicit_memory(implicit_memory *memory);
 void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name);
 void add_dummy_input_port_to_implicit_memory(implicit_memory *memory, int size, const char *port_name);
 void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory);
+implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identifier);
 
 /*
  * Looks up an implicit memory by identifier name in the implicit memory lookup table.

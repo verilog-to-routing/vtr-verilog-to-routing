@@ -114,7 +114,7 @@ void simulate_netlist(netlist_t *netlist)
 		double total_time      = 0; // Includes I/O
 		double simulation_time = 0; // Does not include I/O
 
-		stages *stages = 0;
+		stages_t *stages = 0;
 
 		// Parse -L and -H options containing lists of pins to hold high or low during random vector generation.
 		pin_names *hold_high = parse_pin_name_list(global_args.sim_hold_high);
@@ -261,7 +261,7 @@ void simulate_netlist(netlist_t *netlist)
  * taken for each stage, and that stage is computed in parallel for all subsequent
  * cycles if speedup is observed.
  */
-void simulate_cycle(int cycle, stages *s)
+void simulate_cycle(int cycle, stages_t *s)
 {
 	#ifdef _OPENMP
 	// -1 for cycle 0, -1 for the last cycle in the wave.
@@ -347,7 +347,7 @@ void simulate_cycle(int cycle, stages *s)
  * the nodes organised into parallelizable stages. Also adds lines to
  * custom pins and nodes as requested via the -p option.
  */
-stages *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *l)
+stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_t *l)
 {
 	queue_t *queue = create_queue();
 	// Enqueue top input nodes
@@ -378,12 +378,12 @@ stages *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_
 
 		for (i = 0; i < num_children; i++)
 		{
-			nnode_t* node = children[i];
+			nnode_t* node2 = children[i];
 
-			if (!node->in_queue && is_node_ready(node, cycle) && !is_node_complete(node, cycle))
+			if (!node2->in_queue && is_node_ready(node2, cycle) && !is_node_complete(node2, cycle))
 			{
-				node->in_queue = TRUE;
-				queue->add(queue,node);
+				node2->in_queue = TRUE;
+				queue->add(queue,node2);
 			}
 		}
 		free(children);
@@ -397,7 +397,7 @@ stages *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_
 	queue->destroy(queue);
 
 	// Reorganise the ordered nodes into stages for parallel computation.
-	stages *s = stage_ordered_nodes(ordered_nodes, num_ordered_nodes);
+	stages_t *s = stage_ordered_nodes(ordered_nodes, num_ordered_nodes);
 	free(ordered_nodes);
 
 	return s;
@@ -406,8 +406,8 @@ stages *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, lines_
 /*
  * Puts the ordered nodes in stages, each of which can be computed in parallel.
  */
-stages *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
-	stages *s = (stages *)malloc(sizeof(stages));
+stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
+	stages_t *s = (stages_t *)malloc(sizeof(stages_t));
 	s->stages = (nnode_t ***)calloc(1,sizeof(nnode_t**));
 	s->counts = (int *)calloc(1,sizeof(int));
 	s->num_children = (int *)calloc(1,sizeof(int));
@@ -902,7 +902,7 @@ void flag_undriven_input_pins(nnode_t *node)
 /*
  * Gets the number of nodes whose output pins have been sufficiently covered.
  */
-int get_num_covered_nodes(stages *s)
+int get_num_covered_nodes(stages_t *s)
 {
 	int covered_nodes = 0;
 	int i;
@@ -2280,7 +2280,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 
 						// Verify the width parameter.
 						const char *W = "WIDTH";
-						char *width_string = (char *)symbols->get(symbols, (void *)W, sizeof(char) * 5);
+						char *width_string = (char *)symbols->get(symbols, (const void *)W, sizeof(char) * 5);
 						int mif_width = atoi(width_string);
 						if (!width_string) error_message(SIMULATION_ERROR, -1, -1, "%s: MIF WIDTH parameter unspecified.", filename);
 						if (mif_width != width)
@@ -2289,7 +2289,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 
 						// Verify the depth parameter.
 						const char *D = "DEPTH";
-						char *depth_string = (char *)symbols->get(symbols, (void *)D, sizeof(char) * 5);
+						char *depth_string = (char *)symbols->get(symbols, (const void *)D, sizeof(char) * 5);
 						int mif_depth = atoi(depth_string);
 						if (!depth_string) error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
 						if (mif_depth != depth)
@@ -2298,9 +2298,9 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 
 						// Parse the radix specifications and make sure they're OK.
 						const char *AR = "ADDRESS_RADIX";
-						addr_radix = parse_mif_radix((char *)symbols->get(symbols, (void *)AR, sizeof(char) * 13));
+						addr_radix = parse_mif_radix((char *)symbols->get(symbols, (const void *)AR, sizeof(char) * 13));
 						const char *DR = "DATA_RADIX";
-						data_radix = parse_mif_radix((char *)symbols->get(symbols, (void *)DR, sizeof(char) * 10));
+						data_radix = parse_mif_radix((char *)symbols->get(symbols, (const void *)DR, sizeof(char) * 10));
 
 						if (!addr_radix)
 							error_message(SIMULATION_ERROR, -1, -1,
@@ -3379,7 +3379,7 @@ void free_lines(lines_t *l)
 /*
  * Free stages.
  */
-void free_stages(stages *s)
+void free_stages(stages_t *s)
 {
 	while (s->count--)
 		free(s->stages[s->count]);
@@ -3462,7 +3462,7 @@ int print_progress_bar(double completion, int position, int length, double time)
 /*
  * Prints information about the netlist we are simulating.
  */
-void print_netlist_stats(stages *stages, int num_vectors)
+void print_netlist_stats(stages_t *stages, int num_vectors)
 {
 	printf("%s:\n", get_circuit_filename());
 
@@ -3480,7 +3480,7 @@ void print_netlist_stats(stages *stages, int num_vectors)
 /*
  * Prints statistics. (Coverage and times.)
  */
-void print_simulation_stats(stages *stages, int num_vectors, double total_time, double simulation_time)
+void print_simulation_stats(stages_t *stages, int num_vectors, double total_time, double simulation_time)
 {
 	int covered_nodes = get_num_covered_nodes(stages);
 	printf("Simulation time:   ");
@@ -3530,11 +3530,11 @@ void print_ancestry(nnode_t *bottom_node, int n)
 		{
 			npin_t *pin = node->input_pins[i];
 			nnet_t *net = pin->net;
-			nnode_t *node = net->driver_pin->node;
-			queue->add(queue, node);
-			char *name = get_pin_name(node->name);
-			printf("\t%s %s (%ld)\n", pin->mapping, name, node->unique_id);fflush(stdout);
-			free(name);
+			nnode_t *node2 = net->driver_pin->node;
+			queue->add(queue, node2);
+			char *name2 = get_pin_name(node2->name);
+			printf("\t%s %s (%ld)\n", pin->mapping, name2, node2->unique_id);fflush(stdout);
+			free(name2);
 		}
 
 		/*int count = 0;
@@ -3642,7 +3642,7 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 			{
 				npin_t *pin = node->input_pins[i];
 				nnet_t *net = pin->net;
-				nnode_t *node = net->driver_pin->node;
+				nnode_t *node2 = net->driver_pin->node;
 
 				// If an input is found which hasn't been updated since before cycle-1, traverse it.
 				int is_undriven = FALSE;
@@ -3652,13 +3652,13 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 					if (!found_undriven_pin)
 					{
 						found_undriven_pin = TRUE;
-						queue->add(queue, node);
+						queue->add(queue, node2);
 					}
 					is_undriven = TRUE;
 				}
-				char *name = get_pin_name(node->name);
-				printf("\t(%s) %s (%ld) %d %d %s \n", pin->mapping, name, node->unique_id, node->num_input_pins, node->num_output_pins, is_undriven?"*":"");
-				free(name);
+				char *name2 = get_pin_name(node2->name);
+				printf("\t(%s) %s (%ld) %d %d %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven?"*":"");
+				free(name2);
 			}
 			printf("  ------------\n");
 		}

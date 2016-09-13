@@ -60,8 +60,6 @@ t_type_descriptor* type_descriptors;
 int block_tag;
 
 void get_options(int argc, char **argv);
-void do_high_level_synthesis();
-void do_simulation_of_netlist();
 void print_usage();
 
 #ifdef VPR5

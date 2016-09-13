@@ -90,6 +90,7 @@ void ace_bdd_count_paths(DdManager * mgr, DdNode * bdd, int * num_one_paths, int
 double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * cube, nnode_t *node , st_table *visited, int phase );
 double calc_cube_switch_prob(DdManager * mgr, DdNode * bdd, ace_cube_t * cube, nnode_t *node, int phase );
 double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd, ace_cube_t * cube, nnode_t *node, double P1, int phase );
+int node_error(int code);
 
 
 /*---------------------------------------------------------------------------

@@ -45,6 +45,7 @@ int subchaintotal = 0;
 int *sub = NULL;
 
 #ifdef VPR6
+void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag);
 
 /*---------------------------------------------------------------------------
  * (function: report_sub_distribution)

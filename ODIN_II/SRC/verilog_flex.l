@@ -37,6 +37,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 %s COMMENT
 
 %option noyywrap
+%option nounput
 
 %%
 

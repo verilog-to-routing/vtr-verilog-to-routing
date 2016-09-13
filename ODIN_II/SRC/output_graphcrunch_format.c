@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 void depth_first_traverse_graphcrunch(FILE *out, short marker_value, netlist_t *netlist);
 void depth_first_traversal_graphcrunch_display(nnode_t *node, FILE *fp, int traverse_mark_number);
+void graphcrunch_output(char* path, char* name, short marker_value, netlist_t *netlist);
 
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputAst)

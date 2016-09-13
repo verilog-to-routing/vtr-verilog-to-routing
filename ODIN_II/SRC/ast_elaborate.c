@@ -31,7 +31,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_elaborate.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
-#include "verilog_bison_user_defined.h"
 #include "netlist_create_from_ast.h"
 #include "ctype.h"
 
@@ -296,14 +295,19 @@ void record_expression(ast_node_t *node, char *array[])
 int calculation(char *post_exp[])
 {
   int value;
+  int i;
+  int num = 0;
   struct
   {
     int data[Max_size];
     int top;
-  }pop;
-  pop.data[Max_size] = -1;
+  } pop;
   pop.top = -1;
-  int i, num;
+  for(i = 0; i < Max_size - 1; ++i) {
+        pop.data[i] = 0;
+  }
+  pop.data[Max_size] = -1;
+
   for (i = 0; post_exp[i] != NULL; i++)
   {
     if (*post_exp[i] == '+' || *post_exp[i] == '-' || *post_exp[i] == '*' || *post_exp[i] == '/')
@@ -393,41 +397,41 @@ void translate_expression(char *exp[], char *post_exp[])
 /*---------------------------------------------------------------------------
  * (function: check_and_replace)
  *-------------------------------------------------------------------------*/
-void check_and_replace(ast_node_t *node, char *p[])
+void check_and_replace(ast_node_t *node, char *p2[])
 {
 	//char *point = NULL;
 	switch(node->type)
 	{
 		case IDENTIFIERS:
-				p[count++] = node->types.identifier;
+				p2[count++] = node->types.identifier;
 				break;
 
 		case BLOCKING_STATEMENT:
-			p[count++] = (char*)"=";
+			p2[count++] = strdup("=");
 			break;
 
 		case NON_BLOCKING_STATEMENT:
-			p[count++] = (char*)"<=";
+			p2[count++] = strdup("<=");
 			break;
 
 		case NUMBERS:
-			p[count++] = node->types.number.number;
+			p2[count++] = node->types.number.number;
 			break;
 
 		case BINARY_OPERATION:
 			switch(node->types.operation.op)
 			{
 				case ADD:
-					p[count++] = (char*)"+";
+					p2[count++] = strdup("+");
 					break;
 				case MINUS:
-					p[count++] = (char*)"-";
+					p2[count++] = strdup("-");
 					break;
 				case MULTIPLY:
-					p[count++] = (char*)"*";
+					p2[count++] = strdup("*");
 					break;
 				case DIVIDE:
-					p[count++] = (char*)"/";
+					p2[count++] = strdup("/");
 					break;
 
 				default:
@@ -710,7 +714,7 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20])
  * (function: search_marked_node)
  * search the marked nodes as requirement
  *-------------------------------------------------------------------------*/
-void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p)
+void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p2)
 {
 	int i;
 	if (node == NULL)
@@ -723,11 +727,11 @@ void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p)
 			if (node->children[i]->type == IDENTIFIERS)
 			{
 				if( strcmp(node->children[0]->types.identifier, temp) == 0 && node->children[0]->is_read_write == is)
-					*p = node;
+					*p2 = node;
 			}
 
 			else
-				search_marked_node(node->children[i], is, temp, p);
+				search_marked_node(node->children[i], is, temp, p2);
 
 		}
 	}
@@ -1080,7 +1084,9 @@ void adjoin_constant(int *build)
 						mark = 1;
 					}
 					break;
-
+                default:
+                    //pass
+                    break;
 			}
 		}
 		if (mark == 0)
@@ -1406,6 +1412,9 @@ void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num)
 		case '/':
 			node->types.operation.op = DIVIDE;
 		break;
+        default:
+            oassert(FALSE);
+        break;
 	}
 
 }
@@ -1511,7 +1520,7 @@ void recursive_tree(ast_node_t *node, int list_bracket[], int *count_bracket)
 /*---------------------------------------------------------------------------
  * (function: find_lead_node)
  *-------------------------------------------------------------------------*/
-void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, int ids)
+void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, int ids2)
 {
 	if (node == NULL)
 		return;
@@ -1520,7 +1529,7 @@ void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, in
 		list_bracket[(*count_bracket)++] = node->unique_count;
 
 	if (node->num_children != 0)
-		find_leaf_node(node->children[ids], list_bracket, count_bracket, ids);
+		find_leaf_node(node->children[ids2], list_bracket, count_bracket, ids2);
 
 }
 
@@ -1529,17 +1538,17 @@ void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, in
  *-------------------------------------------------------------------------*/
 void delete_bracket(int begin, int end)
 {
-	enode *s1 = NULL, *s2 = NULL, *temp, *p;
+	enode *s1 = NULL, *s2 = NULL, *temp, *p2;
 	int mark = 0;
 	for (temp = head; temp != NULL; temp = temp->next)
 	{
 		if (temp->id == begin)
 		{
 			s1 = temp;
-			for (p = temp; p != NULL; p = p->next)
-				if (p->id == end)
+			for (p2 = temp; p2 != NULL; p2 = p2->next)
+				if (p2->id == end)
 				{
-					s2 = p;
+					s2 = p2;
 					mark = 1;
 					break;
 				}
@@ -1565,7 +1574,8 @@ void delete_bracket(int begin, int end)
  *-------------------------------------------------------------------------*/
 void delete_bracket_head(enode *begin, enode *end)
 {
-	enode *temp, *s;
+	enode *temp;
+    enode *s = NULL;
 	for (temp = end; temp != NULL; temp = temp->next)
 	{
 		if ((temp->flag == 2) && (temp->priority == 2))
@@ -1584,25 +1594,25 @@ void delete_bracket_head(enode *begin, enode *end)
  *-------------------------------------------------------------------------*/
 void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 {
-	enode *temp, *new_head, *tail, *p, *partial, *start = NULL;
+	enode *temp, *new_head, *tail, *p2, *partial = NULL, *start = NULL;
 	int mark;
 	switch (flag)
 	{
 		case 1:
 		{
-			for (temp = begin; temp != end; temp = p->next)
+			for (temp = begin; temp != end; temp = p2->next)
 			{
 				mark = 0;
-				for (p = temp; p != end->next; p = p->next)
+				for (p2 = temp; p2 != end->next; p2 = p2->next)
 				{
-					if (p == end)
+					if (p2 == end)
 					{
 						mark = 2;
 						break;
 					}
-					if ((p->flag == 2) && (p->priority == 2))
+					if ((p2->flag == 2) && (p2->priority == 2))
 					{
-						partial = p->pre;
+						partial = p2->pre;
 						mark = 1;
 						break;
 					}
@@ -1615,8 +1625,8 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 					free(tail->next);
 					partial->next = new_head;
 					new_head->pre = partial;
-					tail->next = p;
-					p->pre = tail;
+					tail->next = p2;
+					p2->pre = tail;
 				}
 				if (mark == 2)
 					break;
@@ -1635,16 +1645,16 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 			for (temp = start; temp != end->next; temp = partial->next)
 			{
 				mark = 0;
-				for (p = temp; p != end->next; p = p->next)
+				for (p2 = temp; p2 != end->next; p2 = p2->next)
 				{
-					if (p == end)
+					if (p2 == end)
 					{
 						mark = 2;
 						break;
 					}
-					if ((p->flag == 2) && (p->priority == 2))
+					if ((p2->flag == 2) && (p2->priority == 2))
 					{
-						partial = p->next;
+						partial = p2->next;
 						mark = 1;
 						break;
 					}
@@ -1655,8 +1665,8 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 					tail = copy_enode_list(new_head, s, begin->pre);
 					tail = tail->pre;
 					free(tail->next);
-					p->next = new_head;
-					new_head->pre = p;
+					p2->next = new_head;
+					new_head->pre = p2;
 					tail->next = partial;
 					partial->pre = tail;
 
@@ -1666,6 +1676,8 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 			}
 			break;
 		}
+        default:
+            break;
 
 	}
 }
@@ -1793,14 +1805,14 @@ void reduce_parameter()
 	ast_node_t *top;
 	ast_node_t *para[1024];
 	int num = 0;
-	int *count = &num;
+	int *count2 = &num;
 	int i;
 	for (i = 0; i < num_modules; i++)
 	{
 		top = ast_modules[i];
-		*count = 0;
+		*count2 = 0;
 		memset(para, 0, sizeof(para));
-		find_parameter(top, para, count);
+		find_parameter(top, para, count2);
 		if (top->types.module.is_instantiated == 0 && num != 0)
 			remove_para_node(top, para, num);
 
@@ -1811,7 +1823,7 @@ void reduce_parameter()
 /*---------------------------------------------------------------------------
  * (function: find_parameter)
  *-------------------------------------------------------------------------*/
-void find_parameter(ast_node_t *top, ast_node_t *para[], int *count)
+void find_parameter(ast_node_t *top, ast_node_t *para[], int *count2)
 {
 	int i;
 	ast_node_t *node;
@@ -1826,9 +1838,9 @@ void find_parameter(ast_node_t *top, ast_node_t *para[], int *count)
 			return;
 		else
 			if (node->type == VAR_DECLARE && node->types.variable.is_parameter == 1)
-				para[(*count)++] = node;
+				para[(*count2)++] = node;
 
-		find_parameter(node, para, count);
+		find_parameter(node, para, count2);
 	}
 
 }
@@ -1842,8 +1854,8 @@ void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
 	ast_node_t *para_node;
 	ast_node_t *list[1024] = {0};
 	ast_node_t *node;
-	char *name;
-	long value;
+	char *name = NULL;
+	long value = 0;
 
 	count_assign = 0;
 	find_assign_node(top, list);

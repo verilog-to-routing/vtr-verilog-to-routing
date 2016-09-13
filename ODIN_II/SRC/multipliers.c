@@ -45,6 +45,13 @@ t_linked_vptr *mult_list = NULL;
 int min_mult = 0;
 int *mults = NULL;
 
+void record_mult_distribution(nnode_t *node);
+void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int offb, int b);
+void init_cascade_adder(nnode_t *node, nnode_t *a, int b);
+void split_multiplier_a(nnode_t *node, int a0, int a1, int b);
+void split_multiplier_b(nnode_t *node, int a, int b1, int b0);
+void pad_multiplier(nnode_t *node, netlist_t *netlist);
+
 /*---------------------------------------------------------------------------
  * (function: instantiate_simple_soft_multiplier )
  * Sample 4x4 multiplier to help understand logic.
@@ -283,7 +290,7 @@ void record_mult_distribution(nnode_t *node)
 void report_mult_distribution()
 {
 	int i, j;
-	int total = 0;
+	int num_total = 0;
 
 	if(hard_multipliers == NULL)
 		return;
@@ -296,13 +303,13 @@ void report_mult_distribution()
 		{
 			if (mults[i * hard_multipliers->inputs->size + j] != 0)
 			{
-				total += mults[i * hard_multipliers->inputs->size + j];
+				num_total += mults[i * hard_multipliers->inputs->size + j];
 				printf("%d X %d => %d\n", i, j, mults[i * hard_multipliers->inputs->size + j]);
 			}
 		}
 	}
 	printf("\n");
-	printf("\nTotal # of multipliers = %d\n", total);
+	printf("\nTotal # of multipliers = %d\n", num_total);
 	return;
 }
 

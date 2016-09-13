@@ -31,7 +31,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_optimizations.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
-#include "verilog_bison_user_defined.h"
 
 /* --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------
@@ -171,6 +170,8 @@ info_ast_visit_t *constantFold(ast_node_t *node)
 						node_details->is_constant = TRUE;
 						node_details->value = node->types.number.value;
 						break;
+                    default:
+                        oassert(FALSE);
 				}
 				
 				if (node_details->is_constant == TRUE)

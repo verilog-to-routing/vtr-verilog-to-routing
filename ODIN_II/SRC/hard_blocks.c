@@ -34,6 +34,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 STRING_CACHE *hard_block_names = NULL;
 
+#ifdef VPR6
+void cache_hard_block_names();
+#endif
 
 t_model_ports *get_model_port(t_model_ports *ports, const char *name)
 {

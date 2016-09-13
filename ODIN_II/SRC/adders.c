@@ -53,6 +53,9 @@ netlist_t *the_netlist;
 
 #ifdef VPR6
 
+void record_add_distribution(nnode_t *node);
+void init_split_adder(nnode_t *node, nnode_t *ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag, netlist_t *netlist);
+
 /*---------------------------------------------------------------------------
  * (function: init_add_distribution)
  *  For adder, the output will only be the maxim input size + 1
@@ -1030,7 +1033,8 @@ void traverse_list(operation_list oper, t_linked_vptr *place)
  *-------------------------------------------------------------------------*/
 void match_node(t_linked_vptr *place, operation_list oper)
 {
-	int flag, mark;
+	int flag = 0;
+    int mark = 0;
 	nnode_t *node = NULL;
 	nnode_t *next_node = NULL;
 	node = (nnode_t*)place->data_vptr;
@@ -1271,7 +1275,7 @@ void free_op_nodes(nnode_t *node)
  *-------------------------------------------------------------------------*/
 int match_pins(nnode_t *node, nnode_t *next_node)
 {
-	int flag;
+	int flag = 0;
 	int i, j;
 	long id;
 	for (i = 0; i < node->num_input_pins; i++)

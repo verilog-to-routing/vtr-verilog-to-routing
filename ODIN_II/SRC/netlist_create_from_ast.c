@@ -84,14 +84,13 @@ int type_of_circuit;
 
 
 /* PROTOTYPES */
+void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name);
 
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, char *instance_name, int level);
 signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_name_prefix);
 
 void create_all_driver_nets_in_this_module(char *instance_name_prefix);
 void create_all_driver_nets_in_this_function(char *instance_name_prefix);
-
-ast_node_t *find_top_module();
 
 void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix);
 void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix);
@@ -135,6 +134,10 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 
 int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, int num_input_lists);
 void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char *instance_name_prefix);
+signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name_prefix, t_model* hb_model);
+signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_name_prefix, t_model* hb_model);
+signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instance_name_prefix);
+signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance_name_prefix);
 
 void look_for_clocks(netlist_t *netlist);
 
@@ -2460,7 +2463,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 		// VAR_DECLARE_LIST(child[i])->VAR_DECLARE_PORT(child[0])->VAR_DECLARE_input-or-output(child[0])
 		ast_node_t *module_var_node = module_list->children[i]->children[0];
         
-        ast_node_t *module_instance_var_node;
+        ast_node_t *module_instance_var_node = NULL;
 
         if(i > 0) module_instance_var_node = module_instance_list->children[i]->children[1];
 				
@@ -3365,7 +3368,6 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		implicit_memory *memory = lookup_implicit_memory_input(pin->name);
 		nnode_t *node = memory->node;
 
-		int j;
 		for (j = 0; j < node->num_input_pins; j++)
 		{
 			npin_t *original_pin = node->input_pins[j];
@@ -3456,16 +3458,16 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 	{
 		npin_t *pin = memory_inputs->pins[i];
 		implicit_memory *memory = lookup_implicit_memory_input(pin->name);
-		nnode_t *node = memory->node;
+		nnode_t *node2 = memory->node;
 
 		int j;
-		for (j = 0; j < node->num_input_pins; j++)
+		for (j = 0; j < node2->num_input_pins; j++)
 		{
-			npin_t *original_pin = node->input_pins[j];
+			npin_t *original_pin = node2->input_pins[j];
 			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
 			{
 				pin->mapping = original_pin->mapping;
-				add_input_pin_to_node(node, pin, j);
+				add_input_pin_to_node(node2, pin, j);
 				break;
 			}
 		}
@@ -3529,7 +3531,8 @@ int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *
 signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
 {
 
-	signal_list_t *in_1, *out_1, **in;
+	signal_list_t *in_1, **in;
+	signal_list_t *out_1 = NULL;
 	nnode_t *gate_node;
 
 	ast_node_t *gate_instance;
@@ -4778,7 +4781,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 		block_connect = block_list->children[i]->children[0];
 		block_port_connect = block_list->children[i]->children[1];
 		hb_ports = (t_model_ports *)block_list->children[i]->children[1]->hb_port;
-		char *ip_name = block_connect->types.identifier;
+		ip_name = block_connect->types.identifier;
 
 		if (hb_ports->dir == IN_PORT)
 		{
@@ -4812,7 +4815,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 	{
 		block_connect = block_list->children[i]->children[0];
 		hb_ports = (t_model_ports *)block_list->children[i]->children[1]->hb_port;
-		char *ip_name = block_connect->types.identifier;
+		ip_name = block_connect->types.identifier;
 
 		if (hb_ports->dir != IN_PORT)
 		{

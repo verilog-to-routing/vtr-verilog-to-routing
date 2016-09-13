@@ -8,6 +8,12 @@
 
 unsigned long
 string_hash(STRING_CACHE * sc,
+	    const char *string);
+void
+generate_sc_hash(STRING_CACHE * sc);
+
+unsigned long
+string_hash(STRING_CACHE * sc,
 	    const char *string)
 {
     long a, i, mod, mul;

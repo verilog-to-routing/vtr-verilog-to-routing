@@ -118,7 +118,7 @@ endforeach()
 #The flex/bison code is not warning clean so we need to suppress some warnings
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
-    #"-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
+    "-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
     "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
     "-Wno-unused-parameter" #Flex produces functions with unused params in re-entrant mode
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode

@@ -567,7 +567,7 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 		{
 			/* initialize the activation data */
 			nnode_t *current_node = LUT_netlist->forward_levels[i][j];
-			activation_t *act_data = (activation_t*)current_node->node_data;
+			activation_t *act_data2 = (activation_t*)current_node->node_data;
 
 			if (current_node->type != OUTPUT_NODE)
 			{
@@ -576,13 +576,13 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 					if (current_node->output_pins[0]->net->num_fanout_pins != 0)
 					{
 						/* IF this node fans out */
-						fprintf(ace_out, "%s %f %f\n", current_node->name, act_data->static_probability[k], act_data->transition_density[k]);
+						fprintf(ace_out, "%s %f %f\n", current_node->name, act_data2->static_probability[k], act_data2->transition_density[k]);
 					}
 				}
 			}
 			else
 			{
-				fprintf(ace_out, "out:%s %f %f\n", current_node->name, act_data->static_probability[0], act_data->transition_density[0]);
+				fprintf(ace_out, "out:%s %f %f\n", current_node->name, act_data2->static_probability[0], act_data2->transition_density[0]);
 			}
 		}
 	}

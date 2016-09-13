@@ -26,15 +26,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hashtable.h"
 #include "types.h"
 
-void         ___hashtable_add                (hashtable_t *h, void *key, size_t key_length, void *item);
-void*        ___hashtable_remove             (hashtable_t *h, void *key, size_t key_length);
-void*        ___hashtable_get                (hashtable_t *h, void *key, size_t key_length);
+void         ___hashtable_add                (hashtable_t *h, const void *key, size_t key_length, void *item);
+void*        ___hashtable_remove             (hashtable_t *h, const void *key, size_t key_length);
+void*        ___hashtable_get                (hashtable_t *h, const void *key, size_t key_length);
 void**       ___hashtable_get_all            (hashtable_t *h);
 int          ___hashtable_is_empty           (hashtable_t *h);
 void         ___hashtable_destroy            (hashtable_t *h);
 void         ___hashtable_destroy_free_items (hashtable_t *h);
-int          ___hashtable_compare_keys       (void *key, size_t key_len, void* key1, size_t key_len1);
-unsigned int ___hashtable_hash               (void *key, size_t key_len, int max_key);
+int          ___hashtable_compare_keys       (const void *key, size_t key_len, const void* key1, size_t key_len1);
+unsigned int ___hashtable_hash               (const void *key, size_t key_len, int max_key);
 
 hashtable_t* create_hashtable(int store_size)
 {
@@ -98,7 +98,7 @@ void ___hashtable_destroy_free_items(hashtable_t *h)
 	free(h);
 }
 
-void  ___hashtable_add(hashtable_t *h, void *key, size_t key_length, void *item)
+void  ___hashtable_add(hashtable_t *h, const void *key, size_t key_length, void *item)
 {
 	hashtable_node_t *node = (hashtable_node_t *)malloc(sizeof(hashtable_node_t));
 
@@ -120,7 +120,7 @@ void  ___hashtable_add(hashtable_t *h, void *key, size_t key_length, void *item)
 	h->count++;
 }
 
-void* ___hashtable_remove(hashtable_t *h, void *key, size_t key_length)
+void* ___hashtable_remove(hashtable_t *h, const void *key, size_t key_length)
 {
 	unsigned int i = ___hashtable_hash(key, key_length, h->store_size); 
 
@@ -145,7 +145,7 @@ void* ___hashtable_remove(hashtable_t *h, void *key, size_t key_length)
 	return item;
 }
 
-void* ___hashtable_get(hashtable_t *h, void *key, size_t key_length)
+void* ___hashtable_get(hashtable_t *h, const void *key, size_t key_length)
 {
 	unsigned int i = ___hashtable_hash(key, key_length, h->store_size); 
 
@@ -182,18 +182,18 @@ int ___hashtable_is_empty (hashtable_t *h)
 	return h->count == 0;
 }
 
-int ___hashtable_compare_keys(void *key, size_t key_len, void* key1, size_t key_len1)
+int ___hashtable_compare_keys(const void *key, size_t key_len, const void* key1, size_t key_len1)
 {
 	if (key_len != key_len1) return FALSE; 
 	return memcmp(key, key1, key_len) == 0; 
 }
 
-unsigned int ___hashtable_hash(void *key, size_t key_len, int max_key)
+unsigned int ___hashtable_hash(const void *key, size_t key_len, int max_key)
 {
 	unsigned int hash = 1;
 	unsigned int i;
 	for(i = 0; i < key_len; i++)
-		hash = (hash << 5) ^ ((unsigned char *)key)[i] ^ hash;
+		hash = (hash << 5) ^ ((const unsigned char *)key)[i] ^ hash;
 
 	return (hash + max_key) % max_key;
 }

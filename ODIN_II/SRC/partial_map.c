@@ -53,7 +53,6 @@ void instantiate_EQUAL(nnode_t *node, short type, short mark, netlist_t *netlist
 void instantiate_GE(nnode_t *node, short type, short mark, netlist_t *netlist);
 void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist);
 void instantiate_shift_left_or_right(nnode_t *node, short type, short mark, netlist_t *netlist);
-void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist);
 void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
 

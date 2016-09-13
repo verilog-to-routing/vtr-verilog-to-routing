@@ -35,6 +35,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "ast_optimizations.h"
 
+char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
+
 /*---------------------------------------------------------------------------
  * (function: create_node_w_type)
  *-------------------------------------------------------------------------*/
@@ -328,7 +330,10 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int file_numb
 			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
 		}
 		break;
-		}
+        default:
+            oassert(FALSE);
+            break;
+    }
 
 	return new_node;
 

@@ -41,14 +41,20 @@ t_linked_vptr *dp_memory_list;
 t_linked_vptr *split_list;
 t_linked_vptr *memory_instances = NULL;
 t_linked_vptr *memory_port_size_list = NULL;
-int split_size = 0;
-
 
 void pad_dp_memory_width(nnode_t *node, netlist_t *netlist);
 void pad_sp_memory_width(nnode_t *node, netlist_t *netlist);
 void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name);
 void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name);
 
+void copy_input_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name);
+void copy_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name);
+void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const char *port_name);
+void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char *port_name);
+
+int get_sp_ram_split_width();
+int get_dp_ram_split_width();
+void filter_memories_by_soft_logic_cutoff();
 
 int get_sp_ram_depth(nnode_t *node)
 {
