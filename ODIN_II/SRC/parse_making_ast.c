@@ -73,6 +73,16 @@ int size_all_file_items_list;
 
 short to_view_parse;
 
+/*
+ * File-scope function delcarations
+ */
+void graphVizOutputPreproc(FILE *yyin, char* path, char *file);
+ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
+ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
+
+/*
+ * Function implementations
+ */
 void graphVizOutputPreproc(FILE *yyin, char* path, char *file)
 {
 	char line[MaxLine];
@@ -892,6 +902,9 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	ast_node_t *node_copy;
 	/* store the operation type */
 	char temp[256];
+
+    /* avoid uninitialized warning */
+    new_node = NULL;
 	
 	/* allocate child nodes to this node */
 	if( expression2->type == NUMBERS ){
@@ -2130,6 +2143,9 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 					case(LONG_LONG):
 						fprintf(fp, "\t%d [label=\"NUMBERS LONG_LONG:%lld\"];\n", my_label, node->types.number.value);
 						break;
+                    default:
+                        oassert(FALSE);
+                        break;
 				}
 				break;
 			default:
