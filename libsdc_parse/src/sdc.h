@@ -68,10 +68,6 @@
  *
  */
 
-
-//For va_args used by sdc_error()
-#include <stdarg.h>
-
 /*
  * libsdc uses the sdc_error() function to report errors encountered while parsing an SDC file.  
  * If you wish to define your own error reporting function instead of using the default, simply

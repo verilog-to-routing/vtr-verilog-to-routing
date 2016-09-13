@@ -1,7 +1,11 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "sdc.h"
+
+void print_string_group(t_sdc_string_group* group);
+void print_from_to_group(t_sdc_string_group* from, t_sdc_string_group* to);
 
 void print_string_group(t_sdc_string_group* group) {
     const char *start_token, *end_token;

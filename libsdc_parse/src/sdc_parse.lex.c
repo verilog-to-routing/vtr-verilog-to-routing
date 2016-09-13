@@ -569,7 +569,7 @@ static yyconst flex_int16_t yy_chk[254] =
       179,  179,  179
     } ;
 
-/* Table of bools, true if rule could match eol. */
+/* Table of booleans, true if rule could match eol. */
 static yyconst flex_int32_t yy_rule_can_match_eol[29] =
     {   0,
 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -605,10 +605,11 @@ char *yytext;
 /* unistd.h doesn't exist on windows */
 #define YY_NO_UNISTD_H 1
 /* isatty() doesn't exist on windows */
+/* Avoid unused function warning */
 /*
  * Symbol Definitions
  */
-#line 612 "src/sdc_parse.lex.c"
+#line 613 "src/sdc_parse.lex.c"
 
 #define INITIAL 0
 
@@ -659,8 +660,6 @@ extern int yywrap (void );
 #endif
 #endif
 
-    static void yyunput (int c,char *buf_ptr  );
-    
 #ifndef yytext_ptr
 static void yy_flex_strncpy (char *,yyconst char *,int );
 #endif
@@ -787,9 +786,9 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 27 "src/sdc_parse.l"
+#line 30 "src/sdc_parse.l"
 
-#line 793 "src/sdc_parse.lex.c"
+#line 792 "src/sdc_parse.lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -880,129 +879,129 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 28 "src/sdc_parse.l"
+#line 31 "src/sdc_parse.l"
 { /* skip comments */ }
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 29 "src/sdc_parse.l"
+#line 32 "src/sdc_parse.l"
 { return EOL; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 30 "src/sdc_parse.l"
+#line 33 "src/sdc_parse.l"
 { /* skip white space */ }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 32 "src/sdc_parse.l"
+#line 35 "src/sdc_parse.l"
 { return CMD_CREATE_CLOCK; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 33 "src/sdc_parse.l"
+#line 36 "src/sdc_parse.l"
 { return CMD_SET_INPUT_DELAY; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 34 "src/sdc_parse.l"
+#line 37 "src/sdc_parse.l"
 { return CMD_SET_OUTPUT_DELAY; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 35 "src/sdc_parse.l"
+#line 38 "src/sdc_parse.l"
 { return CMD_SET_CLOCK_GROUPS; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 36 "src/sdc_parse.l"
-{ return CMD_SET_false_PATH; }
+#line 39 "src/sdc_parse.l"
+{ return CMD_SET_FALSE_PATH; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 37 "src/sdc_parse.l"
+#line 40 "src/sdc_parse.l"
 { return CMD_SET_MAX_DELAY; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 38 "src/sdc_parse.l"
+#line 41 "src/sdc_parse.l"
 { return CMD_SET_MULTICYCLE_PATH; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 40 "src/sdc_parse.l"
+#line 43 "src/sdc_parse.l"
 { return CMD_GET_PORTS; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 41 "src/sdc_parse.l"
+#line 44 "src/sdc_parse.l"
 { return CMD_GET_CLOCKS; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 43 "src/sdc_parse.l"
+#line 46 "src/sdc_parse.l"
 { return ARG_PERIOD; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 44 "src/sdc_parse.l"
+#line 47 "src/sdc_parse.l"
 { return ARG_NAME; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 45 "src/sdc_parse.l"
+#line 48 "src/sdc_parse.l"
 { return ARG_WAVEFORM; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 46 "src/sdc_parse.l"
+#line 49 "src/sdc_parse.l"
 { return ARG_CLOCK; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 47 "src/sdc_parse.l"
+#line 50 "src/sdc_parse.l"
 { return ARG_MAX; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 48 "src/sdc_parse.l"
+#line 51 "src/sdc_parse.l"
 { return ARG_EXCLUSIVE; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 49 "src/sdc_parse.l"
+#line 52 "src/sdc_parse.l"
 { return ARG_GROUP; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 50 "src/sdc_parse.l"
+#line 53 "src/sdc_parse.l"
 { return ARG_FROM; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 51 "src/sdc_parse.l"
+#line 54 "src/sdc_parse.l"
 { return ARG_TO; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 52 "src/sdc_parse.l"
+#line 55 "src/sdc_parse.l"
 { return ARG_SETUP; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 54 "src/sdc_parse.l"
+#line 57 "src/sdc_parse.l"
 { yylval.intVal = atoi(yytext); return INT_NUMBER; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 55 "src/sdc_parse.l"
+#line 58 "src/sdc_parse.l"
 { yylval.floatVal = atof(yytext); return FLOAT_NUMBER; }
 	YY_BREAK
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 56 "src/sdc_parse.l"
+#line 59 "src/sdc_parse.l"
 { 
                                   /*
                                    * Any continguous sequence of non-white space characters, 
@@ -1043,19 +1042,19 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 93 "src/sdc_parse.l"
+#line 96 "src/sdc_parse.l"
 { yylval.strVal = sdc_strdup(yytext); return STRING; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 94 "src/sdc_parse.l"
+#line 97 "src/sdc_parse.l"
 { /* Literal character to pass unrecognized stuff to parser
                                      (i.e. brackets) */
                                   return (int)(*yytext); 
                                 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 98 "src/sdc_parse.l"
+#line 101 "src/sdc_parse.l"
 { /* If the file has no blank line at the end there will
                                      not be the expected EOL following the last command. 
                                      So first time through, return EOL, and subsequently 
@@ -1068,10 +1067,10 @@ case YY_STATE_EOF(INITIAL):
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 107 "src/sdc_parse.l"
+#line 110 "src/sdc_parse.l"
 ECHO;
 	YY_BREAK
-#line 1075 "src/sdc_parse.lex.c"
+#line 1074 "src/sdc_parse.lex.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1397,47 +1396,6 @@ static int yy_get_next_buffer (void)
 	yy_is_jam = (yy_current_state == 179);
 
 	return yy_is_jam ? 0 : yy_current_state;
-}
-
-    static void yyunput (int c, register char * yy_bp )
-{
-	register char *yy_cp;
-    
-    yy_cp = (yy_c_buf_p);
-
-	/* undo effects of setting up yytext */
-	*yy_cp = (yy_hold_char);
-
-	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-		{ /* need to shift things up to make room */
-		/* +2 for EOB chars. */
-		register int number_to_move = (yy_n_chars) + 2;
-		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
-					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
-		register char *source =
-				&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move];
-
-		while ( source > YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
-			*--dest = *--source;
-
-		yy_cp += (int) (dest - source);
-		yy_bp += (int) (dest - source);
-		YY_CURRENT_BUFFER_LVALUE->yy_n_chars =
-			(yy_n_chars) = YY_CURRENT_BUFFER_LVALUE->yy_buf_size;
-
-		if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-			YY_FATAL_ERROR( "flex scanner push-back overflow" );
-		}
-
-	*--yy_cp = (char) c;
-
-    if ( c == '\n' ){
-        --yylineno;
-    }
-
-	(yytext_ptr) = yy_bp;
-	(yy_hold_char) = *yy_cp;
-	(yy_c_buf_p) = yy_cp;
 }
 
 #ifndef YY_NO_INPUT
@@ -2076,7 +2034,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 107 "src/sdc_parse.l"
+#line 110 "src/sdc_parse.l"
 
 
 

@@ -14,8 +14,6 @@ extern t_sdc_commands* g_sdc_commands;
 /*
  * Function Declarations
  */
-//Error reporting
-extern void sdc_error(const int line_number, const char* near_text, const char* fmt, ...);
 
 //SDC Command List manipulation
 t_sdc_commands* alloc_sdc_commands();

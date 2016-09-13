@@ -21,6 +21,9 @@
 /* isatty() doesn't exist on windows */
 %option never-interactive
 
+/* Avoid unused function warning */
+%option nounput
+
 /*
  * Symbol Definitions
  */

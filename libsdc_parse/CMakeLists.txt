@@ -7,6 +7,10 @@ get_include_directories(LIB_HEADERS LIB_INCLUDE_DIRS)
 #Treat .c as CXX
 set_source_files_properties(${LIB_SOURCES} PROPERTIES LANGUAGE CXX)
 
+#Suppress warnings in Flex/Bison generated files
+set_source_files_properties(src/sdc_parse.lex.c src/sdc_parse.tab.c
+                            PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
+
 #Create the library
 add_library(libsdcparse STATIC
              ${LIB_HEADERS}
