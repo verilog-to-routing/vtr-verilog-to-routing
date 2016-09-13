@@ -1529,6 +1529,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 
 	def_type_in = FC_FRAC;
 	def_type_out = FC_FRAC;
+    ovr_type = FC_FRAC; //Remove uninitialized warning
 	def_in_val = OPEN;
 	def_out_val = OPEN;
 
