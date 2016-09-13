@@ -128,7 +128,20 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
         #Flag supported, so enable it
         set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
     endif()
-endforeach(flag)
+endforeach()
+
+#We sometimes want to suppress format-nonliteral checks
+set(WARN_NON_LITERAL_SUPPRESS_FLAGS "")
+set(WARN_NON_LITERAL_SUPPRESS_FLAGS_TO_CHECK
+    "-Wno-format-nonliteral" #Disable format check warnings on non-literal strings
+    )
+foreach(flag ${WARN_NON_LITERAL_SUPPRESS_FLAGS_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
+    if(COMPILER_SUPPORTS_${flag})
+        #Flag supported, so enable it
+        set(WARN_NON_LITERAL_SUPPRESS_FLAGS "${WARN_NON_LITERAL_SUPPRESS_FLAGS} ${flag}")
+    endif()
+endforeach()
 
 
 #Apply the warning flags to all build types

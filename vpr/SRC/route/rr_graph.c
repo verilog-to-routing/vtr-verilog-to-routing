@@ -715,11 +715,6 @@ static int alloc_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
 	return num_rr_switches;
 }
 
-void print_map(map<int, int> dbmap) {
-    printf("size is: %d\n", (int)dbmap.size());
-    printf("first first: %d\n", (dbmap.begin())->first);
-}
-
 /* load the global g_rr_switch_inf variable. also keep track of, for each arch switch, what 
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch_fanin){

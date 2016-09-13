@@ -1021,6 +1021,12 @@ void add_to_mod_list(float *fptr) {
 	rr_modified_head = mod_ptr;
 }
 namespace heap_ {
+	size_t parent(size_t i);
+	size_t left(size_t i);
+	size_t right(size_t i);
+	size_t size();
+	void expand_heap_if_full();
+
 	size_t parent(size_t i) {return i >> 1;}
 	// child indices of a heap
 	size_t left(size_t i) {return i << 1;}

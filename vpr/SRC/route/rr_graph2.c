@@ -79,6 +79,11 @@ static int find_label_of_track(
 		int *wire_mux_on_track, int num_wire_muxes,
 		int from_track);
 
+void dump_seg_details(
+		t_seg_details * seg_details, 
+		int max_chan_width,
+		const char *fname);
+
 /******************** Subroutine definitions *******************************/
 
 /* This assigns tracks (individually or pairs) to segment types.
@@ -336,6 +341,9 @@ t_seg_details *alloc_and_load_seg_details(
 			case BI_DIRECTIONAL:
 				seg_details[cur_track].drivers = MULTI_BUFFERED;
 				break;
+            default:
+                VTR_ASSERT_MSG(false, "Unrecognized track direction");
+                break;
 			}
 
 			seg_details[cur_track].index = i;
@@ -1077,6 +1085,7 @@ void dump_sblock_pattern(
 						case 1: psz_from_side = "R"; break;
 						case 2: psz_from_side = "B"; break;
 						case 3: psz_from_side = "L"; break;
+                        default: VTR_ASSERT_MSG(false, "Unrecognized from side"); break;
 						}
 						const char * psz_to_side = "?";
 						switch( to_side ) {
@@ -1084,6 +1093,7 @@ void dump_sblock_pattern(
 						case 1: psz_to_side = "R"; break;
 						case 2: psz_to_side = "B"; break;
 						case 3: psz_to_side = "L"; break;
+                        default: VTR_ASSERT_MSG(false, "Unrecognized to side"); break;
 						}
 
 						for (int from_track = 0; from_track < max_chan_width; ++from_track) {
@@ -2279,6 +2289,9 @@ void load_sblock_pattern_lookup(
 				skip = false;
 			}
 			break;
+        default:
+            VTR_ASSERT_MSG(false, "Unrecognzied side");
+            break;
 		}
 		if (skip) {
 			continue;
@@ -2610,6 +2623,9 @@ static int *label_incoming_wires(
 						++num_passing;
 					}
 					break;
+                default:
+                    VTR_ASSERT_MSG(false, "Unrecognized pass");
+                    break;
 				}
 			}
 		}

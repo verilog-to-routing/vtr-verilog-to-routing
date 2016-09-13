@@ -29,6 +29,9 @@ using namespace std;
 #define TABLENGTH 1
 
 /****************** Subroutines local to this module ************************/
+void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb);
+void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb);
+void print_models(FILE *fpout, t_model *user_models);
 
 /**************** Subroutine definitions ************************************/
 

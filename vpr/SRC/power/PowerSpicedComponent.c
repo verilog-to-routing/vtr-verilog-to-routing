@@ -11,6 +11,9 @@ using namespace std;
 
 #include "PowerSpicedComponent.h"
 
+bool sorter_PowerCallibSize(PowerCallibSize * a, PowerCallibSize * b);
+bool sorter_PowerCallibInputs(PowerCallibInputs * a, PowerCallibInputs * b);
+
 PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent * parent_,
 		float inputs) :
 		parent(parent_), num_inputs(inputs), sorted(false), done_callibration(

@@ -15,9 +15,6 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadLine.h"
 
-/* extern, should be a header */
-char **ReadLineTokens(FILE * InFile, int *LineNum);
-
 void read_place(const char *place_file, const char *arch_file,
 		const char *net_file, const int L_nx, const int L_ny,
 		const int L_num_blocks, struct s_block block_list[]) {

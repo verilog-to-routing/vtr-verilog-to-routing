@@ -69,6 +69,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup,
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
 
+void vpr_print_args(int argc, const char** argv);
+
 /* Local subroutines end */
 
 /* Display general VPR information */

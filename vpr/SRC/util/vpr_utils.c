@@ -1436,10 +1436,6 @@ void print_switch_usage() {
         char *s_name = g_arch_switch_inf[iswitch].name;
         float s_area = g_arch_switch_inf[iswitch].mux_trans_size;
         printf(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
-        int num_fanin = (int)(switch_fanin_count[iswitch].size());
-        // 4294967295: unsigned version of -1 (invalid size)
-        if (num_fanin == 4294967295)
-            num_fanin = -1;
         
         map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {

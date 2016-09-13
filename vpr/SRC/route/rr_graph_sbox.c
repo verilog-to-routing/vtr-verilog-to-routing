@@ -28,10 +28,6 @@
  * For simple switch boxes this is overkill, but it will allow complicated  *
  * switch boxes with Fs > 3, etc. without trouble.                          */
 
-int get_simple_switch_block_track(const enum e_side from_side,
-		const enum e_side to_side, const int from_track,
-		const enum e_switch_block_type switch_block_type, const int nodes_per_chan);
-
 /* Allocates and loads the switch_block_conn data structure.  This structure *
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */

@@ -645,6 +645,8 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 		}
 
 		break;
+    default:
+        VTR_ASSERT_MSG(false, "Unrecognzied interconnect type.");
 	}
 
 }

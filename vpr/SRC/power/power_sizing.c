@@ -53,7 +53,6 @@ static double power_count_transistor_SRAM_bit(void);
 static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate(float size);
 static double power_count_transistors_levr();
-static double power_MTAs(float size);
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		bool pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);

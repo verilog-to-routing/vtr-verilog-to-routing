@@ -110,6 +110,15 @@ static void power_print_breakdown_pb(FILE * fp);
 static const char * power_estimation_method_name(
 		e_power_estimation_method power_method);
 
+void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
+	t_pb_graph_pin * pin, int iblk);
+void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
+	t_pb * pb, t_pb_graph_pin * pin, int iblk);
+void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin);
+void power_init_pb_pins_rec(t_pb_graph_node * pb_node);
+void power_pb_pins_init();
+void power_routing_init(t_det_routing_arch * routing_arch);
+
 /************************* FUNCTION DEFINITIONS *********************/
 /**
  *  This function calculates the power of primitives (ff, lut, etc),
@@ -1221,7 +1230,7 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 	g_power_commonly_used->max_seg_to_seg_fanout = max_seg_to_seg_fanout;
 	g_power_commonly_used->max_seg_to_IPIN_fanout = max_seg_to_IPIN_fanout;
 
-#if (PRINT_SPICE_COMPARISON)
+#ifdef PRINT_SPICE_COMPARISON
 	g_power_commonly_used->max_routing_mux_size =
 	max(g_power_commonly_used->max_routing_mux_size, 26);
 #endif

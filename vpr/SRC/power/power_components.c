@@ -427,6 +427,9 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 		break;
 	case COMPLETE_INTERC:
 		break;
+    default:
+        //pass
+        break;
 	}
 
 	/* Power of transistors to build interconnect structure */

@@ -47,6 +47,9 @@ void draw_one_logical_connection(
 	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
 	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox);
 t_pb* highlight_sub_block_helper(const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth);
+void find_pin_index_at_model_scope(
+	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
+	int* pin_index, int* total_pins);
 
 /************************* Subroutine definitions begin *********************************/
 

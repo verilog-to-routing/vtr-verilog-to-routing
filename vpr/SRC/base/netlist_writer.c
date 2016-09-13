@@ -116,6 +116,7 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
 std::string create_unconn_net(size_t& unconn_count);
 std::string escape_verilog_identifier(const std::string id);
 std::string escape_sdf_identifier(const std::string id);
+bool is_special_sdf_char(char c);
 std::string join_identifier(std::string lhs, std::string rhs);
 
 //
