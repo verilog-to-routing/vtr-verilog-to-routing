@@ -63,7 +63,6 @@ my $create_golden = 0;
 my $check_golden = 0;
 my $calc_geomean = 0;
 my $display_qor = 0;
-my $can_quit = 0;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
@@ -84,17 +83,7 @@ while ( $token = shift(@ARGV) ) {
 	}
 	elsif ($token eq "quick_test") {
 		run_quick_test();
-		$can_quit = 1;
-	}
-	elsif ($token eq "odin_reg_micro") {
-		run_odin_test( "micro" );
-		$can_quit = 1;
-	}
-	elsif ($token eq "odin_reg_full") {
-		run_odin_test( "full" );
-		$can_quit = 1;
-	}
-	else {	
+	} else {	
 		if ($token =~ /(.*)\//) {
 			$token = $1;
 		}
@@ -105,7 +94,7 @@ while ( $token = shift(@ARGV) ) {
 # Remove duplicate tests
 @tests = uniq(@tests);
 
-if ( $#tests == -1 and !$can_quit ) {
+if ( $#tests == -1) {
 	die "\n"
 	  . "Incorrect usage.  You must specify at least one test to execute.\n"
 	  . "\n"
@@ -144,27 +133,35 @@ if ( $#tests > -1 ) {
 
 	foreach my $test (@tests) {
 		chomp($test);
-		# Set up test
-		setup_single_test($test);
-		# Check for user overrides
-		check_override();
-		# Run regression test
-		my $run_failures = run_single_test();
+        my $run_failures = 0;
+        if($test =~ /^odin_reg/) {
+            $run_failures = run_odin_test($test);
+        } else {
+            #Standard VTR task-based test
+
+            # Set up test
+            setup_single_test($test);
+            # Check for user overrides
+            check_override();
+            # Run regression test
+            $run_failures = run_single_test();
+            $first = 0;
+            # Parse regression test
+            parse_single_test(" ");
+            # Create/Check golden results
+            if ($create_golden) {
+                parse_single_test("create", "calculate");
+            } else {
+                my $qor_test_failures = parse_single_test("check", "calculate");
+                print "\nTest '$test' had $qor_test_failures qor test failures\n";
+                $num_failed_tests += $qor_test_failures;
+            }
+        }
+
         if($run_failures != 0) {
             print "\nTest '$test' had $run_failures run failures\n";
             $num_failed_tests += $run_failures;
         }
-		$first = 0;
-		# Parse regression test
-		parse_single_test(" ");
-		# Create/Check golden results
-		if ($create_golden) {
-			parse_single_test("create", "calculate");
-		} else {
-			my $qor_test_failures = parse_single_test("check", "calculate");
-            print "\nTest '$test' had $qor_test_failures qor test failures\n";
-            $num_failed_tests += $qor_test_failures;
-		}
 	}
 	print "\nTest complete\n\n";
 }
@@ -407,14 +404,22 @@ sub run_odin_test {
 
 	chdir ("ODIN_II") or die "Failed to change to directory ./ODIN_II: $!";
 
-	if ( $token eq "micro" ) {
-		system("./verify_microbenchmarks.sh");
+    my $return_status = 0;
+	if ( $token eq "odin_reg_micro" ) {
+		$return_status = system("./verify_microbenchmarks.sh");
 	}
-	elsif ( $token eq "full" ) {
-		system("./verify_regression_tests.sh");
-	}
+	elsif ( $token eq "odin_reg_full" ) {
+		$return_status = system("./verify_regression_tests.sh");
+	} else {
+        die("Unrecognized odin test $token");
+    }
 
 	chdir ("..");	
+
+    #Perl is obtuse, and requires you to manually shift the return value by 8 bits
+    #to get the real exit code from a call to system(). There must be a better way to do this....
+    my $exit_code = $return_status >> 8;
+    return $exit_code;
 }
 
 sub trim($) {
