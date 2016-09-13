@@ -738,6 +738,7 @@ static void x11_handle_configure_notify (XEvent report);
 static void x11_handle_button_info (t_event_buttonPressed *button_info,
 								int buttonNumber, int Xbutton_state);
 
+bool is_droppable_event(XEvent* event);
 #endif /* X11 Declarations */
 
 #ifdef WIN32
@@ -794,6 +795,8 @@ static void win32_handle_button_info (t_event_buttonPressed &button_info, UINT m
 									  WPARAM wParam);
 
 COLORREF convert_to_win_color(const t_color& src);
+
+bool is_droppable_event(MSG* message);
 
 #endif /* Win32 Declarations */
 
@@ -1543,26 +1546,22 @@ update_ps_transform (void)
 	}
 }
 
-bool is_droppable_event(
-	#ifdef X11
-		XEvent* event
-	#elif WIN32
-		MSG* message
-	#endif
-	) {
-	#ifdef X11
-		return
-		event->type == MotionNotify || (
+
+#ifdef X11
+bool is_droppable_event(XEvent* event) {
+		return event->type == MotionNotify || (
 			event->type == ButtonPress && (
 				event->xbutton.button == Button4 ||
 				event->xbutton.button == Button5
 			)
 		);
-	#elif WIN32
-		return message->message == WM_MOUSEWHEEL
-		||     message->message == WM_MOUSEMOVE;
-	#endif
 }
+#elif defined WIN32
+bool is_droppable_event(MSG* message) {
+    return message->message == WM_MOUSEWHEEL
+    ||     message->message == WM_MOUSEMOVE;
+}
+#endif
 
 /* The program's main event loop.  Must be passed a user routine        
 * drawscreen which redraws the screen.  It handles all window resizing 
@@ -2210,7 +2209,7 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 		int zero_approx_height = zero_extents.height;
 		int zero_approx_width  = zero_extents.width;
 
-#elif WIN32
+#elif defined WIN32
 		HFONT zero_hfont = CreateFontIndirect(zero_font);
 		if (!zero_hfont) {
 			WIN32_CREATE_ERROR();
@@ -2353,7 +2352,7 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 			xc + ( -wrld_width  + X11_xmagicoffset) / 2.0,
 			yc + ( -wrld_height + X11_ymagicoffset) / 2.0
 		),
-#elif WIN32
+#elif defined WIN32
 		t_point(xc - wrld_width / 2, yc - wrld_height / 2),
 #endif
 		wrld_width,
@@ -2395,7 +2394,7 @@ void drawtext (float xc, float yc, const char *text, float boundx, float boundy)
 			(const FcChar8*)text,
 			text_byte_length
 		);
-#elif WIN32
+#elif defined WIN32
 		float WIN_xtextoffset = 0;
 		float WIN_ytextoffset = 0;
 		float normalized_angle = (angle - (int)(angle/(2*PI))*2*PI);
@@ -2828,6 +2827,9 @@ adjustwin (void (*drawscreen) (void))
 				set_draw_mode(DRAW_NORMAL);
 			}
 			break;
+        default:
+            //pass
+            break;
 		}
 	}
 	/* XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | StructureNotifyMask
@@ -2916,7 +2918,7 @@ close_graphics (void)
 	memset(&x11_state.visual_info, 0, sizeof(x11_state.visual_info)); // dont need to free this
 
 	XCloseDisplay(x11_state.display);
-#elif WIN32
+#elif defined WIN32
    // Destroy the window
 	if(!DestroyWindow(win32_state.hMainWnd))
 		WIN32_DRAW_ERROR();
@@ -3307,7 +3309,7 @@ do_font_loading(int pointsize, float degrees) {
 		printf("the font config array in easygl_constants.h .\n");
 		exit(1);
 	}
-#elif WIN32
+#elif defined WIN32
 	LOGFONT *lf = retval = (LOGFONT*)safe_malloc(sizeof(LOGFONT));
 	ZeroMemory(lf, sizeof(LOGFONT));
 	// lfHeight specifies the desired height of characters in logical units.
@@ -3358,7 +3360,7 @@ do_font_loading(int pointsize, float degrees) {
 static void close_font(font_ptr font) {
 	#ifdef X11
 		XftFontClose(x11_state.display, font);
-	#elif WIN32
+	#elif defined WIN32
 		free(font);
 	#endif
 }
@@ -3809,6 +3811,9 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 					// note, this is also called in the skipping logic
 					handle_zoom_out(x, y, drawscreen);
 					break;
+                default:
+                    //pass
+                    break;
 				}
 			} 
 			else {  /* A menu button was pressed. */
@@ -3845,6 +3850,9 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 			case Button2:  /* Scroll wheel released; stop panning */
 				panning_off();
 				break;
+            default:
+                //pass
+                break;
 			}
 		case MotionNotify:
 #ifdef VERBOSE 
@@ -3879,6 +3887,9 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 			}
 
 			break;
+        default:
+            //pass
+            break;
 		}
 	}
 }

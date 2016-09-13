@@ -367,7 +367,7 @@ void drawellipticarc (
 void drawellipticarc (
 	float xc, float yc, float radx, float rady, float startang, float angextent);
 
-void fillellipticarc (t_point center, float radx, float rady, float startang, float angextent);
+void fillellipticarc (const t_point& center, float radx, float rady, float startang, float angextent);
 void fillellipticarc (float xc, float yc, float radx, float rady, float startang, float angextent);
 
 /* 
