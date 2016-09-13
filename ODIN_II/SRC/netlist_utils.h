@@ -7,7 +7,6 @@
 //
 nnode_t* allocate_nnode();
 npin_t* allocate_npin();
-void free_npin(npin_t *to_free);
 npin_t *get_zero_pin(netlist_t *netlist);
 npin_t *get_pad_pin(netlist_t *netlist);
 npin_t *get_one_pin(netlist_t *netlist);
