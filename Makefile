@@ -28,7 +28,7 @@ packages:
 
 ODIN_II: libarchfpga libvtrutil
 
-vpr: libarchfpga libsdc_parse libvtrutil
+vpr: libarchfpga libsdcparse libvtrutil
 
 libarchfpga: liblog libvtrutil libpugixml
 
@@ -42,7 +42,7 @@ clean:
 	@ cd libarchfpga && make clean
 	@ cd liblog && make clean
 	@ cd libpugixml && make clean
-	@ cd libsdc_parse && make clean
+	@ cd libsdcparse && make clean
 	@ cd libvtrutil && make clean
 
 clean_vpr:

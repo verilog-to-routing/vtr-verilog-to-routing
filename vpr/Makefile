@@ -22,13 +22,13 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 #############################################################################################
 
 CC = $(COMPILER)
-LIB_DIR = -L. -L../libsdc_parse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
-LIB = -lm -lvpr -leasygl -lsdc_parse -larchfpga -lpugixml -lvtrutil -llog
+LIB_DIR = -L. -L../libsdcparse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
+LIB = -lm -lvpr -leasygl -lsdcparse -larchfpga -lpugixml -lvtrutil -llog
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
 OTHER_DIR := $(OTHER_DIR) \
-	-I../libsdc_parse/src \
+	-I../libsdcparse/src \
 	-I../liblog/src \
 	-I../libeasygl/src \
 	$(shell pkg-config --cflags freetype2)
@@ -80,7 +80,7 @@ OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c $(SRC_
 OBJ_DIRS=$(sort $(dir $(OBJ)))
 DEP := $(OBJ:.o=.d)
 
-.PHONY: clean libeasygl libsdc_parse libarchfpga libpugixml libvtrutil liblog 
+.PHONY: clean libeasygl libsdcparse libarchfpga libpugixml libvtrutil liblog 
 
 
 # notify is an order-only prerequisite - note the "|"
@@ -99,13 +99,13 @@ packages:
 libarchfpga:
 	@ cd ../libarchfpga && make libarchfpga.a
 
-libsdc_parse:
-	@ cd ../libsdc_parse && make VERBOSITY=0 libsdc_parse.a
+libsdcparse:
+	@ cd ../libsdcparse && make VERBOSITY=0 libsdcparse.a
 
 libeasygl:
 	@ cd ../libeasygl && make ENABLE_GRAPHICS=$(ENABLE_GRAPHICS) libeasygl.a
 
-libvpr.a: $(OBJ) Makefile libsdc_parse libeasygl libarchfpga
+libvpr.a: $(OBJ) Makefile libsdcparse libeasygl libarchfpga
 	@ ar rcs $@ $(OBJ)
 	@#Remove main
 	@ ar d $@ main.o
@@ -130,7 +130,7 @@ $(OBJ_DIRS):
 clean:
 	rm -f $(EXE) $(OBJ) $(DEP)
 	cd ../libarchfpga && make clean
-	cd ../libsdc_parse && make clean
+	cd ../libsdcparse && make clean
 	cd ../libeasygl && make clean
 
 clean_coverage: clean

@@ -6,7 +6,7 @@ abc_with_bb_support/abc
 ace2/ace
 libarchfpga/read_arch
 liblog/test_log
-libsdc_parse/sdc_parse_test
+libsdcparse/sdcparse_test
 vpr/vpr
 
 #Install

@@ -19,7 +19,7 @@ target_include_directories(libsdcparse PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libsdcparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Create the test executable
-add_executable(sdc_parse_test src/main.c)
-target_link_libraries(sdc_parse_test libsdcparse)
+add_executable(sdcparse_test src/main.c)
+target_link_libraries(sdcparse_test libsdcparse)
 
-install(TARGETS libsdcparse sdc_parse_test DESTINATION bin)
+install(TARGETS libsdcparse sdcparse_test DESTINATION bin)

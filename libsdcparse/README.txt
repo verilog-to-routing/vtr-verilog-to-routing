@@ -1,4 +1,4 @@
-libsdc_parse
+libsdcparse
 ----------------------------------
 
 This library provides a parser for a subset of the Synopsys Design Constriant (SDC)

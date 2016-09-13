@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <climits>
 #include <cmath>
+#include <cstdarg>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -273,7 +274,7 @@ void read_sdc(t_timing_inf timing_inf) {
 }
 
 /*
- * Override the default error function in libsdc_parse so that it throws
+ * Override the default error function in libsdcparse so that it throws
  * vpr style errors.
  */
 void sdc_error(const int line_number, const char* near_text, const char* fmt, ...) {

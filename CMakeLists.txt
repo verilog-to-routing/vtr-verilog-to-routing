@@ -207,7 +207,7 @@ add_subdirectory(liblog)
 add_subdirectory(libpugixml)
 add_subdirectory(libvtrutil)
 add_subdirectory(libarchfpga)
-add_subdirectory(libsdc_parse)
+add_subdirectory(libsdcparse)
 add_subdirectory(libeasygl)
 add_subdirectory(vpr)
 add_subdirectory(ODIN_II)
@@ -234,11 +234,11 @@ set_target_properties(libarchfpga read_arch
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libarchfpga")
-set_target_properties(libsdcparse sdc_parse_test
+set_target_properties(libsdcparse sdcparse_test
     PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdc_parse"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdc_parse"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdc_parse")
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse")
 set_target_properties(libeasygl
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
