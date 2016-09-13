@@ -172,7 +172,8 @@ include(ExternalProject)
 ExternalProject_Add(abc_external
     SOURCE_DIR ${ABC_SOURCE_DIR}
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND make abc libabc.a
+    #Use $(MAKE) to enable parallel build
+    BUILD_COMMAND $(MAKE) abc libabc.a
     BUILD_IN_SOURCE 1
     LOG_BUILD 0
     INSTALL_COMMAND ""
