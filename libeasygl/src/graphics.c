@@ -3583,8 +3583,10 @@ static void x11_init_graphics (const char *window_name)
 		exit(-1);
 	}
 
-	if (x11_state.visual_info.bits_per_rgb != 8 ||
-		x11_state.visual_info.red_mask   != 0xFF0000 ||
+	if (x11_state.visual_info.bits_per_rgb != 8) {
+        fprintf(stderr, "Warning strange 24-bit TrueColor visual with %d-bit rgb channels (expected 8-bit)\n", x11_state.visual_info.bits_per_rgb);
+    }
+    if (x11_state.visual_info.red_mask   != 0xFF0000 ||
 		x11_state.visual_info.green_mask != 0x00FF00 ||
 		x11_state.visual_info.blue_mask  != 0x0000FF) {
 		fprintf(stderr, "Cannot handle strange 24-bit TrueColor visual\n");
