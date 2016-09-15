@@ -84,7 +84,7 @@ static void build_bidir_rr_opins(
 		t_rr_node * L_rr_node, vtr::t_ivec *** L_rr_node_indices,
 		int ******opin_to_track_map, int ***Fc_out,
 		bool * L_rr_edge_done, const t_seg_details * seg_details,
-		struct s_grid_tile **L_grid, const int delayless_switch,
+		struct s_grid_tile **L_grid,
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
 		const int num_seg_types);
 
@@ -94,8 +94,8 @@ static void build_unidir_rr_opins(
 		const int max_chan_width,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
 		int ***Fc_xofs, int ***Fc_yofs,
-		t_rr_node * L_rr_node, bool * L_rr_edge_done,
-		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices, const int delayless_switch,
+		bool * L_rr_edge_done,
+		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices, 
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
 		const int num_seg_types);
 
@@ -123,7 +123,6 @@ static void alloc_and_load_rr_graph(
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void load_uniform_switch_pattern(
-		const t_type_ptr type,
 		int *****tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
@@ -131,7 +130,6 @@ static void load_uniform_switch_pattern(
 		const enum e_directionality directionality);
 
 static void load_perturbed_switch_pattern(
-		const t_type_ptr type,
 		int *****tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
@@ -150,7 +148,7 @@ static void check_all_tracks_reach_pins(
 #endif
 
 static bool **alloc_and_load_perturb_ipins(
-		const int max_chan_width, const int L_num_types, 
+        const int L_num_types, 
 		const int num_seg_types,
 		const int *sets_per_seg_type,
 		int ***Fc_in, int ***Fc_out,
@@ -165,7 +163,7 @@ static void build_rr_chan(
 		const int i, const int j, const t_rr_type chan_type,
 		vtr::t_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
 		vtr::t_ivec ***switch_block_conn, const int cost_index_offset,
-		const int max_chan_width, const int tracks_per_chan, const int *opin_mux_size,
+		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
 		vtr::t_ivec *** L_rr_node_indices,
@@ -178,7 +176,7 @@ static void remap_rr_node_switch_indices(map<int,int> *switch_fanin);
 
 static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch_fanin);
 
-static int alloc_rr_switch_inf(const int num_arch_switches, map<int,int> *switch_fanin);
+static int alloc_rr_switch_inf(map<int,int> *switch_fanin);
 
 static void rr_graph_externals(
 		const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
@@ -225,13 +223,14 @@ void build_rr_graph(
 		const t_type_ptr types, const int L_nx, const int L_ny,
 		struct s_grid_tile **L_grid, 
 		struct s_chan_width *nodes_per_chan,
-		const struct s_chan_width_dist *chan_capacity_inf,
+		const struct s_chan_width_dist * /*chan_capacity_inf*/, //FIXME: Shouldn't this be used?
 		const enum e_switch_block_type sb_type, const int Fs,
 		const vector<t_switchblock_inf> switchblocks, 
 		const int num_seg_types, const int num_arch_switches, 
 		const t_segment_inf * segment_inf,
 		const int global_route_switch, const int delayless_switch,
-		const t_timing_inf timing_inf, const int wire_to_arch_ipin_switch,
+		const t_timing_inf /*timing_inf*/, //FIXME: Shouldn't this be used? 
+        const int wire_to_arch_ipin_switch,
 		const enum e_base_cost_type base_cost_type, 
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
@@ -369,7 +368,7 @@ void build_rr_graph(
 #endif /* VERBOSE */
 	}
 
-	bool **perturb_ipins = alloc_and_load_perturb_ipins(max_chan_width, L_num_types, num_seg_types,
+	bool **perturb_ipins = alloc_and_load_perturb_ipins(L_num_types, num_seg_types,
 			sets_per_seg_type, Fc_in, Fc_out, directionality);
 	/* END FC */
 	
@@ -645,7 +644,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
 
 	/* Determine what the different fan-ins are for each arch switch, and also
 	   how many entries the rr_switch_inf array should have */
-	int num_rr_switches = alloc_rr_switch_inf(num_arch_switches, switch_fanin);
+	int num_rr_switches = alloc_rr_switch_inf(switch_fanin);
 
 	/* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf 
 	   array each version of its fanin has been mapped to */
@@ -676,7 +675,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
 
 /* Allocates space for the global g_rr_switch_inf variable and returns the 
    number of rr switches that were allocated */
-static int alloc_rr_switch_inf(const int num_arch_switches, map<int,int> *switch_fanin){
+static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     int num_rr_switches = 0;
     // map key: switch index specified in arch; map value: fanin for that index
     map<int, int> *inward_switch_inf = new map<int, int>[num_rr_nodes];
@@ -804,7 +803,7 @@ static void rr_graph_externals(
 	alloc_and_load_rr_clb_source(rr_node_indices);
 }
 
-static bool **alloc_and_load_perturb_ipins(const int max_chan_width, const int L_num_types,
+static bool **alloc_and_load_perturb_ipins(const int L_num_types,
 		const int num_seg_types,
 		const int *sets_per_seg_type,
 		int ***Fc_in, int ***Fc_out, 
@@ -993,7 +992,8 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 		struct s_grid_tile **L_grid, const int L_nx, const int L_ny, const int Fs,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
 		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
-		const int max_chan_width, const enum e_switch_block_type sb_type,
+		const int max_chan_width, 
+        const enum e_switch_block_type /*sb_type*/, //FIXME: Shouldn't this be used?
 		const int delayless_switch, const enum e_directionality directionality,
 		const int wire_to_ipin_switch, bool * Fc_clipped,
 		const t_direct_inf *directs, const int num_directs,
@@ -1016,14 +1016,14 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (BI_DIRECTIONAL == directionality) {
 				build_bidir_rr_opins(i, j, L_rr_node, L_rr_node_indices,
 						opin_to_track_map, Fc_out, L_rr_edge_done, seg_details,
-						L_grid, delayless_switch,
+						L_grid,
 						directs, num_directs, clb_to_clb_directs, num_seg_types);
 			} else {
 				VTR_ASSERT(UNI_DIRECTIONAL == directionality);
 				bool clipped;
 				build_unidir_rr_opins(i, j, L_grid, Fc_out, max_chan_width,
-						chan_details_x, chan_details_y, Fc_xofs, Fc_yofs, L_rr_node,
-						L_rr_edge_done, &clipped, L_rr_node_indices, delayless_switch,
+						chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
+						L_rr_edge_done, &clipped, L_rr_node_indices,
 						directs, num_directs, clb_to_clb_directs, num_seg_types);
  				if (clipped) {
 					*Fc_clipped = true;
@@ -1046,7 +1046,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (i > 0) {
 				build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START, 
-						max_chan_width, chan_width.x_list[j], opin_mux_size,
+						max_chan_width, chan_width.x_list[j],
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
@@ -1054,7 +1054,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (j > 0) {
 				build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START + num_seg_types, 
-						max_chan_width, chan_width.y_list[i], opin_mux_size,
+						max_chan_width, chan_width.y_list[i],
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
@@ -1069,7 +1069,7 @@ static void build_bidir_rr_opins(const int i, const int j,
 		t_rr_node * L_rr_node, vtr::t_ivec *** L_rr_node_indices,
 		int ******opin_to_track_map, int ***Fc_out,
 		bool * L_rr_edge_done, const t_seg_details * seg_details,
-		struct s_grid_tile **L_grid, const int delayless_switch,
+		struct s_grid_tile **L_grid,
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
 		const int num_seg_types) {
 
@@ -1432,7 +1432,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type chan_type,
 		vtr::t_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
 		vtr::t_ivec ***switch_block_conn, const int cost_index_offset,
-		const int max_chan_width, const int tracks_per_chan, const int *opin_mux_size,
+		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y,
 		vtr::t_ivec *** L_rr_node_indices,
@@ -1968,11 +1968,11 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 	}
 
 	if (perturb_switch_pattern) {
-		load_perturbed_switch_pattern(Type, tracks_connected_to_pin,
+		load_perturbed_switch_pattern(tracks_connected_to_pin,
 				num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
 				seg_type_tracks, seg_type_tracks, Fc, directionality);
 	} else {
-		load_uniform_switch_pattern(Type, tracks_connected_to_pin,
+		load_uniform_switch_pattern(tracks_connected_to_pin,
 				num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
 				seg_type_tracks, seg_type_tracks, Fc, directionality);
 	}
@@ -1994,7 +1994,7 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 	return tracks_connected_to_pin;
 }
 
-static void load_uniform_switch_pattern(const t_type_ptr type,
+static void load_uniform_switch_pattern(
 		int *****tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
@@ -2059,7 +2059,7 @@ static void load_uniform_switch_pattern(const t_type_ptr type,
 	}
 }
 
-static void load_perturbed_switch_pattern(const t_type_ptr type,
+static void load_perturbed_switch_pattern(
 		int *****tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
@@ -2355,8 +2355,8 @@ static void build_unidir_rr_opins(const int i, const int j,
 		struct s_grid_tile **L_grid, int ***Fc_out, const int max_chan_width, 
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y,
 		int ***Fc_xofs, int ***Fc_yofs,
-		t_rr_node * L_rr_node, bool * L_rr_edge_done,
-		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices, const int delayless_switch,
+		bool * L_rr_edge_done,
+		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices,
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
 		const int num_seg_types){
 
