@@ -20,7 +20,6 @@ static void check_source(int inode, int inet);
 static void check_sink(int inode, int inet, bool * pin_done);
 static void check_switch(struct s_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
-static int pin_and_chan_adjacent(int pin_node, int chan_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
 static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally);
@@ -368,7 +367,7 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	case OPIN:
 		if(to_type == CHANX || to_type == CHANY) {
-			num_adj += pin_and_chan_adjacent(from_node, to_node);
+			num_adj += 1; //adjacent
 		} else {
 			VTR_ASSERT(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
 			return true; /* Special case, direct OPIN to IPIN connections need not be adjacent */
@@ -393,7 +392,7 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	case CHANX:
 		if (to_type == IPIN) {
-			num_adj += pin_and_chan_adjacent(to_node, from_node);
+			num_adj += 1; //adjacent
 		} else if (to_type == CHANX) {
 			from_xhigh = rr_node[from_node].get_xhigh();
 			to_xhigh = rr_node[to_node].get_xhigh();
@@ -425,7 +424,7 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	case CHANY:
 		if (to_type == IPIN) {
-			num_adj += pin_and_chan_adjacent(to_node, from_node);
+			num_adj += 1; //adjacent
 		} else if (to_type == CHANY) {
 			from_yhigh = rr_node[from_node].get_yhigh();
 			to_yhigh = rr_node[to_node].get_yhigh();
@@ -492,20 +491,6 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 		return (0);
 
 	return (1);
-}
-
-static int pin_and_chan_adjacent(int pin_node, int chan_node) {
-
-	/* Checks if pin_node is adjacent to chan_node.  It returns 1 if the two   *
-	 * nodes are adjacent and 0 if they are not (any other value means there's *
-	 * a bug in this routine).                                                 */
-
-	 /*
-	 This functions checks that channels are located at sides of the blocks.
-	 After the change to pin allignment, this is no longer true.
-	 Hence, I'm overriding this function
-	 */
-	 return true;
 }
 
 static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally) {
