@@ -55,7 +55,7 @@ void log_print_info(const char* message, ...) {
 	fflush(log_stream);
 }
 
-void log_print_warning(const char* filename, unsigned int line_num, const char* message, ...) {
+void log_print_warning(const char* /*filename*/, unsigned int /*line_num*/, const char* message, ...) {
 	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
 	va_list args;
@@ -74,7 +74,7 @@ void log_print_warning(const char* filename, unsigned int line_num, const char* 
 	fflush(log_stream);
 }
 
-void log_print_error(const char* filename, unsigned int line_num, const char* message, ...) {
+void log_print_error(const char* /*filename*/, unsigned int /*line_num*/, const char* message, ...) {
 	check_init(); /* Check if output log file setup, if not, then this function also sets it up */
 
 	va_list args;

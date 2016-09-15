@@ -149,7 +149,7 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns(const t_arch_switch_inf *switches, int num_switches, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
+void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switches*/, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
 	
 	/* Make sure that Node is a switchblock */
 	check_node(Node, "switchblock", loc_data);
@@ -753,7 +753,7 @@ static int get_fobj_precedence( const Formula_Object &fobj ){
 
 
 /* Returns associativity of the specified operator */
-static bool op_associativity_is_left( const t_operator &op ){
+static bool op_associativity_is_left( const t_operator &/*op*/ ){
 	bool is_left = true;
 	
 	/* associativity is 'left' for all but the power operator, which is not yet implemented */

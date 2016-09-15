@@ -1463,7 +1463,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 }
 
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
-		bool * default_leakage_mode, const pugiloc::loc_data& loc_data) {
+		bool * /*default_leakage_mode*/, const pugiloc::loc_data& loc_data) {
 	int i;
 	const char *Prop;
 	pugi::xml_node Cur;
@@ -2129,7 +2129,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		bool timing_enabled, s_arch arch, const pugiloc::loc_data& loc_data) {
+		bool /*timing_enabled*/, s_arch arch, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
@@ -2685,7 +2685,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const struct s_arch_switch_inf *Switches, const int NumSwitches,
 
-		 const bool timing_enabled, const pugiloc::loc_data& loc_data) {
+		 const bool /*timing_enabled*/, const pugiloc::loc_data& loc_data) {
 	int i, j;
 	const char *direct_name;
 	const char *from_pin_name;
@@ -2775,8 +2775,8 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 }
 
 static void ProcessPower( pugi::xml_node parent,
-		t_power_arch * power_arch, const t_type_descriptor * Types,
-		const int NumTypes, const pugiloc::loc_data& loc_data) {
+		t_power_arch * power_arch, const t_type_descriptor * /*Types*/,
+		const int /*NumTypes*/, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node Cur;
 
 	/* Get the local interconnect capacitances */
