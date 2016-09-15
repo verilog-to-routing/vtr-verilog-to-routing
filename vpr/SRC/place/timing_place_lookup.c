@@ -125,9 +125,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 		t_timing_inf timing_inf, const t_direct_inf *directs, 
 		const int num_directs);
 
-static void free_routing_structs(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+static void free_routing_structs();
 
 static void assign_locations(t_type_ptr source_type, int source_x_loc,
 		int source_y_loc, int source_z_loc, t_type_ptr sink_type,
@@ -135,9 +133,7 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 
 static float assign_blocks_and_route_net(t_type_ptr source_type,
 		int source_x_loc, int source_y_loc, t_type_ptr sink_type,
-		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts);
 
 static void alloc_delta_arrays(void);
 
@@ -145,29 +141,17 @@ static void free_delta_arrays(void);
 
 static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 		t_type_ptr sink_type, int source_x, int source_y, int start_x,
-		int end_x, int start_y, int end_y, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+		int end_x, int start_y, int end_y, struct s_router_opts router_opts);
 
-static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, int longest_length);
+static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longest_length);
 
-static void compute_delta_io_to_clb(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+static void compute_delta_io_to_clb(struct s_router_opts router_opts);
 
-static void compute_delta_clb_to_io(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+static void compute_delta_clb_to_io(struct s_router_opts router_opts);
 
-static void compute_delta_io_to_io(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+static void compute_delta_io_to_io(struct s_router_opts router_opts);
 
-static void compute_delta_arrays(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, int longest_length);
+static void compute_delta_arrays(struct s_router_opts router_opts, int longest_length);
 
 static int get_best_pin(enum e_pin_type pintype, t_type_ptr type);
 
@@ -535,9 +519,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 }
 
 /**************************************/
-static void free_routing_structs(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+static void free_routing_structs() {
 	int i;
 	free_rr_graph();
 
@@ -594,9 +576,7 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 /**************************************/
 static float assign_blocks_and_route_net(t_type_ptr source_type,
 		int source_x_loc, int source_y_loc, t_type_ptr sink_type,
-		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts) {
 
 	/*places blocks at the specified locations, and routes a net between them */
 	/*returns the delay of this net */
@@ -682,9 +662,7 @@ static void free_delta_arrays(void) {
 /**************************************/
 static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 		t_type_ptr sink_type, int source_x, int source_y, int start_x,
-		int end_x, int start_y, int end_y, struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+		int end_x, int start_y, int end_y, struct s_router_opts router_opts) {
 
 	int delta_x, delta_y;
 	int sink_x, sink_y;
@@ -700,15 +678,13 @@ static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 
 			(*matrix_ptr)[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts);
 		}
 	}
 }
 
 /**************************************/
-static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, int longest_length) {
+static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longest_length) {
 
 	/*this routine must compute delay values in a slightly different way than the */
 	/*other compute routines. We cannot use a location close to the edge as the  */
@@ -754,7 +730,7 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
 			}
 			delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts);
 		}
 
 	}
@@ -769,7 +745,7 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
 
 			delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts);
 		}
 	}
 
@@ -780,7 +756,7 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
 
 			delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts);
 		}
 	}
 
@@ -793,7 +769,7 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
 		delta_y = abs(sink_y - source_y);
 		delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 
 	}
 
@@ -806,14 +782,12 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts,
 
 		delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 	}
 }
 
 /**************************************/
-static void compute_delta_io_to_clb(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+static void compute_delta_io_to_clb(struct s_router_opts router_opts) {
 	int source_x, source_y;
 	int start_x, start_y, end_x, end_y;
 	t_type_ptr source_type, sink_type;
@@ -832,8 +806,7 @@ static void compute_delta_io_to_clb(struct s_router_opts router_opts,
 	start_y = 1;
 	end_y = ny;
 	generic_compute_matrix(&delta_io_to_clb, source_type, sink_type, source_x,
-			source_y, start_x, end_x, start_y, end_y, router_opts,
-			det_routing_arch, segment_inf, timing_inf);
+			source_y, start_x, end_x, start_y, end_y, router_opts);
 
 	source_x = 1;
 	source_y = 0;
@@ -843,22 +816,18 @@ static void compute_delta_io_to_clb(struct s_router_opts router_opts,
 	start_y = 1;
 	end_y = ny;
 	generic_compute_matrix(&delta_io_to_clb, source_type, sink_type, source_x,
-			source_y, start_x, end_x, start_y, end_y, router_opts,
-			det_routing_arch, segment_inf, timing_inf);
+			source_y, start_x, end_x, start_y, end_y, router_opts);
 
 	start_x = 1;
 	end_x = nx;
 	start_y = ny;
 	end_y = ny;
 	generic_compute_matrix(&delta_io_to_clb, source_type, sink_type, source_x,
-			source_y, start_x, end_x, start_y, end_y, router_opts,
-			det_routing_arch, segment_inf, timing_inf);
+			source_y, start_x, end_x, start_y, end_y, router_opts);
 }
 
 /**************************************/
-static void compute_delta_clb_to_io(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
@@ -878,7 +847,7 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts,
 
 			delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts);
 		}
 	}
 
@@ -890,7 +859,7 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts,
 		delta_y = abs(source_y - sink_y);
 		delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 	}
 
 	sink_x = 1;
@@ -901,14 +870,12 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts,
 		delta_x = abs(source_x - sink_x);
 		delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 	}
 }
 
 /**************************************/
-static void compute_delta_io_to_io(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
@@ -932,7 +899,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts,
 		delta_y = abs(sink_y - source_y);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 
 	}
 
@@ -945,7 +912,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts,
 		delta_y = abs(sink_y - source_y);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 
 	}
 
@@ -958,7 +925,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts,
 		delta_x = abs(sink_x - source_x);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 
 	}
 
@@ -971,7 +938,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts,
 		delta_x = abs(sink_x - source_x);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
-				router_opts, det_routing_arch, segment_inf, timing_inf);
+				router_opts);
 
 	}
 
@@ -983,7 +950,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts,
 			delta_x = abs(source_x - sink_x);
 			delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
-					router_opts, det_routing_arch, segment_inf, timing_inf);
+					router_opts);
 
 		}
 	}
@@ -1016,18 +983,16 @@ print_array(float **array_to_print,
 }
 #endif
 /**************************************/
-static void compute_delta_arrays(struct s_router_opts router_opts,
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, int longest_length) {
+static void compute_delta_arrays(struct s_router_opts router_opts, int longest_length) {
 
 	vtr::printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
-	compute_delta_io_to_io(router_opts, det_routing_arch, segment_inf, timing_inf);
+	compute_delta_io_to_io(router_opts);
 	vtr::printf_info("Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
-	compute_delta_io_to_clb(router_opts, det_routing_arch, segment_inf, timing_inf);
+	compute_delta_io_to_clb(router_opts);
 	vtr::printf_info("Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
-	compute_delta_clb_to_io(router_opts, det_routing_arch, segment_inf, timing_inf);
+	compute_delta_clb_to_io(router_opts);
 	vtr::printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
-	compute_delta_clb_to_clb(router_opts, det_routing_arch, segment_inf, timing_inf, longest_length);
+	compute_delta_clb_to_clb(router_opts, longest_length);
 
 #ifdef PRINT_ARRAYS
 	lookup_dump = my_fopen(DUMPFILE, "w", 0);
@@ -1082,12 +1047,10 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 
 	/*now setup and compute the actual arrays */
 	alloc_delta_arrays();
-	compute_delta_arrays(router_opts, (*det_routing_arch), segment_inf, timing_inf,
-			longest_length);
+	compute_delta_arrays(router_opts, longest_length);
 
 	/*free all data structures that are no longer needed */
-	free_routing_structs(router_opts, (*det_routing_arch), segment_inf,
-			timing_inf);
+	free_routing_structs();
 
 	restore_original_device();
 
