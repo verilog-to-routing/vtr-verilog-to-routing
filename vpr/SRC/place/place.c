@@ -181,15 +181,12 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 #endif
 
 static void alloc_and_load_placement_structs(
-		float place_cost_exp, float ***old_region_occ_x,
-		float ***old_region_occ_y, struct s_placer_opts placer_opts,
+		float place_cost_exp, struct s_placer_opts placer_opts,
 		t_direct_inf *directs, int num_directs, int num_segments);
 
 static void alloc_and_load_try_swap_structs();
 
-static void free_placement_structs(
-		float **old_region_occ_x, float **old_region_occ_y,
-		struct s_placer_opts placer_opts);
+static void free_placement_structs(struct s_placer_opts placer_opts);
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
@@ -202,12 +199,11 @@ static void free_legal_placements();
 
 static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z);
 
-static int try_place_macro(int itype, int ipos, int imacro, int * free_locations);
+static int try_place_macro(int itype, int ipos, int imacro);
 
 static void initial_placement_pl_macros(int macros_max_num_tries, int * free_locations);
 
-static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type, 
-		bool apply_placement_regions = false);
+static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type);
 static void initial_placement_location(int * free_locations, int iblk,
 		int *pipos, int *px, int *py, int *pz);
 
@@ -221,9 +217,8 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to);
 static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to);
 
 static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
-		float rlim, float **old_region_occ_x,
-		float **old_region_occ_y,
-		enum e_place_algorithm place_algorithm, float timing_tradeoff,
+		float rlim,
+        enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost);
 
@@ -232,14 +227,13 @@ static void check_place(float bb_cost, float timing_cost,
 		float delay_cost);
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
-		float *timing_cost_ptr, float **old_region_occ_x,
-		float **old_region_occ_y,
+		float *timing_cost_ptr,
 		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost_ptr);
 
-static void update_t(float *t, float std_dev, float rlim, float success_rat,
+static void update_t(float *t, float rlim, float success_rat,
 		struct s_annealing_sched annealing_sched);
 
 static void update_rlim(float *rlim, float success_rat);
@@ -294,10 +288,10 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
-	int num_connections, t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
-	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
-    float * place_delay_value, float ** net_delay, const t_timing_inf &timing_inf);
+	float * delay_cost,
+    float ** net_delay, const t_timing_inf &timing_inf);
 
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
@@ -316,7 +310,7 @@ void try_place(struct s_placer_opts placer_opts,
 	unsigned int ipin, inet;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
-		oldt, **old_region_occ_x, **old_region_occ_y, **net_delay = NULL, crit_exponent,
+		oldt, **net_delay = NULL, crit_exponent,
 		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED,
 		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
 	double std_dev;
@@ -352,9 +346,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	init_chan(width_fac, &router_opts.fixed_channel_width, chan_width_dist);
 
-	alloc_and_load_placement_structs(
-			placer_opts.place_cost_exp,
-			&old_region_occ_x, &old_region_occ_y, placer_opts,
+	alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
 			directs, num_directs, det_routing_arch->num_segment);
 
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
@@ -447,7 +439,7 @@ void try_place(struct s_placer_opts placer_opts,
 	final_rlim = 1;
 	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-	t = starting_t(&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y,
+	t = starting_t(&cost, &bb_cost, &timing_cost,
 			annealing_sched, move_lim, rlim,
 			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
@@ -488,9 +480,9 @@ void try_place(struct s_placer_opts placer_opts,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, num_connections, slacks, crit_exponent, inner_recompute_limit, &stats, 
-			&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y, &delay_cost,
-			&place_delay_value, net_delay, timing_inf);
+			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			&cost, &bb_cost, &timing_cost, &delay_cost,
+			net_delay, timing_inf);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -544,7 +536,7 @@ void try_place(struct s_placer_opts placer_opts,
 		std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
 		oldt = t; /* for finding and printing alpha. */
-		update_t(&t, std_dev, rlim, success_rat, annealing_sched);
+		update_t(&t, rlim, success_rat, annealing_sched);
 
 #ifndef SPEC
 		critical_path_delay = get_critical_path_delay();
@@ -594,9 +586,9 @@ void try_place(struct s_placer_opts placer_opts,
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, num_connections, slacks, crit_exponent, inner_recompute_limit, &stats, 
-			&cost, &bb_cost, &timing_cost, old_region_occ_x, old_region_occ_y, &delay_cost,
-			&place_delay_value, net_delay, timing_inf);
+			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			&cost, &bb_cost, &timing_cost, &delay_cost,
+			net_delay, timing_inf);
 
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
@@ -691,9 +683,7 @@ void try_place(struct s_placer_opts placer_opts,
 	vtr::printf_info("Total moves attempted: %d.0\n", tot_iter);
 #endif
 
-	free_placement_structs(
-				old_region_occ_x, old_region_occ_y,
-				placer_opts);
+	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 
@@ -745,10 +735,10 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
-	int num_connections, t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
-	float ** old_region_occ_x, float ** old_region_occ_y, float * delay_cost,
-	float * place_delay_value, float ** net_delay, const t_timing_inf &timing_inf) {
+	float * delay_cost,
+	float ** net_delay, const t_timing_inf &timing_inf) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -765,7 +755,6 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	/* Inner loop begins */
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 		swap_result = try_swap(t, cost, bb_cost, timing_cost, rlim,
-				old_region_occ_x, old_region_occ_y, 
 				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost);
 
@@ -872,34 +861,14 @@ static void update_rlim(float *rlim, float success_rat) {
 }
 
 /* Update the temperature according to the annealing schedule selected. */
-static void update_t(float *t, float std_dev, float rlim, float success_rat,
+static void update_t(float *t, float rlim, float success_rat,
 		struct s_annealing_sched annealing_sched) {
 
 	/*  float fac; */
 
 	if (annealing_sched.type == USER_SCHED) {
 		*t = annealing_sched.alpha_t * (*t);
-	}
-
-	/* Old standard deviation based stuff is below.  This bogs down horribly 
-	 * for big circuits (alu4 and especially bigkey_mod). */
-	/* #define LAMBDA .7  */
-	/* ------------------------------------ */
-#if 0
-	else if (std_dev == 0.)
-	{
-		*t = 0.;
-	}
-	else
-	{
-		fac = exp(-LAMBDA * (*t) / std_dev);
-		fac = max(0.5, fac);
-		*t = (*t) * fac;
-	}
-#endif
-	/* ------------------------------------- */
-
-	else { /* AUTO_SCHED */
+	} else { /* AUTO_SCHED */
 		if (success_rat > 0.96) {
 			*t = (*t) * 0.5;
 		} else if (success_rat > 0.8) {
@@ -935,8 +904,7 @@ static int exit_crit(float t, float cost,
 }
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
-		float *timing_cost_ptr, float **old_region_occ_x,
-		float **old_region_occ_y, 
+		float *timing_cost_ptr,
 		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
@@ -960,7 +928,6 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 	for (i = 0; i < move_lim; i++) {
 		swap_result = try_swap(HUGE_POSITIVE_FLOAT, cost_ptr, bb_cost_ptr, timing_cost_ptr, rlim,
-				old_region_occ_x, old_region_occ_y,
 				place_algorithm, timing_tradeoff,
 				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost_ptr);
 		
@@ -1141,8 +1108,7 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 }
 
 static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *timing_cost,
-		float rlim, float **old_region_occ_x,
-		float **old_region_occ_y, 
+		float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost) {
@@ -1490,7 +1456,7 @@ static bool find_to(t_type_ptr type, float rlim,
 }
 
 static void find_to_location(t_type_ptr type, float rlim,
-		int iblk_from, int x_from, int y_from, 
+		int /*iblk_from*/, int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to) {
 
 	int itype = type->index;
@@ -1838,7 +1804,6 @@ static float comp_bb_cost(enum cost_methods method) {
 }
 
 static void free_placement_structs(
-		float **old_region_occ_x, float **old_region_occ_y,
 		struct s_placer_opts placer_opts) {
 
 	/* Frees the major structures needed by the placer (and not needed       *
@@ -1900,8 +1865,7 @@ static void free_placement_structs(
 }
 
 static void alloc_and_load_placement_structs(
-		float place_cost_exp, float ***old_region_occ_x,
-		float ***old_region_occ_y, struct s_placer_opts placer_opts,
+		float place_cost_exp, struct s_placer_opts placer_opts,
 		t_direct_inf *directs, int num_directs, int num_segments) {
 
 	/* Allocates the major structures needed only by the placer, primarily for *
@@ -1975,10 +1939,6 @@ static void alloc_and_load_placement_structs(
 	
 	bb_coords = (struct s_bb *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
 	bb_num_on_edges = (struct s_bb *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
-
-	/* Shouldn't use them; crash hard if I do!   */
-	*old_region_occ_x = NULL;
-	*old_region_occ_y = NULL;
 	
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
@@ -2529,7 +2489,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 }
 
 
-static int try_place_macro(int itype, int ipos, int imacro, int * free_locations){
+static int try_place_macro(int itype, int ipos, int imacro){
 
 	int x, y, z, member_x, member_y, member_z, imember;
 
@@ -2606,7 +2566,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			ipos = vtr::irand(free_locations[itype] - 1);
 
 			// Try to place the macro
-			macro_placed = try_place_macro(itype, ipos, imacro, free_locations);
+			macro_placed = try_place_macro(itype, ipos, imacro);
 
 		} // Finished all tries
 		
@@ -2622,7 +2582,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 			for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
 
 				// Try to place the macro
-				macro_placed = try_place_macro(itype, ipos, imacro, free_locations);
+				macro_placed = try_place_macro(itype, ipos, imacro);
 
 			} // Exhausted all the legal placement position for this macro
 
@@ -2643,8 +2603,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 	} // Finish placing all the pl_macros successfully
 }
 
-static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type,
-		bool apply_placement_regions) {
+static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type pad_loc_type) {
 
 	/* Place blocks that are NOT a part of any macro.
 	 * We'll randomly place each block in the clustered netlist, one by one. 
@@ -2781,8 +2740,6 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		}
 	} // Finish updating the legal_pos[][] and free_locations[] array
 
-	bool apply_placement_regions = true;
-	initial_placement_blocks(free_locations, pad_loc_type, apply_placement_regions );
 	initial_placement_blocks(free_locations, pad_loc_type);
 
 	if (pad_loc_type == USER) {
