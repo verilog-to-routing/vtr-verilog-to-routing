@@ -484,7 +484,7 @@ class LatchInst : public Instance {
             , thld_(thld)
             {}
 
-        void print_blif(std::ostream& os, size_t& unconn_count, int depth=0) override {
+        void print_blif(std::ostream& os, size_t& /*unconn_count*/, int depth=0) override {
             os << indent(depth) << ".latch" << " ";
 
             //Input D port
