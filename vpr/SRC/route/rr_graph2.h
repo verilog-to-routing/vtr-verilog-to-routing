@@ -158,7 +158,6 @@ int get_track_to_tracks(
 		const t_rr_type to_type,
 		const int chan_len,
 		const int max_chan_width,
-		const int *opin_mux_size,
 		const int Fs_per_side,
 		short ******sblock_pattern,
 		struct s_linked_edge **edge_list,

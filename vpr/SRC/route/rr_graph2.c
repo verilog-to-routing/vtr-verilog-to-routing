@@ -38,22 +38,19 @@ static int get_bidir_track_to_chan_seg(
 		struct s_linked_edge **edge_list);
 
 static int get_unidir_track_to_chan_seg(
-		const bool is_end_sb,
 		const int from_track, const int to_chan, const int to_seg, const int to_sb,
 		const t_rr_type to_type, const int max_chan_width, const int L_nx,
 		const int L_ny, const enum e_side from_side, const enum e_side to_side,
-		const int Fs_per_side, const int *opin_mux_size,
+		const int Fs_per_side,
 		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
 		const t_seg_details * seg_details, bool * L_rr_edge_done,
 		bool * Fs_clipped, struct s_linked_edge **edge_list);
 
-static int get_track_to_chan_seg(const int L_nx, const int L_ny,
+static int get_track_to_chan_seg(
 		const int from_track, const int to_chan, const int to_seg,
 		const t_rr_type to_chan_type,
 		const e_side from_side, const e_side to_side,
 		vtr::t_ivec ***L_rr_node_indices, 
-		const t_seg_details *dest_seg_details,
-		const e_directionality directionality,
 		t_sb_connection_map *sb_conn_map,
 		bool * L_rr_edge_done, 
 		s_linked_edge **edge_list);
@@ -806,7 +803,7 @@ int get_bidir_opin_connections(
 }
 
 int get_unidir_opin_connections(
-		const t_type_ptr type,
+		const t_type_ptr /*type*/,
 		const int chan, const int seg, int Fc, const int seg_type_index,
 		const t_rr_type chan_type, const t_seg_details * seg_details,
 		t_linked_edge ** edge_list_ptr, int ***Fc_ofs,
@@ -892,7 +889,7 @@ int get_unidir_opin_connections(
 
 bool is_cblock(const int chan, const int seg, const int track,
 		const t_seg_details * seg_details,
-		const enum e_directionality directionality) {
+		const enum e_directionality /*directionality*/) {
 
 	int length, ofs, start_seg;
 
@@ -1573,7 +1570,7 @@ int get_track_to_pins(
 int get_track_to_tracks(
 		const int from_chan, const int from_seg, const int from_track,
 		const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
-		const int chan_len, const int max_chan_width, const int *opin_mux_size,
+		const int chan_len, const int max_chan_width,
 		const int Fs_per_side, short ******sblock_pattern,
 		struct s_linked_edge **edge_list,
 		const t_seg_details * from_seg_details,
@@ -1702,9 +1699,8 @@ int get_track_to_tracks(
 			if (custom_switch_block){
 				if (DEC_DIRECTION == from_seg_details[from_track].direction || 
 				    BI_DIRECTIONAL == directionality){
-					num_conn += get_track_to_chan_seg(nx, ny, from_track, to_chan, to_seg,
+					num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
 									to_type, from_side_a, to_side, L_rr_node_indices, 
-									to_seg_details, directionality,
 									sb_conn_map, L_rr_edge_done, edge_list);
 				}
 			} else {
@@ -1724,9 +1720,9 @@ int get_track_to_tracks(
 					if ((from_is_sblock)
 							&& (DEC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
-								(bool)(sb_seg == start_sb_seg), from_track, to_chan,
+								from_track, to_chan,
 								to_seg, to_sb, to_type, max_chan_width, nx, ny,
-								from_side_a, to_side, Fs_per_side, opin_mux_size,
+								from_side_a, to_side, Fs_per_side,
 								sblock_pattern, L_rr_node_indices, to_seg_details,
 								L_rr_edge_done, &Fs_clipped, edge_list);
 					}
@@ -1740,9 +1736,8 @@ int get_track_to_tracks(
 			if (custom_switch_block){
 				if (INC_DIRECTION == from_seg_details[from_track].direction || 
 				    BI_DIRECTIONAL == directionality){
-					num_conn += get_track_to_chan_seg(nx, ny, from_track, to_chan, to_seg,
+					num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
 									to_type, from_side_b, to_side, L_rr_node_indices, 
-									to_seg_details, directionality,
 									sb_conn_map, L_rr_edge_done, edge_list);
 				}
 			} else {
@@ -1762,9 +1757,9 @@ int get_track_to_tracks(
 					if ((from_is_sblock)
 							&& (INC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
-								(bool)(sb_seg == end_sb_seg), from_track, to_chan,
+								from_track, to_chan,
 								to_seg, to_sb, to_type, max_chan_width, nx, ny, 
-								from_side_b, to_side, Fs_per_side, opin_mux_size, 
+								from_side_b, to_side, Fs_per_side, 
 								sblock_pattern, L_rr_node_indices, to_seg_details, 
 								L_rr_edge_done, &Fs_clipped, edge_list);
 					}
@@ -1842,13 +1837,11 @@ static int get_bidir_track_to_chan_seg(
    edges added .
    See route/build_switchblocks.c for a detailed description of how the switch block
    connection map sb_conn_map is generated. */
-static int get_track_to_chan_seg(const int L_nx, const int L_ny,
+static int get_track_to_chan_seg(
 		const int from_wire, const int to_chan, const int to_seg,
 		const t_rr_type to_chan_type,
 		const e_side from_side, const e_side to_side,
 		vtr::t_ivec ***L_rr_node_indices, 
-		const t_seg_details *dest_seg_details,
-		const e_directionality directionality,
 		t_sb_connection_map *sb_conn_map,
 		bool * L_rr_edge_done, 
 		s_linked_edge **edge_list){
@@ -1907,11 +1900,10 @@ static int get_track_to_chan_seg(const int L_nx, const int L_ny,
 
 
 static int get_unidir_track_to_chan_seg(
-		const bool is_end_sb,
 		const int from_track, const int to_chan, const int to_seg, const int to_sb,
 		const t_rr_type to_type, const int max_chan_width, const int L_nx,
 		const int L_ny, const enum e_side from_side, const enum e_side to_side,
-		const int Fs_per_side, const int *opin_mux_size,
+		const int Fs_per_side,
 		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
 		const t_seg_details * seg_details, bool * L_rr_edge_done,
 		bool * Fs_clipped, struct s_linked_edge **edge_list) {

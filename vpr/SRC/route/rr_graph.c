@@ -1504,7 +1504,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 			}
 			if (to_seg_details->length > 0) {
 				num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord,
-						opposite_chan_type, seg_dimension, max_chan_width, opin_mux_size, 
+						opposite_chan_type, seg_dimension, max_chan_width, 
 						Fs_per_side, sblock_pattern, &edge_list, 
 						from_seg_details, to_seg_details, opposite_chan_details, 
 						directionality,	L_rr_node_indices, L_rr_edge_done,
@@ -1521,7 +1521,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 			}
 			if (to_seg_details->length > 0) {
 				num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord + 1,
-						opposite_chan_type, seg_dimension, max_chan_width, opin_mux_size, 
+						opposite_chan_type, seg_dimension, max_chan_width, 
 						Fs_per_side, sblock_pattern, &edge_list, 
 						from_seg_details, to_seg_details, opposite_chan_details, 
 						directionality,	L_rr_node_indices, L_rr_edge_done, 
@@ -1551,7 +1551,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 				}
 				if (to_seg_details->length > 0) {
 					num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
-							chan_type, seg_dimension, max_chan_width, opin_mux_size, 
+							chan_type, seg_dimension, max_chan_width, 
 							Fs_per_side, sblock_pattern, &edge_list, 
 							from_seg_details, to_seg_details, from_chan_details, 
 							directionality,	L_rr_node_indices, L_rr_edge_done, 
