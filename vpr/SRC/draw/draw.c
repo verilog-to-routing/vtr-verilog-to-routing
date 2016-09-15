@@ -843,7 +843,7 @@ void draw_rr(void) {
 }
 
 
-static void draw_rr_chanx(int inode, int itrack, const t_color& color) {
+static void draw_rr_chanx(int inode, int /*itrack*/, const t_color& color) {
 
 	/* Draws an x-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -932,7 +932,7 @@ static void draw_rr_chanx(int inode, int itrack, const t_color& color) {
 	}
 }
 
-static void draw_rr_chany(int inode, int itrack, const t_color& color) {
+static void draw_rr_chany(int inode, int /*itrack*/, const t_color& color) {
 
 	/* Draws a y-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1292,7 +1292,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 }
 
 
-static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
+static void draw_chanx_to_chanx_edge(int from_node, int /*from_track*/, int to_node,
 		int to_track, short switch_type) {
 
 	/* Draws a connection between two x-channel segments.  Passing in the track *
@@ -1384,7 +1384,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
 }
 
 
-static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
+static void draw_chany_to_chany_edge(int from_node, int /*from_track*/, int to_node,
 		int to_track, short switch_type) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
