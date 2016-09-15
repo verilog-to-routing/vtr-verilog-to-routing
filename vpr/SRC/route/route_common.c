@@ -664,7 +664,7 @@ void mark_ends(int inet) {
 	}
 }
 
-void mark_remaining_ends(int inet, const vector<int>& remaining_sinks) {
+void mark_remaining_ends(const vector<int>& remaining_sinks) {
 	// like mark_ends, but only performs it for the remaining sinks of a net
 	for (int sink_node : remaining_sinks)
 		++rr_node_route_inf[sink_node].target_flag;

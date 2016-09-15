@@ -735,7 +735,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		VTR_ASSERT_SAFE(is_uncongested_route_tree(rt_root));
 
 		// use the nodes to directly mark ends before they get converted to pins
-		mark_remaining_ends(inet, remaining_targets);
+		mark_remaining_ends(remaining_targets);
 
 		// everything dealing with a net works with it in terms of its sink pins; need to convert its sink nodes to sink pins
 		connections_inf.convert_sink_nodes_to_net_pins(remaining_targets);

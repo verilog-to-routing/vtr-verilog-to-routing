@@ -81,7 +81,7 @@ void reset_path_costs(void);
 float get_rr_cong_cost(int inode);
 
 void mark_ends(int inet);
-void mark_remaining_ends(int inet, const std::vector<int>& remaining_sinks);
+void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
