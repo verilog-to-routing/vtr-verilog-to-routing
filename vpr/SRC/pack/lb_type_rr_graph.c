@@ -609,7 +609,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 }
 
 /* Determine intrinsic cost of an edge that joins two pb_graph_pins */
-static float get_cost_of_pb_edge(t_pb_graph_edge *edge) {
+static float get_cost_of_pb_edge(t_pb_graph_edge* /*edge*/) {
 	return 1;
 }
 
