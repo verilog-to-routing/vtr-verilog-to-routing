@@ -13,8 +13,7 @@ using namespace std;
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type,
-		int wire_to_ipin_switch);
+		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type);
 
 static float get_delay_normalization_fac(int nodes_per_chan,
 		vtr::t_ivec *** L_rr_node_indices);
@@ -105,13 +104,12 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 			num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
 	load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
-			base_cost_type, wire_to_ipin_switch);
+			base_cost_type);
 
 }
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type,
-		int wire_to_ipin_switch) {
+		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type) {
 
 	/* Loads the base_cost member of rr_indexed_data according to the specified *
 	 * base_cost_type.                                                          */
