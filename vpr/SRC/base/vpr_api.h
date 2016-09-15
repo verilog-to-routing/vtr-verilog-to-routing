@@ -76,7 +76,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
 void vpr_check_options(const t_options Options, const bool TimingEnabled);
-void vpr_check_arch(const t_arch Arch, const bool TimingEnabled);
+void vpr_check_arch(const t_arch Arch);
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(const enum e_operation Operation,
 		const struct s_placer_opts PlacerOpts,

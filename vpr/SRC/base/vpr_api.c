@@ -39,6 +39,7 @@ using namespace std;
 #include "ReadOptions.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
+#include "CheckArch.h"
 #include "CheckOptions.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
@@ -216,7 +217,7 @@ void vpr_init(const int argc, const char **argv,
 				&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
 
 		/* Check inputs are reasonable */
-		CheckArch(*arch, vpr_setup->TimingEnabled);
+		CheckArch(*arch);
 
 		/* Verify settings don't conflict or otherwise not make sense */
 		CheckSetup(vpr_setup->Operation, vpr_setup->PlacerOpts,
@@ -952,8 +953,8 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 void vpr_check_options(const t_options Options, const bool TimingEnabled) {
 	CheckOptions(Options, TimingEnabled);
 }
-void vpr_check_arch(const t_arch Arch, const bool TimingEnabled) {
-	CheckArch(Arch, TimingEnabled);
+void vpr_check_arch(const t_arch Arch) {
+	CheckArch(Arch);
 }
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(const enum e_operation Operation,

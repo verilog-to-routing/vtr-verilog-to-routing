@@ -32,9 +32,6 @@ void CheckSetup(const enum e_operation Operation,
 		const t_timing_inf Timing,
 		const t_chan_width_dist Chans);
 
-void CheckArch(const t_arch Arch,
-		const bool TimingEnabled);
-
 void ShowSetup(const t_options options, const t_vpr_setup vpr_setup);
 void printClusteredNetlistStats(void);
 
