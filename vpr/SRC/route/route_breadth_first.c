@@ -24,7 +24,7 @@ static void breadth_first_add_source_to_heap(int inet);
 /************************ Subroutine definitions ****************************/
 
 bool try_breadth_first_route(struct s_router_opts router_opts,
-		vtr::t_ivec ** clb_opins_used_locally, int width_fac) {
+		vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
 	 * (FPGA 95 p. 111).  Returns true if it can route this FPGA, false if   *
@@ -287,7 +287,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 }
 
 static void breadth_first_expand_neighbours(int inode, float pcost, 
-		int inet, int itry, float bend_cost) {
+		int inet, int /*itry*/, float bend_cost) {
 
 	/* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
 	 * the expanded bounding box specified in route_bb are not added to the     *

@@ -350,8 +350,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
 		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
-		success = try_breadth_first_route(router_opts, clb_opins_used_locally,
-				width_fac);
+		success = try_breadth_first_route(router_opts, clb_opins_used_locally);
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
