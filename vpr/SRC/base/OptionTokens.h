@@ -61,10 +61,8 @@ enum e_OptionBaseToken {
             OT_CLUSTER_SEED,
             OT_HILL_CLIMBING_FLAG,
             OT_SKIP_CLUSTERING,
-            OT_ALLOW_EARLY_EXIT,
             OT_GLOBAL_CLOCKS,
             OT__START_TIMING_PACK_OPTIONS, //Marker
-                OT_RECOMPUTE_TIMING_AFTER,
                 OT_CLUSTER_BLOCK_DELAY,
                 OT_INTRA_CLUSTER_NET_DELAY,
                 OT_INTER_CLUSTER_NET_DELAY,

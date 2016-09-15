@@ -368,14 +368,10 @@ ProcessOption(char **Args, t_options * Options) {
 		return ReadFloat(Args, &Options->alpha);
 	case OT_BETA_CLUSTERING:
 		return ReadFloat(Args, &Options->beta);
-	case OT_RECOMPUTE_TIMING_AFTER:
-		return ReadInt(Args, &Options->recompute_timing_after);
 	case OT_CLUSTER_BLOCK_DELAY:
 		return ReadFloat(Args, &Options->block_delay);
 	case OT_ALLOW_UNRELATED_CLUSTERING:
 		return ReadOnOff(Args, &Options->allow_unrelated_clustering);
-	case OT_ALLOW_EARLY_EXIT:
-		return ReadOnOff(Args, &Options->allow_early_exit);
 	case OT_INTRA_CLUSTER_NET_DELAY:
 		return ReadFloat(Args, &Options->intra_cluster_net_delay);
 	case OT_INTER_CLUSTER_NET_DELAY:

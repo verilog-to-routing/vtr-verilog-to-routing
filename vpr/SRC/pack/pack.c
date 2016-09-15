@@ -79,11 +79,11 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 				packer_opts->hill_climbing_flag, packer_opts->output_file,
 				packer_opts->timing_driven, packer_opts->cluster_seed_type,
 				packer_opts->alpha, packer_opts->beta,
-				packer_opts->recompute_timing_after, packer_opts->block_delay,
+				packer_opts->block_delay,
 				packer_opts->intra_cluster_net_delay,
 				packer_opts->inter_cluster_net_delay, packer_opts->aspect,
 				packer_opts->allow_unrelated_clustering,
-				packer_opts->allow_early_exit, packer_opts->connection_driven,
+				packer_opts->connection_driven,
 				packer_opts->packer_algorithm, timing_inf,
 				lb_type_rr_graphs);
 	} else {

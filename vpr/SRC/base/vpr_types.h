@@ -627,14 +627,12 @@ struct s_packer_opts {
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;
 	float beta;
-	int recompute_timing_after;
 	float block_delay;
 	float intra_cluster_net_delay;
 	float inter_cluster_net_delay;
 	bool auto_compute_inter_cluster_net_delay;
 	bool skip_clustering;
 	bool allow_unrelated_clustering;
-	bool allow_early_exit;
 	bool connection_driven;
 	bool doPacking;
 	enum e_packer_algorithm packer_algorithm;

@@ -360,7 +360,6 @@ static void ShowPlacerOpts(const t_options Options,
 
 static void ShowPackerOpts(const struct s_packer_opts PackerOpts) {
 
-	vtr::printf_info("PackerOpts.allow_early_exit: %s", (PackerOpts.allow_early_exit ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
 	vtr::printf_info("PackerOpts.aspect: %f\n", PackerOpts.aspect);
@@ -385,7 +384,6 @@ static void ShowPackerOpts(const struct s_packer_opts PackerOpts) {
 	vtr::printf_info("PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
 	vtr::printf_info("PackerOpts.intra_cluster_net_delay: %f\n", PackerOpts.intra_cluster_net_delay);
-	vtr::printf_info("PackerOpts.recompute_timing_after: %d\n", PackerOpts.recompute_timing_after);
 	vtr::printf_info("PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.absorb_buffer_luts: %s", (PackerOpts.absorb_buffer_luts ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));

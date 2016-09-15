@@ -651,10 +651,6 @@ void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
 		PackerOpts->allow_unrelated_clustering =
 				Options.allow_unrelated_clustering;
 	}
-	PackerOpts->allow_early_exit = false; /* DEFAULT */
-	if (Options.Count[OT_ALLOW_EARLY_EXIT]) {
-		PackerOpts->allow_early_exit = Options.allow_early_exit;
-	}
 	PackerOpts->connection_driven = true; /* DEFAULT */
 	if (Options.Count[OT_CONNECTION_DRIVEN_CLUSTERING]) {
 		PackerOpts->connection_driven = Options.connection_driven;
@@ -678,11 +674,6 @@ void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
 		PackerOpts->beta = Options.beta;
 	}
 
-	/* never recomputer timing */
-	PackerOpts->recompute_timing_after = MAX_SHORT; /* DEFAULT */
-	if (Options.Count[OT_RECOMPUTE_TIMING_AFTER]) {
-		PackerOpts->recompute_timing_after = Options.recompute_timing_after;
-	}
 	PackerOpts->block_delay = 0; /* DEFAULT */
 	if (Options.Count[OT_CLUSTER_BLOCK_DELAY]) {
 		PackerOpts->block_delay = Options.block_delay;
