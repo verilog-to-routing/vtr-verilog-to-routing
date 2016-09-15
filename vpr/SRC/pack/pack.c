@@ -32,7 +32,6 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 	t_pack_patterns *list_of_packing_patterns;
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
-	int num_pack_molecules;
 
 	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
 
@@ -61,8 +60,7 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 	list_of_packing_patterns = alloc_and_load_pack_patterns(
 			&num_packing_patterns);
 	list_of_pack_molecules = alloc_and_load_pack_molecules(
-			list_of_packing_patterns, num_packing_patterns,
-			&num_pack_molecules);
+			list_of_packing_patterns, num_packing_patterns);
 	vtr::printf_info("Finish prepacking.\n");
 
 	if(packer_opts->auto_compute_inter_cluster_net_delay) {

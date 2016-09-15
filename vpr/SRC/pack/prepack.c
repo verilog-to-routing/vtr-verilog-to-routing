@@ -770,7 +770,7 @@ static void backward_expand_pack_pattern_from_edge(
  */
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
-		const int num_packing_patterns, int *num_pack_molecule) {
+		const int num_packing_patterns) {
 	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
 	t_pack_molecule *cur_molecule;
