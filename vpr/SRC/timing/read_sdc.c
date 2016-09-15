@@ -277,7 +277,7 @@ void read_sdc(t_timing_inf timing_inf) {
  * Override the default error function in libsdcparse so that it throws
  * vpr style errors.
  */
-void sdc_error(const int line_number, const char* near_text, const char* fmt, ...) {
+void sdc_error(const int line_number, const char* /*near_text*/, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -819,7 +819,7 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 				g_sdc->constrained_inputs = (t_io *) vtr::realloc (g_sdc->constrained_inputs, ++g_sdc->num_constrained_inputs * sizeof(t_io));
 				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = vtr::strdup(name); 
 				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
-				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = 0.;
+				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = io_delay;
 			}
 		} else if (logical_block[iblock].type == VPACK_OUTPAD) {
 			name = logical_block[iblock].name;
@@ -836,7 +836,7 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = vtr::strdup(name + 4); 
 				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
 				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
-				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = 0.;
+				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = io_delay;
 			}
 		}
 	}
