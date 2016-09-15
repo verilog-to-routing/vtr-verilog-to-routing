@@ -94,7 +94,7 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     "-Wshadow"                  #Warn if local variable shadows another variable
     "-Wformat=2"                #Sanity checks for printf-like formatting
     "-Wlogical-op"              #Checks for logical op when bit-wise expected
-    "-Wmissing-declarations"    #Warn if a global function is defined with no delcaration in a header file
+    "-Wmissing-declarations"    #Warn if a global function is defined with no delcaration
     "-Wmissing-include-dirs"    #Warn if a user include directory is missing
     "-Wredundant-decls"         #Warn if there are overlapping declarations
     "-Wswitch-default"          #Warn if a switch has no default
