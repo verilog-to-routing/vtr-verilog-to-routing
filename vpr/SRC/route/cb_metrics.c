@@ -101,17 +101,14 @@ static void find_tracks_unconnected_to_pin( const set<int> *pin_tracks, const ve
    different... i.e. the actual definition of hamming disatnce) that would be 2(set_size - returned_value) */
 static int hamming_proximity_of_two_sets(const set<int> *set1, const set<int> *set2);
 /* returns the pin diversity metric of a block */
-static float get_pin_diversity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const Conn_Block_Metrics *cb_metrics);
+static float get_pin_diversity(const int Fc, const int num_pin_type_pins, const Conn_Block_Metrics *cb_metrics);
 /* Returns the wire homogeneity of a block's connection to tracks */
-static float get_wire_homogeneity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
+static float get_wire_homogeneity(const int Fc, const int nodes_per_chan,
 		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
 /* Returns the hamming proximity of a block's connection to tracks */
-static float get_hamming_proximity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
+static float get_hamming_proximity(const int Fc, const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
 /* Returns Lemieux's cost function for sparse crossbars (see his 2001 book) applied here to the connection block */
-static float get_lemieux_cost_func(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
+static float get_lemieux_cost_func(const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics);
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
    relatively constant */
@@ -119,7 +116,7 @@ static bool annealer(const e_metric metric, const int nodes_per_chan, const t_ty
 		const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, 
 		const float target_metric_tolerance, int *****pin_to_track_connections, Conn_Block_Metrics *cb_metrics);
 /* updates temperature based on current temperature and the annealer's outer loop iteration */
-static double update_temp(const double temp, const int i_outer);
+static double update_temp(const double temp);
 /* determines whether to accept or reject a proposed move based on the resulting delta of the cost and current temperature */
 static bool accept_move(const double del_cost, const double temp);
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
@@ -136,7 +133,7 @@ static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Me
 
 /* adjusts the connection block until the appropriate metric has hit its target value. the other orthogonal metric is kept constant
    within some tolerance */
-void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const float pin_tolerance,
+void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const float /*pin_tolerance*/,
 		const t_type_ptr block_type, int *****pin_to_track_connections, 
 		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, 
 		const int num_segments, const t_segment_inf *segment_inf){
@@ -236,13 +233,13 @@ void get_conn_block_metrics(const t_type_ptr block_type, int *****tracks_connect
 	}
 
 	/* get the metrics */
-	cb_metrics->wire_homogeneity = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+	cb_metrics->wire_homogeneity = get_wire_homogeneity(Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
 
-	cb_metrics->hamming_proximity = get_hamming_proximity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+	cb_metrics->hamming_proximity = get_hamming_proximity(Fc, num_pin_type_pins, 2, both_sides, cb_metrics);
 
-	cb_metrics->lemieux_cost_func = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+	cb_metrics->lemieux_cost_func = get_lemieux_cost_func(2, both_sides, cb_metrics);
 
-	cb_metrics->pin_diversity = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+	cb_metrics->pin_diversity = get_pin_diversity(Fc, num_pin_type_pins, cb_metrics);
 }
 
 /* initializes the fields of the cb_metrics class */
@@ -370,8 +367,7 @@ int get_max_Fc(const int *Fc_array, const t_type_ptr block_type, const e_pin_typ
 }
 
 /* returns the pin diversity metric of a block */
-static float get_pin_diversity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const Conn_Block_Metrics *cb_metrics){
+static float get_pin_diversity(const int Fc, const int num_pin_type_pins, const Conn_Block_Metrics *cb_metrics){
 
 	float total_pin_diversity = 0;
 	float exp_factor = 3.3;
@@ -398,8 +394,7 @@ static float get_pin_diversity(const t_type_ptr block_type, const e_pin_type pin
 }
 
 /* Returns Lemieux's cost function for sparse crossbars (see his 2001 book) applied here to the connection block */
-static float get_lemieux_cost_func(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
+static float get_lemieux_cost_func(const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
 
 	float lcf = 0;
 
@@ -467,8 +462,7 @@ static float get_lemieux_cost_func(const t_type_ptr block_type, const e_pin_type
 }
 
 /* Returns the hamming proximity of a block's connection to tracks */
-static float get_hamming_proximity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
+static float get_hamming_proximity(const int Fc, const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
 
 	float hamming_proximity = 0;
 
@@ -550,8 +544,7 @@ static int hamming_proximity_of_two_sets(const set<int> *set1, const set<int> *s
 }
 
 /* Returns the wire homogeneity of a block's connection to tracks */
-static float get_wire_homogeneity(const t_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int nodes_per_chan,
-		const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
+static float get_wire_homogeneity(const int Fc, const int nodes_per_chan, const int num_pin_type_pins, const int exponent, const bool both_sides, const Conn_Block_Metrics *cb_metrics){
 	
 	float total_wire_homogeneity = 0;
 	float wire_homogeneity[4];
@@ -788,10 +781,10 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
 			   orthogonal metric after the above move */
 			if (metric < NUM_WIRE_METRICS){
 				/* get the new pin diversity cost */
-				new_orthogonal_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+				new_orthogonal_metric = get_pin_diversity(Fc, num_pin_type_pins, cb_metrics);
 			} else {
 				/* get the new wire homogeneity cost */
-				new_orthogonal_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+				new_orthogonal_metric = get_wire_homogeneity(Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
 			}
 
 			/* check if the orthogonal metric has remained within tolerance */
@@ -805,16 +798,16 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
 				double delta_cost;
 				switch(metric){
 					case WIRE_HOMOGENEITY:
-						new_metric = get_wire_homogeneity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+						new_metric = get_wire_homogeneity(Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
 						break;
 					case HAMMING_PROXIMITY:
-						new_metric = get_hamming_proximity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+						new_metric = get_hamming_proximity(Fc, num_pin_type_pins, 2, both_sides, cb_metrics);
 						break;
 					case LEMIEUX_COST_FUNC:
-						new_metric = get_lemieux_cost_func(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, 2, both_sides, cb_metrics);
+						new_metric = get_lemieux_cost_func(2, both_sides, cb_metrics);
 						break;
 					case PIN_DIVERSITY:
-						new_metric = get_pin_diversity(block_type, pin_type, Fc, nodes_per_chan, num_pin_type_pins, cb_metrics);
+						new_metric = get_pin_diversity(Fc, num_pin_type_pins, cb_metrics);
 						break;
 					default:
 						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "try_move: illegal CB metric being adjusted: %d\n", (int)metric);
@@ -942,7 +935,7 @@ static bool annealer(const e_metric metric, const int nodes_per_chan, const t_ty
 			}
 		}
 
-		temp = update_temp(temp, i_outer);
+		temp = update_temp(temp);
 
 		/* stop if temperature has decreased to 0 */
 		if (0 == temp){
@@ -965,7 +958,7 @@ static bool annealer(const e_metric metric, const int nodes_per_chan, const t_ty
 }
  
 /* updates temperature based on current temperature and the annealer's outer loop iteration */
-static double update_temp(const double temp, const int i_outer){
+static double update_temp(const double temp){
 	double new_temp;
 	double fac = TEMP_DECREASE_FAC;
 	double temp_threshold = LOWEST_TEMP;
@@ -1205,7 +1198,7 @@ static long double count_switch_configurations(const int level, const int signal
 
 /* 'normalizes' the given crossbar. normalization is done in a way such that an entry which was formerly equal to '1'
     will now equal to the probability of that switch being available */
-static void normalize_xbar( const int nodes_per_chan, const float fraction_wires_used, t_xbar_matrix *xbar ){
+static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix *xbar ){
 
 
 	int rows = (int)xbar->size();		/* rows correspond to pins */
@@ -1397,7 +1390,7 @@ void analyze_conn_blocks(const int *****opin_cb, const int *****ipin_cb, const t
 
 	/* 'normalize' the output_xbar such that each entry which was formerly equal to '1' will now 
 	   equal to the probability of that corresponding switch being available for use */
-	normalize_xbar(nodes_per_chan, 0.7, &output_xbar);
+	normalize_xbar(0.7, &output_xbar);
 	
 	/* combine the output and input CB crossbars */
 	t_xbar_matrix compound_xbar;
