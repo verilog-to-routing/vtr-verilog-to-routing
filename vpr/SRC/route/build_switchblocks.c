@@ -221,19 +221,19 @@ static int lcm(int x, int y);
 static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
 			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
 			t_chan_details * chan_details_y, t_switchblock_inf *sb,
-			int nx, int ny, int nodes_per_chan, 
+			int nx, int ny,
 			t_wire_type_sizes *wire_type_sizes, e_directionality directionality, 
 			t_sb_connection_map *sb_conns);
 
 /* ... sb_conn represents the 'coordinates' of the desired switch block connections */
-static void compute_wireconn_connections(int nx, int ny, e_directionality directionality, int nodes_per_chan,
+static void compute_wireconn_connections(int nx, int ny, e_directionality directionality,
 		t_chan_details *from_chan_details, t_chan_details *to_chan_details, Switchblock_Lookup sb_conn,
 		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type, 
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns);
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */ 
-static void get_switchpoint_wires( e_directionality directionality, int nx, int ny, int nodes_per_chan, t_seg_details *chan_details, 
+static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details, 
 		t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points, 
 		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires);
 
@@ -344,7 +344,7 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * 
 							/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
 							   the current wire will connect to */
 							compute_wire_connections(x_coord, y_coord, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, &sb, nx, ny, channel_width,
+									chan_details_x, chan_details_y, &sb, nx, ny,
 									&wire_type_sizes, directionality, sb_conns);
 							
 						}
@@ -434,7 +434,7 @@ static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_detail
 						/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
 						   the current wire will connect to */
 						compute_wire_connections(x, y, from_side, to_side, from_wire,
-								chan_details_x, chan_details_y, sb, nx, ny, nodes_per_chan,
+								chan_details_x, chan_details_y, sb, nx, ny,
 								wire_type_sizes, directionality, sb_row);
 					}
 				}
@@ -521,7 +521,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 							/* Fill appropriate entry of the sb_conns map with vector specifying the wires
 							   the current wire will connect to */
 							compute_wire_connections(x, y, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, sb, nx, ny, nodes_per_chan,
+									chan_details_x, chan_details_y, sb, nx, ny,
 									wire_type_sizes, directionality, sb_conns);
 						}
 					}
@@ -549,7 +549,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 							/* Fill appropriate entry of the sb_conns map with vector specifying the wires
 							   the current wire will connect to */
 							compute_wire_connections(x, y, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, sb, nx, ny, nodes_per_chan,
+									chan_details_x, chan_details_y, sb, nx, ny,
 									wire_type_sizes, directionality, sb_conns);
 						}
 					}
@@ -683,7 +683,7 @@ static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan,
 
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */ 
-static void get_switchpoint_wires( e_directionality directionality, int nx, int ny, int nodes_per_chan, t_seg_details *chan_details, 
+static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details, 
 		t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points, 
 		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires){
 
@@ -750,7 +750,7 @@ static void get_switchpoint_wires( e_directionality directionality, int nx, int 
 static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
 			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
 			t_chan_details * chan_details_y, t_switchblock_inf *sb,
-			int nx, int ny, int nodes_per_chan, 
+			int nx, int ny,
 			t_wire_type_sizes *wire_type_sizes, e_directionality directionality, 
 			t_sb_connection_map *sb_conns){
 
@@ -795,7 +795,7 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
 
 		/* compute the destination wire segments to which the source wire segment should connect based on the
 		   current wireconn */
-		compute_wireconn_connections(nx, ny, directionality, nodes_per_chan, from_chan_details, to_chan_details,
+		compute_wireconn_connections(nx, ny, directionality, from_chan_details, to_chan_details,
 						sb_conn, from_x, from_y, to_x, to_y, from_chan_type, to_chan_type, wire_type_sizes,
 						sb, wireconn_ptr, sb_conns);
 	}
@@ -810,7 +810,7 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
    channel segment with coordinate from_x/from_y) should connect to based on the specified 'wireconn_ptr'.
    wireconn_ptr defines the source and destination sets of wire segments (based on wire segment type & switchpoint
    as defined at the top of this file), and the indices of wires to connect to are relative to these sets */
-static void compute_wireconn_connections(int nx, int ny, e_directionality directionality, int nodes_per_chan,
+static void compute_wireconn_connections(int nx, int ny, e_directionality directionality,
 		t_chan_details *from_chan_details, t_chan_details *to_chan_details, Switchblock_Lookup sb_conn,
 		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type, 
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
@@ -901,7 +901,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 
 	/* get the indices of wires with the destination subsegment number, as well as the effective destination 
 	   channel width (which is the number of wires with the destination subsegment number) */
-	get_switchpoint_wires(directionality, nx, ny, nodes_per_chan, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side, 
+	get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side, 
 			to_wire_type, &to_switchpoint, wire_type_sizes, true, &potential_dest_wires);
 
 	if (0 == potential_dest_wires.size()){
@@ -910,7 +910,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 	dest_W = potential_dest_wires.size();
 
 	/* get the index of the source wire relative to all the wires specified by the wireconn */
-	get_switchpoint_wires(directionality, nx, ny, nodes_per_chan, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side, 
+	get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side, 
 			from_wire_type, &(wireconn_ptr->from_point), wire_type_sizes, false, &potential_src_wires);
 	if (0 == potential_src_wires.size()){
 		return;
