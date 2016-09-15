@@ -788,7 +788,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 }
 
 static void timing_driven_expand_neighbours(struct s_heap *current, 
-		int inet, int itry,
+		int inet, int /*itry*/,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim) {
 
@@ -1028,7 +1028,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	return (num_segs_same_dir);
 }
 
-static void update_rr_base_costs(int inet, float largest_criticality) {
+static void update_rr_base_costs(int inet, float /*largest_criticality*/) {
 
 	/* Changes the base costs of different types of rr_nodes according to the  *
 	 * criticality, fanout, etc. of the current net being routed (inet).       */
@@ -1222,7 +1222,7 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 	return false; /* Current route has no overuse */
 }
 
-static bool early_exit_heuristic(const t_router_opts& router_opts) {
+static bool early_exit_heuristic(const t_router_opts& /*router_opts*/) {
 	/* Early exit code for cases where it is obvious that a successful route will not be found 
 	   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
 	int total_wirelength = 0;
