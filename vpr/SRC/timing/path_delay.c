@@ -179,7 +179,7 @@ of the driver tnode. */
 
 static t_slack * alloc_slacks(void);
 
-static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_clock_domain, float criticality_denom,
+static void update_slacks(t_slack * slacks, float criticality_denom,
     bool update_slack, bool is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf);
 
 static void alloc_and_load_tnodes(const t_timing_inf &timing_inf);
@@ -1041,8 +1041,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
  Count number of tnodes first
  Then connect up tnodes with edges
  */
-static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
-		float inter_cluster_net_delay) {
+static void alloc_and_load_tnodes_from_prepacked_netlist(float /*block_delay*/, float inter_cluster_net_delay) {
 	int i, j, k;
 	const t_model *model;
 	t_model_ports *model_port;
@@ -1384,7 +1383,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
 }
 
 static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
-		int *inode, const t_timing_inf timing_inf) {
+		int *inode, const t_timing_inf /*timing_inf*/) {
 	int i;
 	i = *inode;
 	tnode[i].pb_graph_pin = pb_graph_pin;
@@ -1937,7 +1936,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 				/* Update the slack and criticality for each edge of each net which was  
 				analysed on the most recent traversal and has a lower (slack) or 
 				higher (criticality) value than before. */
-				update_slacks(slacks, source_clock_domain, sink_clock_domain, criticality_denom, 
+				update_slacks(slacks, criticality_denom, 
 					update_slack, is_final_analysis, smallest_slack_in_design, timing_inf);
 
 #ifndef PATH_COUNTING
@@ -2625,7 +2624,7 @@ static void do_path_counting(float criticality_denom) {
 }
 #endif
 
-static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_clock_domain, float criticality_denom,
+static void update_slacks(t_slack * slacks, float criticality_denom,
     bool update_slack, bool is_final_analysis, float smallest_slack_in_design, const t_timing_inf &timing_inf) {
 
 	/* Updates the slack and criticality of each sink pin, or equivalently 
