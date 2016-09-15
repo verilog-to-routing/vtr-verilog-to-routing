@@ -1189,7 +1189,7 @@ void pad_sp_memory_width(nnode_t *node, netlist_t *netlist)
 /*
  * Pads the given output port to the width specified in the given model.
  */
-void pad_memory_output_port(nnode_t *node, netlist_t *netlist, t_model *model, const char *port_name)
+void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *model, const char *port_name)
 {
 	static int pad_pin_number = 0; 
 

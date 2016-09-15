@@ -1548,7 +1548,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
  * 	Creates a lookup of the variables declared here so that in the analysis we can look
  * 	up the definition of it to decide what to do.
  *-------------------------------------------------------------------------------------------*/
-void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
+void create_symbol_table_for_module(ast_node_t* module_items, char * /*module_name*/)
 {
 	/* with the top module we need to visit the entire ast tree */
 	int i, j;
@@ -1697,7 +1697,7 @@ void create_symbol_table_for_module(ast_node_t* module_items, char *module_name)
  * 	Creates a lookup of the variables declared here so that in the analysis we can look
  * 	up the definition of it to decide what to do.
  *-------------------------------------------------------------------------------------------*/
-void create_symbol_table_for_function(ast_node_t* function_items, char *function_name)
+void create_symbol_table_for_function(ast_node_t* function_items, char * /*function_name*/)
 {
 	/* with the top module we need to visit the entire ast tree */
 	int i, j;
@@ -3146,7 +3146,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 
 
-void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char *instance_name_prefix)
+void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_node, char * /*instance_name_prefix*/)
 {
     int i;
     long sc_spot;
@@ -3182,7 +3182,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t *initial_no
 /*---------------------------------------------------------------------------------------------
  * (function: terminate_registered_assignment)
  *-------------------------------------------------------------------------------------------*/
-void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* assignment, signal_list_t *potential_clocks, char *instance_name_prefix)
+void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* assignment, signal_list_t *potential_clocks, char * /*instance_name_prefix*/)
 {
 	oassert(potential_clocks != NULL);
 
@@ -4356,7 +4356,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 /*---------------------------------------------------------------------------------------------
  * (function:  create_mux_expressions)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t *create_mux_expressions(signal_list_t **expression_lists, nnode_t *mux_node, int num_expression_lists, char *instance_name_prefix)
+signal_list_t *create_mux_expressions(signal_list_t **expression_lists, nnode_t *mux_node, int num_expression_lists, char * /*instance_name_prefix*/)
 {
 	int i, j;
 	signal_list_t *return_list = init_signal_list();
@@ -4494,7 +4494,7 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 /*---------------------------------------------------------------------------------------------
  * (function: pad_with_zeros)
  *-------------------------------------------------------------------------------------------*/
-void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char *instance_name_prefix)
+void pad_with_zeros(ast_node_t* node, signal_list_t *list, int pad_size, char * /*instance_name_prefix*/)
 {
 	int i;
 

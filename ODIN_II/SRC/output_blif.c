@@ -297,7 +297,7 @@ void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *f
  * (function: partial_map_node)
  * 	Depending on node type, figures out what to print for this node
  *------------------------------------------------------------------*/
-void output_node(nnode_t *node, short traverse_number, FILE *fp)
+void output_node(nnode_t *node, short /*traverse_number*/, FILE *fp)
 {
 	switch (node->type)
 	{
@@ -410,7 +410,7 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 /*-------------------------------------------------------------------------
  * (function: define_logical_function)
  *-----------------------------------------------------------------------*/
-void define_logical_function(nnode_t *node, short type, FILE *out)
+void define_logical_function(nnode_t *node, short /*type*/, FILE *out)
 {
 	int i, j;
 	char *temp_string;

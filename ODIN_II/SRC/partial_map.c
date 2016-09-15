@@ -340,7 +340,7 @@ void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist)
  * (function: instantiate_multi_port_mux )
  * 	Makes the multiport into a series of 2-Mux-decoded 
  *-------------------------------------------------------------------------------------------*/
-void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	int i, j;
 	int width_of_one_hot_logic;
@@ -389,7 +389,7 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t *netlist)
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_not_logic )
  *-------------------------------------------------------------------------------------------*/
-void instantiate_not_logic(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_not_logic(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	int width = node->num_input_pins;
 	nnode_t **new_not_cells;
@@ -417,7 +417,7 @@ void instantiate_not_logic(nnode_t *node, short mark, netlist_t *netlist)
  * (function: instantiate_buffer )
  * 	Buffers just pass through signals
  *-------------------------------------------------------------------------------------------*/
-void instantiate_buffer(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_buffer(nnode_t *node, short /*mark*/, netlist_t * /*netlist*/)
 {
 	int width = node->num_input_pins;
 	int i;

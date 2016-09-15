@@ -59,7 +59,7 @@ void error_message(short error_type, int line_number, int file, const char *mess
 /*---------------------------------------------------------------------------------------------
  * (function: warning_message)
  *-------------------------------------------------------------------------------------------*/
-void warning_message(short error_type, int line_number, int file, const char *message, ...)
+void warning_message(short /*error_type*/, int line_number, int file, const char *message, ...)
 {
 	va_list ap;
 	static short is_warned = FALSE;

@@ -380,7 +380,7 @@ void declare_hard_multiplier(nnode_t *node)
 /*---------------------------------------------------------------------------
  * (function: instantiate_hard_multiplier )
  *-------------------------------------------------------------------------*/
-void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	char *new_name;
 	int len, sanity, i;
@@ -504,7 +504,7 @@ void add_the_blackbox_for_mults(FILE *out)
 /*-------------------------------------------------------------------------
  * (function: define_mult_function)
  *-----------------------------------------------------------------------*/
-void define_mult_function(nnode_t *node, short type, FILE *out)
+void define_mult_function(nnode_t *node, short /*type*/, FILE *out)
 {
 	int i, j;
 	int count;

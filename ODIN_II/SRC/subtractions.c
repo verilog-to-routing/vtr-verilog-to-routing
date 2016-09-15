@@ -119,7 +119,7 @@ void declare_hard_adder_for_sub(nnode_t *node)
 /*---------------------------------------------------------------------------
  * (function: instantiate_hard_adder_subtraction )
  *-------------------------------------------------------------------------*/
-void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	char *new_name;
 	int len, sanity, i;

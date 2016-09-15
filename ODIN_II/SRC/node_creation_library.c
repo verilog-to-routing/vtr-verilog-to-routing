@@ -430,7 +430,7 @@ const char *node_name_based_on_op(nnode_t *node)
  * (function: hard_node_name)
  * 	This creates the unique node name for a hard block
  *--------------------------------------------------------------------------*/
-char *hard_node_name(nnode_t *node, char *instance_name_prefix, char *hb_name, char *hb_inst)
+char *hard_node_name(nnode_t * /*node*/, char *instance_name_prefix, char *hb_name, char *hb_inst)
 {
 	char *return_node_name;
 	

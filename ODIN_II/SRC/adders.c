@@ -187,7 +187,7 @@ void declare_hard_adder(nnode_t *node)
 /*---------------------------------------------------------------------------
  * (function: instantiate_hard_addier )
  *-------------------------------------------------------------------------*/
-void instantiate_hard_adder(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	char *new_name;
 	int len, sanity, i;
@@ -326,7 +326,7 @@ void add_the_blackbox_for_adds(FILE *out)
 /*-------------------------------------------------------------------------
  * (function: define_add_function)
  *-----------------------------------------------------------------------*/
-void define_add_function(nnode_t *node, short type, FILE *out)
+void define_add_function(nnode_t *node, short /*type*/, FILE *out)
 {
 	int i, j;
 	int count;
@@ -983,7 +983,7 @@ void clean_adders()
  *
  * reduce the operations that are redundant
  *-----------------------------------------------------------------------*/
-void reduce_operations(netlist_t *netlist, operation_list op)
+void reduce_operations(netlist_t * /*netlist*/, operation_list op)
 {
 	t_linked_vptr *place = NULL;
 	operation_list oper;

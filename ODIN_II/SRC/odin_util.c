@@ -190,7 +190,7 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
  * Turns the given little endian decimal string into a long long. Throws an error if the
  * string contains non-digits or is larger or smaller than the allowable range of long long.
  */
-long long convert_dec_string_of_size_to_long_long(char *orig_string, int size)
+long long convert_dec_string_of_size_to_long_long(char *orig_string, int /*size*/)
 {
 	if (!is_decimal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);

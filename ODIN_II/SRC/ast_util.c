@@ -166,7 +166,7 @@ void free_ast_node_only(ast_node_t *child)
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_id)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* create_tree_node_id(char* string, int line_number, int file_number)
+ast_node_t* create_tree_node_id(char* string, int line_number, int /*file_number*/)
 {
 	ast_node_t* new_node = create_node_w_type(IDENTIFIERS, line_number, current_parse_file);
 	new_node->types.identifier = string;
@@ -177,7 +177,7 @@ ast_node_t* create_tree_node_id(char* string, int line_number, int file_number)
 /*---------------------------------------------------------------------------------------------
  * (function: *create_tree_node_long_long_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit_size, int line_number, int file_number)
+ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit_size, int line_number, int /*file_number*/)
 {
 	int flag = 0;
 	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
@@ -203,7 +203,7 @@ ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *create_tree_node_number(char* number, int line_number, int file_number)
+ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_number*/)
 {
 	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
 	char *string_pointer = number;
@@ -684,7 +684,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	return return_string;
 }
 
-char **get_name_of_pins_number(ast_node_t *var_node, int start, int width)
+char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
 {
 	char **return_string; 
 	oassert(var_node->type == NUMBERS);

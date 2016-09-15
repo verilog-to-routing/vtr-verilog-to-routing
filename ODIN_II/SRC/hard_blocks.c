@@ -130,7 +130,7 @@ t_model* find_hard_block(const char *name)
 	return NULL;
 }
 
-void define_hard_block(nnode_t *node, short type, FILE *out)
+void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 {
 	int i, j;
 	int index, port;
@@ -282,7 +282,7 @@ void output_hard_blocks(FILE *out)
 }
 
 void
-instantiate_hard_block(nnode_t *node, short mark, netlist_t *netlist)
+instantiate_hard_block(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	int i, port, index;
 

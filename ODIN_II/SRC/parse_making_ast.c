@@ -1506,7 +1506,7 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
  * (function: newIntegerTypeVarDeclare)
  *-------------------------------------------------------------------------------------------*/
 
-ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
+ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
 
     char *number_0 = (char*)malloc(5 * sizeof(char));
@@ -1723,7 +1723,7 @@ void next_module()
 /*--------------------------------------------------------------------------
  * (function: newDefparam)
  *------------------------------------------------------------------------*/
-ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number)
+ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;

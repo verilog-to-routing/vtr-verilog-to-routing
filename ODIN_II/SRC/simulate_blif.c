@@ -1776,7 +1776,7 @@ void compute_add_node(nnode_t *node, int cycle, int type)
  * add by Sen
  * This array will need to be freed later!
  */
-int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int c_length, int flag)
+int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int /*c_length*/, int /*flag*/)
 {
 	int result_size = max(a_length , b_length) + 1;
 	int *result = (int *)calloc(sizeof(int), result_size);
@@ -1912,7 +1912,7 @@ void compute_unary_sub_node(nnode_t *node, int cycle)
  * add by Sen
  * This array will need to be freed later!
  */
-int *unary_sub_arrays(int *a, int a_length, int *c, int c_length)
+int *unary_sub_arrays(int *a, int a_length, int *c, int /*c_length*/)
 {
 	int result_size = a_length + 1;
 	int *result = (int *)calloc(sizeof(int), result_size);
@@ -3462,7 +3462,7 @@ int print_progress_bar(double completion, int position, int length, double time)
 /*
  * Prints information about the netlist we are simulating.
  */
-void print_netlist_stats(stages_t *stages, int num_vectors)
+void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 {
 	printf("%s:\n", get_circuit_filename());
 
@@ -3480,7 +3480,7 @@ void print_netlist_stats(stages_t *stages, int num_vectors)
 /*
  * Prints statistics. (Coverage and times.)
  */
-void print_simulation_stats(stages_t *stages, int num_vectors, double total_time, double simulation_time)
+void print_simulation_stats(stages_t *stages, int /*num_vectors*/, double total_time, double simulation_time)
 {
 	int covered_nodes = get_num_covered_nodes(stages);
 	printf("Simulation time:   ");
