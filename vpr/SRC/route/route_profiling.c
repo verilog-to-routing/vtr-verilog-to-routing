@@ -5,9 +5,34 @@
 
 namespace profiling {
 
+#ifndef PROFILE
+void net_rerouted() {}
+void route_tree_pruned() {}
+void route_tree_preserved() {}
+void mark_for_forced_reroute() {}
+void perform_forced_reroute() {}
+
+// timing functions where *_start starts a clock and *_end terminates the clock
+void sink_criticality_start() {}
+void sink_criticality_end(float /*target_criticality*/) {}
+
+void net_rebuild_start() {}
+void net_rebuild_end(unsigned /*net_fanout*/, unsigned /*sinks_left_to_route*/) {}
+
+void net_fanout_start() {}
+void net_fanout_end(unsigned /*net_fanout*/) {}
+
+
+// analysis functions for printing out the profiling data for an iteration
+void congestion_analysis() {}
+void time_on_criticality_analysis() {}
+void time_on_fanout_analysis() {}
+
+void profiling_initialization(unsigned /*max_net_fanout*/) {}
+
+#else
 using namespace std;
 
-#ifdef PROFILE
 constexpr unsigned int fanout_per_bin = 4;
 constexpr float criticality_per_bin = 0.05;
 
@@ -19,10 +44,8 @@ static vector<int> itry_on_fanout;
 static vector<int> itry_on_criticality;
 static vector<int> rerouted_sinks;
 static vector<int> finished_sinks;
-#endif
 
 // action counters for what setup routing resources did
-#ifdef PROFILE
 static int entire_net_rerouted;
 void net_rerouted() {++entire_net_rerouted;}
 
@@ -37,17 +60,7 @@ void mark_for_forced_reroute() {++connections_forced_to_reroute;}
 static int connections_rerouted_due_to_forcing;
 void perform_forced_reroute() {++connections_rerouted_due_to_forcing;}
 
-#else
-void net_rerouted() {}
-void route_tree_pruned() {}
-void route_tree_preserved() {}
-void mark_for_forced_reroute() {}
-void perform_forced_reroute() {}
-#endif
-
-
 // timing functions where *_start starts a clock and *_end terminates the clock
-#ifdef PROFILE
 static clock_t sink_criticality_clock;
 void sink_criticality_start() {sink_criticality_clock = clock();}
 
@@ -81,19 +94,8 @@ void net_fanout_end(unsigned net_fanout) {
 	time_on_fanout[net_fanout / fanout_per_bin] += time_for_net;
 	itry_on_fanout[net_fanout / fanout_per_bin] += 1;
 }
-#else
-void sink_criticality_start() {}
-void sink_criticality_end(float) {}
-
-void net_rebuild_start() {}
-void net_rebuild_end(unsigned, unsigned) {}
-
-void net_fanout_start() {}
-void net_fanout_end(unsigned) {}
-#endif
 
 void time_on_fanout_analysis() {
-#ifdef PROFILE
 	vtr::printf_info("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n", 
 		entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
 	vtr::printf_info("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
@@ -115,24 +117,20 @@ void time_on_fanout_analysis() {
 	}
 
 	connections_forced_to_reroute = connections_rerouted_due_to_forcing = 0;
-#endif
 	return;
 }
 
 void time_on_criticality_analysis() {
-#ifdef PROFILE
 	vtr::printf_info("criticality low           time (s)        attemps\n");
 	for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
 		if (itry_on_criticality[bin]) {	// avoid printing the many 0 bins
 			vtr::printf_info("%4f           %14.3f   %12d\n",bin*criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
 		}
 	}	
-#endif
 	return;
 }
 
 // at the end of a routing iteration, profile how much congestion is taken up by each type of rr_node
-#ifdef PROFILE
 // efficient bit array for checking against congested type
 struct Congested_node_types {
 	uint32_t mask;
@@ -142,10 +140,8 @@ struct Congested_node_types {
 	bool is_congested(int rr_node_type) const {return mask & (1 << rr_node_type);}
 	bool empty() const {return mask == 0;}
 };
-#endif
 
 void congestion_analysis() {
-#ifdef PROFILE
 	// each type indexes into array which holds the congestion for that type
 	std::vector<int> congestion_per_type((size_t) NUM_RR_TYPES, 0);
 	// print out specific node information if congestion for type is low enough
@@ -181,13 +177,11 @@ void congestion_analysis() {
 			}
 		}
 	}
-#endif
 	return;
 }
 
 
 void profiling_initialization(unsigned max_fanout) {
-#ifdef PROFILE
 	// add 1 so that indexing on the max fanout would still be valid
 	time_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
 	itry_on_fanout.resize((max_fanout / fanout_per_bin) + 1, 0);
@@ -201,8 +195,8 @@ void profiling_initialization(unsigned max_fanout) {
 	part_tree_preserved = 0;
 	connections_forced_to_reroute = 0;
 	connections_rerouted_due_to_forcing = 0;
-#endif
 	return;
 }
+#endif
 
 }	// end namespace profiling
