@@ -21,6 +21,6 @@ bool place_and_route(
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		struct s_model *models, t_direct_inf *directs, int num_directs);
+		t_direct_inf *directs, int num_directs);
 
-void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width_dist);
+void init_chan(int cfactor, t_chan_width_dist chan_width_dist);

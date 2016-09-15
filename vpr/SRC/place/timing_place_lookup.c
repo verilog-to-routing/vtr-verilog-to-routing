@@ -457,7 +457,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 		width_fac = router_opts.fixed_channel_width;
     }
 
-	init_chan(width_fac, 0, chan_width_dist);
+	init_chan(width_fac, chan_width_dist);
 }
 
 /**************************************/

@@ -43,12 +43,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_model *models, t_direct_inf *directs, int num_directs);
+		t_direct_inf *directs, int num_directs);
 
 static float comp_width(t_chan * chan, float x, float separation);
 
-void post_place_sync(const int L_num_blocks,
-		const struct s_block block_list[]);
+void post_place_sync(const int L_num_blocks);
 
 void free_pb_data(t_pb *pb);
 
@@ -60,7 +59,6 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		struct s_model *models,
 		t_direct_inf *directs, int num_directs) {
 
 	/* This routine controls the overall placement and routing of a circuit. */
@@ -96,7 +94,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 	}
 	begin = clock();
-	post_place_sync(num_blocks, block);
+	post_place_sync(num_blocks);
 
 	fflush(stdout);
 
@@ -120,7 +118,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 				arch_file, route_file, router_opts.full_stats,
 				router_opts.verify_binary_search, annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
-				models, directs, num_directs);
+				directs, num_directs);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
@@ -238,7 +236,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		 t_model *models, t_direct_inf *directs, int num_directs) {
+		t_direct_inf *directs, int num_directs) {
 
 	/* This routine performs a binary search to find the minimum number of      *
 	 * tracks per channel required to successfully route a circuit, and returns *
@@ -487,7 +485,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	/* End binary search verification. */
 	/* Restore the best placement (if necessary), the best routing, and  *
 	 * * the best channel widths for final drawing and statistics output.  */
-	init_chan(final, &router_opts.fixed_channel_width, chan_width_dist);
+	init_chan(final, chan_width_dist);
 
 #if 0
 	if (placer_opts.place_freq == PLACE_ALWAYS)
@@ -578,7 +576,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 }
 
-void init_chan(int cfactor, int* chan_override_max, t_chan_width_dist chan_width_dist) {
+void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
 	/* Assigns widths to channels (in tracks).  Minimum one track          * 
 	 * per channel.  io channels are io_rat * maximum in interior          * 
@@ -705,8 +703,7 @@ static float comp_width(t_chan * chan, float x, float separation) {
 
 /* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
 /* This function should only be called once */
-void post_place_sync(const int L_num_blocks,
-		const struct s_block block_list[]) {
+void post_place_sync(const int L_num_blocks) {
 	int iblk, j, inet;
 	unsigned k;
 	t_type_ptr type;

@@ -258,7 +258,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	}
 
 	/* Set the channel widths */
-	init_chan(width_fac, &router_opts.fixed_channel_width, chan_width_dist);
+	init_chan(width_fac, chan_width_dist);
 
 	/* Free any old routing graph, if one exists. */
 	free_rr_graph();
@@ -311,7 +311,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	}
 
 	/* Set the channel widths */
-	init_chan(width_fac, &router_opts.fixed_channel_width, chan_width_dist);
+	init_chan(width_fac, chan_width_dist);
 
 	/* Free any old routing graph, if one exists. */
 	free_rr_graph();

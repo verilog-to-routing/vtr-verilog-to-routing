@@ -344,7 +344,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	width_fac = placer_opts.place_chan_width;
 
-	init_chan(width_fac, &router_opts.fixed_channel_width, chan_width_dist);
+	init_chan(width_fac, chan_width_dist);
 
 	alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
 			directs, num_directs, det_routing_arch->num_segment);
