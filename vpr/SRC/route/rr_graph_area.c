@@ -299,7 +299,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	vtr::printf_info("\n");
 }
 
-void count_unidir_routing_transistors(t_segment_inf * segment_inf, 
+void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/, 
 		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
 		const float trans_sram_bit) {
 	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
@@ -529,7 +529,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 }
 
 static float *
-alloc_and_load_sharable_switch_trans(int num_switch, float trans_sram_bit,
+alloc_and_load_sharable_switch_trans(int num_switch, float /*trans_sram_bit*/,
 		float R_minW_nmos, float R_minW_pmos) {
 
 	/* Loads up an array that says how many transistor are needed to implement   *
