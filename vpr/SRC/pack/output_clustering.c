@@ -22,7 +22,6 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "vpr_utils.h"
-#include "output_blif.h"
 
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
@@ -564,7 +563,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 	/* TODO: print more stats */
 }
 
-void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
+void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
 		bool * is_clock, const char *out_fname, bool skip_clustering) {
 
 	/* 
@@ -656,10 +655,6 @@ void output_clustering(const t_arch *arch, t_block *clb, int num_clusters, const
 	fprintf(fpout, "</block>\n\n");
 
 	fclose(fpout);
-
-#ifdef OUTPUT_BLIF
-		output_blif (arch, clb, num_clusters, getEchoFileName(E_ECHO_POST_PACK_NETLIST));
-#endif
 
 	print_stats(clb, num_clusters);
 	if(!intra_lb_routing.empty()) {
