@@ -446,11 +446,6 @@ enum pic_type {
 };
 /* What's on screen? */
 
-/* Map netlist to FPGA or timing analyze only */
-enum e_operation {
-	RUN_FLOW, TIMING_ANALYSIS_ONLY
-};
-
 enum pfreq {
 	PLACE_NEVER, PLACE_ONCE, PLACE_ALWAYS
 };
@@ -993,7 +988,6 @@ struct t_lb_type_rr_node; /* Defined in pack_types.h */
 typedef struct s_vpr_setup {
 	bool TimingEnabled; /* Is VPR timing enabled */
 	struct s_file_name_opts FileNameOpts; /* File names */
-	enum e_operation Operation; /* run VPR or do analysis only */
 	t_model * user_models; /* blif models defined by the user */
 	t_model * library_models; /* blif models in VPR */
 	struct s_packer_opts PackerOpts; /* Options for packer */

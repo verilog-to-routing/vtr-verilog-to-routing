@@ -63,7 +63,7 @@ void vpr_read_options(const int argc, const char **argv, t_options * options);
 /* Read in arch and circuit */
 void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
-		t_arch * Arch, enum e_operation *Operation,
+		t_arch * Arch,
 		t_model ** user_models, t_model ** library_models,
 		struct s_packer_opts *PackerOpts,
 		struct s_placer_opts *PlacerOpts,
@@ -78,8 +78,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 void vpr_check_options(const t_options Options, const bool TimingEnabled);
 void vpr_check_arch(const t_arch Arch);
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const enum e_operation Operation,
-		const struct s_placer_opts PlacerOpts,
+void vpr_check_setup(const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts,
 		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);

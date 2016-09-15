@@ -209,7 +209,7 @@ void vpr_init(const int argc, const char **argv,
 
 		/* Read in arch and circuit */
 		SetupVPR(options, vpr_setup->TimingEnabled, true, &vpr_setup->FileNameOpts,
-				arch, &vpr_setup->Operation, &vpr_setup->user_models,
+				arch, &vpr_setup->user_models,
 				&vpr_setup->library_models, &vpr_setup->PackerOpts,
 				&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
 				&vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
@@ -221,7 +221,7 @@ void vpr_init(const int argc, const char **argv,
 		CheckArch(*arch);
 
 		/* Verify settings don't conflict or otherwise not make sense */
-		CheckSetup(vpr_setup->Operation, vpr_setup->PlacerOpts,
+		CheckSetup(vpr_setup->PlacerOpts,
 				vpr_setup->RouterOpts,
 				vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
 				arch->Chans);
@@ -274,118 +274,114 @@ void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch
 	/* Output the current settings to console. */
 	printClusteredNetlistStats();
 
-	if (vpr_setup.Operation == TIMING_ANALYSIS_ONLY) {
-		do_constant_net_delay_timing_analysis(vpr_setup.Timing,	vpr_setup.constant_net_delay);
-	} else {
-		int current = vtr::nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
-		int low = 1;
-		int high = -1;
+    int current = vtr::nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
+    int low = 1;
+    int high = -1;
 
-		int *num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
-		int *num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
+    int *num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
+    int *num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
 
-		for (int i = 0; i < num_blocks; ++i) {
-			num_blocks_type[block[i].type->index]++;
-		}
+    for (int i = 0; i < num_blocks; ++i) {
+        num_blocks_type[block[i].type->index]++;
+    }
 
-		if (Arch.clb_grid.IsAuto) {
+    if (Arch.clb_grid.IsAuto) {
 
-			/* Auto-size FPGA, perform a binary search */
-			while (high == -1 || low < high) {
+        /* Auto-size FPGA, perform a binary search */
+        while (high == -1 || low < high) {
 
-				/* Generate grid */
-				if (Arch.clb_grid.Aspect >= 1.0) {
-					ny = current;
-					nx = vtr::nint(current * Arch.clb_grid.Aspect);
-				} else {
-					nx = current;
-					ny = vtr::nint(current / Arch.clb_grid.Aspect);
-				}
+            /* Generate grid */
+            if (Arch.clb_grid.Aspect >= 1.0) {
+                ny = current;
+                nx = vtr::nint(current * Arch.clb_grid.Aspect);
+            } else {
+                nx = current;
+                ny = vtr::nint(current / Arch.clb_grid.Aspect);
+            }
 #if DEBUG
-				vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
+            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
 #endif
-				alloc_and_load_grid(num_instances_type);
-				freeGrid();
+            alloc_and_load_grid(num_instances_type);
+            freeGrid();
 
-				/* Test if netlist fits in grid */
-				bool fit = true;
-				for (int i = 0; i < num_types; ++i) {
-					if (num_blocks_type[i] > num_instances_type[i]) {
-						fit = false;
-						break;
-					}
-				}
+            /* Test if netlist fits in grid */
+            bool fit = true;
+            for (int i = 0; i < num_types; ++i) {
+                if (num_blocks_type[i] > num_instances_type[i]) {
+                    fit = false;
+                    break;
+                }
+            }
 
-				/* get next value */
-				if (!fit) {
-					/* increase size of max */
-					if (high == -1) {
-						current = current * 2;
-						if (current > MAX_SHORT) {
-							vtr::printf_error(__FILE__, __LINE__,
-									"FPGA required is too large for current architecture settings.\n");
-							exit(1);
-						}
-					} else {
-						if (low == current)
-							current++;
-						low = current;
-						current = low + ((high - low) / 2);
-					}
-				} else {
-					high = current;
-					current = low + ((high - low) / 2);
-				}
-			}
+            /* get next value */
+            if (!fit) {
+                /* increase size of max */
+                if (high == -1) {
+                    current = current * 2;
+                    if (current > MAX_SHORT) {
+                        vtr::printf_error(__FILE__, __LINE__,
+                                "FPGA required is too large for current architecture settings.\n");
+                        exit(1);
+                    }
+                } else {
+                    if (low == current)
+                        current++;
+                    low = current;
+                    current = low + ((high - low) / 2);
+                }
+            } else {
+                high = current;
+                current = low + ((high - low) / 2);
+            }
+        }
 
-			/* Generate grid */
-			if (Arch.clb_grid.Aspect >= 1.0) {
-				ny = current;
-				nx = vtr::nint(current * Arch.clb_grid.Aspect);
-			} else {
-				nx = current;
-				ny = vtr::nint(current / Arch.clb_grid.Aspect);
-			}
-			alloc_and_load_grid(num_instances_type);
-			vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
-		} else {
-			nx = Arch.clb_grid.W;
-			ny = Arch.clb_grid.H;
-			alloc_and_load_grid(num_instances_type);
-		}
+        /* Generate grid */
+        if (Arch.clb_grid.Aspect >= 1.0) {
+            ny = current;
+            nx = vtr::nint(current * Arch.clb_grid.Aspect);
+        } else {
+            nx = current;
+            ny = vtr::nint(current / Arch.clb_grid.Aspect);
+        }
+        alloc_and_load_grid(num_instances_type);
+        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
+    } else {
+        nx = Arch.clb_grid.W;
+        ny = Arch.clb_grid.H;
+        alloc_and_load_grid(num_instances_type);
+    }
 
-		vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
+    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
 
-		/* Test if netlist fits in grid */
-		for (int i = 0; i < num_types; ++i) {
-			if (num_blocks_type[i] > num_instances_type[i]) {
+    /* Test if netlist fits in grid */
+    for (int i = 0; i < num_types; ++i) {
+        if (num_blocks_type[i] > num_instances_type[i]) {
 
-				vtr::printf_error(__FILE__, __LINE__,
-						"Not enough physical locations for type %s, "
-						"number of blocks is %d but number of locations is %d.\n",
-						type_descriptors[i].name, num_blocks_type[i],
-						num_instances_type[i]);
-				exit(1);
-			}
-		}
+            vtr::printf_error(__FILE__, __LINE__,
+                    "Not enough physical locations for type %s, "
+                    "number of blocks is %d but number of locations is %d.\n",
+                    type_descriptors[i].name, num_blocks_type[i],
+                    num_instances_type[i]);
+            exit(1);
+        }
+    }
 
-		vtr::printf_info("\n");
-		vtr::printf_info("Resource usage...\n");
-		for (int i = 0; i < num_types; ++i) {
-			vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
-					num_blocks_type[i], type_descriptors[i].name);
-			vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
-					num_instances_type[i], type_descriptors[i].name);
-		}
-		vtr::printf_info("\n");
-		chan_width.x_max = chan_width.y_max = 0;
-		chan_width.x_min = chan_width.y_min = 0;
-		chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
-		chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
+    vtr::printf_info("\n");
+    vtr::printf_info("Resource usage...\n");
+    for (int i = 0; i < num_types; ++i) {
+        vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
+                num_blocks_type[i], type_descriptors[i].name);
+        vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
+                num_instances_type[i], type_descriptors[i].name);
+    }
+    vtr::printf_info("\n");
+    chan_width.x_max = chan_width.y_max = 0;
+    chan_width.x_min = chan_width.y_min = 0;
+    chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
+    chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
 
-		free(num_blocks_type);
-		free(num_instances_type);
-	}
+    free(num_blocks_type);
+    free(num_instances_type);
 }
 
 
@@ -556,7 +552,7 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch arch) {
 	}
 
 	/* Do placement and routing */
-	bool success = place_and_route(vpr_setup->Operation, vpr_setup->PlacerOpts,
+	bool success = place_and_route(vpr_setup->PlacerOpts,
 			vpr_setup->FileNameOpts.PlaceFile, vpr_setup->FileNameOpts.NetFile,
 			vpr_setup->FileNameOpts.ArchFile, vpr_setup->FileNameOpts.RouteFile,
 			vpr_setup->AnnealSched, vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
@@ -934,7 +930,7 @@ void vpr_read_options(const int argc, const char **argv, t_options * options) {
 /* Read in arch and circuit */
 void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
-		t_arch * Arch, enum e_operation *Operation,
+		t_arch * Arch,
 		t_model ** user_models, t_model ** library_models,
 		struct s_packer_opts *PackerOpts,
 		struct s_placer_opts *PlacerOpts,
@@ -946,7 +942,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
-			Operation, user_models, library_models, PackerOpts, PlacerOpts,
+			user_models, library_models, PackerOpts, PlacerOpts,
 			AnnealSched, RouterOpts, RoutingArch, PackerRRGraph, Segments, Timing,
 			ShowGraphics, GraphPause, PowerOpts);
 }
@@ -958,12 +954,11 @@ void vpr_check_arch(const t_arch Arch) {
 	CheckArch(Arch);
 }
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const enum e_operation Operation,
-		const struct s_placer_opts PlacerOpts,
+void vpr_check_setup(const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts,
 		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
-	CheckSetup(Operation, PlacerOpts, RouterOpts, RoutingArch,
+	CheckSetup(PlacerOpts, RouterOpts, RoutingArch,
 			Segments, Timing, Chans);
 }
 /* Read blif file and sweep unused components */

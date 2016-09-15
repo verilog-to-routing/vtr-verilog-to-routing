@@ -15,7 +15,6 @@ static void ShowPackerOpts(const struct s_packer_opts PackerOpts);
 static void ShowPlacerOpts(const t_options Options,
 		const struct s_placer_opts PlacerOpts,
 		const struct s_annealing_sched AnnealSched);
-static void ShowOperation(const enum e_operation Operation);
 static void ShowRouterOpts(const struct s_router_opts RouterOpts);
 static void ShowAnnealSched(const struct s_annealing_sched AnnealSched);
 static void ShowRoutingArch(const struct s_det_routing_arch RoutingArch);
@@ -31,7 +30,6 @@ void ShowSetup(const t_options options, const t_vpr_setup vpr_setup) {
 	vtr::printf_info("Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile);
 	vtr::printf_info("Circuit SDC file: %s\n", vpr_setup.Timing.SDCFile);
 
-	ShowOperation(vpr_setup.Operation);
 	vtr::printf_info("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
 	vtr::printf_info("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
 	vtr::printf_info("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
@@ -285,21 +283,6 @@ static void ShowRouterOpts(const struct s_router_opts RouterOpts) {
 			vtr::printf_info("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
 			vtr::printf_info("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
 		}
-	}
-	vtr::printf_info("\n");
-}
-
-static void ShowOperation(const enum e_operation Operation) {
-	vtr::printf_info("Operation: ");
-	switch (Operation) {
-	case RUN_FLOW:
-		vtr::printf_info("RUN_FLOW\n");
-		break;
-	case TIMING_ANALYSIS_ONLY:
-		vtr::printf_info("TIMING_ANALYSIS_ONLY\n");
-		break;
-	default:
-		vtr::printf_error(__FILE__, __LINE__, "Unknown VPR operation\n");
 	}
 	vtr::printf_info("\n");
 }

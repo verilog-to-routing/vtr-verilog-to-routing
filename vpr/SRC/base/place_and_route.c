@@ -54,8 +54,7 @@ void free_pb_data(t_pb *pb);
 
 /************************* Subroutine Definitions ****************************/
 
-bool place_and_route(enum e_operation operation,
-		struct s_placer_opts placer_opts, char *place_file, char *net_file,
+bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *net_file,
 		char *arch_file, char *route_file,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
@@ -142,15 +141,9 @@ bool place_and_route(enum e_operation operation,
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
 		float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-		bool Fc_clipped = false;
 		success = try_route(width_fac, router_opts, det_routing_arch,
 				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
-				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
-
-		if (Fc_clipped) {
-			vtr::printf_warning(__FILE__, __LINE__, 
-					"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
-		}
+				clb_opins_used_locally, directs, num_directs);
 
 		if (success == false) {
             
@@ -362,7 +355,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
 				timing_inf, net_delay, slacks, chan_width_dist,
-				clb_opins_used_locally, &Fc_clipped, directs, num_directs);
+				clb_opins_used_locally, directs, num_directs);
 		attempt_count++;
 		fflush(stdout);
 #if 1
@@ -470,7 +463,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			}
 			success = try_route(current, router_opts, det_routing_arch,
 					segment_inf, timing_inf, net_delay, slacks,
-					chan_width_dist, clb_opins_used_locally, &Fc_clipped, directs, num_directs);
+					chan_width_dist, clb_opins_used_locally, directs, num_directs);
 
 			if (success && Fc_clipped == false) {
 				final = current;

@@ -22,8 +22,6 @@ using namespace std;
 #include "rr_graph_area.h"
 #include "echo_arch.h"
 
-static void SetupOperation(const t_options Options,
-		enum e_operation *Operation);
 static void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
 		const t_arch Arch, const char *net_file,
 		struct s_packer_opts *PackerOpts);
@@ -36,7 +34,7 @@ static void SetupRouterOpts(const t_options Options, const bool TimingEnabled,
 static void SetupRoutingArch(const t_arch Arch,
 		struct s_det_routing_arch *RoutingArch);
 static void SetupTiming(const t_options Options, const t_arch Arch,
-		const bool TimingEnabled, const enum e_operation Operation,
+		const bool TimingEnabled,
 		const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts, t_timing_inf * Timing);
 static void SetupSwitches(const t_arch Arch,
@@ -49,7 +47,7 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
  * as this should have been done by the various input checkers */
 void SetupVPR(t_options *Options, const bool TimingEnabled,
 		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
-		t_arch * Arch, enum e_operation *Operation,
+		t_arch * Arch,
 		t_model ** user_models, t_model ** library_models,
 		struct s_packer_opts *PackerOpts,
 		struct s_placer_opts *PlacerOpts,
@@ -172,7 +170,6 @@ void SetupVPR(t_options *Options, const bool TimingEnabled,
 	FileNameOpts->CmosTechFile = Options->CmosTechFile;
 	FileNameOpts->out_file_prefix = Options->out_file_prefix;
 
-	SetupOperation(*Options, Operation);
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
@@ -211,7 +208,7 @@ void SetupVPR(t_options *Options, const bool TimingEnabled,
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
-	SetupTiming(*Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,
+	SetupTiming(*Options, *Arch, TimingEnabled, *PlacerOpts,
 			*RouterOpts, Timing);
 	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile,
 			PackerOpts);
@@ -260,7 +257,7 @@ void SetupVPR(t_options *Options, const bool TimingEnabled,
 }
 
 static void SetupTiming(const t_options Options, const t_arch Arch,
-		const bool TimingEnabled, const enum e_operation Operation,
+		const bool TimingEnabled,
 		const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts, t_timing_inf * Timing) {
 
@@ -794,11 +791,6 @@ static void SetupPlacerOpts(const t_options Options, const bool TimingEnabled,
 		PlacerOpts->place_freq = PLACE_NEVER;
 	}
 
-}
-
-static void SetupOperation(const t_options Options,
-		enum e_operation *Operation) {
-	*Operation = RUN_FLOW; /* DEFAULT */
 }
 
 static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,

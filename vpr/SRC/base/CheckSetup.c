@@ -8,8 +8,7 @@
 #include "read_xml_arch_file.h"
 #include "CheckSetup.h"
 
-void CheckSetup(const enum e_operation Operation,
-		const struct s_placer_opts PlacerOpts,
+void CheckSetup(const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts,
 		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
@@ -58,12 +57,6 @@ void CheckSetup(const enum e_operation Operation,
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"base_cost_type must be demand_only when timing analysis is disabled.\n");
 		}
-	}
-
-	if ((TIMING_ANALYSIS_ONLY == Operation)
-			&& (false == Timing.timing_analysis_enabled)) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"-timing_analyze_only_with_net_delay option requires that timing analysis not be disabled.\n");
 	}
 
 	if (DETAILED == RouterOpts.route_type) {
