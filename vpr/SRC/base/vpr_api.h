@@ -80,7 +80,6 @@ void vpr_check_arch(const t_arch Arch);
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(const enum e_operation Operation,
 		const struct s_placer_opts PlacerOpts,
-		const struct s_annealing_sched AnnealSched,
 		const struct s_router_opts RouterOpts,
 		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);

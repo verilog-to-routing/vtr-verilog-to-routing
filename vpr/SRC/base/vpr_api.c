@@ -40,6 +40,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "CheckArch.h"
+#include "CheckSetup.h"
 #include "CheckOptions.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
@@ -221,7 +222,7 @@ void vpr_init(const int argc, const char **argv,
 
 		/* Verify settings don't conflict or otherwise not make sense */
 		CheckSetup(vpr_setup->Operation, vpr_setup->PlacerOpts,
-				vpr_setup->AnnealSched, vpr_setup->RouterOpts,
+				vpr_setup->RouterOpts,
 				vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
 				arch->Chans);
 
@@ -959,11 +960,10 @@ void vpr_check_arch(const t_arch Arch) {
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(const enum e_operation Operation,
 		const struct s_placer_opts PlacerOpts,
-		const struct s_annealing_sched AnnealSched,
 		const struct s_router_opts RouterOpts,
 		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
-	CheckSetup(Operation, PlacerOpts, AnnealSched, RouterOpts, RoutingArch,
+	CheckSetup(Operation, PlacerOpts, RouterOpts, RoutingArch,
 			Segments, Timing, Chans);
 }
 /* Read blif file and sweep unused components */

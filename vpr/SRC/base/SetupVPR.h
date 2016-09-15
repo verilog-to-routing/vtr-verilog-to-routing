@@ -23,15 +23,6 @@ void SetupVPR(t_options *Options,
 		int *GraphPause,
 		t_power_opts * power_opts);
 
-void CheckSetup(const enum e_operation Operation,
-		const struct s_placer_opts PlacerOpts,
-		const struct s_annealing_sched AnnealSched,
-		const struct s_router_opts RouterOpts,
-		const struct s_det_routing_arch RoutingArch,
-		const t_segment_inf * Segments,
-		const t_timing_inf Timing,
-		const t_chan_width_dist Chans);
-
 void ShowSetup(const t_options options, const t_vpr_setup vpr_setup);
 void printClusteredNetlistStats(void);
 
