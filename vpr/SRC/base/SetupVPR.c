@@ -35,8 +35,7 @@ static void SetupRoutingArch(const t_arch Arch,
 		struct s_det_routing_arch *RoutingArch);
 static void SetupTiming(const t_options Options, const t_arch Arch,
 		const bool TimingEnabled,
-		const struct s_placer_opts PlacerOpts,
-		const struct s_router_opts RouterOpts, t_timing_inf * Timing);
+		t_timing_inf * Timing);
 static void SetupSwitches(const t_arch Arch,
 		struct s_det_routing_arch *RoutingArch,
 		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches);
@@ -208,8 +207,7 @@ void SetupVPR(t_options *Options, const bool TimingEnabled,
 
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
-	SetupTiming(*Options, *Arch, TimingEnabled, *PlacerOpts,
-			*RouterOpts, Timing);
+	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
 	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile,
 			PackerOpts);
 	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
@@ -258,8 +256,7 @@ void SetupVPR(t_options *Options, const bool TimingEnabled,
 
 static void SetupTiming(const t_options Options, const t_arch Arch,
 		const bool TimingEnabled,
-		const struct s_placer_opts PlacerOpts,
-		const struct s_router_opts RouterOpts, t_timing_inf * Timing) {
+		t_timing_inf * Timing) {
 
 	/* Don't do anything if they don't want timing */
 	if (false == TimingEnabled) {
