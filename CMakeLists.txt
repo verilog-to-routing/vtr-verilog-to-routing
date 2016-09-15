@@ -88,7 +88,7 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     #GCC-like
     "-Wall"                     #Most warnings, typically good
     "-Wextra"                   #Extra warning, usually good
-    "-Wpedantic"                 #Ensure ISO compliance (i.e. no non-standard extensions)
+    "-Wpedantic"                #Ensure ISO compliance (i.e. no non-standard extensions)
     "-Wcast-qual"               #Warn if cast removes qualifier (e.g. const char* -> char*)
     "-Wcast-align"              #Warn if a cast causes memory alignment changes
     "-Wshadow"                  #Warn if local variable shadows another variable
