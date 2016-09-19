@@ -246,7 +246,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
 		float block_delay,
-		float /*intra_cluster_net_delay*/, //FIXME: Shouldn't this be used?
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,

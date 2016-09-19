@@ -383,7 +383,6 @@ static void ShowPackerOpts(const struct s_packer_opts PackerOpts) {
 	vtr::printf_info("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
-	vtr::printf_info("PackerOpts.intra_cluster_net_delay: %f\n", PackerOpts.intra_cluster_net_delay);
 	vtr::printf_info("PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.absorb_buffer_luts: %s", (PackerOpts.absorb_buffer_luts ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));

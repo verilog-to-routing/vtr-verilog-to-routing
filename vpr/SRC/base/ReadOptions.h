@@ -40,11 +40,9 @@ struct s_options {
 	float beta;
 	int recompute_timing_after;
 	float block_delay;
-	float intra_cluster_net_delay;
 	float inter_cluster_net_delay;
 	bool skip_clustering;
 	bool allow_unrelated_clustering;
-	bool allow_early_exit;
 	bool connection_driven;
 	enum e_packer_algorithm packer_algorithm;
 

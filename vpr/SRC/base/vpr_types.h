@@ -628,7 +628,6 @@ struct s_packer_opts {
 	float alpha;
 	float beta;
 	float block_delay;
-	float intra_cluster_net_delay;
 	float inter_cluster_net_delay;
 	bool auto_compute_inter_cluster_net_delay;
 	bool skip_clustering;
