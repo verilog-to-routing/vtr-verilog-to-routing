@@ -105,8 +105,7 @@ bool is_cblock(
 		const int chan,
 		const int seg,
 		const int track,
-		const t_seg_details *seg_details,
-		const enum e_directionality directionality);
+		const t_seg_details *seg_details);
 
 bool is_sblock(
 		const int chan,
@@ -127,7 +126,6 @@ int get_bidir_opin_connections(
 		const t_seg_details *seg_details);
 
 int get_unidir_opin_connections(
-		const t_type_ptr type,
 		const int chan,
 		const int seg,
 		int Fc,

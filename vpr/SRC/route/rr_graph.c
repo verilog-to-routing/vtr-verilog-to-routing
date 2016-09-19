@@ -2435,7 +2435,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 
 						/* Get the list of opin to mux connections for that chan seg. */
 						bool clipped;
-						num_edges += get_unidir_opin_connections(type, chan, seg,
+						num_edges += get_unidir_opin_connections(chan, seg,
 								seg_type_Fc, iseg, chan_type, seg_details, &edge_list,
 								Fc_ofs, L_rr_edge_done, max_len, max_chan_width,
 								L_rr_node_indices, &clipped);

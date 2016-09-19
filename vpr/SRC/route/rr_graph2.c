@@ -788,7 +788,7 @@ int get_bidir_opin_connections(
 			}
 
 			/* Only connect to wire if there is a CB */
-			if (is_cblock(chan, seg, to_track, seg_details, BI_DIRECTIONAL)) {
+			if (is_cblock(chan, seg, to_track, seg_details)) {
 				to_switch = seg_details[to_track].arch_wire_switch;
 				to_node = get_rr_node_index(tr_i, tr_j, to_type, to_track, L_rr_node_indices);
 
@@ -803,7 +803,6 @@ int get_bidir_opin_connections(
 }
 
 int get_unidir_opin_connections(
-		const t_type_ptr /*type*/,
 		const int chan, const int seg, int Fc, const int seg_type_index,
 		const t_rr_type chan_type, const t_seg_details * seg_details,
 		t_linked_edge ** edge_list_ptr, int ***Fc_ofs,
@@ -888,8 +887,7 @@ int get_unidir_opin_connections(
 }
 
 bool is_cblock(const int chan, const int seg, const int track,
-		const t_seg_details * seg_details,
-		const enum e_directionality /*directionality*/) {
+		const t_seg_details * seg_details) {
 
 	int length, ofs, start_seg;
 
@@ -1504,7 +1502,7 @@ int get_track_to_pins(
 	num_conn = 0;
 
 	for (j = seg; j <= end; j++) {
-		if (is_cblock(chan, j, track, seg_details, directionality)) {
+		if (is_cblock(chan, j, track, seg_details)) {
 			for (pass = 0; pass < 2; ++pass) {
 				if (CHANX == chan_type) {
 					x = j;
