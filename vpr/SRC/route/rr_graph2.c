@@ -838,6 +838,9 @@ int get_unidir_opin_connections(
 	dec_muxes = label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len, 
 			DEC_DIRECTION, max_chan_width, true, &num_dec_muxes, &dummy);
 
+    VTR_ASSERT(inc_muxes != NULL);
+    VTR_ASSERT(dec_muxes != NULL);
+
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
 		*Fc_clipped = true;
