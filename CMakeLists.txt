@@ -86,24 +86,38 @@ endif()
 set(WARN_FLAGS "") #The actual warning flags to be applied
 set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     #GCC-like
-    "-Wall"                     #Most warnings, typically good
-    "-Wextra"                   #Extra warning, usually good
-    "-Wpedantic"                #Ensure ISO compliance (i.e. no non-standard extensions)
-    "-Wcast-qual"               #Warn if cast removes qualifier (e.g. const char* -> char*)
-    "-Wcast-align"              #Warn if a cast causes memory alignment changes
-    "-Wshadow"                  #Warn if local variable shadows another variable
-    "-Wformat=2"                #Sanity checks for printf-like formatting
-    "-Wlogical-op"              #Checks for logical op when bit-wise expected
-    "-Wmissing-declarations"    #Warn if a global function is defined with no delcaration
-    "-Wmissing-include-dirs"    #Warn if a user include directory is missing
-    "-Wredundant-decls"         #Warn if there are overlapping declarations
-    "-Wswitch-default"          #Warn if a switch has no default
-    "-Wundef"                   #Warn if #if() preprocessor refers to an undefined directive
-    "-Wunused-variable"         #Warn about variables that are not used
+    "-Wall"                         #Most warnings, typically good
+    "-Wextra"                       #Extra warning, usually good
+    "-Wpedantic"                    #Ensure ISO compliance (i.e. no non-standard extensions)
+    "-Wcast-qual"                   #Warn if cast removes qualifier (e.g. const char* -> char*)
+    "-Wcast-align"                  #Warn if a cast causes memory alignment changes
+    "-Wshadow"                      #Warn if local variable shadows another variable
+    "-Wformat=2"                    #Sanity checks for printf-like formatting
+    "-Wlogical-op"                  #Checks for logical op when bit-wise expected
+    "-Wmissing-declarations"        #Warn if a global function is defined with no delcaration
+    "-Wmissing-include-dirs"        #Warn if a user include directory is missing
+    "-Wredundant-decls"             #Warn if there are overlapping declarations
+    "-Wswitch-default"              #Warn if a switch has no default
+    "-Wundef"                       #Warn if #if() preprocessor refers to an undefined directive
+    "-Wunused-variable"             #Warn about variables that are not used
+    "-Wdisabled-optimization"       #Warn when optimizations are skipped (usually due to large/complex code)
+    "-Wnoexcept"                    #Warn when functions should be noexcept (i.e. compiler know it doesn't throw)
+    "-Woverloaded-virtual"          #Warn when a function declaration overrides a virtual method
+    "-Wctor-dtor-privacy"           #Warn about inaccessible constructors/destructors
+    "-Wnon-virtual-dtor"            #Warn about missing virtual destructors
     #GCC-like optional
-    #"-Wsign-conversion"         #Warn if a conversion may change the sign
-    #"-Wpadded"                  #Will warn if additional padding is introduced to a struct/class. Turn on if optimizing class memory layouts
+    #"-Wold-style-cast"              #Warn about using c-style casts
+    #"-Wconversion"                  #Warn when type conversions may change value
+    #"-Wsign-conversion"             #Warn if a conversion may change the sign
+    #"-Wpadded"                      #Will warn if additional padding is introduced to a struct/class. Turn on if optimizing class memory layouts
+    #"-Wstrict-overflow=2"           #Warn if the compiler optimizes assuming signed overflow does not occur
+    #"-Wfloat-equal"                 #Warn about using direct floating point equality
+    #"-Wunsafe-loop-optimizations"   #Warn when loops can't be optimized
+    #"-Wswitch-enum"                 #Warn about uncovered enumeration values in a switch (even if there is a default)
+    #"-Wsign-promo"                  #Warn when overload resolution converts an unsigned type to signed when an unsigned overload exists
     )
+
+#TODO: -fsanitize
 
 #Check and see if the compiler supports the various warning flags,
 #and add valid flags
