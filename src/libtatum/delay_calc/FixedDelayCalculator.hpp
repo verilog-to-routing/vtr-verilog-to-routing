@@ -4,14 +4,14 @@
 #include "TimingGraph.hpp"
 
 /** A DelayCalculator implementation which takes a vector
- *  of pre-calculated edge delays
+ *  of fixed pre-calculated edge delays
  */
-class PreCalcDelayCalculator {
+class FixedDelayCalculator {
     public:
 
         ///Initializes the edge delays
         ///\param edge_delays A vector specifying the delay for every edge
-        PreCalcDelayCalculator(std::vector<float> edge_delays) {
+        FixedDelayCalculator(std::vector<float> edge_delays) {
             edge_delays_.reserve(edge_delays.size());
             for(float delay : edge_delays) {
                 edge_delays_.emplace_back(delay);

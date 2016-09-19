@@ -17,7 +17,7 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-#include "PreCalcDelayCalculator.hpp"
+#include "FixedDelayCalculator.hpp"
 #include "ConstantDelayCalculator.hpp"
 
 #include "vpr_timing_graph_common.hpp"
@@ -190,10 +190,10 @@ int main(int argc, char** argv) {
 
 
     //Create the delay calculator
-    auto delay_calculator = std::make_shared<PreCalcDelayCalculator>(edge_delays);
+    auto delay_calculator = std::make_shared<FixedDelayCalculator>(edge_delays);
 
     //Create the timing analyzer
-    std::shared_ptr<SetupTimingAnalyzer> serial_analyzer = std::make_shared<SetupFullTimingAnalyzer<SerialWalker, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<SetupTimingAnalyzer> serial_analyzer = std::make_shared<SetupFullTimingAnalyzer<SerialWalker, FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     //Performance variables
     float serial_verify_time = 0.;
@@ -292,8 +292,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<SetupTimingAnalyzer> parallel_analyzer = std::make_shared<SetupFullTimingAnalyzer<ParallelLevelizedCilkWalker, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
-    //auto parallel_analyzer = std::make_shared<ParallelNoDependancyTimingAnalyzer<SetupAnalysis, PreCalcDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<SetupTimingAnalyzer> parallel_analyzer = std::make_shared<SetupFullTimingAnalyzer<ParallelLevelizedCilkWalker, FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     //float parallel_analysis_time = 0;
     //float parallel_pretraverse_time = 0.;
