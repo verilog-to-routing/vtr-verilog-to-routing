@@ -51,7 +51,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 static int get_expected_segs_to_target(int inode, int target_node,
 		int *num_segs_ortho_dir_ptr);
 
-static void update_rr_base_costs(int inet, float largest_criticality);
+static void update_rr_base_costs(int inet);
 
 static void timing_driven_check_net_delays(float **net_delay);
 
@@ -503,8 +503,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	/* Update base costs according to fanout and criticality rules */
 
 
-	float largest_criticality = pin_criticality[remaining_targets[0]];
-	update_rr_base_costs(inet, largest_criticality);
+	update_rr_base_costs(inet);
 	
 
 	// explore in order of decreasing criticality (no longer need sink_order array)
@@ -1028,7 +1027,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	return (num_segs_same_dir);
 }
 
-static void update_rr_base_costs(int inet, float /*largest_criticality*/) {
+static void update_rr_base_costs(int inet) {
 
 	/* Changes the base costs of different types of rr_nodes according to the  *
 	 * criticality, fanout, etc. of the current net being routed (inet).       */
