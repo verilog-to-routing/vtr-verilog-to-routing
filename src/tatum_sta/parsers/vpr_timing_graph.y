@@ -381,7 +381,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const TimingGraph& tg, const VprArrReqTimes& arr_req_times, const TimingConstraints& tc, const std::vector<BlockId>& node_logical_blocks, const std::vector<float>& edge_delays, const char *msg) {
+int yyerror(const TimingGraph& /*tg*/, const VprArrReqTimes& /*arr_req_times*/, const TimingConstraints& /*tc*/, const std::vector<BlockId>& /*node_logical_blocks*/, const std::vector<float>& /*edge_delays*/, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }

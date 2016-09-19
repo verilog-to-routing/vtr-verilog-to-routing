@@ -162,7 +162,7 @@ void SetupAnalysisVisitor::reset() {
  * Arrival Time Operations
  */
 
-void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const NodeId node_id) {
     //Logical Input
     ASSERT_MSG(tg.num_node_in_edges(node_id) == 0, "Logical input has input edges: timing graph not levelized.");
 
