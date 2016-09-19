@@ -108,7 +108,7 @@ static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
 		const bool timing_enabled, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		const bool timing_enabled, s_arch arch, const pugiloc::loc_data& loc_data);
+		const bool timing_enabled, const s_arch& arch, const pugiloc::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		struct s_arch_switch_inf **Switches, int *NumSwitches,
 		const bool timing_enabled, const pugiloc::loc_data& loc_data);
@@ -2129,7 +2129,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		bool /*timing_enabled*/, s_arch arch, const pugiloc::loc_data& loc_data) {
+		bool /*timing_enabled*/, const s_arch& arch, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
