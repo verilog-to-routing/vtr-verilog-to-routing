@@ -41,7 +41,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac);
 
 static void timing_driven_expand_neighbours(struct s_heap *current, 
-		int inet, int itry,
+		int inet,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim);
 
@@ -613,7 +613,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 				add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
-			timing_driven_expand_neighbours(cheapest, inet, itry, bend_cost,
+			timing_driven_expand_neighbours(cheapest, inet, bend_cost,
 					target_criticality, target_node, astar_fac,
 					highfanout_rlim);
 		}
@@ -788,7 +788,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 }
 
 static void timing_driven_expand_neighbours(struct s_heap *current, 
-		int inet, int /*itry*/,
+		int inet,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim) {
 
