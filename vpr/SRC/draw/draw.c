@@ -74,17 +74,17 @@ static void deselect_all(void);
 static void draw_rr(void);
 static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, const t_color& color);
-static void draw_rr_chanx(int inode, int itrack, const t_color& color);
-static void draw_rr_chany(int inode, int itrack, const t_color& color);
+static void draw_rr_chanx(int inode, const t_color& color);
+static void draw_rr_chany(int inode, const t_color& color);
 static t_bound_box draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
 static void draw_pin_to_pin(int opin, int ipin);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
 						   bool buffered);
-static void draw_chany_to_chany_edge(int from_node, int from_track, int to_node,
+static void draw_chany_to_chany_edge(int from_node, int to_node,
 									 int to_track, short switch_type);
-static void draw_chanx_to_chanx_edge(int from_node, int from_track, int to_node,
+static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 									 int to_track, short switch_type);
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, 
 									 int chany_track, enum e_edge_dir edge_dir,
@@ -711,7 +711,7 @@ static void draw_congestion(void) {
 	/* Draws all the overused routing resources (i.e. congestion) in RED.   */
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	int inode, itrack;
+	int inode;
 
 	setlinewidth(2);
 
@@ -720,30 +720,28 @@ static void draw_congestion(void) {
 		if (occ > 0) {
 			switch (rr_node[inode].type) {
 			case CHANX:
-				itrack = rr_node[inode].get_ptc_num();
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_chanx(inode, itrack, RED);
+					draw_rr_chanx(inode, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_chanx(inode, itrack, RED);
+						draw_rr_chanx(inode, RED);
 					else
-						draw_rr_chanx(inode, itrack, BLUE);
+						draw_rr_chanx(inode, BLUE);
 				}
 				break;
 
 			case CHANY:
-				itrack = rr_node[inode].get_ptc_num();
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_chany(inode, itrack, RED);
+					draw_rr_chany(inode, RED);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_chany(inode, itrack, RED);
+						draw_rr_chany(inode, RED);
 					else
-						draw_rr_chany(inode, itrack, BLUE);
+						draw_rr_chany(inode, BLUE);
 				}
 				break;
 
@@ -774,7 +772,7 @@ void draw_rr(void) {
 	 * them drawn.                                                           */
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	int inode, itrack;
+	int inode;
 
 	if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
 		setlinewidth(3);
@@ -813,14 +811,12 @@ void draw_rr(void) {
 			break; /* Don't draw. */
 
 		case CHANX:
-			itrack = rr_node[inode].get_ptc_num();
-			draw_rr_chanx(inode, itrack, draw_state->draw_rr_node[inode].color);
+			draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
 		case CHANY:
-			itrack = rr_node[inode].get_ptc_num();
-			draw_rr_chany(inode, itrack, draw_state->draw_rr_node[inode].color);
+			draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
@@ -843,7 +839,7 @@ void draw_rr(void) {
 }
 
 
-static void draw_rr_chanx(int inode, int /*itrack*/, const t_color& color) {
+static void draw_rr_chanx(int inode, const t_color& color) {
 
 	/* Draws an x-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -932,7 +928,7 @@ static void draw_rr_chanx(int inode, int /*itrack*/, const t_color& color) {
 	}
 }
 
-static void draw_rr_chany(int inode, int /*itrack*/, const t_color& color) {
+static void draw_rr_chany(int inode, const t_color& color) {
 
 	/* Draws a y-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -1112,7 +1108,7 @@ static void draw_rr_edges(int inode) {
 				} else
 					setcolor(DARKGREEN);
 				switch_type = rr_node[inode].switches[iedge];
-				draw_chanx_to_chanx_edge(inode, from_ptc_num, to_node,
+				draw_chanx_to_chanx_edge(inode, to_node,
 						to_ptc_num, switch_type);
 				break;
 
@@ -1181,7 +1177,7 @@ static void draw_rr_edges(int inode) {
 				} else
 					setcolor(DARKGREEN);
 				switch_type = rr_node[inode].switches[iedge];
-				draw_chany_to_chany_edge(inode, from_ptc_num, to_node,
+				draw_chany_to_chany_edge(inode, to_node,
 						to_ptc_num, switch_type);
 				break;
 
@@ -1292,7 +1288,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 }
 
 
-static void draw_chanx_to_chanx_edge(int from_node, int /*from_track*/, int to_node,
+static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 		int to_track, short switch_type) {
 
 	/* Draws a connection between two x-channel segments.  Passing in the track *
@@ -1384,7 +1380,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int /*from_track*/, int to_n
 }
 
 
-static void draw_chany_to_chany_edge(int from_node, int /*from_track*/, int to_node,
+static void draw_chany_to_chany_edge(int from_node, int to_node,
 		int to_track, short switch_type) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -1762,14 +1758,12 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
 
 				itrack = get_track_num(inode, chanx_track, chany_track);
-				draw_rr_chanx(inode, itrack, draw_state->draw_rr_node[inode].color);
+				draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
 
 				switch (prev_type) {
 
 				case CHANX:
-					prev_track = get_track_num(prev_node, chanx_track,
-							chany_track);
-					draw_chanx_to_chanx_edge(prev_node, prev_track, inode,
+					draw_chanx_to_chanx_edge(prev_node, inode,
 							itrack, switch_type);
 					break;
 
@@ -1797,7 +1791,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
 
 				itrack = get_track_num(inode, chanx_track, chany_track);
-				draw_rr_chany(inode, itrack, draw_state->draw_rr_node[inode].color);
+				draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
 
 				switch (prev_type) {
 
@@ -1809,9 +1803,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 					break;
 
 				case CHANY:
-					prev_track = get_track_num(prev_node, chanx_track,
-							chany_track);
-					draw_chany_to_chany_edge(prev_node, prev_track, inode,
+					draw_chany_to_chany_edge(prev_node, inode,
 							itrack, switch_type);
 					break;
 
