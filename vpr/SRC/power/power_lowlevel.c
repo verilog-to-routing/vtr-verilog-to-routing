@@ -613,7 +613,6 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 	}
 
     VTR_ASSERT(mux_nmos_inf_lower);
-    VTR_ASSERT(mux_nmos_inf_upper);
 
 	if (transistor_size
 			> g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1].nmos_size) {
@@ -624,7 +623,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 	}
 
 	if (num_inputs > mux_nmos_inf_lower->max_mux_sl_size
-			|| (!over_range && num_inputs > mux_nmos_inf_upper->max_mux_sl_size)) {
+			|| (!over_range && mux_nmos_inf_upper && num_inputs > mux_nmos_inf_upper->max_mux_sl_size)) {
 		power_log_msg(POWER_LOG_ERROR,
 				"The circuit contains a single-level mux larger than \
 				what is defined in the <multiplexers> section of the \
@@ -649,6 +648,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
     if (over_range) {
         return v_out_low;
     } else {
+        VTR_ASSERT(mux_nmos_inf_upper);
 		mux_volt_inf_high = &mux_nmos_inf_upper->mux_voltage_inf[num_inputs];
 		power_find_mux_volt_inf(&lower, &upper, mux_volt_inf_high, v_in);
 		if (lower->v_in == v_in || !upper) {
