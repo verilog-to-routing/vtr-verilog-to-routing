@@ -252,7 +252,6 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	 * output of pad is second).  For CLBs, all OPEN pins on the cb have their 
 	 * mapping set to OPEN so I won't use it by mistake.                          */
 
-	int num_sinks;
 	t_slack * slacks = NULL;
 	bool do_process_constraints = false;
 	int ** lookup_tnode_from_pin_id;
@@ -270,9 +269,9 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 
     detect_and_fix_timing_graph_combinational_loops();
 
-	num_sinks = alloc_and_load_timing_graph_levels();
+	alloc_and_load_timing_graph_levels();
 
-	check_timing_graph(num_sinks);
+	check_timing_graph();
 
 	slacks = alloc_slacks();
 
@@ -311,7 +310,6 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 	 * output of pad is second).  For CLBs, all OPEN pins on the cb have their 
 	 * mapping set to OPEN so I won't use it by mistake.                          */
 	
-	int num_sinks;
 	t_slack * slacks = NULL;
 	bool do_process_constraints = false;
 	int **lookup_tnode_from_pin_id;
@@ -331,11 +329,11 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
     detect_and_fix_timing_graph_combinational_loops();
 
-	num_sinks = alloc_and_load_timing_graph_levels();
+	alloc_and_load_timing_graph_levels();
 
 	slacks = alloc_slacks();
 
-	check_timing_graph(num_sinks);
+	check_timing_graph();
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF)) {
 		print_timing_graph_as_blif(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF), models);

@@ -16,7 +16,7 @@ extern vtr::t_ivec *tnodes_at_level;
 
 int alloc_and_load_timing_graph_levels(void);
 
-void check_timing_graph(int num_sinks);
+void check_timing_graph();
 
 float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, t_pb ***pin_id_to_pb_mapping);
 

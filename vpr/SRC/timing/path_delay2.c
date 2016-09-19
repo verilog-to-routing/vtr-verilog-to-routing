@@ -189,7 +189,7 @@ int alloc_and_load_timing_graph_levels(void) {
 	return (num_sinks);
 }
 
-void check_timing_graph(int /*num_sinks*/) {
+void check_timing_graph() {
 
 	/* Checks the timing graph to see that: (1) all the tnodes have been put    *
 	 * into some level of the timing graph; */
