@@ -2106,6 +2106,10 @@ short ******alloc_sblock_pattern_lookup(
 
 	/* Alloc each list of pointers in one go. items is a running product that increases
 	 * with each new dimension of the matrix. */
+
+    VTR_ASSERT(L_nx > 0);
+    VTR_ASSERT(L_ny > 0);
+
 	size_t items = 1;
 	items *= (L_nx + 1);
 	short ******i_list = (short ******) vtr::malloc(sizeof(short *****) * items);
