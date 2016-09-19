@@ -39,7 +39,7 @@ static float *alloc_and_load_unsharable_switch_trans(int num_switch,
 		float trans_sram_bit, float R_minW_nmos);
 
 static float *alloc_and_load_sharable_switch_trans(int num_switch,
-		float trans_sram_bit, float R_minW_nmos, float R_minW_pmos);
+		float R_minW_nmos, float R_minW_pmos);
 
 static float trans_per_mux(int num_inputs, float trans_sram_bit,
 		float pass_trans_area);
@@ -152,7 +152,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 			trans_sram_bit, R_minW_nmos);
 
 	sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
-			trans_sram_bit, R_minW_nmos, R_minW_pmos);
+			R_minW_nmos, R_minW_pmos);
 
 	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
 
@@ -529,7 +529,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 }
 
 static float *
-alloc_and_load_sharable_switch_trans(int num_switch, float /*trans_sram_bit*/,
+alloc_and_load_sharable_switch_trans(int num_switch,
 		float R_minW_nmos, float R_minW_pmos) {
 
 	/* Loads up an array that says how many transistor are needed to implement   *
