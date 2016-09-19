@@ -258,10 +258,10 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum);
 static enum swap_result assess_swap(float delta_c, float t);
 
 static bool find_to(t_type_ptr type, float rlim, 
-		int iblk_from, int x_from, int y_from, 
+		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to);
 static void find_to_location(t_type_ptr type, float rlim,
-		int iblk_from, int x_from, int y_from, 
+		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to);
 
 static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
@@ -1153,7 +1153,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
 
-	if (!find_to(block[b_from].type, rlim, b_from, x_from, y_from, &x_to, &y_to, &z_to))
+	if (!find_to(block[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
 #if 0
@@ -1376,7 +1376,7 @@ static int find_affected_nets(int *nets_to_update) {
 }
 
 static bool find_to(t_type_ptr type, float rlim, 
-		int iblk_from, int x_from, int y_from, 
+		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to) {
 
 	/* Returns the point to which I want to swap, properly range limited. 
@@ -1421,7 +1421,7 @@ static bool find_to(t_type_ptr type, float rlim,
 			num_tries++;
 		}
 
-		find_to_location(type, rlim, iblk_from, x_from, y_from, 
+		find_to_location(type, rlim, x_from, y_from, 
 				px_to, py_to, pz_to);
 		
 		if((x_from == *px_to) && (y_from == *py_to)) {
@@ -1456,7 +1456,7 @@ static bool find_to(t_type_ptr type, float rlim,
 }
 
 static void find_to_location(t_type_ptr type, float rlim,
-		int /*iblk_from*/, int x_from, int y_from, 
+		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to) {
 
 	int itype = type->index;
