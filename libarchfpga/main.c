@@ -46,13 +46,18 @@ int main(int argc, char **argv) {
     try {
         XmlReadArch(argv[1], atoi(argv[2]), arch, &types, &numTypes);
     } catch (vtr::VtrError& vtr_error) {
-        printf("Faild to load architecture %s: %s\n", argv[1], vtr_error.what());
+        printf("Failed to load architecture %s: %s\n", argv[1], vtr_error.what());
         return 1;
     }
 
 	printf("Printing Results\n");
 
-	EchoArch(argv[3], types, numTypes, arch);
+    try {
+        EchoArch(argv[3], types, numTypes, arch);
+    } catch (vtr::VtrError& vtr_error) {
+        printf("Failed to echo architecture %s: %s\n", argv[1], vtr_error.what());
+        return 1;
+    }
 
 	printf("Done\n");
 	free(arch);
