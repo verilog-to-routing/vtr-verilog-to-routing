@@ -1,6 +1,8 @@
 #include <cmath>		/* Needed only for sqrt call (remove if sqrt removed) */
 using namespace std;
 
+#include "vtr_assert.h"
+
 #include "vpr_types.h"
 #include "vpr_error.h"
 
@@ -281,6 +283,8 @@ static void load_rr_indexed_data_T_values(int index_start,
 				num_switches++;
 			}
 		}
+        VTR_ASSERT(num_switches > 0);
+
 		avg_switch_R /= num_switches;
 		avg_switch_T /= num_switches;
 		switch_R_total[cost_index] += avg_switch_R;
