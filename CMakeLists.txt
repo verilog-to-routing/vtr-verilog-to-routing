@@ -13,10 +13,13 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "default install path" FORCE)
 endif()
 
-#Allow the user to configure how much assertion checking should occure
+#Allow the user to configure how much assertion checking should occur
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1, 2, 3: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3)
+
 add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}") #Set assertion level
+
+option(ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
@@ -117,8 +120,6 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     #"-Wsign-promo"                  #Warn when overload resolution converts an unsigned type to signed when an unsigned overload exists
     )
 
-#TODO: -fsanitize
-
 #Check and see if the compiler supports the various warning flags,
 #and add valid flags
 foreach(flag ${WARN_FLAGS_TO_CHECK})
@@ -128,6 +129,9 @@ foreach(flag ${WARN_FLAGS_TO_CHECK})
         set(WARN_FLAGS "${WARN_FLAGS} ${flag}")
     endif()
 endforeach()
+
+#Apply the warning flags to all build types
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 
 #The flex/bison code is not warning clean so we need to suppress some warnings
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
@@ -156,9 +160,27 @@ foreach(flag ${WARN_NON_LITERAL_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
+#See if we support -fsanitize options
+set(SANITIZE_FLAGS "")
+set(SANITIZE_MODES_TO_CHECK
+    "address"    #Detect out-of-bounds and use-after-frees
+    "leak"       #Detect memory-leaks
+    "undefined"  #Detect undefined behaviour
+)
 
-#Apply the warning flags to all build types
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
+foreach(mode ${SANITIZE_MODES_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG("-fsanitize=${mode}" COMPILER_SUPPORTS_SANITIZE_${mode})
+    if(COMPILER_SUPPORTS_SANITIZE_${mode})
+        #Flag supported, so enable it
+        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fsanitize=${mode}")
+    endif()
+endforeach()
+
+if(ENABLE_SANITIZE)
+    #Apply the sanitize flags to all debug build types
+    message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZE_FLAGS}")
+endif()
 
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
