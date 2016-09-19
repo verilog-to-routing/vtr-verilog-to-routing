@@ -1748,7 +1748,6 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				if(rr_node[prev_node].type == OPIN) {
 					draw_pin_to_pin(prev_node, inode);
 				} else {
-					prev_track = get_track_num(prev_node, chanx_track, chany_track);
 					draw_pin_to_chan_edge(inode, prev_node);
 				}
 				break;
