@@ -11,13 +11,13 @@ using namespace std;
 
 /********************* Subroutines local to this module *********************/
 
-static bool breadth_first_route_net(int inet, int itry, float bend_cost);
+static bool breadth_first_route_net(int inet, float bend_cost);
 
 static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 		int remaining_connections_to_sink);
 
 static void breadth_first_expand_neighbours(int inode, float pcost, 
-		int inet, int itry, float bend_cost);
+		int inet, float bend_cost);
 
 static void breadth_first_add_source_to_heap(int inet);
 
@@ -50,7 +50,7 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 		}
 
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-			is_routable = try_breadth_first_route_net(inet, itry, pres_fac, 
+			is_routable = try_breadth_first_route_net(inet, pres_fac, 
 					router_opts);
 			if (!is_routable) {
 				return (false);
@@ -88,7 +88,7 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 	return (false);
 }
 
-bool try_breadth_first_route_net(int inet, int itry, float pres_fac, 
+bool try_breadth_first_route_net(int inet, float pres_fac, 
 		struct s_router_opts router_opts) {
 
 	bool is_routed = false;
@@ -104,7 +104,7 @@ bool try_breadth_first_route_net(int inet, int itry, float pres_fac,
 	} else {
 
 		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
-		is_routed = breadth_first_route_net(inet, itry, router_opts.bend_cost);
+		is_routed = breadth_first_route_net(inet, router_opts.bend_cost);
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
@@ -119,7 +119,7 @@ bool try_breadth_first_route_net(int inet, int itry, float pres_fac,
 	return (is_routed);
 }
 
-static bool breadth_first_route_net(int inet, int itry, float bend_cost) {
+static bool breadth_first_route_net(int inet, float bend_cost) {
 
 	/* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
 	 * begins at the net output, and expands outward until it hits a target      *
@@ -172,7 +172,7 @@ static bool breadth_first_route_net(int inet, int itry, float bend_cost) {
 				if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
 
-				breadth_first_expand_neighbours(inode, new_pcost, inet, itry,
+				breadth_first_expand_neighbours(inode, new_pcost, inet,
 						bend_cost);
 			}
 
@@ -287,7 +287,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 }
 
 static void breadth_first_expand_neighbours(int inode, float pcost, 
-		int inet, int /*itry*/, float bend_cost) {
+		int inet, float bend_cost) {
 
 	/* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
 	 * the expanded bounding box specified in route_bb are not added to the     *
