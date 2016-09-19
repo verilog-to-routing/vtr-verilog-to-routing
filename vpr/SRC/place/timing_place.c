@@ -126,7 +126,7 @@ t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 			g_clbs_nlist.net.size());
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
-			timing_inf, chan_width_dist, directs, num_directs);
+			chan_width_dist, directs, num_directs);
 	
 	timing_place_crit = alloc_crit(&timing_place_crit_ch);
 

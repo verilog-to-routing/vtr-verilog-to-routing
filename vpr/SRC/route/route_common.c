@@ -246,7 +246,7 @@ void get_serial_num(void) {
 
 void try_graph(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
+		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs) {
 
 	t_graph_type graph_type;
@@ -268,12 +268,12 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch->switch_block_type,
+			&chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,
 			det_routing_arch->global_route_switch,
-			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->delayless_switch,
 			det_routing_arch->wire_to_arch_ipin_switch,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
@@ -321,12 +321,12 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch->switch_block_type,
+			&chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,
 			det_routing_arch->global_route_switch,
-			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->delayless_switch,
 			det_routing_arch->wire_to_arch_ipin_switch, 
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,

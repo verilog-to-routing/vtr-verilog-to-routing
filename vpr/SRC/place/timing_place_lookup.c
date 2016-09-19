@@ -122,7 +122,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 
 static void alloc_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const t_direct_inf *directs, 
 		const int num_directs);
 
 static void free_routing_structs();
@@ -463,7 +463,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
 /**************************************/
 static void alloc_routing_structs(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const t_direct_inf *directs, 
 		const int num_directs) {
 
 	int bb_factor;
@@ -488,12 +488,12 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	}
 
 	build_rr_graph(graph_type, num_types, dummy_type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch->switch_block_type,
+			&chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,
 			det_routing_arch->global_route_switch,
-			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->delayless_switch, 
 			det_routing_arch->wire_to_arch_ipin_switch,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
@@ -1014,7 +1014,7 @@ static void compute_delta_arrays(struct s_router_opts router_opts, int longest_l
 /**************************************/
 void compute_delay_lookup_tables(struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist, const t_direct_inf *directs, 
+		t_chan_width_dist chan_width_dist, const t_direct_inf *directs, 
 		const int num_directs) {
 
 	vtr::printf_info("\nStarting placement delay look-up...\n");
@@ -1040,7 +1040,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 
 
 	alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
-			timing_inf, directs, num_directs);
+			directs, num_directs);
 
 
 	longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);

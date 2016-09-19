@@ -3,7 +3,7 @@
 
 void try_graph(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
+		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs);
 
 bool try_route(int width_fac, struct s_router_opts router_opts,

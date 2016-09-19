@@ -117,7 +117,7 @@ static void alloc_and_load_rr_graph(
 		struct s_grid_tile **L_grid, const int L_nx, const int L_ny, const int Fs,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
 		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
-		const int max_chan_width, const enum e_switch_block_type sb_type,
+		const int max_chan_width,
 		const int delayless_switch, const enum e_directionality directionality,
 		const int wire_to_ipin_switch, bool * Fc_clipped, 
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
@@ -223,13 +223,11 @@ void build_rr_graph(
 		const t_type_ptr types, const int L_nx, const int L_ny,
 		struct s_grid_tile **L_grid, 
 		struct s_chan_width *nodes_per_chan,
-		const struct s_chan_width_dist * /*chan_capacity_inf*/, //FIXME: Shouldn't this be used?
 		const enum e_switch_block_type sb_type, const int Fs,
 		const vector<t_switchblock_inf> switchblocks, 
 		const int num_seg_types, const int num_arch_switches, 
 		const t_segment_inf * segment_inf,
 		const int global_route_switch, const int delayless_switch,
-		const t_timing_inf /*timing_inf*/, //FIXME: Shouldn't this be used? 
         const int wire_to_arch_ipin_switch,
 		const enum e_base_cost_type base_cost_type, 
 		const bool trim_empty_channels,
@@ -512,7 +510,7 @@ void build_rr_graph(
 			seg_details, chan_details_x, chan_details_y,
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, sb_conn_map, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
-			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, max_chan_width, sb_type,
+			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, max_chan_width,
 			delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped, 
 			directs, num_directs, clb_to_clb_directs);
 
@@ -993,7 +991,6 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
 		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
 		const int max_chan_width, 
-        const enum e_switch_block_type /*sb_type*/, //FIXME: Shouldn't this be used?
 		const int delayless_switch, const enum e_directionality directionality,
 		const int wire_to_ipin_switch, bool * Fc_clipped,
 		const t_direct_inf *directs, const int num_directs,

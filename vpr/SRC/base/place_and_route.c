@@ -105,7 +105,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		if(width_fac != NO_FIXED_CHANNEL_WIDTH) {
 		    //Only try if a fixed channel width is specified
 		    try_graph(width_fac, router_opts, det_routing_arch, 
-			    segment_inf, timing_inf, chan_width_dist,
+			    segment_inf, chan_width_dist,
 			    directs, num_directs);
 		}
 		return(true);
@@ -500,12 +500,12 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_rr_graph();
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, NULL, det_routing_arch->switch_block_type,
+			&chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,
 			det_routing_arch->global_route_switch,
-			det_routing_arch->delayless_switch, timing_inf,
+			det_routing_arch->delayless_switch,
 			det_routing_arch->wire_to_arch_ipin_switch, 
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
