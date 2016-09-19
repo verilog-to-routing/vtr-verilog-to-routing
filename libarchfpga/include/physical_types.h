@@ -881,13 +881,15 @@ public:
 		to_side = to;
 	}
 
-	SB_Side_Connection(){
+	SB_Side_Connection()
+        : from_side(TOP)
+        , to_side(TOP) {
 		/* do nothing */
 	}
 
-	SB_Side_Connection(enum e_side from, enum e_side to){
-		from_side = from;
-		to_side = to;
+	SB_Side_Connection(enum e_side from, enum e_side to)
+        : from_side(from)
+        , to_side(to) {
 	}
 
 	/* overload < operator which will be used by std::map */	
