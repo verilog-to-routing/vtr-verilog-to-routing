@@ -267,6 +267,8 @@ class Arc {
 //see BlackBoxInst for a general implementation for a black box primitive)
 class Instance {
     public:
+        virtual ~Instance() {};
+
         //Print the current instance in blif format
         //
         //  os - The output stream to print to

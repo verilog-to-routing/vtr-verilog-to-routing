@@ -10,6 +10,7 @@ class NetlistWalker {
         NetlistWalker(NetlistVisitor& netlist_visitor)
             : visitor_(netlist_visitor)
             {}
+        
 
         void walk();
 
@@ -23,6 +24,7 @@ class NetlistWalker {
 class NetlistVisitor {
 
     public:
+        virtual ~NetlistVisitor() {};
         void start() { start_impl(); }
         void visit_top(const char* top_level_name) { visit_top_impl(top_level_name); }
         void visit_clb(const t_pb* clb) { visit_clb_impl(clb); }
