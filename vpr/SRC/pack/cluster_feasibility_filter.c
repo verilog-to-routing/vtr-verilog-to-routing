@@ -92,7 +92,7 @@ static void alloc_pin_classes_in_pb_graph_node(
 			for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 				pb_graph_node->input_pins[i][j].parent_pin_class =
 						(int *) vtr::calloc(pb_graph_node->pb_type->depth,
-								sizeof(int*));
+								sizeof(int));
 				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
 					pb_graph_node->input_pins[i][j].parent_pin_class[k] = OPEN;
 				}
@@ -102,7 +102,7 @@ static void alloc_pin_classes_in_pb_graph_node(
 			for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 				pb_graph_node->output_pins[i][j].parent_pin_class =
 						(int *) vtr::calloc(pb_graph_node->pb_type->depth,
-								sizeof(int*));
+								sizeof(int));
 				pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs =
 						(t_pb_graph_pin ***) vtr::calloc(
 								pb_graph_node->pb_type->depth,
