@@ -612,6 +612,9 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 		}
 	}
 
+    VTR_ASSERT(mux_nmos_inf_lower);
+    VTR_ASSERT(mux_nmos_inf_upper);
+
 	if (transistor_size
 			> g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1].nmos_size) {
 		power_log_msg(POWER_LOG_ERROR,
