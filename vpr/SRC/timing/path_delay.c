@@ -199,7 +199,7 @@ static void do_path_counting(float criticality_denom);
 static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping);
 
 static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
-		int *inode, const t_timing_inf timing_inf);
+		int *inode);
 
 #ifndef PATH_COUNTING
 static void update_normalized_costs(float T_arr_max_this_domain, long max_critical_input_paths,
@@ -802,8 +802,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
 			if (block[i].pb_route[j].atom_net_idx != OPEN) {
 				VTR_ASSERT(tnode[inode].pb_graph_pin == NULL);
-				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode,
-						timing_inf);
+				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode);
 			}
 		}
 	}
@@ -1378,7 +1377,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 }
 
 static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
-		int *inode, const t_timing_inf /*timing_inf*/) {
+		int *inode) {
 	int i;
 	i = *inode;
 	tnode[i].pb_graph_pin = pb_graph_pin;
