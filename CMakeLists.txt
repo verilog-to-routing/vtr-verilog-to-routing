@@ -19,7 +19,9 @@ set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3)
 
 add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}") #Set assertion level
 
-option(ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
+option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
+option(VTR_ENABLE_PROFILING "Enable gprof performance profiler" OFF)
+option(VTR_ENABLE_COVERAGE "Enable gcov coverage tracking" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
@@ -58,30 +60,6 @@ elseif(COMPILER_SUPPORTS_CXX0X_FLAG)
 else()
     message(WARNING "Could not determine C++11 support for compiler ${CMAKE_CXX_COMPILER}. C++11 support is required.")
 endif()
-
-#
-# Debug/Opt flags
-#
-#Support for optimization that don't interfere with debugging?
-#CHECK_CXX_COMPILER_FLAG("-Og" COMPILER_SUPPORTS_-Og)
-#if(COMPILER_SUPPORTS_-Og)
-    ##Currently disable, Og still causes some variables to be optimized away
-    ##set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
-#endif()
-
-#Support for including non-inlined versions of inlined functions (useful for interactive debugging)
-#CHECK_CXX_COMPILER_FLAG("-fkeep-inline-functions" COMPILER_SUPPORTS_-fkeep-inline-functions)
-#if(COMPILER_SUPPORTS_-fkeep-inline-functions)
-    ##set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fkeep-inline-functions")
-    ##set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fkeep-inline-functions")
-#endif()
-
-#Support for gprof
-#CHECK_CXX_COMPILER_FLAG("-pg" COMPILER_SUPPORTS_-pg)
-#if(COMPILER_SUPPORTS_-fkeep-inline-functions)
-    ##set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fkeep-inline-functions")
-    #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -pg")
-#endif()
 
 #
 # Warning flags
@@ -130,9 +108,6 @@ foreach(flag ${WARN_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
-#Apply the warning flags to all build types
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
-
 #The flex/bison code is not warning clean so we need to suppress some warnings
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
@@ -160,28 +135,47 @@ foreach(flag ${WARN_NON_LITERAL_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
-#See if we support -fsanitize options
+#
+# Sanitizer flags
+#
+
 set(SANITIZE_FLAGS "")
-set(SANITIZE_MODES_TO_CHECK
-    "address"    #Detect out-of-bounds and use-after-frees
-    "leak"       #Detect memory-leaks
-    "undefined"  #Detect undefined behaviour
-)
-
-foreach(mode ${SANITIZE_MODES_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG("-fsanitize=${mode}" COMPILER_SUPPORTS_SANITIZE_${mode})
-    if(COMPILER_SUPPORTS_SANITIZE_${mode})
-        #Flag supported, so enable it
-        set(SANITIZE_FLAGS "${SANITIZE_FLAGS} -fsanitize=${mode}")
-    endif()
-endforeach()
-
-if(ENABLE_SANITIZE)
-    #Apply the sanitize flags to all debug build types
+if(VTR_ENABLE_SANITIZE)
+    #Enable sanitizers
+    set(SANITIZE_FLAGS "-fsanitize=address -fsanitize=leak -fsanitize=undefined")
     message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZE_FLAGS}")
 endif()
 
+#
+# Profiling flags
+#
+
+#Support for gprof
+set(PROFILING_FLAGS "")
+if(VTR_ENABLE_PROFILING)
+    #Enable gprof
+    set(PROFILING_FLAGS "-g -pg")
+    message(STATUS "Profiling Flags: ${PROFILING_FLAGS}")
+endif()
+
+
+
+#
+# Code coverage flags
+#
+
+#Support for gcov
+set(COVERAGE_FLAGS "")
+if(VTR_ENABLE_COVERAGE)
+    #Enable gcov
+    set(COVERAGE_FLAGS "-g -ftest-coverage -fprofile-arcs")
+    message(STATUS "Coverage Flags: ${COVERAGE_FLAGS}")
+endif()
+
+#
+# Set final flags
+#
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 function(get_include_directories header_file_list include_directory_list)

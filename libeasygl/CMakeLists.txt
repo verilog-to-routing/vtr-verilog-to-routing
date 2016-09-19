@@ -1,7 +1,7 @@
 project("libeasygl")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules") #For FindFontconfig
 
-option(ENABLE_GRAPHICS "Enables easygl graphics" ON)
+option(EASYGL_ENABLE_GRAPHICS "Enables easygl graphics" ON)
 
 file(GLOB_RECURSE LIB_SOURCES src/*.c)
 file(GLOB_RECURSE LIB_HEADERS src/*.h)
@@ -15,7 +15,7 @@ set(GRAPHICS_LIBRARIES "")
 set(GRAPHICS_INCLUDES "")
 set(GRAPHICS_DEFINES "")
 
-if(ENABLE_GRAPHICS)
+if(EASYGL_ENABLE_GRAPHICS)
     if(WIN32)
         #Windows
         list(GRAPHICS_DEFINES APPEND "-DWIN32")
@@ -51,16 +51,16 @@ if(ENABLE_GRAPHICS)
             list(APPEND GRAPHICS_INCLUDES ${X11_X11_INCLUDE_PATH} ${X11_Xft_INCLUDE_PATH} ${FREETYPE_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
         else()
             #Disable
-            set(ENABLE_GRAPHICS false)
+            set(EASYGL_ENABLE_GRAPHICS false)
         endif()
     endif()
 endif()
 
-if(ENABLE_GRAPHICS)
-    message(STATUS "EasyGL: enabled")
+if(EASYGL_ENABLE_GRAPHICS)
+    message(STATUS "EasyGL: graphics enabled")
 else()
     list(APPEND GRAPHICS_DEFINES "-DNO_GRAPHICS")
-    message(STATUS "EasyGL: disabled")
+    message(STATUS "EasyGL: graphics disabled")
 endif()
 
 #Specify defines and includes
