@@ -245,7 +245,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, bool *is_clock,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
-		float block_delay,
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,
@@ -371,8 +370,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
 	if (timing_driven) {
-		slacks = alloc_and_load_pre_packing_timing_graph(block_delay,
-				inter_cluster_net_delay, arch->models, timing_inf);
+		slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, arch->models, timing_inf);
 		do_timing_analysis(slacks, timing_inf, true, false);
 
 		if (getEchoEnabled()) {

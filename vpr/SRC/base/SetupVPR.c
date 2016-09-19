@@ -671,10 +671,6 @@ void SetupPackerOpts(const t_options Options, const bool TimingEnabled,
 		PackerOpts->beta = Options.beta;
 	}
 
-	PackerOpts->block_delay = 0; /* DEFAULT */
-	if (Options.Count[OT_CLUSTER_BLOCK_DELAY]) {
-		PackerOpts->block_delay = Options.block_delay;
-	}
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
 	PackerOpts->auto_compute_inter_cluster_net_delay = true;
 	if (Options.Count[OT_INTER_CLUSTER_NET_DELAY]) {

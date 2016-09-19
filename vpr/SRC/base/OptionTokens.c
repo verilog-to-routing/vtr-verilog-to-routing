@@ -68,7 +68,6 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "cluster_seed_type", OT_CLUSTER_SEED }, 
 		{ "alpha_clustering", OT_ALPHA_CLUSTERING },
 		{ "beta_clustering", OT_BETA_CLUSTERING }, 
-		{ "cluster_block_delay", OT_CLUSTER_BLOCK_DELAY }, 
 		{ "inter_cluster_net_delay", OT_INTER_CLUSTER_NET_DELAY }, 
 		{ "pack", OT_PACK }, 
 		{ "packer_algorithm", OT_PACKER_ALGORITHM }, /**/

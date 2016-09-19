@@ -184,8 +184,7 @@ static void update_slacks(t_slack * slacks, float criticality_denom,
 
 static void alloc_and_load_tnodes(const t_timing_inf &timing_inf);
 
-static void alloc_and_load_tnodes_from_prepacked_netlist(float block_delay,
-		float inter_cluster_net_delay);
+static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay);
 
 static void alloc_timing_stats(void);
 
@@ -300,8 +299,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	return slacks;
 }
 
-t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
-		float inter_cluster_net_delay, t_model *models, t_timing_inf timing_inf) {
+t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_model *models, t_timing_inf timing_inf) {
 
 	/* This routine builds the graph used for timing analysis.  Every technology-
 	 * mapped netlist pin is a timing node (tnode).  The connectivity between pins is *
@@ -329,8 +327,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float block_delay,
 	num_timing_nets = (int) g_atoms_nlist.net.size();
 	timing_nets = &g_atoms_nlist.net;
 
-	alloc_and_load_tnodes_from_prepacked_netlist(block_delay,
-			inter_cluster_net_delay);
+	alloc_and_load_tnodes_from_prepacked_netlist(inter_cluster_net_delay);
 
     detect_and_fix_timing_graph_combinational_loops();
 
@@ -1041,7 +1038,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
  Count number of tnodes first
  Then connect up tnodes with edges
  */
-static void alloc_and_load_tnodes_from_prepacked_netlist(float /*block_delay*/, float inter_cluster_net_delay) {
+static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay) {
 	int i, j, k;
 	const t_model *model;
 	t_model_ports *model_port;
