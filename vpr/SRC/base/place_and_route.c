@@ -173,23 +173,17 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		init_draw_coords(max_pins_per_clb);
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 		
-		if (timing_inf.timing_analysis_enabled) {
-			VTR_ASSERT(slacks->slack);
+        VTR_ASSERT(slacks->slack);
 
-			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-				/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
-			}
+        if(GetPostSynthesisOption())
+        {
+            netlist_writer(blif_circuit_name);
+        }
 
-			if(GetPostSynthesisOption())
-			{
-				netlist_writer(blif_circuit_name);
-			}
+        free_timing_graph(slacks);
 
-			free_timing_graph(slacks);
-
-			VTR_ASSERT(net_delay);
-			free_net_delay(net_delay, &net_delay_ch);
-		}
+        VTR_ASSERT(net_delay);
+        free_net_delay(net_delay, &net_delay_ch);
 
 		fflush(stdout);
 	}
