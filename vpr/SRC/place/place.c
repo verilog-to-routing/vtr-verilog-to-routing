@@ -670,6 +670,8 @@ void try_place(struct s_placer_opts placer_opts,
 	 
 	// Print out swap statistics
 	total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
+    VTR_ASSERT(total_swap_attempts > 0);
+
 	reject_rate = num_swap_rejected / total_swap_attempts;
 	accept_rate = num_swap_accepted / total_swap_attempts;
 	abort_rate = num_swap_aborted / total_swap_attempts;
@@ -711,6 +713,8 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 #ifdef VERBOSE
 		vtr::printf_info("Outer loop recompute criticalities\n");
 #endif
+        VTR_ASSERT(num_connections > 0);
+
 		*place_delay_value = (*delay_cost) / num_connections;
 
 		/*note, for path_based, the net delay is not updated since it is current,

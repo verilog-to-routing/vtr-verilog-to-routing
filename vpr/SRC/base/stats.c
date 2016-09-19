@@ -357,6 +357,8 @@ void print_wirelen_prob_dist(void) {
 			 *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *
 			 *  only 0.1 to prob_dist[1].                                          */
 
+            VTR_ASSERT(g_clbs_nlist.net[inet].num_sinks() > 0);
+
 			two_point_length = (float) length
 					/ (float) (g_clbs_nlist.net[inet].num_sinks());
 			index = (int) two_point_length;

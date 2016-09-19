@@ -1087,6 +1087,8 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		area = 1;
 	}
 
+    VTR_ASSERT(g_clbs_nlist.net[inet].num_sinks() > 0);
+
 	rlim = (int)(ceil(sqrt((float) area / (float) g_clbs_nlist.net[inet].num_sinks())));
 
 	success = false;
@@ -1247,6 +1249,7 @@ static bool early_exit_heuristic(const t_router_opts& /*router_opts*/) {
 			total_wirelength += wirelength;
 		}
 	}
+    VTR_ASSERT(available_wirelength > 0);
     float used_wirelength_ratio = (float) (total_wirelength) / (float) (available_wirelength);
 
 	vtr::printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
