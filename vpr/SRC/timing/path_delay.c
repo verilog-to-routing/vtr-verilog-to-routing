@@ -391,6 +391,7 @@ void load_timing_graph_net_delays(float **net_delay) {
 	 * net_delay[0..net.size()-1][1..num_pins-1].  These net delays should have    *
 	 * been allocated and loaded with the net_delay routines.  This routine      *
 	 * marks the corresponding edges in the timing graph with the proper delay.  */
+    VTR_ASSERT(net_delay);
 
 	int inet, inode;
 	unsigned ipin;
