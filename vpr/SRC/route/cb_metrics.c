@@ -133,7 +133,7 @@ static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Me
 
 /* adjusts the connection block until the appropriate metric has hit its target value. the other orthogonal metric is kept constant
    within some tolerance */
-void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance, const float /*pin_tolerance*/,
+void adjust_cb_metric(const e_metric metric, const float target, const float target_tolerance,
 		const t_type_ptr block_type, int *****pin_to_track_connections, 
 		const e_pin_type pin_type, const int *Fc_array, const t_chan_width *chan_width_inf, 
 		const int num_segments, const t_segment_inf *segment_inf){
