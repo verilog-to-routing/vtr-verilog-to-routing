@@ -1746,7 +1746,6 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 	int i, iblk, j, k;
 	t_pb * cur_pb;
-	int num_input_pins, num_output_pins;
 	int num_used_input_pins, num_used_output_pins;
 	t_model_ports *port;
 
@@ -1764,12 +1763,10 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 			}
 
 			/* Todo: This was used to explore different normalization options, can be made more efficient once we decide on which one to use*/
-			num_input_pins = 0;
 			port = logical_block[iblk].model->inputs;
 			j = 0;
 			num_used_input_pins = 0;
 			while (port) {
-				num_input_pins += port->size;
 				if (!port->is_clock) {
 					for (k = 0; k < port->size; k++) {
 						if (logical_block[iblk].input_nets[j][k] != OPEN) {
@@ -1780,16 +1777,11 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 				}
 				port = port->next;
 			}
-			if (num_input_pins == 0) {
-				num_input_pins = 1;
-			}
 
 			num_used_output_pins = 0;
 			j = 0;
-			num_output_pins = 0;
 			port = logical_block[iblk].model->outputs;
 			while (port) {
-				num_output_pins += port->size;
 				for (k = 0; k < port->size; k++) {
 					if (logical_block[iblk].output_nets[j][k] != OPEN) {
 						num_used_output_pins++;
@@ -1804,13 +1796,11 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
             VTR_ASSERT(num_used_input_pins + num_used_output_pins != 0.);
 			if (connection_driven) {
 				/*try to absorb as many connections as possible*/
-				/*cur_pb->pb_stats->gain[iblk] = ((1-beta)*(float)cur_pb->pb_stats->sharinggain[iblk] + beta*(float)cur_pb->pb_stats->connectiongain[iblk])/(num_input_pins + num_output_pins);*/
 				cur_pb->pb_stats->gain[iblk] = ((1 - beta)
 						* (float) cur_pb->pb_stats->sharinggain[iblk]
 						+ beta * (float) cur_pb->pb_stats->connectiongain[iblk])
 						/ (num_used_input_pins + num_used_output_pins);
 			} else {
-				/*cur_pb->pb_stats->gain[iblk] = ((float)cur_pb->pb_stats->sharinggain[iblk])/(num_input_pins + num_output_pins); */
 				cur_pb->pb_stats->gain[iblk] =
 						((float) cur_pb->pb_stats->sharinggain[iblk])
 								/ (num_used_input_pins + num_used_output_pins);
