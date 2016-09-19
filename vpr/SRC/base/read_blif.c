@@ -558,9 +558,9 @@ static void add_subckt(bool doall, const t_model *user_models) {
 			/* ELSE - parse in one or the other */
 			/* allocate a new spot for both the circuit_signal name and the subckt_signal name */
 			subckt_signal_name = (char**) vtr::realloc(subckt_signal_name,
-					(subckt_index_signals + 1) * sizeof(char**));
+					(subckt_index_signals + 1) * sizeof(char*));
 			circuit_signal_name = (char**) vtr::realloc(circuit_signal_name,
-					(subckt_index_signals + 1) * sizeof(char**));
+					(subckt_index_signals + 1) * sizeof(char*));
 
 			/* copy in the subckt_signal name */
 			subckt_signal_name[subckt_index_signals] = vtr::strdup(ptr);
