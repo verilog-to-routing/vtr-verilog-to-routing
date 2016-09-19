@@ -17,11 +17,9 @@ endif()
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1, 2, 3: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3)
 
-add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}") #Set assertion level
-
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
-option(VTR_ENABLE_PROFILING "Enable gprof performance profiler" OFF)
-option(VTR_ENABLE_COVERAGE "Enable gcov coverage tracking" OFF)
+option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
+option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 0)
@@ -41,6 +39,11 @@ if(NOT CMAKE_BUILD_TYPE)
         FORCE)
 endif()
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+#
+#Set the assertion level
+#
+add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
