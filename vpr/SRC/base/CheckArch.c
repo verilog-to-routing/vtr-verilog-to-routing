@@ -9,18 +9,18 @@
 #include "CheckArch.h"
 
 /******** Function Prototypes ********/
-static void CheckSwitches(const t_arch Arch);
+static void CheckSwitches(const t_arch& Arch);
 
-static void CheckSegments(const t_arch Arch);
+static void CheckSegments(const t_arch& Arch);
 
 /******** Function Implementations ********/
 
-void CheckArch(const t_arch Arch) {
+void CheckArch(const t_arch& Arch) {
 	CheckSwitches(Arch);
 	CheckSegments(Arch);
 }
 
-static void CheckSwitches(const t_arch Arch) {
+static void CheckSwitches(const t_arch& Arch) {
 	struct s_arch_switch_inf *CurSwitch;
 	int i;
 	int ipin_cblock_switch_index = UNDEFINED;
@@ -74,7 +74,7 @@ static void CheckSwitches(const t_arch Arch) {
  
 }
 
-static void CheckSegments(const t_arch Arch) {
+static void CheckSegments(const t_arch& Arch) {
 	t_segment_inf *CurSeg;
 	int i;
 

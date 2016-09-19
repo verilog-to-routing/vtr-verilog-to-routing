@@ -40,14 +40,14 @@
 /* Main VPR Operations */
 void vpr_init(const int argc, const char **argv, t_options *options,
 		t_vpr_setup *vpr_setup, t_arch *arch);
-void vpr_pack(t_vpr_setup vpr_setup, const t_arch arch);
-void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch);
-bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch arch);
-void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch);
-void vpr_free_vpr_data_structures(t_arch Arch, t_options options,
-		t_vpr_setup vpr_setup);
-void vpr_free_all(t_arch Arch, t_options options,
-		t_vpr_setup vpr_setup);
+void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
+bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch);
+void vpr_free_vpr_data_structures(t_arch& Arch, const t_options& options,
+		t_vpr_setup& vpr_setup);
+void vpr_free_all(t_arch& Arch, const t_options& options,
+		t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title(void);
@@ -75,8 +75,8 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
-void vpr_check_options(const t_options Options, const bool TimingEnabled);
-void vpr_check_arch(const t_arch Arch);
+void vpr_check_options(const t_options& Options, const bool TimingEnabled);
+void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts,
@@ -89,7 +89,7 @@ void vpr_read_and_process_blif(const char *blif_file,
 		const t_model *library_models, bool read_activity_file,
 		char * activity_file);
 /* Show current setup */
-void vpr_show_setup(const t_options options, const t_vpr_setup vpr_setup);
+void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup);
 
 /* Output file names management */
 void vpr_alloc_and_load_output_file_names(const char* default_name);
@@ -99,6 +99,5 @@ char *vpr_get_output_file_name(enum e_output_files ename);
 
 /* Prints user file or internal errors for VPR */
 void vpr_print_error(const VprError& vpr_error);
-
 
 #endif

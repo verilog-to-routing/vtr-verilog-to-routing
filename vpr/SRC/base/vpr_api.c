@@ -39,6 +39,7 @@ using namespace std;
 #include "ReadOptions.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
+#include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
 #include "CheckOptions.h"
@@ -62,10 +63,10 @@ static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
 
 static void free_arch(t_arch* Arch);
-static void free_options(t_options *options);
+static void free_options(const t_options *options);
 static void free_circuit(void);
 
-static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup, const int wire_segment_length,
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
 			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
@@ -253,7 +254,7 @@ void vpr_init(const int argc, const char **argv,
  * Sets globals: nx, ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
-void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch) {
+void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
@@ -385,7 +386,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup vpr_setup, const t_arch Arch
 }
 
 
-void vpr_pack(t_vpr_setup vpr_setup, const t_arch arch) {
+void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 	std::chrono::high_resolution_clock::time_point end, begin;
 	begin = std::chrono::high_resolution_clock::now();
 	vtr::printf_info("Initialize packing.\n");
@@ -457,7 +458,7 @@ void vpr_pack(t_vpr_setup vpr_setup, const t_arch arch) {
 	3) wire to ipin switch
    We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
    a logic block, and the switch block Fs value */
-static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup, const int wire_segment_length,
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
 			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin){
 	e_directionality directionality;
 	int Fs;
@@ -541,7 +542,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup vpr_setup,
 	}
 }
 
-bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch arch) {
+bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 
 	/* Startup X graphics */
 	init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
@@ -672,7 +673,7 @@ void free_arch(t_arch* Arch) {
 	free(Arch->ipin_cblock_switch_name);
 }
 
-void free_options(t_options *options) {
+void free_options(const t_options *options) {
 
 	free(options->ArchFile);
 	free(options->CircuitName);
@@ -886,9 +887,9 @@ void free_circuit() {
 	}
 }
 
-void vpr_free_vpr_data_structures(t_arch Arch,
-		t_options options,
-		t_vpr_setup vpr_setup) {
+void vpr_free_vpr_data_structures(t_arch& Arch,
+		const t_options& options,
+		t_vpr_setup& vpr_setup) {
 
 	if (vpr_setup.Timing.SDCFile != NULL) {
 		free(vpr_setup.Timing.SDCFile);
@@ -905,9 +906,9 @@ void vpr_free_vpr_data_structures(t_arch Arch,
 	free_sdc_related_structs();
 }
 
-void vpr_free_all(t_arch Arch,
-		t_options options,
-		t_vpr_setup vpr_setup) {
+void vpr_free_all(t_arch& Arch,
+		const t_options& options,
+		t_vpr_setup& vpr_setup) {
 
 	free_rr_graph();
 	if (vpr_setup.RouterOpts.doRouting) {
@@ -947,10 +948,10 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */
-void vpr_check_options(const t_options Options, const bool TimingEnabled) {
+void vpr_check_options(const t_options& Options, const bool TimingEnabled) {
 	CheckOptions(Options, TimingEnabled);
 }
-void vpr_check_arch(const t_arch Arch) {
+void vpr_check_arch(const t_arch& Arch) {
 	CheckArch(Arch);
 }
 /* Verify settings don't conflict or otherwise not make sense */
@@ -971,7 +972,7 @@ void vpr_read_and_process_blif(const char *blif_file,
 			library_models, read_activity_file, activity_file);
 }
 /* Show current setup */
-void vpr_show_setup(const t_options options, const t_vpr_setup vpr_setup) {
+void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup) {
 	ShowSetup(options, vpr_setup);
 }
 
@@ -1014,7 +1015,7 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
  * after packing, placement AND routing. Currently, this
  * will not work when running a partial flow (ex. only routing).
  */
-void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 	/* Ensure we are only using 1 clock */
 	VTR_ASSERT(count_netlist_clocks() == 1);

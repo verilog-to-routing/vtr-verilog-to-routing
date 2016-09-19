@@ -44,7 +44,7 @@ static void power_mux_node_max_inputs(t_mux_node * mux_node,
 		float * max_inputs);
 static double power_count_transistors_interc(t_interconnect * interc);
 static double power_count_transistors_pb_node(t_pb_graph_node * pb_node);
-static double power_count_transistors_switchbox(t_arch * arch);
+static double power_count_transistors_switchbox(const t_arch * arch);
 static double power_count_transistors_primitive(t_pb_type * pb_type);
 static double power_count_transistors_LUT(int LUT_inputs,
 		float transistor_size);
@@ -56,7 +56,7 @@ static double power_count_transistors_levr();
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 		bool pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node * pb_node);
-static double power_transistors_per_tile(t_arch * arch);
+static double power_transistors_per_tile(const t_arch * arch);
 static void power_size_pb(void);
 static void power_size_pb_rec(t_pb_graph_node * pb_node);
 static void power_size_pin_to_interconnect(t_interconnect * interc,
@@ -235,7 +235,7 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 	return transistor_cnt;
 }
 
-void power_sizing_init(t_arch * arch) {
+void power_sizing_init(const t_arch * arch) {
 	float transistors_per_tile;
 
 	// tech size = 2 lambda, so lambda^2/4.0 = tech^2
@@ -262,7 +262,7 @@ void power_sizing_init(t_arch * arch) {
  * It returns the number of transistors in a grid of the FPGA (logic block,
  * switch box, 2 connection boxes)
  */
-static double power_transistors_per_tile(t_arch * arch) {
+static double power_transistors_per_tile(const t_arch * arch) {
 	double transistor_cnt = 0.;
 
 	transistor_cnt += power_transistors_for_pb_node(FILL_TYPE->pb_graph_head);
@@ -350,7 +350,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node * pb_node) {
 /**
  * This function counts the maximum number of transistors in a switch box
  */
-static double power_count_transistors_switchbox(t_arch * arch) {
+static double power_count_transistors_switchbox(const t_arch * arch) {
 	double transistor_cnt = 0.;
 	double transistors_per_buf_mux = 0.;
 	int seg_idx;

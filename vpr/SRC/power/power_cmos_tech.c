@@ -52,7 +52,7 @@ static t_power_mux_volt_inf * g_mux_volt_last_searched;
 
 /************************* FUNCTION DECLARATIONS ********************/
 
-static void power_tech_load_xml_file(char * cmos_tech_behavior_filepath);
+static void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath);
 static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
 static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
 static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
@@ -68,14 +68,14 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiloc::
 		float (*usage_fn)(int num_inputs, float transistor_size));
 /************************* FUNCTION DEFINITIONS *********************/
 
-void power_tech_init(char * cmos_tech_behavior_filepath) {
+void power_tech_init(const char * cmos_tech_behavior_filepath) {
 	power_tech_load_xml_file(cmos_tech_behavior_filepath);
 }
 
 /**
  * Reads the transistor properties from the .xml file
  */
-void power_tech_load_xml_file(char * cmos_tech_behavior_filepath) {
+void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
 
     pugi::xml_document doc;
     pugiloc::loc_data loc_data;

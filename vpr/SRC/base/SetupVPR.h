@@ -22,8 +22,6 @@ void SetupVPR(t_options *Options,
 		int *GraphPause,
 		t_power_opts * power_opts);
 
-void ShowSetup(const t_options options, const t_vpr_setup vpr_setup);
-void printClusteredNetlistStats(void);
 
 #endif
 

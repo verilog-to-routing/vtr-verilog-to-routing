@@ -307,14 +307,14 @@ extern t_net_power * clb_net_power;
 /************************* FUNCTION DECLARATIONS ********************/
 
 /* Call before using power module */
-bool power_init(char * power_out_filepath,
-		char * cmos_tech_behavior_filepath, t_arch * arch,
-		t_det_routing_arch * routing_arch);
+bool power_init(const char * power_out_filepath,
+		const char * cmos_tech_behavior_filepath, const t_arch * arch,
+		const t_det_routing_arch * routing_arch);
 
 bool power_uninit(void);
 
 /* Top-Level Function */
-e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,
-		t_arch * arch, t_det_routing_arch * routing_arch);
+e_power_ret_code power_total(float * run_time_s, const t_vpr_setup& vpr_setup,
+		const t_arch * arch, const t_det_routing_arch * routing_arch);
 
 #endif /* __POWER_H__ */

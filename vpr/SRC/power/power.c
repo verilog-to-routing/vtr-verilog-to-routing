@@ -71,7 +71,7 @@ t_net_power * clb_net_power;
 /************************* Function Declarations ********************/
 /* Routing */
 static void power_usage_routing(t_power_usage * power_usage,
-		t_det_routing_arch * routing_arch, t_segment_inf * segment_inf);
+		const t_det_routing_arch * routing_arch, t_segment_inf * segment_inf);
 
 /* Tiles */
 static void power_usage_blocks(t_power_usage * power_usage);
@@ -97,7 +97,7 @@ static void dealloc_mux_graph_rec(t_mux_node * node);
 /* Printing */
 static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 		int indent);
-static void power_print_summary(FILE * fp, t_vpr_setup vpr_setup);
+static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup);
 //static void power_print_stats(FILE * fp);
 static void power_print_breakdown_summary(FILE * fp);
 static void power_print_breakdown_entry(FILE * fp, int indent,
@@ -117,7 +117,7 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin);
 void power_init_pb_pins_rec(t_pb_graph_node * pb_node);
 void power_pb_pins_init();
-void power_routing_init(t_det_routing_arch * routing_arch);
+void power_routing_init(const t_det_routing_arch * routing_arch);
 
 /************************* FUNCTION DEFINITIONS *********************/
 /**
@@ -772,7 +772,7 @@ static void dealloc_mux_graph_rec(t_mux_node * node) {
  * Calculates the power of the entire routing fabric (not local routing
  */
 static void power_usage_routing(t_power_usage * power_usage,
-		t_det_routing_arch * routing_arch, t_segment_inf * segment_inf) {
+		const t_det_routing_arch * routing_arch, t_segment_inf * segment_inf) {
 	int rr_node_idx;
 	int net_idx;
 	int edge_idx;
@@ -1148,7 +1148,7 @@ void power_pb_pins_init() {
 	}
 }
 
-void power_routing_init(t_det_routing_arch * routing_arch) {
+void power_routing_init(const t_det_routing_arch * routing_arch) {
 	int net_idx;
 	int rr_node_idx;
 	int max_fanin;
@@ -1278,9 +1278,9 @@ void power_routing_init(t_det_routing_arch * routing_arch) {
 /**
  * Initialization for all power-related functions
  */
-bool power_init(char * power_out_filepath,
-		char * cmos_tech_behavior_filepath, t_arch * arch,
-		t_det_routing_arch * routing_arch) {
+bool power_init(const char * power_out_filepath,
+		const char * cmos_tech_behavior_filepath, const t_arch * arch,
+		const t_det_routing_arch * routing_arch) {
 	bool error = false;
 
 	/* Set global power architecture & options */
@@ -1373,7 +1373,7 @@ bool power_uninit(void) {
 		}
 		delete mux_info;
 	}
-	free(g_power_commonly_used);
+	delete g_power_commonly_used;
 
 	if (g_power_output->out) {
 		fclose(g_power_output->out);
@@ -1670,7 +1670,7 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 	}
 }
 
-static void power_print_summary(FILE * fp, t_vpr_setup vpr_setup) {
+static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup) {
 	char * arch;
 	char * arch_new;
 
@@ -1704,8 +1704,8 @@ static void power_print_summary(FILE * fp, t_vpr_setup vpr_setup) {
  * and prints it to the output file
  * - run_time_s: (Return value) The total runtime in seconds (us accuracy)
  */
-e_power_ret_code power_total(float * run_time_s, t_vpr_setup vpr_setup,
-		t_arch * arch, t_det_routing_arch * routing_arch) {
+e_power_ret_code power_total(float * run_time_s, const t_vpr_setup& vpr_setup,
+		const t_arch * arch, const t_det_routing_arch * routing_arch) {
 	t_power_usage total_power;
 	t_power_usage sub_power_usage;
 	clock_t t_start;
