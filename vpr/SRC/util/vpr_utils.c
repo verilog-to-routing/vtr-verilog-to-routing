@@ -1414,19 +1414,19 @@ void print_switch_usage() {
     for (int inode = 0; inode < num_rr_nodes; inode++) {
         map<int, int>::iterator itr;
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
-            int fanin = -1;
             int switch_index = itr->first;
+            int fanin = itr->second;
             float Tdel = g_rr_switch_inf[switch_index].Tdel;
             int status = convert_switch_index(&switch_index, &fanin);
-            if (status == -1)
-	    	delete[] switch_fanin_count;
-		delete[] switch_fanin_delay;
-  		delete[] inward_switch_inf;
+            if (status == -1) {
+                delete[] switch_fanin_count;
+                delete[] switch_fanin_delay;
+                delete[] inward_switch_inf;
                 return;
-            if (fanin == -1)
-                fanin = itr->second;
-            if (switch_fanin_count[switch_index].count(fanin) == 0) 
+            }
+            if (switch_fanin_count[switch_index].count(fanin) == 0) {
                 switch_fanin_count[switch_index][fanin] = 0;
+            }
             switch_fanin_count[switch_index][fanin] ++;
             switch_fanin_delay[switch_index][fanin] = Tdel;
         }
