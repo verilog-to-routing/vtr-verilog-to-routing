@@ -277,18 +277,6 @@ t_seg_details *alloc_and_load_seg_details(
 				if (is_global_graph) {
 					seg_details[cur_track].cb[j] = true;
 				} else {
-					index = j;
-
-					/* Rotate longline's so they vary across the FPGA */
-					if (longline) {
-						index = (index + itrack) % length;
-					}
-
-					/* Reverse the order for tracks going in DEC_DIRECTION */
-					if (itrack % fac == 1) {
-						index = (length - 1) - j;
-					}
-
 					/* Use the segment's pattern. */
 					index = j % segment_inf[i].cb_len;
 					seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
@@ -298,18 +286,6 @@ t_seg_details *alloc_and_load_seg_details(
 				if (is_global_graph) {
 					seg_details[cur_track].sb[j] = true;
 				} else {
-					index = j;
-
-					/* Rotate longline's so they vary across the FPGA */
-					if (longline) {
-						index = (index + itrack) % (length + 1);
-					}
-
-					/* Reverse the order for tracks going in DEC_DIRECTION */
-					if (itrack % fac == 1) {
-						index = ((length + 1) - 1) - j;
-					}
-
 					/* Use the segment's pattern. */
 					index = j % segment_inf[i].sb_len;
 					seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
