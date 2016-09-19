@@ -108,7 +108,7 @@ static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
 		const bool timing_enabled, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		const bool timing_enabled, const s_arch& arch, const pugiloc::loc_data& loc_data);
+		const s_arch& arch, const pugiloc::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		struct s_arch_switch_inf **Switches, int *NumSwitches,
 		const bool timing_enabled, const pugiloc::loc_data& loc_data);
@@ -116,7 +116,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 		const int switch_index, s_arch_switch_inf *Switches, const pugiloc::loc_data& loc_data);
 static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const struct s_arch_switch_inf *Switches, const int NumSwitches,
-		 const bool timing_enabled, const pugiloc::loc_data& loc_data);
+		 const pugiloc::loc_data& loc_data);
 static void ProcessSegments(pugi::xml_node Parent,
 		struct s_segment_inf **Segs, int *NumSegs,
 		const struct s_arch_switch_inf *Switches, const int NumSwitches,
@@ -220,14 +220,14 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
 	/* Process types */
 	Next = get_single_child(architecture, "complexblocklist", loc_data);
-	ProcessComplexBlocks(Next, Types, NumTypes, timing_enabled, *arch, loc_data);
+	ProcessComplexBlocks(Next, Types, NumTypes, *arch, loc_data);
 
 	/* Process directs */
 	Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
 	if (Next) {
 		ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
                 arch->Switches, arch->num_switches,
-				timing_enabled, loc_data);
+				loc_data);
 	}
 
 	/* Process architecture power information */
@@ -2129,7 +2129,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		bool /*timing_enabled*/, const s_arch& arch, const pugiloc::loc_data& loc_data) {
+		const s_arch& arch, const pugiloc::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
@@ -2684,8 +2684,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled,
 
 static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 		 int *NumDirects, const struct s_arch_switch_inf *Switches, const int NumSwitches,
-
-		 const bool /*timing_enabled*/, const pugiloc::loc_data& loc_data) {
+		 const pugiloc::loc_data& loc_data) {
 	int i, j;
 	const char *direct_name;
 	const char *from_pin_name;
