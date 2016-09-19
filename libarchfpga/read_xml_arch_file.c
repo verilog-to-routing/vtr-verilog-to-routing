@@ -94,7 +94,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiloc::loc_data& loc_data);
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
-		bool * default_leakage_mode, const pugiloc::loc_data& loc_data);
+		const pugiloc::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
 static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
@@ -1104,7 +1104,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 					sizeof(t_mode));
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
-			ProcessMode(Parent, &pb_type->modes[i], &default_leakage_mode, loc_data);
+			ProcessMode(Parent, &pb_type->modes[i], loc_data);
 			i++;
 		} else {
 			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
@@ -1115,7 +1115,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 				if (0 == strcmp(Cur.name(), "mode")) {
 					pb_type->modes[i].parent_pb_type = pb_type;
 					pb_type->modes[i].index = i;
-					ProcessMode(Cur, &pb_type->modes[i], &default_leakage_mode, loc_data);
+					ProcessMode(Cur, &pb_type->modes[i], loc_data);
 					if (default_leakage_mode) {
 						pb_type->pb_type_power->leakage_default_mode = i;
 					}
@@ -1463,7 +1463,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 }
 
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
-		bool * /*default_leakage_mode*/, const pugiloc::loc_data& loc_data) {
+		const pugiloc::loc_data& loc_data) {
 	int i;
 	const char *Prop;
 	pugi::xml_node Cur;
