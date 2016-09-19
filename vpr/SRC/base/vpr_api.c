@@ -1074,48 +1074,52 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 void vpr_print_error(const VprError& vpr_error){
 
 	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-	char* error_type = (char *)vtr::calloc(1000, sizeof(char));
-	switch(vpr_error.type()){
-	case VPR_ERROR_UNKNOWN:
-		strcpy(error_type, "Unknown");
-		break;
-	case VPR_ERROR_ARCH:
-		strcpy(error_type, "Architecture file");
-		break;
-	case VPR_ERROR_PACK:
-		strcpy(error_type, "Packing");
-		break;
-	case VPR_ERROR_PLACE:
-		strcpy(error_type, "Placement");
-		break;
-	case VPR_ERROR_ROUTE:
-		strcpy(error_type, "Routing");
-		break;
-	case VPR_ERROR_TIMING:
-		strcpy(error_type, "Timing");
-		break;
-	case VPR_ERROR_SDC:
-		strcpy(error_type, "SDC file");
-		break;
-	case VPR_ERROR_NET_F:
-		strcpy(error_type, "Netlist file");
-		break;
-	case VPR_ERROR_BLIF_F:
-		strcpy(error_type, "Blif file");
-		break;
-	case VPR_ERROR_PLACE_F:
-		strcpy(error_type, "Placement file");
-		break;
-	case VPR_ERROR_IMPL_NETLIST_WRITER:
-		strcpy(error_type, "Implementation Netlist Writer");
-		break;
-	case VPR_ERROR_OTHER:
-		strcpy(error_type, "Other");
-		break;
-	default:
-		strcpy(error_type, "Unrecognized Error");
-		break;
-	}
+    char* error_type = NULL;
+    try {
+        switch(vpr_error.type()){
+        case VPR_ERROR_UNKNOWN:
+            error_type = vtr::strdup("Unknown");
+            break;
+        case VPR_ERROR_ARCH:
+            strcpy(error_type, "Architecture file");
+            break;
+        case VPR_ERROR_PACK:
+            strcpy(error_type, "Packing");
+            break;
+        case VPR_ERROR_PLACE:
+            strcpy(error_type, "Placement");
+            break;
+        case VPR_ERROR_ROUTE:
+            strcpy(error_type, "Routing");
+            break;
+        case VPR_ERROR_TIMING:
+            strcpy(error_type, "Timing");
+            break;
+        case VPR_ERROR_SDC:
+            strcpy(error_type, "SDC file");
+            break;
+        case VPR_ERROR_NET_F:
+            strcpy(error_type, "Netlist file");
+            break;
+        case VPR_ERROR_BLIF_F:
+            strcpy(error_type, "Blif file");
+            break;
+        case VPR_ERROR_PLACE_F:
+            strcpy(error_type, "Placement file");
+            break;
+        case VPR_ERROR_IMPL_NETLIST_WRITER:
+            strcpy(error_type, "Implementation Netlist Writer");
+            break;
+        case VPR_ERROR_OTHER:
+            strcpy(error_type, "Other");
+            break;
+        default:
+            strcpy(error_type, "Unrecognized Error");
+            break;
+        }
+    } catch(const vtr::VtrError& e) {
+        //pass
+    }
 
     //We can't pass std::string's through va_args functions,
     //so we need to copy them and pass via c_str()
