@@ -208,7 +208,7 @@ char* fgets(char *buf, int max_size, FILE * fp) {
      * newlines, since it replaces each carriage return \r   *
      * by a newline character \n.  Returns NULL after EOF.     */
 
-    char ch;
+    int ch;
     int i;
 
     cont = 0; /* line continued? */
