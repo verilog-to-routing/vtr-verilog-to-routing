@@ -155,7 +155,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	hash_table = alloc_hash_table();
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		if (block[iblk].type == IO_TYPE) {
-			h_ptr = insert_in_hash_table(hash_table, block[iblk].name, iblk);
+			insert_in_hash_table(hash_table, block[iblk].name, iblk);
 			block[iblk].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
