@@ -4,7 +4,7 @@ project("vpr")
 file(GLOB_RECURSE EXEC_SOURCES SRC/main.c)
 file(GLOB_RECURSE LIB_SOURCES SRC/*/*.c)
 file(GLOB_RECURSE LIB_HEADERS SRC/*/*.h)
-get_include_directories(LIB_HEADERS LIB_INCLUDE_DIRS)
+headers_to_include_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Treat .c as CXX
 set_source_files_properties(${LIB_SOURCES} ${EXEC_SOURCES} PROPERTIES LANGUAGE CXX)

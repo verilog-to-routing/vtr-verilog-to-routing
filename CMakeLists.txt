@@ -26,6 +26,10 @@ set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+include(HeadersToIncludeDirs)
+
 #
 #
 # Determine compiler configuration
@@ -161,8 +165,6 @@ if(VTR_ENABLE_PROFILING)
     message(STATUS "Profiling Flags: ${PROFILING_FLAGS}")
 endif()
 
-
-
 #
 # Code coverage flags
 #
@@ -181,24 +183,12 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
-function(get_include_directories header_file_list include_directory_list)
-    #Extract the directories for each header file
-    foreach(header ${${header_file_list}})
-        get_filename_component(incl_dir ${header} DIRECTORY)
-        list(APPEND dir_list ${incl_dir})
-    endforeach()
 
-    #Remove any duplicates
-    list(LENGTH "${dir_list}" length)
-    if(${length} GREATER 1) #Avoid error with zero-length lists
-        list(REMOVE_DUPLICATES ${dir_list})
-    endif()
+#
+# ABC as external
+#
 
-    #Set the second argument in the caller's scope
-    set(${include_directory_list} ${dir_list} PARENT_SCOPE)
-endfunction(get_include_directories)
-
-#ABC as external
+#We build ABC as an external project using it's own makefile
 set(ABC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support)
 include(ExternalProject)
 ExternalProject_Add(abc_external
@@ -212,10 +202,15 @@ ExternalProject_Add(abc_external
     TEST_COMMAND ""
 )
 
+#Import the generated exec and library
 add_executable(abc IMPORTED GLOBAL)
 add_library(libabc STATIC IMPORTED GLOBAL)
 set_property(TARGET libabc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/libabc.a)
+set_property(TARGET abc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/abc)
+install(FILES ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
+install(PROGRAMS ${ABC_SOURCE_DIR}/abc DESTINATION bin)
 
+#Point at the required include directories
 include_directories(
                     #For ODIN
                     ${ABC_SOURCE_DIR}/src/bdd/cudd 
@@ -244,11 +239,11 @@ include_directories(
                     ${ABC_SOURCE_DIR}/src/map/if 
                     ${ABC_SOURCE_DIR}/src/sat/bsat)
 
-set_property(TARGET abc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/abc)
+#
+# Sub-projects
+#
 
-install(FILES ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
-install(PROGRAMS ${ABC_SOURCE_DIR}/abc DESTINATION bin)
-
+#Add the various sub-projects
 add_subdirectory(liblog)
 add_subdirectory(libpugixml)
 add_subdirectory(libvtrutil)

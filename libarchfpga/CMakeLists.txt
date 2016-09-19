@@ -3,7 +3,7 @@ project("libarchfpga")
 file(GLOB_RECURSE EXEC_SOURCES main.c)
 file(GLOB_RECURSE LIB_SOURCES *.c)
 file(GLOB_RECURSE LIB_HEADERS include/*.h)
-get_include_directories(LIB_HEADERS LIB_INCLUDE_DIRS)
+headers_to_include_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Treat .c as CXX
 set_source_files_properties(${LIB_SOURCES} PROPERTIES LANGUAGE CXX)
