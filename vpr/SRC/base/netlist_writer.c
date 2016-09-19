@@ -825,7 +825,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         NetlistWriterVisitor& operator=(NetlistWriterVisitor&& rhs) = delete;
 
         ~NetlistWriterVisitor() {
-            free(pin_id_to_tnode_lookup_);
+            free_tnode_lookup_from_pin_id(pin_id_to_tnode_lookup_);
         }
 
     private: //Internal types
