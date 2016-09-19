@@ -859,6 +859,7 @@ void free_route_structs() {
 	/* Frees the temporary storage needed only during the routing.  The  *
 	 * final routing result is not freed.                                */
 	if(heap != NULL) {
+        //coverity[offset_free]
 		free(heap + 1);
 	}
 	if(route_bb != NULL) {
