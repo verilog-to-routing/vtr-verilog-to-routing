@@ -82,8 +82,10 @@ namespace vtr {
     void free_matrix(T* ptr, int nrmin, int nrmax, int ncmin) {
         int i;
         for (i = nrmin; i <= nrmax; i++) {
+            //coverity[offset_free]
             std::free(ptr[i] + ncmin);
         }
+        //coverity[offset_free]
         std::free(ptr + nrmin);
     }
 
@@ -93,6 +95,7 @@ namespace vtr {
         for (i = nrmin; i <= nrmax; i++) {
             free_matrix(ptr[i], ncmin, ncmax, ndmin);
         }
+        //coverity[offset_free]
         std::free(ptr + nrmin);
     }
 
@@ -103,6 +106,7 @@ namespace vtr {
         for (i = nrmin; i <= nrmax; i++) {
             free_matrix3(ptr[i], ncmin, ncmax, ndmin, ndmax, nemin);
         }
+        //coverity[offset_free]
         std::free(ptr + nrmin);
     }
 
@@ -113,6 +117,7 @@ namespace vtr {
         for (i = nrmin; i <= nrmax; i++) {
             free_matrix4(ptr[i], ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin);
         }
+        //coverity[offset_free]
         std::free(ptr + nrmin);
     }
 
