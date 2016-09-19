@@ -126,8 +126,8 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf>
 static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 		const int len, const pugiloc::loc_data& loc_data);
 static void ProcessPower( pugi::xml_node parent,
-		t_power_arch * power_arch, const t_type_descriptor * Types,
-		const int NumTypes,  const pugiloc::loc_data& loc_data);
+		t_power_arch * power_arch,
+        const pugiloc::loc_data& loc_data);
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch * clocks, const pugiloc::loc_data& loc_data);
 
@@ -244,14 +244,14 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	Next = get_single_child(architecture, "power", loc_data, POWER_REQD);
 	if (Next) {
 		if (arch->power) {
-			ProcessPower(Next, arch->power, *Types, *NumTypes, loc_data);
+			ProcessPower(Next, arch->power, loc_data);
 		} else {
 			/* This information still needs to be read, even if it is just
 			 * thrown away.
 			 */
 			t_power_arch * power_arch_fake = (t_power_arch*) vtr::calloc(1,
 					sizeof(t_power_arch));
-			ProcessPower(Next, power_arch_fake, *Types, *NumTypes, loc_data);
+			ProcessPower(Next, power_arch_fake, loc_data);
 			free(power_arch_fake);
 		}
 	}
@@ -2774,8 +2774,8 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf **Directs,
 }
 
 static void ProcessPower( pugi::xml_node parent,
-		t_power_arch * power_arch, const t_type_descriptor * /*Types*/,
-		const int /*NumTypes*/, const pugiloc::loc_data& loc_data) {
+		t_power_arch * power_arch,
+		const pugiloc::loc_data& loc_data) {
 	pugi::xml_node Cur;
 
 	/* Get the local interconnect capacitances */
