@@ -962,6 +962,10 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		/* If bidir architecture, implement the reverse connection as well */
 		if (BI_DIRECTIONAL == directionality){
 			to_wire_inf.to_wire = sb_conn.from_wire;
+            //Since we are implementing the reverse connection we have swapped from and to.
+            //Mark so coverity ignores this issue
+            //
+            //coverity[swapped_arguments]
 			Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.to_side, sb_conn.from_side, to_wire);
 			(*sb_conns)[sb_conn_reverse].push_back(to_wire_inf);
 		}
