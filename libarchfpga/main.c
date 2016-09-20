@@ -17,50 +17,45 @@
 void print_help();
 
 int main(int argc, char **argv) {
-	t_arch* arch = (t_arch *) vtr::calloc(1,sizeof(t_arch));
-	t_type_descriptor *types;
-	int numTypes;
-
-	if (argc - 1 != 3) {
-		printf(
-				"Error: Unexpected # of arguments.  Expected 3 found %d arguments\n",
-				argc);
-		print_help();
-        return 1;
-	}
-
-	printf(
-			"------------------------------------------------------------------------------\n");
-	printf(
-			"- Read architecture file and print library data structures into an output file\n");
-	printf(
-			"------------------------------------------------------------------------------\n\n");
-
-	printf("Inputs: \n"
-			"architecture %s \n"
-			"timing_driven %d \n"
-			"output file %s\n", argv[1], atoi(argv[2]), argv[3]);
-	printf("Reading in architecture\n");
-
-	/* function declarations */
     try {
+        t_arch* arch = (t_arch *) vtr::calloc(1,sizeof(t_arch));
+        t_type_descriptor *types;
+        int numTypes;
+
+        if (argc - 1 != 3) {
+            printf(
+                    "Error: Unexpected # of arguments.  Expected 3 found %d arguments\n",
+                    argc);
+            print_help();
+            return 1;
+        }
+
+        printf(
+                "------------------------------------------------------------------------------\n");
+        printf(
+                "- Read architecture file and print library data structures into an output file\n");
+        printf(
+                "------------------------------------------------------------------------------\n\n");
+
+        printf("Inputs: \n"
+                "architecture %s \n"
+                "timing_driven %d \n"
+                "output file %s\n", argv[1], atoi(argv[2]), argv[3]);
+        printf("Reading in architecture\n");
+
+        /* function declarations */
         XmlReadArch(argv[1], atoi(argv[2]), arch, &types, &numTypes);
-    } catch (vtr::VtrError& vtr_error) {
-        printf("Failed to load architecture %s: %s\n", argv[1], vtr_error.what());
-        return 1;
-    }
 
-	printf("Printing Results\n");
+        printf("Printing Results\n");
 
-    try {
         EchoArch(argv[3], types, numTypes, arch);
+        free(arch);
     } catch (vtr::VtrError& vtr_error) {
-        printf("Failed to echo architecture %s: %s\n", argv[1], vtr_error.what());
+        printf("Failed to process architecture %s: %s\n", argv[1], vtr_error.what());
         return 1;
     }
 
-	printf("Done\n");
-	free(arch);
+    printf("Done\n");
 
 	return 0;
 }
