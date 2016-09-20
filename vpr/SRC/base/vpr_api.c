@@ -1082,44 +1082,44 @@ void vpr_print_error(const VprError& vpr_error){
             error_type = vtr::strdup("Unknown");
             break;
         case VPR_ERROR_ARCH:
-            strcpy(error_type, "Architecture file");
+            error_type = vtr::strdup("Architecture file");
             break;
         case VPR_ERROR_PACK:
-            strcpy(error_type, "Packing");
+            error_type = vtr::strdup("Packing");
             break;
         case VPR_ERROR_PLACE:
-            strcpy(error_type, "Placement");
+            error_type = vtr::strdup("Placement");
             break;
         case VPR_ERROR_ROUTE:
-            strcpy(error_type, "Routing");
+            error_type = vtr::strdup("Routing");
             break;
         case VPR_ERROR_TIMING:
-            strcpy(error_type, "Timing");
+            error_type = vtr::strdup("Timing");
             break;
         case VPR_ERROR_SDC:
-            strcpy(error_type, "SDC file");
+            error_type = vtr::strdup("SDC file");
             break;
         case VPR_ERROR_NET_F:
-            strcpy(error_type, "Netlist file");
+            error_type = vtr::strdup("Netlist file");
             break;
         case VPR_ERROR_BLIF_F:
-            strcpy(error_type, "Blif file");
+            error_type = vtr::strdup("Blif file");
             break;
         case VPR_ERROR_PLACE_F:
-            strcpy(error_type, "Placement file");
+            error_type = vtr::strdup("Placement file");
             break;
         case VPR_ERROR_IMPL_NETLIST_WRITER:
-            strcpy(error_type, "Implementation Netlist Writer");
+            error_type = vtr::strdup("Implementation Netlist Writer");
             break;
         case VPR_ERROR_OTHER:
-            strcpy(error_type, "Other");
+            error_type = vtr::strdup("Other");
             break;
         default:
-            strcpy(error_type, "Unrecognized Error");
+            error_type = vtr::strdup("Unrecognized Error");
             break;
         }
     } catch(const vtr::VtrError& e) {
-        //pass
+        error_type = NULL;
     }
 
     //We can't pass std::string's through va_args functions,
