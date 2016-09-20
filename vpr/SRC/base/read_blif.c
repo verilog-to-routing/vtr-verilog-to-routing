@@ -547,7 +547,14 @@ static void add_subckt(bool doall, const t_model *user_models) {
 
 	/* now we have to find the matching subckt */
 	/* find the name we are looking for */
-	strcpy(subckt_name, vtr::strtok(NULL, TOKENS, blif, buf));
+    ptr = vtr::strtok(NULL, TOKENS, blif, buf);
+    if(strlen(ptr) + 1 <= vtr::BUFSIZE) {
+        strcpy(subckt_name, ptr);
+    } else {
+        vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+                "subckt name exceeded buffer size of %zu characters",
+                vtr::BUFSIZE);
+    }
 	/* get all the signals in the form z=r */
 	iparse = 0;
 	while (iparse < MAX_ATOM_PARSE) {
