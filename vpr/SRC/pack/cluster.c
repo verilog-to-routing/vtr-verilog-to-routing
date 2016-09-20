@@ -1793,17 +1793,18 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 			/* end todo */
 
 			/* Calculate area-only cost function */
-            VTR_ASSERT(num_used_input_pins + num_used_output_pins != 0.);
+            int num_used_pins = num_used_input_pins + num_used_output_pins;
+            VTR_ASSERT(num_used_pins > 0);
 			if (connection_driven) {
 				/*try to absorb as many connections as possible*/
 				cur_pb->pb_stats->gain[iblk] = ((1 - beta)
 						* (float) cur_pb->pb_stats->sharinggain[iblk]
 						+ beta * (float) cur_pb->pb_stats->connectiongain[iblk])
-						/ (num_used_input_pins + num_used_output_pins);
+						/ (num_used_pins);
 			} else {
 				cur_pb->pb_stats->gain[iblk] =
 						((float) cur_pb->pb_stats->sharinggain[iblk])
-								/ (num_used_input_pins + num_used_output_pins);
+								/ (num_used_pins);
 
 			}
 
