@@ -899,14 +899,8 @@ static void free_pb_stats_recursive(t_pb *pb) {
 	if (pb) {
 		if (pb->pb_graph_node != NULL) {
 			if (pb->pb_graph_node->pb_type->num_modes != 0) {
-				for (i = 0;
-						i
-								< pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children;
-						i++) {
-					for (j = 0;
-							j
-									< pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-							j++) {
+				for (i = 0; i < pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
+					for (j = 0; j < pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
 						if (pb->child_pbs && pb->child_pbs[i]) {
 							free_pb_stats_recursive(&pb->child_pbs[i][j]);
 						}

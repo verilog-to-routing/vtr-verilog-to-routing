@@ -780,7 +780,6 @@ void free_pb_stats(t_pb *pb) {
 
     if(pb) {
         int i;
-        t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
 
         if(pb->pb_stats == NULL) {
             return;
@@ -794,14 +793,17 @@ void free_pb_stats(t_pb *pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
         
         if(pb->pb_stats->marked_blocks != NULL) {
-            for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
-                free(pb->pb_stats->input_pins_used[i]);
+            t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
+            if(pb_graph_node) {
+                for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
+                    free(pb->pb_stats->input_pins_used[i]);
+                }
+                for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
+                    free(pb->pb_stats->output_pins_used[i]);
+                }
             }
             free(pb->pb_stats->input_pins_used);
             delete [] pb->pb_stats->lookahead_input_pins_used;
-            for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
-                free(pb->pb_stats->output_pins_used[i]);
-            }
             free(pb->pb_stats->output_pins_used);
             delete [] pb->pb_stats->lookahead_output_pins_used;
             free(pb->pb_stats->feasible_blocks);
