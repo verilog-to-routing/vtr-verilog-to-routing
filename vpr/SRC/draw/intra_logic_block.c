@@ -446,10 +446,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 
 			t_pb* child_pb = &pb->child_pbs[i][j];
 
-			// don't go farther if null 
-			if (child_pb == NULL) {
-				continue;
-			}
+			VTR_ASSERT(child_pb != NULL);
 
 			t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
