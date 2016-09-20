@@ -181,7 +181,12 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			continue; /* Skip blank or comment lines. */
 		}
 
-		strcpy(bname, ptr);
+        if(strlen(ptr) + 1 < vtr::BUFSIZE) {
+            strcpy(bname, ptr);
+        } else {
+			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
+					"Block name exceeded buffer size of %zu characters", vtr::BUFSIZE);
+        }
 
 		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
 		if (ptr == NULL) {
