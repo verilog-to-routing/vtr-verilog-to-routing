@@ -1071,7 +1071,9 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	target_xhigh = rr_node[target_node].get_xhigh();
 	target_yhigh = rr_node[target_node].get_yhigh();
 
-	if (g_clbs_nlist.net[inet].num_sinks() < HIGH_FANOUT_NET_LIM) {
+    int num_sinks = g_clbs_nlist.net[inet].num_sinks();
+
+	if (num_sinks < HIGH_FANOUT_NET_LIM) {
 		/* This algorithm only applies to high fanout nets */
 		return 1;
 	}
@@ -1087,9 +1089,9 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		area = 1;
 	}
 
-    VTR_ASSERT(g_clbs_nlist.net[inet].num_sinks() > 0);
+    VTR_ASSERT(num_sinks > 0);
 
-	rlim = (int)(ceil(sqrt((float) area / (float) g_clbs_nlist.net[inet].num_sinks())));
+	rlim = (int)(ceil(sqrt((float) area / (float) num_sinks)));
 
 	success = false;
 	/* determine quickly a feasible bin radius to route sink for high fanout nets 
