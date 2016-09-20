@@ -2117,7 +2117,6 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	 * fanins and fanouts are highlighted when you click on a block      *
 	 * attached to them.                                                 */
 
-	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	char msg[vtr::BUFSIZE];
@@ -2172,7 +2171,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 		return;
 	} 
 
-	VTR_ASERT(clb_index != EMPTY);
+	VTR_ASSERT(clb_index != EMPTY);
 
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything

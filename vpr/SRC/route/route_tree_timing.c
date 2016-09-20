@@ -237,7 +237,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	 * to the routing tree.  It returns the first (most upstream) new rt_node,
 	 * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
-	int inode, remaining_connections_to_sink, no_route_throughs;
+	int inode;
 	short iedge, iswitch;
 	float C_downstream;
 	t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
@@ -253,7 +253,6 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	}
 #endif
 
-	remaining_connections_to_sink = rr_node_route_inf[inode].target_flag;
 	sink_rt_node = alloc_rt_node();
 	sink_rt_node->u.child_list = NULL;
 	sink_rt_node->inode = inode;
