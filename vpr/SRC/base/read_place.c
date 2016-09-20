@@ -13,7 +13,6 @@ using namespace std;
 #include "hash.h"
 #include "read_place.h"
 #include "read_xml_arch_file.h"
-#include "ReadLine.h"
 
 void read_place(const char *place_file, const char *arch_file,
 		const char *net_file, const int L_nx, const int L_ny,

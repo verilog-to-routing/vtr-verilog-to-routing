@@ -60,6 +60,10 @@ void get_pi_values(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int cycle) {
 				prob0to1 = ACE_P0TO1(info->static_prob, info->switch_prob);
 				prob1to0 = ACE_P1TO0(info->static_prob, info->switch_prob);
 
+                //We don't need a cryptographically secure random number
+                //generator so suppress warning in coverity
+                //
+                //coverity[dont_call]
 				rand_num = (double) rand() / (double) RAND_MAX;
 
 				if (info->status == ACE_UNDEF) {
