@@ -40,10 +40,7 @@ int CountTokens(const char **Tokens) {
 char **
 ReadLineTokens(FILE * InFile, int *LineNum) {
 
-	enum {
-		BUFFSIZE = 65536
-	};
-	/* This is much more than enough */
+    const size_t BUFFSIZE = 65536; /* This is much more than enough */
 	char Buffer[BUFFSIZE]; /* Must match BUFFSIZE */
 	char *Res;
 	char *Last;
