@@ -72,11 +72,13 @@ std::string string_fmt(const char* fmt, ...) {
 //an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
     
-    //Determine the formatted length using a copy of the args
     // We need to copy the args so we don't change them before the true formating
     va_list va_args_copy;
     va_copy(va_args_copy, args);
-    int len = vsnprintf(nullptr, 0, fmt, va_args_copy); 
+
+    //Determine the formatted length using a copy of the args
+    int len = std::vsnprintf(nullptr, 0, fmt, va_args_copy); 
+
     va_end(va_args_copy); //Clean-up
 
     //Negative if there is a problem with the format string
@@ -89,7 +91,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     std::unique_ptr<char[]> buf(new char[buf_size]);
 
     //Format into the buffer using the original args
-    len = vsnprintf(buf.get(), buf_size, fmt, args);
+    len = std::vsnprintf(buf.get(), buf_size, fmt, args);
 
     VTR_ASSERT_MSG(len >= 0, "Problem decoding format string");
     VTR_ASSERT(static_cast<size_t>(len) == buf_size - 1);
@@ -102,14 +104,14 @@ std::string vstring_fmt(const char* fmt, va_list args) {
  * people would expect. This ensures null termination */
 char* strncpy(char *dest, const char *src, size_t size) {
     /* Find string's length */
-    size_t len = strlen(src);
+    size_t len = std::strlen(src);
 
     /* Cap length at (num - 1) to leave room for \0 */
     if (size <= len)
         len = (size - 1);
 
     /* Copy as much of string as we can fit */
-    memcpy(dest, src, len);
+    std::memcpy(dest, src, len);
 
     /* explicit null termination */
     dest[len] = '\0';
@@ -125,9 +127,9 @@ char* strdup(const char *str) {
         return NULL ;
     }
 
-    Len = 1 + strlen(str);
+    Len = 1 + std::strlen(str);
     Dst = (char *) vtr::malloc(Len * sizeof(char));
-    memcpy(Dst, str, Len);
+    std::memcpy(Dst, str, Len);
 
     return Dst;
 }
@@ -179,10 +181,10 @@ FILE* fopen(const char *fname, const char *flag) {
 
     /* Appends a prefix string for output files */
     if (out_file_prefix) {
-        if (strchr(flag, 'w')) {
+        if (std::strchr(flag, 'w')) {
             Len = 1; /* NULL char */
-            Len += strlen(out_file_prefix);
-            Len += strlen(fname);
+            Len += std::strlen(out_file_prefix);
+            Len += std::strlen(fname);
             new_fname = (char *) vtr::malloc(Len * sizeof(char));
             strcpy(new_fname, out_file_prefix);
             strcat(new_fname, fname);
@@ -195,7 +197,7 @@ FILE* fopen(const char *fname, const char *flag) {
     }
 
     if (new_fname)
-        free(new_fname);
+        std::free(new_fname);
 
     return (fp);
 }
@@ -229,7 +231,7 @@ char* fgets(char *buf, int max_size, FILE * fp) {
 
         if (ch == '#') { /* comment */
             buf[i] = '\0';
-            while ((ch = fgetc(fp)) != '\n' && !feof(fp))
+            while ((ch = std::fgetc(fp)) != '\n' && !std::feof(fp))
                 ; /* skip the rest of the line */
             return buf;
         }
@@ -274,7 +276,7 @@ bool file_exists(const char* filename) {
 
     file = std::fopen(filename, "r");
     if (file) {
-        fclose(file);
+        std::fclose(file);
         return true;
     }
     return false;
@@ -296,8 +298,8 @@ bool check_file_name_extension(const char* file_name,
     const char* str;
     int len_extension;
 
-    len_extension = strlen(file_extension);
-    str = strstr(file_name, file_extension);
+    len_extension = std::strlen(file_extension);
+    str = std::strstr(file_name, file_extension);
     if(str == NULL || (*(str + len_extension) != '\0')){
         return false;
     }
