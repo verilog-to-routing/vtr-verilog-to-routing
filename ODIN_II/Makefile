@@ -87,7 +87,7 @@ DEP = $(OBJ:.o=.d)
 
 all: CTAGS $(EXEO)
 
-$(EXEO): $(OBJ) libarchfpga
+$(EXEO): $(OBJ) libarchfpga $(ABC_AR)
 	$(CC) $(C_FLAGS) $(FLAGS) $(OBJ) -o $(EXEO) $(LIB) $(ABC_AR)
 
 CTAGS :
@@ -107,6 +107,10 @@ SRC/verilog_bison.c: %.c: %.y
 # Silently create the object directory as needed
 $(OBJ_DIR):
 	@ mkdir -p $@
+
+
+$(ABC_AR):
+	cd $(ABC_DIR) && make
 
 libarchfpga:
 	cd ../libarchfpga && make
