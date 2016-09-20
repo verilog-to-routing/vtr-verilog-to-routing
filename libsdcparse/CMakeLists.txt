@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8.12)
+
 project("libsdcparse")
 
 file(GLOB_RECURSE LIB_SOURCES src/*.c)
