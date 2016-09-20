@@ -5,6 +5,8 @@ using namespace std;
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
+
 #include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
@@ -1110,7 +1112,13 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 		/* Format "pb_type_name.port_name" */
 		*start_pin_index = *end_pin_index = -1;
 			
-		strcpy (source_string, src_string);
+        if(strlen(src_string) + 1 <= MAX_STRING_LEN + 1) {
+            strcpy (source_string, src_string);
+        } else {
+            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                      "Pin name exceeded buffer size of %zu characters", MAX_STRING_LEN + 1);
+
+        }
 		for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
 			if (source_string[ichar] == '.')
 				source_string[ichar] = ' ';
