@@ -471,7 +471,14 @@ static void add_latch(bool doall, const t_model *latch_model) {
 		ptr = vtr::strtok(NULL, TOKENS, blif, buf);
 		if (ptr == NULL)
 			break;
-		strcpy(saved_names[i], ptr);
+        if(strlen(ptr) + 1 < vtr::BUFSIZE) {
+            strcpy(saved_names[i], ptr);
+        } else {
+            vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+                    ".latch parameter exceeded buffer length of %zu characters.\n",
+                    vtr::BUFSIZE);
+
+        }
 	}
 
 	if (i != 5) {
