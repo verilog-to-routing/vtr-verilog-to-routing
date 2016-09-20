@@ -42,5 +42,6 @@ int ace_calc_network_depth(Abc_Ntk_t * ntk) {
 		depth = MAX(depth, info->depth);
 	}
 
+    Vec_PtrFree(nodes);
 	return depth;
 }

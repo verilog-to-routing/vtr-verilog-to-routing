@@ -323,4 +323,5 @@ void ace_sim_activities(Abc_Ntk_t * ntk, Vec_Ptr_t * nodes, int max_cycles,
 
 		info->status = ACE_SIM;
 	}
+    Vec_PtrFree(logic_nodes);
 }

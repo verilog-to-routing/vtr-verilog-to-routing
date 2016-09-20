@@ -299,9 +299,10 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 			}
 			fseek(in_file_desc, 0, SEEK_SET);
 
-			high = (int *) malloc(num_Pi * sizeof(int));
-			toggles = (int *) malloc(num_Pi * sizeof(int));
-			current = (int *) malloc(num_Pi * sizeof(int));
+			high = (int *) calloc(num_Pi, sizeof(int));
+			toggles = (int *) calloc(num_Pi, sizeof(int));
+			current = (int *) calloc(num_Pi, sizeof(int));
+
 
 			num_vec = 0;
 			fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
@@ -349,6 +350,8 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 			if (!error) {
 				Abc_NtkForEachPi(ntk, obj_ptr, i)
 				{
+                    assert(num_vec > 0);
+
 					info = Ace_ObjInfo(obj_ptr);
 					info->static_prob = (double) high[i] / (double) num_vec;
 					info->static_prob = MAX(0.0, info->static_prob);

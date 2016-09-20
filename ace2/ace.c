@@ -108,7 +108,8 @@ void print_node_bdd(Abc_Ntk_t * ntk) {
 			fflush(0);
 
 			DdNode * first_node;
-			Cudd_FirstNode(ntk->pManFunc, node, &first_node);
+			DdGen* gen = Cudd_FirstNode(ntk->pManFunc, node, &first_node);
+            Cudd_GenFree(gen);
 			node = Cudd_E(node);
 
 		}
@@ -284,6 +285,8 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		}
 		assert(info->switch_act >= 0);
 	}
+    Vec_PtrFree(nodes_logic);
+    Vec_PtrFree(latches_in_cycles_vec);
 
 	return error;
 }
@@ -335,6 +338,8 @@ int main(int argc, char * argv[]) {
 	pAbc = Abc_FrameGetGlobalFrame();
 
 	ntk = Io_Read(blif_file_name, IO_FILE_BLIF, 1);
+
+    assert(ntk);
 
 	printf("Objects in network: %d\n", Abc_NtkObjNum(ntk));
 	printf("PIs in network: %d\n", Abc_NtkPiNum(ntk));
