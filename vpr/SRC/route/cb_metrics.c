@@ -700,7 +700,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
 	bool revert = false;
 	/* indicates whether or not we allow a track to be fully disconnected from all the pins of the connection block
 	   in the processs of trying a move (to allow this, preserve_tracks is set to false) */
-	bool preserve_tracks = true;
+	const bool preserve_tracks = true;
 
 	t_vec_vec_set *pin_to_tracks = &cb_metrics->pin_to_tracks;
 	t_vec_vec_set *track_to_pins = &cb_metrics->track_to_pins;
