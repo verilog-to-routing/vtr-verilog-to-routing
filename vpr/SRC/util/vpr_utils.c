@@ -555,10 +555,14 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type) 
 	}
 	int num_pins = pb_graph_head->total_pb_pins;
 
+    VTR_ASSERT(num_pins > 0);
+
 	pb_graph_pin_lookup_from_type = new t_pb_graph_pin* [num_pins];
 	for(int id = 0; id < num_pins; id++) {
 		pb_graph_pin_lookup_from_type[id] = NULL;
 	}
+
+    VTR_ASSERT(pb_graph_pin_lookup_from_type);
 
 	load_pb_graph_pin_lookup_from_index_rec(pb_graph_pin_lookup_from_type, pb_graph_head);
 
