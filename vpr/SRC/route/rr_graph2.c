@@ -814,8 +814,6 @@ int get_unidir_opin_connections(
 	dec_muxes = label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len, 
 			DEC_DIRECTION, max_chan_width, true, &num_dec_muxes, &dummy);
 
-    VTR_ASSERT(inc_muxes != NULL);
-    VTR_ASSERT(dec_muxes != NULL);
 
 	/* Clip Fc to the number of muxes. */
 	if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -832,7 +830,10 @@ int get_unidir_opin_connections(
 		++Fc_ofs[chan][seg][seg_type_index];
 
 		/* Figure out the track it corresponds to. */
+        VTR_ASSERT(inc_muxes != NULL);
 		inc_track = inc_muxes[inc_mux];
+
+        VTR_ASSERT(dec_muxes != NULL);
 		dec_track = dec_muxes[dec_mux];
 
 		/* Figure the inodes of those muxes */
