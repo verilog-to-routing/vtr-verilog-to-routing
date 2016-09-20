@@ -277,10 +277,6 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 	
 	pugi::xml_node SubElem;
 
-	/* Used to designate if a predifined function such as 'wilton' has been found.
-	   If a predifined function is specified, only one function entry is allowed */
-	bool predefined_sb_found = false;
-
 	/* get the number of specified permutation functions */
 	int num_funcs = count_children(Node, "func", loc_data, OPTIONAL);
 
@@ -303,11 +299,6 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 
 		/* get function formula */
 		func_formula = get_attribute(SubElem, "formula", loc_data).as_string(NULL);
-
-		/* a predefined function should be the only entry */
-		if (predefined_sb_found && ifunc > 0){
-			archfpga_throw( __FILE__, __LINE__, "Predefined switchblock function should be the only entry in the switchfuncs section. Other entry found: %s = %s\n", func_type, func_formula);
-		}
 
 		/* go through all the possible cases of func_type */
 		if (0 == strcmp(func_type, "lt")){
