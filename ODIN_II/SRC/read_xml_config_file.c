@@ -59,33 +59,34 @@ void read_config_file(char *file_name)
 	pugiloc::loc_data loc_data;
 	try {
 		loc_data = pugiutil::load_xml(doc, file_name);
+
+        /* Root element should be config */
+        config = get_single_child(doc, "config", loc_data);
+
+        /* Process the verilog files */
+        next = get_single_child(config, "verilog_files", loc_data);
+        read_verilog_files(next, &configuration, loc_data);
+
+        /* Process the output */
+        next = get_single_child(config, "output", loc_data);
+        read_outputs(next, &configuration, loc_data);
+
+        /* Process the optimizations */
+        set_default_optimization_settings(&configuration);
+        next = get_single_child(config, "optimizations", loc_data, OPTIONAL);
+        if (next)
+        {
+            read_optimizations(next, &configuration, loc_data);
+        }
+
+        /* Process the debug switches */
+        next = get_single_child(config, "debug_outputs", loc_data);
+        read_debug_switches(next, &configuration, loc_data);
 	} catch (XmlError& e) {
         printf("error: could not parse xml configuration file '%s'\n", file_name);
         return;
 	}
 
-	/* Root element should be config */
-	config = get_single_child(doc, "config", loc_data);
-
-	/* Process the verilog files */
-	next = get_single_child(config, "verilog_files", loc_data);
-	read_verilog_files(next, &configuration, loc_data);
-
-	/* Process the output */
-	next = get_single_child(config, "output", loc_data);
-	read_outputs(next, &configuration, loc_data);
-
-	/* Process the optimizations */
-	set_default_optimization_settings(&configuration);
-	next = get_single_child(config, "optimizations", loc_data, OPTIONAL);
-	if (next)
-	{
-		read_optimizations(next, &configuration, loc_data);
-	}
-
-	/* Process the debug switches */
-	next = get_single_child(config, "debug_outputs", loc_data);
-	read_debug_switches(next, &configuration, loc_data);
 
 	/* Release the full XML tree */
 	return;

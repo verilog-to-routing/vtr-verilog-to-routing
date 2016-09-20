@@ -125,7 +125,11 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			read_blif(global_args.blif_file);
+            try {
+                read_blif(global_args.blif_file);
+            } catch(vtr::VtrError& vtr_error) {
+                printf("Failed to load blif file: %s\n", vtr_error.what());
+            }
 		}
 
 		/* Simulate netlist */
