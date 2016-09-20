@@ -26,12 +26,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+
+#include "vtr_util.h"
+
 #include "globals.h"
 #include "netlist_utils.h"
 #include "errors.h"
 #include "read_xml_arch_file.h"
 #include "read_netlist.h"
-#include "ReadLine.h"
 #include "string_cache.h"
 
 #ifdef VPR5
@@ -46,11 +48,7 @@ char *netlist_zero_string = "ZERO_GND_ZERO";
 
 nnode_t * add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netlist_t *netlist);
 static void add_io_node_and_driver ( short io_type, netlist_t *netlist, char *io_pin_name);
-void add_subblock_to_node(nnode_t *current_block, char ***token_list, int num_subblocks, t_type_ptr type);
-
-void FreeTokens ( char ***TokensPtr);
-int CountTokens ( char **Tokens);
-char ** ReadLineTokens ( FILE * InFile, int *LineNum);
+void add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::string>& token_list, int num_subblocks, t_type_ptr type);
 
 static t_type_ptr get_type_by_name (
     const char *name,
@@ -75,9 +73,9 @@ read_netlist (
 	int num_blocks, subblock_count;
 	int prev_line;
 	enum special_blk overide;
-	char **block_tokens;
-	char **pin_tokens;
-	char **tokens;
+    std::vector<std::string> block_tokens;
+	std::vector<std::string> pin_tokens;
+	std::vector<std::string> tokens;
 	t_type_ptr type = NULL;
 	netlist_t *netlist = allocate_netlist();
 	npin_t *new_pin;
@@ -118,48 +116,47 @@ read_netlist (
 		overide = NORMAL;
 
 		/* Read file line by line */
-		block_tokens = ReadLineTokens (net_file, &linenum);
+		block_tokens = vtr::ReadLineTokens (net_file, &linenum);
 		prev_line = linenum;
 		while (block_tokens)
 		{
 			/* .global directives have special meaning - CLOCKS */
-			if (0 == strcmp (block_tokens[0], ".global"))
+			if (block_tokens[0] == ".global")
 			{
 				if (pass == DRIVEN)
 				{	
 					/* mark this in the clock list for later aquisition */
-					mark_clock_node (netlist, block_tokens[1]);
+					mark_clock_node (netlist, block_tokens[1].c_str());
 				}
 
 				/* Don't do any more processing on this */
-				FreeTokens (&block_tokens);
-				block_tokens = ReadLineTokens (net_file, &linenum);
+				block_tokens = vtr::ReadLineTokens (net_file, &linenum);
 				prev_line = linenum;
 				continue;
 			}
 
 			/* read the pin tokens */
-			pin_tokens = ReadLineTokens (net_file, &linenum);
+			pin_tokens = vtr::ReadLineTokens (net_file, &linenum);
 
-			if (CountTokens (block_tokens) != 2)
+			if (block_tokens.size() != 2)
 			{
 				error_message(NETLIST_FILE_ERROR, prev_line, -1, "'%s':%d - block type linenum should " "be in form '.type_name block_name'\n", net_filename, prev_line);
 			}
-			if (NULL == pin_tokens)
+			if (pin_tokens.empty())
 			{
 				error_message(NETLIST_FILE_ERROR, prev_line, -1, "'%s':%d - blocks must be follow by a 'pinlist:' linenum\n", net_filename, linenum);
 			}
-			if (0 != strcmp ("pinlist:", pin_tokens[0]))
+			if ("pinlist:" != pin_tokens[0])
 			{
 				error_message(NETLIST_FILE_ERROR, prev_line, -1, "'%s':%d - 'pinlist:' linenum must follow " "block type linenum\n", net_filename, linenum);
 			}
 
-			type = get_type_by_name (block_tokens[0], ntypes, block_types, IO_type, net_filename, prev_line, &overide);
+			type = get_type_by_name (block_tokens[0].c_str(), ntypes, block_types, IO_type, net_filename, prev_line, &overide);
 
 			/* Check if we are overiding the pinlist format for this block since it is an INPUT or OUTPUT */
 			if (overide)
 			{
-				if (CountTokens (pin_tokens) != 2)
+				if (pin_tokens.size() != 2)
 				{		/* 'pinlist:' and name */
 					error_message(NETLIST_FILE_ERROR, prev_line, -1,"'%s':%d - pinlist for .input and .output should " "only have one item.\n", net_filename, linenum);
 				}
@@ -168,10 +165,10 @@ read_netlist (
 					switch (overide)
 					{
 						case INPAD:
-							add_io_node_and_driver (INPUT_NODE, netlist, block_tokens[1]);
+							add_io_node_and_driver (INPUT_NODE, netlist, block_tokens[1].c_str());
 							break;
 						case OUTPAD:
-							add_io_node_and_driver (OUTPUT_NODE, netlist, block_tokens[1]);
+							add_io_node_and_driver (OUTPUT_NODE, netlist, block_tokens[1].c_stR());
 							break;
 						default:
 							break;
@@ -179,37 +176,36 @@ read_netlist (
 				}
 					
 				/* need to read the next line */
-				tokens = ReadLineTokens (net_file, &linenum);
+				tokens = vtr::ReadLineTokens (net_file, &linenum);
 			}
 			else /* this is a block with subblocks in it */
 			{
 				nnode_t *current_block; 
-				char ***tokens_list = NULL;
+                std::vector<std::vector<std::string> token_list;
 
-				if (CountTokens (pin_tokens) != (type->num_pins + 1))
+				if (pin_tokens.size() != (type->num_pins + 1))
 				{
-					error_message(NETLIST_FILE_ERROR, prev_line, -1, "'%s':%d - 'pinlist:' linenum has %d pins instead of " "expect %d pins.\n", net_filename, linenum, CountTokens (pin_tokens) - 1, type->num_pins);
+					error_message(NETLIST_FILE_ERROR, prev_line, -1, "'%s':%d - 'pinlist:' linenum has %d pins instead of " "expect %d pins.\n", net_filename, linenum, pin_tokens.size() - 1, type->num_pins);
 				}
 	
 				/* create the connections and nodes between the clusters */
-				current_block = add_block (block_tokens[1], pin_tokens, type, pass, netlist);
+				current_block = add_block (block_tokens[1].c_str(), pin_tokens, type, pass, netlist);
 	
 				/* Use the subblock data to make internal cluster representation */
-				tokens = ReadLineTokens (net_file, &linenum);
+				tokens = vtr::ReadLineTokens (net_file, &linenum);
 				prev_line = linenum;
 				subblock_count = 0;
-				while (tokens && (0 == strcmp (tokens[0], "subblock:")))
+				while (tokens && (tokens[0] == "subblock:"))
 				{
 					/* Create subblock as internal subgraph of type netlist_t */
 					if (DRIVEN == pass)
 					{
-						tokens_list = (char ***)realloc(tokens_list, sizeof(char**)*(subblock_count+1));
-						tokens_list[subblock_count] = tokens;
+                        token_list.push_back(tokens);
 					}
 	
 					++subblock_count;		/* Next subblock */
 	
-					tokens = ReadLineTokens (net_file, &linenum);
+					tokens = vtr::ReadLineTokens (net_file, &linenum);
 					prev_line = linenum;
 				}
 
@@ -217,23 +213,10 @@ read_netlist (
 				if (DRIVEN == pass)
 				{
 					add_subblock_to_node(current_block, tokens_list, subblock_count, type); 
-
-					/* free up recorded data */
-					for (i = 0; i < subblock_count; i++)
-					{
-						FreeTokens (&tokens_list[i]);
-					}
-					if (tokens_list != NULL)
-					{
-						free(tokens_list);
-					}
 				}
 			}
 	
 			num_blocks++;			/* End of this block */
-
-			FreeTokens (&block_tokens);
-			FreeTokens (&pin_tokens);
 
 			/* done here since the last read of subblocks put us with this linenum */
 			block_tokens = tokens;
@@ -252,7 +235,7 @@ static void
 add_io_node_and_driver (
 	short io_type,
 	netlist_t *netlist,
-	char *io_pin_name
+	const char *io_pin_name
 )
 {
 	long sc_spot;
@@ -315,7 +298,7 @@ add_io_node_and_driver (
  * (function: add_block)
  *-------------------------------------------------------------------------------------------*/
 nnode_t *
-add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netlist_t *netlist)
+add_block (char *node_name, const std::vector<std::string>& pin_tokens, t_type_ptr type, short pass, netlist_t *netlist)
 {
 	long sc_spot;
 	nnode_t *new_node;
@@ -360,7 +343,7 @@ add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netl
 				allocate_more_node_output_pins(new_node, 1);
 				add_output_port_information(new_node, 1);
 
-				if (0 != strcmp ("open", pin_tokens[k]))
+				if ("open" != pin_tokens[k])
 				{
 					/* Add the driver pin */
 					node_output_pin = allocate_npin();
@@ -368,11 +351,11 @@ add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netl
 			
 					/* now add the net and store it in the string hash */
 					new_net = allocate_nnet();
-					new_net->name = strdup(pin_tokens[k]);
+					new_net->name = strdup(pin_tokens[k].c_str());
 					add_a_driver_pin_to_net(new_net, node_output_pin);
 				
 					/* add to the driver hash */
-					if ((sc_spot = sc_lookup_string(netlist->out_pins_sc, pin_tokens[k])) != -1)
+					if ((sc_spot = sc_lookup_string(netlist->out_pins_sc, pin_tokens[k].c_str())) != -1)
 					{
 						/* Special case when we hookup a driver to an output pin */
 						nnode_t *output_node = (nnode_t*)netlist->out_pins_sc->data[sc_spot];
@@ -386,20 +369,20 @@ add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netl
 						add_a_input_pin_to_node_spot_idx(output_node, node_input_pin, 0);
 			
 						/* add to the driver hash */
-						sc_spot = sc_add_string(netlist->nets_sc, pin_tokens[k]);
+						sc_spot = sc_add_string(netlist->nets_sc, pin_tokens[k].c_str());
 						if (netlist->nets_sc->data[sc_spot] != NULL)
 						{
-							error_message(NETLIST_ERROR, linenum, -1, "Two netlist outputs with the same name (%s)\n", pin_tokens[k]);
+							error_message(NETLIST_ERROR, linenum, -1, "Two netlist outputs with the same name (%s)\n", pin_tokens[k].c_str());
 						}
 						netlist->nets_sc->data[sc_spot] = (void*)new_net;
 					}
 					else
 					{
 						/* add to the driver hash */
-						sc_spot = sc_add_string(netlist->nets_sc, pin_tokens[k]);
+						sc_spot = sc_add_string(netlist->nets_sc, pin_tokens[k].c_str());
 						if (netlist->nets_sc->data[sc_spot] != NULL)
 						{
-							error_message(NETLIST_ERROR, linenum, -1, "Two netlist outputs with the same name (%s)\n", pin_tokens[k]);
+							error_message(NETLIST_ERROR, linenum, -1, "Two netlist outputs with the same name (%s)\n", pin_tokens[k].c_str());
 						}
 						netlist->nets_sc->data[sc_spot] = (void*)new_net;
 					}
@@ -416,17 +399,17 @@ add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netl
 				allocate_more_node_input_pins(new_node, 1);
 				add_input_port_information(new_node, 1);
 
-				if (0 != strcmp ("open", pin_tokens[k]))
+				if ("open" != pin_tokens[k].c_str())
 				{
 					/* Hookup driven port (input) to a driver net */
-					if ((sc_spot = sc_lookup_string(netlist->nets_sc, pin_tokens[k])) == -1)
+					if ((sc_spot = sc_lookup_string(netlist->nets_sc, pin_tokens[k].c_str())) == -1)
 					{
-						error_message(NETLIST_ERROR, linenum, -1, "Netlist input does not exist (%s)\n", pin_tokens[k]);
+						error_message(NETLIST_ERROR, linenum, -1, "Netlist input does not exist (%s)\n", pin_tokens[k].c_str());
 					}
 					driver_net = (nnet_t*)netlist->nets_sc->data[sc_spot];
 	
 					node_input_pin = allocate_npin();
-					node_input_pin->name = strdup(pin_tokens[k]);
+					node_input_pin->name = strdup(pin_tokens[k].c_str());
 					/* add to the driver net */
 					add_a_fanout_pin_to_net(driver_net, node_input_pin);
 	
@@ -445,7 +428,7 @@ add_block (char *node_name, char **pin_tokens, t_type_ptr type, short pass, netl
  * (function: add_subblock_to_node)
  *-------------------------------------------------------------------------------------------*/
 void
-add_subblock_to_node(nnode_t *current_block, char ***tokens_list, int num_subblocks, t_type_ptr type)
+add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::string>& tokens_list, int num_subblocks, t_type_ptr type)
 {
 	int i, j, k;
 	nnode_t **subblock_nodes = (nnode_t**)malloc(sizeof(nnode_t*)*num_subblocks);
@@ -539,7 +522,7 @@ add_subblock_to_node(nnode_t *current_block, char ***tokens_list, int num_subblo
 	{
 		subblock_nodes[i] = allocate_nnode();
 		/* the name of the node is the second token since the first is "subblock:" */
-		subblock_nodes[i]->name = strdup(tokens_list[i][1]);
+		subblock_nodes[i]->name = strdup(tokens_list[i][1].c_str());
 
 		allocate_more_node_input_pins(subblock_nodes[i], type->max_subblock_inputs + 1); /* + 1 for clock */
 		allocate_more_node_output_pins(subblock_nodes[i], type->max_subblock_outputs);
@@ -568,10 +551,10 @@ add_subblock_to_node(nnode_t *current_block, char ***tokens_list, int num_subblo
 		{
 			/* Check prefix and load pin num */
 			idx = 2 + k;
-			if (0 == strncmp ("ble_", tokens_list[i][idx], 4))
+			if (0 == strncmp ("ble_", tokens_list[i][idx].c_str(), 4))
 			{
 				/* IF this is a ble connection then hookup to that ble then hookup this input to the output of the ble number */
-				int ble_idx = atoi(tokens_list[i][idx] + 4);	/* Skip the 'ble_' part */
+				int ble_idx = atoi(tokens_list[i][idx].c_str() + 4);	/* Skip the 'ble_' part */
 				npin_t *node_input_pin = allocate_npin();
 
 				oassert(subblock_nodes[ble_idx]->num_output_pins == 1);
@@ -581,10 +564,10 @@ add_subblock_to_node(nnode_t *current_block, char ***tokens_list, int num_subblo
 				/* add pin to node */
 				add_a_input_pin_to_node_spot_idx(subblock_nodes[i], node_input_pin, k);
 			}
-			else if (0 != strcmp ("open", tokens_list[i][idx]))
+			else if (0 != strcmp ("open", tokens_list[i][idx].c_str()))
 			{
 				/* IF this is connected to an input find out which one */
-				int in_idx = input_idx[atoi(tokens_list[i][idx])];
+				int in_idx = input_idx[atoi(tokens_list[i][idx].c_str())];
 				oassert(in_idx < type->num_receivers);
 				oassert(in_idx != -1);
 
@@ -599,10 +582,10 @@ add_subblock_to_node(nnode_t *current_block, char ***tokens_list, int num_subblo
 		for (k = 0; k < type->max_subblock_outputs; ++k)
 		{
 			idx = 2 + type->max_subblock_inputs + k;
-			if (0 != strcmp ("open", tokens_list[i][idx]))
+			if (0 != strcmp ("open", tokens_list[i][idx].c_str()))
 			{
 				/* IF this output goes to a cluster output pin then hook it up */
-				int pin_idx = atoi(tokens_list[i][idx]) - type->num_receivers;
+				int pin_idx = atoi(tokens_list[i][idx].c_str()) - type->num_receivers;
 				int out_idx = output_idx[pin_idx];
 				nnode_t *output_node;
 				npin_t *node_input_pin;
@@ -627,9 +610,9 @@ add_subblock_to_node(nnode_t *current_block, char ***tokens_list, int num_subblo
 			}
 		}
 		idx = 2 + type->max_subblock_inputs + type->max_subblock_outputs;
-		if (0 != strcmp ("open", tokens_list[i][idx]))
+		if (0 != strcmp ("open", tokens_list[i][idx].c_str()))
 		{
-			int clock_idx = input_idx[atoi (tokens_list[i][idx]) - (type->num_receivers + type->num_drivers)];
+			int clock_idx = input_idx[atoi (tokens_list[i][idx].c_str()) - (type->num_receivers + type->num_drivers)];
 			npin_t *node_input_pin = allocate_npin();
 			oassert(clock_idx != -1);
 

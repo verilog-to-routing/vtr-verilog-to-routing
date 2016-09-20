@@ -1000,7 +1000,7 @@ void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node)
 void
 mark_clock_node (
 	netlist_t *netlist,
-	char *clock_name
+	const char *clock_name
 )
 {
 	long sc_spot;

@@ -134,8 +134,9 @@ void sync_grid_to_blocks(const int L_num_blocks,
 		/* Check types match */
 		if (block[i].type != L_grid[block[i].x][block[i].y].type) {
 			vtr::printf_error(__FILE__, __LINE__,
-					"A block is in a grid location (%d x %d) with a conflicting type.\n", 
-					block[i].x, block[i].y);
+					"A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
+					block[i].x, block[i].y,
+                    block[i].type->name, L_grid[block[i].x][block[i].y].type->name);
 			exit(1);
 		}
 

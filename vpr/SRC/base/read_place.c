@@ -20,7 +20,7 @@ void read_place(const char *place_file, const char *arch_file,
 		const int L_num_blocks, struct s_block block_list[]) {
 
 	FILE *infile;
-	char **tokens;
+    std::vector<std::string> tokens;
 	int line = 0;
 	int i;
 	int error;
@@ -32,23 +32,23 @@ void read_place(const char *place_file, const char *arch_file,
 				place_file);
 		
 	/* Check filenames in first line match */
-	tokens = ReadLineTokens(infile, &line);
+	tokens = vtr::ReadLineTokens(infile, &line);
 	error = 0;
-	if (NULL == tokens) {
+	if (tokens.size() < 6) {
 		error = 1;
 	}
 	for (i = 0; i < 6; ++i) {
 		if (!error) {
-			if (NULL == tokens[i]) {
+			if (tokens[i].empty()) {
 				error = 1;
 			}
 		}
 	}
 	if (!error) {
-		if ((0 != strcmp(tokens[0], "Netlist"))
-				|| (0 != strcmp(tokens[1], "file:"))
-				|| (0 != strcmp(tokens[3], "Architecture"))
-				|| (0 != strcmp(tokens[4], "file:"))) {
+		if (tokens[0] != "Netlist"
+				|| tokens[1] != "file:"
+				|| tokens[3] != "Architecture"
+				|| tokens[4] != "file:") {
 			error = 1;
 		};
 	}
@@ -57,38 +57,36 @@ void read_place(const char *place_file, const char *arch_file,
 				"'%s' - Bad filename specification line in placement file.\n", 
 				place_file);
 	}
-	if (0 != strcmp(tokens[2], arch_file)) {
+	if (tokens[2] != arch_file) {
 		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Architecture file that generated placement (%s) does not match current architecture file (%s).\n", 
-				place_file, tokens[2], arch_file);
+				place_file, tokens[2].c_str(), arch_file);
 	}
-	if (0 != strcmp(tokens[5], net_file)) {
+	if (tokens[5] != net_file) {
 		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Netlist file that generated placement (%s) does not match current netlist file (%s).\n", 
-				place_file, tokens[5], net_file);
+				place_file, tokens[5].c_str(), net_file);
 	}
-	free(*tokens);
-	free(tokens);
 
 	/* Check array size in second line matches */
-	tokens = ReadLineTokens(infile, &line);
+	tokens = vtr::ReadLineTokens(infile, &line);
 	error = 0;
-	if (NULL == tokens) {
+	if (tokens.size() < 7) {
 		error = 1;
 	}
 	for (i = 0; i < 7; ++i) {
 		if (!error) {
-			if (NULL == tokens[i]) {
+			if (tokens[i].empty()) {
 				error = 1;
 			}
 		}
 	}
 	if (!error) {
-		if ((0 != strcmp(tokens[0], "Array"))
-				|| (0 != strcmp(tokens[1], "size:"))
-				|| (0 != strcmp(tokens[3], "x"))
-				|| (0 != strcmp(tokens[5], "logic"))
-				|| (0 != strcmp(tokens[6], "blocks"))) {
+		if (tokens[0] != "Array"
+				|| tokens[1] != "size:"
+				|| tokens[3] != "x"
+				|| tokens[5] != "logic"
+				|| tokens[6] != "blocks") {
 			error = 1;
 		};
 	}
@@ -96,20 +94,23 @@ void read_place(const char *place_file, const char *arch_file,
 		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, "'%s' - Bad FPGA size specification line in placement file.\n",
 				place_file);
 	}
-	if ((vtr::atoi(tokens[2]) != L_nx) || (vtr::atoi(tokens[4]) != L_ny)) {
+	if ((vtr::atoi(tokens[2].c_str()) != L_nx) || (vtr::atoi(tokens[4].c_str()) != L_ny)) {
 		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
 				"'%s' - Current FPGA size (%d x %d) is different from size when placement generated (%d x %d).\n", 
-				place_file, L_nx, L_ny, vtr::atoi(tokens[2]), vtr::atoi(tokens[4]));
+				place_file, L_nx, L_ny, vtr::atoi(tokens[2].c_str()), vtr::atoi(tokens[4].c_str()));
 	}
-	free(*tokens);
-	free(tokens);
 
-	tokens = ReadLineTokens(infile, &line);
-	while (tokens) {
+    do {
+        tokens = vtr::ReadLineTokens(infile, &line);
+
+        if(tokens.empty()) {
+            continue;
+        }
+
 		/* Linear search to match pad to netlist */
 		cur_blk = NULL;
 		for (i = 0; i < L_num_blocks; ++i) {
-			if (0 == strcmp(block_list[i].name, tokens[0])) {
+			if (block_list[i].name == tokens[0]) {
 				cur_blk = (block_list + i);
 				break;
 			}
@@ -122,16 +123,11 @@ void read_place(const char *place_file, const char *arch_file,
 		}
 
 		/* Set pad coords */
-		cur_blk->x = vtr::atoi(tokens[1]);
-		cur_blk->y = vtr::atoi(tokens[2]);
-		cur_blk->z = vtr::atoi(tokens[3]);
+		cur_blk->x = vtr::atoi(tokens[1].c_str());
+		cur_blk->y = vtr::atoi(tokens[2].c_str());
+		cur_blk->z = vtr::atoi(tokens[3].c_str());
 
-		/* Get next line */
-		VTR_ASSERT(*tokens);
-		free(*tokens);
-		free(tokens);
-		tokens = ReadLineTokens(infile, &line);
-	}
+	} while (!std::feof(infile));
 
 	fclose(infile);
 }

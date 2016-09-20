@@ -19,6 +19,14 @@ static int cont; /* line continued? (used by strtok)*/
 
 //Splits the string 'text' along the specified delimiter characters in 'delims'
 //The split strings (excluding the delimiters) are returned
+std::vector<std::string> split(const char* text, const std::string delims) {
+    if(text) {
+        std::string text_str(text);
+        return split(text_str, delims);
+    }
+    return std::vector<std::string>();
+}
+
 std::vector<std::string> split(const std::string& text, const std::string delims) {
     std::vector<std::string> tokens;
 
@@ -310,7 +318,7 @@ bool check_file_name_extension(const char* file_name,
 std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum) {
     std::unique_ptr<char[]> buf(new char[vtr::BUFSIZE]);
 
-    char* line = vtr::fgets(buf.get(), vtr::BUFSIZE, InFile);
+    const char* line = vtr::fgets(buf.get(), vtr::BUFSIZE, InFile);
 
     ++(*LineNum);
 
