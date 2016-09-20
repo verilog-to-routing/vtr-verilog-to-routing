@@ -37,7 +37,13 @@ namespace vtr {
     bool check_file_name_extension(const char* file_name, 
                                    const char* file_extension);
 
+
     extern char *out_file_prefix;
+
+    /*
+     * Legacy ReadLine Tokening
+     */
+    std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum);
 }
 
 #endif

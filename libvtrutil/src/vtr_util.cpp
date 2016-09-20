@@ -307,4 +307,14 @@ bool check_file_name_extension(const char* file_name,
     return true;
 }
 
+std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum) {
+    std::unique_ptr<char[]> buf(new char[vtr::BUFSIZE]);
+
+    char* line = vtr::fgets(buf.get(), vtr::BUFSIZE, InFile);
+
+    ++(*LineNum);
+
+    return vtr::split(line);
+}
+
 } //namespace
