@@ -1090,8 +1090,6 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 			VTR_ASSERT(count_children(Parent, "mode", loc_data, OPTIONAL) == 0);
 		}
 	} else {
-		bool default_leakage_mode = false;
-
 		/* container pb_type, process modes */
 		VTR_ASSERT(pb_type->class_type == UNKNOWN_CLASS);
 		pb_type->num_modes = count_children(Parent, "mode", loc_data, OPTIONAL);
@@ -1116,9 +1114,6 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 					pb_type->modes[i].parent_pb_type = pb_type;
 					pb_type->modes[i].index = i;
 					ProcessMode(Cur, &pb_type->modes[i], loc_data);
-					if (default_leakage_mode) {
-						pb_type->pb_type_power->leakage_default_mode = i;
-					}
 
 					ret_mode_names = mode_names.insert(
 							pair<string, int>(pb_type->modes[i].name, 0));
