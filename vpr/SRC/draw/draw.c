@@ -2172,11 +2172,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 		return;
 	} 
 
-	if (clb_index == EMPTY) {
-		update_message(draw_state->default_message);
-		drawscreen();
-		return;
-	}
+	VTR_ASERT(clb_index != EMPTY);
 
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
