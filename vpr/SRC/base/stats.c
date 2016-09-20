@@ -357,10 +357,10 @@ void print_wirelen_prob_dist(void) {
 			 *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *
 			 *  only 0.1 to prob_dist[1].                                          */
 
-            VTR_ASSERT(g_clbs_nlist.net[inet].num_sinks() > 0);
+            int num_sinks = g_clbs_nlist.net[inet].num_sinks();
+            VTR_ASSERT(num_sinks > 0);
 
-			two_point_length = (float) length
-					/ (float) (g_clbs_nlist.net[inet].num_sinks());
+			two_point_length = (float) length / (float) (num_sinks);
 			index = (int) two_point_length;
 			if (index >= prob_dist_size) {
 
@@ -370,13 +370,11 @@ void print_wirelen_prob_dist(void) {
 				vtr::printf_info("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 				incr = index - prob_dist_size + 2;
 				prob_dist_size += incr;
-				prob_dist = (float *)vtr::realloc(prob_dist,
-						prob_dist_size * sizeof(float));
+				prob_dist = (float *)vtr::realloc(prob_dist, prob_dist_size * sizeof(float));
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
 			}
-			prob_dist[index] += (g_clbs_nlist.net[inet].num_sinks())
-					* (1 - two_point_length + index);
+			prob_dist[index] += (num_sinks) * (1 - two_point_length + index);
 
 			index++;
 			if (index >= prob_dist_size) {
@@ -392,10 +390,9 @@ void print_wirelen_prob_dist(void) {
 				for (i = prob_dist_size - incr; i < prob_dist_size; i++)
 					prob_dist[i] = 0.0;
 			}
-			prob_dist[index] += (g_clbs_nlist.net[inet].num_sinks())
-					* (1 - index + two_point_length);
+			prob_dist[index] += (num_sinks) * (1 - index + two_point_length);
 
-			norm_fac += g_clbs_nlist.net[inet].num_sinks();
+			norm_fac += num_sinks;
 		}
 	}
 
