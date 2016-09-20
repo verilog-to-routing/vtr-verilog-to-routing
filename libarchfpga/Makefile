@@ -13,8 +13,6 @@
 CC = g++
 AR = ar
 
-OBJ_DIR = OBJ
-
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -pedantic -Wshadow -Wcast-align -Wno-write-strings
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3

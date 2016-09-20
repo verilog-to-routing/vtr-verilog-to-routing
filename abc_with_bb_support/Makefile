@@ -65,7 +65,7 @@ DEP := $(OBJ:.o=.d)
 depend: $(DEP)
 
 clean: 
-	rm -rf $(PROG) $(OBJ) $(GARBAGE) $(OBJ:.o=.d) 
+	rm -rf $(PROG) lib$(PROG).a $(OBJ) $(GARBAGE) $(OBJ:.o=.d) 
 
 tags:
 	ctags -R .

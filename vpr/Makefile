@@ -128,7 +128,7 @@ $(OBJ_DIRS):
 -include $(DEP)
 
 clean:
-	rm -f $(EXE) $(OBJ) $(DEP)
+	rm -f $(EXE) $(OBJ) $(DEP) libvpr.a
 	cd ../libarchfpga && make clean
 	cd ../libsdcparse && make clean
 	cd ../libeasygl && make clean
