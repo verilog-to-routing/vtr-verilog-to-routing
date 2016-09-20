@@ -262,27 +262,10 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	rr_node_to_rt_node[inode] = sink_rt_node;
 
 	/* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
-	 * Undefine NO_ROUTE_THROUGHS if you want route-throughs or ipin doglegs.
 	 * It makes the code more efficient (though not vastly) to prune this way
 	 * when there aren't route-throughs or ipin doglegs.                        */
 
-#define NO_ROUTE_THROUGHS 1	/* Can't route through unused CLB outputs */
-	no_route_throughs = 1;
-	if (no_route_throughs == 1)
-		sink_rt_node->re_expand = false;
-	else {
-		if (remaining_connections_to_sink == 0) { /* Usual case */
-			sink_rt_node->re_expand = true;
-		}
-
-		/* Weird case.  This net connects several times to the same SINK.  Thus I
-		 * can't re_expand this node as part of the partial routing for subsequent
-		 * connections, since I need to reach it again via another path.            */
-
-		else {
-			sink_rt_node->re_expand = false;
-		}
-	}
+    sink_rt_node->re_expand = false;
 
 	/* Now do it's predecessor. */
 
@@ -317,23 +300,10 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->C_downstream = C_downstream;
 		rr_node_to_rt_node[inode] = rt_node;
 
-		if (no_route_throughs == 1)
-			if (rr_node[inode].type == IPIN)
-				rt_node->re_expand = false;
-			else
-				rt_node->re_expand = true;
-
-		else {
-			if (remaining_connections_to_sink == 0) { /* Normal case */
-				rt_node->re_expand = true;
-			} else { /* This is the IPIN before a multiply-connected SINK */
-				rt_node->re_expand = false;
-
-				/* Reset flag so wire segments get reused */
-
-				remaining_connections_to_sink = 0;
-			}
-		}
+        if (rr_node[inode].type == IPIN)
+            rt_node->re_expand = false;
+        else
+            rt_node->re_expand = true;
 
 		downstream_rt_node = rt_node;
 		iedge = rr_node_route_inf[inode].prev_edge;
