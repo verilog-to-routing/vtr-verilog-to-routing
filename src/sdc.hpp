@@ -204,7 +204,7 @@ struct SetIoDelay {
 };
 
 struct SetClockGroups {
-    ClockGroupsType type = ClockGroupsType::NONE;   //The type of clock group relation being specified
+    ClockGroupsType cg_type = ClockGroupsType::NONE;   //The type of clock group relation being specified
     std::vector<StringGroup> clock_groups;          //The groups of clocks
 
     int file_line_number = UNINITIALIZED_INT;       //Line number where this command is defined
@@ -227,7 +227,7 @@ struct SetMaxDelay {
 };
 
 struct SetMulticyclePath {
-    McpType type = McpType::NONE;               //The type of the mcp
+    McpType mcp_type = McpType::NONE;               //The type of the mcp
     int mcp_value = UNINITIALIZED_INT;          //The number of cycles specifed
     StringGroup from;                           //The source list of startpoints or clocks
     StringGroup to;                             //The target list of endpoints or clocks

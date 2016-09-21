@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     for(const auto& sdc_set_clock_groups : sdc_commands->set_clock_groups_cmds) {
         printf("Line %3d: ", sdc_set_clock_groups.file_line_number);
         printf("set_clock_groups ");
-        if(sdc_set_clock_groups.type == ClockGroupsType::EXCLUSIVE) {
+        if(sdc_set_clock_groups.cg_type == ClockGroupsType::EXCLUSIVE) {
             printf(" -exclusive");
         }
         for(const auto& clk_grp : sdc_set_clock_groups.clock_groups) {
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     for(const auto& sdc_set_multicycle_path : sdc_commands->set_multicycle_path_cmds) {
         printf("Line %3d: ", sdc_set_multicycle_path.file_line_number);
         printf("set_multicycle_path %d ", sdc_set_multicycle_path.mcp_value);
-        if(sdc_set_multicycle_path.type == McpType::SETUP) {
+        if(sdc_set_multicycle_path.mcp_type == McpType::SETUP) {
             printf("-setup ");
         }
         print_from_to_group(sdc_set_multicycle_path.from, sdc_set_multicycle_path.to);
