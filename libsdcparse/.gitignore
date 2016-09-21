@@ -1,0 +1,39 @@
+#
+# Project Related Files
+#
+
+#Executables
+sdc_parse_test
+a.out
+
+#Generated files
+lex.yy.c
+*.tab.h
+*.tab.c
+core
+obj/
+build/
+
+#ctags
+tags
+
+#
+# C++ related files
+#
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Dependency files
+*.d
