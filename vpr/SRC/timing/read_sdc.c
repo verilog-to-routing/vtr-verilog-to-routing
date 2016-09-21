@@ -386,7 +386,7 @@ static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock
 	t_sdc_exclusive_group *exclusive_groups = NULL;
 
     VTR_ASSERT(sdc_set_clock_groups.clock_groups.size() >= 2); //Should have already been caught by parser
-    VTR_ASSERT(sdc_set_clock_groups.type == sdcparse::ClockGroupsType::EXCLUSIVE); //Currently only form supported
+    VTR_ASSERT(sdc_set_clock_groups.cg_type == sdcparse::ClockGroupsType::EXCLUSIVE); //Currently only form supported
 
     for(size_t igroup = 0; igroup < sdc_set_clock_groups.clock_groups.size(); igroup++) {
         const sdcparse::StringGroup& clock_group = sdc_set_clock_groups.clock_groups[igroup];
@@ -503,6 +503,8 @@ static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set
 	bool domain_level_from = false, domain_level_to = false;
     int num_from = 0, num_to = 0;
     char **from_list = NULL, **to_list = NULL;
+
+    VTR_ASSERT(sdc_set_multicycle_path.mcp_type == sdcparse::McpType::SETUP); //Currently only form supported
 
     build_from_to_lists(&from_list, &num_from, &domain_level_from,
                         &to_list, &num_to, &domain_level_to,
