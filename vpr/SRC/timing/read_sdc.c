@@ -20,7 +20,7 @@ using namespace std;
 #include "path_delay2.h"
 #include "ReadOptions.h"
 #include "slre.h"
-#include "sdc.h"
+#include "sdc.hpp"
 
 /***************************** Summary **********************************/
 
@@ -114,23 +114,25 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 	float constraint, int num_multicycles, bool domain_level_from, bool domain_level_to,
 	bool make_copies);
 static int find_cc_constraint(char * source_clock_domain, char * sink_clock_domain);
-static bool regex_match (char *string, char *pattern);
+static bool regex_match (const char *string, const char *pattern);
 static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay);
 static void free_io_constraint(t_io *& io_array, int num_ios);
 static void free_clock_constraint(t_clock *& clock_array, int num_clocks);
 
-static bool apply_sdc_constraints(t_sdc_commands* sdc_commands);
-static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock);
-static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups);
-static bool apply_set_false_path(t_sdc_set_false_path* sdc_set_false_path);
-static bool apply_set_max_delay(t_sdc_set_max_delay* sdc_set_max_delay);
-static bool apply_set_multicycle_path(t_sdc_set_multicycle_path* sdc_set_multicycle_path);
-static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay);
+static bool apply_sdc_constraints(std::shared_ptr<const sdcparse::SdcCommands> sdc_commands);
+static bool apply_create_clock(const sdcparse::CreateClock& sdc_create_clock);
+static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock_groups);
+static bool apply_set_false_path(const sdcparse::SetFalsePath& sdc_set_false_path);
+static bool apply_set_max_delay(const sdcparse::SetMaxDelay& sdc_set_max_delay);
+static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set_multicycle_path);
+static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay);
 
-static bool is_valid_clock_name(char* clock_name);
+static bool is_valid_clock_name(const char* clock_name);
 static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_level_from,
                             char ***to_list, int *num_to, bool* domain_level_to,
-                            t_sdc_string_group* from_group, t_sdc_string_group* to_group);
+                            const sdcparse::StringGroup& from_group, const sdcparse::StringGroup& to_group);
+
+void vpr_sdc_error(const int line_number, const std::string& near_text, const std::string& msg);
 
 /********************* Subroutine definitions *******************************/
 
@@ -172,10 +174,13 @@ void read_sdc(t_timing_inf timing_inf) {
 	As a result, they will be freed after the SDC file is parsed. */
 	alloc_and_load_netlist_clocks_and_ios();
 
-	/* Parse the file line-by-line. */
-    t_sdc_commands* sdc_commands = sdc_parse_file(sdc);
+    /* Setup error handling */
+    sdcparse::set_sdc_error_handler(vpr_sdc_error);
 
-	if (sdc_commands->has_commands == false) { /* blank file or only comments found */
+	/* Parse the file line-by-line. */
+    auto sdc_commands = sdcparse::sdc_parse_file(sdc);
+
+	if (!sdc_commands->has_commands()) { /* blank file or only comments found */
 		vtr::printf_info("\n");
 		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
 		use_default_timing_constraints();
@@ -265,9 +270,6 @@ void read_sdc(t_timing_inf timing_inf) {
 	free(netlist_clocks);
 	free(netlist_ios);
 
-    //Frees sdc_commands and children
-    sdc_parse_cleanup(); 
-
     fclose(sdc);
 
 	return;
@@ -277,79 +279,74 @@ void read_sdc(t_timing_inf timing_inf) {
  * Override the default error function in libsdcparse so that it throws
  * vpr style errors.
  */
-void sdc_error(const int line_number, const char* /*near_text*/, const char* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
-    vvpr_throw(VPR_ERROR_SDC, get_sdc_file_name(), line_number, fmt, args);
-
-    va_end(args);
+void vpr_sdc_error(const int line_number, const std::string& /*near_text*/, const std::string& msg) {
+    vpr_throw(VPR_ERROR_SDC, get_sdc_file_name(), line_number, msg.c_str());
 }
 
-static bool apply_sdc_constraints(t_sdc_commands* sdc_commands) {
+static bool apply_sdc_constraints(std::shared_ptr<const sdcparse::SdcCommands> sdc_commands) {
     //create_clock
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_create_clock_cmds; isdc_cmd++) {
-        apply_create_clock(sdc_commands->create_clock_cmds[isdc_cmd]);
+    for(const auto& create_clock_cmd : sdc_commands->create_clock_cmds) {
+        apply_create_clock(create_clock_cmd);
     }
 
     //set_clock_groups
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_set_clock_groups_cmds; isdc_cmd++) {
-        apply_set_clock_groups(sdc_commands->set_clock_groups_cmds[isdc_cmd]);
+    for(const auto& set_clock_groups_cmd : sdc_commands->set_clock_groups_cmds) {
+        apply_set_clock_groups(set_clock_groups_cmd);
     }
 
     //set_false_path
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_set_false_path_cmds; isdc_cmd++) {
-        apply_set_false_path(sdc_commands->set_false_path_cmds[isdc_cmd]);
+    for(const auto& set_false_path_cmd : sdc_commands->set_false_path_cmds) {
+        apply_set_false_path(set_false_path_cmd);
     }
 
     //set_max_delay
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_set_max_delay_cmds; isdc_cmd++) {
-        apply_set_max_delay(sdc_commands->set_max_delay_cmds[isdc_cmd]);
+    for(const auto& set_max_delay_cmd : sdc_commands->set_max_delay_cmds) {
+        apply_set_max_delay(set_max_delay_cmd);
     }
 
     //set_multicycle_path
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_set_multicycle_path_cmds; isdc_cmd++) {
-        apply_set_multicycle_path(sdc_commands->set_multicycle_path_cmds[isdc_cmd]);
+    for(const auto& set_multicycle_path_cmd : sdc_commands->set_multicycle_path_cmds) {
+        apply_set_multicycle_path(set_multicycle_path_cmd);
     }
 
     //set_input_delay
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_set_input_delay_cmds; isdc_cmd++) {
-        apply_set_io_delay(sdc_commands->set_input_delay_cmds[isdc_cmd]);
+    for(const auto& set_input_delay_cmd : sdc_commands->set_input_delay_cmds) {
+        apply_set_io_delay(set_input_delay_cmd);
     }
 
     //set_output_delay
-    for(int isdc_cmd = 0; isdc_cmd < sdc_commands->num_set_output_delay_cmds; isdc_cmd++) {
-        apply_set_io_delay(sdc_commands->set_output_delay_cmds[isdc_cmd]);
+    for(const auto& set_output_delay_cmd : sdc_commands->set_output_delay_cmds) {
+        apply_set_io_delay(set_output_delay_cmd);
     }
 
     return true;
 }
 
-static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
+static bool apply_create_clock(const sdcparse::CreateClock& sdc_create_clock) {
     bool found;
 
-    if(sdc_create_clock->is_virtual) { 
+    if(sdc_create_clock.is_virtual) { 
         /* Store the clock's name, period and edges in the local array sdc_clocks. */
         sdc_clocks = (t_sdc_clock *) vtr::realloc(sdc_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_sdc_clock));
-        sdc_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock->name);
-        sdc_clocks[g_sdc->num_constrained_clocks - 1].period = sdc_create_clock->period;
-        sdc_clocks[g_sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock->rise_edge; 
-        sdc_clocks[g_sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock->fall_edge; 
+        sdc_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock.name.c_str());
+        sdc_clocks[g_sdc->num_constrained_clocks - 1].period = sdc_create_clock.period;
+        sdc_clocks[g_sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock.rise_edge; 
+        sdc_clocks[g_sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock.fall_edge; 
 
         /* Also store the clock's name, and the fact that it is not a netlist clock, in g_sdc->constrained_clocks. */
         g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, g_sdc->num_constrained_clocks * sizeof(t_clock));
-        g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock->name);
+        g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(sdc_create_clock.name.c_str());
         g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = false;
     } else {
-        VTR_ASSERT(!sdc_create_clock->is_virtual);
+        VTR_ASSERT(!sdc_create_clock.is_virtual);
 
-        for(int itarget = 0; itarget < sdc_create_clock->targets->num_strings; itarget++) {
+        for(size_t itarget = 0; itarget < sdc_create_clock.targets.strings.size(); itarget++) {
 
             /* See if the regular expression stored in ptr is legal and matches at least one clock net. 
             If it is not legal, it will fail during regex_match.  We check for a match using bool found. */
             found = false;
             for (int iclock = 0; iclock < num_netlist_clocks; iclock++) {
-                if (regex_match(netlist_clocks[iclock], sdc_create_clock->targets->strings[itarget])) {
+                if (regex_match(netlist_clocks[iclock], sdc_create_clock.targets.strings[itarget].c_str())) {
                     /* We've found a new clock!  (Note that we can't store ptr as the clock's 
                     name since it could be a regex, unlike the virtual clock case).*/
                     found = true;
@@ -357,9 +354,9 @@ static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
                     /* Store the clock's name, period and edges in the local array sdc_clocks. */
                     sdc_clocks = (t_sdc_clock *) vtr::realloc(sdc_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_sdc_clock));
                     sdc_clocks[g_sdc->num_constrained_clocks - 1].name = netlist_clocks[iclock];
-                    sdc_clocks[g_sdc->num_constrained_clocks - 1].period = sdc_create_clock->period;
-                    sdc_clocks[g_sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock->rise_edge; 
-                    sdc_clocks[g_sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock->fall_edge; 
+                    sdc_clocks[g_sdc->num_constrained_clocks - 1].period = sdc_create_clock.period;
+                    sdc_clocks[g_sdc->num_constrained_clocks - 1].rising_edge = sdc_create_clock.rise_edge; 
+                    sdc_clocks[g_sdc->num_constrained_clocks - 1].falling_edge = sdc_create_clock.fall_edge; 
 
                     /* Also store the clock's name, and the fact that it is a netlist clock, in g_sdc->constrained_clocks. */
                     g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, g_sdc->num_constrained_clocks * sizeof(t_clock));
@@ -370,7 +367,7 @@ static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
             }
 
             if (!found) {
-                vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_create_clock->file_line_number, 
+                vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_create_clock.file_line_number, 
                         "Clock name or regular expression does not correspond to any nets.\n"
                         "If you'd like to create a virtual clock, use the '-name' keyword.\n");
                 return false;
@@ -381,18 +378,18 @@ static bool apply_create_clock(t_sdc_create_clock* sdc_create_clock) {
     return true;
 }
 
-static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups) {
+static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock_groups) {
     bool found;
 
     int iclock;
     int num_exclusive_groups = 0;
 	t_sdc_exclusive_group *exclusive_groups = NULL;
 
-    VTR_ASSERT(sdc_set_clock_groups->num_clock_groups >= 2); //Should have already been caught by parser
-    VTR_ASSERT(sdc_set_clock_groups->type == SDC_CG_EXCLUSIVE); //Currently only form supported
+    VTR_ASSERT(sdc_set_clock_groups.clock_groups.size() >= 2); //Should have already been caught by parser
+    VTR_ASSERT(sdc_set_clock_groups.type == sdcparse::ClockGroupsType::EXCLUSIVE); //Currently only form supported
 
-    for(int igroup = 0; igroup < sdc_set_clock_groups->num_clock_groups; igroup++) {
-        t_sdc_string_group* clock_group = sdc_set_clock_groups->clock_groups[igroup];
+    for(size_t igroup = 0; igroup < sdc_set_clock_groups.clock_groups.size(); igroup++) {
+        const sdcparse::StringGroup& clock_group = sdc_set_clock_groups.clock_groups[igroup];
         
         /* Create a new entry in exclusive groups */
         exclusive_groups = (t_sdc_exclusive_group *) vtr::realloc(
@@ -400,8 +397,8 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
         exclusive_groups[num_exclusive_groups - 1].clock_names = NULL;
         exclusive_groups[num_exclusive_groups - 1].num_clock_names = 0;
 
-        for(int iclk_name = 0; iclk_name < clock_group->num_strings; iclk_name++) {
-            char* clk_name = clock_group->strings[iclk_name];
+        for(size_t iclk_name = 0; iclk_name < clock_group.strings.size(); iclk_name++) {
+            const char* clk_name = clock_group.strings[iclk_name].c_str();
 
             /* Check the regex clk_name against each netlist clock and add it to the clock_names list if it matches. */
             found = false;
@@ -417,7 +414,7 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
             }
             if (!found) {
                 if(!is_valid_clock_name(clk_name)) {
-                    vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_set_clock_groups->file_line_number, 
+                    vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_set_clock_groups.file_line_number, 
                             "Clock name '%s' does not match to any known clock.\n",
                             clk_name);
                 } else {
@@ -459,14 +456,14 @@ static bool apply_set_clock_groups(t_sdc_set_clock_groups* sdc_set_clock_groups)
 }
 
 
-static bool apply_set_false_path(t_sdc_set_false_path* sdc_set_false_path) {
+static bool apply_set_false_path(const sdcparse::SetFalsePath& sdc_set_false_path) {
 	bool domain_level_from = false, domain_level_to = false;
     int num_from = 0, num_to = 0;
     char **from_list = NULL, **to_list = NULL;
 
     build_from_to_lists(&from_list, &num_from, &domain_level_from,
                         &to_list, &num_to, &domain_level_to,
-                        sdc_set_false_path->from, sdc_set_false_path->to);
+                        sdc_set_false_path.from, sdc_set_false_path.to);
 
     /* Create a constraint between each element in from_list and each element in to_list with value DO_NOT_ANALYSE. 
     Set make_copies to false since, as we only need to use from_list and to_list once, we can just have the
@@ -480,7 +477,7 @@ static bool apply_set_false_path(t_sdc_set_false_path* sdc_set_false_path) {
     return true;
 }
 
-static bool apply_set_max_delay(t_sdc_set_max_delay* sdc_set_max_delay) {
+static bool apply_set_max_delay(const sdcparse::SetMaxDelay& sdc_set_max_delay) {
     /* Basically the same as apply_set_false_path, except we get a specific delay value for the constraint. */
 
 	bool domain_level_from = false, domain_level_to = false;
@@ -489,10 +486,10 @@ static bool apply_set_max_delay(t_sdc_set_max_delay* sdc_set_max_delay) {
 
     build_from_to_lists(&from_list, &num_from, &domain_level_from,
                         &to_list, &num_to, &domain_level_to,
-                        sdc_set_max_delay->from, sdc_set_max_delay->to);
+                        sdc_set_max_delay.from, sdc_set_max_delay.to);
 
     /* Create a constraint between each element in from_list and each element in to_list with value max_delay. */
-    add_override_constraint(from_list, num_from, to_list, num_to, sdc_set_max_delay->max_delay,
+    add_override_constraint(from_list, num_from, to_list, num_to, sdc_set_max_delay.max_delay,
                             0, domain_level_from, domain_level_to, false);
     
     /* Finally, set from_list and to_list to NULL since they're both 
@@ -502,19 +499,19 @@ static bool apply_set_max_delay(t_sdc_set_max_delay* sdc_set_max_delay) {
     return true;
 }
 
-static bool apply_set_multicycle_path(t_sdc_set_multicycle_path* sdc_set_multicycle_path) {
+static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set_multicycle_path) {
 	bool domain_level_from = false, domain_level_to = false;
     int num_from = 0, num_to = 0;
     char **from_list = NULL, **to_list = NULL;
 
     build_from_to_lists(&from_list, &num_from, &domain_level_from,
                         &to_list, &num_to, &domain_level_to,
-                        sdc_set_multicycle_path->from, sdc_set_multicycle_path->to);
+                        sdc_set_multicycle_path.from, sdc_set_multicycle_path.to);
 
     /* Create an override constraint between from and to. Unlike the previous two commands, set_multicycle_path requires 
     information about the periods and offsets of the clock domains which from and to, which we have to fill in at the end. */
     add_override_constraint(from_list, num_from, to_list, num_to, HUGE_NEGATIVE_FLOAT /* irrelevant - never used */,
-        sdc_set_multicycle_path->mcp_value, domain_level_from, domain_level_to, false);
+        sdc_set_multicycle_path.mcp_value, domain_level_from, domain_level_to, false);
     
     /* Finally, set from_list and to_list to NULL since they're both 
     being pointed to by the override constraint entry we just created. */
@@ -523,24 +520,21 @@ static bool apply_set_multicycle_path(t_sdc_set_multicycle_path* sdc_set_multicy
     return true;
 }
 
-static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
-    int iio, iport;
+static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay) {
     bool found;
     const char* io_type;
-    char* clock_name;
 
-
-    clock_name = sdc_set_io_delay->clock_name;
+    const char* clock_name = sdc_set_io_delay.clock_name.c_str();
 
     //Support for non-standard wildcard clock name for set_input_delay/set_output_dealy
     //commands, provided it is unambiguous (i.e. there is only one netlist clock)
-    if(num_netlist_clocks == 1 && strcmp(sdc_set_io_delay->clock_name, "*") == 0) {
+    if(num_netlist_clocks == 1 && strcmp(clock_name, "*") == 0) {
         clock_name = netlist_clocks[0]; 
     }
 
     //Verify that the provided clock name is valid
     if(!is_valid_clock_name(clock_name)) {
-        vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_set_io_delay->file_line_number, 
+        vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_set_io_delay.file_line_number, 
                 "Clock name '%s' does not match to any known clock.\n",
                 clock_name);
     }
@@ -551,16 +545,16 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
      * max_delay 
      */
     
-    t_sdc_string_group* port_group = sdc_set_io_delay->target_ports;
-    for (iport = 0; iport < port_group->num_strings; iport++) {
+    const sdcparse::StringGroup& port_group = sdc_set_io_delay.target_ports;
+    for (size_t iport = 0; iport < port_group.strings.size(); iport++) {
 
         found = false;
 
-        for (iio = 0; iio < num_netlist_ios; iio++) {
+        for (int iio = 0; iio < num_netlist_ios; iio++) {
             /* See if the regular expression  is legal and matches at least one input port. 
             If it is not legal, it will fail during regex_match.  We check for a match using bool found. */
-            if (regex_match(netlist_ios[iio], port_group->strings[iport])) {
-                if(sdc_set_io_delay->cmd_type == SDC_INPUT_DELAY) {
+            if (regex_match(netlist_ios[iio], port_group.strings[iport].c_str())) {
+                if(sdc_set_io_delay.io_type == sdcparse::IoDelayType::INPUT) {
                     /* We've found a new input! */
                     g_sdc->num_constrained_inputs++;
                     found = true;
@@ -569,10 +563,10 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
                     g_sdc->constrained_inputs = (t_io *) vtr::realloc (g_sdc->constrained_inputs, g_sdc->num_constrained_inputs * sizeof(t_io));
                     g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = vtr::strdup(netlist_ios[iio]);
                     g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
-                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay->max_delay;
-                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].file_line_number = sdc_set_io_delay->file_line_number; /* global var */
+                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay.max_delay;
+                    g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].file_line_number = sdc_set_io_delay.file_line_number;
                 } else {
-                    VTR_ASSERT(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
+                    VTR_ASSERT(sdc_set_io_delay.io_type == sdcparse::IoDelayType::OUTPUT);
 					/* We've found a new output! */
 					g_sdc->num_constrained_outputs++;
 					found = true;
@@ -581,29 +575,29 @@ static bool apply_set_io_delay(t_sdc_set_io_delay* sdc_set_io_delay) {
 					g_sdc->constrained_outputs = (t_io *) vtr::realloc (g_sdc->constrained_outputs, g_sdc->num_constrained_outputs * sizeof(t_io));
 					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = vtr::strdup(netlist_ios[iio]);
 					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
-					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = sdc_set_io_delay->max_delay;
-					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].file_line_number = sdc_set_io_delay->file_line_number; /* global var */
+					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = sdc_set_io_delay.max_delay;
+					g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].file_line_number = sdc_set_io_delay.file_line_number;
                 }
             }
         }
 
         if (!found) {
-            if(sdc_set_io_delay->cmd_type == SDC_INPUT_DELAY) {
+            if(sdc_set_io_delay.io_type == sdcparse::IoDelayType::INPUT) {
                 io_type = "Input";
             } else {
-                VTR_ASSERT(sdc_set_io_delay->cmd_type == SDC_OUTPUT_DELAY);
+                VTR_ASSERT(sdc_set_io_delay.io_type == sdcparse::IoDelayType::OUTPUT);
                 io_type = "Output";
             }
 
-            vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_set_io_delay->file_line_number, 
-                    "%s name or regular expression \"%s\" does not correspond to any nets.\n", io_type, port_group->strings[iport]);
+            vpr_throw(VPR_ERROR_SDC, sdc_file_name, sdc_set_io_delay.file_line_number, 
+                    "%s name or regular expression \"%s\" does not correspond to any nets.\n", io_type, port_group.strings[iport].c_str());
             return false;
         }
     }
     return true;
 }
 
-static bool is_valid_clock_name(char* clock_name) {
+static bool is_valid_clock_name(const char* clock_name) {
     bool found = false;
     for(int iclk = 0; iclk < g_sdc->num_constrained_clocks; iclk++) {
         if(strcmp(g_sdc->constrained_clocks[iclk].name, clock_name) == 0) {
@@ -616,19 +610,19 @@ static bool is_valid_clock_name(char* clock_name) {
 
 static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_level_from,
                             char ***to_list, int *num_to, bool* domain_level_to,
-                            t_sdc_string_group* from_group, t_sdc_string_group* to_group) {
+                            const sdcparse::StringGroup& from_group, const sdcparse::StringGroup& to_group) {
     /*
      * Source 'from' objects/clocks
      */
 
     //Are we working with a set of clock domains?
-    if(from_group->group_type == SDC_CLOCK) {
+    if(from_group.group_type == sdcparse::StringGroupType::CLOCK) {
         *domain_level_from = true;
     }
-    for(int i = 0; i < from_group->num_strings; i++) {
+    for(size_t i = 0; i < from_group.strings.size(); i++) {
         /* Keep adding clock names to from_list */
         (*from_list) = (char **) vtr::realloc((*from_list), ++(*num_from) * sizeof(**from_list));
-        (*from_list)[(*num_from) - 1] = vtr::strdup(from_group->strings[i]);
+        (*from_list)[(*num_from) - 1] = vtr::strdup(from_group.strings[i].c_str());
     }
 
     /*
@@ -637,13 +631,13 @@ static bool build_from_to_lists(char ***from_list, int *num_from, bool* domain_l
     
     //Are we working with a set of clock domains?
 
-    if(to_group->group_type == SDC_CLOCK) {
+    if(to_group.group_type == sdcparse::StringGroupType::CLOCK) {
         *domain_level_to = true;
     }
-    for(int i = 0; i < to_group->num_strings; i++) {
+    for(size_t i = 0; i < to_group.strings.size(); i++) {
         /* Keep adding clock names to to_list */
         (*to_list) = (char **) vtr::realloc((*to_list), ++(*num_to) * sizeof(**to_list));
-        (*to_list)[(*num_to) - 1] = vtr::strdup(to_group->strings[i]);
+        (*to_list)[(*num_to) - 1] = vtr::strdup(to_group.strings[i].c_str());
     }
 
     return true;
@@ -1007,7 +1001,7 @@ static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_do
 	return constraint;
 }
 
-static bool regex_match (char * string, char * regular_expression) {
+static bool regex_match (const char * string, const char * regular_expression) {
 	/* Given a string and a regular expression, return true if there's a match, 
 	false if not. Print an error and exit if regular_expression is invalid. */
 
