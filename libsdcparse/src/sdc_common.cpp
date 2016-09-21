@@ -173,11 +173,11 @@ std::shared_ptr<SdcCommands> add_sdc_set_io_delay(const Lexer& lexer, std::share
  * Functions for set_clock_groups
  */
 void sdc_set_clock_groups_set_type(const Lexer& lexer, SetClockGroups& sdc_set_clock_groups, ClockGroupsType type) {
-    if(sdc_set_clock_groups.type != ClockGroupsType::NONE) {
+    if(sdc_set_clock_groups.cg_type != ClockGroupsType::NONE) {
         sdc_error_wrap(lexer.lineno(), lexer.text(), "Can only specify a single clock groups relation type (e.g. '-exclusive')\n"); 
     }
 
-    sdc_set_clock_groups.type = type;
+    sdc_set_clock_groups.cg_type = type;
 }
 
 void sdc_set_clock_groups_add_group(const Lexer& /*lexer*/, SetClockGroups& sdc_set_clock_groups, StringGroup clock_group) {
@@ -191,7 +191,7 @@ std::shared_ptr<SdcCommands> add_sdc_set_clock_groups(const Lexer& lexer, std::s
     /*
      * Error checks
      */
-    if(sdc_set_clock_groups.type == ClockGroupsType::NONE) {
+    if(sdc_set_clock_groups.cg_type == ClockGroupsType::NONE) {
         sdc_error_wrap(lexer.lineno(), lexer.text(), "Must specify clock relation type as '-exclusive'.\n"); 
     }
 
@@ -340,10 +340,10 @@ std::shared_ptr<SdcCommands> add_sdc_set_max_delay(const Lexer& lexer, std::shar
  * Functions for set_multicycle_path
  */
 void sdc_set_multicycle_path_set_type(const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, McpType type) {
-    if(sdc_set_multicycle_path.type != McpType::NONE) {
+    if(sdc_set_multicycle_path.mcp_type != McpType::NONE) {
         sdc_error_wrap(lexer.lineno(), lexer.text(), "Must specify the type (e.g. '-setup') only once.\n"); 
     }
-    sdc_set_multicycle_path.type = type;
+    sdc_set_multicycle_path.mcp_type = type;
 }
 
 void sdc_set_multicycle_path_set_mcp_value(const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, int mcp_value) {
@@ -385,7 +385,7 @@ std::shared_ptr<SdcCommands> add_sdc_set_multicycle_path(const Lexer& lexer, std
     /*
      * Error checks
      */
-    if(sdc_set_multicycle_path.type != McpType::SETUP) {
+    if(sdc_set_multicycle_path.mcp_type != McpType::SETUP) {
         sdc_error_wrap(lexer.lineno(), lexer.text(), "Must specify the multicycle path type as '-setup'.\n"); 
     }
 
