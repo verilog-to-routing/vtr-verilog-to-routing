@@ -1,5 +1,5 @@
 #
-#Executables
+#Executables and generated files
 #
 ODIN_II/odin_II.exe
 abc_with_bb_support/abc
@@ -8,6 +8,11 @@ libarchfpga/read_arch
 liblog/test_log
 libsdcparse/sdcparse_test
 vpr/vpr
+libsdcparse/src/sdc_lexer.gen.c
+libsdcparse/src/sdc_lexer.gen.h
+libsdcparse/src/sdc_parser.gen.c
+libsdcparse/src/sdc_parser.gen.h
+libsdcparse/src/stack.hh
 
 #Install
 bin/
