@@ -14,6 +14,7 @@
 #				requiring the use of swap memory, which will cause slower
 #				execution. Be sure you have allocated a sufficiently large swap
 #				memory or errors may result.
+#   -j <N>: Same as -p <N>
 #	-l <task_list_file>:  A file containing a list of tasks to execute. Each task
 #							name should be on a separate line.
 #
@@ -67,8 +68,13 @@ while ( $token = shift(@ARGV) ) {
 		$processors = int($1);
 	}
 
-	# Check for -p N
-	elsif ( $token eq "-p" ) {
+	# Check for -jN
+	if ( $token =~ /^-j(\d+)$/ ) {
+		$processors = int($1);
+	}
+
+	# Check for -p N or -j N
+	elsif ( $token eq "-p" or $token eq "-j" ) {
 		$processors = int( shift(@ARGV) );
 	}
 

@@ -63,25 +63,25 @@ my $create_golden = 0;
 my $check_golden = 0;
 my $calc_geomean = 0;
 my $display_qor = 0;
+my $num_cpu = 1;
 
 # Parse Input Arguments
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-parse") {
 		$parse_only = 1;
-	}
-	elsif ( $token eq "-create_golden" ) {
+	} elsif ( $token eq "-create_golden" ) {
 		$create_golden = 1;
-	}
-	elsif ( $token eq "-check_golden" ) {
+	} elsif ( $token eq "-check_golden" ) {
 		$check_golden = 1;
-	}
-	elsif ( $token eq "-calc_geomean" ) {
+	} elsif ( $token eq "-calc_geomean" ) {
 		$calc_geomean = 1;
-	}
-	elsif ( $token eq "-display_qor" ) {
+	} elsif ( $token eq "-display_qor" ) {
 		$display_qor = 1;
-	}
-	elsif ($token eq "quick_test") {
+	} elsif ( $token eq "-j" ) { #-j N
+		$num_cpu = int(shift(@ARGV));
+    } elsif ( $token =~ /^-j(\d+)$/ ) { #-jN
+        $num_cpu = int($1);
+	} elsif ($token eq "quick_test") {
 		run_quick_test();
 	} else {	
 		if ($token =~ /(.*)\//) {
@@ -192,12 +192,11 @@ sub setup_single_test {
 		$run_params = "$test_dir";
 		$parse_params = "$test_dir ";
 	}
-	
-	# Use 2 threads for weekly regression test
-	if ($test_name eq "vtr_reg_weekly") {
-		my $threads = "2 ";
-		$run_params = "-p " . $threads . $run_params;	
-	}
+
+    #Enable parallel execution
+    if ($num_cpu > 1) {
+        $run_params = "-j " . $num_cpu . " " . $run_params;
+    }
 }
 
 sub check_override {
