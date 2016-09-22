@@ -29,6 +29,7 @@ target_link_libraries(libvpr
                         libvtrutil
                         libarchfpga
                         libsdcparse
+                        libblifparse
                         libeasygl)
 
 #Create the executable

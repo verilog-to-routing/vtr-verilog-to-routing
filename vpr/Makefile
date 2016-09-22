@@ -22,8 +22,8 @@ OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 #############################################################################################
 
 CC = $(COMPILER)
-LIB_DIR = -L. -L../libsdcparse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
-LIB = -lm -lvpr -leasygl -lsdcparse -larchfpga -lpugixml -lvtrutil -llog
+LIB_DIR = -L. -L../libsdcparse -L../libblifparse -L../liblog -L../libeasygl -L../libpugixml -L../libarchfpga -L../libvtrutil
+LIB = -lm -lvpr -leasygl -lsdcparse -lblifparse -larchfpga -lpugixml -lvtrutil -llog
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
@@ -102,10 +102,13 @@ libarchfpga:
 libsdcparse:
 	@ cd ../libsdcparse && make VERBOSITY=0 libsdcparse.a
 
+libblifparse:
+	@ cd ../libblifparse && make VERBOSITY=0 libblifparse.a
+
 libeasygl:
 	@ cd ../libeasygl && make ENABLE_GRAPHICS=$(ENABLE_GRAPHICS) libeasygl.a
 
-libvpr.a: $(OBJ) Makefile libsdcparse libeasygl libarchfpga
+libvpr.a: $(OBJ) Makefile libsdcparse libblifparse libeasygl libarchfpga
 	@ ar rcs $@ $(OBJ)
 	@#Remove main
 	@ ar d $@ main.o
@@ -131,6 +134,7 @@ clean:
 	rm -f $(EXE) $(OBJ) $(DEP) libvpr.a
 	cd ../libarchfpga && make clean
 	cd ../libsdcparse && make clean
+	cd ../libblifparse && make clean
 	cd ../libeasygl && make clean
 
 clean_coverage: clean

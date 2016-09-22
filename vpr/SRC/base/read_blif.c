@@ -3,6 +3,9 @@
 #include <ctime>
 using namespace std;
 
+#include "blifparse.hpp"
+#include "netlist2.h"
+
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_list.h"
@@ -76,11 +79,191 @@ static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
 
+static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs,
+		const t_model *user_models, const t_model *library_models,
+		bool read_activity_file, char * activity_file);
+
 static void do_absorb_buffer_luts(void);
 static void compress_netlist(void);
 static void show_blif_stats(const t_model *user_models, const t_model *library_models);
 static bool add_activity_to_net(char * net_name, float probability,
 		float density);
+
+void blif_error(int lineno, std::string near_text, std::string msg);
+
+void blif_error(int lineno, std::string near_text, std::string msg) {
+    vpr_throw(VPR_ERROR_BLIF_F, "", lineno,
+            "Error in blif file near '%s': %s\n", near_text.c_str(), msg.c_str());
+}
+
+struct BlifCountCallback : public blifparse::Callback {
+    public:
+        void start_model(std::string /*model_name*/) override { ++num_models; }
+        void inputs(std::vector<std::string> /*inputs*/) override { ++num_inputs; }
+        void outputs(std::vector<std::string> /*outputs*/) override { ++num_outputs; }
+
+        void names(std::vector<std::string> /*nets*/, std::vector<std::vector<blifparse::LogicValue>> /*so_cover*/) override { ++num_names; }
+        void latch(std::string /*input*/, std::string /*output*/, blifparse::LatchType /*type*/, std::string /*control*/, blifparse::LogicValue /*init*/) override { ++num_latches; }
+        void subckt(std::string /*model*/, std::vector<std::string> /*ports*/, std::vector<std::string> /*nets*/) override { ++num_subckts; }
+        void blackbox() override {}
+
+        void end_model() override {}
+
+        size_t num_models = 0;
+        size_t num_inputs = 0;
+        size_t num_outputs = 0;
+        size_t num_names = 0;
+        size_t num_latches = 0;
+        size_t num_subckts = 0;
+};
+
+struct BlifAllocCallback : public blifparse::Callback {
+    public:
+        void start_model(std::string model_name) override { 
+            //Assume the first model is the main model
+            if(netlist_.netlist_name() == "") {
+                netlist_.set_netlist_name(model_name);
+            }
+        }
+
+        void inputs(std::vector<std::string> input_names) override {
+            //TODO find input model
+            const t_model* blk_model = nullptr;
+            std::string pin_name = "";
+            for(const auto& input : input_names) {
+                AtomBlkId blk_id = netlist_.create_block(input, AtomBlockType::INPAD, blk_model);
+                AtomNetId net_id = netlist_.create_net(input);
+                netlist_.create_pin(blk_id, net_id, AtomPinType::DRIVER, pin_name);
+            }
+        }
+
+        void outputs(std::vector<std::string> output_names) override { 
+            //TODO find output model
+            const t_model* blk_model = nullptr;
+            std::string pin_name = "";
+            for(const auto& output : output_names) {
+                //Since we name blocks based on thier drivers we need to uniquify outpad names,
+                //which we do with a prefix
+                AtomBlkId blk_id = netlist_.create_block("out:" + output, AtomBlockType::OUTPAD, blk_model);
+                AtomNetId net_id = netlist_.create_net(output);
+                netlist_.create_pin(blk_id, net_id, AtomPinType::SINK, pin_name);
+            }
+        }
+
+        void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> so_cover) override { 
+            //TODO store logic function, find names model
+            const t_model* blk_model = nullptr;
+            AtomBlkId blk_id = netlist_.create_block(nets[nets.size()-1], AtomBlockType::OUTPAD, blk_model);
+
+            //Create inputs
+            for(size_t i = 0; i < nets.size() - 1; ++i) {
+                AtomNetId net_id = netlist_.create_net(nets[i]);
+                netlist_.create_pin(blk_id, net_id, AtomPinType::SINK, std::string("i") + std::to_string(i));
+            }
+
+            //Create output
+            AtomNetId net_id = netlist_.create_net(nets[nets.size()-1]);
+            netlist_.create_pin(blk_id, net_id, AtomPinType::SINK, std::string("o") + std::to_string(nets.size()-1));
+        }
+
+        void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
+            if(type == blifparse::LatchType::UNSPECIFIED) {
+                vtr::printf_warning(__FILE__, __LINE__, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
+            } else if(type != blifparse::LatchType::RISING_EDGE) {
+                vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Only rising edge latches supported\n");
+            }
+            
+            //TODO find latch model
+            const t_model* blk_model = nullptr;
+            std::string input_pin_name = "";
+            std::string output_pin_name = "";
+            std::string clock_pin_name = "";
+
+            AtomBlkId blk_id = netlist_.create_block(output, AtomBlockType::SEQUENTIAL, blk_model);
+
+            //The input
+            AtomNetId in_net_id = netlist_.create_net(input);
+            netlist_.create_pin(blk_id, in_net_id, AtomPinType::SINK, input_pin_name);
+
+            //The output
+            AtomNetId out_net_id = netlist_.create_net(output);
+            netlist_.create_pin(blk_id, out_net_id, AtomPinType::SINK, output_pin_name);
+
+            //The clock
+            AtomNetId clk_net_id = netlist_.create_net(control);
+            netlist_.create_pin(blk_id, clk_net_id, AtomPinType::SINK, clock_pin_name);
+        }
+
+        void subckt(std::string subckt_model, std::vector<std::string> ports, std::vector<std::string> nets) override {
+            //TODO find subckt model, determine first output net, determine comb/seq type
+            const t_model* blk_model = nullptr;
+            std::string first_output_name = "";
+            AtomBlockType blk_type = AtomBlockType::COMBINATIONAL;
+
+            AtomBlkId blk_id = netlist_.create_block(first_output_name, blk_type, blk_model);
+
+            VTR_ASSERT(ports.size() == nets.size());
+
+            for(size_t i = 0; i < ports.size(); ++i) {
+                AtomNetId net_id = netlist_.create_net(nets[i]);
+                AtomPinType pin_type = AtomPinType::SINK; //TODO determine correctly
+                netlist_.create_pin(blk_id, net_id, pin_type, ports[i]);
+            }
+        }
+
+        void blackbox() override {
+            vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Unexpected .blackbox\n");
+        }
+
+        void end_model() override {
+            VTR_ASSERT(!ended);
+            ended = true;
+        }
+
+        AtomNetlist netlist() { return netlist_; }
+
+    private:
+        bool ended = false;
+
+        AtomNetlist netlist_;
+};
+
+
+
+static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs,
+		const t_model *user_models, const t_model *library_models,
+		bool read_activity_file, char * activity_file) {
+
+	FILE* blif_f = vtr::fopen(blif_file, "r");
+	if (blif_f == NULL) {
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+				"Failed to open blif file '%s'.\n", blif_file);
+	}
+
+    //Throw VPR errors instead of using libblifparse default error
+    blifparse::set_blif_error_handler(blif_error);
+
+    //Counting pass
+    BlifCountCallback counter_callback;
+    blifparse::blif_parse_file(blif_f, counter_callback);
+
+    vtr::printf_info("BLIF Counts:\n");
+    vtr::printf_info("\tmodels: %zu\n", counter_callback.num_models);
+    vtr::printf_info("\tinputs: %zu\n", counter_callback.num_inputs);
+    vtr::printf_info("\toutputs: %zu\n", counter_callback.num_outputs);
+    vtr::printf_info("\tnames: %zu\n", counter_callback.num_names);
+    vtr::printf_info("\tlatches: %zu\n", counter_callback.num_latches);
+    vtr::printf_info("\tsubckts: %zu\n", counter_callback.num_subckts);
+
+    rewind(blif_f); /* Start at beginning of file again */
+
+    BlifAllocCallback alloc_callback;
+    blifparse::blif_parse_file(blif_f, alloc_callback);
+
+    auto netlist = alloc_callback.netlist();
+
+    fclose(blif_f);
+}
 
 static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
@@ -1847,8 +2030,13 @@ void read_and_process_blif(const char *blif_file,
 		char * activity_file) {
 
 	/* begin parsing blif input file */
+#if 0
 	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
+#else
+	read_blif2(blif_file, sweep_hanging_nets_and_inputs, user_models,
+			library_models, read_activity_file, activity_file);
+#endif
 
 	/* TODO: Do check blif here 
 	 eg. 

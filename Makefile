@@ -43,6 +43,7 @@ clean:
 	@ cd liblog && make clean
 	@ cd libpugixml && make clean
 	@ cd libsdcparse && make clean
+	@ cd libblifparse && make clean
 	@ cd libvtrutil && make clean
 
 clean_vpr:
