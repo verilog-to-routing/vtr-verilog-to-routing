@@ -127,13 +127,15 @@ struct BlifCountCallback : public blifparse::Callback {
 struct BlifAllocCallback : public blifparse::Callback {
     public:
         BlifAllocCallback(const t_model* user_models, const t_model* library_models)
-            : user_models_(user_models) 
-            , library_models_(library_models) {}
+            : user_arch_models_(user_models) 
+            , library_arch_models_(library_models) {}
+
+        static constexpr const char* OUTPAD_NAME_PREFIX = "out:";
 
     public: //Callback interface
         void start_model(std::string model_name) override { 
             //Create a new model, and set it's name
-            models_.emplace_back(model_name);
+            blif_models_.emplace_back(model_name);
             ended_ = false;
         }
 
@@ -165,7 +167,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             for(const auto& output : output_names) {
                 //Since we name blocks based on thier drivers we need to uniquify outpad names,
                 //which we do with a prefix
-                AtomBlkId blk_id = curr_model().create_block("out:" + output, AtomBlockType::OUTPAD, blk_model);
+                AtomBlkId blk_id = curr_model().create_block(OUTPAD_NAME_PREFIX + output, AtomBlockType::OUTPAD, blk_model);
                 AtomNetId net_id = curr_model().create_net(output);
                 curr_model().create_pin(blk_id, net_id, AtomPinType::SINK, pin_name);
             }
@@ -311,8 +313,9 @@ struct BlifAllocCallback : public blifparse::Callback {
             //and is not a blackbox)
             int top_model_idx = -1; //Not valid
 
-            for(int i = 0; i < static_cast<int>(models_.size()); ++i) {
-                if(!models_[i].is_blackbox()) {
+            for(int i = 0; i < static_cast<int>(blif_models_.size()); ++i) {
+                if(!blif_models_[i].is_blackbox()) {
+                    //A non-blackbox model
                     if(top_model_idx == -1) {
                         top_model_idx = i;
                     } else {
@@ -320,6 +323,9 @@ struct BlifAllocCallback : public blifparse::Callback {
                                 "Found multiple models with primitives. "
                                 "Only one model can contain primitives, the others must be blackboxes.");
                     }
+                } else {
+                    //Verify blackbox models match the architecture
+                    verify_blackbox_model(blif_models_[i]);
                 }
             }
 
@@ -328,20 +334,20 @@ struct BlifAllocCallback : public blifparse::Callback {
                         "No non-blackbox models found. The main model must not be a blackbox.");
             } else {
                 //Return the main model
-                return models_[top_model_idx];
+                return blif_models_[top_model_idx];
             }
 
         }
 
     private:
         const t_model* find_model(std::string name) {
-            for(const t_model* models : {user_models_, library_models_}) {
-                const t_model* curr_model = models;
-                while(curr_model) {
-                    if(name == curr_model->name) {
-                        return curr_model;
+            for(const t_model* arch_models : {user_arch_models_, library_arch_models_}) {
+                const t_model* curr_arch_model = arch_models;
+                while(curr_arch_model) {
+                    if(name == curr_arch_model->name) {
+                        return curr_arch_model;
                     }
-                    curr_model = curr_model->next;
+                    curr_arch_model = curr_arch_model->next;
                 }
             }
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Failed to find matching architecture model for '%s'\n",
@@ -459,12 +465,50 @@ struct BlifAllocCallback : public blifparse::Callback {
             return std::make_pair(trimmed_signal_name, bit_index);
         }
 
+        //Retieves a reference to the currently active .model
         AtomNetlist& curr_model() { 
-            if(models_.empty() || ended_) {
+            if(blif_models_.empty() || ended_) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Expected .model");
             }
 
-            return models_[models_.size()-1]; 
+            return blif_models_[blif_models_.size()-1]; 
+        }
+
+        bool verify_blackbox_model(AtomNetlist& blif_model) {
+            const t_model* arch_model = find_model(blif_model.netlist_name());
+
+            //Verify each port on the model
+            //
+            // We parse each .model as it's own netlist so the IOs
+            // get converted to blocks
+            for(auto blk_id : blif_model.blocks()) {
+
+
+                //Check that the port directions match
+                if(blif_model.block_type(blk_id) == AtomBlockType::INPAD) {
+
+                    const auto& input_name = blif_model.block_name(blk_id);
+
+                    //Find model port already verifies the port widths
+                    const t_model_ports* arch_model_port = find_model_port(arch_model, input_name);
+                    VTR_ASSERT(arch_model_port);
+                    VTR_ASSERT(arch_model_port->dir == IN_PORT);
+
+                } else {
+                    VTR_ASSERT(blif_model.block_type(blk_id) == AtomBlockType::OUTPAD);
+
+                    auto raw_output_name = blif_model.block_name(blk_id);
+
+                    std::string output_name = vtr::replace_first(raw_output_name, OUTPAD_NAME_PREFIX, "");
+
+                    //Find model port already verifies the port widths
+                    const t_model_ports* arch_model_port = find_model_port(arch_model, output_name);
+                    VTR_ASSERT(arch_model_port);
+
+                    VTR_ASSERT(arch_model_port->dir == OUT_PORT);
+                }
+            }
+            return true;
         }
 
     private:
@@ -472,10 +516,10 @@ struct BlifAllocCallback : public blifparse::Callback {
         std::string filename_;
         int lineno_;
 
-        std::vector<AtomNetlist> models_;
+        std::vector<AtomNetlist> blif_models_;
 
-        const t_model* user_models_;
-        const t_model* library_models_;
+        const t_model* user_arch_models_;
+        const t_model* library_arch_models_;
 };
 
 

@@ -59,6 +59,16 @@ std::vector<std::string> split(const std::string& text, const std::string delims
     return tokens;
 }
 
+std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
+    auto pos = input.find(search);
+
+    std::string output(input, 0, pos);
+    output += replace;
+    output += std::string(input, pos + search.size());
+
+    return output;
+}
+
 //Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...) {
     // Make a variable argument list
