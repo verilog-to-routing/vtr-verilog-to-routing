@@ -137,22 +137,23 @@ using namespace blifparse;
 
 %%
 
-blif_data: /*empty*/ {}
-    | blif_data DOT_MODEL STRING EOL        { callback.start_model($3); }
-    | blif_data DOT_INPUTS string_list EOL  { callback.inputs($3); }
-    | blif_data DOT_OUTPUTS string_list EOL { callback.outputs($3); }
-    | blif_data names                       { callback.names($2.nets, $2.so_cover); }
+blif_data: /*empty*/ { }
+    | blif_data DOT_MODEL STRING EOL        { callback.lineno(lexer.lineno()); callback.start_model($3); }
+    | blif_data DOT_INPUTS string_list EOL  { callback.lineno(lexer.lineno()); callback.inputs($3); }
+    | blif_data DOT_OUTPUTS string_list EOL { callback.lineno(lexer.lineno()); callback.outputs($3); }
+    | blif_data names                       { callback.lineno(lexer.lineno()); callback.names($2.nets, $2.so_cover); }
     | blif_data subckt EOL                  { 
                                               if($2.ports.size() != $2.nets.size()) {
                                                   blif_error_wrap(lexer.lineno(), lexer.text(), 
                                                     "Mismatched subckt port and net connection(s) size do not match"
                                                     " (%zu ports, %zu nets)", $2.ports.size(), $2.nets.size());
                                               }
+                                              callback.lineno(lexer.lineno()); 
                                               callback.subckt($2.model, $2.ports, $2.nets);
                                             }
     | blif_data latch EOL                   { }
-    | blif_data DOT_BLACKBOX EOL            { callback.blackbox(); }
-    | blif_data DOT_END EOL                 { callback.end_model(); }
+    | blif_data DOT_BLACKBOX EOL            { callback.lineno(lexer.lineno()); callback.blackbox(); }
+    | blif_data DOT_END EOL                 { callback.lineno(lexer.lineno()); callback.end_model(); }
     | blif_data EOL                         { /* eat end-of-lines */}
     ;
 
@@ -175,18 +176,22 @@ subckt: DOT_SUBCKT STRING       { $$ = SubCkt(); $$.model = $2; }
 
 latch: DOT_LATCH STRING STRING {
                                     //Input and output only
+                                    callback.lineno(lexer.lineno()); 
                                     callback.latch($2, $3, LatchType::UNSPECIFIED, "", LogicValue::UNKOWN);
                                }
     | DOT_LATCH STRING STRING latch_type latch_control {
                                     //Input, output, type and control
+                                    callback.lineno(lexer.lineno()); 
                                     callback.latch($2, $3, $4, $5, LogicValue::UNKOWN);
                                }
     | DOT_LATCH STRING STRING latch_type latch_control latch_init {
                                     //Input, output, type, control and init-value
+                                    callback.lineno(lexer.lineno()); 
                                     callback.latch($2, $3, $4, $5, $6);
                                }
     | DOT_LATCH STRING STRING latch_init {
                                     //Input, output, and init-value
+                                    callback.lineno(lexer.lineno());
                                     callback.latch($2, $3, LatchType::UNSPECIFIED, "", $4);
                                }
     ;

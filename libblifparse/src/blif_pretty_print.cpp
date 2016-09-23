@@ -6,10 +6,16 @@
 namespace blifparse {
 
 void BlifPrettyPrinter::start_model(std::string model_name) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".model %s\n", model_name.c_str());
 }
 
 void BlifPrettyPrinter::inputs(std::vector<std::string> input_conns) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".inputs \\\n");
     ++indent_level_;
     for(size_t i = 0; i < input_conns.size(); ++i) {
@@ -23,6 +29,9 @@ void BlifPrettyPrinter::inputs(std::vector<std::string> input_conns) {
 }
 
 void BlifPrettyPrinter::outputs(std::vector<std::string> output_conns) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".outputs \\\n");
 
     ++indent_level_;
@@ -39,6 +48,9 @@ void BlifPrettyPrinter::outputs(std::vector<std::string> output_conns) {
 }
 
 void BlifPrettyPrinter::names(std::vector<std::string> nets, std::vector<std::vector<LogicValue>> so_cover) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".names ");
     for(size_t i = 0; i < nets.size(); ++i) {
         printf("%s", nets[i].c_str());
@@ -66,6 +78,9 @@ void BlifPrettyPrinter::names(std::vector<std::string> nets, std::vector<std::ve
 }
 
 void BlifPrettyPrinter::latch(std::string input, std::string output, LatchType type, std::string control, LogicValue init) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".latch \\\n");
 
     ++indent_level_;
@@ -100,6 +115,9 @@ void BlifPrettyPrinter::latch(std::string input, std::string output, LatchType t
 }
 
 void BlifPrettyPrinter::subckt(std::string model, std::vector<std::string> ports, std::vector<std::string> nets) {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".subckt %s \\\n", model.c_str());
 
     ++indent_level_;
@@ -119,13 +137,28 @@ void BlifPrettyPrinter::subckt(std::string model, std::vector<std::string> ports
 }
 
 void BlifPrettyPrinter::blackbox() {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".blackbox\n");
     printf("\n");
 }
 
 void BlifPrettyPrinter::end_model() {
+    if(print_file_line_) {
+        printf("#%s:%d\n", filename_.c_str(), lineno_);
+    }
     printf(".end\n");
     printf("\n");
+}
+
+
+void BlifPrettyPrinter::filename(std::string fname) {
+    filename_ = fname;
+}
+
+void BlifPrettyPrinter::lineno(int line_num) {
+    lineno_ = line_num;
 }
 
 std::string BlifPrettyPrinter::indent() {
