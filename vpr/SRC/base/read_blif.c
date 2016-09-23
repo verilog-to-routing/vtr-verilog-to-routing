@@ -113,6 +113,9 @@ struct BlifCountCallback : public blifparse::Callback {
 
         void end_model() override {}
 
+        void filename(std::string /*fname*/) override {}
+        void lineno(int /*line_num*/) override {}
+
         size_t num_models = 0;
         size_t num_inputs = 0;
         size_t num_outputs = 0;
@@ -206,9 +209,9 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
             if(type == blifparse::LatchType::UNSPECIFIED) {
-                vtr::printf_warning(__FILE__, __LINE__, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
+                vtr::printf_warning(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
             } else if(type != blifparse::LatchType::RISING_EDGE) {
-                vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Only rising edge latches supported\n");
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
             }
             
             const t_model* blk_model = find_model("latch");
@@ -283,7 +286,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         void blackbox() override {
-            /*vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Unexpected .blackbox");*/
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .blackbox");
         }
 
         void end_model() override {
@@ -291,6 +294,9 @@ struct BlifAllocCallback : public blifparse::Callback {
             /*ended_ = true;*/
         }
 
+        void filename(std::string fname) override { filename_ = fname; }
+
+        void lineno(int line_num) override { lineno_ = line_num; }
     public:
         //Retrieve the netlist
         AtomNetlist netlist() { return netlist_; }
@@ -305,7 +311,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                     curr_model = curr_model->next;
                 }
             }
-            vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Failed to find matching architecture model for '%s'\n",
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Failed to find matching architecture model for '%s'\n",
                       name.c_str());
         }
 
@@ -333,7 +339,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                     return AtomBlockType::SEQUENTIAL;
                 } else {
                     VTR_ASSERT(clk_count > 1);
-                    vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, "Primitive '%s' has multiple clocks (currently unsupported)\n",
+                    vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Primitive '%s' has multiple clocks (currently unsupported)\n",
                               blk_model->name);
                 }
             }
@@ -349,33 +355,12 @@ struct BlifAllocCallback : public blifparse::Callback {
             //   my_signal_name[2]
             //
             //indicates the 2nd bit of the port 'my_signal_name'.
-            std::string trimmed_port_name = port_name;
+            std::string trimmed_port_name;
+            int bit_index;
+
+            //Extract the index bit
+            std::tie(trimmed_port_name, bit_index) = split_index(port_name);
              
-            //Determine the bit index of the given port_name
-            int bit_index = 0;
-
-            auto iter = --port_name.end(); //Initialized to the last char
-            if(*iter == ']') {
-                //The name may end in an index
-                //
-                //To verify, we iterate back through the string until we find
-                //an open square brackets, or non digit character
-                --iter; //Advance past ']'
-                while(iter != port_name.begin() && std::isdigit(*iter)) --iter;
-
-                //We are at the first non-digit character from the end (or the beginning of the string)
-                if(*iter == '[') {
-                    //We have a valid index in the open range (iter, --port_name.end())
-                    std::string index_str(iter+1, --port_name.end());
-                    std::stringstream ss(index_str);
-                    ss >> bit_index;
-                    VTR_ASSERT_MSG(!ss.fail() && ss.eof(), "Failed to extract port index");
-
-                    //Trim the port name to exclude the final index
-                    trimmed_port_name = std::string(port_name.begin(), iter);
-                }
-            }
-
             //We now have the valid bit index and port_name is the name excluding the index info
             VTR_ASSERT(bit_index >= 0);
 
@@ -391,7 +376,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                             return curr_port;
                         } else {
                             //Out of range
-                            vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, 
+                            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
                                      "Port '%s' on architecture model '%s' exceeds port width (%d bits)\n",
                                       port_name.c_str(), blk_model->name, curr_port->size);
                         }
@@ -401,15 +386,53 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
 
             //No match
-            vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__, 
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
                      "Found no matching port '%s' on architecture model '%s'\n",
                       port_name.c_str(), blk_model->name);
         }
 
+        //Splits the index off a signal name and returns the base signal name (excluding
+        //the index) and the index as an integer. For example
+        //
+        //  "my_signal_name[2]"   -> "my_signal_name", 2
+        std::pair<std::string, int> split_index(const std::string& signal_name) {
+            int bit_index = 0;
+
+            std::string trimmed_signal_name = signal_name;
+
+            auto iter = --signal_name.end(); //Initialized to the last char
+            if(*iter == ']') {
+                //The name may end in an index
+                //
+                //To verify, we iterate back through the string until we find
+                //an open square brackets, or non digit character
+                --iter; //Advance past ']'
+                while(iter != signal_name.begin() && std::isdigit(*iter)) --iter;
+
+                //We are at the first non-digit character from the end (or the beginning of the string)
+                if(*iter == '[') {
+                    //We have a valid index in the open range (iter, --signal_name.end())
+                    std::string index_str(iter+1, --signal_name.end());
+
+                    //Convert to an integer
+                    std::stringstream ss(index_str);
+                    ss >> bit_index;
+                    VTR_ASSERT_MSG(!ss.fail() && ss.eof(), "Failed to extract signal index");
+
+                    //Trim the signal name to exclude the final index
+                    trimmed_signal_name = std::string(signal_name.begin(), iter);
+                }
+            }
+            return std::make_pair(trimmed_signal_name, bit_index);
+        }
+
     private:
         bool ended_ = false;
+        std::string filename_;
+        int lineno_;
 
         AtomNetlist netlist_;
+
 
         const t_model* user_models_;
         const t_model* library_models_;
@@ -430,35 +453,22 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file) {
 
-	FILE* blif_f = vtr::fopen(blif_file, "r");
-	if (blif_f == NULL) {
-		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
-				"Failed to open blif file '%s'.\n", blif_file);
-	}
+/*
+ *    FILE* blif_f = vtr::fopen(blif_file, "r");
+ *    if (blif_f == NULL) {
+ *        vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+ *                "Failed to open blif file '%s'.\n", blif_file);
+ *    }
+ *
+ */
 
     //Throw VPR errors instead of using libblifparse default error
     blifparse::set_blif_error_handler(blif_error);
 
-    //Counting pass
-    BlifCountCallback counter_callback;
-    blifparse::blif_parse_file(blif_f, counter_callback);
-
-    vtr::printf_info("BLIF Counts:\n");
-    vtr::printf_info("\tmodels: %zu\n", counter_callback.num_models);
-    vtr::printf_info("\tinputs: %zu\n", counter_callback.num_inputs);
-    vtr::printf_info("\toutputs: %zu\n", counter_callback.num_outputs);
-    vtr::printf_info("\tnames: %zu\n", counter_callback.num_names);
-    vtr::printf_info("\tlatches: %zu\n", counter_callback.num_latches);
-    vtr::printf_info("\tsubckts: %zu\n", counter_callback.num_subckts);
-
-    rewind(blif_f); /* Start at beginning of file again */
-
     BlifAllocCallback alloc_callback(user_models, library_models);
-    blifparse::blif_parse_file(blif_f, alloc_callback);
+    blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     auto netlist = alloc_callback.netlist();
-
-    fclose(blif_f);
 }
 
 static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
