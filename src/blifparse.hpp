@@ -48,6 +48,9 @@ class Callback {
         virtual void blackbox() = 0;
 
         virtual void end_model() = 0;
+
+        virtual void filename(std::string fname) = 0;
+        virtual void lineno(int line_num) = 0;
 };
 
 

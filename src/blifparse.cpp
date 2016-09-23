@@ -22,7 +22,12 @@ void blif_parse_filename(std::string filename, Callback& callback) {
 void blif_parse_filename(const char* filename, Callback& callback) {
     FILE* infile = std::fopen(filename, "r");
     if(infile != NULL) {
+        //Tell the caller the file name
+        callback.filename(filename); 
+
+        //Parse the file
         blif_parse_file(infile, callback);
+
         std::fclose(infile);
     } else {
         std::fclose(infile);
@@ -38,7 +43,7 @@ void blif_parse_file(FILE* blif_file, Callback& callback) {
     //Setup the parser + lexer
     Parser parser(lexer, callback);
 
-    //Do the parse
+    //Do the actual parse
     int error = parser.parse();
     if(error) {
         blif_error_wrap(0, "", "BLIF Error: file failed to parse!\n");

@@ -8,6 +8,9 @@ namespace blifparse {
 //the BLIF which is being parsed 
 class BlifPrettyPrinter : public Callback {
     public:
+        BlifPrettyPrinter(bool print_file_line=false)
+            : print_file_line_(print_file_line) {}
+
         void start_model(std::string model_name) override;
         void inputs(std::vector<std::string> inputs) override;
         void outputs(std::vector<std::string> outputs) override;
@@ -21,11 +24,18 @@ class BlifPrettyPrinter : public Callback {
         void blackbox() override;
 
         void end_model() override;
+
+        void filename(std::string fname) override;
+        void lineno(int line_num) override;
+
     private:
         std::string indent();
 
         size_t indent_level_ = 0;
 
+        std::string filename_ = "";
+        int lineno_ = 0;
+        bool print_file_line_ = false;
 };
 
 }
