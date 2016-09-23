@@ -2,8 +2,15 @@
 
 #include "vtr_assert.h"
 
+AtomNetlist::AtomNetlist(std::string name)
+    : netlist_name_(name) {}
+
 const std::string& AtomNetlist::netlist_name() const {
     return netlist_name_;
+}
+
+bool AtomNetlist::is_blackbox() const {
+    return is_blackbox_;
 }
 
 const std::string& AtomNetlist::block_name (const AtomBlkId id) const { 
@@ -150,10 +157,6 @@ bool AtomNetlist::valid_pin_id(AtomPinId id) const {
 
 
 //Mutators
-void AtomNetlist::set_netlist_name(const std::string& name) {
-    netlist_name_ = name;
-}
-
 AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table) {
     //First check if the block has already been created
     AtomBlkId blk_id = find_block(name);
@@ -289,6 +292,10 @@ AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_i
     VTR_ASSERT(find_pin(blk_id, net_id, atom_pin_type, pin_name) == pin_id);
 
     return pin_id;
+}
+
+void AtomNetlist::set_blackbox(bool val) {
+    is_blackbox_ = val;
 }
 
 AtomNetlist::AtomPinNameId AtomNetlist::find_pin_name_id(const std::string& name) {

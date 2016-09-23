@@ -132,10 +132,9 @@ struct BlifAllocCallback : public blifparse::Callback {
 
     public: //Callback interface
         void start_model(std::string model_name) override { 
-            //Assume the first model is the main model
-            if(netlist_.netlist_name() == "") {
-                netlist_.set_netlist_name(model_name);
-            }
+            //Create a new model, and set it's name
+            models_.emplace_back(model_name);
+            ended_ = false;
         }
 
         void inputs(std::vector<std::string> input_names) override {
@@ -148,9 +147,9 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             std::string pin_name = blk_model->outputs->name;
             for(const auto& input : input_names) {
-                AtomBlkId blk_id = netlist_.create_block(input, AtomBlockType::INPAD, blk_model);
-                AtomNetId net_id = netlist_.create_net(input);
-                netlist_.create_pin(blk_id, net_id, AtomPinType::DRIVER, pin_name);
+                AtomBlkId blk_id = curr_model().create_block(input, AtomBlockType::INPAD, blk_model);
+                AtomNetId net_id = curr_model().create_net(input);
+                curr_model().create_pin(blk_id, net_id, AtomPinType::DRIVER, pin_name);
             }
         }
 
@@ -166,9 +165,9 @@ struct BlifAllocCallback : public blifparse::Callback {
             for(const auto& output : output_names) {
                 //Since we name blocks based on thier drivers we need to uniquify outpad names,
                 //which we do with a prefix
-                AtomBlkId blk_id = netlist_.create_block("out:" + output, AtomBlockType::OUTPAD, blk_model);
-                AtomNetId net_id = netlist_.create_net(output);
-                netlist_.create_pin(blk_id, net_id, AtomPinType::SINK, pin_name);
+                AtomBlkId blk_id = curr_model().create_block("out:" + output, AtomBlockType::OUTPAD, blk_model);
+                AtomNetId net_id = curr_model().create_net(output);
+                curr_model().create_pin(blk_id, net_id, AtomPinType::SINK, pin_name);
             }
         }
 
@@ -194,17 +193,17 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
             }
 
-            AtomBlkId blk_id = netlist_.create_block(nets[nets.size()-1], AtomBlockType::COMBINATIONAL, blk_model, truth_table);
+            AtomBlkId blk_id = curr_model().create_block(nets[nets.size()-1], AtomBlockType::COMBINATIONAL, blk_model, truth_table);
 
             //Create inputs
             for(size_t i = 0; i < nets.size() - 1; ++i) {
-                AtomNetId net_id = netlist_.create_net(nets[i]);
-                netlist_.create_pin(blk_id, net_id, AtomPinType::SINK, blk_model->inputs->name + std::to_string(i));
+                AtomNetId net_id = curr_model().create_net(nets[i]);
+                curr_model().create_pin(blk_id, net_id, AtomPinType::SINK, blk_model->inputs->name + std::to_string(i));
             }
 
             //Create output
-            AtomNetId net_id = netlist_.create_net(nets[nets.size()-1]);
-            netlist_.create_pin(blk_id, net_id, AtomPinType::SINK, blk_model->outputs->name + std::to_string(nets.size()-1));
+            AtomNetId net_id = curr_model().create_net(nets[nets.size()-1]);
+            curr_model().create_pin(blk_id, net_id, AtomPinType::SINK, blk_model->outputs->name + std::to_string(nets.size()-1));
         }
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
@@ -237,19 +236,19 @@ struct BlifAllocCallback : public blifparse::Callback {
             AtomNetlist::TruthTable truth_table(1);
             truth_table[0].push_back(to_vtr_logic_value(init));
 
-            AtomBlkId blk_id = netlist_.create_block(output, AtomBlockType::SEQUENTIAL, blk_model, truth_table);
+            AtomBlkId blk_id = curr_model().create_block(output, AtomBlockType::SEQUENTIAL, blk_model, truth_table);
 
             //The input
-            AtomNetId in_net_id = netlist_.create_net(input);
-            netlist_.create_pin(blk_id, in_net_id, AtomPinType::SINK, input_pin_name);
+            AtomNetId in_net_id = curr_model().create_net(input);
+            curr_model().create_pin(blk_id, in_net_id, AtomPinType::SINK, input_pin_name);
 
             //The output
-            AtomNetId out_net_id = netlist_.create_net(output);
-            netlist_.create_pin(blk_id, out_net_id, AtomPinType::SINK, output_pin_name);
+            AtomNetId out_net_id = curr_model().create_net(output);
+            curr_model().create_pin(blk_id, out_net_id, AtomPinType::SINK, output_pin_name);
 
             //The clock
-            AtomNetId clk_net_id = netlist_.create_net(control);
-            netlist_.create_pin(blk_id, clk_net_id, AtomPinType::SINK, clock_pin_name);
+            AtomNetId clk_net_id = curr_model().create_net(control);
+            curr_model().create_pin(blk_id, clk_net_id, AtomPinType::SINK, clock_pin_name);
         }
 
         void subckt(std::string subckt_model, std::vector<std::string> ports, std::vector<std::string> nets) override {
@@ -261,7 +260,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             AtomBlockType blk_type = determine_block_type(blk_model);
 
-            AtomBlkId blk_id = netlist_.create_block(first_output_name, blk_type, blk_model);
+            AtomBlkId blk_id = curr_model().create_block(first_output_name, blk_type, blk_model);
 
 
             for(size_t i = 0; i < ports.size(); ++i) {
@@ -270,7 +269,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 VTR_ASSERT(model_port);
 
                 //Create the net
-                AtomNetId net_id = netlist_.create_net(nets[i]);
+                AtomNetId net_id = curr_model().create_net(nets[i]);
 
                 //Determine the pin type
                 AtomPinType pin_type = AtomPinType::SINK;
@@ -281,17 +280,25 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
 
                 //Make the pin
-                netlist_.create_pin(blk_id, net_id, pin_type, ports[i]);
+                curr_model().create_pin(blk_id, net_id, pin_type, ports[i]);
             }
         }
 
         void blackbox() override {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .blackbox");
+            for(const auto& blk_id : curr_model().blocks()) {
+                auto blk_type = curr_model().block_type(blk_id);
+                if(!(blk_type == AtomBlockType::INPAD || blk_type == AtomBlockType::OUTPAD)) {
+                    vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected primitives in blackbox model");
+                }
+            }
+            curr_model().set_blackbox(true);
         }
 
         void end_model() override {
-            /*VTR_ASSERT(!ended_);*/
-            /*ended_ = true;*/
+            if(ended_) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
+            }
+            ended_ = true;
         }
 
         void filename(std::string fname) override { filename_ = fname; }
@@ -299,8 +306,34 @@ struct BlifAllocCallback : public blifparse::Callback {
         void lineno(int line_num) override { lineno_ = line_num; }
     public:
         //Retrieve the netlist
-        AtomNetlist netlist() { return netlist_; }
+        AtomNetlist netlist() { 
+            //Look through all the models loaded, to find the one which is non-blackbox (i.e. has real blocks
+            //and is not a blackbox)
+            int top_model_idx = -1; //Not valid
 
+            for(int i = 0; i < static_cast<int>(models_.size()); ++i) {
+                if(!models_[i].is_blackbox()) {
+                    if(top_model_idx == -1) {
+                        top_model_idx = i;
+                    } else {
+                        vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
+                                "Found multiple models with primitives. "
+                                "Only one model can contain primitives, the others must be blackboxes.");
+                    }
+                }
+            }
+
+            if(top_model_idx == -1) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
+                        "No non-blackbox models found. The main model must not be a blackbox.");
+            } else {
+                //Return the main model
+                return models_[top_model_idx];
+            }
+
+        }
+
+    private:
         const t_model* find_model(std::string name) {
             for(const t_model* models : {user_models_, library_models_}) {
                 const t_model* curr_model = models;
@@ -426,13 +459,20 @@ struct BlifAllocCallback : public blifparse::Callback {
             return std::make_pair(trimmed_signal_name, bit_index);
         }
 
+        AtomNetlist& curr_model() { 
+            if(models_.empty() || ended_) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Expected .model");
+            }
+
+            return models_[models_.size()-1]; 
+        }
+
     private:
         bool ended_ = false;
         std::string filename_;
         int lineno_;
 
-        AtomNetlist netlist_;
-
+        std::vector<AtomNetlist> models_;
 
         const t_model* user_models_;
         const t_model* library_models_;

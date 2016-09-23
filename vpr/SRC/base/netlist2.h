@@ -29,7 +29,7 @@ enum class AtomBlockType {
     SEQUENTIAL
 };
 
-//Make a tuple of AtomBlkId, AtomNetId and AtomPinType hashable so we can use std::unordered_map
+//Make a tuple of AtomBlkId, AtomNetId and AtomPinType std::string hashable so we can use std::unordered_map
 namespace std {
     template<>
     struct hash<std::tuple<AtomBlkId,AtomNetId,AtomPinType,std::string>> {
@@ -50,10 +50,13 @@ class AtomNetlist {
         typedef std::vector<AtomPinId>::const_iterator pin_iterator;
         typedef std::vector<AtomNetId>::const_iterator net_iterator;
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
+    public:
+        AtomNetlist(std::string name);
 
     public: //Public Accessors
         //Netlist
         const std::string&  netlist_name() const;
+        bool                is_blackbox() const;
 
         //Block
         const std::string&          block_name          (const AtomBlkId id) const;
@@ -86,12 +89,11 @@ class AtomNetlist {
 
     public: //Public Mutators
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
-
-        void        set_netlist_name(const std::string& name);
-
         AtomBlkId   create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
         AtomNetId   create_net  (const std::string name);
         AtomPinId   create_pin  (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType pin_type, const std::string name);
+
+        void set_blackbox(bool val);
     
     private: //Private types
         typedef int AtomPinNameId;
@@ -110,6 +112,7 @@ class AtomNetlist {
 
         //Netlist data
         std::string                 netlist_name_;   //Name of the top-level netlist
+        bool                        is_blackbox_;    //Indicates this netlist is a black box
 
         std::vector<AtomBlkId>      block_ids_;      //Valid block ids
         std::vector<std::string>    block_names_;    //Name of each block

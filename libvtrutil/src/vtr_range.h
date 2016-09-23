@@ -1,5 +1,6 @@
 #ifndef VTR_RANGE_H
 #define VTR_RANGE_H
+#include <iterator>
 
 namespace vtr {
     template<typename T>
@@ -8,6 +9,8 @@ namespace vtr {
             Range(T b, T e): begin_(b), end_(e) {}
             T begin() { return begin_; }
             T end() { return end_; }
+            bool empty() { return begin_ == end_; }
+            size_t size() { return std::distance(begin_, end_); }
         private:
             T begin_;
             T end_;
