@@ -93,9 +93,9 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
     }
 }
 
-AtomPinId AtomNetlist::find_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type) const {
-    auto iter = pin_blk_net_type_to_id_.find(std::make_tuple(blk_id,net_id,atom_pin_type));
-    if(iter != pin_blk_net_type_to_id_.end()) {
+AtomPinId AtomNetlist::find_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string& pin_name) const {
+    auto iter = pin_blk_net_type_name_to_id_.find(std::make_tuple(blk_id,net_id,atom_pin_type, pin_name));
+    if(iter != pin_blk_net_type_name_to_id_.end()) {
         AtomPinId pin_id = iter->second;
 
         //Check post-conditions
@@ -103,6 +103,7 @@ AtomPinId AtomNetlist::find_pin (const AtomBlkId blk_id, const AtomNetId net_id,
         VTR_ASSERT(pin_blocks_[pin_id] == blk_id);
         VTR_ASSERT(pin_nets_[pin_id] == net_id);
         VTR_ASSERT(pin_types_[pin_id] == atom_pin_type);
+        VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == pin_name);
 
         return pin_id;
     } else {
@@ -153,7 +154,7 @@ void AtomNetlist::set_netlist_name(const std::string& name) {
     netlist_name_ = name;
 }
 
-AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType blk_type, const t_model* model) {
+AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table) {
     //First check if the block has already been created
     AtomBlkId blk_id = find_block(name);
 
@@ -168,6 +169,7 @@ AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType 
         block_names_.push_back(name);
         block_types_.push_back(blk_type);
         block_models_.push_back(model);
+        block_truth_tables_.push_back(truth_table);
 
         //Initialize the look-ups
         block_name_to_id_.insert(std::make_pair(name, blk_id));
@@ -179,6 +181,7 @@ AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType 
     VTR_ASSERT(block_names_.size() == block_ids_.size());
     VTR_ASSERT(block_types_.size() == block_ids_.size());
     VTR_ASSERT(block_models_.size() == block_ids_.size());
+    VTR_ASSERT(block_truth_tables_.size() == block_ids_.size());
     VTR_ASSERT(block_name_to_id_.size() == block_ids_.size());
     VTR_ASSERT(block_input_pins_.size() == block_ids_.size());
     VTR_ASSERT(block_output_pins_.size() == block_ids_.size());
@@ -188,6 +191,7 @@ AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType 
     VTR_ASSERT(block_names_[blk_id] == name);
     VTR_ASSERT(block_types_[blk_id] == blk_type);
     VTR_ASSERT(block_models_[blk_id] == model);
+    VTR_ASSERT(block_truth_tables_[blk_id] == truth_table);
     VTR_ASSERT(find_block(name) == blk_id);
 
     return blk_id;
@@ -223,13 +227,13 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
 
 }
 
-AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string name) {
+AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string pin_name) {
     //Check pre-conditions (valid ids)
     VTR_ASSERT_MSG(block_ids_[blk_id] == blk_id, "Invalid block id");
     VTR_ASSERT_MSG(net_ids_[net_id] == net_id, "Invalid block id");
 
     //See if the pin already exists
-    AtomPinId pin_id = find_pin(blk_id, net_id, atom_pin_type);
+    AtomPinId pin_id = find_pin(blk_id, net_id, atom_pin_type, pin_name);
     if(pin_id == INVALID_ATOM_PIN) {
         //Not found, create it
 
@@ -243,19 +247,19 @@ AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_i
         pin_types_.push_back(atom_pin_type);
 
         //Store the reverse look-up
-        auto key = std::make_tuple(blk_id, net_id, atom_pin_type);
-        pin_blk_net_type_to_id_.insert(std::make_pair(key, pin_id));
+        auto key = std::make_tuple(blk_id, net_id, atom_pin_type, pin_name);
+        pin_blk_net_type_name_to_id_.insert(std::make_pair(key, pin_id));
 
         //Determine if a name for this pin is already stored
         // We expect names to not be unique amoung pins, so we
         // store each pin name once, and each pin reference the name by an ID
-        AtomPinNameId pin_name_id = find_pin_name_id(name);
+        AtomPinNameId pin_name_id = find_pin_name_id(pin_name);
         if(pin_name_id == INVALID_PIN_NAME_ID) {
             //Not found store name
             pin_name_id = pin_names_.size(); //Reserve a name id
-            pin_names_.push_back(name); //Store the name
+            pin_names_.push_back(pin_name); //Store the name
 
-            pin_name_to_name_id_.insert(std::make_pair(name, pin_name_id)); //Store the reverse look-up
+            pin_name_to_name_id_.insert(std::make_pair(pin_name, pin_name_id)); //Store the reverse look-up
         }
         pin_name_ids_.push_back(pin_name_id); //Store the pin to name_id look-up
 
@@ -274,15 +278,15 @@ AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_i
     VTR_ASSERT(pin_nets_.size() == pin_ids_.size());
     VTR_ASSERT(pin_types_.size() == pin_ids_.size());
     VTR_ASSERT(pin_name_ids_.size() == pin_ids_.size());
-    VTR_ASSERT(pin_blk_net_type_to_id_.size() == pin_ids_.size());
+    VTR_ASSERT(pin_blk_net_type_name_to_id_.size() == pin_ids_.size());
 
     //Check post-conditions: values
     VTR_ASSERT(valid_pin_id(pin_id));
     VTR_ASSERT(pin_blocks_[pin_id] == blk_id);
     VTR_ASSERT(pin_nets_[pin_id] == net_id);
     VTR_ASSERT(pin_types_[pin_id] == atom_pin_type);
-    VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == name);
-    VTR_ASSERT(find_pin(blk_id, net_id, atom_pin_type) == pin_id);
+    VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == pin_name);
+    VTR_ASSERT(find_pin(blk_id, net_id, atom_pin_type, pin_name) == pin_id);
 
     return pin_id;
 }
