@@ -1,4 +1,5 @@
 #include "netlist2.h"
+#include <map>
 
 #include "vtr_assert.h"
 
@@ -17,7 +18,7 @@ const std::string& AtomNetlist::block_name (const AtomBlkId id) const {
     return block_names_[id];
 }
 
-AtomBlockType AtomNetlist::block_type (const AtomBlkId id) const {
+AtomBlkType AtomNetlist::block_type (const AtomBlkId id) const {
     return block_types_[id];
 }
 
@@ -26,11 +27,11 @@ const t_model* AtomNetlist::block_model (const AtomBlkId id) const {
 }
 
 vtr::Range<AtomNetlist::pin_iterator> AtomNetlist::block_input_pins (const AtomBlkId id) const {
-    return vtr::make_range(block_output_pins_[id].begin(), block_output_pins_[id].end());
+    return vtr::make_range(block_input_pins_[id].begin(), block_input_pins_[id].end());
 }
 
 vtr::Range<AtomNetlist::pin_iterator> AtomNetlist::block_output_pins (const AtomBlkId id) const {
-    return vtr::make_range(block_input_pins_[id].begin(), block_input_pins_[id].end());
+    return vtr::make_range(block_output_pins_[id].begin(), block_output_pins_[id].end());
 }
 
 
@@ -45,6 +46,9 @@ AtomNetId AtomNetlist::pin_net (const AtomPinId id) const {
 
 AtomPinType AtomNetlist::pin_type (const AtomPinId id) const { 
     return pin_types_[id];
+}
+const std::string& AtomNetlist::pin_name (const AtomPinId id) const { 
+    return pin_names_[pin_name_ids_[id]];
 }
 
 
@@ -100,8 +104,8 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
     }
 }
 
-AtomPinId AtomNetlist::find_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string& pin_name) const {
-    auto iter = pin_blk_net_type_name_to_id_.find(std::make_tuple(blk_id,net_id,atom_pin_type, pin_name));
+AtomPinId AtomNetlist::find_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string& name) const {
+    auto iter = pin_blk_net_type_name_to_id_.find(std::make_tuple(blk_id,net_id,atom_pin_type, name));
     if(iter != pin_blk_net_type_name_to_id_.end()) {
         AtomPinId pin_id = iter->second;
 
@@ -110,7 +114,7 @@ AtomPinId AtomNetlist::find_pin (const AtomBlkId blk_id, const AtomNetId net_id,
         VTR_ASSERT(pin_blocks_[pin_id] == blk_id);
         VTR_ASSERT(pin_nets_[pin_id] == net_id);
         VTR_ASSERT(pin_types_[pin_id] == atom_pin_type);
-        VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == pin_name);
+        VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == name);
 
         return pin_id;
     } else {
@@ -157,8 +161,11 @@ bool AtomNetlist::valid_pin_id(AtomPinId id) const {
 
 
 //Mutators
-AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table) {
-    //First check if the block has already been created
+AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlkType blk_type, const t_model* model, const TruthTable truth_table) {
+    //Must have a non-mepty name
+    VTR_ASSERT_MSG(!name.empty(), "Empty block name");
+
+    //Check if the block has already been created
     AtomBlkId blk_id = find_block(name);
 
     if(blk_id == INVALID_ATOM_BLK) {
@@ -201,7 +208,9 @@ AtomBlkId AtomNetlist::create_block(const std::string name, const AtomBlockType 
 }
 
 AtomNetId AtomNetlist::create_net (const std::string name) {
-    //First check if the net has already been created
+    VTR_ASSERT_MSG(!name.empty(), "Empty net name");
+
+    //Check if the net has already been created
     AtomNetId net_id = find_net(name);
     if(net_id == INVALID_ATOM_NET) {
         //Not found, create it
@@ -215,11 +224,19 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
 
         //Initialize the look-ups
         net_name_to_id_.insert(std::make_pair(name, net_id));
+
+        //Initialize with no driver
+        net_pins_.emplace_back();
+        net_pins_[net_id].emplace_back(INVALID_ATOM_NET);
+
+        VTR_ASSERT(net_pins_[net_id].size() == 1);
+        VTR_ASSERT(net_pins_[net_id][0] == INVALID_ATOM_NET);
     }
 
     //Check post-conditions: size
     VTR_ASSERT(net_names_.size() == net_ids_.size());
     VTR_ASSERT(net_name_to_id_.size() == net_ids_.size());
+    VTR_ASSERT(net_pins_.size() == net_ids_.size());
 
     //Check post-conditions: values
     VTR_ASSERT(valid_net_id(net_id));
@@ -230,13 +247,13 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
 
 }
 
-AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string pin_name) {
+AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType atom_pin_type, const std::string name) {
     //Check pre-conditions (valid ids)
-    VTR_ASSERT_MSG(block_ids_[blk_id] == blk_id, "Invalid block id");
-    VTR_ASSERT_MSG(net_ids_[net_id] == net_id, "Invalid block id");
+    VTR_ASSERT_MSG(valid_block_id(blk_id), "Invalid block id");
+    VTR_ASSERT_MSG(valid_net_id(net_id), "Invalid block id");
 
     //See if the pin already exists
-    AtomPinId pin_id = find_pin(blk_id, net_id, atom_pin_type, pin_name);
+    AtomPinId pin_id = find_pin(blk_id, net_id, atom_pin_type, name);
     if(pin_id == INVALID_ATOM_PIN) {
         //Not found, create it
 
@@ -250,21 +267,31 @@ AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_i
         pin_types_.push_back(atom_pin_type);
 
         //Store the reverse look-up
-        auto key = std::make_tuple(blk_id, net_id, atom_pin_type, pin_name);
+        auto key = std::make_tuple(blk_id, net_id, atom_pin_type, name);
         pin_blk_net_type_name_to_id_.insert(std::make_pair(key, pin_id));
 
         //Determine if a name for this pin is already stored
         // We expect names to not be unique amoung pins, so we
         // store each pin name once, and each pin reference the name by an ID
-        AtomPinNameId pin_name_id = find_pin_name_id(pin_name);
+        AtomPinNameId pin_name_id = find_pin_name_id(name);
         if(pin_name_id == INVALID_PIN_NAME_ID) {
             //Not found store name
             pin_name_id = pin_names_.size(); //Reserve a name id
-            pin_names_.push_back(pin_name); //Store the name
+            pin_names_.push_back(name); //Store the name
 
-            pin_name_to_name_id_.insert(std::make_pair(pin_name, pin_name_id)); //Store the reverse look-up
+            pin_name_to_name_id_.insert(std::make_pair(name, pin_name_id)); //Store the reverse look-up
         }
         pin_name_ids_.push_back(pin_name_id); //Store the pin to name_id look-up
+
+        //Add the pin to the net
+        if(atom_pin_type == AtomPinType::DRIVER) {
+            VTR_ASSERT(net_pins_[net_id].size() > 0); //Space reserved
+            VTR_ASSERT(net_pins_[net_id][0] == INVALID_ATOM_PIN); //No existing driver
+            
+            net_pins_[net_id][0] = pin_id;
+        } else {
+            net_pins_[net_id].emplace_back(pin_id);
+        }
 
         //Add the pin to the block pin look-up
         // We first need to figure the pin type and block
@@ -288,8 +315,9 @@ AtomPinId AtomNetlist::create_pin (const AtomBlkId blk_id, const AtomNetId net_i
     VTR_ASSERT(pin_blocks_[pin_id] == blk_id);
     VTR_ASSERT(pin_nets_[pin_id] == net_id);
     VTR_ASSERT(pin_types_[pin_id] == atom_pin_type);
-    VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == pin_name);
-    VTR_ASSERT(find_pin(blk_id, net_id, atom_pin_type, pin_name) == pin_id);
+    VTR_ASSERT(pin_names_[pin_name_ids_[pin_id]] == name);
+    VTR_ASSERT(find_pin(blk_id, net_id, atom_pin_type, name) == pin_id);
+    VTR_ASSERT_SAFE_MSG(std::count(net_pins_[net_id].begin(), net_pins_[net_id].end(), pin_id) == 1, "Invalid net (missing or duplicate pin)");
 
     return pin_id;
 }
@@ -304,5 +332,53 @@ AtomNetlist::AtomPinNameId AtomNetlist::find_pin_name_id(const std::string& name
         return iter->second;
     } else {
         return INVALID_PIN_NAME_ID;
+    }
+}
+
+void print_netlist(FILE* f, const AtomNetlist& netlist) {
+
+    std::multimap<AtomBlkType,AtomBlkId> blocks_by_type;
+    for(AtomBlkId blk_id : netlist.blocks()) {
+        blocks_by_type.insert({netlist.block_type(blk_id), blk_id});
+    }
+
+    for(auto kv : blocks_by_type) {
+        AtomBlkType type = kv.first;
+        AtomBlkId blk_id = kv.second;
+        const t_model* model = netlist.block_model(blk_id);
+        fprintf(f, "Block %s", model->name);
+        fprintf(f, " (");
+        switch(type) {
+            case AtomBlkType::INPAD : fprintf(f, "INPAD"); break;
+            case AtomBlkType::OUTPAD: fprintf(f, "OUTPAD"); break;
+            case AtomBlkType::COMBINATIONAL: fprintf(f, "COMBINATIONAL"); break;
+            case AtomBlkType::SEQUENTIAL: fprintf(f, "SEQUENTIAL"); break;
+            default: VTR_ASSERT_MSG(false, "Unrecognzied AtomBlkType");
+        }
+        fprintf(f, "):");
+        fprintf(f, " %s\n", netlist.block_name(blk_id).c_str());
+
+        for(auto pin_id : netlist.block_input_pins(blk_id)) {
+            fprintf(f, "\tInput %s <- %s\n", netlist.pin_name(pin_id).c_str(), netlist.net_name(netlist.pin_net(pin_id)).c_str());
+        }
+        for(auto pin_id : netlist.block_output_pins(blk_id)) {
+            fprintf(f, "\tOutput %s -> %s\n", netlist.pin_name(pin_id).c_str(), netlist.net_name(netlist.pin_net(pin_id)).c_str());
+        }
+    }
+
+    for(auto net_id : netlist.nets()) {
+        auto sinks = netlist.net_sinks(net_id);
+        fprintf(f, "Net %s (fanout %zu)\n", netlist.net_name(net_id).c_str(), sinks.size());
+
+        AtomPinId driver_pin_id = netlist.net_driver(net_id);
+        if(driver_pin_id != INVALID_ATOM_PIN) {
+            printf("\tDriver: %s %s\n", netlist.block_name(netlist.pin_block(driver_pin_id)).c_str(), netlist.pin_name(driver_pin_id).c_str());
+        } else {
+            printf("\tDriver: \n");
+        }
+
+        for(auto sink_pin_id : sinks) {
+            printf("\tSink  : %s %s\n", netlist.block_name(netlist.pin_block(sink_pin_id)).c_str(), netlist.pin_name(sink_pin_id).c_str());
+        }
     }
 }

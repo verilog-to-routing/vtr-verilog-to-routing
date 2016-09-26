@@ -22,15 +22,15 @@ enum class AtomPinType {
     SINK
 };
 
-enum class AtomBlockType {
+enum class AtomBlkType {
     INPAD,
     OUTPAD,
     COMBINATIONAL,
     SEQUENTIAL
 };
 
-//Make a tuple of AtomBlkId, AtomNetId and AtomPinType std::string hashable so we can use std::unordered_map
 namespace std {
+    //Make a tuple of AtomBlkId, AtomNetId and AtomPinType std::string hashable so we can use std::unordered_map
     template<>
     struct hash<std::tuple<AtomBlkId,AtomNetId,AtomPinType,std::string>> {
         std::size_t operator()(const std::tuple<AtomBlkId,AtomNetId,AtomPinType,std::string>& k) const {
@@ -60,16 +60,17 @@ class AtomNetlist {
 
         //Block
         const std::string&          block_name          (const AtomBlkId id) const;
-        AtomBlockType               block_type          (const AtomBlkId id) const;
+        AtomBlkType               block_type          (const AtomBlkId id) const;
         const t_model*              block_model         (const AtomBlkId id) const;
         const TruthTable&           block_truth_table   (const AtomBlkId id) const; 
         vtr::Range<pin_iterator>    block_input_pins    (const AtomBlkId id) const;
         vtr::Range<pin_iterator>    block_output_pins   (const AtomBlkId id) const;
 
         //Pin
-        AtomBlkId   pin_block   (const AtomPinId id) const; 
-        AtomNetId   pin_net     (const AtomPinId id) const; 
-        AtomPinType pin_type    (const AtomPinId id) const; 
+        AtomBlkId           pin_block   (const AtomPinId id) const; 
+        AtomNetId           pin_net     (const AtomPinId id) const; 
+        AtomPinType         pin_type    (const AtomPinId id) const; 
+        const std::string&  pin_name    (const AtomPinId id) const; 
 
         //Net
         const std::string&          net_name    (const AtomNetId id) const; 
@@ -89,7 +90,7 @@ class AtomNetlist {
 
     public: //Public Mutators
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
-        AtomBlkId   create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
+        AtomBlkId   create_block(const std::string name, const AtomBlkType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
         AtomNetId   create_net  (const std::string name);
         AtomPinId   create_pin  (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType pin_type, const std::string name);
 
@@ -116,7 +117,7 @@ class AtomNetlist {
 
         std::vector<AtomBlkId>      block_ids_;      //Valid block ids
         std::vector<std::string>    block_names_;    //Name of each block
-        std::vector<AtomBlockType>  block_types_;    //Type of each block
+        std::vector<AtomBlkType>  block_types_;    //Type of each block
         std::vector<const t_model*> block_models_;   //Architecture model of each block
         std::vector<TruthTable>     block_truth_tables_; //Truth tables of each block
 
@@ -141,5 +142,7 @@ class AtomNetlist {
         std::vector<std::vector<AtomPinId>> block_input_pins_;
         std::vector<std::vector<AtomPinId>> block_output_pins_;
 };
+
+void print_netlist(FILE* f, const AtomNetlist& netlist);
 
 #endif

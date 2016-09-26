@@ -149,7 +149,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             std::string pin_name = blk_model->outputs->name;
             for(const auto& input : input_names) {
-                AtomBlkId blk_id = curr_model().create_block(input, AtomBlockType::INPAD, blk_model);
+                AtomBlkId blk_id = curr_model().create_block(input, AtomBlkType::INPAD, blk_model);
                 AtomNetId net_id = curr_model().create_net(input);
                 curr_model().create_pin(blk_id, net_id, AtomPinType::DRIVER, pin_name);
             }
@@ -167,7 +167,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             for(const auto& output : output_names) {
                 //Since we name blocks based on thier drivers we need to uniquify outpad names,
                 //which we do with a prefix
-                AtomBlkId blk_id = curr_model().create_block(OUTPAD_NAME_PREFIX + output, AtomBlockType::OUTPAD, blk_model);
+                AtomBlkId blk_id = curr_model().create_block(OUTPAD_NAME_PREFIX + output, AtomBlkType::OUTPAD, blk_model);
                 AtomNetId net_id = curr_model().create_net(output);
                 curr_model().create_pin(blk_id, net_id, AtomPinType::SINK, pin_name);
             }
@@ -186,7 +186,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             VTR_ASSERT_MSG(!blk_model->outputs->next, ".names model has multiple output ports");
             VTR_ASSERT_MSG(blk_model->outputs->size == 1, ".names model has non-single-bit output");
 
-            //Conver the single-output cover to a netlist truth table
+            //Convert the single-output cover to a netlist truth table
             AtomNetlist::TruthTable truth_table;
             for(const auto& row : so_cover) {
                 truth_table.emplace_back();
@@ -195,7 +195,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
             }
 
-            AtomBlkId blk_id = curr_model().create_block(nets[nets.size()-1], AtomBlockType::COMBINATIONAL, blk_model, truth_table);
+            AtomBlkId blk_id = curr_model().create_block(nets[nets.size()-1], AtomBlkType::COMBINATIONAL, blk_model, truth_table);
 
             //Create inputs
             for(size_t i = 0; i < nets.size() - 1; ++i) {
@@ -205,7 +205,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             //Create output
             AtomNetId net_id = curr_model().create_net(nets[nets.size()-1]);
-            curr_model().create_pin(blk_id, net_id, AtomPinType::SINK, blk_model->outputs->name + std::to_string(nets.size()-1));
+            curr_model().create_pin(blk_id, net_id, AtomPinType::DRIVER, blk_model->outputs->name);
         }
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
@@ -238,7 +238,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             AtomNetlist::TruthTable truth_table(1);
             truth_table[0].push_back(to_vtr_logic_value(init));
 
-            AtomBlkId blk_id = curr_model().create_block(output, AtomBlockType::SEQUENTIAL, blk_model, truth_table);
+            AtomBlkId blk_id = curr_model().create_block(output, AtomBlkType::SEQUENTIAL, blk_model, truth_table);
 
             //The input
             AtomNetId in_net_id = curr_model().create_net(input);
@@ -246,7 +246,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             //The output
             AtomNetId out_net_id = curr_model().create_net(output);
-            curr_model().create_pin(blk_id, out_net_id, AtomPinType::SINK, output_pin_name);
+            curr_model().create_pin(blk_id, out_net_id, AtomPinType::DRIVER, output_pin_name);
 
             //The clock
             AtomNetId clk_net_id = curr_model().create_net(control);
@@ -257,10 +257,24 @@ struct BlifAllocCallback : public blifparse::Callback {
             VTR_ASSERT(ports.size() == nets.size());
 
             const t_model* blk_model = find_model(subckt_model);
-            std::string first_output_name = "";
+
+            std::string first_output_name;
+            for(size_t i = 0; i < ports.size(); ++i) {
+                const t_model_ports* model_port = find_model_port(blk_model, ports[i]);
+                VTR_ASSERT(model_port);
+
+                //Determine the pin type
+                if(model_port->dir == OUT_PORT) {
+                    first_output_name = nets[i];
+                    break;
+                }
+            }
+            if(first_output_name.empty()) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Found no output pin on .subckt");
+            }
 
 
-            AtomBlockType blk_type = determine_block_type(blk_model);
+            AtomBlkType blk_type = determine_block_type(blk_model);
 
             AtomBlkId blk_id = curr_model().create_block(first_output_name, blk_type, blk_model);
 
@@ -276,7 +290,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 //Determine the pin type
                 AtomPinType pin_type = AtomPinType::SINK;
                 if(model_port->dir == OUT_PORT) {
-                    pin_type = AtomPinType::SINK;
+                    pin_type = AtomPinType::DRIVER;
                 } else {
                     VTR_ASSERT_MSG(model_port->dir == IN_PORT, "Unexpected port type");
                 }
@@ -287,9 +301,11 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         void blackbox() override {
+            //We treat black-boxes as netlists during parsing so they should contain
+            //only inpads/outpads
             for(const auto& blk_id : curr_model().blocks()) {
                 auto blk_type = curr_model().block_type(blk_id);
-                if(!(blk_type == AtomBlockType::INPAD || blk_type == AtomBlockType::OUTPAD)) {
+                if(!(blk_type == AtomBlkType::INPAD || blk_type == AtomBlkType::OUTPAD)) {
                     vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected primitives in blackbox model");
                 }
             }
@@ -354,11 +370,11 @@ struct BlifAllocCallback : public blifparse::Callback {
                       name.c_str());
         }
 
-        AtomBlockType determine_block_type(const t_model* blk_model) {
+        AtomBlkType determine_block_type(const t_model* blk_model) {
             if(blk_model->name == std::string("input")) {
-                return AtomBlockType::INPAD;
+                return AtomBlkType::INPAD;
             } else if(blk_model->name == std::string("output")) {
-                return AtomBlockType::OUTPAD;
+                return AtomBlkType::OUTPAD;
             } else {
                 //Determine if combinational or sequential.
                 // We loop through the inputs looking for clocks
@@ -373,9 +389,9 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
 
                 if(clk_count == 0) {
-                    return AtomBlockType::COMBINATIONAL;
+                    return AtomBlkType::COMBINATIONAL;
                 } else if (clk_count == 1) {
-                    return AtomBlockType::SEQUENTIAL;
+                    return AtomBlkType::SEQUENTIAL;
                 } else {
                     VTR_ASSERT(clk_count > 1);
                     vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Primitive '%s' has multiple clocks (currently unsupported)\n",
@@ -485,7 +501,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
 
                 //Check that the port directions match
-                if(blif_model.block_type(blk_id) == AtomBlockType::INPAD) {
+                if(blif_model.block_type(blk_id) == AtomBlkType::INPAD) {
 
                     const auto& input_name = blif_model.block_name(blk_id);
 
@@ -495,7 +511,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                     VTR_ASSERT(arch_model_port->dir == IN_PORT);
 
                 } else {
-                    VTR_ASSERT(blif_model.block_type(blk_id) == AtomBlockType::OUTPAD);
+                    VTR_ASSERT(blif_model.block_type(blk_id) == AtomBlkType::OUTPAD);
 
                     auto raw_output_name = blif_model.block_name(blk_id);
 
@@ -512,7 +528,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
     private:
-        bool ended_ = false;
+        bool ended_ = true; //Initially no active .model
         std::string filename_;
         int lineno_;
 
@@ -553,6 +569,9 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     auto netlist = alloc_callback.netlist();
+
+    print_netlist(stdout, netlist);
+    std::exit(1);
 }
 
 static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
