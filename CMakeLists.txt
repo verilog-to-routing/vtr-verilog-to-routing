@@ -187,6 +187,14 @@ message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 
 #
+# Titan Benchmarks
+#
+add_custom_target(get_titan_benchmarks
+    COMMAND ./vtr_flow/scripts/download_titan.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
+
+#
 # ABC as external
 #
 
