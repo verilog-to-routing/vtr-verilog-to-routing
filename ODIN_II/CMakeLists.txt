@@ -16,12 +16,12 @@ bison_target(VerilogParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog
 add_flex_bison_dependency(VerilogLexer VerilogParser)
 
 #Get the include directories for the generated headers
-headers_to_include_dirs(BISON_VerilogParser_OUTPUT_HEADER PARSER_INCLUDE_DIRS)
+files_to_dirs(BISON_VerilogParser_OUTPUT_HEADER PARSER_INCLUDE_DIRS)
 
 #Collect the source files
 file(GLOB_RECURSE EXEC_SOURCES SRC/*.c)
 file(GLOB_RECURSE EXEC_HEADERS SRC/*.h)
-headers_to_include_dirs(EXEC_HEADERS EXEC_INCLUDE_DIRS)
+files_to_dirs(EXEC_HEADERS EXEC_INCLUDE_DIRS)
 
 #Treat .c as CXX
 set_source_files_properties(${EXEC_SOURCES} ${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)

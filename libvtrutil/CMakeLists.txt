@@ -39,7 +39,7 @@ add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
 #
 file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*.hpp src/*.h)
-headers_to_include_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
+files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 #Add the version file to the sources
 list(APPEND LIB_SOURCES ${VTR_VERSION_FILE_OUT})

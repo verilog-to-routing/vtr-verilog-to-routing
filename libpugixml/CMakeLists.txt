@@ -4,7 +4,7 @@ project("libpugixml")
 
 file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*.hpp)
-headers_to_include_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
+files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
 
 #Create the library

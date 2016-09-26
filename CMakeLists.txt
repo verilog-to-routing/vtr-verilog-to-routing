@@ -28,7 +28,7 @@ set(VTR_VERSION_PRERELEASE "dev")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
-include(HeadersToIncludeDirs)
+include(FilesToDirs)
 
 #
 #
