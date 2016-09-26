@@ -197,57 +197,81 @@ add_custom_target(get_titan_benchmarks
 #
 # ABC as external
 #
+#add_executable(abc IMPORTED GLOBAL)
+#add_library(libabc STATIC IMPORTED GLOBAL)
+#set_property(TARGET libabc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/libabc.a)
+#set_property(TARGET abc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/abc)
+#install(FILES ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
+#install(PROGRAMS ${ABC_SOURCE_DIR}/abc DESTINATION bin)
 
 #We build ABC as an external project using it's own makefile
-set(ABC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support)
-include(ExternalProject)
-ExternalProject_Add(abc_external
-    SOURCE_DIR ${ABC_SOURCE_DIR}
-    CONFIGURE_COMMAND ""
-    #Use $(MAKE) to enable parallel build
-    BUILD_COMMAND $(MAKE) abc libabc.a
-    BUILD_IN_SOURCE 1
-    LOG_BUILD 0
-    INSTALL_COMMAND ""
-    TEST_COMMAND ""
-)
+#set(ABC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support)
+#message("ABC_SOURCE_DIR ${ABC_SOURCE_DIR}")
+#add_custom_target(abc_build
+    #COMMAND $(MAKE) abc
+    #VERBATIM
+    #WORKING_DIRECTORY ${ABC_SOURCE_DIR}
+    #COMMENT "Building abc")
+#add_custom_target(libabc_build
+    #COMMAND $(MAKE) libabc
+    #WORKING_DIRECTORY ${ABC_SOURCE_DIR}
+    #COMMENT "Building libabc")
+
+add_custom_target(abc_build
+    COMMAND $(MAKE) abc libabc.a
+    WORKING_DIRECTORY ${ABC_SOURCE_DIR}
+    COMMENT "Building abc")
+#add_custom_command(OUTPUT ../abc_with_bb_support/abc
+    #COMMAND $(MAKE) abc
+    #WORKING_DIRECTORY ${ABC_SOURCE_DIR}
+    #COMMENT "Building abc")
+#add_custom_command(OUTPUT ${ABC_SOURCE_DIR}/libabc.a
+    #COMMAND $(MAKE) libabc
+    #WORKING_DIRECTORY ${ABC_SOURCE_DIR}
+    #COMMENT "Building libabc")
+
+#include(ExternalProject)
+#ExternalProject_Add(abc_external
+    #SOURCE_DIR ${ABC_SOURCE_DIR}
+    #CONFIGURE_COMMAND ""
+    ##Use $(MAKE) to enable parallel build
+    #BUILD_COMMAND $(MAKE) abc libabc.a
+    #BUILD_IN_SOURCE 1
+    #LOG_BUILD 0
+    #INSTALL_COMMAND ""
+    #TEST_COMMAND ""
+#)
 
 #Import the generated exec and library
-add_executable(abc IMPORTED GLOBAL)
-add_library(libabc STATIC IMPORTED GLOBAL)
-set_property(TARGET libabc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/libabc.a)
-set_property(TARGET abc PROPERTY IMPORTED_LOCATION ${ABC_SOURCE_DIR}/abc)
-install(FILES ${ABC_SOURCE_DIR}/libabc.a DESTINATION bin)
-install(PROGRAMS ${ABC_SOURCE_DIR}/abc DESTINATION bin)
 
 #Point at the required include directories
-include_directories(
-                    #For ODIN
-                    ${ABC_SOURCE_DIR}/src/bdd/cudd 
-                    ${ABC_SOURCE_DIR}/src/bdd/epd 
-                    ${ABC_SOURCE_DIR}/src/bdd/mtr 
-                    ${ABC_SOURCE_DIR}/src/misc/st
-                    #For ACE
-                    ${ABC_SOURCE_DIR}/src/base/io 
-                    ${ABC_SOURCE_DIR}/src/base/abc 
-                    ${ABC_SOURCE_DIR}/src/base/main 
-                    ${ABC_SOURCE_DIR}/src/base/cmd 
-                    ${ABC_SOURCE_DIR}/src/misc/vec 
-                    ${ABC_SOURCE_DIR}/src/misc/util 
-                    ${ABC_SOURCE_DIR}/src/misc/st 
-                    ${ABC_SOURCE_DIR}/src/misc/extra 
-                    ${ABC_SOURCE_DIR}/src/misc/espresso 
-                    ${ABC_SOURCE_DIR}/src/misc/nm 
-                    ${ABC_SOURCE_DIR}/src/aig/aig 
-                    ${ABC_SOURCE_DIR}/src/aig/hop 
-                    ${ABC_SOURCE_DIR}/src/aig/mem 
-                    ${ABC_SOURCE_DIR}/src/aig/fra 
-                    ${ABC_SOURCE_DIR}/src/aig/dar 
-                    ${ABC_SOURCE_DIR}/src/bdd/cudd 
-                    ${ABC_SOURCE_DIR}/src/bdd/mtr 
-                    ${ABC_SOURCE_DIR}/src/bdd/epd 
-                    ${ABC_SOURCE_DIR}/src/map/if 
-                    ${ABC_SOURCE_DIR}/src/sat/bsat)
+#include_directories(
+                    ##For ODIN
+                    #${ABC_SOURCE_DIR}/src/bdd/cudd 
+                    #${ABC_SOURCE_DIR}/src/bdd/epd 
+                    #${ABC_SOURCE_DIR}/src/bdd/mtr 
+                    #${ABC_SOURCE_DIR}/src/misc/st
+                    ##For ACE
+                    #${ABC_SOURCE_DIR}/src/base/io 
+                    #${ABC_SOURCE_DIR}/src/base/abc 
+                    #${ABC_SOURCE_DIR}/src/base/main 
+                    #${ABC_SOURCE_DIR}/src/base/cmd 
+                    #${ABC_SOURCE_DIR}/src/misc/vec 
+                    #${ABC_SOURCE_DIR}/src/misc/util 
+                    #${ABC_SOURCE_DIR}/src/misc/st 
+                    #${ABC_SOURCE_DIR}/src/misc/extra 
+                    #${ABC_SOURCE_DIR}/src/misc/espresso 
+                    #${ABC_SOURCE_DIR}/src/misc/nm 
+                    #${ABC_SOURCE_DIR}/src/aig/aig 
+                    #${ABC_SOURCE_DIR}/src/aig/hop 
+                    #${ABC_SOURCE_DIR}/src/aig/mem 
+                    #${ABC_SOURCE_DIR}/src/aig/fra 
+                    #${ABC_SOURCE_DIR}/src/aig/dar 
+                    #${ABC_SOURCE_DIR}/src/bdd/cudd 
+                    #${ABC_SOURCE_DIR}/src/bdd/mtr 
+                    #${ABC_SOURCE_DIR}/src/bdd/epd 
+                    #${ABC_SOURCE_DIR}/src/map/if 
+                    #${ABC_SOURCE_DIR}/src/sat/bsat)
 
 #
 # Sub-projects
@@ -261,6 +285,7 @@ add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
 add_subdirectory(libeasygl)
 add_subdirectory(vpr)
+add_subdirectory(abc_with_bb_support)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
