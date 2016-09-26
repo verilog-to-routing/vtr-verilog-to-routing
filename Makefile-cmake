@@ -17,6 +17,10 @@
 #    debug
 BUILD_TYPE = release
 
+#Allows users to pass parameters to cmake
+#  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
+CMAKE_PARAMS = ""
+
 #Suppress makefile output (e.g. entering/leaving directories)
 MAKEFLAGS := -s 
 
@@ -51,7 +55,7 @@ ifndef CMAKE
 endif
 	@ mkdir -p $(BUILD_DIR)
 	echo "cd $(BUILD_DIR) && $(CMAKE) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) .. "
-	cd $(BUILD_DIR) && $(CMAKE) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
+	cd $(BUILD_DIR) && $(CMAKE) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) $(CMAKE_PARAMS) .. 
 
 #Forward any targets that are not named 'distclean' to the generated Makefile
 ifeq ($(findstring distclean,$(MAKECMDGOALS)),)
