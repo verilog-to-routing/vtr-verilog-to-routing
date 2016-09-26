@@ -6,16 +6,18 @@
 #include "vtr_range.h"
 #include "vtr_hash.h"
 #include "vtr_logic.h"
+#include "vtr_strong_id.h"
 
 #include "logic_types.h" //For t_model
 
-typedef int AtomBlkId;
-typedef int AtomNetId;
-typedef int AtomPinId;
+//Type tags for Ids
+struct atom_blk_id_tag;
+struct atom_net_id_tag;
+struct atom_pin_id_tag;
 
-constexpr AtomBlkId INVALID_ATOM_BLK = -1;
-constexpr AtomNetId INVALID_ATOM_NET = -1;
-constexpr AtomPinId INVALID_ATOM_PIN = -1;
+typedef vtr::StrongId<atom_blk_id_tag> AtomBlkId;
+typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
+typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
 
 enum class AtomPinType {
     DRIVER,
@@ -88,6 +90,9 @@ class AtomNetlist {
         AtomPinId   find_pin    (const AtomBlkId blk_id, const AtomNetId net_id, const AtomPinType pin_type, const std::string& pin_name) const;
         AtomBlkId   find_block  (const std::string& name) const;
 
+        //Sanity check for internal consistency
+        bool verify() const;
+
     public: //Public Mutators
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
         AtomBlkId   create_block(const std::string name, const AtomBlkType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
@@ -121,7 +126,7 @@ class AtomNetlist {
         std::vector<const t_model*> block_models_;   //Architecture model of each block
         std::vector<TruthTable>     block_truth_tables_; //Truth tables of each block
 
-        std::vector<AtomBlkId>      pin_ids_;        //Valid pin ids
+        std::vector<AtomPinId>      pin_ids_;        //Valid pin ids
         std::vector<AtomBlkId>      pin_blocks_;     //Block associated with each pin
         std::vector<AtomNetId>      pin_nets_;       //Net associated with each pin
         std::vector<AtomPinType>    pin_types_;      //Type of each pin
