@@ -337,11 +337,13 @@ AtomNetlist::AtomPinNameId AtomNetlist::find_pin_name_id(const std::string& name
 
 void print_netlist(FILE* f, const AtomNetlist& netlist) {
 
+    //Build a map of the blocks by type
     std::multimap<AtomBlkType,AtomBlkId> blocks_by_type;
     for(AtomBlkId blk_id : netlist.blocks()) {
         blocks_by_type.insert({netlist.block_type(blk_id), blk_id});
     }
 
+    //Iterating through the map ensures blocks of the same type are printed together
     for(auto kv : blocks_by_type) {
         AtomBlkType type = kv.first;
         AtomBlkId blk_id = kv.second;
@@ -366,6 +368,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
         }
     }
 
+    //Print out per-net information
     for(auto net_id : netlist.nets()) {
         auto sinks = netlist.net_sinks(net_id);
         fprintf(f, "Net %s (fanout %zu)\n", netlist.net_name(net_id).c_str(), sinks.size());
