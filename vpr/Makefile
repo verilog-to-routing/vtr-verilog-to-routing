@@ -29,6 +29,7 @@ OBJ_DIR = OBJ
 OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/draw -ISRC/route -ISRC/power 
 OTHER_DIR := $(OTHER_DIR) \
 	-I../libsdcparse/src \
+	-I../libblifparse/src \
 	-I../liblog/src \
 	-I../libeasygl/src \
 	$(shell pkg-config --cflags freetype2)
