@@ -176,7 +176,7 @@ class StrongId {
         //Allow some explicit conversion to useful types
 
         //Allow explicit conversion to bool (e.g. if(id))
-        explicit operator bool() const { return *this == INVALID(); }
+        explicit operator bool() const { return *this != INVALID(); }
 
         //Allow explicit conversion to size_t (e.g. my_vector[size_t(strong_id)])
         explicit operator std::size_t() const { return static_cast<std::size_t>(id_); }
