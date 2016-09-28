@@ -84,7 +84,6 @@ class AtomNetlist {
     public: //Public Accessors
         //Netlist
         const std::string&  netlist_name() const;
-        bool                is_blackbox() const;
 
         //Block
         const std::string&          block_name          (const AtomBlockId id) const;
@@ -126,17 +125,24 @@ class AtomNetlist {
         AtomNetId   find_net    (const std::string& name) const;
 
         //Sanity check for internal consistency
-        bool verify() const;
+        void verify() const;
 
     public: //Public Mutators
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
         AtomBlockId create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
         AtomPortId  create_port (const AtomBlockId blk_id, const std::string& name);
         AtomPinId   create_pin  (const AtomPortId port_id, size_t port_bit, const AtomNetId net_id, const AtomPinType type);
-        AtomNetId   create_net  (const std::string name);
+        AtomNetId   create_net  (const std::string name); //An empty or existing net
+        AtomNetId   add_net  (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks); //A new fully-specified net
 
-        void set_blackbox(bool val);
-    
+        void remove_block(const AtomBlockId blk_id);
+        void remove_net(const AtomNetId net_id);
+        void remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id);
+
+        //Removes all blocks/ports/pins/nets which are marked as invalid
+        //Note: this will cause Ids to change!
+        void compress();
+
     private: //Private types
         struct atom_port_common_id_tag;
         typedef vtr::StrongId<atom_port_common_id_tag> AtomPortCommonId;
@@ -148,6 +154,8 @@ class AtomNetlist {
 
         //Mutators
         AtomPortCommonId create_port_common(const std::string& name, const AtomPortType type);
+        void remove_port(const AtomPortId port_id);
+        void remove_pin(const AtomPinId pin_id);
 
         //Sanity Checks
         bool valid_block_id(AtomBlockId id) const;
@@ -156,11 +164,15 @@ class AtomNetlist {
         bool valid_pin_id(AtomPinId id) const;
         bool valid_net_id(AtomNetId id) const;
 
+        void validate_blocks() const;
+        void validate_ports() const;
+        void validate_pins() const;
+        void validate_nets() const;
+
     private: //Private data
 
         //Netlist data
         std::string                 netlist_name_;   //Name of the top-level netlist
-        bool                        is_blackbox_;    //Indicates this netlist is a black box
 
         //Block data
         std::vector<AtomBlockId>             block_ids_;      //Valid block ids
@@ -186,7 +198,6 @@ class AtomNetlist {
         std::vector<AtomPinId>      pin_ids_;        //Valid pin ids
         std::vector<AtomPortId>     pin_ports_;      //Type of each pin
         std::vector<size_t>         pin_port_bits_;  //The ports bit position in the port
-        //std::vector<AtomPinType>    pin_types_;      //Type of each pin
         std::vector<AtomNetId>      pin_nets_;       //Net associated with each pin
 
         //Net data
@@ -202,7 +213,5 @@ class AtomNetlist {
         std::unordered_map<std::string,AtomNetId> net_name_to_net_id_;
         std::unordered_map<std::tuple<std::string,AtomPortType>,AtomPortCommonId> port_name_type_to_common_id_;
 };
-
-void print_netlist(FILE* f, const AtomNetlist& netlist);
 
 #endif

@@ -6,6 +6,7 @@ using namespace std;
 
 #include "blifparse.hpp"
 #include "netlist2.h"
+#include "netlist2_utils.h"
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -136,6 +137,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         void start_model(std::string model_name) override { 
             //Create a new model, and set it's name
             blif_models_.emplace_back(model_name);
+            blif_models_black_box_.emplace_back(false);
             ended_ = false;
         }
 
@@ -328,7 +330,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                     vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected primitives in blackbox model");
                 }
             }
-            curr_model().set_blackbox(true);
+            set_curr_model_blackbox(true);
         }
 
         void end_model() override {
@@ -349,11 +351,13 @@ struct BlifAllocCallback : public blifparse::Callback {
             int top_model_idx = -1; //Not valid
 
             for(int i = 0; i < static_cast<int>(blif_models_.size()); ++i) {
-                if(!blif_models_[i].is_blackbox()) {
+                if(!blif_models_black_box_[i]) {
                     //A non-blackbox model
                     if(top_model_idx == -1) {
+                        //This is the top model
                         top_model_idx = i;
                     } else {
+                        //We already have a top model
                         vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
                                 "Found multiple models with primitives. "
                                 "Only one model can contain primitives, the others must be blackboxes.");
@@ -517,6 +521,11 @@ struct BlifAllocCallback : public blifparse::Callback {
             return blif_models_[blif_models_.size()-1]; 
         }
 
+        void set_curr_model_blackbox(bool val) {
+            VTR_ASSERT(blif_models_.size() == blif_models_black_box_.size());
+            blif_models_black_box_[blif_models_black_box_.size()-1] = val;
+        }
+
         bool verify_blackbox_model(AtomNetlist& blif_model) {
             const t_model* arch_model = find_model(blif_model.netlist_name());
 
@@ -560,6 +569,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         int lineno_;
 
         std::vector<AtomNetlist> blif_models_;
+        std::vector<bool> blif_models_black_box_;
 
         const t_model* user_arch_models_;
         const t_model* library_arch_models_;
@@ -598,6 +608,8 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     auto netlist = alloc_callback.netlist();
+
+    absorb_buffer_luts(netlist);
 
     print_netlist(stdout, netlist);
     std::exit(1);
@@ -2375,17 +2387,6 @@ void read_and_process_blif(const char *blif_file,
 	read_blif2(blif_file, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
 #endif
-
-	/* TODO: Do check blif here 
-	 eg. 
-	 for (i = 0; i < num_logical_blocks; i++) {
-	 if (logical_block[i].model->num_inputs > max_subblock_inputs) {
-	 vtr::printf_error(__FILE__, __LINE__, 
-	 "logical_block %s of model %s has %d inputs but architecture only supports subblocks up to %d inputs.\n",
-	 logical_block[i].name, logical_block[i].model->name, logical_block[i].model->num_inputs, max_subblock_inputs);
-	 }
-	 }
-	 */
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_BLIF_INPUT)) {
 		echo_input(blif_file, getEchoFileName(E_ECHO_BLIF_INPUT),
