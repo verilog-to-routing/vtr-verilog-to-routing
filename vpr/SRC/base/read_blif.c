@@ -609,6 +609,7 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 
     auto netlist = alloc_callback.netlist();
 
+    netlist.verify();
     
     //Clean-up lut buffers
     absorb_buffer_luts(netlist);
@@ -624,6 +625,8 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 
     //Compress the netlist to clean-out invalid entries
     netlist.compress();
+
+    netlist.verify();
 
     print_netlist(stdout, netlist);
     std::exit(1);

@@ -97,6 +97,7 @@ class AtomNetlist {
 
         //Port
         const std::string&          port_name   (const AtomPortId id) const;
+        size_t                      port_width  (const AtomPortId id) const;
         AtomBlockId                 port_block  (const AtomPortId id) const; 
         AtomPortType                port_type   (const AtomPortId id) const; 
         vtr::Range<pin_iterator>    port_pins   (const AtomPortId id) const;
@@ -127,6 +128,9 @@ class AtomNetlist {
         //Sanity check for internal consistency
         void verify() const;
 
+        //Indictes if the netlist has invalid entries due to modification
+        bool dirty() const;
+
     public: //Public Mutators
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
         AtomBlockId create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
@@ -151,11 +155,23 @@ class AtomNetlist {
         //Lookups
         AtomPortCommonId find_port_common_id(const std::string& name, const AtomPortType type) const;
         AtomPortCommonId find_port_common_id(const AtomPortId id) const;
+        const t_model_ports* find_port_model(const AtomPortId id, const std::string& name) const;
 
         //Mutators
         AtomPortCommonId create_port_common(const std::string& name, const AtomPortType type);
         void remove_port(const AtomPortId port_id);
         void remove_pin(const AtomPinId pin_id);
+
+        //Netlist compression
+        std::vector<AtomBlockId> clean_blocks();
+        std::vector<AtomPortId> clean_ports();
+        std::vector<AtomPinId> clean_pins();
+        std::vector<AtomNetId> clean_nets();
+
+        void rebuild_block_refs(const std::vector<AtomPortId>& port_id_map);
+        void rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map);
+        void rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, const std::vector<AtomNetId>& net_id_map);
+        void rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map);
 
         //Sanity Checks
         bool valid_block_id(AtomBlockId id) const;
@@ -173,6 +189,7 @@ class AtomNetlist {
 
         //Netlist data
         std::string                 netlist_name_;   //Name of the top-level netlist
+        bool                        dirty_; //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
         std::vector<AtomBlockId>             block_ids_;      //Valid block ids
@@ -188,9 +205,10 @@ class AtomNetlist {
         std::vector<AtomPortId>             port_ids_;          //Valid port ids
         std::vector<AtomBlockId>            port_blocks_;       //Block associated with each port (indexed by AtomPortId)
         std::vector<std::vector<AtomPinId>> port_pins_;         //Pins associated with each port (indexed by AtomPortId)
+        std::vector<AtomPortCommonId>       port_common_ids_;   //Since ports have duplicate data we use another 'common' id 
+
         std::vector<std::string>            port_common_names_; //Port names (indexed by AtomPortCommonId)
         std::vector<AtomPortType>           port_common_types_; //Type of each port (indexed by AtomPortCommonId)
-        std::vector<AtomPortCommonId>       port_common_ids_;   //Since ports have duplicate data we use another 'common' id 
                                                                 // to look-up the shared info (indexed by AtomPortId)
         std::vector<AtomPortCommonId>       common_ids_;        //Valid common ids
 
