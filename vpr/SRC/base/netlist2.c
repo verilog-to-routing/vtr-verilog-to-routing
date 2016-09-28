@@ -289,6 +289,7 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const AtomBlockTyp
         block_name_to_block_id_.insert(std::make_pair(name, blk_id));
         block_input_ports_.emplace_back();
         block_output_ports_.emplace_back();
+        block_clock_ports_.emplace_back();
     }
 
     //Check post-conditions: size
@@ -365,6 +366,20 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
             }
         } else if(model_port->dir == OUT_PORT) {
             type = AtomPortType::OUTPUT;
+        } else {
+            VTR_ASSERT_MSG(false, "Recognized port type");
+        }
+
+        //Associate the port with the blocks inputs/outputs/clocks
+        if (type == AtomPortType::INPUT) {
+            block_input_ports_[size_t(blk_id)].push_back(port_id);
+
+        } else if (type == AtomPortType::OUTPUT) {
+            block_output_ports_[size_t(blk_id)].push_back(port_id);
+
+        } else if (type == AtomPortType::CLOCK) {
+            block_clock_ports_[size_t(blk_id)].push_back(port_id);
+
         } else {
             VTR_ASSERT_MSG(false, "Recognized port type");
         }
@@ -548,7 +563,9 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
         AtomBlockType type = kv.first;
         AtomBlockId blk_id = kv.second;
         const t_model* model = netlist.block_model(blk_id);
-        fprintf(f, "Block %s", model->name);
+
+        //Print the block model type and type
+        fprintf(f, "Block '%s'", model->name);
         fprintf(f, " (");
         switch(type) {
             case AtomBlockType::INPAD : fprintf(f, "INPAD"); break;
@@ -558,34 +575,85 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             default: VTR_ASSERT_MSG(false, "Recognzied AtomBlockType");
         }
         fprintf(f, "):");
+        //Print block name
         fprintf(f, " %s\n", netlist.block_name(blk_id).c_str());
 
-        /*
-         *for(auto pin_id : netlist.block_input_pins(blk_id)) {
-         *    fprintf(f, "\tInput %s <- %s\n", netlist.pin_name(pin_id).c_str(), netlist.net_name(netlist.pin_net(pin_id)).c_str());
-         *}
-         *for(auto pin_id : netlist.block_output_pins(blk_id)) {
-         *    fprintf(f, "\tOutput %s -> %s\n", netlist.pin_name(pin_id).c_str(), netlist.net_name(netlist.pin_net(pin_id)).c_str());
-         *}
-         */
+        //Print input ports
+        for(auto input_port : netlist.block_input_ports(blk_id)) {
+            auto pins = netlist.port_pins(input_port);
+            fprintf(f, "\tInput (%zu bits)\n", pins.size());
+            size_t i = 0;
+            for(auto pin : pins) {
+                fprintf(f, "\t\t%s[%zu] <-", netlist.port_name(input_port).c_str(), i);
+                if(pin) {
+                    fprintf(f, " %s", netlist.net_name(netlist.pin_net(pin)).c_str());
+                } else {
+                    fprintf(f, " ");
+                }
+                fprintf(f, "\n");
+                i++;
+            }
+        }
+
+        //Print output ports
+        for(auto output_port : netlist.block_output_ports(blk_id)) {
+            auto pins = netlist.port_pins(output_port);
+            fprintf(f, "\tOutput (%zu bits)\n", pins.size());
+            size_t i = 0;
+            for(auto pin : pins) {
+                fprintf(f, "\t\t%s[%zu] ->", netlist.port_name(output_port).c_str(), i);
+                if(pin) {
+                    fprintf(f, " %s", netlist.net_name(netlist.pin_net(pin)).c_str());
+                } else {
+                    fprintf(f, " ");
+                }
+                fprintf(f, "\n");
+                i++;
+            }
+        }
+
+        //Print clock ports
+        for(auto clock_port : netlist.block_clock_ports(blk_id)) {
+            auto pins = netlist.port_pins(clock_port);
+            fprintf(f, "\tClock (%zu bits)\n", pins.size());
+            size_t i = 0;
+            for(auto pin : pins) {
+                fprintf(f, "\t\t%s[%zu] <-", netlist.port_name(clock_port).c_str(), i);
+                if(pin) {
+                    fprintf(f, " %s", netlist.net_name(netlist.pin_net(pin)).c_str());
+                } else {
+                    fprintf(f, " ");
+                }
+                fprintf(f, "\n");
+                i++;
+            }
+        }
     }
 
     //Print out per-net information
     for(auto net_id : netlist.nets()) {
         auto sinks = netlist.net_sinks(net_id);
-        fprintf(f, "Net %s (fanout %zu)\n", netlist.net_name(net_id).c_str(), sinks.size());
+        //Net name and fanout
+        fprintf(f, "Net '%s' (fanout %zu)\n", netlist.net_name(net_id).c_str(), sinks.size());
 
-/*
- *        AtomPinId driver_pin_id = netlist.net_driver(net_id);
- *        if(driver_pin_id != AtomPinId::INVALID()) {
- *            printf("\tDriver: %s %s\n", netlist.block_name(netlist.pin_block(driver_pin_id)).c_str(), netlist.pin_name(driver_pin_id).c_str());
- *        } else {
- *            printf("\tDriver: \n");
- *        }
- *
- *        for(auto sink_pin_id : sinks) {
- *            printf("\tSink  : %s %s\n", netlist.block_name(netlist.pin_block(sink_pin_id)).c_str(), netlist.pin_name(sink_pin_id).c_str());
- *        }
- */
+        AtomPinId driver_pin = netlist.net_driver(net_id);
+        if(driver_pin) {
+            AtomPortId port = netlist.pin_port(driver_pin);
+            AtomBlockId pin_blk = netlist.pin_block(driver_pin);
+            AtomBlockId port_blk = netlist.port_block(port);
+            VTR_ASSERT(pin_blk == port_blk);
+            printf("\tDriver Block: '%s' Driver Pin: '%s[%zu]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(driver_pin));
+        } else {
+            printf("\tNo Driver\n");
+        }
+
+        for(AtomPinId sink_pin : sinks) {
+            VTR_ASSERT(sink_pin);
+            AtomPortId port = netlist.pin_port(sink_pin);
+            AtomBlockId pin_blk = netlist.pin_block(sink_pin);
+            AtomBlockId port_blk = netlist.port_block(port);
+            VTR_ASSERT(pin_blk == port_blk);
+            printf("\tSink Block: '%s' Sink Pin: '%s[%zu]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(sink_pin));
+        }
     }
 }
