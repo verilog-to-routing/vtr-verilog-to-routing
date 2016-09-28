@@ -639,25 +639,37 @@ void AtomNetlist::remove_pin(const AtomPinId pin_id) {
 }
 
 void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id) {
-    VTR_ASSERT(valid_net_id(net_id));
-    VTR_ASSERT(valid_pin_id(pin_id));
+    //Remove a net-pin connection
+    //
+    //Note that during sweeping either the net or pin could be invalid (i.e. already swept)
+    //so we check before trying to use them
+
+
+    //Warning: this is slow!
     //TODO: think about faster ways to do this, we could just mark it as invalid
     //      and use a custom iterator which skips invalid ID's allowing simple iteration
-    
-    //Warning: this is slow!
-    auto iter = std::find(net_pins_[size_t(net_id)].begin(), net_pins_[size_t(net_id)].end(), pin_id); //Linear search
-    VTR_ASSERT(iter != net_pins_[size_t(net_id)].end());
 
-    if(net_driver(net_id) == pin_id) {
-        //Mark no driver
-        net_pins_[size_t(net_id)][0] = AtomPinId::INVALID();
-    } else {
-        //Remove sink
-        net_pins_[size_t(net_id)].erase(iter); //Linear remove
+    if(valid_net_id(net_id)) {
+        auto iter = std::find(net_pins_[size_t(net_id)].begin(), net_pins_[size_t(net_id)].end(), pin_id); //Linear search
+        VTR_ASSERT(iter != net_pins_[size_t(net_id)].end());
+
+        if(net_driver(net_id) == pin_id) {
+            //Mark no driver
+            net_pins_[size_t(net_id)][0] = AtomPinId::INVALID();
+        } else {
+            //Remove sink
+            net_pins_[size_t(net_id)].erase(iter); //Linear remove
+        }
     }
 
     //Dissassociate the pin with the net
-    pin_nets_[size_t(pin_id)] = AtomNetId::INVALID();
+    if(valid_pin_id(pin_id)) {
+        pin_nets_[size_t(pin_id)] = AtomNetId::INVALID();
+    }
+}
+
+void AtomNetlist::compress() {
+
 }
 
 /*

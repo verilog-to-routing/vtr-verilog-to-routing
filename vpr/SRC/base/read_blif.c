@@ -609,7 +609,21 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 
     auto netlist = alloc_callback.netlist();
 
+    
+    //Clean-up lut buffers
     absorb_buffer_luts(netlist);
+
+    //Remove the special 'unconn' net
+    AtomNetId unconn_net_id = netlist.find_net("unconn");
+    if(unconn_net_id) {
+        netlist.remove_net(unconn_net_id);
+    }
+
+    //Sweep unused logic/nets/inputs/outputs
+    sweep_iterative(netlist, false);
+
+    //Compress the netlist to clean-out invalid entries
+    netlist.compress();
 
     print_netlist(stdout, netlist);
     std::exit(1);
