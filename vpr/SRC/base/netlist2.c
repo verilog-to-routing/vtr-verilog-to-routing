@@ -1,5 +1,6 @@
 #include "netlist2.h"
 #include <map>
+#include <algorithm>
 
 #include "vtr_assert.h"
 
@@ -323,6 +324,10 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
         port_id = AtomPortId(port_ids_.size());
         port_ids_.push_back(port_id);
 
+        //Save the reverse lookup
+        auto key = std::make_tuple(blk_id, name);
+        block_id_port_name_to_port_id_.insert({key, port_id});
+
         //Initialize the per-port-instance data
         port_blocks_.push_back(blk_id);
 
@@ -334,9 +339,14 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
             model_port = blk_ports;
             while(model_port) {
                 if(name == model_port->name) {
+                    //Found
                     break;
                 }
                 model_port = model_port->next;
+            }
+            if(model_port) {
+                //Found
+                break;
             }
         }
         VTR_ASSERT_MSG(model_port, "Found model port");
@@ -368,6 +378,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
     VTR_ASSERT(port_blocks_.size() == port_ids_.size());
     VTR_ASSERT(port_pins_.size() == port_ids_.size());
     VTR_ASSERT(port_common_ids_.size() == port_ids_.size());
+    VTR_ASSERT(block_id_port_name_to_port_id_.size() == port_ids_.size());
     
     //Check post-conditions: values
     VTR_ASSERT(valid_port_id(port_id));
@@ -384,8 +395,8 @@ AtomNetlist::AtomPortCommonId AtomNetlist::create_port_common(const std::string&
         //Not found, create
 
         //Reserve an id
-        common_id = AtomPortCommonId(port_common_ids_.size());
-        port_common_ids_.push_back(common_id);
+        common_id = AtomPortCommonId(common_ids_.size());
+        common_ids_.push_back(common_id);
 
         //Store the reverse look-up
         auto key = std::make_tuple(name, type);
@@ -397,9 +408,9 @@ AtomNetlist::AtomPortCommonId AtomNetlist::create_port_common(const std::string&
     }
 
     //Check post-conditions: sizes
-    VTR_ASSERT(port_common_names_.size() == port_common_ids_.size());
-    VTR_ASSERT(port_common_types_.size() == port_common_ids_.size());
-    VTR_ASSERT(port_name_type_to_common_id_.size() == port_common_ids_.size());
+    VTR_ASSERT(port_name_type_to_common_id_.size() == common_ids_.size());
+    VTR_ASSERT(port_common_names_.size() == common_ids_.size());
+    VTR_ASSERT(port_common_types_.size() == common_ids_.size());
 
     //Check post-conditions: values
     VTR_ASSERT(port_common_names_[size_t(common_id)] == name);

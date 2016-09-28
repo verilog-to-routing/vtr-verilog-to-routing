@@ -180,6 +180,7 @@ class AtomNetlist {
         std::vector<AtomPortType>           port_common_types_; //Type of each port (indexed by AtomPortCommonId)
         std::vector<AtomPortCommonId>       port_common_ids_;   //Since ports have duplicate data we use another 'common' id 
                                                                 // to look-up the shared info (indexed by AtomPortId)
+        std::vector<AtomPortCommonId>       common_ids_;        //Valid common ids
 
         //Pin data
         std::vector<AtomPinId>      pin_ids_;        //Valid pin ids

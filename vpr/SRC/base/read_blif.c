@@ -380,9 +380,14 @@ struct BlifAllocCallback : public blifparse::Callback {
                 arch_model = arch_models;
                 while(arch_model) {
                     if(name == arch_model->name) {
+                        //Found it
                         break;
                     }
                     arch_model = arch_model->next;
+                }
+                if(arch_model) {
+                    //Found it
+                    break;
                 }
             }
             if(!arch_model) {
