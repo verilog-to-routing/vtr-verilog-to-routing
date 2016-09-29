@@ -91,6 +91,7 @@ std::vector<T> move_valid(std::vector<T>& values, const std::vector<I>& pred) {
 template<typename T>
 std::vector<T> update_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
     std::vector<T> updated;
+    updated.reserve(values.size());
 
     for(size_t i = 0; i < values.size(); ++i) {
         if(values[i]) {
@@ -113,9 +114,35 @@ std::vector<T> update_refs(const std::vector<T>& values, const std::vector<T>& i
  *
  */
 
-AtomNetlist::AtomNetlist(std::string name)
+AtomNetlist::AtomNetlist(std::string name, size_t num_blocks, size_t num_pins, size_t num_nets)
     : netlist_name_(name)
-    , dirty_(false) {}
+    , dirty_(false) {
+
+    //Use counts as a reservation hint to reduce re-allocation
+    if(num_blocks > 0) {
+        block_names_.reserve(num_blocks); 
+        block_types_.reserve(num_blocks); 
+        block_models_.reserve(num_blocks); 
+        block_truth_tables_.reserve(num_blocks); 
+        block_input_ports_.reserve(num_blocks); 
+        block_output_ports_.reserve(num_blocks); 
+        block_clock_ports_.reserve(num_blocks); 
+        block_name_to_block_id_.reserve(num_blocks); 
+    }
+    if(num_pins > 0) {
+        pin_ids_.reserve(num_pins); 
+        pin_ports_.reserve(num_pins); 
+        pin_port_bits_.reserve(num_pins); 
+        pin_nets_.reserve(num_pins); 
+        pin_port_port_bit_to_pin_id_.reserve(num_pins);
+    }
+    if(num_nets > 0) {
+        net_ids_.reserve(num_nets); 
+        net_names_.reserve(num_nets); 
+        net_pins_.reserve(num_nets); 
+        net_name_to_net_id_.reserve(num_nets);
+    }
+}
 
 /*
  *
@@ -1010,7 +1037,7 @@ void AtomNetlist::rebuild_lookups() {
     //Blocks
     block_name_to_block_id_.clear();
     for(auto blk_id : blocks()) {
-        auto& key = block_name(blk_id);
+        const auto& key = block_name(blk_id);
         block_name_to_block_id_[key] = blk_id;
     }
 
@@ -1106,58 +1133,65 @@ void AtomNetlist::validate_block_port_refs() const {
     //Verify that all block <-> port references are consistent
 
     //Track how many times we've seen each port from the blocks 
-    std::unordered_multiset<AtomPortId> seen_port_ids;
+    std::vector<unsigned> seen_port_ids(port_ids_.size());
 
     for(auto blk_id : blocks()) {
         for(auto in_port_id : block_input_ports(blk_id)) {
             VTR_ASSERT(blk_id == port_block(in_port_id));
-            seen_port_ids.insert(in_port_id);
+            ++seen_port_ids[size_t(in_port_id)];
         }
         for(auto out_port_id : block_output_ports(blk_id)) {
             VTR_ASSERT(blk_id == port_block(out_port_id));
-            seen_port_ids.insert(out_port_id);
+            ++seen_port_ids[size_t(out_port_id)];
         }
         for(auto clock_port_id : block_clock_ports(blk_id)) {
             VTR_ASSERT(blk_id == port_block(clock_port_id));
-            seen_port_ids.insert(clock_port_id);
+            ++seen_port_ids[size_t(clock_port_id)];
         }
     }
 
-    //Check that we have no orphaned ports (i.e. that aren't referenced by blocks) 
+    //Check that we have no orphaned ports (i.e. that aren't referenced by a block) 
     //or shared ports (i.e. referenced by multiple blocks)
-    for(auto port_id : port_ids_) {
-        VTR_ASSERT_MSG(seen_port_ids.count(port_id) == 1, "Port referenced by a single block");
-    }
-    VTR_ASSERT_MSG(seen_port_ids.size() == port_ids_.size(), "All ports checked");
+    VTR_ASSERT_MSG(std::all_of(seen_port_ids.begin(), seen_port_ids.end(),
+        [](unsigned val) {
+            return val == 1;
+    }), "Port referenced by a single block");
+
+    VTR_ASSERT_MSG(std::accumulate(seen_port_ids.begin(), seen_port_ids.end(), 0u) == port_ids_.size(),
+                  "All block ports checked");
 }
 
 void AtomNetlist::validate_port_pin_refs() const {
     //Check that port <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
-    std::unordered_multiset<AtomPinId> seen_pin_ids;
+    std::vector<unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto port_id : port_ids_) {
         for(auto pin_id : port_pins(port_id)) {
             VTR_ASSERT(pin_port(pin_id) == port_id);
             VTR_ASSERT(pin_port_bit(pin_id) < port_width(port_id));
-            seen_pin_ids.insert(pin_id);
+            ++seen_pin_ids[size_t(pin_id)];
         }
     }
 
     //Check that we have no orphaned pins (i.e. that aren't referenced by a port) 
-    //or shared pins (i.e. referenced by multiple ports) 
-    for(auto pin_id : pin_ids_) {
-        VTR_ASSERT_MSG(seen_pin_ids.count(pin_id) == 1, "Pin referenced by a single port");
-    }
-    VTR_ASSERT_MSG(seen_pin_ids.size() == pin_ids_.size(), "All port pins checked");
+    //or shared pins (i.e. referenced by multiple ports)
+    VTR_ASSERT_MSG(std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
+        [](unsigned val) {
+            return val == 1;
+    }), "Pins referenced by a single port");
+
+    VTR_ASSERT_MSG(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) == pin_ids_.size(),
+                  "All port pins checked");
+    
 }
 
 void AtomNetlist::validate_net_pin_refs() const {
     //Check that net <-> pin references are consistent
 
-    //Track how often we see a pin from the nets
-    std::unordered_multiset<AtomPinId> seen_pin_ids;
+    //Track how many times we've seen each pin from the ports
+    std::vector<unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto net_id : nets()) {
         auto pins = net_pins(net_id);
@@ -1175,17 +1209,21 @@ void AtomNetlist::validate_net_pin_refs() const {
                 VTR_ASSERT(pin_net(pin_id) == net_id);
 
                 //We only record valid seen pins since we may see multiple undriven nets with invalid IDs
-                seen_pin_ids.insert(pin_id);
+                ++seen_pin_ids[size_t(pin_id)];
             }
         }
     }
 
-    //Check that we have no orphaned pins (i.e. that aren't referenced by a net) 
-    //or shared pins (i.e. referenced by multiple nets) 
-    for(auto pin_id : pin_ids_) {
-        VTR_ASSERT_MSG(seen_pin_ids.count(pin_id) == 1, "Pin referenced by a single net");
-    }
-    VTR_ASSERT_MSG(seen_pin_ids.size() == pin_ids_.size(), "All net pins checked");
+    //Check that we have no orphaned pins (i.e. that aren't referenced by a port) 
+    //or shared pins (i.e. referenced by multiple ports)
+    VTR_ASSERT_MSG(std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
+        [](unsigned val) {
+            return val == 1;
+    }), "Pins referenced by a single net");
+
+    VTR_ASSERT_MSG(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) == pin_ids_.size(),
+                  "All net pins checked");
+    
 }
 
 
