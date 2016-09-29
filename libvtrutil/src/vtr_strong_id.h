@@ -156,6 +156,8 @@ bool operator==(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentin
 template<typename tag, typename T, T sentinel>
 bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
 
+template<typename tag, typename T, T sentinel>
+bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
 
 
 //Class template definition with default template parameters
@@ -190,6 +192,7 @@ class StrongId {
         // after the function name (i.e. <>)
         friend bool operator== <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
         friend bool operator!= <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+        friend bool operator< <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
     private:
         T id_;
 };
@@ -204,10 +207,16 @@ bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentin
     return !(lhs == rhs);
 }
 
+//Needed for std::map-like containers
+template<typename tag, typename T, T sentinel>
+bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) {
+    return lhs.id_ < rhs.id_;
+}
+
 } //namespace vtr
 
+//Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
 namespace std {
-    //Make StrongId's hashable
     template<>
     template<typename tag, typename T, T sentinel>
     struct hash<vtr::StrongId<tag,T,sentinel>> {
