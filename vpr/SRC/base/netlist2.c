@@ -361,8 +361,11 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
 void AtomNetlist::verify() const {
     verify_sizes();
     verify_refs();
+    verify_lookups();
 }
 
+//Checks that the sizes of internal data structures
+//are consistent. Should take constant time.
 void AtomNetlist::verify_sizes() const {
     validate_block_sizes();
     validate_port_sizes();
@@ -372,14 +375,51 @@ void AtomNetlist::verify_sizes() const {
 
 }
 
+//Checks that all cross-references are consistent.
+//Should take linear time.
 void AtomNetlist::verify_refs() const {
-    //TODO: add sanity checks
     validate_block_port_refs();
     validate_port_pin_refs();
     validate_net_pin_refs();
 
 }
 
+void AtomNetlist::verify_lookups() const {
+    //Verify that fast look-ups are consistent
+
+    //Blocks
+    for(auto blk_id : blocks()) {
+        const auto& name = block_name(blk_id);
+        VTR_ASSERT(find_block(name) == blk_id);
+    }
+
+    //Ports
+    for(auto port_id : port_ids_) {
+        auto blk_id = port_block(port_id);
+        const auto& name = port_name(port_id);
+        VTR_ASSERT(find_port(blk_id, name) == port_id);
+    }
+
+    //Pins
+    for(auto pin_id : pin_ids_) {
+        auto port_id = pin_port(pin_id);
+        auto bit = pin_port_bit(pin_id);
+        VTR_ASSERT(find_pin(port_id, bit) == pin_id);
+    }
+
+    //Nets
+    for(auto net_id : nets()) {
+        const auto& name = net_name(net_id); 
+        VTR_ASSERT(find_net(name) == net_id);
+    }
+
+    //Port common
+    for(auto common_id : common_ids_) {
+        const auto& name = port_common_names_[size_t(common_id)];
+        auto type = port_common_types_[size_t(common_id)];
+        VTR_ASSERT(find_port_common_id(name, type) == common_id);
+    }
+}
 
 /*
  *

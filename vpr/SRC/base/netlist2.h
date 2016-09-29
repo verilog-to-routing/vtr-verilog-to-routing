@@ -176,6 +176,7 @@ class AtomNetlist {
         //Sanity Checks
         void verify_sizes() const;
         void verify_refs() const;
+        void verify_lookups() const;
 
         bool valid_block_id(AtomBlockId id) const;
         bool valid_port_id(AtomPortId id) const;
