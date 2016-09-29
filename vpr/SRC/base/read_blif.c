@@ -104,19 +104,22 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifCountCallback : public blifparse::Callback {
     public:
-        void start_model(std::string /*model_name*/) override { 
+        void start_parse() override {}
+        void finish_parse() override {}
+
+        void begin_model(std::string /*model_name*/) override { 
             ++num_models; 
         }
-        void inputs(std::vector<std::string> inputs) override { 
-            num_inputs += inputs.size(); 
-            for(const auto& input : inputs) {
+        void inputs(std::vector<std::string> input_names) override { 
+            num_inputs += input_names.size(); 
+            for(const auto& input : input_names) {
                 ++net_pin_counts[input];
                 ++pin_count;
             }
         }
-        void outputs(std::vector<std::string> outputs) override { 
-            num_outputs += outputs.size(); 
-            for(const auto& output : outputs) {
+        void outputs(std::vector<std::string> output_names) override { 
+            num_outputs += output_names.size(); 
+            for(const auto& output : output_names) {
                 ++net_pin_counts[output];
                 ++pin_count;
             }
@@ -166,14 +169,25 @@ struct BlifCountCallback : public blifparse::Callback {
 
 struct BlifAllocCallback : public blifparse::Callback {
     public:
-        BlifAllocCallback(const t_model* user_models, const t_model* library_models)
-            : user_arch_models_(user_models) 
+        BlifAllocCallback(AtomNetlist& main_netlist, const t_model* user_models, const t_model* library_models)
+            : main_netlist_(main_netlist)
+            , user_arch_models_(user_models) 
             , library_arch_models_(library_models) {}
 
         static constexpr const char* OUTPAD_NAME_PREFIX = "out:";
 
     public: //Callback interface
-        void start_model(std::string model_name) override { 
+        void start_parse() override {}
+
+        void finish_parse() override {
+            //When parsing is finished we *move* the main netlist
+            //into the user object. This ensures we never have two copies
+            //(consuming twice the memory).
+            size_t main_netlist_idx = determine_main_netlist_index();
+            main_netlist_ = std::move(blif_models_[main_netlist_idx]); 
+        }
+
+        void begin_model(std::string model_name) override { 
             //Create a new model, and set it's name
             blif_models_.emplace_back(model_name);
             blif_models_black_box_.emplace_back(false);
@@ -384,9 +398,10 @@ struct BlifAllocCallback : public blifparse::Callback {
         void lineno(int line_num) override { lineno_ = line_num; }
     public:
         //Retrieve the netlist
-        AtomNetlist netlist() { 
+        size_t determine_main_netlist_index() { 
             //Look through all the models loaded, to find the one which is non-blackbox (i.e. has real blocks
-            //and is not a blackbox)
+            //and is not a blackbox).  To check for errors we look at all models, even if we've already
+            //found a non-blackbox model.
             int top_model_idx = -1; //Not valid
 
             for(int i = 0; i < static_cast<int>(blif_models_.size()); ++i) {
@@ -410,10 +425,11 @@ struct BlifAllocCallback : public blifparse::Callback {
             if(top_model_idx == -1) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
                         "No non-blackbox models found. The main model must not be a blackbox.");
-            } else {
-                //Return the main model
-                return blif_models_[top_model_idx];
             }
+
+            //Return the main model
+            VTR_ASSERT(top_model_idx >= 0);
+            return static_cast<size_t>(top_model_idx);
         }
 
     private:
@@ -469,6 +485,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
             }
             VTR_ASSERT(false);
+            return AtomBlockType::INPAD; //suppress warning
         }
 
         const t_model_ports* find_model_port(const t_model* blk_model, std::string port_name) {
@@ -514,6 +531,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
                      "Found no matching port '%s' on architecture model '%s'\n",
                       port_name.c_str(), blk_model->name);
+            return nullptr;
         }
 
         //Splits the index off a signal name and returns the base signal name (excluding
@@ -610,6 +628,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         std::vector<AtomNetlist> blif_models_;
         std::vector<bool> blif_models_black_box_;
 
+        AtomNetlist& main_netlist_; //User object we fill
         const t_model* user_arch_models_;
         const t_model* library_arch_models_;
 };
@@ -652,10 +671,8 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
     {
         vtr::ScopedPrintTimer t1("Load BLIF");
 
-        BlifAllocCallback alloc_callback(user_models, library_models);
+        BlifAllocCallback alloc_callback(netlist, user_models, library_models);
         blifparse::blif_parse_filename(blif_file, alloc_callback);
-
-        netlist = alloc_callback.netlist();
     }
 
     {
