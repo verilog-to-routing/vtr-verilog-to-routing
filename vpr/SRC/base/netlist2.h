@@ -174,16 +174,23 @@ class AtomNetlist {
         void rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map);
 
         //Sanity Checks
+        void verify_sizes() const;
+        void verify_refs() const;
+
         bool valid_block_id(AtomBlockId id) const;
         bool valid_port_id(AtomPortId id) const;
         bool valid_port_bit(AtomPortId id, size_t port_bit) const;
         bool valid_pin_id(AtomPinId id) const;
         bool valid_net_id(AtomNetId id) const;
 
-        void validate_blocks() const;
-        void validate_ports() const;
-        void validate_pins() const;
-        void validate_nets() const;
+        void validate_block_sizes() const;
+        void validate_port_sizes() const;
+        void validate_pin_sizes() const;
+        void validate_net_sizes() const;
+        void validate_block_refs() const;
+        void validate_port_refs() const;
+        void validate_pin_refs() const;
+        void validate_net_refs() const;
 
     private: //Private data
 

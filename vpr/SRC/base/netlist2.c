@@ -358,16 +358,26 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
  *
  */
 void AtomNetlist::verify() const {
-    validate_blocks();
-    validate_ports();
-    validate_pins();
-    validate_nets();
+    verify_sizes();
+    verify_refs();
+}
 
+void AtomNetlist::verify_sizes() const {
+    validate_block_sizes();
+    validate_port_sizes();
+    validate_pin_sizes();
+    validate_net_sizes();
+
+
+}
+
+void AtomNetlist::verify_refs() const {
     //TODO: add sanity checks
-    //validate_block_refs();
-    //validate_port_refs();
-    //validate_pin_refs();
-    //validate_net_refs();
+    validate_block_refs();
+    validate_port_refs();
+    validate_pin_refs();
+    validate_net_refs();
+
 }
 
 
@@ -988,18 +998,14 @@ bool AtomNetlist::valid_net_id(AtomNetId id) const {
     return true;
 }
 
-void AtomNetlist::validate_blocks() const {
-    //TODO: implement
-
-    //Sizes
+void AtomNetlist::validate_block_sizes() const {
     VTR_ASSERT(block_names_.size() == block_ids_.size());
     VTR_ASSERT(block_types_.size() == block_ids_.size());
     VTR_ASSERT(block_models_.size() == block_ids_.size());
     VTR_ASSERT(block_truth_tables_.size() == block_ids_.size());
 }
 
-void AtomNetlist::validate_ports() const {
-    //TODO: implement
+void AtomNetlist::validate_port_sizes() const {
     VTR_ASSERT(port_blocks_.size() == port_ids_.size());
     VTR_ASSERT(port_pins_.size() == port_ids_.size());
     VTR_ASSERT(port_common_ids_.size() == port_ids_.size());
@@ -1007,18 +1013,37 @@ void AtomNetlist::validate_ports() const {
     VTR_ASSERT(port_common_names_.size() == port_common_types_.size());
 }
 
-void AtomNetlist::validate_pins() const {
-    //TODO: implement
+void AtomNetlist::validate_pin_sizes() const {
     VTR_ASSERT(pin_ports_.size() == pin_ids_.size());
     VTR_ASSERT(pin_port_bits_.size() == pin_ids_.size());
     VTR_ASSERT(pin_nets_.size() == pin_ids_.size());
 }
 
-void AtomNetlist::validate_nets() const {
-    //TODO: implement
+void AtomNetlist::validate_net_sizes() const {
     VTR_ASSERT(net_names_.size() == net_ids_.size());
     VTR_ASSERT(net_pins_.size() == net_ids_.size());
 }
+
+void AtomNetlist::validate_block_refs() const {
+    //TODO: implement
+
+}
+
+void AtomNetlist::validate_port_refs() const {
+    //TODO: implement
+
+}
+
+void AtomNetlist::validate_pin_refs() const {
+    //TODO: implement
+
+}
+
+void AtomNetlist::validate_net_refs() const {
+    //TODO: implement
+
+}
+
 
 /*
  *
