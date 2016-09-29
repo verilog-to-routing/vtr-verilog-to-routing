@@ -13,7 +13,12 @@ void custom_blif_error(const int lineno, const std::string& near_text, const std
 class NoOpCallback : public Callback {
     //A No-op version of the callback
     public:
-        void start_model(std::string /*model_name*/) override {}
+        void start_parse() override {}
+
+        void filename(std::string fname) override {};
+        void lineno(int line_num) override {};
+
+        void begin_model(std::string /*model_name*/) override {}
         void inputs(std::vector<std::string> /*inputs*/) override {}
         void outputs(std::vector<std::string> /*outputs*/) override {}
 
@@ -24,8 +29,7 @@ class NoOpCallback : public Callback {
 
         void end_model() override {}
 
-        void filename(std::string fname) override;
-        void lineno(int line_num) override;
+        void finish_parse() override {}
 };
 
 int main(int argc, char **argv) {

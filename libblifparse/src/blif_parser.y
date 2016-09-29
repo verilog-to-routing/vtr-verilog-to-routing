@@ -138,22 +138,22 @@ using namespace blifparse;
 %%
 
 blif_data: /*empty*/ { }
-    | blif_data DOT_MODEL STRING EOL        { callback.lineno(lexer.lineno()); callback.start_model($3); }
-    | blif_data DOT_INPUTS string_list EOL  { callback.lineno(lexer.lineno()); callback.inputs($3); }
-    | blif_data DOT_OUTPUTS string_list EOL { callback.lineno(lexer.lineno()); callback.outputs($3); }
-    | blif_data names                       { callback.lineno(lexer.lineno()); callback.names($2.nets, $2.so_cover); }
+    | blif_data DOT_MODEL STRING EOL        { callback.lineno(lexer.lineno()-1); callback.begin_model($3); }
+    | blif_data DOT_INPUTS string_list EOL  { callback.lineno(lexer.lineno()-1); callback.inputs($3); }
+    | blif_data DOT_OUTPUTS string_list EOL { callback.lineno(lexer.lineno()-1); callback.outputs($3); }
+    | blif_data names                       { callback.lineno(lexer.lineno()-1); callback.names($2.nets, $2.so_cover); }
     | blif_data subckt EOL                  { 
                                               if($2.ports.size() != $2.nets.size()) {
-                                                  blif_error_wrap(lexer.lineno(), lexer.text(), 
+                                                  blif_error_wrap(lexer.lineno()-1, lexer.text(), 
                                                     "Mismatched subckt port and net connection(s) size do not match"
                                                     " (%zu ports, %zu nets)", $2.ports.size(), $2.nets.size());
                                               }
-                                              callback.lineno(lexer.lineno()); 
+                                              callback.lineno(lexer.lineno()-1); 
                                               callback.subckt($2.model, $2.ports, $2.nets);
                                             }
     | blif_data latch EOL                   { }
-    | blif_data DOT_BLACKBOX EOL            { callback.lineno(lexer.lineno()); callback.blackbox(); }
-    | blif_data DOT_END EOL                 { callback.lineno(lexer.lineno()); callback.end_model(); }
+    | blif_data DOT_BLACKBOX EOL            { callback.lineno(lexer.lineno()-1); callback.blackbox(); }
+    | blif_data DOT_END EOL                 { callback.lineno(lexer.lineno()-1); callback.end_model(); }
     | blif_data EOL                         { /* eat end-of-lines */}
     ;
 
@@ -161,7 +161,7 @@ names: DOT_NAMES string_list EOL { $$ = Names(); $$.nets = $2; }
     | names so_cover_row EOL { 
                                 $$ = std::move($1); 
                                 if($$.nets.size() != $2.size()) {
-                                    blif_error_wrap(lexer.lineno(), lexer.text(),
+                                    blif_error_wrap(lexer.lineno()-1, lexer.text(),
                                         "Mismatched .names single-output cover row."
                                         " names connected to %zu net(s), but cover row has %zu element(s)",
                                         $$.nets.size(), $2.size());
