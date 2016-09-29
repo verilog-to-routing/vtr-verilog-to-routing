@@ -1,5 +1,6 @@
 #include "netlist2.h"
 #include <algorithm>
+#include <unordered_set>
 
 #include "vtr_assert.h"
 /*
@@ -373,10 +374,9 @@ void AtomNetlist::verify_sizes() const {
 
 void AtomNetlist::verify_refs() const {
     //TODO: add sanity checks
-    validate_block_refs();
-    validate_port_refs();
-    validate_pin_refs();
-    validate_net_refs();
+    validate_block_port_refs();
+    validate_port_pin_refs();
+    validate_net_pin_refs();
 
 }
 
@@ -1010,7 +1010,8 @@ void AtomNetlist::validate_port_sizes() const {
     VTR_ASSERT(port_pins_.size() == port_ids_.size());
     VTR_ASSERT(port_common_ids_.size() == port_ids_.size());
 
-    VTR_ASSERT(port_common_names_.size() == port_common_types_.size());
+    VTR_ASSERT(port_common_names_.size() == common_ids_.size());
+    VTR_ASSERT(port_common_names_.size() == common_ids_.size());
 }
 
 void AtomNetlist::validate_pin_sizes() const {
@@ -1024,24 +1025,90 @@ void AtomNetlist::validate_net_sizes() const {
     VTR_ASSERT(net_pins_.size() == net_ids_.size());
 }
 
-void AtomNetlist::validate_block_refs() const {
-    //TODO: implement
+void AtomNetlist::validate_block_port_refs() const {
+    //Verify that all block <-> port references are consistent
 
+    //Track how many times we've seen each port from the blocks 
+    std::unordered_multiset<AtomPortId> seen_port_ids;
+
+    for(auto blk_id : blocks()) {
+        for(auto in_port_id : block_input_ports(blk_id)) {
+            VTR_ASSERT(blk_id == port_block(in_port_id));
+            seen_port_ids.insert(in_port_id);
+        }
+        for(auto out_port_id : block_output_ports(blk_id)) {
+            VTR_ASSERT(blk_id == port_block(out_port_id));
+            seen_port_ids.insert(out_port_id);
+        }
+        for(auto clock_port_id : block_clock_ports(blk_id)) {
+            VTR_ASSERT(blk_id == port_block(clock_port_id));
+            seen_port_ids.insert(clock_port_id);
+        }
+    }
+
+    //Check that we have no orphaned ports (i.e. that aren't referenced by blocks) 
+    //or shared ports (i.e. referenced by multiple blocks)
+    for(auto port_id : port_ids_) {
+        VTR_ASSERT_MSG(seen_port_ids.count(port_id) == 1, "Port referenced by a single block");
+    }
+    VTR_ASSERT_MSG(seen_port_ids.size() == port_ids_.size(), "All ports checked");
 }
 
-void AtomNetlist::validate_port_refs() const {
-    //TODO: implement
+void AtomNetlist::validate_port_pin_refs() const {
+    //Check that port <-> pin references are consistent
 
+    //Track how many times we've seen each pin from the ports
+    std::unordered_multiset<AtomPinId> seen_pin_ids;
+
+    for(auto port_id : port_ids_) {
+        for(auto pin_id : port_pins(port_id)) {
+            VTR_ASSERT(pin_port(pin_id) == port_id);
+            VTR_ASSERT(pin_port_bit(pin_id) < port_width(port_id));
+            seen_pin_ids.insert(pin_id);
+        }
+    }
+
+    //Check that we have no orphaned pins (i.e. that aren't referenced by a port) 
+    //or shared pins (i.e. referenced by multiple ports) 
+    for(auto pin_id : pin_ids_) {
+        VTR_ASSERT_MSG(seen_pin_ids.count(pin_id) == 1, "Pin referenced by a single port");
+    }
+    VTR_ASSERT_MSG(seen_pin_ids.size() == pin_ids_.size(), "All port pins checked");
 }
 
-void AtomNetlist::validate_pin_refs() const {
-    //TODO: implement
+void AtomNetlist::validate_net_pin_refs() const {
+    //Check that net <-> pin references are consistent
 
-}
+    //Track how often we see a pin from the nets
+    std::unordered_multiset<AtomPinId> seen_pin_ids;
 
-void AtomNetlist::validate_net_refs() const {
-    //TODO: implement
+    for(auto net_id : nets()) {
+        auto pins = net_pins(net_id);
+        for(auto iter = pins.begin(); iter != pins.end(); ++iter) {
+            auto pin_id = *iter;
+            if(iter != pins.begin()) {
+                //The first net pin is the driver, which may be invalid
+                //if there is no driver. So we only check for a valid id
+                //on the other net pins (which are all sinks and must be valid)
+                VTR_ASSERT(pin_id);
+            }
 
+            if(pin_id) {
+                //Verify the cross reference if the pin_id is valid (i.e. a sink or a valid driver)
+                VTR_ASSERT(pin_net(pin_id) == net_id);
+
+                //We only record valid seen pins since we may see multiple undriven nets with invalid IDs
+                seen_pin_ids.insert(pin_id);
+            }
+        }
+    }
+
+    //Check that we have no orphaned pins (i.e. that aren't referenced by a net) 
+    //or shared pins (i.e. referenced by multiple nets) 
+    for(auto pin_id : pin_ids_) {
+        VTR_ASSERT_MSG(seen_pin_ids.count(pin_id) == 1, "Pin referenced by a single net");
+    }
+    VTR_ASSERT_MSG(seen_pin_ids.size() == pin_ids_.size(), "All net pins checked");
 }
 
 

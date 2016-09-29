@@ -187,10 +187,9 @@ class AtomNetlist {
         void validate_port_sizes() const;
         void validate_pin_sizes() const;
         void validate_net_sizes() const;
-        void validate_block_refs() const;
-        void validate_port_refs() const;
-        void validate_pin_refs() const;
-        void validate_net_refs() const;
+        void validate_block_port_refs() const;
+        void validate_port_pin_refs() const;
+        void validate_net_pin_refs() const;
 
     private: //Private data
 

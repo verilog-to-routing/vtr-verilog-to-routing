@@ -621,7 +621,7 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
     }
 
     //Sweep unused logic/nets/inputs/outputs
-    sweep_iterative(netlist, false);
+    sweep_iterative(netlist, true);
 
     //Compress the netlist to clean-out invalid entries
     netlist.compress();
