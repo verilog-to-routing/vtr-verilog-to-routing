@@ -731,7 +731,9 @@ void AtomNetlist::remove_net(const AtomNetId net_id) {
 
     //Dissassociate the pins from the net
     for(auto pin_id : net_pins(net_id)) {
-        pin_nets_[size_t(pin_id)] = AtomNetId::INVALID();
+        if(pin_id) {
+            pin_nets_[size_t(pin_id)] = AtomNetId::INVALID();
+        }
     }
 
     //Mark as invalid
