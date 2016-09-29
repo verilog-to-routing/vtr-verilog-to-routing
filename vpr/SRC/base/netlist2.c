@@ -39,8 +39,6 @@ template<typename T>
 std::pair<std::vector<T>,std::vector<T>> compress_ids(const std::vector<T>& ids) {
     std::vector<T> id_map;
     std::vector<T> new_ids;
-    id_map.reserve(ids.size());
-    new_ids.reserve(ids.size());
 
     //When we compress the netlist the index of an existing
     //valid value is decremented by the number of invalids that
@@ -78,7 +76,6 @@ template<typename T, typename I>
 std::vector<T> move_valid(std::vector<T>& values, const std::vector<I>& pred) {
     VTR_ASSERT(values.size() == pred.size());
     std::vector<T> copy;
-    copy.reserve(values.size());
     for(size_t i = 0; i < values.size(); ++i) {
         if (pred[i]) {
             copy.emplace_back(std::move(values[i]));
@@ -91,7 +88,6 @@ std::vector<T> move_valid(std::vector<T>& values, const std::vector<I>& pred) {
 template<typename T>
 std::vector<T> update_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
     std::vector<T> updated;
-    updated.reserve(values.size());
 
     for(size_t i = 0; i < values.size(); ++i) {
         if(values[i]) {
@@ -114,35 +110,9 @@ std::vector<T> update_refs(const std::vector<T>& values, const std::vector<T>& i
  *
  */
 
-AtomNetlist::AtomNetlist(std::string name, size_t num_blocks, size_t num_pins, size_t num_nets)
+AtomNetlist::AtomNetlist(std::string name)
     : netlist_name_(name)
-    , dirty_(false) {
-
-    //Use counts as a reservation hint to reduce re-allocation
-    if(num_blocks > 0) {
-        block_names_.reserve(num_blocks); 
-        block_types_.reserve(num_blocks); 
-        block_models_.reserve(num_blocks); 
-        block_truth_tables_.reserve(num_blocks); 
-        block_input_ports_.reserve(num_blocks); 
-        block_output_ports_.reserve(num_blocks); 
-        block_clock_ports_.reserve(num_blocks); 
-        block_name_to_block_id_.reserve(num_blocks); 
-    }
-    if(num_pins > 0) {
-        pin_ids_.reserve(num_pins); 
-        pin_ports_.reserve(num_pins); 
-        pin_port_bits_.reserve(num_pins); 
-        pin_nets_.reserve(num_pins); 
-        pin_port_port_bit_to_pin_id_.reserve(num_pins);
-    }
-    if(num_nets > 0) {
-        net_ids_.reserve(num_nets); 
-        net_names_.reserve(num_nets); 
-        net_pins_.reserve(num_nets); 
-        net_name_to_net_id_.reserve(num_nets);
-    }
-}
+    , dirty_(false) {}
 
 /*
  *

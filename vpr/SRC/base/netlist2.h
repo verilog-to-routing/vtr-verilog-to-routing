@@ -82,15 +82,7 @@ class AtomNetlist {
 
         //Constructs a netlist
         // name - the name of the netlist
-        // num_blocks - reservation hint for number of blocks
-        // num_pins - reservation hint for number of pins
-        // num_nets - reservation hint for number of nets
-        //
-        // Typically pre-reserving has no impact
-        AtomNetlist(std::string name="",
-                    size_t num_blocks=0,
-                    size_t num_pins=0,
-                    size_t num_nets=0);
+        AtomNetlist(std::string name="");
 
     public: //Public Accessors
         //Netlist
