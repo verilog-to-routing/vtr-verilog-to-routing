@@ -147,6 +147,8 @@ void absorb_buffer_luts(AtomNetlist& netlist) {
     for(auto blk : buffer_luts) {
         remove_buffer_lut(netlist, blk);
     }
+
+    //TODO: absorb inverter LUTs?
 }
 
 std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist) {
