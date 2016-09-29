@@ -13,6 +13,7 @@ using namespace std;
 #include "vtr_list.h"
 #include "vtr_log.h"
 #include "vtr_logic.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -600,35 +601,56 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
  *    }
  *
  */
+    AtomNetlist netlist;
+    {
+        vtr::ScopedPrintTimer t1("Load BLIF");
 
-    //Throw VPR errors instead of using libblifparse default error
-    blifparse::set_blif_error_handler(blif_error);
+        //Throw VPR errors instead of using libblifparse default error
+        blifparse::set_blif_error_handler(blif_error);
 
-    BlifAllocCallback alloc_callback(user_models, library_models);
-    blifparse::blif_parse_filename(blif_file, alloc_callback);
+        BlifAllocCallback alloc_callback(user_models, library_models);
+        blifparse::blif_parse_filename(blif_file, alloc_callback);
 
-    auto netlist = alloc_callback.netlist();
-
-    netlist.verify();
-    
-    //Clean-up lut buffers
-    absorb_buffer_luts(netlist);
-
-    //Remove the special 'unconn' net
-    AtomNetId unconn_net_id = netlist.find_net("unconn");
-    if(unconn_net_id) {
-        netlist.remove_net(unconn_net_id);
+        netlist = alloc_callback.netlist();
     }
 
-    //Sweep unused logic/nets/inputs/outputs
-    sweep_iterative(netlist, true);
+    {
+        vtr::ScopedPrintTimer t2("Verify BLIF");
+        netlist.verify();
+    }
 
-    //Compress the netlist to clean-out invalid entries
-    netlist.compress();
+    {
+        vtr::ScopedPrintTimer t2("Clean BLIF");
+        
+        //Clean-up lut buffers
+        absorb_buffer_luts(netlist);
 
-    netlist.verify();
+        //Remove the special 'unconn' net
+        AtomNetId unconn_net_id = netlist.find_net("unconn");
+        if(unconn_net_id) {
+            netlist.remove_net(unconn_net_id);
+        }
 
-    print_netlist(stdout, netlist);
+        //Sweep unused logic/nets/inputs/outputs
+        sweep_iterative(netlist, true);
+    }
+
+    {
+        vtr::ScopedPrintTimer t2("Compress BLIF");
+
+        //Compress the netlist to clean-out invalid entries
+        netlist.compress();
+    }
+    {
+        vtr::ScopedPrintTimer t2("Verify BLIF");
+
+        netlist.verify();
+    }
+
+    {
+        vtr::ScopedPrintTimer t2("Print BLIF");
+        print_netlist(stdout, netlist);
+    }
     std::exit(1);
 }
 
