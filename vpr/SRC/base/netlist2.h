@@ -79,7 +79,7 @@ class AtomNetlist {
         typedef std::vector<AtomNetId>::const_iterator net_iterator;
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
     public:
-        AtomNetlist(std::string name);
+        AtomNetlist(std::string name="");
 
     public: //Public Accessors
         //Netlist
