@@ -104,13 +104,47 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifCountCallback : public blifparse::Callback {
     public:
-        void start_model(std::string /*model_name*/) override { ++num_models; }
-        void inputs(std::vector<std::string> /*inputs*/) override { ++num_inputs; }
-        void outputs(std::vector<std::string> /*outputs*/) override { ++num_outputs; }
+        void start_model(std::string /*model_name*/) override { 
+            ++num_models; 
+        }
+        void inputs(std::vector<std::string> inputs) override { 
+            num_inputs += inputs.size(); 
+            for(const auto& input : inputs) {
+                ++net_pin_counts[input];
+                ++pin_count;
+            }
+        }
+        void outputs(std::vector<std::string> outputs) override { 
+            num_outputs += outputs.size(); 
+            for(const auto& output : outputs) {
+                ++net_pin_counts[output];
+                ++pin_count;
+            }
+        }
+        void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> /*so_cover*/) override { 
+            ++num_names;
+            pin_count += nets.size();
+            for(const auto& net : nets) {
+                ++net_pin_counts[net]; 
+            }
+        }
+        void latch(std::string input, std::string output, blifparse::LatchType /*type*/, std::string control, blifparse::LogicValue /*init*/) override {
+            ++num_latches; 
 
-        void names(std::vector<std::string> /*nets*/, std::vector<std::vector<blifparse::LogicValue>> /*so_cover*/) override { ++num_names; }
-        void latch(std::string /*input*/, std::string /*output*/, blifparse::LatchType /*type*/, std::string /*control*/, blifparse::LogicValue /*init*/) override { ++num_latches; }
-        void subckt(std::string /*model*/, std::vector<std::string> /*ports*/, std::vector<std::string> /*nets*/) override { ++num_subckts; }
+            pin_count += 3;
+
+            ++net_pin_counts[input];
+            ++net_pin_counts[output];
+            ++net_pin_counts[control];
+        }
+
+        void subckt(std::string /*model*/, std::vector<std::string> /*ports*/, std::vector<std::string> nets) override { 
+            ++num_subckts; 
+            pin_count += nets.size();
+            for(const auto& net : nets) {
+                ++net_pin_counts[net];
+            }
+        }
         void blackbox() override {}
 
         void end_model() override {}
@@ -124,6 +158,10 @@ struct BlifCountCallback : public blifparse::Callback {
         size_t num_names = 0;
         size_t num_latches = 0;
         size_t num_subckts = 0;
+
+        size_t port_count;
+        size_t pin_count;
+        std::unordered_map<std::string,size_t> net_pin_counts;
 };
 
 struct BlifAllocCallback : public blifparse::Callback {
@@ -601,12 +639,18 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
  *    }
  *
  */
+    //Throw VPR errors instead of using libblifparse default error
+    blifparse::set_blif_error_handler(blif_error);
+
+    {
+        vtr::ScopedPrintTimer t2("Count Blif");
+
+        BlifCountCallback callback;
+        blifparse::blif_parse_filename(blif_file, callback);
+    }
     AtomNetlist netlist;
     {
         vtr::ScopedPrintTimer t1("Load BLIF");
-
-        //Throw VPR errors instead of using libblifparse default error
-        blifparse::set_blif_error_handler(blif_error);
 
         BlifAllocCallback alloc_callback(user_models, library_models);
         blifparse::blif_parse_filename(blif_file, alloc_callback);
