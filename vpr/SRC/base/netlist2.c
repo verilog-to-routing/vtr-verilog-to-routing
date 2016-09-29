@@ -855,6 +855,9 @@ void AtomNetlist::compress() {
     rebuild_pin_refs(port_id_map, net_id_map);
     rebuild_net_refs(pin_id_map);
 
+    //Re-build the lookups
+    rebuild_lookups();
+
     //Netlist is now clean
     dirty_ = false;
 }
@@ -996,6 +999,38 @@ void AtomNetlist::rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map) {
         pins = update_refs(pins, pin_id_map);
 
         VTR_ASSERT_SAFE_MSG(all_valid(pins), "Only valid sinks");
+    }
+}
+void AtomNetlist::rebuild_lookups() {
+    //We iterate through the reverse-lookups and update the values (i.e. ids)
+    //to the new id values
+
+    //Blocks
+    block_name_to_block_id_.clear();
+    for(auto blk_id : blocks()) {
+        auto& key = block_name(blk_id);
+        block_name_to_block_id_[key] = blk_id;
+    }
+
+    //Ports
+    block_id_port_name_to_port_id_.clear();
+    for(auto port_id : port_ids_) {
+        const auto& key = std::make_tuple(port_block(port_id), port_name(port_id));
+        block_id_port_name_to_port_id_[key] = port_id;
+    }
+
+    //Pins
+    pin_port_port_bit_to_pin_id_.clear();
+    for(auto pin_id : pin_ids_) {
+        const auto& key = std::make_tuple(pin_port(pin_id), pin_port_bit(pin_id));
+        pin_port_port_bit_to_pin_id_[key] = pin_id;
+    }
+
+    //Nets
+    net_name_to_net_id_.clear();
+    for(auto net_id : nets()) {
+        const auto& key = net_name(net_id);
+        net_name_to_net_id_[key] = net_id;
     }
 }
 

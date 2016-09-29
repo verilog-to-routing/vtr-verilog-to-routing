@@ -172,6 +172,7 @@ class AtomNetlist {
         void rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map);
         void rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, const std::vector<AtomNetId>& net_id_map);
         void rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map);
+        void rebuild_lookups();
 
         //Sanity Checks
         void verify_sizes() const;
