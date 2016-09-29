@@ -647,10 +647,12 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
         netlist.verify();
     }
 
-    {
-        vtr::ScopedPrintTimer t2("Print BLIF");
-        print_netlist(stdout, netlist);
-    }
+    /*
+     *{
+     *    vtr::ScopedPrintTimer t2("Print BLIF");
+     *    print_netlist(stdout, netlist);
+     *}
+     */
     std::exit(1);
 }
 
