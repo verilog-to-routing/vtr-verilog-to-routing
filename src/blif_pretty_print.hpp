@@ -11,7 +11,10 @@ class BlifPrettyPrinter : public Callback {
         BlifPrettyPrinter(bool print_file_line=false)
             : print_file_line_(print_file_line) {}
 
-        void start_model(std::string model_name) override;
+        void start_parse() override;
+        void filename(std::string fname) override;
+        void lineno(int line_num) override;
+        void begin_model(std::string model_name) override;
         void inputs(std::vector<std::string> inputs) override;
         void outputs(std::vector<std::string> outputs) override;
 
@@ -25,8 +28,7 @@ class BlifPrettyPrinter : public Callback {
 
         void end_model() override;
 
-        void filename(std::string fname) override;
-        void lineno(int line_num) override;
+        void finish_parse() override;
 
     private:
         std::string indent();

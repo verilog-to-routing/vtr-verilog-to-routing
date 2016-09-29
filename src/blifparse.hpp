@@ -38,19 +38,42 @@ enum class LatchType;
 class Callback {
     public:
         virtual ~Callback() {};
-        virtual void start_model(std::string model_name) = 0;
+
+        //Start of parsing
+        virtual void start_parse() = 0;
+
+        //Sets current filename
+        virtual void filename(std::string fname) = 0;
+
+        //Sets current line number
+        virtual void lineno(int line_num) = 0;
+
+        //Start of a .model
+        virtual void begin_model(std::string model_name) = 0;
+
+        //.inputs
         virtual void inputs(std::vector<std::string> inputs) = 0;
+
+        //.outputs
         virtual void outputs(std::vector<std::string> outputs) = 0;
 
+        //.names
         virtual void names(std::vector<std::string> nets, std::vector<std::vector<LogicValue>> so_cover) = 0;
+
+        //.latch
         virtual void latch(std::string input, std::string output, LatchType type, std::string control, LogicValue init) = 0;
+
+        //.subckt
         virtual void subckt(std::string model, std::vector<std::string> ports, std::vector<std::string> nets) = 0;
+
+        //.blackbox
         virtual void blackbox() = 0;
 
+        //.end (of a .model)
         virtual void end_model() = 0;
 
-        virtual void filename(std::string fname) = 0;
-        virtual void lineno(int line_num) = 0;
+        //End of parsing
+        virtual void finish_parse() = 0;
 };
 
 
@@ -59,7 +82,9 @@ class Callback {
  */
 void blif_parse_filename(std::string filename, Callback& callback);
 void blif_parse_filename(const char* filename, Callback& callback);
-void blif_parse_file(FILE* blif, Callback& callback);
+
+//Loads from 'blif'. 'filename' only used to pass a filename to callback and can be left unspecified
+void blif_parse_file(FILE* blif, Callback& callback, const char* filename=""); 
 
 /* 
  * The default blif_error() implementation.

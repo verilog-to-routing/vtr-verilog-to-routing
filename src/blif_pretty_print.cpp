@@ -5,7 +5,15 @@
 
 namespace blifparse {
 
-void BlifPrettyPrinter::start_model(std::string model_name) {
+void BlifPrettyPrinter::start_parse() {
+    //Pass
+}
+
+void BlifPrettyPrinter::finish_parse() {
+    //Pass
+}
+
+void BlifPrettyPrinter::begin_model(std::string model_name) {
     if(print_file_line_) {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
     }
