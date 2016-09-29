@@ -151,7 +151,7 @@ endforeach()
 set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
-    set(SANITIZE_FLAGS "-fsanitize=address -fsanitize=leak -fsanitize=undefined")
+    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined")
     message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
