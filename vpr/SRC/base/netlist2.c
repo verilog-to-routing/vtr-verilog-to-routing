@@ -128,6 +128,14 @@ bool AtomNetlist::dirty() const {
     return dirty_;
 }
 
+void AtomNetlist::print_stats() const {
+    vtr::printf_info("Blocks  %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
+    vtr::printf_info("Ports   %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
+    vtr::printf_info("Pins    %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
+    vtr::printf_info("Nets    %zu capacity/size: %.2f\n", net_ids_.size(), float(net_ids_.capacity()) / net_ids_.size());
+    vtr::printf_info("Strings %zu capacity/size: %.2f\n", string_ids_.size(), float(string_ids_.capacity()) / string_ids_.size());
+}
+
 /*
  *
  * Blocks
@@ -164,7 +172,12 @@ vtr::Range<AtomNetlist::port_iterator> AtomNetlist::block_clock_ports (const Ato
 
 AtomPinId AtomNetlist::block_pin (const AtomPortId port_id, BitIndex port_bit) const {
     //Convenience look-up bypassing port
-    return port_pins_[size_t(port_id)][port_bit];
+    for(auto pin_id : port_pins(port_id)) {
+        if(pin_port_bit(pin_id) == port_bit) {
+            return pin_id;
+        }
+    }
+    return AtomPinId::INVALID();
 }
 
 /*
@@ -198,7 +211,7 @@ AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
     } else if(model_port->dir == OUT_PORT) {
         type = AtomPortType::OUTPUT;
     } else {
-        VTR_ASSERT_MSG(false, "Recognized port type");
+        VTR_ASSERT_MSG(false, "Recognized model port type");
     }
     return type;
 }
@@ -229,7 +242,7 @@ AtomPinType AtomNetlist::pin_type (const AtomPinId id) const {
         case AtomPortType::INPUT: /*fallthrough */;
         case AtomPortType::CLOCK: type = AtomPinType::SINK; break;
         case AtomPortType::OUTPUT: type = AtomPinType::DRIVER; break;
-        default: VTR_ASSERT_MSG(false, "Valid port type");
+        default: VTR_ASSERT_MSG(false, "Valid atom port type");
     }
     return type;
 }
@@ -241,7 +254,7 @@ AtomPortId AtomNetlist::pin_port (const AtomPinId id) const {
 AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const { 
     //Convenience lookup bypassing the port
     AtomPortId port_id = pin_port(id);
-    return port_blocks_[size_t(port_id)];
+    return port_block(port_id);
 }
 
 BitIndex AtomNetlist::pin_port_bit(const AtomPinId id) const {
@@ -934,13 +947,7 @@ void AtomNetlist::rebuild_lookups() {
 }
 
 void AtomNetlist::shrink_to_fit() {
-
-    vtr::printf_info("Blocks %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
-    vtr::printf_info("Ports %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
-    vtr::printf_info("Pins %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
-    vtr::printf_info("Nets %zu capacity/size: %.2f\n", net_ids_.size(), float(net_ids_.capacity()) / net_ids_.size());
-    vtr::printf_info("Strings %zu capacity/size: %.2f\n", string_ids_.size(), float(string_ids_.capacity()) / string_ids_.size());
-
+    //Block data
     block_ids_.shrink_to_fit();
     block_names_.shrink_to_fit();
     block_types_.shrink_to_fit();
@@ -959,6 +966,7 @@ void AtomNetlist::shrink_to_fit() {
         ports.shrink_to_fit();
     }
 
+    //Port data
     port_ids_.shrink_to_fit();
     port_blocks_.shrink_to_fit();
     port_pins_.shrink_to_fit();
@@ -966,23 +974,19 @@ void AtomNetlist::shrink_to_fit() {
         pins.shrink_to_fit();
     }
 
+    //Pin data
     pin_ids_.shrink_to_fit();
     pin_ports_.shrink_to_fit();
     pin_port_bits_.shrink_to_fit();
     pin_nets_.shrink_to_fit();
 
+    //Net data
     net_ids_.shrink_to_fit();
     net_names_.shrink_to_fit();
     net_pins_.shrink_to_fit();
 
+    //String data
     string_ids_.shrink_to_fit();
-
-    vtr::printf_info("Blocks %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
-    vtr::printf_info("Ports %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
-    vtr::printf_info("Pins %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
-    vtr::printf_info("Nets %zu capacity/size: %.2f\n", net_ids_.size(), float(net_ids_.capacity()) / net_ids_.size());
-    vtr::printf_info("Strings %zu capacity/size: %.2f\n", string_ids_.size(), float(string_ids_.capacity()) / string_ids_.size());
-
 }
 
 /*

@@ -614,6 +614,8 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 
     {
         vtr::ScopedPrintTimer t2("Clean BLIF");
+
+        netlist.print_stats();
         
         //Clean-up lut buffers
         absorb_buffer_luts(netlist);
@@ -633,6 +635,7 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 
         //Compress the netlist to clean-out invalid entries
         netlist.compress();
+        netlist.print_stats();
     }
     {
         vtr::ScopedPrintTimer t2("Verify BLIF");

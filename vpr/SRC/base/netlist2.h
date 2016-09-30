@@ -141,6 +141,9 @@ class AtomNetlist {
         //Indictes if the netlist has invalid entries due to modification
         bool dirty() const;
 
+        //Item counts and container info (for debugging)
+        void print_stats() const;
+
     public: //Public Mutators
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
         AtomBlockId create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
