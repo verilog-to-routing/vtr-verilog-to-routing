@@ -3,6 +3,7 @@
 #include <unordered_set>
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 /*
  *
  *
@@ -823,6 +824,8 @@ void AtomNetlist::compress() {
     //Re-build the lookups
     rebuild_lookups();
 
+    shrink_to_fit();
+
     //Netlist is now clean
     dirty_ = false;
 }
@@ -997,6 +1000,61 @@ void AtomNetlist::rebuild_lookups() {
         const auto& key = net_name(net_id);
         net_name_to_net_id_[key] = net_id;
     }
+}
+
+void AtomNetlist::shrink_to_fit() {
+
+    vtr::printf_info("Blocks %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
+    vtr::printf_info("Ports %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
+    vtr::printf_info("Port Common %zu capacity/size: %.2f\n", common_ids_.size(), float(common_ids_.capacity()) / common_ids_.size());
+    vtr::printf_info("Pins %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
+    vtr::printf_info("Nets %zu capacity/size: %.2f\n", net_ids_.size(), float(net_ids_.capacity()) / net_ids_.size());
+
+    block_ids_.shrink_to_fit();
+    block_names_.shrink_to_fit();
+    block_types_.shrink_to_fit();
+    block_models_.shrink_to_fit();
+    block_truth_tables_.shrink_to_fit();
+    block_input_ports_.shrink_to_fit();
+    for(auto& ports : block_input_ports_) {
+        ports.shrink_to_fit();
+    }
+    block_output_ports_.shrink_to_fit();
+    for(auto& ports : block_output_ports_) {
+        ports.shrink_to_fit();
+    }
+    block_clock_ports_.shrink_to_fit();
+    for(auto& ports : block_clock_ports_) {
+        ports.shrink_to_fit();
+    }
+
+    port_ids_.shrink_to_fit();
+    port_blocks_.shrink_to_fit();
+    port_pins_.shrink_to_fit();
+    for(auto& pins : port_pins_) {
+        pins.shrink_to_fit();
+    }
+    port_common_ids_.shrink_to_fit();
+
+    port_common_names_.shrink_to_fit();
+    port_common_types_.shrink_to_fit();
+    common_ids_.shrink_to_fit();
+
+    pin_ids_.shrink_to_fit();
+    pin_ports_.shrink_to_fit();
+    pin_port_bits_.shrink_to_fit();
+    pin_nets_.shrink_to_fit();
+
+    net_ids_.shrink_to_fit();
+    net_names_.shrink_to_fit();
+    net_pins_.shrink_to_fit();
+
+    vtr::printf_info("Blocks %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
+    vtr::printf_info("Ports %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
+    vtr::printf_info("Port Common %zu capacity/size: %.2f\n", common_ids_.size(), float(common_ids_.capacity()) / common_ids_.size());
+    vtr::printf_info("Pins %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
+    vtr::printf_info("Nets %zu capacity/size: %.2f\n", net_ids_.size(), float(net_ids_.capacity()) / net_ids_.size());
+
 }
 
 /*

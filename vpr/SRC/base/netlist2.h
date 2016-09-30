@@ -179,6 +179,8 @@ class AtomNetlist {
         void rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map);
         void rebuild_lookups();
 
+        void shrink_to_fit();
+
         //Sanity Checks
         void verify_sizes() const;
         void verify_refs() const;
