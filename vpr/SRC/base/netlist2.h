@@ -21,18 +21,20 @@ typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
 typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
 typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
 
-enum class AtomPortType {
+typedef unsigned BitIndex;
+
+enum class AtomPortType : char {
     INPUT,
     OUTPUT,
     CLOCK
 };
 
-enum class AtomPinType {
+enum class AtomPinType : char {
     DRIVER,
     SINK
 };
 
-enum class AtomBlockType {
+enum class AtomBlockType : char {
     INPAD,
     OUTPAD,
     COMBINATIONAL,
@@ -42,8 +44,8 @@ enum class AtomBlockType {
 namespace std {
     //Make tuples hashable for std::unordered_map
     template<>
-    struct hash<std::tuple<AtomPortId,size_t>> {
-        std::size_t operator()(const std::tuple<AtomPortId,size_t>& k) const {
+    struct hash<std::tuple<AtomPortId,BitIndex>> {
+        std::size_t operator()(const std::tuple<AtomPortId,BitIndex>& k) const {
             std::size_t seed = 0;
             vtr::hash_combine(seed, std::hash<AtomPortId>()(get<0>(k)));
             vtr::hash_combine(seed, std::hash<size_t>()(get<1>(k)));
@@ -96,11 +98,11 @@ class AtomNetlist {
         vtr::Range<port_iterator>   block_input_ports   (const AtomBlockId id) const;
         vtr::Range<port_iterator>   block_output_ports  (const AtomBlockId id) const;
         vtr::Range<port_iterator>   block_clock_ports   (const AtomBlockId id) const;
-        AtomPinId                   block_pin           (const AtomPortId port_id, size_t port_bit) const;
+        AtomPinId                   block_pin           (const AtomPortId port_id, BitIndex port_bit) const;
 
         //Port
         const std::string&          port_name   (const AtomPortId id) const;
-        size_t                      port_width  (const AtomPortId id) const;
+        BitIndex                    port_width  (const AtomPortId id) const;
         AtomBlockId                 port_block  (const AtomPortId id) const; 
         AtomPortType                port_type   (const AtomPortId id) const; 
         vtr::Range<pin_iterator>    port_pins   (const AtomPortId id) const;
@@ -109,7 +111,7 @@ class AtomNetlist {
         AtomNetId           pin_net     (const AtomPinId id) const; 
         AtomPinType         pin_type    (const AtomPinId id) const; 
         AtomPortId          pin_port    (const AtomPinId id) const;
-        size_t              pin_port_bit(const AtomPinId id) const;
+        BitIndex            pin_port_bit(const AtomPinId id) const;
         AtomBlockId         pin_block   (const AtomPinId id) const;
 
         //Net
@@ -125,7 +127,7 @@ class AtomNetlist {
         //Lookups
         AtomBlockId find_block  (const std::string& name) const;
         AtomPortId  find_port   (const AtomBlockId blk_id, const std::string& name) const;
-        AtomPinId   find_pin    (const AtomPortId port_id, size_t port_bit) const;
+        AtomPinId   find_pin    (const AtomPortId port_id, BitIndex port_bit) const;
         AtomNetId   find_net    (const std::string& name) const;
 
         //Sanity check for internal consistency
@@ -138,7 +140,7 @@ class AtomNetlist {
         //Note: all create_*() functions will silently return the appropriate ID if it has already been created
         AtomBlockId create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table=TruthTable());
         AtomPortId  create_port (const AtomBlockId blk_id, const std::string& name);
-        AtomPinId   create_pin  (const AtomPortId port_id, size_t port_bit, const AtomNetId net_id, const AtomPinType type);
+        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type);
         AtomNetId   create_net  (const std::string name); //An empty or existing net
         AtomNetId   add_net  (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks); //A new fully-specified net
 
@@ -184,7 +186,7 @@ class AtomNetlist {
 
         bool valid_block_id(AtomBlockId id) const;
         bool valid_port_id(AtomPortId id) const;
-        bool valid_port_bit(AtomPortId id, size_t port_bit) const;
+        bool valid_port_bit(AtomPortId id, BitIndex port_bit) const;
         bool valid_pin_id(AtomPinId id) const;
         bool valid_net_id(AtomNetId id) const;
 
@@ -226,7 +228,7 @@ class AtomNetlist {
         //Pin data
         std::vector<AtomPinId>      pin_ids_;        //Valid pin ids
         std::vector<AtomPortId>     pin_ports_;      //Type of each pin
-        std::vector<size_t>         pin_port_bits_;  //The ports bit position in the port
+        std::vector<BitIndex>       pin_port_bits_;  //The ports bit position in the port
         std::vector<AtomNetId>      pin_nets_;       //Net associated with each pin
 
         //Net data
@@ -238,7 +240,7 @@ class AtomNetlist {
 
         std::unordered_map<std::string,AtomBlockId> block_name_to_block_id_;
         std::unordered_map<std::tuple<AtomBlockId,std::string>,AtomPortId> block_id_port_name_to_port_id_;
-        std::unordered_map<std::tuple<AtomPortId,size_t>,AtomPinId> pin_port_port_bit_to_pin_id_;
+        std::unordered_map<std::tuple<AtomPortId,BitIndex>,AtomPinId> pin_port_port_bit_to_pin_id_;
         std::unordered_map<std::string,AtomNetId> net_name_to_net_id_;
         std::unordered_map<std::tuple<std::string,AtomPortType>,AtomPortCommonId> port_name_type_to_common_id_;
 };

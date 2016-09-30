@@ -160,7 +160,7 @@ vtr::Range<AtomNetlist::port_iterator> AtomNetlist::block_clock_ports (const Ato
     return vtr::make_range(block_clock_ports_[size_t(id)].begin(), block_clock_ports_[size_t(id)].end());
 }
 
-AtomPinId AtomNetlist::block_pin (const AtomPortId port_id, size_t port_bit) const {
+AtomPinId AtomNetlist::block_pin (const AtomPortId port_id, BitIndex port_bit) const {
     //Convenience look-up bypassing port
     return port_pins_[size_t(port_id)][port_bit];
 }
@@ -176,11 +176,11 @@ const std::string& AtomNetlist::port_name (const AtomPortId id) const {
     return port_common_names_[size_t(common_id)];
 }
 
-size_t AtomNetlist::port_width (const AtomPortId id) const {
+BitIndex AtomNetlist::port_width (const AtomPortId id) const {
     //We look-up the width via the model
     const t_model_ports* port_model = find_port_model(id, port_name(id));
 
-    return static_cast<size_t>(port_model->size);
+    return static_cast<BitIndex>(port_model->size);
 }
 
 AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
@@ -230,7 +230,7 @@ AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const {
     return port_blocks_[size_t(port_id)];
 }
 
-size_t AtomNetlist::pin_port_bit(const AtomPinId id) const {
+BitIndex AtomNetlist::pin_port_bit(const AtomPinId id) const {
     return pin_port_bits_[size_t(id)];
 }
 
@@ -313,7 +313,7 @@ AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& 
     }
 }
 
-AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, size_t port_bit) const {
+AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) const {
     VTR_ASSERT(valid_port_id(port_id));
     VTR_ASSERT(valid_port_bit(port_id, port_bit));
 
@@ -574,7 +574,7 @@ AtomNetlist::AtomPortCommonId AtomNetlist::create_port_common(const std::string&
     return common_id;
 }
 
-AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, size_t port_bit, const AtomNetId net_id, const AtomPinType type) {
+AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type) {
     //Check pre-conditions (valid ids)
     VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
     VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
@@ -709,18 +709,6 @@ void AtomNetlist::remove_block(const AtomBlockId blk_id) {
     //Mark netlist dirty
     dirty_ = true;
 
-    //Blow the block away
-    /*
-     *block_name_to_block_id_.erase(block_name(blk_id));
-     *block_ids_.erase(block_ids_.begin() + size_t(blk_id));
-     *block_names_.erase(block_names_.begin() + size_t(blk_id));
-     *block_types_.erase(block_types_.begin() + size_t(blk_id));
-     *block_models_.erase(block_models_.begin() + size_t(blk_id));
-     *block_truth_tables_.erase(block_truth_tables_.begin() + size_t(blk_id));
-     *block_input_ports_.erase(block_input_ports_.begin() + size_t(blk_id));
-     *block_output_ports_.erase(block_output_ports_.begin() + size_t(blk_id));
-     *block_clock_ports_.erase(block_clock_ports_.begin() + size_t(blk_id));
-     */
 }
 
 void AtomNetlist::remove_net(const AtomNetId net_id) {
@@ -740,13 +728,6 @@ void AtomNetlist::remove_net(const AtomNetId net_id) {
     //Mark netlist dirty
     dirty_ = true;
 
-    //Blow away the net
-    /*
-     *net_name_to_net_id_.erase(net_name(net_id));
-     *net_ids_.erase(net_ids_.begin() + size_t(net_id));
-     *net_pins_.erase(net_pins_.begin() + size_t(net_id));
-     *net_names_.erase(net_names_.begin() + size_t(net_id));
-     */
 }
 
 
@@ -766,13 +747,6 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
 
     //Mark netlist dirty
     dirty_ = true;
-    //Blow the port away
-    /*
-     *block_id_port_name_to_port_id_.erase(std::make_tuple(port_block(port_id), port_name(port_id)));
-     *port_ids_.erase(port_ids_.begin() + size_t(port_id));
-     *port_blocks_.erase(port_blocks_.begin() + size_t(port_id));
-     *port_pins_.erase(port_pins_.begin() + size_t(port_id));
-     */
 
     //Note that we currently don't bother cleaning up the port_common* items
     //(they will change rarely and aren't directly iterable by users)
@@ -794,14 +768,6 @@ void AtomNetlist::remove_pin(const AtomPinId pin_id) {
     //Mark netlist dirty
     dirty_ = true;
 
-    //Blow away the pin
-    /*
-     *pin_port_port_bit_to_pin_id_.erase(std::make_tuple(pin_port(pin_id), pin_port_bit(pin_id)));
-     *pin_ids_.erase(pin_ids_.begin() + size_t(pin_id));
-     *pin_ports_.erase(pin_ports_.begin() + size_t(pin_id));
-     *pin_port_bits_.erase(pin_port_bits_.begin() + size_t(pin_id));
-     *pin_nets_.erase(pin_nets_.begin() + size_t(pin_id));
-     */
 }
 
 void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id) {
@@ -1052,7 +1018,7 @@ bool AtomNetlist::valid_port_id(AtomPortId id) const {
     return true;
 }
 
-bool AtomNetlist::valid_port_bit(AtomPortId id, size_t port_bit) const {
+bool AtomNetlist::valid_port_bit(AtomPortId id, BitIndex port_bit) const {
     VTR_ASSERT(valid_port_id(id));
     if(port_bit >= port_width(id)) return false;
     return true;

@@ -119,7 +119,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             AtomBlockId pin_blk = netlist.pin_block(driver_pin);
             AtomBlockId port_blk = netlist.port_block(port);
             VTR_ASSERT(pin_blk == port_blk);
-            printf("\tDriver Block: '%s' Driver Pin: '%s[%zu]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(driver_pin));
+            printf("\tDriver Block: '%s' Driver Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(driver_pin));
         } else {
             printf("\tNo Driver\n");
         }
@@ -130,7 +130,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             AtomBlockId pin_blk = netlist.pin_block(sink_pin);
             AtomBlockId port_blk = netlist.port_block(port);
             VTR_ASSERT(pin_blk == port_blk);
-            printf("\tSink Block: '%s' Sink Pin: '%s[%zu]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(sink_pin));
+            printf("\tSink Block: '%s' Sink Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(sink_pin));
         }
     }
 }
