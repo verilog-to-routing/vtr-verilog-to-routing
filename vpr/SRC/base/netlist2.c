@@ -757,10 +757,12 @@ void AtomNetlist::compress() {
 
     //The clean_*() functions return a vector which maps from old to new index
     // e.g. block_id_map[old_id] == new_id
-    auto block_id_map = clean_blocks();
-    auto port_id_map = clean_ports();
-    auto pin_id_map = clean_pins();
     auto net_id_map = clean_nets();
+    auto pin_id_map = clean_pins();
+    auto port_id_map = clean_ports();
+    auto block_id_map = clean_blocks();
+    //TODO: clean strings
+    //TODO: iterative cleaning?
 
     //Now we re-build all the cross references
     rebuild_block_refs(port_id_map);
@@ -779,6 +781,7 @@ void AtomNetlist::compress() {
 }
 
 std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
+    //TODO: clean blocks?
     std::vector<AtomBlockId> block_id_map;
     std::vector<AtomBlockId> new_ids;
     std::tie(new_ids, block_id_map) = compress_ids(block_ids_);
@@ -802,6 +805,34 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
 }
 
 std::vector<AtomPortId> AtomNetlist::clean_ports() {
+    //When we remove nets/pins we may end-up with empty ports, or ports
+    //whose pins don't connect to any nets. Mark such ports as invalid 
+    //so they get cleaned up
+    for(auto port_id : port_ids_) {
+        if(port_id) {
+            if(port_pins_[size_t(port_id)].size() == 0) {
+                //The port has no pins
+                remove_port(port_id);
+            } else {
+                bool all_invalid = true;
+                for(auto pin_id : port_pins(port_id)) {
+                    if(pin_id && pin_net(pin_id)) {
+                        //Pin and net are valid
+                        all_invalid = false;
+                        break;
+                    }
+                }
+
+                if(all_invalid) {
+                    //The port has only invalid or net-less pins
+                    remove_port(port_id);
+                }
+            }
+        }
+    }
+
+
+    //Clean the ports
     std::vector<AtomPortId> port_id_map;
     std::vector<AtomPortId> new_ids;
     std::tie(new_ids, port_id_map) = compress_ids(port_ids_);
@@ -833,6 +864,7 @@ std::vector<AtomPinId> AtomNetlist::clean_pins() {
     }
 
 
+    //Clean the pins
     std::vector<AtomPinId> pin_id_map;
     std::vector<AtomPinId> new_ids;
     std::tie(new_ids, pin_id_map) = compress_ids(pin_ids_);
@@ -852,6 +884,7 @@ std::vector<AtomPinId> AtomNetlist::clean_pins() {
 }
 
 std::vector<AtomNetId> AtomNetlist::clean_nets() {
+    //Clean the nets
     std::vector<AtomNetId> net_id_map;
     std::vector<AtomNetId> new_ids;
     std::tie(new_ids, net_id_map) = compress_ids(net_ids_);
