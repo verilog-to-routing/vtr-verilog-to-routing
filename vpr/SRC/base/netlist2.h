@@ -169,7 +169,7 @@ class AtomNetlist {
         const t_model_ports* find_model_port(const AtomPortId id, const std::string& name) const;
 
         //Mutators
-        AtomStringId create_string(const std::string& name);
+        AtomStringId create_string(const std::string& str);
         void remove_port(const AtomPortId port_id);
         void remove_pin(const AtomPinId pin_id);
 

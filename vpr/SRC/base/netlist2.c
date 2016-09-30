@@ -1271,8 +1271,8 @@ const t_model_ports* AtomNetlist::find_model_port (const AtomPortId id, const st
 }
 
 
-AtomStringId AtomNetlist::create_string (const std::string& name) {
-    AtomStringId str_id = find_string(name);
+AtomStringId AtomNetlist::create_string (const std::string& str) {
+    AtomStringId str_id = find_string(str);
     if(!str_id) {
         //Not found, create
 
@@ -1281,11 +1281,11 @@ AtomStringId AtomNetlist::create_string (const std::string& name) {
         string_ids_.push_back(str_id);
 
         //Store the reverse look-up
-        auto key = name;
+        auto key = str;
         string_to_string_id_[key] = str_id;
 
         //Initialize the data
-        strings_.emplace_back(name);
+        strings_.emplace_back(str);
     }
 
     //Check post-conditions: sizes
@@ -1293,8 +1293,8 @@ AtomStringId AtomNetlist::create_string (const std::string& name) {
     VTR_ASSERT(strings_.size() == string_ids_.size());
 
     //Check post-conditions: values
-    VTR_ASSERT(strings_[size_t(str_id)] == name);
-    VTR_ASSERT_SAFE(find_string(name) == str_id);
+    VTR_ASSERT(strings_[size_t(str_id)] == str);
+    VTR_ASSERT_SAFE(find_string(str) == str_id);
 
     return str_id;
 }
