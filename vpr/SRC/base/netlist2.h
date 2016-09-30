@@ -10,16 +10,21 @@
 
 #include "logic_types.h" //For t_model
 
+//Forward delcarations
+class AtomNetlist;
+
 //Type tags for Ids
 struct atom_blk_id_tag;
 struct atom_net_id_tag;
 struct atom_port_id_tag;
 struct atom_pin_id_tag;
+struct atom_string_id_tag;
 
 typedef vtr::StrongId<atom_blk_id_tag> AtomBlockId;
 typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
 typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
 typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
+typedef vtr::StrongId<atom_string_id_tag> AtomStringId;
 
 typedef unsigned BitIndex;
 
@@ -53,21 +58,21 @@ namespace std {
         }
     };
     template<>
-    struct hash<std::tuple<std::string,AtomPortType>> {
+    struct hash<std::tuple<AtomStringId,AtomPortType>> {
         typedef std::underlying_type<AtomPortType>::type enum_type;
-        std::size_t operator()(const std::tuple<std::string,AtomPortType>& k) const {
+        std::size_t operator()(const std::tuple<AtomStringId,AtomPortType>& k) const {
             std::size_t seed = 0;
-            vtr::hash_combine(seed, std::hash<std::string>()(get<0>(k)));
+            vtr::hash_combine(seed, std::hash<AtomStringId>()(get<0>(k)));
             vtr::hash_combine(seed, std::hash<enum_type>()(static_cast<enum_type>(get<1>(k))));
             return seed;
         }
     };
     template<>
-    struct hash<std::tuple<AtomBlockId,std::string>> {
-        std::size_t operator()(const std::tuple<AtomBlockId,std::string>& k) const {
+    struct hash<std::tuple<AtomBlockId,AtomStringId>> {
+        std::size_t operator()(const std::tuple<AtomBlockId,AtomStringId>& k) const {
             std::size_t seed = 0;
             vtr::hash_combine(seed, std::hash<AtomBlockId>()(get<0>(k)));
-            vtr::hash_combine(seed, std::hash<std::string>()(get<1>(k)));
+            vtr::hash_combine(seed, std::hash<AtomStringId>()(get<1>(k)));
             return seed;
         }
     };
@@ -153,17 +158,18 @@ class AtomNetlist {
         void compress();
 
     private: //Private types
-        struct atom_port_common_id_tag;
-        typedef vtr::StrongId<atom_port_common_id_tag> AtomPortCommonId;
 
     private: //Private members
         //Lookups
-        AtomPortCommonId find_port_common_id(const std::string& name) const;
-        AtomPortCommonId find_port_common_id(const AtomPortId id) const;
+        AtomStringId find_string(const std::string& str) const;
+        AtomBlockId find_block(const AtomStringId name_id) const;
+        AtomPortId  find_port(const AtomBlockId blk_id, const AtomStringId name_id) const;
+        AtomNetId find_net(const AtomStringId name_id) const;
+
         const t_model_ports* find_model_port(const AtomPortId id, const std::string& name) const;
 
         //Mutators
-        AtomPortCommonId create_port_common(const std::string& name);
+        AtomStringId create_string(const std::string& name);
         void remove_port(const AtomPortId port_id);
         void remove_pin(const AtomPinId pin_id);
 
@@ -191,14 +197,17 @@ class AtomNetlist {
         bool valid_port_bit(AtomPortId id, BitIndex port_bit) const;
         bool valid_pin_id(AtomPinId id) const;
         bool valid_net_id(AtomNetId id) const;
+        bool valid_string_id(AtomStringId id) const;
 
         void validate_block_sizes() const;
         void validate_port_sizes() const;
         void validate_pin_sizes() const;
         void validate_net_sizes() const;
+        void validate_string_sizes() const;
         void validate_block_port_refs() const;
         void validate_port_pin_refs() const;
         void validate_net_pin_refs() const;
+        void validate_string_refs() const;
 
     private: //Private data
 
@@ -208,7 +217,7 @@ class AtomNetlist {
 
         //Block data
         std::vector<AtomBlockId>             block_ids_;      //Valid block ids
-        std::vector<std::string>             block_names_;    //Name of each block
+        std::vector<AtomStringId>            block_names_;    //Name of each block
         std::vector<AtomBlockType>           block_types_;    //Type of each block
         std::vector<const t_model*>          block_models_;   //Architecture model of each block
         std::vector<TruthTable>              block_truth_tables_; //Truth tables of each block
@@ -218,12 +227,9 @@ class AtomNetlist {
 
         //Port data
         std::vector<AtomPortId>             port_ids_;          //Valid port ids
-        std::vector<AtomBlockId>            port_blocks_;       //Block associated with each port (indexed by AtomPortId)
-        std::vector<std::vector<AtomPinId>> port_pins_;         //Pins associated with each port (indexed by AtomPortId)
-        std::vector<AtomPortCommonId>       port_common_ids_;   //Since ports have duplicate data we use another 'common' id 
-
-        std::vector<std::string>            port_common_names_; //Port names (indexed by AtomPortCommonId)
-        std::vector<AtomPortCommonId>       common_ids_;        //Valid common ids
+        std::vector<AtomStringId>           port_names_;        //Name of each port
+        std::vector<AtomBlockId>            port_blocks_;       //Block associated with each port
+        std::vector<std::vector<AtomPinId>> port_pins_;         //Pins associated with each port
 
         //Pin data
         std::vector<AtomPinId>      pin_ids_;        //Valid pin ids
@@ -233,16 +239,23 @@ class AtomNetlist {
 
         //Net data
         std::vector<AtomNetId>              net_ids_;    //Valid net ids
-        std::vector<std::string>            net_names_;  //Name of each net
+        std::vector<AtomStringId>           net_names_;  //Name of each net
         std::vector<std::vector<AtomPinId>> net_pins_;   //Pins associated with each net
+
+        //String data
+        // We store each unique string once, and reference it by an StringId
+        // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
+        // only store the Ids)
+        std::vector<AtomStringId>   string_ids_;    //Valid string ids
+        std::vector<std::string>    strings_;       //Strings
 
     private: //Fast lookups
 
-        std::unordered_map<std::string,AtomBlockId> block_name_to_block_id_;
-        std::unordered_map<std::tuple<AtomBlockId,std::string>,AtomPortId> block_id_port_name_to_port_id_;
+        std::unordered_map<AtomStringId,AtomBlockId> block_name_to_block_id_;
+        std::unordered_map<std::tuple<AtomBlockId,AtomStringId>,AtomPortId> block_id_port_name_to_port_id_;
         std::unordered_map<std::tuple<AtomPortId,BitIndex>,AtomPinId> pin_port_port_bit_to_pin_id_;
-        std::unordered_map<std::string,AtomNetId> net_name_to_net_id_;
-        std::unordered_map<std::string,AtomPortCommonId> port_name_to_common_id_;
+        std::unordered_map<AtomStringId,AtomNetId> net_name_to_net_id_;
+        std::unordered_map<std::string,AtomStringId> string_to_string_id_;
 };
 
 #endif
