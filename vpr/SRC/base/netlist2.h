@@ -136,7 +136,7 @@ class AtomNetlist {
         AtomNetId   find_net    (const std::string& name) const;
 
         //Sanity check for internal consistency
-        void verify() const;
+        bool verify() const;
 
         //Indictes if the netlist has invalid entries due to modification
         bool dirty() const;
@@ -188,9 +188,9 @@ class AtomNetlist {
         void shrink_to_fit();
 
         //Sanity Checks
-        void verify_sizes() const;
-        void verify_refs() const;
-        void verify_lookups() const;
+        bool verify_sizes() const;
+        bool verify_refs() const;
+        bool verify_lookups() const;
 
         bool valid_block_id(AtomBlockId id) const;
         bool valid_port_id(AtomPortId id) const;
@@ -199,15 +199,15 @@ class AtomNetlist {
         bool valid_net_id(AtomNetId id) const;
         bool valid_string_id(AtomStringId id) const;
 
-        void validate_block_sizes() const;
-        void validate_port_sizes() const;
-        void validate_pin_sizes() const;
-        void validate_net_sizes() const;
-        void validate_string_sizes() const;
-        void validate_block_port_refs() const;
-        void validate_port_pin_refs() const;
-        void validate_net_pin_refs() const;
-        void validate_string_refs() const;
+        bool validate_block_sizes() const;
+        bool validate_port_sizes() const;
+        bool validate_pin_sizes() const;
+        bool validate_net_sizes() const;
+        bool validate_string_sizes() const;
+        bool validate_block_port_refs() const;
+        bool validate_port_pin_refs() const;
+        bool validate_net_pin_refs() const;
+        bool validate_string_refs() const;
 
     private: //Private data
 

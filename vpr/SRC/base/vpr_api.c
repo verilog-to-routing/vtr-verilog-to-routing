@@ -1111,6 +1111,9 @@ void vpr_print_error(const VprError& vpr_error){
         case VPR_ERROR_IMPL_NETLIST_WRITER:
             error_type = vtr::strdup("Implementation Netlist Writer");
             break;
+        case VPR_ERROR_ATOM_NETLIST:
+            error_type = vtr::strdup("Atom Netlist");
+            break;
         case VPR_ERROR_OTHER:
             error_type = vtr::strdup("Other");
             break;

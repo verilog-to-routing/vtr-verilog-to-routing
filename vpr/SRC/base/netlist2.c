@@ -4,6 +4,8 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+
+#include "vpr_error.h"
 /*
  *
  *
@@ -16,7 +18,6 @@ template<typename T>
 bool are_contiguous(std::vector<T>& values) {
     for(size_t i = 0; i < values.size(); ++i) {
         if (size_t(values[i]) != i) {
-            VTR_ASSERT(false);
             return false;
         }
     }
@@ -27,7 +28,6 @@ template<typename T>
 bool all_valid(std::vector<T>& values) {
     for(size_t i = 0; i < values.size(); ++i) {
         if(!values[i]) {
-            VTR_ASSERT(false);
             return false;
         }
     }
@@ -334,66 +334,79 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
  * Validation
  *
  */
-void AtomNetlist::verify() const {
+bool AtomNetlist::verify() const {
     verify_sizes();
     verify_refs();
     verify_lookups();
+    return true;
 }
 
 //Checks that the sizes of internal data structures
 //are consistent. Should take constant time.
-void AtomNetlist::verify_sizes() const {
+bool AtomNetlist::verify_sizes() const {
     validate_block_sizes();
     validate_port_sizes();
     validate_pin_sizes();
     validate_net_sizes();
     validate_string_sizes();
+    return true;
 }
 
 //Checks that all cross-references are consistent.
 //Should take linear time.
-void AtomNetlist::verify_refs() const {
+bool AtomNetlist::verify_refs() const {
     validate_block_port_refs();
     validate_port_pin_refs();
     validate_net_pin_refs();
     validate_string_refs();
-
+    return true;
 }
 
-void AtomNetlist::verify_lookups() const {
+bool AtomNetlist::verify_lookups() const {
     //Verify that fast look-ups are consistent
 
     //Blocks
     for(auto blk_id : blocks()) {
         const auto& name = block_name(blk_id);
-        VTR_ASSERT(find_block(name) == blk_id);
+        if(find_block(name) != blk_id) {
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block lookup by name mismatch");
+        }
     }
 
     //Ports
     for(auto port_id : port_ids_) {
         auto blk_id = port_block(port_id);
         const auto& name = port_name(port_id);
-        VTR_ASSERT(find_port(blk_id, name) == port_id);
+        if(find_port(blk_id, name) != port_id) {
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block lookup by name mismatch");
+        }
     }
 
     //Pins
     for(auto pin_id : pin_ids_) {
         auto port_id = pin_port(pin_id);
         auto bit = pin_port_bit(pin_id);
-        VTR_ASSERT(find_pin(port_id, bit) == pin_id);
+        if(find_pin(port_id, bit) != pin_id) {
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block lookup by name mismatch");
+        }
     }
 
     //Nets
     for(auto net_id : nets()) {
         const auto& name = net_name(net_id); 
-        VTR_ASSERT(find_net(name) == net_id);
+        if(find_net(name) != net_id) {
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block lookup by name mismatch");
+        }
     }
 
     //Port common
     for(auto str_id : string_ids_) {
         const auto& name = strings_[size_t(str_id)];
-        VTR_ASSERT(find_string(name) == str_id);
+        if(find_string(name) != str_id) {
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block lookup by name mismatch");
+        }
     }
+    return true;
 }
 
 /*
@@ -430,13 +443,7 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const AtomBlockTyp
     }
 
     //Check post-conditions: size
-    VTR_ASSERT(block_names_.size() == block_ids_.size());
-    VTR_ASSERT(block_types_.size() == block_ids_.size());
-    VTR_ASSERT(block_models_.size() == block_ids_.size());
-    VTR_ASSERT(block_truth_tables_.size() == block_ids_.size());
-    VTR_ASSERT(block_name_to_block_id_.size() == block_ids_.size());
-    VTR_ASSERT(block_input_ports_.size() == block_ids_.size());
-    VTR_ASSERT(block_output_ports_.size() == block_ids_.size());
+    VTR_ASSERT(validate_block_sizes());
 
     //Check post-conditions: values
     VTR_ASSERT(valid_block_id(blk_id));
@@ -491,8 +498,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
     }
 
     //Check post-conditions: sizes
-    VTR_ASSERT(port_blocks_.size() == port_ids_.size());
-    VTR_ASSERT(port_pins_.size() == port_ids_.size());
+    VTR_ASSERT(validate_port_sizes());
     
     //Check post-conditions: values
     VTR_ASSERT(valid_port_id(port_id));
@@ -542,9 +548,7 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
     }
 
     //Check post-conditions: sizes
-    VTR_ASSERT(pin_ports_.size() == pin_ids_.size());
-    VTR_ASSERT(pin_port_bits_.size() == pin_ids_.size());
-    VTR_ASSERT(pin_nets_.size() == pin_ids_.size());
+    VTR_ASSERT(validate_pin_sizes());
 
     //Check post-conditions: values
     VTR_ASSERT(valid_pin_id(pin_id));
@@ -587,8 +591,7 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
     }
 
     //Check post-conditions: size
-    VTR_ASSERT(net_names_.size() == net_ids_.size());
-    VTR_ASSERT(net_pins_.size() == net_ids_.size());
+    VTR_ASSERT(validate_net_sizes());
 
     //Check post-conditions: values
     VTR_ASSERT(valid_net_id(net_id));
@@ -684,9 +687,6 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
 
     //Mark netlist dirty
     dirty_ = true;
-
-    //Note that we currently don't bother cleaning up the port_common* items
-    //(they will change rarely and aren't directly iterable by users)
 }
 
 void AtomNetlist::remove_pin(const AtomPinId pin_id) {
@@ -712,8 +712,6 @@ void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id)
     //
     //Note that during sweeping either the net or pin could be invalid (i.e. already swept)
     //so we check before trying to use them
-
-
 
     if(valid_net_id(net_id)) {
         //Warning: this is slow!
@@ -760,6 +758,7 @@ void AtomNetlist::compress() {
     //Re-build the lookups
     rebuild_lookups();
 
+    //Resize containers to exact size
     shrink_to_fit();
 
     //Netlist is now clean
@@ -783,9 +782,8 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
     //Update Ids last since used as predicate
     block_ids_ = new_ids;
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(block_ids_), "IDs should be contiguous");
-
-    VTR_ASSERT_SAFE(all_valid(block_ids_));
+    VTR_ASSERT_SAFE_MSG(are_contiguous(block_ids_), "Ids should be contiguous");
+    VTR_ASSERT_SAFE_MSG(all_valid(block_ids_), "All Ids should be valid");
 
     return block_id_map;
 }
@@ -803,9 +801,8 @@ std::vector<AtomPortId> AtomNetlist::clean_ports() {
     //Update Ids last since used as predicate
     port_ids_ = new_ids;
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(port_ids_), "IDs should be contiguous");
-
-    VTR_ASSERT_SAFE(all_valid(port_ids_));
+    VTR_ASSERT_SAFE_MSG(are_contiguous(port_ids_), "Ids should be contiguous");
+    VTR_ASSERT_SAFE_MSG(all_valid(port_ids_), "All Ids should be valid");
 
     return port_id_map;
 }
@@ -835,9 +832,8 @@ std::vector<AtomPinId> AtomNetlist::clean_pins() {
     //Update Ids last since used as predicate
     pin_ids_ = new_ids;
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(pin_ids_), "IDs should be contiguous");
-
-    VTR_ASSERT_SAFE(all_valid(pin_ids_));
+    VTR_ASSERT_SAFE_MSG(are_contiguous(pin_ids_), "Ids should be contiguous");
+    VTR_ASSERT_SAFE_MSG(all_valid(pin_ids_), "All Ids should be valid");
 
     return pin_id_map;
 }
@@ -854,9 +850,8 @@ std::vector<AtomNetId> AtomNetlist::clean_nets() {
     //Update Ids last since used as predicate
     net_ids_ = new_ids;
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(net_ids_), "IDs should be contiguous");
-
-    VTR_ASSERT_SAFE(all_valid(net_ids_));
+    VTR_ASSERT_SAFE_MSG(are_contiguous(net_ids_), "Ids should be contiguous");
+    VTR_ASSERT_SAFE_MSG(all_valid(net_ids_), "All Ids should be valid");
 
     return net_id_map;
 }
@@ -865,36 +860,36 @@ void AtomNetlist::rebuild_block_refs(const std::vector<AtomPortId>& port_id_map)
     //Update the port id references held by blocks
     for(std::vector<AtomPortId>& port : block_input_ports_) {
         port = update_refs(port, port_id_map);
-        VTR_ASSERT_SAFE(all_valid(port));
+        VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
     }
     for(std::vector<AtomPortId>& port : block_output_ports_) {
         port = update_refs(port, port_id_map);
-        VTR_ASSERT_SAFE(all_valid(port));
+        VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
     }
     for(std::vector<AtomPortId>& port : block_clock_ports_) {
         port = update_refs(port, port_id_map);
-        VTR_ASSERT_SAFE(all_valid(port));
+        VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
     }
 }
 
 void AtomNetlist::rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map) {
     //Update block and pin references held by ports
     port_blocks_ = update_refs(port_blocks_, block_id_map); 
-    VTR_ASSERT_SAFE(all_valid(port_blocks_));
+    VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
 
     for(auto& pins : port_pins_) {
         pins = update_refs(pins, pin_id_map);
-        VTR_ASSERT_SAFE(all_valid(pins));
+        VTR_ASSERT_SAFE_MSG(all_valid(pins), "All Ids should be valid");
     }
 }
 
 void AtomNetlist::rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, const std::vector<AtomNetId>& net_id_map) {
     //Update port and net references held by pins
     pin_ports_ = update_refs(pin_ports_, port_id_map);
-    VTR_ASSERT_SAFE(all_valid(pin_ports_));
+    VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
 
     pin_nets_ = update_refs(pin_nets_, net_id_map);
-    VTR_ASSERT_SAFE(all_valid(pin_nets_));
+    VTR_ASSERT_SAFE_MSG(all_valid(pin_nets_), "All Ids should be valid");
 }
 
 void AtomNetlist::rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map) {
@@ -902,7 +897,7 @@ void AtomNetlist::rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map) {
     for(auto& pins : net_pins_) {
         pins = update_refs(pins, pin_id_map);
 
-        VTR_ASSERT_SAFE_MSG(all_valid(pins), "Only valid sinks");
+        VTR_ASSERT_SAFE_MSG(all_valid(pins), "All sinks should be valid");
     }
 }
 void AtomNetlist::rebuild_lookups() {
@@ -1036,34 +1031,49 @@ bool AtomNetlist::valid_string_id(AtomStringId id) const {
     return true;
 }
 
-void AtomNetlist::validate_block_sizes() const {
-    VTR_ASSERT(block_names_.size() == block_ids_.size());
-    VTR_ASSERT(block_types_.size() == block_ids_.size());
-    VTR_ASSERT(block_models_.size() == block_ids_.size());
-    VTR_ASSERT(block_truth_tables_.size() == block_ids_.size());
+bool AtomNetlist::validate_block_sizes() const {
+    if(block_names_.size() != block_ids_.size()
+        || block_types_.size() != block_ids_.size()
+        || block_models_.size() != block_ids_.size()
+        || block_truth_tables_.size() != block_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
+    }
+    return true;
 }
 
-void AtomNetlist::validate_port_sizes() const {
-    VTR_ASSERT(port_blocks_.size() == port_ids_.size());
-    VTR_ASSERT(port_pins_.size() == port_ids_.size());
+bool AtomNetlist::validate_port_sizes() const {
+    if(port_blocks_.size() != port_ids_.size()
+        || port_pins_.size() != port_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
+    }
+    return true;
 }
 
-void AtomNetlist::validate_pin_sizes() const {
-    VTR_ASSERT(pin_ports_.size() == pin_ids_.size());
-    VTR_ASSERT(pin_port_bits_.size() == pin_ids_.size());
-    VTR_ASSERT(pin_nets_.size() == pin_ids_.size());
+bool AtomNetlist::validate_pin_sizes() const {
+    if(pin_ports_.size() != pin_ids_.size()
+        || pin_port_bits_.size() != pin_ids_.size()
+        || pin_nets_.size() != pin_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
+    }
+    return true;
 }
 
-void AtomNetlist::validate_net_sizes() const {
-    VTR_ASSERT(net_names_.size() == net_ids_.size());
-    VTR_ASSERT(net_pins_.size() == net_ids_.size());
+bool AtomNetlist::validate_net_sizes() const {
+    if(net_names_.size() != net_ids_.size()
+        || net_pins_.size() != net_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
+    }
+    return true;
 }
 
-void AtomNetlist::validate_string_sizes() const {
-    VTR_ASSERT(strings_.size() == string_ids_.size());
+bool AtomNetlist::validate_string_sizes() const {
+    if(strings_.size() != string_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent string data sizes");
+    }
+    return true;
 }
 
-void AtomNetlist::validate_block_port_refs() const {
+bool AtomNetlist::validate_block_port_refs() const {
     //Verify that all block <-> port references are consistent
 
     //Track how many times we've seen each port from the blocks 
@@ -1071,31 +1081,42 @@ void AtomNetlist::validate_block_port_refs() const {
 
     for(auto blk_id : blocks()) {
         for(auto in_port_id : block_input_ports(blk_id)) {
-            VTR_ASSERT(blk_id == port_block(in_port_id));
+            if(blk_id != port_block(in_port_id)) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block-input port cross-reference does not match");
+            }
             ++seen_port_ids[size_t(in_port_id)];
         }
         for(auto out_port_id : block_output_ports(blk_id)) {
-            VTR_ASSERT(blk_id == port_block(out_port_id));
+            if(blk_id != port_block(out_port_id)) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block-output port cross-reference does not match") ;
+            }
             ++seen_port_ids[size_t(out_port_id)];
         }
         for(auto clock_port_id : block_clock_ports(blk_id)) {
-            VTR_ASSERT(blk_id == port_block(clock_port_id));
+            if(blk_id != port_block(clock_port_id)) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block-clock port cross-reference does not match"); 
+            }
             ++seen_port_ids[size_t(clock_port_id)];
         }
     }
 
-    //Check that we have no orphaned ports (i.e. that aren't referenced by a block) 
-    //or shared ports (i.e. referenced by multiple blocks)
-    VTR_ASSERT_MSG(std::all_of(seen_port_ids.begin(), seen_port_ids.end(),
+    //Check that we have neither orphaned ports (i.e. that aren't referenced by a block) 
+    //nor shared ports (i.e. referenced by multiple blocks)
+    if(!std::all_of(seen_port_ids.begin(), seen_port_ids.end(),
         [](unsigned val) {
             return val == 1;
-    }), "Port referenced by a single block");
+    })) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Port not referenced by a single block");
+    }
 
-    VTR_ASSERT_MSG(std::accumulate(seen_port_ids.begin(), seen_port_ids.end(), 0u) == port_ids_.size(),
-                  "All block ports checked");
+    if(std::accumulate(seen_port_ids.begin(), seen_port_ids.end(), 0u) != port_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found orphaned port (not referenced by a block)");
+    }
+
+    return true;
 }
 
-void AtomNetlist::validate_port_pin_refs() const {
+bool AtomNetlist::validate_port_pin_refs() const {
     //Check that port <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
@@ -1103,25 +1124,33 @@ void AtomNetlist::validate_port_pin_refs() const {
 
     for(auto port_id : port_ids_) {
         for(auto pin_id : port_pins(port_id)) {
-            VTR_ASSERT(pin_port(pin_id) == port_id);
-            VTR_ASSERT(pin_port_bit(pin_id) < port_width(port_id));
+            if(pin_port(pin_id) != port_id) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Port-pin cross-reference does not match");
+            }
+            if(pin_port_bit(pin_id) >= port_width(port_id)) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Out-of-range port bit index");
+            }
             ++seen_pin_ids[size_t(pin_id)];
         }
     }
 
-    //Check that we have no orphaned pins (i.e. that aren't referenced by a port) 
-    //or shared pins (i.e. referenced by multiple ports)
-    VTR_ASSERT_MSG(std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
+    //Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
+    //nor shared pins (i.e. referenced by multiple ports)
+    if(!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
         [](unsigned val) {
             return val == 1;
-    }), "Pins referenced by a single port");
+    })) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Pins not referenced by a single port");
+    }
 
-    VTR_ASSERT_MSG(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) == pin_ids_.size(),
-                  "All port pins checked");
-    
+    if(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) != pin_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found orphaned pins (not referenced by a port)");
+    }
+
+    return true;
 }
 
-void AtomNetlist::validate_net_pin_refs() const {
+bool AtomNetlist::validate_net_pin_refs() const {
     //Check that net <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
@@ -1135,12 +1164,16 @@ void AtomNetlist::validate_net_pin_refs() const {
                 //The first net pin is the driver, which may be invalid
                 //if there is no driver. So we only check for a valid id
                 //on the other net pins (which are all sinks and must be valid)
-                VTR_ASSERT(pin_id);
+                if(!pin_id) {
+                    VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Invalid pin found in net sinks");
+                }
             }
 
             if(pin_id) {
                 //Verify the cross reference if the pin_id is valid (i.e. a sink or a valid driver)
-                VTR_ASSERT(pin_net(pin_id) == net_id);
+                if(pin_net(pin_id) != net_id) {
+                    VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Net-pin cross-reference does not match");
+                }
 
                 //We only record valid seen pins since we may see multiple undriven nets with invalid IDs
                 ++seen_pin_ids[size_t(pin_id)];
@@ -1148,24 +1181,31 @@ void AtomNetlist::validate_net_pin_refs() const {
         }
     }
 
-    //Check that we have no orphaned pins (i.e. that aren't referenced by a port) 
-    //or shared pins (i.e. referenced by multiple ports)
-    VTR_ASSERT_MSG(std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
+    //Check that we have niether orphaned pins (i.e. that aren't referenced by a port) 
+    //nor shared pins (i.e. referenced by multiple ports)
+    if(!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
         [](unsigned val) {
             return val == 1;
-    }), "Pins referenced by a single net");
+    })) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found pins not referenced by a single net");
+    }
 
-    VTR_ASSERT_MSG(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) == pin_ids_.size(),
-                  "All net pins checked");
+    if(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) != pin_ids_.size()) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found orphaned pins (not referenced by a net)");
+    }
     
+    return true;
 }
 
-void AtomNetlist::validate_string_refs() const {
+bool AtomNetlist::validate_string_refs() const {
     for(const auto& string_ids : {block_names_, port_names_, net_names_}) {
         for(const auto& str_id : string_ids) {
-            VTR_ASSERT(valid_string_id(str_id));
+            if(!valid_string_id(str_id)) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Invalid string reference");
+            }
         }
     }
+    return true;
 }
 
 
@@ -1299,8 +1339,3 @@ AtomStringId AtomNetlist::create_string (const std::string& str) {
     return str_id;
 }
 
-/*
- *
- * Non-member functions
- *
- */
