@@ -158,12 +158,12 @@ class AtomNetlist {
 
     private: //Private members
         //Lookups
-        AtomPortCommonId find_port_common_id(const std::string& name, const AtomPortType type) const;
+        AtomPortCommonId find_port_common_id(const std::string& name) const;
         AtomPortCommonId find_port_common_id(const AtomPortId id) const;
-        const t_model_ports* find_port_model(const AtomPortId id, const std::string& name) const;
+        const t_model_ports* find_model_port(const AtomPortId id, const std::string& name) const;
 
         //Mutators
-        AtomPortCommonId create_port_common(const std::string& name, const AtomPortType type);
+        AtomPortCommonId create_port_common(const std::string& name);
         void remove_port(const AtomPortId port_id);
         void remove_pin(const AtomPinId pin_id);
 
@@ -223,8 +223,6 @@ class AtomNetlist {
         std::vector<AtomPortCommonId>       port_common_ids_;   //Since ports have duplicate data we use another 'common' id 
 
         std::vector<std::string>            port_common_names_; //Port names (indexed by AtomPortCommonId)
-        std::vector<AtomPortType>           port_common_types_; //Type of each port (indexed by AtomPortCommonId)
-                                                                // to look-up the shared info (indexed by AtomPortId)
         std::vector<AtomPortCommonId>       common_ids_;        //Valid common ids
 
         //Pin data
@@ -244,7 +242,7 @@ class AtomNetlist {
         std::unordered_map<std::tuple<AtomBlockId,std::string>,AtomPortId> block_id_port_name_to_port_id_;
         std::unordered_map<std::tuple<AtomPortId,BitIndex>,AtomPinId> pin_port_port_bit_to_pin_id_;
         std::unordered_map<std::string,AtomNetId> net_name_to_net_id_;
-        std::unordered_map<std::tuple<std::string,AtomPortType>,AtomPortCommonId> port_name_type_to_common_id_;
+        std::unordered_map<std::string,AtomPortCommonId> port_name_to_common_id_;
 };
 
 #endif

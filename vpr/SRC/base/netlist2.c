@@ -179,15 +179,27 @@ const std::string& AtomNetlist::port_name (const AtomPortId id) const {
 
 BitIndex AtomNetlist::port_width (const AtomPortId id) const {
     //We look-up the width via the model
-    const t_model_ports* port_model = find_port_model(id, port_name(id));
+    const t_model_ports* model_port = find_model_port(id, port_name(id));
 
-    return static_cast<BitIndex>(port_model->size);
+    return static_cast<BitIndex>(model_port->size);
 }
 
 AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
-    //Same for all ports accross the same model, so use the common Id
-    AtomPortCommonId common_id = find_port_common_id(id);
-    return port_common_types_[size_t(common_id)];
+    const t_model_ports* model_port = find_model_port(id, port_name(id));
+
+    AtomPortType type;
+    if(model_port->dir == IN_PORT) {
+        if(model_port->is_clock) {
+            type = AtomPortType::CLOCK;
+        } else {
+            type = AtomPortType::INPUT;
+        }
+    } else if(model_port->dir == OUT_PORT) {
+        type = AtomPortType::OUTPUT;
+    } else {
+        VTR_ASSERT_MSG(false, "Recognized port type");
+    }
+    return type;
 }
 
 AtomBlockId AtomNetlist::port_block (const AtomPortId id) const {
@@ -414,8 +426,7 @@ void AtomNetlist::verify_lookups() const {
     //Port common
     for(auto common_id : common_ids_) {
         const auto& name = port_common_names_[size_t(common_id)];
-        auto type = port_common_types_[size_t(common_id)];
-        VTR_ASSERT(find_port_common_id(name, type) == common_id);
+        VTR_ASSERT(find_port_common_id(name) == common_id);
     }
 }
 
@@ -491,27 +502,14 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
         //Initialize the per-port-instance data
         port_blocks_.push_back(blk_id);
 
-        //Find the model port
-        const t_model_ports* model_port = find_port_model(port_id, name);
+        //Initialize the shared/common per port/block data
+        AtomPortCommonId port_common_id = create_port_common(name);
+        port_common_ids_.push_back(port_common_id);
 
         //Allocate the pins, initialize to invalid Ids
         port_pins_.emplace_back();
-
-        //Determine the port type
-        AtomPortType type;
-        if(model_port->dir == IN_PORT) {
-            if(model_port->is_clock) {
-                type = AtomPortType::CLOCK;
-            } else {
-                type = AtomPortType::INPUT;
-            }
-        } else if(model_port->dir == OUT_PORT) {
-            type = AtomPortType::OUTPUT;
-        } else {
-            VTR_ASSERT_MSG(false, "Recognized port type");
-        }
-
         //Associate the port with the blocks inputs/outputs/clocks
+        AtomPortType type = port_type(port_id);
         if (type == AtomPortType::INPUT) {
             block_input_ports_[size_t(blk_id)].push_back(port_id);
 
@@ -525,9 +523,6 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
             VTR_ASSERT_MSG(false, "Recognized port type");
         }
 
-        //Initialize the shared/common per port/block type data
-        AtomPortCommonId port_common_id = create_port_common(name, type);
-        port_common_ids_.push_back(port_common_id);
     }
 
     //Check post-conditions: sizes
@@ -544,8 +539,8 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
     return port_id;
 }
 
-AtomNetlist::AtomPortCommonId AtomNetlist::create_port_common(const std::string& name, const AtomPortType type) {
-    AtomPortCommonId common_id = find_port_common_id(name, type);
+AtomNetlist::AtomPortCommonId AtomNetlist::create_port_common(const std::string& name) {
+    AtomPortCommonId common_id = find_port_common_id(name);
     if(!common_id) {
         //Not found, create
 
@@ -554,23 +549,20 @@ AtomNetlist::AtomPortCommonId AtomNetlist::create_port_common(const std::string&
         common_ids_.push_back(common_id);
 
         //Store the reverse look-up
-        auto key = std::make_tuple(name, type);
-        port_name_type_to_common_id_[key] = common_id;
+        auto key = name;
+        port_name_to_common_id_[key] = common_id;
 
         //Initialize the data
         port_common_names_.emplace_back(name);
-        port_common_types_.emplace_back(type);
     }
 
     //Check post-conditions: sizes
-    VTR_ASSERT(port_name_type_to_common_id_.size() == common_ids_.size());
+    VTR_ASSERT(port_name_to_common_id_.size() == common_ids_.size());
     VTR_ASSERT(port_common_names_.size() == common_ids_.size());
-    VTR_ASSERT(port_common_types_.size() == common_ids_.size());
 
     //Check post-conditions: values
     VTR_ASSERT(port_common_names_[size_t(common_id)] == name);
-    VTR_ASSERT(port_common_types_[size_t(common_id)] == type);
-    VTR_ASSERT_SAFE(find_port_common_id(name, type) == common_id);
+    VTR_ASSERT_SAFE(find_port_common_id(name) == common_id);
 
     return common_id;
 }
@@ -1037,7 +1029,6 @@ void AtomNetlist::shrink_to_fit() {
     port_common_ids_.shrink_to_fit();
 
     port_common_names_.shrink_to_fit();
-    port_common_types_.shrink_to_fit();
     common_ids_.shrink_to_fit();
 
     pin_ids_.shrink_to_fit();
@@ -1226,9 +1217,9 @@ void AtomNetlist::validate_net_pin_refs() const {
  * Internal utilities
  *
  */
-AtomNetlist::AtomPortCommonId AtomNetlist::find_port_common_id (const std::string& name, const AtomPortType type) const {
-    auto iter = port_name_type_to_common_id_.find(std::make_tuple(name, type));
-    if(iter != port_name_type_to_common_id_.end()) {
+AtomNetlist::AtomPortCommonId AtomNetlist::find_port_common_id (const std::string& name) const {
+    auto iter = port_name_to_common_id_.find(name);
+    if(iter != port_name_to_common_id_.end()) {
         return iter->second;
     } else {
         return AtomPortCommonId::INVALID();
@@ -1238,7 +1229,7 @@ AtomNetlist::AtomPortCommonId AtomNetlist::find_port_common_id (const AtomPortId
     return port_common_ids_[size_t(id)];
 }
 
-const t_model_ports* AtomNetlist::find_port_model(const AtomPortId id, const std::string& name) const {
+const t_model_ports* AtomNetlist::find_model_port(const AtomPortId id, const std::string& name) const {
     AtomBlockId blk_id = port_block(id);
     const t_model* blk_model = block_model(blk_id);
 
