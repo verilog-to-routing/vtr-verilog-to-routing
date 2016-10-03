@@ -578,10 +578,10 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
         netlist.verify();
     }
 
+    netlist.print_stats();
+
     {
         vtr::ScopedPrintTimer t2("Clean BLIF");
-
-        netlist.print_stats();
         
         //Clean-up lut buffers
         absorb_buffer_luts(netlist);
@@ -593,7 +593,7 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
         }
 
         //Sweep unused logic/nets/inputs/outputs
-        sweep_iterative(netlist, true);
+        sweep_iterative(netlist, false);
     }
 
     {
@@ -615,6 +615,11 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
      *    print_netlist(stdout, netlist);
      *}
      */
+
+    FILE* f = vtr::fopen("atom_netlist.echo", "w");
+    VTR_ASSERT(f);
+    print_netlist_as_blif(f, netlist);
+    fclose(f);
     std::exit(1);
 }
 

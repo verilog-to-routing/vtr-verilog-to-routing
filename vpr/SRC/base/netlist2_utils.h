@@ -5,6 +5,7 @@
 
 //Print the netlist for debugging
 void print_netlist(FILE* f, const AtomNetlist& netlist);
+void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist);
 
 //Modify the netlist by absorbing buffer LUTs
 void absorb_buffer_luts(AtomNetlist& netlist);
