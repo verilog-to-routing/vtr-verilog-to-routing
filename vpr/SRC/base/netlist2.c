@@ -85,9 +85,23 @@ std::vector<T> move_valid(std::vector<T>& values, const std::vector<I>& pred) {
     return copy;
 }
 
-//Updates values based on id_map
+//Updates values based on id_map, even if the original/new mappings are not valid
 template<typename T>
-std::vector<T> update_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
+std::vector<T> update_all_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
+    std::vector<T> updated;
+
+    for(size_t i = 0; i < values.size(); ++i) {
+        //The original item was valid
+        auto new_val = id_map[size_t(values[i])]; 
+        //The original item exists in the new mapping
+        updated.emplace_back(new_val);
+    }
+    return updated;
+}
+
+//Updates values based on id_map, only if the originalx and new mappings are valid
+template<typename T>
+std::vector<T> update_valid_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
     std::vector<T> updated;
 
     for(size_t i = 0; i < values.size(); ++i) {
@@ -147,7 +161,37 @@ const std::string& AtomNetlist::block_name (const AtomBlockId id) const {
 }
 
 AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
-    return block_types_[size_t(id)];
+    const t_model* blk_model = block_model(id);
+
+    AtomBlockType type = AtomBlockType::COMBINATIONAL;
+    if(blk_model->name == std::string("input")) {
+        type = AtomBlockType::INPAD;
+    } else if(blk_model->name == std::string("output")) {
+        type = AtomBlockType::OUTPAD;
+    } else {
+        //Determine if combinational or sequential.
+        // We loop through the inputs looking for clocks
+        const t_model_ports* port = blk_model->inputs;
+        size_t clk_count = 0;
+
+        while(port) {
+            if(port->is_clock) {
+                ++clk_count;
+            }
+            port = port->next;
+        }
+
+        if(clk_count == 0) {
+            type = AtomBlockType::COMBINATIONAL;
+        } else if (clk_count == 1) {
+            type = AtomBlockType::SEQUENTIAL;
+        } else {
+            VTR_ASSERT(clk_count > 1);
+            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Primitive '%s' has multiple clocks (currently unsupported)",
+                      blk_model->name);
+        }
+    }
+    return type;
 }
 
 const t_model* AtomNetlist::block_model (const AtomBlockId id) const {
@@ -427,7 +471,7 @@ bool AtomNetlist::verify_lookups() const {
  * Mutators
  *
  */
-AtomBlockId AtomNetlist::create_block(const std::string name, const AtomBlockType blk_type, const t_model* model, const TruthTable truth_table) {
+AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* model, const TruthTable truth_table) {
     //Must have a non-mepty name
     VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
 
@@ -444,7 +488,6 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const AtomBlockTyp
 
         //Initialize the data
         block_names_.push_back(name_id);
-        block_types_.push_back(blk_type);
         block_models_.push_back(model);
         block_truth_tables_.push_back(truth_table);
 
@@ -461,7 +504,6 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const AtomBlockTyp
     //Check post-conditions: values
     VTR_ASSERT(valid_block_id(blk_id));
     VTR_ASSERT(block_name(blk_id) == name);
-    VTR_ASSERT(block_type(blk_id) == blk_type);
     VTR_ASSERT(block_model(blk_id) == model);
     VTR_ASSERT(block_truth_table(blk_id) == truth_table);
     VTR_ASSERT_SAFE(find_block(name) == blk_id);
@@ -570,7 +612,6 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
     VTR_ASSERT(pin_net(pin_id) == net_id);
     VTR_ASSERT(pin_type(pin_id) == type);
     VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
-    VTR_ASSERT_SAFE_MSG(std::count(net_pins_[size_t(net_id)].begin(), net_pins_[size_t(net_id)].end(), pin_id) == 1, "No missing or duplicate pins");
 
     return pin_id;
 }
@@ -686,7 +727,7 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
 
     //Remove the pins
     for(auto pin : port_pins(port_id)) {
-        if(pin) {
+        if(valid_pin_id(pin)) {
             remove_pin(pin);
         }
     }
@@ -751,9 +792,60 @@ void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id)
     }
 }
 
+void AtomNetlist::remove_unused() {
+    //Mark any nets/pins/ports/blocks which are not in use as invalid
+    //so they will be removed
+
+    bool found_unused;
+    do {
+        found_unused = false;
+        //Nets with no connected pins
+        for(auto net_id : nets()) {
+            if(net_id 
+                && !net_driver(net_id) 
+                && net_sinks(net_id).size() == 0) {
+                remove_net(net_id);
+                found_unused = true;
+            }
+        }
+
+        //Pins with no connected nets
+        for(auto pin_id : pin_ids_) {
+            if(pin_id 
+                && !pin_net(pin_id)) {
+                remove_pin(pin_id);
+                found_unused = true;
+            }
+        }
+
+        //Empty ports
+        for(auto port_id : port_ids_) {
+            if(port_id 
+                && port_pins(port_id).size() == 0) {
+                remove_port(port_id);
+                found_unused = true;
+            }
+        }
+
+        //Blocks with no ports
+        for(auto blk_id : blocks()) {
+            if(blk_id 
+                && block_input_ports(blk_id).size() == 0 
+                && block_output_ports(blk_id).size() == 0 
+                && block_clock_ports(blk_id).size() == 0) {
+                remove_block(blk_id);
+                found_unused = true;
+            }
+        }
+    } while(found_unused);
+}
+
 void AtomNetlist::compress() {
     //Compress the various netlist components to remove invalid entries
     // Note: this invalidates all Ids
+
+    //Walk the netlist to invalidate any unused items
+    remove_unused();
 
     //The clean_*() functions return a vector which maps from old to new index
     // e.g. block_id_map[old_id] == new_id
@@ -788,7 +880,6 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
 
     //Move all the valid values
     block_names_ = move_valid(block_names_, block_ids_);
-    block_types_ = move_valid(block_types_, block_ids_);
     block_models_ = move_valid(block_models_, block_ids_);
     block_truth_tables_ = move_valid(block_truth_tables_, block_ids_);
     block_input_ports_ = move_valid(block_input_ports_, block_ids_);
@@ -798,6 +889,8 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
     //Update Ids last since used as predicate
     block_ids_ = new_ids;
 
+    VTR_ASSERT(validate_block_sizes());
+
     VTR_ASSERT_SAFE_MSG(are_contiguous(block_ids_), "Ids should be contiguous");
     VTR_ASSERT_SAFE_MSG(all_valid(block_ids_), "All Ids should be valid");
 
@@ -805,33 +898,6 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
 }
 
 std::vector<AtomPortId> AtomNetlist::clean_ports() {
-    //When we remove nets/pins we may end-up with empty ports, or ports
-    //whose pins don't connect to any nets. Mark such ports as invalid 
-    //so they get cleaned up
-    for(auto port_id : port_ids_) {
-        if(port_id) {
-            if(port_pins_[size_t(port_id)].size() == 0) {
-                //The port has no pins
-                remove_port(port_id);
-            } else {
-                bool all_invalid = true;
-                for(auto pin_id : port_pins(port_id)) {
-                    if(pin_id && pin_net(pin_id)) {
-                        //Pin and net are valid
-                        all_invalid = false;
-                        break;
-                    }
-                }
-
-                if(all_invalid) {
-                    //The port has only invalid or net-less pins
-                    remove_port(port_id);
-                }
-            }
-        }
-    }
-
-
     //Clean the ports
     std::vector<AtomPortId> port_id_map;
     std::vector<AtomPortId> new_ids;
@@ -845,6 +911,8 @@ std::vector<AtomPortId> AtomNetlist::clean_ports() {
     //Update Ids last since used as predicate
     port_ids_ = new_ids;
 
+    VTR_ASSERT(validate_port_sizes());
+
     VTR_ASSERT_SAFE_MSG(are_contiguous(port_ids_), "Ids should be contiguous");
     VTR_ASSERT_SAFE_MSG(all_valid(port_ids_), "All Ids should be valid");
 
@@ -852,18 +920,6 @@ std::vector<AtomPortId> AtomNetlist::clean_ports() {
 }
 
 std::vector<AtomPinId> AtomNetlist::clean_pins() {
-    //When we remove a net we may leave the pins dangling,
-    //so mark such pins invalid
-    for(size_t i = 0; i < pin_nets_.size(); ++i) {
-        if(!pin_nets_[i]) {
-            //Dangling pin (no associated net)
-
-            //Mark as invalid so it will be removed
-            pin_ids_[i] = AtomPinId::INVALID();
-        }
-    }
-
-
     //Clean the pins
     std::vector<AtomPinId> pin_id_map;
     std::vector<AtomPinId> new_ids;
@@ -876,6 +932,8 @@ std::vector<AtomPinId> AtomNetlist::clean_pins() {
 
     //Update Ids last since used as predicate
     pin_ids_ = new_ids;
+
+    VTR_ASSERT(validate_pin_sizes());
 
     VTR_ASSERT_SAFE_MSG(are_contiguous(pin_ids_), "Ids should be contiguous");
     VTR_ASSERT_SAFE_MSG(all_valid(pin_ids_), "All Ids should be valid");
@@ -896,6 +954,8 @@ std::vector<AtomNetId> AtomNetlist::clean_nets() {
     //Update Ids last since used as predicate
     net_ids_ = new_ids;
 
+    VTR_ASSERT(validate_net_sizes());
+
     VTR_ASSERT_SAFE_MSG(are_contiguous(net_ids_), "Ids should be contiguous");
     VTR_ASSERT_SAFE_MSG(all_valid(net_ids_), "All Ids should be valid");
 
@@ -905,46 +965,51 @@ std::vector<AtomNetId> AtomNetlist::clean_nets() {
 void AtomNetlist::rebuild_block_refs(const std::vector<AtomPortId>& port_id_map) {
     //Update the port id references held by blocks
     for(std::vector<AtomPortId>& port : block_input_ports_) {
-        port = update_refs(port, port_id_map);
+        port = update_valid_refs(port, port_id_map);
         VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
     }
     for(std::vector<AtomPortId>& port : block_output_ports_) {
-        port = update_refs(port, port_id_map);
+        port = update_valid_refs(port, port_id_map);
         VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
     }
     for(std::vector<AtomPortId>& port : block_clock_ports_) {
-        port = update_refs(port, port_id_map);
+        port = update_valid_refs(port, port_id_map);
         VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
     }
+    VTR_ASSERT(validate_block_sizes());
 }
 
 void AtomNetlist::rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map) {
     //Update block and pin references held by ports
-    port_blocks_ = update_refs(port_blocks_, block_id_map); 
+    port_blocks_ = update_valid_refs(port_blocks_, block_id_map); 
     VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
 
     for(auto& pins : port_pins_) {
-        pins = update_refs(pins, pin_id_map);
+        pins = update_valid_refs(pins, pin_id_map);
         VTR_ASSERT_SAFE_MSG(all_valid(pins), "All Ids should be valid");
     }
+    VTR_ASSERT(validate_port_sizes());
 }
 
 void AtomNetlist::rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, const std::vector<AtomNetId>& net_id_map) {
     //Update port and net references held by pins
-    pin_ports_ = update_refs(pin_ports_, port_id_map);
+    pin_ports_ = update_all_refs(pin_ports_, port_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
 
-    pin_nets_ = update_refs(pin_nets_, net_id_map);
+    pin_nets_ = update_all_refs(pin_nets_, net_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_nets_), "All Ids should be valid");
+
+    VTR_ASSERT(validate_pin_sizes());
 }
 
 void AtomNetlist::rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map) {
     //Update pin references held by nets
     for(auto& pins : net_pins_) {
-        pins = update_refs(pins, pin_id_map);
+        pins = update_valid_refs(pins, pin_id_map);
 
         VTR_ASSERT_SAFE_MSG(all_valid(pins), "All sinks should be valid");
     }
+    VTR_ASSERT(validate_net_sizes());
 }
 void AtomNetlist::rebuild_lookups() {
     //We iterate through the reverse-lookups and update the values (i.e. ids)
@@ -983,7 +1048,6 @@ void AtomNetlist::shrink_to_fit() {
     //Block data
     block_ids_.shrink_to_fit();
     block_names_.shrink_to_fit();
-    block_types_.shrink_to_fit();
     block_models_.shrink_to_fit();
     block_truth_tables_.shrink_to_fit();
     block_input_ports_.shrink_to_fit();
@@ -998,6 +1062,7 @@ void AtomNetlist::shrink_to_fit() {
     for(auto& ports : block_clock_ports_) {
         ports.shrink_to_fit();
     }
+    VTR_ASSERT(validate_block_sizes());
 
     //Port data
     port_ids_.shrink_to_fit();
@@ -1006,20 +1071,24 @@ void AtomNetlist::shrink_to_fit() {
     for(auto& pins : port_pins_) {
         pins.shrink_to_fit();
     }
+    VTR_ASSERT(validate_port_sizes());
 
     //Pin data
     pin_ids_.shrink_to_fit();
     pin_ports_.shrink_to_fit();
     pin_port_bits_.shrink_to_fit();
     pin_nets_.shrink_to_fit();
+    VTR_ASSERT(validate_pin_sizes());
 
     //Net data
     net_ids_.shrink_to_fit();
     net_names_.shrink_to_fit();
     net_pins_.shrink_to_fit();
+    VTR_ASSERT(validate_net_sizes());
 
     //String data
     string_ids_.shrink_to_fit();
+    VTR_ASSERT(validate_string_sizes());
 }
 
 /*
@@ -1070,7 +1139,6 @@ bool AtomNetlist::valid_string_id(AtomStringId id) const {
 
 bool AtomNetlist::validate_block_sizes() const {
     if(block_names_.size() != block_ids_.size()
-        || block_types_.size() != block_ids_.size()
         || block_models_.size() != block_ids_.size()
         || block_truth_tables_.size() != block_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
@@ -1177,7 +1245,7 @@ bool AtomNetlist::validate_port_pin_refs() const {
         [](unsigned val) {
             return val == 1;
     })) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Pins not referenced by a single port");
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Pins referenced by zero or multiple ports");
     }
 
     if(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) != pin_ids_.size()) {
@@ -1224,7 +1292,7 @@ bool AtomNetlist::validate_net_pin_refs() const {
         [](unsigned val) {
             return val == 1;
     })) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found pins not referenced by a single net");
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found pins referenced by zero or multiple nets");
     }
 
     if(std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) != pin_ids_.size()) {

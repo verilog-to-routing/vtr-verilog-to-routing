@@ -141,7 +141,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             std::string pin_name = blk_model->outputs->name;
             for(const auto& input : input_names) {
-                AtomBlockId blk_id = curr_model().create_block(input, AtomBlockType::INPAD, blk_model);
+                AtomBlockId blk_id = curr_model().create_block(input, blk_model);
                 AtomPortId port_id = curr_model().create_port(blk_id, blk_model->outputs->name);
                 AtomNetId net_id = curr_model().create_net(input);
                 curr_model().create_pin(port_id, 0, net_id, AtomPinType::DRIVER);
@@ -160,7 +160,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             for(const auto& output : output_names) {
                 //Since we name blocks based on thier drivers we need to uniquify outpad names,
                 //which we do with a prefix
-                AtomBlockId blk_id = curr_model().create_block(OUTPAD_NAME_PREFIX + output, AtomBlockType::OUTPAD, blk_model);
+                AtomBlockId blk_id = curr_model().create_block(OUTPAD_NAME_PREFIX + output, blk_model);
                 AtomPortId port_id = curr_model().create_port(blk_id, blk_model->inputs->name);
                 AtomNetId net_id = curr_model().create_net(output);
                 curr_model().create_pin(port_id, 0, net_id, AtomPinType::SINK);
@@ -189,7 +189,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
             }
 
-            AtomBlockId blk_id = curr_model().create_block(nets[nets.size()-1], AtomBlockType::COMBINATIONAL, blk_model, truth_table);
+            AtomBlockId blk_id = curr_model().create_block(nets[nets.size()-1], blk_model, truth_table);
 
             //Create inputs
             AtomPortId input_port_id = curr_model().create_port(blk_id, blk_model->inputs->name);
@@ -236,7 +236,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             AtomNetlist::TruthTable truth_table(1);
             truth_table[0].push_back(to_vtr_logic_value(init));
 
-            AtomBlockId blk_id = curr_model().create_block(output, AtomBlockType::SEQUENTIAL, blk_model, truth_table);
+            AtomBlockId blk_id = curr_model().create_block(output, blk_model, truth_table);
 
             //The input
             AtomPortId d_port_id = curr_model().create_port(blk_id, d_model_port->name);
@@ -278,9 +278,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
 
 
-            AtomBlockType blk_type = determine_block_type(blk_model);
-
-            AtomBlockId blk_id = curr_model().create_block(first_output_name, blk_type, blk_model);
+            AtomBlockId blk_id = curr_model().create_block(first_output_name, blk_model);
 
 
             for(size_t i = 0; i < ports.size(); ++i) {
@@ -391,38 +389,6 @@ struct BlifAllocCallback : public blifparse::Callback {
                           name.c_str());
             }
             return arch_model;
-        }
-
-        AtomBlockType determine_block_type(const t_model* blk_model) {
-            if(blk_model->name == std::string("input")) {
-                return AtomBlockType::INPAD;
-            } else if(blk_model->name == std::string("output")) {
-                return AtomBlockType::OUTPAD;
-            } else {
-                //Determine if combinational or sequential.
-                // We loop through the inputs looking for clocks
-                const t_model_ports* port = blk_model->inputs;
-                size_t clk_count = 0;
-
-                while(port) {
-                    if(port->is_clock) {
-                        ++clk_count;
-                    }
-                    port = port->next;
-                }
-
-                if(clk_count == 0) {
-                    return AtomBlockType::COMBINATIONAL;
-                } else if (clk_count == 1) {
-                    return AtomBlockType::SEQUENTIAL;
-                } else {
-                    VTR_ASSERT(clk_count > 1);
-                    vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Primitive '%s' has multiple clocks (currently unsupported)\n",
-                              blk_model->name);
-                }
-            }
-            VTR_ASSERT(false);
-            return AtomBlockType::INPAD; //suppress warning
         }
 
         const t_model_ports* find_model_port(const t_model* blk_model, std::string port_name) {

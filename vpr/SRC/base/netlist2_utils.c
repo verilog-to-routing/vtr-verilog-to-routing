@@ -470,10 +470,12 @@ size_t sweep_nets(AtomNetlist& netlist) {
         if(!net_id) continue;
 
         if(!netlist.net_driver(net_id)) {
+            //No driver
             /*vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no driver and will be removed\n", netlist.net_name(net_id).c_str());*/
             nets_to_remove.insert(net_id);
         }
         if(netlist.net_sinks(net_id).size() == 0) {
+            //No sinks
             /*vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no sinks and will be removed\n", netlist.net_name(net_id).c_str());*/
             nets_to_remove.insert(net_id);
         }
