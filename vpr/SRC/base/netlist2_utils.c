@@ -17,7 +17,7 @@ bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk);
 void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk);
 
-std::string make_unconn(size_t& unconn_count);
+std::string make_unconn(size_t& unconn_count, AtomPinType type);
 
 
 void print_netlist(FILE* f, const AtomNetlist& netlist) {
@@ -359,7 +359,16 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                 if(net_id) {
                     fprintf(f, "%s", netlist.net_name(net_id).c_str());
                 } else {
-                    fprintf(f, "%s", make_unconn(unconn_count).c_str());
+                    AtomPortType port_type = netlist.port_type(ports[i]);
+
+                    AtomPinType pin_type;
+                    switch(port_type) {
+                        case AtomPortType::INPUT: //fallthrough
+                        case AtomPortType::CLOCK: pin_type = AtomPinType::SINK; break;
+                        case AtomPortType::OUTPUT: pin_type = AtomPinType::DRIVER; break;
+                        default: VTR_ASSERT(false);
+                    }
+                    fprintf(f, "%s", make_unconn(unconn_count, pin_type).c_str());
                 }
 
                 if(i != ports.size() - 1 || j != width - 1) {
@@ -816,11 +825,14 @@ size_t sweep_nets(AtomNetlist& netlist) {
     return nets_to_remove.size();
 }
 
-std::string make_unconn(size_t& /*unconn_count*/) {
-    //We currently return the same unconn net, since doing otherwise messes up ABC's sec check
-    //
-    //Specifically, ABC treats un-driven nets as if they are primary-inputs with constant zero drivers.
-    //But it expects the undriven nets to *same name*.
-    //Similarily, we can't use unique unconn names since then ABC will complain about wrong number of PIs
-    return std::string("unconn");
+std::string make_unconn(size_t& unconn_count, AtomPinType /*pin_type*/) {
+#if 0
+    if(pin_type == AtomPinType::DRIVER) {
+        return std::string("unconn") + std::to_string(unconn_count++);
+    } else {
+        return std::string("unconn");
+    }
+#else
+    return std::string("unconn") + std::to_string(unconn_count++);
+#endif
 }

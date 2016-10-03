@@ -616,10 +616,13 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
      *}
      */
 
-    FILE* f = vtr::fopen("atom_netlist.echo", "w");
-    VTR_ASSERT(f);
-    print_netlist_as_blif(f, netlist);
-    fclose(f);
+    {
+        vtr::ScopedPrintTimer t2("Echo File BLIF");
+        FILE* f = vtr::fopen("atom_netlist.echo", "w");
+        VTR_ASSERT(f);
+        print_netlist_as_blif(f, netlist);
+        fclose(f);
+    }
     std::exit(1);
 }
 
