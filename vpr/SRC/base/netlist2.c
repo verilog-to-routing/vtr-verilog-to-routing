@@ -223,6 +223,15 @@ AtomPinId AtomNetlist::block_pin (const AtomPortId port_id, BitIndex port_bit) c
     }
     return AtomPinId::INVALID();
 }
+AtomNetId AtomNetlist::block_net (const AtomPortId port_id, BitIndex port_bit) const {
+    //Convenience look-up bypassing port and pin
+    AtomPinId pin_id = block_pin(port_id, port_bit);
+    if(pin_id) {
+        return pin_net(pin_id);
+    } else {
+        return AtomNetId::INVALID();
+    }
+}
 
 /*
  *

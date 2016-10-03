@@ -69,6 +69,7 @@ class AtomNetlist {
         vtr::Range<port_iterator>   block_output_ports  (const AtomBlockId id) const;
         vtr::Range<port_iterator>   block_clock_ports   (const AtomBlockId id) const;
         AtomPinId                   block_pin           (const AtomPortId port_id, BitIndex port_bit) const;
+        AtomNetId                   block_net           (const AtomPortId port_id, BitIndex port_bit) const;
 
         //Port
         const std::string&          port_name   (const AtomPortId id) const;
