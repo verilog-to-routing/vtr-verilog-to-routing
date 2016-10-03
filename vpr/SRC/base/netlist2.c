@@ -224,7 +224,7 @@ vtr::Range<AtomNetlist::port_iterator> AtomNetlist::block_clock_ports (const Ato
     return vtr::make_range(block_clock_ports_[size_t(id)].begin(), block_clock_ports_[size_t(id)].end());
 }
 
-AtomPinId AtomNetlist::block_pin (const AtomPortId port_id, BitIndex port_bit) const {
+AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, BitIndex port_bit) const {
     //Convenience look-up bypassing port
     VTR_ASSERT(valid_port_id(port_id));
     VTR_ASSERT(valid_port_bit(port_id, port_bit));
@@ -236,12 +236,12 @@ AtomPinId AtomNetlist::block_pin (const AtomPortId port_id, BitIndex port_bit) c
     }
     return AtomPinId::INVALID();
 }
-AtomNetId AtomNetlist::block_net (const AtomPortId port_id, BitIndex port_bit) const {
+AtomNetId AtomNetlist::port_net (const AtomPortId port_id, BitIndex port_bit) const {
     VTR_ASSERT(valid_port_id(port_id));
     VTR_ASSERT(valid_port_bit(port_id, port_bit));
 
     //Convenience look-up bypassing port and pin
-    AtomPinId pin_id = block_pin(port_id, port_bit);
+    AtomPinId pin_id = port_pin(port_id, port_bit);
     if(pin_id) {
         return pin_net(pin_id);
     } else {
@@ -265,7 +265,7 @@ BitIndex AtomNetlist::port_width (const AtomPortId id) const {
     VTR_ASSERT(valid_port_id(id));
 
     //We look-up the width via the model
-    const t_model_ports* model_port = find_model_port(id, port_name(id));
+    const t_model_ports* model_port = find_model_port(id);
 
     return static_cast<BitIndex>(model_port->size);
 }
@@ -273,7 +273,7 @@ BitIndex AtomNetlist::port_width (const AtomPortId id) const {
 AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
     VTR_ASSERT(valid_port_id(id));
 
-    const t_model_ports* model_port = find_model_port(id, port_name(id));
+    const t_model_ports* model_port = find_model_port(id);
 
     AtomPortType type;
     if(model_port->dir == IN_PORT) {
@@ -1460,15 +1460,15 @@ AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
     }
 }
 
-const t_model_ports* AtomNetlist::find_model_port (const AtomPortId id, const std::string& name) const {
-    AtomBlockId blk_id = port_block(id);
+const t_model_ports* AtomNetlist::find_model_port (const AtomPortId port_id) const {
+    AtomBlockId blk_id = port_block(port_id);
     const t_model* blk_model = block_model(blk_id);
 
     const t_model_ports* model_port = nullptr;
     for(const t_model_ports* blk_ports : {blk_model->inputs, blk_model->outputs}) {
         model_port = blk_ports;
         while(model_port) {
-            if(name == model_port->name) {
+            if(port_name(port_id) == model_port->name) {
                 //Found
                 break;
             }

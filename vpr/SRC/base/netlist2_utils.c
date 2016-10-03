@@ -355,7 +355,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                 }
                 fprintf(f, "=");
                 
-                auto net_id = netlist.block_net(ports[i], j);
+                auto net_id = netlist.port_net(ports[i], j);
                 if(net_id) {
                     fprintf(f, "%s", netlist.net_name(net_id).c_str());
                 } else {
