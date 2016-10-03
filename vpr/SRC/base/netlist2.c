@@ -352,13 +352,22 @@ vtr::Range<AtomNetlist::net_iterator> AtomNetlist::nets () const {
  */
 AtomBlockId AtomNetlist::find_block (const std::string& name) const {
     auto str_id = find_string(name);
-    return find_block(str_id);
+    if(!str_id) {
+        return AtomBlockId::INVALID();
+    } else {
+        return find_block(str_id);
+    }
 }
 
 AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& name) const {
     VTR_ASSERT(valid_block_id(blk_id));
+
     auto str_id = find_string(name);
-    return find_port(blk_id, str_id);
+    if(!str_id) {
+        return AtomPortId::INVALID();
+    } else {
+        return find_port(blk_id, str_id);
+    }
 }
 
 AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) const {
@@ -383,7 +392,11 @@ AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) co
 
 AtomNetId AtomNetlist::find_net (const std::string& name) const {
     auto str_id = find_string(name);
-    return find_net(str_id);
+    if(!str_id) {
+        return AtomNetId::INVALID();
+    } else {
+        return find_net(str_id);
+    }
 }
 
 /*
