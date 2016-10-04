@@ -1,4 +1,4 @@
-#include "netlist2_utils.h"
+#include "atom_netlist_utils.h"
 #include <map>
 #include <unordered_set>
 #include <set>

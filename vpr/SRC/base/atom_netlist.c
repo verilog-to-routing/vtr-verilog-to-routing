@@ -1,6 +1,7 @@
-#include "netlist2.h"
 #include <algorithm>
 #include <unordered_set>
+
+#include "atom_netlist.h"
 
 #include "vtr_assert.h"
 #include "vtr_log.h"

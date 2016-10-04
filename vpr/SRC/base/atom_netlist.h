@@ -1,5 +1,5 @@
-#ifndef NETLIST2_H
-#define NETLIST2_H
+#ifndef ATOM_NETLIST_H
+#define ATOM_NETLIST_H
 /*
  * Summary
  * ========
@@ -268,7 +268,7 @@
 
 #include "logic_types.h" //For t_model
 
-#include "netlist2_fwd.h"
+#include "atom_netlist_fwd.h"
 
 
 /*

@@ -1,7 +1,7 @@
-#ifndef NETLIST2_UTILS_H
-#define NETLIST2_UTILS_H
+#ifndef ATOM_NETLIST_UTILS_H
+#define ATOM_NETLIST_UTILS_H
 #include <cstdio>
-#include "netlist2.h"
+#include "atom_netlist.h"
 
 /*
  *

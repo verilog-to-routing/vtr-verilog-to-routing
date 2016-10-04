@@ -6,8 +6,8 @@
 using namespace std;
 
 #include "blifparse.hpp"
-#include "netlist2.h"
-#include "netlist2_utils.h"
+#include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
