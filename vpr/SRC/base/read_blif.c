@@ -87,6 +87,7 @@ static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
 static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
+static void show_blif_stats2(const AtomNetlist& netlist);
 
 static void do_absorb_buffer_luts(void);
 static void compress_netlist(void);
@@ -609,6 +610,8 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
         netlist.verify();
     }
 
+    show_blif_stats2(netlist);
+
     /*
      *{
      *    vtr::ScopedPrintTimer t2("Print BLIF");
@@ -625,7 +628,73 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
      *    fclose(f);
      *}
      */
-    std::exit(1);
+}
+static void show_blif_stats2(const AtomNetlist& netlist) {
+    std::map<std::string,size_t> block_type_counts;
+
+    //Count the block statistics
+    for(auto blk_id : netlist.blocks()) {
+
+        const t_model* blk_model = netlist.block_model(blk_id);
+        if(blk_model->name == std::string("names")) {
+            //LUT
+            size_t lut_size = 0;
+            auto in_ports = netlist.block_input_ports(blk_id);
+
+            //May have zero (no input LUT) or one input port
+            if(in_ports.size() == 1) {
+                auto port_id = *in_ports.begin();
+
+                //Figure out the LUT size
+                lut_size = netlist.port_width(port_id);
+
+            } else {
+                VTR_ASSERT(in_ports.size() == 0);
+            }
+
+            ++block_type_counts[std::to_string(lut_size) + "-LUT"];
+        } else {
+            //Other types
+            ++block_type_counts[blk_model->name];
+        }
+    }
+    //Count the net statistics
+    std::map<std::string,double> net_stats;
+    for(auto net_id : netlist.nets()) {
+        double fanout = netlist.net_sinks(net_id).size();
+
+        net_stats["Max Fanout"] = std::max(net_stats["Max Fanout"], fanout);
+
+        if(net_stats.count("Min Fanout")) {
+            net_stats["Min Fanout"] = std::min(net_stats["Min Fanout"], fanout);
+        } else {
+            net_stats["Min Fanout"] = fanout;
+        }
+
+        net_stats["Avg Fanout"] += fanout;
+    }
+    net_stats["Avg Fanout"] /= netlist.nets().size();
+
+    //Determine the maximum length of a type name for nice formatting
+    size_t max_block_type_len = 0;
+    for(auto kv : block_type_counts) {
+        max_block_type_len = std::max(max_block_type_len, kv.first.size());
+    }
+    size_t max_net_type_len = 0;
+    for(auto kv : net_stats) {
+        max_net_type_len = std::max(max_net_type_len, kv.first.size());
+    }
+
+    //Print the statistics
+    vtr::printf_info("Blif Circuit Statistics:\n"); 
+    vtr::printf_info("  Blocks: %zu\n", netlist.blocks().size()); 
+    for(auto kv : block_type_counts) {
+        vtr::printf_info("    %-*s: %5zu\n", max_block_type_len, kv.first.c_str(), kv.second);
+    }
+    vtr::printf_info("  Nets  : %zu\n", netlist.nets().size()); 
+    for(auto kv : net_stats) {
+        vtr::printf_info("    %-*s: %6.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
+    }
 }
 
 static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
