@@ -3,6 +3,8 @@
 #include "vpr_types.h"
 #include "globals.h"
 #include "netlist.h"
+#include "atom_netlist.h"
+#include "atom_map.h"
 #include <map>
 
 
@@ -10,6 +12,10 @@
 int binary_search = -1;
 
 float grid_logic_tile_area = 0;
+
+/* Atom netlist */
+AtomNetlist g_atom_nl;
+AtomMap g_atom_map;
 
 /* User netlist information begin  */
 int num_logical_nets = 0, num_logical_blocks = 0;

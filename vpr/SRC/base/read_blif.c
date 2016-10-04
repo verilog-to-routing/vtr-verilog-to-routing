@@ -628,6 +628,8 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
      *    fclose(f);
      *}
      */
+
+    g_atom_nl = std::move(netlist);
 }
 static void show_blif_stats2(const AtomNetlist& netlist) {
     std::map<std::string,size_t> block_type_counts;

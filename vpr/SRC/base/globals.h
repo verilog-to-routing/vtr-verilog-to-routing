@@ -14,6 +14,7 @@
 
 #include "vtr_matrix.h"
 #include "netlist.h"
+#include "atom_netlist_fwd.h"
 #include "rr_node.h"
 
 /********************************************************************
@@ -37,6 +38,10 @@ Checking OS System
 /* external-to-complex block nets in the user netlist */
 extern int num_nets;
 extern struct s_net *clb_net;
+
+/* Atom netlist */
+extern AtomNetlist g_atom_nl;
+extern AtomMap g_atom_map;
 
 /* blocks in the user netlist */
 extern int num_blocks;

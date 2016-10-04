@@ -7,6 +7,7 @@
 
 //Forward delcaration
 class AtomNetlist;
+class AtomMap;
 
 /*
  * Ids
