@@ -111,7 +111,7 @@ void sync_grid_to_blocks(const int L_num_blocks,
 
 					/* Set them as unconnected */
 					for (k = 0; k < L_grid[i][j].type->capacity; ++k) {
-						L_grid[i][j].blocks[k] = EMPTY;
+						L_grid[i][j].blocks[k] = EMPTY_BLOCK;
 					}
 				}
 			}
@@ -141,8 +141,8 @@ void sync_grid_to_blocks(const int L_num_blocks,
 		}
 
 		/* Check already in use */
-		if ((EMPTY != L_grid[block[i].x][block[i].y].blocks[block[i].z])
-				&& (INVALID != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
+		if ((EMPTY_BLOCK != L_grid[block[i].x][block[i].y].blocks[block[i].z])
+				&& (INVALID_BLOCK != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"Location (%d, %d, %d) is used more than once.\n", 
 					block[i].x, block[i].y, block[i].z);
@@ -751,7 +751,7 @@ void free_pb(t_pb *pb) {
 		if (pb->name)
 			free(pb->name);
 		pb->name = NULL;
-		if (pb->logical_block != EMPTY && pb->logical_block != INVALID && logical_block != NULL) {
+		if (pb->logical_block != EMPTY_BLOCK && pb->logical_block != INVALID_BLOCK && logical_block != NULL) {
 			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
 			logical_block[pb->logical_block].pb = NULL;
 			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */

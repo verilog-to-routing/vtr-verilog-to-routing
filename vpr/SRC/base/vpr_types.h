@@ -80,8 +80,8 @@ typedef size_t bitfield;
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
-#define EMPTY -1
-#define INVALID -2
+#define EMPTY_BLOCK -1
+#define INVALID_BLOCK -2
 
 #define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 5 /* Base number of previous iterations used to compute reduction in congestion */
 

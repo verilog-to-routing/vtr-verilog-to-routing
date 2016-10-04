@@ -85,7 +85,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 						grid[x+x_offset][y+y_offset].height_offset = y_offset;
 						grid[x+x_offset][y+y_offset].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 						for (int i = 0; i < max(1,type->capacity); ++i) {
-							grid[x+x_offset][y+y_offset].blocks[i] = EMPTY;
+							grid[x+x_offset][y+y_offset].blocks[i] = EMPTY_BLOCK;
 						}
 					}
 				}
@@ -93,18 +93,18 @@ void alloc_and_load_grid(int *num_instances_type) {
 				grid[x][y].type = type;
 				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 				for (int i = 0; i < max(1,type->capacity); ++i) {
-					grid[x][y].blocks[i] = EMPTY;
+					grid[x][y].blocks[i] = EMPTY_BLOCK;
 				}
 			} else {
 				grid[x][y].type = EMPTY_TYPE;
 				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int));
-				grid[x][y].blocks[0] = EMPTY;
+				grid[x][y].blocks[0] = EMPTY_BLOCK;
 			}
 		}
 	}
 
 	// And, refresh (ie. reset and update) the "num_instances_type" array
-	// (while also forcing any remaining INVALID blocks to EMPTY_TYPE)
+	// (while also forcing any remaining INVALID_BLOCK blocks to EMPTY_TYPE)
 	alloc_and_load_num_instances_type(grid, nx, ny,	num_instances_type, num_types);
 
 	CheckGrid();
@@ -150,8 +150,8 @@ static void alloc_and_load_num_instances_type(
 			bool isValid = false;
 			for (int z = 0; z < L_grid[x][y].type->capacity; ++z) {
 
-				if (L_grid[x][y].blocks[z] == INVALID) {
-					L_grid[x][y].blocks[z] = EMPTY;
+				if (L_grid[x][y].blocks[z] == INVALID_BLOCK) {
+					L_grid[x][y].blocks[z] = EMPTY_BLOCK;
 				} else {
 					isValid = true;
 				}

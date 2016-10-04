@@ -627,7 +627,7 @@ static void drawplace(void) {
 				/* Fill background for the clb. Do not fill if "show_blk_internal" 
 				 * is toggled. 
 				 */
-				if (bnum != EMPTY && bnum != INVALID) {
+				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
 					setcolor(draw_state->block_color[bnum]);
 					fillrect(abs_clb_bbox);
 				} else {
@@ -644,11 +644,11 @@ static void drawplace(void) {
 
 				setcolor(BLACK);
 
-				setlinestyle((EMPTY == bnum) ? DASHED : SOLID);
+				setlinestyle((EMPTY_BLOCK == bnum) ? DASHED : SOLID);
 				drawrect(abs_clb_bbox);
 
 				/* Draw text if the space has parts of the netlist */
-				if (bnum != EMPTY && bnum != INVALID) {
+				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
 					float saved_rotation = gettextrotation();
 					if (j == 0 || j == ny + 1) {
 						settextrotation(90);
@@ -2145,7 +2145,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			t_grid_tile* grid_tile = &grid[i][j];
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = grid_tile->blocks[k];
-				if (clb_index != EMPTY) {
+				if (clb_index != EMPTY_BLOCK) {
 					clb = &block[clb_index];
 					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb);
 					if (clb_bbox.intersects(abs_x, abs_y)) {
@@ -2171,7 +2171,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 		return;
 	} 
 
-	VTR_ASSERT(clb_index != EMPTY);
+	VTR_ASSERT(clb_index != EMPTY_BLOCK);
 
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything

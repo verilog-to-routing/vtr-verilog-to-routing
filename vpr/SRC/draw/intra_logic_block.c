@@ -151,7 +151,7 @@ void draw_internal_draw_subblk() {
 			int num_sub_tiles = grid[i][j].type->capacity;
 			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Don't draw if block is empty. */
-				if (grid[i][j].blocks[k] == EMPTY || grid[i][j].blocks[k] == INVALID)
+				if (grid[i][j].blocks[k] == EMPTY_BLOCK || grid[i][j].blocks[k] == INVALID_BLOCK)
 					continue;
 
 				/* Get block ID */

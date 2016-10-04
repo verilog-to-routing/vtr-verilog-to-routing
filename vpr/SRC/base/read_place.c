@@ -159,8 +159,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		for (j = 0; j <= ny + 1; j++) {
 			if (grid[i][j].type == IO_TYPE) {
 				for (k = 0; k < IO_TYPE->capacity; k++) {
-					if (grid[i][j].blocks[k] != INVALID) {
-						grid[i][j].blocks[k] = EMPTY; /* Flag for err. check */
+					if (grid[i][j].blocks[k] != INVALID_BLOCK) {
+						grid[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
 					}
 				}
 			}

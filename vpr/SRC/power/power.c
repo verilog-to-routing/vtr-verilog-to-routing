@@ -619,8 +619,8 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 
-				if (grid[x][y].blocks[z] != EMPTY
-						&& grid[x][y].blocks[z] != INVALID) {
+				if (grid[x][y].blocks[z] != EMPTY_BLOCK
+						&& grid[x][y].blocks[z] != INVALID_BLOCK) {
 					pb = block[grid[x][y].blocks[z]].pb;
 				}
 

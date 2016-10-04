@@ -2393,13 +2393,11 @@ void read_and_process_blif(const char *blif_file,
 		char * activity_file) {
 
 	/* begin parsing blif input file */
-#if 0
-	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
-			library_models, read_activity_file, activity_file);
-#else
 	read_blif2(blif_file, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
-#endif
+
+	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
+			library_models, read_activity_file, activity_file);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_BLIF_INPUT)) {
 		echo_input(blif_file, getEchoFileName(E_ECHO_BLIF_INPUT),
