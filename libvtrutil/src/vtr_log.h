@@ -12,6 +12,9 @@ extern PrintHandlerWarning printf_warning;
 extern PrintHandlerError printf_error;
 extern PrintHandlerDirect printf_direct;
 
+//printf is an alias to printf_info
+const auto printf = printf_info;
+
 } //namespace
 
 
