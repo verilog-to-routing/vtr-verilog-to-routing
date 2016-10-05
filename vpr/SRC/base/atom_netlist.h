@@ -695,4 +695,6 @@ class AtomNetlist {
         std::unordered_map<std::string,AtomStringId>                        string_to_string_id_;
 };
 
+#include "atom_map.h"
+
 #endif

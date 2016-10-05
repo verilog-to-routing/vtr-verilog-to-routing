@@ -9,6 +9,7 @@ using namespace std;
 
 #include "physical_types.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "place_macro.h"
@@ -754,6 +755,13 @@ void free_pb(t_pb *pb) {
 		if (pb->logical_block != EMPTY_BLOCK && pb->logical_block != INVALID_BLOCK && logical_block != NULL) {
 			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
 			logical_block[pb->logical_block].pb = NULL;
+
+            //Update atom netlist mapping
+            auto blk_id = g_atom_nl.find_block(logical_block[pb->logical_block].name);
+            VTR_ASSERT(blk_id);
+            g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
+            g_atom_map.set_atom_pb(blk_id, NULL);
+
 			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
 			revalid_molecule = logical_block[pb->logical_block].packed_molecules;
 			while (revalid_molecule != NULL) {

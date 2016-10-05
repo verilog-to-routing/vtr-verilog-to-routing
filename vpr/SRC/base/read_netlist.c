@@ -17,12 +17,13 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_log.h"
 
-
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
+
 #include "hash.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "read_xml_util.h"
 #include "read_netlist.h"
 #include "pb_type_graph.h"
@@ -162,6 +163,12 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 		temp_hash = insert_in_hash_table(logical_block_hash,
 				logical_block[i].name, i);
 		logical_block[i].pb = NULL;
+
+        //Update atom netlist mapping
+        auto blk_id = g_atom_nl.find_block(logical_block[i].name);
+        VTR_ASSERT(blk_id);
+        g_atom_map.set_atom_pb(blk_id, NULL);
+
 		if(temp_hash->count != 1) {
 			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					"Found duplicate block in netlist file named: %s.\n",
@@ -359,8 +366,16 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 		}
 		pb->logical_block = temp_hash->index;
 		VTR_ASSERT(logical_block[temp_hash->index].pb == NULL);
+
 		logical_block[temp_hash->index].pb = pb;
 		logical_block[temp_hash->index].clb_index = index;
+
+        //Update atom netlist mapping
+        auto blk_id = g_atom_nl.find_block(logical_block[temp_hash->index].name);
+        VTR_ASSERT(blk_id);
+        g_atom_map.set_atom_pb(blk_id, pb);
+        g_atom_map.set_atom_clb(blk_id, index);
+
 		(*num_primitives)++;
 	} else {
 		/* process children of child if exists */

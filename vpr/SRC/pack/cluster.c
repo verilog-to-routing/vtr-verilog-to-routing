@@ -19,6 +19,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "pack_types.h"
 #include "cluster.h"
 #include "heapsort.h"
@@ -824,6 +825,8 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	for (i = 0; i < num_logical_blocks; i++) {
 		logical_block[i].clb_index = NO_CLUSTER;
 	}
+    //g_atom_map returns NO_CLUSTER for any not found value, so we don't need to keep it in sync here
+    //FIXME: clean-up
 
 	/* alloc and load list of molecules to pack */
 	unclustered_list_head = (struct s_molecule_link *) vtr::calloc(
@@ -1442,6 +1445,12 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
 
+        //Update the atom netlist mappings
+        AtomBlockId blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
+        g_atom_map.set_atom_clb(blk_id, clb_index);
+        VTR_ASSERT(blk_id);
+        g_atom_map.set_atom_pb(blk_id, pb);
+
 		add_atom_as_target(router_data, ilogical_block);
 		if (!primitive_feasible(ilogical_block, pb)) {
 			/* failed location feasibility check, revert pack */
@@ -1472,6 +1481,12 @@ static void revert_place_logical_block(const int iblock, t_lb_router_data *route
 	pb = logical_block[iblock].pb;
 	logical_block[iblock].clb_index = NO_CLUSTER;
 	logical_block[iblock].pb = NULL;
+
+    //Update the atom netlist
+    auto blk_id = g_atom_nl.find_block(logical_block[iblock].name);
+    VTR_ASSERT(blk_id);
+    g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
+    g_atom_map.set_atom_pb(blk_id, NULL);
 
 	if (pb != NULL) {
 		/* When freeing molecules, the current block might already have been freed by a prior revert 
@@ -1848,6 +1863,11 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		new_blk = molecule->logical_block_ptrs[iblock]->index;
 
 		logical_block[new_blk].clb_index = clb_index;
+
+        //Update atom netlist mapping
+        auto blk_id = g_atom_nl.find_block(logical_block[new_blk].name);
+        VTR_ASSERT(blk_id);
+        g_atom_map.set_atom_clb(blk_id, clb_index);
 
 		cur_pb = logical_block[new_blk].pb->parent_pb;
 		while (cur_pb) {
