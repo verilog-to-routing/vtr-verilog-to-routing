@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <set>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -11,6 +12,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "rr_graph_area.h"
 #include "segment_stats.h"
 #include "stats.h"
@@ -455,31 +457,18 @@ int count_netlist_clocks(void) {
 
 	/* Count how many clocks are in the netlist. */
 
-	int iblock, i, clock_net;
-	char * name;
-	bool found;
-	int num_clocks = 0;
-	char ** clock_names = NULL;
+    std::set<std::string> clock_names;
 
-	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].clock_net != OPEN) {
-			clock_net = logical_block[iblock].clock_net;
-			VTR_ASSERT(clock_net != OPEN);
-			name = logical_block[clock_net].name;
-			/* Now that we've found a clock, let's see if we've counted it already */
-			found = false;
-			for (i = 0; !found && i < num_clocks; i++) {
-				if (strcmp(clock_names[i], name) == 0) {
-					found = true;
-				}
-			}
-			if (!found) {
-				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-				clock_names = (char **) vtr::realloc (clock_names, ++num_clocks * sizeof(char *));
-				clock_names[num_clocks - 1] = name;
-			}
-		}
-	}
-	free (clock_names);
-	return num_clocks;
+    //Loop through each clock pin and record the names in clock_names
+    for(auto blk_id : g_atom_nl.blocks()) {
+        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
+                clock_names.insert(g_atom_nl.net_name(net_id));
+            }
+        }
+    }
+
+    //Since std::set does not include duplicates, the number of clocks is the size of the set
+	return static_cast<int>(clock_names.size());
 }
