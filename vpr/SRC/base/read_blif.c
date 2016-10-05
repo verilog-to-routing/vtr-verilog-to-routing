@@ -585,16 +585,20 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
         vtr::ScopedPrintTimer t2("Clean BLIF");
         
         //Clean-up lut buffers
-        absorb_buffer_luts(netlist);
+        /*absorb_buffer_luts(netlist);*/
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if(unconn_net_id) {
             netlist.remove_net(unconn_net_id);
         }
+        AtomBlockId unconn_blk_id = netlist.find_block("unconn");
+        if(unconn_blk_id) {
+            netlist.remove_block(unconn_blk_id);
+        }
 
         //Sweep unused logic/nets/inputs/outputs
-        sweep_iterative(netlist, false);
+        /*sweep_iterative(netlist, false);*/
     }
 
     {
