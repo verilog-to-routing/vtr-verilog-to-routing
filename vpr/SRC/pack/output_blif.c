@@ -21,6 +21,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "output_blif.h"
 #include "ReadOptions.h"
 #include "vpr_utils.h"
@@ -29,7 +30,7 @@ using namespace std;
 #define TABLENGTH 1
 
 /****************** Subroutines local to this module ************************/
-void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb);
+void print_logical_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb);
 void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb);
 void print_models(FILE *fpout, t_model *user_models);
 
@@ -83,92 +84,139 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 }
 
 /* Print netlist atom in blif format */
-void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
+void print_logical_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	t_pb_route * pb_route;
 	int clb_index;
-	t_pb_graph_node *pb_graph_node;
+	const t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
 
-	clb_index = logical_block[ilogical_block].clb_index;
+	clb_index = g_atom_map.atom_clb(atom_blk);
 	VTR_ASSERT(clb_index != OPEN);
 	pb_route = clb[clb_index].pb_route;
 	VTR_ASSERT(pb_route != NULL);
-	pb_graph_node = logical_block[ilogical_block].pb->pb_graph_node;
+	pb_graph_node = g_atom_map.atom_pb_graph_node(atom_blk);
 	pb_type = pb_graph_node->pb_type;
 
 
-	if(logical_block[ilogical_block].type == VPACK_INPAD) {
+    if (g_atom_nl.block_type(atom_blk) == AtomBlockType::INPAD) {
 		int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
-		fprintf(fpout, ".names %s clb_%d_rr_node_%d\n", logical_block[ilogical_block].name, clb_index, node_index);
+		fprintf(fpout, ".names %s clb_%d_rr_node_%d\n", g_atom_nl.block_name(atom_blk).c_str(), clb_index, node_index);
 		fprintf(fpout, "1 1\n\n");
-	}
-	else if (logical_block[ilogical_block].type == VPACK_OUTPAD) {
+    } else if (g_atom_nl.block_type(atom_blk) == AtomBlockType::OUTPAD) {
 		int node_index = pb_graph_node->input_pins[0][0].pin_count_in_cluster;
 
-		if (strcmp(g_atoms_nlist.net[logical_block[ilogical_block].input_nets[0][0]].name,
-			logical_block[ilogical_block].name + 4) != 0) {
-			fprintf(fpout, ".names clb_%d_rr_node_%d %s\n", clb_index, node_index, logical_block[ilogical_block].name + 4);
+        //Don't add a buffer if the name is prefixed with :out, just remove the :out
+        auto input_ports = g_atom_nl.block_input_ports(atom_blk);
+        VTR_ASSERT(input_ports.size() == 1);
+        auto input_pins = g_atom_nl.port_pins(*input_ports.begin());
+        VTR_ASSERT(input_pins.size() == 1);
+        auto input_pin = *input_pins.begin();
+        auto input_net = g_atom_nl.pin_net(input_pin);
+
+        const char* outpad_input_net = g_atom_nl.net_name(input_net).c_str();
+        const char* trimmed_outpad_name = g_atom_nl.block_name(atom_blk).c_str() + 4;
+		if (strcmp(outpad_input_net, trimmed_outpad_name) != 0) {
+			fprintf(fpout, ".names clb_%d_rr_node_%d %s\n", clb_index, node_index, trimmed_outpad_name);
 			fprintf(fpout, "1 1\n\n");
 		}
 	}
-	else if(strcmp(logical_block[ilogical_block].model->name, "names") == 0) {
+	else if(strcmp(g_atom_nl.block_model(atom_blk)->name, "names") == 0) {
 		/* Print a LUT, a LUT has K input pins and one output pin */
 		fprintf(fpout, ".names ");
+
+        VTR_ASSERT(pb_type->num_ports == 2);
+
+        //Print the input port
 		for (int i = 0; i < pb_type->num_ports; i++) {
-			VTR_ASSERT(pb_type->num_ports == 2);
 			if (pb_type->ports[i].type == IN_PORT) {
 				/* LUTs receive special handling because a LUT has logically equivalent inputs.
 					The intra-logic block router may have taken advantage of logical equivalence so we need to unscramble the inputs when we output the LUT logic.
 				*/
 				VTR_ASSERT(pb_type->ports[i].is_clock == false);
-				for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
-					if (logical_block[ilogical_block].input_nets[0][j] != OPEN) {
-						int k;
-						for (k = 0; k < pb_type->ports[i].num_pins; k++) {								
-							int node_index = pb_graph_node->input_pins[0][k].pin_count_in_cluster;
-							int a_net_index = pb_route[node_index].atom_net_idx;
-							if(a_net_index != OPEN) {
-								if(a_net_index == logical_block[ilogical_block].input_nets[0][j]) {
-									fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_route[node_index].prev_pb_pin_id);
-									break;
-								}
-							}
-						}
-						if(k == pb_type->ports[i].num_pins) {
-							/* Failed to find LUT input, a netlist error has occurred */
-							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-								"LUT %s missing input %s post packing. This is a VPR internal error, report to vpr@eecg.utoronto.ca\n",
-								logical_block[ilogical_block].name, g_atoms_nlist.net[logical_block[ilogical_block].input_nets[0][j]].name);
-						}
-					}
-				}
+
+                AtomPortId port_id = g_atom_nl.find_port(atom_blk, pb_type->ports[i].name);
+                if(port_id) {
+                    for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
+                        AtomPinId pin_id = g_atom_nl.port_pin(port_id, j);
+                        if(pin_id) {
+                            AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+                            VTR_ASSERT(net_id);
+
+                            int k;
+                            for (k = 0; k < pb_type->ports[i].num_pins; k++) {								
+                                int node_index = pb_graph_node->input_pins[0][k].pin_count_in_cluster;
+                                AtomNetId a_net_id = pb_route[node_index].atom_net_id;
+                                if(a_net_id) {
+                                    if(a_net_id == net_id) {
+                                        fprintf(fpout, "clb_%d_rr_node_%d ", clb_index, pb_route[node_index].prev_pb_pin_id);
+                                        break;
+                                    }
+                                }
+                            }
+                            if(k == pb_type->ports[i].num_pins) {
+                                /* Failed to find LUT input, a netlist error has occurred */
+                                vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+                                    "LUT %s missing input %s post packing please file a bug report\n",
+                                    g_atom_nl.block_name(atom_blk).c_str(), g_atom_nl.net_name(net_id).c_str());
+                            }
+                        }
+                    }
+                }
 			}
 		}
+        
+        //Print the output port
 		for (int i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == OUT_PORT) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-				VTR_ASSERT(logical_block[ilogical_block].output_nets[0][0] == pb_route[node_index].atom_net_idx);
-				fprintf(fpout, "%s\n", logical_block[ilogical_block].name);
+
+                auto port_id = g_atom_nl.find_port(atom_blk, pb_type->ports[i].name);
+                auto pin_id = g_atom_nl.port_pin(port_id, 0);
+                VTR_ASSERT(pin_id);
+                VTR_ASSERT(g_atom_nl.pin_net(pin_id) == pb_route[node_index].atom_net_id);
+
+				fprintf(fpout, "%s\n", g_atom_nl.block_name(atom_blk).c_str());
 			}
 		}
-		vtr::t_linked_vptr *truth_table = logical_block[ilogical_block].truth_table;
-		while (truth_table) {
-			fprintf(fpout, "%s\n", (char *) truth_table->data_vptr);
-			truth_table = truth_table->next;
-		}
 
+        //Print the truth table
+        const auto& truth_table = g_atom_nl.block_truth_table(atom_blk);
+        for(auto row_iter = truth_table.rbegin(); row_iter != truth_table.rend(); ++row_iter) {
+            const auto& row = *row_iter;
+            for(auto iter = row.begin(); iter != row.end(); ++iter) {
+                if(iter == --row.end()) {
+                    fprintf(fpout, " ");
+                }
+                switch(*iter) {
+                    case vtr::LogicValue::TRUE: fprintf(fpout, "1"); break;
+                    case vtr::LogicValue::FALSE: fprintf(fpout, "0"); break;
+                    case vtr::LogicValue::DONT_CARE: fprintf(fpout, "-"); break;
+                    default: VTR_ASSERT(false);
+                }
+                if(iter == --row.end()) {
+                    VTR_ASSERT(*iter != vtr::LogicValue::DONT_CARE);
+                }
+            }
+            fprintf(fpout, "\n");
+        }
 
+        //Print the intermediate buffers for the output
 		for (int i = 0; i < pb_type->num_ports; i++) {
 			if (pb_type->ports[i].type == OUT_PORT) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-				VTR_ASSERT(logical_block[ilogical_block].output_nets[0][0] == pb_route[node_index].atom_net_idx);
-				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", logical_block[ilogical_block].name, clb_index, node_index);
+
+                auto port_id = g_atom_nl.find_port(atom_blk, pb_type->ports[i].name);
+                auto pin_id = g_atom_nl.port_pin(port_id, 0);
+                VTR_ASSERT(pin_id);
+                VTR_ASSERT(g_atom_nl.pin_net(pin_id) == pb_route[node_index].atom_net_id);
+
+				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", g_atom_nl.block_name(atom_blk).c_str(), clb_index, node_index);
 				fprintf(fpout, "1 1\n");
 			}
 		}
-	} else if (strcmp(logical_block[ilogical_block].model->name, "latch") == 0) {
+	} else if (strcmp(g_atom_nl.block_model(atom_blk)->name, "latch") == 0) {
 		/* Print a flip-flop.  A flip-flop has a D input, a Q output, and a clock input */
 		fprintf(fpout, ".latch ");
 		VTR_ASSERT(pb_type->num_ports == 3);
@@ -176,17 +224,36 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 			if (pb_type->ports[i].type == IN_PORT
 					&& pb_type->ports[i].is_clock == false) {
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-				VTR_ASSERT(logical_block[ilogical_block].input_nets[0][0] != OPEN);
-				int node_index =
-						pb_graph_node->input_pins[0][0].pin_count_in_cluster;
+
+                auto input_ports = g_atom_nl.block_input_ports(atom_blk);
+                VTR_ASSERT(input_ports.size() == 1);
+                auto input_pins = g_atom_nl.port_pins(*input_ports.begin());
+                VTR_ASSERT_MSG(g_atom_nl.pin_net(*input_pins.begin()), "Valid input net");
+
+				int node_index = pb_graph_node->input_pins[0][0].pin_count_in_cluster;
 				fprintf(fpout, "clb_%d_rr_node_%d ", clb_index,	pb_route[node_index].prev_pb_pin_id);
 			} else if (pb_type->ports[i].type == OUT_PORT) {
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-				fprintf(fpout, "%s re ", g_atoms_nlist.net[logical_block[ilogical_block].output_nets[0][0]].name);
+
+                auto output_ports = g_atom_nl.block_output_ports(atom_blk);
+                VTR_ASSERT(output_ports.size() == 1);
+                auto output_pins = g_atom_nl.port_pins(*output_ports.begin());
+                VTR_ASSERT(output_pins.size() == 1);
+                auto output_net_id = g_atom_nl.pin_net(*output_pins.begin());
+                VTR_ASSERT_MSG(output_net_id, "Valid output net");
+
+
+				fprintf(fpout, "%s re ", g_atom_nl.net_name(output_net_id).c_str());
 			} else if (pb_type->ports[i].type == IN_PORT
 					&& pb_type->ports[i].is_clock == true) {
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-				VTR_ASSERT(logical_block[ilogical_block].clock_net != OPEN);
+
+                auto clock_ports = g_atom_nl.block_clock_ports(atom_blk);
+                VTR_ASSERT(clock_ports.size() == 1);
+                auto clock_pins = g_atom_nl.port_pins(*clock_ports.begin());
+                VTR_ASSERT(clock_pins.size() == 1);
+                VTR_ASSERT_MSG(g_atom_nl.pin_net(*clock_pins.begin()), "Valid clock net");
+
 				int node_index = pb_graph_node->clock_pins[0][0].pin_count_in_cluster;
 				fprintf(fpout, "clb_%d_rr_node_%d 2", clb_index, pb_route[node_index].prev_pb_pin_id);
 			} else {
@@ -198,38 +265,42 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 			if (pb_type->ports[i].type == OUT_PORT) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-				VTR_ASSERT(logical_block[ilogical_block].output_nets[0][0] == pb_route[node_index].atom_net_idx);
-				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", g_atoms_nlist.net[logical_block[ilogical_block].output_nets[0][0]].name, clb_index, node_index);
+                AtomPortId port_id = g_atom_nl.find_port(atom_blk, pb_type->ports[i].name);
+                auto net_id = g_atom_nl.port_net(port_id, 0);
+				VTR_ASSERT(net_id == pb_route[node_index].atom_net_id);
+				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", g_atom_nl.net_name(net_id).c_str(), clb_index, node_index);
 				fprintf(fpout, "1 1\n");
 			}
 		}
 	} else {
-		const t_model *cur = logical_block[ilogical_block].model;
+		const t_model *cur = g_atom_nl.block_model(atom_blk);
 		fprintf(fpout, ".subckt %s \\\n", cur->name);
 
 		/* Print input ports */
 		t_model_ports *port = cur->inputs;
 		
 		while (port != NULL) {
+            AtomPortId port_id = g_atom_nl.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
+                fprintf(fpout, "%s[%d]=", port->name, i);
+
 				if (port->is_clock == true) {
 					VTR_ASSERT(port->index == 0);
 					VTR_ASSERT(port->size == 1);
-					if (logical_block[ilogical_block].clock_pin_name != NULL) {
-						fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].clock_pin_name);
-					}
-					else {
-						fprintf(fpout, "%s[%d]=unconn ", port->name, i);
-					}
-				}
-				else{
-					if (logical_block[ilogical_block].input_pin_names != NULL && logical_block[ilogical_block].input_pin_names[port->index] != NULL && logical_block[ilogical_block].input_pin_names[port->index][i] != NULL) {
-						fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].input_pin_names[port->index][i]);
-					}
-					else {
-						fprintf(fpout, "%s[%d]=unconn ", port->name, i);
-					}
-				}
+
+                    VTR_ASSERT(g_atom_nl.port_type(port_id) == AtomPortType::CLOCK);
+                }
+
+                AtomNetId net_id = g_atom_nl.port_net(port_id, i);
+
+                //Output the net
+                if(net_id) {
+                    fprintf(fpout, "%s", g_atom_nl.net_name(net_id).c_str());
+                } else {
+                    fprintf(fpout, "unconn");
+                }
+
+                fprintf(fpout, " "); //Space after port assignment
 				if (i % 4 == 3) {
 					if (i + 1 < port->size) {
 						fprintf(fpout, "\\\n");
@@ -239,12 +310,19 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 			port = port->next;
 			fprintf(fpout, "\\\n");
 		}
-		/* Print input ports */
-		port = cur->outputs;
 
+		/* Print output ports */
+		port = cur->outputs;
 		while (port != NULL) {
+            AtomPortId port_id = g_atom_nl.find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
-				fprintf(fpout, "%s[%d]=%s ", port->name, i, logical_block[ilogical_block].output_pin_names[port->index][i]);
+                AtomNetId net_id = g_atom_nl.port_net(port_id, i);
+
+                if(net_id) {
+                    fprintf(fpout, "%s[%d]=%s ", port->name, i, g_atom_nl.net_name(net_id).c_str());
+                } else {
+                    fprintf(fpout, "%s[%d]=unconn ", port->name, i);
+                }
 				
 				if (i % 4 == 3) {
 					if (i + 1 < port->size) {
@@ -261,22 +339,20 @@ void print_logical_block(FILE *fpout, int ilogical_block, t_block *clb) {
 		fprintf(fpout, "\n");
 
 
-		if (logical_block[ilogical_block].output_pin_names != NULL) {
-			port = cur->outputs;
-			while (port != NULL) {
-				if (logical_block[ilogical_block].output_pin_names[port->index] != NULL)	{
-					for (int ipin = 0; ipin < port->size; ipin++) {
-						int net_index = logical_block[ilogical_block].output_nets[port->index][ipin];
-						if (net_index != OPEN && logical_block[ilogical_block].output_pin_names[port->index][ipin] != NULL) {
-							t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, ipin, pb_graph_node);
-							fprintf(fpout, ".names %s clb_%d_rr_node_%d\n", logical_block[ilogical_block].output_pin_names[port->index][ipin], clb_index, pb_graph_pin->pin_count_in_cluster);
-							fprintf(fpout, "1 1\n\n");
-						}
-					}
-				}
-				port = port->next;
-			}
-		}
+        /* Print output buffers */
+        port = cur->outputs;
+        while (port != NULL) {
+            AtomPortId port_id = g_atom_nl.find_port(atom_blk, port->name);
+            for (int ipin = 0; ipin < port->size; ipin++) {
+                AtomNetId net_id = g_atom_nl.port_net(port_id, ipin);
+                if (net_id) {
+                    t_pb_graph_pin *pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(port, ipin, pb_graph_node);
+                    fprintf(fpout, ".names %s clb_%d_rr_node_%d\n", g_atom_nl.net_name(net_id).c_str(), clb_index, pb_graph_pin->pin_count_in_cluster);
+                    fprintf(fpout, "1 1\n\n");
+                }
+            }
+            port = port->next;
+        }
 	}
 }
 
@@ -398,7 +474,7 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 	 * the cluster, in essentially a graph based format.                           */
 
 	FILE *fpout;
-	int bnum, column;
+	int column;
 	vtr::t_linked_vptr *p_io_removed;
 	
 	if(clb[0].pb_route == NULL) {
@@ -412,12 +488,12 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	/* Print out all input and output pads. */
 	fprintf(fpout, "\n.inputs ");
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_INPAD) {
-			print_string(logical_block[bnum].name, &column, fpout);
+	for (auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
+			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, fpout);
 		}
 	}
-	p_io_removed = circuit_p_io_removed;
+	p_io_removed = circuit_p_io_removed; //FIXME: need to consider this with the new atom netlist...
 	while (p_io_removed) {
 		print_string((char*) p_io_removed->data_vptr, &column, fpout);
 		p_io_removed = p_io_removed->next;
@@ -425,10 +501,10 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	column = 0;
 	fprintf(fpout, "\n.outputs ");
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_OUTPAD) {
+	for (auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_nl.block_type(blk_id) == AtomBlockType::OUTPAD) {
 			/* remove output prefix "out:" */
-			print_string(logical_block[bnum].name + 4, &column, fpout);
+			print_string(g_atom_nl.block_name(blk_id).c_str() + 4, &column, fpout);
 		}
 	}
 
@@ -439,8 +515,8 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 	fprintf(fpout, " 0\n\n");
 
 	/* print out all circuit elements */
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		print_logical_block(fpout, bnum, clb);
+	for (auto blk_id : g_atom_nl.blocks()) {
+		print_logical_block(fpout, blk_id, clb);
 	}
 
 	for(int clb_index = 0; clb_index < num_clusters; clb_index++) {
