@@ -360,7 +360,7 @@ bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
  * Return pb_graph_node pin from model port and pin
  *  NULL if not found
  */
-t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node) {
+t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *model_port, const int model_pin, const t_pb_graph_node *pb_graph_node) {
 	int i;
 
 	if(model_port->dir == IN_PORT) {
