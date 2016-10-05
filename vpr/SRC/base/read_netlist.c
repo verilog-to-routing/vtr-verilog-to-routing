@@ -655,6 +655,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                         }
                         //Mark the associated inter-block net
                         pb_route[rr_node_index].atom_net_idx = temp_hash->index;
+                        pb_route[rr_node_index].atom_net_id = g_atom_nl.find_net(g_atoms_nlist.net[temp_hash->index].name);
                     }						
                 }
             } else {
@@ -721,6 +722,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     pins[i].c_str());
                         }
                         pb_route[rr_node_index].atom_net_idx = temp_hash->index;
+                        pb_route[rr_node_index].atom_net_id = g_atom_nl.find_net(g_atoms_nlist.net[temp_hash->index].name);
                     }
                 }
             } else {
@@ -1110,4 +1112,5 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 	}	
 		
 	pb_route[ipin].atom_net_idx = pb_route[driver].atom_net_idx;
+	pb_route[ipin].atom_net_id = g_atom_nl.find_net(g_atoms_nlist.net[pb_route[driver].atom_net_idx].name);
 }

@@ -28,6 +28,7 @@ using namespace std;
 
 #include "physical_types.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
@@ -442,6 +443,7 @@ t_pb_route *alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets
 
 	for(int ipin = 0; ipin < total_pins; ipin++) {
 		pb_route[ipin].atom_net_idx = OPEN;
+		pb_route[ipin].atom_net_id = AtomNetId::INVALID();
 		pb_route[ipin].prev_pb_pin_id = OPEN;
 	}
 
@@ -487,6 +489,7 @@ static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, c
 		cur_pin_id = ipin;
 		if(pb_route[cur_pin_id].atom_net_idx == OPEN) {
 			pb_route[cur_pin_id].atom_net_idx = atom_net;
+			pb_route[cur_pin_id].atom_net_id = g_atom_nl.find_net(g_atoms_nlist.net[atom_net].name); //Update atom netlist ref
 			pb_route[cur_pin_id].prev_pb_pin_id = prev_pb_pin_id;
 		} else {
 			VTR_ASSERT(pb_route[cur_pin_id].atom_net_idx == atom_net);
