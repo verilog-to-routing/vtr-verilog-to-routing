@@ -389,6 +389,10 @@ class AtomNetlist {
         //Returns the net (potentially invalid) associated with the specified port and port bit index
         AtomNetId port_net   (const AtomPortId port_id, BitIndex port_bit) const;
 
+        //Returns the model port of the specified port or nullptr if not
+        //  port_id: The ID of the port to look for
+        const t_model_ports* port_model(const AtomPortId port_id) const;
+
         /*
          * Pin
          */
@@ -553,14 +557,6 @@ class AtomNetlist {
         //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVAILD() if not
         //  name_id: The string ID of the net name to look for
         AtomNetId find_net(const AtomStringId name_id) const;
-
-        //Returns the model port of the specified port or nullptr if not
-        //  port_id: The ID of the port to look for
-        //  name   : The name of the port to look for
-        //
-        //Note that 'name' is required since this function may be called before the port has been fully
-        //initialized
-        const t_model_ports* find_model_port(const AtomPortId port_id) const;
 
         /*
          * Mutators
