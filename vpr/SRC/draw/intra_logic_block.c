@@ -26,6 +26,7 @@ using namespace std;
 
 #include "intra_logic_block.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "draw_global.h"
 #include "graphics.h"
@@ -44,11 +45,11 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 static bool is_top_lvl_block_highlighted(const t_block& clb);
 
 void draw_one_logical_connection(
-	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
-	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox);
+	const AtomPinId src_pin,  const AtomBlockId src_lblk, const t_bound_box& src_abs_bbox,
+	const AtomPinId sink_pin, const AtomBlockId sink_lblk, const t_bound_box& sink_abs_bbox);
 t_pb* highlight_sub_block_helper(const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth);
 void find_pin_index_at_model_scope(
-	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
+	const AtomPinId the_pin, const AtomBlockId lblk, const bool search_inputs,
 	int* pin_index, int* total_pins);
 
 /************************* Subroutine definitions begin *********************************/
@@ -469,29 +470,28 @@ void draw_logical_connections() {
 
 
 	// iterate over all the atom nets
-	for (vector<t_vnet>::iterator net = g_atoms_nlist.net.begin(); net != g_atoms_nlist.net.end(); ++net){
+    for(auto net_id : g_atom_nl.nets()) {
 
-		int src_lblk_id = net->pins.at(0).block;
-		t_logical_block* src_lblk = &logical_block[src_lblk_id];
-		t_pb_graph_node* src_pb_gnode = src_lblk->pb->pb_graph_node;
-		t_block* src_clb = &block[src_lblk->clb_index];
+        AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
+        AtomBlockId src_blk_id = g_atom_nl.pin_block(driver_pin_id);
+		const t_pb_graph_node* src_pb_gnode = g_atom_map.atom_pb_graph_node(src_blk_id);
+		t_block* src_clb = &block[g_atom_map.atom_clb(src_blk_id)];
 		bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
 		bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
 		// get the abs bbox of of the driver pb
-		const t_bound_box& src_bbox = draw_coords->get_absolute_pb_bbox(src_lblk->clb_index, src_pb_gnode);
+		const t_bound_box& src_bbox = draw_coords->get_absolute_pb_bbox(g_atom_map.atom_clb(src_blk_id), src_pb_gnode);
 
 		// iterate over the sinks
-		for (std::vector<t_net_pin>::iterator pin = net->pins.begin() + 1;
-			pin != net->pins.end(); ++pin) {
+        for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
 
-			t_logical_block* sink_lblk = &logical_block[pin->block];
-			t_pb_graph_node* sink_pb_gnode = sink_lblk->pb->pb_graph_node;
-			t_block* sink_clb = &block[sink_lblk->clb_index];
+            AtomBlockId sink_blk_id = g_atom_nl.pin_block(sink_pin_id);
+            const t_pb_graph_node* sink_pb_gnode = g_atom_map.atom_pb_graph_node(sink_blk_id);
+			t_block* sink_clb = &block[g_atom_map.atom_clb(sink_blk_id)];
 
-			if (sel_subblk_info.is_head_net_of_critical_path(net->pins.at(0), *pin)) {
+			if (sel_subblk_info.is_head_net_of_critical_path(driver_pin_id, sink_pin_id)) {
 				setcolor(crit_path_colors::net::HEAD);
-			} else if (sel_subblk_info.is_on_critical_path(net->pins.at(0), *pin)) {
+			} else if (sel_subblk_info.is_on_critical_path(driver_pin_id, sink_pin_id)) {
 				setcolor(crit_path_colors::net::TAIL);
 			} else if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVES_IT_COLOR);
@@ -505,72 +505,58 @@ void draw_logical_connections() {
 			}
 
 			// get the abs. bbox of the sink pb
-			const t_bound_box& sink_bbox = draw_coords->get_absolute_pb_bbox(sink_lblk->clb_index, sink_pb_gnode);
+			const t_bound_box& sink_bbox = draw_coords->get_absolute_pb_bbox(g_atom_map.atom_clb(sink_blk_id), sink_pb_gnode);
 
-			draw_one_logical_connection(net->pins.at(0), *src_lblk, src_bbox, *pin, *sink_lblk, sink_bbox);		
+			draw_one_logical_connection(driver_pin_id, src_blk_id, src_bbox, sink_pin_id, sink_blk_id, sink_bbox);		
 		}
 	}
 }
 
 /**
- * Helper function for draw_one_logical_connection(...). Finds the index of a pin
- * in the given model. It counts pins in the model until it finds the given pin,
- * and puts this count in pin_index. The total number of pins is also calculated
- * and put in total_pins. The search inpts parameter tells this function to search
- * inpts (if true) or outputs (if false).
+ * Helper function for draw_one_logical_connection(...). 
+ * We return the index of the pin in the context of the *model* (i.e. accross
+ * all input or output ports as determined by search_inputs).
+ * This is used to determine where to draw connection start/end points
+ *
+ * The pin index in the model context is returned via pin_index.
+ *
+ * The total number of model pins (either inputs or outputs) is returned via total_pins
+ *
+ * The search inputs parameter tells this function to search
+ * inputs (if true) or outputs (if false).
  */
 void find_pin_index_at_model_scope(
-	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
+	const AtomPinId pin_id, const AtomBlockId blk_id, const bool search_inputs,
 	int* pin_index, int* total_pins) {
 
-	// printf("looking for pin {blk: %d, port: %d, pin: %d}\n",
-		// the_pin.block, the_pin.block_port, the_pin.block_pin);
+    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+    const t_model_ports* model_port = g_atom_nl.port_model(port_id);
 
-	t_model_ports* port = NULL;
-	if (search_inputs) {
-		port = lblk.model->inputs;
-	} else { // searching outputs
-		port = lblk.model->outputs;
-	}
+    //Total up the port widths
+    //  Note that we do this on the model since the atom netlist doesn't include unused ports
+    int pin_cnt = 0;
+    const t_model* model = g_atom_nl.block_model(blk_id);
+    const t_model_ports* port = (search_inputs) ? model->inputs : model->outputs;
+    while(port) {
 
-	*pin_index = -1;
-	int i = 0;
-	// Note, that all iterations must go through - no early exits -
-	// as we are also trying to count the total number of pins
+        if(port == model_port) {
+            //This is the port the pin is associated with, record it's index
 
-	// iterate over the ports.
-	while(port != NULL) {
-		if(search_inputs ? port->is_clock == false : true) {
-			int iport = port->index;
-			// iterate over the pins on that port
-			// printf("looking at port %d\n", iport);
-			for (int ipin = 0; ipin < port->size; ipin++) {
-				// get the net that connects here.
-				int inet = OPEN;
-				if (search_inputs) {
-					inet = lblk.input_nets[iport][ipin];
-				} else {
-					inet = lblk.output_nets[iport][ipin];
-				}
-				if(inet != OPEN) {
-					t_vnet& net = g_atoms_nlist.net.at(inet);
-					for (auto pin = net.pins.begin(); pin != net.pins.end(); ++pin) {
+            //Get the pin index in the port
+            int atom_port_index = g_atom_nl.pin_port_bit(pin_id);
 
-						if (pin->block == the_pin.block
-							&& ipin == the_pin.block_pin
-							&& iport == the_pin.block_port) {
-							*pin_index = i;
-						}
-						
-						i = i + 1;
-					}
-				}
-				i = i + 1;
-			}
-		}
-		port = port->next;
-	}
-	*total_pins = i;
+            //The index of this pin in the model is the pins counted so-far 
+            //(i.e. accross previous ports) plus the index in the port
+            *pin_index = pin_cnt + atom_port_index;
+        }
+
+        //Running total of model pins seen so-far
+        pin_cnt += port->size;
+
+        port = port->next;
+    }
+
+    *total_pins = pin_cnt;
 }
 
 /**
@@ -579,8 +565,8 @@ void find_pin_index_at_model_scope(
  * more effeciently elsewhere.
  */
 void draw_one_logical_connection(
-	const t_net_pin& src_pin,  const t_logical_block& src_lblk, const t_bound_box& src_abs_bbox,
-	const t_net_pin& sink_pin, const t_logical_block& sink_lblk, const t_bound_box& sink_abs_bbox) {
+	const AtomPinId src_pin,  const AtomBlockId src_lblk, const t_bound_box& src_abs_bbox,
+	const AtomPinId sink_pin, const AtomBlockId sink_lblk, const t_bound_box& sink_abs_bbox) {
 
 	const float FRACTION_USABLE_WIDTH = 0.3;
 
@@ -611,7 +597,7 @@ void draw_one_logical_connection(
 	drawline(src_point.x, src_point.y,
 		sink_point.x, sink_point.y);
 
-	if (src_lblk.clb_index == sink_lblk.clb_index) {
+	if (g_atom_map.atom_clb(src_lblk) == g_atom_map.atom_clb(sink_lblk)) {
 		// if they are in the same clb, put one arrow in the center
 		float center_x = (src_point.x + sink_point.x) / 2;
 		float center_y = (src_point.y + sink_point.y) / 2;
@@ -774,7 +760,7 @@ void add_all_children(const t_pb* pb, const t_block* clb,
 
 void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_containing_block) {
 	selected_pb = new_selected_sub_block;
-	selected_pb_gnode = (selected_pb == NULL) ? NULL : selected_pb->pb_graph_node;
+    selected_pb_gnode = (selected_pb == NULL) ? NULL : selected_pb->pb_graph_node;
 	containing_block = new_containing_block;
 	sinks.clear();
 	sources.clear();
@@ -783,58 +769,41 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	if (has_selection()) {
 		add_all_children(selected_pb, containing_block, in_selected_subtree);
 
-		for (int i = 0; i < num_logical_blocks; ++i) {
-			const t_logical_block* lblk = &logical_block[i];
+		for (auto blk_id : g_atom_nl.blocks()) {
+            const t_block* clb = &block[g_atom_map.atom_clb(blk_id)];
+            const t_pb_graph_node* pb_graph_node = g_atom_map.atom_pb_graph_node(blk_id);
 			// find the logical block that corrisponds to this pb.
-			if ( is_in_selected_subtree(lblk->pb->pb_graph_node, &block[lblk->clb_index]) ) {
+			if ( is_in_selected_subtree(pb_graph_node, clb) ) {
 
-				const t_model* model = lblk->model;
+                //Collect the sources of all nets driving this node
+                for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
+                    for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                        AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+                        AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
 
-				t_model_ports* model_ports = model->inputs;
-				// iterate over the input ports
-				while(model_ports != NULL) {
-					if(model_ports->is_clock == false) {
-						int iport = model_ports->index;
-						// iterate over the pins on that port
-						for (int ipin = 0; ipin < model_ports->size; ipin++) {
-							// get the net that connects here.
-							int inet = lblk->input_nets[iport][ipin];
-							if(inet != OPEN) {
-								t_vnet& net = g_atoms_nlist.net.at(inet);
+                        AtomBlockId src_blk = g_atom_nl.pin_block(driver_pin_id);
 
-								// put the driver in the sources list
-								t_net_pin& pin = net.pins.at(0);
-								t_logical_block* src_lblk = &logical_block[pin.block];
+                        const t_block* src_clb = &block[g_atom_map.atom_clb(src_blk)];
+                        const t_pb_graph_node* src_pb_graph_node = g_atom_map.atom_pb_graph_node(src_blk);
 
-								sources.insert(gnode_clb_pair(
-									src_lblk->pb->pb_graph_node, &block[src_lblk->clb_index])
-								);
-							}
-						}
-					}
-					model_ports = model_ports->next;
-				}
+                        sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
+                    }
+                }
 
-				model_ports = model->outputs;
-				while(model_ports != NULL) {
-					int iport = model_ports->index;
-					for (int ipin = 0; ipin < model_ports->size; ipin++) {
-						int inet = lblk->output_nets[iport][ipin];
-						if(inet != OPEN) {
-							t_vnet& net = g_atoms_nlist.net.at(inet);
+                //Collect the sinks of all nets driven by this node
+                for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
+                    for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                        AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+                        for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
+                            AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin_id);
 
-							// put the all sinks in the sink list
-							for (auto pin = net.pins.begin() + 1; pin != net.pins.end(); ++pin) {
-								t_logical_block* sink_lblk = &logical_block[pin->block];
+                            const t_block* sink_clb = &block[g_atom_map.atom_clb(sink_blk)];
+                            const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
 
-								sinks.insert(gnode_clb_pair(
-									sink_lblk->pb->pb_graph_node, &block[sink_lblk->clb_index])
-								);
-							}
-						}
-					}
-					model_ports = model_ports->next;
-				}
+                            sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
+                        }
+                    }
+                }
 			}
 		}
 	}
@@ -899,10 +868,10 @@ bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* tes
 	return sources.find(gnode_clb_pair(test,test_block)) != sources.end();
 }
 
-bool t_selected_sub_block_info::is_on_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const {
+bool t_selected_sub_block_info::is_on_critical_path(const AtomPinId test_src, const AtomPinId test_sink) const {
 
-	clb_pin_tuple src_clb_pin_tuple(test_src, false, false);
-	clb_pin_tuple sink_clb_pin_tuple(test_sink, true, false);
+	clb_pin_tuple src_clb_pin_tuple(test_src);
+	clb_pin_tuple sink_clb_pin_tuple(test_sink);
 	return nets_on_critical_path.find(
 		std::make_pair(
 			src_clb_pin_tuple,
@@ -915,9 +884,9 @@ bool t_selected_sub_block_info::is_on_critical_path(const t_pb_graph_node* test,
 	return blocks_on_critical_path.find(gnode_clb_pair(test,test_block)) != blocks_on_critical_path.end();
 }
 
-bool t_selected_sub_block_info::is_head_net_of_critical_path(const t_net_pin& test_src, const t_net_pin& test_sink) const {
-	clb_pin_tuple src_clb_pin_tuple(test_src, false, false);
-	clb_pin_tuple sink_clb_pin_tuple(test_sink, true, false);
+bool t_selected_sub_block_info::is_head_net_of_critical_path(const AtomPinId test_src, const AtomPinId test_sink) const {
+	clb_pin_tuple src_clb_pin_tuple(test_src);
+	clb_pin_tuple sink_clb_pin_tuple(test_sink);
 
 	return 
 	is_driver_of_head_of_critical_path( src_clb_pin_tuple.pb_gnode, &block[ src_clb_pin_tuple.clb_index])
@@ -945,9 +914,9 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_
 	pb_gnode(pb_gnode_) {
 }
 
-t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const t_net_pin& atom_pin, bool is_input_pin, bool is_in_global_net) :
-	clb_index(logical_block[atom_pin.block].clb_index),
-	pb_gnode(get_pb_graph_node_pin_from_g_atoms_nlist_pin(atom_pin, is_input_pin, is_in_global_net)->parent_node) {
+t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) :
+	clb_index(g_atom_map.atom_clb(g_atom_nl.pin_block(atom_pin))),
+	pb_gnode(g_atom_map.atom_pb_graph_node(g_atom_nl.pin_block(atom_pin))) {
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {

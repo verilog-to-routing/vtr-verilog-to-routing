@@ -116,7 +116,7 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	return result;
 }
 
-t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, t_pb_graph_node* pb_gnode) {
+t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, const t_pb_graph_node* pb_gnode) {
 	t_bound_box result = this->get_pb_bbox(clb,*pb_gnode);
 	
 	// go up the graph, adding the parent bboxes to the result,
@@ -130,7 +130,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, t_pb_graph_n
 	return result;
 }
 
-t_bound_box t_draw_coords::get_absolute_pb_bbox(int clb_index, t_pb_graph_node* pb_gnode) {
+t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode) {
 	return get_absolute_pb_bbox(block[clb_index], pb_gnode);
 }
 
