@@ -9,6 +9,9 @@ class AtomMap {
         const t_pb* atom_pb(const AtomBlockId blk_id) const;
         AtomBlockId pb_atom(const t_pb* pb_val) const;
 
+        //Conveneince wrapper around atom_pb to access the associated graph node
+        const t_pb_graph_node* atom_pb_graph_node(const AtomBlockId blk_id) const;
+
         int atom_clb(const AtomBlockId blk_id) const;
         AtomBlockId clb_atom(const int clb_index_val) const;
 

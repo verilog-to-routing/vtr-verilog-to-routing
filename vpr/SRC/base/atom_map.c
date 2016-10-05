@@ -20,6 +20,15 @@ AtomBlockId AtomMap::pb_atom(const t_pb* pb_val) const {
     return iter->second;
 }
 
+const t_pb_graph_node* AtomMap::atom_pb_graph_node(const AtomBlockId blk_id) const {
+    const t_pb* pb = atom_pb(blk_id);
+    if(pb) {
+        //Found
+        return pb->pb_graph_node;
+    }
+    return nullptr;
+}
+
 int AtomMap::atom_clb(const AtomBlockId blk_id) const {
     auto iter = atom_to_clb_.find(blk_id);
     if(iter == atom_to_clb_.end()) {
