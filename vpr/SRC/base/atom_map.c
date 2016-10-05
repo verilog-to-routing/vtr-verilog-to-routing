@@ -11,8 +11,8 @@ const t_pb* AtomMap::atom_pb(const AtomBlockId blk_id) const {
     return iter->second;
 }
 
-AtomBlockId AtomMap::pb_atom(const t_pb* pb_val) const {
-    auto iter = pb_to_atom_.find(pb_val);
+AtomBlockId AtomMap::pb_atom(const t_pb* pb) const {
+    auto iter = pb_to_atom_.find(pb);
     if(iter == pb_to_atom_.end()) {
         //Not found
         return AtomBlockId::INVALID();
@@ -47,25 +47,25 @@ AtomBlockId AtomMap::clb_atom(const int clb_index) const {
     return iter->second;
 }
 
-void AtomMap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb_val) {
-    //If either of blk_id or pb_val are not valid, 
+void AtomMap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
+    //If either of blk_id or pb are not valid, 
     //remove any mapping
     if(!blk_id) {
         //Remove
-        pb_to_atom_.erase(pb_val);
+        pb_to_atom_.erase(pb);
         VTR_ASSERT_SAFE(atom_to_pb.count(blk_id) == 0);
     }
-    if(pb_val == nullptr) {
+    if(pb == nullptr) {
         //Remove
         atom_to_pb_.erase(blk_id);
-        VTR_ASSERT_SAFE(pb_to_atom_.count(pb_val) == 0);
+        VTR_ASSERT_SAFE(pb_to_atom_.count(pb) == 0);
     }
     
     //If both are valid store the mapping
-    if(blk_id && pb_val) {
+    if(blk_id && pb) {
         //Store
-        atom_to_pb_[blk_id] = pb_val;
-        pb_to_atom_[pb_val] = blk_id;
+        atom_to_pb_[blk_id] = pb;
+        pb_to_atom_[pb] = blk_id;
     }
 }
 
