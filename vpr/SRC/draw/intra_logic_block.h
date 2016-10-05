@@ -17,10 +17,8 @@
 struct t_selected_sub_block_info {
 	struct clb_pin_tuple {
 		int clb_index;
-		//const t_pb_graph_pin* pb_gpin;
 		const t_pb_graph_node* pb_gnode;
 
-		// clb_pin_tuple(int clb_index, const t_pb_graph_pin* pb_gpin);
 		clb_pin_tuple(int clb_index, const t_pb_graph_node* pb_gnode);
 		clb_pin_tuple(const t_net_pin& atom_pin, bool is_input_pin, bool is_in_global_net);
 		bool operator==(const clb_pin_tuple&) const;
@@ -48,7 +46,6 @@ struct t_selected_sub_block_info {
 			std::hash<int> int_hasher;
 			std::hash<const void*> ptr_hasher;
 			return int_hasher(v.clb_index) 
-				// ^ ptr_hasher((const void*)v.pb_gpin);
 				^ ptr_hasher((const void*)v.pb_gnode);
 		}
 	};
@@ -62,9 +59,7 @@ private:
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > in_selected_subtree;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > blocks_on_critical_path;
 	gnode_clb_pair head_of_critical_path;
-	// clb_pin_tuple head_of_critical_path;
 	gnode_clb_pair driver_of_head_of_critical_path;
-	// clb_pin_tuple driver_of_head_of_critical_path;
 
 public:
 

@@ -553,17 +553,12 @@ void find_pin_index_at_model_scope(
 					inet = lblk.output_nets[iport][ipin];
 				}
 				if(inet != OPEN) {
-					// printf("looking at net %d\n", inet);
 					t_vnet& net = g_atoms_nlist.net.at(inet);
 					for (auto pin = net.pins.begin(); pin != net.pins.end(); ++pin) {
-						// printf("looking at pin {blk: %d, port: %d, pin: %d}\n",
-							// pin->block, pin->block_port, pin->block_pin);
 
 						if (pin->block == the_pin.block
 							&& ipin == the_pin.block_pin
 							&& iport == the_pin.block_port) {
-							// puts("found match");
-							// we've found our pin
 							*pin_index = i;
 						}
 						
@@ -576,10 +571,6 @@ void find_pin_index_at_model_scope(
 		port = port->next;
 	}
 	*total_pins = i;
-	// if (*pin_index < 0) {
-	// 	puts("didn't find!!!!");
-	// }
-	// puts("--- NEXT! ---");
 }
 
 /**
@@ -789,8 +780,6 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	sources.clear();
 	in_selected_subtree.clear();
 
-	// printf("selecting in clb #%ld\n", new_containing_block - block);
-
 	if (has_selection()) {
 		add_all_children(selected_pb, containing_block, in_selected_subtree);
 
@@ -951,7 +940,6 @@ bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* te
  * Begin definition of t_selected_sub_block_info::clb_pin_tuple functions.
  */
 
-// t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_pb_graph_pin* pb_gpin_) :
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_pb_graph_node* pb_gnode_) :
 	clb_index(clb_index_),
 	pb_gnode(pb_gnode_) {
@@ -959,13 +947,11 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const t_net_pin& atom_pin, bool is_input_pin, bool is_in_global_net) :
 	clb_index(logical_block[atom_pin.block].clb_index),
-	// pb_gpin(get_pb_graph_node_pin_from_g_atoms_nlist_pin(atom_pin, is_input_pin, is_in_global_net)) {
 	pb_gnode(get_pb_graph_node_pin_from_g_atoms_nlist_pin(atom_pin, is_input_pin, is_in_global_net)->parent_node) {
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {
 	return   clb_index == rhs.clb_index
-	// &&         pb_gpin == rhs.pb_gpin;
 	&&        pb_gnode == rhs.pb_gnode;
 }
 
