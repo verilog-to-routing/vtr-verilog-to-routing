@@ -1388,6 +1388,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	if (parent_pb->child_pbs == NULL) {
 		VTR_ASSERT(parent_pb->name == NULL);
 		parent_pb->logical_block = OPEN;
+        g_atom_map.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
+
 		parent_pb->name = vtr::strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
@@ -1409,6 +1411,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 					j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 				parent_pb->child_pbs[i][j].logical_block = OPEN;
+                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
+
 				parent_pb->child_pbs[i][j].pb_graph_node =
 						&(parent_pb->pb_graph_node->child_pb_graph_nodes[parent_pb->mode][i][j]);
 			}

@@ -298,6 +298,8 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 
 	/* Parse all pbs and CB internal nets*/
 	cb[index].pb->logical_block = OPEN;
+    g_atom_map.set_atom_pb(AtomBlockId::INVALID(), cb[index].pb);
+
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
 	
@@ -443,6 +445,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 
                 /* Parse all pbs and CB internal nets*/
                 pb->child_pbs[i][pb_index].logical_block = OPEN;
+                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto mode = child.attribute("mode");
                 pb->child_pbs[i][pb_index].mode = 0;
@@ -468,6 +471,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = NULL;
                 pb->child_pbs[i][pb_index].logical_block = OPEN;
+                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
                 if (lookahead1) {

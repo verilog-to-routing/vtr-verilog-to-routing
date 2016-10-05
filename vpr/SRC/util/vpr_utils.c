@@ -726,6 +726,7 @@ void free_pb(t_pb *pb) {
 			}
 		}
 		pb->logical_block = OPEN;
+        g_atom_map.set_atom_pb(AtomBlockId::INVALID(), pb);
 	}
 	free_pb_stats(pb);
 }
