@@ -384,10 +384,10 @@ class AtomNetlist {
         vtr::Range<pin_iterator>    port_pins   (const AtomPortId id) const;
 
         //Returns the pin (potentially invalid) associated with the specified port and port bit index
-        AtomPinId port_pin   (const AtomPortId port_id, BitIndex port_bit) const;
+        AtomPinId port_pin   (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the net (potentially invalid) associated with the specified port and port bit index
-        AtomNetId port_net   (const AtomPortId port_id, BitIndex port_bit) const;
+        AtomNetId port_net   (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the model port of the specified port or nullptr if not
         //  port_id: The ID of the port to look for

@@ -225,31 +225,6 @@ vtr::Range<AtomNetlist::port_iterator> AtomNetlist::block_clock_ports (const Ato
     return vtr::make_range(block_clock_ports_[size_t(id)].begin(), block_clock_ports_[size_t(id)].end());
 }
 
-AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, BitIndex port_bit) const {
-    //Convenience look-up bypassing port
-    VTR_ASSERT(valid_port_id(port_id));
-    VTR_ASSERT(valid_port_bit(port_id, port_bit));
-
-    for(auto pin_id : port_pins(port_id)) {
-        if(pin_port_bit(pin_id) == port_bit) {
-            return pin_id;
-        }
-    }
-    return AtomPinId::INVALID();
-}
-AtomNetId AtomNetlist::port_net (const AtomPortId port_id, BitIndex port_bit) const {
-    VTR_ASSERT(valid_port_id(port_id));
-    VTR_ASSERT(valid_port_bit(port_id, port_bit));
-
-    //Convenience look-up bypassing port and pin
-    AtomPinId pin_id = port_pin(port_id, port_bit);
-    if(pin_id) {
-        return pin_net(pin_id);
-    } else {
-        return AtomNetId::INVALID();
-    }
-}
-
 /*
  *
  * Ports
@@ -302,6 +277,32 @@ vtr::Range<AtomNetlist::pin_iterator> AtomNetlist::port_pins (const AtomPortId i
 
     return vtr::make_range(port_pins_[size_t(id)].begin(), port_pins_[size_t(id)].end());
 }
+
+AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_bit) const {
+    //Convenience look-up bypassing port
+    VTR_ASSERT(valid_port_id(port_id));
+    VTR_ASSERT(valid_port_bit(port_id, port_bit));
+
+    for(auto pin_id : port_pins(port_id)) {
+        if(pin_port_bit(pin_id) == port_bit) {
+            return pin_id;
+        }
+    }
+    return AtomPinId::INVALID();
+}
+AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_bit) const {
+    VTR_ASSERT(valid_port_id(port_id));
+    VTR_ASSERT(valid_port_bit(port_id, port_bit));
+
+    //Convenience look-up bypassing port and pin
+    AtomPinId pin_id = port_pin(port_id, port_bit);
+    if(pin_id) {
+        return pin_net(pin_id);
+    } else {
+        return AtomNetId::INVALID();
+    }
+}
+
 
 const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
     AtomBlockId blk_id = port_block(port_id);
