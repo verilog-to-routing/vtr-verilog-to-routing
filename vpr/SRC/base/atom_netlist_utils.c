@@ -18,6 +18,7 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk);
 void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk);
 
 std::string make_unconn(size_t& unconn_count, AtomPinType type);
+void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
 
 
 void print_netlist(FILE* f, const AtomNetlist& netlist) {
@@ -835,4 +836,121 @@ std::string make_unconn(size_t& unconn_count, AtomPinType /*pin_type*/) {
 #else
     return std::string("unconn") + std::to_string(unconn_count++);
 #endif
+}
+
+
+bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table) {
+    bool encodes_on_set = false;
+    if(truth_table.empty()) {
+        //An empyt truth table corresponds to a constant zero
+        // making whether the 'on' set is encoded an arbitrary
+        // choice (we choose true)
+        encodes_on_set = true;
+    } else {
+        VTR_ASSERT_MSG(truth_table[0].size() > 0, "Can not have an empty truth-table row");
+
+        //Inspect the last (output) value
+        auto out_val = truth_table[0][truth_table[0].size()-1];
+        switch(out_val) {
+            case vtr::LogicValue::TRUE: encodes_on_set = true; break;
+            case vtr::LogicValue::FALSE: encodes_on_set = false; break;
+            default: 
+                  VPR_THROW(VPR_ERROR_OTHER, "Unrecognized truth-table output value");
+        }
+    }
+    return encodes_on_set;
+}
+
+std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs) {
+    bool on_set = truth_table_encodes_on_set(truth_table); 
+
+    //Initialize the lut mask
+    size_t mask_bits = pow(2, num_inputs);
+    std::vector<vtr::LogicValue> mask;
+    if(on_set) {
+        //If we are encoding the on-set the background value is false
+        mask = std::vector<vtr::LogicValue>(mask_bits, vtr::LogicValue::FALSE);
+    } else {
+        //If we are encoding the off-set the background value is true
+        mask = std::vector<vtr::LogicValue>(mask_bits, vtr::LogicValue::TRUE);
+    }
+
+    for(const auto& row : truth_table) {
+        //Each row in the truth table (excluding the output) is a cube, 
+        //and may need to be expanded to account for don't cares
+
+        //We first expand the cube to include all the inputs (in-case the
+        //logical LUT has fewer inputs than the physical lut). We initialize
+        //any unspecified values as don't cares
+        std::vector<vtr::LogicValue> cube(num_inputs, vtr::LogicValue::DONT_CARE);
+        for(size_t i = 0; i < row.size() - 2; ++i) {
+            cube[i] = row[i];
+        }
+
+        std::vector<size_t> minterms;
+
+        for(auto minterm : cube_to_minterms(cube)) {
+            //Mark the minterms in the mask
+
+            if(on_set) {
+                mask[minterm] = vtr::LogicValue::TRUE;
+            } else {
+                mask[minterm] = vtr::LogicValue::FALSE;
+            }
+        }
+    }
+    return mask;
+}
+
+std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube) {
+    std::vector<size_t> minterms;
+    cube_to_minterms_recurr(cube, minterms);
+    return minterms;
+}
+
+void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms) {
+    bool cube_has_dc = false;
+    for(size_t i = 0; i < cube.size(); ++i) {
+        if(cube[i] == vtr::LogicValue::DONT_CARE) {
+            //If we have a don't care we need to recursively expand
+            //the don't care for the true and false cases
+            cube_has_dc = true;
+
+            //True case
+            std::vector<vtr::LogicValue> cube_true = cube;
+            cube_true[i] = vtr::LogicValue::TRUE;
+            cube_to_minterms_recurr(cube_true, minterms); //Recurse
+
+            //False case
+            std::vector<vtr::LogicValue> cube_false = cube;
+            cube_false[i] = vtr::LogicValue::FALSE;
+            cube_to_minterms_recurr(cube_false, minterms); //Recurss
+
+        } else {
+            VTR_ASSERT(cube[i] == vtr::LogicValue::TRUE
+                       || cube[i] == vtr::LogicValue::FALSE);
+        }
+    }
+
+    if(!cube_has_dc) {
+        //This cube is actually a minterm
+
+        //Convert the cube to the minterm number
+        size_t minterm = 0;
+        for(size_t i = 0; i < cube.size(); ++i) {
+            //The minterm is the integer representation of the
+            //binary number stored in the cube. We do the conversion
+            //by summing up all powers of two where the cube is true.
+            //
+            //Note that we treat the right-most value as the LSB
+            //so we check the cubes values in reverse order (from
+            //high to low index).
+            if(cube[(cube.size() - 1) - i] == vtr::LogicValue::TRUE) {
+                minterm += 1 << i; //Note powers of two by shifting
+            }
+        }
+
+        //Save the minterm number
+        minterms.push_back(minterm);
+    }
 }

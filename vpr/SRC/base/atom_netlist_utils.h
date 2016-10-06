@@ -35,6 +35,17 @@ size_t sweep_inputs(AtomNetlist& netlist);
 size_t sweep_outputs(AtomNetlist& netlist);
 
 /*
+ * Truth-table operations
+ */
+//Deterimine whether a truth table encodes the logic functions 'On' set (returns true)
+//or 'Off' set (returns false)
+bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table);
+
+std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs);
+
+std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);
+
+/*
  * Print the netlist for debugging
  */
 void print_netlist(FILE* f, const AtomNetlist& netlist);
