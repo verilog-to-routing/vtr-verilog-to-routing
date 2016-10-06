@@ -5,7 +5,7 @@ files (the "Software"), to deal in the Software without
 restriction, including without limitation the rights to use,
 copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following 
+Software is furnished to do so, subject to the following
 conditions:
 
 The above copyright notice and this permission notice shall be
@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 #include <string.h>
 #include <stdio.h>
@@ -61,15 +61,15 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* open the file for output */
 	if (global_args.high_level_block != NULL)
 	{
-		out_file = (char*)malloc(sizeof(char)*(1+strlen(file_name)+strlen(global_args.high_level_block)+6)); 
-		sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block); 
+		out_file = (char*)malloc(sizeof(char)*(1+strlen(file_name)+strlen(global_args.high_level_block)+6));
+		sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block);
 		out = fopen(out_file, "w");
 	}
 	else
 	{
 		out = fopen(file_name, "w");
 	}
-	
+
 	if (out == NULL)
 	{
 		error_message(NETLIST_ERROR, -1, -1, "Could not open output file %s\n", file_name);
@@ -86,33 +86,31 @@ void output_blif(char *file_name, netlist_t *netlist)
 			first_time_inputs = TRUE;
 		}
 
-		if(netlist->top_input_nodes[i]->output_pins[0]->net->fanout_pins != NULL)
+		if (global_args.high_level_block != NULL)
 		{
-			if (global_args.high_level_block != NULL)
+			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
+				count = count + fprintf(out, " %s^^%i-%i", netlist->top_input_nodes[i]->name, netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
+			else
 			{
-				if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
-					count = count + fprintf(out, " %s^^%i-%i", netlist->top_input_nodes[i]->name, netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
-				else
-				{
-					/* wrapping line */
-					count = fprintf(out, " \\\n %s^^%i-%i", netlist->top_input_nodes[i]->name,netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
-					count = count - 3;
-				}
+				/* wrapping line */
+				count = fprintf(out, " \\\n %s^^%i-%i", netlist->top_input_nodes[i]->name,netlist->top_input_nodes[i]->related_ast_node->far_tag, netlist->top_input_nodes[i]->related_ast_node->high_number);
+				count = count - 3;
+			}
+		}
+		else
+		{
+			if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
+			{
+				count = count + fprintf(out, " %s", netlist->top_input_nodes[i]->name);
 			}
 			else
 			{
-				if (strlen(netlist->top_input_nodes[i]->name) + count < 79)
-				{
-					count = count + fprintf(out, " %s", netlist->top_input_nodes[i]->name);
-				}
-				else
-				{
-					/* wrapping line */
-					count = fprintf(out, " \\\n %s", netlist->top_input_nodes[i]->name);
-					count = count - 3;
-				}
+				/* wrapping line */
+				count = fprintf(out, " \\\n %s", netlist->top_input_nodes[i]->name);
+				count = count - 3;
 			}
 		}
+
 	}
 	fprintf(out, "\n");
 
@@ -124,7 +122,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 			warning_message(NETLIST_ERROR, netlist->top_output_nodes[i]->related_ast_node->line_number, netlist->top_output_nodes[i]->related_ast_node->file_number, "This output is undriven (%s) and will be removed\n", netlist->top_output_nodes[i]->name);
 		}
 		else
-		{	
+		{
 			if (first_time_outputs == FALSE)
 			{
 				count = fprintf(out, ".outputs");
@@ -164,7 +162,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* traverse the internals of the flat net-list */
 	if (strcmp(configuration.output_type, "blif") == 0)
 	{
-		depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);	
+		depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
 	}
 	else
 	{
@@ -300,7 +298,7 @@ void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *f
  *------------------------------------------------------------------*/
 void output_node(nnode_t *node, short traverse_number, FILE *fp)
 {
-	switch (node->type) 
+	switch (node->type)
 	{
 		case GT:
 			define_set_input_logical_function(node, "100 1\n", fp);
@@ -308,7 +306,7 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 			oassert(node->input_pins[2] != NULL);
 			break;
 		case LT:
-			define_set_input_logical_function(node, "010 1\n", fp); // last input decides if this 
+			define_set_input_logical_function(node, "010 1\n", fp); // last input decides if this
 			oassert(node->num_input_pins == 3);
 			oassert(node->input_pins[2] != NULL);
 			break;
@@ -320,7 +318,7 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 			break;
 		case BITWISE_NOT:
 			define_set_input_logical_function(node, "0 1\n", fp);
-			break;	
+			break;
 
 		case LOGICAL_AND:
 		case LOGICAL_OR:
@@ -332,7 +330,7 @@ void output_node(nnode_t *node, short traverse_number, FILE *fp)
 		case NOT_EQUAL:
 		case LOGICAL_NOT:
 			define_logical_function(node, node->type, fp);
-			break;	
+			break;
 
 		case MUX_2:
 			define_decoded_mux(node, fp);
@@ -427,9 +425,9 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 		{
 			/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
 			if (node->input_pins[i]->net->driver_pin->node->related_ast_node != NULL)
-				fprintf(out, " %s^^%i-%i", node->input_pins[i]->net->driver_pin->node->name, 	node->input_pins[i]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[i]->net->driver_pin->node->related_ast_node->high_number); 
+				fprintf(out, " %s^^%i-%i", node->input_pins[i]->net->driver_pin->node->name, 	node->input_pins[i]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[i]->net->driver_pin->node->related_ast_node->high_number);
 			else
-				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name); 
+				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name);
 		}
 		/* now print the output */
 		if (node->related_ast_node != NULL)
@@ -446,7 +444,7 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 			/* Just print the driver_pin->name NOT driver_pin->node->name -- KEN */
 			nnet_t *net = node->input_pins[i]->net;
 			if (net && net->driver_pin)
-			{	
+			{
 				if (net->driver_pin->name != NULL)
 				{
 					if ((net->driver_pin->node->type == MULTIPLY) ||
@@ -483,7 +481,7 @@ void define_logical_function(nnode_t *node, short type, FILE *out)
 	oassert(node->num_output_pins == 1);
 
 	/* print out the blif definition of this gate */
-	switch (node->type) 
+	switch (node->type)
 	{
 		case LOGICAL_AND:
 		{
@@ -602,18 +600,18 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 		{
 			/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
 			if (node->input_pins[i]->net->driver_pin->node->related_ast_node != NULL)
-				fprintf(out, " %s^^%i-%i", node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[i]->net->driver_pin->node->related_ast_node->high_number); 
+				fprintf(out, " %s^^%i-%i", node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[i]->net->driver_pin->node->related_ast_node->high_number);
 			else
-				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name); 
+				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name);
 		}
-	
+
 		/* now print the output */
 		if (node->related_ast_node != NULL)
 			fprintf(out, " %s^^%i-%i", node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number);
 		else
 			fprintf(out, " %s", node->name);
 		fprintf(out, "\n");
-	
+
 		/* print out the blif definition of this gate */
 		if (bit_output != NULL)
 		{
@@ -638,7 +636,7 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 			    	   	(node->input_pins[i]->net->driver_pin->node->type == ADD) ||
 			    	   	(node->input_pins[i]->net->driver_pin->node->type == MINUS))
 					{
-						fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name); 
+						fprintf(out, " %s", node->input_pins[i]->net->driver_pin->name);
 					}
 					else
 					{
@@ -647,15 +645,15 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 				}
 				else
 				{
-					fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name); 
+					fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name);
 				}
 			}
 		}
-	
+
 		/* now print the output */
 		fprintf(out, " %s", node->name);
 		fprintf(out, "\n");
-	
+
 		/* print out the blif definition of this gate */
 		if (bit_output != NULL)
 		{
@@ -677,19 +675,19 @@ void define_ff(nnode_t *node, FILE *out)
 	oassert(node->num_output_pins == 1);
 	oassert(node->num_input_pins == 2);
 
-	/* By default, latches value are unknown, represented by 3 in a BLIF file 
+	/* By default, latches value are unknown, represented by 3 in a BLIF file
 	and by -1 internally in ODIN */
 	int initial_value = 3;
-	
+
 	/* Check if the global argument for initial values is set to 0 or 1 instead */
 	if (global_args.sim_initial_value == 0) initial_value = 0;
 	else if (global_args.sim_initial_value == 1) initial_value = 1;
-	
+
 	/* Check for a specific initial value on this node */
 	if(node->has_initial_value){
 		initial_value = node->initial_value;
 	}
-	
+
 	/* input, output, clock */
 	if (global_args.high_level_block != NULL)
 		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number, initial_value);
@@ -704,7 +702,7 @@ void define_ff(nnode_t *node, FILE *out)
 			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
 		else
 			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
-				
+
 	}
 	fprintf(out, "\n");
 }
@@ -728,11 +726,11 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 			/* now hookup the input wires with their respective ports.  [1+i] to skip output spot. */
 			if (node->input_pins[i]->net->driver_pin->node->related_ast_node != NULL)
 			{
-				fprintf(out, " %s^^%i-%i", node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[i]->net->driver_pin->node->related_ast_node->high_number); 
+				fprintf(out, " %s^^%i-%i", node->input_pins[i]->net->driver_pin->node->name, node->input_pins[i]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[i]->net->driver_pin->node->related_ast_node->high_number);
 			}
 			else
 			{
-				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name); 
+				fprintf(out, " %s", node->input_pins[i]->net->driver_pin->node->name);
 			}
 		}
 		/* now print the output */
@@ -826,4 +824,3 @@ void output_blif_pin_connect(nnode_t *node, FILE *out)
 
 	return;
 }
-
