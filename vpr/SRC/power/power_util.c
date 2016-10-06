@@ -248,8 +248,8 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
             }
         }
     }
-
-    std::vector<vtr::LogicValue> lut_mask = truth_table_to_lut_mask(truth_table, LUT_size);
+    auto expanded_truth_table = expand_truth_table(truth_table, LUT_size);
+    std::vector<vtr::LogicValue> lut_mask = truth_table_to_lut_mask(expanded_truth_table, LUT_size);
 
     VTR_ASSERT(lut_mask.size() == (size_t) num_SRAM_bits);
 

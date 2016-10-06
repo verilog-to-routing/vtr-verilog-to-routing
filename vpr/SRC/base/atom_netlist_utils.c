@@ -861,6 +861,47 @@ bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table) {
     return encodes_on_set;
 }
 
+AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs, const std::vector<int>& permutation) {
+    AtomNetlist::TruthTable permuted_truth_table;
+
+    for(const auto& row : truth_table) {
+        //Space for the permuted row: num inputs + one output
+        std::vector<vtr::LogicValue> permuted_row(num_inputs + 1, vtr::LogicValue::FALSE);
+
+        //Permute the inputs in the row
+        for(size_t i = 0; i < row.size() - 1; i++) {
+            int permuted_idx = permutation[i];
+            permuted_row[permuted_idx] = row[i]; 
+        }
+        //Assign the output value
+        permuted_row[permuted_row.size() - 1] = row[row.size() - 1];
+
+        permuted_truth_table.push_back(permuted_row);
+    }
+
+    return permuted_truth_table;
+}
+
+AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs) {
+    AtomNetlist::TruthTable expanded_truth_table;
+
+    for(const auto& row : truth_table) {
+        //Initialize an empty row
+        std::vector<vtr::LogicValue> expanded_row(num_inputs+1,  vtr::LogicValue::FALSE);     
+        
+        //Copy the existing input values
+        for(size_t i = 0; i < row.size() - 1; ++i) {
+            expanded_row[i] = row[i];
+        }
+        //Set the output value
+        expanded_row[expanded_row.size()-1] = row[row.size()-1];
+
+        expanded_truth_table.push_back(expanded_row);
+    }
+
+    return expanded_truth_table;
+}
+
 std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs) {
     bool on_set = truth_table_encodes_on_set(truth_table); 
 
@@ -879,19 +920,15 @@ std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTab
         //Each row in the truth table (excluding the output) is a cube, 
         //and may need to be expanded to account for don't cares
 
-        //We first expand the cube to include all the inputs (in-case the
-        //logical LUT has fewer inputs than the physical lut). We initialize
-        //any unspecified values as don't cares
-        std::vector<vtr::LogicValue> cube(num_inputs, vtr::LogicValue::DONT_CARE);
-        for(size_t i = 0; i < row.size() - 2; ++i) {
-            cube[i] = row[i];
-        }
+        std::vector<vtr::LogicValue> cube(row.begin(), --row.end());
+        VTR_ASSERT(cube.size() == num_inputs);
 
         std::vector<size_t> minterms;
 
         for(auto minterm : cube_to_minterms(cube)) {
             //Mark the minterms in the mask
 
+            VTR_ASSERT(minterm < mask.size());
             if(on_set) {
                 mask[minterm] = vtr::LogicValue::TRUE;
             } else {
@@ -941,12 +978,8 @@ void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size
             //The minterm is the integer representation of the
             //binary number stored in the cube. We do the conversion
             //by summing up all powers of two where the cube is true.
-            //
-            //Note that we treat the right-most value as the LSB
-            //so we check the cubes values in reverse order (from
-            //high to low index).
-            if(cube[(cube.size() - 1) - i] == vtr::LogicValue::TRUE) {
-                minterm += 1 << i; //Note powers of two by shifting
+            if(cube[i] == vtr::LogicValue::TRUE) {
+                minterm += (1 << i); //Note powers of two by shifting
             }
         }
 

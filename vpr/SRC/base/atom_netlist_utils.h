@@ -41,8 +41,25 @@ size_t sweep_outputs(AtomNetlist& netlist);
 //or 'Off' set (returns false)
 bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table);
 
+//Returns the truth table expanded to use num_inputs inputs. 
+//Typical usage is to expand the truth table of a LUT which is logically smaller than
+//the one provided by the architecture (e.g. implement a 2-LUT in a 6-LUT)
+//   truth_table: The truth table to expand
+//   num_inputs : The number of inputs to use
+AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs);
+
+//Permutes the inputs of a truth table
+//   truth_table: The truth table to expand
+//   num_inputs : The number of inputs to use
+//   permutation: A vector indicies to permute, permutation[i] is the input pin where 
+//                the signal currently connected to input i should be placed
+AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs, const std::vector<int>& permutation);
+
+//Convers a truth table to a lut mask (sequence of binary values representing minterms)
 std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs);
 
+//Convers a logic cube (potnetially including don't cares) into 
+//a sequence of minterm numbers
 std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);
 
 /*
