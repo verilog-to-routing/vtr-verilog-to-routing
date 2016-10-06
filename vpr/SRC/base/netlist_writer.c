@@ -2088,7 +2088,7 @@ bool is_special_sdf_char(char c) {
     //    ` to ` (ASCII decimal 96)
     //    { to ~ (ASCII decimal 123-126)
     //
-    //Not that the spec defines _ (decimal code 95) and $ (decimal code 36) 
+    //Note that the spec defines _ (decimal code 95) and $ (decimal code 36) 
     //as non-special alphanumeric characters. 
     //
     //However it inconsistently also lists $ in the list of special characters.
@@ -2098,7 +2098,7 @@ bool is_special_sdf_char(char c) {
     //Note that the spec appears to have rendering errors in the PDF availble
     //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK' 
     //character (decimal code 171) in place of the APOSTROPHE character ' 
-    //with decimal code 39 in the special character list. We assume code 39
+    //with decimal code 39 in the special character list. We assume code 39.
     if((c >= 33 && c <= 35) ||
        (c == 36) || // $
        (c >= 37 && c <= 47) ||
