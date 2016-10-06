@@ -174,7 +174,7 @@
  * The netlist can be created by using the create_*() member functions to create individual Blocks/Ports/Pins/Nets
  *
  * For instance to create the following netlist (where each block is the same type, and has an input port 'A' 
- * and output port 'B':
+ * and output port 'B'):
  *
  *      -----------        net1         -----------
  *      | block_1 |-------------------->| block_2 |
@@ -187,12 +187,14 @@
  *
  *      const t_model* blk_model = .... //Initialize the block model appropriately
  *
- *      AtomNetlist my_nl("my_netlist"); //Initialize the netlist with name 'my_netlist'
+ *      AtomNetlist netlist("my_netlist"); //Initialize the netlist with name 'my_netlist'
  *
  *      //Create the first block
  *      AtomBlockId blk1 = netlist.create_block("block_1", blk_model);
  *
  *      //Create the first block's output port
+ *      //  Note that the input/output/clock type of the port is determined
+ *      //  automatically from the block model
  *      AtomPortId blk1_out = netlist.create_port(blk1, "B");
  *
  *      //Create the net
@@ -229,13 +231,13 @@
  *      | block_1 |-------------------->| block_2 |
  *      -----------                     -----------
  *
- * Note that until compress() is called any removed elements will have invalid IDs (e.g. AtomBlockId::INVALID()).
+ * Note that until compress() is called any 'removed' elements will have invalid IDs (e.g. AtomBlockId::INVALID()).
  * As a result after calling remove_block() (which invalidates blk3) we *then* called compress() to remove the
  * invalid IDs.
  *
  * Also note that compress() is relatively slow. As a result avoid calling compress() after every call to
- * a remove_*() function, and instead batch up calls to remove_*() and call compress() after a set of modifications 
- * have been applied.
+ * a remove_*() function, and instead batch up calls to remove_*() and call compress() only after a set of 
+ * modifications have been applied.
  *
  * Verifying the netlist
  * ---------------------
@@ -246,6 +248,39 @@
  *
  * If the netlist is not valid verify() will throw an exception, otherwise it returns true.
  *
+ * Invariants
+ * ==========
+ * The AtomNetlist maintains stronger invariants if the netlist is compressed.
+ *
+ * Netlist is compressed ('not dirty')
+ * -----------------------------------
+ * If the netlist is compressed (i.e. !dirty(), meaning there have been NO calls to remove_*() since the last call to 
+ * compress()) the following invariant will hold:
+ *      - Any range returned will contain only valid IDs
+ *
+ * In practise this means the following conditions hold:
+ *      - Blocks will not contain empty ports (i.e. ports with no pin/net connections)
+ *      - Ports will not contain pins with no associated net
+ *      - Net will not contain invalid sink pins
+ *
+ * This means that no error checking for invalid IDs is needed if simply iterating through netlist (see below for
+ * some exceptions).
+ *
+ * NOTE: you may still encounter invalid IDs in the following cases:
+ *      - net_driver() will return an invalid ID if the net is undriven
+ *      - port_pin()/port_net() will return an invalid ID if the bit index corresponds to an unconnected pin
+ *
+ * Netlist is NOT compressed ('dirty')
+ * -----------------------------------
+ * If the netlist is not compressed (i.e. dirty(), meaning there have been calls to remove_*() with no subsequent 
+ * calls to compress()) then the invariant above does not hold.
+ *
+ * Any range may return invalid IDs. In practise this means, 
+ *      - Blocks may contain invalid ports
+ *      - Ports may contain invalid pins
+ *      - Pins may not have a valid associated net
+ *      - Nets may contain invalid sink pins
+ *
  * Implementation
  * ==============
  * The netlist is stored in Struct-of-Arrays format rather than the more conventional Array-of-Structs.
@@ -254,10 +289,31 @@
  * attributes at a time this tends to be more efficient).
  *
  * Clients of this class pass nearly-opaque IDs (AtomBlockId, AtomPortId, AtomPinId, AtomNetId, AtomStringId) to retrieve
- * information. The ID is internally converted to a vector index to retrieve the required value from it's associated storage.
+ * information. The ID is internally converted to an index to retrieve the required value from it's associated storage.
  *
  * By using nearly-opaque IDs we can change the underlying data layout as need to optimize performance/memory, without
  * distrupting client code.
+ *
+ * Strings
+ * -------
+ * To minimize memory usage, we store each unqiue string only once in the netlist and give it a unique ID (AtomStringId).
+ * Any references to this string then make use of the AtomStringId. 
+ *
+ * In particular this prevents the (potentially large) strings from begin duplicated multiple times in various look-ups,
+ * instead the more space efficient AtomStringId is duplicated.
+ *
+ * Note that AtomStringId is an internal implementation detail and should not be exposed as part of the public interface.
+ * Any public functions should take and return std::string's instead.
+ *
+ * Extension/What to store
+ * -----------------------
+ * The AtomNetlist should contain only information directly related to the netlist state (i.e. netlist connectivity).
+ * Various mappings to/from atom elements (e.g. what CLB contains an atom), and algorithmic state (e.g. if a net is routed) 
+ * do NOT constitute netlist state and should NOT be stored here. 
+ *
+ * Such implementation state should be stored in other data structures (which may reference the AtomNetlist's IDs).
+ *
+ * The netlist state should typically be immutable (i.e. read-only) for most of the CAD flow.
  */
 #include <vector>
 #include <unordered_map>
@@ -272,14 +328,14 @@
 
 
 /*
- * Make various tuples hash-able for usin in std::unordered_map's
+ * Make various tuples hash-able for use in std::unordered_map's
  *
  * C++11 does not natively support hashing std::tuple's even in the tuple's components
  * are hash-able.  We use vtr::hash_combine (see vtr_hash.h for details), to combine the
  * hash of the individual tuple components. 
  *
  * Note that it is legal to define template *specializations* in the std namespace, 
- * and makes the associated tuples behave like natively hash-able types.
+ * and it makes the associated tuples behave like natively hash-able types.
  */
 namespace std {
     template<>
@@ -334,7 +390,7 @@ class AtomNetlist {
         const std::string&  netlist_name() const;
 
         /*
-         * Block
+         * Blocks
          */
         //Returns the name of the specified block
         const std::string&          block_name          (const AtomBlockId id) const;
@@ -354,19 +410,19 @@ class AtomNetlist {
         // For FF/Latches there is only a single entry representing the initial state
         const TruthTable&           block_truth_table   (const AtomBlockId id) const; 
 
-        //Returns a range consisting of all the input ports associated with the specified block
+        //Returns a range consisting of the input ports associated with the specified block
         vtr::Range<port_iterator>   block_input_ports   (const AtomBlockId id) const;
 
-        //Returns a range consisting of all the output ports associated with the specified block
+        //Returns a range consisting of the output ports associated with the specified block
         // Note this is typically only data ports, but some blocks (e.g. PLLs) can produce outputs
         // which are clocks.
         vtr::Range<port_iterator>   block_output_ports  (const AtomBlockId id) const;
 
-        //Returns a range consisting of all the input clock ports associated with the specified block
+        //Returns a range consisting of the input clock ports associated with the specified block
         vtr::Range<port_iterator>   block_clock_ports   (const AtomBlockId id) const;
 
         /*
-         * Port
+         * Ports
          */
         //Returns the name of the specified port
         const std::string&          port_name   (const AtomPortId id) const;
@@ -394,7 +450,7 @@ class AtomNetlist {
         const t_model_ports* port_model(const AtomPortId port_id) const;
 
         /*
-         * Pin
+         * Pins
          */
         //Returns the net associated with the specified pin
         AtomNetId   pin_net         (const AtomPinId id) const; 
@@ -413,7 +469,7 @@ class AtomNetlist {
 
 
         /*
-         * Net
+         * Nets
          */
         //Returns the name of the specified net
         const std::string&          net_name    (const AtomNetId id) const; 
@@ -507,7 +563,7 @@ class AtomNetlist {
         AtomNetId   add_net     (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
         /*
-         * Note: all remove_*() will mark the associated items for removal, but will the items
+         * Note: all remove_*() will mark the associated items as invalid, but will the items
          * will not be removed until compress() is called.
          */
 
