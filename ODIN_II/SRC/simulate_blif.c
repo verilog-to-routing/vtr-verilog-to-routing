@@ -29,8 +29,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 /*
- * Performs simulation. 
- */ 
+ * Performs simulation.
+ */
 void simulate_netlist(netlist_t *netlist)
 {
 	printf("Beginning simulation.\n"); fflush(stdout);
@@ -217,7 +217,7 @@ void simulate_netlist(netlist_t *netlist)
 		hold_high_index->destroy_free_items(hold_high_index);
 		hold_low_index ->destroy_free_items(hold_low_index);
 
-		fflush(out); 
+		fflush(out);
 		fprintf(modelsim_out, "run %d\n", num_vectors*100);
 
 		printf("\n");
@@ -1313,8 +1313,8 @@ void update_pin_value(npin_t *pin, signed char value, int cycle)
 signed char get_pin_value(npin_t *pin, int cycle)
 {
 	if (!pin->values || cycle < 0){
-		/* If the pin's node has an initial value, then use it. 
-		   Otherwise use the global initial value 
+		/* If the pin's node has an initial value, then use it.
+		   Otherwise use the global initial value
 		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
 		if(pin->node && pin->node->has_initial_value) {
 			return pin->node->initial_value;
@@ -1405,12 +1405,12 @@ void initialize_pin(npin_t *pin)
 
 	int i;
 	for (i = 0; i < SIM_WAVE_LENGTH; i++){
-		/* If the pin's node has an initial value, then use it. 
-		   Otherwise use the global initial value 
+		/* If the pin's node has an initial value, then use it.
+		   Otherwise use the global initial value
 		   Need to make sure pin->node isn't NULL (e.g. for a dummy node) */
 		if(pin->node && pin->node->has_initial_value)
 			pin->values[i] = pin->node->initial_value;
-		else 
+		else
 			pin->values[i] = global_args.sim_initial_value;
 	}
 
@@ -1668,8 +1668,13 @@ void compute_generic_node(nnode_t *node, int cycle)
 		if (j == lut_size) found = TRUE;
 	}
 
-	if (found) update_pin_value(node->output_pins[0], 1, cycle);
-	else       update_pin_value(node->output_pins[0], 0, cycle);
+	if (node->generic_output == 1){
+		if (found) update_pin_value(node->output_pins[0], 1, cycle);
+		else       update_pin_value(node->output_pins[0], 0, cycle);
+	} else {
+		if (found) update_pin_value(node->output_pins[0], 0, cycle);
+		else       update_pin_value(node->output_pins[0], 1, cycle);
+	}
 }
 
 /*
@@ -2522,19 +2527,19 @@ int verify_test_vector_headers(FILE *in, lines_t *l)
 		}
 		else
 		{
-			buffer[buffer_length++] = next;			
+			buffer[buffer_length++] = next;
 			buffer[buffer_length] = '\0';
-		}		
+		}
 	}
 	return TRUE;
 }
 
-/* 
+/*
  * Verifies that no lines have null pins.
  */
 int verify_lines (lines_t *l)
 {
-	int i; 
+	int i;
 	for (i = 0; i < l->count; i++)
 	{
 		int j;
@@ -2543,11 +2548,11 @@ int verify_lines (lines_t *l)
 			if (!l->lines[i]->pins[j])
 			{
 				warning_message(SIMULATION_ERROR, 0, -1, "A line %d:(%s) has a NULL pin. ", j, l->lines[i]->name);
-				return FALSE; 
+				return FALSE;
 			}
 		}
 	}
-	return TRUE; 
+	return TRUE;
 }
 
 /*
@@ -2616,9 +2621,9 @@ char *generate_vector_header(lines_t *l)
  */
 void add_test_vector_to_lines(test_vector *v, lines_t *l, int cycle)
 {
-	if (l->count < v->count) 
+	if (l->count < v->count)
 		error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%d) than values (%d).", l->count, v->count);
-	if (l->count > v->count) 
+	if (l->count > v->count)
 		error_message(SIMULATION_ERROR, 0, -1, "More lines (%d) than values (%d).", l->count, v->count);
 
 	int i;
@@ -2787,7 +2792,7 @@ test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hol
 					value = (rand() % 2);
 			}
 
-			v->values[v->count] = (signed char *)realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));		
+			v->values[v->count] = (signed char *)realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
 			v->values[v->count][v->counts[v->count]++] = value;
 		}
 		v->count++;
@@ -2801,7 +2806,7 @@ test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hol
  *
  * When edge is -1, both edges of the clock are written. When edge is 0,
  * the falling edge is written. When edge is 1, the rising edge is written.
- */ 
+ */
 void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_length, int edge)
 {
 	if (!cycle_offset)
@@ -2822,7 +2827,7 @@ void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_lengt
 void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 {
 	char buffer[BUFFER_MAX_SIZE];
-	int i; 
+	int i;
 	for (i = 0; i < l->count; i++)
 	{
 		line_t *line = l->lines[i];
@@ -2860,14 +2865,14 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			//	sprintf(buffer, "X");
 		}
 		else
-		{	
+		{
 			// +1 for ceiling, +1 for null, +2 for "OX"
 			if ((num_pins/4 + 1 + 1 + 2) > BUFFER_MAX_SIZE)
 				error_message(SIMULATION_ERROR, 0, -1, "Buffer overflow anticipated while writing vector for line %s.", line->name);
 
 			sprintf(buffer, "0X");
 
-			int hex_digit = 0;				
+			int hex_digit = 0;
 			int j;
 			for (j = num_pins - 1; j >= 0; j--)
 			{
@@ -2877,7 +2882,7 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
 
 				hex_digit += value << j % 4;
-				
+
 				if (!(j % 4))
 				{
 					sprintf(buffer, "%s%X", buffer, hex_digit);
@@ -3299,7 +3304,7 @@ char *vector_value_to_hex(signed char *value, int length)
 }
 
 /*
- * Counts the number of vectors in the given file. 
+ * Counts the number of vectors in the given file.
  */
 int count_test_vectors(FILE *in)
 {
@@ -3350,7 +3355,7 @@ int get_next_vector(FILE *file, char *buffer)
 	while (fgets(buffer, BUFFER_MAX_SIZE, file))
 		if (is_vector(buffer))
 			return TRUE;
-	
+
 	return FALSE;
 }
 

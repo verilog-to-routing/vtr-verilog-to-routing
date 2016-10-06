@@ -20,7 +20,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include "string_cache.h"
 #include "odin_util.h"
 #include "read_xml_arch_file.h"
@@ -182,7 +182,7 @@ struct global_args_t_t
 #ifndef AST_TYPES_H
 #define AST_TYPES_H
 
-typedef enum 
+typedef enum
 {
 	DEC,
 	HEX,
@@ -204,32 +204,32 @@ typedef enum
 	CLOCK_NODE,
 	ADD, // +
 	MINUS, // -
-	BITWISE_NOT, // ~	
-	BITWISE_AND, // & 
+	BITWISE_NOT, // ~
+	BITWISE_AND, // &
 	BITWISE_OR, // |
 	BITWISE_NAND, // ~&
-	BITWISE_NOR, // ~| 
-	BITWISE_XNOR, // ~^ 
+	BITWISE_NOR, // ~|
+	BITWISE_XNOR, // ~^
 	BITWISE_XOR, // ^
-	LOGICAL_NOT, // ! 
+	LOGICAL_NOT, // !
 	LOGICAL_OR, // ||
 	LOGICAL_AND, // &&
 	LOGICAL_NAND, // No Symbol
 	LOGICAL_NOR, // No Symbol
 	LOGICAL_XNOR, // No symbol
 	LOGICAL_XOR, // No Symbol
-	MULTIPLY, // * 
+	MULTIPLY, // *
 	DIVIDE, // /
 	MODULO, // %
 	OP_POW, // **
 	LT, // <
 	GT, // >
-	LOGICAL_EQUAL, // == 
+	LOGICAL_EQUAL, // ==
 	NOT_EQUAL, // !=
 	LTE, // <=
 	GTE, // >=
 	SR, // >>
-	SL, // << 
+	SL, // <<
 	CASE_EQUAL, // ===
 	CASE_NOT_EQUAL, // !==
 	ADDER_FUNC,
@@ -239,20 +239,20 @@ typedef enum
 	NETLIST_FUNCTION,
 	MEMORY,
 	PAD_NODE,
-	HARD_IP, 
+	HARD_IP,
 	GENERIC, /*added for the unknown node type */
 	FULLADDER
 } operation_list;
-	
-typedef enum 
+
+typedef enum
 {
 	NO_ID,
 	/* top level things */
 	FILE_ITEMS,
-	MODULE, 
+	MODULE,
 	/* VARIABLES */
-	INPUT, 
-	OUTPUT, 
+	INPUT,
+	OUTPUT,
 	INOUT,
 	WIRE,
 	REG,
@@ -261,14 +261,14 @@ typedef enum
 	INITIALS,
 	PORT,
 	/* OTHER MODULE ITEMS */
-	MODULE_ITEMS, 
+	MODULE_ITEMS,
 	VAR_DECLARE,
 	VAR_DECLARE_LIST,
 	ASSIGN,
-   	/* OTHER MODULE AND FUNCTION ITEMS */    
+   	/* OTHER MODULE AND FUNCTION ITEMS */
 	FUNCTION,
    	/* OTHER FUNCTION ITEMS */
-  	FUNCTION_ITEMS,     
+  	FUNCTION_ITEMS,
 	/* primitives */
 	GATE,
 	GATE_INSTANCE,
@@ -284,11 +284,11 @@ typedef enum
 	ONE_MODULE_INSTANCE,
 	/* Function instances*/
 	FUNCTION_NAMED_INSTANCE,
-	FUNCTION_INSTANCE,     
+	FUNCTION_INSTANCE,
 	SPECIFY_PAL_CONNECTION_STATEMENT,
 	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */
-	BLOCK, 
+	BLOCK,
 	NON_BLOCKING_STATEMENT,
 	BLOCKING_STATEMENT,
 	ASSIGNING_LIST,
@@ -304,20 +304,20 @@ typedef enum
 	/* Delay Control */
 	DELAY_CONTROL,
 	POSEDGE,
-	NEGEDGE, 
+	NEGEDGE,
 	/* expressions */
-	BINARY_OPERATION, 
+	BINARY_OPERATION,
 	UNARY_OPERATION,
 	/* basic primitives */
-	ARRAY_REF, 
+	ARRAY_REF,
 	RANGE_REF,
 	CONCATENATE,
 	/* basic identifiers */
 	IDENTIFIERS,
-	NUMBERS, 
+	NUMBERS,
 	/* Hard Blocks */
-	HARD_BLOCK, 
-	HARD_BLOCK_NAMED_INSTANCE, 
+	HARD_BLOCK,
+	HARD_BLOCK_NAMED_INSTANCE,
 	HARD_BLOCK_CONNECT_LIST,
 	HARD_BLOCK_CONNECT,
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
@@ -327,7 +327,7 @@ typedef enum
 struct typ_t
 {
 	char *identifier;
-    
+
 	struct
 	{
 		short base;
@@ -367,14 +367,14 @@ struct typ_t
 		short is_instantiated;
 		ast_node_t **function_instantiations_instance;
 		int size_function_instantiations;
-		int index;		
+		int index;
 	} function;
 	struct
 	{
 		int num_bit_strings;
 		char **bit_strings;
 	} concat;
-    
+
 };
 
 
@@ -424,7 +424,7 @@ struct chain_information_t_t
 	int num_bits;
 };
 
-/* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version 
+/* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
 struct nnode_t_t
 {
@@ -432,7 +432,7 @@ struct nnode_t_t
 	char *name; // unique name of a node
 	operation_list type; // the type of node
 	int bit_width; // Size of the operation (e.g. for adders/subtractors)
-	
+
 	ast_node_t *related_ast_node; // the abstract syntax node that made this node
 
 	short traverse_visited; // a way to mark if we've visited yet
@@ -473,6 +473,9 @@ struct nnode_t_t
 	int ratio; //clock ratio for clock nodes
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
+
+	//Generic gate output
+	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 };
 
 
@@ -538,18 +541,18 @@ struct nnet_t_t
 	//////////////////////
 };
 
-struct signal_list_t_t 
+struct signal_list_t_t
 {
-	npin_t **pins;	
+	npin_t **pins;
 	int count;
 
 	char is_memory;
 	char is_adder;
 };
 
-struct char_list_t_t 
+struct char_list_t_t
 {
-	char **strings;	
+	char **strings;
 	int num_strings;
 };
 
@@ -571,7 +574,7 @@ struct netlist_t_t
 	int num_internal_nodes;
 	nnode_t** clocks;
 	int num_clocks;
-	
+
 
 	/* netlist levelized structures */
 	nnode_t ***forward_levels;
@@ -595,7 +598,7 @@ struct netlist_t_t
 
 	netlist_stats_t *stats;
 
-	t_type_ptr type; 
+	t_type_ptr type;
 };
 
 struct netlist_stats_t_t
@@ -606,13 +609,13 @@ struct netlist_stats_t_t
 	int num_logic_nodes;
 	int num_nodes;
 
-	float average_fanin; /* = to the fanin of all nodes: basic outs, combo and ffs */	
+	float average_fanin; /* = to the fanin of all nodes: basic outs, combo and ffs */
 	int *fanin_distribution;
 	int num_fanin_distribution;
 
 	long num_output_pins;
 	float average_output_pins_per_node;
-	float average_fanout; /* = to the fanout of all nodes: basic IOs, combo and ffs...no vcc, clocks, gnd */	
+	float average_fanout; /* = to the fanout of all nodes: basic IOs, combo and ffs...no vcc, clocks, gnd */
 	int *fanout_distribution;
 	int num_fanout_distribution;
 

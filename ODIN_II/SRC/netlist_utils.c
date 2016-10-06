@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +40,7 @@ nnode_t* allocate_nnode() {
 	nnode_t *new_node;
 
 	new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	
+
 	new_node->name = NULL;
 	new_node->type = NO_OP;
 	new_node->bit_width = 0;
@@ -51,7 +51,7 @@ nnode_t* allocate_nnode() {
 	new_node->num_input_pins = 0;
 	new_node->output_pins = NULL;
 	new_node->num_output_pins = 0;
-	
+
 	new_node->input_port_sizes = NULL;
 	new_node->num_input_port_sizes = 0;
 	new_node->output_port_sizes = NULL;
@@ -71,7 +71,7 @@ nnode_t* allocate_nnode() {
 
 	new_node->simulate_block_cycle = NULL;
 	new_node->memory_data = NULL;
-	
+
 	new_node->bit_map= NULL;
 	new_node->bit_map_line_count=0;
 
@@ -81,10 +81,11 @@ nnode_t* allocate_nnode() {
 	new_node->num_undriven_pins = 0;
 
 	new_node->ratio = 1;
-	
+
 	new_node->has_initial_value = FALSE;
 	new_node->initial_value = 0;
-	
+
+	new_node->generic_output = -1;
 
 	return new_node;
 }
@@ -92,14 +93,14 @@ nnode_t* allocate_nnode() {
 /*---------------------------------------------------------------------------------------------
  * (function: free_nnode)
  *-------------------------------------------------------------------------------------------*/
-void free_nnode(nnode_t *to_free) 
+void free_nnode(nnode_t *to_free)
 {
 	int i;
 
 	if (to_free != NULL)
 	{
 		/* need to free node_data */
-		
+
 		for (i = 0; i < to_free->num_input_pins; i++)
 		{
 			if (to_free->input_pins[i] != NULL)
@@ -107,13 +108,13 @@ void free_nnode(nnode_t *to_free)
 				free_npin(to_free->input_pins[i]);
 				to_free->input_pins[i] = NULL;
 			}
-		}	
+		}
 		if (to_free->input_pins != NULL)
 		{
 			free(to_free->input_pins);
 			to_free->input_pins = NULL;
 		}
-	
+
 		for (i = 0; i < to_free->num_output_pins; i++)
 		{
 			if (to_free->output_pins[i] != NULL)
@@ -138,18 +139,18 @@ void free_nnode(nnode_t *to_free)
 
 		/* now free the node */
 		free(to_free);
-	}	
+	}
 }
 
 /*-------------------------------------------------------------------------
  * (function: allocate_more_node_input_pins)
- * 	Makes more space in the node for pin connections ... 
+ * 	Makes more space in the node for pin connections ...
  *-----------------------------------------------------------------------*/
 void allocate_more_input_pins(nnode_t *node, int width)
 {
 	int i;
 
-	if (width <= 0) 
+	if (width <= 0)
 	{
 		warning_message(NETLIST_ERROR, -1, -1, "tried adding output pins for with <= 0 %s\n", node->name);
 		return;
@@ -165,7 +166,7 @@ void allocate_more_input_pins(nnode_t *node, int width)
 
 /*-------------------------------------------------------------------------
  * (function: allocate_more_node_output_pins)
- * 	Makes more space in the node for pin connections ... 
+ * 	Makes more space in the node for pin connections ...
  *-----------------------------------------------------------------------*/
 void allocate_more_output_pins(nnode_t *node, int width)
 {
@@ -212,7 +213,7 @@ npin_t* allocate_npin() {
 	npin_t *new_pin;
 
 	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	
+
 	new_pin->name = NULL;
 	new_pin->type = NO_ID;
 	new_pin->net = NULL;
@@ -220,7 +221,7 @@ npin_t* allocate_npin() {
 	new_pin->node = NULL;
 	new_pin->pin_node_idx = -1;
 	new_pin->mapping = NULL;
-	
+
 	new_pin->cycle  = NULL;
 	new_pin->values = NULL;
 
@@ -235,7 +236,7 @@ npin_t* allocate_npin() {
 }
 /*-------------------------------------------------------------------------
  * (function: copy_output_npin)
- * 	Copies an output pin 
+ * 	Copies an output pin
  *-----------------------------------------------------------------------*/
 npin_t* copy_output_npin(npin_t* copy_pin)
 {
@@ -290,7 +291,7 @@ nnet_t* allocate_nnet()
 	nnet_t *new_net;
 
 	new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-	
+
 	new_net->name = NULL;
 	new_net->driver_pin = NULL;
 	new_net->fanout_pins = NULL;
@@ -299,7 +300,7 @@ nnet_t* allocate_nnet()
 
 	new_net->net_data = NULL;
 	new_net->unique_net_data_id = -1;
-	
+
 	new_net->has_initial_value = FALSE;
 	new_net->initial_value = 0;
 
@@ -432,7 +433,7 @@ void add_driver_pin_to_net(nnet_t *net, npin_t *pin)
 void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 {
 
-	/* copy the driver over to the new_net */	
+	/* copy the driver over to the new_net */
 	if (output_net->driver_pin)
 	{
 		/* IF - there is a pin assigned to this net, then copy it */
@@ -442,13 +443,13 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 	join_nets(input_net, output_net);
 	/* mark that this is combined */
 	input_net->combined = TRUE;
-	
+
 	/* Need to keep the initial value data when we combine the nets */
 	input_net->has_initial_value = output_net->has_initial_value;
 	input_net->initial_value = output_net->initial_value;
-	
+
 	/* special cases for global nets */
-	if (output_net == netlist->zero_net) 
+	if (output_net == netlist->zero_net)
 	{
 		netlist->zero_net = input_net;
 	}
@@ -457,7 +458,7 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 		netlist->one_net = input_net;
 	}
 
-	/* free the driver net */	
+	/* free the driver net */
 	free_nnet(output_net);
 }
 
@@ -487,7 +488,7 @@ void join_nets(nnet_t *join_to_net, nnet_t* other_net)
 		{
 			add_fanout_pin_to_net(join_to_net, other_net->fanout_pins[i]);
 		}
-	}	
+	}
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -505,7 +506,7 @@ void remap_pin_to_new_net(npin_t *pin, nnet_t *new_net)
 	else if (pin->type == OUTPUT)
 	{
 		/* clean out the entry in the old net */
-		pin->net->driver_pin = NULL;	
+		pin->net->driver_pin = NULL;
 		/* do the new addition */
 		add_driver_pin_to_net(new_net, pin);
 	}
@@ -524,7 +525,7 @@ void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx)
 	}
 	else if (pin->type == OUTPUT) {
 		/* clean out the entry in the old net */
-		pin->node->output_pins[pin->pin_node_idx] = NULL;	
+		pin->node->output_pins[pin->pin_node_idx] = NULL;
 		/* do the new addition */
 		add_output_pin_to_node(new_node, pin, pin_idx);
 	}
@@ -542,10 +543,10 @@ void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 	oassert(in_node->num_input_pins > in_idx);
 
 	new_in_pin = allocate_npin();
-	
+
 	/* create the pin that hooks up to the input */
 	add_input_pin_to_node(in_node, new_in_pin, in_idx);
-	
+
 	if (out_node->output_pins[out_idx] == NULL)
 	{
 		/* IF - this node has no output net or pin */
@@ -553,7 +554,7 @@ void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 		nnet_t *new_net;
 		new_net = allocate_nnet();
 		new_out_pin = allocate_npin();
-	
+
 		/* create the pin that hooks up to the input */
 		add_output_pin_to_node(out_node, new_out_pin, out_idx);
 		/* hook up in pin out of the new net */
@@ -690,7 +691,7 @@ void sort_signal_list_alphabetically(signal_list_t *list)
 signal_list_t *make_output_pins_for_existing_node(nnode_t* node, int width)
 {
 	signal_list_t *return_list = init_signal_list();
-	int i; 
+	int i;
 
 	oassert(node->num_output_pins == width);
 
@@ -709,7 +710,7 @@ signal_list_t *make_output_pins_for_existing_node(nnode_t* node, int width)
 		add_driver_pin_to_net(new_net, new_pin1);
 		/* hook up the new pin 2 to this new net */
 		add_fanout_pin_to_net(new_net, new_pin2);
-		
+
 		/* add the new_pin2 to the list of pins */
 		add_pin_to_signal_list(return_list, new_pin2);
 	}
@@ -737,7 +738,7 @@ void free_signal_list(signal_list_t *list)
  * (function: hookup_input_pins_from_signal_list)
  * 	For each pin in this list hook it up to the inputs according to indexes and width
  *--------------------------------------------------------------------------*/
-void hookup_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t *netlist) 
+void hookup_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t *netlist)
 {
 	int i;
 
@@ -758,15 +759,15 @@ void hookup_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_l
 			if (global_args.all_warnings)
 				warning_message(NETLIST_ERROR, -1, -1, "padding an input port with 0 for node %s\n", node->name);
 		}
-	}	
+	}
 }
 
 /*---------------------------------------------------------------------------
  * (function: hookup_hb_input_pins_from_signal_list)
- *   For each pin in this list hook it up to the inputs according to 
+ *   For each pin in this list hook it up to the inputs according to
  *   indexes and width. Extra pins are tied to PAD for later resolution.
  *--------------------------------------------------------------------------*/
-void hookup_hb_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t *netlist) 
+void hookup_hb_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t *netlist)
 {
 	int i;
 
@@ -785,14 +786,14 @@ void hookup_hb_input_pins_from_signal_list(nnode_t *node, int n_start_idx, signa
 			if (global_args.all_warnings)
 				warning_message(NETLIST_ERROR, -1, -1, "padding an input port with HB_PAD for node %s\n", node->name);
 		}
-	}	
+	}
 }
 
 /*---------------------------------------------------------------------------------------------
  * (function: hookup_output_pouts_from_signal_list)
  * 	hooks the pin into the output net, by checking for a driving net
  *-------------------------------------------------------------------------------------------*/
-void hookup_output_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* output_list, int ol_start_idx, int width) 
+void hookup_output_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_list_t* output_list, int ol_start_idx, int width)
 {
 	int i;
 	long sc_spot_output;
@@ -800,7 +801,7 @@ void hookup_output_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_
 	for (i = 0; i < width; i++)
 	{
 		oassert(output_list->count > (ol_start_idx+i));
-	
+
 		/* hook outpin to the node */
 		add_output_pin_to_node(node, output_list->pins[ol_start_idx+i], n_start_idx+i);
 
@@ -809,12 +810,12 @@ void hookup_output_pins_from_signal_list(nnode_t *node, int n_start_idx, signal_
 			/* this output pin does not have a net OR we couldn't find it */
 			error_message(NETLIST_ERROR, -1, -1, "Net for driver (%s) doesn't exist for node %s\n", output_list->pins[ol_start_idx+i]->name, node->name);
 		}
-	
+
 		/* hook the outpin into the net */
 		add_driver_pin_to_net(((nnet_t*)output_nets_sc->data[sc_spot_output]), output_list->pins[ol_start_idx+i]);
 
 
-	}	
+	}
 }
 
 void depth_traverse_count(nnode_t *node, int *count, int traverse_mark_number);
@@ -912,10 +913,10 @@ netlist_t* allocate_netlist()
 	new_netlist->forward_levels = NULL;
 	new_netlist->num_forward_levels = 0;
 	new_netlist->num_at_forward_level = NULL;
-	new_netlist->backward_levels = NULL; 
+	new_netlist->backward_levels = NULL;
 	new_netlist->num_backward_levels = 0;
 	new_netlist->num_at_backward_level = NULL;
-	new_netlist->sequential_level_nodes = NULL; 
+	new_netlist->sequential_level_nodes = NULL;
 	new_netlist->num_sequential_levels = 0;
 	new_netlist->num_at_sequential_level = NULL;
 	new_netlist->sequential_level_combinational_termination_node = NULL;
@@ -958,7 +959,7 @@ void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node)
 		}
 		netlist->nodes_sc->data[sc_spot] = (void*)node;
 	}
-		
+
 	if (special_node == INPUT_NODE)
 	{
 		/* This is for clocks, gnd, and vcc */
@@ -986,7 +987,7 @@ void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node)
 		netlist->ff_nodes[netlist->num_ff_nodes] = node;
 		netlist->num_ff_nodes++;
 	}
-	else 
+	else
 	{
 		netlist->internal_nodes = (nnode_t**)realloc(netlist->internal_nodes, sizeof(nnode_t*)*(netlist->num_internal_nodes+1));
 		netlist->internal_nodes[netlist->num_internal_nodes] = node;

@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 
 #include<stdlib.h>
 #include<string.h>
@@ -89,7 +89,7 @@ typedef struct {
 
 
 //netlist_t * verilog_netlist;
-short static skip_reading_bit_map=FALSE; 
+short static skip_reading_bit_map=FALSE;
 
 void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash);
 void rb_look_for_clocks();// not sure if this is needed
@@ -312,7 +312,7 @@ short assign_node_type_from_node_name(char * output_name)
 
 /*---------------------------------------------------------------------------------------------
    * function:create_latch_node_and_driver
-     to create an ff node and driver from that node 
+     to create an ff node and driver from that node
      format .latch <input> <output> [<type> <control/clock>] <initial val>
 *-------------------------------------------------------------------------------------------*/
 void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
@@ -349,7 +349,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			names[2] = strdup("re");
 		}
 		else
-		{	
+		{
 			error_message(NETLIST_ERROR,file_line_number,-1, "This .latch Format not supported \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>");
 		}
 	}
@@ -357,14 +357,14 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
 	new_node->type = FF_NODE;
-	
+
 	/* Read in the initial value of the latch.
 	   Possible values from a blif file are:
 	   0: LOW
 	   1: HIGH
 	   2: DON'T CARE
 	   3: UNKNOWN
-	  
+
 	   2 and 3 are treated in the same way */
 	int initial_value = atoi(names[4]);
 	if(initial_value == 0 || initial_value == 1){
@@ -378,7 +378,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 
 	/* allocate the input pin */
 	allocate_more_input_pins(new_node,2);/* input[1] is clock */
-  
+
 	/* add the port information */
 	int i;
 	for(i = 0; i < 2; i++)
@@ -413,7 +413,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	new_pin->type = OUTPUT;
 	add_output_pin_to_node(new_node, new_pin, 0);
 	add_driver_pin_to_net(new_net, new_pin);
-  
+
 	output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
 	/* Free the char** names */
@@ -423,7 +423,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 
 /*---------------------------------------------------------------------------------------------
    * function: search_clock_name
-     to search the clock if the control in the latch 
+     to search the clock if the control in the latch
      is not mentioned
 *-------------------------------------------------------------------------------------------*/
 char* search_clock_name(FILE* file)
@@ -487,7 +487,7 @@ char* search_clock_name(FILE* file)
 	if (found) return input_names[0];
 	else       return strdup(DEFAULT_CLOCK_NAME);
 }
-  
+
 
 
 /*---------------------------------------------------------------------------------------------
@@ -508,8 +508,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	{
 		names_parameters          = (char**)realloc(names_parameters, sizeof(char*)*(count + 1));
 		names_parameters[count++] = strdup(token);
-  	}	
-   
+  	}
+
 	// Split the name parameters at the equals sign.
 	char **mappings = (char**)malloc(sizeof(char*) * count);
 	char **names    = (char**)malloc(sizeof(char*) * count);
@@ -643,7 +643,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 
 /*---------------------------------------------------------------------------------------------
    * function:create_internal_node_and_driver
-     to create an internal node and driver from that node 
+     to create an internal node and driver from that node
 *-------------------------------------------------------------------------------------------*/
 
 void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
@@ -658,7 +658,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		names = (char**)realloc(names, sizeof(char*) * (input_count + 1));
 		names[input_count++]= strdup(ptr);
 	}
-  
+
 	/* assigning the new_node */
 	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
@@ -717,7 +717,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin, i);
 		}
-	
+
 		/* add information for the intermediate VCC and GND node (appears in ABC )*/
 		if(new_node->type == GND_NODE)
 		{
@@ -820,183 +820,193 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 	{
 		free(output_bit_map);
 		output_bit_map = strdup(One);
+		node->generic_output = 1;
 	}
 	else
 	{
 		free(output_bit_map);
 		output_bit_map = strdup(Zero);
+		node->generic_output = 0;
 	}
 
 	file_line_number = last_line;
 	fsetpos(file,&pos);
 
-	/* Single line bit map : */
-	if(line_count_bitmap == 1)
-	{
-		// GT
-		if(!strcmp(bit_map[0],"100"))
-			return GT;
-
-		// LT
-		if(!strcmp(bit_map[0],"010"))
-			return LT;
-
-		/* LOGICAL_AND and LOGICAL_NAND for ABC*/
-		int i;
-		for(i = 0; i < input_count && bit_map[0][i] == '1'; i++);
-
-		if(i == input_count)
+	/*Patern recognition for faster simulation*/
+	if(node->generic_output){
+		//On-gate recognition
+		//TODO move off-logic parts to appropriate code block
+		/* Single line bit map : */
+		if(line_count_bitmap == 1)
 		{
-			if (!strcmp(output_bit_map,"1"))
-				return LOGICAL_AND;
-			else if (!strcmp(output_bit_map,"0"))
+			// GT
+			if(!strcmp(bit_map[0],"100"))
+				return GT;
+
+			// LT
+			if(!strcmp(bit_map[0],"010"))
+				return LT;
+
+			/* LOGICAL_AND and LOGICAL_NAND for ABC*/
+			int i;
+			for(i = 0; i < input_count && bit_map[0][i] == '1'; i++);
+
+			if(i == input_count)
+			{
+				if (!strcmp(output_bit_map,"1"))
+					return LOGICAL_AND;
+				else if (!strcmp(output_bit_map,"0"))
+					return LOGICAL_NAND;
+			}
+
+			/* BITWISE_NOT */
+			if(!strcmp(bit_map[0],"0"))
+				return BITWISE_NOT;
+
+			/* LOGICAL_NOR and LOGICAL_OR for ABC */
+			for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
+			if(i == input_count)
+			{
+				if (!strcmp(output_bit_map,"1"))
+					return LOGICAL_NOR;
+				else if (!strcmp(output_bit_map,"0"))
+					return LOGICAL_OR;
+			}
+		}
+		/* Assumption that bit map is in order when read from blif */
+		else if(line_count_bitmap == 2)
+		{
+			/* LOGICAL_XOR */
+			if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0)) return LOGICAL_XOR;
+			/* LOGICAL_XNOR */
+			if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) return LOGICAL_XNOR;
+		}
+		else if (line_count_bitmap == 4)
+		{
+			/* ADDER_FUNC */
+			if (
+					   (!strcmp(bit_map[0],"001"))
+					&& (!strcmp(bit_map[1],"010"))
+					&& (!strcmp(bit_map[2],"100"))
+					&& (!strcmp(bit_map[3],"111"))
+			)
+				return ADDER_FUNC;
+			/* CARRY_FUNC */
+			if(
+					   (!strcmp(bit_map[0],"011"))
+					&& (!strcmp(bit_map[1],"101"))
+					&& (!strcmp(bit_map[2],"110"))
+					&& (!strcmp(bit_map[3],"111"))
+			)
+				return 	CARRY_FUNC;
+			/* LOGICAL_XOR */
+			if(
+					   (!strcmp(bit_map[0],"001"))
+					&& (!strcmp(bit_map[1],"010"))
+					&& (!strcmp(bit_map[2],"100"))
+					&& (!strcmp(bit_map[3],"111"))
+			)
+				return 	LOGICAL_XOR;
+			/* LOGICAL_XNOR */
+			if(
+					   (!strcmp(bit_map[0],"000"))
+					&& (!strcmp(bit_map[1],"011"))
+					&& (!strcmp(bit_map[2],"101"))
+					&& (!strcmp(bit_map[3],"110"))
+			)
+				return 	LOGICAL_XNOR;
+		}
+
+
+		if(line_count_bitmap == input_count)
+		{
+			/* LOGICAL_OR */
+			int i;
+			for(i = 0; i < line_count_bitmap; i++)
+			{
+				if(bit_map[i][i] == '1')
+				{
+					int j;
+					for(j = 1; j < input_count; j++)
+						if(bit_map[i][(i+j)% input_count]!='-')
+							break;
+
+					if(j != input_count)
+						break;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			if(i == line_count_bitmap)
+				return LOGICAL_OR;
+
+			/* LOGICAL_NAND */
+			for(i = 0; i < line_count_bitmap; i++)
+			{
+				if(bit_map[i][i]=='0')
+				{
+					int j;
+					for(j = 1; j < input_count; j++)
+						if(bit_map[i][(i+j)% input_count]!='-')
+							break;
+
+					if(j != input_count) break;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			if(i == line_count_bitmap)
 				return LOGICAL_NAND;
 		}
 
-		/* BITWISE_NOT */
-		if(!strcmp(bit_map[0],"0"))
-			return BITWISE_NOT;
-
-		/* LOGICAL_NOR and LOGICAL_OR for ABC */
-		for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
-		if(i == input_count)
+		/* MUX_2 */
+		if(line_count_bitmap*2 == input_count)
 		{
-			if (!strcmp(output_bit_map,"1"))
-				return LOGICAL_NOR;
-			else if (!strcmp(output_bit_map,"0"))
-				return LOGICAL_OR;
-		}
-	}
-	/* Assumption that bit map is in order when read from blif */
-	else if(line_count_bitmap == 2)
-	{
-		/* LOGICAL_XOR */
-		if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0)) return LOGICAL_XOR;
-		/* LOGICAL_XNOR */
-		if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) return LOGICAL_XNOR;
-	}
-	else if (line_count_bitmap == 4)
-	{
-		/* ADDER_FUNC */
-		if (
-				   (!strcmp(bit_map[0],"001"))
-				&& (!strcmp(bit_map[1],"010"))
-				&& (!strcmp(bit_map[2],"100"))
-				&& (!strcmp(bit_map[3],"111"))
-		)
-			return ADDER_FUNC;
-		/* CARRY_FUNC */
-		if(
-				   (!strcmp(bit_map[0],"011"))
-				&& (!strcmp(bit_map[1],"101"))
-				&& (!strcmp(bit_map[2],"110"))
-				&& (!strcmp(bit_map[3],"111"))
-		)
-			return 	CARRY_FUNC;
-		/* LOGICAL_XOR */
-		if(
-				   (!strcmp(bit_map[0],"001"))
-				&& (!strcmp(bit_map[1],"010"))
-				&& (!strcmp(bit_map[2],"100"))
-				&& (!strcmp(bit_map[3],"111"))
-		)
-			return 	LOGICAL_XOR;
-		/* LOGICAL_XNOR */
-		if(
-				   (!strcmp(bit_map[0],"000"))
-				&& (!strcmp(bit_map[1],"011"))
-				&& (!strcmp(bit_map[2],"101"))
-				&& (!strcmp(bit_map[3],"110"))
-		)
-			return 	LOGICAL_XNOR;
-	}
-  
-
-	if(line_count_bitmap == input_count)
-	{
-		/* LOGICAL_OR */
-		int i;
-		for(i = 0; i < line_count_bitmap; i++)
-		{
-			if(bit_map[i][i] == '1')
+			int i;
+			for(i = 0; i < line_count_bitmap; i++)
 			{
-				int j;
-				for(j = 1; j < input_count; j++)
-					if(bit_map[i][(i+j)% input_count]!='-')
-						break;
-
-				if(j != input_count)
-					break;
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		if(i == line_count_bitmap)
-			return LOGICAL_OR;
-
-		/* LOGICAL_NAND */
-		for(i = 0; i < line_count_bitmap; i++)
-		{
-			if(bit_map[i][i]=='0')
-			{
-				int j;
-				for(j = 1; j < input_count; j++)
-					if(bit_map[i][(i+j)% input_count]!='-')
-						break;
-
-				if(j != input_count) break;
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		if(i == line_count_bitmap)
-			return LOGICAL_NAND;
-	}
-
-	/* MUX_2 */
-	if(line_count_bitmap*2 == input_count)
-	{
-		int i;
-		for(i = 0; i < line_count_bitmap; i++)
-		{
-			if (
-					   (bit_map[i][i]=='1')
-					&& (bit_map[i][i+line_count_bitmap] =='1')
-			)
-			{
-				int j;
-				for (j = 1; j < line_count_bitmap; j++)
+				if (
+						   (bit_map[i][i]=='1')
+						&& (bit_map[i][i+line_count_bitmap] =='1')
+				)
 				{
-					if (
-							   (bit_map[i][ (i+j) % line_count_bitmap] != '-')
-							|| (bit_map[i][((i+j) % line_count_bitmap) + line_count_bitmap] != '-')
-					)
+					int j;
+					for (j = 1; j < line_count_bitmap; j++)
 					{
-						break;
+						if (
+								   (bit_map[i][ (i+j) % line_count_bitmap] != '-')
+								|| (bit_map[i][((i+j) % line_count_bitmap) + line_count_bitmap] != '-')
+						)
+						{
+							break;
+						}
 					}
+
+					if(j != input_count)
+						break;
 				}
-
-				if(j != input_count)
+				else
+				{
 					break;
+				}
 			}
-			else
-			{
-				break;
-			}
-		}
 
-		if(i == line_count_bitmap)
-			return MUX_2;
+			if(i == line_count_bitmap)
+				return MUX_2;
+		}
+	} else if (node->generic_output == 0){
+		//Off-gate recognition
+		//TODO
 	}
 
 	 /* assigning the bit_map to the node if it is GENERIC */
-	
+
 	node->bit_map = bit_map;
 	node->bit_map_line_count = line_count_bitmap;
 	return GENERIC;
@@ -1005,7 +1015,7 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 /*
 *---------------------------------------------------------------------------------------------
    * function: add_top_input_nodes
-     to add the top level inputs to the netlist 
+     to add the top level inputs to the netlist
 *-------------------------------------------------------------------------------------------*/
 void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 {
@@ -1057,8 +1067,8 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 
 /*---------------------------------------------------------------------------------------------
    * function: create_top_output_nodes
-     to add the top level outputs to the netlist 
-*-------------------------------------------------------------------------------------------*/	
+     to add the top level outputs to the netlist
+*-------------------------------------------------------------------------------------------*/
 void rb_create_top_output_nodes(FILE *file)
 {
 	char *ptr;
@@ -1093,16 +1103,16 @@ void rb_create_top_output_nodes(FILE *file)
 		verilog_netlist->top_output_nodes = (nnode_t**)realloc(verilog_netlist->top_output_nodes, sizeof(nnode_t*)*(verilog_netlist->num_top_output_nodes+1));
 		verilog_netlist->top_output_nodes[verilog_netlist->num_top_output_nodes++] = new_node;
 	}
-} 
-  
- 
+}
+
+
 /*---------------------------------------------------------------------------------------------
    * (function: look_for_clocks)
  *-------------------------------------------------------------------------------------------*/
 
 void rb_look_for_clocks()
 {
-	int i; 
+	int i;
 	for (i = 0; i < verilog_netlist->num_ff_nodes; i++)
 	{
 		if (verilog_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type != CLOCK_NODE)
@@ -1127,7 +1137,7 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 	npin_t *new_pin;
 	/* create the constant nets */
 
-	/* ZERO net */ 
+	/* ZERO net */
 	/* description given for the zero net is same for other two */
 	verilog_netlist->zero_net = allocate_nnet(); // allocate memory to net pointer
 	verilog_netlist->gnd_node = allocate_nnode(); // allocate memory to node pointer
@@ -1195,7 +1205,7 @@ static void dum_parse (char *buffer, FILE *file)
 
 
 /*---------------------------------------------------------------------------------------------
- * function: hook_up_nets() 
+ * function: hook_up_nets()
  * find the output nets and add the corresponding nets
  *-------------------------------------------------------------------------------------------*/
 void hook_up_nets(hashtable_t *output_nets_hash)
@@ -1375,7 +1385,7 @@ hashtable_t *index_names(char **names, int count)
 	hashtable_t *index = create_hashtable((count*2) + 1);
 	int i;
 	for (i = 0; i < count; i++)
-	{	
+	{
 		int *offset = (int *)malloc(sizeof(int));
 		*offset = i;
 		index->add(index, names[i], sizeof(char) * strlen(names[i]), offset);
@@ -1672,4 +1682,3 @@ void free_hard_block_ports(hard_block_ports *p)
 	p->index->destroy_free_items(p->index);
 	free(p);
 }
-
