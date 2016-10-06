@@ -212,6 +212,10 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 			num_logical_nets * sizeof(int));
 	for (i = 0; i < num_logical_nets; i++) {
 		vpack_to_clb_net_mapping[i] = OPEN;
+
+        AtomNetId net_id = g_atom_nl.find_net(vpack_net[i].name);
+        VTR_ASSERT(net_id);
+        g_atom_map.set_atom_clb_net(net_id, OPEN);
 	}
 
 	for (i = 0; i < ext_ncount; i++) {
@@ -219,6 +223,10 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 		VTR_ASSERT(temp_hash != NULL);
 		clb_to_vpack_net_mapping[i] = temp_hash->index;
 		vpack_to_clb_net_mapping[temp_hash->index] = i;
+
+        AtomNetId net_id = g_atom_nl.find_net(ext_nlist[i].name);
+        VTR_ASSERT(net_id);
+        g_atom_map.set_atom_clb_net(net_id, i);
 	}
 
 	/* Return blocks and nets */

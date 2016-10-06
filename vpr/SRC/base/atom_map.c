@@ -47,6 +47,25 @@ AtomBlockId AtomMap::clb_atom(const int clb_index) const {
     return iter->second;
 }
 
+AtomNetId AtomMap::atom_net(const int clb_net_index) const {
+    auto iter = clb_to_atom_net_.find(clb_net_index);
+    if(iter == clb_to_atom_net_.end()) {
+        //Not found
+        return AtomNetId::INVALID();
+    }
+    return iter->second;
+}
+
+int AtomMap::clb_net(const AtomNetId net_id) const {
+    auto iter = atom_to_clb_net_.find(net_id);
+    if(iter == atom_to_clb_net_.end()) {
+        //Not found
+        return OPEN;
+    }
+    return iter->second;
+
+}
+
 void AtomMap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     //If either of blk_id or pb are not valid, 
     //remove any mapping
@@ -88,5 +107,27 @@ void AtomMap::set_atom_clb(const AtomBlockId blk_id, const int clb_index) {
         //Store
         atom_to_clb_[blk_id] = clb_index;
         clb_to_atom_[clb_index] = blk_id;
+    }
+}
+
+void AtomMap::set_atom_clb_net(const AtomNetId net_id, const int clb_net_index) {
+    VTR_ASSERT(net_id);
+    //If either are invalid remove any mapping
+    if(!net_id) {
+        //Remove
+        clb_to_atom_net_.erase(clb_net_index);
+        VTR_ASSERT_SAFE(atom_to_clb_net_.count(net_id) == 0);
+    }
+    if(clb_net_index == OPEN) {
+        //Remove
+        atom_to_clb_net_.erase(net_id);
+        VTR_ASSERT_SAFE(clb_to_atom_net_.count(clb_net_index) == 0);
+    }
+    
+    //If both are valid store the mapping
+    if(net_id && clb_net_index != OPEN) {
+        //Store
+        atom_to_clb_net_[net_id] = clb_net_index;
+        clb_to_atom_net_[clb_net_index] = net_id;
     }
 }

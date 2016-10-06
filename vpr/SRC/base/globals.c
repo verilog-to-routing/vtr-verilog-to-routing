@@ -16,6 +16,7 @@ float grid_logic_tile_area = 0;
 /* Atom netlist */
 AtomNetlist g_atom_nl;
 AtomMap g_atom_map;
+std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
 /* User netlist information begin  */
 int num_logical_nets = 0, num_logical_blocks = 0;

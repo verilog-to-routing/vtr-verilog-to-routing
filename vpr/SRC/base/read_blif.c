@@ -88,6 +88,9 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
 static void show_blif_stats2(const AtomNetlist& netlist);
+static std::unordered_map<AtomNetId,t_net_power> read_activity2(const AtomNetlist& netlist, char * activity_file);
+bool add_activity_to_net2(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
+                          char * net_name, float probability, float density);
 
 static void do_absorb_buffer_luts(void);
 static void compress_netlist(void);
@@ -555,14 +558,6 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file) {
 
-/*
- *    FILE* blif_f = vtr::fopen(blif_file, "r");
- *    if (blif_f == NULL) {
- *        vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
- *                "Failed to open blif file '%s'.\n", blif_file);
- *    }
- *
- */
     //Throw VPR errors instead of using libblifparse default error
     blifparse::set_blif_error_handler(blif_error);
 
@@ -615,6 +610,11 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
     }
 
     show_blif_stats2(netlist);
+
+    if(read_activity_file) {
+        auto atom_net_power = read_activity2(netlist, activity_file);
+        g_atom_net_power = std::move(atom_net_power);
+    }
 
     /*
      *{
@@ -701,6 +701,65 @@ static void show_blif_stats2(const AtomNetlist& netlist) {
     for(auto kv : net_stats) {
         vtr::printf_info("    %-*s: %6.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
+}
+
+static std::unordered_map<AtomNetId,t_net_power> read_activity2(const AtomNetlist& netlist, char * activity_file) {
+	char buf[vtr::BUFSIZE];
+	char * ptr;
+	char * word1;
+	char * word2;
+	char * word3;
+
+	FILE * act_file_hdl;
+
+    std::unordered_map<AtomNetId,t_net_power> atom_net_power;
+
+	for (auto net_id : netlist.nets()) {
+		atom_net_power[net_id].probability = -1.0;
+		atom_net_power[net_id].density = -1.0;
+	}
+
+	act_file_hdl = vtr::fopen(activity_file, "r");
+	if (act_file_hdl == NULL) {
+		vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+				"Error: could not open activity file: %s\n", activity_file);
+	}
+
+	ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
+	while (ptr != NULL) {
+		word1 = strtok(buf, TOKENS);
+		word2 = strtok(NULL, TOKENS);
+		word3 = strtok(NULL, TOKENS);
+		add_activity_to_net2(netlist, atom_net_power, word1, atof(word2), atof(word3));
+
+		ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
+	}
+	fclose(act_file_hdl);
+
+	/* Make sure all nets have an activity value */
+	for (auto net_id : netlist.nets()) {
+		if (atom_net_power[net_id].probability < 0.0
+				|| atom_net_power[net_id].density < 0.0) {
+			vpr_throw(VPR_ERROR_BLIF_F, __FILE__, __LINE__,
+					"Error: Activity file does not contain signal %s\n",
+					netlist.net_name(net_id).c_str());
+		}
+	}
+    return atom_net_power;
+}
+
+bool add_activity_to_net2(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
+                          char * net_name, float probability, float density) {
+    AtomNetId net_id = netlist.find_net(net_name);
+    if(net_id) {
+        atom_net_power[net_id].probability = probability;
+        atom_net_power[net_id].density = density;
+        return false;
+    }
+
+	printf("Error: net %s found in activity file, but it does not exist in the .blif file.\n",
+			net_name);
+	return true;
 }
 
 static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,

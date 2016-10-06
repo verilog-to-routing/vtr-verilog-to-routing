@@ -160,10 +160,11 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		}
 
 		if (pb) {
+            AtomBlockId blk_id = g_atom_map.pb_atom(pb);
 			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size,
-					logical_block[pb->logical_block].truth_table);
+					g_atom_nl.block_truth_table(blk_id));
 		} else {
-			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, NULL);
+			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, AtomNetlist::TruthTable());
 		}
 		power_usage_lut(&sub_power_usage, LUT_size,
 				g_power_arch->LUT_transistor_size, SRAM_values,
@@ -1162,10 +1163,8 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 		clb_net_power = (t_net_power*) vtr::calloc(num_nets, sizeof(t_net_power));
 	}
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
-		clb_net_power[net_idx].probability =
-				vpack_net_power[clb_to_vpack_net_mapping[net_idx]].probability;
-		clb_net_power[net_idx].density =
-				vpack_net_power[clb_to_vpack_net_mapping[net_idx]].density;
+		clb_net_power[net_idx].probability = g_atom_net_power[g_atom_map.atom_net(net_idx)].probability;
+		clb_net_power[net_idx].density = g_atom_net_power[g_atom_map.atom_net(net_idx)].density;
 	}
 
 	/* Initialize RR Graph Structures */

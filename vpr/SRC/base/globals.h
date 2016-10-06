@@ -2,15 +2,16 @@
  Global variables 
 
  Key global variables that are used everywhere in VPR: 
- clb_net, vpack_net, block, and logical_block
+ clb_net, block, and g_atom_nl
 
  These variables represent the user netlist in various stages of the CAD flow:
-  vpack_net and logical_block for the unclustered netlist pre packing
+  g_atom_nl for the unclustered user-supplied netlist
   clb_net and block for the clustered netlist post packing
  */
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
+#include <unordered_map>
 
 #include "vtr_matrix.h"
 #include "netlist.h"
@@ -42,6 +43,8 @@ extern struct s_net *clb_net;
 /* Atom netlist */
 extern AtomNetlist g_atom_nl;
 extern AtomMap g_atom_map;
+
+extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
 /* blocks in the user netlist */
 extern int num_blocks;
