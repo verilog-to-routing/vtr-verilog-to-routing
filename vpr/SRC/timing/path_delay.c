@@ -1037,49 +1037,46 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
  Then connect up tnodes with edges
  */
 static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay) {
-	int i, j, k;
-	const t_model *model;
-	t_model_ports *model_port;
 	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
-	int inode, inet;
-	int incr;
-	int count;
 
 	f_net_to_driver_tnode = (int*)vtr::malloc(g_atoms_nlist.net.size() * sizeof(int));
 
-	for (i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
+	for (int i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
 		f_net_to_driver_tnode[i] = OPEN;
 	}
 	
-	/* allocate space for tnodes */
+	/* Determine the number of tnode's (and allocate space for logical_block i/o to tnode mappings) */
 	num_tnodes = 0;
-	for (i = 0; i < num_logical_blocks; i++) {
-		model = logical_block[i].model;
+	for (int i = 0; i < num_logical_blocks; i++) {
+		const t_model* model = logical_block[i].model;
 		logical_block[i].clock_net_tnode = NULL;
 		if (logical_block[i].type == VPACK_INPAD) {
-			logical_block[i].output_net_tnodes = (t_tnode***)vtr::calloc(1,
-					sizeof(t_tnode**));
-			num_tnodes += 2;
+			logical_block[i].output_net_tnodes = (t_tnode***)vtr::calloc(1, sizeof(t_tnode**));
+			num_tnodes += 2; //SOURCE and OPIN
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
 			logical_block[i].input_net_tnodes = (t_tnode***)vtr::calloc(1, sizeof(t_tnode**));
-			num_tnodes += 2;
+			num_tnodes += 2; //SINK and OPIN
 		} else {
+            int incr;
 			if (logical_block[i].clock_net == OPEN) {
-				incr = 1;
+				incr = 1; //Non-sequential so only an IPIN or OPIN node
 			} else {
-				incr = 2;
+				incr = 2; //Sequential so both and IPIN/OPIN and a SOURCE/SINK nodes
 			}
-			j = 0;
-			model_port = model->inputs;
+			int j = 0;
+			const t_model_ports* model_port = model->inputs;
 			while (model_port) {
 				if (model_port->is_clock == false) {
-					for (k = 0; k < model_port->size; k++) {
+                    //Non-clock port, so add tnodes for each input pin
+					for (int k = 0; k < model_port->size; k++) {
 						if (logical_block[i].input_nets[j][k] != OPEN) {
 							num_tnodes += incr;
 						}
 					}
 					j++;
 				} else {
+                    //A clock port so only an FF_CLOCK node
+                    VTR_ASSERT(model_port->is_clock);
 					num_tnodes++;
 				}
 				model_port = model_port->next;
@@ -1089,7 +1086,8 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			j = 0;
 			model_port = model->outputs;
 			while (model_port) {
-				for (k = 0; k < model_port->size; k++) {
+                //Add tnodes for each output pin
+				for (int k = 0; k < model_port->size; k++) {
 					if (logical_block[i].output_nets[j][k] != OPEN) {
 						num_tnodes += incr;
 					}
@@ -1100,33 +1098,39 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			logical_block[i].output_net_tnodes = (t_tnode ***)vtr::calloc(j, sizeof(t_tnode**));
 		}
 	}
+    /* Allocate the tnodes */
 	tnode = (t_tnode *)vtr::calloc(num_tnodes, sizeof(t_tnode));
 	
 	/* Allocate space for prepacked_data, which is only used pre-packing. */
-	for (inode = 0; inode < num_tnodes; inode++) {
+	for (int inode = 0; inode < num_tnodes; inode++) {
 		tnode[inode].prepacked_data = (t_prepacked_tnode_data *) vtr::malloc(sizeof(t_prepacked_tnode_data));
 	}
 
 	/* load tnodes, alloc edges for tnodes, load all known tnodes */
-	inode = 0;
-	for (i = 0; i < num_logical_blocks; i++) {
-		model = logical_block[i].model;
+	int inode = 0;
+	for (int i = 0; i < num_logical_blocks; i++) {
+		const t_model* model = logical_block[i].model;
 		if (logical_block[i].type == VPACK_INPAD) {
-			logical_block[i].output_net_tnodes[0] = (t_tnode **)vtr::calloc(1,
-					sizeof(t_tnode*));
+            //A primary input
+
+            //Look-ups
+			logical_block[i].output_net_tnodes[0] = (t_tnode **)vtr::calloc(1, sizeof(t_tnode*));
 			logical_block[i].output_net_tnodes[0][0] = &tnode[inode];
 			f_net_to_driver_tnode[logical_block[i].output_nets[0][0]] = inode;
+
+            //The OPIN
 			tnode[inode].prepacked_data->model_pin = 0;
 			tnode[inode].prepacked_data->model_port = 0;
 			tnode[inode].prepacked_data->model_port_ptr = model->outputs;
 			tnode[inode].block = i;
 			tnode[inode].type = TN_INPAD_OPIN;
 
-			tnode[inode].num_edges =
-					g_atoms_nlist.net[logical_block[i].output_nets[0][0]].num_sinks();
+			tnode[inode].num_edges = g_atoms_nlist.net[logical_block[i].output_nets[0][0]].num_sinks();
 			tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(
 					tnode[inode].num_edges * sizeof(t_tedge),
 					&tedge_ch);
+
+            //The source
 			tnode[inode + 1].num_edges = 1;
 			tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc(
 					1 * sizeof(t_tedge), &tedge_ch);
@@ -1136,75 +1140,89 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			tnode[inode + 1].block = i;
 			inode += 2;
 		} else if (logical_block[i].type == VPACK_OUTPAD) {
-			logical_block[i].input_net_tnodes[0] = (t_tnode **)vtr::calloc(1,
-					sizeof(t_tnode*));
+            //A primary input
+
+            //Look-ups
+			logical_block[i].input_net_tnodes[0] = (t_tnode **)vtr::calloc(1, sizeof(t_tnode*));
 			logical_block[i].input_net_tnodes[0][0] = &tnode[inode];
+
+            //The IPIN
 			tnode[inode].prepacked_data->model_pin = 0;
 			tnode[inode].prepacked_data->model_port = 0;
 			tnode[inode].prepacked_data->model_port_ptr = model->inputs;
 			tnode[inode].block = i;
 			tnode[inode].type = TN_OUTPAD_IPIN;
 			tnode[inode].num_edges = 1;
-			tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(
-					1 * sizeof(t_tedge), &tedge_ch);
+			tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(1 * sizeof(t_tedge), &tedge_ch);
 			tnode[inode].out_edges->Tdel = 0;
 			tnode[inode].out_edges->to_node = inode + 1;
+
+            //The OPIN
 			tnode[inode + 1].type = TN_OUTPAD_SINK;
 			tnode[inode + 1].block = i;
 			tnode[inode + 1].num_edges = 0;
 			tnode[inode + 1].out_edges = NULL;
 			inode += 2;
 		} else {
-			j = 0;
-			model_port = model->outputs;
+            //A regular block
+
+            //Process the block's outputs
+			int j = 0;
+			t_model_ports* model_port = model->outputs;
 			while (model_port) {
                 logical_block[i].output_net_tnodes[j] = (t_tnode **)vtr::calloc( model_port->size, sizeof(t_tnode*));
 				if (model_port->is_clock == false) {
-                    for (k = 0; k < model_port->size; k++) {
+                    //A non-clock output
+                    for (int k = 0; k < model_port->size; k++) {
                         if (logical_block[i].output_nets[j][k] != OPEN) {
+                            //Look-ups 
+                            f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] = inode;
+                            logical_block[i].output_net_tnodes[j][k] = &tnode[inode];
+
+                            //The first tnode
                             tnode[inode].prepacked_data->model_pin = k;
                             tnode[inode].prepacked_data->model_port = j;
                             tnode[inode].prepacked_data->model_port_ptr = model_port;
                             tnode[inode].block = i;
-                            f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] =
-                                    inode;
-                            logical_block[i].output_net_tnodes[j][k] =
-                                    &tnode[inode];
-
-                            tnode[inode].num_edges =
-                                    g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
-                            tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(
-                                    tnode[inode].num_edges * sizeof(t_tedge),
-                                    &tedge_ch);
+                            tnode[inode].num_edges = g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
+                            tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
 
                             if (logical_block[i].clock_net == OPEN) {
+                                //Non-sequentail block so only a single OPIN tnode
                                 tnode[inode].type = TN_PRIMITIVE_OPIN;
+
                                 inode++;
                             } else {
-                                /* load delays from predicted clock-to-Q time */
-                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
+                                //A sequential block, so the first tnode was an FF_OPIN
                                 tnode[inode].type = TN_FF_OPIN;
-                                tnode[inode + 1].num_edges = 1;
-                                tnode[inode + 1].out_edges =
-                                        (t_tedge *) vtr::chunk_malloc(
-                                                1 * sizeof(t_tedge),
-                                                &tedge_ch);
-                                tnode[inode + 1].out_edges->to_node = inode;
-                                tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
+
+                                //The second tnode is the FF_SOURCE
                                 tnode[inode + 1].type = TN_FF_SOURCE;
                                 tnode[inode + 1].block = i;
+
+                                //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
+                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
+                                                        logical_block[i].expected_lowest_cost_primitive);
+                                tnode[inode + 1].num_edges = 1;
+                                tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
+                                tnode[inode + 1].out_edges->to_node = inode;
+                                tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //Set the clk-to-Q delay
+
                                 inode += 2;
                             }
                         }
                     }
                 } else {
-                    //An output clock port, that is a clock source (e.g. PLL output)
+                    //An output clock port, meaning a clock source (e.g. PLL output)
 
                     //For every non-empty pin on the clock port create a clock pin and clock source tnode
-                    for (k = 0; k < model_port->size; k++) {
+                    for (int k = 0; k < model_port->size; k++) {
                         if (logical_block[i].output_nets[j][k] != OPEN) {
+                            //Look-ups
+                            f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] = inode;
+                            logical_block[i].output_net_tnodes[j][k] = &tnode[inode];
 
-                            //Clock output pin
+                            //Create the OPIN
                             tnode[inode].type = TN_CLOCK_OPIN;
 
                             tnode[inode].prepacked_data->model_pin = k;
@@ -1212,25 +1230,26 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                             tnode[inode].prepacked_data->model_port_ptr = model_port;
                             tnode[inode].block = i;
 
-                            //Save this as the driver tnode
-                            f_net_to_driver_tnode[logical_block[i].output_nets[j][k]] = inode;
-                            logical_block[i].output_net_tnodes[j][k] = &tnode[inode];
-
                             //Allocate space for the output edges
                             tnode[inode].num_edges = g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
                             tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
 
-                            //Create the clock source
-                            from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
+
+                            //Create the clock SOURCE
+                            from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
+                                                    logical_block[i].expected_lowest_cost_primitive);
                             tnode[inode + 1].type = TN_CLOCK_SOURCE;
                             tnode[inode + 1].num_edges = 1;
-                            tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
-                            tnode[inode + 1].out_edges->to_node = inode;
-                            tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
                             tnode[inode + 1].prepacked_data->model_pin = k;
                             tnode[inode + 1].prepacked_data->model_port = j;
                             tnode[inode + 1].prepacked_data->model_port_ptr = model_port;
                             tnode[inode + 1].block = i;
+
+                            //Initialize the edge between them
+                            tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
+                            tnode[inode + 1].out_edges->to_node = inode;
+                            tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //PLL output delay? Not clear what this reallly means... perhaps clock insertion delay from PLL?
+
                             inode += 2;
                         }
                     }
@@ -1239,51 +1258,75 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 				model_port = model_port->next;
 			}
 
+            //Process the block's inputs
 			j = 0;
 			model_port = model->inputs;
 			while (model_port) {
 				if (model_port->is_clock == false) {
-					logical_block[i].input_net_tnodes[j] = (t_tnode **)vtr::calloc(
-							model_port->size, sizeof(t_tnode*));
-					for (k = 0; k < model_port->size; k++) {
+                    //A non-clock (i.e. data) input
+
+					logical_block[i].input_net_tnodes[j] = (t_tnode **)vtr::calloc( model_port->size, sizeof(t_tnode*));
+
+                    //For every non-empty pin create the associated tnode(s)
+					for (int k = 0; k < model_port->size; k++) {
 						if (logical_block[i].input_nets[j][k] != OPEN) {
+                            //Look-ups
+							logical_block[i].input_net_tnodes[j][k] = &tnode[inode];
+
+                            //Initialize the common part of the first tnode
 							tnode[inode].prepacked_data->model_pin = k;
 							tnode[inode].prepacked_data->model_port = j;
 							tnode[inode].prepacked_data->model_port_ptr = model_port;
 							tnode[inode].block = i;
-							logical_block[i].input_net_tnodes[j][k] =
-									&tnode[inode];
-							from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, logical_block[i].expected_lowest_cost_primitive);
+
+							from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
+                                                    logical_block[i].expected_lowest_cost_primitive);
+
 							if (logical_block[i].clock_net == OPEN) {
-								/* load predicted combinational delays to predicted edges */
+                                //A non-sequential/combinational block
+
 								tnode[inode].type = TN_PRIMITIVE_IPIN;
-								tnode[inode].out_edges =
-										(t_tedge *) vtr::chunk_malloc(
-										from_pb_graph_pin->num_pin_timing * sizeof(t_tedge),
-												&tedge_ch);
-								count = 0;
+
+                                //Allocate space for all possible the edges
+								tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( from_pb_graph_pin->num_pin_timing * sizeof(t_tedge), &tedge_ch);
+
+                                //Initialize the delay and sink tnodes (i.e. PRIMITIVE_OPINs)
+								int count = 0;
 								for(int m = 0; m < from_pb_graph_pin->num_pin_timing; m++) {
 									to_pb_graph_pin = from_pb_graph_pin->pin_timing[m];
 									if(logical_block[i].output_nets[to_pb_graph_pin->port->model_port->index][to_pb_graph_pin->pin_number] == OPEN) {
 										continue;
 									}
+
+                                    //Mark the delay
 									tnode[inode].out_edges[count].Tdel = from_pb_graph_pin->pin_timing_del_max[m];
-									tnode[inode].out_edges[count].to_node = 
-										get_tnode_index(logical_block[i].output_net_tnodes[to_pb_graph_pin->port->model_port->index][to_pb_graph_pin->pin_number]);
+
+                                    //Find the tnode associated with the sink port & pin
+                                    int iblk_sink = i;
+                                    int iport_sink = to_pb_graph_pin->port->model_port->index;
+                                    int ipin_sink = to_pb_graph_pin->pin_number;
+                                    int to_node = get_tnode_index(logical_block[iblk_sink].output_net_tnodes[iport_sink][ipin_sink]);
+
+                                    VTR_ASSERT(tnode[to_node].type == TN_PRIMITIVE_OPIN);
+
+									tnode[inode].out_edges[count].to_node = to_node;
 									count++;
 								}
+                                //Mark the number of used edges (note that this may be less than the number allocated, since
+                                //some allocated edges may correspond to pins which were not connected)
 								tnode[inode].num_edges = count;
 								inode++;
 							} else {
-								/* load predicted setup time */
+                                //A sequential input
 								tnode[inode].type = TN_FF_IPIN;
+
+                                //Allocate the edge to the sink, and mark the setup-time on it
 								tnode[inode].num_edges = 1;
-								tnode[inode].out_edges =
-										(t_tedge *) vtr::chunk_malloc(
-												1 * sizeof(t_tedge),
-												&tedge_ch);
+								tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
 								tnode[inode].out_edges->to_node = inode + 1;
 								tnode[inode].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
+
+                                //Initialize the FF_SINK node
 								tnode[inode + 1].type = TN_FF_SINK;
 								tnode[inode + 1].num_edges = 0;
 								tnode[inode + 1].out_edges = NULL;
@@ -1294,9 +1337,16 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 					}
 					j++;
 				} else {
+                    //A clock input
+                    //TODO: consider more than one clock per primitive
+
 					if (logical_block[i].clock_net != OPEN) {
 						VTR_ASSERT(logical_block[i].clock_net_tnode == NULL);
+
+                        //Look-up
 						logical_block[i].clock_net_tnode = &tnode[inode];
+
+                        //Initialize the clock tnode
 						tnode[inode].block = i;
 						tnode[inode].prepacked_data->model_pin = 0;
 						tnode[inode].prepacked_data->model_port = 0;
@@ -1313,66 +1363,85 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 	}
 	VTR_ASSERT(inode == num_tnodes);
 
-	/* load edge delays and initialize clock domains to OPEN. */
-	for (i = 0; i < num_tnodes; i++) {
+	/* Load net delays and initialize clock domains to OPEN. */
+	for (int i = 0; i < num_tnodes; i++) {
 		tnode[i].clock_domain = OPEN;
 
-		/* 3 primary scenarios for edge delays
-		 1.  Point-to-point delays inside block
-		 2.  
-		 */
-		count = 0;
+        //Since the setup/clock-to-q/combinational delays have already been set above,
+        //we only set the net related delays here
 		switch (tnode[i].type) {
-		case TN_INPAD_OPIN:
-		case TN_PRIMITIVE_OPIN:
-		case TN_FF_OPIN:
-		case TN_CLOCK_OPIN:
-			/* fanout is determined by intra-cluster connections */
-			/* Allocate space for edges  */
-			inet =
-					logical_block[tnode[i].block].output_nets[tnode[i].prepacked_data->model_port][tnode[i].prepacked_data->model_pin];
-			VTR_ASSERT(inet != OPEN);
+            case TN_INPAD_OPIN:     //fallthrough
+            case TN_PRIMITIVE_OPIN: //fallthrough
+            case TN_FF_OPIN:        //fallthrough
+            case TN_CLOCK_OPIN: {
+                /* An output pin tnode */
 
-			for (j = 1; j < (int) g_atoms_nlist.net[inet].pins.size(); j++) {
-				if (g_atoms_nlist.net[inet].is_const_gen) {
-					tnode[i].out_edges[j - 1].Tdel = HUGE_NEGATIVE_FLOAT;
-					tnode[i].type = TN_CONSTANT_GEN_SOURCE;
-				} else {
-					tnode[i].out_edges[j - 1].Tdel = inter_cluster_net_delay;
-				}
-				if (g_atoms_nlist.net[inet].is_global) {
-					VTR_ASSERT(
-						logical_block[g_atoms_nlist.net[inet].pins[j].block].clock_net == inet);
-					tnode[i].out_edges[j - 1].to_node =
-						get_tnode_index(logical_block[g_atoms_nlist.net[inet].pins[j].block].clock_net_tnode);
-				} else {
-					VTR_ASSERT(
-						logical_block[g_atoms_nlist.net[inet].pins[j].block].input_net_tnodes[g_atoms_nlist.net[inet].pins[j].block_port][g_atoms_nlist.net[inet].pins[j].block_pin] != NULL);
-					tnode[i].out_edges[j - 1].to_node =
-						get_tnode_index(logical_block[g_atoms_nlist.net[inet].pins[j].block].input_net_tnodes[g_atoms_nlist.net[inet].pins[j].block_port][g_atoms_nlist.net[inet].pins[j].block_pin]);
-				}
-			}
-			VTR_ASSERT(tnode[i].num_edges == g_atoms_nlist.net[inet].num_sinks());
-			break;
-		case TN_PRIMITIVE_IPIN:
-		case TN_OUTPAD_IPIN:
-		case TN_INPAD_SOURCE:
-		case TN_OUTPAD_SINK:
-		case TN_FF_SINK:
-		case TN_FF_SOURCE:
-		case TN_FF_IPIN:
-		case TN_FF_CLOCK:
-		case TN_CLOCK_SOURCE:
-			break;
-		default:
-			vtr::printf_error(__FILE__, __LINE__, 
-					"Consistency check failed: Unknown tnode type %d.\n", tnode[i].type);
-			VTR_ASSERT(0);
-			break;
+                //Find the net driven by the OPIN
+                int iblk = tnode[i].block;
+                int iport = tnode[i].prepacked_data->model_port;
+                int ipin = tnode[i].prepacked_data->model_pin;
+                int inet = logical_block[iblk].output_nets[iport][ipin];
+                VTR_ASSERT(inet != OPEN);
+
+                //Look at each sink
+                for (int j = 1; j < (int) g_atoms_nlist.net[inet].pins.size(); j++) {
+                    if (g_atoms_nlist.net[inet].is_const_gen) {
+                        //The net is a constant generator, we override the driver
+                        //tnode type appropriately and set the delay to a large
+                        //negative value to ensure the signal is treated as already
+                        //'arrived'
+                        tnode[i].type = TN_CONSTANT_GEN_SOURCE;
+                        tnode[i].out_edges[j - 1].Tdel = HUGE_NEGATIVE_FLOAT;
+                    } else {
+                        //This is a real net, so use the default delay
+                        tnode[i].out_edges[j - 1].Tdel = inter_cluster_net_delay;
+                    }
+
+                    if (g_atoms_nlist.net[inet].is_global) {
+                        int iblk_sink = g_atoms_nlist.net[inet].pins[j].block;
+
+                        //Global means this must be a clock
+                        VTR_ASSERT(logical_block[iblk_sink].clock_net == inet);
+
+                        //Connect the edge to the sink
+                        tnode[i].out_edges[j - 1].to_node = get_tnode_index(logical_block[iblk_sink].clock_net_tnode);
+                    } else {
+                        //This is a standard sink pin
+
+                        //Find the tnode associated with the sink pin
+                        int iblk_sink = g_atoms_nlist.net[inet].pins[j].block;
+                        int iport_sink = g_atoms_nlist.net[inet].pins[j].block_port;
+                        int ipin_sink = g_atoms_nlist.net[inet].pins[j].block_pin;
+                        VTR_ASSERT(logical_block[iblk_sink].input_net_tnodes[iport_sink][ipin_sink] != NULL);
+
+                        int to_node = get_tnode_index(logical_block[iblk_sink].input_net_tnodes[iport_sink][ipin_sink]);
+
+                        //Connect the edge to the sink
+                        tnode[i].out_edges[j - 1].to_node = to_node;
+                    }
+                }
+                VTR_ASSERT(tnode[i].num_edges == g_atoms_nlist.net[inet].num_sinks());
+                break;
+            }
+            case TN_PRIMITIVE_IPIN: //fallthrough
+            case TN_OUTPAD_IPIN:    //fallthrough
+            case TN_INPAD_SOURCE:   //fallthrough
+            case TN_OUTPAD_SINK:    //fallthrough
+            case TN_FF_SINK:        //fallthrough
+            case TN_FF_SOURCE:      //fallthrough
+            case TN_FF_IPIN:        //fallthrough
+            case TN_FF_CLOCK:       //fallthrough
+            case TN_CLOCK_SOURCE:   //fallthrough
+                /* All other tnode's have had their edge-delays initialized */
+                break;
+            default:
+                VPR_THROW(VPR_ERROR_TIMING, "Unknown tnode type %d.\n", tnode[i].type);
+                break;
 		}
 	}
 
-	for (i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
+    //Sanity check, every net should have a valid driver tnode
+	for (int i = 0; i < (int) g_atoms_nlist.net.size(); i++) {
 		VTR_ASSERT(f_net_to_driver_tnode[i] != OPEN);
 	}
 }
