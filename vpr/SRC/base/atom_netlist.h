@@ -689,6 +689,9 @@ class AtomNetlist {
 
         //Verify that fast-lookups are consistent with internal data structures
         bool verify_lookups() const;
+        
+        //Verify that block invariants hold (i.e. logical consistency)
+        bool verify_block_invariants() const;
 
 
         //Validates that the specified ID is valid in the current netlist state

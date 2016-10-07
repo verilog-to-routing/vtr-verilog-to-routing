@@ -482,9 +482,14 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
  *
  */
 bool AtomNetlist::verify() const {
+    //Verify data structure consistency
     verify_sizes();
     verify_refs();
     verify_lookups();
+
+    //Verify logical consistency
+    verify_block_invariants();
+
     return true;
 }
 
@@ -551,6 +556,38 @@ bool AtomNetlist::verify_lookups() const {
         const auto& name = strings_[size_t(str_id)];
         if(find_string(name) != str_id) {
             VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block lookup by name mismatch");
+        }
+    }
+    return true;
+}
+
+bool AtomNetlist::verify_block_invariants() const {
+    for(auto blk_id : blocks()) {
+
+        //Find any connected clock
+        AtomNetId clk_net_id;
+        for(auto port_id : block_clock_ports(blk_id)) {
+            for(auto pin_id : port_pins(port_id)) {
+                if(pin_id) {
+                    clk_net_id = pin_net(pin_id);
+                    break;
+                }
+            }
+        }
+
+        if(block_type(blk_id) == AtomBlockType::SEQUENTIAL) {
+            //Sequential types must have a clock
+            if(!clk_net_id) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is sequential type but has no clock", 
+                          block_name(blk_id).c_str());
+            }
+
+        } else {
+            //Non-sequential types must not have a clock
+            if(clk_net_id) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is a non-sequential type but has a clock '%s'", 
+                          block_name(blk_id).c_str(), net_name(clk_net_id));
+            }
         }
     }
     return true;
