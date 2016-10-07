@@ -14,6 +14,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "read_sdc.h"
 #include "read_blif.h"
 #include "path_delay.h"
@@ -720,41 +721,47 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. */
 
-	int iblock, i, clock_net;
-	char * name;
-	bool found;
+    for(auto blk_id : g_atom_nl.blocks()) {
 
-	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].clock_net != OPEN) {
-			clock_net = logical_block[iblock].clock_net;
-			VTR_ASSERT(clock_net != OPEN);
-			name = g_atoms_nlist.net[clock_net].name;
-			/* Now that we've found a clock, let's see if we've counted it already */
-			found = false;
-			for (i = 0; !found && i < num_netlist_clocks; i++) {
-				if (strcmp(netlist_clocks[i], name) == 0) {
-					found = true;
-				}
-			}
-			if (!found) {
-				/* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
-				netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
-				netlist_clocks[num_netlist_clocks - 1] = name;
-			}
-		} else if (logical_block[iblock].type == VPACK_INPAD || logical_block[iblock].type == VPACK_OUTPAD) {
-			name = logical_block[iblock].name;
+        AtomBlockType type = g_atom_nl.block_type(blk_id);
+        if(type == AtomBlockType::SEQUENTIAL) {
+            for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
+                for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                    AtomNetId clk_net_id = g_atom_nl.pin_net(pin_id);
+                    VTR_ASSERT(clk_net_id);
+
+                    std::string name = g_atom_nl.net_name(clk_net_id);
+                    /* Now that we've found a clock, let's see if we've counted it already */
+                    bool found = false;
+                    for (int i = 0; !found && i < num_netlist_clocks; i++) {
+                        if (netlist_clocks[i] == name) {
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        /* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
+                        netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
+                        netlist_clocks[num_netlist_clocks - 1] = vtr::strdup(name.c_str());
+                    }
+                }
+            }
+		} else if (type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) {
+
+            std::string name = g_atom_nl.block_name(blk_id);
 			/* Now that we've found an I/O, let's see if we've counted it already */
-			found = false;
-			for (i = 0; !found && i < num_netlist_ios; i++) {
-				if (strcmp(netlist_ios[i], name) == 0) {
+			bool found = false;
+			for (int i = 0; !found && i < num_netlist_ios; i++) {
+				if (netlist_ios[i] == name) {
 					found = true;
 				}
 			}
 			if (!found) {
+                const char* trimmed_name = (type == AtomBlockType::OUTPAD) ? name.c_str() + 4 : name.c_str();
+				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
+
 				/* If we get here, the I/O is new and so we dynamically grow the array netlist_ios by one. */
 				netlist_ios = (char **) vtr::realloc (netlist_ios, ++num_netlist_ios * sizeof(char *));
-				netlist_ios[num_netlist_ios - 1] = logical_block[iblock].type == VPACK_OUTPAD ? name + 4 : name; 
-				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
+				netlist_ios[num_netlist_ios - 1] = vtr::strdup(trimmed_name); 
 			}
 		}
 	}
@@ -763,31 +770,30 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 static void count_netlist_clocks_as_constrained_clocks(void) {
 	/* Counts how many clocks are in the netlist, and adds them to the array g_sdc->constrained_clocks. */
 
-	int iblock, i, clock_net;
-	char * name;
-	bool found;
-
 	g_sdc->num_constrained_clocks = 0;
 	
-	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].clock_net != OPEN) {
-			clock_net = logical_block[iblock].clock_net;
-			VTR_ASSERT(clock_net != OPEN);
-			name = g_atoms_nlist.net[clock_net].name;
-			/* Now that we've found a clock, let's see if we've counted it already */
-			found = false;
-			for (i = 0; !found && i < g_sdc->num_constrained_clocks; i++) {
-				if (strcmp(g_sdc->constrained_clocks[i].name, name) == 0) {
-					found = true;
-				}
-			}
-			if (!found) {
-				/* If we get here, the clock is new and so we dynamically grow the array g_sdc->constrained_clocks by one. */
-				g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
-				g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(name);
-				g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = true;
-				/* Fanout will be filled out once the timing graph has been constructed. */
-			}
+    for(auto blk_id : g_atom_nl.blocks()) {
+        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                AtomNetId clk_net_id = g_atom_nl.pin_net(pin_id);
+                VTR_ASSERT(clk_net_id);
+
+                std::string name = g_atom_nl.net_name(clk_net_id);
+                /* Now that we've found a clock, let's see if we've counted it already */
+                bool found = false;
+                for (int i = 0; !found && i < g_sdc->num_constrained_clocks; i++) {
+                    if (g_sdc->constrained_clocks[i].name == name) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    /* If we get here, the clock is new and so we dynamically grow the array g_sdc->constrained_clocks by one. */
+                    g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
+                    g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(name.c_str());
+                    g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = true;
+                    /* Fanout will be filled out once the timing graph has been constructed. */
+                }
+            }
 		}
 	}
 }
@@ -796,40 +802,38 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 	/* Count how many I/Os are in the netlist, adds them to the arrays g_sdc->constrained_inputs/
 	g_sdc->constrained_outputs with an I/O delay of 0 and constrains them to clock clock_name. */
 
-	int iblock, iinput, ioutput; 
-	char * name;
-	bool found;
+    for(auto blk_id : g_atom_nl.blocks()) {
+        AtomBlockType type = g_atom_nl.block_type(blk_id);
 
-	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		if (logical_block[iblock].type == VPACK_INPAD) {
-			name = logical_block[iblock].name;
+		if (type == AtomBlockType::INPAD) {
+            std::string name = g_atom_nl.block_name(blk_id);
 			/* Now that we've found an I/O, let's see if we've counted it already */
-			found = false;
-			for (iinput = 0; !found && iinput < g_sdc->num_constrained_inputs; iinput++) {
-				if (strcmp(g_sdc->constrained_inputs[iinput].name, name) == 0) {
+			bool found = false;
+			for (int iinput = 0; !found && iinput < g_sdc->num_constrained_inputs; iinput++) {
+				if (g_sdc->constrained_inputs[iinput].name == name) {
 					found = true;
 				}
 			}
 			if (!found) {
 				/* If we get here, the input is new and so we add it to g_sdc->constrained_inputs. */
 				g_sdc->constrained_inputs = (t_io *) vtr::realloc (g_sdc->constrained_inputs, ++g_sdc->num_constrained_inputs * sizeof(t_io));
-				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = vtr::strdup(name); 
+				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].name = vtr::strdup(name.c_str()); 
 				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
 				g_sdc->constrained_inputs[g_sdc->num_constrained_inputs - 1].delay = io_delay;
 			}
-		} else if (logical_block[iblock].type == VPACK_OUTPAD) {
-			name = logical_block[iblock].name;
+		} else if (type == AtomBlockType::OUTPAD) {
+            std::string name = g_atom_nl.block_name(blk_id);
 			/* Now that we've found an I/O, let's see if we've counted it already */
-			found = false;
-			for (ioutput = 0; !found && ioutput < g_sdc->num_constrained_outputs; ioutput++) {
-				if (strcmp(g_sdc->constrained_outputs[ioutput].name, name) == 0) {
+			bool found = false;
+			for (int ioutput = 0; !found && ioutput < g_sdc->num_constrained_outputs; ioutput++) {
+				if (g_sdc->constrained_outputs[ioutput].name == name) {
 					found = true;
 				}
 			}
 			if (!found) {
 				/* If we get here, the output is new and so we add it to g_sdc->constrained_outputs. */
 				g_sdc->constrained_outputs = (t_io *) vtr::realloc (g_sdc->constrained_outputs, ++g_sdc->num_constrained_outputs * sizeof(t_io));
-				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = vtr::strdup(name + 4); 
+				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].name = vtr::strdup(name.c_str() + 4); 
 				/* the + 4 removes the prefix "out:" automatically prepended to outputs */
 				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
 				g_sdc->constrained_outputs[g_sdc->num_constrained_outputs - 1].delay = io_delay;
