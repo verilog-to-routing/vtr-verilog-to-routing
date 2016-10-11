@@ -360,6 +360,12 @@ AtomPortId AtomNetlist::pin_port (const AtomPinId id) const {
     return pin_ports_[size_t(id)];
 }
 
+BitIndex AtomNetlist::pin_port_bit(const AtomPinId id) const {
+    VTR_ASSERT(valid_pin_id(id));
+
+    return pin_port_bits_[size_t(id)];
+}
+
 AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const { 
     //Convenience lookup bypassing the port
     VTR_ASSERT(valid_pin_id(id));
@@ -368,11 +374,12 @@ AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const {
     return port_block(port_id);
 }
 
-BitIndex AtomNetlist::pin_port_bit(const AtomPinId id) const {
+bool AtomNetlist::pin_is_constant (const AtomPinId id) const {
     VTR_ASSERT(valid_pin_id(id));
 
-    return pin_port_bits_[size_t(id)];
+    return pin_is_constant_[size_t(id)];
 }
+
 
 /*
  *
@@ -691,7 +698,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
     return port_id;
 }
 
-AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type) {
+AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type, bool is_const) {
     //Check pre-conditions (valid ids)
     VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
     VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
@@ -710,6 +717,7 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
         pin_ports_.push_back(port_id);
         pin_port_bits_.push_back(port_bit);
         pin_nets_.push_back(net_id);
+        pin_is_constant_.push_back(is_const);
 
         //Store the reverse look-up
         auto key = std::make_tuple(port_id, port_bit);
@@ -738,6 +746,7 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
     VTR_ASSERT(pin_port_bit(pin_id) == port_bit);
     VTR_ASSERT(pin_net(pin_id) == net_id);
     VTR_ASSERT(pin_type(pin_id) == type);
+    VTR_ASSERT(pin_is_constant(pin_id) == is_const);
     VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
 
     return pin_id;
@@ -1062,6 +1071,7 @@ std::vector<AtomPinId> AtomNetlist::clean_pins() {
     pin_ports_ = move_valid(pin_ports_, pin_ids_);
     pin_port_bits_ = move_valid(pin_port_bits_, pin_ids_);
     pin_nets_ = move_valid(pin_nets_, pin_ids_);
+    pin_is_constant_ = move_valid(pin_is_constant_, pin_ids_);
 
     //Update Ids last since used as predicate
     pin_ids_ = new_ids;
@@ -1290,7 +1300,8 @@ bool AtomNetlist::validate_port_sizes() const {
 bool AtomNetlist::validate_pin_sizes() const {
     if(pin_ports_.size() != pin_ids_.size()
         || pin_port_bits_.size() != pin_ids_.size()
-        || pin_nets_.size() != pin_ids_.size()) {
+        || pin_nets_.size() != pin_ids_.size()
+        || pin_is_constant_.size() != pin_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
     }
     return true;

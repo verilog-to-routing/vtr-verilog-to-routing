@@ -84,7 +84,7 @@ static void read_blif(const char *blif_file, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
 
-static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs,
+static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
 static void show_blif_stats2(const AtomNetlist& netlist);
@@ -203,10 +203,41 @@ struct BlifAllocCallback : public blifparse::Callback {
                 curr_model().create_pin(input_port_id, i, net_id, AtomPinType::SINK);
             }
 
+            //Figure out if the output is a constant generator
+            bool output_is_const = false;
+            if(truth_table.empty()
+                || (truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::FALSE)) {
+                //An empty truth table in BLIF corresponds to a constant-zero
+                //  e.g.
+                //
+                //  #gnd is a constant 0 generator
+                //  .names gnd 
+                //
+                //An single entry truth table with value '0' also corresponds to a constant-zero
+                //  e.g.
+                //
+                //  #gnd2 is a constant 0 generator
+                //  .names gnd2
+                //  0
+                //
+                output_is_const = true;
+                vtr::printf("Found constant-zero generator '%s'\n", nets[nets.size()-1].c_str());
+            } else if(truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::TRUE) {
+                //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
+                //  e.g.
+                //
+                //  #vcc is a constant 1 generator
+                //  .names vcc
+                //  1
+                //
+                output_is_const = true;
+                vtr::printf("Found constant-one generator '%s'\n", nets[nets.size()-1].c_str());
+            }
+
             //Create output
             AtomNetId net_id = curr_model().create_net(nets[nets.size()-1]);
             AtomPortId output_port_id = curr_model().create_port(blk_id, blk_model->outputs->name);
-            curr_model().create_pin(output_port_id, 0, net_id, AtomPinType::DRIVER);
+            curr_model().create_pin(output_port_id, 0, net_id, AtomPinType::DRIVER, output_is_const);
         }
 
         void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
@@ -554,7 +585,7 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
     return new_val;
 }
 
-static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs,
+static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file) {
 
@@ -580,7 +611,9 @@ static void read_blif2(const char *blif_file, bool sweep_hanging_nets_and_inputs
         vtr::ScopedPrintTimer t2("Clean BLIF");
         
         //Clean-up lut buffers
-        /*absorb_buffer_luts(netlist);*/
+        if(absorb_buffers) {
+            absorb_buffer_luts(netlist);
+        }
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
@@ -2527,7 +2560,7 @@ void read_and_process_blif(const char *blif_file,
 		char * activity_file) {
 
 	/* begin parsing blif input file */
-	read_blif2(blif_file, sweep_hanging_nets_and_inputs, user_models,
+	read_blif2(blif_file, absorb_buffer_luts, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
 
 	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,

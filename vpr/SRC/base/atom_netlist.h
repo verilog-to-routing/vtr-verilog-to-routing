@@ -467,6 +467,9 @@ class AtomNetlist {
         //Returns the block associated with the specified pin
         AtomBlockId pin_block       (const AtomPinId id) const;
 
+        //Returns true if the pin is a constant (i.e. it's value never changes)
+        bool        pin_is_constant (const AtomPinId id) const;
+
 
         /*
          * Nets
@@ -550,7 +553,8 @@ class AtomNetlist {
         //  port_bit: The bit index of the pin in the port
         //  net_id  : The net the pin drives/sinks
         //  type    : The type of the pin (driver/sink)
-        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type);
+        //  is_const: Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type, bool is_const=false);
 
         //Create an empty, or return an existing net in the netlist
         //  name    : The unique name of the net
@@ -724,10 +728,11 @@ class AtomNetlist {
         std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
         //Pin data
-        std::vector<AtomPinId>      pin_ids_;       //Valid pin ids
-        std::vector<AtomPortId>     pin_ports_;     //Type of each pin
-        std::vector<BitIndex>       pin_port_bits_; //The ports bit position in the port
-        std::vector<AtomNetId>      pin_nets_;      //Net associated with each pin
+        std::vector<AtomPinId>  pin_ids_;           //Valid pin ids
+        std::vector<AtomPortId> pin_ports_;         //Type of each pin
+        std::vector<BitIndex>   pin_port_bits_;     //The ports bit position in the port
+        std::vector<AtomNetId>  pin_nets_;          //Net associated with each pin
+        std::vector<bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
         //Net data
         std::vector<AtomNetId>              net_ids_;   //Valid net ids
