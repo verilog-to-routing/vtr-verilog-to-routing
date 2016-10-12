@@ -630,6 +630,8 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
         //Do not remove such buffers
         return;
     }
+    //FIXME: overriding new net name with input name to be consistent with old netlist (avoids errors during transition period)
+    new_net_name = netlist.net_name(input_net);
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
 

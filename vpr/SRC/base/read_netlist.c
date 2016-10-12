@@ -208,8 +208,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	/* load mapping between external nets and all nets */
 	/* jluu TODO: Should use local variables here then assign to globals later, clean up later */
 	clb_to_vpack_net_mapping = (int *) vtr::malloc(ext_ncount * sizeof(int));
-	vpack_to_clb_net_mapping = (int *) vtr::malloc(
-			num_logical_nets * sizeof(int));
+	vpack_to_clb_net_mapping = (int *) vtr::malloc(num_logical_nets * sizeof(int));
 	for (i = 0; i < num_logical_nets; i++) {
 		vpack_to_clb_net_mapping[i] = OPEN;
 
@@ -999,10 +998,6 @@ void free_logical_blocks(void) {
 		while (port) {
 			if (!port->is_clock) {
 				free(logical_block[iblk].input_nets[i]);
-				if (logical_block[iblk].input_net_tnodes) {
-					if (logical_block[iblk].input_net_tnodes[i])
-						free(logical_block[iblk].input_net_tnodes[i]);
-				}
 				if (logical_block[iblk].input_pin_names != NULL && logical_block[iblk].input_pin_names[i] != NULL) {
 					for (int j = 0; j < port->size; j++) {
 						if (logical_block[iblk].input_pin_names[i][j] != NULL) {
@@ -1015,8 +1010,6 @@ void free_logical_blocks(void) {
 			}
 			port = port->next;
 		}
-		if (logical_block[iblk].input_net_tnodes)
-			free(logical_block[iblk].input_net_tnodes);
 		if (logical_block[iblk].input_pin_names != NULL) {
 			free(logical_block[iblk].input_pin_names);
 		}
@@ -1036,10 +1029,6 @@ void free_logical_blocks(void) {
 		i = 0;
 		while (port) {
 			free(logical_block[iblk].output_nets[i]);
-			if (logical_block[iblk].output_net_tnodes) {
-				if (logical_block[iblk].output_net_tnodes[i])
-					free(logical_block[iblk].output_net_tnodes[i]);
-			}
 			if (logical_block[iblk].output_pin_names != NULL && logical_block[iblk].output_pin_names[i] != NULL) {
 				for (int j = 0; j < port->size; j++) {
 					if (logical_block[iblk].output_pin_names[i][j] != NULL) {
@@ -1050,9 +1039,6 @@ void free_logical_blocks(void) {
 			}
 			i++;
 			port = port->next;
-		}
-		if (logical_block[iblk].output_net_tnodes) {
-			free(logical_block[iblk].output_net_tnodes);
 		}
 		free(logical_block[iblk].output_nets);
 		free(logical_block[iblk].name);

@@ -195,9 +195,9 @@ typedef struct s_logical_block {
 	t_pb* pb; /* pb primitive that this block is packed into */
 
 	/* timing information */
-	struct s_tnode ***input_net_tnodes; /* [0..num_input_ports-1][0..num_pins -1] correspnding input net tnode */
-	struct s_tnode ***output_net_tnodes; /* [0..num_output_ports-1][0..num_pins -1] correspnding output net tnode */
-	struct s_tnode *clock_net_tnode; /* correspnding clock net tnode */
+    //struct s_tnode ***input_net_tnodes; [> [0..num_input_ports-1][0..num_pins -1] correspnding input net tnode <]
+	//struct s_tnode ***output_net_tnodes; [> [0..num_output_ports-1][0..num_pins -1] correspnding output net tnode <]
+	//struct s_tnode *clock_net_tnode; [> correspnding clock net tnode <]
 
     vtr::t_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
 	vtr::t_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
@@ -326,6 +326,7 @@ typedef struct s_tnode {
 	float T_req; /* Required arrival time of the last input signal to this node 
 	 if the critical path is not to be lengthened. */
 	int block; /* logical block primitive which this tnode is part of */
+    AtomBlockId atom_block; /* Atom block associated with this tnode */
 
 #ifdef PATH_COUNTING
 	float forward_weight, backward_weight; /* Weightings of the importance of paths 
@@ -343,7 +344,7 @@ typedef struct s_tnode {
 	t_prepacked_tnode_data * prepacked_data;
 
 	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely
-											  disconnected to break a combinational loop */
+											     disconnected to break a combinational loop */
 } t_tnode;
 
 /* Other structures storing timing information */
