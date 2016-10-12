@@ -535,6 +535,7 @@ void find_pin_index_at_model_scope(
     //Total up the port widths
     //  Note that we do this on the model since the atom netlist doesn't include unused ports
     int pin_cnt = 0;
+    *pin_index = -1; //initialize
     const t_model* model = g_atom_nl.block_model(blk_id);
     const t_model_ports* port = (search_inputs) ? model->inputs : model->outputs;
     while(port) {
@@ -555,6 +556,8 @@ void find_pin_index_at_model_scope(
 
         port = port->next;
     }
+
+    VTR_ASSERT(*pin_index != -1);
 
     *total_pins = pin_cnt;
 }
