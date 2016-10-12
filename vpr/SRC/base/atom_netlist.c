@@ -415,6 +415,20 @@ vtr::Range<AtomNetlist::pin_iterator> AtomNetlist::net_sinks (const AtomNetId id
     return vtr::make_range(++net_pins_[size_t(id)].begin(), net_pins_[size_t(id)].end());
 }
 
+bool AtomNetlist::net_is_constant (const AtomNetId id) const {
+    VTR_ASSERT(valid_net_id(id));
+
+    //Look-up the driver
+    auto driver_pin_id = net_driver(id);
+    if(driver_pin_id) {
+        //Valid driver, see it is constant
+        return pin_is_constant(driver_pin_id);
+    }
+
+    //No valid driver so can't be const
+    return false;
+}
+
 /*
  *
  * Aggregates

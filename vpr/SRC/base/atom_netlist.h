@@ -467,7 +467,7 @@ class AtomNetlist {
         //Returns the block associated with the specified pin
         AtomBlockId pin_block       (const AtomPinId id) const;
 
-        //Returns true if the pin is a constant (i.e. it's value never changes)
+        //Returns true if the pin is a constant (i.e. its value never changes)
         bool        pin_is_constant (const AtomPinId id) const;
 
 
@@ -475,18 +475,21 @@ class AtomNetlist {
          * Nets
          */
         //Returns the name of the specified net
-        const std::string&          net_name    (const AtomNetId id) const; 
+        const std::string&          net_name        (const AtomNetId id) const; 
 
         //Returns a range consisting of all the pins in the net (driver and sinks)
         //The first element in the range is the driver (and may be invalid)
         //The remaining elements (potentially none) are the sinks
-        vtr::Range<pin_iterator>    net_pins    (const AtomNetId id) const;
+        vtr::Range<pin_iterator>    net_pins        (const AtomNetId id) const;
 
         //Returns the (potentially invalid) net driver pin
-        AtomPinId                   net_driver  (const AtomNetId id) const;
+        AtomPinId                   net_driver      (const AtomNetId id) const;
 
         //Returns a (potentially empty) range consisting of net's sink pins
-        vtr::Range<pin_iterator>    net_sinks   (const AtomNetId id) const;
+        vtr::Range<pin_iterator>    net_sinks       (const AtomNetId id) const;
+
+        //Returns true if the net is driven by a constant pin (i.e. its value never changes)
+        bool                        net_is_constant (const AtomNetId id) const;
 
         /*
          * Aggregates
