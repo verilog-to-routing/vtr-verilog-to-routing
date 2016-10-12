@@ -21,7 +21,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,11 +59,11 @@ int simplify_ast()
 	/* for loop support */
 	optimize_for_tree();
 	/* reduce parameters with their values if they have been set */
-	reduce_parameter();
+	//reduce_parameter();
 	/* simplify assignment expressions */
 	reduce_assignment_expression();
 	/* find multiply or divide operation that can be replaced with shift operation */
-	shift_operation();
+	//shift_operation();
 
 	//ast_node_t *top = find_top_module();
 
@@ -545,7 +545,7 @@ void change_to_number_node(ast_node_t *node, char *number)
 		}
 		index_string_pointer++;
 	}
-	
+
 	len = strlen(number);
 	if (index_string_pointer == len)
 	{
@@ -859,20 +859,20 @@ void reduce_enode_list()
 {
 	enode *temp;
 	int a;
-	
+
 	while(head != NULL && (head->type.data == 0) && (head->next->priority == 2) && (head->next->type.operation == '+')){
 		temp=head;
 		head = head->next->next;
 		head->pre = NULL;
-		
+
 		free(temp->next);
 		free(temp);
 	}
-	
+
 	if(head == NULL){
 		return;
 	}
-	
+
 	temp = head->next;
 	while (temp != NULL)
 	{
@@ -888,7 +888,7 @@ void reduce_enode_list()
 					temp->next->pre = temp->pre->pre;
 				}
 				free(temp->pre);
-				
+
 				enode *toBeDeleted = temp;
 				temp = temp->next;
 				free(toBeDeleted);
@@ -900,7 +900,7 @@ void reduce_enode_list()
 					temp->pre->type.operation = '+';
 				a = temp->type.data;
 				temp->type.data = -a;
-				
+
 				temp = temp->next;
 			} else {
 				temp = temp->next;
@@ -2114,8 +2114,3 @@ int check_index(ast_node_t *parent, ast_node_t *node)
 
 	return index;
 }
-
-
-
-
-
