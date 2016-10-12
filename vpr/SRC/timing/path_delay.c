@@ -159,8 +159,6 @@ clock_t timing_analysis_runtime = 0;
 
 static vtr::t_chunk tedge_ch = {NULL, 0, NULL};
 
-static vector<t_vnet> *timing_nets = NULL;
-
 static vector<size_t> f_num_timing_net_pins;
 
 static t_timing_stats * f_timing_stats = NULL; /* Critical path delay and worst-case slack per constraint. */
@@ -272,7 +270,6 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 				"in alloc_and_load_timing_graph: An old timing graph still exists.\n");
 	}
 
-	timing_nets = &g_clbs_nlist.net;
     f_num_timing_net_pins = init_timing_net_pins();
 
 	alloc_and_load_tnodes(timing_inf);
@@ -332,7 +329,6 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
 	lookup_tnode_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
 
-	timing_nets = &g_atoms_nlist.net;
     f_num_timing_net_pins = init_atom_timing_net_pins();
 
 	alloc_and_load_tnodes_from_prepacked_netlist(inter_cluster_net_delay);
@@ -2877,12 +2873,11 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
 	vtr::t_linked_int *critical_path_head, *critical_path_node;
 	FILE *fp;
-	int non_global_nets_on_crit_path, global_nets_on_crit_path;
+	int nets_on_crit_path;
 	int tnodes_on_crit_path, inode, iblk, inet;
 	e_tnode_type type;
 	float total_net_delay, total_logic_delay, Tdel;
 
-	vector<t_vnet> & tnets = *timing_nets; 
 	t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
 	critical_path_head = allocate_and_load_critical_path(timing_inf);
@@ -2890,8 +2885,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
 	fp = vtr::fopen(fname, "w");
 
-	non_global_nets_on_crit_path = 0;
-	global_nets_on_crit_path = 0;
+	nets_on_crit_path = 0;
 	tnodes_on_crit_path = 0;
 	total_net_delay = 0.;
 	total_logic_delay = 0.;
@@ -2905,10 +2899,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 		if (type == TN_CB_OPIN) {
 			get_tnode_block_and_output_net(inode, &iblk, &inet);
 
-			if (!tnets[inet].is_global)
-				non_global_nets_on_crit_path++;
-			else
-				global_nets_on_crit_path++;
+            nets_on_crit_path++;
 
 			total_net_delay += Tdel;
 		} else {
@@ -2918,14 +2909,13 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 		critical_path_node = critical_path_node->next;
 	}
 
-	fprintf(fp, "\nTnodes on critical path: %d  Non-global nets on critical path: %d."
-			"\n", tnodes_on_crit_path, non_global_nets_on_crit_path);
-	fprintf(fp, "Global nets on critical path: %d.\n", global_nets_on_crit_path);
+	fprintf(fp, "\nTnodes on critical path: %d  Nets on critical path: %d."
+			"\n", tnodes_on_crit_path, nets_on_crit_path);
 	fprintf(fp, "Total logic delay: %g (s)  Total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
 
-	vtr::printf_info("Nets on critical path: %d normal, %d global.\n",
-			non_global_nets_on_crit_path, global_nets_on_crit_path);
+	vtr::printf_info("Nets on critical path: %d normal.\n",
+			nets_on_crit_path);
 
 	vtr::printf_info("Total logic delay: %g (s), total net delay: %g (s)\n",
 			total_logic_delay, total_net_delay);
