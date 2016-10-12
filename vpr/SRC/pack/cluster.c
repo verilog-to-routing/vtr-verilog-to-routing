@@ -1592,6 +1592,12 @@ static void update_timing_gain_values(int inet,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, const t_slack * slacks) {
 
+    AtomNetId net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
+    VTR_ASSERT(net_id);
+    //Temporary work-around while converting to g_atom_nl
+    //TODO: clean-up
+    int slack_inet = size_t(net_id); //FIXME remove!
+
 	/*This function is called when the timing_gain values on the g_atoms_nlist.net*
 	 *inet requires updating.   */
 	float timinggain;
@@ -1613,11 +1619,11 @@ static void update_timing_gain_values(int inet,
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
+				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[slack_inet][ipin] 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[slack_inet][ipin]; 
 #else
 				/* Timing gain is the timing criticality. */
-				timinggain = slacks->timing_criticality[inet][ipin]; 
+				timinggain = slacks->timing_criticality[slack_inet][ipin]; 
 #endif
 				if(cur_pb->pb_stats->timinggain.count(iblk) == 0) {
 					cur_pb->pb_stats->timinggain[iblk] = 0;
@@ -1637,11 +1643,11 @@ static void update_timing_gain_values(int inet,
 			for (ipin = 1; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
+				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[slack_inet][ipin] 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[slack_inet][ipin]; 
 #else
 				/* Timing gain is the timing criticality. */
-				timinggain = slacks->timing_criticality[inet][ipin]; 
+				timinggain = slacks->timing_criticality[slack_inet][ipin]; 
 #endif
 				if(cur_pb->pb_stats->timinggain.count(newblk) == 0) {
 					cur_pb->pb_stats->timinggain[newblk] = 0;
@@ -1653,6 +1659,7 @@ static void update_timing_gain_values(int inet,
 		}
 	}
 }
+
 /*****************************************/
 static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 		int clustered_block, 
