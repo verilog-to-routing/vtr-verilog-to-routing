@@ -1496,7 +1496,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 	f_net_to_driver_tnode = (int*)vtr::malloc(g_atoms_nlist.net.size() * sizeof(int));
 	/*for (int i = 0; i < (int) g_atoms_nlist.net.size(); i++) {*/
     auto nets = g_atom_nl.nets();
-	for (int i = 0; i < num_timing_nets(); i++) {
+	for (size_t i = 0; i < num_timing_nets(); i++) {
         auto net_id = *(nets.begin() + i); //Ugly hack
         VTR_ASSERT(net_id);
 
@@ -1507,7 +1507,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
     }
 
     //Sanity check, every net should have a valid driver tnode
-	for (int i = 0; i < num_timing_nets(); i++) {
+	for (size_t i = 0; i < num_timing_nets(); i++) {
 		VTR_ASSERT(f_net_to_driver_tnode[i] != OPEN);
 	}
 }
@@ -2786,7 +2786,7 @@ static void update_slacks(t_slack * slacks, float criticality_denom,
 		num_edges = tnode[inode].num_edges;
 		tedge = tnode[inode].out_edges;
 
-        VTR_ASSERT_MSG(num_edges == num_timing_net_sinks(inet), "Number of tnode edges and net sinks do not match");
+        VTR_ASSERT_MSG(static_cast<size_t>(num_edges) == num_timing_net_sinks(inet), "Number of tnode edges and net sinks do not match");
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
 			to_node = tedge[iedge].to_node;
