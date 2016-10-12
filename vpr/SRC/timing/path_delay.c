@@ -3057,39 +3057,6 @@ void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr) {
 	*inet_ptr = inet;
 }
 
-void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
-		float constant_net_delay_value) {
-
-	/* Does a timing analysis (simple) where it assumes that each net has a      *
-	 * constant delay value.  Used only when operation == TIMING_ANALYSIS_ONLY.  */
-
-	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-	t_slack * slacks = NULL;
-	float **net_delay = NULL;
-	
-	slacks = alloc_and_load_timing_graph(timing_inf);
-	net_delay = alloc_net_delay(&net_delay_ch, *timing_nets, (*timing_nets).size()); 
-	load_constant_net_delay(net_delay, constant_net_delay_value, *timing_nets, (*timing_nets).size());
-	load_timing_graph_net_delays(net_delay);
-	
-	do_timing_analysis(slacks, timing_inf, false, true);
-
-	if (getEchoEnabled()) {
-		if(isEchoFileEnabled(E_ECHO_CRITICAL_PATH))
-			print_critical_path("critical_path.echo", timing_inf);
-		if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
-			print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
-		if(isEchoFileEnabled(E_ECHO_SLACK))
-			print_slack(slacks->slack, true, getEchoFileName(E_ECHO_SLACK));
-		if(isEchoFileEnabled(E_ECHO_NET_DELAY))
-			print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
-	}
-
-	print_timing_stats();
-
-	free_timing_graph(slacks);
-	free_net_delay(net_delay, &net_delay_ch);
-}
 #ifndef PATH_COUNTING
 static void update_normalized_costs(float criticality_denom, long max_critical_input_paths,
     long max_critical_output_paths, const t_timing_inf &timing_inf) {

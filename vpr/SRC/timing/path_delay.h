@@ -68,9 +68,6 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf);
 
 void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr);
 
-void do_constant_net_delay_timing_analysis(t_timing_inf timing_inf,
-		float constant_net_delay_value);
-
 void print_timing_graph_as_blif (const char *fname, t_model *models);
 
 int **alloc_and_load_tnode_lookup_from_pin_id();
