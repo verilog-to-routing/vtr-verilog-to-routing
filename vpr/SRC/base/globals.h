@@ -98,15 +98,8 @@ extern struct s_subckt *subckt;
 /* New user netlist information */
 extern t_netlist g_atoms_nlist;
 
-
-
 /* primiary inputs removed from circuit */
 extern vtr::t_linked_vptr *circuit_p_io_removed;
-
-/* Relationship between external-to-complex block nets and internal-to-complex block nets */
-extern int *clb_to_vpack_net_mapping; /* [0..num_clb_nets - 1] */
-extern int *vpack_to_clb_net_mapping; /* [0..num_vpack_nets - 1] */
-
 
 /*******************************************************************
  Routing related globals

@@ -833,12 +833,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 
 void free_circuit() {
 
-	/* Free netlist reference tables for nets */
-	free(clb_to_vpack_net_mapping);
-	free(vpack_to_clb_net_mapping);
-	clb_to_vpack_net_mapping = NULL;
-	vpack_to_clb_net_mapping = NULL;
-
 	/* Free logical blocks and nets */
 	if (logical_block != NULL) {
 		free_logical_blocks();

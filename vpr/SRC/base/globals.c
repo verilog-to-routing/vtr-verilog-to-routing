@@ -41,9 +41,6 @@ struct s_block *block = NULL;
 t_netlist g_atoms_nlist;
 t_netlist g_clbs_nlist;
 
-int *clb_to_vpack_net_mapping = NULL; /* [0..num_clb_nets - 1] */
-int *vpack_to_clb_net_mapping = NULL; /* [0..num_vpack_nets - 1] */
-
 /* This identifies the t_type_ptr of an IO block */
 int num_types = 0;
 struct s_type_descriptor *type_descriptors = NULL;
