@@ -59,7 +59,7 @@ static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 	*column += len + 1;
 }
 
-static void print_net_name(int inet, int *column, FILE * fpout) {
+static void print_net_name(AtomNetId net_id, int *column, FILE * fpout) {
 
 	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
 	 * length of a line to LINELENGTH characters by using \ to continue *
@@ -70,13 +70,13 @@ static void print_net_name(int inet, int *column, FILE * fpout) {
 
 	char *str_ptr;
 
-	if (inet == OPEN) {
+	if (!net_id) {
 		str_ptr = new char [6];
 		sprintf(str_ptr, "open");
 	}
 	else {
-		str_ptr = new char[strlen(g_atoms_nlist.net[inet].name) + 7];
-		sprintf(str_ptr, "__|e%s", g_atoms_nlist.net[inet].name);
+		str_ptr = new char[strlen(g_atom_nl.net_name(net_id).c_str()) + 7];
+		sprintf(str_ptr, "__|e%s", g_atom_nl.net_name(net_id).c_str());
 	}
 
 	print_string(str_ptr, column, fpout);
@@ -371,7 +371,7 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 
 
 	for(int i = 0; i < max_pb_graph_pin; i++) {
-		if(pb_route[i].atom_net_idx != OPEN) {
+		if(pb_route[i].atom_net_id) {
 			int column = 0;
 			pb_graph_node_of_pin = pb_graph_pin_lookup[i]->parent_node;
 
@@ -380,13 +380,13 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 				/* Logic block input pin */
 				VTR_ASSERT(pb_graph_node_of_pin->parent_pb_graph_node == NULL);
 				fprintf(fpout, ".names ");
-				print_net_name(pb_route[i].atom_net_idx, &column, fpout);
+				print_net_name(pb_route[i].atom_net_id, &column, fpout);
 				fprintf(fpout, " clb_%d_rr_node_%d\n", iclb, i);
 				fprintf(fpout, "1 1\n\n");
 			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 && pb_graph_node_of_pin->parent_pb_graph_node == NULL) {
 				/* Logic block output pin */
 				fprintf(fpout, ".names clb_%d_rr_node_%d ", iclb, pb_route[i].prev_pb_pin_id);
-				print_net_name(pb_route[i].atom_net_idx, &column, fpout);
+				print_net_name(pb_route[i].atom_net_id, &column, fpout);
 				fprintf(fpout, "\n");
 				fprintf(fpout, "1 1\n\n");
 			} else if (pb_graph_node_of_pin->pb_type->num_modes != 0 || pb_graph_pin_lookup[i]->port->type != OUT_PORT) {

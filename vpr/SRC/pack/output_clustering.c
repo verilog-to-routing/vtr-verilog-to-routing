@@ -16,6 +16,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "pack_types.h"
 #include "cluster_router.h"
 #include "output_clustering.h"
@@ -56,7 +57,7 @@ static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * 
 	*column += len + 1;
 }
 
-static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
+static void print_net_name(AtomNetId net_id, int *column, int num_tabs, FILE * fpout) {
 
 	/* This routine prints out the g_atoms_nlist.net name (or open).  
      * net_num is the index of the g_atoms_nlist.net to be printed, while     *
@@ -66,10 +67,10 @@ static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
 
 	const char *str_ptr;
 
-	if (inet == OPEN)
+	if (!net_id)
 		str_ptr = "open";
 	else
-		str_ptr = g_atoms_nlist.net[inet].name;
+		str_ptr = g_atom_nl.net_name(net_id).c_str();
 
 	print_string(str_ptr, column, num_tabs, fpout);
 }
@@ -82,7 +83,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 	int len;
 
 
-	if (pb_route[inode].atom_net_idx == OPEN) {
+	if (!pb_route[inode].atom_net_id) {
 		print_string("open", column, num_tabs, fpout);
 	} else {
 		str_ptr = NULL;
@@ -94,7 +95,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 			VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == NULL || 
 					(cur_pin->parent_node->pb_type->num_modes == 0 && cur_pin->port->type == OUT_PORT)
 					);
-			print_net_name(pb_route[inode].atom_net_idx, column, num_tabs, fpout);
+			print_net_name(pb_route[inode].atom_net_id, column, num_tabs, fpout);
 		} else {
 			t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
 			t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
@@ -172,7 +173,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 					node_index =
 							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
 					if (pb_type->num_modes > 0
-						&& pb_route[node_index].atom_net_idx != OPEN) {
+						&& pb_route[node_index].atom_net_id) {
 						prev_node = pb_route[node_index].prev_pb_pin_id;
 						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
@@ -279,7 +280,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 									m++) {
 								node_index =
 										pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (pb_route[node_index].atom_net_idx != OPEN) {
+								if (pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
 								}
@@ -338,7 +339,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 				node_index =
 						pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == NULL) {
-					print_net_name(pb_route[node_index].atom_net_idx, &column,
+					print_net_name(pb_route[node_index].atom_net_id, &column,
 							tab_depth, fpout);
 				} else {
 					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route,
@@ -387,7 +388,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 				node_index =
 						pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == NULL) {
-					print_net_name(pb_route[node_index].atom_net_idx, &column,
+					print_net_name(pb_route[node_index].atom_net_id, &column,
 							tab_depth, fpout);
 				} else {
 					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route,
@@ -419,7 +420,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 									m++) {
 								node_index =
 										pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (pb_route[node_index].atom_net_idx != OPEN) {
+								if (pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
 								}

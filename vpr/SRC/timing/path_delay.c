@@ -780,7 +780,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		num_nodes_in_block = 0;
 		int itype = block[i].type->index;
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (block[i].pb_route[j].atom_net_idx != OPEN) {
+			if (block[i].pb_route[j].atom_net_id) {
 				if (intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_INPAD
 					|| intra_lb_pb_pin_lookup[itype][j]->type
 								== PB_PIN_OUTPAD
@@ -802,7 +802,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	for (i = 0; i < num_blocks; i++) {
 		int itype = block[i].type->index;
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (block[i].pb_route[j].atom_net_idx != OPEN) {
+			if (block[i].pb_route[j].atom_net_id) {
 				VTR_ASSERT(tnode[inode].pb_graph_pin == NULL);
 				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode);
 			}
@@ -874,15 +874,15 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				VTR_ASSERT(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
 				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
 				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
-					VTR_ASSERT(intra_lb_route[dnode].atom_net_idx == intra_lb_route[i_pin_id].atom_net_idx);
+					VTR_ASSERT(intra_lb_route[dnode].atom_net_id == intra_lb_route[i_pin_id].atom_net_id);
 
 					tnode[i].out_edges[count].Tdel =
 							ipb_graph_pin->output_edges[j]->delay_max;
 					tnode[i].out_edges[count].to_node = lookup_tnode_from_pin_id[iblock][dnode];
 					VTR_ASSERT(tnode[i].out_edges[count].to_node != OPEN);
 
-					if (g_atoms_nlist.net[intra_lb_route[i_pin_id].atom_net_idx].is_const_gen
-							== true && tnode[i].type == TN_PRIMITIVE_OPIN) {
+                    AtomNetId net_id = intra_lb_route[i_pin_id].atom_net_id;
+					if (g_atom_nl.net_is_constant(net_id) && tnode[i].type == TN_PRIMITIVE_OPIN) {
 						tnode[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						tnode[i].type = TN_CONSTANT_GEN_SOURCE;
 					}
@@ -910,10 +910,9 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 				for (j = 0; j < tnode[i].num_edges; j++) {
 					/* Some outpins aren't used, ignore these.  Only consider output pins that are used */
-					if (intra_lb_route[ipb_graph_pin->pin_timing[j]->pin_count_in_cluster].atom_net_idx
-							!= OPEN) {
-						tnode[i].out_edges[k].Tdel =
-								ipb_graph_pin->pin_timing_del_max[j];
+                    int cluster_pin_idx = ipb_graph_pin->pin_timing[j]->pin_count_in_cluster;
+					if (intra_lb_route[cluster_pin_idx].atom_net_id) {
+						tnode[i].out_edges[k].Tdel = ipb_graph_pin->pin_timing_del_max[j];
 						tnode[i].out_edges[k].to_node = lookup_tnode_from_pin_id[tnode[i].block][ipb_graph_pin->pin_timing[j]->pin_count_in_cluster];
 						VTR_ASSERT(tnode[i].out_edges[k].to_node != OPEN);
 						k++;
@@ -1341,23 +1340,26 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                         auto sink_port_id = g_atom_nl.find_port(sink_blk_id, to_pb_graph_pin->port->model_port->name);
                                         VTR_ASSERT(sink_port_id);
                                         auto sink_pin_id = g_atom_nl.port_pin(sink_port_id, to_pb_graph_pin->pin_number);
+                                        if(sink_pin_id) {
+                                            //Pin is in use
 
-                                        int to_node = g_atom_map.atom_pin_tnode(sink_pin_id);
-                                        VTR_ASSERT(to_node != OPEN);
+                                            int to_node = g_atom_map.atom_pin_tnode(sink_pin_id);
+                                            VTR_ASSERT(to_node != OPEN);
 
-                                        //Skip pins with no connections
-                                        if(!sink_pin_id) {
-                                            continue;
+                                            //Skip pins with no connections
+                                            if(!sink_pin_id) {
+                                                continue;
+                                            }
+
+                                            //Mark the delay
+                                            tnode[inode].out_edges[count].Tdel = from_pb_graph_pin->pin_timing_del_max[m];
+
+                                            VTR_ASSERT(tnode[to_node].type == TN_PRIMITIVE_OPIN);
+
+                                            tnode[inode].out_edges[count].to_node = to_node;
+
+                                            count++;
                                         }
-
-                                        //Mark the delay
-                                        tnode[inode].out_edges[count].Tdel = from_pb_graph_pin->pin_timing_del_max[m];
-
-                                        VTR_ASSERT(tnode[to_node].type == TN_PRIMITIVE_OPIN);
-
-                                        tnode[inode].out_edges[count].to_node = to_node;
-
-                                        count++;
                                     }
                                     //Mark the number of used edges (note that this may be less than the number allocated, since
                                     //some allocated edges may correspond to pins which were not connected)

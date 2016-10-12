@@ -164,7 +164,7 @@ typedef struct s_pb {
 
 /* Representation of intra-logic block routing */
 struct t_pb_route {
-	int atom_net_idx;	/* which net in the atomic netlist uses this pin */
+	int atom_net_idx;	/* which net in the atom netlist uses this pin */
     AtomNetId atom_net_id;
 	int prev_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
 

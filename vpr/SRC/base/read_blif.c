@@ -626,6 +626,11 @@ static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_ha
         }
 
         //Sweep unused logic/nets/inputs/outputs
+        //TODO: sweep iteratively, for now sweep only inputs/nets to match old behavior
+        if(sweep_hanging_nets_and_inputs) {
+            sweep_nets(netlist); 
+            sweep_inputs(netlist); 
+        }
         /*sweep_iterative(netlist, false);*/
     }
 
