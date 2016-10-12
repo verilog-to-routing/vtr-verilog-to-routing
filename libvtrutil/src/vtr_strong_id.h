@@ -141,6 +141,9 @@
  *
  *      my_vec[size_t(my_id)]; //Access the third element via explicit conversion
  */
+#include <type_traits> //for std::is_integral
+#include <cstddef> //for std::size_t
+
 namespace vtr {
 
 //Forward delcare the class (needed for operator declarations)
