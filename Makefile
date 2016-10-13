@@ -1,59 +1,64 @@
-#####################################################################
-# Makefile to build CAD tools in Verilog-to-Routing (VTR) Framework #
-#####################################################################
+#This is a simple wrapper hiding cmake from non-expert end users.
+#
+# It supports the targets:
+#   'make' 		 	 - builds everything (all libaries/executables)
+#   'make clean' 	 - removes generated build objects/libraries/executables etc.
+# 	'make distclean' - will clean everything including the cmake generated build files
+#
+# All other targets (e.g. 'make vpr') are passed to the cmake generated makefile
+# and processed according to the CMakeLists.txt.
+#
+# To perform a debug build use:
+#   'make BUILD_TYPE=debug'
 
-SUBDIRS = abc_with_bb_support ODIN_II vpr ace2
+#Default build type
+# Possible values:
+#    release
+#    debug
+BUILD_TYPE = release
 
-all: notifications subdirs
+#Allows users to pass parameters to cmake
+#  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
+override CMAKE_PARAMS += -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
-subdirs: $(SUBDIRS)
+#Suppress makefile output (e.g. entering/leaving directories)
+MAKEFLAGS := -s 
 
-$(SUBDIRS):
-	@ $(MAKE) -C $@ --no-print-directory VERBOSITY=0
-	
-notifications: 
-# checks if required packages are installed, and notifies the user if not
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep exuberant-ctags -c >>/dev/null; then echo "\n\n\n\n***************************************************************\n* Required package 'ctags' not found.                         *\n* Type 'make packages' to install all packages, or            *\n* 'sudo apt-get install exuberant-ctags' to install manually. *\n***************************************************************\n\n\n\n"; fi; fi
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep bison -c >>/dev/null; then echo "\n\n\n\n*****************************************************\n* Required package 'bison' not found.               *\n* Type 'make packages' to install all packages, or  *\n* 'sudo apt-get install bison' to install manually. *\n*****************************************************\n\n\n\n"; fi; fi
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep flex -c >>/dev/null; then echo "\n\n\n\n*****************************************************\n* Required package 'flex' not found.                *\n* Type 'make packages' to install all packages, or  *\n* 'sudo apt-get install flex' to install manually.  *\n*****************************************************\n\n\n\n"; fi; fi
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep g++ -c >>/dev/null; then echo "\n\n\n\n*****************************************************\n* Required package 'g++' not found.                 * \n* Type 'make packages' to install all packages, or  *\n* 'sudo apt-get install g++' to install manually.   *\n*****************************************************\n\n\n\n"; fi; fi
+BUILD_DIR=./build
+GENERATED_MAKEFILE := $(BUILD_DIR)/Makefile
 
-packages:
-# checks if required packages are installed, and installs them if not
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep exuberant-ctags -c >>/dev/null; then sudo apt-get install exuberant-ctags; fi; fi
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep bison -c >>/dev/null; then sudo apt-get install bison; fi; fi
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep flex -c >>/dev/null; then sudo apt-get install flex; fi; fi
-	@ if cat /etc/issue | grep Ubuntu -c >>/dev/null; then if ! dpkg -l | grep g++ -c >>/dev/null; then sudo apt-get install g++; fi; fi
-	@ cd vpr && make packages
+#Check for the cmake exectuable
+CMAKE := $(shell command -v cmake 2> /dev/null)
 
-ODIN_II: libarchfpga libvtrutil
 
-vpr: libarchfpga libsdcparse libvtrutil
+#All targets in this make file are always out of date.
+# This ensures that any make target requests are forwarded to
+# the generated makefile
+.PHONY: all distclean $(GENERATED_MAKEFILE) $(MAKECMDGOALS)
 
-libarchfpga: liblog libvtrutil libpugixml
+#Build everything
+all: $(GENERATED_MAKEFILE)
+	@+$(MAKE) -C $(BUILD_DIR)
 
-ace2: abc_with_bb_support
+#Call the generated Makefile's clean, and then remove all cmake generated files
+distclean: $(GENERATED_MAKEFILE)
+	@ echo "Cleaning build..."
+	@+$(MAKE) -C $(BUILD_DIR) clean 
+	@ echo "Removing build system files.."
+	@ rm -rf $(BUILD_DIR)
+	@ rm -rf CMakeFiles CMakeCache.txt #In case 'cmake .' was run in the source directory
 
-clean:
-	@ cd ODIN_II && make clean
-	@ cd abc_with_bb_support && make clean
-	@ cd ace2 && make clean
-	@ cd vpr && make clean
-	@ cd libarchfpga && make clean
-	@ cd liblog && make clean
-	@ cd libpugixml && make clean
-	@ cd libsdcparse && make clean
-	@ cd libvtrutil && make clean
+#Call cmake to generate the main Makefile
+$(GENERATED_MAKEFILE):
+ifndef CMAKE
+	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+endif
+	@ mkdir -p $(BUILD_DIR)
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
 
-clean_vpr:
-	@ cd vpr && make clean
-
-get_titan_benchmarks:
-	@ echo "Warning: A typical Titan release is a ~1GB download, and uncompresses to ~10GB."
-	@ echo "Starting download in 15 seconds..."
-	@ sleep 15
-	@ ./vtr_flow/scripts/download_titan.py --vtr_flow_dir ./vtr_flow
-	@ echo "Titan architectures: vtr_flow/arch/titan"
-	@ echo "Titan benchmarks: vtr_flow/benchmarks/titan_blif"
-
-.PHONY: packages subdirs $(SUBDIRS)
+#Forward any targets that are not named 'distclean' to the generated Makefile
+ifeq ($(findstring distclean,$(MAKECMDGOALS)),)
+$(MAKECMDGOALS): $(GENERATED_MAKEFILE)
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+endif

@@ -19,6 +19,12 @@ Download
 ========
 For most users of VTR (rather than active developers) you should download the latest packaged (and regression tested) version of VTR from [here](https://verilogtorouting.org/download).
 
+Building
+========
+On unix-like systems run `make` from the root directory.
+
+For more details see [here](BUILDING.md).
+
 Documentation
 =============
 VTR's full documentation is available [here](https://docs.verilogtorouting.org).
