@@ -24,7 +24,7 @@ The options most people will be interested in are:
 * :option:`-nodisp` (turn off graphics).
 
 In general for the other options the defaults are fine, and only people looking at how different CAD algorithms perform will try many of them.
-To understand what the more esoteric placer and router options actually do, see :cite:`betz_arch_cad` or download :cite:`betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,marquardt_timing_driven_placement` from the author’s `web page <http://www.eecg.toronto.edu/~vaughn>`.
+To understand what the more esoteric placer and router options actually do, see :cite:`betz_arch_cad` or download :cite:`betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,marquardt_timing_driven_placement` from the author’s `web page <http://www.eecg.toronto.edu/~vaughn>`_.
 
 In the following text, values in angle brackets e.g. ``<int>`` ``<float>`` ``<string>`` ``<file>``, should be replaced by the appropriate number, string, or file path.
 Values in curly braces separated by vertical bars, e.g. ``{on | off}``, indicate all the permissible choices for an option.
