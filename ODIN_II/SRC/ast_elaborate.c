@@ -62,7 +62,7 @@ int simplify_ast()
 	/* simplify assignment expressions */
 	reduce_assignment_expression();
 	/* find multiply or divide operation that can be replaced with shift operation */
-	//shift_operation();
+	shift_operation();
 
 	//ast_node_t *top = find_top_module();
 
@@ -2009,61 +2009,9 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag, int modu
 		}
 		else if (flag == 3) // divide
 			parent->types.operation.op = SR;
-		if (flag == 1 || flag == 2) // multiply
-		change_bit_size(parent->children[0], module_num, power);
 	}
 }
 
-/*---------------------------------------------------------------------------
- * (function: change_bit_size)
- * enlarge the bit size of inputs
- *-------------------------------------------------------------------------*/
-void change_bit_size(ast_node_t *node, int module_num, long long size)
-{
-	ast_node_t *top;
-	char *name;
-	top= ast_modules[module_num];
-	name = node->types.identifier;
-	search_var_declare_list(top, name, size);
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: search_var_declare_list)
- * find the variable in var_declare_list and change its input bit size
- *-------------------------------------------------------------------------*/
-void search_var_declare_list(ast_node_t *node, char *name, long long size)
-{
-	int i;
-	long long value;
-	char num[1024] = {0};
-	if (node == NULL)
-		return;
-
-	if (node->type == VAR_DECLARE)
-	{
-		if (node->children[0] != NULL && node->children[0]->type == IDENTIFIERS)
-		{
-			if (strcmp(node->children[0]->types.identifier, name) == 0)
-			{
-				if (node->children[1] != NULL)
-				{
-					value = node->children[1]->types.number.value + size;
-					sprintf(num, "%lld", value);
-					change_to_number_node(node->children[1], num);
-				}
-			}
-		}
-
-	}
-
-	else if (node->num_children != 0)
-	{
-		for (i = 0; i < node->num_children; i++)
-			search_var_declare_list(node->children[i], name, size);
-	}
-
-}
 
 /*---------------------------------------------------------------------------
  * (function: check_intermediate_variable)
