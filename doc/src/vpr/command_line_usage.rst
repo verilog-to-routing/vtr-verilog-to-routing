@@ -520,7 +520,7 @@ The following options are used to enable power estimation in VPR.
 .. option:: --tech_properties <file>
 
     XML File containing properties of the CMOS technology (transistor capacitances, leakage currents, etc).  
-    These can be found at ``<vtr_installation>/vtr_flow/tech/``, or can be created for a user-provided SPICE technology (see :ref:`power_estimation`).
+    These can be found at ``$VTR_ROOT/vtr_flow/tech/``, or can be created for a user-provided SPICE technology (see :ref:`power_estimation`).
 
 .. option:: --activity_file <file>
 
