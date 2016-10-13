@@ -209,7 +209,7 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
 
 static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, int **lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping);
 
-static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping);
+static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping);
 
 static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id);
 
@@ -219,13 +219,13 @@ static inline bool has_valid_T_arr(int inode);
 
 static inline bool has_valid_T_req(int inode);
 
-static int find_clock(char * net_name);
+static int find_clock(const char * net_name);
 
-static int find_input(char * net_name);
+static int find_input(const char * net_name);
 
-static int find_output(char * net_name);
+static int find_output(const char * net_name);
 
-static int find_cf_constraint(char * source_clock_name, char * sink_ff_name);
+static int find_cf_constraint(const char * source_clock_name, const char * sink_ff_name);
 
 static void propagate_clock_domain_and_skew(int inode);
 
@@ -1489,8 +1489,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
     //Build the net to driver look-up
     //  TODO: convert to use net_id directly
-	f_net_to_driver_tnode = (int*)vtr::malloc(g_atoms_nlist.net.size() * sizeof(int));
-	/*for (int i = 0; i < (int) g_atoms_nlist.net.size(); i++) {*/
+	f_net_to_driver_tnode = (int*)vtr::malloc(num_timing_nets() * sizeof(int));
     auto nets = g_atom_nl.nets();
 	for (size_t i = 0; i < num_timing_nets(); i++) {
         auto net_id = *(nets.begin() + i); //Ugly hack
@@ -2217,7 +2216,7 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 							float constraint;
 							if (g_sdc->num_cf_constraints > 0) {
 								char *source_domain_name = g_sdc->constrained_clocks[source_clock_domain].name;
-								char *sink_register_name = find_tnode_net_name(inode, is_prepacked, pin_id_to_pb_mapping);
+								const char *sink_register_name = find_tnode_net_name(inode, is_prepacked, pin_id_to_pb_mapping);
 								int icf = find_cf_constraint(source_domain_name, sink_register_name);
 								if (icf != DO_NOT_ANALYSE) {
 									constraint = g_sdc->cf_constraints[icf].constraint;
@@ -2463,9 +2462,12 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 				if (!(tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK)) {
 					if(is_prepacked) {
+                        AtomPinId pin_id = g_atom_map.tnode_atom_pin(inode);
+                        VTR_ASSERT(pin_id);
+                        AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
 						vtr::printf_warning(__FILE__, __LINE__, 
 								"Pin on block %s.%s[%d] not used\n", 
-								logical_block[tnode[inode].block].name, 
+                                g_atom_nl.block_name(blk_id).c_str(),
 								tnode[inode].prepacked_data->model_port_ptr->name, 
 								tnode[inode].prepacked_data->model_pin);
 					}
@@ -2487,7 +2489,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 				if (g_sdc->num_cf_constraints > 0) {
 					char *source_domain_name = g_sdc->constrained_clocks[source_clock_domain].name;
-					char *sink_register_name = find_tnode_net_name(inode, is_prepacked, pin_id_to_pb_mapping);
+					const char *sink_register_name = find_tnode_net_name(inode, is_prepacked, pin_id_to_pb_mapping);
 					int icf = find_cf_constraint(source_domain_name, sink_register_name);
 					if (icf != DO_NOT_ANALYSE) {
 						constraint = g_sdc->cf_constraints[icf].constraint;
@@ -3095,7 +3097,7 @@ tnodes.  Finds fanout of each clock domain, including virtual (external) clocks.
 Marks unconstrained I/Os with a dummy clock domain (-1). */
 
 	int i, iclock, inode, num_at_level, clock_index, input_index, output_index;
-	char * net_name;
+	const char * net_name;
 	t_tnode * clock_node;
 
 	/* Wipe fanout of each clock domain in g_sdc->constrained_clocks. */
@@ -3211,41 +3213,49 @@ static void propagate_clock_domain_and_skew(int inode) {
 	}
 }
 
-static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping) {
+static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
-	int logic_block; /* Name chosen not to conflict with the array logical_block */
 	t_pb_graph_pin * pb_graph_pin;
 
-	logic_block = tnode[inode].block;
+
 	if (is_prepacked) {
+        //We only store pin mappings for tnode's which correspond to netlist pins,
+        //so we need to convert sources/sinks to their relevant pin tnode's before
+        //looking up the netlist pin/net
+        int inode_pin = OPEN;
+        if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE) {
+            VTR_ASSERT(tnode[inode].num_edges == 1);
+            inode_pin = tnode[inode].out_edges[0].to_node;
+        } else if (tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK) {
+            inode_pin = inode - 1;
+            VTR_ASSERT(tnode[inode_pin].out_edges[0].to_node == inode);
+        } else {
+            inode_pin = inode;
+        }
+        VTR_ASSERT(inode_pin != OPEN);
+
+        AtomPinId pin_id = g_atom_map.tnode_atom_pin(inode_pin);
+        VTR_ASSERT(pin_id);
+
         if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_INPAD_OPIN ||
            tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_OUTPAD_IPIN) {
+            AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
+
             //For input/input pads the net name is the same as the block name
-            return logical_block[logic_block].name;
+            return g_atom_nl.block_name(blk_id).c_str();
         } else {
-            //Otherwise we need to look it up via the extra prepacked data
-            VTR_ASSERT(tnode[inode].prepacked_data);
+            AtomNetId net_id = g_atom_nl.pin_net(pin_id);
 
-            int iport = tnode[inode].prepacked_data->model_port;
-            int ipin = tnode[inode].prepacked_data->model_pin;
-            int inet;
-
-            if(tnode[inode].prepacked_data->model_port_ptr->dir == IN_PORT) {
-                inet = logical_block[logic_block].input_nets[iport][ipin];
-            } else {
-                VTR_ASSERT(tnode[inode].prepacked_data->model_port_ptr->dir == OUT_PORT);
-                inet = logical_block[logic_block].output_nets[iport][ipin];
-            }
-
-            return g_atoms_nlist.net[inet].name;
+            return g_atom_nl.net_name(net_id).c_str();
         }
 	} else {
+        int iblock = tnode[inode].block;
         if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_INPAD_OPIN ||
            tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_OUTPAD_IPIN) {
             //For input/input pads the net name is the same as the block name
             pb_graph_pin = tnode[inode].pb_graph_pin;
-			return pin_id_to_pb_mapping[logic_block][pb_graph_pin->pin_count_in_cluster]->name;
+			return pin_id_to_pb_mapping[iblock][pb_graph_pin->pin_count_in_cluster]->name;
         } else {
             //We need to find the TN_CB_OPIN/TN_CB_IPIN that this node drives, so that we can look up
             //the net name in the global clb netlist
@@ -3272,13 +3282,11 @@ static char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_t
 static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id) {
 	/* Finds the TN_FF_CLOCK tnode on the same flipflop as an TN_FF_SOURCE or TN_FF_SINK tnode. */
 	
-	int logic_block; /* Name chosen not to conflict with the array logical_block */
 	t_tnode * ff_clock_tnode;
 	int ff_tnode;
 	t_pb_graph_node * parent_pb_graph_node;
 	t_pb_graph_pin * ff_source_or_sink_pb_graph_pin, * clock_pb_graph_pin;
 
-	logic_block = tnode[inode].block;
 	if (is_prepacked) {
         //TODO: handle multiple clocks
         
@@ -3322,13 +3330,14 @@ static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_
         ff_clock_tnode = &tnode[i_ff_clock];
 
 	} else {
+        int iblock = tnode[inode].block;
 		ff_source_or_sink_pb_graph_pin = tnode[inode].pb_graph_pin;
 		parent_pb_graph_node = ff_source_or_sink_pb_graph_pin->parent_node;
 		/* Make sure there's only one clock port and only one clock pin in that port */
 		VTR_ASSERT(parent_pb_graph_node->num_clock_ports == 1);
 		VTR_ASSERT(parent_pb_graph_node->num_clock_pins[0] == 1);
 		clock_pb_graph_pin = &parent_pb_graph_node->clock_pins[0][0];
-		ff_tnode = lookup_tnode_from_pin_id[logic_block][clock_pb_graph_pin->pin_count_in_cluster];
+		ff_tnode = lookup_tnode_from_pin_id[iblock][clock_pb_graph_pin->pin_count_in_cluster];
 		VTR_ASSERT(ff_tnode != OPEN);
 		ff_clock_tnode = &tnode[ff_tnode];
 	}
@@ -3337,7 +3346,7 @@ static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_
 	return ff_clock_tnode;
 }
 
-static int find_clock(char * net_name) {
+static int find_clock(const char * net_name) {
 /* Given a string net_name, find whether it's the name of a clock in the array g_sdc->constrained_clocks.  *
  * if it is, return the clock's index in g_sdc->constrained_clocks; if it's not, return -1. */
 	int index;
@@ -3349,7 +3358,7 @@ static int find_clock(char * net_name) {
 	return -1;
 }
 
-static int find_input(char * net_name) {
+static int find_input(const char * net_name) {
 /* Given a string net_name, find whether it's the name of a constrained input in the array g_sdc->constrained_inputs.  *
  * if it is, return its index in g_sdc->constrained_inputs; if it's not, return -1. */
 	int index;
@@ -3361,7 +3370,7 @@ static int find_input(char * net_name) {
 	return -1;
 }
 
-static int find_output(char * net_name) {
+static int find_output(const char * net_name) {
 /* Given a string net_name, find whether it's the name of a constrained output in the array g_sdc->constrained_outputs.  *
  * if it is, return its index in g_sdc->constrained_outputs; if it's not, return -1. */
 	int index;
@@ -3373,7 +3382,7 @@ static int find_output(char * net_name) {
 	return -1;
 }
 
-static int find_cf_constraint(char * source_clock_name, char * sink_ff_name) {
+static int find_cf_constraint(const char * source_clock_name, const char * sink_ff_name) {
 	/* Given a source clock domain and a sink flip-flop, find out if there's an override constraint between them.
 	If there is, return the index in g_sdc->cf_constraints; if there is not, return -1. */
 	int icf, isource, isink;
