@@ -15,4 +15,12 @@ target_link_libraries(ace
                         ${CMAKE_DL_LIBS}
                         )
 
+#ACE includes some ABC headers which cause warnings - we suppress them here
+#TODO: check for flag support portably
+set(ACE_SUPPRESS_FLAGS 
+        -Wno-pointer-to-int-cast 
+        -Wno-int-to-pointer-cast 
+        )
+target_compile_options(ace PRIVATE ${ACE_SUPPRESS_FLAGS})
+
 install(TARGETS ace DESTINATION bin)

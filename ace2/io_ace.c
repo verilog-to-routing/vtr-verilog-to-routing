@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <assert.h>
+
 
 #include "ace.h"
 #include "io_ace.h"
@@ -250,11 +252,13 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 			double static_prob, switch_prob;
 			Abc_Obj_t * pi_obj_ptr;
 			int pi_obj_id;
+            char* res;
 
 			printf("Reading activity file...\n");
 
 			// Read real PIs activity values from file
-			fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+			res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+            assert(res);
 			while (!feof(in_file_desc)) {
 				sscanf(line, "%s %lf %lf\n", pi_name, &static_prob,
 						&switch_prob);
@@ -276,7 +280,8 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 				info->switch_prob = switch_prob;
 				info->switch_act = switch_prob;
 
-				fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+				res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+                assert(res);
 			}
 		} else if (pi_format == ACE_VEC) {
 			printf("Reading vector file...\n");
@@ -286,10 +291,13 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 			int * toggles;
 			int * current;
 			char vector[ACE_CHAR_BUFFER_SIZE];
+            char* res;
 
-			fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+			res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+            assert(res);
 			while (!feof(in_file_desc)) {
-				fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+				res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+                assert(res);
 				num_vec++;
 			}
 			Abc_NtkForEachPi(ntk, obj_ptr, i)
@@ -305,7 +313,8 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 
 
 			num_vec = 0;
-			fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+			res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+            assert(res);
 			while (!feof(in_file_desc)) {
 				sscanf(line, "%s\n", vector);
 
@@ -343,7 +352,8 @@ int ace_io_read_activity(Abc_Ntk_t * ntk, FILE * in_file_desc,
 					info->values[num_vec] = (vector[i] == '1');
 				}
 
-				fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+				res = fgets(line, ACE_CHAR_BUFFER_SIZE, in_file_desc);
+                assert(res);
 				num_vec++;
 			}
 
