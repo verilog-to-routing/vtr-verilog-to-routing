@@ -22,6 +22,7 @@ using namespace std;
 
 #include "read_xml_arch_file.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "hash.h"
 #include "prepack.h"
 #include "vpr_utils.h"
@@ -819,7 +820,12 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	 more difficult because now it needs to consider splitting molecules.
 	 */
 	for (i = 0; i < num_logical_blocks; i++) {
+        auto blk_id = g_atom_nl.find_block(logical_block[i].name);
+        VTR_ASSERT(blk_id);
+
 		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_logical_block(i);
+        g_atom_map.set_expected_lowest_cost_pb_gnode(blk_id, logical_block[i].expected_lowest_cost_primitive);
+
 		if (logical_block[i].packed_molecules == NULL) {
 			cur_molecule = (t_pack_molecule*) vtr::calloc(1,
 					sizeof(t_pack_molecule));

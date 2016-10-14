@@ -27,6 +27,13 @@ class AtomMap {
         void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
 
         /*
+         * Expected lowest cost pb_graph_node
+         */
+        const t_pb_graph_node* expected_lowest_cost_pb_gnode(const AtomBlockId blk_id) const;
+
+        void set_expected_lowest_cost_pb_gnode(const AtomBlockId blk_id, const t_pb_graph_node* node);
+
+        /*
          * Blocks
          */
         //Returns the clb index associated with blk_id
@@ -69,6 +76,8 @@ class AtomMap {
     private:
         std::unordered_map<AtomBlockId,const t_pb*> atom_to_pb_;
         std::unordered_map<const t_pb*,AtomBlockId> pb_to_atom_;
+
+        std::unordered_map<AtomBlockId,const t_pb_graph_node*> atom_to_lowest_cost_pb_gnode_;
 
         std::unordered_map<AtomBlockId,int> atom_to_clb_;
         std::unordered_map<int,AtomBlockId> clb_to_atom_;

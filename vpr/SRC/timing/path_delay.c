@@ -1235,7 +1235,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                                 //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
                                 from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                        logical_block[i].expected_lowest_cost_primitive);
+                                                        g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
                                 tnode[inode + 1].num_edges = 1;
                                 tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                 tnode[inode + 1].out_edges->to_node = inode;
@@ -1272,7 +1272,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                             //Create the clock SOURCE
                             from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                    logical_block[i].expected_lowest_cost_primitive);
+                                                    g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
                             tnode[inode + 1].type = TN_CLOCK_SOURCE;
                             tnode[inode + 1].block = i;
                             tnode[inode + 1].atom_block = blk_id;
@@ -1321,7 +1321,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 tnode[inode].atom_block = blk_id;
 
                                 from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                        logical_block[i].expected_lowest_cost_primitive);
+                                                        g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
 
                                 if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
                                     //A non-sequential/combinational block

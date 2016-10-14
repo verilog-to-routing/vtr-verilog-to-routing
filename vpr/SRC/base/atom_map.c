@@ -54,6 +54,32 @@ void AtomMap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
 }
 
 /*
+ * Expected lowest cost pb_graph_node
+ */
+const t_pb_graph_node* AtomMap::expected_lowest_cost_pb_gnode(const AtomBlockId blk_id) const {
+    auto iter = atom_to_lowest_cost_pb_gnode_.find(blk_id);
+    if(iter == atom_to_lowest_cost_pb_gnode_.end()) {
+        return nullptr;
+    }
+    return iter->second;
+}
+
+void AtomMap::set_expected_lowest_cost_pb_gnode(const AtomBlockId blk_id, const t_pb_graph_node* node) {
+    if(!blk_id) {
+        VTR_ASSERT(atom_to_lowest_cost_pb_gnode_.count(blk_id) == 0);
+    }
+    if(node == nullptr) {
+        atom_to_lowest_cost_pb_gnode_.erase(blk_id);
+    }
+
+    if(blk_id && node) {
+        //Both valid store the mapping
+        atom_to_lowest_cost_pb_gnode_[blk_id] = node;
+    }
+
+}
+
+/*
  * Blocks
  */
 int AtomMap::atom_clb(const AtomBlockId blk_id) const {
