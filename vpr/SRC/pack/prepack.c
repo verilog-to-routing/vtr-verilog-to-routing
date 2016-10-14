@@ -836,9 +836,9 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
-			cur_molecule->logical_block_ptrs = (t_logical_block**) vtr::malloc(
+			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc(
 					1 * sizeof(t_logical_block*));
-			cur_molecule->logical_block_ptrs[0] = &logical_block[i];
+			cur_molecule->atom_block_ptrs[0] = &logical_block[i];
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
@@ -901,11 +901,11 @@ static t_pack_molecule *try_create_molecule(
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 		if (molecule->pack_pattern == NULL) {failed = true; goto end_prolog;}
 
-		molecule->logical_block_ptrs = (t_logical_block **)vtr::calloc(
+		molecule->atom_block_ptrs = (t_logical_block **)vtr::calloc(
 			molecule->pack_pattern->num_blocks,
 			sizeof(t_logical_block *)
 		);
-		if (molecule->logical_block_ptrs == NULL) {failed = true; goto end_prolog;}
+		if (molecule->atom_block_ptrs == NULL) {failed = true; goto end_prolog;}
 
 		molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
 		if (molecule->num_blocks == 0) {failed = true; goto end_prolog;}
@@ -927,15 +927,15 @@ static t_pack_molecule *try_create_molecule(
 			molecule->pack_pattern->root_block) == true) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
-			if(molecule->logical_block_ptrs[i] == NULL) {
+			if(molecule->atom_block_ptrs[i] == NULL) {
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
 			molecule_linked_list = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
 			molecule_linked_list->data_vptr = (void *) molecule;
 			molecule_linked_list->next =
-					molecule->logical_block_ptrs[i]->packed_molecules;
-			molecule->logical_block_ptrs[i]->packed_molecules =
+					molecule->atom_block_ptrs[i]->packed_molecules;
+			molecule->atom_block_ptrs[i]->packed_molecules =
 					molecule_linked_list;
 		}
 	} else {
@@ -944,7 +944,7 @@ static t_pack_molecule *try_create_molecule(
 
 	if (failed == true) {
 		/* Does not match pattern, free molecule */
-		free(molecule->logical_block_ptrs);
+		free(molecule->atom_block_ptrs);
 		free(molecule);
 		molecule = NULL;
 	}
@@ -967,8 +967,8 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 	is_optional = is_block_optional[current_pattern_block->block_id];
 
 		/* If the block in the pattern has already been visited, then there is no need to revisit it */
-	if (molecule->logical_block_ptrs[current_pattern_block->block_id] != NULL) {
-		if (molecule->logical_block_ptrs[current_pattern_block->block_id]
+	if (molecule->atom_block_ptrs[current_pattern_block->block_id] != NULL) {
+		if (molecule->atom_block_ptrs[current_pattern_block->block_id]
 				!= &logical_block[logical_block_index]) {
 			/* Mismatch between the visited block and the current block implies that the current netlist structure does not match the expected pattern, return whether or not this matters */
 			return is_optional;
@@ -990,7 +990,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 
 		success = true;
 		/* If the primitive types match, store it, expand it and explore neighbouring nodes */
-		molecule->logical_block_ptrs[current_pattern_block->block_id] =
+		molecule->atom_block_ptrs[current_pattern_block->block_id] =
 				&logical_block[logical_block_index]; /* store that this node has been visited */
 		molecule->num_ext_inputs +=
 				logical_block[logical_block_index].used_input_pins;
@@ -1068,20 +1068,20 @@ static void print_pack_molecules(const char *fname,
 		if (list_of_molecules_current->type == MOLECULE_SINGLE_ATOM) {
 			fprintf(fp, "\nmolecule type: atom\n");
 			fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n", i,
-					list_of_molecules_current->logical_block_ptrs[0]->index,
-					list_of_molecules_current->logical_block_ptrs[0]->name);
+					list_of_molecules_current->atom_block_ptrs[0]->index,
+					list_of_molecules_current->atom_block_ptrs[0]->name);
 		} else if (list_of_molecules_current->type == MOLECULE_FORCED_PACK) {
 			fprintf(fp, "\nmolecule type: %s\n",
 					list_of_molecules_current->pack_pattern->name);
 			for (i = 0; i < list_of_molecules_current->pack_pattern->num_blocks;
 					i++) {
-				if(list_of_molecules_current->logical_block_ptrs[i] == NULL) {
+				if(list_of_molecules_current->atom_block_ptrs[i] == NULL) {
 					fprintf(fp, "\tpattern index %d: empty \n",	i);
 				} else {
 					fprintf(fp, "\tpattern index %d: logical block [%d] name %s",
 						i,
-						list_of_molecules_current->logical_block_ptrs[i]->index,
-						list_of_molecules_current->logical_block_ptrs[i]->name);
+						list_of_molecules_current->atom_block_ptrs[i]->index,
+						list_of_molecules_current->atom_block_ptrs[i]->name);
 					if(list_of_molecules_current->pack_pattern->root_block->block_id == i) {
 						fprintf(fp, " root node\n");
 					} else {

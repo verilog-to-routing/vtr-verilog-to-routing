@@ -86,7 +86,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  * 
  * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
  * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match logical_block_ptrs of molecule.
+ * primitives_list - a list of primitives indexed to match atom_block_ptrs of molecule.
  *                   Expects an allocated array of primitives ptrs as inputs.  
  *                   This function loads the array with the lowest cost primitives that implement molecule
  */
@@ -135,7 +135,7 @@ bool get_next_primitive_list(
 			continue; /* no more primitives of this type available */
 		}
 		if (primitive_type_feasible(
-				molecule->logical_block_ptrs[molecule->root]->index,
+				molecule->atom_block_ptrs[molecule->root]->index,
 				cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats->valid_primitives[i];
 			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
@@ -466,7 +466,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 	list_size = get_array_size_of_molecule(molecule);
 
 	if (primitive_type_feasible(
-			molecule->logical_block_ptrs[molecule->root]->index,
+			molecule->atom_block_ptrs[molecule->root]->index,
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == true) {
 			if(root_passes_early_filter(root, molecule, clb_index)) {
@@ -485,7 +485,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 				}
 				for (i = 0; i < list_size; i++) {
 					VTR_ASSERT(
-							(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
+							(primitives_list[i] == NULL) == (molecule->atom_block_ptrs[i] == NULL));
 					for (int j = 0; j < list_size; j++) {
 						if(i != j) {
 							if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
@@ -522,7 +522,7 @@ static bool expand_forced_pack_molecule_placement(
 		} else {
 			next_block = cur->from_block;
 		}
-		if (primitives_list[next_block->block_id] == NULL && molecule->logical_block_ptrs[next_block->block_id] != NULL) {
+		if (primitives_list[next_block->block_id] == NULL && molecule->atom_block_ptrs[next_block->block_id] != NULL) {
 			/* first time visiting location */
 
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
@@ -553,12 +553,12 @@ static bool expand_forced_pack_molecule_placement(
 			if (next_pin != NULL) {
 				next_primitive = next_pin->parent_node;
 				/* Check for legality of placement, if legal, expand from legal placement, if not, return false */
-				if (molecule->logical_block_ptrs[next_block->block_id] != NULL
+				if (molecule->atom_block_ptrs[next_block->block_id] != NULL
 						&& primitives_list[next_block->block_id] == NULL) {
 					if (next_primitive->cluster_placement_primitive->valid
 							== true
 							&& primitive_type_feasible(
-									molecule->logical_block_ptrs[next_block->block_id]->index,
+									molecule->atom_block_ptrs[next_block->block_id]->index,
 									next_primitive->pb_type)) {
 						primitives_list[next_block->block_id] = next_primitive;
 						*cost +=
@@ -789,7 +789,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 	t_pb_graph_pin *sink_pb_graph_pin;
 
 	feasible = true;
-	root_block = molecule->logical_block_ptrs[molecule->root];
+	root_block = molecule->atom_block_ptrs[molecule->root];
 	for(i = 0; feasible && i < root->num_output_ports; i++) {
 		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
 			if(root->output_pins[i][j].is_forced_connection) {

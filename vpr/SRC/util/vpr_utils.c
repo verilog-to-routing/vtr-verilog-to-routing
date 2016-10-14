@@ -744,8 +744,8 @@ void free_pb(t_pb *pb) {
 				cur_molecule = (t_pack_molecule*)revalid_molecule->data_vptr;
 				if (cur_molecule->valid == false) {
 					for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-						if (cur_molecule->logical_block_ptrs[i] != NULL) {
-							if (cur_molecule->logical_block_ptrs[i]->clb_index != OPEN) {
+						if (cur_molecule->atom_block_ptrs[i] != NULL) {
+							if (cur_molecule->atom_block_ptrs[i]->clb_index != OPEN) {
 								break;
 							}
 						}

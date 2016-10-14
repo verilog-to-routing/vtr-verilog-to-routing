@@ -225,11 +225,11 @@ typedef struct s_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
 	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
-	t_logical_block **logical_block_ptrs; /* [0..num_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
+	t_logical_block **atom_block_ptrs; /* [0..num_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
 	bool valid; /* Whether or not this molecule is still valid */
 
 	int num_blocks; /* number of logical blocks of molecule */
-	int root; /* root index of molecule, logical_block_ptrs[root] is ptr to root logical block */
+	int root; /* root index of molecule, atom_block_ptrs[root] is ptr to root logical block */
 
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
 
