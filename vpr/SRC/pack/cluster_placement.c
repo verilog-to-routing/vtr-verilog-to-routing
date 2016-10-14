@@ -76,8 +76,9 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 }
 
 /**
- * get next list of primitives for list of logical blocks
- * primitives is the list of ptrs to primitives that matches with the list of logical_blocks (by index), assumes memory is preallocated
+ * get next list of primitives for list of atom blocks
+ *
+ * primitives is the list of ptrs to primitives that matches with the list of atom block, assumes memory is preallocated
  *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
  *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
  *
@@ -85,7 +86,9 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  * 
  * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
  * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match logical_block_ptrs of molecule.  Expects an allocated array of primitives ptrs as inputs.  This function loads the array with the lowest cost primitives that implement molecule
+ * primitives_list - a list of primitives indexed to match logical_block_ptrs of molecule.
+ *                   Expects an allocated array of primitives ptrs as inputs.  
+ *                   This function loads the array with the lowest cost primitives that implement molecule
  */
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -102,7 +105,10 @@ bool get_next_primitive_list(
 
 		cluster_placement_stats->curr_molecule = molecule;
 	} else {
-		/* Hack! Same failed molecule may re-enter if upper stream functions suck, I'm going to make the molecule selector more intelligent, TODO: Remove later */
+		/* Hack! Same failed molecule may re-enter if upper stream functions suck, 
+         * I'm going to make the molecule selector more intelligent.
+         * TODO: Remove later 
+         */
 		if (cluster_placement_stats->in_flight != NULL) {
 			/* Hack end */
 
