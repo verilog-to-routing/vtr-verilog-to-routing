@@ -158,13 +158,11 @@ struct t_lb_trace {
 
 /* Represents a net used inside a logic block and the physical nodes used by the net */
 struct t_intra_lb_net {
-	int atom_net_index;					/* index of atomic net this intra_lb_net represents */
-    AtomNetId atom_net_id;
+    AtomNetId atom_net_id;              /* index of atom net this intra_lb_net represents */
 	vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
 	t_lb_trace *rt_tree;				/* Route tree head */
 	
 	t_intra_lb_net() {
-		atom_net_index = OPEN;
         atom_net_id = AtomNetId::INVALID();
 		rt_tree = NULL;
 	}

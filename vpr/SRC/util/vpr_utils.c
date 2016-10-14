@@ -400,6 +400,26 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 	return NULL;
 }
 
+//Retrieves the pb_graph_pin associated with an AtomPinId
+//  TODO: currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
+//        in a more convenient interface. It should replace get_pb_graph_node_pin_from_model_port_pin() 
+//        when all clients have been transferred to this function
+const t_pb_graph_pin* get_pb_graph_node_pin(AtomPinId pin_id) {
+    VTR_ASSERT(pin_id);
+
+    AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
+    const t_pb_graph_node* pb_gnode = g_atom_map.atom_pb_graph_node(blk_id);
+    VTR_ASSERT(pb_gnode);
+
+    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+    const t_model_ports* model_port = g_atom_nl.port_model(port_id);
+    VTR_ASSERT(model_port);
+
+    int ipin = g_atom_nl.pin_port_bit(pin_id);
+    
+    return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
+}
+
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin) {
 	return get_pb_graph_node_pin_from_block_pin(pin.block, pin.block_pin);
 }
