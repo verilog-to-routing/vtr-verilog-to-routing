@@ -59,8 +59,8 @@ static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * 
 
 static void print_net_name(AtomNetId net_id, int *column, int num_tabs, FILE * fpout) {
 
-	/* This routine prints out the g_atoms_nlist.net name (or open).  
-     * net_num is the index of the g_atoms_nlist.net to be printed, while     *
+	/* This routine prints out the g_atom_nl net name (or open).  
+     * net_num is the index of the g_atom_nl net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
@@ -462,14 +462,11 @@ static void print_stats(t_block *clb, int num_clusters) {
 	 * internal connections are printed out.                         */
 
 	int ipin, icluster, itype;/*, iblk;*/
-	unsigned int inet;
-	/*int unabsorbable_ffs;*/
 	int total_nets_absorbed;
-	bool * nets_absorbed;
+    std::unordered_map<AtomNetId,bool> nets_absorbed;
 
 	int *num_clb_types, *num_clb_inputs_used, *num_clb_outputs_used;
 
-	nets_absorbed = NULL;
 	num_clb_types = num_clb_inputs_used = num_clb_outputs_used = NULL;
 
 	num_clb_types = (int*) vtr::calloc(num_types, sizeof(int));
@@ -477,29 +474,9 @@ static void print_stats(t_block *clb, int num_clusters) {
 	num_clb_outputs_used = (int*) vtr::calloc(num_types, sizeof(int));
 
 
-	nets_absorbed = (bool *) vtr::calloc(g_atoms_nlist.net.size(), sizeof(bool));
-	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
-		nets_absorbed[inet] = true;
+    for(auto net_id : g_atom_nl.nets()) {
+		nets_absorbed[net_id] = true;
 	}
-
-#if 0
-
-/*counting number of flipflops which cannot be absorbed to check the optimality of the packer wrt CLB density*/
-
-	unabsorbable_ffs = 0;
-	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
-		if (strcmp(logical_block[iblk].model->name, "latch") == 0) {
-			if (g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].num_sinks() > 1
-					|| strcmp(
-							logical_block[g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].pins[0].block].model->name,
-							"names") != 0) {
-				unabsorbable_ffs++;
-			}
-		}
-	}
-	vtr::printf_info("\n");
-	vtr::printf_info("%d FFs in input netlist not absorbable (ie. impossible to form BLE).\n", unabsorbable_ffs);
-#endif
 
 	/* Counters used only for statistics purposes. */
 
@@ -507,22 +484,23 @@ static void print_stats(t_block *clb, int num_clusters) {
 		for (ipin = 0; ipin < clb[icluster].type->num_pins; ipin++) {
 			if (clb[icluster].pb_route == NULL) {
 				if (clb[icluster].nets[ipin] != OPEN) {
-					nets_absorbed[clb[icluster].nets[ipin]] = false;
-					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
-						== RECEIVER) {
+                    int clb_net_idx = clb[icluster].nets[ipin];
+                    auto net_id = g_atom_map.atom_net(clb_net_idx);
+                    VTR_ASSERT(net_id);
+					nets_absorbed[net_id] = false;
+					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type == RECEIVER) {
 						num_clb_inputs_used[clb[icluster].type->index]++;
 					}
-					else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
-						== DRIVER) {
+					else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type == DRIVER) {
 						num_clb_outputs_used[clb[icluster].type->index]++;
 					}
 				}
 			}
 			else {
 				int pb_graph_pin_id = get_pb_graph_node_pin_from_block_pin(icluster, ipin)->pin_count_in_cluster;
-				int atom_net_idx = clb[icluster].pb_route[pb_graph_pin_id].atom_net_idx;
-				if (atom_net_idx != OPEN) {
-					nets_absorbed[atom_net_idx] = false;
+				auto atom_net_id = clb[icluster].pb_route[pb_graph_pin_id].atom_net_id;
+				if (atom_net_id) {
+					nets_absorbed[atom_net_id] = false;
 					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
 						== RECEIVER) {
 						num_clb_inputs_used[clb[icluster].type->index]++;
@@ -550,14 +528,13 @@ static void print_stats(t_block *clb, int num_clusters) {
 	}
 
 	total_nets_absorbed = 0;
-	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
-		if (nets_absorbed[inet] == true) {
+    for(auto net_id : g_atom_nl.nets()) {
+		if (nets_absorbed[net_id] == true) {
 			total_nets_absorbed++;
 		}
 	}
 	vtr::printf_info("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
-			total_nets_absorbed, (int)g_atoms_nlist.net.size(), (int)g_atoms_nlist.net.size() - total_nets_absorbed);
-	free(nets_absorbed);
+			total_nets_absorbed, (int)g_atom_nl.nets().size(), (int)g_atom_nl.nets().size() - total_nets_absorbed);
 	free(num_clb_types);
 	free(num_clb_inputs_used);
 	free(num_clb_outputs_used);
