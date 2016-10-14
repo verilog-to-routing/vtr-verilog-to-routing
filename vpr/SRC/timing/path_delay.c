@@ -1034,9 +1034,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
 	/* Determine the number of tnode's */
 	num_tnodes = 0;
-    for (int i = 0; i < num_logical_blocks; ++i) {
-        auto blk_id = g_atom_nl.find_block(logical_block[i].name);
-        VTR_ASSERT(blk_id);
+    for(AtomBlockId blk_id : g_atom_nl.blocks()) {
 
 		const t_model* model = g_atom_nl.block_model(blk_id);
 		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
@@ -1102,9 +1100,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
 	/* load tnodes, alloc edges for tnodes, load all known tnodes */
 	int inode = 0;
-    for (int i = 0; i < num_logical_blocks; ++i) {
-        auto blk_id = g_atom_nl.find_block(logical_block[i].name);
-        VTR_ASSERT(blk_id);
+    for(AtomBlockId blk_id : g_atom_nl.blocks()) {
 
 		const t_model* model = g_atom_nl.block_model(blk_id);
 		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
@@ -1129,7 +1125,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			tnode[inode].prepacked_data->model_pin = 0;
 			tnode[inode].prepacked_data->model_port = 0;
 			tnode[inode].prepacked_data->model_port_ptr = model->outputs;
-			tnode[inode].block = i;
+			tnode[inode].block = OPEN;
 			tnode[inode].atom_block = blk_id;
 			tnode[inode].type = TN_INPAD_OPIN;
 
@@ -1141,7 +1137,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
             //The source
 			tnode[inode + 1].type = TN_INPAD_SOURCE;
-			tnode[inode + 1].block = i;
+			tnode[inode + 1].block = OPEN;
 			tnode[inode + 1].atom_block = blk_id;
 			tnode[inode + 1].num_edges = 1;
 			tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
@@ -1171,7 +1167,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			tnode[inode].prepacked_data->model_pin = 0;
 			tnode[inode].prepacked_data->model_port = 0;
 			tnode[inode].prepacked_data->model_port_ptr = model->inputs;
-			tnode[inode].block = i;
+			tnode[inode].block = OPEN;
 			tnode[inode].atom_block = blk_id;
 			tnode[inode].type = TN_OUTPAD_IPIN;
 			tnode[inode].num_edges = 1;
@@ -1181,7 +1177,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
             //The sink
 			tnode[inode + 1].type = TN_OUTPAD_SINK;
-			tnode[inode + 1].block = i;
+			tnode[inode + 1].block = OPEN;
 			tnode[inode + 1].atom_block = blk_id;
 			tnode[inode + 1].num_edges = 0;
 			tnode[inode + 1].out_edges = NULL;
@@ -1213,7 +1209,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                             tnode[inode].prepacked_data->model_pin = k;
                             tnode[inode].prepacked_data->model_port = j;
                             tnode[inode].prepacked_data->model_port_ptr = model_port;
-                            tnode[inode].block = i;
+                            tnode[inode].block = OPEN;
                             tnode[inode].atom_block = blk_id;
                             tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
                             tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
@@ -1230,7 +1226,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                                 //The second tnode is the FF_SOURCE
                                 tnode[inode + 1].type = TN_FF_SOURCE;
-                                tnode[inode + 1].block = i;
+                                tnode[inode + 1].block = OPEN;
                                 tnode[inode + 1].atom_block = blk_id;
 
                                 //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
@@ -1261,7 +1257,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                             tnode[inode].prepacked_data->model_pin = k;
                             tnode[inode].prepacked_data->model_port = j;
                             tnode[inode].prepacked_data->model_port_ptr = model_port;
-                            tnode[inode].block = i;
+                            tnode[inode].block = OPEN;
                             tnode[inode].atom_block = blk_id;
 
                             //Allocate space for the output edges
@@ -1274,7 +1270,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                             from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
                                                     g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
                             tnode[inode + 1].type = TN_CLOCK_SOURCE;
-                            tnode[inode + 1].block = i;
+                            tnode[inode + 1].block = OPEN;
                             tnode[inode + 1].atom_block = blk_id;
                             tnode[inode + 1].num_edges = 1;
                             tnode[inode + 1].prepacked_data->model_pin = k;
@@ -1317,7 +1313,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 tnode[inode].prepacked_data->model_pin = k;
                                 tnode[inode].prepacked_data->model_port = j;
                                 tnode[inode].prepacked_data->model_port_ptr = model_port;
-                                tnode[inode].block = i;
+                                tnode[inode].block = OPEN;
                                 tnode[inode].atom_block = blk_id;
 
                                 from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
@@ -1382,7 +1378,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     tnode[inode + 1].type = TN_FF_SINK;
                                     tnode[inode + 1].num_edges = 0;
                                     tnode[inode + 1].out_edges = NULL;
-                                    tnode[inode + 1].block = i;
+                                    tnode[inode + 1].block = OPEN;
                                     tnode[inode + 1].atom_block = blk_id;
 
                                     inode += 2;
@@ -1403,7 +1399,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                             //Initialize the clock tnode
                             tnode[inode].type = TN_FF_CLOCK;
-                            tnode[inode].block = i;
+                            tnode[inode].block = OPEN;
                             tnode[inode].atom_block = blk_id;
                             tnode[inode].prepacked_data->model_pin = 0;
                             tnode[inode].prepacked_data->model_port = 0;
