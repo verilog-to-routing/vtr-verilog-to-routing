@@ -99,5 +99,5 @@ Non-unix-like platforms
 =======================
 CMake supports a variety of operating systems and can generate project files for a variety of build systems and IDEs.
 While VTR is developed primarily on Linux, it should be possible to build on different platforms (your milage may varry).
-See cmake.org for more details about using cmake and generating project files on other platforms.
+See the [CMake Documentation]](cmake.org) for more details about using cmake and generating project files on other platforms and build systems (e.g. Eclipse, Microsoft Visual Studio).
 
