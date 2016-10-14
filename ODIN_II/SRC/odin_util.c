@@ -88,7 +88,7 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 	}
 	if (signal_name && (previous || module_name))
 	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+strlen(signal_name)+1));
+		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+2+strlen(signal_name)+1));
 		strcat(return_string, "^");
 		strcat(return_string, signal_name);
 	}
