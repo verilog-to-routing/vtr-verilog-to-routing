@@ -30,7 +30,7 @@ using namespace std;
 #define TABLENGTH 1
 
 /****************** Subroutines local to this module ************************/
-void print_logical_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb);
+void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb);
 void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb);
 void print_models(FILE *fpout, t_model *user_models);
 
@@ -61,9 +61,9 @@ static void print_string(const char *str_ptr, int *column, FILE * fpout) {
 
 static void print_net_name(AtomNetId net_id, int *column, FILE * fpout) {
 
-	/* This routine prints out the g_atoms_nlist.net name (or open) and limits the    *
+	/* This routine prints out the g_atom_nl net name (or open) and limits the    *
 	 * length of a line to LINELENGTH characters by using \ to continue *
-	 * lines.  net_num is the index of the g_atoms_nlist.net to be printed, while     *
+	 * lines.  net_id is the id of the g_atom_nl net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
@@ -84,7 +84,7 @@ static void print_net_name(AtomNetId net_id, int *column, FILE * fpout) {
 }
 
 /* Print netlist atom in blif format */
-void print_logical_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
+void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	t_pb_route * pb_route;
 	int clb_index;
 	const t_pb_graph_node *pb_graph_node;
@@ -516,7 +516,7 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	/* print out all circuit elements */
 	for (auto blk_id : g_atom_nl.blocks()) {
-		print_logical_block(fpout, blk_id, clb);
+		print_atom_block(fpout, blk_id, clb);
 	}
 
 	for(int clb_index = 0; clb_index < num_clusters; clb_index++) {
