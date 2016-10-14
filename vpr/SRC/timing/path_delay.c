@@ -81,7 +81,7 @@ from the forward and backward weights on each tnode. */
 
 Author:  V. Betz
 
-We can build timing graphs that match either the primitive (logical_block) 
+We can build timing graphs that match either the primitive (g_atom_nl) 
 netlist (of basic elements before clustering, like FFs and LUTs) or that 
 match the clustered netlist (block).  You pass in the is_pre_packed flag to 
 say which kind of netlist and timing graph you are working with.
@@ -1032,7 +1032,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
     //TODO: convert from iterating over models to directly iterating over the atom netlist
 	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
 
-	/* Determine the number of tnode's (and allocate space for logical_block i/o to tnode mappings) */
+	/* Determine the number of tnode's */
 	num_tnodes = 0;
     for (int i = 0; i < num_logical_blocks; ++i) {
         auto blk_id = g_atom_nl.find_block(logical_block[i].name);
@@ -1133,7 +1133,8 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			tnode[inode].atom_block = blk_id;
 			tnode[inode].type = TN_INPAD_OPIN;
 
-			tnode[inode].num_edges = g_atoms_nlist.net[logical_block[i].output_nets[0][0]].num_sinks();
+            auto net_id = g_atom_nl.pin_net(pin_id);
+			tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
 			tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(
 					tnode[inode].num_edges * sizeof(t_tedge),
 					&tedge_ch);
@@ -1264,7 +1265,8 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                             tnode[inode].atom_block = blk_id;
 
                             //Allocate space for the output edges
-                            tnode[inode].num_edges = g_atoms_nlist.net[logical_block[i].output_nets[j][k]].num_sinks();
+                            auto net_id = g_atom_nl.pin_net(pin_id);
+                            tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
                             tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
 
 
