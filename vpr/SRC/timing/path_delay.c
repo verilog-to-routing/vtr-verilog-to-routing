@@ -305,7 +305,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	return slacks;
 }
 
-t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_model *models, t_timing_inf timing_inf) {
+t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_timing_inf timing_inf) {
 
 	/* This routine builds the graph used for timing analysis.  Every technology-
 	 * mapped netlist pin is a timing node (tnode).  The connectivity between pins is *
@@ -341,10 +341,6 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
 	check_timing_graph();
 
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF)) {
-		print_timing_graph_as_blif(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF), models);
-	}
-	
 	if (g_sdc == NULL) {
 		/* the SDC timing constraints only need to be read in once; *
 		 * if they haven't been already, do it now				    */
@@ -3726,102 +3722,6 @@ static void print_spaces(FILE * fp, int num_spaces) {
 	for ( ; num_spaces > 0; num_spaces--) {
 		fprintf(fp, " ");
 	}
-}
-
-void print_timing_graph_as_blif (const char *fname, t_model *models) {
-	struct s_model_ports *port;
-	vtr::t_linked_vptr *p_io_removed;
-	/* Prints out the critical path to a file.  */
-
-	FILE *fp;
-	int i, j;
-	
-	//int **lookup_tnode_from_pin_id = NULL;
-
-	fp = vtr::fopen(fname, "w");
-
-	fprintf(fp, ".model %s\n", blif_circuit_name);
-
-	fprintf(fp, ".inputs ");
-	for (i = 0; i < num_logical_blocks; i++) {
-		if (logical_block[i].type == VPACK_INPAD) {
-			fprintf(fp, "\\\n%s ", logical_block[i].name);
-		}
-	}
-	p_io_removed = circuit_p_io_removed;
-	while (p_io_removed) {
-		fprintf(fp, "\\\n%s ", (char *) p_io_removed->data_vptr);
-		p_io_removed = p_io_removed->next;
-	}
-
-	fprintf(fp, "\n");
-
-	fprintf(fp, ".outputs ");
-	for (i = 0; i < num_logical_blocks; i++) {
-		if (logical_block[i].type == VPACK_OUTPAD) {
-			/* Outputs have a "out:" prepended to them, must remove */
-			fprintf(fp, "\\\n%s ", &logical_block[i].name[4]);
-		}
-	}
-	fprintf(fp, "\n");
-	fprintf(fp, ".names unconn\n");
-	fprintf(fp, " 0\n\n");
-	
-	
-	/* Print out primitives */
-	//FIXME: Causing a segfault	
-	//for (i = 0; i < num_logical_blocks; i++) {
-	//	print_primitive_as_blif(fp, i, lookup_tnode_from_pin_id);
-	//}
-	
-	/* Print out tnode connections */
-	for (i = 0; i < num_tnodes; i++) {
-		if (tnode[i].type != TN_PRIMITIVE_IPIN && tnode[i].type != TN_FF_SOURCE
-				&& tnode[i].type != TN_INPAD_SOURCE
-				&& tnode[i].type != TN_OUTPAD_IPIN) {
-			for (j = 0; j < tnode[i].num_edges; j++) {
-				fprintf(fp, ".names tnode_%d tnode_%d\n", i,
-					tnode[i].out_edges[j].to_node);
-				fprintf(fp, "1 1\n\n");
-			}
-		}
-	}
-
-	fprintf(fp, ".end\n\n");
-
-	/* Print out .subckt models */
-	while (models) {
-		fprintf(fp, ".model %s\n", models->name);
-		fprintf(fp, ".inputs ");
-		port = models->inputs;
-		while (port) {
-			if (port->size > 1) {
-				for (j = 0; j < port->size; j++) {
-					fprintf(fp, "%s[%d] ", port->name, j);
-				}
-			} else {
-				fprintf(fp, "%s ", port->name);
-			}
-			port = port->next;
-		}
-		fprintf(fp, "\n");
-		fprintf(fp, ".outputs ");
-		port = models->outputs;
-		while (port) {
-			if (port->size > 1) {
-				for (j = 0; j < port->size; j++) {
-					fprintf(fp, "%s[%d] ", port->name, j);
-				}
-			} else {
-				fprintf(fp, "%s ", port->name);
-			}
-			port = port->next;
-		}
-		fprintf(fp, "\n.blackbox\n.end\n\n");
-		fprintf(fp, "\n\n");
-		models = models->next;
-	}
-	fclose(fp);
 }
 
 /*

@@ -371,7 +371,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
 	if (timing_driven) {
-		slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, arch->models, timing_inf);
+		slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf);
 		do_timing_analysis(slacks, timing_inf, true, false);
 
 		if (getEchoEnabled()) {

@@ -540,10 +540,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 
 	if (timing_inf.timing_analysis_enabled) {
-		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-			/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
-		}
-		
 		if(GetPostSynthesisOption())
 		  {
             netlist_writer(blif_circuit_name);
