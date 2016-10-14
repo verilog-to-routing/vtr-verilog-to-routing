@@ -929,8 +929,7 @@ static t_pack_molecule *try_create_molecule(
 		if (molecule->num_blocks == 0) {failed = true; goto end_prolog;}
 
 		if (list_of_pack_patterns[pack_pattern_index].root_block == NULL) {failed = true; goto end_prolog;}
-		molecule->root =
-				list_of_pack_patterns[pack_pattern_index].root_block->block_id;
+		molecule->root = list_of_pack_patterns[pack_pattern_index].root_block->block_id;
 		molecule->num_ext_inputs = 0;
 
 		if(list_of_pack_patterns[pack_pattern_index].is_chain == true) {
@@ -952,10 +951,8 @@ static t_pack_molecule *try_create_molecule(
 			}			
 			molecule_linked_list = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
 			molecule_linked_list->data_vptr = (void *) molecule;
-			molecule_linked_list->next =
-					molecule->atom_block_ptrs[i]->packed_molecules;
-			molecule->atom_block_ptrs[i]->packed_molecules =
-					molecule_linked_list;
+			molecule_linked_list->next = molecule->atom_block_ptrs[i]->packed_molecules;
+			molecule->atom_block_ptrs[i]->packed_molecules = molecule_linked_list;
 		}
 	} else {
 		failed = true;
@@ -987,8 +984,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 
 		/* If the block in the pattern has already been visited, then there is no need to revisit it */
 	if (molecule->atom_block_ptrs[current_pattern_block->block_id] != NULL) {
-		if (molecule->atom_block_ptrs[current_pattern_block->block_id]
-				!= &logical_block[logical_block_index]) {
+		if (molecule->atom_block_ptrs[current_pattern_block->block_id] != &logical_block[logical_block_index]) {
 			/* Mismatch between the visited block and the current block implies 
              * that the current netlist structure does not match the expected pattern, 
              * return whether or not this matters */
@@ -1006,8 +1002,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		return is_optional;
 	}
 
-	if (primitive_type_feasible(logical_block_index,
-			current_pattern_block->pb_type)) {
+	if (primitive_type_feasible(logical_block_index, current_pattern_block->pb_type)) {
 
 		success = true;
 		/* If the primitive types match, store it, expand it and explore neighbouring nodes */
@@ -1021,40 +1016,33 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 			if (cur_pack_pattern_connection->from_block
 					== current_pattern_block) {
 				/* find net corresponding to pattern */
-				iport =
-						cur_pack_pattern_connection->from_pin->port->model_port->index;
+				iport = cur_pack_pattern_connection->from_pin->port->model_port->index;
 				ipin = cur_pack_pattern_connection->from_pin->pin_number;
-				inet =
-						logical_block[logical_block_index].output_nets[iport][ipin];
+				inet = logical_block[logical_block_index].output_nets[iport][ipin];
 
 				/* Check if net is valid */
 				if (inet == OPEN || g_atoms_nlist.net[inet].num_sinks() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
 				} else {
-					success = try_expand_molecule(molecule,
-						g_atoms_nlist.net[inet].pins[1].block,
-							cur_pack_pattern_connection->to_block);
+					success = try_expand_molecule(molecule, g_atoms_nlist.net[inet].pins[1].block,
+                                cur_pack_pattern_connection->to_block);
 				}
 			} else {
-				VTR_ASSERT(
-						cur_pack_pattern_connection->to_block == current_pattern_block);
+				VTR_ASSERT(cur_pack_pattern_connection->to_block == current_pattern_block);
 				/* find net corresponding to pattern */
-				iport =
-						cur_pack_pattern_connection->to_pin->port->model_port->index;
+				iport = cur_pack_pattern_connection->to_pin->port->model_port->index;
 				ipin = cur_pack_pattern_connection->to_pin->pin_number;
 				if (cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
 					inet = logical_block[logical_block_index].clock_net;
 				} else {
-					inet =
-							logical_block[logical_block_index].input_nets[iport][ipin];
+					inet = logical_block[logical_block_index].input_nets[iport][ipin];
 				}
 				/* Check if net is valid */
 				if (inet == OPEN || g_atoms_nlist.net[inet].num_sinks() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->from_block->block_id];
 				} else {
-					success = try_expand_molecule(molecule,
-						g_atoms_nlist.net[inet].pins[0].block,
-							cur_pack_pattern_connection->from_block);
+					success = try_expand_molecule(molecule, g_atoms_nlist.net[inet].pins[0].block,
+                                cur_pack_pattern_connection->from_block);
 				}
 			}
 			cur_pack_pattern_connection = cur_pack_pattern_connection->next;
