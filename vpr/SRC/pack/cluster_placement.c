@@ -21,6 +21,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "hash.h"
 #include "cluster_placement.h"
@@ -784,31 +785,40 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 	bool feasible;
 	t_logical_block *root_block;
 	t_model_ports *model_port;
-	int inet;
-	int isink;
-	t_pb_graph_pin *sink_pb_graph_pin;
 
 	feasible = true;
 	root_block = molecule->atom_block_ptrs[molecule->root];
+
+    AtomBlockId blk_id = g_atom_nl.find_block(root_block->name);
+
 	for(i = 0; feasible && i < root->num_output_ports; i++) {
 		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
 			if(root->output_pins[i][j].is_forced_connection) {
+
 				model_port = root->output_pins[i][j].port->model_port;
-				inet = root_block->output_nets[model_port->index][j];
-				if(inet != OPEN) {
+
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
+                AtomPinId pin_id = g_atom_nl.port_pin(port_id, j);
+                AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+
+				if(net_id) {
 					/* This output pin has a dedicated connection to one output, make sure that molecule works */
 					if(molecule->type == MOLECULE_SINGLE_ATOM) {
 						feasible = false; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
-						if(g_atoms_nlist.net[inet].num_sinks() == 1) {
-							isink = g_atoms_nlist.net[inet].pins[1].block;
-							if(logical_block[isink].clb_index == clb_index) {
-								sink_pb_graph_pin = &root->output_pins[i][j];
+                        auto sinks = g_atom_nl.net_sinks(net_id);
+						if(sinks.size() == 1) {
+                            AtomPinId sink_pin = *sinks.begin();
+                            AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin);
+
+							if(g_atom_map.atom_clb(sink_blk) == clb_index) {
+								const t_pb_graph_pin* sink_pb_graph_pin = get_pb_graph_pin(sink_pin);
 								while(sink_pb_graph_pin->num_output_edges != 0) {
 									VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
 									VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
 									sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
 								}
-								if(sink_pb_graph_pin->parent_node == logical_block[isink].pb->pb_graph_node) {
+                                const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
+								if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
 									/* There is a logical block mapped to the physical position that pulls in the atom in question */
 									feasible = true;
 								}
