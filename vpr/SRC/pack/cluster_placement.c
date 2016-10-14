@@ -761,15 +761,18 @@ void reset_tried_but_unused_cluster_placements(
 
 
 /* Quick, additional filter to see if root is feasible for molecule 
-
-   Limitation: This code can absorb a single atom by a "forced connection".  A forced connection is one where there is no interconnect flexibility connecting
-               two primitives so if one primitive is used, then the other must also be used.
-
-			   TODO: jluu - Many ways to make this either more efficient or more robust.
-							1.  For forced connections, I can get the packer to try forced connections first thus avoid trying out other locations that 
-							    I know are bad thus saving runtime and potentially improving robustness because the placement cost function is not always 100%.
-							2.  I need to extend this so that molecules can be pulled in instead of just atoms.
-*/
+ *
+ * Limitation: This code can absorb a single atom by a "forced connection".  
+ * A forced connection is one where there is no interconnect flexibility connecting
+ * two primitives so if one primitive is used, then the other must also be used.
+ *
+ * TODO: jluu - Many ways to make this either more efficient or more robust.
+ *      1.  For forced connections, I can get the packer to try forced connections first 
+ *          thus avoid trying out other locations that I know are bad thus saving runtime 
+ *          and potentially improving robustness because the placement cost function is 
+ *          not always 100%.
+ *      2.  I need to extend this so that molecules can be pulled in instead of just atoms.
+ */
 static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const int clb_index) {
 	int i, j;
 	bool feasible;
