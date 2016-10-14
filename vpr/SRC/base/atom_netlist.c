@@ -607,7 +607,7 @@ bool AtomNetlist::verify_block_invariants() const {
             //Non-sequential types must not have a clock
             if(clk_net_id) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is a non-sequential type but has a clock '%s'", 
-                          block_name(blk_id).c_str(), net_name(clk_net_id));
+                          block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
             }
         }
     }
