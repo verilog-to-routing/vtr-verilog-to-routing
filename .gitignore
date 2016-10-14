@@ -70,6 +70,16 @@ ODIN_II/SRC/verilog_bison.output
 ODIN_II/SRC/verilog_flex.c
 
 #
+#Odin test outputs
+#
+ODIN_II/default_out.blif
+ODIN_II/input_vectors
+ODIN_II/log
+ODIN_II/output_activity
+ODIN_II/temp.blif
+ODIN_II/test.do
+
+#
 #C/C++
 #
 *.d
