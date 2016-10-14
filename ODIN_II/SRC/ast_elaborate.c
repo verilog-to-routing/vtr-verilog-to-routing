@@ -1926,7 +1926,7 @@ void shift_operation()
 	for (i = 0; i < num_modules; i++)
 	{
 		top = ast_modules[i];
-		search_certain_operation(top, i);
+		search_certain_operation(top);
 	}
 
 }
@@ -1935,7 +1935,7 @@ void shift_operation()
  * (function: change_ast_node)
  *  search all AST to find multiply or divide operations
  *-------------------------------------------------------------------------*/
-void search_certain_operation(ast_node_t *node, int module_num)
+void search_certain_operation(ast_node_t *node)
 {
 	int i;
 	ast_node_t *child;
@@ -1949,8 +1949,8 @@ void search_certain_operation(ast_node_t *node, int module_num)
 		if (child != NULL)
 		{
 			if (child->type == BINARY_OPERATION && (child->types.operation.op == MULTIPLY || child->types.operation.op == DIVIDE))
-				check_binary_operation(child, module_num);
-			search_certain_operation(child, module_num);
+				check_binary_operation(child);
+			search_certain_operation(child);
 		}
 	}
 
@@ -1960,21 +1960,21 @@ void search_certain_operation(ast_node_t *node, int module_num)
  * (function: change_ast_node)
  *  check the children nodes of an operation node
  *-------------------------------------------------------------------------*/
-void check_binary_operation(ast_node_t *node, int module_num)
+void check_binary_operation(ast_node_t *node)
 {
 	if (node->types.operation.op == MULTIPLY)
 	{
 		if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
-			check_node_number(node, node->children[1], 1, module_num); // 1 means multiply and don't need to move children nodes
+			check_node_number(node, node->children[1], 1); // 1 means multiply and don't need to move children nodes
 		if (node->children[0]->type == NUMBERS && node->children[1]->type == IDENTIFIERS)
-			check_node_number(node, node->children[0], 2, module_num); // 2 means multiply and needs to move children nodes
+			check_node_number(node, node->children[0], 2); // 2 means multiply and needs to move children nodes
 
 	}
 
 	else if (node->types.operation.op == DIVIDE)
 	{
 		if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
-			check_node_number(node, node->children[1], 3, module_num); // 3 means divide
+			check_node_number(node, node->children[1], 3); // 3 means divide
 	}
 
 }
@@ -1983,7 +1983,7 @@ void check_binary_operation(ast_node_t *node, int module_num)
  * (function: change_ast_node)
  * check if the number is the power of 2
  *-------------------------------------------------------------------------*/
-void check_node_number(ast_node_t *parent, ast_node_t *child, int flag, int module_num)
+void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
 {
 	long long power = 0;
 	char num[1024] = {0};
