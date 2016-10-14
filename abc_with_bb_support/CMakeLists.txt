@@ -119,7 +119,7 @@ list(APPEND LIB_INCLUDE_DIRS
 add_library(libabc STATIC
              ${LIB_SOURCES})
 target_include_directories(libabc PUBLIC ${LIB_INCLUDE_DIRS})
-set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+set_target_properties(libabc PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies
 target_link_libraries(libabc
