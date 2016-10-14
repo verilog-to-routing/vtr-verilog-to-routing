@@ -359,7 +359,8 @@ void create_netlist()
 	}
 
 	/* we will reduce the parameters and the assignment expressions*/
-	reduce_parameter();
+	/* Simplify the AST by reducing complex statements - for loops */
+	simplify_ast();
 	reduce_assignment_expression();
 
 	/* we will find the top module */

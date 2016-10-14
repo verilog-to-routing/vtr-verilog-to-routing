@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -49,7 +49,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "odin_ii_func.h"
-#include "ast_elaborate.h"
 #include "netlist_cleanup.h"
 /*---------------------------------------------------------------------------
  * (function: set_default_options)
@@ -132,9 +131,6 @@ void do_high_level_synthesis()
 	{
 		add_tag_data();
 	}
-
-	/* Simplify the AST by reducing complex statements - for loops */
-	simplify_ast();
 
 	/* Now that we have a parse tree (abstract syntax tree [ast]) of
 	 * the Verilog we want to make into a netlist. */

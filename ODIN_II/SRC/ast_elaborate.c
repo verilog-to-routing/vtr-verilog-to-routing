@@ -57,6 +57,8 @@ int simplify_ast()
 {
 	/* for loop support */
 	optimize_for_tree();
+	/* reduce parameters with their values if they have been set */
+	reduce_parameter();
 	/* simplify assignment expressions */
 	reduce_assignment_expression();
 	/* find multiply or divide operation that can be replaced with shift operation */
