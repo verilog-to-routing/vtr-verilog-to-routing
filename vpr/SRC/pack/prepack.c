@@ -1,13 +1,13 @@
 /* 
- Prepacking: Group together technology-mapped netlist blocks before packing.  This gives hints to the packer on what groups of blocks to keep together during packing.
- Primary purpose 1) "Forced" packs (eg LUT+FF pair)
- 2) Carry-chains
-
-
- Duties: Find pack patterns in architecture, find pack patterns in netlist.
-
- Author: Jason Luu
- March 12, 2012
+ * Prepacking: Group together technology-mapped netlist blocks before packing.  
+ * This gives hints to the packer on what groups of blocks to keep together during packing.
+ * Primary purpose:
+ *    1) "Forced" packs (eg LUT+FF pair)
+ *    2) Carry-chains
+ * Duties: Find pack patterns in architecture, find pack patterns in netlist.
+ *
+ * Author: Jason Luu
+ * March 12, 2012
  */
 
 #include <cstdio>
@@ -74,9 +74,11 @@ static int find_new_root_atom_for_chain(const int block_index, const t_pack_patt
  * Find all packing patterns in architecture 
  * [0..num_packing_patterns-1]
  *
- * Limitations: Currently assumes that forced pack nets must be single-fanout as this covers all the reasonable architectures we wanted.
- More complicated structures should probably be handled either downstream (general packing) or upstream (in tech mapping)
- *              If this limitation is too constraining, code is designed so that this limitation can be removed
+ * Limitations: Currently assumes that forced pack nets must be single-fanout
+ * as this covers all the reasonable architectures we wanted.
+ * More complicated structures should probably be handled either downstream 
+ * (general packing) or upstream (in tech mapping).
+ * If this limitation is too constraining, code is designed so that this limitation can be removed.
  */
 t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	int i, j, ncount, k;
@@ -110,8 +112,11 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 					list_of_packing_patterns, i, NULL, NULL, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
-			/* Default settings: A section of a netlist must match all blocks in a pack pattern before it can be made a molecule except for carry-chains.  For carry-chains, since carry-chains are typically
-			quite flexible in terms of size, it is optional whether or not an atom in a netlist matches any particular block inside the chain */
+			/* Default settings: A section of a netlist must match all blocks in a pack 
+             * pattern before it can be made a molecule except for carry-chains.  
+             * For carry-chains, since carry-chains are typically quite flexible in terms 
+             * of size, it is optional whether or not an atom in a netlist matches any 
+             * particular block inside the chain */
 			list_of_packing_patterns[i].is_block_optional = (bool*) vtr::malloc(L_num_blocks * sizeof(bool));
 			for(k = 0; k < L_num_blocks; k++) {
 				list_of_packing_patterns[i].is_block_optional[k] = false;
@@ -298,8 +303,8 @@ static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin) {
 }
 
 /**
- * Allocates memory for models and loads the name of the packing pattern so that it can be identified and loaded with
- * more complete information later
+ * Allocates memory for models and loads the name of the packing pattern 
+ * so that it can be identified and loaded with more complete information later
  */
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
 		struct s_hash **nhash) {
@@ -427,7 +432,8 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 
 /** 
  * Find if receiver of edge is in the same pattern, if yes, add to pattern
- *  Convention: Connections are made on backward expansion only (to make future multi-fanout support easier) so this function will not update connections
+ *  Convention: Connections are made on backward expansion only (to make future 
+ *              multi-fanout support easier) so this function will not update connections
  */
 static void forward_expand_pack_pattern_from_edge(
 		const t_pb_graph_edge* expansion_edge,
@@ -582,7 +588,9 @@ static void forward_expand_pack_pattern_from_edge(
 
 /** 
  * Find if driver of edge is in the same pattern, if yes, add to pattern
- *  Convention: Connections are made on backward expansion only (to make future multi-fanout support easier) so this function must update both source and destination blocks
+ *  Convention: Connections are made on backward expansion only (to make future multi-
+ *               fanout support easier) so this function must update both source and 
+ *               destination blocks
  */
 static void backward_expand_pack_pattern_from_edge(
 		const t_pb_graph_edge* expansion_edge,
@@ -767,7 +775,8 @@ static void backward_expand_pack_pattern_from_edge(
  * Pre-pack atoms in netlist to molecules
  * 1.  Single atoms are by definition a molecule.
  * 2.  Forced pack molecules are groupings of atoms that matches a t_pack_pattern definition.
- * 3.  Chained molecules are molecules that follow a carry-chain style pattern: ie. a single linear chain that can be split across multiple complex blocks
+ * 3.  Chained molecules are molecules that follow a carry-chain style pattern,
+ *     ie. a single linear chain that can be split across multiple complex blocks
  */
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
@@ -781,9 +790,11 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 	cur_molecule = list_of_molecules_head = NULL;
 
-	/* Find forced pack patterns */
-	/* Simplifying assumptions: Each atom can map to at most one molecule, use first-fit mapping based on priority of pattern */
-	/* TODO: Need to investigate better mapping strategies than first-fit */
+	/* Find forced pack patterns
+	 * Simplifying assumptions: Each atom can map to at most one molecule, 
+     *                          use first-fit mapping based on priority of pattern
+	 * TODO: Need to investigate better mapping strategies than first-fit 
+     */
 	for (i = 0; i < num_packing_patterns; i++) {
 		best_pattern = 0;
 		for(j = 1; j < num_packing_patterns; j++) {
@@ -799,13 +810,16 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule = try_create_molecule(list_of_pack_patterns, best_pattern, j);
 			if (cur_molecule != NULL) {
 				cur_molecule->next = list_of_molecules_head;
-				/* In the event of multiple molecules with the same logical block pattern, bias to use the molecule with less costly physical resources first */
+				/* In the event of multiple molecules with the same logical block pattern, 
+                 * bias to use the molecule with less costly physical resources first 
+                 */
 				/* TODO: Need to normalize magical number 100 */
 				cur_molecule->base_gain = cur_molecule->num_blocks
 						- (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
 				if(logical_block[j].packed_molecules == NULL || logical_block[j].packed_molecules->data_vptr != cur_molecule) {
-					/* molecule did not cover current atom (possibly because molecule created is part of a long chain that extends past multiple logic blocks), try again */
+					/* molecule did not cover current atom (possibly because molecule created is
+                     * part of a long chain that extends past multiple logic blocks), try again */
 					j--;
 				}
 			}
@@ -836,8 +850,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
-			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc(
-					1 * sizeof(t_logical_block*));
+			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc( 1 * sizeof(t_logical_block*));
 			cur_molecule->atom_block_ptrs[0] = &logical_block[i];
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
@@ -878,11 +891,16 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
 }
 
 /**
- * Given a pattern and a logical block to serve as the root block, determine if the candidate logical block serving as the root node matches the pattern
+ * Given a pattern and a logical block to serve as the root block, determine if 
+ * the candidate logical block serving as the root node matches the pattern.
  * If yes, return the molecule with this logical block as the root, if not, return NULL
- * Limitations: Currently assumes that forced pack nets must be single-fanout as this covers all the reasonable architectures we wanted
- More complicated structures should probably be handled either downstream (general packing) or upstream (in tech mapping)
+ *
+ * Limitations: Currently assumes that forced pack nets must be single-fanout as 
+ *              this covers all the reasonable architectures we wanted. More complicated 
+ *              structures should probably be handled either downstream (general packing) 
+ *              or upstream (in tech mapping).
  *              If this limitation is too constraining, code is designed so that this limitation can be removed
+ *
  * Side Effect: If successful, link atom to molecule
  */
 static t_pack_molecule *try_create_molecule(
@@ -916,7 +934,8 @@ static t_pack_molecule *try_create_molecule(
 		molecule->num_ext_inputs = 0;
 
 		if(list_of_pack_patterns[pack_pattern_index].is_chain == true) {
-			/* A chain pattern extends beyond a single logic block so we must find the block_index that matches with the portion of a chain for this particular logic block */
+			/* A chain pattern extends beyond a single logic block so we must find 
+             * the block_index that matches with the portion of a chain for this particular logic block */
 			block_index = find_new_root_atom_for_chain(block_index, &list_of_pack_patterns[pack_pattern_index]);
 		}
 	}
@@ -970,7 +989,9 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 	if (molecule->atom_block_ptrs[current_pattern_block->block_id] != NULL) {
 		if (molecule->atom_block_ptrs[current_pattern_block->block_id]
 				!= &logical_block[logical_block_index]) {
-			/* Mismatch between the visited block and the current block implies that the current netlist structure does not match the expected pattern, return whether or not this matters */
+			/* Mismatch between the visited block and the current block implies 
+             * that the current netlist structure does not match the expected pattern, 
+             * return whether or not this matters */
 			return is_optional;
 		} else {
 			molecule->num_ext_inputs--; /* This block is revisited, implies net is entirely internal to molecule, reduce count */
@@ -1184,7 +1205,8 @@ static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_p
 	return 0;
 }
 
-/* A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
+/* A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic 
+ * block by identifying the actual atom that forms the root of the new chain.
  * Returns OPEN if this block_index doesn't match up with any chain
  *
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
