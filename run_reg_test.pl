@@ -158,10 +158,8 @@ if ( $#tests > -1 ) {
             }
         }
 
-        if($run_failures != 0) {
-            print "\nTest '$test' had $run_failures run failures\n";
-            $num_failed_tests += $run_failures;
-        }
+        print "\nTest '$test' had $run_failures run failures\n";
+        $num_failed_tests += $run_failures;
 	}
 	print "\nTest complete\n\n";
 }
