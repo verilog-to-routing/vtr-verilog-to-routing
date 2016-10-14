@@ -1071,7 +1071,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 				if (ptr->moleculeptr->logical_block_ptrs[i] != NULL) {
 					ilogical_blk =
 							ptr->moleculeptr->logical_block_ptrs[i]->index;
-					if (!exists_free_primitive_for_logical_block(
+					if (!exists_free_primitive_for_atom_block(
 							cluster_placement_stats_ptr, ilogical_blk)) { /* TODO: I should be using a better filtering check especially when I'm dealing with multiple clock/multiple global reset signals where the clock/reset packed in matters, need to do later when I have the circuits to check my work */
 						success = false;
 						break;
@@ -2107,7 +2107,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 							if (molecule->logical_block_ptrs[j] != NULL) {
 								VTR_ASSERT(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 								iblk = molecule->logical_block_ptrs[j]->index;
-								if (!exists_free_primitive_for_logical_block(
+								if (!exists_free_primitive_for_atom_block(
 										cluster_placement_stats_ptr,
 										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
 									success = false;
@@ -2144,7 +2144,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 							if (molecule->logical_block_ptrs[j] != NULL) {
 								VTR_ASSERT(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 								iblk = molecule->logical_block_ptrs[j]->index;
-								if (!exists_free_primitive_for_logical_block(
+								if (!exists_free_primitive_for_atom_block(
 										cluster_placement_stats_ptr,
 										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
 									success = false;
@@ -2186,7 +2186,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						if (molecule->logical_block_ptrs[j] != NULL) {
 							VTR_ASSERT(molecule->logical_block_ptrs[j]->clb_index == NO_CLUSTER);
 							iblk = molecule->logical_block_ptrs[j]->index;
-							if (!exists_free_primitive_for_logical_block(
+							if (!exists_free_primitive_for_atom_block(
 									cluster_placement_stats_ptr,
 									iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
 								success = false;

@@ -23,7 +23,7 @@ void free_cluster_placement_stats(
 		t_cluster_placement_stats *cluster_placement_stats);
 
 int get_array_size_of_molecule(const t_pack_molecule *molecule);
-bool exists_free_primitive_for_logical_block(
+bool exists_free_primitive_for_atom_block(
 		t_cluster_placement_stats *cluster_placement_stats,
 		const int ilogical_block);
 
