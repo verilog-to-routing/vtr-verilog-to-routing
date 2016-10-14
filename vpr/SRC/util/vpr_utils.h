@@ -23,7 +23,7 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
 bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *model_port, const int model_pin, const t_pb_graph_node *pb_graph_node);
-const t_pb_graph_pin* get_pb_graph_node_pin(AtomPinId pin_id);
+const t_pb_graph_pin* get_pb_graph_pin(AtomPinId pin_id);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin);

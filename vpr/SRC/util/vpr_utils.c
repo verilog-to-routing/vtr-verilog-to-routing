@@ -404,7 +404,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 //  TODO: currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
 //        in a more convenient interface. It should replace get_pb_graph_node_pin_from_model_port_pin() 
 //        when all clients have been transferred to this function
-const t_pb_graph_pin* get_pb_graph_node_pin(AtomPinId pin_id) {
+const t_pb_graph_pin* get_pb_graph_pin(AtomPinId pin_id) {
     VTR_ASSERT(pin_id);
 
     AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
