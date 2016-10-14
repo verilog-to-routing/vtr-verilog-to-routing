@@ -122,7 +122,7 @@ static int *seed_blend_index_array = NULL;
 /*local functions*/
 /*****************************************/
 
-static void check_clocks(bool *is_clock);
+static void check_clocks(const std::unordered_set<int>& is_clock);
 
 #if 0
 static void check_for_duplicate_inputs ();
@@ -195,7 +195,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 		bool connection_driven, t_pb *pb);
 
 static void update_cluster_stats( const t_pack_molecule *molecule,
-		const int clb_index, const bool *is_clock, const bool global_clocks,
+		const int clb_index, const std::unordered_set<int>& is_clock, const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven, const t_slack * slacks);
 
@@ -243,7 +243,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 /*****************************************/
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
-		int num_models, bool global_clocks, bool *is_clock,
+		int num_models, bool global_clocks, const std::unordered_set<int>& is_clock,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
@@ -712,7 +712,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 }
 
 /*****************************************/
-static void check_clocks(bool *is_clock) {
+static void check_clocks(const std::unordered_set<int>& is_clock) {
 
 	/* Checks that nets used as clock inputs to latches are never also used *
 	 * as VPACK_LUT inputs.  It's electrically questionable, and more importantly *
@@ -728,7 +728,7 @@ static void check_clocks(bool *is_clock) {
 				for (ipin = 0; ipin < port->size; ipin++) {
 					inet = logical_block[iblk].input_nets[port->index][ipin];
 					if (inet != OPEN) {
-						if (is_clock[inet]) {
+						if (is_clock.count(inet)) {
 							vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 									"Error in check_clocks.\n"
 									"Net %d (%s) is a clock, but also connects to a logic block input on logical_block %d (%s).\n"
@@ -1842,7 +1842,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 /*****************************************/
 static void update_cluster_stats( const t_pack_molecule *molecule,
-		const int clb_index, const bool *is_clock, const bool global_clocks,
+		const int clb_index, const std::unordered_set<int>& is_clock, const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven, const t_slack * slacks) {
 
@@ -1897,7 +1897,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 			for (ipin = 0; ipin < port->size; ipin++) {
 				inet = logical_block[new_blk].output_nets[port->index][ipin]; /* Output pin first. */
 				if (inet != OPEN) {
-					if (!is_clock[inet] || !global_clocks)
+					if (!is_clock.count(inet) || !global_clocks)
 						mark_and_update_partial_gain(inet, GAIN, new_blk,
 								timing_driven,
 								connection_driven, OUTPUT, slacks);

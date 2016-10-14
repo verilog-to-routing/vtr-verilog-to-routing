@@ -542,7 +542,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 }
 
 void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
-		bool * is_clock, const char *out_fname, bool skip_clustering) {
+		const std::unordered_set<int>& is_clock, const char *out_fname, bool skip_clustering) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *
@@ -550,8 +550,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	 * the cluster, in essentially a graph based format.                           */
 
 	FILE *fpout;
-	int bnum, column;
-	unsigned netnum;
+	int column;
 
 	if(!intra_lb_routing.empty()) {
 		VTR_ASSERT((int)intra_lb_routing.size() == num_clusters);
@@ -573,18 +572,18 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	fprintf(fpout, "\t<inputs>\n\t\t");
 
 	column = 2 * TAB_LENGTH; /* Organize whitespace to ident data inside block */
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_INPAD) {
-			print_string(logical_block[bnum].name, &column, 2, fpout);
+    for(auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
+			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, 2, fpout);
 		}
 	}
 	fprintf(fpout, "\n\t</inputs>\n");
 	fprintf(fpout, "\n\t<outputs>\n\t\t");
 
 	column = 2 * TAB_LENGTH;
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_OUTPAD) {
-			print_string(logical_block[bnum].name, &column, 2, fpout);
+    for(auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_nl.block_type(blk_id) == AtomBlockType::OUTPAD) {
+			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, 2, fpout);
 		}
 	}
 	fprintf(fpout, "\n\t</outputs>\n");
@@ -593,9 +592,14 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	if (global_clocks) {
 		fprintf(fpout, "\n\t<clocks>\n\t\t");
 
-		for (netnum = 0; netnum < g_atoms_nlist.net.size(); netnum++) {
-			if (is_clock[netnum]) {
-				print_string(g_atoms_nlist.net[netnum].name, &column, 2, fpout);
+        for(int inet = 0; inet < (int) g_atoms_nlist.net.size(); ++inet) {
+
+            //TODO: convert is_clock to use AtomNetId
+            if(is_clock.count(inet)) {
+                auto net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
+                VTR_ASSERT(net_id);
+
+				print_string(g_atom_nl.net_name(net_id).c_str(), &column, 2, fpout);
 			}
 		}
 		fprintf(fpout, "\n\t</clocks>\n\n");
@@ -603,27 +607,22 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 
 	/* Print out all input and output pads. */
 
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		switch (logical_block[bnum].type) {
-		case VPACK_INPAD:
-		case VPACK_OUTPAD:
-		case VPACK_COMB:
-		case VPACK_LATCH:
+    for(auto blk_id : g_atom_nl.blocks()) {
+        auto type = g_atom_nl.block_type(blk_id);
+		switch (type) {
+        case AtomBlockType::INPAD:
+        case AtomBlockType::OUTPAD:
+        case AtomBlockType::COMBINATIONAL:
+        case AtomBlockType::SEQUENTIAL:
 			if (skip_clustering) {
 				VTR_ASSERT(0);
 			}
 			break;
 
-		case VPACK_EMPTY:
-			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
-					"in output_netlist: logical_block %d is VPACK_EMPTY.\n",
-					bnum);
-			break;
-
 		default:
 			vtr::printf_error(__FILE__, __LINE__, 
-					"in output_netlist: Unexpected type %d for logical_block %d.\n", 
-					logical_block[bnum].type, bnum);
+					"in output_netlist: Unexpected type %d for atom block %s.\n", 
+					type, g_atom_nl.block_name(blk_id).c_str());
 		}
 	}
 
