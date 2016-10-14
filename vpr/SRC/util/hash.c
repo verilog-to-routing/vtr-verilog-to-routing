@@ -147,17 +147,16 @@ int hash_value(const char *name) {
 	 * overflow.								     */
 
 	int i;
-	int val = 0, mult = 1;
+	unsigned val = 0, mult = 1;
 
 	i = strlen(name);
 	for (i = strlen(name) - 1; i >= 0; i--) {
-		val += mult * ((int) name[i]);
+		val += mult * ((unsigned) name[i]);
 		mult *= 7;
 	}
-	val += (int) name[0];
+	val += (unsigned) name[0];
 	val %= HASHSIZE;
 	
-	val = abs(val);
 	return (val);
 }
 
