@@ -2232,9 +2232,9 @@ static t_pack_molecule *get_molecule_for_cluster(
 		t_lb_net_stats *clb_inter_blk_nets,
 		int cluster_index) {
 
-	/* Finds the vpack block with the the greatest gain that satisifies the      *
+	/* Finds the block with the the greatest gain that satisifies the      *
 	 * input, clock and capacity constraints of a cluster that are       *
-	 * passed in.  If no suitable vpack block is found it returns NO_CLUSTER.   
+	 * passed in.  If no suitable block is found it returns NO_CLUSTER.   
 	 */
 
 	t_pack_molecule *best_molecule;

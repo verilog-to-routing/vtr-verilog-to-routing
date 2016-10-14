@@ -408,7 +408,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-			vtr::printf_info("Routing net %s %d is impossible\n", vpack_net[lb_nets[inet].atom_net_index].name, inet);
+			vtr::printf_info("Routing net %s is impossible\n", g_atom_nl.net_name(lb_nets[inet].atom_net_id).c_str());
 			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
@@ -557,6 +557,9 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 		/* This is not a valid net */
 		return;
 	}
+
+    auto net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
+    VTR_ASSERT(net_id);
 	
 	/* Find if current net is in route tree, if not, then add to rt.
 	   Code assumes that # of nets in cluster is small so a linear search through vector is faster than using more complex data structures
@@ -569,11 +572,15 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, int iatom, in
 	}
 	if(found == false) {
 		struct t_intra_lb_net new_net;
+
 		new_net.atom_net_index = inet;
+        new_net.atom_net_id = net_id;
+
 		ipos = lb_nets.size();
 		lb_nets.push_back(new_net);
 	}
 	VTR_ASSERT(lb_nets[ipos].atom_net_index == inet);
+	VTR_ASSERT(lb_nets[ipos].atom_net_id == net_id);
 
 	/*
 	Determine whether or not this is a new intra lb net, if yes, then add to list of intra lb nets

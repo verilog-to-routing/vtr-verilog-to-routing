@@ -1,16 +1,17 @@
+#ifndef PACK_TYPES_H
+#define PACK_TYPES_H
 /**
  * Jason Luu
  * July 22, 2013
  *
  * Defines core data structures used in packing
  */
-
-#ifndef PACK_TYPES_H
-#define PACK_TYPES_H
-
-#include "arch_types.h"
 #include <map>
 #include <vector>
+
+#include "arch_types.h"
+#include "atom_netlist_fwd.h"
+
 
 
 /**************************************************************************
@@ -158,11 +159,13 @@ struct t_lb_trace {
 /* Represents a net used inside a logic block and the physical nodes used by the net */
 struct t_intra_lb_net {
 	int atom_net_index;					/* index of atomic net this intra_lb_net represents */
+    AtomNetId atom_net_id;
 	vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
 	t_lb_trace *rt_tree;				/* Route tree head */
 	
 	t_intra_lb_net() {
 		atom_net_index = OPEN;
+        atom_net_id = AtomNetId::INVALID();
 		rt_tree = NULL;
 	}
 };
