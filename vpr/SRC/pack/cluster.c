@@ -449,28 +449,30 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 
 		for (iblk = 0; iblk < num_logical_blocks; iblk++) {
-			/* Score seed gain of each block as a weighted sum of timing criticality, number of tightly coupled blocks connected to it, and number of external inputs */
+			/* Score seed gain of each block as a weighted sum of timing criticality, 
+             * number of tightly coupled blocks connected to it, and number of external inputs */
 			float seed_blend_fac = 0.5;
 			float max_blend_gain = 0;
-			vtr::t_linked_vptr *blk_molecules;
-			blk_molecules = logical_block[iblk].packed_molecules;
-			while(blk_molecules != NULL) {
-				int blocks_of_molecule = 0;
+
+            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+            VTR_ASSERT(blk_id);
+
+            auto molecule_rng = atom_molecules.equal_range(blk_id);
+            for(const auto& kv : vtr::make_range(molecule_rng.first, molecule_rng.second)) {
+                int blocks_of_molecule = 0;
 				int inputs_of_molecule = 0;
 				float blend_gain = 0;
 			
-				t_pack_molecule *blk_mol = (t_pack_molecule*) blk_molecules->data_vptr;
+				const t_pack_molecule* blk_mol = kv.second;
 				inputs_of_molecule = blk_mol->num_ext_inputs;
 				blocks_of_molecule = blk_mol->num_blocks;
-				blend_gain = (
-				              seed_blend_fac * block_criticality[iblk] + 
-							  (1-seed_blend_fac) * (inputs_of_molecule / max_molecule_inputs)
-							  ) * (1 + 0.2 * (blocks_of_molecule - 1));
+				blend_gain = (seed_blend_fac * block_criticality[iblk] 
+                              + (1-seed_blend_fac) * (inputs_of_molecule / max_molecule_inputs));
+                blend_gain *= (1 + 0.2 * (blocks_of_molecule - 1));
 				if(blend_gain > max_blend_gain) {
 					max_blend_gain = blend_gain;
 				}
-				blk_molecules = blk_molecules->next;
-			}
+            }
 			seed_blend_gain[iblk] = max_blend_gain;
 			
 		}
