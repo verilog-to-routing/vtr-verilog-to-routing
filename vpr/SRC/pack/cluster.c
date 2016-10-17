@@ -540,27 +540,36 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						primitives_list, clb[num_clb - 1].pb, num_models,
 						max_cluster_size, num_clb - 1, max_nets_in_pb_type, detailed_routing_stage, router_data);
 				prev_molecule = next_molecule;
+
+#ifdef DEBUG_FAILED_PACKING_CANDIDATES
+                auto blk_id = next_molecule->atom_block_ptrs[next_molecule->root];
+                VTR_ASSERT(blk_id);
+
+                std::string blk_name = g_atom_nl.block_name(blk_id);
+                const t_model* blk_model = g_atom_nl.block_model(blk_id);
+#endif
+
 				if (block_pack_status != BLK_PASSED) {
 					if (next_molecule != NULL) {
 						if (block_pack_status == BLK_FAILED_ROUTE) {
 #ifdef DEBUG_FAILED_PACKING_CANDIDATES
 							vtr::printf_direct("\tNO_ROUTE:%s type %s/n", 
-									next_molecule->atom_block_ptrs[next_molecule->root]->name, 
-									next_molecule->atom_block_ptrs[next_molecule->root]->model->name);
+									blk_name.c_str(), 
+									blk_model->name);
 							fflush(stdout);
-	#else
+#else
 							vtr::printf_direct(".");
-	#endif
+#endif
 						} else {
-	#ifdef DEBUG_FAILED_PACKING_CANDIDATES
+#ifdef DEBUG_FAILED_PACKING_CANDIDATES
 							vtr::printf_direct("\tFAILED_CHECK:%s type %s check %d\n", 
-									next_molecule->atom_block_ptrs[next_molecule->root]->name, 
-									next_molecule->atom_block_ptrs[next_molecule->root]->model->name, 
+									blk_name.c_str(), 
+									blk_model->name, 
 									block_pack_status);
 							fflush(stdout);
-	#else
+#else
 							vtr::printf_direct(".");
-	#endif
+#endif
 						}
 					}
 
@@ -573,14 +582,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					continue;
 				} else {
 					/* Continue packing by filling smallest cluster */
-	#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
+#ifdef DEBUG_FAILED_PACKING_CANDIDATES			
 					vtr::printf_direct("\tPASSED:%s type %s\n", 
-							next_molecule->atom_block_ptrs[next_molecule->root]->name, 
-							next_molecule->atom_block_ptrs[next_molecule->root]->model->name);
+							blk_name.c_str(), 
+							blk_model->name);
 					fflush(stdout);
-	#else
+#else
 					vtr::printf_direct(".");
-	#endif
+#endif
 				}
 				update_cluster_stats(next_molecule, num_clb - 1, is_clock,
 						global_clocks, alpha, beta, timing_driven,
