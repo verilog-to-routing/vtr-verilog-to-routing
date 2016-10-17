@@ -823,8 +823,14 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
 
-                auto rng = atom_molecules.equal_range(blk_id);
-				if(logical_block[j].packed_molecules == NULL || logical_block[j].packed_molecules->data_vptr != cur_molecule) {
+                //Note: atom_molecules is an (ordered) multimap so the last molecule 
+                //      inserted for a given blk_id will be the last valid element 
+                //      in the equal_range
+                auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
+                bool range_empty = (rng.first == rng.second);
+                auto last_valid_iter = --rng.second; //Iterator to last element
+                bool cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
+				if(range_empty || !cur_was_last_inserted) {
 					/* molecule did not cover current atom (possibly because molecule created is
                      * part of a long chain that extends past multiple logic blocks), try again */
 					j--;
@@ -847,7 +853,9 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_logical_block(i);
         g_atom_map.set_expected_lowest_cost_pb_gnode(blk_id, logical_block[i].expected_lowest_cost_primitive);
 
-		if (logical_block[i].packed_molecules == NULL) {
+        auto rng = atom_molecules.equal_range(blk_id);
+        bool rng_empty = (rng.first == rng.second);
+		if (rng_empty) {
 			cur_molecule = (t_pack_molecule*) vtr::calloc(1, sizeof(t_pack_molecule));
 			cur_molecule->valid = true;
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
