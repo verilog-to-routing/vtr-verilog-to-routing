@@ -232,7 +232,7 @@ static void check_clustering(int num_clb, t_block *clb);
 
 static void check_cluster_logical_blocks(t_pb *pb, bool *blocks_checked);
 
-static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool getblend);
+static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules, bool getblend);
 
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
@@ -486,9 +486,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		}
 
 		if (cluster_seed_type == VPACK_BLEND) {
-			istart = get_highest_gain_seed_molecule(&seedindex, true);
+			istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, true);
 		} else if (cluster_seed_type == VPACK_TIMING) {
-			istart = get_highest_gain_seed_molecule(&seedindex, false);
+			istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, false);
 		} else {/*max input seed*/
 			istart = get_seed_logical_molecule_with_most_ext_inputs(
 					max_molecule_inputs);
@@ -636,9 +636,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						blocks_since_last_analysis += num_blocks_hill_added;
 					}
 					if (cluster_seed_type == VPACK_BLEND) {
-						istart = get_highest_gain_seed_molecule(&seedindex, true);
+						istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, true);
 					} else if (cluster_seed_type == VPACK_TIMING) {
-						istart = get_highest_gain_seed_molecule(&seedindex, false);
+						istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, false);
 					} else { /*max input seed*/
 						istart = get_seed_logical_molecule_with_most_ext_inputs(
 								max_molecule_inputs);
@@ -2137,7 +2137,6 @@ static t_pack_molecule *get_highest_gain_molecule(
 
 	int i, j, iblk, index, inet, count;
 	bool success;
-	vtr::t_linked_vptr *cur;
 
 	t_pack_molecule *molecule;
 	molecule = NULL;
@@ -2414,14 +2413,13 @@ static void check_cluster_logical_blocks(t_pb *pb, bool *blocks_checked) {
 	}
 }
 
-static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool getblend) {
+static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules, bool getblend) {
 	/* Do_timing_analysis must be called before this, or this function 
 	 * will return garbage. Returns molecule with most critical block;
 	 * if block belongs to multiple molecules, return the biggest molecule. */
 
 	int blkidx;
-	t_pack_molecule *molecule, *best;
-	vtr::t_linked_vptr *cur;
+	t_pack_molecule *molecule = NULL, *best = NULL;
 
 	while (*seedindex < num_logical_blocks) {
 
@@ -2432,18 +2430,19 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool get
 		}
 
 		if (logical_block[blkidx].clb_index == NO_CLUSTER) {
-			cur = logical_block[blkidx].packed_molecules;
-			best = NULL;
-			while (cur != NULL) {
-				molecule = (t_pack_molecule *) cur->data_vptr;
+            auto blk_id = g_atom_nl.find_block(logical_block[blkidx].name);
+            VTR_ASSERT(blk_id);
+
+            auto rng = atom_molecules.equal_range(blk_id);
+            for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                molecule = kv.second;
 				if (molecule->valid) {
-					if (best == NULL
-							|| (best->base_gain) < (molecule->base_gain)) {
+					if (best == NULL || (best->base_gain) < (molecule->base_gain)) {
 						best = molecule;
 					}
 				}
-				cur = cur->next;
-			}
+
+            }
 			VTR_ASSERT(best != NULL);
 			return best;
 		}
