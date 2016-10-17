@@ -781,13 +781,11 @@ void reset_tried_but_unused_cluster_placements(
 static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const int clb_index) {
 	int i, j;
 	bool feasible;
-	t_logical_block *root_block;
 	t_model_ports *model_port;
 
 	feasible = true;
-	root_block = molecule->atom_block_ptrs[molecule->root];
 
-    AtomBlockId blk_id = g_atom_nl.find_block(root_block->name);
+    AtomBlockId blk_id = molecule->atom_block_ids[molecule->root];
 
 	for(i = 0; feasible && i < root->num_output_ports; i++) {
 		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
