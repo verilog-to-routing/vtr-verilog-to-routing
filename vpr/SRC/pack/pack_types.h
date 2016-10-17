@@ -69,8 +69,8 @@ typedef struct s_pb_stats {
 	int **output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used */
 
 	/* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
-	vector<int> *lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
-	vector<int> *lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+    std::vector<int> *lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+    std::vector<int> *lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
 
 	/* Array of feasible blocks to select from [0..max_array_size-1] 
 	 Sorted in ascending gain order so that the last block is the most desirable (this makes it easy to pop blocks off the list
@@ -153,13 +153,13 @@ struct t_lb_rr_node_stats {
 */
 struct t_lb_trace {
 	int	current_node;					/* current t_lb_type_rr_node used by net */
-	vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
+    std::vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
 };
 
 /* Represents a net used inside a logic block and the physical nodes used by the net */
 struct t_intra_lb_net {
     AtomNetId atom_net_id;              /* index of atom net this intra_lb_net represents */
-	vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
+    std::vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
 	t_lb_trace *rt_tree;				/* Route tree head */
 	
 	t_intra_lb_net() {
@@ -220,15 +220,15 @@ struct t_explored_node_tb {
 /* Stores all data needed by intra-logic block router */
 struct t_lb_router_data {
 	/* Physical Architecture Info */
-	vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
+    std::vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
 	
 	/* Logical Netlist Info */
-	vector <t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
+    std::vector<t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
 	
 	/* Saved nets */
-	vector <t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic block nets and their connections */
+    std::vector<t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic block nets and their connections */
 	
-	map <int, bool> *atoms_added;		/* map that records which atoms are added to cluster router */
+    std::map<AtomBlockId, bool> *atoms_added;		/* map that records which atoms are added to cluster router */
 
 	/* Logical-to-physical mapping info */
 	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block rr node instance */

@@ -115,7 +115,7 @@ t_lb_router_data *alloc_and_load_router_data(vector<t_lb_type_rr_node> *lb_type_
 	router_data->lb_rr_node_stats = new t_lb_rr_node_stats[size];
 	router_data->explored_node_tb = new t_explored_node_tb[size];
 	router_data->intra_lb_nets = new vector<t_intra_lb_net>;
-	router_data->atoms_added = new map<int, bool>;
+	router_data->atoms_added = new map<AtomBlockId, bool>;
 	router_data->lb_type = type;
 
 	return router_data;
@@ -149,17 +149,17 @@ void add_atom_as_target(t_lb_router_data *router_data, const int iatom) { //TODO
 	const t_model *model;
 	t_model_ports *model_ports;
 	int iport;
-	map <int, bool> & atoms_added = *router_data->atoms_added;
+    std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
     AtomBlockId blk_id = g_atom_nl.find_block(logical_block[iatom].name);
     VTR_ASSERT(blk_id);
 
 	pb = g_atom_map.atom_pb(blk_id);
 	
-	if(atoms_added.count(iatom) > 0) {
+	if(atoms_added.count(blk_id) > 0) {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", g_atom_nl.block_name(blk_id).c_str());
 	}
-	atoms_added[iatom] = true;
+	atoms_added[blk_id] = true;
 
 	set_reset_pb_modes(router_data, pb, true);
 
@@ -225,18 +225,15 @@ void add_atom_as_target(t_lb_router_data *router_data, const int iatom) { //TODO
 }
 
 /* Remove pins of netlist atom from current routing drivers/targets */
-void remove_atom_from_target(t_lb_router_data *router_data, const int iatom) {
+void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
 	const t_model *model;
 	t_model_ports *model_ports;
 	int iport;
-	map <int, bool> & atoms_added = *router_data->atoms_added;
-
-    AtomBlockId blk_id = g_atom_nl.find_block(logical_block[iatom].name);
-    VTR_ASSERT(blk_id);
+	map <AtomBlockId, bool> & atoms_added = *router_data->atoms_added;
 
 	const t_pb* pb = g_atom_map.atom_pb(blk_id);
 	
-	if(atoms_added.count(iatom) == 0) {
+	if(atoms_added.count(blk_id) == 0) {
 		return;
 	}
 	
@@ -298,7 +295,7 @@ void remove_atom_from_target(t_lb_router_data *router_data, const int iatom) {
 		model_ports = model_ports->next;
 	}
 
-	atoms_added.erase(iatom);
+	atoms_added.erase(blk_id);
 }
 
 /* Set/Reset mode of rr nodes to the pb used.  If set == true, then set all modes of the rr nodes affected by pb to the mode of the pb.

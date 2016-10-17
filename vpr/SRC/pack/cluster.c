@@ -1344,7 +1344,7 @@ static enum e_block_pack_status try_pack_molecule(
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {
 					if (molecule->atom_block_ids[i]) {
-						remove_atom_from_target(router_data, molecule->atom_block_ptrs[i]->index);
+						remove_atom_from_target(router_data, molecule->atom_block_ids[i]);
 					}
 				}
 				for (i = 0; i < failed_location; i++) {					
