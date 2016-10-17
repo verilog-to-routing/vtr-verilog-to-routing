@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cstdlib>
 
 #include "echo_arch.h"
 #include "arch_types.h"
