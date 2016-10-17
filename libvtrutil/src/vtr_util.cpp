@@ -1,5 +1,6 @@
 #include <cstdarg>
 #include <cstdlib>
+#include <cerrno> //For errno
 #include <cstring>
 #include <memory>
 
