@@ -163,6 +163,7 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 
 static enum e_block_pack_status try_pack_molecule(
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const int clb_index, const int max_nets_in_pb_type, const int detailed_routing_stage, t_lb_router_data *router_data);
@@ -202,7 +203,9 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
-		t_block *new_cluster, const int clb_index,
+		t_block *new_cluster, 
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const int clb_index,
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
 		const int num_models, const int max_cluster_size,
@@ -243,7 +246,9 @@ static void load_transitive_fanout_candidates(int cluster_index,
 /*****************************************/
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
-		int num_models, bool global_clocks, const std::unordered_set<int>& is_clock,
+		int num_models, bool global_clocks, 
+        const std::unordered_set<int>& is_clock,
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
@@ -501,7 +506,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list,
-					&clb[num_clb], num_clb, istart, aspect, num_used_instances_type,
+					&clb[num_clb], atom_molecules, num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
 					max_nets_in_pb_type, lb_type_rr_graphs, &router_data, detailed_routing_stage);
 			vtr::printf_info("Complex block %d: %s, type: %s\n", 
@@ -529,7 +534,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			prev_molecule = istart;
 			while (next_molecule != NULL && prev_molecule != next_molecule) {
 				block_pack_status = try_pack_molecule(
-						cur_cluster_placement_stats_ptr, next_molecule,
+						cur_cluster_placement_stats_ptr, 
+                        atom_molecules,
+                        next_molecule,
 						primitives_list, clb[num_clb - 1].pb, num_models,
 						max_cluster_size, num_clb - 1, max_nets_in_pb_type, detailed_routing_stage, router_data);
 				prev_molecule = next_molecule;
@@ -1235,6 +1242,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_nets_in_pb_type) {
  */
 static enum e_block_pack_status try_pack_molecule(
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const int clb_index, const int max_nets_in_pb_type, const int detailed_routing_stage, t_lb_router_data *router_data) {
@@ -1295,14 +1303,14 @@ static enum e_block_pack_status try_pack_molecule(
 				if (detailed_routing_stage == (int)E_DETAILED_ROUTE_FOR_EACH_ATOM && try_intra_lb_route(router_data) == false) {
 					/* Cannot pack */
 					block_pack_status = BLK_FAILED_ROUTE;
-				}
-				else{
+				} else {
 					/* Pack successful, commit 
 					 TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
 					 */
 					VTR_ASSERT(block_pack_status == BLK_PASSED);
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
-						/* Chained molecules often take up lots of area and are important, if a chain is packed in, want to rename logic block to match chain name */
+						/* Chained molecules often take up lots of area and are important, 
+                         * if a chain is packed in, want to rename logic block to match chain name */
 						chain_root_block = molecule->atom_block_ptrs[molecule->pack_pattern->root_block->block_id];
 						cur_pb = chain_root_block->pb->parent_pb;
 						while(cur_pb != NULL) {
@@ -1312,17 +1320,15 @@ static enum e_block_pack_status try_pack_molecule(
 						}
 					}
 					for (i = 0; i < molecule_size; i++) {
-						if (molecule->atom_block_ptrs[i] != NULL) {
+                        if (molecule->atom_block_ptrs[i] != NULL) {
 							/* invalidate all molecules that share logical block with current molecule */
-							cur_molecule =
-									molecule->atom_block_ptrs[i]->packed_molecules;
+							cur_molecule = molecule->atom_block_ptrs[i]->packed_molecules;
+
 							while (cur_molecule != NULL) {
-								((t_pack_molecule*) cur_molecule->data_vptr)->valid =
-										false;
+								((t_pack_molecule*) cur_molecule->data_vptr)->valid = false;
 								cur_molecule = cur_molecule->next;
 							}
-							commit_primitive(cluster_placement_stats_ptr,
-									primitives_list[i]);
+							commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
 						}
 					}
 				}
@@ -1953,7 +1959,9 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
-		t_block *new_cluster, const int clb_index,
+		t_block *new_cluster, 
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const int clb_index,
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
 		const int num_models, const int max_cluster_size,
@@ -2006,6 +2014,7 @@ static void start_new_cluster(
 					set_mode_cluster_placement_stats(new_cluster->pb->pb_graph_node, j);
 					success = (BLK_PASSED
 							== try_pack_molecule(&cluster_placement_stats[i],
+                                    atom_molecules,
 									molecule, primitives_list, new_cluster->pb,
 									num_models, max_cluster_size, clb_index,
 									max_nets_in_pb_type, detailed_routing_stage, *router_data));

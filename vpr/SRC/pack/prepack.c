@@ -780,6 +780,7 @@ static void backward_expand_pack_pattern_from_edge(
  */
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
 		const int num_packing_patterns) {
 	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
@@ -856,8 +857,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
 
-			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) vtr::calloc(1,
-					sizeof(vtr::t_linked_vptr));
+			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
 			logical_block[i].packed_molecules->data_vptr = (void*) cur_molecule;
 		}
 	}
