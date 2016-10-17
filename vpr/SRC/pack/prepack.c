@@ -876,8 +876,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
 
-			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
-			logical_block[i].packed_molecules->data_vptr = (void*) cur_molecule;
             atom_molecules.insert({blk_id, cur_molecule});
 		}
 	}
@@ -930,7 +928,6 @@ static t_pack_molecule *try_create_molecule(
 		int block_index) {
 	int i;
 	t_pack_molecule *molecule;
-	vtr::t_linked_vptr *molecule_linked_list;
 
 	bool failed = false;
 
@@ -970,10 +967,6 @@ static t_pack_molecule *try_create_molecule(
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
-			molecule_linked_list = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
-			molecule_linked_list->data_vptr = (void *) molecule;
-			molecule_linked_list->next = molecule->atom_block_ptrs[i]->packed_molecules;
-			molecule->atom_block_ptrs[i]->packed_molecules = molecule_linked_list;
 
             atom_molecules.insert({blk_id, molecule});
 		}

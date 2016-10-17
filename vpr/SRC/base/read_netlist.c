@@ -945,13 +945,6 @@ void free_logical_blocks(void) {
 			free(logical_block[iblk].clock_pin_name);
 		}
 
-		tvptr = logical_block[iblk].packed_molecules;
-		while (tvptr != NULL) {
-			next = tvptr->next;
-			free(tvptr);
-			tvptr = next;
-		}
-
 		free(logical_block[iblk].input_nets);
 		port = logical_block[iblk].model->outputs;
 		i = 0;
