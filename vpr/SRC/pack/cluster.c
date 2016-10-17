@@ -213,6 +213,7 @@ static void start_new_cluster(
 
 static t_pack_molecule* get_highest_gain_molecule(
 		t_pb *cur_pb,
+        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		t_lb_net_stats *clb_inter_blk_nets,
@@ -220,6 +221,7 @@ static t_pack_molecule* get_highest_gain_molecule(
 
 static t_pack_molecule* get_molecule_for_cluster(
 		t_pb *cur_pb,
+        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const bool allow_unrelated_clustering,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
@@ -528,7 +530,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					- 1].type->index];
 			num_unrelated_clustering_attempts = 0;
 			next_molecule = get_molecule_for_cluster(
-					clb[num_clb - 1].pb, allow_unrelated_clustering,
+					clb[num_clb - 1].pb, 
+                    atom_molecules,
+                    allow_unrelated_clustering,
 					&num_unrelated_clustering_attempts,
 					cur_cluster_placement_stats_ptr,
 					clb_inter_blk_nets,
@@ -576,7 +580,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					}
 
 					next_molecule = get_molecule_for_cluster(
-							clb[num_clb - 1].pb, allow_unrelated_clustering,
+							clb[num_clb - 1].pb,
+                            atom_molecules,
+                            allow_unrelated_clustering,
 							&num_unrelated_clustering_attempts,
 							cur_cluster_placement_stats_ptr,
 							clb_inter_blk_nets,
@@ -602,7 +608,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
 				}
 				next_molecule = get_molecule_for_cluster(
-						clb[num_clb - 1].pb, allow_unrelated_clustering,
+						clb[num_clb - 1].pb,
+                        atom_molecules,
+                        allow_unrelated_clustering,
 						&num_unrelated_clustering_attempts,
 						cur_cluster_placement_stats_ptr,
 						clb_inter_blk_nets,
@@ -2116,6 +2124,7 @@ Molecule selection priority:
 */
 static t_pack_molecule *get_highest_gain_molecule(
 		t_pb *cur_pb,
+        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
 		t_lb_net_stats *clb_inter_blk_nets,
@@ -2145,16 +2154,19 @@ static t_pack_molecule *get_highest_gain_molecule(
 		for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
 			iblk = cur_pb->pb_stats->marked_blocks[i];
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				cur = logical_block[iblk].packed_molecules;
-				while (cur != NULL) {
-					molecule = (t_pack_molecule *) cur->data_vptr;
+                auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+                VTR_ASSERT(blk_id);
+
+                auto rng = atom_molecules.equal_range(blk_id);
+                for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                    molecule = kv.second;
 					if (molecule->valid) {
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
 								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
-								auto blk_id = molecule->atom_block_ids[j];
-								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
+								auto blk_id2 = molecule->atom_block_ids[j];
+								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule 
                                      * (more robust) or individual logical blocks (faster) */
 									success = false;
@@ -2166,9 +2178,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 							add_molecule_to_pb_stats_candidates(molecule,
 									cur_pb->pb_stats->gain, cur_pb, AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE);
 						}
-					}
-					cur = cur->next;
-				}
+                    }
+                }
 			}
 		}
 	}
@@ -2182,16 +2193,19 @@ static t_pack_molecule *get_highest_gain_molecule(
 		for (i = 0; i < (int) g_atoms_nlist.net[inet].pins.size() && count < AAPACK_MAX_HIGH_FANOUT_EXPLORE; i++) {
 			iblk = g_atoms_nlist.net[inet].pins[i].block;
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				cur = logical_block[iblk].packed_molecules;
-				while (cur != NULL) {
-					molecule = (t_pack_molecule *) cur->data_vptr;
+                auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+                VTR_ASSERT(blk_id);
+
+                auto rng = atom_molecules.equal_range(blk_id);
+                for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                    molecule = kv.second;
 					if (molecule->valid) {
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
 								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
-								auto blk_id = molecule->atom_block_ids[j];
-								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
+								auto blk_id2 = molecule->atom_block_ids[j];
+								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule (more 
                                      * robust) or individual logical blocks (faster) */
 									success = false;
@@ -2205,8 +2219,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 							count++;
 						}
 					}
-					cur = cur->next;
-				}
+                }
 			}
 		} 
 		cur_pb->pb_stats->tie_break_high_fanout_net = OPEN; /* Mark off that this high fanout net has been considered */
@@ -2273,6 +2286,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 /*****************************************/
 static t_pack_molecule *get_molecule_for_cluster(
 		t_pb *cur_pb,
+        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const bool allow_unrelated_clustering,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
@@ -2288,7 +2302,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 
 	/* If cannot pack into primitive, try packing into cluster */
 
-	best_molecule = get_highest_gain_molecule(cur_pb,
+	best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
 			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index);
 
 	/* If no blocks have any gain to the current cluster, the code above *
