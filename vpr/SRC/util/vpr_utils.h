@@ -53,7 +53,6 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 		int * end_pin_index, char * pb_type_name, char * port_name);
 
 
-void free_cb(t_pb *pb);
 void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
 

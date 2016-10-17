@@ -693,17 +693,10 @@ int num_ext_inputs_logical_block(int iblk) {
 	return (ext_inps);
 }
 
-
-void free_cb(t_pb *pb) {
-
-	if (pb == NULL) {
-		return;
-	}
-
-	free_pb(pb);
-}
-
 void free_pb(t_pb *pb) {
+    if(pb == NULL) {
+        return;
+    }
 
 	const t_pb_type * pb_type;
 	int i, j, mode;

@@ -665,7 +665,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			} else {
 				/* Free up data structures and requeue used molecules */
 				num_used_instances_type[clb[num_clb - 1].type->index]--;
-				free_cb(clb[num_clb - 1].pb);
+				free_pb(clb[num_clb - 1].pb);
 				free(clb[num_clb - 1].pb);
 				free(clb[num_clb - 1].name);
 				clb[num_clb - 1].name = NULL;
@@ -699,7 +699,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free_cluster_placement_stats(cluster_placement_stats);
 
 	for (i = 0; i < num_clb; i++) {
-		free_cb(clb[i].pb);
+		free_pb(clb[i].pb);
 		free(clb[i].name);
 		free(clb[i].nets);
 		free(clb[i].pb);
