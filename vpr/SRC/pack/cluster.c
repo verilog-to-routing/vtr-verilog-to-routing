@@ -163,7 +163,7 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 
 static enum e_block_pack_status try_pack_molecule(
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const int clb_index, const int max_nets_in_pb_type, const int detailed_routing_stage, t_lb_router_data *router_data);
@@ -204,7 +204,7 @@ static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
 		t_block *new_cluster, 
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int clb_index,
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
@@ -248,7 +248,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
         const std::unordered_set<int>& is_clock,
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
@@ -1252,7 +1252,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_nets_in_pb_type) {
  */
 static enum e_block_pack_status try_pack_molecule(
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const int clb_index, const int max_nets_in_pb_type, const int detailed_routing_stage, t_lb_router_data *router_data) {
@@ -1997,7 +1997,7 @@ static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
 		t_block *new_cluster, 
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int clb_index,
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,

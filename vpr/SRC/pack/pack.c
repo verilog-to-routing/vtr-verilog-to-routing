@@ -29,7 +29,7 @@ static std::unordered_set<int> alloc_and_load_is_clock(bool global_clocks);
 void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 		const t_model *user_models, const t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
     std::unordered_set<int> is_clock;
-    std::unordered_map<AtomBlockId,vtr::t_linked_vptr*> atom_molecules; //The molecules associated with each atom block
+    std::unordered_multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
 	int num_models;
 	const t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;

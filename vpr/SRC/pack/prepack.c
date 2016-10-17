@@ -54,7 +54,9 @@ static void backward_expand_pack_pattern_from_edge(
 static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_patterns *pattern_b);
 static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_pattern_block **pattern_block_list);
 static t_pack_molecule *try_create_molecule(
-		t_pack_patterns *list_of_pack_patterns, const int pack_pattern_index,
+		t_pack_patterns *list_of_pack_patterns, 
+        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        const int pack_pattern_index,
 		int block_index);
 static bool try_expand_molecule(t_pack_molecule *molecule,
 		const int logical_block_index,
@@ -780,7 +782,7 @@ static void backward_expand_pack_pattern_from_edge(
  */
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& /*atom_molecules*/,
+        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const int num_packing_patterns) {
 	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
@@ -808,16 +810,16 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		VTR_ASSERT(is_used[best_pattern] == false);
 		is_used[best_pattern] = true;
 		for (j = 0; j < num_logical_blocks; j++) {
-			cur_molecule = try_create_molecule(list_of_pack_patterns, best_pattern, j);
+			cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, j);
 			if (cur_molecule != NULL) {
 				cur_molecule->next = list_of_molecules_head;
 				/* In the event of multiple molecules with the same logical block pattern, 
                  * bias to use the molecule with less costly physical resources first 
                  */
 				/* TODO: Need to normalize magical number 100 */
-				cur_molecule->base_gain = cur_molecule->num_blocks
-						- (cur_molecule->pack_pattern->base_cost / 100);
+				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
+
 				if(logical_block[j].packed_molecules == NULL || logical_block[j].packed_molecules->data_vptr != cur_molecule) {
 					/* molecule did not cover current atom (possibly because molecule created is
                      * part of a long chain that extends past multiple logic blocks), try again */
@@ -842,8 +844,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
         g_atom_map.set_expected_lowest_cost_pb_gnode(blk_id, logical_block[i].expected_lowest_cost_primitive);
 
 		if (logical_block[i].packed_molecules == NULL) {
-			cur_molecule = (t_pack_molecule*) vtr::calloc(1,
-					sizeof(t_pack_molecule));
+			cur_molecule = (t_pack_molecule*) vtr::calloc(1, sizeof(t_pack_molecule));
 			cur_molecule->valid = true;
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
@@ -862,6 +863,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 
 			logical_block[i].packed_molecules = (vtr::t_linked_vptr*) vtr::calloc(1, sizeof(vtr::t_linked_vptr));
 			logical_block[i].packed_molecules->data_vptr = (void*) cur_molecule;
+            atom_molecules.insert({blk_id, cur_molecule});
 		}
 	}
 
@@ -907,7 +909,9 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
  * Side Effect: If successful, link atom to molecule
  */
 static t_pack_molecule *try_create_molecule(
-		t_pack_patterns *list_of_pack_patterns, const int pack_pattern_index,
+		t_pack_patterns *list_of_pack_patterns, 
+        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        const int pack_pattern_index,
 		int block_index) {
 	int i;
 	t_pack_molecule *molecule;
@@ -946,7 +950,8 @@ static t_pack_molecule *try_create_molecule(
 			molecule->pack_pattern->root_block) == true) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
-			if(!molecule->atom_block_ids[i]) {
+            auto blk_id = molecule->atom_block_ids[i];
+			if(!blk_id) {
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
@@ -954,7 +959,8 @@ static t_pack_molecule *try_create_molecule(
 			molecule_linked_list->data_vptr = (void *) molecule;
 			molecule_linked_list->next = molecule->atom_block_ptrs[i]->packed_molecules;
 			molecule->atom_block_ptrs[i]->packed_molecules = molecule_linked_list;
-            //TODO: update atom_molecules
+
+            atom_molecules.insert({blk_id, molecule});
 		}
 	} else {
 		failed = true;
