@@ -700,8 +700,6 @@ void free_pb(t_pb *pb) {
 
 	const t_pb_type * pb_type;
 	int i, j, mode;
-	vtr::t_linked_vptr *revalid_molecule;
-	t_pack_molecule *cur_molecule;
 
 	pb_type = pb->pb_graph_node->pb_type;
 
@@ -738,30 +736,57 @@ void free_pb(t_pb *pb) {
             g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
             g_atom_map.set_atom_pb(blk_id, NULL);
 
-			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
-			revalid_molecule = logical_block[pb->logical_block].packed_molecules;
-			while (revalid_molecule != NULL) {
-				cur_molecule = (t_pack_molecule*)revalid_molecule->data_vptr;
-				if (cur_molecule->valid == false) {
-					for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-						if (cur_molecule->atom_block_ids[i]) {
-							if (g_atom_map.atom_clb(cur_molecule->atom_block_ids[i]) != OPEN) {
-								break;
-							}
-						}
-					}
-					/* All logical blocks are open for this molecule, place back in queue */
-					if (i == get_array_size_of_molecule(cur_molecule)) {
-						cur_molecule->valid = true;	
-					}
-				}
-				revalid_molecule = revalid_molecule->next;
-			}
 		}
 		pb->logical_block = OPEN;
         g_atom_map.set_atom_pb(AtomBlockId::INVALID(), pb);
 	}
 	free_pb_stats(pb);
+}
+
+void revalid_molecules(t_pb* pb, std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
+	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
+
+	if (pb_type->blif_model == NULL) {
+		int mode = pb->mode;
+		for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
+			for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != NULL; j++) {
+				if (pb->child_pbs[i][j].name != NULL || pb->child_pbs[i][j].child_pbs != NULL) {
+					revalid_molecules(&pb->child_pbs[i][j], atom_molecules);
+				}
+			}
+        }
+    } else {
+        //Primitive
+		if (pb->logical_block != EMPTY_BLOCK && pb->logical_block != INVALID_BLOCK && logical_block != NULL) {
+
+            /* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
+            auto blk_id = g_atom_nl.find_block(logical_block[pb->logical_block].name);
+            VTR_ASSERT(blk_id);
+
+            //Update atom netlist mapping
+            g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
+            g_atom_map.set_atom_pb(blk_id, NULL);
+
+            auto rng = atom_molecules.equal_range(blk_id);
+            for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                t_pack_molecule* cur_molecule = kv.second;
+                if (cur_molecule->valid == false) {
+                    int i;
+                    for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
+                        if (cur_molecule->atom_block_ids[i]) {
+                            if (g_atom_map.atom_clb(cur_molecule->atom_block_ids[i]) != OPEN) {
+                                break;
+                            }
+                        }
+                    }
+                    /* All logical blocks are open for this molecule, place back in queue */
+                    if (i == get_array_size_of_molecule(cur_molecule)) {
+                        cur_molecule->valid = true;	
+                    }
+                }
+            }
+        }
+    }
 }
 
 void free_pb_stats(t_pb *pb) {

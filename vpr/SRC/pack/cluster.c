@@ -174,7 +174,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		const int max_nets_in_pb_type,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data);
-static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data);
+static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data, 
+        std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules);
 
 static void update_connection_gain_values(int inet, int clustered_block,
 		t_pb * cur_pb,
@@ -251,7 +252,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
         const std::unordered_set<int>& is_clock,
-        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
@@ -665,6 +666,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			} else {
 				/* Free up data structures and requeue used molecules */
 				num_used_instances_type[clb[num_clb - 1].type->index]--;
+                revalid_molecules(clb[num_clb - 1].pb, atom_molecules);
 				free_pb(clb[num_clb - 1].pb);
 				free(clb[num_clb - 1].pb);
 				free(clb[num_clb - 1].name);
@@ -1362,7 +1364,8 @@ static enum e_block_pack_status try_pack_molecule(
 					if (molecule->atom_block_ids[i]) {
 						revert_place_atom_block(
 								molecule->atom_block_ptrs[i]->index,
-								router_data);
+								router_data,
+                                atom_molecules);
 					}
 				}
 			}
@@ -1505,7 +1508,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 /* Revert trial logical block iblock and free up memory space accordingly 
  */
-static void revert_place_atom_block(const int iblock, t_lb_router_data *router_data) {
+static void revert_place_atom_block(const int iblock, t_lb_router_data *router_data,
+    std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules) {
 	t_pb *pb, *next;
 
 	pb = logical_block[iblock].pb;
@@ -1524,6 +1528,7 @@ static void revert_place_atom_block(const int iblock, t_lb_router_data *router_d
 		 */
 
 		next = pb->parent_pb;
+        revalid_molecules(pb, atom_molecules);
 		free_pb(pb);
 		pb = next;
 
@@ -1537,7 +1542,10 @@ static void revert_place_atom_block(const int iblock, t_lb_router_data *router_d
 					&& pb->pb_stats->num_child_blocks_in_pb == 0) {
 				set_reset_pb_modes(router_data, pb, false);
 				if (next != NULL) {
-					/* If the code gets here, then that means that placing the initial seed molecule failed, don't free the actual complex block itself as the seed needs to find another placement */
+					/* If the code gets here, then that means that placing the initial seed molecule 
+                     * failed, don't free the actual complex block itself as the seed needs to find 
+                     * another placement */
+                    revalid_molecules(pb, atom_molecules);
 					free_pb(pb);
 				}
 			}
