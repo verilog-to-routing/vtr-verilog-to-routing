@@ -1261,7 +1261,6 @@ static enum e_block_pack_status try_pack_molecule(
 	int molecule_size, failed_location;
 	int i;
 	enum e_block_pack_status block_pack_status;
-	vtr::t_linked_vptr *cur_molecule;
 	t_pb *parent;
 	t_pb *cur_pb;
 	bool is_root_of_chain;
@@ -1332,12 +1331,13 @@ static enum e_block_pack_status try_pack_molecule(
 					for (i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
 							/* invalidate all molecules that share logical block with current molecule */
-							cur_molecule = molecule->atom_block_ptrs[i]->packed_molecules;
 
-							while (cur_molecule != NULL) {
-								((t_pack_molecule*) cur_molecule->data_vptr)->valid = false;
-								cur_molecule = cur_molecule->next;
-							}
+                            auto rng = atom_molecules.equal_range(molecule->atom_block_ids[i]);
+                            for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                                t_pack_molecule* cur_molecule = kv.second;
+                                cur_molecule->valid = false;
+                            }
+
 							commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
 						}
 					}
