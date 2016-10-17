@@ -485,8 +485,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 					}
 				}
 				for (i = 0; i < list_size; i++) {
-					VTR_ASSERT(
-							(primitives_list[i] == NULL) == (molecule->atom_block_ptrs[i] == NULL));
+					VTR_ASSERT( (primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
 					for (int j = 0; j < list_size; j++) {
 						if(i != j) {
 							if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
@@ -523,7 +522,7 @@ static bool expand_forced_pack_molecule_placement(
 		} else {
 			next_block = cur->from_block;
 		}
-		if (primitives_list[next_block->block_id] == NULL && molecule->atom_block_ptrs[next_block->block_id] != NULL) {
+		if (primitives_list[next_block->block_id] == NULL && molecule->atom_block_ids[next_block->block_id]) {
 			/* first time visiting location */
 
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
@@ -554,8 +553,7 @@ static bool expand_forced_pack_molecule_placement(
 			if (next_pin != NULL) {
 				next_primitive = next_pin->parent_node;
 				/* Check for legality of placement, if legal, expand from legal placement, if not, return false */
-				if (molecule->atom_block_ptrs[next_block->block_id] != NULL
-						&& primitives_list[next_block->block_id] == NULL) {
+				if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == NULL) {
 					if (next_primitive->cluster_placement_primitive->valid
 							== true
 							&& primitive_type_feasible(
