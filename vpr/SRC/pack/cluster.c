@@ -1074,7 +1074,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 	 * avail > 0.                                                      */
 
 	struct s_molecule_link *ptr, *prev_ptr;
-	int ilogical_blk, i;
+	int i;
 	bool success;
 
 	prev_ptr = &unclustered_list_head[ext_inps];
@@ -1085,8 +1085,8 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 			success = true;
 			for (i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
 				if (ptr->moleculeptr->atom_block_ids[i]) {
-					ilogical_blk = ptr->moleculeptr->atom_block_ptrs[i]->index;
-					if (!exists_free_primitive_for_atom_block( cluster_placement_stats_ptr, ilogical_blk)) { 
+					auto blk_id = ptr->moleculeptr->atom_block_ids[i];
+					if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
                         /* TODO: I should be using a better filtering check especially when I'm 
                          * dealing with multiple clock/multiple global reset signals where the clock/reset 
                          * packed in matters, need to do later when I have the circuits to check my work */
@@ -2124,8 +2124,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
 								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
-								iblk = molecule->atom_block_ptrs[j]->index;
-								if (!exists_free_primitive_for_atom_block( cluster_placement_stats_ptr, iblk)) { 
+								auto blk_id = molecule->atom_block_ids[j];
+								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
                                     /* TODO: debating whether to check if placement exists for molecule 
                                      * (more robust) or individual logical blocks (faster) */
 									success = false;
@@ -2161,10 +2161,10 @@ static t_pack_molecule *get_highest_gain_molecule(
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
 								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
-								iblk = molecule->atom_block_ptrs[j]->index;
-								if (!exists_free_primitive_for_atom_block(
-										cluster_placement_stats_ptr,
-										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+								auto blk_id = molecule->atom_block_ids[j];
+								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
+                                    /* TODO: debating whether to check if placement exists for molecule (more 
+                                     * robust) or individual logical blocks (faster) */
 									success = false;
 									break;
 								}
@@ -2203,10 +2203,10 @@ static t_pack_molecule *get_highest_gain_molecule(
 					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 						if (molecule->atom_block_ids[j]) {
 							VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
-							iblk = molecule->atom_block_ptrs[j]->index;
-							if (!exists_free_primitive_for_atom_block(
-									cluster_placement_stats_ptr,
-									iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+							auto blk_id = molecule->atom_block_ids[j];
+							if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
+                                /* TODO: debating whether to check if placement exists for molecule (more 
+                                 * robust) or individual logical blocks (faster) */
 								success = false;
 								break;
 							}
