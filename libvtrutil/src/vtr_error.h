@@ -2,6 +2,7 @@
 #define VTR_ERROR_H
 
 #include <stdexcept>
+#include <string>
 
 namespace vtr {
 
