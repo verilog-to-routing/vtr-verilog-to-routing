@@ -174,7 +174,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		const int max_nets_in_pb_type,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data);
-static void revert_place_logical_block(const int ilogical_block, t_lb_router_data *router_data);
+static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data);
 
 static void update_connection_gain_values(int inet, int clustered_block,
 		t_pb * cur_pb,
@@ -1349,7 +1349,7 @@ static enum e_block_pack_status try_pack_molecule(
 				}
 				for (i = 0; i < failed_location; i++) {					
 					if (molecule->atom_block_ids[i]) {
-						revert_place_logical_block(
+						revert_place_atom_block(
 								molecule->atom_block_ptrs[i]->index,
 								router_data);
 					}
@@ -1494,7 +1494,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 /* Revert trial logical block iblock and free up memory space accordingly 
  */
-static void revert_place_logical_block(const int iblock, t_lb_router_data *router_data) {
+static void revert_place_atom_block(const int iblock, t_lb_router_data *router_data) {
 	t_pb *pb, *next;
 
 	pb = logical_block[iblock].pb;
