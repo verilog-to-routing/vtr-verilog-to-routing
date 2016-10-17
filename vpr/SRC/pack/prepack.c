@@ -946,7 +946,7 @@ static t_pack_molecule *try_create_molecule(
 			molecule->pack_pattern->root_block) == true) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
-			if(molecule->atom_block_ptrs[i] == NULL) {
+			if(!molecule->atom_block_ids[i]) {
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
@@ -985,8 +985,10 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 	is_optional = is_block_optional[current_pattern_block->block_id];
 
 		/* If the block in the pattern has already been visited, then there is no need to revisit it */
-	if (molecule->atom_block_ptrs[current_pattern_block->block_id] != NULL) {
-		if (molecule->atom_block_ptrs[current_pattern_block->block_id] != &logical_block[logical_block_index]) {
+	if (molecule->atom_block_ids[current_pattern_block->block_id]) {
+        auto blk_id = g_atom_nl.find_block(logical_block[logical_block_index].name);
+        VTR_ASSERT(blk_id);
+		if (molecule->atom_block_ids[current_pattern_block->block_id] != blk_id) {
 			/* Mismatch between the visited block and the current block implies 
              * that the current netlist structure does not match the expected pattern, 
              * return whether or not this matters */
@@ -1084,21 +1086,19 @@ static void print_pack_molecules(const char *fname,
 	while (list_of_molecules_current != NULL) {
 		if (list_of_molecules_current->type == MOLECULE_SINGLE_ATOM) {
 			fprintf(fp, "\nmolecule type: atom\n");
-			fprintf(fp, "\tpattern index %d: logical block [%d] name %s\n", i,
-					list_of_molecules_current->atom_block_ptrs[0]->index,
-					list_of_molecules_current->atom_block_ptrs[0]->name);
+			fprintf(fp, "\tpattern index %d: logical block %s\n", i,
+					g_atom_nl.block_name(list_of_molecules_current->atom_block_ids[0]).c_str());
 		} else if (list_of_molecules_current->type == MOLECULE_FORCED_PACK) {
 			fprintf(fp, "\nmolecule type: %s\n",
 					list_of_molecules_current->pack_pattern->name);
 			for (i = 0; i < list_of_molecules_current->pack_pattern->num_blocks;
 					i++) {
-				if(list_of_molecules_current->atom_block_ptrs[i] == NULL) {
+				if(!list_of_molecules_current->atom_block_ids[i]) {
 					fprintf(fp, "\tpattern index %d: empty \n",	i);
 				} else {
-					fprintf(fp, "\tpattern index %d: logical block [%d] name %s",
+					fprintf(fp, "\tpattern index %d: logical block %s",
 						i,
-						list_of_molecules_current->atom_block_ptrs[i]->index,
-						list_of_molecules_current->atom_block_ptrs[i]->name);
+						g_atom_nl.block_name(list_of_molecules_current->atom_block_ids[i]).c_str());
 					if(list_of_molecules_current->pack_pattern->root_block->block_id == i) {
 						fprintf(fp, " root node\n");
 					} else {
