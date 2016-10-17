@@ -33,7 +33,7 @@ extern const char* lb_rr_type_str[];
 /* Stores statistical information for a physical block such as costs and usages */
 typedef struct s_pb_stats {
 	/* Packing statistics */
-	std::map<int, float> gain; /* Attraction (inverse of cost) function */
+	std::map<AtomBlockId, float> gain; /* Attraction (inverse of cost) function */
 
 	std::map<int, float> timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
 	 Determined by the most critical g_atoms_nlist.net between this logical_block and any logical_block in the current pb */

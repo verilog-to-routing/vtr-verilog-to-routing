@@ -131,7 +131,7 @@ static void check_for_duplicate_inputs ();
 static bool is_logical_blk_in_pb(int iblk, t_pb *pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		map<int, float> &gain, t_pb *pb, int max_queue_size);
+		map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size);
 
 static void alloc_and_init_clustering(int max_molecule_inputs,
 		t_cluster_placement_stats **cluster_placement_stats,
@@ -232,7 +232,7 @@ static void check_cluster_logical_blocks(t_pb *pb, bool *blocks_checked);
 
 static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool getblend);
 
-static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_gain);
+static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
 static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin);
@@ -774,7 +774,7 @@ static bool is_logical_blk_in_pb(int iblk, t_pb *pb) {
 
 /* Add blk to list of feasible blocks sorted according to gain */
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
-		map<int, float> &gain, t_pb *pb, int max_queue_size) {
+		map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size) {
 	int i, j;
 
 	for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
@@ -1349,7 +1349,6 @@ static enum e_block_pack_status try_pack_molecule(
 				}
 				for (i = 0; i < failed_location; i++) {					
 					if (molecule->atom_block_ids[i]) {
-                        VTR_ASSERT(molecule->atom_block_ptrs[i] != NULL);
 						revert_place_logical_block(
 								molecule->atom_block_ptrs[i]->index,
 								router_data);
@@ -1790,6 +1789,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 		for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
 			iblk = cur_pb->pb_stats->marked_blocks[i];
+            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
 
 			if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
 				cur_pb->pb_stats->connectiongain[iblk] = 0;
@@ -1833,12 +1833,12 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
             VTR_ASSERT(num_used_pins > 0);
 			if (connection_driven) {
 				/*try to absorb as many connections as possible*/
-				cur_pb->pb_stats->gain[iblk] = ((1 - beta)
+				cur_pb->pb_stats->gain[blk_id] = ((1 - beta)
 						* (float) cur_pb->pb_stats->sharinggain[iblk]
 						+ beta * (float) cur_pb->pb_stats->connectiongain[iblk])
 						/ (num_used_pins);
 			} else {
-				cur_pb->pb_stats->gain[iblk] =
+				cur_pb->pb_stats->gain[blk_id] =
 						((float) cur_pb->pb_stats->sharinggain[iblk])
 								/ (num_used_pins);
 
@@ -1846,9 +1846,9 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 			/* Add in timing driven cost into cost function */
 			if (timing_driven) {
-				cur_pb->pb_stats->gain[iblk] = alpha
+				cur_pb->pb_stats->gain[blk_id] = alpha
 						* cur_pb->pb_stats->timinggain[iblk]
-						+ (1.0 - alpha) * (float) cur_pb->pb_stats->gain[iblk];
+						+ (1.0 - alpha) * (float) cur_pb->pb_stats->gain[blk_id];
 			}
 		}
 		cur_pb = cur_pb->parent_pb;
@@ -2413,7 +2413,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool get
  gain is equal to total_block_gain + molecule_base_gain*some_factor - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
 
  */
-static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_gain) {
+static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain) {
 	float gain;
 	int i, ipin;
 	int num_introduced_inputs_of_indirectly_related_block;
@@ -2424,8 +2424,8 @@ static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_g
 	for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
         auto blk_id = molecule->atom_block_ids[i];
 		if (blk_id) {
-			if(blk_gain.count(molecule->atom_block_ptrs[i]->index) > 0) {
-				gain += blk_gain[molecule->atom_block_ptrs[i]->index];
+			if(blk_gain.count(blk_id) > 0) {
+				gain += blk_gain[blk_id];
 			} else {
 				/* This block has no connection with current cluster, penalize molecule for having this block 
 				 */
@@ -2877,14 +2877,16 @@ static void load_transitive_fanout_candidates(int cluster_index,
 						int tnet = clb_inter_blk_nets[tclb].nets_in_lb[itnet];
 						for(unsigned int tpin = 0; tpin < g_atoms_nlist.net[tnet].pins.size(); tpin++) {
 							int tatom = g_atoms_nlist.net[tnet].pins[tpin].block;
-							if(logical_block[tatom].clb_index == NO_CLUSTER) {
+                            auto blk_id = g_atom_nl.find_block(logical_block[tatom].name);
+                            VTR_ASSERT(blk_id);
+							if(g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 								/* This transitive atom is not packed, score and add */
 								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
 
-								if(pb_stats->gain.count(tatom) == 0) {
-									pb_stats->gain[tatom] = 0.001;									
+								if(pb_stats->gain.count(blk_id) == 0) {
+									pb_stats->gain[blk_id] = 0.001;									
 								} else {
-									pb_stats->gain[tatom] += 0.001;									
+									pb_stats->gain[blk_id] += 0.001;									
 								}
 								vtr::t_linked_vptr *cur;
 								cur = logical_block[tatom].packed_molecules;
