@@ -16,7 +16,7 @@ void free_list_of_pack_patterns(t_pack_patterns *list_of_pack_patterns, const in
 
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
-        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const int num_packing_patterns);
 
 #endif

@@ -55,7 +55,7 @@ static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_p
 static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_pattern_block **pattern_block_list);
 static t_pack_molecule *try_create_molecule(
 		t_pack_patterns *list_of_pack_patterns, 
-        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
 		int block_index);
 static bool try_expand_molecule(t_pack_molecule *molecule,
@@ -782,7 +782,7 @@ static void backward_expand_pack_pattern_from_edge(
  */
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
-        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const int num_packing_patterns) {
 	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
@@ -810,6 +810,9 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		VTR_ASSERT(is_used[best_pattern] == false);
 		is_used[best_pattern] = true;
 		for (j = 0; j < num_logical_blocks; j++) {
+            auto blk_id = g_atom_nl.find_block(logical_block[j].name);
+            VTR_ASSERT(blk_id);
+
 			cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, j);
 			if (cur_molecule != NULL) {
 				cur_molecule->next = list_of_molecules_head;
@@ -820,6 +823,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
 
+                auto rng = atom_molecules.equal_range(blk_id);
 				if(logical_block[j].packed_molecules == NULL || logical_block[j].packed_molecules->data_vptr != cur_molecule) {
 					/* molecule did not cover current atom (possibly because molecule created is
                      * part of a long chain that extends past multiple logic blocks), try again */
@@ -910,7 +914,7 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
  */
 static t_pack_molecule *try_create_molecule(
 		t_pack_patterns *list_of_pack_patterns, 
-        std::unordered_multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
 		int block_index) {
 	int i;
