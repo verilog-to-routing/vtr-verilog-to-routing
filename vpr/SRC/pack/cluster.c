@@ -1896,7 +1896,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         VTR_ASSERT(blk_id);
         g_atom_map.set_atom_clb(blk_id, clb_index);
 
-		cur_pb = logical_block[new_blk].pb->parent_pb;
+		cur_pb = g_atom_map.atom_pb(blk_id)->parent_pb;
 		while (cur_pb) {
 			/* reset list of feasible blocks */
 			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
@@ -1907,38 +1907,55 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 			cur_pb = cur_pb->parent_pb;
 		}
 
-		port = logical_block[new_blk].model->outputs;
+        const t_model* model = g_atom_nl.block_model(blk_id);
+
+        /* Output pin first. */
+		port = model->outputs;
 		while (port) {
+            auto port_id = g_atom_nl.find_port(blk_id, port->name);
+            VTR_ASSERT(port_id);
+
 			for (ipin = 0; ipin < port->size; ipin++) {
-				inet = logical_block[new_blk].output_nets[port->index][ipin]; /* Output pin first. */
-				if (inet != OPEN) {
-					if (!is_clock.count(inet) || !global_clocks)
+                auto pin_id = g_atom_nl.port_pin(port_id, ipin);
+
+				if (pin_id) {
+                    inet = logical_block[new_blk].output_nets[port->index][ipin];
+					if (!is_clock.count(inet) || !global_clocks) {
 						mark_and_update_partial_gain(inet, GAIN, new_blk,
 								timing_driven,
 								connection_driven, OUTPUT, slacks);
-					else
+                    } else {
 						mark_and_update_partial_gain(inet, NO_GAIN, new_blk,
 								timing_driven,
 								connection_driven, OUTPUT, slacks);
+                    }
 				}
 			}
 			port = port->next;
 		}
-		port = logical_block[new_blk].model->inputs;
+
+        /* Input pins */
+		port = model->inputs;
 		while (port) {
 			if (port->is_clock) {
 				port = port->next;
 				continue;
 			}
-			for (ipin = 0; ipin < port->size; ipin++) { /*  VPACK_BLOCK input pins. */
 
-				inet = logical_block[new_blk].input_nets[port->index][ipin];
-				if (inet != OPEN) {
-					mark_and_update_partial_gain(inet, GAIN, new_blk,
-							timing_driven, connection_driven,
-							INPUT, slacks);
-				}
-			}
+            auto port_id = g_atom_nl.find_port(blk_id, port->name);
+            if(port_id) {
+
+                for (ipin = 0; ipin < port->size; ipin++) {
+                    auto pin_id = g_atom_nl.port_pin(port_id, ipin);
+
+                    if (pin_id) {
+                        inet = logical_block[new_blk].input_nets[port->index][ipin];
+                        mark_and_update_partial_gain(inet, GAIN, new_blk,
+                                timing_driven, connection_driven,
+                                INPUT, slacks);
+                    }
+                }
+            }
 			port = port->next;
 		}
 
@@ -1946,23 +1963,34 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		 * NEVER go to the input of a VPACK_COMB.  It doesn't really make electrical *
 		 * sense for that to happen, and I check this in the check_clocks     *
 		 * function.  Don't disable that sanity check.                        */
-		inet = logical_block[new_blk].clock_net; /* Clock input pin. */
-		if (inet != OPEN) {
-			if (global_clocks)
-				mark_and_update_partial_gain(inet, NO_GAIN, new_blk,
-						timing_driven, connection_driven, INPUT, slacks);
-			else
-				mark_and_update_partial_gain(inet, GAIN, new_blk,
-						timing_driven, connection_driven, INPUT, slacks);
+        //TODO: lift above restriction
+        //TODO: suppot multiple clocks per primitive
+        auto clock_ports = g_atom_nl.block_clock_ports(blk_id);
+        if(clock_ports.size() > 0) {
+            VTR_ASSERT(clock_ports.size() == 1);
+            auto clock_port_id = *clock_ports.begin();
 
-		}
+            auto clock_pins = g_atom_nl.port_pins(clock_port_id);
+            VTR_ASSERT(clock_pins.size() == 1);
+            auto clock_pin_id = *clock_pins.begin();
+
+            if (clock_pin_id) {
+                inet = logical_block[new_blk].clock_net; /* Clock input pin. */
+                if (global_clocks) {
+                    mark_and_update_partial_gain(inet, NO_GAIN, new_blk,
+                            timing_driven, connection_driven, INPUT, slacks);
+                } else {
+                    mark_and_update_partial_gain(inet, GAIN, new_blk,
+                            timing_driven, connection_driven, INPUT, slacks);
+                }
+            }
+        }
 
 		update_total_gain(alpha, beta, timing_driven, connection_driven,
-				logical_block[new_blk].pb->parent_pb);
+				g_atom_map.atom_pb(blk_id)->parent_pb);
 
 		commit_lookahead_pins_used(cb);
 	}
-
 }
 
 static void start_new_cluster(
