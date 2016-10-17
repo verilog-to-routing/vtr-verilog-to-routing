@@ -542,7 +542,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				prev_molecule = next_molecule;
 
 #ifdef DEBUG_FAILED_PACKING_CANDIDATES
-                auto blk_id = next_molecule->atom_block_ptrs[next_molecule->root];
+                auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
                 VTR_ASSERT(blk_id);
 
                 std::string blk_name = g_atom_nl.block_name(blk_id);
@@ -1084,11 +1084,12 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 		if (ptr->moleculeptr->valid) {
 			success = true;
 			for (i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
-				if (ptr->moleculeptr->atom_block_ptrs[i] != NULL) {
-					ilogical_blk =
-							ptr->moleculeptr->atom_block_ptrs[i]->index;
-					if (!exists_free_primitive_for_atom_block(
-							cluster_placement_stats_ptr, ilogical_blk)) { /* TODO: I should be using a better filtering check especially when I'm dealing with multiple clock/multiple global reset signals where the clock/reset packed in matters, need to do later when I have the circuits to check my work */
+				if (ptr->moleculeptr->atom_block_ids[i]) {
+					ilogical_blk = ptr->moleculeptr->atom_block_ptrs[i]->index;
+					if (!exists_free_primitive_for_atom_block( cluster_placement_stats_ptr, ilogical_blk)) { 
+                        /* TODO: I should be using a better filtering check especially when I'm 
+                         * dealing with multiple clock/multiple global reset signals where the clock/reset 
+                         * packed in matters, need to do later when I have the circuits to check my work */
 						success = false;
 						break;
 					}
@@ -1278,11 +1279,10 @@ static enum e_block_pack_status try_pack_molecule(
 				primitives_list, clb_index)) {
 			block_pack_status = BLK_PASSED;
 			
-			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED;
-					i++) {
-				VTR_ASSERT((primitives_list[i] == NULL) == (molecule->atom_block_ptrs[i] == NULL));
+			for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
+				VTR_ASSERT((primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
 				failed_location = i + 1;
-				if (molecule->atom_block_ptrs[i] != NULL) {
+				if (molecule->atom_block_ids[i]) {
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain && i == molecule->pack_pattern->root_block->block_id) {
 						chain_root_pin = molecule->pack_pattern->chain_root_pin;
 						is_root_of_chain = true;
@@ -1329,7 +1329,7 @@ static enum e_block_pack_status try_pack_molecule(
 						}
 					}
 					for (i = 0; i < molecule_size; i++) {
-                        if (molecule->atom_block_ptrs[i] != NULL) {
+                        if (molecule->atom_block_ids[i]) {
 							/* invalidate all molecules that share logical block with current molecule */
 							cur_molecule = molecule->atom_block_ptrs[i]->packed_molecules;
 
@@ -1344,12 +1344,13 @@ static enum e_block_pack_status try_pack_molecule(
 			}
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {
-					if (molecule->atom_block_ptrs[i] != NULL) {
+					if (molecule->atom_block_ids[i]) {
 						remove_atom_from_target(router_data, molecule->atom_block_ptrs[i]->index);
 					}
 				}
 				for (i = 0; i < failed_location; i++) {					
-					if (molecule->atom_block_ptrs[i] != NULL) {
+					if (molecule->atom_block_ids[i]) {
+                        VTR_ASSERT(molecule->atom_block_ptrs[i] != NULL);
 						revert_place_logical_block(
 								molecule->atom_block_ptrs[i]->index,
 								router_data);
@@ -1884,7 +1885,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 	cb = NULL;
 
 	for (iblock = 0; iblock < molecule_size; iblock++) {
-		if (molecule->atom_block_ptrs[iblock] == NULL) {
+		if (!molecule->atom_block_ids[iblock]) {
 			continue;
 		}
 		new_blk = molecule->atom_block_ptrs[iblock]->index;
@@ -1986,10 +1987,9 @@ static void start_new_cluster(
 	/* Check if this cluster is really empty */
 
 	/* Allocate a dummy initial cluster and load a logical block as a seed and check if it is legal */
-	new_cluster->name = (char*) vtr::malloc(
-			(strlen(molecule->atom_block_ptrs[molecule->root]->name) + 4) * sizeof(char));
-	sprintf(new_cluster->name, "cb.%s",
-			molecule->atom_block_ptrs[molecule->root]->name);
+    const std::string& root_atom_name = g_atom_nl.block_name(molecule->atom_block_ids[molecule->root]);
+	new_cluster->name = (char*) vtr::malloc((root_atom_name.size() + 4) * sizeof(char));
+	sprintf(new_cluster->name, "cb.%s", root_atom_name.c_str());
 	new_cluster->nets = NULL;
 	new_cluster->type = NULL;
 	new_cluster->pb = NULL;
@@ -2046,12 +2046,12 @@ static void start_new_cluster(
 						"Can not find any logic block that can implement molecule.\n"
 						"\tPattern %s %s\n", 
 						molecule->pack_pattern->name,
-						molecule->atom_block_ptrs[molecule->root]->name);
+						root_atom_name.c_str());
 			} else {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"Can not find any logic block that can implement molecule.\n"
 						"\tAtom %s\n",
-						molecule->atom_block_ptrs[molecule->root]->name);
+						root_atom_name.c_str());
 			}
 		}
 
@@ -2122,12 +2122,12 @@ static t_pack_molecule *get_highest_gain_molecule(
 					if (molecule->valid) {
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-							if (molecule->atom_block_ptrs[j] != NULL) {
-								VTR_ASSERT(molecule->atom_block_ptrs[j]->clb_index == NO_CLUSTER);
+							if (molecule->atom_block_ids[j]) {
+								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 								iblk = molecule->atom_block_ptrs[j]->index;
-								if (!exists_free_primitive_for_atom_block(
-										cluster_placement_stats_ptr,
-										iblk)) { /* TODO: debating whether to check if placement exists for molecule (more robust) or individual logical blocks (faster) */
+								if (!exists_free_primitive_for_atom_block( cluster_placement_stats_ptr, iblk)) { 
+                                    /* TODO: debating whether to check if placement exists for molecule 
+                                     * (more robust) or individual logical blocks (faster) */
 									success = false;
 									break;
 								}
@@ -2159,8 +2159,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 					if (molecule->valid) {
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-							if (molecule->atom_block_ptrs[j] != NULL) {
-								VTR_ASSERT(molecule->atom_block_ptrs[j]->clb_index == NO_CLUSTER);
+							if (molecule->atom_block_ids[j]) {
+								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 								iblk = molecule->atom_block_ptrs[j]->index;
 								if (!exists_free_primitive_for_atom_block(
 										cluster_placement_stats_ptr,
@@ -2201,8 +2201,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 				if (molecule->valid) {
 					success = true;
 					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
-						if (molecule->atom_block_ptrs[j] != NULL) {
-							VTR_ASSERT(molecule->atom_block_ptrs[j]->clb_index == NO_CLUSTER);
+						if (molecule->atom_block_ids[j]) {
+							VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 							iblk = molecule->atom_block_ptrs[j]->index;
 							if (!exists_free_primitive_for_atom_block(
 									cluster_placement_stats_ptr,
@@ -2416,39 +2416,48 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, bool get
  */
 static float get_molecule_gain(t_pack_molecule *molecule, map<int, float> &blk_gain) {
 	float gain;
-	int i, ipin, iport, inet, iblk;
+	int i, ipin;
 	int num_introduced_inputs_of_indirectly_related_block;
 	t_model_ports *cur;
 
 	gain = 0;
 	num_introduced_inputs_of_indirectly_related_block = 0;
 	for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
-		if (molecule->atom_block_ptrs[i] != NULL) {
+        auto blk_id = molecule->atom_block_ids[i];
+		if (blk_id) {
 			if(blk_gain.count(molecule->atom_block_ptrs[i]->index) > 0) {
 				gain += blk_gain[molecule->atom_block_ptrs[i]->index];
 			} else {
 				/* This block has no connection with current cluster, penalize molecule for having this block 
 				 */
-				cur = molecule->atom_block_ptrs[i]->model->inputs;
-				iport = 0;
+                const t_model* model = g_atom_nl.block_model(blk_id);
+				cur = model->inputs;
 				while (cur != NULL) {
+                    auto port_id = g_atom_nl.find_port(blk_id, cur->name);
+                    VTR_ASSERT(port_id);
+
 					if (cur->is_clock != true) {
 						for (ipin = 0; ipin < cur->size; ipin++) {
-							inet = molecule->atom_block_ptrs[i]->input_nets[iport][ipin];
-							if (inet != OPEN) {
+                            auto pin_id = g_atom_nl.port_pin(port_id, ipin);
+                            if(pin_id) {
+                                auto net_id = g_atom_nl.pin_net(pin_id);
+                                VTR_ASSERT(net_id);
+
+                                auto driver_pin_id = g_atom_nl.net_driver(net_id);
+                                VTR_ASSERT(driver_pin_id);
+
+                                auto driver_blk_id = g_atom_nl.pin_block(driver_pin_id);
+
 								num_introduced_inputs_of_indirectly_related_block++;
-								for (iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
-									if (molecule->atom_block_ptrs[iblk]
-											!= NULL
-												&& g_atoms_nlist.net[inet].pins[0].block
-													== molecule->atom_block_ptrs[iblk]->index) {
+								for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
+									if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
+                                        //valid block which is driver (and hence not an input)
 										num_introduced_inputs_of_indirectly_related_block--;
 										break;
 									}
 								}
 							}
 						}
-						iport++;
 					}
 					cur = cur->next;
 				}
