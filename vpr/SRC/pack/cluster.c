@@ -242,6 +242,7 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 static void print_block_criticalities(const char * fname);
 
 static void load_transitive_fanout_candidates(int cluster_index,
+                                              const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets);
 
@@ -2233,6 +2234,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 			/* First time finding transitive fanout candidates therefore alloc and load them */
 			cur_pb->pb_stats->transitive_fanout_candidates = new vector<t_pack_molecule *>;
 			load_transitive_fanout_candidates(cluster_index,
+                                              atom_molecules,
 											  cur_pb->pb_stats,
 											  clb_inter_blk_nets);
 
@@ -2906,6 +2908,7 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 
 /* Score unclustered atoms that are two hops away from current cluster */
 static void load_transitive_fanout_candidates(int cluster_index,
+                                              const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets) {
 	for(int mnet = 0; mnet < pb_stats->num_marked_nets; mnet++) {
@@ -2931,14 +2934,14 @@ static void load_transitive_fanout_candidates(int cluster_index,
 								} else {
 									pb_stats->gain[blk_id] += 0.001;									
 								}
-								vtr::t_linked_vptr *cur;
-								cur = logical_block[tatom].packed_molecules;
-								while (cur != NULL) {
-									t_pack_molecule *molecule = (t_pack_molecule *) cur->data_vptr;
+                                auto rng = atom_molecules.equal_range(blk_id);
+                                for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                                    t_pack_molecule* molecule = kv.second;
 									if (molecule->valid) {
 										unsigned int imol = 0;
 
-										/* The number of potential molecules is heavily bounded so this O(N) operation should be safe since N is small */
+										/* The number of potential molecules is heavily bounded so 
+                                         * this O(N) operation should be safe since N is small */
 										for(imol = 0; imol < transitive_fanout_candidates.size(); imol++) {
 											if(molecule == transitive_fanout_candidates[imol]) {
 												break;
@@ -2949,8 +2952,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 											transitive_fanout_candidates.push_back(molecule);
 										}
 									}
-									cur = cur->next;
-								}
+                                }
 							}
 						}
 					}
