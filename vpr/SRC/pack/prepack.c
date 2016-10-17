@@ -851,8 +851,11 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
-			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc( 1 * sizeof(t_logical_block*));
-			cur_molecule->atom_block_ptrs[0] = &logical_block[i];
+
+			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc( 1 * sizeof(t_logical_block*)); //TODO: remove
+			cur_molecule->atom_block_ptrs[0] = &logical_block[i]; //TODO: remove
+            cur_molecule->atom_block_ids = {blk_id};
+
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
 			list_of_molecules_head = cur_molecule;
@@ -919,11 +922,9 @@ static t_pack_molecule *try_create_molecule(
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 		if (molecule->pack_pattern == NULL) {failed = true; goto end_prolog;}
 
-		molecule->atom_block_ptrs = (t_logical_block **)vtr::calloc(
-			molecule->pack_pattern->num_blocks,
-			sizeof(t_logical_block *)
-		);
-		if (molecule->atom_block_ptrs == NULL) {failed = true; goto end_prolog;}
+		molecule->atom_block_ptrs = (t_logical_block **)vtr::calloc(molecule->pack_pattern->num_blocks, sizeof(t_logical_block *));
+		if (molecule->atom_block_ptrs == NULL) {failed = true; goto end_prolog;} //Failed to allocate
+        molecule->atom_block_ids = std::vector<AtomBlockId>(molecule->pack_pattern->num_blocks); //Initializes invalid
 
 		molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
 		if (molecule->num_blocks == 0) {failed = true; goto end_prolog;}
@@ -953,6 +954,7 @@ static t_pack_molecule *try_create_molecule(
 			molecule_linked_list->data_vptr = (void *) molecule;
 			molecule_linked_list->next = molecule->atom_block_ptrs[i]->packed_molecules;
 			molecule->atom_block_ptrs[i]->packed_molecules = molecule_linked_list;
+            //TODO: update atom_molecules
 		}
 	} else {
 		failed = true;
@@ -1006,10 +1008,16 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 
 		success = true;
 		/* If the primitive types match, store it, expand it and explore neighbouring nodes */
-		molecule->atom_block_ptrs[current_pattern_block->block_id] =
-				&logical_block[logical_block_index]; /* store that this node has been visited */
-		molecule->num_ext_inputs +=
-				logical_block[logical_block_index].used_input_pins;
+
+
+        /* store that this node has been visited */
+		molecule->atom_block_ptrs[current_pattern_block->block_id] = &logical_block[logical_block_index];  //TODO: remove
+
+        auto blk_id = g_atom_nl.find_block(logical_block[logical_block_index].name);
+        VTR_ASSERT(blk_id);
+		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
+
+		molecule->num_ext_inputs += logical_block[logical_block_index].used_input_pins;
 		
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != NULL && success == true) {
