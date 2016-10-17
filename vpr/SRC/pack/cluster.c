@@ -1262,7 +1262,6 @@ static enum e_block_pack_status try_pack_molecule(
 	vtr::t_linked_vptr *cur_molecule;
 	t_pb *parent;
 	t_pb *cur_pb;
-	t_logical_block *chain_root_block;
 	bool is_root_of_chain;
 	t_pb_graph_pin *chain_root_pin;
 
@@ -1320,13 +1319,13 @@ static enum e_block_pack_status try_pack_molecule(
 					if(molecule->type == MOLECULE_FORCED_PACK && molecule->pack_pattern->is_chain) {
 						/* Chained molecules often take up lots of area and are important, 
                          * if a chain is packed in, want to rename logic block to match chain name */
-						chain_root_block = molecule->atom_block_ptrs[molecule->pack_pattern->root_block->block_id];
-						cur_pb = chain_root_block->pb->parent_pb;
+                        AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
+						cur_pb = g_atom_map.atom_pb(chain_root_blk_id)->parent_pb;
 						while(cur_pb != NULL) {
-							free(cur_pb->name);
-							cur_pb->name = vtr::strdup(chain_root_block->name);
-							cur_pb = cur_pb->parent_pb;
-						}
+						    free(cur_pb->name);
+						    cur_pb->name = vtr::strdup(g_atom_nl.block_name(chain_root_blk_id).c_str());
+						    cur_pb = cur_pb->parent_pb;
+                        }
 					}
 					for (i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
