@@ -87,7 +87,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  * 
  * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
  * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match atom_block_ptrs of molecule.
+ * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
  *                   Expects an allocated array of primitives ptrs as inputs.  
  *                   This function loads the array with the lowest cost primitives that implement molecule
  */
@@ -136,7 +136,7 @@ bool get_next_primitive_list(
 			continue; /* no more primitives of this type available */
 		}
 		if (primitive_type_feasible(
-				molecule->atom_block_ptrs[molecule->root]->index,
+				molecule->atom_block_ids[molecule->root],
 				cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats->valid_primitives[i];
 			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
@@ -467,7 +467,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 	list_size = get_array_size_of_molecule(molecule);
 
 	if (primitive_type_feasible(
-			molecule->atom_block_ptrs[molecule->root]->index,
+			molecule->atom_block_ids[molecule->root],
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == true) {
 			if(root_passes_early_filter(root, molecule, clb_index)) {
@@ -559,7 +559,7 @@ static bool expand_forced_pack_molecule_placement(
 					if (next_primitive->cluster_placement_primitive->valid
 							== true
 							&& primitive_type_feasible(
-									molecule->atom_block_ptrs[next_block->block_id]->index,
+									molecule->atom_block_ids[next_block->block_id],
 									next_primitive->pb_type)) {
 						primitives_list[next_block->block_id] = next_primitive;
 						*cost +=
@@ -724,9 +724,12 @@ bool exists_free_primitive_for_atom_block(
 	int i;
 	t_cluster_placement_primitive *cur, *prev;
 
+    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
+    VTR_ASSERT(blk_id);
+
 	/* might have a primitive in flight that's still valid */
 	if (cluster_placement_stats->in_flight) {
-		if (primitive_type_feasible(ilogical_block,
+		if (primitive_type_feasible(blk_id,
 				cluster_placement_stats->in_flight->pb_graph_node->pb_type)) {
 			return true;
 		}
@@ -737,7 +740,7 @@ bool exists_free_primitive_for_atom_block(
 		if (cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
 			continue; /* no more primitives of this type available */
 		}
-		if (primitive_type_feasible(ilogical_block,
+		if (primitive_type_feasible(blk_id,
 				cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats->valid_primitives[i];
 			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;

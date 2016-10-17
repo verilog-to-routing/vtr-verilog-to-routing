@@ -780,7 +780,7 @@ static void backward_expand_pack_pattern_from_edge(
  */
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
-        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& atom_molecules,
+        const std::unordered_map<AtomBlockId,vtr::t_linked_vptr*>& /*atom_molecules*/,
 		const int num_packing_patterns) {
 	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
@@ -999,6 +999,9 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		}
 	}
 
+    auto blk_id = g_atom_nl.find_block(logical_block[logical_block_index].name);
+    VTR_ASSERT(blk_id);
+
 	/* This node has never been visited */
 	/* Simplifying assumption: An atom can only map to one molecule */
 	if(logical_block[logical_block_index].packed_molecules != NULL) {
@@ -1006,7 +1009,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		return is_optional;
 	}
 
-	if (primitive_type_feasible(logical_block_index, current_pattern_block->pb_type)) {
+	if (primitive_type_feasible(blk_id, current_pattern_block->pb_type)) {
 
 		success = true;
 		/* If the primitive types match, store it, expand it and explore neighbouring nodes */
@@ -1015,8 +1018,6 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
         /* store that this node has been visited */
 		molecule->atom_block_ptrs[current_pattern_block->block_id] = &logical_block[logical_block_index];  //TODO: remove
 
-        auto blk_id = g_atom_nl.find_block(logical_block[logical_block_index].name);
-        VTR_ASSERT(blk_id);
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
 
 		molecule->num_ext_inputs += logical_block[logical_block_index].used_input_pins;
@@ -1147,9 +1148,12 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_
 	if(curr_pb_graph_node == NULL) {
 		return NULL;
 	}
+
+    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
+    VTR_ASSERT(blk_id);
 	
 	if(curr_pb_graph_node->pb_type->blif_model != NULL) {
-		if(primitive_type_feasible(ilogical_block, curr_pb_graph_node->pb_type)) {
+		if(primitive_type_feasible(blk_id, curr_pb_graph_node->pb_type)) {
 			cur_cost = compute_primitive_base_cost(curr_pb_graph_node);
 			if(best_cost == UNDEFINED || best_cost > cur_cost) {
 				best_cost = cur_cost;
@@ -1220,7 +1224,10 @@ static int find_new_root_atom_for_chain(const int block_index, const t_pack_patt
 	root_ipin = list_of_pack_pattern->chain_root_pin;
 	root_pb_graph_node = root_ipin->parent_node;
 
-	if(primitive_type_feasible(block_index, root_pb_graph_node->pb_type) == false) {
+    auto blk_id = g_atom_nl.find_block(logical_block[block_index].name);
+    VTR_ASSERT(blk_id);
+
+	if(primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) {
 		return OPEN;
 	}
 
