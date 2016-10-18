@@ -234,7 +234,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 
 static void check_clustering(int num_clb, t_block *clb);
 
-static void check_cluster_atom_blocks(t_pb *pb, bool *blocks_checked);
+static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>& blocks_checked);
 
 static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules, bool getblend);
 
@@ -2298,55 +2298,69 @@ static t_pack_molecule *get_molecule_for_cluster(
 }
 
 
-/* TODO: Add more error checking, too light */
-/*****************************************/
+/* TODO: Add more error checking! */
 static void check_clustering(int num_clb, t_block *clb) {
-	int i;
-	t_pb * cur_pb;
-	bool * blocks_checked;
-
-	blocks_checked = (bool*)vtr::calloc(num_logical_blocks, sizeof(bool));
+    std::unordered_set<AtomBlockId> atoms_checked;
 
 	/* 
-	 * Check that each logical block connects to one primitive and that the primitive links up to the parent clb
+	 * Check that each atom block connects to one physical primitive and that the primitive links up to the parent clb
 	 */
-	for (i = 0; i < num_blocks; i++) {
-		if (logical_block[i].pb->logical_block != i) {
+    for(auto blk_id : g_atom_nl.blocks()) {
+        //Each atom should be part of a pb
+        const t_pb* atom_pb = g_atom_map.atom_pb(blk_id);
+        if(!atom_pb) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-					"pb %s does not contain logical block %s but logical block %s #%d links to pb.\n",
-					logical_block[i].pb->name, logical_block[i].name, logical_block[i].name, i);
+					"Atom block %s is not mapped to a pb\n",
+					g_atom_nl.block_name(blk_id).c_str());
+        }
+
+        //Check the reverse mapping is consistent
+		if (g_atom_map.pb_atom(atom_pb) != blk_id) {
+			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+					"pb %s does not contain atom block %s but atom block %s maps to pb.\n",
+                    atom_pb->name,
+					g_atom_nl.block_name(blk_id).c_str(), 
+                    g_atom_nl.block_name(blk_id).c_str());
 		}
-		cur_pb = logical_block[i].pb;
-		VTR_ASSERT(strcmp(cur_pb->name, logical_block[i].name) == 0);
+
+		VTR_ASSERT(g_atom_nl.block_name(blk_id) == atom_pb->name);
+
+        const t_pb* cur_pb = atom_pb;
 		while (cur_pb->parent_pb) {
 			cur_pb = cur_pb->parent_pb;
 			VTR_ASSERT(cur_pb->name);
 		}
-		if (cur_pb != clb[num_clb].pb) {
+
+        int iclb = g_atom_map.atom_clb(blk_id);
+        if(iclb == NO_CLUSTER) {
+			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+					"Atom %s is not mapped to a CLB\n",
+					g_atom_nl.block_name(blk_id).c_str());
+        }
+
+		if (cur_pb != clb[iclb].pb) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"CLB %s does not match CLB contained by pb %s.\n",
-					cur_pb->name, logical_block[i].pb->name);
+					cur_pb->name, atom_pb->name);
 		}
 	}
 
 	/* Check that I do not have spurious links in children pbs */
-	for (i = 0; i < num_clb; i++) {
-		check_cluster_atom_blocks(clb[i].pb, blocks_checked);
+	for (int i = 0; i < num_clb; i++) {
+		check_cluster_atom_blocks(clb[i].pb, atoms_checked);
 	}
 
-	for (i = 0; i < num_logical_blocks; i++) {
-		if (blocks_checked[i] == false) {
+	for (auto blk_id : g_atom_nl.blocks()) {
+		if (!atoms_checked.count(blk_id)) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-					"Logical block %s #%d not found in any cluster.\n",
-					logical_block[i].name, i);
+					"Atom block %s not found in any cluster.\n",
+					g_atom_nl.block_name(blk_id).c_str());
 		}
 	}
-
-	free(blocks_checked);
 }
 
 /* TODO: May want to check that all atom blocks are actually reached */
-static void check_cluster_atom_blocks(t_pb *pb, bool *blocks_checked) {
+static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>& blocks_checked) {
 	int i, j;
 	const t_pb_type *pb_type;
 	bool has_child;
@@ -2355,17 +2369,18 @@ static void check_cluster_atom_blocks(t_pb *pb, bool *blocks_checked) {
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
 		/* primitive */
-		if (pb->logical_block != OPEN) {
-			if (blocks_checked[pb->logical_block] != false) {
+        auto blk_id = g_atom_map.pb_atom(pb);
+		if (blk_id) {
+			if (blocks_checked.count(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"pb %s contains logical block %s #%d but logical block is already contained in another pb.\n",
-						pb->name, logical_block[pb->logical_block].name, pb->logical_block);
+						"pb %s contains atom block %s but atom block is already contained in another pb.\n",
+						pb->name, g_atom_nl.block_name(blk_id).c_str());
 			}
-			blocks_checked[pb->logical_block] = true;
-			if (pb != logical_block[pb->logical_block].pb) {
+			blocks_checked.insert(blk_id);
+			if (pb != g_atom_map.atom_pb(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"pb %s contains logical block %s #%d but logical block does not link to pb.\n",
-						pb->name, logical_block[pb->logical_block].name, pb->logical_block);
+						"pb %s contains logical block %s but logical block does not link to pb.\n",
+						pb->name, g_atom_nl.block_name(blk_id).c_str());
 			}
 		}
 	} else {
@@ -2375,8 +2390,7 @@ static void check_cluster_atom_blocks(t_pb *pb, bool *blocks_checked) {
 				if (pb->child_pbs[i] != NULL) {
 					if (pb->child_pbs[i][j].name != NULL) {
 						has_child = true;
-						check_cluster_atom_blocks(&pb->child_pbs[i][j],
-								blocks_checked);
+						check_cluster_atom_blocks(&pb->child_pbs[i][j], blocks_checked);
 					}
 				}
 			}
