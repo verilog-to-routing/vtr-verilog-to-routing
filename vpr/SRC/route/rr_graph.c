@@ -2701,6 +2701,8 @@ static bool* alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out,
 	
 	/* get an upper bound on the number of prime factors of num_wire_types	*/
 	max_primes = (int)floor(log((float)num_wire_types)/log(2.0));
+    max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
+
 	prime_factors = (int *) vtr::malloc(max_primes * sizeof(int));
 	for (i = 0; i < max_primes; i++){
 		prime_factors[i] = 0;
