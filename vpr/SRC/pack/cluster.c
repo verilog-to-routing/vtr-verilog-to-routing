@@ -106,7 +106,7 @@ static struct s_molecule_link *memory_pool; /*Declared here so I can free easily
  * clusterings).  The only time a logical_block should connect to the same g_atoms_nlist.net  *
  * twice is when one connection is an output and the other is an input, *
  * so this should take care of all multiple connections.                */
-static int *net_output_feeds_driving_block_input;
+static std::unordered_map<AtomNetId,int> net_output_feeds_driving_block_input;
 
 /* Timing information for blocks */
 static float *block_criticality = NULL;
@@ -701,7 +701,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(num_instances_type);
 	free(unclustered_list_head);
 	free(memory_pool);
-	free(net_output_feeds_driving_block_input);
 
 	if (timing_driven) {
 		free(block_criticality);
@@ -831,8 +830,7 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	/* Allocates the main data structures used for clustering and properly *
 	 * initializes them.                                                   */
 
-	int i, ext_inps, ipin, driving_blk;
-	unsigned int inet;
+	int i, ext_inps;
 	struct s_molecule_link *next_ptr;
 	t_pack_molecule *cur_molecule;
 	t_pack_molecule **molecule_array;
@@ -878,19 +876,20 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	}
 	free(molecule_array);
 
-	/* alloc and load net info */
-	net_output_feeds_driving_block_input = (int *) vtr::malloc(
-		g_atoms_nlist.net.size() * sizeof(int));
+	/* load net info */
+    for(AtomNetId net : g_atom_nl.nets()) {
+        AtomPinId driver_pin = g_atom_nl.net_driver(net);
+        AtomBlockId driver_block = g_atom_nl.pin_block(driver_pin);
 
-	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
-		net_output_feeds_driving_block_input[inet] = 0;
-		driving_blk = g_atoms_nlist.net[inet].pins[0].block;
-		for (ipin = 1; ipin < (int) g_atoms_nlist.net[inet].pins.size(); ipin++) {
-			if (g_atoms_nlist.net[inet].pins[ipin].block == driving_blk) {
-				net_output_feeds_driving_block_input[inet]++;
-			}
-		}
-	}
+        for(AtomPinId sink_pin : g_atom_nl.net_sinks(net)) {
+            AtomBlockId sink_block = g_atom_nl.pin_block(sink_pin);
+
+            if(driver_block == sink_block) {
+                net_output_feeds_driving_block_input[net]++;
+            }
+
+        }
+    }
 
 	/* alloc and load cluster placement info */
 	*cluster_placement_stats = alloc_and_load_cluster_placement_stats();
@@ -1623,7 +1622,7 @@ static void update_timing_gain_values(int inet,
 
 	/* Check if this g_atoms_nlist.net lists its driving logical_block twice.  If so, avoid  *
 	 * double counting this logical_block by skipping the first (driving) pin. */
-	if (net_output_feeds_driving_block_input[inet] == false)
+	if (net_output_feeds_driving_block_input[net_id] == false)
 		ifirst = 0;
 	else
 		ifirst = 1;
@@ -1730,10 +1729,10 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 
 		if (gain_flag == GAIN) {
 
-			/* Check if this g_atoms_nlist.net lists its driving logical_block twice.  If so, avoid  *
+			/* Check if this atom net lists its driving logical_block twice.  If so, avoid  *
 			 * double counting this logical_block by skipping the first (driving) pin. */
 
-			if (net_output_feeds_driving_block_input[inet] == 0)
+			if (net_output_feeds_driving_block_input[net_id] == 0)
 				ifirst = 0;
 			else
 				ifirst = 1;
