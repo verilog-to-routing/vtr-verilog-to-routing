@@ -23,6 +23,7 @@
 #include <string.h>
 #include <ctime>
 #include <utility>
+#include <cmath>
 
 #include <string>
 #include <iostream>
