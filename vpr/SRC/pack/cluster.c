@@ -234,7 +234,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 
 static void check_clustering(int num_clb, t_block *clb);
 
-static void check_cluster_logical_blocks(t_pb *pb, bool *blocks_checked);
+static void check_cluster_atom_blocks(t_pb *pb, bool *blocks_checked);
 
 static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules, bool getblend);
 
@@ -2331,7 +2331,7 @@ static void check_clustering(int num_clb, t_block *clb) {
 
 	/* Check that I do not have spurious links in children pbs */
 	for (i = 0; i < num_clb; i++) {
-		check_cluster_logical_blocks(clb[i].pb, blocks_checked);
+		check_cluster_atom_blocks(clb[i].pb, blocks_checked);
 	}
 
 	for (i = 0; i < num_logical_blocks; i++) {
@@ -2345,8 +2345,8 @@ static void check_clustering(int num_clb, t_block *clb) {
 	free(blocks_checked);
 }
 
-/* TODO: May want to check that all logical blocks are actually reached (low priority, nice to have) */
-static void check_cluster_logical_blocks(t_pb *pb, bool *blocks_checked) {
+/* TODO: May want to check that all atom blocks are actually reached */
+static void check_cluster_atom_blocks(t_pb *pb, bool *blocks_checked) {
 	int i, j;
 	const t_pb_type *pb_type;
 	bool has_child;
@@ -2375,7 +2375,7 @@ static void check_cluster_logical_blocks(t_pb *pb, bool *blocks_checked) {
 				if (pb->child_pbs[i] != NULL) {
 					if (pb->child_pbs[i][j].name != NULL) {
 						has_child = true;
-						check_cluster_logical_blocks(&pb->child_pbs[i][j],
+						check_cluster_atom_blocks(&pb->child_pbs[i][j],
 								blocks_checked);
 					}
 				}
