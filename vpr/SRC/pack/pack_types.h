@@ -52,8 +52,9 @@ typedef struct s_pb_stats {
 	/* [0..num_marked_nets] and [0..num_marked_blocks] respectively.  List  *
 	 * the indices of the nets and blocks that have had their num_pins_of_  *
 	 * net_in_pb and gain entries altered.                             */
-	int *marked_nets, *marked_blocks;
-	int num_marked_nets, num_marked_blocks;
+    std::vector<AtomNetId> marked_nets; //List of nets with the num_pins_of_net_in_pb and gain entries altered
+    int* marked_blocks;
+	int num_marked_blocks;
 	int num_child_blocks_in_pb;
 
 	AtomNetId tie_break_high_fanout_net; /* If no marked candidate molecules, use 

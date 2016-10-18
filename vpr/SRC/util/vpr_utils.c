@@ -820,7 +820,6 @@ void free_pb_stats(t_pb *pb) {
             free(pb->pb_stats->output_pins_used);
             delete [] pb->pb_stats->lookahead_output_pins_used;
             free(pb->pb_stats->feasible_blocks);
-            free(pb->pb_stats->marked_nets);
             free(pb->pb_stats->marked_blocks);
         }
         pb->pb_stats->marked_blocks = NULL;

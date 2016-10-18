@@ -88,8 +88,7 @@ struct s_molecule_link {
 /* Store stats on nets used by packed block, useful for determining transitively connected blocks 
 (eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
 struct t_lb_net_stats {
-	int num_nets_in_lb;
-	int *nets_in_lb;
+    std::vector<AtomNetId> nets_in_lb;
 };
 
 /* Keeps a linked list of the unclustered blocks to speed up looking for *
@@ -652,16 +651,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				
 				/* store info that will be used later in packing from pb_stats and free the rest */
 				t_pb_stats *pb_stats = clb[num_clb - 1].pb->pb_stats;
-				clb_inter_blk_nets[num_clb - 1].nets_in_lb = (int*)vtr::malloc(sizeof(int) * pb_stats->num_marked_nets);
-				for(int inet = 0; inet < pb_stats->num_marked_nets; inet++) {
-					int mnet = pb_stats->marked_nets[inet];
-                    auto mnet_id = g_atom_nl.find_net(g_atoms_nlist.net[mnet].name);
-                    VTR_ASSERT(mnet_id);
+				for(const AtomNetId mnet_id : pb_stats->marked_nets) {
 					int external_terminals = g_atom_nl.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
 					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
-						clb_inter_blk_nets[num_clb - 1].nets_in_lb[clb_inter_blk_nets[num_clb - 1].num_nets_in_lb] = mnet;
-						clb_inter_blk_nets[num_clb - 1].num_nets_in_lb++;
+						clb_inter_blk_nets[num_clb - 1].nets_in_lb.push_back(mnet_id);
 					}
 				}
 				free_pb_stats_recursive(clb[num_clb - 1].pb);
@@ -734,9 +728,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	free (primitives_list);
 	if(clb_inter_blk_nets != NULL) {
-		for(i = 0; i < num_clb; i++) {
-			free(clb_inter_blk_nets[i].nets_in_lb);
-		}
 	   free(clb_inter_blk_nets);
 	   clb_inter_blk_nets = NULL;
 	}
@@ -1198,7 +1189,7 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 /*****************************************/
 
 /*****************************************/
-static void alloc_and_load_pb_stats(t_pb *pb, int max_nets_in_pb_type) {
+static void alloc_and_load_pb_stats(t_pb *pb) {
 
 	/* Call this routine when starting to fill up a new cluster.  It resets *
 	 * the gain vector, etc.                                                */
@@ -1247,12 +1238,9 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_nets_in_pb_type) {
 
 	pb->pb_stats->num_pins_of_net_in_pb.clear();
 
-	pb->pb_stats->marked_nets = (int *) vtr::malloc(
-			max_nets_in_pb_type * sizeof(int));
 	pb->pb_stats->marked_blocks = (int *) vtr::malloc(
 			num_logical_blocks * sizeof(int));
 
-	pb->pb_stats->num_marked_nets = 0;
 	pb->pb_stats->num_marked_blocks = 0;
 
 	pb->pb_stats->num_child_blocks_in_pb = 0;
@@ -1466,7 +1454,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	*parent = pb; /* this pb is parent of it's child that called this function */
 	VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
 	if (pb->pb_stats == NULL) {
-		alloc_and_load_pb_stats(pb, max_nets_in_pb_type);
+		alloc_and_load_pb_stats(pb);
 	}
 	pb_type = pb_graph_node->pb_type;
 
@@ -1743,8 +1731,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 		/* Mark g_atoms_nlist.net as being visited, if necessary. */
 
 		if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
-			cur_pb->pb_stats->marked_nets[cur_pb->pb_stats->num_marked_nets] = inet;
-			cur_pb->pb_stats->num_marked_nets++;
+			cur_pb->pb_stats->marked_nets.push_back(net_id);
 		}
 
 		/* Update gains of affected blocks. */
@@ -2063,7 +2050,7 @@ static void start_new_cluster(
 				}
 				new_cluster->pb = (t_pb*)vtr::calloc(1, sizeof(t_pb));
 				new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
-				alloc_and_load_pb_stats(new_cluster->pb, max_nets_in_pb_type);
+				alloc_and_load_pb_stats(new_cluster->pb);
 				new_cluster->pb->parent_pb = NULL;
 
 				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &type_descriptors[i]);
@@ -2930,20 +2917,16 @@ static void load_transitive_fanout_candidates(int cluster_index,
                                               const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets) {
-	for(int mnet = 0; mnet < pb_stats->num_marked_nets; mnet++) {
-		int inet = pb_stats->marked_nets[mnet];
-		if(g_atoms_nlist.net[inet].pins.size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
-			for(unsigned int ipin = 0; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
-				int iatom = g_atoms_nlist.net[inet].pins[ipin].block;
-				int tclb = logical_block[iatom].clb_index;
+    for(const auto net_id : pb_stats->marked_nets) {
+		if(g_atom_nl.net_pins(net_id).size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
+            for(const auto pin_id : g_atom_nl.net_pins(net_id)) {
+                AtomBlockId atom_blk_id = g_atom_nl.pin_block(pin_id);
+                int tclb = g_atom_map.atom_clb(atom_blk_id); //The transitive CLB
 				if(tclb != cluster_index && tclb != NO_CLUSTER) {
 					/* Explore transitive connections from already packed cluster */
-					for(int itnet = 0; itnet < clb_inter_blk_nets[tclb].num_nets_in_lb; itnet++) {
-						int tnet = clb_inter_blk_nets[tclb].nets_in_lb[itnet];
-						for(unsigned int tpin = 0; tpin < g_atoms_nlist.net[tnet].pins.size(); tpin++) {
-							int tatom = g_atoms_nlist.net[tnet].pins[tpin].block;
-                            auto blk_id = g_atom_nl.find_block(logical_block[tatom].name);
-                            VTR_ASSERT(blk_id);
+					for(AtomNetId tnet : clb_inter_blk_nets[tclb].nets_in_lb) {
+                        for(AtomPinId tpin : g_atom_nl.net_pins(tnet)) {
+                            auto blk_id = g_atom_nl.pin_block(tpin);
 							if(g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 								/* This transitive atom is not packed, score and add */
 								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
