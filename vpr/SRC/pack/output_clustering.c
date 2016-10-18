@@ -542,7 +542,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 }
 
 void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
-		const std::unordered_set<int>& is_clock, const char *out_fname, bool skip_clustering) {
+		const std::unordered_set<AtomNetId>& is_clock, const char *out_fname, bool skip_clustering) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *
@@ -592,13 +592,8 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	if (global_clocks) {
 		fprintf(fpout, "\n\t<clocks>\n\t\t");
 
-        for(int inet = 0; inet < (int) g_atoms_nlist.net.size(); ++inet) {
-
-            //TODO: convert is_clock to use AtomNetId
-            if(is_clock.count(inet)) {
-                auto net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
-                VTR_ASSERT(net_id);
-
+        for(auto net_id : g_atom_nl.nets()) {
+            if(is_clock.count(net_id)) {
 				print_string(g_atom_nl.net_name(net_id).c_str(), &column, 2, fpout);
 			}
 		}

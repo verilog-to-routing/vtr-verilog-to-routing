@@ -6,10 +6,11 @@
 
 #include "physical_types.h"
 #include "vpr_types.h"
+#include "atom_netlist_fwd.h"
 
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
-        const std::unordered_set<int>& is_clock,
+        const std::unordered_set<AtomNetId>& is_clock,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven,
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,

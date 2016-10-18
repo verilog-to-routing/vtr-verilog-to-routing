@@ -13,6 +13,7 @@ using namespace std;
 
 #include "read_xml_arch_file.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "prepack.h"
 #include "pack_types.h"
 #include "pack.h"
@@ -24,11 +25,11 @@ using namespace std;
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static std::unordered_set<int> alloc_and_load_is_clock(bool global_clocks);
+static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 
 void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 		const t_model *user_models, const t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
-    std::unordered_set<int> is_clock;
+    std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
 	int num_models;
 	const t_model *cur_model;
@@ -130,33 +131,23 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	return Tdel_switch + R_switch * Cout_switch;
 }
 
-std::unordered_set<int> alloc_and_load_is_clock(bool global_clocks) {
+std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 
 	/* Looks through all the logical_block to find and mark all the clocks, by setting *
 	 * the corresponding entry in is_clock to true.  global_clocks is used     *
 	 * only for an error check.                                                */
 
-	int num_clocks, bnum, clock_net;
-
-	num_clocks = 0;
-
-    std::unordered_set<int> is_clock;
+	int num_clocks = 0;
+    std::unordered_set<AtomNetId> is_clock;
 
 	/* Want to identify all the clock nets.  */
 
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_LATCH) {
-			clock_net = logical_block[bnum].clock_net;
-			VTR_ASSERT(clock_net != OPEN);
-			if (!is_clock.count(clock_net)) {
-				is_clock.insert(clock_net);
-				num_clocks++;
-			}
-		} else {
-			if (logical_block[bnum].clock_net != OPEN) {
-				clock_net = logical_block[bnum].clock_net;
-				if (!is_clock.count(clock_net)) {
-                    is_clock.insert(clock_net);
+    for(auto blk_id : g_atom_nl.blocks()) {
+        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
+				if (!is_clock.count(net_id)) {
+                    is_clock.insert(net_id);
 					num_clocks++;
 				}
 			}
@@ -169,7 +160,7 @@ std::unordered_set<int> alloc_and_load_is_clock(bool global_clocks) {
 
 	if (num_clocks > 1 && global_clocks) {
 		vtr::printf_warning(__FILE__, __LINE__, 
-				"Circuit contains %d clocks. All clocks will be marked global.\n", num_clocks);
+				"All %d clocks will be treated as global.\n", num_clocks);
 	}
 
 	return (is_clock);
