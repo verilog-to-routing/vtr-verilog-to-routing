@@ -4,6 +4,7 @@
 #include <ctime>
 #include <climits>
 #include <cstdlib>
+#include <cmath>
 using namespace std;
 
 #include "vtr_util.h"
