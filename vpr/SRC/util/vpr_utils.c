@@ -631,7 +631,7 @@ float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 			+ primitive->pb_type->num_clock_pins);
 }
 
-int num_ext_inputs_logical_block(int iblk) {
+int num_ext_inputs_logical_block(AtomBlockId blk_id) {
 
 	/* Returns the number of input pins on this logical_block that must be hooked *
 	 * up through external interconnect.  That is, the number of input    *
@@ -641,8 +641,6 @@ int num_ext_inputs_logical_block(int iblk) {
 
 	/* TODO: process to get ext_inps is slow, should cache in lookup table */
 
-    AtomBlockId blk_id = g_atom_nl.find_block(logical_block[iblk].name); //TODO: convert to pass blk_id directly as argument when callers upgraded
-    VTR_ASSERT(blk_id);
     const t_model* model = g_atom_nl.block_model(blk_id);
 
 	t_model_ports* in_port = model->inputs;

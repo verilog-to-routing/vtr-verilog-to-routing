@@ -35,22 +35,23 @@ typedef struct s_pb_stats {
 	/* Packing statistics */
 	std::map<AtomBlockId, float> gain; /* Attraction (inverse of cost) function */
 
-	std::map<int, float> timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
-	 Determined by the most critical g_atoms_nlist.net between this logical_block and any logical_block in the current pb */
-	std::map<int, float> connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
-	std::map<int, float> prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
-	std::map<int, float> sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
+	std::map<AtomBlockId, float> timinggain; /* The timing criticality score of this logical_block. 
+	                                            Determined by the most critical g_atoms_nlist.net 
+                                                between this logical_block and any logical_block in 
+                                                the current pb */
+	std::map<AtomBlockId, float> connectiongain; /* Weighted sum of connections to attraction function */
+	std::map<AtomBlockId, float> sharinggain; /* How many nets on this logical_block are already in the pb under consideration */
 
-	/* [0..num_logical_blocks-1]. This is the gain used for hill-climbing. It stores*
+	/* This is the gain used for hill-climbing. It stores*
 	 * the reduction in the number of pins that adding this logical_block to the the*
 	 * current pb will have. This reflects the fact that sometimes the *
 	 * addition of a logical_block to a pb may reduce the number of inputs     *
 	 * required if it shares inputs with all other BLEs and it's output is  *
 	 * used by all other child pbs in this parent pb.                               */
-	std::map<int, float> hillgain;
+	std::map<AtomBlockId, float> hillgain;
 
     std::vector<AtomNetId> marked_nets; //List of nets with the num_pins_of_net_in_pb and gain entries altered
-    std::vector<int> marked_blocks; //List of blocks with the num_pins_of_net_in_pb and gain entries altered
+    std::vector<AtomBlockId> marked_blocks; //List of blocks with the num_pins_of_net_in_pb and gain entries altered
 
 	int num_child_blocks_in_pb;
 

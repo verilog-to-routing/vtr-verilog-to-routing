@@ -1550,8 +1550,7 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	for (ipin = 0; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
 		iblk = g_atoms_nlist.net[inet].pins[ipin].block;
 		if (logical_block[iblk].clb_index == clb_index
-				&& is_logical_blk_in_pb(iblk,
-						logical_block[clustered_block].pb)) {
+				&& is_logical_blk_in_pb(iblk, logical_block[clustered_block].pb)) {
 			num_internal_connections++;
 		} else if (logical_block[iblk].clb_index == OPEN) {
 			num_open_connections++;
@@ -1563,18 +1562,22 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	if (net_relation_to_clustered_block == OUTPUT) {
 		for (ipin = 1; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
 			iblk = g_atoms_nlist.net[inet].pins[ipin].block;
+
+            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+            VTR_ASSERT(blk_id);
+
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-				/* TODO: Gain function accurate only if net has one connection to block, TODO: Should we handle case where net has multi-connection to block? Gain computation is only off by a bit in this case */
-				if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
-					cur_pb->pb_stats->connectiongain[iblk] = 0;
+				/* TODO: Gain function accurate only if net has one connection to block, 
+                 * TODO: Should we handle case where net has multi-connection to block? 
+                 *       Gain computation is only off by a bit in this case */
+				if(cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
+					cur_pb->pb_stats->connectiongain[blk_id] = 0;
 				}
 				
 				if (num_internal_connections > 1) {
-					cur_pb->pb_stats->connectiongain[iblk] -= 1
-							/ (float) (num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
+					cur_pb->pb_stats->connectiongain[blk_id] -= 1 / (float) (num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
 				}
-				cur_pb->pb_stats->connectiongain[iblk] += 1
-						/ (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1);
+				cur_pb->pb_stats->connectiongain[blk_id] += 1 / (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1);
 			}
 		}
 	}
@@ -1584,16 +1587,18 @@ static void update_connection_gain_values(int inet, int clustered_block,
 		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
 
 		iblk = g_atoms_nlist.net[inet].pins[0].block;
+
+        auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+        VTR_ASSERT(blk_id);
+
 		if (logical_block[iblk].clb_index == NO_CLUSTER) {
-			if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
-				cur_pb->pb_stats->connectiongain[iblk] = 0;
+			if(cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
+				cur_pb->pb_stats->connectiongain[blk_id] = 0;
 			}
 			if (num_internal_connections > 1) {
-				cur_pb->pb_stats->connectiongain[iblk] -= 1
-						/ (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
+				cur_pb->pb_stats->connectiongain[blk_id] -= 1 / (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
 			}
-			cur_pb->pb_stats->connectiongain[iblk] += 1
-					/ (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1);
+			cur_pb->pb_stats->connectiongain[blk_id] += 1 / (float) (num_open_connections + 1.5 * num_stuck_connections + 0.1);
 		}
 	}
 }
@@ -1626,6 +1631,8 @@ static void update_timing_gain_values(int inet,
 			&& !g_atoms_nlist.net[inet].is_global) {
 		for (ipin = ifirst; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
 			iblk = g_atoms_nlist.net[inet].pins[ipin].block;
+            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+            VTR_ASSERT(blk_id);
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
@@ -1635,11 +1642,11 @@ static void update_timing_gain_values(int inet,
 				/* Timing gain is the timing criticality. */
 				timinggain = slacks->timing_criticality[slack_inet][ipin]; 
 #endif
-				if(cur_pb->pb_stats->timinggain.count(iblk) == 0) {
-					cur_pb->pb_stats->timinggain[iblk] = 0;
+				if(cur_pb->pb_stats->timinggain.count(blk_id) == 0) {
+					cur_pb->pb_stats->timinggain[blk_id] = 0;
 				}
-				if (timinggain > cur_pb->pb_stats->timinggain[iblk])
-					cur_pb->pb_stats->timinggain[iblk] = timinggain;
+				if (timinggain > cur_pb->pb_stats->timinggain[blk_id])
+					cur_pb->pb_stats->timinggain[blk_id] = timinggain;
 			}
 		}
 	}
@@ -1649,6 +1656,8 @@ static void update_timing_gain_values(int inet,
 		/*Calculate the timing gain for the logical_block which is driving *
 		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
 		newblk = g_atoms_nlist.net[inet].pins[0].block;
+        auto new_blk_id = g_atom_nl.find_block(logical_block[newblk].name);
+        VTR_ASSERT(new_blk_id);
 		if (logical_block[newblk].clb_index == NO_CLUSTER) {
 			for (ipin = 1; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
 #ifdef PATH_COUNTING
@@ -1659,11 +1668,11 @@ static void update_timing_gain_values(int inet,
 				/* Timing gain is the timing criticality. */
 				timinggain = slacks->timing_criticality[slack_inet][ipin]; 
 #endif
-				if(cur_pb->pb_stats->timinggain.count(newblk) == 0) {
-					cur_pb->pb_stats->timinggain[newblk] = 0;
+				if(cur_pb->pb_stats->timinggain.count(new_blk_id) == 0) {
+					cur_pb->pb_stats->timinggain[new_blk_id] = 0;
 				}
-				if (timinggain > cur_pb->pb_stats->timinggain[newblk])
-					cur_pb->pb_stats->timinggain[newblk] = timinggain;
+				if (timinggain > cur_pb->pb_stats->timinggain[new_blk_id])
+					cur_pb->pb_stats->timinggain[new_blk_id] = timinggain;
 
 			}
 		}
@@ -1686,8 +1695,6 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	 * cluster. The timinggain is the criticality of the most critical*
 	 * g_atoms_nlist.net between this logical_block and a logical_block in the cluster.             */
 
-	int iblk, ifirst;
-	unsigned int ipin;
 	t_pb *cur_pb;
 
 	cur_pb = logical_block[clustered_block].pb->parent_pb;
@@ -1724,26 +1731,27 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 
 		if (gain_flag == GAIN) {
 
-			/* Check if this atom net lists its driving logical_block twice.  If so, avoid  *
-			 * double counting this logical_block by skipping the first (driving) pin. */
+			/* Check if this net is connected to it's driver block multiple times (i.e. as both an output and input)
+             * If so, avoid double counting by skipping the first (driving) pin. */
 
-			if (net_output_feeds_driving_block_input[net_id] == 0)
-				ifirst = 0;
-			else
-				ifirst = 1;
+            auto pins = g_atom_nl.net_pins(net_id);
+			if (net_output_feeds_driving_block_input[net_id] != 0)
+                //We implicitly assume here that net_output_feeds_driver_block_input[net_id] is 2
+                //(i.e. the net loops back to the block only once)
+			    pins = g_atom_nl.net_sinks(net_id);	
 
 			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
-				for (ipin = ifirst; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
-					iblk = g_atoms_nlist.net[inet].pins[ipin].block;
-					if (logical_block[iblk].clb_index == NO_CLUSTER) {
+                for(auto pin_id : pins) {
+                    auto blk_id = g_atom_nl.pin_block(pin_id);
+					if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 
-						if (cur_pb->pb_stats->sharinggain.count(iblk) == 0) {
-							cur_pb->pb_stats->marked_blocks.push_back(iblk);
-							cur_pb->pb_stats->sharinggain[iblk] = 1;
-							cur_pb->pb_stats->hillgain[iblk] = 1 - num_ext_inputs_logical_block(iblk);
+						if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
+							cur_pb->pb_stats->marked_blocks.push_back(blk_id);
+							cur_pb->pb_stats->sharinggain[blk_id] = 1;
+							cur_pb->pb_stats->hillgain[blk_id] = 1 - num_ext_inputs_logical_block(blk_id);
 						} else {
-							cur_pb->pb_stats->sharinggain[iblk]++;
-							cur_pb->pb_stats->hillgain[iblk]++;
+							cur_pb->pb_stats->sharinggain[blk_id]++;
+							cur_pb->pb_stats->hillgain[blk_id]++;
 						}
 					}
 				}
@@ -1773,53 +1781,29 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 	/*Updates the total  gain array to reflect the desired tradeoff between*
 	 *input sharing (sharinggain) and path_length minimization (timinggain)*/
-
-	int j, k;
-	t_pb * cur_pb;
-	int num_used_input_pins, num_used_output_pins;
-	t_model_ports *port;
-
-	cur_pb = pb;
+	t_pb * cur_pb = pb;
 	while (cur_pb) {
 
-		for (int iblk : cur_pb->pb_stats->marked_blocks) {
-            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+		for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
 
-			if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
-				cur_pb->pb_stats->connectiongain[iblk] = 0;
+			if(cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
+				cur_pb->pb_stats->connectiongain[blk_id] = 0;
 			}
-			if(cur_pb->pb_stats->sharinggain.count(iblk) == 0) {
-				cur_pb->pb_stats->sharinggain[iblk] = 0;
-			}
-
-			/* Todo: This was used to explore different normalization options, can be made more efficient once we decide on which one to use*/
-			port = logical_block[iblk].model->inputs;
-			j = 0;
-			num_used_input_pins = 0;
-			while (port) {
-				if (!port->is_clock) {
-					for (k = 0; k < port->size; k++) {
-						if (logical_block[iblk].input_nets[j][k] != OPEN) {
-							num_used_input_pins++;
-						}
-					}
-					j++;
-				}
-				port = port->next;
+			if(cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
+				cur_pb->pb_stats->sharinggain[blk_id] = 0;
 			}
 
-			num_used_output_pins = 0;
-			j = 0;
-			port = logical_block[iblk].model->outputs;
-			while (port) {
-				for (k = 0; k < port->size; k++) {
-					if (logical_block[iblk].output_nets[j][k] != OPEN) {
-						num_used_output_pins++;
-					}
-				}
-				port = port->next;
-				j++;
-			}
+			/* Todo: This was used to explore different normalization options, can 
+             * be made more efficient once we decide on which one to use*/
+			int num_used_input_pins = 0;
+            for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
+                num_used_input_pins += g_atom_nl.port_pins(port_id).size();
+            }
+
+			int num_used_output_pins = 0;
+            for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
+                num_used_output_pins += g_atom_nl.port_pins(port_id).size();
+            }
 			/* end todo */
 
 			/* Calculate area-only cost function */
@@ -1828,12 +1812,12 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 			if (connection_driven) {
 				/*try to absorb as many connections as possible*/
 				cur_pb->pb_stats->gain[blk_id] = ((1 - beta)
-						* (float) cur_pb->pb_stats->sharinggain[iblk]
-						+ beta * (float) cur_pb->pb_stats->connectiongain[iblk])
+						* (float) cur_pb->pb_stats->sharinggain[blk_id]
+						+ beta * (float) cur_pb->pb_stats->connectiongain[blk_id])
 						/ (num_used_pins);
 			} else {
 				cur_pb->pb_stats->gain[blk_id] =
-						((float) cur_pb->pb_stats->sharinggain[iblk])
+						((float) cur_pb->pb_stats->sharinggain[blk_id])
 								/ (num_used_pins);
 
 			}
@@ -1841,7 +1825,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 			/* Add in timing driven cost into cost function */
 			if (timing_driven) {
 				cur_pb->pb_stats->gain[blk_id] = alpha
-						* cur_pb->pb_stats->timinggain[iblk]
+						* cur_pb->pb_stats->timinggain[blk_id]
 						+ (1.0 - alpha) * (float) cur_pb->pb_stats->gain[blk_id];
 			}
 		}
@@ -2134,10 +2118,8 @@ static t_pack_molecule *get_highest_gain_molecule(
 	if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
 		cur_pb->pb_stats->num_feasible_blocks = 0;
 		cur_pb->pb_stats->explore_transitive_fanout = true; /* If no legal molecules found, enable exploration of molecules two hops away */
-		for (int iblk : cur_pb->pb_stats->marked_blocks) {
-			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-                auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
-                VTR_ASSERT(blk_id);
+		for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
+			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 
                 auto rng = atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
