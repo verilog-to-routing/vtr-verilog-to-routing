@@ -1220,7 +1220,7 @@ static void alloc_and_load_pb_stats(t_pb *pb, int max_nets_in_pb_type) {
 	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(
 			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
-	pb->pb_stats->tie_break_high_fanout_net = OPEN;
+	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
 		pb->pb_stats->input_pins_used[i] = (int*) vtr::malloc(
 				pb->pb_graph_node->input_pin_class_size[i] * sizeof(int));
@@ -1710,7 +1710,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	 * cluster. The timinggain is the criticality of the most critical*
 	 * g_atoms_nlist.net between this logical_block and a logical_block in the cluster.             */
 
-	int iblk, ifirst, stored_net;
+	int iblk, ifirst;
 	unsigned int ipin;
 	t_pb *cur_pb;
 
@@ -1729,9 +1729,9 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 			while(cur_pb->parent_pb != NULL) {
 				cur_pb = cur_pb->parent_pb;
 			}
-			stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
-			if(stored_net == OPEN || g_atom_nl.net_sinks(net_id).size() < g_atoms_nlist.net[stored_net].num_sinks()) {
-				cur_pb->pb_stats->tie_break_high_fanout_net = inet;
+			AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
+			if(!stored_net || g_atom_nl.net_sinks(net_id).size() < g_atom_nl.net_sinks(stored_net).size()) {
+				cur_pb->pb_stats->tie_break_high_fanout_net = net_id;
 			}
 		}
 		return;
@@ -2147,7 +2147,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	 * function passed in as is_feasible.  If there are no feasible *
 	 * blocks it returns NO_CLUSTER.                                */
 
-	int i, j, iblk, index, inet, count;
+	int i, j, iblk, index, count;
 	bool success;
 
 	t_pack_molecule *molecule;
@@ -2196,16 +2196,23 @@ static t_pack_molecule *get_highest_gain_molecule(
 	}
 
 	// 2. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
-	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net != OPEN) {
-		/* Because the packer ignores high fanout nets when marking what blocks to consider, use one of the ignored high fanout net to fill up lightly related blocks */
+	if(cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
+		/* Because the packer ignores high fanout nets when marking what blocks 
+         * to consider, use one of the ignored high fanout net to fill up lightly 
+         * related blocks */
 		reset_tried_but_unused_cluster_placements(cluster_placement_stats_ptr);
-		inet = cur_pb->pb_stats->tie_break_high_fanout_net;
+
+		AtomNetId net_id = cur_pb->pb_stats->tie_break_high_fanout_net;
+
 		count = 0;
-		for (i = 0; i < (int) g_atoms_nlist.net[inet].pins.size() && count < AAPACK_MAX_HIGH_FANOUT_EXPLORE; i++) {
-			iblk = g_atoms_nlist.net[inet].pins[i].block;
-			if (logical_block[iblk].clb_index == NO_CLUSTER) {
-                auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
-                VTR_ASSERT(blk_id);
+        for(auto pin_id : g_atom_nl.net_pins(net_id)) {
+            if(count >= AAPACK_MAX_HIGH_FANOUT_EXPLORE) {
+                break;
+            }
+
+            AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
+
+			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 
                 auto rng = atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2233,12 +2240,12 @@ static t_pack_molecule *get_highest_gain_molecule(
                 }
 			}
 		} 
-		cur_pb->pb_stats->tie_break_high_fanout_net = OPEN; /* Mark off that this high fanout net has been considered */
+		cur_pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID(); /* Mark off that this high fanout net has been considered */
 	}
 
 	// 3. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
 	if(cur_pb->pb_stats->num_feasible_blocks == 0 && 
-	   cur_pb->pb_stats->tie_break_high_fanout_net == OPEN &&
+	   !cur_pb->pb_stats->tie_break_high_fanout_net &&
 	   cur_pb->pb_stats->explore_transitive_fanout == true
 	   ) {
 		if(cur_pb->pb_stats->transitive_fanout_candidates == NULL) {
