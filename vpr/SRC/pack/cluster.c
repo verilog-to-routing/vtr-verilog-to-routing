@@ -127,7 +127,7 @@ static void check_clocks(const std::unordered_set<int>& is_clock);
 static void check_for_duplicate_inputs ();
 #endif 
 
-static bool is_logical_blk_in_pb(int iblk, t_pb *pb);
+static bool is_atom_blk_in_pb(const AtomBlockId blk_id, t_pb *pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
 		map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size);
@@ -175,7 +175,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data, 
         std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules);
 
-static void update_connection_gain_values(int inet, int clustered_block,
+static void update_connection_gain_values(const AtomNetId net_id, int clustered_block,
 		t_pb * cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
@@ -758,9 +758,8 @@ static void check_clocks(const std::unordered_set<int>& is_clock) {
 }
 
 /* Determine if logical block is in pb */
-static bool is_logical_blk_in_pb(int iblk, t_pb *pb) {
-	t_pb * cur_pb;
-	cur_pb = logical_block[iblk].pb;
+static bool is_atom_blk_in_pb(const AtomBlockId blk_id, t_pb *pb) {
+	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
 	while (cur_pb) {
 		if (cur_pb == pb) {
 			return true;
@@ -1530,14 +1529,12 @@ static void revert_place_atom_block(const int iblock, t_lb_router_data *router_d
 	}
 }
 
-static void update_connection_gain_values(int inet, int clustered_block,
+static void update_connection_gain_values(const AtomNetId net_id, int clustered_block,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block) {
-	/*This function is called when the connectiongain values on the g_atoms_nlist.net*
-	 *inet require updating.   */
+	/*This function is called when the connectiongain values on the net net_id*
+	 *require updating.   */
 
-	int iblk;
-	unsigned ipin;
 	int clb_index;
 	int num_internal_connections, num_open_connections, num_stuck_connections;
 
@@ -1547,12 +1544,15 @@ static void update_connection_gain_values(int inet, int clustered_block,
 
 	/* may wish to speed things up by ignoring clock nets since they are high fanout */
 
-	for (ipin = 0; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
-		iblk = g_atoms_nlist.net[inet].pins[ipin].block;
-		if (logical_block[iblk].clb_index == clb_index
-				&& is_logical_blk_in_pb(iblk, logical_block[clustered_block].pb)) {
+    /*
+	 *for (ipin = 0; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
+     */
+    for(auto pin_id : g_atom_nl.net_pins(net_id)) {
+        auto blk_id = g_atom_nl.pin_block(pin_id);
+		if (g_atom_map.atom_clb(blk_id) == clb_index
+				&& is_atom_blk_in_pb(blk_id, logical_block[clustered_block].pb)) {
 			num_internal_connections++;
-		} else if (logical_block[iblk].clb_index == OPEN) {
+		} else if (g_atom_map.atom_clb(blk_id) == OPEN) {
 			num_open_connections++;
 		} else {
 			num_stuck_connections++;
@@ -1560,13 +1560,15 @@ static void update_connection_gain_values(int inet, int clustered_block,
 	}
 
 	if (net_relation_to_clustered_block == OUTPUT) {
-		for (ipin = 1; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
-			iblk = g_atoms_nlist.net[inet].pins[ipin].block;
-
-            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+        /*
+		 *for (ipin = 1; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
+		 *    iblk = g_atoms_nlist.net[inet].pins[ipin].block;
+         */
+        for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
+            auto blk_id = g_atom_nl.pin_block(pin_id);
             VTR_ASSERT(blk_id);
 
-			if (logical_block[iblk].clb_index == NO_CLUSTER) {
+			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 				/* TODO: Gain function accurate only if net has one connection to block, 
                  * TODO: Should we handle case where net has multi-connection to block? 
                  *       Gain computation is only off by a bit in this case */
@@ -1586,12 +1588,10 @@ static void update_connection_gain_values(int inet, int clustered_block,
 		/*Calculate the connectiongain for the logical_block which is driving *
 		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
 
-		iblk = g_atoms_nlist.net[inet].pins[0].block;
+        auto driver_pin_id = g_atom_nl.net_driver(net_id);
+        auto blk_id = g_atom_nl.pin_block(driver_pin_id);
 
-        auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
-        VTR_ASSERT(blk_id);
-
-		if (logical_block[iblk].clb_index == NO_CLUSTER) {
+		if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 			if(cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
 				cur_pb->pb_stats->connectiongain[blk_id] = 0;
 			}
@@ -1758,7 +1758,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 			}
 
 			if (connection_driven) {
-				update_connection_gain_values(inet, clustered_block, cur_pb,
+				update_connection_gain_values(net_id, clustered_block, cur_pb,
 						net_relation_to_clustered_block);
 			}
 
