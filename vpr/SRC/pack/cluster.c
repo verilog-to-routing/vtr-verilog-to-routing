@@ -655,7 +655,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				clb_inter_blk_nets[num_clb - 1].nets_in_lb = (int*)vtr::malloc(sizeof(int) * pb_stats->num_marked_nets);
 				for(int inet = 0; inet < pb_stats->num_marked_nets; inet++) {
 					int mnet = pb_stats->marked_nets[inet];
-					int external_terminals = g_atoms_nlist.net[mnet].pins.size() - pb_stats->num_pins_of_net_in_pb[inet];
+                    auto mnet_id = g_atom_nl.find_net(g_atoms_nlist.net[mnet].name);
+                    VTR_ASSERT(mnet_id);
+                    auto inet_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
+                    VTR_ASSERT(inet_id);
+					int external_terminals = g_atom_nl.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[inet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
 					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
 						clb_inter_blk_nets[num_clb - 1].nets_in_lb[clb_inter_blk_nets[num_clb - 1].num_nets_in_lb] = mnet;
@@ -1740,9 +1744,8 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 	while (cur_pb) {
 		/* Mark g_atoms_nlist.net as being visited, if necessary. */
 
-		if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
-			cur_pb->pb_stats->marked_nets[cur_pb->pb_stats->num_marked_nets] =
-					inet;
+		if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
+			cur_pb->pb_stats->marked_nets[cur_pb->pb_stats->num_marked_nets] = inet;
 			cur_pb->pb_stats->num_marked_nets++;
 		}
 
@@ -1758,7 +1761,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 			else
 				ifirst = 1;
 
-			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
+			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
 				for (ipin = ifirst; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
 					iblk = g_atoms_nlist.net[inet].pins[ipin].block;
 					if (logical_block[iblk].clb_index == NO_CLUSTER) {
@@ -1786,10 +1789,10 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 						net_relation_to_clustered_block, slacks);
 			}
 		}
-		if(cur_pb->pb_stats->num_pins_of_net_in_pb.count(inet) == 0) {
-			cur_pb->pb_stats->num_pins_of_net_in_pb[inet] = 0;
+		if(cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
+			cur_pb->pb_stats->num_pins_of_net_in_pb[net_id] = 0;
 		}
-		cur_pb->pb_stats->num_pins_of_net_in_pb[inet]++;
+		cur_pb->pb_stats->num_pins_of_net_in_pb[net_id]++;
 		cur_pb = cur_pb->parent_pb;
 	}
 }

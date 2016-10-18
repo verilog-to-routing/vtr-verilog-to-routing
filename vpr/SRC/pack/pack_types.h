@@ -64,7 +64,7 @@ typedef struct s_pb_stats {
 
 	/* [0..g_atoms_nlist.net.size()-1].  How many pins of each g_atoms_nlist.net are contained in the *
 	 * currently open pb?                                          */
-	std::map<int, int> num_pins_of_net_in_pb;
+	std::map<AtomNetId, int> num_pins_of_net_in_pb;
 
 	/* Record of pins of class used TODO: Jason Luu: Should really be using hash table for this for speed, too lazy to write one now, performance isn't too bad since I'm at most iterating over the number of pins of a pb which is effectively a constant for reasonable architectures */
 	int **input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
