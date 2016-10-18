@@ -66,8 +66,8 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 static void print_pack_molecules(const char *fname,
 		const t_pack_patterns *list_of_pack_patterns, const int num_pack_patterns,
 		const t_pack_molecule *list_of_molecules);
-static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(const int ilogical_block);
-static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(const int ilogical_block, t_pb_graph_node *curr_pb_graph_node, float *cost);
+static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id);
+static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node *curr_pb_graph_node, float *cost);
 static int find_new_root_atom_for_chain(const int block_index, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
@@ -853,7 +853,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
         auto blk_id = g_atom_nl.find_block(logical_block[i].name);
         VTR_ASSERT(blk_id);
 
-		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_logical_block(i);
+		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
         g_atom_map.set_expected_lowest_cost_pb_gnode(blk_id, logical_block[i].expected_lowest_cost_primitive);
 
         auto rng = atom_molecules.equal_range(blk_id);
@@ -1132,7 +1132,7 @@ static void print_pack_molecules(const char *fname,
 }
 
 /* Search through all primitives and return the lowest cost primitive that fits this logical block */
-static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(const int ilogical_block) {
+static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id) {
 	int i;
 	float cost, best_cost;
 	t_pb_graph_node *current, *best;
@@ -1142,7 +1142,7 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(con
 	current = NULL;
 	for(i = 0; i < num_types; i++) {
 		cost = UNDEFINED;
-		current = get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(ilogical_block, type_descriptors[i].pb_graph_head, &cost);
+		current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type_descriptors[i].pb_graph_head, &cost);
 		if(cost != UNDEFINED) {
 			if(best_cost == UNDEFINED || best_cost > cost) {
 				best_cost = cost;
@@ -1153,7 +1153,7 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block(con
 	return best;
 }
 
-static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(const int ilogical_block, t_pb_graph_node *curr_pb_graph_node, float *cost) {
+static t_pb_graph_node *get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node *curr_pb_graph_node, float *cost) {
 	t_pb_graph_node *best, *cur;
 	float cur_cost, best_cost;
 	int i, j;
@@ -1164,9 +1164,6 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_
 		return NULL;
 	}
 
-    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
-    VTR_ASSERT(blk_id);
-	
 	if(curr_pb_graph_node->pb_type->blif_model != NULL) {
 		if(primitive_type_feasible(blk_id, curr_pb_graph_node->pb_type)) {
 			cur_cost = compute_primitive_base_cost(curr_pb_graph_node);
@@ -1179,7 +1176,7 @@ static t_pb_graph_node *get_expected_lowest_cost_primitive_for_logical_block_in_
 		for(i = 0; i < curr_pb_graph_node->pb_type->num_modes; i++) {
 			for(j = 0; j < curr_pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
 				*cost = UNDEFINED;
-				cur = get_expected_lowest_cost_primitive_for_logical_block_in_pb_graph_node(ilogical_block, &curr_pb_graph_node->child_pb_graph_nodes[i][j][0], cost);
+				cur = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, &curr_pb_graph_node->child_pb_graph_nodes[i][j][0], cost);
 				if(cur != NULL) {
 					if(best == NULL || best_cost > *cost) {
 						best = cur;
