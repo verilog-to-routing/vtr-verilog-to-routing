@@ -37,6 +37,7 @@ circuit_list_add=tseng.blif
 
 # Add architectures to list to sweep
 arch_list_add=k4_n4_v7_bidir.xml
+arch_list_add=k4_n4_v7_l1_bidir.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
