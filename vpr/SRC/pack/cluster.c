@@ -657,9 +657,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					int mnet = pb_stats->marked_nets[inet];
                     auto mnet_id = g_atom_nl.find_net(g_atoms_nlist.net[mnet].name);
                     VTR_ASSERT(mnet_id);
-                    auto inet_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
-                    VTR_ASSERT(inet_id);
-					int external_terminals = g_atom_nl.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[inet_id];
+					int external_terminals = g_atom_nl.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
 					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
 						clb_inter_blk_nets[num_clb - 1].nets_in_lb[clb_inter_blk_nets[num_clb - 1].num_nets_in_lb] = mnet;
