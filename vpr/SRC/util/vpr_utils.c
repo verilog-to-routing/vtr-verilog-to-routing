@@ -805,7 +805,7 @@ void free_pb_stats(t_pb *pb) {
         pb->pb_stats->connectiongain.clear();
         pb->pb_stats->num_pins_of_net_in_pb.clear();
         
-        if(pb->pb_stats->marked_blocks != NULL) {
+        if(!pb->pb_stats->marked_blocks.empty()) {
             t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
             if(pb_graph_node) {
                 for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
@@ -820,9 +820,7 @@ void free_pb_stats(t_pb *pb) {
             free(pb->pb_stats->output_pins_used);
             delete [] pb->pb_stats->lookahead_output_pins_used;
             free(pb->pb_stats->feasible_blocks);
-            free(pb->pb_stats->marked_blocks);
         }
-        pb->pb_stats->marked_blocks = NULL;
         if(pb->pb_stats->transitive_fanout_candidates != NULL) {
             delete pb->pb_stats->transitive_fanout_candidates;
         };

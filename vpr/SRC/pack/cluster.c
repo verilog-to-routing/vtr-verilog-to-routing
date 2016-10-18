@@ -1230,11 +1230,6 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 
 	pb->pb_stats->num_pins_of_net_in_pb.clear();
 
-	pb->pb_stats->marked_blocks = (int *) vtr::malloc(
-			num_logical_blocks * sizeof(int));
-
-	pb->pb_stats->num_marked_blocks = 0;
-
 	pb->pb_stats->num_child_blocks_in_pb = 0;
 
 	pb->pb_stats->explore_transitive_fanout = true;
@@ -1743,8 +1738,7 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 					if (logical_block[iblk].clb_index == NO_CLUSTER) {
 
 						if (cur_pb->pb_stats->sharinggain.count(iblk) == 0) {
-							cur_pb->pb_stats->marked_blocks[cur_pb->pb_stats->num_marked_blocks] = iblk;
-							cur_pb->pb_stats->num_marked_blocks++;
+							cur_pb->pb_stats->marked_blocks.push_back(iblk);
 							cur_pb->pb_stats->sharinggain[iblk] = 1;
 							cur_pb->pb_stats->hillgain[iblk] = 1 - num_ext_inputs_logical_block(iblk);
 						} else {
@@ -1780,7 +1774,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 	/*Updates the total  gain array to reflect the desired tradeoff between*
 	 *input sharing (sharinggain) and path_length minimization (timinggain)*/
 
-	int i, iblk, j, k;
+	int j, k;
 	t_pb * cur_pb;
 	int num_used_input_pins, num_used_output_pins;
 	t_model_ports *port;
@@ -1788,8 +1782,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 	cur_pb = pb;
 	while (cur_pb) {
 
-		for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
-			iblk = cur_pb->pb_stats->marked_blocks[i];
+		for (int iblk : cur_pb->pb_stats->marked_blocks) {
             auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
 
 			if(cur_pb->pb_stats->connectiongain.count(iblk) == 0) {
@@ -2126,7 +2119,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	 * function passed in as is_feasible.  If there are no feasible *
 	 * blocks it returns NO_CLUSTER.                                */
 
-	int i, j, iblk, index, count;
+	int j, index, count;
 	bool success;
 
 	t_pack_molecule *molecule;
@@ -2141,8 +2134,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 	if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
 		cur_pb->pb_stats->num_feasible_blocks = 0;
 		cur_pb->pb_stats->explore_transitive_fanout = true; /* If no legal molecules found, enable exploration of molecules two hops away */
-		for (i = 0; i < cur_pb->pb_stats->num_marked_blocks; i++) {
-			iblk = cur_pb->pb_stats->marked_blocks[i];
+		for (int iblk : cur_pb->pb_stats->marked_blocks) {
 			if (logical_block[iblk].clb_index == NO_CLUSTER) {
                 auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
                 VTR_ASSERT(blk_id);
@@ -2236,7 +2228,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 											  clb_inter_blk_nets);
 
 			/* Only consider candidates that pass a very simple legality check */
-			for(i = 0; i < (int) cur_pb->pb_stats->transitive_fanout_candidates->size(); i++) {
+			for(int i = 0; i < (int) cur_pb->pb_stats->transitive_fanout_candidates->size(); i++) {
 				molecule = (*cur_pb->pb_stats->transitive_fanout_candidates)[i];
 				if (molecule->valid) {
 					success = true;

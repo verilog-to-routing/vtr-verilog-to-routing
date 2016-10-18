@@ -49,12 +49,9 @@ typedef struct s_pb_stats {
 	 * used by all other child pbs in this parent pb.                               */
 	std::map<int, float> hillgain;
 
-	/* [0..num_marked_nets] and [0..num_marked_blocks] respectively.  List  *
-	 * the indices of the nets and blocks that have had their num_pins_of_  *
-	 * net_in_pb and gain entries altered.                             */
     std::vector<AtomNetId> marked_nets; //List of nets with the num_pins_of_net_in_pb and gain entries altered
-    int* marked_blocks;
-	int num_marked_blocks;
+    std::vector<int> marked_blocks; //List of blocks with the num_pins_of_net_in_pb and gain entries altered
+
 	int num_child_blocks_in_pb;
 
 	AtomNetId tie_break_high_fanout_net; /* If no marked candidate molecules, use 
