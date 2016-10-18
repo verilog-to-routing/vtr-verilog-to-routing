@@ -1716,16 +1716,21 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 
 	cur_pb = logical_block[clustered_block].pb->parent_pb;
 
+    AtomNetId net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
+    VTR_ASSERT(net_id);
 	
-	if (g_atoms_nlist.net[inet].num_sinks() > AAPACK_MAX_NET_SINKS_IGNORE) {
-		/* Optimization: It can be too runtime costly for marking all sinks for a high fanout-net that probably has no hope of ever getting packed, thus ignore those high fanout nets */
+	if (g_atom_nl.net_sinks(net_id).size() > AAPACK_MAX_NET_SINKS_IGNORE) {
+		/* Optimization: It can be too runtime costly for marking all sinks for 
+         * a high fanout-net that probably has no hope of ever getting packed, 
+         * thus ignore those high fanout nets */
 		if(g_atoms_nlist.net[inet].is_global != true) {
-			/* If no low/medium fanout nets, we may need to consider high fan-out nets for packing, so select one and store it */ 
+			/* If no low/medium fanout nets, we may need to consider 
+             * high fan-out nets for packing, so select one and store it */ 
 			while(cur_pb->parent_pb != NULL) {
 				cur_pb = cur_pb->parent_pb;
 			}
 			stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
-			if(stored_net == OPEN || g_atoms_nlist.net[inet].num_sinks() < g_atoms_nlist.net[stored_net].num_sinks()) {
+			if(stored_net == OPEN || g_atom_nl.net_sinks(net_id).size() < g_atoms_nlist.net[stored_net].num_sinks()) {
 				cur_pb->pb_stats->tie_break_high_fanout_net = inet;
 			}
 		}
@@ -1759,12 +1764,10 @@ static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,
 					if (logical_block[iblk].clb_index == NO_CLUSTER) {
 
 						if (cur_pb->pb_stats->sharinggain.count(iblk) == 0) {
-							cur_pb->pb_stats->marked_blocks[cur_pb->pb_stats->num_marked_blocks] =
-									iblk;
+							cur_pb->pb_stats->marked_blocks[cur_pb->pb_stats->num_marked_blocks] = iblk;
 							cur_pb->pb_stats->num_marked_blocks++;
 							cur_pb->pb_stats->sharinggain[iblk] = 1;
-							cur_pb->pb_stats->hillgain[iblk] = 1
-									- num_ext_inputs_logical_block(iblk);
+							cur_pb->pb_stats->hillgain[iblk] = 1 - num_ext_inputs_logical_block(iblk);
 						} else {
 							cur_pb->pb_stats->sharinggain[iblk]++;
 							cur_pb->pb_stats->hillgain[iblk]++;
