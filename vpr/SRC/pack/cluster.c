@@ -1365,7 +1365,6 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	t_pb *pb, *parent_pb;
 	const t_pb_type *pb_type;
 
-	t_model_ports *root_port;
 
 	my_parent = NULL;
 
@@ -1391,7 +1390,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
         g_atom_map.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
 
-		parent_pb->name = vtr::strdup(logical_block[ilogical_block].name);
+		parent_pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
 		parent_pb->child_pbs =
@@ -1445,7 +1444,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	if (is_primitive) {
 		VTR_ASSERT(pb->logical_block == OPEN && g_atom_map.atom_pb(blk_id) == NULL && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
-		pb->name = vtr::strdup(logical_block[ilogical_block].name);
+		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		pb->logical_block = ilogical_block;
 		logical_block[ilogical_block].clb_index = clb_index;
 		logical_block[ilogical_block].pb = pb;
@@ -1462,8 +1461,12 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {
 			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
-			root_port = chain_root_pin->port->model_port;
-			if(logical_block[ilogical_block].input_nets[root_port->index][chain_root_pin->pin_number] != OPEN) {
+            t_model_ports *root_port = chain_root_pin->port->model_port;
+            auto port_id = g_atom_nl.find_port(blk_id, root_port->name);
+            VTR_ASSERT(port_id);
+            auto chain_net_id = g_atom_nl.port_net(port_id, chain_root_pin->pin_number);
+
+			if(chain_net_id) {
 				/* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
 				if(pb_graph_node != chain_root_pin->parent_node) {
 					/* this location does not match with the dedicated chain input from outside logic block, therefore not feasible */
