@@ -255,7 +255,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 
 	/* Parse all pbs and CB internal nets*/
-	cb[index].pb->logical_block = OPEN;
     g_atom_map.set_atom_pb(AtomBlockId::INVALID(), cb[index].pb);
 
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
@@ -318,7 +317,6 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 					".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
 					pb->name);
 		}
-		pb->logical_block = OPEN;
 
         //Update atom netlist mapping
         VTR_ASSERT(blk_id);
@@ -332,9 +330,6 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 		pb->child_pbs = (t_pb **) vtr::calloc(pb_type->modes[pb->mode].num_pb_type_children, sizeof(t_pb*));
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
 			pb->child_pbs[i] = (t_pb *) vtr::calloc(pb_type->modes[pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
-				pb->child_pbs[i][j].logical_block = OPEN;
-			}
 		}
 
 		/* Populate info for each physical block  */
@@ -383,7 +378,6 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                 pb->child_pbs[i][pb_index].name = vtr::strdup(name.value());
 
                 /* Parse all pbs and CB internal nets*/
-                pb->child_pbs[i][pb_index].logical_block = OPEN;
                 g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto mode = child.attribute("mode");
@@ -406,7 +400,6 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
             } else {
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = NULL;
-                pb->child_pbs[i][pb_index].logical_block = OPEN;
                 g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);

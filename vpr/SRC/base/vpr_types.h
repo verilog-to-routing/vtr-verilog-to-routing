@@ -130,7 +130,6 @@ typedef struct s_pb t_pb;
 typedef struct s_pb {
 	char *name; /* Name of this physical block */
 	t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
-	int logical_block; /* If this is a terminating pb, gives the logical (netlist) block that it contains */
 
 	int mode; /* mode that this pb is set to */
 

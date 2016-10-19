@@ -1373,7 +1373,6 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	/* Create siblings if siblings are not allocated */
 	if (parent_pb->child_pbs == NULL) {
 		VTR_ASSERT(parent_pb->name == NULL);
-		parent_pb->logical_block = OPEN;
         g_atom_map.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
 
 		parent_pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
@@ -1387,7 +1386,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
-				parent_pb->child_pbs[i][j].logical_block = OPEN;
+
                 g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
 
 				parent_pb->child_pbs[i][j].pb_graph_node =
@@ -1421,8 +1420,6 @@ static enum e_block_pack_status try_place_logical_block_rec(
                     && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
-
-		pb->logical_block = OPEN;
 
         //Update the atom netlist mappings
         g_atom_map.set_atom_clb(blk_id, clb_index);
