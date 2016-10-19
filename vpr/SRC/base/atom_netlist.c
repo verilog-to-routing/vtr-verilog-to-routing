@@ -1585,3 +1585,14 @@ AtomStringId AtomNetlist::create_string (const std::string& str) {
     return str_id;
 }
 
+/*
+ * External helper functions
+ */
+int num_used_pins(const AtomNetlist& netlist, vtr::Range<AtomNetlist::port_iterator> ports) {
+    int count = 0;
+    for(auto port_id : ports) {
+        auto pins = netlist.port_pins(port_id);
+        count += pins.size();
+    }
+    return count;
+}
