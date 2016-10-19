@@ -1454,7 +1454,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
         g_atom_map.set_atom_clb(blk_id, clb_index);
         g_atom_map.set_atom_pb(blk_id, pb);
 
-		add_atom_as_target(router_data, ilogical_block);
+		add_atom_as_target(router_data, blk_id);
 		if (!primitive_feasible(blk_id, pb)) {
 			/* failed location feasibility check, revert pack */
 			block_pack_status = BLK_FAILED_FEASIBLE;

@@ -144,15 +144,12 @@ void free_router_data(t_lb_router_data *router_data) {
 ******************************************************************************************/
 
 /* Add pins of netlist atom to to current routing drivers/targets */
-void add_atom_as_target(t_lb_router_data *router_data, const int iatom) { //TODO: convert to take AtomBlockId directly
+void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
 	const t_pb *pb;
 	const t_model *model;
 	t_model_ports *model_ports;
 	int iport;
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
-
-    AtomBlockId blk_id = g_atom_nl.find_block(logical_block[iatom].name);
-    VTR_ASSERT(blk_id);
 
 	pb = g_atom_map.atom_pb(blk_id);
 	
