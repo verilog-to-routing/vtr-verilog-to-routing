@@ -2402,9 +2402,10 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 			blkidx = critindexarray[(*seedindex)++];
 		}
 
-		if (logical_block[blkidx].clb_index == NO_CLUSTER) {
-            auto blk_id = g_atom_nl.find_block(logical_block[blkidx].name);
-            VTR_ASSERT(blk_id);
+        auto blk_id = g_atom_nl.find_block(logical_block[blkidx].name);
+        VTR_ASSERT(blk_id);
+
+		if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 
             auto rng = atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2426,8 +2427,10 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 }
 
 /* get gain of packing molecule into current cluster 
- gain is equal to total_block_gain + molecule_base_gain*some_factor - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
-
+     gain is equal to:
+        total_block_gain 
+        + molecule_base_gain*some_factor 
+        - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain) {
 	float gain;
