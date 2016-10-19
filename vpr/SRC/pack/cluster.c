@@ -127,7 +127,7 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock);
 static void check_for_duplicate_inputs ();
 #endif 
 
-static bool is_atom_blk_in_pb(const AtomBlockId blk_id, t_pb *pb);
+static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,
 		map<AtomBlockId, float> &gain, t_pb *pb, int max_queue_size);
@@ -175,7 +175,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data, 
         std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules);
 
-static void update_connection_gain_values(const AtomNetId net_id, int clustered_block,
+static void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clustered_blk_id,
 		t_pb * cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
@@ -186,7 +186,7 @@ static void update_timing_gain_values(const AtomNetId net_id,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag,
-		int clustered_block,
+		const AtomBlockId clustered_blk_id,
         bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
@@ -761,7 +761,7 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 }
 
 /* Determine if logical block is in pb */
-static bool is_atom_blk_in_pb(const AtomBlockId blk_id, t_pb *pb) {
+static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb) {
 	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
 	while (cur_pb) {
 		if (cur_pb == pb) {
@@ -1532,18 +1532,17 @@ static void revert_place_atom_block(const int iblock, t_lb_router_data *router_d
 	}
 }
 
-static void update_connection_gain_values(const AtomNetId net_id, int clustered_block,
+static void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clustered_blk_id,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block) {
 	/*This function is called when the connectiongain values on the net net_id*
 	 *require updating.   */
 
-	int clb_index;
 	int num_internal_connections, num_open_connections, num_stuck_connections;
 
 	num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
-	clb_index = logical_block[clustered_block].clb_index;
+	int clb_index = g_atom_map.atom_clb(clustered_blk_id);
 
 	/* may wish to speed things up by ignoring clock nets since they are high fanout */
 
@@ -1553,7 +1552,7 @@ static void update_connection_gain_values(const AtomNetId net_id, int clustered_
     for(auto pin_id : g_atom_nl.net_pins(net_id)) {
         auto blk_id = g_atom_nl.pin_block(pin_id);
 		if (g_atom_map.atom_clb(blk_id) == clb_index
-				&& is_atom_blk_in_pb(blk_id, logical_block[clustered_block].pb)) {
+				&& is_atom_blk_in_pb(blk_id, g_atom_map.atom_pb(clustered_blk_id))) {
 			num_internal_connections++;
 		} else if (g_atom_map.atom_clb(blk_id) == OPEN) {
 			num_open_connections++;
@@ -1679,7 +1678,7 @@ static void update_timing_gain_values(const AtomNetId net_id,
 
 /*****************************************/
 static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_update gain_flag,
-		int clustered_block, 
+		const AtomBlockId clustered_blk_id, 
 		bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
@@ -1694,9 +1693,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 	 * cluster. The timinggain is the criticality of the most critical*
 	 * g_atoms_nlist.net between this logical_block and a logical_block in the cluster.             */
 
-	t_pb *cur_pb;
-
-	cur_pb = logical_block[clustered_block].pb->parent_pb;
+	t_pb* cur_pb = g_atom_map.atom_pb(clustered_blk_id)->parent_pb;
 
 	if (g_atom_nl.net_sinks(net_id).size() > AAPACK_MAX_NET_SINKS_IGNORE) {
 		/* Optimization: It can be too runtime costly for marking all sinks for 
@@ -1754,7 +1751,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 			}
 
 			if (connection_driven) {
-				update_connection_gain_values(net_id, clustered_block, cur_pb,
+				update_connection_gain_values(net_id, clustered_blk_id, cur_pb,
 						net_relation_to_clustered_block);
 			}
 
@@ -1898,11 +1895,11 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 				if (pin_id) {
                     auto net_id = g_atom_nl.pin_net(pin_id);
 					if (!is_clock.count(net_id) || !global_clocks) {
-						mark_and_update_partial_gain(net_id, GAIN, new_blk,
+						mark_and_update_partial_gain(net_id, GAIN, blk_id,
 								timing_driven,
 								connection_driven, OUTPUT, slacks, is_global);
                     } else {
-						mark_and_update_partial_gain(net_id, NO_GAIN, new_blk,
+						mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
 								timing_driven,
 								connection_driven, OUTPUT, slacks, is_global);
                     }
@@ -1927,7 +1924,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 
                     if (pin_id) {
                         auto net_id = g_atom_nl.pin_net(pin_id);
-                        mark_and_update_partial_gain(net_id, GAIN, new_blk,
+                        mark_and_update_partial_gain(net_id, GAIN, blk_id,
                                 timing_driven, connection_driven,
                                 INPUT, slacks, is_global);
                     }
@@ -1954,10 +1951,10 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             if (clock_pin_id) {
                 auto net_id = g_atom_nl.pin_net(clock_pin_id);
                 if (global_clocks) {
-                    mark_and_update_partial_gain(net_id, NO_GAIN, new_blk,
+                    mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                             timing_driven, connection_driven, INPUT, slacks, is_global);
                 } else {
-                    mark_and_update_partial_gain(net_id, GAIN, new_blk,
+                    mark_and_update_partial_gain(net_id, GAIN, blk_id,
                             timing_driven, connection_driven, INPUT, slacks, is_global);
                 }
             }
