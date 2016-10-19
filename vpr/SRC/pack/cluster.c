@@ -2672,7 +2672,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 			skip = false;
 
-			/* check if driving pin for input is contained within the currently investigated cluster, if yes, do nothing since no input needs to be used */
+			/* check if driving pin for input is contained within the currently 
+             * investigated cluster, if yes, do nothing since no input needs to be used */
 			if (output_pb_graph_pin != NULL) {
 				check_pb = logical_block[g_atoms_nlist.net[inet].pins[0].block].pb;
 				while (check_pb != NULL && check_pb != cur_pb) {
@@ -2708,16 +2709,20 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 			VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
 
 			skip = false;
-			if (pb_graph_pin->num_connectable_primtive_input_pins[depth]
-					>= g_atoms_nlist.net[inet].num_sinks()) {
-				/* Important: This runtime penalty looks a lot scarier than it really is.  For high fan-out nets, I at most look at the number of pins within the cluster which limits runtime.
-				 DO NOT REMOVE THIS INITIAL FILTER WITHOUT CAREFUL ANALYSIS ON RUNTIME!!!
-				 
-				 Key Observation:
-				 For LUT-based designs it is impossible for the average fanout to exceed the number of LUT inputs so it's usually around 4-5 (pigeon-hole argument, if the average fanout is greater than the 
-				 number of LUT inputs, where do the extra connections go?  Therefore, average fanout must be capped to a small constant where the constant is equal to the number of LUT inputs).  The real danger to runtime
-				 is when the number of sinks of a net gets doubled
-				 
+			if (pb_graph_pin->num_connectable_primtive_input_pins[depth] >= g_atoms_nlist.net[inet].num_sinks()) {
+				/* Important: This runtime penalty looks a lot scarier than it really is.  
+                 * For high fan-out nets, I at most look at the number of pins within the 
+                 * cluster which limits runtime.
+                 *
+				 * DO NOT REMOVE THIS INITIAL FILTER WITHOUT CAREFUL ANALYSIS ON RUNTIME!!!
+				 * 
+				 * Key Observation:
+				 * For LUT-based designs it is impossible for the average fanout to exceed 
+                 * the number of LUT inputs so it's usually around 4-5 (pigeon-hole argument,
+                 * if the average fanout is greater than the number of LUT inputs, where do 
+                 * the extra connections go?  Therefore, average fanout must be capped to a 
+                 * small constant where the constant is equal to the number of LUT inputs).  
+                 * The real danger to runtime is when the number of sinks of a net gets doubled
 				 */
 				int anet_size = (int) g_atoms_nlist.net[inet].pins.size();
 				for (i = 1; i < anet_size; i++) {
@@ -2728,7 +2733,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				}
 				if (i == anet_size) {
 					count = 0;
-					/* TODO: I should cache the absorbed outputs, once net is absorbed, net is forever absorbed, no point in rechecking every time */
+					/* TODO: I should cache the absorbed outputs, once net is absorbed,
+                     *       net is forever absorbed, no point in rechecking every time */
 					for (i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
 						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
 								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i])
