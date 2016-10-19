@@ -1436,8 +1436,8 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		pb->logical_block = ilogical_block;
-		logical_block[ilogical_block].clb_index = clb_index;
-		logical_block[ilogical_block].pb = pb;
+		logical_block[ilogical_block].clb_index = NO_CLUSTER;
+		logical_block[ilogical_block].pb = NULL;
 
         //Update the atom netlist mappings
         g_atom_map.set_atom_clb(blk_id, clb_index);
@@ -1853,7 +1853,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		}
 		new_blk = molecule->atom_block_ptrs[iblock]->index;
 
-		logical_block[new_blk].clb_index = clb_index;
+		logical_block[new_blk].clb_index = NO_CLUSTER;
 
         //Update atom netlist mapping
         auto blk_id = g_atom_nl.find_block(logical_block[new_blk].name);
