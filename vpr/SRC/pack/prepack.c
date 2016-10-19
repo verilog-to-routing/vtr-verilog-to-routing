@@ -869,7 +869,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->pack_pattern = NULL;
 
 			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc( 1 * sizeof(t_logical_block*)); //TODO: remove
-			cur_molecule->atom_block_ptrs[0] = &logical_block[i]; //TODO: remove
+			cur_molecule->atom_block_ptrs[0] = NULL; //TODO: remove
             cur_molecule->atom_block_ids = {blk_id};
 
 			cur_molecule->next = list_of_molecules_head;
@@ -1031,7 +1031,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 
 
         /* store that this node has been visited */
-		molecule->atom_block_ptrs[current_pattern_block->block_id] = &logical_block[logical_block_index];  //TODO: remove
+		molecule->atom_block_ptrs[current_pattern_block->block_id] = NULL;  //TODO: remove
 
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
 
