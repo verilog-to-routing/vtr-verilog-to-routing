@@ -144,10 +144,9 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 		t_pb_graph_pin *pb_graph_pin, t_pb *primitive_pb, int inet);
 static void commit_lookahead_pins_used(t_pb *cur_pb);
 static bool check_lookahead_pins_used(t_pb *cur_pb);
-static bool primitive_feasible(int iblk, t_pb *cur_pb);
-static bool primitive_type_and_memory_feasible(int iblk,
-		const t_pb_type *cur_pb_type, t_pb *memory_class_pb,
-		int sibling_memory_blk);
+static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
+static bool primitive_type_and_memory_feasible(const AtomBlockId blk_id,
+		const t_pb_type *cur_pb_type, t_pb *memory_class_pb);
 
 static t_pack_molecule *get_molecule_by_num_ext_inputs(
 		const int ext_inps, const enum e_removal_policy remove_flag,
@@ -932,129 +931,121 @@ static void free_pb_stats_recursive(t_pb *pb) {
 	}
 }
 
-static bool primitive_feasible(int iblk, t_pb *cur_pb) {
+static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 	const t_pb_type *cur_pb_type;
 	int i;
 	t_pb *memory_class_pb; /* Used for memory class only, for memories, open pins must be the same among siblings */
-	int sibling_memory_blk;
+	AtomBlockId sibling_memory_blk_id;
 
 	cur_pb_type = cur_pb->pb_graph_node->pb_type;
 	memory_class_pb = NULL;
-	sibling_memory_blk = OPEN;
 
 	VTR_ASSERT(cur_pb_type->num_modes == 0);
 	/* primitive */
-	if (cur_pb->logical_block != OPEN && cur_pb->logical_block != iblk) {
+    AtomBlockId curr_pb_blk_id = g_atom_map.pb_atom(cur_pb);
+	if (curr_pb_blk_id && curr_pb_blk_id != blk_id) {
 		/* This pb already has a different logical block */
 		return false;
 	}
 
 	if (cur_pb_type->class_type == MEMORY_CLASS) {
-		/* memory class is special, all siblings must share all nets, including open nets, with the exception of data nets */
+		/* memory class is special, all siblings must share all nets, 
+         * including open nets, with the exception of data nets */
 		/* find sibling if one exists */
 		memory_class_pb = cur_pb->parent_pb;
 		for (i = 0; i < cur_pb_type->parent_mode->num_pb_type_children; i++) {
-			if (memory_class_pb->child_pbs[cur_pb->mode][i].name != NULL
-					&& memory_class_pb->child_pbs[cur_pb->mode][i].logical_block
-							!= OPEN) {
-				sibling_memory_blk =
-						memory_class_pb->child_pbs[cur_pb->mode][i].logical_block;
+            const t_pb* child_pb = &memory_class_pb->child_pbs[cur_pb->mode][i];
+            AtomBlockId mem_class_child_blk_id = g_atom_map.pb_atom(child_pb);
+			if (child_pb->name != NULL
+					&& mem_class_child_blk_id) {
+				sibling_memory_blk_id = mem_class_child_blk_id;
 			}
 		}
-		if (sibling_memory_blk == OPEN) {
+		if (!sibling_memory_blk_id) {
 			memory_class_pb = NULL;
 		}
 	}
 
-	return primitive_type_and_memory_feasible(iblk, cur_pb_type,
-			memory_class_pb, sibling_memory_blk);
+	return primitive_type_and_memory_feasible(blk_id, cur_pb_type,
+			memory_class_pb);
 }
 
-static bool primitive_type_and_memory_feasible(int iblk,
-		const t_pb_type *cur_pb_type, t_pb *memory_class_pb,
-		int sibling_memory_blk) {
-	t_model_ports *port;
+static bool primitive_type_and_memory_feasible(const AtomBlockId blk_id,
+		const t_pb_type *cur_pb_type, t_pb *memory_class_pb) {
 	int i, j;
 	bool second_pass;
 
 	/* check if ports are big enough */
 	/* for memories, also check that pins are the same with existing siblings */
-	port = logical_block[iblk].model->inputs;
-	second_pass = false;
+    const t_model* model = g_atom_nl.block_model(blk_id);
+    t_model_ports* port = model->inputs;
 	while (port || !second_pass) {
 		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
 		if (!port) {
 			second_pass = true;
-			port = logical_block[iblk].model->outputs;
-		}
-		for (i = 0; i < cur_pb_type->num_ports; i++) {
-			if (cur_pb_type->ports[i].model_port == port) {
-				/* TODO: This is slow, I only need to check from 0 if it is a memory block, other blocks I can check from port->size onwards */
-				for (j = 0; j < port->size; j++) {
-					if (port->dir == IN_PORT && !port->is_clock) {
-						if (memory_class_pb) {
-							if (cur_pb_type->ports[i].port_class == NULL
-									|| strstr(cur_pb_type->ports[i].port_class,
-											"data")
-											!= cur_pb_type->ports[i].port_class) {
-								if (logical_block[iblk].input_nets[port->index][j]
-										!= logical_block[sibling_memory_blk].input_nets[port->index][j]) {
-									return false;
-								}
-							}
-						}
-						if (logical_block[iblk].input_nets[port->index][j]
-								!= OPEN
-								&& j >= cur_pb_type->ports[i].num_pins) {
-							return false;
-						}
-					} else if (port->dir == OUT_PORT) {
-						if (memory_class_pb) {
-							if (cur_pb_type->ports[i].port_class == NULL
-									|| strstr(cur_pb_type->ports[i].port_class,
-											"data")
-											!= cur_pb_type->ports[i].port_class) {
-								if (logical_block[iblk].output_nets[port->index][j]
-										!= logical_block[sibling_memory_blk].output_nets[port->index][j]) {
-									return false;
-								}
-							}
-						}
-						if (logical_block[iblk].output_nets[port->index][j]
-								!= OPEN
-								&& j >= cur_pb_type->ports[i].num_pins) {
-							return false;
-						}
-					} else {
-						VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
-						VTR_ASSERT(j == 0);
-						if (memory_class_pb) {
-							if (logical_block[iblk].clock_net
-									!= logical_block[sibling_memory_blk].clock_net) {
-								return false;
-							}
-						}
-						if (logical_block[iblk].clock_net != OPEN
-								&& j >= cur_pb_type->ports[i].num_pins) {
-							return false;
-						}
-					}
-				}
-				break;
-			}
-		}
-		if (i == cur_pb_type->num_ports) {
-			if (((logical_block[iblk].model->inputs != NULL) && !second_pass)
-					|| (logical_block[iblk].model->outputs != NULL
-							&& second_pass)) {
-				/* physical port not found */
-				return false;
-			}
+			port = model->outputs;
 		}
 		if (port) {
+            auto port_id = g_atom_nl.find_port(blk_id, port->name);
+
+            
+            if(port_id) {
+                for (i = 0; i < cur_pb_type->num_ports; i++) {
+                    if (cur_pb_type->ports[i].model_port == port) {
+                        /* TODO: This is slow, I only need to check from 0 if it is a memory block, 
+                         * other blocks I can check from port->size onwards */
+                        for (j = 0; j < port->size; j++) {
+                            AtomNetId this_net_id = g_atom_nl.port_net(port_id, j);
+                            AtomNetId sibling_net_id = g_atom_nl.port_net(port_id, j);
+                            if (port->dir == IN_PORT && !port->is_clock) {
+                                if (memory_class_pb) {
+                                    if (cur_pb_type->ports[i].port_class == NULL
+                                            || strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
+                                        if (this_net_id != sibling_net_id) {
+                                            return false;
+                                        }
+                                    }
+                                }
+                            } else if (port->dir == OUT_PORT) {
+                                if (memory_class_pb) {
+                                    if (cur_pb_type->ports[i].port_class == NULL
+                                            || strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
+                                        if (this_net_id != sibling_net_id) {
+                                            return false;
+                                        }
+                                    }
+                                }
+                            } else {
+                                VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
+                                VTR_ASSERT(j == 0);
+                                //TODO: hanlde multiple clocks per primitive...
+
+                                if (memory_class_pb) {
+                                    if (this_net_id != sibling_net_id) {
+                                        return false;
+                                    }
+                                }
+                            }
+
+                            if (this_net_id && j >= cur_pb_type->ports[i].num_pins) {
+                                return false;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (i == cur_pb_type->num_ports) {
+                    if (((model->inputs != NULL) && !second_pass)
+                            || (model->outputs != NULL && second_pass)) {
+                        /* physical port not found */
+                        return false;
+                    }
+                }
+            }
 			port = port->next;
 		}
 	}
+
 	return true;
 }
 
@@ -1464,7 +1455,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
         g_atom_map.set_atom_pb(blk_id, pb);
 
 		add_atom_as_target(router_data, ilogical_block);
-		if (!primitive_feasible(ilogical_block, pb)) {
+		if (!primitive_feasible(blk_id, pb)) {
 			/* failed location feasibility check, revert pack */
 			block_pack_status = BLK_FAILED_FEASIBLE;
 		}

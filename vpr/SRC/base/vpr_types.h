@@ -126,6 +126,7 @@ struct s_pb_stats;
 
  All physical blocks are represented by this s_pb data structure.
  */
+typedef struct s_pb t_pb;
 typedef struct s_pb {
 	char *name; /* Name of this physical block */
 	t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
@@ -133,8 +134,8 @@ typedef struct s_pb {
 
 	int mode; /* mode that this pb is set to */
 
-	struct s_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
-	struct s_pb *parent_pb; /* pointer to parent node */
+	t_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
+	t_pb *parent_pb; /* pointer to parent node */
 
 	struct s_pb_stats *pb_stats; /* statistics for current pb */
 
