@@ -255,6 +255,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
         const std::unordered_set<AtomNetId>& is_clock,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
@@ -376,7 +377,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
 	if (timing_driven) {
-		slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf);
+		slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
+                                                         expected_lowest_cost_pb_gnode);
 		do_timing_analysis(slacks, timing_inf, true, false);
 
 		if (getEchoEnabled()) {

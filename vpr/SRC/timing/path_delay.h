@@ -1,5 +1,6 @@
 #ifndef PATH_DELAY
 #define PATH_DELAY
+#include <unordered_map>
 #include "vpr_types.h"
 #include "vtr_util.h"
 
@@ -32,7 +33,8 @@
 
 t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf);
 
-t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_timing_inf timing_inf);
+t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_timing_inf timing_inf,
+        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode);
 
 vtr::t_linked_int *allocate_and_load_critical_path(const t_timing_inf &timing_inf);
 

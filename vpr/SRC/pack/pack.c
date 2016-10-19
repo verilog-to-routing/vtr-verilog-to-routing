@@ -31,6 +31,7 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 		const t_model *user_models, const t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
+    std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
 	int num_models;
 	const t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
@@ -64,6 +65,7 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
     list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns, 
                                 atom_molecules,
+                                expected_lowest_cost_pb_gnode,
                                 num_packing_patterns);
 	vtr::printf_info("Finish prepacking.\n");
 
@@ -79,7 +81,9 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 
 	if (packer_opts->skip_clustering == false) {
 		do_clustering(arch, list_of_pack_molecules, num_models,
-				packer_opts->global_clocks, is_clock, atom_molecules,
+				packer_opts->global_clocks, is_clock, 
+                atom_molecules,
+                expected_lowest_cost_pb_gnode,
 				packer_opts->hill_climbing_flag, packer_opts->output_file,
 				packer_opts->timing_driven, packer_opts->cluster_seed_type,
 				packer_opts->alpha, packer_opts->beta,

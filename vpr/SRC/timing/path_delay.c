@@ -183,7 +183,8 @@ static void update_slacks(t_slack * slacks, float criticality_denom,
 
 static void alloc_and_load_tnodes(const t_timing_inf &timing_inf);
 
-static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay);
+static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay,
+        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode);
 
 static void alloc_timing_stats(void);
 
@@ -305,7 +306,8 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	return slacks;
 }
 
-t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_timing_inf timing_inf) {
+t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay, t_timing_inf timing_inf,
+        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode) {
 
 	/* This routine builds the graph used for timing analysis.  Every technology-
 	 * mapped netlist pin is a timing node (tnode).  The connectivity between pins is *
@@ -331,7 +333,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
     f_num_timing_net_pins = init_atom_timing_net_pins();
 
-	alloc_and_load_tnodes_from_prepacked_netlist(inter_cluster_net_delay);
+	alloc_and_load_tnodes_from_prepacked_netlist(inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
 
     detect_and_fix_timing_graph_combinational_loops();
 
@@ -1024,7 +1026,8 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
  Count number of tnodes first
  Then connect up tnodes with edges
  */
-static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay) {
+static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay,
+        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode) {
     //TODO: convert from iterating over models to directly iterating over the atom netlist
 	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
 
@@ -1226,8 +1229,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 tnode[inode + 1].atom_block = blk_id;
 
                                 //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
+                                auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
+                                VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
+
                                 from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                        g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
+                                                        iter->second);
                                 tnode[inode + 1].num_edges = 1;
                                 tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                 tnode[inode + 1].out_edges->to_node = inode;
@@ -1263,8 +1269,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
 
                             //Create the clock SOURCE
+                            auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
+                            VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
+
                             from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                    g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
+                                                    iter->second);
                             tnode[inode + 1].type = TN_CLOCK_SOURCE;
                             tnode[inode + 1].block = OPEN;
                             tnode[inode + 1].atom_block = blk_id;
@@ -1312,8 +1321,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 tnode[inode].block = OPEN;
                                 tnode[inode].atom_block = blk_id;
 
+                                auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
+                                VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
+
                                 from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                        g_atom_map.expected_lowest_cost_pb_gnode(blk_id));
+                                                        iter->second);
 
                                 if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
                                     //A non-sequential/combinational block

@@ -786,6 +786,7 @@ static void backward_expand_pack_pattern_from_edge(
 t_pack_molecule *alloc_and_load_pack_molecules(
 		t_pack_patterns *list_of_pack_patterns,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
 		const int num_packing_patterns) {
 	int i, j, best_pattern;
 	t_pack_molecule *list_of_molecules_head;
@@ -853,8 +854,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
         auto blk_id = g_atom_nl.find_block(logical_block[i].name);
         VTR_ASSERT(blk_id);
 
-		logical_block[i].expected_lowest_cost_primitive = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
-        g_atom_map.set_expected_lowest_cost_pb_gnode(blk_id, logical_block[i].expected_lowest_cost_primitive);
+        expected_lowest_cost_pb_gnode[blk_id] = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
 
         auto rng = atom_molecules.equal_range(blk_id);
         bool rng_empty = (rng.first == rng.second);
