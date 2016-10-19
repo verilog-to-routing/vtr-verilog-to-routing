@@ -239,7 +239,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
-static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
+static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin);
 
 static void print_block_criticalities(const char * fname);
@@ -2749,7 +2749,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 					for (int j = 0; j < pb_graph_pin->num_connectable_primtive_input_pins[depth]; j++) {
 						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
 								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][j])
-								== inet) {
+								== net_id) {
 							count++;
 						}
 					}
@@ -2848,15 +2848,14 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 }
 
 /* determine net at given pin location for cluster, return OPEN if none exists */
-static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
+static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin) {
 	t_pb_graph_node *pb_graph_node;
 	int i;
 	t_model_ports *model_port;
-	int ilogical_block;
 
 	if (cur_pb->name == NULL) {
-		return OPEN;
+		return AtomNetId::INVALID();
 	}
 	if (cur_pb->pb_graph_node->pb_type->num_modes != 0) {
 		pb_graph_node = pb_graph_pin->parent_node;
@@ -2866,7 +2865,7 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		}
 		if (pb_graph_node->parent_pb_graph_node == cur_pb->pb_graph_node) {
 			if (cur_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
-				return OPEN;
+                return AtomNetId::INVALID();
 			}
 			for (i = 0; i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (pb_graph_node
@@ -2879,23 +2878,18 @@ static int get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 					&cur_pb->child_pbs[i][pb_graph_node->placement_index],
 					pb_graph_pin);
 		} else {
-			return OPEN;
+            return AtomNetId::INVALID();
 		}
 	} else {
-		ilogical_block = cur_pb->logical_block;
-		if (ilogical_block == OPEN) {
-			return OPEN;
+        AtomBlockId blk_id = g_atom_map.pb_atom(cur_pb);
+		if (!blk_id) {
+			return AtomNetId::INVALID();
 		} else {
 			model_port = pb_graph_pin->port->model_port;
-			if (model_port->is_clock) {
-				VTR_ASSERT(model_port->dir == IN_PORT);
-				return logical_block[ilogical_block].clock_net;
-			} else if (model_port->dir == IN_PORT) {
-				return logical_block[ilogical_block].input_nets[model_port->index][pb_graph_pin->pin_number];
-			} else {
-				VTR_ASSERT(model_port->dir == OUT_PORT);
-				return logical_block[ilogical_block].output_nets[model_port->index][pb_graph_pin->pin_number];
-			}
+
+            auto port_id = g_atom_nl.find_port(blk_id, model_port->name);
+
+            return g_atom_nl.port_net(port_id, pb_graph_pin->pin_number);
 		}
 	}
 }
