@@ -166,7 +166,7 @@ static enum e_block_pack_status try_pack_molecule(
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const int clb_index, const int detailed_routing_stage, t_lb_router_data *router_data);
 static enum e_block_pack_status try_place_logical_block_rec(
-		const t_pb_graph_node *pb_graph_node, const int ilogical_block,
+		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const int clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
@@ -1259,7 +1259,7 @@ static enum e_block_pack_status try_pack_molecule(
 					}
 					block_pack_status = try_place_logical_block_rec(
 							primitives_list[i],
-							molecule->atom_block_ptrs[i]->index, pb, &parent,
+							molecule->atom_block_ids[i], pb, &parent,
 							max_models, max_cluster_size, clb_index,
 							cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
 				}
@@ -1338,7 +1338,7 @@ static enum e_block_pack_status try_pack_molecule(
  */
 
 static enum e_block_pack_status try_place_logical_block_rec(
-		const t_pb_graph_node *pb_graph_node, const int ilogical_block,
+		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const int clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
@@ -1356,13 +1356,10 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 	block_pack_status = BLK_PASSED;
 
-    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
-    VTR_ASSERT(blk_id);
-
 	/* Discover parent */
 	if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
 		block_pack_status = try_place_logical_block_rec(
-				pb_graph_node->parent_pb_graph_node, ilogical_block, cb,
+				pb_graph_node->parent_pb_graph_node, blk_id, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
 				cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
 		parent_pb = my_parent;
