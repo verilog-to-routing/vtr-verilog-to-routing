@@ -1804,7 +1804,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
 	int ipin;
-	int new_blk, molecule_size;
+	int molecule_size;
 	int iblock;
 	t_model_ports *port;
 	t_pb *cur_pb, *cb;
@@ -1824,14 +1824,12 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 	cb = NULL;
 
 	for (iblock = 0; iblock < molecule_size; iblock++) {
-		if (!molecule->atom_block_ids[iblock]) {
+        auto blk_id = molecule->atom_block_ids[iblock];
+		if (!blk_id) {
 			continue;
 		}
-		new_blk = molecule->atom_block_ptrs[iblock]->index;
 
         //Update atom netlist mapping
-        auto blk_id = g_atom_nl.find_block(logical_block[new_blk].name);
-        VTR_ASSERT(blk_id);
         g_atom_map.set_atom_clb(blk_id, clb_index);
 
 		cur_pb = g_atom_map.atom_pb(blk_id)->parent_pb;
