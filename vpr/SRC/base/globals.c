@@ -20,7 +20,6 @@ std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
 /* User netlist information begin  */
 int num_logical_nets = 0, num_logical_blocks = 0;
-int num_p_inputs = 0, num_p_outputs = 0;
 
 struct s_net *vpack_net = NULL;
 t_net_power * vpack_net_power = NULL;

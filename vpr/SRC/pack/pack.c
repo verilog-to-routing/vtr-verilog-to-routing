@@ -55,11 +55,22 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
+
+    size_t num_p_inputs = 0;
+    size_t num_p_outputs = 0;
+    for(auto blk_id : g_atom_nl.blocks()) {
+        auto type = g_atom_nl.block_type(blk_id);
+        if(type == AtomBlockType::INPAD) {
+            ++num_p_inputs;
+        } else if(type == AtomBlockType::OUTPAD) {
+            ++num_p_outputs;
+        }
+    }
 	
 	vtr::printf_info("\n");
 	vtr::printf_info("After removing unused inputs...\n");
-	vtr::printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
-		num_logical_blocks, (int) g_atoms_nlist.net.size(), num_p_inputs, num_p_outputs);
+	vtr::printf_info("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
+		g_atom_nl.blocks().size(), g_atom_nl.nets().size(), num_p_inputs, num_p_outputs);
 
 	vtr::printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);

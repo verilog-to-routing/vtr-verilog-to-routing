@@ -935,8 +935,6 @@ static void init_parse(bool doall, bool init_vpack_net_power) {
 	olines = 0;
 	model_lines = 0;
 	endlines = 0;
-	num_p_inputs = 0;
-	num_p_outputs = 0;
 	num_luts = 0;
 	num_latches = 0;
 	num_logical_blocks = 0;
@@ -1577,11 +1575,9 @@ static void io_line(int in_or_out, bool doall, const t_model *io_model) {
 		}
 
 		if (in_or_out == DRIVER) { /* processing .inputs line */
-			num_p_inputs++;
 			logical_block[num_logical_blocks - 1].type = VPACK_INPAD;
 			logical_block[num_logical_blocks - 1].output_nets[0][0] = nindex;
 		} else { /* processing .outputs line */
-			num_p_outputs++;
 			logical_block[num_logical_blocks - 1].type = VPACK_OUTPAD;
 			logical_block[num_logical_blocks - 1].input_nets[0][0] = nindex;
 		}
@@ -1778,8 +1774,6 @@ void echo_input(const char *blif_file, const char *echo_file, const t_model *lib
 	}
 
 	vtr::printf_info("Input netlist file: '%s', model: %s\n", blif_file, model);
-	vtr::printf_info("Primary inputs: %d, primary outputs: %d\n", num_p_inputs,
-			num_p_outputs);
 	vtr::printf_info("LUTs: %d, latches: %d, subckts: %d\n", num_luts,
 			num_latches, num_subckts);
 	vtr::printf_info("# standard absorbable latches: %d\n",
@@ -2535,20 +2529,6 @@ static void compress_netlist(void) {
 		num_logical_blocks = new_num_blocks;
 		logical_block = (struct s_logical_block *) vtr::realloc(logical_block,
 				num_logical_blocks * sizeof(struct s_logical_block));
-	}
-
-	/* Now I have to recompute the number of primary inputs and outputs, since *
-	 * some inputs may have been unused and been removed.  No real need to     *
-	 * recount primary outputs -- it's just done as defensive coding.          */
-
-	num_p_inputs = 0;
-	num_p_outputs = 0;
-
-	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
-		if (logical_block[iblk].type == VPACK_INPAD)
-			num_p_inputs++;
-		else if (logical_block[iblk].type == VPACK_OUTPAD)
-			num_p_outputs++;
 	}
 
 	free(net_remap);
