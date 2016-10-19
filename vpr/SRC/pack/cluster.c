@@ -311,9 +311,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #endif
 
 	/* TODO: This is memory inefficient, fix if causes problems */
-	clb = (t_block*)vtr::calloc(num_logical_blocks, sizeof(t_block));
+	clb = (t_block*)vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_block));
 	num_clb = 0;
-	clb_inter_blk_nets = (t_lb_net_stats*) vtr::calloc(num_logical_blocks, sizeof(t_lb_net_stats));
+	clb_inter_blk_nets = (t_lb_net_stats*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_lb_net_stats));
 
 	istart = NULL;
 
@@ -395,12 +395,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_criticality(slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
-		block_criticality = (float*) vtr::calloc(num_logical_blocks, sizeof(float));
+		block_criticality = (float*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(float));
 
-		critindexarray = (int*) vtr::malloc(num_logical_blocks * sizeof(int));
+		critindexarray = (int*) vtr::malloc(g_atom_nl.blocks().size() * sizeof(int));
 
-		seed_blend_gain = (float*) vtr::calloc(num_logical_blocks, sizeof(float));
-		seed_blend_index_array = (int*) vtr::malloc(num_logical_blocks * sizeof(int));
+		seed_blend_gain = (float*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(float));
+		seed_blend_index_array = (int*) vtr::malloc(g_atom_nl.blocks().size() * sizeof(int));
 
 		for (i = 0; i < num_logical_blocks; i++) {
 			VTR_ASSERT(logical_block[i].index == i);
@@ -479,8 +479,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			seed_blend_gain[iblk] = max_blend_gain;
 			
 		}
-		heapsort(critindexarray, block_criticality, num_logical_blocks, 1);
-		heapsort(seed_blend_index_array, seed_blend_gain, num_logical_blocks, 1);
+		heapsort(critindexarray, block_criticality, g_atom_nl.blocks().size(), 1);
+		heapsort(seed_blend_index_array, seed_blend_gain, g_atom_nl.blocks().size(), 1);
 		
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
 			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
