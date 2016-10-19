@@ -1393,22 +1393,13 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
-		parent_pb->child_pbs =
-				(t_pb **) vtr::calloc(
-						parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,
-						sizeof(t_pb *));
-		for (i = 0;
-				i
-						< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;
-				i++) {
-			parent_pb->child_pbs[i] =
-					(t_pb *) vtr::calloc(
-							parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb,
-							sizeof(t_pb));
-			for (j = 0;
-					j
-							< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb;
-					j++) {
+        const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
+		parent_pb->child_pbs = (t_pb **) vtr::calloc( mode->num_pb_type_children, sizeof(t_pb *));
+
+		for (i = 0; i < mode->num_pb_type_children; i++) {
+			parent_pb->child_pbs[i] = (t_pb *) vtr::calloc( mode->pb_type_children[i].num_pb, sizeof(t_pb));
+
+			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 				parent_pb->child_pbs[i][j].logical_block = OPEN;
                 g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
@@ -1421,16 +1412,13 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		VTR_ASSERT(parent_pb->mode == pb_graph_node->pb_type->parent_mode->index);
 	}
 
-	for (i = 0;
-			i
-					< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;
-			i++) {
-		if (pb_graph_node->pb_type
-				== &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i]) {
+    const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
+	for (i = 0; i < mode->num_pb_type_children; i++) {
+		if (pb_graph_node->pb_type == &mode->pb_type_children[i]) {
 			break;
 		}
 	}
-	VTR_ASSERT(i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children);
+	VTR_ASSERT(i < mode->num_pb_type_children);
 	pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
 	*parent = pb; /* this pb is parent of it's child that called this function */
 	VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
@@ -1442,7 +1430,9 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	is_primitive = (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		VTR_ASSERT(pb->logical_block == OPEN && g_atom_map.atom_pb(blk_id) == NULL && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
+		VTR_ASSERT(pb->logical_block == OPEN 
+                    && g_atom_map.atom_pb(blk_id) == NULL 
+                    && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		pb->logical_block = ilogical_block;
