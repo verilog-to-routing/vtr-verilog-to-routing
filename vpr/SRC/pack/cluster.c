@@ -2860,25 +2860,17 @@ static void load_transitive_fanout_candidates(int cluster_index,
 static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each logical block to a file. */
 	
-	int iblock, len;
-	FILE * fp;
-	char * name;
+	FILE * fp = vtr::fopen(fname, "w");
+	fprintf(fp, "atom_block_name\tcriticality\tcritindexarray\tseed_blend_gain\tseed_blend_gain_index\n");
 
-	fp = vtr::fopen(fname, "w");
-	fprintf(fp, "Index \tLogical block name \tCriticality \tCritindexarray\n\n");
-	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		name = logical_block[iblock].name;
-		len = strlen(name);
-		fprintf(fp, "%d\t%s\t", logical_block[iblock].index, name);
-		if (len < 8) {
-			fprintf(fp, "\t\t");
-		} else if (len < 16) {
-			fprintf(fp, "\t");
-		}
-		fprintf(fp, "%f\t%d\n", block_criticality[iblock], critindexarray[iblock]);
+	for (int iblock = 0; iblock < num_logical_blocks; iblock++) {
+		fprintf(fp, "%s\t", logical_block[iblock].name);
+
+		fprintf(fp, "%f\t%d\t", block_criticality[iblock], critindexarray[iblock]);
+
+		fprintf(fp, "%f\t%d", seed_blend_gain[iblock], seed_blend_index_array[iblock]);
+
+        fprintf(fp, "\n");
 	}
 	fclose(fp);
 }
-
-
-
