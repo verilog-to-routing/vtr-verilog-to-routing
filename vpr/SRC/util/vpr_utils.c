@@ -725,15 +725,12 @@ void free_pb(t_pb *pb) {
 			free(pb->name);
 		pb->name = NULL;
 		if (pb->logical_block != EMPTY_BLOCK && pb->logical_block != INVALID_BLOCK && logical_block != NULL) {
-			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
-			logical_block[pb->logical_block].pb = NULL;
 
             //Update atom netlist mapping
             auto blk_id = g_atom_nl.find_block(logical_block[pb->logical_block].name);
             VTR_ASSERT(blk_id);
             g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
             g_atom_map.set_atom_pb(blk_id, NULL);
-
 		}
 		pb->logical_block = OPEN;
         g_atom_map.set_atom_pb(AtomBlockId::INVALID(), pb);

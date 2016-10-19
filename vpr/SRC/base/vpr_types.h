@@ -190,15 +190,7 @@ typedef struct s_logical_block {
 
 	int used_input_pins; /* Number of used input pins */
 
-	int clb_index; /* Complex block index that this logical block got mapped to */
-
 	int index; /* Index in array that this block can be found */
-	t_pb* pb; /* pb primitive that this block is packed into */
-
-	/* timing information */
-    //struct s_tnode ***input_net_tnodes; [> [0..num_input_ports-1][0..num_pins -1] correspnding input net tnode <]
-	//struct s_tnode ***output_net_tnodes; [> [0..num_output_ports-1][0..num_pins -1] correspnding output net tnode <]
-	//struct s_tnode *clock_net_tnode; [> correspnding clock net tnode <]
 
     vtr::t_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
 

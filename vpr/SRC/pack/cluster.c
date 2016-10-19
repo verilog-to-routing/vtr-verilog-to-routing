@@ -837,12 +837,6 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	t_pack_molecule **molecule_array;
 	int max_molecule_size;
 
-	for (i = 0; i < num_logical_blocks; i++) {
-		logical_block[i].clb_index = NO_CLUSTER;
-	}
-    //g_atom_map returns NO_CLUSTER for any not found value, so we don't need to keep it in sync here
-    //FIXME: clean-up
-
 	/* alloc and load list of molecules to pack */
 	unclustered_list_head = (struct s_molecule_link *) vtr::calloc(
 			max_molecule_inputs + 1, sizeof(struct s_molecule_link));
@@ -1436,8 +1430,6 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		pb->logical_block = ilogical_block;
-		logical_block[ilogical_block].clb_index = NO_CLUSTER;
-		logical_block[ilogical_block].pb = NULL;
 
         //Update the atom netlist mappings
         g_atom_map.set_atom_clb(blk_id, clb_index);
@@ -1483,10 +1475,7 @@ static void revert_place_atom_block(const int iblock, t_lb_router_data *router_d
     //which is why we store them as such in g_atom_map
     t_pb* pb = const_cast<t_pb*>(g_atom_map.atom_pb(blk_id)); 
 
-	logical_block[iblock].clb_index = NO_CLUSTER;
-	logical_block[iblock].pb = NULL;
-
-    //Update the atom netlist
+    //Update the atom netlist mapping
     g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
     g_atom_map.set_atom_pb(blk_id, NULL);
 
@@ -1852,8 +1841,6 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 			continue;
 		}
 		new_blk = molecule->atom_block_ptrs[iblock]->index;
-
-		logical_block[new_blk].clb_index = NO_CLUSTER;
 
         //Update atom netlist mapping
         auto blk_id = g_atom_nl.find_block(logical_block[new_blk].name);
