@@ -141,7 +141,7 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb);
 static void reset_lookahead_pins_used(t_pb *cur_pb);
 static void compute_and_mark_lookahead_pins_used(int ilogical_block);
 static void compute_and_mark_lookahead_pins_used_for_pin(
-		t_pb_graph_pin *pb_graph_pin, t_pb *primitive_pb, int inet);
+		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, int inet);
 static void commit_lookahead_pins_used(t_pb *cur_pb);
 static bool check_lookahead_pins_used(t_pb *cur_pb);
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
@@ -2565,7 +2565,6 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 /* Determine if pins of speculatively packed pb are legal */
 static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
 	int i, j;
-	t_pb *cur_pb;
 	t_pb_graph_node *pb_graph_node;
 	const t_pb_type *pb_type;
 	t_port *prim_port;
@@ -2574,21 +2573,25 @@ static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
 	int output_port;
 	int clock_port;
 
-	VTR_ASSERT(logical_block[ilogical_block].pb != NULL);
+    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
+    VTR_ASSERT(blk_id);
 
-	cur_pb = logical_block[ilogical_block].pb;
+	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
+    VTR_ASSERT(cur_pb != NULL);
+
 	pb_graph_node = cur_pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
-	/* TODO: This is inelegant design, I should change the primitive ports in pb_type to be input, output, or clock instead of this lookup */
+	/* TODO: This is inelegant design, I should change the primitive ports in pb_type 
+     *       to be input, output, or clock instead of this lookup */
 	input_port = output_port = clock_port = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		prim_port = &pb_type->ports[i];
 		if (prim_port->is_clock) {
 			VTR_ASSERT(prim_port->type == IN_PORT);
 			VTR_ASSERT(prim_port->num_pins == 1 && clock_port == 0);
-			/* currently support only one clock for primitives */
+			/* TODO: support multiple clocks for primitives */
 			if (logical_block[ilogical_block].clock_net != OPEN) {
 				compute_and_mark_lookahead_pins_used_for_pin(
 						&pb_graph_node->clock_pins[0][0], cur_pb,
@@ -2623,7 +2626,7 @@ static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
 
 /* Given a pin and its assigned net, mark all pin classes that are affected */
 static void compute_and_mark_lookahead_pins_used_for_pin(
-		t_pb_graph_pin *pb_graph_pin, t_pb *primitive_pb, int inet) {
+		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, int inet) {
 	int depth, i;
 	int pin_class, output_port;
 	t_pb * cur_pb;
