@@ -528,7 +528,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			if (timing_driven && !early_exit) {
 				blocks_since_last_analysis++;
 				/*it doesn't make sense to do a timing analysis here since there*
-				 *is only one logical_block clustered it would not change anything      */
+				 *is only one atom block clustered it would not change anything      */
 			}
 			cur_cluster_placement_stats_ptr = &cluster_placement_stats[clb[num_clb
 					- 1].type->index];
@@ -1051,14 +1051,14 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 		const int ext_inps, const enum e_removal_policy remove_flag,
 		t_cluster_placement_stats *cluster_placement_stats_ptr) {
 
-	/* This routine returns a logical_block which has not been clustered, has  *
+	/* This routine returns an atom block which has not been clustered, has  *
 	 * no connection to the current cluster, satisfies the cluster     *
 	 * clock constraints, is a valid subblock inside the cluster, does not exceed the cluster subblock units available,
 	 and has ext_inps external inputs.  If        *
-	 * there is no such logical_block it returns NO_CLUSTER.  Remove_flag      *
+	 * there is no such atom block it returns NO_CLUSTER.  Remove_flag      *
 	 * controls whether or not blocks that have already been clustered *
 	 * are removed from the unclustered_list data structures.  NB:     *
-	 * to get a logical_block regardless of clock constraints just set clocks_ *
+	 * to get a atom block regardless of clock constraints just set clocks_ *
 	 * avail > 0.                                                      */
 
 	struct s_molecule_link *ptr, *prev_ptr;
@@ -1108,8 +1108,8 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 	/* This routine is used to find new blocks for clustering when there are no feasible       *
 	 * blocks with any attraction to the current cluster (i.e. it finds       *
 	 * blocks which are unconnected from the current cluster).  It returns    *
-	 * the logical_block with the largest number of used inputs that satisfies the    *
-	 * clocking and number of inputs constraints.  If no suitable logical_block is    *
+	 * the atom block with the largest number of used inputs that satisfies the    *
+	 * clocking and number of inputs constraints.  If no suitable atom block is    *
 	 * found, the routine returns NO_CLUSTER.                                 
 	 * TODO: Analyze if this function is useful in more detail, also, should probably not include clock in input count
 	 */
@@ -1147,9 +1147,9 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 		int max_molecule_inputs) {
 
-	/* This routine is used to find the first seed logical_block for the clustering.  It returns    *
-	 * the logical_block with the largest number of used inputs that satisfies the    *
-	 * clocking and number of inputs constraints.  If no suitable logical_block is    *
+	/* This routine is used to find the first seed atom block for the clustering.  It returns    *
+	 * the atom block with the largest number of used inputs that satisfies the    *
+	 * clocking and number of inputs constraints.  If no suitable atom block is    *
 	 * found, the routine returns NO_CLUSTER.                                 */
 
 	int ext_inps;
@@ -1182,7 +1182,7 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 
 	/* If statement below is for speed.  If nets are reasonably low-fanout,  *
 	 * only a relatively small number of blocks will be marked, and updating *
-	 * only those logical_block structures will be fastest.  If almost all blocks    *
+	 * only those atom block structures will be fastest.  If almost all blocks    *
 	 * have been touched it should be faster to just run through them all    *
 	 * in order (less addressing and better cache locality).                 */
 	pb->pb_stats->input_pins_used = (AtomNetId **) vtr::malloc(
@@ -1513,9 +1513,6 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 
 	/* may wish to speed things up by ignoring clock nets since they are high fanout */
 
-    /*
-	 *for (ipin = 0; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
-     */
     for(auto pin_id : g_atom_nl.net_pins(net_id)) {
         auto blk_id = g_atom_nl.pin_block(pin_id);
 		if (g_atom_map.atom_clb(blk_id) == clb_index
@@ -1529,10 +1526,6 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 	}
 
 	if (net_relation_to_clustered_block == OUTPUT) {
-        /*
-		 *for (ipin = 1; ipin < g_atoms_nlist.net[inet].pins.size(); ipin++) {
-		 *    iblk = g_atoms_nlist.net[inet].pins[ipin].block;
-         */
         for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
             auto blk_id = g_atom_nl.pin_block(pin_id);
             VTR_ASSERT(blk_id);
@@ -1554,8 +1547,8 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 	}
 
 	if (net_relation_to_clustered_block == INPUT) {
-		/*Calculate the connectiongain for the logical_block which is driving *
-		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
+		/*Calculate the connectiongain for the atom block which is driving *
+		 *the atom net that is an input to an atom block in the cluster */
 
         auto driver_pin_id = g_atom_nl.net_driver(net_id);
         auto blk_id = g_atom_nl.pin_block(driver_pin_id);
@@ -1581,12 +1574,12 @@ static void update_timing_gain_values(const AtomNetId net_id,
     //TODO: clean-up
     int slack_inet = size_t(net_id); //FIXME remove!
 
-	/*This function is called when the timing_gain values on the g_atoms_nlist.net*
-	 *inet requires updating.   */
+	/*This function is called when the timing_gain values on the atom net*
+	 *net_id requires updating.   */
 	float timinggain;
 
-	/* Check if this g_atoms_nlist.net lists its driving logical_block twice.  If so, avoid  *
-	 * double counting this logical_block by skipping the first (driving) pin. */
+	/* Check if this atom net lists its driving atom block twice.  If so, avoid  *
+	 * double counting this atom block by skipping the first (driving) pin. */
     auto pins = g_atom_nl.net_pins(net_id);
 	if (net_output_feeds_driving_block_input[net_id] != 0)
         pins = g_atom_nl.net_sinks(net_id);
@@ -1616,8 +1609,8 @@ static void update_timing_gain_values(const AtomNetId net_id,
 
 	if (net_relation_to_clustered_block == INPUT
 			&& !is_global.count(net_id)) {
-		/*Calculate the timing gain for the logical_block which is driving *
-		 *the g_atoms_nlist.net that is an input to a logical_block in the cluster */
+		/*Calculate the timing gain for the atom block which is driving *
+		 *the atom net that is an input to a atom block in the cluster */
         auto driver_pin = g_atom_nl.net_driver(net_id);
         auto new_blk_id = g_atom_nl.pin_block(driver_pin);
 
@@ -1653,12 +1646,12 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
-	 * the gain when a logic logical_block is added to a cluster.  The        *
-	 * sharinggain is the number of inputs that a logical_block shares with   *
+	 * the gain when an atom block is added to a cluster.  The        *
+	 * sharinggain is the number of inputs that a atom block shares with   *
 	 * blocks that are already in the cluster. Hillgain is the        *
-	 * reduction in number of pins-required by adding a logical_block to the  *
+	 * reduction in number of pins-required by adding a atom block to the  *
 	 * cluster. The timinggain is the criticality of the most critical*
-	 * g_atoms_nlist.net between this logical_block and a logical_block in the cluster.             */
+	 * atom net between this atom block and an atom block in the cluster.             */
 
 	t_pb* cur_pb = g_atom_map.atom_pb(clustered_blk_id)->parent_pb;
 
@@ -1681,7 +1674,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 	}
 
 	while (cur_pb) {
-		/* Mark g_atoms_nlist.net as being visited, if necessary. */
+		/* Mark atom net as being visited, if necessary. */
 
 		if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
 			cur_pb->pb_stats->marked_nets.push_back(net_id);
@@ -2230,7 +2223,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 			NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets, cluster_index);
 
 	/* If no blocks have any gain to the current cluster, the code above *
-	 * will not find anything.  However, another logical_block with no inputs in *
+	 * will not find anything.  However, another atom block with no inputs in *
 	 * common with the cluster may still be inserted into the cluster.   */
 
 	if (allow_unrelated_clustering) {
