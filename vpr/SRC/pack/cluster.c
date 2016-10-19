@@ -139,9 +139,9 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 static void free_pb_stats_recursive(t_pb *pb);
 static void try_update_lookahead_pins_used(t_pb *cur_pb);
 static void reset_lookahead_pins_used(t_pb *cur_pb);
-static void compute_and_mark_lookahead_pins_used(int ilogical_block);
+static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id);
 static void compute_and_mark_lookahead_pins_used_for_pin(
-		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, int inet);
+		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id);
 static void commit_lookahead_pins_used(t_pb *cur_pb);
 static bool check_lookahead_pins_used(t_pb *cur_pb);
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
@@ -1119,7 +1119,7 @@ static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster(
 
 	for (i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
 		for (j = 0; j < cur_pb->pb_graph_node->input_pin_class_size[i]; j++) {
-			if (cur_pb->pb_stats->input_pins_used[i][j] == OPEN)
+			if (cur_pb->pb_stats->input_pins_used[i][j])
 				inputs_avail++;
 		}
 	}
@@ -1173,7 +1173,7 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	/* Call this routine when starting to fill up a new cluster.  It resets *
 	 * the gain vector, etc.                                                */
 
-	int i, j;
+	int i;
 
 	pb->pb_stats = new t_pb_stats;
 
@@ -1182,31 +1182,23 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	 * only those logical_block structures will be fastest.  If almost all blocks    *
 	 * have been touched it should be faster to just run through them all    *
 	 * in order (less addressing and better cache locality).                 */
-	pb->pb_stats->input_pins_used = (int **) vtr::malloc(
-			pb->pb_graph_node->num_input_pin_class * sizeof(int*));
-	pb->pb_stats->output_pins_used = (int **) vtr::malloc(
-			pb->pb_graph_node->num_output_pin_class * sizeof(int*));
-	pb->pb_stats->lookahead_input_pins_used = new vector<int> [pb->pb_graph_node->num_input_pin_class];
-	pb->pb_stats->lookahead_output_pins_used = new vector<int> [pb->pb_graph_node->num_output_pin_class];
+	pb->pb_stats->input_pins_used = (AtomNetId **) vtr::malloc(
+			pb->pb_graph_node->num_input_pin_class * sizeof(AtomNetId*));
+	pb->pb_stats->output_pins_used = (AtomNetId **) vtr::malloc(
+			pb->pb_graph_node->num_output_pin_class * sizeof(AtomNetId*));
+	pb->pb_stats->lookahead_input_pins_used = new vector<AtomNetId> [pb->pb_graph_node->num_input_pin_class];
+	pb->pb_stats->lookahead_output_pins_used = new vector<AtomNetId> [pb->pb_graph_node->num_output_pin_class];
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
 	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(
 			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
 	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
-		pb->pb_stats->input_pins_used[i] = (int*) vtr::malloc(
-				pb->pb_graph_node->input_pin_class_size[i] * sizeof(int));
-		for (j = 0; j < pb->pb_graph_node->input_pin_class_size[i]; j++) {
-			pb->pb_stats->input_pins_used[i][j] = OPEN;
-		}
+		pb->pb_stats->input_pins_used[i] = new AtomNetId[pb->pb_graph_node->input_pin_class_size[i]];
 	}
 
 	for (i = 0; i < pb->pb_graph_node->num_output_pin_class; i++) {
-		pb->pb_stats->output_pins_used[i] = (int*) vtr::malloc(
-				pb->pb_graph_node->output_pin_class_size[i] * sizeof(int));
-		for (j = 0; j < pb->pb_graph_node->output_pin_class_size[i]; j++) {
-			pb->pb_stats->output_pins_used[i][j] = OPEN;
-		}
+		pb->pb_stats->output_pins_used[i] = new AtomNetId[pb->pb_graph_node->output_pin_class_size[i]];
 	}
 
 	pb->pb_stats->gain.clear();
@@ -1429,6 +1421,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
                     && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
+
 		pb->logical_block = ilogical_block;
 
         //Update the atom netlist mappings
@@ -2514,8 +2507,10 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 			}
 		}
 	} else {
-		if (pb_type->blif_model != NULL && cur_pb->logical_block != OPEN) {
-			compute_and_mark_lookahead_pins_used(cur_pb->logical_block);
+
+        AtomBlockId blk_id = g_atom_map.pb_atom(cur_pb);
+		if (pb_type->blif_model != NULL && blk_id) {
+			compute_and_mark_lookahead_pins_used(blk_id);
 		}
 	}
 }
@@ -2550,7 +2545,7 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 }
 
 /* Determine if pins of speculatively packed pb are legal */
-static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
+static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
 	int i, j;
 	t_pb_graph_node *pb_graph_node;
 	const t_pb_type *pb_type;
@@ -2559,9 +2554,6 @@ static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
 	int input_port;
 	int output_port;
 	int clock_port;
-
-    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
-    VTR_ASSERT(blk_id);
 
 	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
     VTR_ASSERT(cur_pb != NULL);
@@ -2575,45 +2567,51 @@ static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
 	input_port = output_port = clock_port = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		prim_port = &pb_type->ports[i];
-		if (prim_port->is_clock) {
-			VTR_ASSERT(prim_port->type == IN_PORT);
-			VTR_ASSERT(prim_port->num_pins == 1 && clock_port == 0);
-			/* TODO: support multiple clocks for primitives */
-			if (logical_block[ilogical_block].clock_net != OPEN) {
-				compute_and_mark_lookahead_pins_used_for_pin(
-						&pb_graph_node->clock_pins[0][0], cur_pb,
-						logical_block[ilogical_block].clock_net);
-			}
-			clock_port++;
-		} else if (prim_port->type == IN_PORT) {
-			for (j = 0; j < prim_port->num_pins; j++) {
-				if (logical_block[ilogical_block].input_nets[prim_port->model_port->index][j]
-						!= OPEN) {
-					compute_and_mark_lookahead_pins_used_for_pin(
-							&pb_graph_node->input_pins[input_port][j], cur_pb,
-							logical_block[ilogical_block].input_nets[prim_port->model_port->index][j]);
-				}
-			}
-			input_port++;
-		} else if (prim_port->type == OUT_PORT) {
-			for (j = 0; j < prim_port->num_pins; j++) {
-				if (logical_block[ilogical_block].output_nets[prim_port->model_port->index][j]
-						!= OPEN) {
-					compute_and_mark_lookahead_pins_used_for_pin(
-							&pb_graph_node->output_pins[output_port][j], cur_pb,
-							logical_block[ilogical_block].output_nets[prim_port->model_port->index][j]);
-				}
-			}
-			output_port++;
-		} else {
-			VTR_ASSERT(0);
-		}
+        auto port_id = g_atom_nl.find_port(blk_id, prim_port->name);
+
+        if(port_id) {
+            if (prim_port->is_clock) {
+                VTR_ASSERT(prim_port->type == IN_PORT);
+                VTR_ASSERT(prim_port->num_pins == 1 && clock_port == 0);
+                /* TODO: support multiple clocks for primitives */
+
+                auto net_id = g_atom_nl.port_net(port_id, 0);
+                if (net_id) {
+                    compute_and_mark_lookahead_pins_used_for_pin(
+                            &pb_graph_node->clock_pins[0][0], cur_pb,
+                            net_id);
+                }
+                clock_port++;
+            } else if (prim_port->type == IN_PORT) {
+                for (j = 0; j < prim_port->num_pins; j++) {
+                    auto net_id = g_atom_nl.port_net(port_id, j);
+                    if (net_id) {
+                        compute_and_mark_lookahead_pins_used_for_pin(
+                                &pb_graph_node->input_pins[input_port][j], cur_pb,
+                                net_id);
+                    }
+                }
+                input_port++;
+            } else if (prim_port->type == OUT_PORT) {
+                for (j = 0; j < prim_port->num_pins; j++) {
+                    auto net_id = g_atom_nl.port_net(port_id, j);
+                    if (net_id) {
+                        compute_and_mark_lookahead_pins_used_for_pin(
+                                &pb_graph_node->output_pins[output_port][j], cur_pb,
+                                net_id);
+                    }
+                }
+                output_port++;
+            } else {
+                VTR_ASSERT(0);
+            }
+        }
 	}
 }
 
 /* Given a pin and its assigned net, mark all pin classes that are affected */
 static void compute_and_mark_lookahead_pins_used_for_pin(
-		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, int inet) {
+		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id) {
 	int depth;
 	int pin_class, output_port;
 	t_pb * cur_pb;
@@ -2626,15 +2624,12 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 	cur_pb = primitive_pb->parent_pb;
 
-
-    auto net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
-    VTR_ASSERT(net_id);
-
 	while (cur_pb) {
 		depth = cur_pb->pb_graph_node->pb_type->depth;
 		pin_class = pb_graph_pin->parent_pin_class[depth];
 		VTR_ASSERT(pin_class != OPEN);
 
+        auto driver_pin_id = g_atom_nl.net_driver(net_id);
         auto driver_blk_id = g_atom_nl.net_driver_block(net_id);
 
 		if (pb_graph_pin->port->type == IN_PORT) {
@@ -2652,8 +2647,9 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				for (int i = 0; i < pb_type->num_ports && !found; i++) {
 					prim_port = &pb_type->ports[i];
 					if (prim_port->type == OUT_PORT) {
-						if (pb_type->ports[i].model_port->index
-							== g_atoms_nlist.net[inet].pins[0].block_port) {
+                        auto driver_port_id = g_atom_nl.pin_port(driver_pin_id);
+                        auto driver_model_port = g_atom_nl.port_model(driver_port_id);
+						if (pb_type->ports[i].model_port == driver_model_port) {
 							found = true;
 							break;
 						}
@@ -2661,8 +2657,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 					}
 				}
 				VTR_ASSERT(found);
-				output_pb_graph_pin =
-					&(driver_pb->pb_graph_node->output_pins[output_port][g_atoms_nlist.net[inet].pins[0].block_pin]);
+				output_pb_graph_pin = &(driver_pb->pb_graph_node->output_pins[output_port][g_atom_nl.pin_port_bit(driver_pin_id)]);
 			}
 
 			skip = false;
@@ -2676,8 +2671,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				}
 				if (check_pb != NULL) {
 					for (int i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
-						if (pb_graph_pin
-								== output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
+						if (pb_graph_pin == output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
 							skip = true;
 						}
 					}
@@ -2690,14 +2684,13 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				skip = false;
 				int la_inpins_size = (int)cur_pb->pb_stats->lookahead_input_pins_used[pin_class].size();
 				for (int i = 0; i < la_inpins_size; i++) {
-					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i]
-							== inet) {
+					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i] == net_id) {
 						skip = true;
 					}
 				}
 				if (!skip) {
 					/* Net must take up a slot */
-					cur_pb->pb_stats->lookahead_input_pins_used[pin_class].push_back(inet);
+					cur_pb->pb_stats->lookahead_input_pins_used[pin_class].push_back(net_id);
 				}
 			}
 		} else {
@@ -2748,7 +2741,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 			if (!skip) {
 				/* This output must exit this cluster */
-				cur_pb->pb_stats->lookahead_output_pins_used[pin_class].push_back(inet);				
+				cur_pb->pb_stats->lookahead_output_pins_used[pin_class].push_back(net_id);				
 			}
 		}
 
@@ -2803,9 +2796,8 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 			ipin = 0;
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]);
 			for (j = 0; j < (int) cur_pb->pb_stats->lookahead_input_pins_used[i].size(); j++) {
-				VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i][j] != OPEN);
-				cur_pb->pb_stats->input_pins_used[i][ipin] =
-						cur_pb->pb_stats->lookahead_input_pins_used[i][j];
+				VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i][j]);
+				cur_pb->pb_stats->input_pins_used[i][ipin] = cur_pb->pb_stats->lookahead_input_pins_used[i][j];
 				ipin++;
 			}
 		}
@@ -2814,9 +2806,8 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 			ipin = 0;
 			VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->output_pin_class_size[i]);
 			for (j = 0; j < (int) cur_pb->pb_stats->lookahead_output_pins_used[i].size(); j++) {
-				VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i][j] != OPEN);
-				cur_pb->pb_stats->output_pins_used[i][ipin] =
-						cur_pb->pb_stats->lookahead_output_pins_used[i][j];
+				VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i][j]);
+				cur_pb->pb_stats->output_pins_used[i][ipin] = cur_pb->pb_stats->lookahead_output_pins_used[i][j];
 				ipin++;
 			}
 		}
