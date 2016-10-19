@@ -1744,7 +1744,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 						if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
 							cur_pb->pb_stats->marked_blocks.push_back(blk_id);
 							cur_pb->pb_stats->sharinggain[blk_id] = 1;
-							cur_pb->pb_stats->hillgain[blk_id] = 1 - num_ext_inputs_logical_block(blk_id);
+							cur_pb->pb_stats->hillgain[blk_id] = 1 - num_ext_inputs_atom_block(blk_id);
 						} else {
 							cur_pb->pb_stats->sharinggain[blk_id]++;
 							cur_pb->pb_stats->hillgain[blk_id]++;

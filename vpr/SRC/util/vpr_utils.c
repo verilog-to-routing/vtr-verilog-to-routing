@@ -631,9 +631,9 @@ float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 			+ primitive->pb_type->num_clock_pins);
 }
 
-int num_ext_inputs_logical_block(AtomBlockId blk_id) {
+int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
-	/* Returns the number of input pins on this logical_block that must be hooked *
+	/* Returns the number of input pins on this atom block that must be hooked *
 	 * up through external interconnect.  That is, the number of input    *
 	 * pins used - the number which connect (internally) to the outputs.   */
 

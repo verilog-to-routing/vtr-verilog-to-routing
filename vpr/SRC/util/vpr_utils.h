@@ -34,7 +34,7 @@ void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping);
 
 
 float compute_primitive_base_cost(const t_pb_graph_node *primitive);
-int num_ext_inputs_logical_block(AtomBlockId blk_id);
+int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
 int ** alloc_and_load_net_pin_index();
 
