@@ -166,7 +166,7 @@ static enum e_block_pack_status try_pack_molecule(
 		const t_pack_molecule *molecule, t_pb_graph_node **primitives_list,
 		t_pb * pb, const int max_models, const int max_cluster_size,
 		const int clb_index, const int detailed_routing_stage, t_lb_router_data *router_data);
-static enum e_block_pack_status try_place_logical_block_rec(
+static enum e_block_pack_status try_place_atom_block_rec(
 		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const int clb_index,
@@ -1260,7 +1260,7 @@ static enum e_block_pack_status try_pack_molecule(
 						chain_root_pin = NULL;
 						is_root_of_chain = false;
 					}
-					block_pack_status = try_place_logical_block_rec(
+					block_pack_status = try_place_atom_block_rec(
 							primitives_list[i],
 							molecule->atom_block_ids[i], pb, &parent,
 							max_models, max_cluster_size, clb_index,
@@ -1340,7 +1340,7 @@ static enum e_block_pack_status try_pack_molecule(
  * Try place logical block into current primitive location
  */
 
-static enum e_block_pack_status try_place_logical_block_rec(
+static enum e_block_pack_status try_place_atom_block_rec(
 		const t_pb_graph_node *pb_graph_node, const AtomBlockId blk_id,
 		t_pb *cb, t_pb **parent, const int max_models,
 		const int max_cluster_size, const int clb_index,
@@ -1361,7 +1361,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 	/* Discover parent */
 	if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
-		block_pack_status = try_place_logical_block_rec(
+		block_pack_status = try_place_atom_block_rec(
 				pb_graph_node->parent_pb_graph_node, blk_id, cb,
 				&my_parent, max_models, max_cluster_size, clb_index,
 				cluster_placement_stats_ptr, is_root_of_chain, chain_root_pin, router_data);
