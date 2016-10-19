@@ -9,6 +9,7 @@
 #include <cstring>
 #include <ctime>
 #include <map>
+#include <algorithm>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -110,12 +111,12 @@ static struct s_molecule_link *memory_pool; /*Declared here so I can free easily
 static std::unordered_map<AtomNetId,int> net_output_feeds_driving_block_input;
 
 /* Timing information for blocks */
-static float *block_criticality = NULL;
-static int *critindexarray = NULL;
+static std::vector<AtomBlockId> critindexarray;
+static unordered_map<AtomBlockId,float> block_criticality;
 
 /* Score different seeds for blocks */
-static float *seed_blend_gain = NULL;
-static int *seed_blend_index_array = NULL;
+static std::vector<AtomBlockId> seed_blend_index_array;
+static std::unordered_map<AtomBlockId,float> seed_blend_gain;
 	
 
 /*****************************************/
@@ -395,17 +396,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_criticality(slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
-		block_criticality = (float*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(float));
-
-		critindexarray = (int*) vtr::malloc(g_atom_nl.blocks().size() * sizeof(int));
-
-		seed_blend_gain = (float*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(float));
-		seed_blend_index_array = (int*) vtr::malloc(g_atom_nl.blocks().size() * sizeof(int));
-
-		for (i = 0; i < num_logical_blocks; i++) {
-			VTR_ASSERT(logical_block[i].index == i);
-			critindexarray[i] = i;
-			seed_blend_index_array[i] = i;
+		for (auto blk_id : g_atom_nl.blocks()) {
+			critindexarray.push_back(blk_id);
+			seed_blend_index_array.push_back(blk_id);
 		}
 
 #ifdef PATH_COUNTING
@@ -415,14 +408,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			
 				/* Find the logical block iblk which this pin is a sink on. */
 				iblk = g_atoms_nlist.net[inet].pins[ipin].block;
+                auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
+                VTR_ASSERT(blk_id);
 					
 				/* The criticality of this pin is a sum of its timing and path criticalities. */
 				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
 					 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
 
 				/* The criticality of each block is the maximum of the criticalities of all its pins. */
-				if (block_criticality[iblk] < crit) {
-					block_criticality[iblk] = crit;
+				if (block_criticality[blk_id] < crit) {
+					block_criticality[blk_id] = crit;
 				}
 			}
 		}
@@ -444,8 +439,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						* (float) tnode[inode].prepacked_data->normalized_T_arr;
 				crit = (1 - tnode[inode].prepacked_data->normalized_slack) + num_paths_scaling
 						+ distance_scaling;
-				if (block_criticality[iblk] < crit) {
-					block_criticality[iblk] = crit;
+				if (block_criticality[blk_id] < crit) {
+					block_criticality[blk_id] = crit;
 				}
 			}
 		}
@@ -469,18 +464,34 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				const t_pack_molecule* blk_mol = kv.second;
 				inputs_of_molecule = blk_mol->num_ext_inputs;
 				blocks_of_molecule = blk_mol->num_blocks;
-				blend_gain = (seed_blend_fac * block_criticality[iblk] 
+				blend_gain = (seed_blend_fac * block_criticality[blk_id] 
                               + (1-seed_blend_fac) * (inputs_of_molecule / max_molecule_inputs));
                 blend_gain *= (1 + 0.2 * (blocks_of_molecule - 1));
 				if(blend_gain > max_blend_gain) {
 					max_blend_gain = blend_gain;
 				}
             }
-			seed_blend_gain[iblk] = max_blend_gain;
+			seed_blend_gain[blk_id] = max_blend_gain;
 			
 		}
-		heapsort(critindexarray, block_criticality, g_atom_nl.blocks().size(), 1);
-		heapsort(seed_blend_index_array, seed_blend_gain, g_atom_nl.blocks().size(), 1);
+        /*
+		 *heapsort(critindexarray, block_criticality, g_atom_nl.blocks().size(), 1);
+		 *heapsort(seed_blend_index_array, seed_blend_gain, g_atom_nl.blocks().size(), 1);
+         */
+
+        //Sort in decreasing order (i.e. most critical at index 0)
+        std::sort(critindexarray.begin(), critindexarray.end(),
+            [](const AtomBlockId lhs, const AtomBlockId rhs) {
+                return block_criticality[lhs] > block_criticality[rhs];        
+            }
+        );
+
+        //Sort in decreasing order (i.e. highest gain at index 0)
+        std::sort(seed_blend_index_array.begin(), seed_blend_index_array.end(),
+            [](const AtomBlockId lhs, const AtomBlockId rhs) {
+                return seed_blend_gain[lhs] > seed_blend_gain[rhs];        
+            }
+        );
 		
 		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
 			print_block_criticalities(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES));
@@ -715,18 +726,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free(memory_pool);
 
 	if (timing_driven) {
-		free(block_criticality);
-		free(critindexarray);
-		free(seed_blend_gain);
-		free(seed_blend_index_array);
+		block_criticality.clear();
+		critindexarray.clear();
+		seed_blend_gain.clear();
+		seed_blend_index_array.clear();
 
-		block_criticality = NULL;
-		critindexarray = NULL;
-		seed_blend_gain = NULL;
-		seed_blend_index_array = NULL;
-	}
-
-	if (timing_driven) {
 		free_timing_graph(slacks);
 	}
 
@@ -2350,19 +2354,16 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 	 * will return garbage. Returns molecule with most critical block;
 	 * if block belongs to multiple molecules, return the biggest molecule. */
 
-	int blkidx;
+	AtomBlockId blk_id;
 	t_pack_molecule *molecule = NULL, *best = NULL;
 
 	while (*seedindex < num_logical_blocks) {
 
 		if(getblend == true) {
-			blkidx = seed_blend_index_array[(*seedindex)++];
+			blk_id = seed_blend_index_array[(*seedindex)++];
 		} else {
-			blkidx = critindexarray[(*seedindex)++];
+			blk_id = critindexarray[(*seedindex)++];
 		}
-
-        auto blk_id = g_atom_nl.find_block(logical_block[blkidx].name);
-        VTR_ASSERT(blk_id);
 
 		if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 
@@ -2907,19 +2908,22 @@ static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each logical block to a file. */
 	
 	FILE * fp = vtr::fopen(fname, "w");
-	fprintf(fp, "atom_block_name \tcriticality \tcritindexarray\n\n");
+	fprintf(fp, "atom_block_name\tcriticality\tcritindexarray\tseed_blend_gain\tseed_blend_gain_index\n");
 
-    int iblock = 0;
     for(auto blk_id : g_atom_nl.blocks()) {
         std::string name = g_atom_nl.block_name(blk_id);
 		fprintf(fp, "%s\t", name.c_str());
-		if (name.size() < 8) {
-			fprintf(fp, "\t\t");
-		} else if (name.size() < 16) {
-			fprintf(fp, "\t");
-		}
-		fprintf(fp, "%f\t%d\n", block_criticality[iblock], critindexarray[iblock]);
-        ++iblock;
+
+        auto crit_idx_iter = std::find(critindexarray.begin(), critindexarray.end(), blk_id);
+        VTR_ASSERT(crit_idx_iter != critindexarray.end());
+        int crit_idx = crit_idx_iter - critindexarray.begin();
+		fprintf(fp, "%f\t%d\t", block_criticality[blk_id], crit_idx);
+
+        auto seed_gain_iter = std::find(seed_blend_index_array.begin(), seed_blend_index_array.end(), blk_id);
+        int seed_blend_gain_index = seed_gain_iter - seed_blend_index_array.begin();
+		fprintf(fp, "%f\t%d", seed_blend_gain[blk_id], seed_blend_gain_index);
+
+        fprintf(fp, "\n");
 	}
 	fclose(fp);
 }
