@@ -55,7 +55,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 
 void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
-void revalid_molecules(t_pb* pb, std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
+void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 void print_switch_usage();
 void print_usage_by_wire_length();

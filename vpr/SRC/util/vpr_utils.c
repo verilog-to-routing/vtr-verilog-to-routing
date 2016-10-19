@@ -741,7 +741,7 @@ void free_pb(t_pb *pb) {
 	free_pb_stats(pb);
 }
 
-void revalid_molecules(t_pb* pb, std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
+void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
 	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
 	if (pb_type->blif_model == NULL) {

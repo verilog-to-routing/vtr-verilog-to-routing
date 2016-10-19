@@ -172,7 +172,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data);
 static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data, 
-        std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules);
+        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 static void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clustered_blk_id,
 		t_pb * cur_pb,
@@ -1472,16 +1472,21 @@ static enum e_block_pack_status try_place_logical_block_rec(
 /* Revert trial logical block iblock and free up memory space accordingly 
  */
 static void revert_place_atom_block(const int iblock, t_lb_router_data *router_data,
-    std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules) {
-	t_pb *pb, *next;
+    const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
 
-	pb = logical_block[iblock].pb;
+    auto blk_id = g_atom_nl.find_block(logical_block[iblock].name);
+    VTR_ASSERT(blk_id);
+    //We cast away const here since we may free the pb, and it is
+    //being removed from the active mapping.
+    //
+    //In general most code works fine accessing cosnt t_pb*,
+    //which is why we store them as such in g_atom_map
+    t_pb* pb = const_cast<t_pb*>(g_atom_map.atom_pb(blk_id)); 
+
 	logical_block[iblock].clb_index = NO_CLUSTER;
 	logical_block[iblock].pb = NULL;
 
     //Update the atom netlist
-    auto blk_id = g_atom_nl.find_block(logical_block[iblock].name);
-    VTR_ASSERT(blk_id);
     g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
     g_atom_map.set_atom_pb(blk_id, NULL);
 
@@ -1490,7 +1495,7 @@ static void revert_place_atom_block(const int iblock, t_lb_router_data *router_d
 		 When this happens, no need to do anything beyond basic book keeping at the logical block
 		 */
 
-		next = pb->parent_pb;
+		t_pb* next = pb->parent_pb;
         revalid_molecules(pb, atom_molecules);
 		free_pb(pb);
 		pb = next;
