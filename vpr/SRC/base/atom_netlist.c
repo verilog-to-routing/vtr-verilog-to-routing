@@ -409,6 +409,14 @@ AtomPinId AtomNetlist::net_driver (const AtomNetId id) const {
     }
 }
 
+AtomBlockId AtomNetlist::net_driver_block (const AtomNetId id) const {
+    auto driver_pin_id = net_driver(id);
+    if(driver_pin_id) {
+        return pin_block(driver_pin_id);
+    }
+    return AtomBlockId::INVALID();
+}
+
 vtr::Range<AtomNetlist::pin_iterator> AtomNetlist::net_sinks (const AtomNetId id) const {
     VTR_ASSERT(valid_net_id(id));
 

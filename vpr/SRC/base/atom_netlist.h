@@ -485,6 +485,9 @@ class AtomNetlist {
         //Returns the (potentially invalid) net driver pin
         AtomPinId                   net_driver      (const AtomNetId id) const;
 
+        //Returns the (potentially invalid) net driver block
+        AtomBlockId                 net_driver_block(const AtomNetId id) const;
+
         //Returns a (potentially empty) range consisting of net's sink pins
         vtr::Range<pin_iterator>    net_sinks       (const AtomNetId id) const;
 
