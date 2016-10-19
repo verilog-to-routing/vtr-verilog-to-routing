@@ -2627,10 +2627,9 @@ static void compute_and_mark_lookahead_pins_used(int ilogical_block) {
 /* Given a pin and its assigned net, mark all pin classes that are affected */
 static void compute_and_mark_lookahead_pins_used_for_pin(
 		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, int inet) {
-	int depth, i;
+	int depth;
 	int pin_class, output_port;
 	t_pb * cur_pb;
-	t_pb * check_pb;
 	const t_pb_type *pb_type;
 	t_port *prim_port;
 	t_pb_graph_pin *output_pb_graph_pin;
@@ -2640,21 +2639,30 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 	cur_pb = primitive_pb->parent_pb;
 
+
+    auto net_id = g_atom_nl.find_net(g_atoms_nlist.net[inet].name);
+    VTR_ASSERT(net_id);
+
 	while (cur_pb) {
 		depth = cur_pb->pb_graph_node->pb_type->depth;
 		pin_class = pb_graph_pin->parent_pin_class[depth];
 		VTR_ASSERT(pin_class != OPEN);
 
+        auto driver_blk_id = g_atom_nl.net_driver_block(net_id);
+
 		if (pb_graph_pin->port->type == IN_PORT) {
 			/* find location of net driver if exist in clb, NULL otherwise */
+
+            auto prim_blk_id = g_atom_map.pb_atom(primitive_pb);
+
+            const t_pb* driver_pb = g_atom_map.atom_pb(driver_blk_id);
+
 			output_pb_graph_pin = NULL;
-			if (logical_block[g_atoms_nlist.net[inet].pins[0].block].clb_index
-					== logical_block[primitive_pb->logical_block].clb_index) {
-				pb_type =
-					logical_block[g_atoms_nlist.net[inet].pins[0].block].pb->pb_graph_node->pb_type;
+			if (g_atom_map.atom_clb(driver_blk_id) == g_atom_map.atom_clb(prim_blk_id)) {
+				pb_type = driver_pb->pb_graph_node->pb_type;
 				output_port = 0;
 				found = false;
-				for (i = 0; i < pb_type->num_ports && !found; i++) {
+				for (int i = 0; i < pb_type->num_ports && !found; i++) {
 					prim_port = &pb_type->ports[i];
 					if (prim_port->type == OUT_PORT) {
 						if (pb_type->ports[i].model_port->index
@@ -2667,7 +2675,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				}
 				VTR_ASSERT(found);
 				output_pb_graph_pin =
-					&(logical_block[g_atoms_nlist.net[inet].pins[0].block].pb->pb_graph_node->output_pins[output_port][g_atoms_nlist.net[inet].pins[0].block_pin]);
+					&(driver_pb->pb_graph_node->output_pins[output_port][g_atoms_nlist.net[inet].pins[0].block_pin]);
 			}
 
 			skip = false;
@@ -2675,12 +2683,12 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 			/* check if driving pin for input is contained within the currently 
              * investigated cluster, if yes, do nothing since no input needs to be used */
 			if (output_pb_graph_pin != NULL) {
-				check_pb = logical_block[g_atoms_nlist.net[inet].pins[0].block].pb;
+				const t_pb* check_pb = driver_pb;
 				while (check_pb != NULL && check_pb != cur_pb) {
 					check_pb = check_pb->parent_pb;
 				}
 				if (check_pb != NULL) {
-					for (i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
+					for (int i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
 						if (pb_graph_pin
 								== output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
 							skip = true;
@@ -2694,7 +2702,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 				/* Check if already in pin class, if yes, skip */
 				skip = false;
 				int la_inpins_size = (int)cur_pb->pb_stats->lookahead_input_pins_used[pin_class].size();
-				for (i = 0; i < la_inpins_size; i++) {
+				for (int i = 0; i < la_inpins_size; i++) {
 					if (cur_pb->pb_stats->lookahead_input_pins_used[pin_class][i]
 							== inet) {
 						skip = true;
@@ -2709,7 +2717,9 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 			VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
 
 			skip = false;
-			if (pb_graph_pin->num_connectable_primtive_input_pins[depth] >= g_atoms_nlist.net[inet].num_sinks()) {
+            int num_net_pins = static_cast<int>(g_atom_nl.net_pins(net_id).size());
+            int num_net_sinks = static_cast<int>(g_atom_nl.net_sinks(net_id).size());
+			if (pb_graph_pin->num_connectable_primtive_input_pins[depth] >= num_net_sinks) {
 				/* Important: This runtime penalty looks a lot scarier than it really is.  
                  * For high fan-out nets, I at most look at the number of pins within the 
                  * cluster which limits runtime.
@@ -2724,25 +2734,26 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
                  * small constant where the constant is equal to the number of LUT inputs).  
                  * The real danger to runtime is when the number of sinks of a net gets doubled
 				 */
-				int anet_size = (int) g_atoms_nlist.net[inet].pins.size();
-				for (i = 1; i < anet_size; i++) {
-					if (logical_block[g_atoms_nlist.net[inet].pins[i].block].clb_index
-						!= logical_block[g_atoms_nlist.net[inet].pins[0].block].clb_index) {
+                int i = 1;
+                for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
+                    auto sink_blk_id = g_atom_nl.pin_block(pin_id);
+					if (g_atom_map.atom_clb(sink_blk_id) != g_atom_map.atom_clb(driver_blk_id)) {
 						break;
 					}
+                    ++i;
 				}
-				if (i == anet_size) {
+				if (i == num_net_pins) {
 					count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed,
                      *       net is forever absorbed, no point in rechecking every time */
-					for (i = 0; i < pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
+					for (int j = 0; j < pb_graph_pin->num_connectable_primtive_input_pins[depth]; j++) {
 						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
-								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i])
+								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][j])
 								== inet) {
 							count++;
 						}
 					}
-					if (count == g_atoms_nlist.net[inet].num_sinks()) {
+					if (count == num_net_sinks) {
 						skip = true;
 					}
 				}
