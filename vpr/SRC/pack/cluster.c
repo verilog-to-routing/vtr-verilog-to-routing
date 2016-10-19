@@ -2906,22 +2906,20 @@ static void load_transitive_fanout_candidates(int cluster_index,
 static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each logical block to a file. */
 	
-	int iblock, len;
-	FILE * fp;
-	char * name;
+	FILE * fp = vtr::fopen(fname, "w");
+	fprintf(fp, "atom_block_name \tcriticality \tcritindexarray\n\n");
 
-	fp = vtr::fopen(fname, "w");
-	fprintf(fp, "Index \tLogical block name \tCriticality \tCritindexarray\n\n");
-	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-		name = logical_block[iblock].name;
-		len = strlen(name);
-		fprintf(fp, "%d\t%s\t", logical_block[iblock].index, name);
-		if (len < 8) {
+    int iblock = 0;
+    for(auto blk_id : g_atom_nl.blocks()) {
+        std::string name = g_atom_nl.block_name(blk_id);
+		fprintf(fp, "%s\t", name.c_str());
+		if (name.size() < 8) {
 			fprintf(fp, "\t\t");
-		} else if (len < 16) {
+		} else if (name.size() < 16) {
 			fprintf(fp, "\t");
 		}
 		fprintf(fp, "%f\t%d\n", block_criticality[iblock], critindexarray[iblock]);
+        ++iblock;
 	}
 	fclose(fp);
 }
