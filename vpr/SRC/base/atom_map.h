@@ -27,13 +27,6 @@ class AtomMap {
         void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
 
         /*
-         * Expected lowest cost pb_graph_node
-         */
-        const t_pb_graph_node* expected_lowest_cost_pb_gnode(const AtomBlockId blk_id) const;
-
-        void set_expected_lowest_cost_pb_gnode(const AtomBlockId blk_id, const t_pb_graph_node* node);
-
-        /*
          * Blocks
          */
         //Returns the clb index associated with blk_id
