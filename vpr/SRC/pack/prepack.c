@@ -813,33 +813,33 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 		}
 		VTR_ASSERT(is_used[best_pattern] == false);
 		is_used[best_pattern] = true;
-		for (j = 0; j < num_logical_blocks; j++) {
-            auto blk_id = g_atom_nl.find_block(logical_block[j].name);
-            VTR_ASSERT(blk_id);
+        for(auto blk_id : g_atom_nl.blocks()) {
 
-			cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id);
-			if (cur_molecule != NULL) {
-				cur_molecule->next = list_of_molecules_head;
-				/* In the event of multiple molecules with the same logical block pattern, 
-                 * bias to use the molecule with less costly physical resources first 
-                 */
-				/* TODO: Need to normalize magical number 100 */
-				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
-				list_of_molecules_head = cur_molecule;
+            bool retry = false;
+            do {
+                cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id);
+                if (cur_molecule != NULL) {
+                    cur_molecule->next = list_of_molecules_head;
+                    /* In the event of multiple molecules with the same logical block pattern, 
+                     * bias to use the molecule with less costly physical resources first */
+                    /* TODO: Need to normalize magical number 100 */
+                    cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
+                    list_of_molecules_head = cur_molecule;
 
-                //Note: atom_molecules is an (ordered) multimap so the last molecule 
-                //      inserted for a given blk_id will be the last valid element 
-                //      in the equal_range
-                auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
-                bool range_empty = (rng.first == rng.second);
-                auto last_valid_iter = --rng.second; //Iterator to last element
-                bool cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
-				if(range_empty || !cur_was_last_inserted) {
-					/* molecule did not cover current atom (possibly because molecule created is
-                     * part of a long chain that extends past multiple logic blocks), try again */
-					j--;
-				}
-			}
+                    //Note: atom_molecules is an (ordered) multimap so the last molecule 
+                    //      inserted for a given blk_id will be the last valid element 
+                    //      in the equal_range
+                    auto rng = atom_molecules.equal_range(blk_id); //The range of molecules matching this block
+                    bool range_empty = (rng.first == rng.second);
+                    auto last_valid_iter = --rng.second; //Iterator to last element
+                    bool cur_was_last_inserted = (last_valid_iter->second == cur_molecule);
+                    if(range_empty || !cur_was_last_inserted) {
+                        /* molecule did not cover current atom (possibly because molecule created is
+                         * part of a long chain that extends past multiple logic blocks), try again */
+                        retry = true;
+                    }
+                }
+            } while(retry);
 		}
 	}
 	free(is_used);
@@ -850,9 +850,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	 If a block belongs to a molecule, then carrying the single atoms around can make the packing problem
 	 more difficult because now it needs to consider splitting molecules.
 	 */
-	for (i = 0; i < num_logical_blocks; i++) {
-        auto blk_id = g_atom_nl.find_block(logical_block[i].name);
-        VTR_ASSERT(blk_id);
+    for(auto blk_id : g_atom_nl.blocks()) {
 
         expected_lowest_cost_pb_gnode[blk_id] = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
 
