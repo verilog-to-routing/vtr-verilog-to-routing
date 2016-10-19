@@ -1754,15 +1754,8 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 			/* Todo: This was used to explore different normalization options, can 
              * be made more efficient once we decide on which one to use*/
-			int num_used_input_pins = 0;
-            for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
-                num_used_input_pins += g_atom_nl.port_pins(port_id).size();
-            }
-
-			int num_used_output_pins = 0;
-            for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
-                num_used_output_pins += g_atom_nl.port_pins(port_id).size();
-            }
+			int num_used_input_pins = num_used_pins(g_atom_nl, g_atom_nl.block_input_ports(blk_id));
+			int num_used_output_pins = num_used_pins(g_atom_nl, g_atom_nl.block_output_ports(blk_id));
 			/* end todo */
 
 			/* Calculate area-only cost function */

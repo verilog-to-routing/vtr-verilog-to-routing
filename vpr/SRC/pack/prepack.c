@@ -58,17 +58,17 @@ static t_pack_molecule *try_create_molecule(
 		t_pack_patterns *list_of_pack_patterns, 
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
-		int block_index);
+		AtomBlockId blk_id);
 static bool try_expand_molecule(t_pack_molecule *molecule,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-		const int logical_block_index,
+		const AtomBlockId blk_id,
 		const t_pack_pattern_block *current_pattern_block);
 static void print_pack_molecules(const char *fname,
 		const t_pack_patterns *list_of_pack_patterns, const int num_pack_patterns,
 		const t_pack_molecule *list_of_molecules);
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id);
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node *curr_pb_graph_node, float *cost);
-static int find_new_root_atom_for_chain(const int block_index, const t_pack_patterns *list_of_pack_pattern, 
+static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 /*****************************************/
@@ -817,7 +817,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
             auto blk_id = g_atom_nl.find_block(logical_block[j].name);
             VTR_ASSERT(blk_id);
 
-			cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, j);
+			cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id);
 			if (cur_molecule != NULL) {
 				cur_molecule->next = list_of_molecules_head;
 				/* In the event of multiple molecules with the same logical block pattern, 
@@ -864,7 +864,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
 			cur_molecule->root = 0;
-			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
+			cur_molecule->num_ext_inputs = num_used_pins(g_atom_nl, g_atom_nl.block_input_ports(blk_id));
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
 
@@ -923,7 +923,7 @@ static t_pack_molecule *try_create_molecule(
 		t_pack_patterns *list_of_pack_patterns, 
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int pack_pattern_index,
-		int block_index) {
+		AtomBlockId blk_id) {
 	int i;
 	t_pack_molecule *molecule;
 
@@ -947,24 +947,24 @@ static t_pack_molecule *try_create_molecule(
 
 		if(list_of_pack_patterns[pack_pattern_index].is_chain == true) {
 			/* A chain pattern extends beyond a single logic block so we must find 
-             * the block_index that matches with the portion of a chain for this particular logic block */
-			block_index = find_new_root_atom_for_chain(block_index, &list_of_pack_patterns[pack_pattern_index], atom_molecules);
+             * the blk_id that matches with the portion of a chain for this particular logic block */
+			blk_id = find_new_root_atom_for_chain(blk_id, &list_of_pack_patterns[pack_pattern_index], atom_molecules);
 		}
 	}
 
 	end_prolog:
 
-	if (!failed && block_index != OPEN && try_expand_molecule(molecule, atom_molecules, block_index,
+	if (!failed && blk_id && try_expand_molecule(molecule, atom_molecules, blk_id,
 			molecule->pack_pattern->root_block) == true) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
-            auto blk_id = molecule->atom_block_ids[i];
-			if(!blk_id) {
+            auto blk_id2 = molecule->atom_block_ids[i];
+			if(!blk_id2) {
 				VTR_ASSERT(list_of_pack_patterns[pack_pattern_index].is_block_optional[i] == true);
 				continue;
 			}			
 
-            atom_molecules.insert({blk_id, molecule});
+            atom_molecules.insert({blk_id2, molecule});
 		}
 	} else {
 		failed = true;
@@ -984,18 +984,15 @@ static t_pack_molecule *try_create_molecule(
  */
 static bool try_expand_molecule(t_pack_molecule *molecule,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-		const int logical_block_index,
+		const AtomBlockId blk_id,
 		const t_pack_pattern_block *current_pattern_block) {
-	int iport, ipin, inet;
+	int ipin;
 	bool success;
 	bool is_optional;
 	bool *is_block_optional;
 	t_pack_pattern_connections *cur_pack_pattern_connection;
 	is_block_optional = molecule->pack_pattern->is_block_optional;
 	is_optional = is_block_optional[current_pattern_block->block_id];
-
-    auto blk_id = g_atom_nl.find_block(logical_block[logical_block_index].name);
-    VTR_ASSERT(blk_id);
 
     /* If the block in the pattern has already been visited, then there is no need to revisit it */
 	if (molecule->atom_block_ids[current_pattern_block->block_id]) {
@@ -1028,39 +1025,53 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
         /* store that this node has been visited */
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
 
-		molecule->num_ext_inputs += logical_block[logical_block_index].used_input_pins;
+		molecule->num_ext_inputs += num_used_pins(g_atom_nl, g_atom_nl.block_input_ports(blk_id));
 		
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != NULL && success == true) {
 			if (cur_pack_pattern_connection->from_block
 					== current_pattern_block) {
 				/* find net corresponding to pattern */
-				iport = cur_pack_pattern_connection->from_pin->port->model_port->index;
+                auto port_id = g_atom_nl.find_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port->name);
+                VTR_ASSERT(port_id);
 				ipin = cur_pack_pattern_connection->from_pin->pin_number;
-				inet = logical_block[logical_block_index].output_nets[iport][ipin];
+                auto net_id = g_atom_nl.port_net(port_id, ipin);
+
+                auto net_sinks = g_atom_nl.net_sinks(net_id);
 
 				/* Check if net is valid */
-				if (inet == OPEN || g_atoms_nlist.net[inet].num_sinks() != 1) { /* One fanout assumption */
+				if (!net_id || net_sinks.size() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
 				} else {
-					success = try_expand_molecule(molecule, atom_molecules, g_atoms_nlist.net[inet].pins[1].block,
+                    VTR_ASSERT(net_sinks.size() == 1);
+
+                    auto sink_pin_id = *net_sinks.begin();
+                    auto sink_blk_id = g_atom_nl.pin_block(sink_pin_id);
+
+					success = try_expand_molecule(molecule, atom_molecules, sink_blk_id,
                                 cur_pack_pattern_connection->to_block);
 				}
 			} else {
 				VTR_ASSERT(cur_pack_pattern_connection->to_block == current_pattern_block);
 				/* find net corresponding to pattern */
-				iport = cur_pack_pattern_connection->to_pin->port->model_port->index;
+
+                auto port_id = g_atom_nl.find_port(blk_id, cur_pack_pattern_connection->to_pin->port->model_port->name);
+                VTR_ASSERT(port_id);
 				ipin = cur_pack_pattern_connection->to_pin->pin_number;
+
+                AtomNetId net_id;
 				if (cur_pack_pattern_connection->to_pin->port->model_port->is_clock) {
-					inet = logical_block[logical_block_index].clock_net;
+                    VTR_ASSERT(ipin == 1); //TODO: support multi-clock primitives
+					net_id = g_atom_nl.port_net(port_id, ipin);
 				} else {
-					inet = logical_block[logical_block_index].input_nets[iport][ipin];
+					net_id = g_atom_nl.port_net(port_id, ipin);
 				}
 				/* Check if net is valid */
-				if (inet == OPEN || g_atoms_nlist.net[inet].num_sinks() != 1) { /* One fanout assumption */
+				if (!net_id || g_atom_nl.net_sinks(net_id).size() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->from_block->block_id];
 				} else {
-					success = try_expand_molecule(molecule, atom_molecules, g_atoms_nlist.net[inet].pins[0].block,
+                    auto driver_blk_id = g_atom_nl.net_driver_block(net_id);
+					success = try_expand_molecule(molecule, atom_molecules, driver_blk_id,
                                 cur_pack_pattern_connection->from_block);
 				}
 			}
@@ -1210,55 +1221,55 @@ static int compare_pack_pattern(const t_pack_patterns *pattern_a, const t_pack_p
 	return 0;
 }
 
-/* A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic 
+/* A chain can extend across multiple atom blocks.  Must segment the chain to fit in an atom 
  * block by identifying the actual atom that forms the root of the new chain.
- * Returns OPEN if this block_index doesn't match up with any chain
+ * Returns AtomBlockId::INVALID() if this block_index doesn't match up with any chain
  *
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
  * block_index: index of current atom
  * list_of_pack_pattern: ptr to current chain pattern
  */
-static int find_new_root_atom_for_chain(const int block_index, const t_pack_patterns *list_of_pack_pattern,
+static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const t_pack_patterns *list_of_pack_pattern,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
-	int new_index = OPEN;
+    AtomBlockId new_root_blk_id;
 	t_pb_graph_pin *root_ipin;
 	t_pb_graph_node *root_pb_graph_node;
 	t_model_ports *model_port;
-	int driver_net, driver_block;
 	
 	VTR_ASSERT(list_of_pack_pattern->is_chain == true);
 	root_ipin = list_of_pack_pattern->chain_root_pin;
 	root_pb_graph_node = root_ipin->parent_node;
 
-    auto blk_id = g_atom_nl.find_block(logical_block[block_index].name);
-    VTR_ASSERT(blk_id);
-
 	if(primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) {
-		return OPEN;
+		return AtomBlockId::INVALID();
 	}
 
 	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
 	model_port = root_ipin->port->model_port;
-	driver_net = logical_block[block_index].input_nets[model_port->index][root_ipin->pin_number];
-	if(driver_net == OPEN) {
+
+    auto port_id = g_atom_nl.find_port(blk_id, model_port->name);
+    VTR_ASSERT(port_id);
+
+	AtomNetId driver_net_id = g_atom_nl.port_net(port_id, root_ipin->pin_number);
+	if(!driver_net_id) {
 		/* The current block is the furthest up the chain, return it */
-		return block_index;
+		return blk_id;
 	}
 
-	driver_block = g_atoms_nlist.net[driver_net].pins[0].block;
+	AtomBlockId driver_blk_id = g_atom_nl.port_block(port_id);
 
     auto rng = atom_molecules.equal_range(blk_id);
     bool rng_empty = (rng.first == rng.second);
 	if(!rng_empty) {
 		/* Driver is used/invalid, so current block is the furthest up the chain, return it */
-		return block_index;
+		return blk_id;
 	}
 
-	new_index = find_new_root_atom_for_chain(driver_block, list_of_pack_pattern, atom_molecules);
-	if(new_index == OPEN) {
-		return block_index;
+	new_root_blk_id = find_new_root_atom_for_chain(driver_blk_id, list_of_pack_pattern, atom_molecules);
+	if(!new_root_blk_id) {
+		return blk_id;
 	} else {
-		return new_index;
+		return new_root_blk_id;
 	}
 }
 
