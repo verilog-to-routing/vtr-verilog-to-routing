@@ -48,7 +48,7 @@ using namespace std;
 				  *nets that do not have such a broad effect.        *
 				  *Note that this multiplier is intentionally very   * 
 				  *small compared to the total criticality because   *
-				  *we want to make sure that g_atoms_nlist.net criticality is      *
+				  *we want to make sure that atom net criticality is      *
 				  *primarily determined by slacks, with this acting  *
 				  *only as a tie-breaker between otherwise equal nets*/
 #define SCALE_DISTANCE_VAL 1e-4  /*this value is used as a multiplier to assign a    *
@@ -99,11 +99,12 @@ static struct s_molecule_link *unclustered_list_head;
 int unclustered_list_head_size;
 static struct s_molecule_link *memory_pool; /*Declared here so I can free easily.*/
 
-/* Does the logical_block that drives the output of this g_atoms_nlist.net also appear as a   *
- * receiver (input) pin of the g_atoms_nlist.net?  [0..g_atoms_nlist.net.size()-1].  If so, then by how much? This is used     *
- * in the gain routines to avoid double counting the connections from   *
+/* Does the atom block that drives the output of this atom net also appear as a   *
+ * receiver (input) pin of the atom net?If so, then by how much? 
+ *
+ * This is used in the gain routines to avoid double counting the connections from   *
  * the current cluster to other blocks (hence yielding better           *
- * clusterings).  The only time a logical_block should connect to the same g_atoms_nlist.net  *
+ * clusterings).  The only time an atom block should connect to the same atom net  *
  * twice is when one connection is an output and the other is an input, *
  * so this should take care of all multiple connections.                */
 static std::unordered_map<AtomNetId,int> net_output_feeds_driving_block_input;
