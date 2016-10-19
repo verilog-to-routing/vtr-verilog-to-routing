@@ -1416,7 +1416,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	is_primitive = (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		VTR_ASSERT(pb->logical_block == OPEN 
+		VTR_ASSERT(!g_atom_map.pb_atom(pb)
                     && g_atom_map.atom_pb(blk_id) == NULL 
                     && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */

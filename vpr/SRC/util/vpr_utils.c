@@ -752,11 +752,9 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
         }
     } else {
         //Primitive
-		if (pb->logical_block != EMPTY_BLOCK && pb->logical_block != INVALID_BLOCK && logical_block != NULL) {
-
+        auto blk_id = g_atom_map.pb_atom(pb);
+		if (blk_id && logical_block != NULL) {
             /* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
-            auto blk_id = g_atom_nl.find_block(logical_block[pb->logical_block].name);
-            VTR_ASSERT(blk_id);
 
             //Update atom netlist mapping
             g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
