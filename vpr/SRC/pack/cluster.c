@@ -1422,7 +1422,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 
-		pb->logical_block = ilogical_block;
+		pb->logical_block = OPEN;
 
         //Update the atom netlist mappings
         g_atom_map.set_atom_clb(blk_id, clb_index);
