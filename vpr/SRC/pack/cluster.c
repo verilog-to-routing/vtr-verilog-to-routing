@@ -1380,6 +1380,9 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 	block_pack_status = BLK_PASSED;
 
+    auto blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
+    VTR_ASSERT(blk_id);
+
 	/* Discover parent */
 	if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
 		block_pack_status = try_place_logical_block_rec(
@@ -1449,7 +1452,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	is_primitive = (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		VTR_ASSERT(pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
+		VTR_ASSERT(pb->logical_block == OPEN && g_atom_map.atom_pb(blk_id) == NULL && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = vtr::strdup(logical_block[ilogical_block].name);
 		pb->logical_block = ilogical_block;
@@ -1457,9 +1460,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		logical_block[ilogical_block].pb = pb;
 
         //Update the atom netlist mappings
-        AtomBlockId blk_id = g_atom_nl.find_block(logical_block[ilogical_block].name);
         g_atom_map.set_atom_clb(blk_id, clb_index);
-        VTR_ASSERT(blk_id);
         g_atom_map.set_atom_pb(blk_id, pb);
 
 		add_atom_as_target(router_data, ilogical_block);
