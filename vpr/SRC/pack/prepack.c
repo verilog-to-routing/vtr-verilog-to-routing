@@ -868,8 +868,6 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
 
-			cur_molecule->atom_block_ptrs = (t_logical_block**) vtr::malloc( 1 * sizeof(t_logical_block*)); //TODO: remove
-			cur_molecule->atom_block_ptrs[0] = NULL; //TODO: remove
             cur_molecule->atom_block_ids = {blk_id};
 
 			cur_molecule->next = list_of_molecules_head;
@@ -938,8 +936,6 @@ static t_pack_molecule *try_create_molecule(
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 		if (molecule->pack_pattern == NULL) {failed = true; goto end_prolog;}
 
-		molecule->atom_block_ptrs = (t_logical_block **)vtr::calloc(molecule->pack_pattern->num_blocks, sizeof(t_logical_block *));
-		if (molecule->atom_block_ptrs == NULL) {failed = true; goto end_prolog;} //Failed to allocate
         molecule->atom_block_ids = std::vector<AtomBlockId>(molecule->pack_pattern->num_blocks); //Initializes invalid
 
 		molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
@@ -976,7 +972,6 @@ static t_pack_molecule *try_create_molecule(
 
 	if (failed == true) {
 		/* Does not match pattern, free molecule */
-		free(molecule->atom_block_ptrs);
 		free(molecule);
 		molecule = NULL;
 	}
@@ -1031,8 +1026,6 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 
 
         /* store that this node has been visited */
-		molecule->atom_block_ptrs[current_pattern_block->block_id] = NULL;  //TODO: remove
-
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
 
 		molecule->num_ext_inputs += logical_block[logical_block_index].used_input_pins;
