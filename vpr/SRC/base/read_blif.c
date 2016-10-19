@@ -1792,8 +1792,8 @@ void echo_input(const char *blif_file, const char *echo_file, const t_model *lib
 
 	fprintf(fp, "Input netlist file: '%s', model: %s\n", blif_file, model);
 	fprintf(fp,
-			"num_p_inputs: %d, num_p_outputs: %d, num_luts: %d, num_latches: %d\n",
-			num_p_inputs, num_p_outputs, num_luts, num_latches);
+			"num_luts: %d, num_latches: %d\n",
+			num_luts, num_latches);
 	fprintf(fp, "num_logical_blocks: %d, num_logical_nets: %d\n",
 			num_logical_blocks, num_logical_nets);
 
