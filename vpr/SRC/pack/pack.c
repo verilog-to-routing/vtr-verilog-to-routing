@@ -135,8 +135,9 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 
 std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 
-	/* Looks through all the logical_block to find and mark all the clocks, by setting *
-	 * the corresponding entry in is_clock to true.  global_clocks is used     *
+	/* Looks through all the atom blocks to find and mark all the clocks, by setting
+	 * the corresponding entry by adding the clock to is_clock.
+     * global_clocks is used 
 	 * only for an error check.                                                */
 
 	int num_clocks = 0;
