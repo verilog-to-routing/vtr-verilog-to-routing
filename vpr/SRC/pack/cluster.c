@@ -171,7 +171,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		const int max_cluster_size, const int clb_index,
 		const t_cluster_placement_stats *cluster_placement_stats_ptr,
 		const bool is_root_of_chain, const t_pb_graph_pin *chain_root_pin, t_lb_router_data *router_data);
-static void revert_place_atom_block(const int ilogical_block, t_lb_router_data *router_data, 
+static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 static void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clustered_blk_id,
@@ -1319,7 +1319,7 @@ static enum e_block_pack_status try_pack_molecule(
 				for (i = 0; i < failed_location; i++) {					
 					if (molecule->atom_block_ids[i]) {
 						revert_place_atom_block(
-								molecule->atom_block_ptrs[i]->index,
+								molecule->atom_block_ids[i],
 								router_data,
                                 atom_molecules);
 					}
@@ -1450,11 +1450,9 @@ static enum e_block_pack_status try_place_logical_block_rec(
 
 /* Revert trial logical block iblock and free up memory space accordingly 
  */
-static void revert_place_atom_block(const int iblock, t_lb_router_data *router_data,
+static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
     const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
 
-    auto blk_id = g_atom_nl.find_block(logical_block[iblock].name);
-    VTR_ASSERT(blk_id);
     //We cast away const here since we may free the pb, and it is
     //being removed from the active mapping.
     //
