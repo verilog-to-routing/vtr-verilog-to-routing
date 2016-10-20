@@ -285,7 +285,6 @@ typedef struct s_tnode {
 	float T_req; /* Required arrival time of the last input signal to this node 
 	 if the critical path is not to be lengthened. */
 	int block; /* atom block primitive which this tnode is part of */
-    AtomBlockId atom_block; /* Atom block associated with this tnode */
 
 #ifdef PATH_COUNTING
 	float forward_weight, backward_weight; /* Weightings of the importance of paths 

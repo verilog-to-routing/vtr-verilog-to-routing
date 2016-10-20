@@ -433,7 +433,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			Tnodes that do not have both times valid were not part of the analysis. 
 			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
 			if (has_valid_normalized_T_arr(inode)) {
-				auto blk_id = tnode[inode].atom_block;
+				auto blk_id = find_tnode_atom_block(inode);
 				num_paths_scaling = SCALE_NUM_PATHS
 						* (float) tnode[inode].prepacked_data->normalized_total_critical_paths;
 				distance_scaling = SCALE_DISTANCE_VAL
