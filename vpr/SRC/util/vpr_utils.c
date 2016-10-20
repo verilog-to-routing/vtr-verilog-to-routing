@@ -1,4 +1,5 @@
 #include <cstring>
+#include <unordered_set>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -302,64 +303,55 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
  */
 bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type) {
 
-	int i, j;
-	bool second_pass;
-
 	if (cur_pb_type == NULL) {
 		return false;
 	}
 
-	/* check if ports are big enough */
+    if(cur_pb_type->model != g_atom_nl.block_model(blk_id)) {
+        //Primitive and atom do not match
+        return false;
+    }
 
-    //TODO: convert to iterate on atom netlist directly instead of on model...
-    const t_model* model = g_atom_nl.block_model(blk_id);
-	const t_model_ports* port = model->inputs;
-	second_pass = false;
-	while (port || !second_pass) {
-		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
-		if (!port) {
-			second_pass = true;
-			port = model->outputs;
-		}
+    std::unordered_set<AtomPortId> checked_ports;
 
-		if (port) {
-            auto port_id = g_atom_nl.find_port(blk_id, port->name);
-            if(port_id) {
-                //Port is in use
+    for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
+        const t_port* pb_port = &cur_pb_type->ports[iport];
+        const t_model_ports* pb_model_port = pb_port->model_port;
 
-                for (i = 0; i < cur_pb_type->num_ports; i++) {
-                    if (cur_pb_type->ports[i].model_port == port) {
-                        for (j = cur_pb_type->ports[i].num_pins; j < port->size; j++) {
-                            if (port->dir == IN_PORT && !port->is_clock) {
-                                if (g_atom_nl.port_pin(port_id, j)) {
-                                    return false;
-                                }
-                            } else if (port->dir == OUT_PORT) {
-                                if (g_atom_nl.port_pin(port_id, j)) {
-                                    return false;
-                                }
-                            } else {
-                                VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
-                                VTR_ASSERT(j == 0); //TODO: support multi-clock
-                                if (g_atom_nl.port_pin(port_id, j)) {
-                                    return false;
-                                }
-                            }
-                        }
-                        break;
-                    }
+        //Find the matching port on the atom
+        auto port_id = g_atom_nl.find_port(blk_id, pb_model_port->name);
+
+        if(port_id) { //Port is used by atom
+             
+            //??? Why does ipin start at num_pins ???
+            for (int ipin = pb_port->num_pins; ipin < pb_model_port->size; ++ipin) {
+                //Sanity check
+                if (pb_model_port->dir == IN_PORT && pb_model_port->is_clock) {
+                    VTR_ASSERT(ipin == 0); //TODO: support multi-clock
                 }
-                if (i == cur_pb_type->num_ports) {
-                    if ((model->inputs != NULL && !second_pass)
-                            || (model->outputs != NULL && second_pass)) {
-                        /* physical port not found */
-                        return false;
-                    }
+
+                if (g_atom_nl.port_pin(port_id, ipin)) {
+                    //Required pin is in use
+                    return false;
                 }
             }
-			port = port->next;
-		}
-	}
+
+            //Mark this port as checked
+            checked_ports.insert(port_id);
+        }
+    }
+
+    //See if all the atom ports were checked
+    auto port_sets = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
+    for(auto port_set : port_sets) {
+        for(auto port_id : port_set) {
+            if(!checked_ports.count(port_id)) {
+                //Required atom port was missing from physical primitive
+                return false;
+            }
+        }
+    }
+
 	return true;
 }
 
@@ -418,6 +410,9 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin_id) {
     AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
     const t_pb_graph_node* pb_gnode = g_atom_map.atom_pb_graph_node(blk_id);
     VTR_ASSERT(pb_gnode);
+
+    //The graph node and pin/block should agree on the model they represent
+    VTR_ASSERT(g_atom_nl.block_model(blk_id) == pb_gnode->pb_type->model);
 
     //Get the pin index
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
