@@ -1,3 +1,20 @@
+/*
+ * BLIF Netlist Loader
+ * ===================
+ *
+ * This loader handles loading a post-technology mapping fully flattened (i.e not 
+ * hierarchical) netlist in Berkely Logic Interchange Format (BLIF) file, and 
+ * builds a netlist data structure (AtomNetlist) from it.
+ *
+ * BLIF text parsing is handled by the blifparse library, while this file is responsible
+ * for creating the netlist data structure.
+ *
+ * The main object of interest is the BlifAllocCallback struct, which implements the
+ * blifparse callback interface.  The callback methods are then called when basic blif
+ * primitives are encountered by the parser.  The callback methods then create the associated
+ * netlist data structures.
+ *
+ */
 #include <cstdio>
 #include <cstring>
 #include <ctime>
