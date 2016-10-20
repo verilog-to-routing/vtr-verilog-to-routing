@@ -1483,11 +1483,11 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 	}
 
     //Build the net to driver look-up
-    //  TODO: convert to use net_id directly
+    //  TODO: convert to use net_id directly when timing graph re-unified
 	f_net_to_driver_tnode = (int*)vtr::malloc(num_timing_nets() * sizeof(int));
     auto nets = g_atom_nl.nets();
 	for (size_t i = 0; i < num_timing_nets(); i++) {
-        auto net_id = *(nets.begin() + i); //Ugly hack
+        auto net_id = *(nets.begin() + i); //XXX: Ugly hack relying on sequentially increasing net id's
         VTR_ASSERT(net_id);
 
         auto driver_pin_id = g_atom_nl.net_driver(net_id);
