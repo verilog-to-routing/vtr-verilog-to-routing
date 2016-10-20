@@ -807,7 +807,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
                             AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin);
 
 							if(g_atom_map.atom_clb(sink_blk) == clb_index) {
-								const t_pb_graph_pin* sink_pb_graph_pin = get_pb_graph_pin(sink_pin);
+								const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(sink_pin);
 								while(sink_pb_graph_pin->num_output_edges != 0) {
 									VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
 									VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
