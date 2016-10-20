@@ -579,7 +579,6 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     pins[i].c_str());
                         }
                         //Mark the associated inter-block net
-                        pb_route[rr_node_index].atom_net_idx = OPEN; //TODO remove
                         pb_route[rr_node_index].atom_net_id = net_id;
                     }						
                 }
@@ -646,7 +645,6 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     ".blif and .net do not match, unknown net %s found in .net file.\n",
                                     pins[i].c_str());
                         }
-                        pb_route[rr_node_index].atom_net_idx = OPEN; //TODO remove
                         pb_route[rr_node_index].atom_net_id = net_id;
                     }
                 }
@@ -935,6 +933,5 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 		load_atom_index_for_pb_pin(pb_route, driver);
 	}	
 		
-	pb_route[ipin].atom_net_idx = OPEN; //TODO remove
 	pb_route[ipin].atom_net_id = pb_route[driver].atom_net_id;
 }

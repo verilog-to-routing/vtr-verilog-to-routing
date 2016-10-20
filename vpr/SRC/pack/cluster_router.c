@@ -462,7 +462,6 @@ t_pb_route *alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets
 	t_pb_route * pb_route = new t_pb_route[pb_graph_head->total_pb_pins];
 
 	for(int ipin = 0; ipin < total_pins; ipin++) {
-		pb_route[ipin].atom_net_idx = OPEN;
 		pb_route[ipin].atom_net_id = AtomNetId::INVALID();
 		pb_route[ipin].prev_pb_pin_id = OPEN;
 	}
