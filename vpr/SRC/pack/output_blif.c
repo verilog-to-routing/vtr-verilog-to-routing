@@ -475,7 +475,6 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	FILE *fpout;
 	int column;
-	vtr::t_linked_vptr *p_io_removed;
 	
 	if(clb[0].pb_route == NULL) {
 		return;
@@ -492,11 +491,6 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
 			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, fpout);
 		}
-	}
-	p_io_removed = NULL; //FIXME: need to consider this with the new atom netlist...
-	while (p_io_removed) {
-		print_string((char*) p_io_removed->data_vptr, &column, fpout);
-		p_io_removed = p_io_removed->next;
 	}
 
 	column = 0;
