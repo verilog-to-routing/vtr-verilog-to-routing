@@ -17,7 +17,6 @@
 #include "route_common.h"
 #include "route_tree_timing.h"
 #include "route_timing.h"
-#include "heapsort.h"
 #include "path_delay.h"
 #include "net_delay.h"
 #include "stats.h"

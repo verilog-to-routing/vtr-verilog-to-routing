@@ -23,7 +23,6 @@ using namespace std;
 #include "atom_netlist.h"
 #include "pack_types.h"
 #include "cluster.h"
-#include "heapsort.h"
 #include "output_clustering.h"
 #include "SetupGrid.h"
 #include "read_xml_arch_file.h"
@@ -472,10 +471,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			seed_blend_gain[blk_id] = max_blend_gain;
 			
 		}
-        /*
-		 *heapsort(critindexarray, block_criticality, g_atom_nl.blocks().size(), 1);
-		 *heapsort(seed_blend_index_array, seed_blend_gain, g_atom_nl.blocks().size(), 1);
-         */
 
         //Sort in decreasing order (i.e. most critical at index 0)
         std::sort(critindexarray.begin(), critindexarray.end(),
