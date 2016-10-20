@@ -2548,6 +2548,7 @@ void read_and_process_blif(const char *blif_file,
 	read_blif2(blif_file, absorb_buffer_luts, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
 
+#if 0
 	read_blif(blif_file, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
 
@@ -2581,6 +2582,7 @@ void read_and_process_blif(const char *blif_file,
 	logical_block_input_count = NULL;
 	logical_block_output_count = NULL;
 	model = NULL;
+#endif
 }
 
 /* Output blif statistics */
