@@ -13,7 +13,6 @@
 
  Key data structures:
 
- logical_block - One node in the input technology-mapped netlist
  net - Connectivity data structure for the user netlist
  block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
  rr_node - The basic building block of the interconnect in the FPGA architecture
@@ -101,11 +100,6 @@ typedef size_t bitfield;
 #define UNDEFINED -1    
 #endif
 
-/* netlist blocks are assigned one of these types */
-enum logical_block_types {
-	VPACK_INPAD = -2, VPACK_OUTPAD, VPACK_COMB, VPACK_LATCH, VPACK_EMPTY
-};
-
 /* Selection algorithm for selecting next seed  */
 enum e_cluster_seed {
 	VPACK_TIMING, VPACK_MAX_INPUTS, VPACK_BLEND
@@ -178,34 +172,8 @@ struct t_pb_route {
 
 struct s_tnode;
 
-/* Technology-mapped user netlist block */
-typedef struct s_logical_block {
-	char *name; /* Taken from the first g_atoms_nlist.net which it drives. */
-	enum logical_block_types type; /* I/O, combinational logic, or latch */
-	const t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
-
-	int **input_nets; /* [0..num_input_ports-1][0..num_port_pins-1] List of input nets connected to this logical_block. */
-	int **output_nets; /* [0..num_output_ports-1][0..num_port_pins-1] List of output nets connected to this logical_block. */
-	int clock_net; /* Clock net connected to this logical_block. */
-
-	int used_input_pins; /* Number of used input pins */
-
-	int index; /* Index in array that this block can be found */
-
-    vtr::t_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
-
-	char ***input_pin_names; /* [0..num_ports-1][0..num_pins-1] save the input name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
-	char ***output_pin_names; /* [0..num_ports-1][0..num_pins-1] save the output name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
-	char *clock_pin_name; /* save the clock name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
-
-} t_logical_block;
-
-enum e_pack_pattern_molecule_type {
-	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
-};
-
 /**
- * Represents a grouping of logical_blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
+ * Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
  * Store in linked list
  * 
  * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
