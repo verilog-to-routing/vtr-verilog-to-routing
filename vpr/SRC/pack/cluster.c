@@ -410,7 +410,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         for(auto net_id : g_atom_nl.nets()) {
             for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
 			
-				/* Find the logical block iblk which this pin is a sink on. */
+				/* Find the atom block blk_id which this pin is a sink on. */
                 auto blk_id = g_atom_nl.pin_block(pin_id);
 					
 				/* The criticality of this pin is a sum of its timing and path criticalities. */
@@ -764,7 +764,7 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 	}
 }
 
-/* Determine if logical block is in pb */
+/* Determine if atom block is in pb */
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb) {
 	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
 	while (cur_pb) {
@@ -895,7 +895,7 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	*cluster_placement_stats = alloc_and_load_cluster_placement_stats();
 
 	/* alloc array that will store primitives that a molecule gets placed to, 
-	 primitive_list is referenced by index, for example a logical block in index 2 of a molecule matches to a primitive in index 2 in primitive_list
+	 primitive_list is referenced by index, for example a atom block in index 2 of a molecule matches to a primitive in index 2 in primitive_list
 	 this array must be the size of the biggest molecule
 	 */
 	max_molecule_size = 1;
@@ -943,7 +943,7 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 	/* primitive */
     AtomBlockId curr_pb_blk_id = g_atom_map.pb_atom(cur_pb);
 	if (curr_pb_blk_id && curr_pb_blk_id != blk_id) {
-		/* This pb already has a different logical block */
+		/* This pb already has a different atom block */
 		return false;
 	}
 
@@ -1070,7 +1070,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 	prev_ptr = &unclustered_list_head[ext_inps];
 	ptr = unclustered_list_head[ext_inps].next;
 	while (ptr != NULL) {
-		/* TODO: Get better candidate logical block in future, eg. return most timing critical or some other smarter metric */
+		/* TODO: Get better candidate atom block in future, eg. return most timing critical or some other smarter metric */
 		if (ptr->moleculeptr->valid) {
 			success = true;
 			for (i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
@@ -1302,7 +1302,7 @@ static enum e_block_pack_status try_pack_molecule(
 					}
 					for (i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
-							/* invalidate all molecules that share logical block with current molecule */
+							/* invalidate all molecules that share atom block with current molecule */
 
                             auto rng = atom_molecules.equal_range(molecule->atom_block_ids[i]);
                             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -1339,7 +1339,7 @@ static enum e_block_pack_status try_pack_molecule(
 }
 
 /**
- * Try place logical block into current primitive location
+ * Try place atom block into current primitive location
  */
 
 static enum e_block_pack_status try_place_atom_block_rec(
@@ -1453,7 +1453,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	return block_pack_status;
 }
 
-/* Revert trial logical block iblock and free up memory space accordingly 
+/* Revert trial atom block iblock and free up memory space accordingly 
  */
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
     const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
@@ -1471,7 +1471,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *
 
 	if (pb != NULL) {
 		/* When freeing molecules, the current block might already have been freed by a prior revert 
-		 When this happens, no need to do anything beyond basic book keeping at the logical block
+		 When this happens, no need to do anything beyond basic book keeping at the atom block
 		 */
 
 		t_pb* next = pb->parent_pb;
@@ -1924,7 +1924,7 @@ static void start_new_cluster(
 		const int num_models, const int max_cluster_size,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
-	 It expands the FPGA if it cannot find a legal cluster for the logical block
+	 It expands the FPGA if it cannot find a legal cluster for the atom block
 	 */
 	int i, j;
 	bool success;
@@ -1933,7 +1933,7 @@ static void start_new_cluster(
 	VTR_ASSERT(new_cluster->name == NULL);
 	/* Check if this cluster is really empty */
 
-	/* Allocate a dummy initial cluster and load a logical block as a seed and check if it is legal */
+	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
     const std::string& root_atom_name = g_atom_nl.block_name(molecule->atom_block_ids[molecule->root]);
 	new_cluster->name = (char*) vtr::malloc((root_atom_name.size() + 4) * sizeof(char));
 	sprintf(new_cluster->name, "cb.%s", root_atom_name.c_str());
@@ -2074,7 +2074,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 								auto blk_id2 = molecule->atom_block_ids[j];
 								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule 
-                                     * (more robust) or individual logical blocks (faster) */
+                                     * (more robust) or individual atom blocks (faster) */
 									success = false;
 									break;
 								}
@@ -2120,7 +2120,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 								auto blk_id2 = molecule->atom_block_ids[j];
 								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule (more 
-                                     * robust) or individual logical blocks (faster) */
+                                     * robust) or individual atom blocks (faster) */
 									success = false;
 									break;
 								}
@@ -2162,7 +2162,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 							auto blk_id = molecule->atom_block_ids[j];
 							if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
                                 /* TODO: debating whether to check if placement exists for molecule (more 
-                                 * robust) or individual logical blocks (faster) */
+                                 * robust) or individual atom blocks (faster) */
 								success = false;
 								break;
 							}
@@ -2322,7 +2322,7 @@ static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>&
 			blocks_checked.insert(blk_id);
 			if (pb != g_atom_map.atom_pb(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"pb %s contains logical block %s but logical block does not link to pb.\n",
+						"pb %s contains atom block %s but atom block does not link to pb.\n",
 						pb->name, g_atom_nl.block_name(blk_id).c_str());
 			}
 		}
@@ -2904,7 +2904,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 }
 
 static void print_block_criticalities(const char * fname) {
-	/* Prints criticality and critindexarray for each logical block to a file. */
+	/* Prints criticality and critindexarray for each atom block to a file. */
 	
 	FILE * fp = vtr::fopen(fname, "w");
 	/*fprintf(fp, "atom_block_name criticality critindexarray seed_blend_gain seed_blend_gain_index\n");*/

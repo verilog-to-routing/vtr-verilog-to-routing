@@ -187,7 +187,7 @@ typedef struct s_pack_molecule {
                                                 index on pack_pattern_block->index of pack pattern */
 	bool valid; /* Whether or not this molecule is still valid */
 
-	int num_blocks; /* number of logical blocks of molecule */
+	int num_blocks; /* number of atom blocks of molecule */
 	int root; /* root index of molecule, atom_block_ids[root] is the root atom block */
 
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
@@ -284,7 +284,7 @@ typedef struct s_tnode {
 	float T_arr; /* Arrival time of the last input signal to this node. */
 	float T_req; /* Required arrival time of the last input signal to this node 
 	 if the critical path is not to be lengthened. */
-	int block; /* logical block primitive which this tnode is part of */
+	int block; /* atom block primitive which this tnode is part of */
     AtomBlockId atom_block; /* Atom block associated with this tnode */
 
 #ifdef PATH_COUNTING
@@ -470,7 +470,7 @@ typedef struct s_net {
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block
  * usage: Number of blocks used in this grid tile
- * blocks[]: Array of logical blocks placed in a physical position, EMPTY means
+ * blocks[]: Array of CLBs placed in a physical position, EMPTY means
  no block at that index */
 typedef struct s_grid_tile {
 	t_type_ptr type;

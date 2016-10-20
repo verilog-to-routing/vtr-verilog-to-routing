@@ -1,5 +1,5 @@
 /* 
- Find placement for group of logical blocks in complex block
+ Find placement for group of atom blocks in complex block
  Author: Jason Luu
  */
 

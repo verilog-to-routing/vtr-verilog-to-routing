@@ -297,7 +297,7 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
 }
 
 /**
- * given a primitive type and a logical block, is the mapping legal
+ * given a primitive type and a atom block, is the mapping legal
  */
 bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type) {
 
@@ -771,7 +771,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                             }
                         }
                     }
-                    /* All logical blocks are open for this molecule, place back in queue */
+                    /* All atom blocks are open for this molecule, place back in queue */
                     if (i == get_array_size_of_molecule(cur_molecule)) {
                         cur_molecule->valid = true;	
                     }

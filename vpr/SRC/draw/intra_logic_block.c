@@ -775,7 +775,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 		for (auto blk_id : g_atom_nl.blocks()) {
             const t_block* clb = &block[g_atom_map.atom_clb(blk_id)];
             const t_pb_graph_node* pb_graph_node = g_atom_map.atom_pb_graph_node(blk_id);
-			// find the logical block that corrisponds to this pb.
+			// find the atom block that corrisponds to this pb.
 			if ( is_in_selected_subtree(pb_graph_node, clb) ) {
 
                 //Collect the sources of all nets driving this node

@@ -820,7 +820,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
                 cur_molecule = try_create_molecule(list_of_pack_patterns, atom_molecules, best_pattern, blk_id);
                 if (cur_molecule != NULL) {
                     cur_molecule->next = list_of_molecules_head;
-                    /* In the event of multiple molecules with the same logical block pattern, 
+                    /* In the event of multiple molecules with the same atom block pattern, 
                      * bias to use the molecule with less costly physical resources first */
                     /* TODO: Need to normalize magical number 100 */
                     cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
@@ -844,7 +844,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	}
 	free(is_used);
 
-	/* List all logical blocks as a molecule for blocks that do not belong to any molecules.
+	/* List all atom blocks as a molecule for blocks that do not belong to any molecules.
 	 This allows the packer to be consistent as it now packs molecules only instead of atoms and molecules
 
 	 If a block belongs to a molecule, then carrying the single atoms around can make the packing problem
@@ -905,9 +905,9 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
 }
 
 /**
- * Given a pattern and a logical block to serve as the root block, determine if 
- * the candidate logical block serving as the root node matches the pattern.
- * If yes, return the molecule with this logical block as the root, if not, return NULL
+ * Given a pattern and a atom block to serve as the root block, determine if 
+ * the candidate atom block serving as the root node matches the pattern.
+ * If yes, return the molecule with this atom block as the root, if not, return NULL
  *
  * Limitations: Currently assumes that forced pack nets must be single-fanout as 
  *              this covers all the reasonable architectures we wanted. More complicated 
@@ -977,7 +977,7 @@ static t_pack_molecule *try_create_molecule(
 }
 
 /**
- * Determine if logical block can match with the pattern to form a molecule
+ * Determine if atom block can match with the pattern to form a molecule
  * return true if it matches, return false otherwise
  */
 static bool try_expand_molecule(t_pack_molecule *molecule,
@@ -1104,7 +1104,7 @@ static void print_pack_molecules(const char *fname,
 	while (list_of_molecules_current != NULL) {
 		if (list_of_molecules_current->type == MOLECULE_SINGLE_ATOM) {
 			fprintf(fp, "\nmolecule type: atom\n");
-			fprintf(fp, "\tpattern index %d: logical block %s\n", i,
+			fprintf(fp, "\tpattern index %d: atom block %s\n", i,
 					g_atom_nl.block_name(list_of_molecules_current->atom_block_ids[0]).c_str());
 		} else if (list_of_molecules_current->type == MOLECULE_FORCED_PACK) {
 			fprintf(fp, "\nmolecule type: %s\n",
@@ -1114,7 +1114,7 @@ static void print_pack_molecules(const char *fname,
 				if(!list_of_molecules_current->atom_block_ids[i]) {
 					fprintf(fp, "\tpattern index %d: empty \n",	i);
 				} else {
-					fprintf(fp, "\tpattern index %d: logical block %s",
+					fprintf(fp, "\tpattern index %d: atom block %s",
 						i,
 						g_atom_nl.block_name(list_of_molecules_current->atom_block_ids[i]).c_str());
 					if(list_of_molecules_current->pack_pattern->root_block->block_id == i) {
@@ -1133,7 +1133,7 @@ static void print_pack_molecules(const char *fname,
 	fclose(fp);
 }
 
-/* Search through all primitives and return the lowest cost primitive that fits this logical block */
+/* Search through all primitives and return the lowest cost primitive that fits this atom block */
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id) {
 	int i;
 	float cost, best_cost;

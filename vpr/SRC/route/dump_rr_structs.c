@@ -213,7 +213,7 @@ static void dump_grid( fstream &file ){
 			file << "width_offset(" << grid_tile.width_offset << ") ";
 			file << "height_offset(" << grid_tile.height_offset << ") ";
 
-			/* skipping usage and logical blocks array */
+			/* skipping usage and atom blocks */
 
 			file << endl;
 		}

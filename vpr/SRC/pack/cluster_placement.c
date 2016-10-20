@@ -1,5 +1,5 @@
 /* 
- Given a group of logical blocks and a partially-packed complex block, find placement for group of logical blocks in complex block
+ Given a group of atom blocks and a partially-packed complex block, find placement for group of atom blocks in complex block
  To use, keep "cluster_placement_stats" data structure throughout packing
  cluster_placement_stats undergoes these major states:
  Initialization - performed once at beginning of packing
@@ -715,7 +715,7 @@ int get_array_size_of_molecule(const t_pack_molecule *molecule) {
 	}
 }
 
-/* Given logical block, determines if a free primitive exists for it */
+/* Given atom block, determines if a free primitive exists for it */
 bool exists_free_primitive_for_atom_block(
 		t_cluster_placement_stats *cluster_placement_stats,
 		const AtomBlockId blk_id) {
@@ -815,7 +815,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 								}
                                 const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
 								if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
-									/* There is a logical block mapped to the physical position that pulls in the atom in question */
+									/* There is a atom block mapped to the physical position that pulls in the atom in question */
 									feasible = true;
 								}
 							}
