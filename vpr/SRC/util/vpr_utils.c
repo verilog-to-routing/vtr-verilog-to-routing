@@ -801,8 +801,6 @@ void free_pb_stats(t_pb *pb) {
             t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
             if(pb_graph_node) {
             }
-            delete [] pb->pb_stats->lookahead_input_pins_used;
-            delete [] pb->pb_stats->lookahead_output_pins_used;
             free(pb->pb_stats->feasible_blocks);
         }
         if(pb->pb_stats->transitive_fanout_candidates != NULL) {

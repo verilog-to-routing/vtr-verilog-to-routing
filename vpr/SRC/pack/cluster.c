@@ -1189,8 +1189,8 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	 * in order (less addressing and better cache locality).                 */
 	pb->pb_stats->input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
 	pb->pb_stats->output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
-	pb->pb_stats->lookahead_input_pins_used = new vector<AtomNetId> [pb->pb_graph_node->num_input_pin_class];
-	pb->pb_stats->lookahead_output_pins_used = new vector<AtomNetId> [pb->pb_graph_node->num_output_pin_class];
+	pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
+	pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
 	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(
 			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
