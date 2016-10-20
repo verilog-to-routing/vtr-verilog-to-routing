@@ -183,7 +183,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb* cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
-		const t_slack * slacks,
+		t_prepack_slack& slacks,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag,
@@ -191,7 +191,7 @@ static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_updat
         bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-		const t_slack * slacks,
+		t_prepack_slack& slacks,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void update_total_gain(float alpha, float beta, bool timing_driven,
@@ -203,7 +203,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const std::unordered_set<AtomNetId>& is_global, 
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
-		const bool connection_driven, const t_slack * slacks);
+		const bool connection_driven, t_prepack_slack& slacks);
 
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -251,6 +251,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets);
 
+static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks);
 /*****************************************/
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
@@ -280,7 +281,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	*****************************************************************/
     VTR_ASSERT(packer_algorithm == PACK_GREEDY);
 
-	int i, iblk, num_molecules, blocks_since_last_analysis, num_clb,
+	int i, num_molecules, blocks_since_last_analysis, num_clb,
 		num_blocks_hill_added, max_cluster_size, cur_cluster_size, 
 		max_molecule_inputs, max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
 		seedindex, savedseedindex /* index of next most timing critical block */,
@@ -296,7 +297,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
 	t_pb_graph_node **primitives_list;
 	t_block *clb; /* [0..num_clusters-1] */
-	t_slack * slacks = NULL;
+	t_slack * raw_slacks = NULL;
+    t_prepack_slack slacks;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
@@ -379,9 +381,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
 	if (timing_driven) {
-		slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
+		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
                                                          expected_lowest_cost_pb_gnode);
-		do_timing_analysis(slacks, timing_inf, true, false);
+		do_timing_analysis(raw_slacks, timing_inf, true, false);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
@@ -391,10 +393,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
 #endif
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_SLACK))
-				print_slack(slacks->slack, false, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
+				print_slack(raw_slacks->slack, false, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
-				print_criticality(slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
+				print_criticality(raw_slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
+
+        slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
 
 		for (auto blk_id : g_atom_nl.blocks()) {
 			critindexarray.push_back(blk_id);
@@ -403,17 +407,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 #ifdef PATH_COUNTING
 		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
-		for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) { 
-			for (ipin = 1; ipin < (int)g_atoms_nlist.net[inet].pins.size(); ipin++) { 
+        for(auto net_id : g_atom_nl.nets()) {
+            for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
 			
 				/* Find the logical block iblk which this pin is a sink on. */
-				iblk = g_atoms_nlist.net[inet].pins[ipin].block;
-                auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
-                VTR_ASSERT(blk_id);
+                auto blk_id = g_atom_nl.pin_block(pin_id);
 					
 				/* The criticality of this pin is a sum of its timing and path criticalities. */
-				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[inet][ipin] 
-					 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
+				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[pin_id] 
+					 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[pin_id]; 
 
 				/* The criticality of each block is the maximum of the criticalities of all its pins. */
 				if (block_criticality[blk_id] < crit) {
@@ -432,7 +434,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
 			if (has_valid_normalized_T_arr(inode)) {
 				auto blk_id = tnode[inode].atom_block;
-                iblk = size_t(blk_id); //FIXME: convert properly!
 				num_paths_scaling = SCALE_NUM_PATHS
 						* (float) tnode[inode].prepacked_data->normalized_total_critical_paths;
 				distance_scaling = SCALE_DISTANCE_VAL
@@ -446,14 +447,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		}
 #endif
 
-		for (iblk = 0; iblk < num_logical_blocks; iblk++) {
+        for(auto blk_id : g_atom_nl.blocks()) {
 			/* Score seed gain of each block as a weighted sum of timing criticality, 
              * number of tightly coupled blocks connected to it, and number of external inputs */
 			float seed_blend_fac = 0.5;
 			float max_blend_gain = 0;
-
-            auto blk_id = g_atom_nl.find_block(logical_block[iblk].name);
-            VTR_ASSERT(blk_id);
 
             auto molecule_rng = atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(molecule_rng.first, molecule_rng.second)) {
@@ -731,7 +729,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		seed_blend_gain.clear();
 		seed_blend_index_array.clear();
 
-		free_timing_graph(slacks);
+		free_timing_graph(raw_slacks);
 	}
 
 	free (primitives_list);
@@ -1571,12 +1569,9 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 /*****************************************/
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb *cur_pb,
-		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, const t_slack * slacks,
+		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
+        t_prepack_slack& slacks,
         const std::unordered_set<AtomNetId>& is_global) {
-
-    //XXX: FIXME: Temporary work-around while converting to g_atom_nl
-    //TODO: clean-up
-    int slack_inet = size_t(net_id); //FIXME remove!
 
 	/*This function is called when the timing_gain values on the atom net*
 	 *net_id requires updating.   */
@@ -1593,14 +1588,13 @@ static void update_timing_gain_values(const AtomNetId net_id,
         for(auto pin_id : pins) {
             auto blk_id = g_atom_nl.pin_block(pin_id);
 			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
-                unsigned ipin = g_atom_nl.pin_port_bit(pin_id);
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[slack_inet][ipin] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[slack_inet][ipin]; 
+				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks.path_criticality[pin_id] 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks.timing_criticality[pin_id]; 
 #else
 				/* Timing gain is the timing criticality. */
-				timinggain = slacks->timing_criticality[slack_inet][ipin]; 
+				timinggain = slacks.timing_criticality[pin_id]; 
 #endif
 				if(cur_pb->pb_stats->timinggain.count(blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[blk_id] = 0;
@@ -1620,14 +1614,13 @@ static void update_timing_gain_values(const AtomNetId net_id,
 
 		if (g_atom_map.atom_clb(new_blk_id) == NO_CLUSTER) {
 			for (auto pin_id : g_atom_nl.net_sinks(net_id)) {
-                unsigned ipin = g_atom_nl.pin_port_bit(pin_id);
 #ifdef PATH_COUNTING
 				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks->path_criticality[slack_inet][ipin] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks->timing_criticality[slack_inet][ipin]; 
+				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks.path_criticality[pin_id] 
+						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks.timing_criticality[pin_id]; 
 #else
 				/* Timing gain is the timing criticality. */
-				timinggain = slacks->timing_criticality[slack_inet][ipin]; 
+				timinggain = slacks.timing_criticality[pin_id]; 
 #endif
 				if(cur_pb->pb_stats->timinggain.count(new_blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[new_blk_id] = 0;
@@ -1646,7 +1639,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-		const t_slack * slacks,
+		t_prepack_slack& slacks,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
@@ -1790,7 +1783,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const std::unordered_set<AtomNetId>& is_global, 
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
-		const bool connection_driven, const t_slack * slacks) {
+		const bool connection_driven, t_prepack_slack& slacks) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
@@ -2357,7 +2350,9 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 	AtomBlockId blk_id;
 	t_pack_molecule *molecule = NULL, *best = NULL;
 
-	while (*seedindex < num_logical_blocks) {
+    VTR_ASSERT(seed_blend_index_array.size() == critindexarray.size());
+
+	while (*seedindex < static_cast<int>(seed_blend_index_array.size())) {
 
 		if(getblend == true) {
 			blk_id = seed_blend_index_array[(*seedindex)++];
@@ -2847,7 +2842,11 @@ static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 
             auto port_id = g_atom_nl.find_port(blk_id, model_port->name);
 
-            return g_atom_nl.port_net(port_id, pb_graph_pin->pin_number);
+            if(!port_id) {
+                return AtomNetId::INVALID();
+            } else {
+                return g_atom_nl.port_net(port_id, pb_graph_pin->pin_number);
+            }
 		}
 	}
 }
@@ -2937,4 +2936,24 @@ static void print_block_criticalities(const char * fname) {
         fprintf(fp, "\n");
 	}
 	fclose(fp);
+}
+
+static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks) {
+    //Temporary helper function to convert raw slacks (by net and net pin indicies)
+    //to AtomNetId, AtomPinId -- this will be replaced with the new timing analyzer
+    t_prepack_slack prepack_slacks;
+    int inet = 0;
+    for(auto net_id : g_atom_nl.nets()) {
+        int ipin = 1;
+        for(auto pin_id : g_atom_nl.net_pins(net_id)) {
+            prepack_slacks.slack[pin_id] = raw_slacks->slack[inet][ipin];
+            prepack_slacks.timing_criticality[pin_id] = raw_slacks->timing_criticality[inet][ipin];
+#ifdef PATH_COUNTING
+            prepack_slacks.path_criticaltiy[pin_id] = raw_slacks->path_criticality[inet][ipin];
+#endif
+            ++ipin;
+        }
+        ++inet;
+    }
+    return prepack_slacks;
 }
