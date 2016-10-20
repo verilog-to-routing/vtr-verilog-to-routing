@@ -33,19 +33,23 @@ Checking OS System
 #endif*/
 
 /********************************************************************
- User Netlist Globals
+ Atom Netlist Globals
  ********************************************************************/
-
-/* external-to-complex block nets in the user netlist */
-extern int num_nets;
-extern struct s_net *clb_net;
-
 /* Atom netlist */
 extern AtomNetlist g_atom_nl;
+
+/* Mappins to/from the Atom Netlist */
 extern AtomMap g_atom_map;
 
 /* Atom net power info */
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
+
+/********************************************************************
+ CLB Netlist Globals
+ ********************************************************************/
+/* external-to-complex block nets in the user netlist */
+extern int num_nets;
+extern struct s_net *clb_net;
 
 /* blocks in the user netlist */
 extern int num_blocks;
@@ -79,26 +83,6 @@ extern char *default_output_name;
 
 /* Default area of a 1x1 logic tile (excludes routing) on the FPGA */
 extern float grid_logic_tile_area;
-
-/*******************************************************************
- Packing related globals
- ********************************************************************/
-
-/* Netlist description data structures. */
-#if 0
-/* User netlist information */
-extern int num_logical_nets, num_logical_blocks;
-extern struct s_net *vpack_net;
-extern t_net_power * vpack_net_power;
-extern struct s_logical_block *logical_block;
-extern struct s_subckt *subckt;
-
-/* New user netlist information */
-extern t_netlist g_atoms_nlist;
-
-/* primiary inputs removed from circuit */
-extern vtr::t_linked_vptr *circuit_p_io_removed;
-#endif
 
 /*******************************************************************
  Routing related globals
