@@ -2907,7 +2907,6 @@ static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each atom block to a file. */
 	
 	FILE * fp = vtr::fopen(fname, "w");
-	/*fprintf(fp, "atom_block_name criticality critindexarray seed_blend_gain seed_blend_gain_index\n");*/
 
     //For prett formatting determine the maximum name length
     int max_name_len = strlen("atom_block_name");
