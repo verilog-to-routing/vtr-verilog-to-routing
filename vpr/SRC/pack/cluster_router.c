@@ -146,9 +146,6 @@ void free_router_data(t_lb_router_data *router_data) {
 /* Add pins of netlist atom to to current routing drivers/targets */
 void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
 	const t_pb *pb;
-	const t_model *model;
-	t_model_ports *model_ports;
-	int iport;
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
 	pb = g_atom_map.atom_pb(blk_id);
@@ -160,65 +157,14 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 
 	set_reset_pb_modes(router_data, pb, true);
 
-	model = g_atom_nl.block_model(blk_id);
-
-    //TODO: convert to walk atom entlist directly (instead of models...)
-	
-	/* Add inputs to route tree sources/targets */	
-	model_ports = model->inputs;
-	while(model_ports != NULL) {
-        AtomPortId port_id = g_atom_nl.find_port(blk_id, model_ports->name);
-        if(port_id) { //Constant generators may have no input port
-
-            if(model_ports->is_clock == false) {
-                iport = model_ports->index;
-                for (int ipin = 0; ipin < model_ports->size; ipin++) {
-                    AtomPinId pin_id = g_atom_nl.port_pin(port_id, ipin);
-                    if(pin_id) {
-                        add_pin_to_rt_terminals(router_data, pin_id);
-                    }
-                }
-            }
-        }
-		model_ports = model_ports->next;
-	}
-
-	/* Add outputs to route tree sources/targets */	
-	model_ports = model->outputs;
-	while(model_ports != NULL) {
-        AtomPortId port_id = g_atom_nl.find_port(blk_id, model_ports->name);
-        VTR_ASSERT(port_id);
-
-		iport = model_ports->index;
-		for (int ipin = 0; ipin < model_ports->size; ipin++) {
-            AtomPinId pin_id = g_atom_nl.port_pin(port_id, ipin);
-            if(pin_id) {
+    auto all_ports = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
+    for(auto ports : all_ports) {
+        for(auto port_id : ports) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
                 add_pin_to_rt_terminals(router_data, pin_id);
-			}
-		}
-		model_ports = model_ports->next;
-	}
-
-	/* Add clock to route tree sources/targets */	
-	model_ports = model->inputs;
-	while(model_ports != NULL) {
-        AtomPortId port_id = g_atom_nl.find_port(blk_id, model_ports->name);
-        if(port_id) { //Constant generators may have no input port
-            if(model_ports->is_clock == true) {
-                iport = model_ports->index;
-                VTR_ASSERT(iport == 0);
-                for (int ipin = 0; ipin < model_ports->size; ipin++) {
-                    VTR_ASSERT(ipin == 0);
-                    AtomPinId pin_id = g_atom_nl.port_pin(port_id, ipin);
-
-                    if(pin_id) {
-                        add_pin_to_rt_terminals(router_data, pin_id);
-                    }
-                }
             }
         }
-        model_ports = model_ports->next;
-	}
+    }
 }
 
 /* Remove pins of netlist atom from current routing drivers/targets */
