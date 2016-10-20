@@ -1028,7 +1028,6 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
  */
 static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay,
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode) {
-    //TODO: convert from iterating over models to directly iterating over the atom netlist
 	t_pb_graph_pin *from_pb_graph_pin, *to_pb_graph_pin;
 
 	/* Determine the number of tnode's */
