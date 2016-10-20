@@ -1187,10 +1187,8 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	 * only those atom block structures will be fastest.  If almost all blocks    *
 	 * have been touched it should be faster to just run through them all    *
 	 * in order (less addressing and better cache locality).                 */
-	pb->pb_stats->input_pins_used = (AtomNetId **) vtr::malloc(
-			pb->pb_graph_node->num_input_pin_class * sizeof(AtomNetId*));
-	pb->pb_stats->output_pins_used = (AtomNetId **) vtr::malloc(
-			pb->pb_graph_node->num_output_pin_class * sizeof(AtomNetId*));
+	pb->pb_stats->input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
+	pb->pb_stats->output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->lookahead_input_pins_used = new vector<AtomNetId> [pb->pb_graph_node->num_input_pin_class];
 	pb->pb_stats->lookahead_output_pins_used = new vector<AtomNetId> [pb->pb_graph_node->num_output_pin_class];
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
@@ -1199,11 +1197,11 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 
 	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
-		pb->pb_stats->input_pins_used[i] = new AtomNetId[pb->pb_graph_node->input_pin_class_size[i]];
+		pb->pb_stats->input_pins_used[i] = std::vector<AtomNetId>(pb->pb_graph_node->input_pin_class_size[i]);
 	}
 
 	for (i = 0; i < pb->pb_graph_node->num_output_pin_class; i++) {
-		pb->pb_stats->output_pins_used[i] = new AtomNetId[pb->pb_graph_node->output_pin_class_size[i]];
+		pb->pb_stats->output_pins_used[i] = std::vector<AtomNetId>(pb->pb_graph_node->output_pin_class_size[i]);
 	}
 
 	pb->pb_stats->gain.clear();

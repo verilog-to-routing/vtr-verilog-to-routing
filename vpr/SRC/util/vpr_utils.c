@@ -786,8 +786,6 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
 void free_pb_stats(t_pb *pb) {
 
     if(pb) {
-        int i;
-
         if(pb->pb_stats == NULL) {
             return;
         }
@@ -802,16 +800,8 @@ void free_pb_stats(t_pb *pb) {
         if(!pb->pb_stats->marked_blocks.empty()) {
             t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
             if(pb_graph_node) {
-                for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
-                    free(pb->pb_stats->input_pins_used[i]);
-                }
-                for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
-                    free(pb->pb_stats->output_pins_used[i]);
-                }
             }
-            free(pb->pb_stats->input_pins_used);
             delete [] pb->pb_stats->lookahead_input_pins_used;
-            free(pb->pb_stats->output_pins_used);
             delete [] pb->pb_stats->lookahead_output_pins_used;
             free(pb->pb_stats->feasible_blocks);
         }
