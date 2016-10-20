@@ -158,8 +158,8 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 	set_reset_pb_modes(router_data, pb, true);
 
     auto all_ports = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
-    for(auto ports : all_ports) {
-        for(auto port_id : ports) {
+    for(auto port_set : all_ports) {
+        for(auto port_id : port_set) {
             for(auto pin_id : g_atom_nl.port_pins(port_id)) {
                 add_pin_to_rt_terminals(router_data, pin_id);
             }
@@ -169,9 +169,6 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 
 /* Remove pins of netlist atom from current routing drivers/targets */
 void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
-	const t_model *model;
-	t_model_ports *model_ports;
-	int iport;
 	map <AtomBlockId, bool> & atoms_added = *router_data->atoms_added;
 
 	const t_pb* pb = g_atom_map.atom_pb(blk_id);
@@ -182,62 +179,15 @@ void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId bl
 	
 	set_reset_pb_modes(router_data, pb, false);
 		
-	model = g_atom_nl.block_model(blk_id);
-	
-	/* Remove inputs from route tree sources/targets */	
-	model_ports = model->inputs;
-	while(model_ports != NULL) {
-        AtomPortId port_id = g_atom_nl.find_port(blk_id, model_ports->name);
-        VTR_ASSERT(port_id);
-
-		if(model_ports->is_clock == false) {
-			iport = model_ports->index;
-			for (int ipin = 0; ipin < model_ports->size; ipin++) {
-                AtomPinId pin_id = g_atom_nl.port_pin(port_id, ipin);
-				if(pin_id) {
-					remove_pin_from_rt_terminals(router_data, pin_id);
-				}
-			}
-		}
-		model_ports = model_ports->next;
-	}
-
-	/* Remove outputs from route tree sources/targets */	
-	model_ports = model->outputs;
-	while(model_ports != NULL) {
-        AtomPortId port_id = g_atom_nl.find_port(blk_id, model_ports->name);
-        VTR_ASSERT(port_id);
-
-		iport = model_ports->index;
-		for (int ipin = 0; ipin < model_ports->size; ipin++) {
-            AtomPinId pin_id = g_atom_nl.port_pin(port_id, ipin);
-			if(pin_id) {
-				remove_pin_from_rt_terminals(router_data, pin_id);
-			}
-		}
-		model_ports = model_ports->next;
-	}
-
-	/* Remove clock from route tree sources/targets */	
-	model_ports = model->inputs;
-	while(model_ports != NULL) {
-        AtomPortId port_id = g_atom_nl.find_port(blk_id, model_ports->name);
-        VTR_ASSERT(port_id);
-
-		if(model_ports->is_clock == true) {
-			iport = model_ports->index;
-			VTR_ASSERT(iport == 0);
-			for (int ipin = 0; ipin < model_ports->size; ipin++) {
-				VTR_ASSERT(ipin == 0);
-                AtomPinId pin_id = g_atom_nl.port_pin(port_id, ipin);
-				if(pin_id) {
-					remove_pin_from_rt_terminals(router_data, pin_id);
-				}
-			}
-		}
-		model_ports = model_ports->next;
-	}
-
+    auto all_ports = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
+    for(auto port_set : all_ports) {
+        for(auto port_id : port_set) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                remove_pin_from_rt_terminals(router_data, pin_id);
+            }
+        }
+    }
+    
 	atoms_added.erase(blk_id);
 }
 
