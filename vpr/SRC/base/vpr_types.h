@@ -170,7 +170,9 @@ struct t_pb_route {
 	}
 };
 
-struct s_tnode;
+enum e_pack_pattern_molecule_type {
+	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
+};
 
 /**
  * Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
