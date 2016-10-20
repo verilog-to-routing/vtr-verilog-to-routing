@@ -2908,25 +2908,33 @@ static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each logical block to a file. */
 	
 	FILE * fp = vtr::fopen(fname, "w");
-	fprintf(fp, "atom_block_name\tcriticality\tcritindexarray\tseed_blend_gain\tseed_blend_gain_index\n");
+	/*fprintf(fp, "atom_block_name criticality critindexarray seed_blend_gain seed_blend_gain_index\n");*/
+
+    //For prett formatting determine the maximum name length
+    int max_name_len = strlen("atom_block_name");
+    for(auto blk_id : g_atom_nl.blocks()) {
+        max_name_len = std::max(max_name_len, (int) g_atom_nl.block_name(blk_id).size());
+    }
+
+    fprintf(fp, "%-*s %s %s %s %s\n", max_name_len, "atom_block_name", "criticality", "critindexarray", "seed_blend_gain", "seed_blend_gain_index");
 
     for(auto blk_id : g_atom_nl.blocks()) {
         std::string name = g_atom_nl.block_name(blk_id);
-		fprintf(fp, "%s\t", name.c_str());
+		fprintf(fp, "%-*s ", max_name_len, name.c_str());
+
+		fprintf(fp, "%*f ", (int) strlen("criticality"), block_criticality[blk_id]);
 
         auto crit_idx_iter = std::find(critindexarray.begin(), critindexarray.end(), blk_id);
         VTR_ASSERT(crit_idx_iter != critindexarray.end());
         int crit_idx = crit_idx_iter - critindexarray.begin();
-		fprintf(fp, "%f\t%d\t", block_criticality[blk_id], crit_idx);
+        fprintf(fp, "%*d ", (int) strlen("critindexarray"), crit_idx);
 
+        fprintf(fp, "%*f ", (int) strlen("seed_blend_gain"), seed_blend_gain[blk_id]);
         auto seed_gain_iter = std::find(seed_blend_index_array.begin(), seed_blend_index_array.end(), blk_id);
         int seed_blend_gain_index = seed_gain_iter - seed_blend_index_array.begin();
-		fprintf(fp, "%f\t%d", seed_blend_gain[blk_id], seed_blend_gain_index);
+        fprintf(fp, "%*d", (int) strlen("seed_blend_gain_index"), seed_blend_gain_index);
 
         fprintf(fp, "\n");
 	}
 	fclose(fp);
 }
-
-
-
