@@ -586,9 +586,11 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
     auto output_sinks = netlist.net_sinks(output_net); 
 
     //We don't copy the input pin (i.e. pin 2)
-    std::copy_if(input_sinks.begin(), input_sinks.end(), std::back_inserter(new_sinks), [input_pin](AtomPinId id) {
-        return id != input_pin;
-    });
+    std::copy_if(input_sinks.begin(), input_sinks.end(), std::back_inserter(new_sinks), 
+        [input_pin](AtomPinId id) {
+            return id != input_pin;
+        }
+    );
     //Since we are copying sinks we don't include the output driver (i.e. pin m+1)
     std::copy(output_sinks.begin(), output_sinks.end(), std::back_inserter(new_sinks));
 
@@ -603,11 +605,13 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
     // Note that the driver can only (potentially) be an INPAD, and the sinks only (potentially) OUTPADs
     AtomBlockType driver_block_type = netlist.block_type(netlist.pin_block(new_driver));
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
-    bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(), [&](AtomPinId pin_id) {
-        VTR_ASSERT(netlist.pin_type(pin_id) == AtomPinType::SINK);
-        AtomBlockId blk_id = netlist.pin_block(pin_id);
-        return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
-    });
+    bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(), 
+        [&](AtomPinId pin_id) {
+            VTR_ASSERT(netlist.pin_type(pin_id) == AtomPinType::SINK);
+            AtomBlockId blk_id = netlist.pin_block(pin_id);
+            return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+        }
+    );
 
     std::string new_net_name;
     if(!driver_is_pi && !po_in_sinks) {
@@ -630,8 +634,6 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
         //Do not remove such buffers
         return;
     }
-    //FIXME: overriding new net name with input name to be consistent with old netlist (avoids errors during transition period)
-    new_net_name = netlist.net_name(input_net);
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
 
