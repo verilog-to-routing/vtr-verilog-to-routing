@@ -193,10 +193,6 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	*L_num_nets = ext_ncount;
 	*net_list = ext_nlist;
 
-	//Added August 2013, Daniel Chen for loading post-pack netlist into new data structures
-	load_global_net_from_array(ext_nlist, ext_ncount, &g_clbs_nlist);
-	//echo_global_nlist_net(&g_clbs_nlist, ext_nlist);
-
 	clock_t end = clock();
 
 	vtr::printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
