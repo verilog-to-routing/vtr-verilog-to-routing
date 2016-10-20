@@ -24,35 +24,14 @@ using namespace std;
 #include "ReadOptions.h"
 #include "hash.h"
 
-/* PRINT_PIN_NETS */
-
-struct s_model_stats {
-	const t_model * model;
-	int count;
-};
-
-#define MAX_ATOM_PARSE 200000000
-
-/* This source file will read in a FLAT blif netlist consisting     *
- * of .inputs, .outputs, .names and .latch commands.  It currently   *
- * does not handle hierarchical blif files.  Hierarchical            *
- * blif files can be flattened via the read_blif and write_blif      *
- * commands of sis.  LUT circuits should only have .names commands;  *
- * there should be no gates.  This parser performs limited error     *
- * checking concerning the consistency of the netlist it obtains.    *
- * .inputs and .outputs statements must be given; this parser does   *
- * not infer primary inputs and outputs from non-driven and fanout   *
- * free nodes.  This parser can be extended to do this if necessary, *
- * or the sis read_blif and write_blif commands can be used to put a *
- * netlist into the standard format.                                 *
- * V. Betz, August 25, 1994.                                         *
- * Added more error checking, March 30, 1995, V. Betz                */
-
 static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
+
 static void show_blif_stats(const AtomNetlist& netlist);
+
 static std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netlist, char * activity_file);
+
 bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
                           char * net_name, float probability, float density);
 
