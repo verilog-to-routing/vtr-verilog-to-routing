@@ -48,12 +48,12 @@ struct s_model_stats {
  * V. Betz, August 25, 1994.                                         *
  * Added more error checking, March 30, 1995, V. Betz                */
 
-static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
+static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file);
-static void show_blif_stats2(const AtomNetlist& netlist);
-static std::unordered_map<AtomNetId,t_net_power> read_activity2(const AtomNetlist& netlist, char * activity_file);
-bool add_activity_to_net2(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
+static void show_blif_stats(const AtomNetlist& netlist);
+static std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netlist, char * activity_file);
+bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
                           char * net_name, float probability, float density);
 
 void blif_error(int lineno, std::string near_text, std::string msg);
@@ -543,7 +543,7 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
     return new_val;
 }
 
-static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
+static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file) {
 
@@ -605,10 +605,10 @@ static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_ha
         netlist.verify();
     }
 
-    show_blif_stats2(netlist);
+    show_blif_stats(netlist);
 
     if(read_activity_file) {
-        auto atom_net_power = read_activity2(netlist, activity_file);
+        auto atom_net_power = read_activity(netlist, activity_file);
         g_atom_net_power = std::move(atom_net_power);
     }
 
@@ -631,7 +631,7 @@ static void read_blif2(const char *blif_file, bool absorb_buffers, bool sweep_ha
 
     g_atom_nl = std::move(netlist);
 }
-static void show_blif_stats2(const AtomNetlist& netlist) {
+static void show_blif_stats(const AtomNetlist& netlist) {
     std::map<std::string,size_t> block_type_counts;
 
     //Count the block statistics
@@ -699,7 +699,7 @@ static void show_blif_stats2(const AtomNetlist& netlist) {
     }
 }
 
-static std::unordered_map<AtomNetId,t_net_power> read_activity2(const AtomNetlist& netlist, char * activity_file) {
+static std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netlist, char * activity_file) {
 	char buf[vtr::BUFSIZE];
 	char * ptr;
 	char * word1;
@@ -726,7 +726,7 @@ static std::unordered_map<AtomNetId,t_net_power> read_activity2(const AtomNetlis
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
 		word3 = strtok(NULL, TOKENS);
-		add_activity_to_net2(netlist, atom_net_power, word1, atof(word2), atof(word3));
+		add_activity_to_net(netlist, atom_net_power, word1, atof(word2), atof(word3));
 
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
 	}
@@ -744,7 +744,7 @@ static std::unordered_map<AtomNetId,t_net_power> read_activity2(const AtomNetlis
     return atom_net_power;
 }
 
-bool add_activity_to_net2(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
+bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
                           char * net_name, float probability, float density) {
     AtomNetId net_id = netlist.find_net(net_name);
     if(net_id) {
@@ -768,7 +768,7 @@ void read_and_process_blif(const char *blif_file,
 		char * activity_file) {
 
 	/* begin parsing blif input file */
-	read_blif2(blif_file, absorb_buffer_luts, sweep_hanging_nets_and_inputs, user_models,
+	read_blif(blif_file, absorb_buffer_luts, sweep_hanging_nets_and_inputs, user_models,
 			library_models, read_activity_file, activity_file);
 }
 
