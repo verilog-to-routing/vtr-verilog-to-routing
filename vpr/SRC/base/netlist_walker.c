@@ -1,9 +1,10 @@
 #include "netlist_walker.h"
 #include "globals.h"
+#include "atom_netlist.h"
 
 void NetlistWalker::walk() {
     
-    visitor_.visit_top(blif_circuit_name);
+    visitor_.visit_top(g_atom_nl.netlist_name().c_str());
 
     for(int i = 0; i < num_blocks; i++) {
 

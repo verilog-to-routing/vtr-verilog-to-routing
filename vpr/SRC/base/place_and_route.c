@@ -15,6 +15,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "vpr_error.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "place_and_route.h"
 #include "place.h"
 #include "read_place.h"
@@ -177,7 +178,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
         if(GetPostSynthesisOption())
         {
-            netlist_writer(blif_circuit_name);
+            netlist_writer(g_atom_nl.netlist_name());
         }
 
         free_timing_graph(slacks);
