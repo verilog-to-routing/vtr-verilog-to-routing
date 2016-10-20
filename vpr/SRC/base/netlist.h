@@ -78,6 +78,9 @@ struct t_netlist{
 	vector<t_vnet>  net;
 };
 
+void load_global_net_from_array(const t_net* net_arr,
+	const int num_net_arr, t_netlist* g_nlist);
+
 void echo_global_nlist_net(const t_netlist* g_nlist);
 
 void free_global_nlist_net(t_netlist* g_nlist);
