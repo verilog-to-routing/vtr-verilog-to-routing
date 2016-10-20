@@ -13,31 +13,22 @@ int binary_search = -1;
 
 float grid_logic_tile_area = 0;
 
-/* Atom netlist */
+char *default_output_name = NULL;
+
+/******** Atom Netlist ********/
 AtomNetlist g_atom_nl;
+
 AtomMap g_atom_map;
+
 std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
-/* User netlist information begin  */
-int num_logical_nets = 0, num_logical_blocks = 0;
-
-struct s_net *vpack_net = NULL;
-t_net_power * vpack_net_power = NULL;
-
-struct s_logical_block *logical_block = NULL;
-char *blif_circuit_name = NULL;
-char *default_output_name = NULL;
-/* User netlist information end  */
-
-/******** Clustered netlist to be mapped stuff ********/
-
+/******** Clustered netlist ********/
 int num_nets = 0;
 struct s_net *clb_net = NULL;
 
 int num_blocks = 0;
 struct s_block *block = NULL;
 
-t_netlist g_atoms_nlist;
 t_netlist g_clbs_nlist;
 
 /* This identifies the t_type_ptr of an IO block */
@@ -48,7 +39,7 @@ t_type_ptr IO_TYPE = NULL;
 t_type_ptr EMPTY_TYPE = NULL;
 t_type_ptr FILL_TYPE = NULL;
 
-/******** Physical architecture stuff ********/
+/******** Physical architecture ********/
 
 int nx = 0;
 int ny = 0;
