@@ -156,7 +156,8 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
         i++;
     }
 	VTR_ASSERT(i == bcount);
-	VTR_ASSERT(num_primitives == num_logical_blocks);
+    VTR_ASSERT(num_primitives > 0);
+	VTR_ASSERT(static_cast<size_t>(num_primitives) == g_atom_nl.blocks().size());
 
 	/* Error check */
     for(auto blk_id : g_atom_nl.blocks()) {
