@@ -543,7 +543,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	if (timing_inf.timing_analysis_enabled) {
 		if(GetPostSynthesisOption())
 		  {
-            netlist_writer(blif_circuit_name);
+            netlist_writer(g_atom_nl.netlist_name().c_str());
 		  }
 
 		//free_timing_graph(slacks);

@@ -484,7 +484,7 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 	fpout = vtr::fopen(out_fname, "w");
 
 	column = 0;
-	fprintf(fpout, ".model %s\n", blif_circuit_name);
+	fprintf(fpout, ".model %s\n", g_atom_nl.netlist_name().c_str());
 
 	/* Print out all input and output pads. */
 	fprintf(fpout, "\n.inputs ");
@@ -493,7 +493,7 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, fpout);
 		}
 	}
-	p_io_removed = circuit_p_io_removed; //FIXME: need to consider this with the new atom netlist...
+	p_io_removed = NULL; //FIXME: need to consider this with the new atom netlist...
 	while (p_io_removed) {
 		print_string((char*) p_io_removed->data_vptr, &column, fpout);
 		p_io_removed = p_io_removed->next;

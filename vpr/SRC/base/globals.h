@@ -44,6 +44,7 @@ extern struct s_net *clb_net;
 extern AtomNetlist g_atom_nl;
 extern AtomMap g_atom_map;
 
+/* Atom net power info */
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
 /* blocks in the user netlist */
@@ -73,8 +74,6 @@ extern t_type_ptr FILL_TYPE;
 extern int num_types;
 extern struct s_type_descriptor *type_descriptors;
 
-/* name of the blif circuit */
-extern char *blif_circuit_name;
 /* default output name */
 extern char *default_output_name;
 
@@ -86,7 +85,7 @@ extern float grid_logic_tile_area;
  ********************************************************************/
 
 /* Netlist description data structures. */
-
+#if 0
 /* User netlist information */
 extern int num_logical_nets, num_logical_blocks;
 extern struct s_net *vpack_net;
@@ -99,6 +98,7 @@ extern t_netlist g_atoms_nlist;
 
 /* primiary inputs removed from circuit */
 extern vtr::t_linked_vptr *circuit_p_io_removed;
+#endif
 
 /*******************************************************************
  Routing related globals

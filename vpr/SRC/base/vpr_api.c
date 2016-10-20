@@ -833,12 +833,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 
 void free_circuit() {
 
-	/* Free logical blocks and nets */
-	if (logical_block != NULL) {
-		free_logical_blocks();
-		free_logical_nets();
-	}
-
 	if (clb_net != NULL) {
 		for (int i = 0; i < num_nets; ++i) {
 			free(clb_net[i].name);
@@ -852,7 +846,6 @@ void free_circuit() {
 
 	//Free new net structures
 	free_global_nlist_net(&g_clbs_nlist);
-	free_global_nlist_net(&g_atoms_nlist);
 
 	if (block != NULL) {
 		for (int i = 0; i < num_blocks; ++i) {
@@ -867,18 +860,6 @@ void free_circuit() {
 	}
 	free(block);
 	block = NULL;
-
-	free(blif_circuit_name);
-	free(default_output_name);
-	blif_circuit_name = NULL;
-
-	vtr::t_linked_vptr *p_io_removed = circuit_p_io_removed;
-	while (p_io_removed != NULL) {
-		circuit_p_io_removed = p_io_removed->next;
-		free(p_io_removed->data_vptr);
-		free(p_io_removed);
-		p_io_removed = circuit_p_io_removed;
-	}
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
