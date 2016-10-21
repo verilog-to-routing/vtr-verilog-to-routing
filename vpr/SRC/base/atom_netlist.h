@@ -572,6 +572,13 @@ class AtomNetlist {
         //  sinsks  : The net's sink pins
         AtomNetId   add_net     (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
+        //Mark a pin as being a constant generator.
+        // There are somcases where whether a pin is constant can not be determined until after
+        // the entier netlist has been built; so we expose a way to mark existing pins as constants
+        //  pin_id  : The pin to be marked
+        //  value   : The boolean value to set the pin_is_constant attribute
+        void set_pin_is_constant(const AtomPinId pin_id, const bool value);
+
         /*
          * Note: all remove_*() will mark the associated items as invalid, but will the items
          * will not be removed until compress() is called.

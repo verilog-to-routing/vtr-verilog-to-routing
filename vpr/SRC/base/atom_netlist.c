@@ -836,6 +836,11 @@ AtomNetId AtomNetlist::add_net (const std::string name, AtomPinId driver, std::v
 
     return net_id;
 }
+void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) {
+    VTR_ASSERT(valid_pin_id(pin_id));
+
+    pin_is_constant_[size_t(pin_id)] = value;
+}
 
 void AtomNetlist::remove_block(const AtomBlockId blk_id) {
     VTR_ASSERT(valid_block_id(blk_id));

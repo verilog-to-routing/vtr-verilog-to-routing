@@ -242,6 +242,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             const t_model* blk_model = find_model(subckt_model);
 
+            //We name the subckt based on the net it's first output pin drives
             std::string first_output_name;
             for(size_t i = 0; i < ports.size(); ++i) {
                 const t_model_ports* model_port = find_model_port(blk_model, ports[i]);
@@ -254,15 +255,12 @@ struct BlifAllocCallback : public blifparse::Callback {
                 }
             }
             //We must have an output in-order to name the subckt
-            // Also intuitively the subckt can be swept if it has no outside effect
             if(first_output_name.empty()) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Found no output pin on .subckt '%s'",
                           subckt_model.c_str());
             }
 
-
             AtomBlockId blk_id = curr_model().create_block(first_output_name, blk_model);
-
 
             for(size_t i = 0; i < ports.size(); ++i) {
                 //Check for consistency between model and ports
@@ -308,6 +306,13 @@ struct BlifAllocCallback : public blifparse::Callback {
             if(ended_) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
             }
+
+            //We can not determine if a .subckt is a constant generator until all
+            //it's inputs have been created. So we identify them now, once the full
+            //model has been defined
+            mark_constant_generator_subckts();
+
+            //Mark as ended
             ended_ = true;
         }
 
@@ -511,6 +516,74 @@ struct BlifAllocCallback : public blifparse::Callback {
             return true;
         }
 
+        //Marks all constant subckt generator output pins as constants
+        void mark_constant_generator_subckts() {
+            size_t num_blocks_marked;
+
+            //It is possible that by marking one constant generator
+            //it may 'reveal' another constant generator downstream.
+            //As a result we iteratively mark constant generators until
+            //no additional ones are identified.
+            std::unordered_set<AtomBlockId> marked_blocks;
+            do {
+                num_blocks_marked = 0;
+
+                //Look through all the blocks marking those that are
+                //constant generataors
+                for(auto blk_id : curr_model().blocks()) {
+                    if(marked_blocks.count(blk_id)) continue; //Don't mark multiple times
+
+                    if(identify_candidate_constant_generator_subckt(blk_id)) {
+                        //This block is a constant generator
+                        marked_blocks.insert(blk_id);
+
+                        vtr::printf("Inferred black-box constant generator '%s'\n", 
+                                    curr_model().block_name(blk_id).c_str());
+
+                        //Mark all the output pins as constants
+                        for(auto port_id : curr_model().block_output_ports(blk_id)) {
+                            for(auto pin_id : curr_model().port_pins(port_id)) {
+                                curr_model().set_pin_is_constant(pin_id, true);
+                            }
+                        }
+
+                        ++num_blocks_marked;
+                    }
+                }
+            } while(num_blocks_marked != 0);
+        }
+
+        //Determines if a particular block satisfies all the criteria of a constant
+        //generator.
+        //
+        //Returns true, if the block is a constant generator and should be marked
+        bool identify_candidate_constant_generator_subckt(AtomBlockId blk_id) {
+            const t_model* arch_model = curr_model().block_model(blk_id);
+
+            //We look for combinational blocks which are not .names (i.e.
+            //combinational .subckts)
+            if(curr_model().block_type(blk_id) == AtomBlockType::COMBINATIONAL
+               && arch_model->name != std::string("names")) {
+
+                //A subckt is a constant generator if all its input nets are either:
+                //  1) Constant nets (i.e. driven by constant pins), or
+                //  2) Disconnected
+                for(auto port_id : curr_model().block_input_ports(blk_id)) {
+                    for(auto pin_id : curr_model().port_pins(port_id)) {
+                        auto net_id = curr_model().pin_net(pin_id);
+
+                        if(net_id && !curr_model().net_is_constant(net_id)) {
+                            return false;
+                        } else {
+                            VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
+                        }
+                    }
+                }
+                //This subckt is a constant generator
+                return true;
+            }
+            return false;
+        }
     private:
         bool ended_ = true; //Initially no active .model
         std::string filename_;
