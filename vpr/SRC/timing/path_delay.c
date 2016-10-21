@@ -1,6 +1,7 @@
 #include <cstring>
 #include <climits>
 #include <cmath>
+#include <set>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -1414,6 +1415,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 	VTR_ASSERT(inode == num_tnodes);
 
 	/* Load net delays and initialize clock domains to OPEN. */
+    std::set<int> const_gen_tnodes;
 	for (int i = 0; i < num_tnodes; i++) {
 		tnode[i].clock_domain = OPEN;
 
@@ -1437,6 +1439,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                 if(is_const_net) {
                     VTR_ASSERT(tnode[i].type == TN_PRIMITIVE_OPIN);
                     tnode[i].type = TN_CONSTANT_GEN_SOURCE;
+                    const_gen_tnodes.insert(i);
                 }
 
                 //Look at each sink
@@ -1480,6 +1483,26 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                 break;
 		}
 	}
+
+    //In some instances, we may end-up with constant generators driving constant generators
+    //(which is illegal in the timing graph since constant generators shouldn't have any input
+    //edges). So we remove those edges now.
+    int const_gen_edge_break_count = 0;
+    for(inode = 0; inode < num_tnodes; ++inode) {
+        for(int iedge = 0; iedge <tnode[inode].num_edges; ++iedge) {
+            int& to_node = tnode[inode].out_edges[iedge].to_node;
+            if(const_gen_tnodes.count(to_node)) {
+                //This edge points to a constant generator, mark it invalid 
+                VTR_ASSERT(tnode[to_node].type == TN_CONSTANT_GEN_SOURCE);
+
+                to_node = DO_NOT_ANALYSE;
+
+                ++const_gen_edge_break_count;
+            }
+        }
+    }
+    vtr::printf_info("Disconnected %d redundant edges to constant generators\n", const_gen_edge_break_count);
+
 
     //Build the net to driver look-up
     //  TODO: convert to use net_id directly when timing graph re-unified
@@ -2425,7 +2448,17 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 					//We suppress node type errors if they have the is_comb_loop_breakpoint flag set.
 					//The flag denotes that an input edge to this node was disconnected to break a combinational
 					//loop, and hence we don't consider this an error.
-                    if(tnode[inode].pb_graph_pin) {
+                    AtomPinId pin_id = g_atom_map.tnode_atom_pin(inode);
+                    if(pin_id) {
+                        AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+                        AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
+                        vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
+                                "Timing graph discovered unexpected edge to node %d  atom block '%s' port '%s' port_bit '%zu'.",
+                                inode,
+                                g_atom_nl.block_name(blk_id).c_str(),
+                                g_atom_nl.port_name(port_id).c_str(),
+                                g_atom_nl.pin_port_bit(pin_id));
+                    } else if(tnode[inode].pb_graph_pin) {
                         vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
                                 "Timing graph started on unexpected node %d %s.%s[%d].",
                                 inode,
@@ -2440,7 +2473,17 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 				}
 			} else {
 				if ((tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CONSTANT_GEN_SOURCE)) {
-                    if(tnode[inode].pb_graph_pin) {
+                    AtomPinId pin_id = g_atom_map.tnode_atom_pin(inode);
+                    if(pin_id) {
+                        AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+                        AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
+                        vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
+                                "Timing graph discovered unexpected edge to node %d  atom block '%s' port '%s' port_bit '%zu'.",
+                                inode,
+                                g_atom_nl.block_name(blk_id).c_str(),
+                                g_atom_nl.port_name(port_id).c_str(),
+                                g_atom_nl.pin_port_bit(pin_id));
+                    } else if(tnode[inode].pb_graph_pin) {
                         vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
                                 "Timing graph discovered unexpected edge to node %d %s.%s[%d].",
                                 inode,
