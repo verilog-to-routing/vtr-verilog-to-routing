@@ -794,8 +794,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 				model_port = root->output_pins[i][j].port->model_port;
 
                 AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
-                AtomPinId pin_id = g_atom_nl.port_pin(port_id, j);
-                AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+                AtomNetId net_id = g_atom_nl.port_net(port_id, j);
 
 				if(net_id) {
 					/* This output pin has a dedicated connection to one output, make sure that molecule works */
