@@ -312,8 +312,18 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         return false;
     }
 
-    std::unordered_set<AtomPortId> checked_ports;
+    VTR_ASSERT_MSG(!g_atom_nl.dirty(), "This function assumes a compresssed/non-dirty netlist");
 
+
+    //Keep track of how many atom ports were checked.
+    //
+    //We need to do this since we iterate over the pb's ports and 
+    //may miss some atom ports if there is a mismatch
+    size_t checked_ports = 0;
+
+    //Look at each port on the pb and find the associated port on the
+    //atom. To be feasible the pb must have as many pins on each port
+    //as the atom requires
     for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
         const t_port* pb_port = &cur_pb_type->ports[iport];
         const t_model_ports* pb_model_port = pb_port->model_port;
@@ -321,37 +331,39 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         //Find the matching port on the atom
         auto port_id = g_atom_nl.find_port(blk_id, pb_model_port->name);
 
-        if(port_id) { //Port is used by atom
+        if(port_id) { //Port is used by the atom
              
-            //??? Why does ipin start at num_pins ???
-            for (int ipin = pb_port->num_pins; ipin < pb_model_port->size; ++ipin) {
-                //Sanity check
-                if (pb_model_port->dir == IN_PORT && pb_model_port->is_clock) {
-                    VTR_ASSERT(ipin == 0); //TODO: support multi-clock
-                }
+            //In compressed form the atom netlist stores only in-use pins,
+            //so we can query the number of required pins directly
+            int required_atom_pins = g_atom_nl.port_pins(port_id).size();
 
-                if (g_atom_nl.port_pin(port_id, ipin)) {
-                    //Required pin is in use
-                    return false;
-                }
-            }
+            int available_pb_pins = pb_port->num_pins;
 
-            //Mark this port as checked
-            checked_ports.insert(port_id);
-        }
-    }
-
-    //See if all the atom ports were checked
-    auto port_sets = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
-    for(auto port_set : port_sets) {
-        for(auto port_id : port_set) {
-            if(!checked_ports.count(port_id)) {
-                //Required atom port was missing from physical primitive
+            if(available_pb_pins < required_atom_pins) {
+                //Too many pins required
                 return false;
             }
+
+            //Note that this port was checked
+            ++checked_ports;
         }
     }
 
+    //Similarily to pins, only in-use ports are stored in the compressed
+    //atom netlist, so we can figure out how many ports should have been
+    //checked directly
+    size_t atom_ports = g_atom_nl.block_input_ports(blk_id).size()
+                        + g_atom_nl.block_output_ports(blk_id).size()
+                        + g_atom_nl.block_clock_ports(blk_id).size();
+
+    //See if all the atom ports were checked
+    if(checked_ports != atom_ports) {
+        VTR_ASSERT(checked_ports < atom_ports);
+        //Required atom port was missing from physical primitive
+        return false;
+    }
+
+    //Feasible
 	return true;
 }
 
