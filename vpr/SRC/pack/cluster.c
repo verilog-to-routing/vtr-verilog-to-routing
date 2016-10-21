@@ -2333,9 +2333,8 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
  */
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain) {
 	float gain;
-	int i, ipin;
+	int i;
 	int num_introduced_inputs_of_indirectly_related_block;
-	t_model_ports *cur;
 
 	gain = 0;
 	num_introduced_inputs_of_indirectly_related_block = 0;
@@ -2347,37 +2346,26 @@ static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float
 			} else {
 				/* This block has no connection with current cluster, penalize molecule for having this block 
 				 */
-                const t_model* model = g_atom_nl.block_model(blk_id);
-				cur = model->inputs;
-				while (cur != NULL) {
-                    auto port_id = g_atom_nl.find_port(blk_id, cur->name);
-                    VTR_ASSERT(port_id);
+                for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
+                    for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                        auto net_id = g_atom_nl.pin_net(pin_id);
+                        VTR_ASSERT(net_id);
 
-					if (cur->is_clock != true) {
-						for (ipin = 0; ipin < cur->size; ipin++) {
-                            auto pin_id = g_atom_nl.port_pin(port_id, ipin);
-                            if(pin_id) {
-                                auto net_id = g_atom_nl.pin_net(pin_id);
-                                VTR_ASSERT(net_id);
+                        auto driver_pin_id = g_atom_nl.net_driver(net_id);
+                        VTR_ASSERT(driver_pin_id);
 
-                                auto driver_pin_id = g_atom_nl.net_driver(net_id);
-                                VTR_ASSERT(driver_pin_id);
+                        auto driver_blk_id = g_atom_nl.pin_block(driver_pin_id);
 
-                                auto driver_blk_id = g_atom_nl.pin_block(driver_pin_id);
-
-								num_introduced_inputs_of_indirectly_related_block++;
-								for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
-									if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
-                                        //valid block which is driver (and hence not an input)
-										num_introduced_inputs_of_indirectly_related_block--;
-										break;
-									}
-								}
-							}
-						}
-					}
-					cur = cur->next;
-				}
+                        num_introduced_inputs_of_indirectly_related_block++;
+                        for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
+                            if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
+                                //valid block which is driver (and hence not an input)
+                                num_introduced_inputs_of_indirectly_related_block--;
+                                break;
+                            }
+                        }
+                    }
+                }
 			}
 		}
 	}
