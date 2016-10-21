@@ -8,15 +8,13 @@ using namespace blifparse;
 
 int exit_code = 0;
 
-void custom_blif_error(const int lineno, const std::string& near_text, const std::string& msg);
-
 class NoOpCallback : public Callback {
     //A No-op version of the callback
     public:
         void start_parse() override {}
 
-        void filename(std::string fname) override {};
-        void lineno(int line_num) override {};
+        void filename(std::string /*fname*/) override {};
+        void lineno(int /*line_num*/) override {};
 
         void begin_model(std::string /*model_name*/) override {}
         void inputs(std::vector<std::string> /*inputs*/) override {}
@@ -30,6 +28,16 @@ class NoOpCallback : public Callback {
         void end_model() override {}
 
         void finish_parse() override {}
+
+        void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {
+            fprintf(stderr, "Custom Error at line %d near '%s': %s\n", curr_lineno, near_text.c_str(), msg.c_str());
+            had_error_ = true;
+        }
+
+        bool had_error() { return had_error_ = true; }
+
+    private:
+        bool had_error_ = false;
 };
 
 int main(int argc, char **argv) {
@@ -41,18 +49,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    //Use custom error handling
-    blifparse::set_blif_error_handler(custom_blif_error);
-
     //Parse the file
     blifparse::BlifPrettyPrinter callback(true);
     //NoOpCallback callback;
     blif_parse_filename(argv[1], callback);
-    return exit_code;
-}
 
-void custom_blif_error(const int lineno, const std::string& near_text, const std::string& msg) {
-    fprintf(stderr, "Custom Error at line %d near '%s': %s\n", lineno, near_text.c_str(), msg.c_str());
-    exit_code = 1;
+    if(callback.had_error()) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
-

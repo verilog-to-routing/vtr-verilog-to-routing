@@ -144,7 +144,7 @@ blif_data: /*empty*/ { }
     | blif_data names                       { callback.lineno(lexer.lineno()-1); callback.names($2.nets, $2.so_cover); }
     | blif_data subckt EOL                  { 
                                               if($2.ports.size() != $2.nets.size()) {
-                                                  blif_error_wrap(lexer.lineno()-1, lexer.text(), 
+                                                  blif_error_wrap(callback ,lexer.lineno()-1, lexer.text(), 
                                                     "Mismatched subckt port and net connection(s) size do not match"
                                                     " (%zu ports, %zu nets)", $2.ports.size(), $2.nets.size());
                                               }
@@ -161,7 +161,7 @@ names: DOT_NAMES string_list EOL { $$ = Names(); $$.nets = $2; }
     | names so_cover_row EOL { 
                                 $$ = std::move($1); 
                                 if($$.nets.size() != $2.size()) {
-                                    blif_error_wrap(lexer.lineno()-1, lexer.text(),
+                                    blif_error_wrap(callback, lexer.lineno()-1, lexer.text(),
                                         "Mismatched .names single-output cover row."
                                         " names connected to %zu net(s), but cover row has %zu element(s)",
                                         $$.nets.size(), $2.size());
@@ -230,5 +230,5 @@ string_list: /*empty*/ { $$ = std::vector<std::string>(); }
 
 
 void blifparse::Parser::error(const std::string& msg) {
-    blif_error_wrap(lexer.lineno(), lexer.text(), msg.c_str());
+    blif_error_wrap(callback, lexer.lineno(), lexer.text(), msg.c_str());
 }

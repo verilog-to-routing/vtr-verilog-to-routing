@@ -5,11 +5,8 @@
 
 namespace blifparse {
 
-//Define the blif error handler and set the default
-std::function<void(const int, const std::string&, const std::string&)> blif_error = default_blif_error;
-
 //We wrap the actual blif_error to issolate custom handlers from vaargs
-void blif_error_wrap(const int line_no, const std::string& near_text, const char* fmt, ...) {
+void blif_error_wrap(Callback& callback, const int line_no, const std::string& near_text, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -43,7 +40,7 @@ void blif_error_wrap(const int line_no, const std::string& near_text, const char
     std::string msg(buf.get(), len);
 
     //Call the error handler
-    blif_error(line_no, near_text, msg);
+    callback.parse_error(line_no, near_text, msg);
 }
 
 }

@@ -28,14 +28,14 @@ void blif_parse_filename(const char* filename, Callback& callback) {
         std::fclose(infile);
     } else {
         std::fclose(infile);
-        blif_error_wrap(0, "", "Could not open file %s.\n", filename);
+        blif_error_wrap(callback, 0, "", "Could not open file %s.\n", filename);
     }
 }
 
 void blif_parse_file(FILE* blif_file, Callback& callback, const char* filename) {
 
     //Initialize the lexer
-    Lexer lexer(blif_file);
+    Lexer lexer(blif_file, callback);
 
     //Setup the parser + lexer
     Parser parser(lexer, callback);
@@ -49,23 +49,11 @@ void blif_parse_file(FILE* blif_file, Callback& callback, const char* filename) 
     //Do the actual parse
     int error = parser.parse();
     if(error) {
-        blif_error_wrap(0, "", "BLIF Error: file failed to parse!\n");
+        blif_error_wrap(callback, 0, "", "File failed to parse.\n");
     }
 
     //Finished parsing
     callback.finish_parse();
-}
-
-/*
- * Error handling
- */
-void default_blif_error(const int line_no, const std::string& near_text, const std::string& msg) {
-    fprintf(stderr, "BLIF Error line %d near '%s': %s\n", line_no, near_text.c_str(), msg.c_str());
-    exit(1);
-}
-
-void set_blif_error_handler(std::function<void(const int, const std::string&, const std::string&)> new_blif_error_handler) {
-    blif_error = new_blif_error_handler;
 }
 
 }
