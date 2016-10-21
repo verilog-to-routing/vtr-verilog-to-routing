@@ -925,13 +925,7 @@ static void free_pb_stats_recursive(t_pb *pb) {
 }
 
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
-	const t_pb_type *cur_pb_type;
-	int i;
-	t_pb *memory_class_pb; /* Used for memory class only, for memories, open pins must be the same among siblings */
-
-	cur_pb_type = cur_pb->pb_graph_node->pb_type;
-	memory_class_pb = NULL;
-	AtomBlockId sibling_memory_blk_id;
+	const t_pb_type *cur_pb_type = cur_pb->pb_graph_node->pb_type;
 
 	VTR_ASSERT(cur_pb_type->num_modes == 0); /* primitive */
 
@@ -943,11 +937,13 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 	}
 
 	if (cur_pb_type->class_type == MEMORY_CLASS) {
-		/* memory class is special, all siblings must share all nets, including open nets, with the exception of data nets */
+		/* Memory class has additional feasibility requirements:
+         *   - all siblings must share all nets, including open nets, with the exception of data nets */
 
 		/* find sibling if one exists */
-		memory_class_pb = cur_pb->parent_pb;
-		for (i = 0; i < cur_pb_type->parent_mode->num_pb_type_children; i++) {
+        AtomBlockId sibling_memory_blk_id;
+		t_pb* memory_class_pb = cur_pb->parent_pb;
+		for (int i = 0; i < cur_pb_type->parent_mode->num_pb_type_children; i++) {
 
 
             const t_pb* child_pb = &memory_class_pb->child_pbs[cur_pb->mode][i];
@@ -957,12 +953,18 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 				sibling_memory_blk_id = mem_class_child_blk_id;
 			}
 		}
-		if (!sibling_memory_blk_id) {
-			memory_class_pb = NULL;
+
+		if (sibling_memory_blk_id) {
+            //There is a sibling, see if the current block is feasible with it
+            bool memory_feasible = primitive_type_and_memory_feasible(blk_id, cur_pb_type, sibling_memory_blk_id);
+            if(!memory_feasible) {
+                return false;
+            }
 		}
 	}
 
-	return primitive_type_and_memory_feasible(blk_id, cur_pb_type, sibling_memory_blk_id);
+    //Generic feasibility check
+	return primitive_type_feasible(blk_id, cur_pb_type);
 }
 
 static bool primitive_type_and_memory_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_memory_blk_id) {
