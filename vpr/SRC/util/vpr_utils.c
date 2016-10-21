@@ -299,7 +299,7 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
 }
 
 /**
- * given a primitive type and a atom block, is the mapping legal
+ * given an atom block and physical primitive type, is the mapping legal
  */
 bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type) {
 
@@ -365,6 +365,25 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
 
     //Feasible
 	return true;
+}
+
+//Returns the sibling atom of a memory slice pb
+//  Note that the pb must be part of a MEMORY_CLASS
+AtomBlockId find_memory_sibling(const t_pb* pb) {
+    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
+
+    VTR_ASSERT(pb_type->class_type == MEMORY_CLASS);
+
+    const t_pb* memory_class_pb = pb->parent_pb;
+
+    for(int isibling = 0; isibling < pb_type->parent_mode->num_pb_type_children; ++isibling) {
+        const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
+
+        if(sibling_pb->name != NULL) {
+            return g_atom_map.pb_atom(sibling_pb);
+        }
+    }
+    return AtomBlockId::INVALID();
 }
 
 

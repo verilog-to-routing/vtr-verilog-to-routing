@@ -146,7 +146,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 static void commit_lookahead_pins_used(t_pb *cur_pb);
 static bool check_lookahead_pins_used(t_pb *cur_pb);
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
-static bool primitive_type_and_memory_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_memory_blk);
+static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_memory_blk);
 
 static t_pack_molecule *get_molecule_by_num_ext_inputs(
 		const int ext_inps, const enum e_removal_policy remove_flag,
@@ -941,23 +941,12 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
          *   - all siblings must share all nets, including open nets, with the exception of data nets */
 
 		/* find sibling if one exists */
-        AtomBlockId sibling_memory_blk_id;
-		t_pb* memory_class_pb = cur_pb->parent_pb;
-		for (int i = 0; i < cur_pb_type->parent_mode->num_pb_type_children; i++) {
-
-
-            const t_pb* child_pb = &memory_class_pb->child_pbs[cur_pb->mode][i];
-            AtomBlockId mem_class_child_blk_id = g_atom_map.pb_atom(child_pb);
-
-			if (child_pb->name != NULL && mem_class_child_blk_id) {
-				sibling_memory_blk_id = mem_class_child_blk_id;
-			}
-		}
+        AtomBlockId sibling_memory_blk_id = find_memory_sibling(cur_pb);
 
 		if (sibling_memory_blk_id) {
             //There is a sibling, see if the current block is feasible with it
-            bool memory_feasible = primitive_type_and_memory_feasible(blk_id, cur_pb_type, sibling_memory_blk_id);
-            if(!memory_feasible) {
+            bool sibling_feasible = primitive_memory_sibling_feasible(blk_id, cur_pb_type, sibling_memory_blk_id);
+            if(!sibling_feasible) {
                 return false;
             }
 		}
@@ -967,92 +956,75 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 	return primitive_type_feasible(blk_id, cur_pb_type);
 }
 
-static bool primitive_type_and_memory_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_memory_blk_id) {
-	/* check if ports are big enough */
-	/* for memories, also check that pins are the same with existing siblings */
-    const t_model* blk_model = g_atom_nl.block_model(blk_id);
-	const t_model_ports* port = blk_model->inputs;
-	bool second_pass = false;
-	while (port || !second_pass) {
-		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
-		if (!port) {
-			second_pass = true;
-			port = blk_model->outputs;
-		}
-        if(port) {
-            auto this_port_id = g_atom_nl.find_port(blk_id, port->name);
+static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type, const AtomBlockId sibling_blk_id) {
+    /* Check that the two atom blocks blk_id and sibling_blk_id (which should both be memory slices)
+     * are feasible, in the sence that they have precicely the same net connections (with the
+     * exception of nets in data port classes).
+     *
+     * Note that this routine does not check pin feasibility against the cur_pb_type; so
+     * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
+     */
+    VTR_ASSERT(cur_pb->class_type == MEMORY_CLASS);
 
-            if(this_port_id) { //Port in use by atom
+    //First, identify the 'data' ports by looking at the cur_pb_type
+    std::unordered_set<t_model_ports*> data_ports;
+    for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
+        const char* port_class = cur_pb_type->ports[iport].port_class;
+        if(strstr(port_class, "data") == port_class) {
+            //The port_class starts with "data", so it is a data port
 
-                int i;
-                for (i = 0; i < cur_pb_type->num_ports; i++) {
-                    if (cur_pb_type->ports[i].model_port == port) {
-                        /* TODO: This is slow, I only need to check from 0 if it is a memory block, 
-                         * other blocks I can check from port->size onwards */
-                        for (int j = 0; j < port->size; j++) {
-                            AtomNetId this_net_id = g_atom_nl.port_net(this_port_id, j);
-                            if (port->dir == IN_PORT && !port->is_clock) {
-                                if (sibling_memory_blk_id) {
-                                    auto sibling_port_id = g_atom_nl.find_port(sibling_memory_blk_id, port->name);
-                                    VTR_ASSERT(sibling_port_id);
-                                    AtomNetId sibling_net_id = g_atom_nl.port_net(sibling_port_id, j);
-                                    if (cur_pb_type->ports[i].port_class == NULL
-                                            || strstr(cur_pb_type->ports[i].port_class, "data") != cur_pb_type->ports[i].port_class) {
-                                        if (this_net_id != sibling_net_id) {
-                                            return false;
-                                        }
-                                    }
-                                }
-                                if (this_net_id && j >= cur_pb_type->ports[i].num_pins) {
-                                    return false;
-                                }
-                            } else if (port->dir == OUT_PORT) {
-                                if (sibling_memory_blk_id) {
-                                    auto sibling_port_id = g_atom_nl.find_port(sibling_memory_blk_id, port->name);
-                                    VTR_ASSERT(sibling_port_id);
-                                    AtomNetId sibling_net_id = g_atom_nl.port_net(sibling_port_id, j);
-                                    if (cur_pb_type->ports[i].port_class == NULL
-                                            || strstr(cur_pb_type->ports[i].port_class,
-                                                    "data")
-                                                    != cur_pb_type->ports[i].port_class) {
-                                        if (this_net_id != sibling_net_id) {
-                                            return false;
-                                        }
-                                    }
-                                }
-                                if (this_net_id && j >= cur_pb_type->ports[i].num_pins) {
-                                    return false;
-                                }
-                            } else {
-                                VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
-                                VTR_ASSERT(j == 0);
-                                if (sibling_memory_blk_id) {
-                                    auto sibling_port_id = g_atom_nl.find_port(sibling_memory_blk_id, port->name);
-                                    VTR_ASSERT(sibling_port_id);
-                                    AtomNetId sibling_net_id = g_atom_nl.port_net(sibling_port_id, j);
-                                    if (this_net_id != sibling_net_id) {
-                                        return false;
-                                    }
-                                }
-                                if (this_net_id && j >= cur_pb_type->ports[i].num_pins) {
-                                    return false;
-                                }
-                            }
-                        }
-                        break;
-                    }
+            //Record the port
+            data_ports.insert(cur_pb_type->ports[iport].model_port);
+        }
+    }
+
+    //Now verify that all nets (except those connected to data ports) are equivalent
+    //between blk_id and sibling_blk_id
+
+    //Since the atom netlist stores only in-use ports, we iterate over the model to ensure
+    //all ports are compared
+    const t_model* model = cur_pb_type->model;
+    for(t_model_ports* port : {model->inputs, model->outputs}) {
+        for(; port; port = port->next) {
+            if(data_ports.count(port)) {
+                //Don't check data ports
+                continue;
+            }
+
+            //Note: VPR doesn't support multi-driven nets, so all outputs
+            //should be data ports, otherwise the siblings will both be
+            //driving the output net
+
+            //Get the ports from each primitive
+            auto blk_port_id = g_atom_nl.find_port(blk_id, port->name);
+            auto sib_port_id = g_atom_nl.find_port(sibling_blk_id, port->name);
+
+            //Check that all nets (including unconnected nets) match
+            for(int ipin = 0; ipin < port->size; ++ipin) {
+                //The nets are initialized as invalid (i.e. disconnected)
+                AtomNetId blk_net_id;
+                AtomNetId sib_net_id;
+
+                //We can get the actual net provided the port exists
+                //
+                //Note that if the port did not exist, the net is left
+                //as invalid/disconneced
+                if(blk_port_id) {
+                    blk_net_id = g_atom_nl.port_net(blk_port_id, ipin);    
                 }
-                if (i == cur_pb_type->num_ports) {
-                    if ((blk_model->inputs != NULL && !second_pass)
-                            || (blk_model->outputs != NULL && second_pass)) {
-                        /* physical port not found */
-                        return false;
-                    }
+                if(sib_port_id) {
+                    sib_net_id = g_atom_nl.port_net(sib_port_id, ipin);    
+                }
+
+                //The sibling and block must have the same (possibly disconnected)
+                //net on this pin
+                if(blk_net_id != sib_net_id) {
+                    //Nets do not match, not feasible
+                    return false;
                 }
             }
-			port = port->next;
-		}
-	}
+        }
+    }
 
 	return true;
 }
