@@ -2937,8 +2937,10 @@ static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks)
     int inet = 0;
     for(auto net_id : g_atom_nl.nets()) {
         int ipin = 1;
-        for(auto pin_id : g_atom_nl.net_pins(net_id)) {
-            prepack_slacks.slack[pin_id] = raw_slacks->slack[inet][ipin];
+        for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
+            float* net_slacks = raw_slacks->slack[inet];
+            float pin_slack = net_slacks[ipin];
+            prepack_slacks.slack[pin_id] = pin_slack;
             prepack_slacks.timing_criticality[pin_id] = raw_slacks->timing_criticality[inet][ipin];
 #ifdef PATH_COUNTING
             prepack_slacks.path_criticaltiy[pin_id] = raw_slacks->path_criticality[inet][ipin];
