@@ -74,6 +74,9 @@ class Callback {
 
         //End of parsing
         virtual void finish_parse() = 0;
+
+        //Error during parsing
+        virtual void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) = 0;
 };
 
 
@@ -85,25 +88,6 @@ void blif_parse_filename(const char* filename, Callback& callback);
 
 //Loads from 'blif'. 'filename' only used to pass a filename to callback and can be left unspecified
 void blif_parse_file(FILE* blif, Callback& callback, const char* filename=""); 
-
-/* 
- * The default blif_error() implementation.
- * By default it prints the error mesage to stderr and exits the program.
- */
-void default_blif_error(const int line_number, const std::string& near_text, const std::string& msg);
-
-/*
- * libblifparse calls blif_error() to report errors encountered while parsing an SDC file.  
- *
- * If you wish to define your own error reporting function (e.g. to throw exceptions instead
- * of exit) you can change the behaviour by providing another callable type which matches the signature.
- *
- * The return type is void, while the arguments are:
- *     1) const int line_no            - the file line number
- *     2) const std::string& near_text - the text the parser encountered 'near' the error
- *     3) const std::string& msg       - the error message
- */
-void set_blif_error_handler(std::function<void(const int, const std::string&, const std::string&)> new_blif_error_handler);
 
 /*
  * Enumerations

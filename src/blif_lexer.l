@@ -155,8 +155,8 @@ ENDL (\n|\n\r)
                                      return 0 (which indicated end of file). This ensures
                                      there will always be an EOL provided to the parser. 
                                      However it may also generate a stray EOL if the last
-                                     line IS blank - so the parse must handle those correclty. */
+                                     line IS blank - so the parser must handle those correclty. */
                                   static bool once; return (once = !once) ? blifparse::Parser::make_EOL() : blifparse::Parser::make_EOF();
                                 }
-<*>.                            { blifparse::blif_error_wrap(blifparse_get_lineno(yyscanner), blifparse_get_text(yyscanner), "Unrecognzied character"); }
+<*>.                            { blifparse::blif_error_wrap(callback, blifparse_get_lineno(yyscanner), blifparse_get_text(yyscanner), "Unrecognzied character"); }
 %%

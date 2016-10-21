@@ -1,5 +1,6 @@
 #ifndef BLIF_PRETTY_PRINT
 #define BLIF_PRETTY_PRINT
+#include <cstdio>
 #include "blifparse.hpp"
 
 namespace blifparse {
@@ -30,6 +31,13 @@ class BlifPrettyPrinter : public Callback {
 
         void finish_parse() override;
 
+        void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {
+            fprintf(stderr, "Custom Error at line %d near '%s': %s\n", curr_lineno, near_text.c_str(), msg.c_str());
+            had_error_ = true;
+        }
+
+        bool had_error() { return had_error_; }
+
     private:
         std::string indent();
 
@@ -38,6 +46,7 @@ class BlifPrettyPrinter : public Callback {
         std::string filename_ = "";
         int lineno_ = 0;
         bool print_file_line_ = false;
+        bool had_error_ = false;
 };
 
 }
