@@ -52,12 +52,6 @@ static std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist
 bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetId,t_net_power>& atom_net_power,
                           char * net_name, float probability, float density);
 
-void blif_error(int lineno, std::string near_text, std::string msg);
-
-void blif_error(int lineno, std::string near_text, std::string msg) {
-    vpr_throw(VPR_ERROR_BLIF_F, "", lineno,
-            "Error in blif file near '%s': %s\n", near_text.c_str(), msg.c_str());
-}
 
 vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
@@ -320,6 +314,11 @@ struct BlifAllocCallback : public blifparse::Callback {
         void filename(std::string fname) override { filename_ = fname; }
 
         void lineno(int line_num) override { lineno_ = line_num; }
+
+        void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {
+            vpr_throw(VPR_ERROR_BLIF_F, "", curr_lineno,
+                    "Error in blif file near '%s': %s\n", near_text.c_str(), msg.c_str());
+        }
     public:
         //Retrieve the netlist
         size_t determine_main_netlist_index() { 
@@ -542,9 +541,6 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
 		const t_model *user_models, const t_model *library_models,
 		bool read_activity_file, char * activity_file) {
-
-    //Throw VPR errors instead of using libblifparse default error
-    blifparse::set_blif_error_handler(blif_error);
 
     AtomNetlist netlist;
     {
