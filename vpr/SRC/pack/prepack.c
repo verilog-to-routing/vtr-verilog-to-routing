@@ -1027,8 +1027,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != NULL && success == true) {
-			if (cur_pack_pattern_connection->from_block
-					== current_pattern_block) {
+			if (cur_pack_pattern_connection->from_block == current_pattern_block) {
 				/* find net corresponding to pattern */
                 auto port_id = g_atom_nl.find_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port->name);
                 VTR_ASSERT(port_id);
