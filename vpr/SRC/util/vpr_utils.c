@@ -650,50 +650,27 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
 	/* TODO: process to get ext_inps is slow, should cache in lookup table */
 
-    const t_model* model = g_atom_nl.block_model(blk_id);
+    std::unordered_set<AtomNetId> input_nets;
 
-	t_model_ports* in_port = model->inputs;
-	while (in_port) {
-		if (in_port->is_clock == false) {
-            AtomPortId in_port_id = g_atom_nl.find_port(blk_id, in_port->name);
-            if(in_port_id) {
-                for (int ipin = 0; ipin < in_port->size; ipin++) {
-                    AtomPinId in_pin_id = g_atom_nl.port_pin(in_port_id, ipin);
+    //Record the unique input nets
+    for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
+        for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            input_nets.insert(net_id);
+        }
+    }
 
-                    if(!in_pin_id) continue;
+    ext_inps = input_nets.size();
 
-                    AtomNetId in_net_id = g_atom_nl.pin_net(in_pin_id);
-                    if (in_pin_id) {
-                        ext_inps++;
-                    }
-
-                    //See if any output is also connected to the current input
-                    t_model_ports* out_port = model->outputs;
-                    while (out_port) {
-                        AtomPortId out_port_id = g_atom_nl.find_port(blk_id, out_port->name);
-                        if(out_port_id) {
-                            for (int opin = 0; opin < out_port->size; opin++) {
-                                AtomPinId out_pin_id = g_atom_nl.port_pin(out_port_id, opin);
-                                if (!out_pin_id) continue;
-                                /* TODO: I could speed things up a bit by computing the number of inputs *
-                                 * and number of external inputs for each atom block at the start of   *
-                                 * clustering and storing them in arrays.  Look into if speed is a      *
-                                 * problem.                                                             */
-                                AtomNetId out_net_id = g_atom_nl.pin_net(out_pin_id);
-
-                                if (in_net_id == out_net_id) {
-                                    ext_inps--;
-                                    break;
-                                }
-                            }
-                            out_port = out_port->next;
-                        }
-                    }
-                }
+    //Look through the output nets for any duplicates of the input nets
+    for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
+        for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            if(input_nets.count(net_id)) {
+                --ext_inps;
             }
-		}
-		in_port = in_port->next;
-	}
+        }
+    }
 
 	VTR_ASSERT(ext_inps >= 0);
 
