@@ -544,21 +544,21 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
 
     AtomNetlist netlist;
     {
-        vtr::ScopedPrintTimer t1("Load BLIF");
+        vtr::ScopedPrintTimer t("Load BLIF");
 
         BlifAllocCallback alloc_callback(netlist, user_models, library_models);
         blifparse::blif_parse_filename(blif_file, alloc_callback);
     }
 
     {
-        vtr::ScopedPrintTimer t2("Verify BLIF");
+        vtr::ScopedPrintTimer t("Verify BLIF");
         netlist.verify();
     }
 
     netlist.print_stats();
 
     {
-        vtr::ScopedPrintTimer t2("Clean BLIF");
+        vtr::ScopedPrintTimer t("Clean BLIF");
         
         //Clean-up lut buffers
         if(absorb_buffers) {
@@ -570,6 +570,7 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
         if(unconn_net_id) {
             netlist.remove_net(unconn_net_id);
         }
+        //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if(unconn_blk_id) {
             netlist.remove_block(unconn_blk_id);
@@ -585,14 +586,14 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
     }
 
     {
-        vtr::ScopedPrintTimer t2("Compress BLIF");
+        vtr::ScopedPrintTimer t("Compress BLIF");
 
         //Compress the netlist to clean-out invalid entries
         netlist.compress();
         netlist.print_stats();
     }
     {
-        vtr::ScopedPrintTimer t2("Verify BLIF");
+        vtr::ScopedPrintTimer t("Verify BLIF");
 
         netlist.verify();
     }
@@ -600,6 +601,7 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
     show_blif_stats(netlist);
 
     if(read_activity_file) {
+        vtr::ScopedPrintTimer t("Load Activity File");
         auto atom_net_power = read_activity(netlist, activity_file);
         g_atom_net_power = std::move(atom_net_power);
     }
