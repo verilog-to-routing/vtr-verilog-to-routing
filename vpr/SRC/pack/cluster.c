@@ -964,7 +964,7 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
      * Note that this routine does not check pin feasibility against the cur_pb_type; so
      * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
      */
-    VTR_ASSERT(cur_pb->class_type == MEMORY_CLASS);
+    VTR_ASSERT(cur_pb_type->class_type == MEMORY_CLASS);
 
     //First, identify the 'data' ports by looking at the cur_pb_type
     std::unordered_set<t_model_ports*> data_ports;
