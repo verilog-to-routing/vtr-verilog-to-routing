@@ -1766,13 +1766,12 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
-	int ipin;
 	int molecule_size;
 	int iblock;
-	t_model_ports *port;
 	t_pb *cur_pb, *cb;
 
 	/* TODO: what a scary comment from Vaughn, we'll have to watch out for this causing problems */
+
 	/* Output can be open so the check is necessary.  I don't change  *
 	 * the gain for clock outputs when clocks are globally distributed  *
 	 * because I assume there is no real need to pack similarly clocked *
@@ -1806,75 +1805,41 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 			cur_pb = cur_pb->parent_pb;
 		}
 
-        const t_model* model = g_atom_nl.block_model(blk_id);
-
-        /* Output pin first. */
-		port = model->outputs;
-		while (port) {
-            auto port_id = g_atom_nl.find_port(blk_id, port->name);
-            VTR_ASSERT(port_id);
-
-			for (ipin = 0; ipin < port->size; ipin++) {
-                auto pin_id = g_atom_nl.port_pin(port_id, ipin);
-
-				if (pin_id) {
-                    auto net_id = g_atom_nl.pin_net(pin_id);
-					if (!is_clock.count(net_id) || !global_clocks) {
-						mark_and_update_partial_gain(net_id, GAIN, blk_id,
-								timing_driven,
-								connection_driven, OUTPUT, slacks, is_global);
-                    } else {
-						mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
-								timing_driven,
-								connection_driven, OUTPUT, slacks, is_global);
-                    }
-				}
-			}
-			port = port->next;
-		}
-
-        /* Input pins */
-		port = model->inputs;
-		while (port) {
-			if (port->is_clock) {
-				port = port->next;
-				continue;
-			}
-
-            auto port_id = g_atom_nl.find_port(blk_id, port->name);
-            if(port_id) {
-
-                for (ipin = 0; ipin < port->size; ipin++) {
-                    auto pin_id = g_atom_nl.port_pin(port_id, ipin);
-
-                    if (pin_id) {
-                        auto net_id = g_atom_nl.pin_net(pin_id);
-                        mark_and_update_partial_gain(net_id, GAIN, blk_id,
-                                timing_driven, connection_driven,
-                                INPUT, slacks, is_global);
-                    }
+        /* Outputs first */
+        for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
+                if (!is_clock.count(net_id) || !global_clocks) {
+                    mark_and_update_partial_gain(net_id, GAIN, blk_id,
+                            timing_driven,
+                            connection_driven, OUTPUT, slacks, is_global);
+                } else {
+                    mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
+                            timing_driven,
+                            connection_driven, OUTPUT, slacks, is_global);
                 }
             }
-			port = port->next;
-		}
+        }
 
+        /* Next Inputs */
+        for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
+                mark_and_update_partial_gain(net_id, GAIN, blk_id,
+                        timing_driven, connection_driven,
+                        INPUT, slacks, is_global);
+            }
+        }
+
+        /* Finally Clocks */
 		/* Note:  The code below ONLY WORKS when nets that go to clock inputs *
 		 * NEVER go to the input of a VPACK_COMB.  It doesn't really make electrical *
 		 * sense for that to happen, and I check this in the check_clocks     *
 		 * function.  Don't disable that sanity check.                        */
-        //TODO: lift above restriction
-        //TODO: suppot multiple clocks per primitive
-        auto clock_ports = g_atom_nl.block_clock_ports(blk_id);
-        if(clock_ports.size() > 0) {
-            VTR_ASSERT(clock_ports.size() == 1);
-            auto clock_port_id = *clock_ports.begin();
-
-            auto clock_pins = g_atom_nl.port_pins(clock_port_id);
-            VTR_ASSERT(clock_pins.size() == 1);
-            auto clock_pin_id = *clock_pins.begin();
-
-            if (clock_pin_id) {
-                auto net_id = g_atom_nl.pin_net(clock_pin_id);
+        //TODO: lift above restriction (does happen on some circuits)
+        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
                 if (global_clocks) {
                     mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                             timing_driven, connection_driven, INPUT, slacks, is_global);
