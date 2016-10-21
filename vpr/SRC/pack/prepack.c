@@ -905,7 +905,7 @@ static void free_pack_pattern(t_pack_pattern_block *pattern_block, t_pack_patter
 }
 
 /**
- * Given a pattern and a atom block to serve as the root block, determine if 
+ * Given a pattern and an atom block to serve as the root block, determine if 
  * the candidate atom block serving as the root node matches the pattern.
  * If yes, return the molecule with this atom block as the root, if not, return NULL
  *
@@ -1034,12 +1034,11 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 				ipin = cur_pack_pattern_connection->from_pin->pin_number;
                 auto net_id = g_atom_nl.port_net(port_id, ipin);
 
-                auto net_sinks = g_atom_nl.net_sinks(net_id);
-
 				/* Check if net is valid */
-				if (!net_id || net_sinks.size() != 1) { /* One fanout assumption */
+				if (!net_id || g_atom_nl.net_sinks(net_id).size() != 1) { /* One fanout assumption */
 					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
 				} else {
+                    auto net_sinks = g_atom_nl.net_sinks(net_id);
                     VTR_ASSERT(net_sinks.size() == 1);
 
                     auto sink_pin_id = *net_sinks.begin();
@@ -1247,15 +1246,16 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
     auto port_id = g_atom_nl.find_port(blk_id, model_port->name);
     VTR_ASSERT(port_id);
 
-	AtomNetId driver_net_id = g_atom_nl.port_net(port_id, root_ipin->pin_number);
-	if(!driver_net_id) {
+	AtomNetId driving_net_id = g_atom_nl.port_net(port_id, root_ipin->pin_number);
+	if(!driving_net_id) {
 		/* The current block is the furthest up the chain, return it */
 		return blk_id;
 	}
 
-	AtomBlockId driver_blk_id = g_atom_nl.port_block(port_id);
+    auto driver_pin_id = g_atom_nl.net_driver(driving_net_id);
+	AtomBlockId driver_blk_id = g_atom_nl.pin_block(driver_pin_id);
 
-    auto rng = atom_molecules.equal_range(blk_id);
+    auto rng = atom_molecules.equal_range(driver_blk_id);
     bool rng_empty = (rng.first == rng.second);
 	if(!rng_empty) {
 		/* Driver is used/invalid, so current block is the furthest up the chain, return it */
