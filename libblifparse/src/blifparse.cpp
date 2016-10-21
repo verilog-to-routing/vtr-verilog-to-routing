@@ -27,8 +27,7 @@ void blif_parse_filename(const char* filename, Callback& callback) {
 
         std::fclose(infile);
     } else {
-        std::fclose(infile);
-        blif_error_wrap(callback, 0, "", "Could not open file %s.\n", filename);
+        blif_error_wrap(callback, 0, "", "Could not open file '%s'.\n", filename);
     }
 }
 
