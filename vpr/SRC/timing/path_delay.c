@@ -814,6 +814,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 	/* load edge delays and initialize clock domains to OPEN 
 	and prepacked_data (which is not used post-packing) to NULL. */
+    std::set<int> const_gen_tnodes;
 	for (int i = 0; i < num_tnodes; i++) {
 		tnode[i].clock_domain = OPEN;
 		tnode[i].prepacked_data = NULL;
@@ -883,6 +884,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					if (g_atom_nl.net_is_constant(net_id) && tnode[i].type == TN_PRIMITIVE_OPIN) {
 						tnode[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						tnode[i].type = TN_CONSTANT_GEN_SOURCE;
+                        const_gen_tnodes.insert(i);
 					}
 
 					count++;
@@ -1014,6 +1016,25 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		vtr::printf_warning(__FILE__, __LINE__, 
 				"Unconnected logic in design, number of dangling tnodes = %d\n", num_dangling_pins);
 	}
+
+    //In some instances, we may end-up with constant generators driving constant generators
+    //(which is illegal in the timing graph since constant generators shouldn't have any input
+    //edges). So we remove those edges now.
+    int const_gen_edge_break_count = 0;
+    for(inode = 0; inode < num_tnodes; ++inode) {
+        for(int iedge = 0; iedge <tnode[inode].num_edges; ++iedge) {
+            int& to_node = tnode[inode].out_edges[iedge].to_node;
+            if(const_gen_tnodes.count(to_node)) {
+                //This edge points to a constant generator, mark it invalid 
+                VTR_ASSERT(tnode[to_node].type == TN_CONSTANT_GEN_SOURCE);
+
+                to_node = DO_NOT_ANALYSE;
+
+                ++const_gen_edge_break_count;
+            }
+        }
+    }
+    vtr::printf_info("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
 
 	
 	for (int i = 0; i < num_types; i++) {
@@ -1501,7 +1522,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
             }
         }
     }
-    vtr::printf_info("Disconnected %d redundant edges to constant generators\n", const_gen_edge_break_count);
+    vtr::printf_info("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
 
 
     //Build the net to driver look-up
@@ -2292,6 +2313,8 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
 	long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
+    
+    print_timing_graph("tg.echo");
 	
 	/* Performs a single forward and backward traversal for the domain pair 
 	source_clock_domain and sink_clock_domain. Returns the denominator that
