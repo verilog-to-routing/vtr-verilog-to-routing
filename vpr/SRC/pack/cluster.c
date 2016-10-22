@@ -970,7 +970,7 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
     std::unordered_set<t_model_ports*> data_ports;
     for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
         const char* port_class = cur_pb_type->ports[iport].port_class;
-        if(strstr(port_class, "data") == port_class) {
+        if(port_class && strstr(port_class, "data") == port_class) {
             //The port_class starts with "data", so it is a data port
 
             //Record the port
