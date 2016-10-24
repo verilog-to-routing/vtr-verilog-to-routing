@@ -239,7 +239,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
-static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb, t_pb_graph_pin *pb_graph_pin);
+int count_cluster_reachable_net_sinks(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 
 static void print_block_criticalities(const char * fname);
 
@@ -2644,17 +2644,9 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
                     //Verify this, by counting the number of net sinks reachable from the driver pin.
                     //If the count equals the number of net sinks then the net is fully absorbed. and
                     //the net does not exit the cluster
-					int reachable_sink_count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed,
                      *       net is forever absorbed, no point in rechecking every time */
-					for (int j = 0; j < pb_graph_pin->num_connectable_primtive_input_pins[depth]; j++) {
-						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
-								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][j])
-								== net_id) {
-							reachable_sink_count++;
-						}
-					}
-					if (reachable_sink_count == num_net_sinks) {
+					if (count_cluster_reachable_net_sinks(pb_graph_pin, depth, net_id) == num_net_sinks) {
                         //All the sinks are reachable inside the cluster
 						net_exits_cluster = false;
 					}
@@ -2669,6 +2661,51 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 
 		cur_pb = cur_pb->parent_pb;
 	}
+}
+
+int count_cluster_reachable_net_sinks(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id) {
+    int num_reachable_sinks = 0;
+
+    //Record the sink pb graph pins we are looking for
+    std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
+    for(const AtomPinId pin_id : g_atom_nl.net_sinks(net_id)) {
+        const AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+        const AtomBlockId blk_id = g_atom_nl.port_block(port_id);
+
+        const t_pb_graph_node* pb_gnode = g_atom_map.atom_pb_graph_node(blk_id);
+        VTR_ASSERT(pb_gnode);
+
+        auto port_type = g_atom_nl.port_type(port_id);
+        const t_model_ports* model_port = g_atom_nl.port_model(port_id);
+        const int port_bit_index = g_atom_nl.pin_port_bit(pin_id);
+
+        t_pb_graph_pin* sink_pb_gpin = NULL;
+        VTR_ASSERT(port_type == AtomPortType::INPUT);
+        for(int iport = 0; iport < pb_gnode->num_input_ports; ++iport) {
+            t_port* port = pb_gnode->input_pins[iport][0].port;
+            if(port->model_port == model_port) {
+                VTR_ASSERT(port_bit_index < pb_gnode->num_input_pins[iport]);
+                sink_pb_gpin = &pb_gnode->input_pins[iport][port_bit_index];
+                break;
+            }
+        }
+        VTR_ASSERT(sink_pb_gpin);
+
+        VTR_ASSERT(sink_pb_gpin->port->model_port == model_port);
+
+        sink_pb_gpins.insert(sink_pb_gpin);
+    }
+
+    //Count how many sink pins are reachable
+    for(int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primtive_input_pins[depth]; ++i_prim_pin) {
+        const t_pb_graph_pin* sink_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
+
+        if(sink_pb_gpins.count(sink_pb_gpin)) {
+            ++num_reachable_sinks;
+        }
+    }
+
+    return num_reachable_sinks;
 }
 
 /* Check if the number of available inputs/outputs for a pin class is sufficient for speculatively packed blocks */
@@ -2743,69 +2780,6 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 					}
 				}
 			}
-		}
-	}
-}
-
-/* determine net at given pin location for cluster, return AtomNetId::INVALID() if none exists */
-static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
-		t_pb_graph_pin *pb_graph_pin) {
-	t_pb_graph_node *pb_graph_node;
-	int i;
-	t_model_ports *model_port;
-
-	if (cur_pb->name == NULL) {
-		return AtomNetId::INVALID();
-	}
-	if (cur_pb->pb_graph_node->pb_type->num_modes != 0) {
-        //Non-primitive
-
-        //Move-up the graph from the pb_garph_pin to find cur_pb
-		pb_graph_node = pb_graph_pin->parent_node;
-		while (pb_graph_node->parent_pb_graph_node->pb_type->depth > cur_pb->pb_graph_node->pb_type->depth) {
-			pb_graph_node = pb_graph_node->parent_pb_graph_node;
-		}
-
-		if (pb_graph_node->parent_pb_graph_node == cur_pb->pb_graph_node) {
-            //pb_graph_pin is contained in cur_pb
-
-			if (cur_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
-                //Modes do not match
-                return AtomNetId::INVALID();
-			}
-            //Find the child pb index which contains the pb_graph_pin
-			for (i = 0; i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (pb_graph_node == &cur_pb->pb_graph_node->child_pb_graph_nodes[cur_pb->mode][i][pb_graph_node->placement_index]) {
-					break;
-				}
-			}
-			VTR_ASSERT(i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children);
-
-            //Recurse
-			return get_net_corresponding_to_pb_graph_pin(&cur_pb->child_pbs[i][pb_graph_node->placement_index],
-                        pb_graph_pin);
-		} else {
-            return AtomNetId::INVALID();
-		}
-	} else {
-        //Primitive
-
-        //Find the atom block corresponding to this primitive pb
-        AtomBlockId blk_id = g_atom_map.pb_atom(cur_pb);
-		if (!blk_id) {
-			return AtomNetId::INVALID();
-		} else {
-            //Find the port corresponding to the pb_graph_pin
-			model_port = pb_graph_pin->port->model_port;
-
-            auto port_id = g_atom_nl.find_port(blk_id, model_port->name);
-
-            if(!port_id) {
-                return AtomNetId::INVALID();
-            } else {
-                //Find the net corresponding to the pb_graph_pin
-                return g_atom_nl.port_net(port_id, pb_graph_pin->pin_number);
-            }
 		}
 	}
 }
