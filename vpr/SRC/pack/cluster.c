@@ -239,8 +239,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
-static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
-		t_pb_graph_pin *pb_graph_pin);
+static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb, t_pb_graph_pin *pb_graph_pin);
 
 static void print_block_criticalities(const char * fname);
 
@@ -2525,7 +2524,6 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 	const t_pb_type *pb_type;
 	t_port *prim_port;
 	t_pb_graph_pin *output_pb_graph_pin;
-	int count;
 
 	bool skip, found;
 
@@ -2602,11 +2600,18 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 			}
 		} else {
 			VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
+            /*
+             * Determine if this net (which is driven within this cluster) leaves this cluster
+             * (and hense uses an output pin).
+             */
 
-			skip = false;
-            int num_net_pins = static_cast<int>(g_atom_nl.net_pins(net_id).size());
+			bool net_exits_cluster = true;
             int num_net_sinks = static_cast<int>(g_atom_nl.net_sinks(net_id).size());
+
 			if (pb_graph_pin->num_connectable_primtive_input_pins[depth] >= num_net_sinks) {
+                //It is possible the net is completely absorbed in the cluster,
+                //since this pin could (potentially) drive all the net's sinks
+
 				/* Important: This runtime penalty looks a lot scarier than it really is.  
                  * For high fan-out nets, I at most look at the number of pins within the 
                  * cluster which limits runtime.
@@ -2621,32 +2626,42 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
                  * small constant where the constant is equal to the number of LUT inputs).  
                  * The real danger to runtime is when the number of sinks of a net gets doubled
 				 */
-                int i = 1;
+
+                //Check if all the net sinks are, in fact, inside this cluster
+                bool all_sinks_in_cur_cluster = true;
+                int driver_clb = g_atom_map.atom_clb(driver_blk_id);
                 for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
                     auto sink_blk_id = g_atom_nl.pin_block(pin_id);
-					if (g_atom_map.atom_clb(sink_blk_id) != g_atom_map.atom_clb(driver_blk_id)) {
+					if (g_atom_map.atom_clb(sink_blk_id) != driver_clb) {
+                        all_sinks_in_cur_cluster = false;
 						break;
 					}
-                    ++i;
 				}
-				if (i == num_net_pins) {
-					count = 0;
+
+				if (all_sinks_in_cur_cluster) {
+                    //All the sinks are part of this cluster, so the net may be fully absorbed.
+                    //
+                    //Verify this, by counting the number of net sinks reachable from the driver pin.
+                    //If the count equals the number of net sinks then the net is fully absorbed. and
+                    //the net does not exit the cluster
+					int reachable_sink_count = 0;
 					/* TODO: I should cache the absorbed outputs, once net is absorbed,
                      *       net is forever absorbed, no point in rechecking every time */
 					for (int j = 0; j < pb_graph_pin->num_connectable_primtive_input_pins[depth]; j++) {
 						if (get_net_corresponding_to_pb_graph_pin(cur_pb,
 								pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][j])
 								== net_id) {
-							count++;
+							reachable_sink_count++;
 						}
 					}
-					if (count == num_net_sinks) {
-						skip = true;
+					if (reachable_sink_count == num_net_sinks) {
+                        //All the sinks are reachable inside the cluster
+						net_exits_cluster = false;
 					}
 				}
 			}
 
-			if (!skip) {
+			if (net_exits_cluster) {
 				/* This output must exit this cluster */
 				cur_pb->pb_stats->lookahead_output_pins_used[pin_class].push_back(net_id);				
 			}
