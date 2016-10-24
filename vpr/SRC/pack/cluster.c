@@ -2732,7 +2732,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 	}
 }
 
-/* determine net at given pin location for cluster, return OPEN if none exists */
+/* determine net at given pin location for cluster, return AtomNetId::INVALID() if none exists */
 static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		t_pb_graph_pin *pb_graph_pin) {
 	t_pb_graph_node *pb_graph_node;
@@ -2743,33 +2743,44 @@ static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
 		return AtomNetId::INVALID();
 	}
 	if (cur_pb->pb_graph_node->pb_type->num_modes != 0) {
+        //Non-primitive
+
+        //Move-up the graph from the pb_garph_pin to find cur_pb
 		pb_graph_node = pb_graph_pin->parent_node;
-		while (pb_graph_node->parent_pb_graph_node->pb_type->depth
-				> cur_pb->pb_graph_node->pb_type->depth) {
+		while (pb_graph_node->parent_pb_graph_node->pb_type->depth > cur_pb->pb_graph_node->pb_type->depth) {
 			pb_graph_node = pb_graph_node->parent_pb_graph_node;
 		}
+
 		if (pb_graph_node->parent_pb_graph_node == cur_pb->pb_graph_node) {
+            //pb_graph_pin is contained in cur_pb
+
 			if (cur_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
+                //Modes do not match
                 return AtomNetId::INVALID();
 			}
+            //Find the child pb index which contains the pb_graph_pin
 			for (i = 0; i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-				if (pb_graph_node
-						== &cur_pb->pb_graph_node->child_pb_graph_nodes[cur_pb->mode][i][pb_graph_node->placement_index]) {
+				if (pb_graph_node == &cur_pb->pb_graph_node->child_pb_graph_nodes[cur_pb->mode][i][pb_graph_node->placement_index]) {
 					break;
 				}
 			}
 			VTR_ASSERT(i < cur_pb->pb_graph_node->pb_type->modes[cur_pb->mode].num_pb_type_children);
-			return get_net_corresponding_to_pb_graph_pin(
-					&cur_pb->child_pbs[i][pb_graph_node->placement_index],
-					pb_graph_pin);
+
+            //Recurse
+			return get_net_corresponding_to_pb_graph_pin(&cur_pb->child_pbs[i][pb_graph_node->placement_index],
+                        pb_graph_pin);
 		} else {
             return AtomNetId::INVALID();
 		}
 	} else {
+        //Primitive
+
+        //Find the atom block corresponding to this primitive pb
         AtomBlockId blk_id = g_atom_map.pb_atom(cur_pb);
 		if (!blk_id) {
 			return AtomNetId::INVALID();
 		} else {
+            //Find the port corresponding to the pb_graph_pin
 			model_port = pb_graph_pin->port->model_port;
 
             auto port_id = g_atom_nl.find_port(blk_id, model_port->name);
@@ -2777,6 +2788,7 @@ static AtomNetId get_net_corresponding_to_pb_graph_pin(t_pb *cur_pb,
             if(!port_id) {
                 return AtomNetId::INVALID();
             } else {
+                //Find the net corresponding to the pb_graph_pin
                 return g_atom_nl.port_net(port_id, pb_graph_pin->pin_number);
             }
 		}
