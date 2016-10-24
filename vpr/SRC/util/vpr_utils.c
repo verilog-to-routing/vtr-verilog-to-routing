@@ -447,10 +447,11 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin_id) {
 
     //Get the pin index
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+    int ipin = g_atom_nl.pin_port_bit(pin_id);
+
+    //Get the model port
     const t_model_ports* model_port = g_atom_nl.port_model(port_id);
     VTR_ASSERT(model_port);
-
-    int ipin = g_atom_nl.pin_port_bit(pin_id);
     
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
