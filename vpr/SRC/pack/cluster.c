@@ -995,8 +995,8 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
             //driving the output net
 
             //Get the ports from each primitive
-            auto blk_port_id = g_atom_nl.find_port(blk_id, port->name);
-            auto sib_port_id = g_atom_nl.find_port(sibling_blk_id, port->name);
+            auto blk_port_id = g_atom_nl.find_port(blk_id, port);
+            auto sib_port_id = g_atom_nl.find_port(sibling_blk_id, port);
 
             //Check that all nets (including unconnected nets) match
             for(int ipin = 0; ipin < port->size; ++ipin) {
@@ -1414,7 +1414,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {
 			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
             t_model_ports *root_port = chain_root_pin->port->model_port;
-            auto port_id = g_atom_nl.find_port(blk_id, root_port->name);
+            auto port_id = g_atom_nl.find_port(blk_id, root_port);
             VTR_ASSERT(port_id);
             auto chain_net_id = g_atom_nl.port_net(port_id, chain_root_pin->pin_number);
 
@@ -2472,7 +2472,7 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
 	input_port = output_port = clock_port = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		prim_port = &pb_type->ports[i];
-        auto port_id = g_atom_nl.find_port(blk_id, prim_port->name);
+        auto port_id = g_atom_nl.find_port(blk_id, prim_port->model_port);
 
         if(port_id) {
             if (prim_port->is_clock) {

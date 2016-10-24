@@ -329,7 +329,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         const t_model_ports* pb_model_port = pb_port->model_port;
 
         //Find the matching port on the atom
-        auto port_id = g_atom_nl.find_port(blk_id, pb_model_port->name);
+        auto port_id = g_atom_nl.find_port(blk_id, pb_model_port);
 
         if(port_id) { //Port is used by the atom
              

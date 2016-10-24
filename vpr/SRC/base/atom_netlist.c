@@ -462,6 +462,20 @@ AtomBlockId AtomNetlist::find_block (const std::string& name) const {
     }
 }
 
+AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const t_model_ports* model_port) const {
+    VTR_ASSERT(valid_block_id(blk_id));
+    VTR_ASSERT(model_port);
+
+    auto iter = block_id_model_port_to_port_id_.find(std::make_tuple(blk_id, model_port));
+    if(iter == block_id_model_port_to_port_id_.end()) {
+        return AtomPortId::INVALID();
+    } else {
+        VTR_ASSERT_SAFE(port_model(iter->second) == model_port);
+
+        return iter->second;
+    }
+}
+
 AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& name) const {
     VTR_ASSERT(valid_block_id(blk_id));
 
@@ -664,12 +678,12 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
     return blk_id;
 }
 
-AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::string& name) {
+AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const t_model_ports* model_port) {
     //Check pre-conditions
     VTR_ASSERT_MSG(valid_block_id(blk_id), "Valid block id");
 
     //See if the port already exists
-    AtomStringId name_id = create_string(name);
+    AtomStringId name_id = create_string(model_port->name);
     AtomPortId port_id = find_port(blk_id, name_id);
     if(!port_id) {
         //Not found, create it
@@ -681,10 +695,13 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
         //Save the reverse lookup
         auto key = std::make_tuple(blk_id, name_id);
         block_id_port_name_to_port_id_[key] = port_id;
+        auto key2 = std::make_tuple(blk_id, model_port);
+        block_id_model_port_to_port_id_[key2] = port_id;
 
         //Initialize the per-port-instance data
         port_blocks_.push_back(blk_id);
         port_names_.push_back(name_id);
+        port_models_.push_back(model_port);
         port_widths_.push_back(port_model(port_id)->size);
 
         //Allocate the pins, initialize to invalid Ids
@@ -713,8 +730,11 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
     //Check post-conditions: values
     VTR_ASSERT(valid_port_id(port_id));
     VTR_ASSERT(port_block(port_id) == blk_id);
-    VTR_ASSERT(port_name(port_id) == name);
+    VTR_ASSERT(port_name(port_id) == model_port->name);
+    VTR_ASSERT(port_width(port_id) == (unsigned) model_port->size);
+    VTR_ASSERT(port_model(port_id) == model_port);
     VTR_ASSERT_SAFE(find_port(blk_id, name) == port_id);
+    VTR_ASSERT_SAFE(find_port(blk_id, model_port) == port_id);
 
     return port_id;
 }
@@ -898,7 +918,9 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
     //Invalidate look-up
     AtomBlockId blk_id = port_block(port_id);
     AtomStringId name_id = port_names_[size_t(port_id)];
+    const t_model_ports* model_port = port_models_[size_t(port_id)];
     block_id_port_name_to_port_id_[std::make_tuple(blk_id, name_id)] = AtomPortId::INVALID();
+    block_id_model_port_to_port_id_[std::make_tuple(blk_id, model_port)] = AtomPortId::INVALID();
 
     //Mark as invalid
     port_ids_[size_t(port_id)] = AtomPortId::INVALID();
@@ -1075,6 +1097,7 @@ std::vector<AtomPortId> AtomNetlist::clean_ports() {
     port_names_ = move_valid(port_names_, port_ids_);
     port_blocks_ = move_valid(port_blocks_, port_ids_);
     port_widths_ = move_valid(port_widths_, port_ids_);
+    port_models_ = move_valid(port_models_, port_ids_);
     port_pins_ = move_valid(port_pins_, port_ids_);
 
     //Update Ids last since used as predicate
@@ -1194,9 +1217,13 @@ void AtomNetlist::rebuild_lookups() {
 
     //Ports
     block_id_port_name_to_port_id_.clear();
+    block_id_model_port_to_port_id_.clear();
     for(auto port_id : port_ids_) {
         const auto& key = std::make_tuple(port_block(port_id), port_names_[size_t(port_id)]);
         block_id_port_name_to_port_id_[key] = port_id;
+
+        const auto& key2 = std::make_tuple(port_block(port_id), port_models_[size_t(port_id)]);
+        block_id_model_port_to_port_id_[key2] = port_id;
     }
 
     //Pins

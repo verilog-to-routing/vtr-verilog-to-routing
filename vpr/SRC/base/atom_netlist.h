@@ -366,6 +366,15 @@ namespace std {
             return seed;
         }
     };
+    template<>
+    struct hash<std::tuple<AtomBlockId,const t_model_ports*>> {
+        std::size_t operator()(const std::tuple<AtomBlockId,const t_model_ports*>& k) const {
+            std::size_t seed = 0;
+            vtr::hash_combine(seed, std::hash<AtomBlockId>()(get<0>(k)));
+            vtr::hash_combine(seed, std::hash<const t_model_ports*>()(get<1>(k)));
+            return seed;
+        }
+    };
 } //namespace std
 
 
@@ -512,6 +521,11 @@ class AtomNetlist {
 
         //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
         //  blk_id: The ID of the block who's ports will be checked
+        //  model_port: The port model to look for
+        AtomPortId  find_port   (const AtomBlockId blk_id, const t_model_ports* model_port) const;
+
+        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
+        //  blk_id: The ID of the block who's ports will be checked
         //  name  : The name of the port to look for
         AtomPortId  find_port   (const AtomBlockId blk_id, const std::string& name) const;
 
@@ -552,7 +566,7 @@ class AtomNetlist {
         //Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
-        AtomPortId  create_port (const AtomBlockId blk_id, const std::string& name);
+        AtomPortId  create_port (const AtomBlockId blk_id, const t_model_ports* model_port);
 
         //Create or return an existing pin in the netlist
         //  port_id : The port this pin is associated with
@@ -738,6 +752,7 @@ class AtomNetlist {
         std::vector<AtomPortId>             port_ids_;      //Valid port ids
         std::vector<AtomStringId>           port_names_;    //Name of each port
         std::vector<AtomBlockId>            port_blocks_;   //Block associated with each port
+        std::vector<const t_model_ports*>   port_models_;   //Architecture port models of each port
         std::vector<BitIndex>               port_widths_;   //Architecture bit-width of each port
         std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
@@ -764,6 +779,7 @@ class AtomNetlist {
 
         std::unordered_map<AtomStringId,AtomBlockId>                        block_name_to_block_id_;
         std::unordered_map<std::tuple<AtomBlockId,AtomStringId>,AtomPortId> block_id_port_name_to_port_id_;
+        std::unordered_map<std::tuple<AtomBlockId,const t_model_ports*>,AtomPortId> block_id_model_port_to_port_id_;
         std::unordered_map<std::tuple<AtomPortId,BitIndex>,AtomPinId>       pin_port_port_bit_to_pin_id_;
         std::unordered_map<AtomStringId,AtomNetId>                          net_name_to_net_id_;
         std::unordered_map<std::string,AtomStringId>                        string_to_string_id_;

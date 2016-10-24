@@ -1073,7 +1073,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			int j = 0;
 			const t_model_ports* model_port = model->inputs;
 			while (model_port) {
-                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
                 if(port_id) {
                     if (model_port->is_clock == false) {
                         //Non-clock port, so add tnodes for each used input pin
@@ -1095,7 +1095,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			j = 0;
 			model_port = model->outputs;
 			while (model_port) {
-                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
                 VTR_ASSERT(port_id);
                 //Add tnodes for each output pin
 				for (int k = 0; k < model_port->size; k++) {
@@ -1207,7 +1207,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			t_model_ports* model_port = model->outputs;
 			while (model_port) {
 
-                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
                 VTR_ASSERT(port_id);
 
 				if (model_port->is_clock == false) {
@@ -1313,7 +1313,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			model_port = model->inputs;
 			while (model_port) {
 
-                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
                 if(port_id) {
 
                     if (model_port->is_clock == false) {
@@ -1354,7 +1354,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
                                         //Find the tnode associated with the sink port & pin
                                         auto sink_blk_id = blk_id; //Within a single atom, so the source and sink blocks are the same
-                                        auto sink_port_id = g_atom_nl.find_port(sink_blk_id, to_pb_graph_pin->port->model_port->name);
+                                        auto sink_port_id = g_atom_nl.find_port(sink_blk_id, to_pb_graph_pin->port->model_port);
                                         VTR_ASSERT(sink_port_id);
                                         auto sink_pin_id = g_atom_nl.port_pin(sink_port_id, to_pb_graph_pin->pin_number);
                                         if(sink_pin_id) {

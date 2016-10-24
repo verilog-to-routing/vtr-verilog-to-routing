@@ -793,7 +793,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 
 				model_port = root->output_pins[i][j].port->model_port;
 
-                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port->name);
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
                 AtomNetId net_id = g_atom_nl.port_net(port_id, j);
 
 				if(net_id) {
