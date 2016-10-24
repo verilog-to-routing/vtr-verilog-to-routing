@@ -2394,7 +2394,8 @@ static int compare_molecule_gain(const void *a, const void *b) {
 }
 
 /* Determine if speculatively packed cur_pb is pin feasible 
- * Runtime is actually not that bad for this.  It's worst case O(k^2) where k is the number of pb_graph pins.  Can use hash tables or make incremental if becomes an issue.
+ * Runtime is actually not that bad for this.  It's worst case O(k^2) where k is the 
+ * number of pb_graph pins.  Can use hash tables or make incremental if becomes an issue.
  */
 static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 	int i, j;
@@ -2402,12 +2403,10 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 
 	if (pb_type->num_modes > 0 && cur_pb->name != NULL) {
 		if (cur_pb->child_pbs != NULL) {
-			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children;
-					i++) {
+			for (i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
 				if (cur_pb->child_pbs[i] != NULL) {
 					for (j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
-						try_update_lookahead_pins_used(
-								&cur_pb->child_pbs[i][j]);
+						try_update_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
 					}
 				}
 			}
@@ -2534,11 +2533,11 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 		pin_class = pb_graph_pin->parent_pin_class[depth];
 		VTR_ASSERT(pin_class != OPEN);
 
-        auto driver_pin_id = g_atom_nl.net_driver(net_id);
         auto driver_blk_id = g_atom_nl.net_driver_block(net_id);
 
 		if (pb_graph_pin->port->type == IN_PORT) {
 			/* find location of net driver if exist in clb, NULL otherwise */
+            auto driver_pin_id = g_atom_nl.net_driver(net_id);
 
             auto prim_blk_id = g_atom_map.pb_atom(primitive_pb);
 
