@@ -72,7 +72,7 @@ class AtomMap {
 
         std::unordered_map<AtomBlockId,const t_pb_graph_node*> atom_to_lowest_cost_pb_gnode_;
 
-        std::unordered_map<AtomBlockId,int> atom_to_clb_;
+        std::vector<int> atom_to_clb_;
         std::unordered_map<int,AtomBlockId> clb_to_atom_;
 
         std::unordered_map<AtomNetId,int> atom_to_clb_net_;

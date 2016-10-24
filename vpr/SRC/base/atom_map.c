@@ -57,12 +57,11 @@ void AtomMap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
  * Blocks
  */
 int AtomMap::atom_clb(const AtomBlockId blk_id) const {
-    auto iter = atom_to_clb_.find(blk_id);
-    if(iter == atom_to_clb_.end()) {
-        //Not found
+    if(blk_id && size_t(blk_id) < atom_to_clb_.size()) {
+        return atom_to_clb_[size_t(blk_id)];
+    } else {
         return NO_CLUSTER;
     }
-    return iter->second;
 }
 
 AtomBlockId AtomMap::clb_atom(const int clb_index) const {
@@ -75,23 +74,26 @@ AtomBlockId AtomMap::clb_atom(const int clb_index) const {
 }
 
 void AtomMap::set_atom_clb(const AtomBlockId blk_id, const int clb_index) {
-    VTR_ASSERT(blk_id);
+
+    if(blk_id && size_t(blk_id) >= atom_to_clb_.size()) {
+        atom_to_clb_.resize(size_t(blk_id)+1, NO_CLUSTER);
+    }
+
     //If either are invalid remove any mapping
-    if(!blk_id) {
+    if(clb_index != NO_CLUSTER && !blk_id) {
         //Remove
         clb_to_atom_.erase(clb_index);
-        VTR_ASSERT_SAFE(atom_to_clb_.count(blk_id) == 0);
     }
-    if(clb_index == NO_CLUSTER) {
+    if(blk_id && clb_index == NO_CLUSTER) {
         //Remove
-        atom_to_clb_.erase(blk_id);
+        atom_to_clb_[size_t(blk_id)] = NO_CLUSTER;
         VTR_ASSERT_SAFE(clb_to_atom_.count(clb_index) == 0);
     }
     
     //If both are valid store the mapping
     if(blk_id && clb_index != NO_CLUSTER) {
         //Store
-        atom_to_clb_[blk_id] = clb_index;
+        atom_to_clb_[size_t(blk_id)] = clb_index;
         clb_to_atom_[clb_index] = blk_id;
     }
 }
