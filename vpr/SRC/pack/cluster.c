@@ -2641,7 +2641,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
                     //All the sinks are part of this cluster, so the net may be fully absorbed.
                     //
                     //Verify this, by counting the number of net sinks reachable from the driver pin.
-                    //If the count equals the number of net sinks then the net is fully absorbed. and
+                    //If the count equals the number of net sinks then the net is fully absorbed and
                     //the net does not exit the cluster
 					/* TODO: I should cache the absorbed outputs, once net is absorbed,
                      *       net is forever absorbed, no point in rechecking every time */
