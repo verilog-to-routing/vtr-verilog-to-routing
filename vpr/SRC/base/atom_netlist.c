@@ -240,10 +240,7 @@ const std::string& AtomNetlist::port_name (const AtomPortId id) const {
 BitIndex AtomNetlist::port_width (const AtomPortId id) const {
     VTR_ASSERT(valid_port_id(id));
 
-    //We look-up the width via the model
-    const t_model_ports* model_port = port_model(id);
-
-    return static_cast<BitIndex>(model_port->size);
+    return port_widths_[size_t(id)];
 }
 
 AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
@@ -291,8 +288,8 @@ AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_b
     return AtomPinId::INVALID();
 }
 AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_bit) const {
-    VTR_ASSERT(valid_port_id(port_id));
-    VTR_ASSERT(valid_port_bit(port_id, port_bit));
+    //port_pin() will validate that port_bit and port_id are valid so don't 
+    //check redundently here
 
     //Convenience look-up bypassing port and pin
     AtomPinId pin_id = port_pin(port_id, port_bit);
@@ -688,6 +685,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
         //Initialize the per-port-instance data
         port_blocks_.push_back(blk_id);
         port_names_.push_back(name_id);
+        port_widths_.push_back(port_model(port_id)->size);
 
         //Allocate the pins, initialize to invalid Ids
         port_pins_.emplace_back();
@@ -705,6 +703,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const std::strin
         } else {
             VTR_ASSERT_MSG(false, "Recognized port type");
         }
+
 
     }
 
@@ -1075,6 +1074,7 @@ std::vector<AtomPortId> AtomNetlist::clean_ports() {
     //Copy all the valid values
     port_names_ = move_valid(port_names_, port_ids_);
     port_blocks_ = move_valid(port_blocks_, port_ids_);
+    port_widths_ = move_valid(port_widths_, port_ids_);
     port_pins_ = move_valid(port_pins_, port_ids_);
 
     //Update Ids last since used as predicate
@@ -1237,6 +1237,7 @@ void AtomNetlist::shrink_to_fit() {
     //Port data
     port_ids_.shrink_to_fit();
     port_blocks_.shrink_to_fit();
+    port_widths_.shrink_to_fit();
     port_pins_.shrink_to_fit();
     for(auto& pins : port_pins_) {
         pins.shrink_to_fit();
@@ -1318,6 +1319,7 @@ bool AtomNetlist::validate_block_sizes() const {
 
 bool AtomNetlist::validate_port_sizes() const {
     if(port_blocks_.size() != port_ids_.size()
+        || port_widths_.size() != port_widths_.size()
         || port_pins_.size() != port_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
     }
