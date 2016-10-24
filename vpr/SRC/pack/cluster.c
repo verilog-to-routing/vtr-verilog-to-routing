@@ -2665,8 +2665,6 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 int count_cluster_reachable_net_sinks(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id) {
     int num_reachable_sinks = 0;
 
-    std::unordered_map<const t_model_ports*,int> model_port_to_index;
-
     //Record the sink pb graph pins we are looking for
     std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
     for(const AtomPinId pin_id : g_atom_nl.net_sinks(net_id)) {
