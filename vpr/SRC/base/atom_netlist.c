@@ -910,8 +910,6 @@ void AtomNetlist::remove_pin(const AtomPinId pin_id) {
 
     //Find the associated net
     AtomNetId net = pin_net(pin_id);
-    AtomPortId port = pin_port(pin_id);
-    BitIndex port_bit = pin_port_bit(pin_id);
 
     //Remove the pin from the associated net
     remove_net_pin(net, pin_id);
