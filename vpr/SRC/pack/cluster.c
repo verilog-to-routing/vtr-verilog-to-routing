@@ -142,7 +142,7 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb);
 static void reset_lookahead_pins_used(t_pb *cur_pb);
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id);
 static void compute_and_mark_lookahead_pins_used_for_pin(
-		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id);
+		const t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id);
 static void commit_lookahead_pins_used(t_pb *cur_pb);
 static bool check_lookahead_pins_used(t_pb *cur_pb);
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb);
@@ -2467,55 +2467,19 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
 	pb_type = pb_graph_node->pb_type;
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
-	/* TODO: This is inelegant design, I should change the primitive ports in pb_type 
-     *       to be input, output, or clock instead of this lookup */
-	input_port = output_port = clock_port = 0;
-	for (i = 0; i < pb_type->num_ports; i++) {
-		prim_port = &pb_type->ports[i];
-        auto port_id = g_atom_nl.find_port(blk_id, prim_port->model_port);
+    for(auto ports : {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)}) {
+        for(auto port_id : ports) {
+            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
 
-        if(port_id) {
-            if (prim_port->is_clock) {
-                VTR_ASSERT(prim_port->type == IN_PORT);
-                VTR_ASSERT(prim_port->num_pins == 1 && clock_port == 0);
-                /* TODO: support multiple clocks for primitives */
-
-                auto net_id = g_atom_nl.port_net(port_id, 0);
-                if (net_id) {
-                    compute_and_mark_lookahead_pins_used_for_pin(
-                            &pb_graph_node->clock_pins[0][0], cur_pb,
-                            net_id);
-                }
-                clock_port++;
-            } else if (prim_port->type == IN_PORT) {
-                for (j = 0; j < prim_port->num_pins; j++) {
-                    auto net_id = g_atom_nl.port_net(port_id, j);
-                    if (net_id) {
-                        compute_and_mark_lookahead_pins_used_for_pin(
-                                &pb_graph_node->input_pins[input_port][j], cur_pb,
-                                net_id);
-                    }
-                }
-                input_port++;
-            } else if (prim_port->type == OUT_PORT) {
-                for (j = 0; j < prim_port->num_pins; j++) {
-                    auto net_id = g_atom_nl.port_net(port_id, j);
-                    if (net_id) {
-                        compute_and_mark_lookahead_pins_used_for_pin(
-                                &pb_graph_node->output_pins[output_port][j], cur_pb,
-                                net_id);
-                    }
-                }
-                output_port++;
-            } else {
-                VTR_ASSERT(0);
+                compute_and_mark_lookahead_pins_used_for_pin(find_pb_graph_pin(pin_id), cur_pb, net_id);
             }
         }
-	}
+    }
 }
 
 /* Given a pin and its assigned net, mark all pin classes that are affected */
-static void compute_and_mark_lookahead_pins_used_for_pin(t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id) {
+static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id) {
 	int depth;
 	int pin_class, output_port;
 	t_pb * cur_pb;
