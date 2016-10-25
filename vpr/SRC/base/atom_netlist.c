@@ -499,19 +499,25 @@ AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) co
     VTR_ASSERT(valid_port_id(port_id));
     VTR_ASSERT(valid_port_bit(port_id, port_bit));
 
-    auto iter = pin_port_port_bit_to_pin_id_.find(std::make_tuple(port_id, port_bit));
-    if(iter != pin_port_port_bit_to_pin_id_.end()) {
-        AtomPinId pin_id = iter->second;
+    //Pins are stored in ascending order of bit index,
+    //so we can binary search for the specific bit
+    auto port_bit_cmp = [&](const AtomPinId pin_id, BitIndex bit_index) {
+        return pin_port_bit(pin_id) < bit_index; 
+    };
 
-        //Check post-conditions
-        if(pin_id) {
-            VTR_ASSERT(valid_pin_id(pin_id));
-            VTR_ASSERT(pin_port_bit(pin_id) == port_bit);
-        }
+    auto pins = port_pins(port_id);
 
-        return pin_id;
-    } else {
+    //Finds the location where the pin with bit index port_bit should be located (if it exists)
+    auto iter = std::lower_bound(pins.begin(), pins.end(), port_bit, port_bit_cmp);
+
+    if(iter == pins.end() || pin_port_bit(*iter) != port_bit) {
+        //Either the end of the pins (i.e. not found), or
+        //the value does not match (indicating a gap in the indicies, so also not found)
         return AtomPinId::INVALID();
+    } else {
+        //Found it
+        VTR_ASSERT(pin_port_bit(*iter) == port_bit);
+        return *iter;
     }
 }
 
@@ -762,10 +768,6 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
         pin_nets_.push_back(net_id);
         pin_is_constant_.push_back(is_const);
 
-        //Store the reverse look-up
-        auto key = std::make_tuple(port_id, port_bit);
-        pin_port_port_bit_to_pin_id_[key] = pin_id;
-
         //Add the pin to the net
         if(type == AtomPinType::DRIVER) {
             VTR_ASSERT_MSG(net_pins_[size_t(net_id)].size() > 0, "Space for net's pin");
@@ -934,9 +936,6 @@ void AtomNetlist::remove_pin(const AtomPinId pin_id) {
 
     //Remove the pin from the associated net
     remove_net_pin(net, pin_id);
-
-    //Invalidate look-up
-    pin_port_port_bit_to_pin_id_[std::make_tuple(port, port_bit)] = AtomPinId::INVALID();
 
     //Mark as invalid
     pin_ids_[size_t(pin_id)] = AtomPinId::INVALID();
@@ -1208,13 +1207,6 @@ void AtomNetlist::rebuild_lookups() {
     for(auto blk_id : blocks()) {
         const auto& key = block_names_[size_t(blk_id)];
         block_name_to_block_id_[key] = blk_id;
-    }
-
-    //Pins
-    pin_port_port_bit_to_pin_id_.clear();
-    for(auto pin_id : pin_ids_) {
-        const auto& key = std::make_tuple(pin_port(pin_id), pin_port_bit(pin_id));
-        pin_port_port_bit_to_pin_id_[key] = pin_id;
     }
 
     //Nets

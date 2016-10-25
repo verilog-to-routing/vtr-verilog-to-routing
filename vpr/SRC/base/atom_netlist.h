@@ -326,58 +326,6 @@
 
 #include "atom_netlist_fwd.h"
 
-
-/*
- * Make various tuples hash-able for use in std::unordered_map's
- *
- * C++11 does not natively support hashing std::tuple's even in the tuple's components
- * are hash-able.  We use vtr::hash_combine (see vtr_hash.h for details), to combine the
- * hash of the individual tuple components. 
- *
- * Note that it is legal to define template *specializations* in the std namespace, 
- * and it makes the associated tuples behave like natively hash-able types.
- */
-namespace std {
-    template<>
-    struct hash<std::tuple<AtomPortId,BitIndex>> {
-        std::size_t operator()(const std::tuple<AtomPortId,BitIndex>& k) const {
-            std::size_t seed = 0;
-            vtr::hash_combine(seed, std::hash<AtomPortId>()(get<0>(k)));
-            vtr::hash_combine(seed, std::hash<size_t>()(get<1>(k)));
-            return seed;
-        }
-    };
-    template<>
-    struct hash<std::tuple<AtomStringId,AtomPortType>> {
-        typedef std::underlying_type<AtomPortType>::type enum_type;
-        std::size_t operator()(const std::tuple<AtomStringId,AtomPortType>& k) const {
-            std::size_t seed = 0;
-            vtr::hash_combine(seed, std::hash<AtomStringId>()(get<0>(k)));
-            vtr::hash_combine(seed, std::hash<enum_type>()(static_cast<enum_type>(get<1>(k))));
-            return seed;
-        }
-    };
-    template<>
-    struct hash<std::tuple<AtomBlockId,AtomStringId>> {
-        std::size_t operator()(const std::tuple<AtomBlockId,AtomStringId>& k) const {
-            std::size_t seed = 0;
-            vtr::hash_combine(seed, std::hash<AtomBlockId>()(get<0>(k)));
-            vtr::hash_combine(seed, std::hash<AtomStringId>()(get<1>(k)));
-            return seed;
-        }
-    };
-    template<>
-    struct hash<std::tuple<AtomBlockId,const t_model_ports*>> {
-        std::size_t operator()(const std::tuple<AtomBlockId,const t_model_ports*>& k) const {
-            std::size_t seed = 0;
-            vtr::hash_combine(seed, std::hash<AtomBlockId>()(get<0>(k)));
-            vtr::hash_combine(seed, std::hash<const t_model_ports*>()(get<1>(k)));
-            return seed;
-        }
-    };
-} //namespace std
-
-
 class AtomNetlist {
     public: //Public types
         typedef std::vector<AtomBlockId>::const_iterator block_iterator;
@@ -781,7 +729,6 @@ class AtomNetlist {
     private: //Fast lookups
 
         std::unordered_map<AtomStringId,AtomBlockId>                        block_name_to_block_id_;
-        std::unordered_map<std::tuple<AtomPortId,BitIndex>,AtomPinId>       pin_port_port_bit_to_pin_id_;
         std::unordered_map<AtomStringId,AtomNetId>                          net_name_to_net_id_;
         std::unordered_map<std::string,AtomStringId>                        string_to_string_id_;
 };
