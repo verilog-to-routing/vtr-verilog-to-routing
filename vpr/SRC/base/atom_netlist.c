@@ -300,27 +300,9 @@ AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_b
 
 
 const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
-    AtomBlockId blk_id = port_block(port_id);
-    const t_model* blk_model = block_model(blk_id);
+    VTR_ASSERT(valid_port_id(port_id));
 
-    const t_model_ports* model_port = nullptr;
-    for(const t_model_ports* blk_ports : {blk_model->inputs, blk_model->outputs}) {
-        model_port = blk_ports;
-        while(model_port) {
-            if(port_name(port_id) == model_port->name) {
-                //Found
-                break;
-            }
-            model_port = model_port->next;
-        }
-        if(model_port) {
-            //Found
-            break;
-        }
-    }
-    VTR_ASSERT_MSG(model_port, "Found model port");
-    VTR_ASSERT_MSG(model_port->size >= 0, "Positive port width");
-    return model_port;
+    return port_models_[size_t(port_id)];
 }
 
 
