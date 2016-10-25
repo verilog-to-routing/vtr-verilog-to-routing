@@ -2451,20 +2451,8 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 
 /* Determine if pins of speculatively packed pb are legal */
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
-	int i, j;
-	t_pb_graph_node *pb_graph_node;
-	const t_pb_type *pb_type;
-	t_port *prim_port;
-
-	int input_port;
-	int output_port;
-	int clock_port;
-
 	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
     VTR_ASSERT(cur_pb != NULL);
-
-	pb_graph_node = cur_pb->pb_graph_node;
-	pb_type = pb_graph_node->pb_type;
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
     for(auto ports : {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)}) {
