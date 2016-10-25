@@ -239,7 +239,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 
 static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float> &blk_gain);
 static int compare_molecule_gain(const void *a, const void *b);
-int count_cluster_reachable_net_sinks(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
+int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 
 static void print_block_criticalities(const char * fname);
 
@@ -2515,8 +2515,7 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
 }
 
 /* Given a pin and its assigned net, mark all pin classes that are affected */
-static void compute_and_mark_lookahead_pins_used_for_pin(
-		t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id) {
+static void compute_and_mark_lookahead_pins_used_for_pin(t_pb_graph_pin *pb_graph_pin, const t_pb *primitive_pb, const AtomNetId net_id) {
 	int depth;
 	int pin_class, output_port;
 	t_pb * cur_pb;
@@ -2645,7 +2644,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
                     //the net does not exit the cluster
 					/* TODO: I should cache the absorbed outputs, once net is absorbed,
                      *       net is forever absorbed, no point in rechecking every time */
-					if (count_cluster_reachable_net_sinks(pb_graph_pin, depth, net_id) == num_net_sinks) {
+					if (net_sinks_reachable_in_cluster(pb_graph_pin, depth, net_id)) {
                         //All the sinks are reachable inside the cluster
 						net_exits_cluster = false;
 					}
@@ -2662,8 +2661,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(
 	}
 }
 
-int count_cluster_reachable_net_sinks(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id) {
-    int num_reachable_sinks = 0;
+int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id) {
+    size_t num_reachable_sinks = 0;
 
     //Record the sink pb graph pins we are looking for
     std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
@@ -2676,14 +2675,17 @@ int count_cluster_reachable_net_sinks(const t_pb_graph_pin* driver_pb_gpin, cons
 
     //Count how many sink pins are reachable
     for(int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primtive_input_pins[depth]; ++i_prim_pin) {
-        const t_pb_graph_pin* sink_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
+        const t_pb_graph_pin* reachable_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
 
-        if(sink_pb_gpins.count(sink_pb_gpin)) {
+        if(sink_pb_gpins.count(reachable_pb_gpin)) {
             ++num_reachable_sinks;
+            if(num_reachable_sinks == g_atom_nl.net_sinks(net_id).size()) {
+                return true;
+            }
         }
     }
 
-    return num_reachable_sinks;
+    return false;
 }
 
 /* Check if the number of available inputs/outputs for a pin class is sufficient for speculatively packed blocks */
