@@ -748,17 +748,15 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
         pin_is_constant_.push_back(is_const);
 
         //Add the pin to the net
-        if(type == AtomPinType::DRIVER) {
-            VTR_ASSERT_MSG(net_pins_[size_t(net_id)].size() > 0, "Space for net's pin");
-            VTR_ASSERT_MSG(net_pins_[size_t(net_id)][0] == AtomPinId::INVALID(), "No existing net driver");
-            
-            net_pins_[size_t(net_id)][0] = pin_id; //Set driver
-        } else {
-            net_pins_[size_t(net_id)].emplace_back(pin_id); //Add sink
-        }
+        associate_pin_with_net(pin_id, type, net_id);
+
+        //Add the pin to the block
+        associate_pin_with_block(pin_id, port_block(port_id));
 
         //Add the pin to the port
-        port_pins_[size_t(port_id)].push_back(pin_id);
+        associate_pin_with_port(pin_id, port_id);
+
+
     }
 
     //Check post-conditions: sizes
@@ -1547,6 +1545,28 @@ AtomStringId AtomNetlist::create_string (const std::string& str) {
     VTR_ASSERT_SAFE(find_string(str) == str_id);
 
     return str_id;
+}
+
+void AtomNetlist::associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id) {
+    //Add the pin to the net
+    if(type == AtomPinType::DRIVER) {
+        VTR_ASSERT_MSG(net_pins_[size_t(net_id)].size() > 0, "Space for net's pin");
+        VTR_ASSERT_MSG(net_pins_[size_t(net_id)][0] == AtomPinId::INVALID(), "No existing net driver");
+        
+        net_pins_[size_t(net_id)][0] = pin_id; //Set driver
+    } else {
+        VTR_ASSERT(type == AtomPinType::SINK);
+
+        net_pins_[size_t(net_id)].emplace_back(pin_id); //Add sink
+    }
+}
+
+void AtomNetlist::associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id) {
+    port_pins_[size_t(port_id)].push_back(pin_id);
+}
+
+void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomBlockId blk_id) {
+    //pass
 }
 
 /*

@@ -603,6 +603,10 @@ class AtomNetlist {
         //  str: The string whose ID is requested
         AtomStringId create_string(const std::string& str);
 
+        void associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id); 
+        void associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id); 
+        void associate_pin_with_block(const AtomPinId pin_id, const AtomBlockId blk_id); 
+
         //Removes a port from the netlist.
         //The port's pins are also marked invalid and removed from any associated nets
         //  port_id: The ID of the port to be removed
@@ -695,6 +699,12 @@ class AtomNetlist {
         std::vector<AtomStringId>            block_names_;          //Name of each block
         std::vector<const t_model*>          block_models_;         //Architecture model of each block
         std::vector<TruthTable>              block_truth_tables_;   //Truth tables of each block
+#if 0
+        std::vector<std::vector<AtomPinId>>  block_pins_;           //Pins of each block
+        std::vector<pin_range>               block_inputs_;         //Input pin ranges of each block
+        std::vector<pin_range>               block_outputs_;        //Output pin ranges of each block
+        std::vector<pin_range>               block_clocks_;         //Clock pin ranges of each block
+#endif
         std::vector<std::vector<AtomPortId>> block_input_ports_;    //Input ports of each block
         std::vector<std::vector<AtomPortId>> block_output_ports_;   //Output ports of each block
         std::vector<std::vector<AtomPortId>> block_clock_ports_;    //Clock ports of each block
@@ -704,7 +714,11 @@ class AtomNetlist {
         std::vector<AtomStringId>           port_names_;    //Name of each port
         std::vector<AtomBlockId>            port_blocks_;   //Block associated with each port
         std::vector<const t_model_ports*>   port_models_;   //Architecture port models of each port
+#if 0
+        std::vector<pin_range>              port_pins_;     //Pins associated with each port
+#else
         std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
+#endif
 
         //Pin data
         std::vector<AtomPinId>  pin_ids_;           //Valid pin ids
