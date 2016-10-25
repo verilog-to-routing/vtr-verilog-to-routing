@@ -384,7 +384,13 @@ class AtomNetlist {
         typedef std::vector<AtomPortId>::const_iterator port_iterator;
         typedef std::vector<AtomPinId>::const_iterator pin_iterator;
         typedef std::vector<AtomNetId>::const_iterator net_iterator;
+
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
+
+        typedef vtr::Range<block_iterator> block_range;
+        typedef vtr::Range<port_iterator> port_range;
+        typedef vtr::Range<pin_iterator> pin_range;
+        typedef vtr::Range<net_iterator> net_range;
     public:
 
         //Constructs a netlist
@@ -402,13 +408,13 @@ class AtomNetlist {
          * Blocks
          */
         //Returns the name of the specified block
-        const std::string&          block_name          (const AtomBlockId id) const;
+        const std::string&  block_name          (const AtomBlockId id) const;
 
         //Returns the type of the specified block
-        AtomBlockType               block_type          (const AtomBlockId id) const;
+        AtomBlockType       block_type          (const AtomBlockId id) const;
 
         //Returns the model associated with the block
-        const t_model*              block_model         (const AtomBlockId id) const;
+        const t_model*      block_model         (const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -417,46 +423,46 @@ class AtomNetlist {
         // logic function.
         //
         // For FF/Latches there is only a single entry representing the initial state
-        const TruthTable&           block_truth_table   (const AtomBlockId id) const; 
+        const TruthTable&   block_truth_table   (const AtomBlockId id) const; 
 
         //Returns a range consisting of the input ports associated with the specified block
-        vtr::Range<port_iterator>   block_input_ports   (const AtomBlockId id) const;
+        port_range          block_input_ports   (const AtomBlockId id) const;
 
         //Returns a range consisting of the output ports associated with the specified block
         // Note this is typically only data ports, but some blocks (e.g. PLLs) can produce outputs
         // which are clocks.
-        vtr::Range<port_iterator>   block_output_ports  (const AtomBlockId id) const;
+        port_range          block_output_ports  (const AtomBlockId id) const;
 
         //Returns a range consisting of the input clock ports associated with the specified block
-        vtr::Range<port_iterator>   block_clock_ports   (const AtomBlockId id) const;
+        port_range          block_clock_ports   (const AtomBlockId id) const;
 
         /*
          * Ports
          */
         //Returns the name of the specified port
-        const std::string&          port_name   (const AtomPortId id) const;
+        const std::string&      port_name   (const AtomPortId id) const;
 
         //Returns the width (number of bits) in the specified port
-        BitIndex                    port_width  (const AtomPortId id) const;
+        BitIndex                port_width  (const AtomPortId id) const;
 
         //Returns the block associated with the specified port
-        AtomBlockId                 port_block  (const AtomPortId id) const; 
+        AtomBlockId             port_block  (const AtomPortId id) const; 
 
         //Returns the type of the specified port
-        AtomPortType                port_type   (const AtomPortId id) const; 
+        AtomPortType            port_type   (const AtomPortId id) const; 
 
         //Returns the set of valid pins associated with the port
-        vtr::Range<pin_iterator>    port_pins   (const AtomPortId id) const;
+        pin_range               port_pins   (const AtomPortId id) const;
 
         //Returns the pin (potentially invalid) associated with the specified port and port bit index
-        AtomPinId port_pin   (const AtomPortId port_id, const BitIndex port_bit) const;
+        AtomPinId               port_pin    (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the net (potentially invalid) associated with the specified port and port bit index
-        AtomNetId port_net   (const AtomPortId port_id, const BitIndex port_bit) const;
+        AtomNetId               port_net    (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the model port of the specified port or nullptr if not
         //  port_id: The ID of the port to look for
-        const t_model_ports* port_model(const AtomPortId port_id) const;
+        const t_model_ports*    port_model  (const AtomPortId port_id) const;
 
         /*
          * Pins
@@ -484,33 +490,33 @@ class AtomNetlist {
          * Nets
          */
         //Returns the name of the specified net
-        const std::string&          net_name        (const AtomNetId id) const; 
+        const std::string&  net_name        (const AtomNetId id) const; 
 
         //Returns a range consisting of all the pins in the net (driver and sinks)
         //The first element in the range is the driver (and may be invalid)
         //The remaining elements (potentially none) are the sinks
-        vtr::Range<pin_iterator>    net_pins        (const AtomNetId id) const;
+        pin_range           net_pins        (const AtomNetId id) const;
 
         //Returns the (potentially invalid) net driver pin
-        AtomPinId                   net_driver      (const AtomNetId id) const;
+        AtomPinId           net_driver      (const AtomNetId id) const;
 
         //Returns the (potentially invalid) net driver block
-        AtomBlockId                 net_driver_block(const AtomNetId id) const;
+        AtomBlockId         net_driver_block(const AtomNetId id) const;
 
         //Returns a (potentially empty) range consisting of net's sink pins
-        vtr::Range<pin_iterator>    net_sinks       (const AtomNetId id) const;
+        pin_range           net_sinks       (const AtomNetId id) const;
 
         //Returns true if the net is driven by a constant pin (i.e. its value never changes)
-        bool                        net_is_constant (const AtomNetId id) const;
+        bool                net_is_constant (const AtomNetId id) const;
 
         /*
          * Aggregates
          */
         //Returns a range consisting of all blocks in the netlist
-        vtr::Range<block_iterator>  blocks  () const;
+        block_range blocks  () const;
 
         //Returns a range consisting of all nets in the netlist
-        vtr::Range<net_iterator>    nets    () const;
+        net_range   nets    () const;
         
         /*
          * Lookups
@@ -788,7 +794,7 @@ class AtomNetlist {
 /*
  * External helper functions
  */
-int num_used_pins(const AtomNetlist& netlist, vtr::Range<AtomNetlist::port_iterator> ports);
+int num_used_pins(const AtomNetlist& netlist, AtomNetlist::port_range ports);
 
 #include "atom_map.h"
 
