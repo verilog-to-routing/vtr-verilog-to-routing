@@ -461,11 +461,9 @@ int count_netlist_clocks(void) {
 
     //Loop through each clock pin and record the names in clock_names
     for(auto blk_id : g_atom_nl.blocks()) {
-        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                auto net_id = g_atom_nl.pin_net(pin_id);
-                clock_names.insert(g_atom_nl.net_name(net_id));
-            }
+        for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            clock_names.insert(g_atom_nl.net_name(net_id));
         }
     }
 

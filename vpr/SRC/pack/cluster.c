@@ -741,18 +741,17 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 
     for(auto blk_id : g_atom_nl.blocks()) {
 		if (g_atom_nl.block_type(blk_id) != AtomBlockType::OUTPAD) {
-            for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
-                for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                    auto net_id = g_atom_nl.pin_net(pin_id);
-                    if (is_clock.count(net_id)) {
-                        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-                                "Error in check_clocks.\n"
-                                "Net %s is a clock, but also connects to a logic block input on atom block %s.\n"
-                                "This would break the current clustering implementation and is electrically questionable, so clustering has been aborted.\n",
-                                g_atom_nl.net_name(net_id).c_str(), g_atom_nl.block_name(blk_id).c_str());
-                    }
-				}
-			}
+            for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
+                auto net_id = g_atom_nl.pin_net(pin_id);
+                if (is_clock.count(net_id)) {
+                    vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+                            "Error in check_clocks.\n"
+                            "Net %s is a clock, but also connects to a logic block input on atom block %s.\n"
+                            "This would break the current clustering implementation and is electrically "
+                            "questionable, so clustering has been aborted.\n",
+                            g_atom_nl.net_name(net_id).c_str(), g_atom_nl.block_name(blk_id).c_str());
+                }
+            }
 		}
 	}
 }
@@ -1723,8 +1722,8 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 			/* Todo: This was used to explore different normalization options, can 
              * be made more efficient once we decide on which one to use*/
-			int num_used_input_pins = num_used_pins(g_atom_nl, g_atom_nl.block_input_ports(blk_id));
-			int num_used_output_pins = num_used_pins(g_atom_nl, g_atom_nl.block_output_ports(blk_id));
+			int num_used_input_pins = g_atom_nl.block_input_pins(blk_id).size();
+			int num_used_output_pins = g_atom_nl.block_output_pins(blk_id).size();
 			/* end todo */
 
 			/* Calculate area-only cost function */
@@ -1805,29 +1804,25 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		}
 
         /* Outputs first */
-        for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                auto net_id = g_atom_nl.pin_net(pin_id);
-                if (!is_clock.count(net_id) || !global_clocks) {
-                    mark_and_update_partial_gain(net_id, GAIN, blk_id,
-                            timing_driven,
-                            connection_driven, OUTPUT, slacks, is_global);
-                } else {
-                    mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
-                            timing_driven,
-                            connection_driven, OUTPUT, slacks, is_global);
-                }
+        for(auto pin_id : g_atom_nl.block_output_pins(blk_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            if (!is_clock.count(net_id) || !global_clocks) {
+                mark_and_update_partial_gain(net_id, GAIN, blk_id,
+                        timing_driven,
+                        connection_driven, OUTPUT, slacks, is_global);
+            } else {
+                mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
+                        timing_driven,
+                        connection_driven, OUTPUT, slacks, is_global);
             }
         }
 
         /* Next Inputs */
-        for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                auto net_id = g_atom_nl.pin_net(pin_id);
-                mark_and_update_partial_gain(net_id, GAIN, blk_id,
-                        timing_driven, connection_driven,
-                        INPUT, slacks, is_global);
-            }
+        for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            mark_and_update_partial_gain(net_id, GAIN, blk_id,
+                    timing_driven, connection_driven,
+                    INPUT, slacks, is_global);
         }
 
         /* Finally Clocks */
@@ -1836,16 +1831,14 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		 * sense for that to happen, and I check this in the check_clocks     *
 		 * function.  Don't disable that sanity check.                        */
         //TODO: lift above restriction (does happen on some circuits)
-        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                auto net_id = g_atom_nl.pin_net(pin_id);
-                if (global_clocks) {
-                    mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
-                            timing_driven, connection_driven, INPUT, slacks, is_global);
-                } else {
-                    mark_and_update_partial_gain(net_id, GAIN, blk_id,
-                            timing_driven, connection_driven, INPUT, slacks, is_global);
-                }
+        for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            if (global_clocks) {
+                mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
+                        timing_driven, connection_driven, INPUT, slacks, is_global);
+            } else {
+                mark_and_update_partial_gain(net_id, GAIN, blk_id,
+                        timing_driven, connection_driven, INPUT, slacks, is_global);
             }
         }
 
@@ -2345,23 +2338,21 @@ static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float
 			} else {
 				/* This block has no connection with current cluster, penalize molecule for having this block 
 				 */
-                for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
-                    for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                        auto net_id = g_atom_nl.pin_net(pin_id);
-                        VTR_ASSERT(net_id);
+                for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
+                    auto net_id = g_atom_nl.pin_net(pin_id);
+                    VTR_ASSERT(net_id);
 
-                        auto driver_pin_id = g_atom_nl.net_driver(net_id);
-                        VTR_ASSERT(driver_pin_id);
+                    auto driver_pin_id = g_atom_nl.net_driver(net_id);
+                    VTR_ASSERT(driver_pin_id);
 
-                        auto driver_blk_id = g_atom_nl.pin_block(driver_pin_id);
+                    auto driver_blk_id = g_atom_nl.pin_block(driver_pin_id);
 
-                        num_introduced_inputs_of_indirectly_related_block++;
-                        for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
-                            if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
-                                //valid block which is driver (and hence not an input)
-                                num_introduced_inputs_of_indirectly_related_block--;
-                                break;
-                            }
+                    num_introduced_inputs_of_indirectly_related_block++;
+                    for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
+                        if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
+                            //valid block which is driver (and hence not an input)
+                            num_introduced_inputs_of_indirectly_related_block--;
+                            break;
                         }
                     }
                 }

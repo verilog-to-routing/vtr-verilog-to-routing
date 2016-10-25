@@ -106,9 +106,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 		int node_index = pb_graph_node->input_pins[0][0].pin_count_in_cluster;
 
         //Don't add a buffer if the name is prefixed with :out, just remove the :out
-        auto input_ports = g_atom_nl.block_input_ports(atom_blk);
-        VTR_ASSERT(input_ports.size() == 1);
-        auto input_pins = g_atom_nl.port_pins(*input_ports.begin());
+        auto input_pins = g_atom_nl.block_input_pins(atom_blk);
         VTR_ASSERT(input_pins.size() == 1);
         auto input_pin = *input_pins.begin();
         auto input_net = g_atom_nl.pin_net(input_pin);
@@ -225,9 +223,8 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 					&& pb_type->ports[i].is_clock == false) {
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto input_ports = g_atom_nl.block_input_ports(atom_blk);
-                VTR_ASSERT(input_ports.size() == 1);
-                auto input_pins = g_atom_nl.port_pins(*input_ports.begin());
+                auto input_pins = g_atom_nl.block_input_pins(atom_blk);
+                VTR_ASSERT(input_pins.size() == 1);
                 VTR_ASSERT_MSG(g_atom_nl.pin_net(*input_pins.begin()), "Valid input net");
 
 				int node_index = pb_graph_node->input_pins[0][0].pin_count_in_cluster;
@@ -235,9 +232,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 			} else if (pb_type->ports[i].type == OUT_PORT) {
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto output_ports = g_atom_nl.block_output_ports(atom_blk);
-                VTR_ASSERT(output_ports.size() == 1);
-                auto output_pins = g_atom_nl.port_pins(*output_ports.begin());
+                auto output_pins = g_atom_nl.block_output_pins(atom_blk);
                 VTR_ASSERT(output_pins.size() == 1);
                 auto output_net_id = g_atom_nl.pin_net(*output_pins.begin());
                 VTR_ASSERT_MSG(output_net_id, "Valid output net");
@@ -248,9 +243,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 					&& pb_type->ports[i].is_clock == true) {
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto clock_ports = g_atom_nl.block_clock_ports(atom_blk);
-                VTR_ASSERT(clock_ports.size() == 1);
-                auto clock_pins = g_atom_nl.port_pins(*clock_ports.begin());
+                auto clock_pins = g_atom_nl.block_clock_pins(atom_blk);
                 VTR_ASSERT(clock_pins.size() == 1);
                 VTR_ASSERT_MSG(g_atom_nl.pin_net(*clock_pins.begin()), "Valid clock net");
 

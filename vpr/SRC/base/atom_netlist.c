@@ -1748,15 +1748,3 @@ void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPor
         VTR_ASSERT(new_iter + 1 == block_pins(blk_id).end());
     }
 }
-
-/*
- * External helper functions
- */
-int num_used_pins(const AtomNetlist& netlist, AtomNetlist::port_range ports) {
-    int count = 0;
-    for(auto port_id : ports) {
-        auto pins = netlist.port_pins(port_id);
-        count += pins.size();
-    }
-    return count;
-}

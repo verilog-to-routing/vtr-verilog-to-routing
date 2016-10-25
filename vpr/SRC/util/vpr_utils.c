@@ -673,22 +673,18 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     std::unordered_set<AtomNetId> input_nets;
 
     //Record the unique input nets
-    for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
-        for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-            auto net_id = g_atom_nl.pin_net(pin_id);
-            input_nets.insert(net_id);
-        }
+    for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
+        auto net_id = g_atom_nl.pin_net(pin_id);
+        input_nets.insert(net_id);
     }
 
     ext_inps = input_nets.size();
 
     //Look through the output nets for any duplicates of the input nets
-    for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
-        for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-            auto net_id = g_atom_nl.pin_net(pin_id);
-            if(input_nets.count(net_id)) {
-                --ext_inps;
-            }
+    for(auto pin_id : g_atom_nl.block_output_pins(blk_id)) {
+        auto net_id = g_atom_nl.pin_net(pin_id);
+        if(input_nets.count(net_id)) {
+            --ext_inps;
         }
     }
 

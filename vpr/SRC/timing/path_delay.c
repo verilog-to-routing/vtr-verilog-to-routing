@@ -1067,7 +1067,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 				incr = 1; //Non-sequential so only an IPIN or OPIN node
 			} else {
                 VTR_ASSERT(g_atom_nl.block_type(blk_id) == AtomBlockType::SEQUENTIAL);
-                VTR_ASSERT(g_atom_nl.block_clock_ports(blk_id).size() > 0);
+                VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).size() > 0);
 				incr = 2; //Sequential so both and IPIN/OPIN and a SOURCE/SINK nodes
 			}
 			int j = 0;
@@ -1126,15 +1126,10 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
             //A primary input
 
-            //Single output port
-            auto out_ports = g_atom_nl.block_output_ports(blk_id);
-            VTR_ASSERT(out_ports.size() == 1);
-            VTR_ASSERT(g_atom_nl.block_input_ports(blk_id).empty());
-            VTR_ASSERT(g_atom_nl.block_clock_ports(blk_id).empty());
-            auto port_id = *out_ports.begin();
-
-            //Single pin
-            auto pins = g_atom_nl.port_pins(port_id);
+            //Single output pin
+            VTR_ASSERT(g_atom_nl.block_input_pins(blk_id).empty());
+            VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).empty());
+            auto pins = g_atom_nl.block_output_pins(blk_id);
             VTR_ASSERT(pins.size() == 1);
             auto pin_id = *pins.begin();
 
@@ -1166,15 +1161,12 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 		} else if (g_atom_nl.block_type(blk_id) == AtomBlockType::OUTPAD) {
             //A primary input
 
-            //Single input port
-            auto in_ports = g_atom_nl.block_input_ports(blk_id);
-            VTR_ASSERT(in_ports.size() == 1);
-            VTR_ASSERT(g_atom_nl.block_output_ports(blk_id).empty());
-            VTR_ASSERT(g_atom_nl.block_clock_ports(blk_id).empty());
-            auto port_id = *in_ports.begin();
+            //Single input pin
+            VTR_ASSERT(g_atom_nl.block_output_pins(blk_id).empty());
+            VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).empty());
 
             //Single pin
-            auto pins = g_atom_nl.port_pins(port_id);
+            auto pins = g_atom_nl.block_input_pins(blk_id);
             VTR_ASSERT(pins.size() == 1);
             auto pin_id = *pins.begin();
 
@@ -3385,13 +3377,8 @@ static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_
         auto blk_id = g_atom_nl.pin_block(pin_id);
         VTR_ASSERT(blk_id);
 
-        //Get the single clock port
-        auto clock_ports = g_atom_nl.block_clock_ports(blk_id);
-        VTR_ASSERT(clock_ports.size() == 1);
-        auto clock_port_id = *clock_ports.begin();
-
         //Get the single clock pin
-        auto clock_pins = g_atom_nl.port_pins(clock_port_id);
+        auto clock_pins = g_atom_nl.block_clock_pins(blk_id);
         VTR_ASSERT(clock_pins.size() == 1);
         auto clock_pin_id = *clock_pins.begin();
 

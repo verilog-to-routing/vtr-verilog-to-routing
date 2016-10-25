@@ -157,15 +157,13 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 	/* Want to identify all the clock nets.  */
 
     for(auto blk_id : g_atom_nl.blocks()) {
-        for(auto port_id : g_atom_nl.block_clock_ports(blk_id)) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                auto net_id = g_atom_nl.pin_net(pin_id);
-				if (!is_clock.count(net_id)) {
-                    is_clock.insert(net_id);
-					num_clocks++;
-				}
-			}
-		}
+        for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            if (!is_clock.count(net_id)) {
+                is_clock.insert(net_id);
+                num_clocks++;
+            }
+        }
 	}
 
 	/* If we have multiple clocks and we're supposed to declare them global, *

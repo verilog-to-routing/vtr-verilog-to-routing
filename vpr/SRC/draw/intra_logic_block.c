@@ -779,32 +779,28 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 			if ( is_in_selected_subtree(pb_graph_node, clb) ) {
 
                 //Collect the sources of all nets driving this node
-                for(auto port_id : g_atom_nl.block_input_ports(blk_id)) {
-                    for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                        AtomNetId net_id = g_atom_nl.pin_net(pin_id);
-                        AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
+                for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
+                    AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+                    AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
 
-                        AtomBlockId src_blk = g_atom_nl.pin_block(driver_pin_id);
+                    AtomBlockId src_blk = g_atom_nl.pin_block(driver_pin_id);
 
-                        const t_block* src_clb = &block[g_atom_map.atom_clb(src_blk)];
-                        const t_pb_graph_node* src_pb_graph_node = g_atom_map.atom_pb_graph_node(src_blk);
+                    const t_block* src_clb = &block[g_atom_map.atom_clb(src_blk)];
+                    const t_pb_graph_node* src_pb_graph_node = g_atom_map.atom_pb_graph_node(src_blk);
 
-                        sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
-                    }
+                    sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
                 }
 
                 //Collect the sinks of all nets driven by this node
-                for(auto port_id : g_atom_nl.block_output_ports(blk_id)) {
-                    for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                        AtomNetId net_id = g_atom_nl.pin_net(pin_id);
-                        for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
-                            AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin_id);
+                for(auto pin_id : g_atom_nl.block_output_pins(blk_id)) {
+                    AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+                    for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
+                        AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin_id);
 
-                            const t_block* sink_clb = &block[g_atom_map.atom_clb(sink_blk)];
-                            const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
+                        const t_block* sink_clb = &block[g_atom_map.atom_clb(sink_blk)];
+                        const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
 
-                            sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
-                        }
+                        sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
                     }
                 }
 			}

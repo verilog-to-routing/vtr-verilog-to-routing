@@ -759,12 +759,6 @@ class AtomNetlist {
         std::unordered_map<std::string,AtomStringId>                        string_to_string_id_;
 };
 
-/*
- * External helper functions
- */
-int num_used_pins(const AtomNetlist& netlist, AtomNetlist::port_range ports);
-
 #include "atom_map.h"
-
 
 #endif

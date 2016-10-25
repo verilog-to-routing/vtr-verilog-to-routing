@@ -744,8 +744,7 @@ static void backward_expand_pack_pattern_from_edge(
 									curr_pattern_index, L_num_blocks, true);
 				}
 			} else {
-				for (j = 0; j < expansion_edge->input_pins[i]->num_input_edges;
-						j++) {
+				for (j = 0; j < expansion_edge->input_pins[i]->num_input_edges; j++) {
 					if (expansion_edge->input_pins[i]->input_edges[j]->infer_pattern
 							== true) {
 						backward_expand_pack_pattern_from_edge(
@@ -753,10 +752,7 @@ static void backward_expand_pack_pattern_from_edge(
 								list_of_packing_patterns, curr_pattern_index,
 								destination_pin, destination_block, L_num_blocks);
 					} else {
-						for (k = 0;
-								k
-										< expansion_edge->input_pins[i]->input_edges[j]->num_pack_patterns;
-								k++) {
+						for (k = 0; k < expansion_edge->input_pins[i]->input_edges[j]->num_pack_patterns; k++) {
 							if (expansion_edge->input_pins[i]->input_edges[j]->pack_pattern_indices[k]
 									== curr_pattern_index) {
 								VTR_ASSERT(found == false);
@@ -862,7 +858,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
 			cur_molecule->root = 0;
-			cur_molecule->num_ext_inputs = num_used_pins(g_atom_nl, g_atom_nl.block_input_ports(blk_id));
+			cur_molecule->num_ext_inputs = g_atom_nl.block_input_pins(blk_id).size();
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
 
@@ -1023,7 +1019,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
         /* store that this node has been visited */
 		molecule->atom_block_ids[current_pattern_block->block_id] = blk_id;
 
-		molecule->num_ext_inputs += num_used_pins(g_atom_nl, g_atom_nl.block_input_ports(blk_id));
+		molecule->num_ext_inputs += g_atom_nl.block_input_pins(blk_id).size();
 		
 		cur_pack_pattern_connection = current_pattern_block->connections;
 		while (cur_pack_pattern_connection != NULL && success == true) {
