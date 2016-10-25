@@ -157,13 +157,8 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 
 	set_reset_pb_modes(router_data, pb, true);
 
-    auto all_ports = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
-    for(auto port_set : all_ports) {
-        for(auto port_id : port_set) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                add_pin_to_rt_terminals(router_data, pin_id);
-            }
-        }
+    for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
+        add_pin_to_rt_terminals(router_data, pin_id);
     }
 }
 
@@ -179,13 +174,8 @@ void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId bl
 	
 	set_reset_pb_modes(router_data, pb, false);
 		
-    auto all_ports = {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)};
-    for(auto port_set : all_ports) {
-        for(auto port_id : port_set) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                remove_pin_from_rt_terminals(router_data, pin_id);
-            }
-        }
+    for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
+        remove_pin_from_rt_terminals(router_data, pin_id);
     }
     
 	atoms_added.erase(blk_id);

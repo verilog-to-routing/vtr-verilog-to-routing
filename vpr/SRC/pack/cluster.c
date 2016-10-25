@@ -2455,14 +2455,10 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
     VTR_ASSERT(cur_pb != NULL);
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
-    for(auto ports : {g_atom_nl.block_input_ports(blk_id), g_atom_nl.block_output_ports(blk_id), g_atom_nl.block_clock_ports(blk_id)}) {
-        for(auto port_id : ports) {
-            for(auto pin_id : g_atom_nl.port_pins(port_id)) {
-                auto net_id = g_atom_nl.pin_net(pin_id);
+    for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
+        auto net_id = g_atom_nl.pin_net(pin_id);
 
-                compute_and_mark_lookahead_pins_used_for_pin(find_pb_graph_pin(pin_id), cur_pb, net_id);
-            }
-        }
+        compute_and_mark_lookahead_pins_used_for_pin(find_pb_graph_pin(pin_id), cur_pb, net_id);
     }
 }
 
