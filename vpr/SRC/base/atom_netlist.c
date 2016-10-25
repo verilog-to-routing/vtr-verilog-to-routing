@@ -101,6 +101,7 @@ std::vector<T> update_all_refs(const std::vector<T>& values, const std::vector<T
 }
 
 //Updates values based on id_map, only if the originalx and new mappings are valid
+// any invalid values are not included
 template<typename T>
 std::vector<T> update_valid_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
     std::vector<T> updated;
@@ -205,6 +206,12 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
     VTR_ASSERT(valid_block_id(id));
 
     return block_truth_tables_[size_t(id)];
+}
+
+AtomNetlist::pin_range AtomNetlist::block_pins (const AtomBlockId id) const {
+    VTR_ASSERT(valid_block_id(id));
+
+    return vtr::make_range(block_pins_[size_t(id)].begin(), block_pins_[size_t(id)].end()); 
 }
 
 AtomNetlist::port_range AtomNetlist::block_input_ports (const AtomBlockId id) const {
@@ -598,29 +605,48 @@ bool AtomNetlist::verify_lookups() const {
 bool AtomNetlist::verify_block_invariants() const {
     for(auto blk_id : blocks()) {
 
-        //Find any connected clock
-        AtomNetId clk_net_id;
-        for(auto port_id : block_clock_ports(blk_id)) {
-            for(auto pin_id : port_pins(port_id)) {
-                if(pin_id) {
-                    clk_net_id = pin_net(pin_id);
-                    break;
+        {
+            //Check block type
+
+            //Find any connected clock
+            AtomNetId clk_net_id;
+            for(auto port_id : block_clock_ports(blk_id)) {
+                for(auto pin_id : port_pins(port_id)) {
+                    if(pin_id) {
+                        clk_net_id = pin_net(pin_id);
+                        break;
+                    }
+                }
+            }
+
+            if(block_type(blk_id) == AtomBlockType::SEQUENTIAL) {
+                //Sequential types must have a clock
+                if(!clk_net_id) {
+                    VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is sequential type but has no clock", 
+                              block_name(blk_id).c_str());
+                }
+
+            } else {
+                //Non-sequential types must not have a clock
+                if(clk_net_id) {
+                    VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is a non-sequential type but has a clock '%s'", 
+                              block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
                 }
             }
         }
+        {
+            //Check that block pins and ports are consistent (i.e. same number of pins)
+            size_t num_block_pins = block_pins(blk_id).size();
 
-        if(block_type(blk_id) == AtomBlockType::SEQUENTIAL) {
-            //Sequential types must have a clock
-            if(!clk_net_id) {
-                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is sequential type but has no clock", 
-                          block_name(blk_id).c_str());
+            size_t total_block_port_pins = 0;
+            for(auto ports : {block_input_ports(blk_id), block_output_ports(blk_id), block_clock_ports(blk_id)}) {
+                for(auto port_id : ports) {
+                    total_block_port_pins += port_pins(port_id).size(); 
+                }
             }
-
-        } else {
-            //Non-sequential types must not have a clock
-            if(clk_net_id) {
-                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is a non-sequential type but has a clock '%s'", 
-                          block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
+            if(num_block_pins != total_block_port_pins) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block pins and port pins do not match on atom block '%s'",
+                        block_name(blk_id).c_str());
             }
         }
     }
@@ -654,6 +680,7 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
 
         //Initialize the look-ups
         block_name_to_block_id_[name_id] = blk_id;
+        block_pins_.emplace_back();
         block_input_ports_.emplace_back();
         block_output_ports_.emplace_back();
         block_clock_ports_.emplace_back();
@@ -1016,7 +1043,7 @@ void AtomNetlist::compress() {
     //TODO: iterative cleaning?
 
     //Now we re-build all the cross references
-    rebuild_block_refs(port_id_map);
+    rebuild_block_refs(pin_id_map, port_id_map);
     rebuild_port_refs(block_id_map, pin_id_map);
     rebuild_pin_refs(port_id_map, net_id_map);
     rebuild_net_refs(pin_id_map);
@@ -1032,7 +1059,7 @@ void AtomNetlist::compress() {
 }
 
 std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
-    //TODO: clean blocks?
+    //Clean the blocks
     std::vector<AtomBlockId> block_id_map;
     std::vector<AtomBlockId> new_ids;
     std::tie(new_ids, block_id_map) = compress_ids(block_ids_);
@@ -1041,6 +1068,7 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
     block_names_ = move_valid(block_names_, block_ids_);
     block_models_ = move_valid(block_models_, block_ids_);
     block_truth_tables_ = move_valid(block_truth_tables_, block_ids_);
+    block_pins_ = move_valid(block_pins_, block_ids_);
     block_input_ports_ = move_valid(block_input_ports_, block_ids_);
     block_output_ports_ = move_valid(block_output_ports_, block_ids_);
     block_clock_ports_ = move_valid(block_clock_ports_, block_ids_);
@@ -1123,7 +1151,13 @@ std::vector<AtomNetId> AtomNetlist::clean_nets() {
     return net_id_map;
 }
 
-void AtomNetlist::rebuild_block_refs(const std::vector<AtomPortId>& port_id_map) {
+void AtomNetlist::rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map) {
+    //Update the pin id references held by blocks
+    for(std::vector<AtomPinId>& pins : block_pins_) {
+        pins = update_valid_refs(pins, pin_id_map);
+        VTR_ASSERT_SAFE_MSG(all_valid(pins), "All Ids should be valid");
+    }
+
     //Update the port id references held by blocks
     for(std::vector<AtomPortId>& port : block_input_ports_) {
         port = update_valid_refs(port, port_id_map);
@@ -1566,7 +1600,7 @@ void AtomNetlist::associate_pin_with_port(const AtomPinId pin_id, const AtomPort
 }
 
 void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomBlockId blk_id) {
-    //pass
+    block_pins_[size_t(blk_id)].push_back(pin_id);
 }
 
 /*

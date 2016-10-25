@@ -373,6 +373,9 @@ class AtomNetlist {
         // For FF/Latches there is only a single entry representing the initial state
         const TruthTable&   block_truth_table   (const AtomBlockId id) const; 
 
+        //Returns a range of all pins assoicated with the specified block
+        pin_range           block_pins          (const AtomBlockId id) const;
+
         //Returns a range consisting of the input ports associated with the specified block
         port_range          block_input_ports   (const AtomBlockId id) const;
 
@@ -638,7 +641,7 @@ class AtomNetlist {
         std::vector<AtomNetId> clean_nets();
 
         //Re-builds cross-references held by blocks
-        void rebuild_block_refs(const std::vector<AtomPortId>& port_id_map);
+        void rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map);
 
         //Re-builds cross-references held by ports
         void rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map);
@@ -699,8 +702,8 @@ class AtomNetlist {
         std::vector<AtomStringId>            block_names_;          //Name of each block
         std::vector<const t_model*>          block_models_;         //Architecture model of each block
         std::vector<TruthTable>              block_truth_tables_;   //Truth tables of each block
-#if 0
         std::vector<std::vector<AtomPinId>>  block_pins_;           //Pins of each block
+#if 0
         std::vector<pin_range>               block_inputs_;         //Input pin ranges of each block
         std::vector<pin_range>               block_outputs_;        //Output pin ranges of each block
         std::vector<pin_range>               block_clocks_;         //Clock pin ranges of each block
