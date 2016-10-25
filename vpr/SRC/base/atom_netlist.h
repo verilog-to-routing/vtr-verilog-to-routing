@@ -376,6 +376,15 @@ class AtomNetlist {
         //Returns a range of all pins assoicated with the specified block
         pin_range           block_pins          (const AtomBlockId id) const;
 
+        //Returns a range of all input pins assoicated with the specified block
+        pin_range           block_input_pins    (const AtomBlockId id) const;
+
+        //Returns a range of all output pins assoicated with the specified block
+        pin_range           block_output_pins   (const AtomBlockId id) const;
+
+        //Returns a range of all clock pins assoicated with the specified block
+        pin_range           block_clock_pins    (const AtomBlockId id) const;
+
         //Returns a range consisting of the input ports associated with the specified block
         port_range          block_input_ports   (const AtomBlockId id) const;
 
@@ -608,7 +617,7 @@ class AtomNetlist {
 
         void associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id); 
         void associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id); 
-        void associate_pin_with_block(const AtomPinId pin_id, const AtomBlockId blk_id); 
+        void associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id); 
 
         //Removes a port from the netlist.
         //The port's pins are also marked invalid and removed from any associated nets
@@ -672,6 +681,7 @@ class AtomNetlist {
         //Verify that internal data structure cross-references are consistent
         bool verify_refs() const; //All cross-references
         bool validate_block_port_refs() const;
+        bool validate_block_pin_refs() const;
         bool validate_port_pin_refs() const;
         bool validate_net_pin_refs() const;
         bool validate_string_refs() const;
@@ -702,12 +712,12 @@ class AtomNetlist {
         std::vector<AtomStringId>            block_names_;          //Name of each block
         std::vector<const t_model*>          block_models_;         //Architecture model of each block
         std::vector<TruthTable>              block_truth_tables_;   //Truth tables of each block
+
         std::vector<std::vector<AtomPinId>>  block_pins_;           //Pins of each block
-#if 0
-        std::vector<pin_range>               block_inputs_;         //Input pin ranges of each block
-        std::vector<pin_range>               block_outputs_;        //Output pin ranges of each block
-        std::vector<pin_range>               block_clocks_;         //Clock pin ranges of each block
-#endif
+        std::vector<int>                     block_num_input_pins_; //Number of input pins on each block
+        std::vector<int>                     block_num_output_pins_;//Number of output pins on each block
+        std::vector<int>                     block_num_clock_pins_; //Number of clock pins on each block
+
         std::vector<std::vector<AtomPortId>> block_input_ports_;    //Input ports of each block
         std::vector<std::vector<AtomPortId>> block_output_ports_;   //Output ports of each block
         std::vector<std::vector<AtomPortId>> block_clock_ports_;    //Clock ports of each block

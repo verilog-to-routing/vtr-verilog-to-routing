@@ -119,6 +119,18 @@ std::vector<T> update_valid_refs(const std::vector<T>& values, const std::vector
     return updated;
 }
 
+template<typename R, typename T>
+size_t count_valid_refs(R range, const std::vector<T>& id_map) {
+    size_t valid_count = 0;
+    for(auto val : range) {
+        if(id_map[size_t(val)]) {
+            ++valid_count;
+        }
+    }
+
+    return valid_count;
+}
+
 /*
  *
  *
@@ -212,6 +224,40 @@ AtomNetlist::pin_range AtomNetlist::block_pins (const AtomBlockId id) const {
     VTR_ASSERT(valid_block_id(id));
 
     return vtr::make_range(block_pins_[size_t(id)].begin(), block_pins_[size_t(id)].end()); 
+}
+
+AtomNetlist::pin_range AtomNetlist::block_input_pins (const AtomBlockId id) const {
+    VTR_ASSERT(valid_block_id(id));
+
+    auto begin = block_pins_[size_t(id)].begin();
+
+    auto end = block_pins_[size_t(id)].begin() + block_num_input_pins_[size_t(id)];
+
+    return vtr::make_range(begin, end); 
+}
+
+AtomNetlist::pin_range AtomNetlist::block_output_pins (const AtomBlockId id) const {
+    VTR_ASSERT(valid_block_id(id));
+
+    auto begin = block_pins_[size_t(id)].begin() + block_num_input_pins_[size_t(id)];
+
+    auto end = begin + block_num_output_pins_[size_t(id)];
+
+    return vtr::make_range(begin, end); 
+}
+
+AtomNetlist::pin_range AtomNetlist::block_clock_pins (const AtomBlockId id) const {
+    VTR_ASSERT(valid_block_id(id));
+
+    auto begin = block_pins_[size_t(id)].begin()
+                 + block_num_input_pins_[size_t(id)]
+                 + block_num_output_pins_[size_t(id)];
+
+    auto end = begin + block_num_clock_pins_[size_t(id)];
+
+    VTR_ASSERT(end == block_pins_[size_t(id)].end());
+
+    return vtr::make_range(begin, end); 
 }
 
 AtomNetlist::port_range AtomNetlist::block_input_ports (const AtomBlockId id) const {
@@ -549,6 +595,7 @@ bool AtomNetlist::verify_sizes() const {
 //Should take linear time.
 bool AtomNetlist::verify_refs() const {
     validate_block_port_refs();
+    validate_block_pin_refs();
     validate_port_pin_refs();
     validate_net_pin_refs();
     validate_string_refs();
@@ -680,7 +727,12 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
 
         //Initialize the look-ups
         block_name_to_block_id_[name_id] = blk_id;
+
         block_pins_.emplace_back();
+        block_num_input_pins_.push_back(0);
+        block_num_output_pins_.push_back(0);
+        block_num_clock_pins_.push_back(0);
+
         block_input_ports_.emplace_back();
         block_output_ports_.emplace_back();
         block_clock_ports_.emplace_back();
@@ -777,11 +829,11 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
         //Add the pin to the net
         associate_pin_with_net(pin_id, type, net_id);
 
-        //Add the pin to the block
-        associate_pin_with_block(pin_id, port_block(port_id));
-
         //Add the pin to the port
         associate_pin_with_port(pin_id, port_id);
+
+        //Add the pin to the block
+        associate_pin_with_block(pin_id, port_type(port_id), port_block(port_id));
 
 
     }
@@ -1068,7 +1120,12 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
     block_names_ = move_valid(block_names_, block_ids_);
     block_models_ = move_valid(block_models_, block_ids_);
     block_truth_tables_ = move_valid(block_truth_tables_, block_ids_);
+
     block_pins_ = move_valid(block_pins_, block_ids_);
+    block_num_input_pins_ = move_valid(block_num_input_pins_, block_ids_);
+    block_num_output_pins_ = move_valid(block_num_output_pins_, block_ids_);
+    block_num_clock_pins_ = move_valid(block_num_clock_pins_, block_ids_);
+
     block_input_ports_ = move_valid(block_input_ports_, block_ids_);
     block_output_ports_ = move_valid(block_output_ports_, block_ids_);
     block_clock_ports_ = move_valid(block_clock_ports_, block_ids_);
@@ -1153,9 +1210,28 @@ std::vector<AtomNetId> AtomNetlist::clean_nets() {
 
 void AtomNetlist::rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map) {
     //Update the pin id references held by blocks
-    for(std::vector<AtomPinId>& pins : block_pins_) {
+    for(auto blk_id : blocks()) {
+        //Before update the references, we need to know how many are valid,
+        //so we can also update the numbers of input/output/clock pins
+
+        //Note that we take special care to not modify the pin counts until after
+        //they have all been counted (since the block_*_pins() functions depend on
+        //the counts).
+        size_t num_input_pins = count_valid_refs(block_input_pins(blk_id), pin_id_map);
+        size_t num_output_pins = count_valid_refs(block_output_pins(blk_id), pin_id_map);
+        size_t num_clock_pins = count_valid_refs(block_clock_pins(blk_id), pin_id_map);
+
+        std::vector<AtomPinId>& pins = block_pins_[size_t(blk_id)];
+
         pins = update_valid_refs(pins, pin_id_map);
+        block_num_input_pins_[size_t(blk_id)] = num_input_pins;
+        block_num_output_pins_[size_t(blk_id)] = num_output_pins;
+        block_num_clock_pins_[size_t(blk_id)] = num_clock_pins;
+
         VTR_ASSERT_SAFE_MSG(all_valid(pins), "All Ids should be valid");
+        VTR_ASSERT(pins.size() == (size_t) block_num_input_pins_[size_t(blk_id)]
+                                           + block_num_output_pins_[size_t(blk_id)]
+                                           + block_num_clock_pins_[size_t(blk_id)]);
     }
 
     //Update the port id references held by blocks
@@ -1405,6 +1481,45 @@ bool AtomNetlist::validate_block_port_refs() const {
     return true;
 }
 
+bool AtomNetlist::validate_block_pin_refs() const {
+    //Verify that block pin refs are consistent 
+    //(e.g. inputs are inputs, outputs are outputs etc.)
+    for(auto blk_id : blocks()) {
+
+        //Check that only input pins are found when iterating through inputs
+        for(auto pin_id : block_input_pins(blk_id)) {
+            auto port_id = pin_port(pin_id);
+
+
+            auto type = port_type(port_id);
+            if(type != AtomPortType::INPUT) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Non-input pin in block input pins");
+            }
+        }
+
+        //Check that only output pins are found when iterating through outputs
+        for(auto pin_id : block_output_pins(blk_id)) {
+            auto port_id = pin_port(pin_id);
+
+            auto type = port_type(port_id);
+            if(type != AtomPortType::OUTPUT) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Non-output pin in block output pins");
+            }
+        }
+
+        //Check that only clock pins are found when iterating through clocks
+        for(auto pin_id : block_clock_pins(blk_id)) {
+            auto port_id = pin_port(pin_id);
+
+            auto type = port_type(port_id);
+            if(type != AtomPortType::CLOCK) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Non-clock pin in block clock pins");
+            }
+        }
+    }
+    return true;
+}
+
 bool AtomNetlist::validate_port_pin_refs() const {
     //Check that port <-> pin references are consistent
 
@@ -1599,8 +1714,39 @@ void AtomNetlist::associate_pin_with_port(const AtomPinId pin_id, const AtomPort
     port_pins_[size_t(port_id)].push_back(pin_id);
 }
 
-void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomBlockId blk_id) {
-    block_pins_[size_t(blk_id)].push_back(pin_id);
+void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id) {
+    auto port_id = pin_port(pin_id);
+    VTR_ASSERT(port_type(port_id) == type);
+
+    //Get an interator pointing to where we want to insert
+    pin_iterator iter;
+    if(type == AtomPortType::INPUT) {
+        iter = block_input_pins(blk_id).end();
+        ++block_num_input_pins_[size_t(blk_id)];
+    } else if (type == AtomPortType::OUTPUT) {
+        iter = block_output_pins(blk_id).end();
+        ++block_num_output_pins_[size_t(blk_id)];
+    } else {
+        VTR_ASSERT(type == AtomPortType::CLOCK);
+        iter = block_clock_pins(blk_id).end();
+        ++block_num_clock_pins_[size_t(blk_id)];
+    }
+
+    //Insert the element just before iter
+    auto new_iter = block_pins_[size_t(blk_id)].insert(iter, pin_id);
+
+    //Inserted value should be the last valid range element
+    if(type == AtomPortType::INPUT) {
+        VTR_ASSERT(new_iter + 1 == block_input_pins(blk_id).end());
+        VTR_ASSERT(new_iter + 1 == block_output_pins(blk_id).begin());
+    } else if (type == AtomPortType::OUTPUT) {
+        VTR_ASSERT(new_iter + 1 == block_output_pins(blk_id).end());
+        VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).begin());
+    } else {
+        VTR_ASSERT(type == AtomPortType::CLOCK);
+        VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).end());
+        VTR_ASSERT(new_iter + 1 == block_pins(blk_id).end());
+    }
 }
 
 /*
