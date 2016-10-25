@@ -146,28 +146,43 @@
  * associated with blk_id. We then used the port_pins() method to get iterable ranges of all the pins
  * associated with each port, from which we can find the assoicated net.
  *
- * Note that we used range-based-for loops in the above, we could also have written (more verbosely) using 
+ * Often port information is not relevant so this can be further simplified by iterating over a blocks pins
+ * directly (e.g. by calling one of the block_*_pins() funcionts):
+ *
+ *      AtomBlkId blk_id;
+ *
+ *      //... Initialize blk_id with the block of interest
+ *
+ *      //Iterate over the blocks ports directly
+ *      for(AtomPinId pin_id : netlist.block_input_pins(blk_id)) {
+ *
+ *          //Retrieve the net
+ *          AtomNetId net_id = netlist.pin_net(pin_id);
+ *
+ *          //Get its name
+ *          const std::string& net_name = netlist.net_name(net_id);
+ *          printf("Associated net: %s\n", net_name.c_str());
+ *      }
+ *     
+ * Note the use of range-based-for loops above; it could also have written (more verbosely) using 
  * a conventional for loop and explicit iterators as follows:
  *
  *      AtomBlkId blk_id;
  *
  *      //... Initialize blk_id with the block of interest
  *
- *      //Iterat through the ports
- *      auto input_ports = netlist.block_input_ports(blk_id);
- *      for(auto port_iter = input_ports.begin(); port_iter != input_ports.end(); ++port_iter) {
+ *      //Iterate over the blocks ports directly
+ *      auto pins = netlist.block_input_pins(blk_id);
+ *      for(auto pin_iter = pins.begin(); pin_iter != pins.end(); ++pin_iter) {
  *
- *          //Iterate through the pins
- *          auto pins = netlist.pins(*port_iter);
- *          for(auto pin_iter = pins.begin(); pin_iter != pins.end(); ++pin_iter) {
- *              //Retrieve the net
- *              AtomNetId net_id = netlist.pin_net(*pin_iter);
+ *          //Retrieve the net
+ *          AtomNetId net_id = netlist.pin_net(*pin_iter);
  *
- *              //Get its name
- *              const std::string& net_name = netlist.net_name(net_id);
- *              printf("Associated net: %s\n", net_name.c_str());
- *          }
+ *          //Get its name
+ *          const std::string& net_name = netlist.net_name(net_id);
+ *          printf("Associated net: %s\n", net_name.c_str());
  *      }
+ *
  *
  * Creating the netlist
  * --------------------
@@ -415,6 +430,7 @@ class AtomNetlist {
         pin_range               port_pins   (const AtomPortId id) const;
 
         //Returns the pin (potentially invalid) associated with the specified port and port bit index
+        //Note: this function is identical to find_net()
         AtomPinId               port_pin    (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the net (potentially invalid) associated with the specified port and port bit index

@@ -57,7 +57,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             fprintf(f, "\tInput (%zu bits)\n", pins.size());
             size_t i = 0;
             for(auto pin : pins) {
-                fprintf(f, "\t\t%s[%zu] <-", netlist.port_name(input_port).c_str(), i);
+                fprintf(f, "\t\t%s [%zu] <-", netlist.port_name(input_port).c_str(), i);
                 if(pin) {
                     auto net = netlist.pin_net(pin);
                     if(net) {
@@ -79,7 +79,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             fprintf(f, "\tOutput (%zu bits)\n", pins.size());
             size_t i = 0;
             for(auto pin : pins) {
-                fprintf(f, "\t\t%s[%zu] ->", netlist.port_name(output_port).c_str(), i);
+                fprintf(f, "\t\t%s [%zu] ->", netlist.port_name(output_port).c_str(), i);
                 if(pin) {
                     auto net = netlist.pin_net(pin);
                     if(net) {
@@ -101,7 +101,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             fprintf(f, "\tClock (%zu bits)\n", pins.size());
             size_t i = 0;
             for(auto pin : pins) {
-                fprintf(f, "\t\t%s[%zu] <-", netlist.port_name(clock_port).c_str(), i);
+                fprintf(f, "\t\t%s [%zu] <-", netlist.port_name(clock_port).c_str(), i);
                 if(pin) {
                     fprintf(f, " %s", netlist.net_name(netlist.pin_net(pin)).c_str());
                 } else {
@@ -270,17 +270,13 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             //Collect Inputs
             auto input_ports = netlist.block_input_ports(blk_id);
             VTR_ASSERT(input_ports.size() <= 1);
-            for(auto port_id : input_ports) {
-                for(auto in_pin_id : netlist.port_pins(port_id)) {
-                    auto net_id = netlist.pin_net(in_pin_id);
-                    nets.push_back(net_id);
-                }
+            for(auto in_pin_id : netlist.block_input_pins(blk_id)) {
+                auto net_id = netlist.pin_net(in_pin_id);
+                nets.push_back(net_id);
             }
 
             //Collect Outputs
-            auto output_ports = netlist.block_output_ports(blk_id);
-            VTR_ASSERT(output_ports.size() == 1);
-            auto out_pins = netlist.port_pins(*output_ports.begin());
+            auto out_pins = netlist.block_output_pins(blk_id);
             VTR_ASSERT(out_pins.size() == 1);
 
             auto out_net_id = netlist.pin_net(*out_pins.begin());
@@ -470,17 +466,9 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
 
             //Buffer LUTs have a single input port and a single output port
             if(input_ports.size() == 1 && output_ports.size() == 1) {
-                //Get the ports
-                auto input_port = *input_ports.begin();
-                auto output_port = *output_ports.begin();
-
-                //Collect the pins
-                auto input_pins = netlist.port_pins(input_port);
-                auto output_pins = netlist.port_pins(output_port);
-
                 //Count the number of connected input pins
                 size_t connected_input_pins = 0;
-                for(auto input_pin : input_pins) {
+                for(auto input_pin : netlist.block_input_pins(blk)) {
                     if(input_pin && netlist.pin_net(input_pin)) {
                         ++connected_input_pins;
                     }
@@ -488,7 +476,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
 
                 //Count the number of connected output pins
                 size_t connected_output_pins = 0;
-                for(auto output_pin : output_pins) {
+                for(auto output_pin : netlist.block_output_pins(blk)) {
                     if(output_pin && netlist.pin_net(output_pin)) {
                         ++connected_output_pins;
                     }
@@ -568,11 +556,14 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
     //    all other pins as sinks
 
     //Find the input and output nets
-    auto input_port = *netlist.block_input_ports(blk).begin();
-    auto output_port = *netlist.block_output_ports(blk).begin();
+    auto input_pins = netlist.block_input_pins(blk);
+    auto output_pins = netlist.block_output_pins(blk);
 
-    auto input_pin = *netlist.port_pins(input_port).begin(); //i.e. pin 2
-    auto output_pin = *netlist.port_pins(output_port).begin(); //i.e. pin m+1
+    VTR_ASSERT(input_pins.size() == 1);
+    VTR_ASSERT(output_pins.size() == 1);
+
+    auto input_pin = *input_pins.begin(); //i.e. pin 2
+    auto output_pin = *output_pins.begin(); //i.e. pin m+1
 
     auto input_net = netlist.pin_net(input_pin);
     auto output_net = netlist.pin_net(output_pin);
@@ -654,14 +645,12 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
 
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     //Any block with no fanout is removable
-    for(AtomPortId out_port_id : netlist.block_output_ports(blk_id)) {
-        for(AtomPinId pin_id : netlist.port_pins(out_port_id)) {
-            if(!pin_id) continue;
-            AtomNetId net_id = netlist.pin_net(pin_id);
-            if(net_id) {
-                //There is a valid output net
-                return false; 
-            }
+    for(AtomPinId pin_id : netlist.block_output_pins(blk_id)) {
+        if(!pin_id) continue;
+        AtomNetId net_id = netlist.pin_net(pin_id);
+        if(net_id) {
+            //There is a valid output net
+            return false; 
         }
     }
     return true;
@@ -683,16 +672,15 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     if(type != AtomBlockType::OUTPAD) return false;
 
     //An output is only removable if it has no fan-in
-    for(AtomPortId in_port_id : netlist.block_input_ports(blk_id)) {
-        for(AtomPinId pin_id : netlist.port_pins(in_port_id)) {
-            if(!pin_id) continue;
-            AtomNetId net_id = netlist.pin_net(pin_id);
-            if(net_id) {
-                //There is a valid output net
-                return false; 
-            }
+    for(AtomPinId pin_id : netlist.block_input_pins(blk_id)) {
+        if(!pin_id) continue;
+        AtomNetId net_id = netlist.pin_net(pin_id);
+        if(net_id) {
+            //There is a valid output net
+            return false; 
         }
     }
+
     return true;
 }
 

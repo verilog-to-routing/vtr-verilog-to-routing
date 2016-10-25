@@ -328,16 +328,9 @@ AtomNetlist::pin_range AtomNetlist::port_pins (const AtomPortId id) const {
 
 AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_bit) const {
     //Convenience look-up bypassing port
-    VTR_ASSERT(valid_port_id(port_id));
-    VTR_ASSERT(valid_port_bit(port_id, port_bit));
-
-    for(auto pin_id : port_pins(port_id)) {
-        if(pin_port_bit(pin_id) == port_bit) {
-            return pin_id;
-        }
-    }
-    return AtomPinId::INVALID();
+    return find_pin(port_id, port_bit);
 }
+
 AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_bit) const {
     //port_pin() will validate that port_bit and port_id are valid so don't 
     //check redundently here
@@ -657,12 +650,10 @@ bool AtomNetlist::verify_block_invariants() const {
 
             //Find any connected clock
             AtomNetId clk_net_id;
-            for(auto port_id : block_clock_ports(blk_id)) {
-                for(auto pin_id : port_pins(port_id)) {
-                    if(pin_id) {
-                        clk_net_id = pin_net(pin_id);
-                        break;
-                    }
+            for(auto pin_id : block_clock_pins(blk_id)) {
+                if(pin_id) {
+                    clk_net_id = pin_net(pin_id);
+                    break;
                 }
             }
 
@@ -691,6 +682,7 @@ bool AtomNetlist::verify_block_invariants() const {
                     total_block_port_pins += port_pins(port_id).size(); 
                 }
             }
+
             if(num_block_pins != total_block_port_pins) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block pins and port pins do not match on atom block '%s'",
                         block_name(blk_id).c_str());
@@ -1049,8 +1041,7 @@ void AtomNetlist::remove_unused() {
 
         //Pins with no connected nets
         for(auto pin_id : pin_ids_) {
-            if(pin_id 
-                && !pin_net(pin_id)) {
+            if(pin_id && !pin_net(pin_id)) {
                 remove_pin(pin_id);
                 found_unused = true;
             }
@@ -1058,8 +1049,7 @@ void AtomNetlist::remove_unused() {
 
         //Empty ports
         for(auto port_id : port_ids_) {
-            if(port_id 
-                && port_pins(port_id).size() == 0) {
+            if(port_id && port_pins(port_id).size() == 0) {
                 remove_port(port_id);
                 found_unused = true;
             }

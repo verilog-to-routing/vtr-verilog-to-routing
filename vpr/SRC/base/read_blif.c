@@ -541,10 +541,8 @@ struct BlifAllocCallback : public blifparse::Callback {
                                     curr_model().block_name(blk_id).c_str());
 
                         //Mark all the output pins as constants
-                        for(auto port_id : curr_model().block_output_ports(blk_id)) {
-                            for(auto pin_id : curr_model().port_pins(port_id)) {
-                                curr_model().set_pin_is_constant(pin_id, true);
-                            }
+                        for(auto pin_id : curr_model().block_output_pins(blk_id)) {
+                            curr_model().set_pin_is_constant(pin_id, true);
                         }
 
                         ++num_blocks_marked;
@@ -568,15 +566,13 @@ struct BlifAllocCallback : public blifparse::Callback {
                 //A subckt is a constant generator if all its input nets are either:
                 //  1) Constant nets (i.e. driven by constant pins), or
                 //  2) Disconnected
-                for(auto port_id : curr_model().block_input_ports(blk_id)) {
-                    for(auto pin_id : curr_model().port_pins(port_id)) {
-                        auto net_id = curr_model().pin_net(pin_id);
+                for(auto pin_id : curr_model().block_input_pins(blk_id)) {
+                    auto net_id = curr_model().pin_net(pin_id);
 
-                        if(net_id && !curr_model().net_is_constant(net_id)) {
-                            return false;
-                        } else {
-                            VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
-                        }
+                    if(net_id && !curr_model().net_is_constant(net_id)) {
+                        return false;
+                    } else {
+                        VTR_ASSERT(!net_id || curr_model().net_is_constant(net_id));
                     }
                 }
                 //This subckt is a constant generator
