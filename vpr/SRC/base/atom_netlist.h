@@ -526,11 +526,13 @@ class AtomNetlist {
         AtomBlockId find_block  (const std::string& name) const;
 
         //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
+        //Note that this method is typically more efficient than searching by name
         //  blk_id: The ID of the block who's ports will be checked
         //  model_port: The port model to look for
         AtomPortId  find_port   (const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
         //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
+        //Note that this method is typically less efficient than searching by a t_model_port
         //  blk_id: The ID of the block who's ports will be checked
         //  name  : The name of the port to look for
         AtomPortId  find_port   (const AtomBlockId blk_id, const std::string& name) const;
@@ -641,11 +643,6 @@ class AtomNetlist {
         //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVAILD() if not
         //  name_id : The block name to look for
         AtomBlockId find_block(const AtomStringId name_id) const;
-
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
-        //  blk_id : The ID of the block who's ports will be checked
-        //  name_id: The string ID of the port name to look for
-        AtomPortId  find_port(const AtomBlockId blk_id, const AtomStringId name_id) const;
 
         //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVAILD() if not
         //  name_id: The string ID of the net name to look for
@@ -784,8 +781,6 @@ class AtomNetlist {
     private: //Fast lookups
 
         std::unordered_map<AtomStringId,AtomBlockId>                        block_name_to_block_id_;
-        std::unordered_map<std::tuple<AtomBlockId,AtomStringId>,AtomPortId> block_id_port_name_to_port_id_;
-        std::unordered_map<std::tuple<AtomBlockId,const t_model_ports*>,AtomPortId> block_id_model_port_to_port_id_;
         std::unordered_map<std::tuple<AtomPortId,BitIndex>,AtomPinId>       pin_port_port_bit_to_pin_id_;
         std::unordered_map<AtomStringId,AtomNetId>                          net_name_to_net_id_;
         std::unordered_map<std::string,AtomStringId>                        string_to_string_id_;

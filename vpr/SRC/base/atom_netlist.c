@@ -466,25 +466,33 @@ AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const t_model_ports
     VTR_ASSERT(valid_block_id(blk_id));
     VTR_ASSERT(model_port);
 
-    auto iter = block_id_model_port_to_port_id_.find(std::make_tuple(blk_id, model_port));
-    if(iter == block_id_model_port_to_port_id_.end()) {
-        return AtomPortId::INVALID();
-    } else {
-        VTR_ASSERT_SAFE(port_model(iter->second) == model_port);
+    //We can tell from the model port the set of ports
+    //the port can be found in
+    port_range range = (model_port->dir == IN_PORT) ?
+                             (model_port->is_clock) ?  block_clock_ports(blk_id) : block_input_ports(blk_id)
+                            : (block_output_ports(blk_id));
 
-        return iter->second;
+    for(auto port_id : range) {
+        if(port_name(port_id) == model_port->name) {
+            return port_id;
+        }
     }
+
+    return AtomPortId::INVALID();
 }
 
 AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& name) const {
     VTR_ASSERT(valid_block_id(blk_id));
 
-    auto str_id = find_string(name);
-    if(!str_id) {
-        return AtomPortId::INVALID();
-    } else {
-        return find_port(blk_id, str_id);
+    //Since we only know the port name, we must search all the ports
+    for(auto ports : {block_input_ports(blk_id), block_output_ports(blk_id), block_clock_ports(blk_id)}) {
+        for(auto port_id : ports) {
+            if(port_name(port_id) == name) {
+                return port_id;
+            }
+        }
     }
+    return AtomPortId::INVALID();
 }
 
 AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) const {
@@ -684,19 +692,13 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const t_model_po
 
     //See if the port already exists
     AtomStringId name_id = create_string(model_port->name);
-    AtomPortId port_id = find_port(blk_id, name_id);
+    AtomPortId port_id = find_port(blk_id, model_port);
     if(!port_id) {
         //Not found, create it
 
         //Reserve an id
         port_id = AtomPortId(port_ids_.size());
         port_ids_.push_back(port_id);
-
-        //Save the reverse lookup
-        auto key = std::make_tuple(blk_id, name_id);
-        block_id_port_name_to_port_id_[key] = port_id;
-        auto key2 = std::make_tuple(blk_id, model_port);
-        block_id_model_port_to_port_id_[key2] = port_id;
 
         //Initialize the per-port-instance data
         port_blocks_.push_back(blk_id);
@@ -914,13 +916,6 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
             remove_pin(pin);
         }
     }
-
-    //Invalidate look-up
-    AtomBlockId blk_id = port_block(port_id);
-    AtomStringId name_id = port_names_[size_t(port_id)];
-    const t_model_ports* model_port = port_models_[size_t(port_id)];
-    block_id_port_name_to_port_id_[std::make_tuple(blk_id, name_id)] = AtomPortId::INVALID();
-    block_id_model_port_to_port_id_[std::make_tuple(blk_id, model_port)] = AtomPortId::INVALID();
 
     //Mark as invalid
     port_ids_[size_t(port_id)] = AtomPortId::INVALID();
@@ -1213,17 +1208,6 @@ void AtomNetlist::rebuild_lookups() {
     for(auto blk_id : blocks()) {
         const auto& key = block_names_[size_t(blk_id)];
         block_name_to_block_id_[key] = blk_id;
-    }
-
-    //Ports
-    block_id_port_name_to_port_id_.clear();
-    block_id_model_port_to_port_id_.clear();
-    for(auto port_id : port_ids_) {
-        const auto& key = std::make_tuple(port_block(port_id), port_names_[size_t(port_id)]);
-        block_id_port_name_to_port_id_[key] = port_id;
-
-        const auto& key2 = std::make_tuple(port_block(port_id), port_models_[size_t(port_id)]);
-        block_id_model_port_to_port_id_[key2] = port_id;
     }
 
     //Pins
@@ -1550,28 +1534,6 @@ AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
         return AtomBlockId::INVALID();
     }
 }
-
-
-AtomPortId AtomNetlist::find_port(const AtomBlockId blk_id, const AtomStringId name_id) const {
-    VTR_ASSERT(valid_block_id(blk_id));
-    VTR_ASSERT(valid_string_id(name_id));
-
-    auto iter = block_id_port_name_to_port_id_.find(std::make_tuple(blk_id, name_id));
-    if(iter != block_id_port_name_to_port_id_.end()) {
-        AtomPortId port_id = iter->second;
-
-        //Check post-conditions
-        if(port_id) {
-            VTR_ASSERT(valid_port_id(port_id));
-            VTR_ASSERT(port_names_[size_t(port_id)] == name_id);
-        }
-        
-        return port_id;
-    } else {
-        return AtomPortId::INVALID();
-    }
-}
-
 
 AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
     VTR_ASSERT(valid_string_id(name_id));
