@@ -704,7 +704,6 @@ class AtomNetlist {
         std::vector<AtomStringId>           port_names_;    //Name of each port
         std::vector<AtomBlockId>            port_blocks_;   //Block associated with each port
         std::vector<const t_model_ports*>   port_models_;   //Architecture port models of each port
-        std::vector<BitIndex>               port_widths_;   //Architecture bit-width of each port
         std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
         //Pin data
