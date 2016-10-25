@@ -730,9 +730,9 @@ class AtomNetlist {
         std::vector<TruthTable>              block_truth_tables_;   //Truth tables of each block
 
         std::vector<std::vector<AtomPinId>>  block_pins_;           //Pins of each block
-        std::vector<int>                     block_num_input_pins_; //Number of input pins on each block
-        std::vector<int>                     block_num_output_pins_;//Number of output pins on each block
-        std::vector<int>                     block_num_clock_pins_; //Number of clock pins on each block
+        std::vector<unsigned>                block_num_input_pins_; //Number of input pins on each block
+        std::vector<unsigned>                block_num_output_pins_;//Number of output pins on each block
+        std::vector<unsigned>                block_num_clock_pins_; //Number of clock pins on each block
 
         std::vector<std::vector<AtomPortId>> block_input_ports_;    //Input ports of each block
         std::vector<std::vector<AtomPortId>> block_output_ports_;   //Output ports of each block
