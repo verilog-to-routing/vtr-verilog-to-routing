@@ -260,22 +260,44 @@ AtomNetlist::pin_range AtomNetlist::block_clock_pins (const AtomBlockId id) cons
     return vtr::make_range(begin, end); 
 }
 
+AtomNetlist::port_range AtomNetlist::block_ports (const AtomBlockId id) const {
+    VTR_ASSERT(valid_block_id(id));
+
+    return vtr::make_range(block_ports_[size_t(id)].begin(), block_ports_[size_t(id)].end()); 
+}
+
 AtomNetlist::port_range AtomNetlist::block_input_ports (const AtomBlockId id) const {
     VTR_ASSERT(valid_block_id(id));
 
-    return vtr::make_range(block_input_ports_[size_t(id)].begin(), block_input_ports_[size_t(id)].end());
+    auto begin = block_ports_[size_t(id)].begin();
+
+    auto end = block_ports_[size_t(id)].begin() + block_num_input_ports_[size_t(id)];
+
+    return vtr::make_range(begin, end); 
 }
 
 AtomNetlist::port_range AtomNetlist::block_output_ports (const AtomBlockId id) const {
     VTR_ASSERT(valid_block_id(id));
 
-    return vtr::make_range(block_output_ports_[size_t(id)].begin(), block_output_ports_[size_t(id)].end());
+    auto begin = block_ports_[size_t(id)].begin() + block_num_input_ports_[size_t(id)];
+
+    auto end = begin + block_num_output_ports_[size_t(id)];
+
+    return vtr::make_range(begin, end); 
 }
 
 AtomNetlist::port_range AtomNetlist::block_clock_ports (const AtomBlockId id) const {
     VTR_ASSERT(valid_block_id(id));
 
-    return vtr::make_range(block_clock_ports_[size_t(id)].begin(), block_clock_ports_[size_t(id)].end());
+    auto begin = block_ports_[size_t(id)].begin()
+                 + block_num_input_ports_[size_t(id)]
+                 + block_num_output_ports_[size_t(id)];
+
+    auto end = begin + block_num_clock_ports_[size_t(id)];
+
+    VTR_ASSERT(end == block_ports_[size_t(id)].end());
+
+    return vtr::make_range(begin, end); 
 }
 
 /*
@@ -725,9 +747,10 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
         block_num_output_pins_.push_back(0);
         block_num_clock_pins_.push_back(0);
 
-        block_input_ports_.emplace_back();
-        block_output_ports_.emplace_back();
-        block_clock_ports_.emplace_back();
+        block_ports_.emplace_back();
+        block_num_input_ports_.push_back(0);
+        block_num_output_ports_.push_back(0);
+        block_num_clock_ports_.push_back(0);
     }
 
     //Check post-conditions: size
@@ -764,22 +787,8 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const t_model_po
 
         //Allocate the pins, initialize to invalid Ids
         port_pins_.emplace_back();
-        //Associate the port with the blocks inputs/outputs/clocks
-        AtomPortType type = port_type(port_id);
-        if (type == AtomPortType::INPUT) {
-            block_input_ports_[size_t(blk_id)].push_back(port_id);
 
-        } else if (type == AtomPortType::OUTPUT) {
-            block_output_ports_[size_t(blk_id)].push_back(port_id);
-
-        } else if (type == AtomPortType::CLOCK) {
-            block_clock_ports_[size_t(blk_id)].push_back(port_id);
-
-        } else {
-            VTR_ASSERT_MSG(false, "Recognized port type");
-        }
-
-
+        associate_port_with_block(port_id, blk_id);
     }
 
     //Check post-conditions: sizes
@@ -917,10 +926,8 @@ void AtomNetlist::remove_block(const AtomBlockId blk_id) {
     VTR_ASSERT(valid_block_id(blk_id));
     
     //Remove the ports
-    for(auto block_ports : {block_input_ports(blk_id), block_output_ports(blk_id), block_clock_ports(blk_id)}) {
-        for(AtomPortId block_port : block_ports) {
-            remove_port(block_port);
-        }
+    for(AtomPortId block_port : block_ports(blk_id)) {
+        remove_port(block_port);
     }
 
     //Invalidate look-up
@@ -1116,9 +1123,10 @@ std::vector<AtomBlockId> AtomNetlist::clean_blocks() {
     block_num_output_pins_ = move_valid(block_num_output_pins_, block_ids_);
     block_num_clock_pins_ = move_valid(block_num_clock_pins_, block_ids_);
 
-    block_input_ports_ = move_valid(block_input_ports_, block_ids_);
-    block_output_ports_ = move_valid(block_output_ports_, block_ids_);
-    block_clock_ports_ = move_valid(block_clock_ports_, block_ids_);
+    block_ports_ = move_valid(block_ports_, block_ids_);
+    block_num_input_ports_ = move_valid(block_num_input_ports_, block_ids_);
+    block_num_output_ports_ = move_valid(block_num_output_ports_, block_ids_);
+    block_num_clock_ports_ = move_valid(block_num_clock_ports_, block_ids_);
 
     //Update Ids last since used as predicate
     block_ids_ = new_ids;
@@ -1222,21 +1230,25 @@ void AtomNetlist::rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, c
         VTR_ASSERT(pins.size() == (size_t) block_num_input_pins_[size_t(blk_id)]
                                            + block_num_output_pins_[size_t(blk_id)]
                                            + block_num_clock_pins_[size_t(blk_id)]);
+
+        //Similarily for ports
+        size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
+        size_t num_output_ports = count_valid_refs(block_output_ports(blk_id), port_id_map);
+        size_t num_clock_ports = count_valid_refs(block_clock_ports(blk_id), port_id_map);
+
+        std::vector<AtomPortId>& ports = block_ports_[size_t(blk_id)];
+
+        ports = update_valid_refs(ports, port_id_map);
+        block_num_input_ports_[size_t(blk_id)] = num_input_ports;
+        block_num_output_ports_[size_t(blk_id)] = num_output_ports;
+        block_num_clock_ports_[size_t(blk_id)] = num_clock_ports;
+
+        VTR_ASSERT_SAFE_MSG(all_valid(ports), "All Ids should be valid");
+        VTR_ASSERT(ports.size() == (size_t) block_num_input_ports_[size_t(blk_id)]
+                                           + block_num_output_ports_[size_t(blk_id)]
+                                           + block_num_clock_ports_[size_t(blk_id)]);
     }
 
-    //Update the port id references held by blocks
-    for(std::vector<AtomPortId>& port : block_input_ports_) {
-        port = update_valid_refs(port, port_id_map);
-        VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
-    }
-    for(std::vector<AtomPortId>& port : block_output_ports_) {
-        port = update_valid_refs(port, port_id_map);
-        VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
-    }
-    for(std::vector<AtomPortId>& port : block_clock_ports_) {
-        port = update_valid_refs(port, port_id_map);
-        VTR_ASSERT_SAFE_MSG(all_valid(port), "All Ids should be valid");
-    }
     VTR_ASSERT(validate_block_sizes());
 }
 
@@ -1306,18 +1318,14 @@ void AtomNetlist::shrink_to_fit() {
     block_num_output_pins_.shrink_to_fit();
     block_num_clock_pins_.shrink_to_fit();
 
-    block_input_ports_.shrink_to_fit();
-    for(auto& ports : block_input_ports_) {
+    block_ports_.shrink_to_fit();
+    for(auto& ports : block_ports_) {
         ports.shrink_to_fit();
     }
-    block_output_ports_.shrink_to_fit();
-    for(auto& ports : block_output_ports_) {
-        ports.shrink_to_fit();
-    }
-    block_clock_ports_.shrink_to_fit();
-    for(auto& ports : block_clock_ports_) {
-        ports.shrink_to_fit();
-    }
+    block_num_input_ports_.shrink_to_fit();
+    block_num_output_ports_.shrink_to_fit();
+    block_num_clock_ports_.shrink_to_fit();
+
     VTR_ASSERT(validate_block_sizes());
 
     //Port data
@@ -1745,5 +1753,40 @@ void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPor
         VTR_ASSERT(type == AtomPortType::CLOCK);
         VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).end());
         VTR_ASSERT(new_iter + 1 == block_pins(blk_id).end());
+    }
+}
+
+void AtomNetlist::associate_port_with_block(const AtomPortId port_id, const AtomBlockId blk_id) {
+    //Associate the port with the blocks inputs/outputs/clocks
+    AtomPortType type = port_type(port_id);
+
+    //Get an interator pointing to where we want to insert
+    port_iterator iter;
+    if(type == AtomPortType::INPUT) {
+        iter = block_input_ports(blk_id).end();
+        ++block_num_input_ports_[size_t(blk_id)];
+    } else if (type == AtomPortType::OUTPUT) {
+        iter = block_output_ports(blk_id).end();
+        ++block_num_output_ports_[size_t(blk_id)];
+    } else {
+        VTR_ASSERT(type == AtomPortType::CLOCK);
+        iter = block_clock_ports(blk_id).end();
+        ++block_num_clock_ports_[size_t(blk_id)];
+    }
+
+    //Insert the element just before iter
+    auto new_iter = block_ports_[size_t(blk_id)].insert(iter, port_id);
+
+    //Inserted value should be the last valid range element
+    if(type == AtomPortType::INPUT) {
+        VTR_ASSERT(new_iter + 1 == block_input_ports(blk_id).end());
+        VTR_ASSERT(new_iter + 1 == block_output_ports(blk_id).begin());
+    } else if (type == AtomPortType::OUTPUT) {
+        VTR_ASSERT(new_iter + 1 == block_output_ports(blk_id).end());
+        VTR_ASSERT(new_iter + 1 == block_clock_ports(blk_id).begin());
+    } else {
+        VTR_ASSERT(type == AtomPortType::CLOCK);
+        VTR_ASSERT(new_iter + 1 == block_clock_ports(blk_id).end());
+        VTR_ASSERT(new_iter + 1 == block_ports(blk_id).end());
     }
 }
