@@ -1324,6 +1324,7 @@ void AtomNetlist::shrink_to_fit() {
     //Port data
     port_ids_.shrink_to_fit();
     port_blocks_.shrink_to_fit();
+    port_models_.shrink_to_fit();
     port_pins_.shrink_to_fit();
     for(auto& pins : port_pins_) {
         pins.shrink_to_fit();
@@ -1335,6 +1336,7 @@ void AtomNetlist::shrink_to_fit() {
     pin_ports_.shrink_to_fit();
     pin_port_bits_.shrink_to_fit();
     pin_nets_.shrink_to_fit();
+    pin_is_constant_.shrink_to_fit();
     VTR_ASSERT(validate_pin_sizes());
 
     //Net data
@@ -1345,6 +1347,7 @@ void AtomNetlist::shrink_to_fit() {
 
     //String data
     string_ids_.shrink_to_fit();
+    strings_.shrink_to_fit();
     VTR_ASSERT(validate_string_sizes());
 }
 
