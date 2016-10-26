@@ -341,6 +341,10 @@
 
 #include "atom_netlist_fwd.h"
 
+//Forward delcaration for private methods
+template<typename I>
+class IdMap;
+
 class AtomNetlist {
     public: //Public types
         typedef std::vector<AtomBlockId>::const_iterator block_iterator;
@@ -659,38 +663,38 @@ class AtomNetlist {
         /*
          * Netlist compression/optimization
          */
-        void build_id_maps(std::vector<AtomBlockId>& block_id_map, 
-                           std::vector<AtomPortId>& port_id_map, 
-                           std::vector<AtomPinId>& pin_id_map, 
-                           std::vector<AtomNetId>& net_id_map);
-        void reorder_ids(std::vector<AtomBlockId>& block_id_map, 
-                         std::vector<AtomPortId>& port_id_map, 
-                         std::vector<AtomPinId>& pin_id_map, 
-                         std::vector<AtomNetId>& net_id_map);
+        void build_id_maps(IdMap<AtomBlockId>& block_id_map, 
+                           IdMap<AtomPortId>& port_id_map, 
+                           IdMap<AtomPinId>& pin_id_map, 
+                           IdMap<AtomNetId>& net_id_map);
+        void reorder_ids(IdMap<AtomBlockId>& block_id_map, 
+                         IdMap<AtomPortId>& port_id_map, 
+                         IdMap<AtomPinId>& pin_id_map, 
+                         IdMap<AtomNetId>& net_id_map);
 
         //Removes invalid and reorders blocks
-        void clean_blocks(const std::vector<AtomBlockId>& block_id_map);
+        void clean_blocks(const IdMap<AtomBlockId>& block_id_map);
 
         //Removes invalid and reorders ports
-        void clean_ports(const std::vector<AtomPortId>& port_id_map);
+        void clean_ports(const IdMap<AtomPortId>& port_id_map);
 
         //Removes invalid and reorders pins
-        void clean_pins(const std::vector<AtomPinId>& pin_id_map);
+        void clean_pins(const IdMap<AtomPinId>& pin_id_map);
 
         //Removes invalid and reorders nets
-        void clean_nets(const std::vector<AtomNetId>& net_id_map);
+        void clean_nets(const IdMap<AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by blocks
-        void rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map);
+        void rebuild_block_refs(const IdMap<AtomPinId>& pin_id_map, const IdMap<AtomPortId>& port_id_map);
 
         //Re-builds cross-references held by ports
-        void rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map);
+        void rebuild_port_refs(const IdMap<AtomBlockId>& block_id_map, const IdMap<AtomPinId>& pin_id_map);
 
         //Re-builds cross-references held by pins
-        void rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, const std::vector<AtomNetId>& net_id_map);
+        void rebuild_pin_refs(const IdMap<AtomPortId>& port_id_map, const IdMap<AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by nets
-        void rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map);
+        void rebuild_net_refs(const IdMap<AtomPinId>& pin_id_map);
 
         //Re-builds fast look-ups
         void rebuild_lookups();

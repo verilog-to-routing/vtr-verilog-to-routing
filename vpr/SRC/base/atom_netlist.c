@@ -16,6 +16,49 @@
  *
  */
 
+//A class which defines a mapping from an 'old' to 'new' Id space
+//
+//This is used to store the old to new Id mapping when compressing
+//the netlist.
+template<typename Id>
+class IdMap {
+    public:
+        IdMap(size_t nelem)
+            : id_map_(nelem) {}
+
+        //Returns the new Id for a given old Id
+        Id new_id(Id old_id) const {
+            if(old_id) {
+                return id_map_[size_t(old_id)];
+            } else {
+                return Id::INVALID();
+            }
+        }
+
+        void set_new_id(Id old_id_val, Id new_id_val) {
+            VTR_ASSERT(size_t(old_id_val) < id_map_.size());
+            VTR_ASSERT(size_t(new_id_val) < id_map_.size());
+            id_map_[size_t(old_id_val)] = new_id_val; 
+        }
+
+        size_t size() const { return id_map_.size(); }
+
+        size_t count_valid() const {
+            size_t valid_count = 0;
+            for(size_t i = 0; i < id_map_.size(); ++i) {
+                if(id_map_[i]) { 
+                    //New id is valid
+                    ++valid_count; 
+                }
+            }
+            return valid_count; 
+        }
+
+    private:
+        std::vector<Id> id_map_;
+};
+
+//Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename T>
 bool are_contiguous(std::vector<T>& values) {
     for(size_t i = 0; i < values.size(); ++i) {
@@ -26,6 +69,7 @@ bool are_contiguous(std::vector<T>& values) {
     return true;
 }
 
+//Returns true if all elements in the vector 'values' evaluate true
 template<typename T>
 bool all_valid(std::vector<T>& values) {
     for(size_t i = 0; i < values.size(); ++i) {
@@ -39,17 +83,17 @@ bool all_valid(std::vector<T>& values) {
 //Builds a mapping from old to new ids
 //  i.e. map[old_id] == new_id
 template<typename T>
-std::vector<T> compress_ids(const std::vector<T>& ids) {
-    std::vector<T> id_map;
+IdMap<T> compress_ids(const std::vector<T>& ids) {
+    IdMap<T> id_map(ids.size());
     size_t i = 0;
     for(auto id : ids) {
         if(id) {
             //Valid
-            id_map.emplace_back(i); 
+            id_map.set_new_id(id, T(i)); 
             ++i;
         } else {
             //Invalid
-            id_map.emplace_back(T::INVALID());
+            VTR_ASSERT(!id_map.new_id(id));
         }
     }
 
@@ -64,66 +108,81 @@ std::vector<T> compress_ids(const std::vector<T>& ids) {
 //
 // If it is an invalid ID, the element in values is dropped.
 // Otherwise the element is moved to the new ID location.
-template<typename T, typename I>
-std::vector<T> clean_and_reorder_values(const std::vector<T>& values, const std::vector<I>& id_map) {
+template<typename T, typename Id>
+std::vector<T> clean_and_reorder_values(const std::vector<T>& values, const IdMap<Id>& id_map) {
     VTR_ASSERT(values.size() == id_map.size());
 
-    //Count the number of valid entries in the id_map
-    size_t valid_count = 0;
-    for(size_t i = 0; i < id_map.size(); ++i) {
-        if(id_map[i]) { 
-            //New id is valid
-            ++valid_count; 
-        }
-    }
-
-    //Allocate a new vector to store the values that have been not dropped
-    std::vector<T> result(valid_count);
+    //Allocate a new vector to store the values that will not be dropped
+    std::vector<T> result(id_map.count_valid());
 
     //Move over the valid entries to their new locations
-    for(size_t i = 0; i < id_map.size(); ++i) {
-        if (id_map[i]) {
-            size_t new_idx = size_t(id_map[i]);
+    for(size_t cur_idx = 0; cur_idx < values.size(); ++cur_idx) {
+        Id old_id = Id(cur_idx);
+
+        Id new_id = id_map.new_id(old_id);
+        if (new_id) {
+            //There is a valid mapping
+            size_t new_idx = size_t(new_id);
 
             VTR_ASSERT(new_idx < result.size());
 
-            result[new_idx] = std::move(values[i]);
+            result[new_idx] = std::move(values[cur_idx]);
         }
     }
 
     return result;
 }
-template<typename I>
-std::vector<I> clean_and_reorder_ids(const std::vector<I>& id_map) {
+
+//Returns the set of new valid Ids defined by 'id_map'
+template<typename Id>
+std::vector<Id> clean_and_reorder_ids(const IdMap<Id>& id_map) {
     //For IDs, the values are the new id's stored in the map
-    return clean_and_reorder_values(id_map, id_map);
+
+    //Allocate a new vector to store the values that have been not dropped
+    std::vector<Id> result(id_map.count_valid());
+
+    //Move over the valid entries to their new locations
+    for(size_t cur_idx = 0; cur_idx < id_map.size(); ++cur_idx) {
+        Id old_id = Id(cur_idx);
+
+        Id new_id = id_map.new_id(old_id);
+        if (new_id) {
+            //There is a valid mapping
+            size_t new_idx = size_t(new_id);
+
+            VTR_ASSERT(new_idx < result.size());
+
+            result[new_idx] = new_id;
+        }
+    }
+
+    return result;
 }
 
 
-//Updates values based on id_map, even if the original/new mappings are not valid
-template<typename T>
-std::vector<T> update_all_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
-    std::vector<T> updated;
+//Updates the Ids in 'values' based on id_map, even if the original/new mappings are not valid
+template<typename Id>
+std::vector<Id> update_all_refs(const std::vector<Id>& values, const IdMap<Id>& id_map) {
+    std::vector<Id> updated;
 
     for(size_t i = 0; i < values.size(); ++i) {
         //The original item was valid
-        auto new_val = id_map[size_t(values[i])]; 
+        auto new_val = id_map.new_id(values[i]); 
         //The original item exists in the new mapping
         updated.emplace_back(new_val);
     }
     return updated;
 }
 
-//Updates values based on id_map, only if the originalx and new mappings are valid
-// any invalid values are not included
-template<typename T>
-std::vector<T> update_valid_refs(const std::vector<T>& values, const std::vector<T>& id_map) {
-    std::vector<T> updated;
+//Updates the Ids in 'values' based on the new mapping in 'id_map', if both the original and new Ids mappings are valid
+template<typename Id>
+std::vector<Id> update_valid_refs(const std::vector<Id>& values, const IdMap<Id>& id_map) {
+    std::vector<Id> updated;
 
     for(size_t i = 0; i < values.size(); ++i) {
         if(values[i]) {
             //The original item was valid
-            auto new_val = id_map[size_t(values[i])]; 
+            auto new_val = id_map.new_id(values[i]); 
             if(new_val) {
                 //The original item exists in the new mapping
                 updated.emplace_back(new_val);
@@ -133,11 +192,13 @@ std::vector<T> update_valid_refs(const std::vector<T>& values, const std::vector
     return updated;
 }
 
-template<typename R, typename T>
-size_t count_valid_refs(R range, const std::vector<T>& id_map) {
+//Count how many of the Id's referenced in 'range' have a valid
+//new mapping in 'id_map'
+template<typename R, typename Id>
+size_t count_valid_refs(R range, const IdMap<Id>& id_map) {
     size_t valid_count = 0;
-    for(auto val : range) {
-        if(id_map[size_t(val)]) {
+    for(Id id : range) {
+        if(id_map.new_id(id)) {
             ++valid_count;
         }
     }
@@ -1089,10 +1150,10 @@ void AtomNetlist::compress() {
     //Walk the netlist to invalidate any unused items
     remove_unused();
 
-    std::vector<AtomBlockId> block_id_map;
-    std::vector<AtomPortId> port_id_map;
-    std::vector<AtomPinId> pin_id_map;
-    std::vector<AtomNetId> net_id_map;
+    IdMap<AtomBlockId> block_id_map(block_ids_.size());
+    IdMap<AtomPortId> port_id_map(port_ids_.size());
+    IdMap<AtomPinId> pin_id_map(pin_ids_.size());
+    IdMap<AtomNetId> net_id_map(net_ids_.size());
 
     //Build the mappings from old to new id's, potentially
     //re-ordering for improved cache locality
@@ -1126,52 +1187,51 @@ void AtomNetlist::compress() {
     dirty_ = false;
 }
 
-void AtomNetlist::build_id_maps(std::vector<AtomBlockId>& block_id_map, 
-                                std::vector<AtomPortId>& port_id_map, 
-                                std::vector<AtomPinId>& pin_id_map, 
-                                std::vector<AtomNetId>& net_id_map) {
+void AtomNetlist::build_id_maps(IdMap<AtomBlockId>& block_id_map, 
+                                IdMap<AtomPortId>& port_id_map, 
+                                IdMap<AtomPinId>& pin_id_map, 
+                                IdMap<AtomNetId>& net_id_map) {
 
     block_id_map = compress_ids(block_ids_);
     port_id_map = compress_ids(port_ids_);
-    pin_id_map = compress_ids(pin_ids_);
     net_id_map = compress_ids(net_ids_);
 
     reorder_ids(block_id_map, port_id_map, pin_id_map, net_id_map);
 }
 
-void AtomNetlist::reorder_ids(std::vector<AtomBlockId>& /*block_id_map*/, 
-                 std::vector<AtomPortId>& /*port_id_map*/, 
-                 std::vector<AtomPinId>& pin_id_map, 
-                 std::vector<AtomNetId>& /*net_id_map*/) {
+void AtomNetlist::reorder_ids(IdMap<AtomBlockId>& /*block_id_map*/, 
+                 IdMap<AtomPortId>& /*port_id_map*/, 
+                 IdMap<AtomPinId>& pin_id_map, 
+                 IdMap<AtomNetId>& /*net_id_map*/) {
 
     //Re-order pins for net-based cache locality
 
     //Record the pins in net order
-    pin_id_map = std::vector<AtomPinId>(pin_ids_.size());
+    pin_id_map = IdMap<AtomPinId>(pin_ids_.size());
     size_t ipin = 0;
     for(auto net_id : nets()) {
         if(net_id) {
             for(auto pin_id : net_pins(net_id)) {
                 if(pin_id) {
-                    pin_id_map[size_t(pin_id)] = AtomPinId(ipin);
+                    pin_id_map.set_new_id(pin_id, AtomPinId(ipin));
                     ++ipin;
                 }
             }
         }
     }
 
-    for(size_t i = 0; i < pin_ids_.size(); ++i) {
-        if(pin_ids_[i]) {
+    for(auto pin_id : pin_ids_) {
+        if(pin_id) {
             //Valid pins should have a valid new mapping
-            VTR_ASSERT(pin_id_map[i]);
+            VTR_ASSERT(pin_id_map.new_id(pin_id));
         } else {
             //Invalid pins should have an invalid new mapping
-            VTR_ASSERT(!pin_id_map[i]);
+            VTR_ASSERT(!pin_id_map.new_id(pin_id));
         }
     }
 }
 
-void AtomNetlist::clean_blocks(const std::vector<AtomBlockId>& block_id_map) {
+void AtomNetlist::clean_blocks(const IdMap<AtomBlockId>& block_id_map) {
     //Clean the blocks
 
     //Update all the block values
@@ -1196,7 +1256,7 @@ void AtomNetlist::clean_blocks(const std::vector<AtomBlockId>& block_id_map) {
     VTR_ASSERT_MSG(all_valid(block_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::clean_ports(const std::vector<AtomPortId>& port_id_map) {
+void AtomNetlist::clean_ports(const IdMap<AtomPortId>& port_id_map) {
     //Clean the ports
 
     //Update all the port values
@@ -1212,7 +1272,7 @@ void AtomNetlist::clean_ports(const std::vector<AtomPortId>& port_id_map) {
     VTR_ASSERT_MSG(all_valid(port_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::clean_pins(const std::vector<AtomPinId>& pin_id_map) {
+void AtomNetlist::clean_pins(const IdMap<AtomPinId>& pin_id_map) {
     //Clean the pins
 
     //Update all the pin values
@@ -1228,7 +1288,7 @@ void AtomNetlist::clean_pins(const std::vector<AtomPinId>& pin_id_map) {
     VTR_ASSERT_MSG(all_valid(pin_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::clean_nets(const std::vector<AtomNetId>& net_id_map) {
+void AtomNetlist::clean_nets(const IdMap<AtomNetId>& net_id_map) {
     //Clean the nets
 
     //Update all the net values
@@ -1242,7 +1302,7 @@ void AtomNetlist::clean_nets(const std::vector<AtomNetId>& net_id_map) {
     VTR_ASSERT_MSG(all_valid(net_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map) {
+void AtomNetlist::rebuild_block_refs(const IdMap<AtomPinId>& pin_id_map, const IdMap<AtomPortId>& port_id_map) {
     //Update the pin id references held by blocks
     for(auto blk_id : blocks()) {
         //Before update the references, we need to know how many are valid,
@@ -1288,7 +1348,7 @@ void AtomNetlist::rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, c
     VTR_ASSERT(validate_block_sizes());
 }
 
-void AtomNetlist::rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map, const std::vector<AtomPinId>& pin_id_map) {
+void AtomNetlist::rebuild_port_refs(const IdMap<AtomBlockId>& block_id_map, const IdMap<AtomPinId>& pin_id_map) {
     //Update block and pin references held by ports
     port_blocks_ = update_valid_refs(port_blocks_, block_id_map); 
     VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
@@ -1300,7 +1360,7 @@ void AtomNetlist::rebuild_port_refs(const std::vector<AtomBlockId>& block_id_map
     VTR_ASSERT(validate_port_sizes());
 }
 
-void AtomNetlist::rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, const std::vector<AtomNetId>& net_id_map) {
+void AtomNetlist::rebuild_pin_refs(const IdMap<AtomPortId>& port_id_map, const IdMap<AtomNetId>& net_id_map) {
     //Update port and net references held by pins
     pin_ports_ = update_all_refs(pin_ports_, port_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
@@ -1311,7 +1371,7 @@ void AtomNetlist::rebuild_pin_refs(const std::vector<AtomPortId>& port_id_map, c
     VTR_ASSERT(validate_pin_sizes());
 }
 
-void AtomNetlist::rebuild_net_refs(const std::vector<AtomPinId>& pin_id_map) {
+void AtomNetlist::rebuild_net_refs(const IdMap<AtomPinId>& pin_id_map) {
     //Update pin references held by nets
     for(auto& pins : net_pins_) {
         pins = update_valid_refs(pins, pin_id_map);
