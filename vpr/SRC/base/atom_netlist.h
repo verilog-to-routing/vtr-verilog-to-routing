@@ -740,7 +740,6 @@ class AtomNetlist {
         std::vector<unsigned>                block_num_output_pins_;    //Number of output pins on each block
         std::vector<unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
 
-        //TODO: convert ports to linear layout
         std::vector<std::vector<AtomPortId>> block_ports_;              //Ports of each block
         std::vector<unsigned>                block_num_input_ports_;    //Input ports of each block
         std::vector<unsigned>                block_num_output_ports_;   //Output ports of each block
@@ -751,12 +750,7 @@ class AtomNetlist {
         std::vector<AtomStringId>           port_names_;    //Name of each port
         std::vector<AtomBlockId>            port_blocks_;   //Block associated with each port
         std::vector<const t_model_ports*>   port_models_;   //Architecture port models of each port
-#if 0
-        //TODO: convert pins to ref block pins
-        std::vector<pin_range>              port_pins_;     //Pins associated with each port
-#else
         std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
-#endif
 
         //Pin data
         std::vector<AtomPinId>  pin_ids_;           //Valid pin ids
