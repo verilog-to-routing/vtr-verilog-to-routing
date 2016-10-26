@@ -663,6 +663,10 @@ class AtomNetlist {
                            std::vector<AtomPortId>& port_id_map, 
                            std::vector<AtomPinId>& pin_id_map, 
                            std::vector<AtomNetId>& net_id_map);
+        void reorder_ids(std::vector<AtomBlockId>& block_id_map, 
+                         std::vector<AtomPortId>& port_id_map, 
+                         std::vector<AtomPinId>& pin_id_map, 
+                         std::vector<AtomNetId>& net_id_map);
 
         //Removes invalid and reorders blocks
         void clean_blocks(const std::vector<AtomBlockId>& block_id_map);

@@ -7,6 +7,7 @@
 #include "vtr_log.h"
 
 #include "vpr_error.h"
+
 /*
  *
  *
@@ -83,6 +84,9 @@ std::vector<T> clean_and_reorder_values(const std::vector<T>& values, const std:
     for(size_t i = 0; i < id_map.size(); ++i) {
         if (id_map[i]) {
             size_t new_idx = size_t(id_map[i]);
+
+            VTR_ASSERT(new_idx < result.size());
+
             result[new_idx] = std::move(values[i]);
         }
     }
@@ -91,17 +95,8 @@ std::vector<T> clean_and_reorder_values(const std::vector<T>& values, const std:
 }
 template<typename I>
 std::vector<I> clean_and_reorder_ids(const std::vector<I>& id_map) {
-
-    std::vector<I> result;
-
-    //Move over the valid entries to their new locations
-    for(size_t i = 0; i < id_map.size(); ++i) {
-        if (id_map[i]) {
-            result.emplace_back(id_map[i]);
-        }
-    }
-
-    return result;
+    //For IDs, the values are the new id's stored in the map
+    return clean_and_reorder_values(id_map, id_map);
 }
 
 
@@ -1115,10 +1110,6 @@ void AtomNetlist::compress() {
     //TODO: clean strings
     //TODO: iterative cleaning?
 
-    for(auto blk_id : blocks()) {
-        vtr::printf("Block %d\n", int(size_t(blk_id)));
-    }
-
     //Now we re-build all the cross references
     rebuild_block_refs(pin_id_map, port_id_map);
     rebuild_port_refs(block_id_map, pin_id_map);
@@ -1145,11 +1136,40 @@ void AtomNetlist::build_id_maps(std::vector<AtomBlockId>& block_id_map,
     pin_id_map = compress_ids(pin_ids_);
     net_id_map = compress_ids(net_ids_);
 
-    for(size_t i = 0; i < block_id_map.size(); ++i) {
-        vtr::printf("Block Map %zu -> %d\n", i, int(size_t(block_id_map[i])));
-    }
+    reorder_ids(block_id_map, port_id_map, pin_id_map, net_id_map);
 }
 
+void AtomNetlist::reorder_ids(std::vector<AtomBlockId>& /*block_id_map*/, 
+                 std::vector<AtomPortId>& /*port_id_map*/, 
+                 std::vector<AtomPinId>& pin_id_map, 
+                 std::vector<AtomNetId>& /*net_id_map*/) {
+
+    //Re-order pins for net-based cache locality
+
+    //Record the pins in net order
+    pin_id_map = std::vector<AtomPinId>(pin_ids_.size());
+    size_t ipin = 0;
+    for(auto net_id : nets()) {
+        if(net_id) {
+            for(auto pin_id : net_pins(net_id)) {
+                if(pin_id) {
+                    pin_id_map[size_t(pin_id)] = AtomPinId(ipin);
+                    ++ipin;
+                }
+            }
+        }
+    }
+
+    for(size_t i = 0; i < pin_ids_.size(); ++i) {
+        if(pin_ids_[i]) {
+            //Valid pins should have a valid new mapping
+            VTR_ASSERT(pin_id_map[i]);
+        } else {
+            //Invalid pins should have an invalid new mapping
+            VTR_ASSERT(!pin_id_map[i]);
+        }
+    }
+}
 
 void AtomNetlist::clean_blocks(const std::vector<AtomBlockId>& block_id_map) {
     //Clean the blocks
@@ -1172,8 +1192,8 @@ void AtomNetlist::clean_blocks(const std::vector<AtomBlockId>& block_id_map) {
 
     VTR_ASSERT(validate_block_sizes());
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(block_ids_), "Ids should be contiguous");
-    VTR_ASSERT_SAFE_MSG(all_valid(block_ids_), "All Ids should be valid");
+    VTR_ASSERT_MSG(are_contiguous(block_ids_), "Ids should be contiguous");
+    VTR_ASSERT_MSG(all_valid(block_ids_), "All Ids should be valid");
 }
 
 void AtomNetlist::clean_ports(const std::vector<AtomPortId>& port_id_map) {
@@ -1188,8 +1208,8 @@ void AtomNetlist::clean_ports(const std::vector<AtomPortId>& port_id_map) {
 
     VTR_ASSERT(validate_port_sizes());
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(port_ids_), "Ids should be contiguous");
-    VTR_ASSERT_SAFE_MSG(all_valid(port_ids_), "All Ids should be valid");
+    VTR_ASSERT_MSG(are_contiguous(port_ids_), "Ids should be contiguous");
+    VTR_ASSERT_MSG(all_valid(port_ids_), "All Ids should be valid");
 }
 
 void AtomNetlist::clean_pins(const std::vector<AtomPinId>& pin_id_map) {
@@ -1204,8 +1224,8 @@ void AtomNetlist::clean_pins(const std::vector<AtomPinId>& pin_id_map) {
 
     VTR_ASSERT(validate_pin_sizes());
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(pin_ids_), "Ids should be contiguous");
-    VTR_ASSERT_SAFE_MSG(all_valid(pin_ids_), "All Ids should be valid");
+    VTR_ASSERT_MSG(are_contiguous(pin_ids_), "Ids should be contiguous");
+    VTR_ASSERT_MSG(all_valid(pin_ids_), "All Ids should be valid");
 }
 
 void AtomNetlist::clean_nets(const std::vector<AtomNetId>& net_id_map) {
@@ -1218,8 +1238,8 @@ void AtomNetlist::clean_nets(const std::vector<AtomNetId>& net_id_map) {
 
     VTR_ASSERT(validate_net_sizes());
 
-    VTR_ASSERT_SAFE_MSG(are_contiguous(net_ids_), "Ids should be contiguous");
-    VTR_ASSERT_SAFE_MSG(all_valid(net_ids_), "All Ids should be valid");
+    VTR_ASSERT_MSG(are_contiguous(net_ids_), "Ids should be contiguous");
+    VTR_ASSERT_MSG(all_valid(net_ids_), "All Ids should be valid");
 }
 
 void AtomNetlist::rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map) {
