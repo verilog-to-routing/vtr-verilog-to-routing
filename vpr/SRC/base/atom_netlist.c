@@ -1535,6 +1535,8 @@ bool AtomNetlist::validate_port_pin_refs() const {
     std::vector<unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto port_id : port_ids_) {
+        bool first_bit = true;
+        BitIndex prev_bit_index = 0;
         for(auto pin_id : port_pins(port_id)) {
             if(pin_port(pin_id) != port_id) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Port-pin cross-reference does not match");
@@ -1543,6 +1545,23 @@ bool AtomNetlist::validate_port_pin_refs() const {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Out-of-range port bit index");
             }
             ++seen_pin_ids[size_t(pin_id)];
+
+            BitIndex port_bit_index = pin_port_bit(pin_id);
+            
+            //Verify that the port bit index is legal
+            if(!valid_port_bit(port_id, port_bit_index)) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Invalid pin bit index in port");
+            }
+
+            //Verify that the pins are listed in increasing order of port bit index,
+            //we rely on this property to perform fast binary searches for pins with specific bit
+            //indicies
+            if(first_bit) {
+                prev_bit_index = port_bit_index;
+                first_bit = false;
+            } else if(prev_bit_index >= port_bit_index) {
+                VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Port pin indicies are not in ascending order");
+            }
         }
     }
 
