@@ -352,9 +352,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
     //Similarily to pins, only in-use ports are stored in the compressed
     //atom netlist, so we can figure out how many ports should have been
     //checked directly
-    size_t atom_ports = g_atom_nl.block_input_ports(blk_id).size()
-                        + g_atom_nl.block_output_ports(blk_id).size()
-                        + g_atom_nl.block_clock_ports(blk_id).size();
+    size_t atom_ports = g_atom_nl.block_ports(blk_id).size();
 
     //See if all the atom ports were checked
     if(checked_ports != atom_ports) {

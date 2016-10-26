@@ -334,11 +334,9 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
         subckt_models.insert(blk_model);
         
         std::vector<AtomPortId> ports;
-        for(auto port_group : {netlist.block_input_ports(blk_id), netlist.block_output_ports(blk_id), netlist.block_clock_ports(blk_id)}) {
-            for(auto port_id : port_group) {
-                VTR_ASSERT(netlist.port_width(port_id) > 0);
-                ports.push_back(port_id);
-            }
+        for(auto port_id : netlist.block_ports(blk_id)) {
+            VTR_ASSERT(netlist.port_width(port_id) > 0);
+            ports.push_back(port_id);
         }
 
 

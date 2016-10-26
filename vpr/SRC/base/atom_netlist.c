@@ -533,11 +533,9 @@ AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& 
     VTR_ASSERT(valid_block_id(blk_id));
 
     //Since we only know the port name, we must search all the ports
-    for(auto ports : {block_input_ports(blk_id), block_output_ports(blk_id), block_clock_ports(blk_id)}) {
-        for(auto port_id : ports) {
-            if(port_name(port_id) == name) {
-                return port_id;
-            }
+    for(auto port_id : block_ports(blk_id)) {
+        if(port_name(port_id) == name) {
+            return port_id;
         }
     }
     return AtomPortId::INVALID();
@@ -699,10 +697,8 @@ bool AtomNetlist::verify_block_invariants() const {
             size_t num_block_pins = block_pins(blk_id).size();
 
             size_t total_block_port_pins = 0;
-            for(auto ports : {block_input_ports(blk_id), block_output_ports(blk_id), block_clock_ports(blk_id)}) {
-                for(auto port_id : ports) {
-                    total_block_port_pins += port_pins(port_id).size(); 
-                }
+            for(auto port_id : block_ports(blk_id)) {
+                total_block_port_pins += port_pins(port_id).size(); 
             }
 
             if(num_block_pins != total_block_port_pins) {
@@ -1062,12 +1058,9 @@ void AtomNetlist::remove_unused() {
             }
         }
 
-        //Blocks with no ports
+        //Blocks with no pins
         for(auto blk_id : blocks()) {
-            if(blk_id 
-                && block_input_ports(blk_id).size() == 0 
-                && block_output_ports(blk_id).size() == 0 
-                && block_clock_ports(blk_id).size() == 0) {
+            if(blk_id && block_pins(blk_id).size() == 0) {
                 remove_block(blk_id);
                 found_unused = true;
             }
