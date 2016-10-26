@@ -1297,6 +1297,15 @@ void AtomNetlist::shrink_to_fit() {
     block_names_.shrink_to_fit();
     block_models_.shrink_to_fit();
     block_truth_tables_.shrink_to_fit();
+
+    block_pins_.shrink_to_fit();
+    for(auto& pins : block_pins_) {
+        pins.shrink_to_fit();
+    }
+    block_num_input_pins_.shrink_to_fit();
+    block_num_output_pins_.shrink_to_fit();
+    block_num_clock_pins_.shrink_to_fit();
+
     block_input_ports_.shrink_to_fit();
     for(auto& ports : block_input_ports_) {
         ports.shrink_to_fit();
