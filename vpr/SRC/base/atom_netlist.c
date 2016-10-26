@@ -1397,7 +1397,15 @@ bool AtomNetlist::valid_string_id(AtomStringId id) const {
 bool AtomNetlist::validate_block_sizes() const {
     if(block_names_.size() != block_ids_.size()
         || block_models_.size() != block_ids_.size()
-        || block_truth_tables_.size() != block_ids_.size()) {
+        || block_truth_tables_.size() != block_ids_.size()
+        || block_pins_.size() != block_ids_.size()
+        || block_num_input_pins_.size() != block_ids_.size()
+        || block_num_output_pins_.size() != block_ids_.size()
+        || block_num_clock_pins_.size() != block_ids_.size()
+        || block_ports_.size() != block_ids_.size()
+        || block_num_input_ports_.size() != block_ids_.size()
+        || block_num_output_ports_.size() != block_ids_.size()
+        || block_num_clock_ports_.size() != block_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
     }
     return true;
