@@ -796,7 +796,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const t_model_po
     VTR_ASSERT(port_name(port_id) == model_port->name);
     VTR_ASSERT(port_width(port_id) == (unsigned) model_port->size);
     VTR_ASSERT(port_model(port_id) == model_port);
-    VTR_ASSERT_SAFE(find_port(blk_id, name) == port_id);
+    VTR_ASSERT_SAFE(find_port(blk_id, model_port->name) == port_id);
     VTR_ASSERT_SAFE(find_port(blk_id, model_port) == port_id);
 
     return port_id;

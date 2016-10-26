@@ -37,7 +37,7 @@ void AtomMap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     if(!blk_id) {
         //Remove
         pb_to_atom_.erase(pb);
-        VTR_ASSERT_SAFE(atom_to_pb.count(blk_id) == 0);
+        VTR_ASSERT_SAFE(atom_to_pb_.count(blk_id) == 0);
     }
     if(pb == nullptr) {
         //Remove
