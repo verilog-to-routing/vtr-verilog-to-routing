@@ -657,19 +657,24 @@ class AtomNetlist {
         void remove_unused();
 
         /*
-         * Netlist compression
+         * Netlist compression/optimization
          */
-        //Removes invalid blocks and returns a mapping from old to new block IDs
-        std::vector<AtomBlockId> clean_blocks();
+        void build_id_maps(std::vector<AtomBlockId>& block_id_map, 
+                           std::vector<AtomPortId>& port_id_map, 
+                           std::vector<AtomPinId>& pin_id_map, 
+                           std::vector<AtomNetId>& net_id_map);
 
-        //Removes invalid ports and returns a mapping from old to new port IDs
-        std::vector<AtomPortId> clean_ports();
+        //Removes invalid and reorders blocks
+        void clean_blocks(const std::vector<AtomBlockId>& block_id_map);
 
-        //Removes invalid pins and returns a mapping from old to new pin IDs
-        std::vector<AtomPinId> clean_pins();
+        //Removes invalid and reorders ports
+        void clean_ports(const std::vector<AtomPortId>& port_id_map);
 
-        //Removes invalid nets and returns a mapping from old to new net IDs
-        std::vector<AtomNetId> clean_nets();
+        //Removes invalid and reorders pins
+        void clean_pins(const std::vector<AtomPinId>& pin_id_map);
+
+        //Removes invalid and reorders nets
+        void clean_nets(const std::vector<AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by blocks
         void rebuild_block_refs(const std::vector<AtomPinId>& pin_id_map, const std::vector<AtomPortId>& port_id_map);
