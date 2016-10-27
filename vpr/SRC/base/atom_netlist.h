@@ -653,6 +653,10 @@ class AtomNetlist {
         void compress();
 
     private: //Private types
+        struct atom_string_id_tag;
+
+        //A unique identifier for a string in the atom netlist
+        typedef vtr::StrongId<atom_string_id_tag> AtomStringId;
 
     private: //Private members
         /*

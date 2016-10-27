@@ -23,7 +23,6 @@ struct atom_blk_id_tag;
 struct atom_net_id_tag;
 struct atom_port_id_tag;
 struct atom_pin_id_tag;
-struct atom_string_id_tag;
 
 //A unique identifier for a block/primitive in the atom netlist
 typedef vtr::StrongId<atom_blk_id_tag> AtomBlockId;
@@ -36,9 +35,6 @@ typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
 
 //A unique identifier for a pin in the atom netlist
 typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
-
-//A unique identifier for a string in the atom netlist
-typedef vtr::StrongId<atom_string_id_tag> AtomStringId;
 
 //An signal index in a port
 typedef unsigned BitIndex;

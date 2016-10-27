@@ -1741,7 +1741,7 @@ bool AtomNetlist::validate_string_refs() const {
  * Internal utilities
  *
  */
-AtomStringId AtomNetlist::find_string (const std::string& str) const {
+AtomNetlist::AtomStringId AtomNetlist::find_string (const std::string& str) const {
     auto iter = string_to_string_id_.find(str);
     if(iter != string_to_string_id_.end()) {
         AtomStringId str_id = iter->second;
@@ -1791,7 +1791,7 @@ AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
     }
 }
 
-AtomStringId AtomNetlist::create_string (const std::string& str) {
+AtomNetlist::AtomStringId AtomNetlist::create_string (const std::string& str) {
     AtomStringId str_id = find_string(str);
     if(!str_id) {
         //Not found, create
