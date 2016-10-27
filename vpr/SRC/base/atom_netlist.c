@@ -56,6 +56,7 @@ class IdMap {
         }
 
     private:
+        //The mapping is stored as id_map_[old] == new
         std::vector<Id> id_map_;
 };
 
@@ -81,8 +82,7 @@ bool all_valid(std::vector<T>& values) {
     return true;
 }
 
-//Builds a mapping from old to new ids
-//  i.e. map[old_id] == new_id
+//Builds a mapping from old to new ids by skipping values marked invalid
 template<typename T>
 IdMap<T> compress_ids(const std::vector<T>& ids) {
     IdMap<T> id_map(ids.size());
