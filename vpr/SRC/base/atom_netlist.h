@@ -667,12 +667,6 @@ class AtomNetlist {
                            IdMap<AtomPortId>& port_id_map, 
                            IdMap<AtomPinId>& pin_id_map, 
                            IdMap<AtomNetId>& net_id_map);
-        void reorder_ids(IdMap<AtomBlockId>& block_id_map, 
-                         IdMap<AtomPortId>& port_id_map, 
-                         IdMap<AtomPinId>& pin_id_map, 
-                         IdMap<AtomNetId>& net_id_map);
-
-        std::vector<AtomBlockId> determine_block_order();
 
         //Removes invalid and reorders blocks
         void clean_blocks(const IdMap<AtomBlockId>& block_id_map);

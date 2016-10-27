@@ -1186,231 +1186,37 @@ void AtomNetlist::compress() {
 
     //Netlist is now clean
     dirty_ = false;
+
+#if 0
+    //Print id debug info 
+    for(auto pin_id : pin_ids_) {
+        auto blk_id = pin_block(pin_id);
+        auto net_id = pin_net(pin_id);
+        vtr::printf("Pin %zu: blk=%zu net=%zu\n", pin_id, blk_id, net_id);
+    }
+    for(auto blk_id : blocks()) {
+        for(auto pin_id : block_pins(blk_id)) {
+            auto net_id = pin_net(pin_id);
+            vtr::printf("Block %zu: pin=%zu net=%zu\n", blk_id, pin_id, net_id);
+        }
+    }
+    for(auto net_id : nets()) {
+        for(auto pin_id : net_pins(net_id)) {
+            auto blk_id = pin_block(pin_id);
+            vtr::printf("Net %zu: pin=%zu blk=%zu\n", net_id, pin_id, blk_id);
+        }
+    }
+#endif
 }
 
 void AtomNetlist::build_id_maps(IdMap<AtomBlockId>& block_id_map, 
                                 IdMap<AtomPortId>& port_id_map, 
                                 IdMap<AtomPinId>& pin_id_map, 
                                 IdMap<AtomNetId>& net_id_map) {
-
-    reorder_ids(block_id_map, port_id_map, pin_id_map, net_id_map);
-}
-
-void AtomNetlist::reorder_ids(IdMap<AtomBlockId>& block_id_map, 
-                              IdMap<AtomPortId>& port_id_map, 
-                              IdMap<AtomPinId>& pin_id_map, 
-                              IdMap<AtomNetId>& net_id_map) {
-    //Re-order Ids for improved cache locality
-    // by specifying the appropriate 
-
-#if 0
-    size_t iblk = 0;
-    size_t iport = 0;
-    size_t ipin = 0;
-    size_t inet = 0;
-    std::vector<bool> seen_net(net_ids_.size(), false);
-    std::vector<bool> seen_pin(pin_ids_.size(), false);
-    for(auto blk_id : determine_block_order()) {
-        if(!valid_block_id(blk_id)) continue;
-        block_id_map.set_new_id(blk_id, AtomBlockId(iblk));
-
-        for(auto port_id : block_ports(blk_id)) {
-            if(!valid_port_id(port_id)) continue;
-            port_id_map.set_new_id(port_id, AtomPortId(iport));
-
-            for(auto blk_pin_id : port_pins(port_id)) {
-                if(!valid_pin_id(blk_pin_id)) continue;
-
-                if(!seen_pin[size_t(blk_pin_id)]) {
-                    auto net_id = pin_net(blk_pin_id);
-                    if(!valid_net_id(net_id)) continue;
-
-                    //TODO: think about thresholding out large fanout nets...
-                    for(auto net_pin_id : net_pins(net_id)) {
-                        if(!valid_pin_id(net_pin_id)) continue;
-                        pin_id_map.set_new_id(net_pin_id, AtomPinId(ipin));
-                                
-                        ++ipin;
-                        seen_pin[size_t(net_pin_id)] = true;
-                    }
-                    net_id_map.set_new_id(net_id, AtomNetId(inet));
-                    ++inet;
-                }
-            }
-            ++iport;
-        }
-        ++iblk;
-    }
-#else
-    size_t iblk = 0;
-    size_t ipin = 0;
-    size_t inet = 0;
-
-    //TODO: verify that this is actually doing what it should!
-
-    //Breadth-first search from the seed block, ordering
-    //the blocks/pins/nets at each level
-    constexpr size_t FANOUT_THRESHOLD = 4;
-    std::vector<bool> seen_block(blocks().size(), false);
-    std::vector<bool> seen_net(nets().size(), false);
-    for(auto seed_blk : blocks()) {
-        if(!valid_block_id(seed_blk)) continue;
-        if(seen_block[size_t(seed_blk)]) continue;
-
-        std::queue<AtomBlockId> blk_queue;
-        blk_queue.push(seed_blk);
-        //vtr::printf("Seed Block %s\n", block_name(seed_blk).c_str());
-
-        while(!blk_queue.empty()) {
-            auto blk_id = blk_queue.front();
-            blk_queue.pop();
-
-            if(seen_block[size_t(blk_id)]) continue;
-
-            //vtr::printf("Processing Block %s\n", block_name(blk_id).c_str());
-
-            //First time the block was seen, add it
-            block_id_map.set_new_id(blk_id, AtomBlockId(iblk));
-            seen_block[size_t(blk_id)] = true;
-            ++iblk;
-
-            //Collect the nets of this block so they can be sorted by
-            //fanout
-            std::vector<AtomNetId> blk_nets;
-            for(auto pin_id : block_pins(blk_id)) {
-                if(!valid_pin_id(pin_id)) continue;
-
-                auto net_id = pin_net(pin_id);
-                if(valid_net_id(net_id) && !seen_net[size_t(net_id)]) {
-                    blk_nets.push_back(net_id);
-                }
-            }
-
-            //Sort by ascending fanout
-            //std::sort(blk_nets.begin(), blk_nets.end(),
-                //[&](const AtomNetId lhs, const AtomNetId rhs) {
-                    //return net_sinks(lhs).size() < net_sinks(rhs).size();
-                //}
-            //);
-
-            //Add the fanout blocks to the queue
-            for(auto net_id : blk_nets) {
-                if(!valid_net_id(net_id) || seen_net[size_t(net_id)]) continue;
-
-                //vtr::printf("Processing Net %s\n", net_name(net_id).c_str());
-
-                for(auto pin_id : net_pins(net_id)) {
-                    if(!valid_pin_id(pin_id)) continue;
-
-                    auto net_blk_id = pin_block(pin_id);
-                    if(!seen_block[size_t(net_blk_id)]) {
-                        //vtr::printf("Adding connected block %s\n", block_name(net_blk_id).c_str());
-                        blk_queue.push(net_blk_id);
-                    }
-
-                    //Map the pin
-                    pin_id_map.set_new_id(pin_id, AtomPinId(ipin));
-                    ++ipin;
-                }
-
-                //Map the net
-                net_id_map.set_new_id(net_id, AtomNetId(inet));
-                seen_net[size_t(net_id)] = true;
-                ++inet;
-            }
-        }
-    }
-
+    block_id_map = compress_ids(block_ids_);
     port_id_map = compress_ids(port_ids_);
-#endif
-}
-
-std::vector<AtomBlockId> AtomNetlist::determine_block_order() {
-    //We try to find a good block ordering, where highly related blocks
-    //(i.e. those with lots of conectivity to each other) are placed close
-    //together in the Id space. This will cause thier data to be located close
-    //together in memory and improve both spatial and temporal cache locality
-
-    //We use a simple linear-time heuristic to estimate this relatedness
-
-    std::map<std::pair<AtomBlockId,AtomBlockId>,float> driver_to_sink_connections;
-    std::map<AtomBlockId,float> block_nets;
-
-    //Count the connections between driver and sink blocks
-    //also record how many nets each block connects to
-    for(auto net_id : nets()) {
-        if(!net_id) continue;
-        auto driver_pin_id = net_driver(net_id);
-        auto driver_blk_id = pin_block(driver_pin_id);
-        for(auto sink_pin_id : net_sinks(net_id)) {
-            if(!sink_pin_id) continue;
-            auto sink_blk_id = pin_block(sink_pin_id); 
-
-            //We keep only a single entry per pair, by always putting the lower id
-            //block first
-            std::pair<AtomBlockId,AtomBlockId> key;
-            if(driver_blk_id < sink_blk_id) {
-                key = {driver_blk_id, sink_blk_id};
-            } else {
-                key = {sink_blk_id, driver_blk_id};
-            }
-
-            driver_to_sink_connections[key] += 1;
-
-            //Record how many connections to each block
-            block_nets[driver_blk_id] += 1;
-            block_nets[sink_blk_id] += 1;
-        }
-    }
-
-    //Score each block pair based on their connectivity, normalized by
-    //their connected nets
-    std::vector<std::tuple<AtomBlockId,AtomBlockId,float>> pair_score;
-    for(auto kv : driver_to_sink_connections) {
-        auto blk_pair = kv.first;
-
-        AtomBlockId blk1 = blk_pair.first;
-        AtomBlockId blk2 = blk_pair.second;
-
-        float score = kv.second / (block_nets[blk1] + block_nets[blk2]);
-
-        pair_score.emplace_back(std::make_tuple(blk1, blk2, score));
-    }
-
-    //Sort by score in descending order
-    std::sort(pair_score.begin(), pair_score.end(), 
-        [](const std::tuple<AtomBlockId,AtomBlockId,float>& lhs, const std::tuple<AtomBlockId,AtomBlockId,float>& rhs) {
-            return std::get<2>(lhs) > std::get<2>(rhs);
-        }
-    );
-
-    /*
-     *for(const auto& tuple : pair_score) {
-     *    auto blk1 = std::get<0>(tuple);
-     *    auto blk2 = std::get<1>(tuple);
-     *    auto score = std::get<2>(tuple);
-     *    vtr::printf("Block Pair %zu %zu: Score %f (connections: %f, blk1_nets: %f, blk2_nets: %f)\n",
-     *            blk1, blk2, score, driver_to_sink_connections[{blk1,blk2}], block_nets[blk1], block_nets[blk2]);
-     *}
-     */
-
-    //Greedily order the blocks
-    std::vector<AtomBlockId> block_order;
-    std::vector<bool> seen_blocks(block_ids_.size(), false);
-    for(const auto& tuple : pair_score) {
-        auto blk1 = std::get<0>(tuple);
-        auto blk2 = std::get<1>(tuple);
-        if(!seen_blocks[size_t(blk1)]) {
-            block_order.push_back(blk1); 
-            seen_blocks[size_t(blk1)] = true;
-        }
-        if(!seen_blocks[size_t(blk2)]) {
-            block_order.push_back(blk2); 
-            seen_blocks[size_t(blk2)] = true;
-        }
-    }
-
-    return block_order;
+    pin_id_map = compress_ids(pin_ids_);
+    net_id_map = compress_ids(net_ids_);
 }
 
 void AtomNetlist::clean_blocks(const IdMap<AtomBlockId>& block_id_map) {
