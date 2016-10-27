@@ -2306,8 +2306,6 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
 	long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
     
-    print_timing_graph("tg.echo");
-	
 	/* Performs a single forward and backward traversal for the domain pair 
 	source_clock_domain and sink_clock_domain. Returns the denominator that
 	will be later used to normalize criticality - the maximum of all arrival 
