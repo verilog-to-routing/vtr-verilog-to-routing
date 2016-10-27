@@ -8,8 +8,9 @@
  * Overview
  * ========
  * The netlist logically consists of several different components: Blocks, Ports, Pins and Nets
- * Each componenet in the netlist has a unique identifer (AtomBlockId, AtomPortId, AtomPinId, AtomNetId) used to
- * retireve information about it.
+ * Each componenet in the netlist has a unique identifer (AtomBlockId, AtomPortId, AtomPinId, AtomNetId) 
+ * used to retireve information about it. In this implementation these ID's are unique throughout the 
+ * netlist (i.e. every port in the netlist has a unique ID, even if the ports share a common type).
  *
  * Block
  * -----
@@ -19,17 +20,9 @@
  *
  * Block related information can be retrieved using the block_*() member functions.
  *
- * Ports
- * -----
- * A Port is a (potentially multi-bit) group of signals which enter/exit a block.
- * For example, the two operands and output of an N-bit adder would logically be grouped as three ports. 
- * Ports have a specified bit-width which defines how many pins form the port.
- *
- * Port related information can be retrieved using the port_*() member functions.
- *
  * Pins
  * ----
- * Pins define single-bit connections between a port and a net.
+ * Pins define single-bit connections between a block and a net.
  *
  * Pin related information can be retrieved using the pin_*() member functions.
  *
@@ -39,6 +32,15 @@
  * Each net has a single driver pin, and a set of sink pins.
  *
  * Net related information can be retrieved using the net_*() member functions.
+ *
+ * Ports
+ * -----
+ * A Port is a (potentially multi-bit) group of pins.
+ *
+ * For example, the two operands and output of an N-bit adder would logically be grouped as three ports. 
+ * Ports have a specified bit-width which defines how many pins form the port.
+ *
+ * Port related information can be retrieved using the port_*() member functions.
  *
  * Usage
  * =====
@@ -164,8 +166,8 @@
  *          printf("Associated net: %s\n", net_name.c_str());
  *      }
  *     
- * Note the use of range-based-for loops above; it could also have written (more verbosely) using 
- * a conventional for loop and explicit iterators as follows:
+ * Note the use of range-based-for loops in the above examples; it could also have written (more verbosely) 
+ * using a conventional for loop and explicit iterators as follows:
  *
  *      AtomBlkId blk_id;
  *
@@ -265,7 +267,7 @@
  *
  * Invariants
  * ==========
- * The AtomNetlist maintains stronger invariants if the netlist is compressed.
+ * The AtomNetlist maintains stronger invariants if the netlist is in compressed form.
  *
  * Netlist is compressed ('not dirty')
  * -----------------------------------
@@ -274,7 +276,7 @@
  *      - Any range returned will contain only valid IDs
  *
  * In practise this means the following conditions hold:
- *      - Blocks will not contain empty ports (i.e. ports with no pin/net connections)
+ *      - Blocks will not contain empty ports/pins (e.g. ports with no pin/net connections)
  *      - Ports will not contain pins with no associated net
  *      - Net will not contain invalid sink pins
  *
@@ -291,13 +293,13 @@
  * calls to compress()) then the invariant above does not hold.
  *
  * Any range may return invalid IDs. In practise this means, 
- *      - Blocks may contain invalid ports
+ *      - Blocks may contain invalid ports/pins
  *      - Ports may contain invalid pins
  *      - Pins may not have a valid associated net
  *      - Nets may contain invalid sink pins
  *
- * Implementation
- * ==============
+ * Implementation Details
+ * ======================
  * The netlist is stored in Struct-of-Arrays format rather than the more conventional Array-of-Structs.
  * This improves cache locality by keeping component attributes of the same type in contiguous memory.
  * This prevents unneeded member data from being pulled into the cache (since most code accesses only a few
@@ -320,15 +322,47 @@
  * Note that AtomStringId is an internal implementation detail and should not be exposed as part of the public interface.
  * Any public functions should take and return std::string's instead.
  *
- * Extension/What to store
- * -----------------------
+ * Block pins/Block ports data layout
+ * ----------------------------------
+ * The pins/ports for each block are stored in a similar manner, for bervity we describe only pins here.
+ *
+ * The pins for each block (i.e. AtomPinId's) are stored in a single vector for each block (the block_pins_ member).
+ * This allows us to iterate over all pins (i.e. block_pins()), or specific subsets of pins (e.g. only inputs with 
+ * block_input_pins()).
+ *
+ * To accomplish this all pins of the same group (input/output/clock) are located next to each other. An example is 
+ * shown below, where the block has n input pins, m output pins and k clock pins.
+ *
+ *  -------------------------------------------------------------------------------------------------------------------
+ *  | ipin_1 | ipin_2 | ... | ipin_n | opin_1 | opin_2 | ... | opin_m | clock_pin_1 | clock_pin_2 | ... | clock_pin_k |
+ *  -------------------------------------------------------------------------------------------------------------------
+ *  ^                                ^                                ^                                               ^
+ *  |                                |                                |                                               |
+ * begin                         opin_begin                    clock_pin_begin                                       end
+ *
+ * Provided we know the internal dividing points (i.e. opin_begin and clock_pin_begin) we can easily build the various
+ * ranges of interest:
+ *
+ *      all pins   : [begin, end)
+ *      input pins : [begin, opin_begin)
+ *      output pins: [opin_begin, clock_pin_begin)
+ *      clock pins : [clock_pin_begin, end)
+ *
+ * Since any reallocation would invalidate any iterators to these internal dividers, we seperately store the number
+ * of input/output/clock pins per block (i.e. in block_num_input_pins_, block_num_output_pins_ and 
+ * block_num_clock_pins_). The internal dividers can then be easily calculated (e.g. see block_output_pins()), even 
+ * if new pins are inserted (provided the counts are updated).
+ * 
+ * Adding data to the netlist
+ * --------------------------
  * The AtomNetlist should contain only information directly related to the netlist state (i.e. netlist connectivity).
  * Various mappings to/from atom elements (e.g. what CLB contains an atom), and algorithmic state (e.g. if a net is routed) 
  * do NOT constitute netlist state and should NOT be stored here. 
  *
  * Such implementation state should be stored in other data structures (which may reference the AtomNetlist's IDs).
  *
- * The netlist state should typically be immutable (i.e. read-only) for most of the CAD flow.
+ * The netlist state is typically be immutable (i.e. read-only) for most of the CAD flow.
+ * 
  */
 #include <vector>
 #include <unordered_map>
@@ -439,10 +473,14 @@ class AtomNetlist {
         pin_range               port_pins   (const AtomPortId id) const;
 
         //Returns the pin (potentially invalid) associated with the specified port and port bit index
-        //Note: this function is identical to find_net()
+        //  port_id : The ID of the associated port
+        //  port_bit: The bit index of the pin in the port
+        //Note: this function is a synonym for find_pin()
         AtomPinId               port_pin    (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the net (potentially invalid) associated with the specified port and port bit index
+        //  port_id : The ID of the associated port
+        //  port_bit: The bit index of the pin in the port
         AtomNetId               port_net    (const AtomPortId port_id, const BitIndex port_bit) const;
 
         //Returns the model port of the specified port or nullptr if not
@@ -469,7 +507,6 @@ class AtomNetlist {
 
         //Returns true if the pin is a constant (i.e. its value never changes)
         bool        pin_is_constant (const AtomPinId id) const;
-
 
         /*
          * Nets
@@ -580,8 +617,8 @@ class AtomNetlist {
         AtomNetId   add_net     (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
         //Mark a pin as being a constant generator.
-        // There are somcases where whether a pin is constant can not be determined until after
-        // the entier netlist has been built; so we expose a way to mark existing pins as constants
+        // There are some cases where a pin can not be identified as a is constant until after
+        // the full netlist has been built; so we expose a way to mark existing pins as constants.
         //  pin_id  : The pin to be marked
         //  value   : The boolean value to set the pin_is_constant attribute
         void set_pin_is_constant(const AtomPinId pin_id, const bool value);
@@ -612,7 +649,7 @@ class AtomNetlist {
         //This should be called after completing a series of netlist modifications 
         //(e.g. removing blocks/ports/pins/nets).
         //
-        //NOTE: this invalidates existing IDs!
+        //NOTE: this invalidates all existing IDs!
         void compress();
 
     private: //Private types
@@ -640,9 +677,16 @@ class AtomNetlist {
         //  str: The string whose ID is requested
         AtomStringId create_string(const std::string& str);
 
+        //Updates net cross-references for the specified pin
         void associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id); 
+
+        //Updates port cross-references for the specified pin
         void associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id); 
+
+        //Updates block cross-references for the specified pin
         void associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id); 
+
+        //Updates block cross-references for the specified port
         void associate_port_with_block(const AtomPortId port_id, const AtomBlockId blk_id);
 
         //Removes a port from the netlist.
@@ -663,6 +707,9 @@ class AtomNetlist {
         /*
          * Netlist compression/optimization
          */
+        //Builds the new mappings from old to new IDs.
+        //The various IdMap's should be initialized with invalid mappings
+        //for all current ID's before being called.
         void build_id_maps(IdMap<AtomBlockId>& block_id_map, 
                            IdMap<AtomPortId>& port_id_map, 
                            IdMap<AtomPinId>& pin_id_map, 
@@ -722,7 +769,6 @@ class AtomNetlist {
         
         //Verify that block invariants hold (i.e. logical consistency)
         bool verify_block_invariants() const;
-
 
         //Validates that the specified ID is valid in the current netlist state
         bool valid_block_id(AtomBlockId id) const;
