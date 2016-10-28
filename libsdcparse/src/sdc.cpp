@@ -6,9 +6,6 @@
 #include "sdc_lexer.hpp"
 #include "sdc_error.hpp"
 
-
-extern FILE	*sdcparse_in; //Global input file defined by flex
-
 namespace sdcparse {
 
 /*
@@ -29,7 +26,6 @@ std::shared_ptr<SdcCommands> sdc_parse_filename(const char* filename) {
         sdc_commands = sdc_parse_file(infile);
         fclose(infile);
     } else {
-        fclose(infile);
         sdc_error_wrap(0, "", "Could not open file %s.\n", filename);
     }
 

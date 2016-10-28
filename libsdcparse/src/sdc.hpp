@@ -15,9 +15,9 @@
  * --------------------------
  * Since this is NOT a full TCL interpreter, 'function calls' to get_ports or
  * get_clocks, are converted to string_group, with the group_type field set
- * to either SDC_CLOCK or SDC_PORT respectively. That is, they are represented as 
- * the sets of the strings passed to those functions.  It is left up to the 
- * application to interpret them.
+ * to either StringType::CLOCK or StringType::SDC_PORT respectively. That is, 
+ * they are represented as the sets of the strings passed to those functions.  
+ * It is left up to the application to interpret them.
  *
  * After parsing, each SDC command is represented as a C struct.  Typically each
  * command is parsed into a unique type of struct, however some closely related commands
@@ -74,10 +74,34 @@
 #include <functional>
 
 namespace sdcparse {
+/*
+ * Forward declarations
+ */
+enum class IoDelayType;
+enum class ClockGroupsType;
+enum class FromToType;
+enum class McpType;
+enum class StringGroupType;
 
-//Sentinal values
-constexpr double UNINITIALIZED_FLOAT = std::numeric_limits<double>::quiet_NaN();
-constexpr int UNINITIALIZED_INT = -1;
+struct SdcCommands;
+
+struct CreateClock;
+struct SetIoDelay;
+struct SetClockGroups;
+struct SetFalsePath;
+struct SetMaxDelay;
+struct SetMulticyclePath;
+
+struct StringGroup;
+
+
+/*
+ * External functions for loading an SDC file
+ */
+std::shared_ptr<SdcCommands> sdc_parse_filename(std::string filename);
+std::shared_ptr<SdcCommands> sdc_parse_filename(const char* filename);
+std::shared_ptr<SdcCommands> sdc_parse_file(FILE* sdc);
+
 
 /* 
  * The default sdc_error() implementation.
@@ -98,20 +122,11 @@ void default_sdc_error(const int line_number, const std::string& near_text, cons
  */
 void set_sdc_error_handler(std::function<void(const int, const std::string&, const std::string&)> new_sdc_error_handler);
 
-
 /*
- * Forward declarations
+ * Sentinal values
  */
-struct SdcCommands;
-
-struct CreateClock;
-struct SetIoDelay;
-struct SetClockGroups;
-struct SetFalsePath;
-struct SetMaxDelay;
-struct SetMulticyclePath;
-
-struct StringGroup;
+constexpr double UNINITIALIZED_FLOAT = std::numeric_limits<double>::quiet_NaN();
+constexpr int UNINITIALIZED_INT = -1;
 
 /*
  * Enumerations to describe specific SDC command types and attributes
@@ -167,9 +182,9 @@ struct StringGroup {
         : group_type(type) {}
 
     StringGroupType group_type = StringGroupType::STRING;   //The type of the string group, default is STRING. 
-                                                            //Groups derived from 'calls' to [get_clocks {...}] 
-                                                            //and [get_ports {...}] will have types SDC_CLOCK 
-                                                            //and SDC_PORT respectively.
+                                                            // Groups derived from 'calls' to [get_clocks {...}] 
+                                                            // and [get_ports {...}] will have types SDC_CLOCK 
+                                                            // and SDC_PORT respectively.
     std::vector<std::string> strings;                       //The strings in the group
 };
 
@@ -204,10 +219,10 @@ struct SetIoDelay {
 };
 
 struct SetClockGroups {
-    ClockGroupsType cg_type = ClockGroupsType::NONE;   //The type of clock group relation being specified
-    std::vector<StringGroup> clock_groups;          //The groups of clocks
+    ClockGroupsType cg_type = ClockGroupsType::NONE;    //The type of clock group relation being specified
+    std::vector<StringGroup> clock_groups;              //The groups of clocks
 
-    int file_line_number = UNINITIALIZED_INT;       //Line number where this command is defined
+    int file_line_number = UNINITIALIZED_INT;           //Line number where this command is defined
 };
 
 struct SetFalsePath {
@@ -227,20 +242,13 @@ struct SetMaxDelay {
 };
 
 struct SetMulticyclePath {
-    McpType mcp_type = McpType::NONE;               //The type of the mcp
+    McpType mcp_type = McpType::NONE;           //The type of the mcp
     int mcp_value = UNINITIALIZED_INT;          //The number of cycles specifed
     StringGroup from;                           //The source list of startpoints or clocks
     StringGroup to;                             //The target list of endpoints or clocks
 
     int file_line_number = UNINITIALIZED_INT;   //Line number where this command is defined
 };
-
-/*
- *  Externally useful functions
- */
-std::shared_ptr<SdcCommands> sdc_parse_filename(std::string filename);
-std::shared_ptr<SdcCommands> sdc_parse_filename(const char* filename);
-std::shared_ptr<SdcCommands> sdc_parse_file(FILE* sdc);
 
 } //namespace
 
