@@ -478,27 +478,22 @@ private:
  * just for safety.
  */
 struct t_gl_state {
-   bool initialized;
-   t_display_type disp_type;
-   t_color background_color;
-   t_color foreground_color;
-   int currentlinestyle;
-   int currentlinewidth;
-   int currentfontsize;
-   float currentfontrotation;
-   e_draw_mode current_draw_mode;
-   FILE *ps;
-   bool ProceedPressed;
-   char statusMessage[BUFSIZE];
-   FontCache font_info;
-   bool get_keypress_input, get_mouse_move_input;
-	t_gl_state()
-		: initialized(false)
-		, disp_type(SCREEN)
-		, background_color(0xFF, 0xFF, 0xCC)
-	{ }
+    bool initialized = false;
+    t_display_type disp_type = SCREEN;
+    t_color background_color = t_color(0xFF, 0xFF, 0xCC);
+    t_color foreground_color = BLACK;
+    int currentlinestyle = SOLID;
+    int currentlinewidth = 0;
+    int currentfontsize = 12;
+    float currentfontrotation = 0;
+    e_draw_mode current_draw_mode = DRAW_NORMAL;
+    FILE *ps = nullptr;
+    bool ProceedPressed = false;
+    char statusMessage[BUFSIZE];
+    FontCache font_info;
+    bool get_keypress_input = false;
+    bool get_mouse_move_input = false;
 };
-
 
 /* Structure used to store coordinate information used for
  * graphic transformations.
