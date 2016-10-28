@@ -733,8 +733,8 @@ static void x11_turn_on_off (int pressed);
 static void x11_drawmenu(void);
 static void menutext(XftDraw* draw, int xc, int yc, const char *text);
 
-static void x11_handle_expose (XEvent report, void (*drawscreen) (void));
-static void x11_handle_configure_notify (XEvent report);
+static void x11_handle_expose (const XEvent& report, void (*drawscreen) (void));
+static void x11_handle_configure_notify (const XEvent& report);
 static void x11_handle_button_info (t_event_buttonPressed *button_info,
 								int buttonNumber, int Xbutton_state);
 
@@ -4135,7 +4135,7 @@ static void x11_drawmenu(void)
 }
 
 
-static void x11_handle_expose(XEvent report, void (*drawscreen) (void))
+static void x11_handle_expose(const XEvent& report, void (*drawscreen) (void))
 {
 #ifdef VERBOSE
 	printf("Got an expose event.\n");
@@ -4151,7 +4151,7 @@ static void x11_handle_expose(XEvent report, void (*drawscreen) (void))
 }
 
 
-static void x11_handle_configure_notify(XEvent report)
+static void x11_handle_configure_notify(const XEvent& report)
 {
 	trans_coord.top_width = report.xconfigure.width;
 	trans_coord.top_height = report.xconfigure.height;
