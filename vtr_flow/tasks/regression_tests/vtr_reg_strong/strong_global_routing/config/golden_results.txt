@@ -1,4 +1,4 @@
 arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-timing/k6_N10_mem32K_40nm.xml	stereovision3.v	0fd6612-dirty	success	10	-1	0.395545	0.212023	0.282279	0.022622	357	-1	-1	-1	293	323	130	20	11	30	0	0		
-nonuniform_chan_width/k6_N10_mem32K_40nm_nonuniform.xml	stereovision3.v	0fd6612-dirty	success	10	-1	0.363612	0.206853	0.218157	0.022766	536	-1	-1	-1	293	323	130	20	11	30	0	0		
-nonuniform_chan_width/k6_N10_mem32K_40nm_pulse.xml	stereovision3.v	0fd6612-dirty	success	8	-1	0.39584	0.225879	0.138896	0.024829	440	-1	-1	-1	293	323	130	20	11	30	0	0		
+timing/k6_N10_mem32K_40nm.xml	stereovision3.v	b5ccf4a-dirty	success	10	-1	0.085528	0.085543	0.069007	0.012241	455	-1	-1	-1	293	323	129	20	11	30	0	0		
+nonuniform_chan_width/k6_N10_mem32K_40nm_nonuniform.xml	stereovision3.v	b5ccf4a-dirty	success	10	-1	0.0851308	0.101535	0.068564	0.009463	519	-1	-1	-1	293	323	129	20	11	30	0	0		
+nonuniform_chan_width/k6_N10_mem32K_40nm_pulse.xml	stereovision3.v	b5ccf4a-dirty	success	8	-1	0.0849217	0.089462	0.196523	0.010411	416	-1	-1	-1	293	323	129	20	11	30	0	0		
