@@ -658,37 +658,41 @@ AtomNetId AtomNetlist::find_net (const std::string& name) const {
  *
  */
 bool AtomNetlist::verify() const {
+    bool valid = true;
+
     //Verify data structure consistency
-    verify_sizes();
-    verify_refs();
-    verify_lookups();
+    valid &= verify_sizes();
+    valid &= verify_refs();
+    valid &= verify_lookups();
 
     //Verify logical consistency
-    verify_block_invariants();
+    valid &= verify_block_invariants();
 
-    return true;
+    return valid;
 }
 
 //Checks that the sizes of internal data structures
 //are consistent. Should take constant time.
 bool AtomNetlist::verify_sizes() const {
-    validate_block_sizes();
-    validate_port_sizes();
-    validate_pin_sizes();
-    validate_net_sizes();
-    validate_string_sizes();
-    return true;
+    bool valid = true;
+    valid &= validate_block_sizes();
+    valid &= validate_port_sizes();
+    valid &= validate_pin_sizes();
+    valid &= validate_net_sizes();
+    valid &= validate_string_sizes();
+    return valid;
 }
 
 //Checks that all cross-references are consistent.
 //Should take linear time.
 bool AtomNetlist::verify_refs() const {
-    validate_block_port_refs();
-    validate_block_pin_refs();
-    validate_port_pin_refs();
-    validate_net_pin_refs();
-    validate_string_refs();
-    return true;
+    bool valid = true;
+    valid &= validate_block_port_refs();
+    valid &= validate_block_pin_refs();
+    valid &= validate_port_pin_refs();
+    valid &= validate_net_pin_refs();
+    valid &= validate_string_refs();
+    return valid;
 }
 
 bool AtomNetlist::verify_lookups() const {
