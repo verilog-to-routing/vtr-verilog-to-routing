@@ -459,6 +459,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				const t_pack_molecule* blk_mol = kv.second;
 				inputs_of_molecule = blk_mol->num_ext_inputs;
 				blocks_of_molecule = blk_mol->num_blocks;
+
+                VTR_ASSERT(max_molecule_inputs > 0);
+
 				blend_gain = (seed_blend_fac * block_criticality[blk_id] 
                               + (1-seed_blend_fac) * (inputs_of_molecule / max_molecule_inputs));
                 blend_gain *= (1 + 0.2 * (blocks_of_molecule - 1));
@@ -493,13 +496,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		} else if (cluster_seed_type == VPACK_TIMING) {
 			istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, false);
 		} else {/*max input seed*/
-			istart = get_seed_logical_molecule_with_most_ext_inputs(
-					max_molecule_inputs);
+			istart = get_seed_logical_molecule_with_most_ext_inputs(max_molecule_inputs);
 		}
 
 	} else /*cluster seed is max input (since there is no timing information)*/ {
-		istart = get_seed_logical_molecule_with_most_ext_inputs(
-				max_molecule_inputs);
+		istart = get_seed_logical_molecule_with_most_ext_inputs(max_molecule_inputs);
 	}
 
 	/****************************************************************
