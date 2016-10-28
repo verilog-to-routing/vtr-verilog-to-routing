@@ -16,6 +16,7 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "pack_types.h"
 #include "cluster_router.h"
 #include "output_clustering.h"
@@ -56,20 +57,20 @@ static void print_string(const char *str_ptr, int *column, int num_tabs, FILE * 
 	*column += len + 1;
 }
 
-static void print_net_name(int inet, int *column, int num_tabs, FILE * fpout) {
+static void print_net_name(AtomNetId net_id, int *column, int num_tabs, FILE * fpout) {
 
-	/* This routine prints out the g_atoms_nlist.net name (or open).  
-     * net_num is the index of the g_atoms_nlist.net to be printed, while     *
+	/* This routine prints out the g_atom_nl net name (or open).  
+     * net_num is the index of the g_atom_nl net to be printed, while     *
 	 * column points to the current printing column (column is both     *
 	 * used and updated by this routine).  fpout is the output file     *
 	 * pointer.                                                         */
 
 	const char *str_ptr;
 
-	if (inet == OPEN)
+	if (!net_id)
 		str_ptr = "open";
 	else
-		str_ptr = g_atoms_nlist.net[inet].name;
+		str_ptr = g_atom_nl.net_name(net_id).c_str();
 
 	print_string(str_ptr, column, num_tabs, fpout);
 }
@@ -82,7 +83,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 	int len;
 
 
-	if (pb_route[inode].atom_net_idx == OPEN) {
+	if (!pb_route[inode].atom_net_id) {
 		print_string("open", column, num_tabs, fpout);
 	} else {
 		str_ptr = NULL;
@@ -94,7 +95,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 			VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == NULL || 
 					(cur_pin->parent_node->pb_type->num_modes == 0 && cur_pin->port->type == OUT_PORT)
 					);
-			print_net_name(pb_route[inode].atom_net_idx, column, num_tabs, fpout);
+			print_net_name(pb_route[inode].atom_net_id, column, num_tabs, fpout);
 		} else {
 			t_pb_graph_pin *cur_pin = pb_graph_pin_lookup_from_index_by_type[type->index][inode];
 			t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
@@ -172,7 +173,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 					node_index =
 							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
 					if (pb_type->num_modes > 0
-						&& pb_route[node_index].atom_net_idx != OPEN) {
+						&& pb_route[node_index].atom_net_id) {
 						prev_node = pb_route[node_index].prev_pb_pin_id;
 						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
@@ -279,7 +280,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 									m++) {
 								node_index =
 										pb_graph_node->child_pb_graph_nodes[mode_of_edge][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (pb_route[node_index].atom_net_idx != OPEN) {
+								if (pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
 								}
@@ -338,7 +339,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 				node_index =
 						pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == NULL) {
-					print_net_name(pb_route[node_index].atom_net_idx, &column,
+					print_net_name(pb_route[node_index].atom_net_id, &column,
 							tab_depth, fpout);
 				} else {
 					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route,
@@ -387,7 +388,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 				node_index =
 						pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == NULL) {
-					print_net_name(pb_route[node_index].atom_net_idx, &column,
+					print_net_name(pb_route[node_index].atom_net_id, &column,
 							tab_depth, fpout);
 				} else {
 					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route,
@@ -419,7 +420,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 									m++) {
 								node_index =
 										pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
-								if (pb_route[node_index].atom_net_idx != OPEN) {
+								if (pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
 								}
@@ -461,14 +462,11 @@ static void print_stats(t_block *clb, int num_clusters) {
 	 * internal connections are printed out.                         */
 
 	int ipin, icluster, itype;/*, iblk;*/
-	unsigned int inet;
-	/*int unabsorbable_ffs;*/
 	int total_nets_absorbed;
-	bool * nets_absorbed;
+    std::unordered_map<AtomNetId,bool> nets_absorbed;
 
 	int *num_clb_types, *num_clb_inputs_used, *num_clb_outputs_used;
 
-	nets_absorbed = NULL;
 	num_clb_types = num_clb_inputs_used = num_clb_outputs_used = NULL;
 
 	num_clb_types = (int*) vtr::calloc(num_types, sizeof(int));
@@ -476,29 +474,9 @@ static void print_stats(t_block *clb, int num_clusters) {
 	num_clb_outputs_used = (int*) vtr::calloc(num_types, sizeof(int));
 
 
-	nets_absorbed = (bool *) vtr::calloc(g_atoms_nlist.net.size(), sizeof(bool));
-	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
-		nets_absorbed[inet] = true;
+    for(auto net_id : g_atom_nl.nets()) {
+		nets_absorbed[net_id] = true;
 	}
-
-#if 0
-
-/*counting number of flipflops which cannot be absorbed to check the optimality of the packer wrt CLB density*/
-
-	unabsorbable_ffs = 0;
-	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
-		if (strcmp(logical_block[iblk].model->name, "latch") == 0) {
-			if (g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].num_sinks() > 1
-					|| strcmp(
-							logical_block[g_atoms_nlist.net[logical_block[iblk].input_nets[0][0]].pins[0].block].model->name,
-							"names") != 0) {
-				unabsorbable_ffs++;
-			}
-		}
-	}
-	vtr::printf_info("\n");
-	vtr::printf_info("%d FFs in input netlist not absorbable (ie. impossible to form BLE).\n", unabsorbable_ffs);
-#endif
 
 	/* Counters used only for statistics purposes. */
 
@@ -506,22 +484,23 @@ static void print_stats(t_block *clb, int num_clusters) {
 		for (ipin = 0; ipin < clb[icluster].type->num_pins; ipin++) {
 			if (clb[icluster].pb_route == NULL) {
 				if (clb[icluster].nets[ipin] != OPEN) {
-					nets_absorbed[clb[icluster].nets[ipin]] = false;
-					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
-						== RECEIVER) {
+                    int clb_net_idx = clb[icluster].nets[ipin];
+                    auto net_id = g_atom_map.atom_net(clb_net_idx);
+                    VTR_ASSERT(net_id);
+					nets_absorbed[net_id] = false;
+					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type == RECEIVER) {
 						num_clb_inputs_used[clb[icluster].type->index]++;
 					}
-					else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
-						== DRIVER) {
+					else if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type == DRIVER) {
 						num_clb_outputs_used[clb[icluster].type->index]++;
 					}
 				}
 			}
 			else {
 				int pb_graph_pin_id = get_pb_graph_node_pin_from_block_pin(icluster, ipin)->pin_count_in_cluster;
-				int atom_net_idx = clb[icluster].pb_route[pb_graph_pin_id].atom_net_idx;
-				if (atom_net_idx != OPEN) {
-					nets_absorbed[atom_net_idx] = false;
+				auto atom_net_id = clb[icluster].pb_route[pb_graph_pin_id].atom_net_id;
+				if (atom_net_id) {
+					nets_absorbed[atom_net_id] = false;
 					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type
 						== RECEIVER) {
 						num_clb_inputs_used[clb[icluster].type->index]++;
@@ -549,14 +528,13 @@ static void print_stats(t_block *clb, int num_clusters) {
 	}
 
 	total_nets_absorbed = 0;
-	for (inet = 0; inet < g_atoms_nlist.net.size(); inet++) {
-		if (nets_absorbed[inet] == true) {
+    for(auto net_id : g_atom_nl.nets()) {
+		if (nets_absorbed[net_id] == true) {
 			total_nets_absorbed++;
 		}
 	}
 	vtr::printf_info("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
-			total_nets_absorbed, (int)g_atoms_nlist.net.size(), (int)g_atoms_nlist.net.size() - total_nets_absorbed);
-	free(nets_absorbed);
+			total_nets_absorbed, (int)g_atom_nl.nets().size(), (int)g_atom_nl.nets().size() - total_nets_absorbed);
 	free(num_clb_types);
 	free(num_clb_inputs_used);
 	free(num_clb_outputs_used);
@@ -564,7 +542,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 }
 
 void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
-		bool * is_clock, const char *out_fname, bool skip_clustering) {
+		const std::unordered_set<AtomNetId>& is_clock, const char *out_fname, bool skip_clustering) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *
@@ -572,8 +550,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	 * the cluster, in essentially a graph based format.                           */
 
 	FILE *fpout;
-	int bnum, column;
-	unsigned netnum;
+	int column;
 
 	if(!intra_lb_routing.empty()) {
 		VTR_ASSERT((int)intra_lb_routing.size() == num_clusters);
@@ -595,18 +572,18 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	fprintf(fpout, "\t<inputs>\n\t\t");
 
 	column = 2 * TAB_LENGTH; /* Organize whitespace to ident data inside block */
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_INPAD) {
-			print_string(logical_block[bnum].name, &column, 2, fpout);
+    for(auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
+			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, 2, fpout);
 		}
 	}
 	fprintf(fpout, "\n\t</inputs>\n");
 	fprintf(fpout, "\n\t<outputs>\n\t\t");
 
 	column = 2 * TAB_LENGTH;
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_OUTPAD) {
-			print_string(logical_block[bnum].name, &column, 2, fpout);
+    for(auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_nl.block_type(blk_id) == AtomBlockType::OUTPAD) {
+			print_string(g_atom_nl.block_name(blk_id).c_str(), &column, 2, fpout);
 		}
 	}
 	fprintf(fpout, "\n\t</outputs>\n");
@@ -615,9 +592,9 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	if (global_clocks) {
 		fprintf(fpout, "\n\t<clocks>\n\t\t");
 
-		for (netnum = 0; netnum < g_atoms_nlist.net.size(); netnum++) {
-			if (is_clock[netnum]) {
-				print_string(g_atoms_nlist.net[netnum].name, &column, 2, fpout);
+        for(auto net_id : g_atom_nl.nets()) {
+            if(is_clock.count(net_id)) {
+				print_string(g_atom_nl.net_name(net_id).c_str(), &column, 2, fpout);
 			}
 		}
 		fprintf(fpout, "\n\t</clocks>\n\n");
@@ -625,27 +602,22 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 
 	/* Print out all input and output pads. */
 
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		switch (logical_block[bnum].type) {
-		case VPACK_INPAD:
-		case VPACK_OUTPAD:
-		case VPACK_COMB:
-		case VPACK_LATCH:
+    for(auto blk_id : g_atom_nl.blocks()) {
+        auto type = g_atom_nl.block_type(blk_id);
+		switch (type) {
+        case AtomBlockType::INPAD:
+        case AtomBlockType::OUTPAD:
+        case AtomBlockType::COMBINATIONAL:
+        case AtomBlockType::SEQUENTIAL:
 			if (skip_clustering) {
 				VTR_ASSERT(0);
 			}
 			break;
 
-		case VPACK_EMPTY:
-			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
-					"in output_netlist: logical_block %d is VPACK_EMPTY.\n",
-					bnum);
-			break;
-
 		default:
 			vtr::printf_error(__FILE__, __LINE__, 
-					"in output_netlist: Unexpected type %d for logical_block %d.\n", 
-					logical_block[bnum].type, bnum);
+					"in output_netlist: Unexpected type %d for atom block %s.\n", 
+					type, g_atom_nl.block_name(blk_id).c_str());
 		}
 	}
 

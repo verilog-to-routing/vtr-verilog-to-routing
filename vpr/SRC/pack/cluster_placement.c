@@ -1,5 +1,5 @@
 /* 
- Given a group of logical blocks and a partially-packed complex block, find placement for group of logical blocks in complex block
+ Given a group of atom blocks and a partially-packed complex block, find placement for group of atom blocks in complex block
  To use, keep "cluster_placement_stats" data structure throughout packing
  cluster_placement_stats undergoes these major states:
  Initialization - performed once at beginning of packing
@@ -21,6 +21,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "hash.h"
 #include "cluster_placement.h"
@@ -76,8 +77,9 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 }
 
 /**
- * get next list of primitives for list of logical blocks
- * primitives is the list of ptrs to primitives that matches with the list of logical_blocks (by index), assumes memory is preallocated
+ * get next list of primitives for list of atom blocks
+ *
+ * primitives is the list of ptrs to primitives that matches with the list of atom block, assumes memory is preallocated
  *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
  *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
  *
@@ -85,7 +87,9 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
  * 
  * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
  * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match logical_block_ptrs of molecule.  Expects an allocated array of primitives ptrs as inputs.  This function loads the array with the lowest cost primitives that implement molecule
+ * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
+ *                   Expects an allocated array of primitives ptrs as inputs.  
+ *                   This function loads the array with the lowest cost primitives that implement molecule
  */
 bool get_next_primitive_list(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -102,7 +106,10 @@ bool get_next_primitive_list(
 
 		cluster_placement_stats->curr_molecule = molecule;
 	} else {
-		/* Hack! Same failed molecule may re-enter if upper stream functions suck, I'm going to make the molecule selector more intelligent, TODO: Remove later */
+		/* Hack! Same failed molecule may re-enter if upper stream functions suck, 
+         * I'm going to make the molecule selector more intelligent.
+         * TODO: Remove later 
+         */
 		if (cluster_placement_stats->in_flight != NULL) {
 			/* Hack end */
 
@@ -129,7 +136,7 @@ bool get_next_primitive_list(
 			continue; /* no more primitives of this type available */
 		}
 		if (primitive_type_feasible(
-				molecule->logical_block_ptrs[molecule->root]->index,
+				molecule->atom_block_ids[molecule->root],
 				cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats->valid_primitives[i];
 			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
@@ -460,7 +467,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 	list_size = get_array_size_of_molecule(molecule);
 
 	if (primitive_type_feasible(
-			molecule->logical_block_ptrs[molecule->root]->index,
+			molecule->atom_block_ids[molecule->root],
 			root->pb_type)) {
 		if (root->cluster_placement_primitive->valid == true) {
 			if(root_passes_early_filter(root, molecule, clb_index)) {
@@ -478,8 +485,7 @@ static float try_place_molecule(const t_pack_molecule *molecule,
 					}
 				}
 				for (i = 0; i < list_size; i++) {
-					VTR_ASSERT(
-							(primitives_list[i] == NULL) == (molecule->logical_block_ptrs[i] == NULL));
+					VTR_ASSERT( (primitives_list[i] == NULL) == (!molecule->atom_block_ids[i]));
 					for (int j = 0; j < list_size; j++) {
 						if(i != j) {
 							if(primitives_list[i] != NULL && primitives_list[i] == primitives_list[j]) {
@@ -516,7 +522,7 @@ static bool expand_forced_pack_molecule_placement(
 		} else {
 			next_block = cur->from_block;
 		}
-		if (primitives_list[next_block->block_id] == NULL && molecule->logical_block_ptrs[next_block->block_id] != NULL) {
+		if (primitives_list[next_block->block_id] == NULL && molecule->atom_block_ids[next_block->block_id]) {
 			/* first time visiting location */
 
 			/* find next primitive based on pattern connections, expand next primitive if not visited */
@@ -547,12 +553,11 @@ static bool expand_forced_pack_molecule_placement(
 			if (next_pin != NULL) {
 				next_primitive = next_pin->parent_node;
 				/* Check for legality of placement, if legal, expand from legal placement, if not, return false */
-				if (molecule->logical_block_ptrs[next_block->block_id] != NULL
-						&& primitives_list[next_block->block_id] == NULL) {
+				if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == NULL) {
 					if (next_primitive->cluster_placement_primitive->valid
 							== true
 							&& primitive_type_feasible(
-									molecule->logical_block_ptrs[next_block->block_id]->index,
+									molecule->atom_block_ids[next_block->block_id],
 									next_primitive->pb_type)) {
 						primitives_list[next_block->block_id] = next_primitive;
 						*cost +=
@@ -710,16 +715,16 @@ int get_array_size_of_molecule(const t_pack_molecule *molecule) {
 	}
 }
 
-/* Given logical block, determines if a free primitive exists for it */
-bool exists_free_primitive_for_logical_block(
+/* Given atom block, determines if a free primitive exists for it */
+bool exists_free_primitive_for_atom_block(
 		t_cluster_placement_stats *cluster_placement_stats,
-		const int ilogical_block) {
+		const AtomBlockId blk_id) {
 	int i;
 	t_cluster_placement_primitive *cur, *prev;
 
 	/* might have a primitive in flight that's still valid */
 	if (cluster_placement_stats->in_flight) {
-		if (primitive_type_feasible(ilogical_block,
+		if (primitive_type_feasible(blk_id,
 				cluster_placement_stats->in_flight->pb_graph_node->pb_type)) {
 			return true;
 		}
@@ -730,7 +735,7 @@ bool exists_free_primitive_for_logical_block(
 		if (cluster_placement_stats->valid_primitives[i]->next_primitive == NULL) {
 			continue; /* no more primitives of this type available */
 		}
-		if (primitive_type_feasible(ilogical_block,
+		if (primitive_type_feasible(blk_id,
 				cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
 			prev = cluster_placement_stats->valid_primitives[i];
 			cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
@@ -761,46 +766,55 @@ void reset_tried_but_unused_cluster_placements(
 
 
 /* Quick, additional filter to see if root is feasible for molecule 
-
-   Limitation: This code can absorb a single atom by a "forced connection".  A forced connection is one where there is no interconnect flexibility connecting
-               two primitives so if one primitive is used, then the other must also be used.
-
-			   TODO: jluu - Many ways to make this either more efficient or more robust.
-							1.  For forced connections, I can get the packer to try forced connections first thus avoid trying out other locations that 
-							    I know are bad thus saving runtime and potentially improving robustness because the placement cost function is not always 100%.
-							2.  I need to extend this so that molecules can be pulled in instead of just atoms.
-*/
+ *
+ * Limitation: This code can absorb a single atom by a "forced connection".  
+ * A forced connection is one where there is no interconnect flexibility connecting
+ * two primitives so if one primitive is used, then the other must also be used.
+ *
+ * TODO: jluu - Many ways to make this either more efficient or more robust.
+ *      1.  For forced connections, I can get the packer to try forced connections first 
+ *          thus avoid trying out other locations that I know are bad thus saving runtime 
+ *          and potentially improving robustness because the placement cost function is 
+ *          not always 100%.
+ *      2.  I need to extend this so that molecules can be pulled in instead of just atoms.
+ */
 static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_molecule *molecule, const int clb_index) {
 	int i, j;
 	bool feasible;
-	t_logical_block *root_block;
 	t_model_ports *model_port;
-	int inet;
-	int isink;
-	t_pb_graph_pin *sink_pb_graph_pin;
 
 	feasible = true;
-	root_block = molecule->logical_block_ptrs[molecule->root];
+
+    AtomBlockId blk_id = molecule->atom_block_ids[molecule->root];
+
 	for(i = 0; feasible && i < root->num_output_ports; i++) {
 		for(j = 0; feasible && j < root->num_output_pins[i]; j++) {
 			if(root->output_pins[i][j].is_forced_connection) {
+
 				model_port = root->output_pins[i][j].port->model_port;
-				inet = root_block->output_nets[model_port->index][j];
-				if(inet != OPEN) {
+
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
+                AtomNetId net_id = g_atom_nl.port_net(port_id, j);
+
+				if(net_id) {
 					/* This output pin has a dedicated connection to one output, make sure that molecule works */
 					if(molecule->type == MOLECULE_SINGLE_ATOM) {
 						feasible = false; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
-						if(g_atoms_nlist.net[inet].num_sinks() == 1) {
-							isink = g_atoms_nlist.net[inet].pins[1].block;
-							if(logical_block[isink].clb_index == clb_index) {
-								sink_pb_graph_pin = &root->output_pins[i][j];
+                        auto sinks = g_atom_nl.net_sinks(net_id);
+						if(sinks.size() == 1) {
+                            AtomPinId sink_pin = *sinks.begin();
+                            AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin);
+
+							if(g_atom_map.atom_clb(sink_blk) == clb_index) {
+								const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(sink_pin);
 								while(sink_pb_graph_pin->num_output_edges != 0) {
 									VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
 									VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
 									sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
 								}
-								if(sink_pb_graph_pin->parent_node == logical_block[isink].pb->pb_graph_node) {
-									/* There is a logical block mapped to the physical position that pulls in the atom in question */
+                                const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
+								if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
+									/* There is a atom block mapped to the physical position that pulls in the atom in question */
 									feasible = true;
 								}
 							}

@@ -16,6 +16,7 @@ enum e_vpr_error {
 	VPR_ERROR_PLACE_F,
 	VPR_ERROR_BLIF_F,
 	VPR_ERROR_IMPL_NETLIST_WRITER,
+	VPR_ERROR_ATOM_NETLIST,
 	VPR_ERROR_OTHER
 };
 typedef enum e_vpr_error t_vpr_error_type;
@@ -40,5 +41,13 @@ class VprError : public vtr::VtrError {
 
 void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
 void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
+
+/*
+ * Macro wrapper around vpr_throw() which automatically 
+ * specifies file and line number of call site.
+ */
+#define VPR_THROW(type, ...) do { \
+        vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
+    } while(false)
 
 #endif

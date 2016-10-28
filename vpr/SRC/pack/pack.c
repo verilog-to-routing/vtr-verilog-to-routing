@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <cstring>
+#include <unordered_set>
+#include <unordered_map>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -11,6 +13,7 @@ using namespace std;
 
 #include "read_xml_arch_file.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "prepack.h"
 #include "pack_types.h"
 #include "pack.h"
@@ -22,11 +25,13 @@ using namespace std;
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static bool *alloc_and_load_is_clock(bool global_clocks);
+static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 
 void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 		const t_model *user_models, const t_model *library_models, t_timing_inf timing_inf, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
-	bool *is_clock;
+    std::unordered_set<AtomNetId> is_clock;
+    std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
+    std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
 	int num_models;
 	const t_model *cur_model;
 	t_pack_patterns *list_of_packing_patterns;
@@ -50,17 +55,29 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
+
+    size_t num_p_inputs = 0;
+    size_t num_p_outputs = 0;
+    for(auto blk_id : g_atom_nl.blocks()) {
+        auto type = g_atom_nl.block_type(blk_id);
+        if(type == AtomBlockType::INPAD) {
+            ++num_p_inputs;
+        } else if(type == AtomBlockType::OUTPAD) {
+            ++num_p_outputs;
+        }
+    }
 	
 	vtr::printf_info("\n");
 	vtr::printf_info("After removing unused inputs...\n");
-	vtr::printf_info("\ttotal blocks: %d, total nets: %d, total inputs: %d, total outputs: %d\n",
-		num_logical_blocks, (int) g_atoms_nlist.net.size(), num_p_inputs, num_p_outputs);
+	vtr::printf_info("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
+		g_atom_nl.blocks().size(), g_atom_nl.nets().size(), num_p_inputs, num_p_outputs);
 
 	vtr::printf_info("Begin prepacking.\n");
-	list_of_packing_patterns = alloc_and_load_pack_patterns(
-			&num_packing_patterns);
-	list_of_pack_molecules = alloc_and_load_pack_molecules(
-			list_of_packing_patterns, num_packing_patterns);
+	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
+    list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns, 
+                                atom_molecules,
+                                expected_lowest_cost_pb_gnode,
+                                num_packing_patterns);
 	vtr::printf_info("Finish prepacking.\n");
 
 	if(packer_opts->auto_compute_inter_cluster_net_delay) {
@@ -75,7 +92,9 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 
 	if (packer_opts->skip_clustering == false) {
 		do_clustering(arch, list_of_pack_molecules, num_models,
-				packer_opts->global_clocks, is_clock,
+				packer_opts->global_clocks, is_clock, 
+                atom_molecules,
+                expected_lowest_cost_pb_gnode,
 				packer_opts->hill_climbing_flag, packer_opts->output_file,
 				packer_opts->timing_driven, packer_opts->cluster_seed_type,
 				packer_opts->alpha, packer_opts->beta,
@@ -89,15 +108,11 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 				"Skip clustering no longer supported.\n");
 	}
 
-	free(is_clock);
-	
 	/*free list_of_pack_molecules*/
 	free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
 
 	cur_pack_molecule = list_of_pack_molecules;
 	while (cur_pack_molecule != NULL){
-		if (cur_pack_molecule->logical_block_ptrs != NULL)
-			free(cur_pack_molecule->logical_block_ptrs);
 		cur_pack_molecule = list_of_pack_molecules->next;
 		free(list_of_pack_molecules);
 		list_of_pack_molecules = cur_pack_molecule;
@@ -129,38 +144,26 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	return Tdel_switch + R_switch * Cout_switch;
 }
 
-bool *alloc_and_load_is_clock(bool global_clocks) {
+std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
 
-	/* Looks through all the logical_block to find and mark all the clocks, by setting *
-	 * the corresponding entry in is_clock to true.  global_clocks is used     *
+	/* Looks through all the atom blocks to find and mark all the clocks, by setting
+	 * the corresponding entry by adding the clock to is_clock.
+     * global_clocks is used 
 	 * only for an error check.                                                */
 
-	int num_clocks, bnum, clock_net;
-	bool * is_clock;
-
-	num_clocks = 0;
-
-	is_clock = (bool *) vtr::calloc(g_atoms_nlist.net.size(), sizeof(bool));
+	int num_clocks = 0;
+    std::unordered_set<AtomNetId> is_clock;
 
 	/* Want to identify all the clock nets.  */
 
-	for (bnum = 0; bnum < num_logical_blocks; bnum++) {
-		if (logical_block[bnum].type == VPACK_LATCH) {
-			clock_net = logical_block[bnum].clock_net;
-			VTR_ASSERT(clock_net != OPEN);
-			if (is_clock[clock_net] == false) {
-				is_clock[clock_net] = true;
-				num_clocks++;
-			}
-		} else {
-			if (logical_block[bnum].clock_net != OPEN) {
-				clock_net = logical_block[bnum].clock_net;
-				if (is_clock[clock_net] == false) {
-					is_clock[clock_net] = true;
-					num_clocks++;
-				}
-			}
-		}
+    for(auto blk_id : g_atom_nl.blocks()) {
+        for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
+            auto net_id = g_atom_nl.pin_net(pin_id);
+            if (!is_clock.count(net_id)) {
+                is_clock.insert(net_id);
+                num_clocks++;
+            }
+        }
 	}
 
 	/* If we have multiple clocks and we're supposed to declare them global, *
@@ -169,7 +172,7 @@ bool *alloc_and_load_is_clock(bool global_clocks) {
 
 	if (num_clocks > 1 && global_clocks) {
 		vtr::printf_warning(__FILE__, __LINE__, 
-				"Circuit contains %d clocks. All clocks will be marked global.\n", num_clocks);
+				"All %d clocks will be treated as global.\n", num_clocks);
 	}
 
 	return (is_clock);

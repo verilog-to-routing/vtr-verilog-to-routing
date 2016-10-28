@@ -151,7 +151,7 @@ endforeach()
 set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
-    set(SANITIZE_FLAGS "-fsanitize=address -fsanitize=leak -fsanitize=undefined")
+    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined")
     message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
@@ -283,6 +283,7 @@ add_subdirectory(libpugixml)
 add_subdirectory(libvtrutil)
 add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
+add_subdirectory(libblifparse)
 add_subdirectory(libeasygl)
 add_subdirectory(vpr)
 add_subdirectory(abc_with_bb_support)
@@ -315,6 +316,11 @@ set_target_properties(libsdcparse sdcparse_test
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse")
+set_target_properties(libblifparse blifparse_test
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libblifparse"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libblifparse"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libblifparse")
 set_target_properties(libeasygl
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"

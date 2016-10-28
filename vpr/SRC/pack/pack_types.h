@@ -1,16 +1,17 @@
+#ifndef PACK_TYPES_H
+#define PACK_TYPES_H
 /**
  * Jason Luu
  * July 22, 2013
  *
  * Defines core data structures used in packing
  */
-
-#ifndef PACK_TYPES_H
-#define PACK_TYPES_H
-
-#include "arch_types.h"
 #include <map>
 #include <vector>
+
+#include "arch_types.h"
+#include "atom_netlist_fwd.h"
+
 
 
 /**************************************************************************
@@ -32,44 +33,49 @@ extern const char* lb_rr_type_str[];
 /* Stores statistical information for a physical block such as costs and usages */
 typedef struct s_pb_stats {
 	/* Packing statistics */
-	std::map<int, float> gain; /* Attraction (inverse of cost) function */
+	std::map<AtomBlockId, float> gain; /* Attraction (inverse of cost) function */
 
-	std::map<int, float> timinggain; /* [0..num_logical_blocks-1]. The timing criticality score of this logical_block. 
-	 Determined by the most critical g_atoms_nlist.net between this logical_block and any logical_block in the current pb */
-	std::map<int, float> connectiongain; /* [0..num_logical_blocks-1] Weighted sum of connections to attraction function */
-	std::map<int, float> prevconnectiongainincr; /* [0..num_logical_blocks-1] Prev sum to weighted sum of connections to attraction function */
-	std::map<int, float> sharinggain; /* [0..num_logical_blocks-1]. How many nets on this logical_block are already in the pb under consideration */
+	std::map<AtomBlockId, float> timinggain; /* The timing criticality score of this atom block. 
+	                                            Determined by the most critical atom net 
+                                                between this atom block and any atom block in 
+                                                the current pb */
+	std::map<AtomBlockId, float> connectiongain; /* Weighted sum of connections to attraction function */
+	std::map<AtomBlockId, float> sharinggain; /* How many nets on an atom block are already in the pb under consideration */
 
-	/* [0..num_logical_blocks-1]. This is the gain used for hill-climbing. It stores*
-	 * the reduction in the number of pins that adding this logical_block to the the*
+	/* This is the gain used for hill-climbing. It stores*
+	 * the reduction in the number of pins that adding this atom block to the the*
 	 * current pb will have. This reflects the fact that sometimes the *
-	 * addition of a logical_block to a pb may reduce the number of inputs     *
+	 * addition of an atom block to a pb may reduce the number of inputs     *
 	 * required if it shares inputs with all other BLEs and it's output is  *
 	 * used by all other child pbs in this parent pb.                               */
-	std::map<int, float> hillgain;
+	std::map<AtomBlockId, float> hillgain;
 
-	/* [0..num_marked_nets] and [0..num_marked_blocks] respectively.  List  *
-	 * the indices of the nets and blocks that have had their num_pins_of_  *
-	 * net_in_pb and gain entries altered.                             */
-	int *marked_nets, *marked_blocks;
-	int num_marked_nets, num_marked_blocks;
+    std::vector<AtomNetId> marked_nets; //List of nets with the num_pins_of_net_in_pb and gain entries altered
+    std::vector<AtomBlockId> marked_blocks; //List of blocks with the num_pins_of_net_in_pb and gain entries altered
+
 	int num_child_blocks_in_pb;
 
-	int tie_break_high_fanout_net; /* If no marked candidate molecules, use this high fanout net to determine the next candidate atom */
+	AtomNetId tie_break_high_fanout_net; /* If no marked candidate molecules, use 
+                                            this high fanout net to determine the 
+                                            next candidate atom */
 	bool explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
 	std::vector<t_pack_molecule *> *transitive_fanout_candidates;
 
-	/* [0..g_atoms_nlist.net.size()-1].  How many pins of each g_atoms_nlist.net are contained in the *
-	 * currently open pb?                                          */
-	std::map<int, int> num_pins_of_net_in_pb;
+	/* How many pins of each atom net are contained in the *
+	 * currently open pb?                                  */
+	std::map<AtomNetId, int> num_pins_of_net_in_pb;
 
-	/* Record of pins of class used TODO: Jason Luu: Should really be using hash table for this for speed, too lazy to write one now, performance isn't too bad since I'm at most iterating over the number of pins of a pb which is effectively a constant for reasonable architectures */
-	int **input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
-	int **output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used */
+	/* Record of pins of class used 
+     * TODO: Jason Luu: Should really be using hash table for this for speed, 
+     *       too lazy to write one now, performance isn't too bad since I'm at 
+     *       most iterating over the number of pins of a pb which is effectively 
+     *       a constant for reasonable architectures */
+    std::vector<std::vector<AtomNetId>> input_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used */
+	std::vector<std::vector<AtomNetId>> output_pins_used; /* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used */
 
 	/* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
-	vector<int> *lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
-	vector<int> *lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+    std::vector<std::vector<AtomNetId>> lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+    std::vector<std::vector<AtomNetId>> lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
 
 	/* Array of feasible blocks to select from [0..max_array_size-1] 
 	 Sorted in ascending gain order so that the last block is the most desirable (this makes it easy to pop blocks off the list
@@ -152,17 +158,17 @@ struct t_lb_rr_node_stats {
 */
 struct t_lb_trace {
 	int	current_node;					/* current t_lb_type_rr_node used by net */
-	vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
+    std::vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
 };
 
 /* Represents a net used inside a logic block and the physical nodes used by the net */
 struct t_intra_lb_net {
-	int atom_net_index;					/* index of atomic net this intra_lb_net represents */
-	vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
+    AtomNetId atom_net_id;              /* index of atom net this intra_lb_net represents */
+    std::vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
 	t_lb_trace *rt_tree;				/* Route tree head */
 	
 	t_intra_lb_net() {
-		atom_net_index = OPEN;
+        atom_net_id = AtomNetId::INVALID();
 		rt_tree = NULL;
 	}
 };
@@ -219,15 +225,15 @@ struct t_explored_node_tb {
 /* Stores all data needed by intra-logic block router */
 struct t_lb_router_data {
 	/* Physical Architecture Info */
-	vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
+    std::vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
 	
 	/* Logical Netlist Info */
-	vector <t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
+    std::vector<t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
 	
 	/* Saved nets */
-	vector <t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic block nets and their connections */
+    std::vector<t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic block nets and their connections */
 	
-	map <int, bool> *atoms_added;		/* map that records which atoms are added to cluster router */
+    std::map<AtomBlockId, bool> *atoms_added;		/* map that records which atoms are added to cluster router */
 
 	/* Logical-to-physical mapping info */
 	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block rr node instance */

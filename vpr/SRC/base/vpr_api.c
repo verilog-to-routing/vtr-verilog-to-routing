@@ -834,18 +834,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 
 void free_circuit() {
 
-	/* Free netlist reference tables for nets */
-	free(clb_to_vpack_net_mapping);
-	free(vpack_to_clb_net_mapping);
-	clb_to_vpack_net_mapping = NULL;
-	vpack_to_clb_net_mapping = NULL;
-
-	/* Free logical blocks and nets */
-	if (logical_block != NULL) {
-		free_logical_blocks();
-		free_logical_nets();
-	}
-
 	if (clb_net != NULL) {
 		for (int i = 0; i < num_nets; ++i) {
 			free(clb_net[i].name);
@@ -859,12 +847,11 @@ void free_circuit() {
 
 	//Free new net structures
 	free_global_nlist_net(&g_clbs_nlist);
-	free_global_nlist_net(&g_atoms_nlist);
 
 	if (block != NULL) {
 		for (int i = 0; i < num_blocks; ++i) {
 			if (block[i].pb != NULL) {
-				free_cb(block[i].pb);
+				free_pb(block[i].pb);
 				free(block[i].pb);
 			}
 			free(block[i].nets);
@@ -874,18 +861,6 @@ void free_circuit() {
 	}
 	free(block);
 	block = NULL;
-
-	free(blif_circuit_name);
-	free(default_output_name);
-	blif_circuit_name = NULL;
-
-	vtr::t_linked_vptr *p_io_removed = circuit_p_io_removed;
-	while (p_io_removed != NULL) {
-		circuit_p_io_removed = p_io_removed->next;
-		free(p_io_removed->data_vptr);
-		free(p_io_removed);
-		p_io_removed = circuit_p_io_removed;
-	}
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
@@ -1111,6 +1086,9 @@ void vpr_print_error(const VprError& vpr_error){
             break;
         case VPR_ERROR_IMPL_NETLIST_WRITER:
             error_type = vtr::strdup("Implementation Netlist Writer");
+            break;
+        case VPR_ERROR_ATOM_NETLIST:
+            error_type = vtr::strdup("Atom Netlist");
             break;
         case VPR_ERROR_OTHER:
             error_type = vtr::strdup("Other");

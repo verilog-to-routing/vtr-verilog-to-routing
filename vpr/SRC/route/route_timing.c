@@ -17,7 +17,6 @@
 #include "route_common.h"
 #include "route_tree_timing.h"
 #include "route_timing.h"
-#include "heapsort.h"
 #include "path_delay.h"
 #include "net_delay.h"
 #include "stats.h"
@@ -343,7 +342,6 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
 			g_clbs_nlist.net[inet].is_routed = true;
-			g_atoms_nlist.net[clb_to_vpack_net_mapping[inet]].is_routed = true;
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}

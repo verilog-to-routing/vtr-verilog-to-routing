@@ -12,6 +12,7 @@
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "atom_netlist.h"
 #include "path_delay2.h"
 #include "read_xml_arch_file.h"
 
@@ -288,16 +289,15 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	}
 
 	if (type == TN_CB_OPIN) {
-		inet =
-				block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx;
-		inet = vpack_to_clb_net_mapping[inet];
+		AtomNetId atom_net_id = block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+		inet = g_atom_map.clb_net(atom_net_id);
+        VTR_ASSERT(inet != OPEN);
 		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
 			inet, g_clbs_nlist.net[inet].name, (int) g_clbs_nlist.net[inet].pins.size());
 	} else if (pb_graph_pin != NULL) {
-		inet =
-			block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx;
-		fprintf(fp, "Internal Net: #%d (%s).  Pins on net: %d.\n", inet,
-			g_atoms_nlist.net[inet].name, (int) g_atoms_nlist.net[inet].pins.size());
+		AtomNetId net_id = block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+		fprintf(fp, "Internal Net: %s.  Pins on net: %zu.\n",
+			g_atom_nl.net_name(net_id).c_str(), g_atom_nl.net_pins(net_id).size());
 	}
 
 	fprintf(fp, "\n");

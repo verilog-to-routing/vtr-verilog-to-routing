@@ -1,10 +1,25 @@
+#ifndef CLUSTER_H
+#define CLUSTER_H
+#include <unordered_map>
+#include <unordered_set>
+#include <map>
+#include <vector>
+
+#include "physical_types.h"
+#include "vpr_types.h"
+#include "atom_netlist_fwd.h"
+
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
-		int num_models, bool global_clocks, bool *is_clock,
+		int num_models, bool global_clocks, 
+        const std::unordered_set<AtomNetId>& is_clock,
+        std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven,
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf,
-		vector<t_lb_type_rr_node> *lb_type_rr_graphs);
+		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs);
 int get_cluster_of_block(int blkidx);
+#endif

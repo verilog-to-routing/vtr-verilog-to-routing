@@ -467,9 +467,9 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 
 				/* Get probability/density of input signals */
 				if (pb) {
-					int output_pin_net =
-						block[iblk].pb_route[interc_pins->output_pins[out_port_idx][pin_idx]->pin_count_in_cluster].atom_net_idx;
-					if (output_pin_net == OPEN) {
+                    int cluster_pin_idx = interc_pins->output_pins[out_port_idx][pin_idx]->pin_count_in_cluster;
+					AtomNetId output_pin_net = block[iblk].pb_route[cluster_pin_idx].atom_net_id;
+					if (!output_pin_net) {
 						selected_input = 0;
 					} else {
 						for (in_port_idx = 0;
@@ -478,15 +478,14 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 								in_port_idx++) {
 							t_pb_graph_pin * input_pin =
 									interc_pins->input_pins[in_port_idx][pin_idx];
-							int input_pin_net =
-									block[iblk].pb_route[input_pin->pin_count_in_cluster].atom_net_idx;
+							AtomNetId input_pin_net = block[iblk].pb_route[input_pin->pin_count_in_cluster].atom_net_id;
 							/* Find input pin that connects through the mux to the output pin */
 							if (output_pin_net == input_pin_net) {
 								selected_input = in_port_idx;
 							}
 
 							/* Initialize input densities */
-							if (input_pin_net != OPEN) {
+							if (input_pin_net) {
 								in_dens[in_port_idx] = pin_dens(pb, input_pin, iblk);
 								in_prob[in_port_idx] = pin_prob(pb, input_pin, iblk);
 							}

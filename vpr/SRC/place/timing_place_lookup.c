@@ -335,7 +335,7 @@ static void load_simplified_device(void) {
 			grid[i][j].height_offset = 0;
 			grid[i][j].blocks = (int*)vtr::malloc(grid[i][j].type->capacity * sizeof(int));
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				grid[i][j].blocks[k] = EMPTY;
+				grid[i][j].blocks[k] = EMPTY_BLOCK;
 			}
 		}
 	}
@@ -368,8 +368,8 @@ static void reset_placement(void) {
 		for (j = 0; j <= ny + 1; j++) {
 			grid[i][j].usage = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].blocks[k] != INVALID) {
-					grid[i][j].blocks[k] = EMPTY;
+				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
+					grid[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
 		}
@@ -609,9 +609,9 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 
 	grid[source_x_loc][source_y_loc].usage = 0;
-	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY;
+	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
 	grid[sink_x_loc][sink_y_loc].usage = 0;
-	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY;
+	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
 
 	return (net_delay_value);
 }

@@ -13,7 +13,6 @@
 
  Key data structures:
 
- logical_block - One node in the input technology-mapped netlist
  net - Connectivity data structure for the user netlist
  block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
  rr_node - The basic building block of the interconnect in the FPGA architecture
@@ -29,7 +28,9 @@
 #define VPR_TYPES_H
 
 #include <vector>
+#include <unordered_map>
 #include "arch_types.h"
+#include "atom_netlist_fwd.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -80,8 +81,8 @@ typedef size_t bitfield;
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
-#define EMPTY -1
-#define INVALID -2
+#define EMPTY_BLOCK -1
+#define INVALID_BLOCK -2
 
 #define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 5 /* Base number of previous iterations used to compute reduction in congestion */
 
@@ -98,11 +99,6 @@ typedef size_t bitfield;
 #ifndef UNDEFINED						 
 #define UNDEFINED -1    
 #endif
-
-/* netlist blocks are assigned one of these types */
-enum logical_block_types {
-	VPACK_INPAD = -2, VPACK_OUTPAD, VPACK_COMB, VPACK_LATCH, VPACK_EMPTY
-};
 
 /* Selection algorithm for selecting next seed  */
 enum e_cluster_seed {
@@ -125,15 +121,15 @@ struct s_pb_stats;
 
  All physical blocks are represented by this s_pb data structure.
  */
+typedef struct s_pb t_pb;
 typedef struct s_pb {
 	char *name; /* Name of this physical block */
 	t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
-	int logical_block; /* If this is a terminating pb, gives the logical (netlist) block that it contains */
 
 	int mode; /* mode that this pb is set to */
 
-	struct s_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
-	struct s_pb *parent_pb; /* pointer to parent node */
+	t_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
+	t_pb *parent_pb; /* pointer to parent node */
 
 	struct s_pb_stats *pb_stats; /* statistics for current pb */
 
@@ -163,56 +159,21 @@ typedef struct s_pb {
 
 /* Representation of intra-logic block routing */
 struct t_pb_route {
-	int atom_net_idx;	/* which net in the atomic netlist uses this pin */
+    AtomNetId atom_net_id; /* which net in the atom netlist uses this pin */
 	int prev_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
 
 	t_pb_route() {
-		atom_net_idx = OPEN;
+		atom_net_id = AtomNetId::INVALID();
 		prev_pb_pin_id = OPEN;
 	}
 };
-
-struct s_tnode;
-
-/* Technology-mapped user netlist block */
-typedef struct s_logical_block {
-	char *name; /* Taken from the first g_atoms_nlist.net which it drives. */
-	enum logical_block_types type; /* I/O, combinational logic, or latch */
-	const t_model* model; /* Technology-mapped type (eg. LUT, Flip-flop, memory slice, inpad, etc) */
-
-	int **input_nets; /* [0..num_input_ports-1][0..num_port_pins-1] List of input nets connected to this logical_block. */
-	int **output_nets; /* [0..num_output_ports-1][0..num_port_pins-1] List of output nets connected to this logical_block. */
-	int clock_net; /* Clock net connected to this logical_block. */
-
-	int used_input_pins; /* Number of used input pins */
-
-	int clb_index; /* Complex block index that this logical block got mapped to */
-
-	int index; /* Index in array that this block can be found */
-	t_pb* pb; /* pb primitive that this block is packed into */
-
-	/* timing information */
-	struct s_tnode ***input_net_tnodes; /* [0..num_input_ports-1][0..num_pins -1] correspnding input net tnode */
-	struct s_tnode ***output_net_tnodes; /* [0..num_output_ports-1][0..num_pins -1] correspnding output net tnode */
-	struct s_tnode *clock_net_tnode; /* correspnding clock net tnode */
-
-    vtr::t_linked_vptr *truth_table; /* If this is a LUT (.names), then this is the logic that the LUT implements */
-	vtr::t_linked_vptr *packed_molecules; /* List of t_pack_molecules that this logical block is a part of */
-
-	t_pb_graph_node *expected_lowest_cost_primitive; /* predicted ideal primitive to use for this logical block */
-
-	char ***input_pin_names; /* [0..num_ports-1][0..num_pins-1] save the input name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
-	char ***output_pin_names; /* [0..num_ports-1][0..num_pins-1] save the output name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
-	char *clock_pin_name; /* save the clock name so that it can be labelled correctly later for formal equivalence verification, we do the same thing for unused inputs as formal equivalence requires this */
-
-} t_logical_block;
 
 enum e_pack_pattern_molecule_type {
 	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
 };
 
 /**
- * Represents a grouping of logical_blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
+ * Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
  * Store in linked list
  * 
  * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
@@ -222,11 +183,12 @@ typedef struct s_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
 	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
-	t_logical_block **logical_block_ptrs; /* [0..num_blocks-1] ptrs to logical blocks that implements this molecule, index on pack_pattern_block->index of pack pattern */
+    std::vector<AtomBlockId> atom_block_ids; /* [0..num_blocks-1] IDs of atom blocks that implements this molecule, 
+                                                index on pack_pattern_block->index of pack pattern */
 	bool valid; /* Whether or not this molecule is still valid */
 
-	int num_blocks; /* number of logical blocks of molecule */
-	int root; /* root index of molecule, logical_block_ptrs[root] is ptr to root logical block */
+	int num_blocks; /* number of atom blocks of molecule */
+	int root; /* root index of molecule, atom_block_ids[root] is the root atom block */
 
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
 
@@ -322,7 +284,7 @@ typedef struct s_tnode {
 	float T_arr; /* Arrival time of the last input signal to this node. */
 	float T_req; /* Required arrival time of the last input signal to this node 
 	 if the critical path is not to be lengthened. */
-	int block; /* logical block primitive which this tnode is part of */
+	int block; /* atom block primitive which this tnode is part of */
 
 #ifdef PATH_COUNTING
 	float forward_weight, backward_weight; /* Weightings of the importance of paths 
@@ -340,7 +302,7 @@ typedef struct s_tnode {
 	t_prepacked_tnode_data * prepacked_data;
 
 	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely
-											  disconnected to break a combinational loop */
+											     disconnected to break a combinational loop */
 } t_tnode;
 
 /* Other structures storing timing information */
@@ -383,13 +345,23 @@ typedef struct s_timing_stats {
 
 typedef struct s_slack {
 	/* Matrices storing slacks and criticalities of each sink pin on each net
-	 [0..net.size()-1][1..num_pins-1] for both pre- and post-packed netlists. */
+	 [0..net.size()-1][1..num_pins-1] for post-packed netlists. */
 	float ** slack;
 	float ** timing_criticality;
 #ifdef PATH_COUNTING
 	float ** path_criticality;
 #endif
 } t_slack;
+
+typedef struct s_prepack_slack {
+	/* Matrices storing slacks and criticalities of each sink pin (for all nets)
+	 [AtomPinId] for pre-packed netlists. */
+    std::unordered_map<AtomPinId,float> slack;
+    std::unordered_map<AtomPinId,float> timing_criticality;
+#ifdef PATH_COUNTING
+    std::unordered_map<AtomPinId,float> path_criticality;
+#endif
+} t_prepack_slack;
 
 typedef struct s_override_constraint {
 	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from
@@ -497,7 +469,7 @@ typedef struct s_net {
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block
  * usage: Number of blocks used in this grid tile
- * blocks[]: Array of logical blocks placed in a physical position, EMPTY means
+ * blocks[]: Array of CLBs placed in a physical position, EMPTY means
  no block at that index */
 typedef struct s_grid_tile {
 	t_type_ptr type;

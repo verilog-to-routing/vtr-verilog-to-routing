@@ -17,12 +17,13 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_log.h"
 
-
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
+
 #include "hash.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "read_xml_util.h"
 #include "read_netlist.h"
 #include "pb_type_graph.h"
@@ -32,19 +33,14 @@ using namespace std;
 static const char* netlist_file_name = NULL;
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
-		struct s_hash **vpack_net_hash,
         const pugiloc::loc_data& loc_data);
 
 static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
-		struct s_hash **vpack_net_hash,
-		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data);
 
 static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
 		const int index, int *num_primitives,
-		struct s_hash **vpack_net_hash,
-		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data);
 
 static struct s_net *alloc_and_init_netlist_from_hash(const int ncount,
@@ -55,7 +51,7 @@ static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
 
 static void load_external_nets_and_cb(const int L_num_blocks,
 		const struct s_block block_list[],
-		const struct s_net nlist[], int *ext_ncount,
+		int *ext_ncount,
 		struct s_net **ext_nets, const std::vector<std::string>& circuit_clocks);
 
 static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route);
@@ -63,10 +59,9 @@ static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
 static void mark_constant_generators(const int L_num_blocks,
-		const struct s_block block_list[],
-		struct s_net nlist[]);
+		const struct s_block block_list[]);
 
-static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route, struct s_net nlist[]);
+static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
 
@@ -87,7 +82,6 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	struct s_block *blist;
 	int ext_ncount;
 	struct s_net *ext_nlist;
-	struct s_hash **vpack_net_hash, **logical_block_hash, *temp_hash;
     std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
 
 	int num_primitives = 0;
@@ -149,69 +143,48 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
     bcount = pugiutil::count_children(top, "block", loc_data);
 	blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
 
-	/* create quick hash look up for vpack_net and logical_block 
-	 Also reset logical block data structure for pb
-	 */
-	vpack_net_hash = alloc_hash_table();
-	logical_block_hash = alloc_hash_table();
-	for (i = 0; i < num_logical_nets; i++) {
-		temp_hash = insert_in_hash_table(vpack_net_hash, vpack_net[i].name, i);
-		VTR_ASSERT(temp_hash->count == 1);
-	}
-	for (i = 0; i < num_logical_blocks; i++) {
-		temp_hash = insert_in_hash_table(logical_block_hash,
-				logical_block[i].name, i);
-		logical_block[i].pb = NULL;
-		if(temp_hash->count != 1) {
-			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-					"Found duplicate block in netlist file named: %s.\n",
-					logical_block[i].name);
-        }
-	}
+    //Reset atom/pb mapping (it is reloaded from the packed netlist file)
+    for(auto blk_id : g_atom_nl.blocks()) {
+        g_atom_map.set_atom_pb(blk_id, NULL);
+    }
 
-	/* Prcoess netlist */
+	/* Process netlist */
 
     i = 0;
     for(auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
-        processComplexBlock(curr_block, blist, i, &num_primitives, vpack_net_hash, logical_block_hash, loc_data);
-
+        processComplexBlock(curr_block, blist, i, &num_primitives, loc_data);
         i++;
     }
 	VTR_ASSERT(i == bcount);
-	VTR_ASSERT(num_primitives == num_logical_blocks);
+    VTR_ASSERT(num_primitives > 0);
+	VTR_ASSERT(static_cast<size_t>(num_primitives) == g_atom_nl.blocks().size());
 
 	/* Error check */
-	for (i = 0; i < num_logical_blocks; i++) {
-		if (logical_block[i].pb == NULL) {
+    for(auto blk_id : g_atom_nl.blocks()) {
+		if (g_atom_map.atom_pb(blk_id) == NULL) {
 			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					".blif file and .net file do not match, .net file missing atom %s.\n",
-					logical_block[i].name);
+					g_atom_nl.block_name(blk_id).c_str());
 		}
 	}
 	/* TODO: Add additional check to make sure net connections match */
 
-	mark_constant_generators(bcount, blist, vpack_net);
-	load_external_nets_and_cb(bcount, blist, vpack_net,
-			&ext_ncount, &ext_nlist, circuit_clocks);
+	mark_constant_generators(bcount, blist);
+	load_external_nets_and_cb(bcount, blist, &ext_ncount, &ext_nlist, circuit_clocks);
 
 	/* TODO: create this function later
 	 check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_clocks, blist, bcount);
 	 */
 
 	/* load mapping between external nets and all nets */
-	/* jluu TODO: Should use local variables here then assign to globals later, clean up later */
-	clb_to_vpack_net_mapping = (int *) vtr::malloc(ext_ncount * sizeof(int));
-	vpack_to_clb_net_mapping = (int *) vtr::malloc(
-			num_logical_nets * sizeof(int));
-	for (i = 0; i < num_logical_nets; i++) {
-		vpack_to_clb_net_mapping[i] = OPEN;
+    for(auto net_id : g_atom_nl.nets()) {
+        g_atom_map.set_atom_clb_net(net_id, OPEN);
 	}
 
 	for (i = 0; i < ext_ncount; i++) {
-		temp_hash = get_hash_entry(vpack_net_hash, ext_nlist[i].name);
-		VTR_ASSERT(temp_hash != NULL);
-		clb_to_vpack_net_mapping[i] = temp_hash->index;
-		vpack_to_clb_net_mapping[temp_hash->index] = i;
+        AtomNetId net_id = g_atom_nl.find_net(ext_nlist[i].name);
+        VTR_ASSERT(net_id);
+        g_atom_map.set_atom_clb_net(net_id, i);
 	}
 
 	/* Return blocks and nets */
@@ -224,9 +197,6 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	load_global_net_from_array(ext_nlist, ext_ncount, &g_clbs_nlist);
 	//echo_global_nlist_net(&g_clbs_nlist, ext_nlist);
 
-	free_hash_table(logical_block_hash);
-	free_hash_table(vpack_net_hash);
-
 	clock_t end = clock();
 
 	vtr::printf_info("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
@@ -237,14 +207,10 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
  * Parent - XML tag for this CLB
  * clb - Array of CLBs in the netlist
  * index - index of the CLB to allocate and load information into
- * vpack_net_hash - hashtable of all nets in blif netlist
- * logical_block_hash - hashtable of all atoms in blif netlist
  * loc_data - xml location info for error reporting
  */
 static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		const int index, int *num_primitives,
-		struct s_hash **vpack_net_hash,
-		struct s_hash **logical_block_hash,
         const pugiloc::loc_data& loc_data) {
 
 	bool found;
@@ -290,7 +256,8 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 
 	/* Parse all pbs and CB internal nets*/
-	cb[index].pb->logical_block = OPEN;
+    g_atom_map.set_atom_pb(AtomBlockId::INVALID(), cb[index].pb);
+
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
 	
@@ -309,8 +276,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 				index);
 	}
 
-	processPb(clb_block, cb, index, cb[index].pb, cb[index].pb_route, num_primitives, vpack_net_hash,
-			logical_block_hash, loc_data);
+	processPb(clb_block, cb, index, cb[index].pb, cb[index].pb_route, num_primitives, loc_data);
 
 	cb[index].nets = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
@@ -324,56 +290,47 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
  * XML parser to populate pb info and to update internal nets of the parent CLB
  * Parent - XML tag for this pb_type
  * pb - physical block to use
- * vpack_net_hash - hashtable of original blif net names and indices
- * logical_block_hash - hashtable of original blif atom names and indices
  * loc_data - xml location info for error reporting
  */
 static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
-		struct s_hash **vpack_net_hash,
-		struct s_hash **logical_block_hash,
-        const pugiloc::loc_data& loc_data) {
+    const pugiloc::loc_data& loc_data) {
 	int i, j, pb_index;
 	bool found;
 	const t_pb_type *pb_type;
 	t_token *tokens;
 	int num_tokens;
-	struct s_hash *temp_hash;
 
     auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
-	processPorts(inputs, pb, pb_route, vpack_net_hash, loc_data);
+	processPorts(inputs, pb, pb_route, loc_data);
 
     auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
-	processPorts(outputs, pb, pb_route, vpack_net_hash, loc_data);
+	processPorts(outputs, pb, pb_route, loc_data);
 
     auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
-	processPorts(clocks, pb, pb_route, vpack_net_hash, loc_data);
+	processPorts(clocks, pb, pb_route, loc_data);
 
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
-		temp_hash = get_hash_entry(logical_block_hash, pb->name);
-		if (temp_hash == NULL) {
+        AtomBlockId blk_id = g_atom_nl.find_block(pb->name);
+		if (!blk_id) {
 			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
 					pb->name);
 		}
-		pb->logical_block = temp_hash->index;
-		VTR_ASSERT(logical_block[temp_hash->index].pb == NULL);
-		logical_block[temp_hash->index].pb = pb;
-		logical_block[temp_hash->index].clb_index = index;
+
+        //Update atom netlist mapping
+        VTR_ASSERT(blk_id);
+        g_atom_map.set_atom_pb(blk_id, pb);
+        g_atom_map.set_atom_clb(blk_id, index);
+
 		(*num_primitives)++;
 	} else {
 		/* process children of child if exists */
 
-		pb->child_pbs = (t_pb **) vtr::calloc(
-				pb_type->modes[pb->mode].num_pb_type_children, sizeof(t_pb*));
+		pb->child_pbs = (t_pb **) vtr::calloc(pb_type->modes[pb->mode].num_pb_type_children, sizeof(t_pb*));
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			pb->child_pbs[i] = (t_pb *) vtr::calloc(
-					pb_type->modes[pb->mode].pb_type_children[i].num_pb,
-					sizeof(t_pb));
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
-				pb->child_pbs[i][j].logical_block = OPEN;
-			}
+			pb->child_pbs[i] = (t_pb *) vtr::calloc(pb_type->modes[pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
 		}
 
 		/* Populate info for each physical block  */
@@ -393,13 +350,9 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 
             found = false;
             pb_index = OPEN;
-            for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children;
-                    i++) {
-                if (strcmp(
-                        pb_type->modes[pb->mode].pb_type_children[i].name,
-                        tokens[0].data) == 0) {
-                    if (vtr::atoi(tokens[2].data)
-                            >= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
+            for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
+                if (strcmp( pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
+                    if (vtr::atoi(tokens[2].data) >= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                 "Instance number exceeds # of pb available for instance %s in %s.\n",
                                 instance_type.value(), child.name());
@@ -411,8 +364,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                                 instance_type.value(),
                                 pb->child_pbs[i][pb_index].name);
                     }
-                    pb->child_pbs[i][pb_index].pb_graph_node =
-                            &pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
+                    pb->child_pbs[i][pb_index].pb_graph_node = &pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
                     found = true;
                     break;
                 }
@@ -427,15 +379,13 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                 pb->child_pbs[i][pb_index].name = vtr::strdup(name.value());
 
                 /* Parse all pbs and CB internal nets*/
-                pb->child_pbs[i][pb_index].logical_block = OPEN;
+                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto mode = child.attribute("mode");
                 pb->child_pbs[i][pb_index].mode = 0;
                 found = false;
                 for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
-                    if (strcmp(mode.value(),
-                            pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
-                            == 0) {
+                    if (strcmp(mode.value(), pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name) == 0) {
                         pb->child_pbs[i][pb_index].mode = j;
                         found = true;
                     }
@@ -447,12 +397,11 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                 }
                 pb->child_pbs[i][pb_index].parent_pb = pb;
 
-                processPb(child, cb, index, &pb->child_pbs[i][pb_index], pb_route,
-                        num_primitives,	vpack_net_hash, logical_block_hash, loc_data);
+                processPb(child, cb, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives,	loc_data);
             } else {
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = NULL;
-                pb->child_pbs[i][pb_index].logical_block = OPEN;
+                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
                 if (lookahead1) {
@@ -462,9 +411,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                     pb->child_pbs[i][pb_index].mode = 0;
                     found = false;
                     for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
-                        if (strcmp(mode.value(),
-                                pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
-                                == 0) {
+                        if (strcmp(mode.value(), pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name) == 0) {
                             pb->child_pbs[i][pb_index].mode = j;
                             found = true;
                         }
@@ -475,8 +422,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                                 pb->child_pbs[i][pb_index].name, pb_index);
                     }
                     pb->child_pbs[i][pb_index].parent_pb = pb;
-                    processPb(child, cb, index, &pb->child_pbs[i][pb_index], pb_route,
-                            num_primitives, vpack_net_hash, logical_block_hash, loc_data);
+                    processPb(child, cb, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data);
                 }
             }
             freeTokens(tokens, num_tokens);
@@ -544,7 +490,6 @@ static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
 }
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
-		struct s_hash **vpack_net_hash,
         const pugiloc::loc_data& loc_data) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
@@ -552,7 +497,6 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 	int rr_node_index;
 	t_pb_graph_pin *** pin_node;
 	int *num_ptrs, num_sets;
-	struct s_hash *temp_hash;
 	bool found;
 
     for(auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
@@ -632,14 +576,14 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         //For connected pins look-up the inter-block net index associated with it
-                        temp_hash = get_hash_entry(vpack_net_hash, pins[i].c_str());
-                        if (temp_hash == NULL) {
+                        AtomNetId net_id = g_atom_nl.find_net(pins[i].c_str());
+                        if (!net_id) {
                             vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
                                     ".blif and .net do not match, unknown net %s found in .net file.\n.",
                                     pins[i].c_str());
                         }
                         //Mark the associated inter-block net
-                        pb_route[rr_node_index].atom_net_idx = temp_hash->index;
+                        pb_route[rr_node_index].atom_net_id = net_id;
                     }						
                 }
             } else {
@@ -699,13 +643,13 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                 for (i = 0; i < num_tokens; i++) {
                     rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
                     if (strcmp(pins[i].c_str(), "open") != 0) {
-                        temp_hash = get_hash_entry(vpack_net_hash, pins[i].c_str());
-                        if (temp_hash == NULL) {
+                        AtomNetId net_id = g_atom_nl.find_net(pins[i].c_str());
+                        if (!net_id) {
                             vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
                                     ".blif and .net do not match, unknown net %s found in .net file.\n",
                                     pins[i].c_str());
                         }
-                        pb_route[rr_node_index].atom_net_idx = temp_hash->index;
+                        pb_route[rr_node_index].atom_net_id = net_id;
                     }
                 }
             } else {
@@ -761,7 +705,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
  */
 static void load_external_nets_and_cb(const int L_num_blocks,
 		const struct s_block block_list[],
-		const struct s_net nlist[], int *ext_ncount,
+		int *ext_ncount,
 		struct s_net **ext_nets, const std::vector<std::string>& circuit_clocks) {
 	int i, j, k, ipin;
 	struct s_hash **ext_nhash;
@@ -796,9 +740,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->input_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
+				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
+                    AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
+                                                vtr::strdup(g_atom_nl.net_name(net_id).c_str()),
                                                 ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -812,9 +757,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_output_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->output_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
-				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
+				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
+                    AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
+                                                vtr::strdup(g_atom_nl.net_name(net_id).c_str()),
                                                 ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -828,9 +774,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_clock_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->clock_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
-				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx != OPEN) {
+				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
+                    AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                nlist[block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_idx].name,
+                                                vtr::strdup(g_atom_nl.net_name(net_id).c_str()),
                                                 ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -904,17 +851,15 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 
 static void mark_constant_generators(const int L_num_blocks,
-		const struct s_block block_list[],
-		struct s_net nlist[]) {
+		const struct s_block block_list[]) {
 	int i;
 	for (i = 0; i < L_num_blocks; i++) {
 		mark_constant_generators_rec(block_list[i].pb,
-				block_list[i].pb_route, nlist);
+				block_list[i].pb_route);
 	}
 }
 
-static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route,
-		struct s_net nlist[]) {
+static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route) {
 	int i, j;
 	t_pb_type *pb_type;
 	bool const_gen;
@@ -923,7 +868,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 			pb_type = &(pb->pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i]);
 			for (j = 0; j < pb_type->num_pb; j++) {
 				if (pb->child_pbs[i][j].name != NULL) {
-					mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route, nlist);
+					mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route);
 				}
 			}
 		}
@@ -931,16 +876,16 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 		const_gen = true;
 		for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true; i++) {
 			for (j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {
-				if (pb_route[pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster].atom_net_idx
-						!= OPEN) {
+                int cluster_pin_idx = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
+				if (pb_route[cluster_pin_idx].atom_net_id) {
 					const_gen = false;
 				}
 			}
 		}
 		for (i = 0; i < pb->pb_graph_node->num_clock_ports && const_gen == true; i++) {
 			for (j = 0; j < pb->pb_graph_node->num_clock_pins[i] && const_gen == true; j++) {
-				if (pb_route[pb->pb_graph_node->clock_pins[i][j].pin_count_in_cluster].atom_net_idx
-						!= OPEN) {
+                int cluster_pin_idx = pb->pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
+				if (pb_route[cluster_pin_idx].atom_net_id) {
 					const_gen = false;
 				}
 			}
@@ -949,119 +894,17 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 			vtr::printf_info("%s is a constant generator.\n", pb->name);
 			for (i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
 				for (j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
-					if (pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx != OPEN) {
-						nlist[pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_idx].is_const_gen = true;
+                    int cluster_pin_idx = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;
+					if (pb_route[cluster_pin_idx].atom_net_id) {
+                        AtomNetId net_id = pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_id;
+                        AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
+                        VTR_ASSERT(g_atom_nl.pin_is_constant(driver_pin_id));
 					}
 				}
 			}
 		}
 	}
 }
-
-/* Free logical blocks of netlist */
-void free_logical_blocks(void) {
-	int iblk, i;
-	t_model_ports *port;
-	vtr::t_linked_vptr *tvptr, *next;
-
-	for (iblk = 0; iblk < num_logical_blocks; iblk++) {
-		port = logical_block[iblk].model->inputs;
-		i = 0;
-		while (port) {
-			if (!port->is_clock) {
-				free(logical_block[iblk].input_nets[i]);
-				if (logical_block[iblk].input_net_tnodes) {
-					if (logical_block[iblk].input_net_tnodes[i])
-						free(logical_block[iblk].input_net_tnodes[i]);
-				}
-				if (logical_block[iblk].input_pin_names != NULL && logical_block[iblk].input_pin_names[i] != NULL) {
-					for (int j = 0; j < port->size; j++) {
-						if (logical_block[iblk].input_pin_names[i][j] != NULL) {
-							free(logical_block[iblk].input_pin_names[i][j]);
-						}
-					}
-					free(logical_block[iblk].input_pin_names[i]);
-				}
-				i++;
-			}
-			port = port->next;
-		}
-		if (logical_block[iblk].input_net_tnodes)
-			free(logical_block[iblk].input_net_tnodes);
-		if (logical_block[iblk].input_pin_names != NULL) {
-			free(logical_block[iblk].input_pin_names);
-		}
-		if (logical_block[iblk].clock_pin_name != NULL) {
-			free(logical_block[iblk].clock_pin_name);
-		}
-
-		tvptr = logical_block[iblk].packed_molecules;
-		while (tvptr != NULL) {
-			next = tvptr->next;
-			free(tvptr);
-			tvptr = next;
-		}
-
-		free(logical_block[iblk].input_nets);
-		port = logical_block[iblk].model->outputs;
-		i = 0;
-		while (port) {
-			free(logical_block[iblk].output_nets[i]);
-			if (logical_block[iblk].output_net_tnodes) {
-				if (logical_block[iblk].output_net_tnodes[i])
-					free(logical_block[iblk].output_net_tnodes[i]);
-			}
-			if (logical_block[iblk].output_pin_names != NULL && logical_block[iblk].output_pin_names[i] != NULL) {
-				for (int j = 0; j < port->size; j++) {
-					if (logical_block[iblk].output_pin_names[i][j] != NULL) {
-						free(logical_block[iblk].output_pin_names[i][j]);
-					}
-				}
-				free(logical_block[iblk].output_pin_names[i]);
-			}
-			i++;
-			port = port->next;
-		}
-		if (logical_block[iblk].output_net_tnodes) {
-			free(logical_block[iblk].output_net_tnodes);
-		}
-		free(logical_block[iblk].output_nets);
-		free(logical_block[iblk].name);
-		tvptr = logical_block[iblk].truth_table;
-		while (tvptr != NULL) {
-			if (tvptr->data_vptr)
-				free(tvptr->data_vptr);
-			next = tvptr->next;
-			free(tvptr);
-			tvptr = next;
-		}
-		if (logical_block[iblk].output_pin_names != NULL) {
-			free(logical_block[iblk].output_pin_names);
-		}
-	}
-	free(logical_block);
-	logical_block = NULL;
-}
-
-/* Free  logical blocks of netlist */
-void free_logical_nets(void) {
-	int inet;
-
-	for (inet = 0; inet < num_logical_nets; inet++) {
-		free(vpack_net[inet].name);
-		free(vpack_net[inet].node_block);
-		free(vpack_net[inet].node_block_port);
-		free(vpack_net[inet].node_block_pin);
-	}
-	free(vpack_net);
-	vpack_net = NULL;
-	if (vpack_net_power) {
-		free(vpack_net_power);
-		vpack_net_power = NULL;
-	}
-}
-
-
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
 	t_pb_route *pb_route;
@@ -1078,7 +921,7 @@ static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb
 	int num_pins = type->pb_graph_head->total_pb_pins;
 
 	for (int i = 0; i < num_pins; i++) {
-		if (pb_route[i].prev_pb_pin_id != OPEN && pb_route[i].atom_net_idx == OPEN) {
+		if (pb_route[i].prev_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
 			load_atom_index_for_pb_pin(pb_route, i);
 		}
 	}
@@ -1088,11 +931,11 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 	int driver = pb_route[ipin].prev_pb_pin_id;
 	
 	VTR_ASSERT(driver != OPEN);
-	VTR_ASSERT(pb_route[ipin].atom_net_idx == OPEN);
+	VTR_ASSERT(!pb_route[ipin].atom_net_id);
 
-	if (pb_route[driver].atom_net_idx == OPEN) {
+	if (!pb_route[driver].atom_net_id) {
 		load_atom_index_for_pb_pin(pb_route, driver);
 	}	
 		
-	pb_route[ipin].atom_net_idx = pb_route[driver].atom_net_idx;
+	pb_route[ipin].atom_net_id = pb_route[driver].atom_net_id;
 }

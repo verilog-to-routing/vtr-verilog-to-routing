@@ -21,10 +21,9 @@ void sync_grid_to_blocks(const int L_num_blocks,
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
-bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type);
-t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node);
-t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pin, bool is_input_pin, bool is_in_global_net);
-t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin);
+bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type *cur_pb_type);
+t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *model_port, const int model_pin, const t_pb_graph_node *pb_graph_node);
+const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin_id);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin);
@@ -35,7 +34,7 @@ void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping);
 
 
 float compute_primitive_base_cost(const t_pb_graph_node *primitive);
-int num_ext_inputs_logical_block(int iblk);
+int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
 int ** alloc_and_load_net_pin_index();
 
@@ -54,12 +53,14 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 		int * end_pin_index, char * pb_type_name, char * port_name);
 
 
-void free_cb(t_pb *pb);
 void free_pb_stats(t_pb *pb);
 void free_pb(t_pb *pb);
+void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules);
 
 void print_switch_usage();
 void print_usage_by_wire_length();
 
+AtomBlockId find_tnode_atom_block(int inode);
+AtomBlockId find_memory_sibling(const t_pb* pb);
 #endif
 

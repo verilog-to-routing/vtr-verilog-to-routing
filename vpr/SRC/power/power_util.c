@@ -31,12 +31,13 @@ using namespace std;
 
 #include "power_util.h"
 #include "globals.h"
+#include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 
 /************************* GLOBALS **********************************/
 
 /************************* FUNCTION DECLARATIONS*********************/
 static void log_msg(t_log * log_ptr, const char * msg);
-static void int_2_binary_str(char * binary_str, int value, int str_length);
 static void init_mux_arch_default(t_mux_arch * mux_arch, int levels,
 		int num_inputs, float transistor_size);
 static void alloc_and_load_mux_graph_recursive(t_mux_node * node,
@@ -85,10 +86,9 @@ float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float density = 0.;
 
 	if (pb) {
-		int net_num;
-		net_num = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_idx;
-		if (net_num != OPEN) {
-			density = vpack_net_power[net_num].density;
+		AtomNetId net_id = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		if (net_id) {
+			density = g_atom_net_power[net_id].density;
 		}
 	}
 
@@ -100,10 +100,9 @@ float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float prob = 1.;
 
 	if (pb) {
-		int net_num;
-		net_num = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_idx;
-		if (net_num != OPEN) {
-			prob = vpack_net_power[net_num].probability;
+		AtomNetId net_id = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		if (net_id) {
+			prob = g_atom_net_power[net_id].probability;
 		}
 	}
 
@@ -209,203 +208,59 @@ float calc_buffer_stage_effort(int N, float final_stage_size) {
 		return 1.0;
 }
 
-#if 0
-void integer_to_SRAMvalues(int SRAM_num, int input_integer, char SRAM_values[]) {
-	char binary_str[20];
-	int binary_str_counter;
-	int local_integer;
-	int i;
-
-	binary_str_counter = 0;
-
-	local_integer = input_integer;
-
-	while (local_integer > 0) {
-		if (local_integer % 2 == 0) {
-			SRAM_values[binary_str_counter++] = '0';
-		} else {
-			SRAM_values[binary_str_counter++] = '1';
-		}
-		local_integer = local_integer / 2;
-	}
-
-	while (binary_str_counter < SRAM_num) {
-		SRAM_values[binary_str_counter++] = '0';
-	}
-
-	SRAM_values[binary_str_counter] = '\0';
-
-	for (i = 0; i < binary_str_counter; i++) {
-		binary_str[i] = SRAM_values[binary_str_counter - 1 - i];
-	}
-
-	binary_str[binary_str_counter] = '\0';
-
-}
-#endif
-
-/**
- * This function converts an integer to a binary string
- * - binary_str: (Return value) The created binary string
- * - value: The integer value to convert
- * - str_length: The length of the binary string
- */
-static void int_2_binary_str(char * binary_str, int value, int str_length) {
-	int i;
-	int odd;
-
-	binary_str[str_length] = '\0';
-
-	for (i = str_length - 1; i >= 0; i--, value >>= 1) {
-		odd = value % 2;
-		if (odd == 0) {
-			binary_str[i] = '0';
-		} else {
-			binary_str[i] = '1';
-		}
-	}
-}
-
 /**
  * This functions returns the LUT SRAM values from the given logic terms
  *  - LUT_size: The number of LUT inputs
- *  - truth_table: The logic terms saved from the BLIF file, in a linked list format
+ *  - truth_table: The logic terms saved from the BLIF file
  */
 char * alloc_SRAM_values_from_truth_table(int LUT_size,
-		vtr::t_linked_vptr * truth_table) {
-	char * SRAM_values;
-	int i;
-	int num_SRAM_bits;
-	char * binary_str;
-	char ** terms;
-	char * buffer;
-	char * str_loc;
-	bool on_set;
-	vtr::t_linked_vptr * list_ptr;
-	int num_terms;
-	int term_idx;
-	int bit_idx;
-	int dont_care_start_pos;
+		const AtomNetlist::TruthTable& truth_table) {
 
-	num_SRAM_bits = 1 << LUT_size;
-	SRAM_values = (char*) vtr::calloc(num_SRAM_bits + 1, sizeof(char));
+	int num_SRAM_bits = 1 << LUT_size;
+
+    //SRAM value stored as a string of '0' and '1' characters
+    // Initialize to all zeros
+	char* SRAM_values = (char*) vtr::calloc(num_SRAM_bits + 1, sizeof(char));
 	SRAM_values[num_SRAM_bits] = '\0';
 
-	if (!truth_table) {
-		for (i = 0; i < num_SRAM_bits; i++) {
+	if (truth_table.empty()) {
+		for (int i = 0; i < num_SRAM_bits; i++) {
 			SRAM_values[i] = '1';
 		}
 		return SRAM_values;
 	}
-
-	binary_str = (char*) vtr::calloc(LUT_size + 1, sizeof(char));
-	buffer = (char*) vtr::calloc(LUT_size + 10, sizeof(char));
-
-	strcpy(buffer, (char*) truth_table->data_vptr);
 
 	/* Check if this is an unconnected node - hopefully these will be
 	 * ignored by VPR in the future
 	 */
-	if (strcmp(buffer, " 0") == 0) {
-		free(binary_str);
-		free(buffer);
-		return SRAM_values;
-	} else if (strcmp(buffer, " 1") == 0) {
-		for (i = 0; i < num_SRAM_bits; i++) {
-			SRAM_values[i] = '1';
-		}
-		free(binary_str);
-		free(buffer);
-		return SRAM_values;
-	}
+    if(truth_table.size() == 1) {
+        //Single row check to see if a constant node
+        if(truth_table[0].size() == 1) {
+            if(truth_table[0][0] == vtr::LogicValue::TRUE) {
+                //Mark all the SRAM values as ON
+                for (int i = 0; i < num_SRAM_bits; i++) {
+                    SRAM_values[i] = '1';
+                }
+                return SRAM_values;
+            } else {
+                VTR_ASSERT(truth_table[0][0] == vtr::LogicValue::FALSE);
+                return SRAM_values;
+            }
+        }
+    }
+    auto expanded_truth_table = expand_truth_table(truth_table, LUT_size);
+    std::vector<vtr::LogicValue> lut_mask = truth_table_to_lut_mask(expanded_truth_table, LUT_size);
 
-	/* If the LUT is larger than the terms, the lower significant bits will be don't cares */
-	str_loc = strtok(buffer, " \t");
-	dont_care_start_pos = strlen(str_loc);
+    VTR_ASSERT(lut_mask.size() == (size_t) num_SRAM_bits);
 
-	/* Find out if the truth table provides the ON-set or OFF-set */
-	str_loc = strtok(NULL, " \t");
-	on_set = true;
-	if (str_loc[0] == '1') {
-	} else if (str_loc[0] == '0') {
-		on_set = false;
-	} else {
-		VTR_ASSERT(0);
-	}
-
-	/* Count truth table terms */
-	num_terms = 0;
-	for (list_ptr = truth_table; list_ptr != NULL; list_ptr = list_ptr->next) {
-		num_terms++;
-	}
-	terms = (char**) vtr::calloc(num_terms, sizeof(char *));
-
-	/* Extract truth table terms */
-	for (list_ptr = truth_table, term_idx = 0; list_ptr != NULL; list_ptr =
-			list_ptr->next, term_idx++) {
-		terms[term_idx] = (char*) vtr::calloc(LUT_size + 1, sizeof(char));
-
-		strcpy(buffer, (char*) list_ptr->data_vptr);
-		str_loc = strtok(buffer, " \t");
-		strcpy(terms[term_idx], str_loc);
-
-		/* Fill don't cares for lower bits (when LUT is larger than term size) */
-		for (bit_idx = dont_care_start_pos; bit_idx < LUT_size; bit_idx++) {
-			terms[term_idx][bit_idx] = '-';
-		}
-
-		/* Verify on/off consistency */
-		str_loc = strtok(NULL, " \t");
-		if (on_set) {
-			VTR_ASSERT(str_loc[0] == '1');
-		} else {
-			VTR_ASSERT(str_loc[0] == '0');
-		}
-	}
-
-	/* Loop through all SRAM bits */
-	for (i = 0; i < num_SRAM_bits; i++) {
-		/* Set default value */
-		if (on_set) {
-			SRAM_values[i] = '0';
-		} else {
-			SRAM_values[i] = '1';
-		}
-
-		/* Get binary number representing this SRAM index */
-		int_2_binary_str(binary_str, i, LUT_size);
-
-		/* Loop through truth table terms */
-		for (term_idx = 0; term_idx < num_terms; term_idx++) {
-			bool match = true;
-
-			for (bit_idx = 0; bit_idx < LUT_size; bit_idx++) {
-				if ((terms[term_idx][bit_idx] != '-')
-						&& (terms[term_idx][bit_idx] != binary_str[bit_idx])) {
-					match = false;
-					break;
-				}
-			}
-
-			if (match) {
-				if (on_set) {
-					SRAM_values[i] = '1';
-				} else {
-					SRAM_values[i] = '0';
-				}
-
-				/* No need to check the other terms, already matched */
-				break;
-			}
-		}
-
-	}
-	free(binary_str);
-	free(buffer);
-	for (term_idx = 0; term_idx < num_terms; term_idx++) {
-		free(terms[term_idx]);
-	}
-	free(terms);
+    //Convert to string
+    for(size_t i = 0; i < lut_mask.size(); ++i) {
+        switch(lut_mask[i]) {
+            case vtr::LogicValue::TRUE: SRAM_values[i] = '1'; break;
+            case vtr::LogicValue::FALSE: SRAM_values[i] = '0'; break;
+            default: VTR_ASSERT(false);
+        }
+    }
 
 	return SRAM_values;
 }

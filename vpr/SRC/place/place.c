@@ -987,7 +987,7 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	b_to = grid[x_to][y_to].blocks[z_to];
 
 	// Check whether the to_location is empty
-	if (b_to == EMPTY) {
+	if (b_to == EMPTY_BLOCK) {
 
 		// Swap the block, dont swap the nets yet
 		block[b_from].x = x_to;
@@ -1007,7 +1007,7 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 		blocks_affected.moved_blocks[imoved_blk].swapped_from_is_empty = true;
 		blocks_affected.num_moved_blocks ++;
 				
-	} else if (b_to != INVALID ) {
+	} else if (b_to != INVALID_BLOCK ) {
 
 		// Does not allow a swap with a macro yet
 		get_imacro_from_iblk(&imacro, b_to, pl_macros, num_pl_macros);
@@ -1293,7 +1293,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				}
 				if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty) {
 					grid[x_from][y_from].usage--;
-					grid[x_from][y_from].blocks[z_from] = EMPTY;
+					grid[x_from][y_from].blocks[z_from] = EMPTY_BLOCK;
 				}
 			
 			} // Finish updating clb for all blocks
@@ -1441,7 +1441,7 @@ static bool find_to(t_type_ptr type, float rlim,
 				*pz_to = vtr::irand(grid[*px_to][*py_to].type->capacity - 1);
 			}
 			int b_to = grid[*px_to][*py_to].blocks[*pz_to];
-			if ((b_to != EMPTY) && (block[b_to].is_fixed == true)) {
+			if ((b_to != EMPTY_BLOCK) && (block[b_to].is_fixed == true)) {
 				is_legal = false;
 			}
 		}
@@ -2408,8 +2408,8 @@ static void alloc_legal_placements() {
 		for (j = 0; j <= ny + 1; j++) {
 			grid[i][j].usage = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].blocks[k] != INVALID) {
-					grid[i][j].blocks[k] = EMPTY;
+				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
+					grid[i][j].blocks[k] = EMPTY_BLOCK;
 					if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 						num_legal_pos[grid[i][j].type->index]++;
 					}
@@ -2432,7 +2432,7 @@ static void load_legal_placements() {
 	for (i = 0; i <= nx + 1; i++) {
 		for (j = 0; j <= ny + 1; j++) {
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].blocks[k] == INVALID) {
+				if (grid[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
 				}
 				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
@@ -2479,7 +2479,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
 		if (member_x <= nx+1 && member_y <= ny+1
 				&& grid[member_x][member_y].type->index == itype
-				&& grid[member_x][member_y].blocks[member_z] == EMPTY) {
+				&& grid[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
 			// Can still accomodate blocks here, check the next position
 			continue;
 		} else {
@@ -2505,7 +2505,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 	z = legal_pos[itype][ipos].z;
 			
 	// If that location is occupied, do nothing.
-	if (grid[x][y].blocks[z] != EMPTY) {
+	if (grid[x][y].blocks[z] != EMPTY_BLOCK) {
 		return (macro_placed);
 	} 
 	
@@ -2618,7 +2618,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 
-		if (block[iblk].x != EMPTY) {
+		if (block[iblk].x != EMPTY_BLOCK) {
 			// block placed.
 			continue;
 		}
@@ -2642,8 +2642,8 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
 
-			// Make sure that the position is EMPTY before placing the block down
-			VTR_ASSERT(grid[x][y].blocks[z] == EMPTY);
+			// Make sure that the position is EMPTY_BLOCK before placing the block down
+			VTR_ASSERT(grid[x][y].blocks[z] == EMPTY_BLOCK);
 
 			grid[x][y].blocks[z] = iblk;
 			grid[x][y].usage++;
@@ -2708,8 +2708,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			grid[i][j].usage = 0;
 			itype = grid[i][j].type->index;
 			for (k = 0; k < type_descriptors[itype].capacity; k++) {
-				if (grid[i][j].blocks[k] != INVALID) {
-					grid[i][j].blocks[k] = EMPTY;
+				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
+					grid[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
 		}
@@ -2733,7 +2733,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			z = legal_pos[itype][ipos].z;
 			
 			// Check if that location is occupied.  If it is, remove from legal_pos
-			if (grid[x][y].blocks[z] != EMPTY && grid[x][y].blocks[z] != INVALID) {
+			if (grid[x][y].blocks[z] != EMPTY_BLOCK && grid[x][y].blocks[z] != INVALID_BLOCK) {
 				legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
 				free_locations[itype]--;
 
@@ -2920,7 +2920,7 @@ static void check_place(float bb_cost, float timing_cost,
 			usage_check = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				bnum = grid[i][j].blocks[k];
-				if (EMPTY == bnum || INVALID == bnum)
+				if (EMPTY_BLOCK == bnum || INVALID_BLOCK == bnum)
 					continue;
 
 				if (block[bnum].type != grid[i][j].type) {

@@ -13,6 +13,7 @@
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
+#include "vtr_logic.h"
 #include "vtr_version.h"
 
 #include "vpr_error.h"
@@ -22,6 +23,8 @@
 
 #include "globals.h"
 #include "path_delay.h"
+#include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 
 //Overview
 //========
@@ -82,19 +85,12 @@
 
 
 //Enable for extra output while calculating LUT masks
-/*#define DEBUG_LUT_MASK*/
+//#define DEBUG_LUT_MASK
 
 //
 //File local type delcarations
 //
-enum class LogicVal {
-    FALSE=0,
-    TRUE=1,
-    DONTCARE=2,
-    UNKOWN=3,
-    HIGHZ
-};
-std::ostream& operator<<(std::ostream& os, LogicVal val);
+std::ostream& operator<<(std::ostream& os, vtr::LogicValue val);
 
 
 enum class PortType {
@@ -126,19 +122,18 @@ std::string join_identifier(std::string lhs, std::string rhs);
 //
 
 //A vector-like object containing logic values.
-//It includes some useful additional operations such as input rotation (rotate()) and
-//expansion of Don't Cares into minterm numbers (minterms()) used during while calculating
-//LUT masks.
 class LogicVec {
     public:
         LogicVec() = default;
         LogicVec(size_t size_val, //Number of logic values
-                 LogicVal init_value) //Default value
+                 vtr::LogicValue init_value) //Default value
             : values_(size_val, init_value)
             {}
+        LogicVec(std::vector<vtr::LogicValue> values)
+            : values_(values) {}
 
         //Array indexing operator
-        LogicVal& operator[](size_t i) { return values_[i]; }
+        vtr::LogicValue& operator[](size_t i) { return values_[i]; }
 
         //Size accessor
         size_t size() { return values_.size(); }
@@ -155,74 +150,14 @@ class LogicVec {
             return os;
         }
 
-        //Rotates the logic values using permute as a mapping
-        //
-        //e.g. the new value at index i is the value currently
-        //     at index permute[i]
-        void rotate(std::vector<int> permute) {
-            VTR_ASSERT(permute.size() == values_.size());
-
-            auto orig_values = values_;
-
-            for(size_t i = 0; i < values_.size(); i++) {
-                values_[i] = orig_values[permute[i]];
-            }
-        }
-
-        //Returns a vector of minterms (denoted by their number), handling expansion of any
-        //don't cares
-        std::vector<size_t> minterms() {
-            std::vector<size_t> minterms_vec;
-
-            minterms_recur(minterms_vec, *this);
-
-            return minterms_vec;
-        }
-
         //Standard iterators
-        std::vector<LogicVal>::reverse_iterator begin() { return values_.rbegin(); }
-        std::vector<LogicVal>::reverse_iterator end() { return values_.rend(); }
-        std::vector<LogicVal>::const_reverse_iterator begin() const { return values_.crbegin(); }
-        std::vector<LogicVal>::const_reverse_iterator end() const { return values_.crend(); }
+        std::vector<vtr::LogicValue>::reverse_iterator begin() { return values_.rbegin(); }
+        std::vector<vtr::LogicValue>::reverse_iterator end() { return values_.rend(); }
+        std::vector<vtr::LogicValue>::const_reverse_iterator begin() const { return values_.crbegin(); }
+        std::vector<vtr::LogicValue>::const_reverse_iterator end() const { return values_.crend(); }
 
     private:
-
-        //Recursive helper function to handle minterm expansion in the case of don't
-        //cares
-        void minterms_recur(std::vector<size_t>& minterms_vec, LogicVec logic_vec) {
-
-            //Find the first don't care
-            auto iter = std::find(logic_vec.begin(), logic_vec.end(), LogicVal::DONTCARE);
-
-            if(iter == logic_vec.end()) {
-                //Base case (only TRUE/FALSE) caluclate minterm number
-                size_t minterm_number = 0;
-                for(size_t i = 0; i < values_.size(); i++) {
-                    if(logic_vec.values_[i] == LogicVal::TRUE) {
-                        size_t index_power = (1 << i);
-                        minterm_number += index_power;
-                    } else if(logic_vec.values_[i] == LogicVal::FALSE) {
-                        //pass
-                    } else {
-                        VTR_ASSERT(false); //Unsupported values
-                    }
-                }
-                minterms_vec.push_back(minterm_number);
-            } else {
-                //Recurse
-
-                //Expand with Don't Care set true
-                *iter = LogicVal::TRUE;
-                minterms_recur(minterms_vec, logic_vec);
-
-                //Expand with Don't Care set false
-                *iter = LogicVal::FALSE;
-                minterms_recur(minterms_vec, logic_vec);
-            }
-        }
-
-    private:
-        std::vector<LogicVal> values_; //The logic values
+        std::vector<vtr::LogicValue> values_; //The logic values
 };
 
 //A combinational timing arc
@@ -372,7 +307,7 @@ class LutInst : public Instance {
             // but would add complexity
             size_t minterms_set = 0;
             for(size_t minterm = 0; minterm < lut_mask_.size(); minterm++) {
-                if(lut_mask_[minterm] == LogicVal::TRUE) {
+                if(lut_mask_[minterm] == vtr::LogicValue::TRUE) {
                     //Convert the minterm to a string of bits
                     std::string bit_str = std::bitset<64>(minterm).to_string();
 
@@ -473,7 +408,7 @@ class LatchInst : public Instance {
         LatchInst(std::string inst_name, //Name of this instance
                   std::map<std::string,std::string> port_conns, //Instance's port-to-net connections
                   Type type, //Type of this latch
-                  LogicVal init_value, //Initial value of the latch
+                  vtr::LogicValue init_value, //Initial value of the latch
                   double tcq=std::numeric_limits<double>::quiet_NaN(), //Clock-to-Q delay
                   double tsu=std::numeric_limits<double>::quiet_NaN(), //Setup time
                   double thld=std::numeric_limits<double>::quiet_NaN()) //Hold time
@@ -516,10 +451,10 @@ class LatchInst : public Instance {
 
             os << indent(depth) << "DFF" << " #(\n";
             os << indent(depth+1) << ".INITIAL_VALUE(";
-            if     (initial_value_ == LogicVal::TRUE)     os << "1'b1";
-            else if(initial_value_ == LogicVal::FALSE)    os << "1'b0";
-            else if(initial_value_ == LogicVal::DONTCARE) os << "1'bx";
-            else if(initial_value_ == LogicVal::UNKOWN)   os << "1'bx";
+            if     (initial_value_ == vtr::LogicValue::TRUE)     os << "1'b1";
+            else if(initial_value_ == vtr::LogicValue::FALSE)    os << "1'b0";
+            else if(initial_value_ == vtr::LogicValue::DONT_CARE) os << "1'bx";
+            else if(initial_value_ == vtr::LogicValue::UNKOWN)   os << "1'bx";
             else VTR_ASSERT(false);
             os << ")\n";
             os << indent(depth) << ") " << escape_verilog_identifier(instance_name_) << " (\n";
@@ -581,7 +516,7 @@ class LatchInst : public Instance {
         std::string instance_name_;
         std::map<std::string,std::string> port_connections_;
         Type type_;
-        LogicVal initial_value_;
+        vtr::LogicValue initial_value_;
         double tcq_; //Clock delay + tcq
         double tsu_; //Setup time
         double thld_; //Hold time
@@ -836,7 +771,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         void visit_atom_impl(const t_pb* atom) override { 
-            const t_model* model = logical_block[atom->logical_block].model;
+            const t_model* model = g_atom_nl.block_model(g_atom_map.pb_atom(atom));
 
             if(model->name == std::string("input")) {
                 inputs_.emplace_back(make_io(atom, PortType::IN));
@@ -915,8 +850,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             verilog_os_ << "\n";
             verilog_os_ << indent(depth+1) << "//Interconnect\n";
             for(const auto& kv : logical_net_sinks_) {
-                int atom_net_idx = kv.first;
-                auto driver_iter = logical_net_drivers_.find(atom_net_idx);
+                auto atom_net_id = kv.first;
+                auto driver_iter = logical_net_drivers_.find(atom_net_id);
                 VTR_ASSERT(driver_iter != logical_net_drivers_.end());
                 const auto& driver_wire = driver_iter->second.first;
 
@@ -970,8 +905,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             blif_os_ << "\n";
             blif_os_ << indent(depth) << "#Interconnect\n";
             for(const auto& kv : logical_net_sinks_) {
-                int atom_net_idx = kv.first;
-                auto driver_iter = logical_net_drivers_.find(atom_net_idx);
+                auto atom_net_id = kv.first;
+                auto driver_iter = logical_net_drivers_.find(atom_net_id);
                 VTR_ASSERT(driver_iter != logical_net_drivers_.end());
                 const auto& driver_wire = driver_iter->second.first;
 
@@ -1007,8 +942,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Interconnect
             for(const auto& kv : logical_net_sinks_) {
-                int atom_net_idx = kv.first;
-                auto driver_iter = logical_net_drivers_.find(atom_net_idx);
+                auto atom_net_id = kv.first;
+                auto driver_iter = logical_net_drivers_.find(atom_net_id);
                 VTR_ASSERT(driver_iter != logical_net_drivers_.end());
                 auto driver_wire = driver_iter->second.first;
                 auto driver_tnode = driver_iter->second.second;
@@ -1046,7 +981,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns the name of a wire connecting a primitive and global net.  
         //The wire is recorded and instantiated by the top level output routines.
-        std::string make_inst_wire(int atom_net_idx, //The id of the net in the atom netlist
+        std::string make_inst_wire(AtomNetId atom_net_id, //The id of the net in the atom netlist
                                    int tnode_id,  //The tnode associated with the primitive pin
                                    std::string inst_name, //The name of the instance associated with the pin
                                    PortType port_type, //The port direction
@@ -1069,13 +1004,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto value = std::make_pair(wire_name, tnode_id);
             if(port_type == PortType::IN || port_type == PortType::CLOCK) {
                 //Add the sink
-                logical_net_sinks_[atom_net_idx].push_back(value);
+                logical_net_sinks_[atom_net_id].push_back(value);
 
             } else {
                 //Add the driver
                 VTR_ASSERT(port_type == PortType::OUT);
 
-                auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_idx, value));
+                auto ret = logical_net_drivers_.insert(std::make_pair(atom_net_id, value));
                 VTR_ASSERT(ret.second); //Was inserted, drivers are unique
             }
 
@@ -1111,7 +1046,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             const t_block* top_block = find_top_block(atom);
 
-            int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
+            auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
             //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
             PortType wire_dir = (dir == PortType::IN) ? PortType::OUT : PortType::IN;
@@ -1119,7 +1054,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Look up the tnode associated with this pin (used for delay calculation)
             int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-            auto wire_name = make_inst_wire(atom_net_idx, tnode_id, io_name, wire_dir, 0, 0);
+            auto wire_name = make_inst_wire(atom_net_id, tnode_id, io_name, wire_dir, 0, 0);
 
             //Connect the wires to to I/Os with assign statements
             if(wire_dir == PortType::IN) {
@@ -1154,10 +1089,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::vector<Arc> timing_arcs;
             for(int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
                 int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
-                int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
+                auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
                 std::string net;
-                if(atom_net_idx == OPEN) {
+                if(!atom_net_id) {
                     //Disconnected
                     net = "";
                 } else {
@@ -1166,7 +1101,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Look up the tnode associated with this pin (used for delay calculation)
                     int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::IN, 0, pin_idx);
+                    net = make_inst_wire(atom_net_id, tnode_id, inst_name, PortType::IN, 0, pin_idx);
 
                     //Record the timing arc
                     VTR_ASSERT(tnode[tnode_id].num_edges == 1);
@@ -1183,10 +1118,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 VTR_ASSERT(pb_graph_node->num_output_ports == 1); //LUT has one output port
                 VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
                 int cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-                int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
+                auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
                 std::string net;
-                if(atom_net_idx == OPEN) {
+                if(!atom_net_id) {
                     //Disconnected
                     net = "";
                 } else {
@@ -1195,7 +1130,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Look up the tnode associated with this pin (used for delay calculation)
                     int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-                    net = make_inst_wire(atom_net_idx, tnode_id, inst_name, PortType::OUT, 0, 0);
+                    net = make_inst_wire(atom_net_id, tnode_id, inst_name, PortType::OUT, 0, 0);
                 }
                 port_conns["out"].push_back(net);
             }
@@ -1225,30 +1160,30 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Input (D)
             int input_cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-            int input_atom_net_idx = top_block->pb_route[input_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
-            std::string input_net = make_inst_wire(input_atom_net_idx, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::IN, 0, 0);
+            auto input_atom_net_id = top_block->pb_route[input_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::IN, 0, 0);
             port_conns["D"] = input_net;
 
             double tsu = pb_graph_node->input_pins[0][0].tsu_tco;
 
             //Output (Q)
             int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-            int output_atom_net_idx = top_block->pb_route[output_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
-            std::string output_net = make_inst_wire(output_atom_net_idx, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUT, 0, 0);
+            auto output_atom_net_id = top_block->pb_route[output_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUT, 0, 0);
             port_conns["Q"] = output_net;
 
             double tcq = pb_graph_node->output_pins[0][0].tsu_tco;
 
             //Clock (control)
             int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-            int control_atom_net_idx = top_block->pb_route[control_cluster_pin_idx].atom_net_idx; //Connected net in atom netlist
-            std::string control_net = make_inst_wire(control_atom_net_idx, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
+            auto control_atom_net_id = top_block->pb_route[control_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            std::string control_net = make_inst_wire(control_atom_net_id, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
             port_conns["clock"] = control_net;
 
             //VPR currently doesn't store enough information to determine these attributes,
             //for now assume reasonable defaults.
             LatchInst::Type type = LatchInst::Type::RISING_EDGE;
-            LogicVal init_value = LogicVal::FALSE;
+            vtr::LogicValue init_value = vtr::LogicValue::FALSE;
 
             return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq, tsu);
         }
@@ -1284,15 +1219,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
-                    if(atom_net_idx == OPEN) {
+                    if(!atom_net_id) {
                         //Disconnected
                         net = "";
                     } else {
                         //Connected
-                        net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::IN, iport, ipin);
                     }
 
 
@@ -1341,14 +1276,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
-                    if(atom_net_idx == OPEN) {
+                    if(!atom_net_id) {
                         //Disconnected
                         net = "";
                     } else {
-                        net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
+                        net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUT, iport, ipin);
                     }
 
                     std::string port_name;
@@ -1377,11 +1312,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     std::string port_class = port->port_class;
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
-                    VTR_ASSERT(atom_net_idx != OPEN); //Must have a clock
+                    VTR_ASSERT(atom_net_id); //Must have a clock
 
-                    std::string net = make_inst_wire(atom_net_idx, find_tnode(atom, cluster_pin_idx), inst_name, PortType::CLOCK, iport, ipin);
+                    std::string net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::CLOCK, iport, ipin);
 
                     if(port_class == "clock") {
                         VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
@@ -1424,16 +1359,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     params["WIDTH"] = std::to_string(port->num_pins); //Assume same width on all ports
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
-                    if(atom_net_idx == OPEN) {
+                    if(!atom_net_id) {
                         //Disconnected
                         net = "";
                     } else {
                         //Connected
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::IN, iport, ipin);
 
                         //Delays
                         //
@@ -1459,17 +1394,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     const t_port* port = pin->port; 
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
-                    if(atom_net_idx == OPEN) {
+                    if(!atom_net_id) {
                         //Disconnected
                         net = "";
                     } else {
                         //Connected
 
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUT, iport, ipin);
 
                         //Record the timing arcs
                         for(auto& data_tuple : tnode_delay_matrix[inode]) {
@@ -1521,16 +1456,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     }
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
-                    if(atom_net_idx == OPEN) {
+                    if(!atom_net_id) {
                         //Disconnected
 
                     } else {
                         //Connected
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::IN, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::IN, iport, ipin);
 
                         //Delays
                         //
@@ -1556,16 +1491,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     const t_port* port = pin->port; 
 
                     int cluster_pin_idx = pin->pin_count_in_cluster;
-                    int atom_net_idx = top_block->pb_route[cluster_pin_idx].atom_net_idx;
+                    auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id;
 
                     std::string net;
-                    if(atom_net_idx == OPEN) {
+                    if(!atom_net_id) {
                         //Disconnected
                         net = "";
                     } else {
                         //Connected
                         auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_idx, inode, inst_name, PortType::OUT, iport, ipin);
+                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUT, iport, ipin);
 
                         //Record the timing arcs
                         for(auto& data_tuple : tnode_delay_matrix[inode]) {
@@ -1613,7 +1548,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns the tnode ID of the given atom's connected cluster pin
         int find_tnode(const t_pb* atom, int cluster_pin_idx) {
 
-            int clb_index = logical_block[atom->logical_block].clb_index;
+            AtomBlockId blk_id = g_atom_map.pb_atom(atom);
+            int clb_index = g_atom_map.atom_clb(blk_id);
             int tnode_id = pin_id_to_tnode_lookup_[clb_index][cluster_pin_idx];
 
             VTR_ASSERT(tnode_id != OPEN);
@@ -1624,7 +1560,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns a LogicVec representing the LUT mask of the given LUT atom
         LogicVec load_lut_mask(size_t num_inputs, //LUT size
                               const t_pb* atom) { //LUT primitive
-            const t_model* model = logical_block[atom->logical_block].model;
+            const t_model* model = g_atom_nl.block_model(g_atom_map.pb_atom(atom));
             VTR_ASSERT(model->name == std::string("names"));
 
 #ifdef DEBUG_LUT_MASK
@@ -1634,57 +1570,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Figure out how the inputs were permuted (compared to the input netlist)
             std::vector<int> permute = determine_lut_permutation(num_inputs, atom);
 
-            //VPR stores the truth table as in BLIF
-            //Each row of the table (i.e. a c-string) is stored in a linked list 
-            //
-            //The c-string is the literal row from BLIF, e.g. "0 1" for an inverter, "11 1" for an AND2
-            vtr::t_linked_vptr* names_row_ptr = logical_block[atom->logical_block].truth_table;
-            
-            //Determine the truth (output value) for this .names
-            bool encoding_on_set = names_encodes_on_set(names_row_ptr);
 
-            //Initialize LUT mask
-            int lut_bits = std::pow(2, num_inputs);
-            LogicVec lut_mask;
-            if(encoding_on_set) {
-                //Encoding the ON set, so the 'background' value for unspecified
-                //minterms is FALSE
-                lut_mask = LogicVec(lut_bits, LogicVal::FALSE); 
-            } else {
-                //Encoding the OFF set, so the 'background' value for unspecified
-                //minterms is TRUE
-                lut_mask = LogicVec(lut_bits, LogicVal::TRUE); 
-            }
+            //Retrieve the truth table
+            const auto& truth_table = g_atom_nl.block_truth_table(g_atom_map.pb_atom(atom));
 
-            //Process each row of the .names truth table
-            while(names_row_ptr != nullptr) {
+            //Apply the permutation
+            auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permute);
 
-                //Get the input values defining this row of the truth table
-                LogicVec input_values = names_row_to_logic_vec(static_cast<const char*>(names_row_ptr->data_vptr), num_inputs, encoding_on_set);
-
-                //Apply any LUT input rotations
-                auto permuted_input_values = input_values;
-                permuted_input_values.rotate(permute);
-
-#ifdef DEBUG_LUT_MASK
-                std::cout << "\t" << names_row << " = "<< input_values << ":" << encoding_on_set;
-
-                std::cout << " -> " << permuted_input_values << ":" << encoding_on_set<< std::endl;
-#endif
-
-                //Get the minterm numbers representing the logic function, while
-                //expand any don't cares in the input values
-                for(size_t minterm : permuted_input_values.minterms()) {
-#ifdef DEBUG_LUT_MASK
-                    std::cout << "\tSetting minterm : " << minterm << " to " << encoding_on_set << std::endl;
-#endif
-                    //Set the appropraite lut mask entry
-                    lut_mask[minterm] = (encoding_on_set) ? LogicVal::TRUE : LogicVal::FALSE;
-                }
-                
-                //Advance to the next row
-                names_row_ptr = names_row_ptr->next;
-            }
+            //Convert to lut mask
+            LogicVec lut_mask = truth_table_to_lut_mask(permuted_truth_table, num_inputs);
 
 #ifdef DEBUG_LUT_MASK
             std::cout << "\tLUT_MASK: " << lut_mask << std::endl;
@@ -1716,27 +1610,34 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //
             //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
             //and find the corresponding input in the implementation atom (i.e. in the current netlist)
-            for(size_t i = 0; i < num_inputs; i++) {
-                int logical_net = logical_block[atom->logical_block].input_nets[0][i]; //The original net in the input netlist
+            auto ports = g_atom_nl.block_input_ports(g_atom_map.pb_atom(atom));
+            if(ports.size() == 1) {
+                AtomPortId port_id = *ports.begin();
+                for(size_t i = 0; i < num_inputs; i++) {
+                    AtomNetId logical_net_id = g_atom_nl.port_net(port_id, i); //The original net in the atom netlist
 
-                if(logical_net != OPEN) {
-                    int atom_input_net = OPEN;
-                    size_t j;
-                    for(j = 0; j < num_inputs; j++) {
-                        atom_input_net = find_atom_input_logical_net(atom, j); //The net currently connected to input j
+                    if(logical_net_id) {
+                        AtomNetId impl_input_net_id;
+                        size_t j;
+                        for(j = 0; j < num_inputs; j++) {
+                            impl_input_net_id = find_atom_input_logical_net(atom, j); //The net currently connected to input j
 
-                        if(logical_net == atom_input_net) {
+                            if(logical_net_id == impl_input_net_id) {
 #ifdef DEBUG_LUT_MASK
-                            std::cout << "\tLogic net " << logical_net << " (" << g_atoms_nlist.net[logical_net].name << ") "
-                            std::cout << "atom lut input " << i << " -> impl lut input " << j << std::endl;
+                                std::cout << "\tLogic net (" << g_atom_nl.net_name(logical_net_id) << ") ";
+                                std::cout << "atom lut input " << i << " -> impl lut input " << j << std::endl;
 #endif
-                            break;
+                                break;
+                            }
                         }
-                    }
-                    VTR_ASSERT(atom_input_net == logical_net);
+                        VTR_ASSERT(impl_input_net_id == logical_net_id);
 
-                    permute[j] = i;
+                        permute[i] = j;
+                    }
                 }
+            } else {
+                //May have no inputs on a constant generator
+                VTR_ASSERT(ports.size() == 0);
             }
 
             //Fill in any missing values in the permutation (i.e. zeros)
@@ -1830,17 +1731,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
 
             //Extract the input values for this row
-            LogicVec input_values(num_inputs, LogicVal::FALSE);
+            LogicVec input_values(num_inputs, vtr::LogicValue::FALSE);
             size_t i = 0;
             //Walk through each input in the input cube for this row
             while(names_row[i] != ' ') {
-                LogicVal input_val = LogicVal::UNKOWN;
+                vtr::LogicValue input_val = vtr::LogicValue::UNKOWN;
                 if(names_row[i] == '1') {
-                    input_val = LogicVal::TRUE; 
+                    input_val = vtr::LogicValue::TRUE; 
                 } else if (names_row[i] == '0') {
-                    input_val = LogicVal::FALSE; 
+                    input_val = vtr::LogicValue::FALSE; 
                 } else if (names_row[i] == '-') {
-                    input_val = LogicVal::DONTCARE; 
+                    input_val = vtr::LogicValue::DONT_CARE; 
                 } else {
                     vpr_throw(VPR_ERROR_IMPL_NETLIST_WRITER, __FILE__, __LINE__,
                                 "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", names_row[i]);
@@ -1863,13 +1764,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         //Returns the logical net ID 
-        int find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
+        AtomNetId find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
             const t_pb_graph_node* pb_node = atom->pb_graph_node;
 
             int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
             const t_block* top_clb = find_top_block(atom);
-            int atom_net_idx = top_clb->pb_route[cluster_pin_idx].atom_net_idx;
-            return atom_net_idx;
+            AtomNetId atom_net_id = top_clb->pb_route[cluster_pin_idx].atom_net_id;
+            return atom_net_id;
         }
 
 
@@ -1892,11 +1793,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Drivers of logical nets. 
         // Key: logic net id, Value: pair of wire_name and tnode_id
-        std::map<int, std::pair<std::string,int>> logical_net_drivers_; 
+        std::map<AtomNetId, std::pair<std::string,int>> logical_net_drivers_; 
 
         //Sinks of logical nets. 
         // Key: logical net id, Value: vector wire_name tnode_id pairs
-        std::map<int, std::vector<std::pair<std::string,int>>> logical_net_sinks_; 
+        std::map<AtomNetId, std::vector<std::pair<std::string,int>>> logical_net_sinks_; 
         std::map<std::string, float> logical_net_sink_delays_;
 
         //Look-up from pins to tnodes
@@ -1918,9 +1819,9 @@ void netlist_writer(const std::string basename) {
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
 
-    vtr::printf_info("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
-    vtr::printf_info("Writting Implementation Netlist: %s\n", blif_filename.c_str());
-    vtr::printf_info("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
+    vtr::printf("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
+    vtr::printf("Writting Implementation Netlist: %s\n", blif_filename.c_str());
+    vtr::printf("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
 
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);
@@ -1937,13 +1838,12 @@ void netlist_writer(const std::string basename) {
 // File-scope function implementations
 //
 
-//Output operator for LogicVal
-std::ostream& operator<<(std::ostream& os, LogicVal val) {
-    if(val == LogicVal::FALSE) os << "0";
-    else if (val == LogicVal::TRUE) os << "1";
-    else if (val == LogicVal::DONTCARE) os << "-";
-    else if (val == LogicVal::UNKOWN) os << "x";
-    else if (val == LogicVal::HIGHZ) os << "z";
+//Output operator for vtr::LogicValue
+std::ostream& operator<<(std::ostream& os, vtr::LogicValue val) {
+    if(val == vtr::LogicValue::FALSE) os << "0";
+    else if (val == vtr::LogicValue::TRUE) os << "1";
+    else if (val == vtr::LogicValue::DONT_CARE) os << "-";
+    else if (val == vtr::LogicValue::UNKOWN) os << "x";
     else VTR_ASSERT(false);
     return os;
 }
@@ -2088,7 +1988,7 @@ bool is_special_sdf_char(char c) {
     //    ` to ` (ASCII decimal 96)
     //    { to ~ (ASCII decimal 123-126)
     //
-    //Not that the spec defines _ (decimal code 95) and $ (decimal code 36) 
+    //Note that the spec defines _ (decimal code 95) and $ (decimal code 36) 
     //as non-special alphanumeric characters. 
     //
     //However it inconsistently also lists $ in the list of special characters.
@@ -2098,7 +1998,7 @@ bool is_special_sdf_char(char c) {
     //Note that the spec appears to have rendering errors in the PDF availble
     //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK' 
     //character (decimal code 171) in place of the APOSTROPHE character ' 
-    //with decimal code 39 in the special character list. We assume code 39
+    //with decimal code 39 in the special character list. We assume code 39.
     if((c >= 33 && c <= 35) ||
        (c == 36) || // $
        (c >= 37 && c <= 47) ||

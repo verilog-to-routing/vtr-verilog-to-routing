@@ -10,8 +10,9 @@
  *      VTR_ASSERT      - medium overhead assertions that may be enabled
  *      VTR_ASSERT_SAFE - high overhead assertions typically enabled only for debugging
  * Each of the above assertions also have a *_MSG variants (e.g. VTR_ASSERT_MSG(expr, msg) 
- * which takes an additional argument specifying additional message text to be shown when 
- * the assertion fails.
+ * which takes an additional argument specifying additional message text to be shown.
+ * By convention the message should state the condition *being checked* (and not the failure condition),
+ * since that the condition failed is obvious from the assertion failure itself.
  *
  * The macro VTR_ASSERT_LEVEL specifies the level of assertion checking desired:
  *

@@ -16,6 +16,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "vpr_error.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "place_and_route.h"
 #include "place.h"
 #include "read_place.h"
@@ -178,7 +179,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
         if(GetPostSynthesisOption())
         {
-            netlist_writer(blif_circuit_name);
+            netlist_writer(g_atom_nl.netlist_name());
         }
 
         free_timing_graph(slacks);
@@ -541,13 +542,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 
 	if (timing_inf.timing_analysis_enabled) {
-		if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_POST_FLOW_TIMING_GRAPH)) {
-			/*print_timing_graph_as_blif (getEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH), models);*/
-		}
-		
 		if(GetPostSynthesisOption())
 		  {
-            netlist_writer(blif_circuit_name);
+            netlist_writer(g_atom_nl.netlist_name().c_str());
 		  }
 
 		//free_timing_graph(slacks);

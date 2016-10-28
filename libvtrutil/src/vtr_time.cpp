@@ -14,6 +14,7 @@ float ScopedTimer::elapsed_sec() {
 
 ScopedPrintTimer::ScopedPrintTimer(std::string action)
     : action_(action) {
+    vtr::printf_info("%s\n", action_.c_str());
 }
 
 ScopedPrintTimer::~ScopedPrintTimer() {

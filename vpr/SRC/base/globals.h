@@ -2,18 +2,20 @@
  Global variables 
 
  Key global variables that are used everywhere in VPR: 
- clb_net, vpack_net, block, and logical_block
+ clb_net, block, and g_atom_nl
 
  These variables represent the user netlist in various stages of the CAD flow:
-  vpack_net and logical_block for the unclustered netlist pre packing
+  g_atom_nl for the unclustered user-supplied netlist
   clb_net and block for the clustered netlist post packing
  */
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
+#include <unordered_map>
 
 #include "vtr_matrix.h"
 #include "netlist.h"
+#include "atom_netlist_fwd.h"
 #include "rr_node.h"
 
 /********************************************************************
@@ -31,9 +33,20 @@ Checking OS System
 #endif*/
 
 /********************************************************************
- User Netlist Globals
+ Atom Netlist Globals
  ********************************************************************/
+/* Atom netlist */
+extern AtomNetlist g_atom_nl;
 
+/* Mappins to/from the Atom Netlist */
+extern AtomMap g_atom_map;
+
+/* Atom net power info */
+extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
+
+/********************************************************************
+ CLB Netlist Globals
+ ********************************************************************/
 /* external-to-complex block nets in the user netlist */
 extern int num_nets;
 extern struct s_net *clb_net;
@@ -65,40 +78,11 @@ extern t_type_ptr FILL_TYPE;
 extern int num_types;
 extern struct s_type_descriptor *type_descriptors;
 
-/* name of the blif circuit */
-extern char *blif_circuit_name;
 /* default output name */
 extern char *default_output_name;
 
 /* Default area of a 1x1 logic tile (excludes routing) on the FPGA */
 extern float grid_logic_tile_area;
-
-/*******************************************************************
- Packing related globals
- ********************************************************************/
-
-/* Netlist description data structures. */
-
-/* User netlist information */
-extern int num_logical_nets, num_logical_blocks;
-extern int num_p_inputs, num_p_outputs;
-extern struct s_net *vpack_net;
-extern t_net_power * vpack_net_power;
-extern struct s_logical_block *logical_block;
-extern struct s_subckt *subckt;
-
-/* New user netlist information */
-extern t_netlist g_atoms_nlist;
-
-
-
-/* primiary inputs removed from circuit */
-extern vtr::t_linked_vptr *circuit_p_io_removed;
-
-/* Relationship between external-to-complex block nets and internal-to-complex block nets */
-extern int *clb_to_vpack_net_mapping; /* [0..num_clb_nets - 1] */
-extern int *vpack_to_clb_net_mapping; /* [0..num_vpack_nets - 1] */
-
 
 /*******************************************************************
  Routing related globals

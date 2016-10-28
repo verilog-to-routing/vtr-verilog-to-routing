@@ -10,9 +10,7 @@ struct s_hash {
 /* name:  The string referred to by this hash entry.							*
  * index: The integer identifier for this entry.								*
  * count: Number of times an element with this name has been inserted into		*
- *        the table. EXCEPTION: For the structure for blif parsing/reading,		*
- * 	  blif_hash, value of count is the number of pins on this g_atoms_nlist.net *
- * 	  so far.																	*
+ *        the table.    														*
  * next:  A pointer to the next (string,index) entry that mapped to the			*
  *        same hash value, or NULL if there are no more entries.				*/
 

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <unordered_set>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -8,7 +9,9 @@ using namespace std;
 #include "vpr_error.h"
 
 #include "physical_types.h"
+#include "path_delay.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "place_macro.h"
@@ -111,7 +114,7 @@ void sync_grid_to_blocks(const int L_num_blocks,
 
 					/* Set them as unconnected */
 					for (k = 0; k < L_grid[i][j].type->capacity; ++k) {
-						L_grid[i][j].blocks[k] = EMPTY;
+						L_grid[i][j].blocks[k] = EMPTY_BLOCK;
 					}
 				}
 			}
@@ -141,8 +144,8 @@ void sync_grid_to_blocks(const int L_num_blocks,
 		}
 
 		/* Check already in use */
-		if ((EMPTY != L_grid[block[i].x][block[i].y].blocks[block[i].z])
-				&& (INVALID != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
+		if ((EMPTY_BLOCK != L_grid[block[i].x][block[i].y].blocks[block[i].z])
+				&& (INVALID_BLOCK != L_grid[block[i].x][block[i].y].blocks[block[i].z])) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"Location (%d, %d, %d) is used more than once.\n", 
 					block[i].x, block[i].y, block[i].z);
@@ -296,62 +299,89 @@ int get_max_depth_of_pb_type(t_pb_type *pb_type) {
 }
 
 /**
- * given a primitive type and a logical block, is the mapping legal
+ * given an atom block and physical primitive type, is the mapping legal
  */
-bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
-
-	t_model_ports *port;
-	int i, j;
-	bool second_pass;
+bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_type) {
 
 	if (cur_pb_type == NULL) {
 		return false;
 	}
 
-	/* check if ports are big enough */
-	port = logical_block[iblk].model->inputs;
-	second_pass = false;
-	while (port || !second_pass) {
-		/* TODO: This is slow if the number of ports are large, fix if becomes a problem */
-		if (!port) {
-			second_pass = true;
-			port = logical_block[iblk].model->outputs;
-		}
-		for (i = 0; i < cur_pb_type->num_ports; i++) {
-			if (cur_pb_type->ports[i].model_port == port) {
-				for (j = cur_pb_type->ports[i].num_pins; j < port->size; j++) {
-					if (port->dir == IN_PORT && !port->is_clock) {
-						if (logical_block[iblk].input_nets[port->index][j] != OPEN) {
-							return false;
-						}
-					} else if (port->dir == OUT_PORT) {
-						if (logical_block[iblk].output_nets[port->index][j] != OPEN) {
-							return false;
-						}
-					} else {
-						VTR_ASSERT(port->dir == IN_PORT && port->is_clock);
-						VTR_ASSERT(j == 0);
-						if (logical_block[iblk].clock_net != OPEN) {
-							return false;
-						}
-					}
-				}
-				break;
-			}
-		}
-		if (i == cur_pb_type->num_ports) {
-			if ((logical_block[iblk].model->inputs != NULL && !second_pass)
-					|| (logical_block[iblk].model->outputs != NULL
-							&& second_pass)) {
-				/* physical port not found */
-				return false;
-			}
-		}
-		if (port) {
-			port = port->next;
-		}
-	}
+    if(cur_pb_type->model != g_atom_nl.block_model(blk_id)) {
+        //Primitive and atom do not match
+        return false;
+    }
+
+    VTR_ASSERT_MSG(!g_atom_nl.dirty(), "This function assumes a compresssed/non-dirty netlist");
+
+
+    //Keep track of how many atom ports were checked.
+    //
+    //We need to do this since we iterate over the pb's ports and 
+    //may miss some atom ports if there is a mismatch
+    size_t checked_ports = 0;
+
+    //Look at each port on the pb and find the associated port on the
+    //atom. To be feasible the pb must have as many pins on each port
+    //as the atom requires
+    for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
+        const t_port* pb_port = &cur_pb_type->ports[iport];
+        const t_model_ports* pb_model_port = pb_port->model_port;
+
+        //Find the matching port on the atom
+        auto port_id = g_atom_nl.find_port(blk_id, pb_model_port);
+
+        if(port_id) { //Port is used by the atom
+             
+            //In compressed form the atom netlist stores only in-use pins,
+            //so we can query the number of required pins directly
+            int required_atom_pins = g_atom_nl.port_pins(port_id).size();
+
+            int available_pb_pins = pb_port->num_pins;
+
+            if(available_pb_pins < required_atom_pins) {
+                //Too many pins required
+                return false;
+            }
+
+            //Note that this port was checked
+            ++checked_ports;
+        }
+    }
+
+    //Similarily to pins, only in-use ports are stored in the compressed
+    //atom netlist, so we can figure out how many ports should have been
+    //checked directly
+    size_t atom_ports = g_atom_nl.block_ports(blk_id).size();
+
+    //See if all the atom ports were checked
+    if(checked_ports != atom_ports) {
+        VTR_ASSERT(checked_ports < atom_ports);
+        //Required atom port was missing from physical primitive
+        return false;
+    }
+
+    //Feasible
 	return true;
+}
+
+//Returns the sibling atom of a memory slice pb
+//  Note that the pb must be part of a MEMORY_CLASS
+AtomBlockId find_memory_sibling(const t_pb* pb) {
+    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
+
+    VTR_ASSERT(pb_type->class_type == MEMORY_CLASS);
+
+    const t_pb* memory_class_pb = pb->parent_pb;
+
+    for(int isibling = 0; isibling < pb_type->parent_mode->num_pb_type_children; ++isibling) {
+        const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
+
+        if(sibling_pb->name != NULL) {
+            return g_atom_map.pb_atom(sibling_pb);
+        }
+    }
+    return AtomBlockId::INVALID();
 }
 
 
@@ -359,7 +389,7 @@ bool primitive_type_feasible(int iblk, const t_pb_type *cur_pb_type) {
  * Return pb_graph_node pin from model port and pin
  *  NULL if not found
  */
-t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_port, int model_pin, t_pb_graph_node *pb_graph_node) {
+t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *model_port, const int model_pin, const t_pb_graph_node *pb_graph_node) {
 	int i;
 
 	if(model_port->dir == IN_PORT) {
@@ -399,61 +429,29 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(t_model_ports *model_p
 	return NULL;
 }
 
-t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_net(int inet, int ipin) {
-	return get_pb_graph_node_pin_from_g_atoms_nlist_pin(
-		g_atoms_nlist.net[inet].pins[ipin],
-		ipin > 0,
-		g_atoms_nlist.net[inet].is_global
-	);
-}
+//Retrieves the pb_graph_pin associated with an AtomPinId
+//  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
+//  in a more convenient interface.
+const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin_id) {
+    VTR_ASSERT(pin_id);
 
-t_pb_graph_pin* get_pb_graph_node_pin_from_g_atoms_nlist_pin(const t_net_pin& pin, bool is_input_pin, bool is_in_global_net) {
+    //Get the graph node
+    AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
+    const t_pb_graph_node* pb_gnode = g_atom_map.atom_pb_graph_node(blk_id);
+    VTR_ASSERT(pb_gnode);
 
-	int ilogical_block;
-	t_model_ports *port;
+    //The graph node and pin/block should agree on the model they represent
+    VTR_ASSERT(g_atom_nl.block_model(blk_id) == pb_gnode->pb_type->model);
 
-	ilogical_block = pin.block;
+    //Get the pin index
+    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
+    int ipin = g_atom_nl.pin_port_bit(pin_id);
 
-	VTR_ASSERT(ilogical_block != OPEN);
-	if(logical_block[ilogical_block].pb == NULL) {
-		/* This net has not been packed yet thus pb_graph_pin does not exist */
-		return NULL;
-	}
-
-	if(is_input_pin) {
-		port = logical_block[ilogical_block].model->inputs;
-		if(is_in_global_net) {
-			while(port != NULL) {
-				if(port->is_clock) {
-					if(port->index == pin.block_port) {
-						break;
-					}
-				}
-				port = port->next;
-			}
-		} else {
-			while(port != NULL) {
-				if(!port->is_clock) {
-					if(port->index == pin.block_port) {
-						break;
-					}
-				}
-				port = port->next;
-			}
-		}
-	} else {
-		/* This is an output pin */
-		port = logical_block[ilogical_block].model->outputs;
-		while(port != NULL) {
-			if(port->index == pin.block_port) {
-				break;
-			}
-			port = port->next;
-		}
-	}
-
-	VTR_ASSERT(port != NULL);
-	return get_pb_graph_node_pin_from_model_port_pin(port, pin.block_pin, logical_block[ilogical_block].pb->pb_graph_node);
+    //Get the model port
+    const t_model_ports* model_port = g_atom_nl.port_model(port_id);
+    VTR_ASSERT(model_port);
+    
+    return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
 t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin) {
@@ -660,71 +658,46 @@ float compute_primitive_base_cost(const t_pb_graph_node *primitive) {
 			+ primitive->pb_type->num_clock_pins);
 }
 
-int num_ext_inputs_logical_block(int iblk) {
+int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
-	/* Returns the number of input pins on this logical_block that must be hooked *
+	/* Returns the number of input pins on this atom block that must be hooked *
 	 * up through external interconnect.  That is, the number of input    *
 	 * pins used - the number which connect (internally) to the outputs.   */
 
-	int ext_inps, output_net, ipin, opin;
-
-	t_model_ports *port, *out_port;
+	int ext_inps = 0;
 
 	/* TODO: process to get ext_inps is slow, should cache in lookup table */
-	ext_inps = 0;
-	port = logical_block[iblk].model->inputs;
-	while (port) {
-		if (port->is_clock == false) {
-			for (ipin = 0; ipin < port->size; ipin++) {
-				if (logical_block[iblk].input_nets[port->index][ipin] != OPEN) {
-					ext_inps++;
-				}
-				out_port = logical_block[iblk].model->outputs;
-				while (out_port) {
-					for (opin = 0; opin < out_port->size; opin++) {
-						output_net =
-								logical_block[iblk].output_nets[out_port->index][opin];
-						if (output_net == OPEN)
-							continue;
-						/* TODO: I could speed things up a bit by computing the number of inputs *
-						 * and number of external inputs for each logic logical_block at the start of   *
-						 * clustering and storing them in arrays.  Look into if speed is a      *
-						 * problem.                                                             */
 
-						if (logical_block[iblk].input_nets[port->index][ipin]
-								== output_net) {
-							ext_inps--;
-							break;
-						}
-					}
-					out_port = out_port->next;
-				}
-			}
-		}
-		port = port->next;
-	}
+    std::unordered_set<AtomNetId> input_nets;
+
+    //Record the unique input nets
+    for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
+        auto net_id = g_atom_nl.pin_net(pin_id);
+        input_nets.insert(net_id);
+    }
+
+    ext_inps = input_nets.size();
+
+    //Look through the output nets for any duplicates of the input nets
+    for(auto pin_id : g_atom_nl.block_output_pins(blk_id)) {
+        auto net_id = g_atom_nl.pin_net(pin_id);
+        if(input_nets.count(net_id)) {
+            --ext_inps;
+        }
+    }
 
 	VTR_ASSERT(ext_inps >= 0);
 
 	return (ext_inps);
 }
 
-
-void free_cb(t_pb *pb) {
-
-	if (pb == NULL) {
-		return;
-	}
-
-	free_pb(pb);
-}
-
 void free_pb(t_pb *pb) {
+    if(pb == NULL) {
+        return;
+    }
 
 	const t_pb_type * pb_type;
 	int i, j, mode;
-	vtr::t_linked_vptr *revalid_molecule;
-	t_pack_molecule *cur_molecule;
 
 	pb_type = pb->pb_graph_node->pb_type;
 
@@ -751,39 +724,66 @@ void free_pb(t_pb *pb) {
 		if (pb->name)
 			free(pb->name);
 		pb->name = NULL;
-		if (pb->logical_block != EMPTY && pb->logical_block != INVALID && logical_block != NULL) {
-			logical_block[pb->logical_block].clb_index = NO_CLUSTER;
-			logical_block[pb->logical_block].pb = NULL;
-			/* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
-			revalid_molecule = logical_block[pb->logical_block].packed_molecules;
-			while (revalid_molecule != NULL) {
-				cur_molecule = (t_pack_molecule*)revalid_molecule->data_vptr;
-				if (cur_molecule->valid == false) {
-					for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-						if (cur_molecule->logical_block_ptrs[i] != NULL) {
-							if (cur_molecule->logical_block_ptrs[i]->clb_index != OPEN) {
-								break;
-							}
-						}
-					}
-					/* All logical blocks are open for this molecule, place back in queue */
-					if (i == get_array_size_of_molecule(cur_molecule)) {
-						cur_molecule->valid = true;	
-					}
-				}
-				revalid_molecule = revalid_molecule->next;
-			}
+
+        auto blk_id = g_atom_map.pb_atom(pb);
+		if (blk_id) {
+
+            //Update atom netlist mapping
+            g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
+            g_atom_map.set_atom_pb(blk_id, NULL);
 		}
-		pb->logical_block = OPEN;
+        g_atom_map.set_atom_pb(AtomBlockId::INVALID(), pb);
 	}
 	free_pb_stats(pb);
+}
+
+void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
+	const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
+
+	if (pb_type->blif_model == NULL) {
+		int mode = pb->mode;
+		for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != NULL; i++) {
+			for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb	&& pb->child_pbs[i] != NULL; j++) {
+				if (pb->child_pbs[i][j].name != NULL || pb->child_pbs[i][j].child_pbs != NULL) {
+					revalid_molecules(&pb->child_pbs[i][j], atom_molecules);
+				}
+			}
+        }
+    } else {
+        //Primitive
+        auto blk_id = g_atom_map.pb_atom(pb);
+		if (blk_id) {
+            /* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
+
+            //Update atom netlist mapping
+            g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
+            g_atom_map.set_atom_pb(blk_id, NULL);
+
+            auto rng = atom_molecules.equal_range(blk_id);
+            for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                t_pack_molecule* cur_molecule = kv.second;
+                if (cur_molecule->valid == false) {
+                    int i;
+                    for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
+                        if (cur_molecule->atom_block_ids[i]) {
+                            if (g_atom_map.atom_clb(cur_molecule->atom_block_ids[i]) != OPEN) {
+                                break;
+                            }
+                        }
+                    }
+                    /* All atom blocks are open for this molecule, place back in queue */
+                    if (i == get_array_size_of_molecule(cur_molecule)) {
+                        cur_molecule->valid = true;	
+                    }
+                }
+            }
+        }
+    }
 }
 
 void free_pb_stats(t_pb *pb) {
 
     if(pb) {
-        int i;
-
         if(pb->pb_stats == NULL) {
             return;
         }
@@ -795,25 +795,12 @@ void free_pb_stats(t_pb *pb) {
         pb->pb_stats->connectiongain.clear();
         pb->pb_stats->num_pins_of_net_in_pb.clear();
         
-        if(pb->pb_stats->marked_blocks != NULL) {
+        if(!pb->pb_stats->marked_blocks.empty()) {
             t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
             if(pb_graph_node) {
-                for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
-                    free(pb->pb_stats->input_pins_used[i]);
-                }
-                for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
-                    free(pb->pb_stats->output_pins_used[i]);
-                }
             }
-            free(pb->pb_stats->input_pins_used);
-            delete [] pb->pb_stats->lookahead_input_pins_used;
-            free(pb->pb_stats->output_pins_used);
-            delete [] pb->pb_stats->lookahead_output_pins_used;
             free(pb->pb_stats->feasible_blocks);
-            free(pb->pb_stats->marked_nets);
-            free(pb->pb_stats->marked_blocks);
         }
-        pb->pb_stats->marked_blocks = NULL;
         if(pb->pb_stats->transitive_fanout_candidates != NULL) {
             delete pb->pb_stats->transitive_fanout_candidates;
         };
@@ -1509,3 +1496,37 @@ void print_usage_by_wire_length() {
     total_wire_count.clear();
 }
 */
+
+AtomBlockId find_tnode_atom_block(int inode) {
+    AtomBlockId blk_id;
+    AtomPinId pin_id;
+    auto type = tnode[inode].type;
+    if(type == TN_INPAD_SOURCE || type == TN_FF_SOURCE) {
+        //A source does not map directly to a netlist pin,
+        //so we walk to it's assoicated OPIN
+        VTR_ASSERT_MSG(tnode[inode].num_edges == 1, "Source nodes must have a single output edge");
+        int i_opin_node = tnode[inode].out_edges[0].to_node;
+
+        VTR_ASSERT(tnode[i_opin_node].type == TN_INPAD_OPIN ||tnode[i_opin_node].type == TN_FF_OPIN);
+
+        pin_id = g_atom_map.tnode_atom_pin(i_opin_node);
+        
+    } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
+        //A sink does not map directly to a netlist pin,
+        //so we go back to its input pin
+
+        //By convention the sink pin is at one index before the sink itself
+        int i_ipin_node = inode - 1;
+        VTR_ASSERT(tnode[i_ipin_node].type == TN_OUTPAD_IPIN || tnode[i_ipin_node].type == TN_FF_IPIN);
+        VTR_ASSERT(tnode[i_ipin_node].num_edges == 1);
+        VTR_ASSERT(tnode[i_ipin_node].out_edges[0].to_node == inode);
+
+        pin_id = g_atom_map.tnode_atom_pin(i_ipin_node);
+    } else {
+        pin_id = g_atom_map.tnode_atom_pin(inode);
+    }
+
+    blk_id = g_atom_nl.pin_block(pin_id);
+
+    return blk_id;
+}
