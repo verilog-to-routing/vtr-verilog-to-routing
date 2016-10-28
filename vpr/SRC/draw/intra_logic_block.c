@@ -523,7 +523,7 @@ void find_pin_index_at_model_scope(
 	const t_net_pin& the_pin, const t_logical_block& lblk, const bool search_inputs,
 	int* pin_index, int* total_pins) {
 
-	// printf("looking for pin {blk: %d, port: %d, pin: %d}\n",
+	// vtr::printf_info("looking for pin {blk: %d, port: %d, pin: %d}\n",
 		// the_pin.block, the_pin.block_port, the_pin.block_pin);
 
 	t_model_ports* port = NULL;
@@ -543,7 +543,7 @@ void find_pin_index_at_model_scope(
 		if(search_inputs ? port->is_clock == false : true) {
 			int iport = port->index;
 			// iterate over the pins on that port
-			// printf("looking at port %d\n", iport);
+			// vtr::printf_info("looking at port %d\n", iport);
 			for (int ipin = 0; ipin < port->size; ipin++) {
 				// get the net that connects here.
 				int inet = OPEN;
@@ -553,10 +553,10 @@ void find_pin_index_at_model_scope(
 					inet = lblk.output_nets[iport][ipin];
 				}
 				if(inet != OPEN) {
-					// printf("looking at net %d\n", inet);
+					// vtr::printf_info("looking at net %d\n", inet);
 					t_vnet& net = g_atoms_nlist.net.at(inet);
 					for (auto pin = net.pins.begin(); pin != net.pins.end(); ++pin) {
-						// printf("looking at pin {blk: %d, port: %d, pin: %d}\n",
+						// vtr::printf_info("looking at pin {blk: %d, port: %d, pin: %d}\n",
 							// pin->block, pin->block_port, pin->block_pin);
 
 						if (pin->block == the_pin.block
@@ -789,7 +789,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	sources.clear();
 	in_selected_subtree.clear();
 
-	// printf("selecting in clb #%ld\n", new_containing_block - block);
+	// vtr::printf_info("selecting in clb #%ld\n", new_containing_block - block);
 
 	if (has_selection()) {
 		add_all_children(selected_pb, containing_block, in_selected_subtree);

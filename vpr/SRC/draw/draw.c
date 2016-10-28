@@ -213,7 +213,7 @@ static void drawscreen() {
 #ifdef WIN32
 	drawscreen_end = clock();
 
-	printf("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
+    vtr::printf_info("Drawscreen took %f seconds.\n", (float)(drawscreen_end - drawscreen_begin) / CLOCKS_PER_SEC);
 
 #else /* X11 */
 	struct timeval end;
@@ -225,7 +225,7 @@ static void drawscreen() {
 	unsigned long time_diff_microsec;
 	time_diff_microsec = end_time - begin_time;
 
-	printf("Drawscreen took %ld microseconds\n", time_diff_microsec);
+	vtr::printf_info("Drawscreen took %ld microseconds\n", time_diff_microsec);
 #endif /* WIN32 */
 #endif /* TIME_DRAWSCREEN */
 }

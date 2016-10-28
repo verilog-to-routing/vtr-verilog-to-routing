@@ -1376,7 +1376,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
     }
     *switch_index = -1;
     *fanin = -1;
-    printf("\n\nerror converting switch index ! \n\n");
+    vtr::printf_info("\n\nerror converting switch index ! \n\n");
     return -1;
 }
 
@@ -1448,20 +1448,20 @@ void print_switch_usage() {
             switch_fanin_delay[switch_index][fanin] = Tdel;
         }
     }
-    printf("\n=============== switch usage stats ===============\n");
+    vtr::printf_info("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch ++ ) {
         char *s_name = g_arch_switch_inf[iswitch].name;
         float s_area = g_arch_switch_inf[iswitch].mux_trans_size;
-        printf(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
+        vtr::printf_info(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
         
         map<int, int>::iterator itr;
         for (itr = switch_fanin_count[iswitch].begin(); itr != switch_fanin_count[iswitch].end(); itr ++ ) {
-            printf("\t\tnumber of fanin: %d", itr->first);
-            printf("\t\tnumber of wires driven by this switch: %d", itr->second);
-            printf("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
+            vtr::printf_info("\t\tnumber of fanin: %d", itr->first);
+            vtr::printf_info("\t\tnumber of wires driven by this switch: %d", itr->second);
+            vtr::printf_info("\t\tTdel: %g\n", switch_fanin_delay[iswitch][itr->first]);
         }
     }
-    printf("\n==================================================\n\n");
+    vtr::printf_info("\n==================================================\n\n");
     delete[] switch_fanin_count;
     delete[] switch_fanin_delay;
     delete[] inward_switch_inf;
@@ -1496,15 +1496,15 @@ void print_usage_by_wire_length() {
     for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
         total_wires += itr->second;
     }
-    printf("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
+    vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
     for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) 
-        printf("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
+        vtr::printf_info("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
     for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
         float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
         float ratio_to_all_type_total = ((float)itr->second) / total_wires;
-        printf("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
+        vtr::printf_info("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
     }
-    printf("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+    vtr::printf_info("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
     used_wire_count.clear();
     total_wire_count.clear();
 }

@@ -31,6 +31,7 @@
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #include "power.h"
 #include "power_components.h"
@@ -834,7 +835,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 								clb_net_prob(node->net_num);
 						next_node_power->num_inputs++;
 						if (next_node_power->num_inputs > next_node->get_fan_in()) {
-							printf("%d %d\n", next_node_power->num_inputs,
+                            vtr::printf_info("%d %d\n", next_node_power->num_inputs,
 									next_node->get_fan_in());
 							fflush(0);
 							VTR_ASSERT(0);

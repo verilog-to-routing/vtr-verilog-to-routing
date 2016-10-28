@@ -2020,7 +2020,7 @@ static void read_activity(char * activity_file) {
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
 		word3 = strtok(NULL, TOKENS);
-		//printf("word1:%s|word2:%s|word3:%s\n", word1, word2, word3);
+		//vtr::printf_info("word1:%s|word2:%s|word3:%s\n", word1, word2, word3);
 		fail |= add_activity_to_net(word1, atof(word2), atof(word3));
 
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
@@ -2056,7 +2056,7 @@ bool add_activity_to_net(char * net_name, float probability, float density) {
 		h_ptr = h_ptr->next;
 	}
 
-	printf(
+	vtr::printf_info(
 			"Error: net %s found in activity file, but it does not exist in the .blif file.\n",
 			net_name);
 	return true;

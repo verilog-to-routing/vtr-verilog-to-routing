@@ -516,16 +516,16 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 }
 
 void print_comb_loop(std::vector<int>& loop_tnodes) {
-    printf("Comb Loop:\n");
+    vtr::printf_info("Comb Loop:\n");
     for(std::vector<int>::iterator it = loop_tnodes.begin(); it != loop_tnodes.end(); it++) {
         int i_tnode = *it;
         if(tnode[i_tnode].pb_graph_pin != NULL) {
-            printf("\ttnode: %d %s.%s[%d]\n", i_tnode,
+            vtr::printf_info("\ttnode: %d %s.%s[%d]\n", i_tnode,
                             tnode[i_tnode].pb_graph_pin->parent_node->pb_type->name, 
                             tnode[i_tnode].pb_graph_pin->port->name, 
                             tnode[i_tnode].pb_graph_pin->pin_number);
         } else {
-            printf("\ttnode: %d\n", i_tnode);
+            vtr::printf_info("\ttnode: %d\n", i_tnode);
         }
     }
 }
