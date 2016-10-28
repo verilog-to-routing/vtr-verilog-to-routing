@@ -4,12 +4,6 @@
 #include "sdc.hpp"
 #include "sdc_lexer.hpp"
 
-/*
- * Parser info
- */
-extern int sdcparse_lineno;
-extern char* sdcparse_text;
-
 namespace sdcparse {
 
 /*
