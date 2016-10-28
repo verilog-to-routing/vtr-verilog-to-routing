@@ -582,15 +582,15 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
     private:
         bool ended_ = true; //Initially no active .model
-        std::string filename_;
-        int lineno_;
+        std::string filename_ = "";
+        int lineno_ = -1;
 
         std::vector<AtomNetlist> blif_models_;
         std::vector<bool> blif_models_black_box_;
 
         AtomNetlist& main_netlist_; //User object we fill
-        const t_model* user_arch_models_;
-        const t_model* library_arch_models_;
+        const t_model* user_arch_models_ = nullptr;
+        const t_model* library_arch_models_ = nullptr;
 
 };
 
