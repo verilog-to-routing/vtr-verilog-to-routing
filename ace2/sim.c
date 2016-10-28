@@ -172,7 +172,7 @@ void evaluate_circuit(Abc_Ntk_t * ntk, Vec_Ptr_t * node_vec, int cycle) {
 	Abc_Obj_t * obj;
 	Ace_Obj_Info_t * info;
 	int i;
-	int value;
+	int value = -1;
 	int * faninValues;
 	ace_status_t status;
 	DdNode * dd_node;
