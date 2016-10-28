@@ -743,7 +743,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
                     AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                vtr::strdup(g_atom_nl.net_name(net_id).c_str()),
+                                                g_atom_nl.net_name(net_id).c_str(),
                                                 ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -760,7 +760,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
                     AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                vtr::strdup(g_atom_nl.net_name(net_id).c_str()),
+                                                g_atom_nl.net_name(net_id).c_str(),
                                                 ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -777,7 +777,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
                     AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                vtr::strdup(g_atom_nl.net_name(net_id).c_str()),
+                                                g_atom_nl.net_name(net_id).c_str(),
                                                 ext_ncount);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
