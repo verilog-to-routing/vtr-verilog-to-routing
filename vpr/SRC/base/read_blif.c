@@ -41,9 +41,9 @@ using namespace std;
 #include "ReadOptions.h"
 #include "hash.h"
 
-static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
-		const t_model *user_models, const t_model *library_models,
-		bool read_activity_file, char * activity_file);
+static AtomNetlist read_blif(const char *blif_file, 
+                             const t_model *user_models, 
+                             const t_model *library_models);
 
 static void show_blif_stats(const AtomNetlist& netlist);
 
@@ -607,30 +607,40 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
     return new_val;
 }
 
-static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_hanging_nets_and_inputs,
-		const t_model *user_models, const t_model *library_models,
-		bool read_activity_file, char * activity_file) {
+static AtomNetlist read_blif(const char *blif_file, 
+                             const t_model *user_models, 
+                             const t_model *library_models) {
+    AtomNetlist netlist;
 
+    BlifAllocCallback alloc_callback(netlist, user_models, library_models);
+    blifparse::blif_parse_filename(blif_file, alloc_callback);
+
+    netlist.verify();
+
+    return netlist;
+}
+
+AtomNetlist read_and_process_blif(const char *blif_file, 
+                                  const t_model *user_models, 
+                                  const t_model *library_models,
+                                  bool should_absorb_buffers, 
+                                  bool should_sweep_primary_ios, 
+                                  bool should_sweep_nets,
+                                  bool should_sweep_blocks, 
+                                  bool read_activity_file, 
+                                  char * activity_file) {
     AtomNetlist netlist;
     {
         vtr::ScopedPrintTimer t("Load BLIF");
-
-        BlifAllocCallback alloc_callback(netlist, user_models, library_models);
-        blifparse::blif_parse_filename(blif_file, alloc_callback);
+        
+        netlist = read_blif(blif_file, user_models, library_models);
     }
-
-    {
-        vtr::ScopedPrintTimer t("Verify BLIF");
-        netlist.verify();
-    }
-
-    netlist.print_stats();
 
     {
         vtr::ScopedPrintTimer t("Clean BLIF");
         
         //Clean-up lut buffers
-        if(absorb_buffers) {
+        if(should_absorb_buffers) {
             absorb_buffer_luts(netlist);
         }
 
@@ -639,6 +649,7 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
         if(unconn_net_id) {
             netlist.remove_net(unconn_net_id);
         }
+
         //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if(unconn_blk_id) {
@@ -646,12 +657,7 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
         }
 
         //Sweep unused logic/nets/inputs/outputs
-        //TODO: sweep iteratively, for now sweep only inputs/nets to match old behavior
-        if(sweep_hanging_nets_and_inputs) {
-            sweep_nets(netlist); 
-            sweep_inputs(netlist); 
-        }
-        /*sweep_iterative(netlist, false);*/
+        sweep_iterative(netlist, should_sweep_primary_ios, should_sweep_nets, should_sweep_blocks);
     }
 
     {
@@ -659,7 +665,6 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
 
         //Compress the netlist to clean-out invalid entries
         netlist.compress();
-        netlist.print_stats();
     }
     {
         vtr::ScopedPrintTimer t("Verify BLIF");
@@ -675,25 +680,9 @@ static void read_blif(const char *blif_file, bool absorb_buffers, bool sweep_han
         g_atom_net_power = std::move(atom_net_power);
     }
 
-    /*
-     *{
-     *    vtr::ScopedPrintTimer t2("Print BLIF");
-     *    print_netlist(stdout, netlist);
-     *}
-     */
-
-    /*
-     *{
-     *    vtr::ScopedPrintTimer t2("Echo File BLIF");
-     *    FILE* f = vtr::fopen("atom_netlist.echo", "w");
-     *    VTR_ASSERT(f);
-     *    print_netlist_as_blif(f, netlist);
-     *    fclose(f);
-     *}
-     */
-
-    g_atom_nl = std::move(netlist);
+    return netlist;
 }
+
 static void show_blif_stats(const AtomNetlist& netlist) {
     std::map<std::string,size_t> block_type_counts;
 
@@ -821,18 +810,3 @@ bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetI
 			net_name);
 	return true;
 }
-
-/* Read blif file and perform basic sweep/accounting on it
- * - power_opts: Power options, can be NULL
- */
-void read_and_process_blif(const char *blif_file,
-		bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
-        const t_model *user_models,
-		const t_model *library_models, bool read_activity_file,
-		char * activity_file) {
-
-	/* begin parsing blif input file */
-	read_blif(blif_file, absorb_buffer_luts, sweep_hanging_nets_and_inputs, user_models,
-			library_models, read_activity_file, activity_file);
-}
-

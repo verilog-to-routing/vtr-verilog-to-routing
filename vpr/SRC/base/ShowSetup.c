@@ -12,6 +12,7 @@
 
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const struct s_packer_opts& PackerOpts);
+static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
 static void ShowPlacerOpts(const t_options& Options,
 		const struct s_placer_opts& PlacerOpts,
 		const struct s_annealing_sched& AnnealSched);
@@ -33,6 +34,8 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 	vtr::printf_info("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
 	vtr::printf_info("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
 	vtr::printf_info("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
+
+    ShowNetlistOpts(vpr_setup.NetlistOpts);
 
 	if (vpr_setup.PackerOpts.doPacking) {
 		ShowPackerOpts(vpr_setup.PackerOpts);
@@ -357,6 +360,13 @@ static void ShowPlacerOpts(const t_options& Options,
 
 }
 
+static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
+    vtr::printf_info("NetlistOpts.abosrb_buffer_luts: %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_primary_ios : %s\n", (NetlistOpts.sweep_primary_ios)  ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_nets        : %s\n", (NetlistOpts.sweep_nets)         ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_blocks      : %s\n", (NetlistOpts.sweep_blocks)       ? "true" : "false");
+	vtr::printf_info("\n");
+}
 
 static void ShowPackerOpts(const struct s_packer_opts& PackerOpts) {
 
@@ -382,8 +392,6 @@ static void ShowPackerOpts(const struct s_packer_opts& PackerOpts) {
 	vtr::printf_info("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.hill_climbing_flag: %s", (PackerOpts.hill_climbing_flag ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
-	vtr::printf_info("PackerOpts.sweep_hanging_nets_and_inputs: %s", (PackerOpts.sweep_hanging_nets_and_inputs ? "true\n" : "false\n"));
-	vtr::printf_info("PackerOpts.absorb_buffer_luts: %s", (PackerOpts.absorb_buffer_luts ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
 	vtr::printf_info("\n");
 }

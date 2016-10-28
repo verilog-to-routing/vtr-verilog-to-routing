@@ -20,7 +20,10 @@ void absorb_buffer_luts(AtomNetlist& netlist);
 //Repeatedly sweeps the netlist removing blocks and nets 
 //until nothing more can be swept.
 //If sweep_ios is true also sweeps primary-inputs and primary-outputs
-size_t sweep_iterative(AtomNetlist& netlist, bool sweep_ios);
+size_t sweep_iterative(AtomNetlist& netlist, 
+                       bool should_sweep_ios,
+                       bool should_sweep_blocks,
+                       bool should_sweep_nets);
 
 //Sweeps blocks that have no fanout
 size_t sweep_blocks(AtomNetlist& netlist);

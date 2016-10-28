@@ -85,11 +85,6 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 		vtr::printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
 	}
 
-	/* Uncomment line below if you want a dump of compressed netlist. */
-	/* if (getEchoEnabled()){
-	 echo_input (packer_opts->blif_file_name, packer_opts->lut_size, "packed.echo"); 
-	 }else; */
-
 	if (packer_opts->skip_clustering == false) {
 		do_clustering(arch, list_of_pack_molecules, num_models,
 				packer_opts->global_clocks, is_clock, 

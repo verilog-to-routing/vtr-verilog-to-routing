@@ -351,15 +351,22 @@ ProcessOption(char **Args, t_options * Options) {
 		return Args;
 	case OT_GENERATE_POST_SYNTHESIS_NETLIST:          
 	  return ReadOnOff(Args, &Options->Generate_Post_Synthesis_Netlist);
-		/* Clustering Options */
+
+    //Atom netlist options
+	case OT_ABSORB_BUFFER_LUTS:
+		return ReadOnOff(Args, &Options->absorb_buffer_luts);
+	case OT_SWEEP_PRIMARY_IOS:
+		return ReadOnOff(Args, &Options->sweep_primary_ios);
+	case OT_SWEEP_NETS:
+		return ReadOnOff(Args, &Options->sweep_nets);
+	case OT_SWEEP_BLOCKS:
+		return ReadOnOff(Args, &Options->sweep_blocks);
+
+    /* Clustering Options */
 	case OT_GLOBAL_CLOCKS:
 		return ReadOnOff(Args, &Options->global_clocks);
 	case OT_HILL_CLIMBING_FLAG:
 		return ReadOnOff(Args, &Options->hill_climbing_flag);
-	case OT_SWEEP_HANGING_NETS_AND_INPUTS:
-		return ReadOnOff(Args, &Options->sweep_hanging_nets_and_inputs);
-	case OT_ABSORB_BUFFER_LUTS:
-		return ReadOnOff(Args, &Options->absorb_buffer_luts);
 	case OT_TIMING_DRIVEN_CLUSTERING:
 		return ReadOnOff(Args, &Options->timing_driven);
 	case OT_CLUSTER_SEED:

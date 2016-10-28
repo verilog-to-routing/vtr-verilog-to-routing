@@ -22,6 +22,7 @@ using namespace std;
 #include "rr_graph_area.h"
 #include "echo_arch.h"
 
+static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 		const t_arch& Arch, const char *net_file,
 		struct s_packer_opts *PackerOpts);
@@ -44,19 +45,23 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
-void SetupVPR(t_options *Options, const bool TimingEnabled,
-		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
-		t_arch * Arch,
-		t_model ** user_models, t_model ** library_models,
-		struct s_packer_opts *PackerOpts,
-		struct s_placer_opts *PlacerOpts,
-		struct s_annealing_sched *AnnealSched,
-		struct s_router_opts *RouterOpts,
-		struct s_det_routing_arch *RoutingArch,
-		vector <t_lb_type_rr_node> **PackerRRGraphs,
-		t_segment_inf ** Segments, t_timing_inf * Timing,
-		bool * ShowGraphics, int *GraphPause,
-		t_power_opts * PowerOpts) {
+void SetupVPR(t_options *Options, 
+              const bool TimingEnabled,
+              const bool readArchFile, 
+              struct s_file_name_opts *FileNameOpts,
+              t_arch * Arch,
+              t_model ** user_models, 
+              t_model ** library_models,
+              t_netlist_opts* NetlistOpts,
+              struct s_packer_opts *PackerOpts,
+              struct s_placer_opts *PlacerOpts,
+              struct s_annealing_sched *AnnealSched,
+              struct s_router_opts *RouterOpts,
+              struct s_det_routing_arch *RoutingArch,
+              vector <t_lb_type_rr_node> **PackerRRGraphs,
+              t_segment_inf ** Segments, t_timing_inf * Timing,
+              bool * ShowGraphics, int *GraphPause,
+              t_power_opts * PowerOpts) {
 	int i, j, len;
 
 	if (!Options->CircuitName) vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, "No blif file found in arguments (did you specify an architecture file?)\n");
@@ -169,6 +174,7 @@ void SetupVPR(t_options *Options, const bool TimingEnabled,
 	FileNameOpts->CmosTechFile = Options->CmosTechFile;
 	FileNameOpts->out_file_prefix = Options->out_file_prefix;
 
+    SetupNetlistOpts(*Options, *NetlistOpts);
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
@@ -627,18 +633,6 @@ void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 		PackerOpts->hill_climbing_flag = Options.hill_climbing_flag;
 	}
 
-	PackerOpts->sweep_hanging_nets_and_inputs = true;
-	if (Options.Count[OT_SWEEP_HANGING_NETS_AND_INPUTS]) {
-		PackerOpts->sweep_hanging_nets_and_inputs =
-				Options.sweep_hanging_nets_and_inputs;
-	}
-
-	PackerOpts->absorb_buffer_luts = true;
-	if (Options.Count[OT_ABSORB_BUFFER_LUTS]) {
-		PackerOpts->absorb_buffer_luts =
-				Options.absorb_buffer_luts;
-	}
-
 	PackerOpts->skip_clustering = false; /* DEFAULT */
 	if (Options.Count[OT_SKIP_CLUSTERING]) {
 		PackerOpts->skip_clustering = true;
@@ -682,6 +676,29 @@ void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 	if (Options.Count[OT_PACKER_ALGORITHM]) {
 		PackerOpts->packer_algorithm = Options.packer_algorithm;
 	}
+}
+
+static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
+    
+    NetlistOpts.absorb_buffer_luts = true; //Default
+    if(Options.Count[OT_ABSORB_BUFFER_LUTS]) {
+        NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
+    }
+
+    NetlistOpts.sweep_primary_ios = true; //Default
+    if(Options.Count[OT_SWEEP_PRIMARY_IOS]) {
+        NetlistOpts.sweep_primary_ios = Options.sweep_primary_ios;
+    }
+
+    NetlistOpts.sweep_nets = true; //Default
+    if(Options.Count[OT_SWEEP_NETS]) {
+        NetlistOpts.sweep_nets = Options.sweep_nets;
+    }
+
+    NetlistOpts.sweep_blocks = true; //Default
+    if(Options.Count[OT_SWEEP_BLOCKS]) {
+        NetlistOpts.sweep_blocks = Options.sweep_blocks;
+    }
 }
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,

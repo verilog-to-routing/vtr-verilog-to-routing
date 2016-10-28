@@ -1058,9 +1058,19 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
 		const t_model* model = g_atom_nl.block_model(blk_id);
 		if (g_atom_nl.block_type(blk_id) == AtomBlockType::INPAD) {
-			num_tnodes += 2; //SOURCE and OPIN
+            auto pins = g_atom_nl.block_output_pins(blk_id);
+            if(pins.size() == 1) {
+                num_tnodes += 2; //SOURCE and OPIN
+            } else {
+                VTR_ASSERT(pins.size() == 0); //Swept
+            }
 		} else if (g_atom_nl.block_type(blk_id) == AtomBlockType::OUTPAD) {
-			num_tnodes += 2; //SINK and OPIN
+            auto pins = g_atom_nl.block_input_pins(blk_id);
+            if(pins.size() == 1) {
+                num_tnodes += 2; //SINK and OPIN
+            } else {
+                VTR_ASSERT(pins.size() == 0); //Swept
+            }
 		} else {
             int incr;
 			if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
@@ -1130,34 +1140,37 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
             VTR_ASSERT(g_atom_nl.block_input_pins(blk_id).empty());
             VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).empty());
             auto pins = g_atom_nl.block_output_pins(blk_id);
-            VTR_ASSERT(pins.size() == 1);
-            auto pin_id = *pins.begin();
+            if(pins.size() == 1) {
+                auto pin_id = *pins.begin();
 
-            //Look-ups
-            g_atom_map.set_atom_pin_tnode(pin_id, inode);
+                //Look-ups
+                g_atom_map.set_atom_pin_tnode(pin_id, inode);
 
-            //The OPIN
-			tnode[inode].prepacked_data->model_pin = 0;
-			tnode[inode].prepacked_data->model_port = 0;
-			tnode[inode].prepacked_data->model_port_ptr = model->outputs;
-			tnode[inode].block = OPEN;
-			tnode[inode].type = TN_INPAD_OPIN;
+                //The OPIN
+                tnode[inode].prepacked_data->model_pin = 0;
+                tnode[inode].prepacked_data->model_port = 0;
+                tnode[inode].prepacked_data->model_port_ptr = model->outputs;
+                tnode[inode].block = OPEN;
+                tnode[inode].type = TN_INPAD_OPIN;
 
-            auto net_id = g_atom_nl.pin_net(pin_id);
-			tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
-			tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(
-					tnode[inode].num_edges * sizeof(t_tedge),
-					&tedge_ch);
+                auto net_id = g_atom_nl.pin_net(pin_id);
+                tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
+                tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(
+                        tnode[inode].num_edges * sizeof(t_tedge),
+                        &tedge_ch);
 
-            //The source
-			tnode[inode + 1].type = TN_INPAD_SOURCE;
-			tnode[inode + 1].block = OPEN;
-			tnode[inode + 1].num_edges = 1;
-			tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
-			tnode[inode + 1].out_edges->Tdel = 0;
-			tnode[inode + 1].out_edges->to_node = inode;
+                //The source
+                tnode[inode + 1].type = TN_INPAD_SOURCE;
+                tnode[inode + 1].block = OPEN;
+                tnode[inode + 1].num_edges = 1;
+                tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
+                tnode[inode + 1].out_edges->Tdel = 0;
+                tnode[inode + 1].out_edges->to_node = inode;
 
-			inode += 2;
+                inode += 2;
+            } else {
+                VTR_ASSERT(pins.size() == 0); //Driven net was swept
+            }
 		} else if (g_atom_nl.block_type(blk_id) == AtomBlockType::OUTPAD) {
             //A primary input
 
@@ -1167,30 +1180,33 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 
             //Single pin
             auto pins = g_atom_nl.block_input_pins(blk_id);
-            VTR_ASSERT(pins.size() == 1);
-            auto pin_id = *pins.begin();
+            if(pins.size() == 1) {
+                auto pin_id = *pins.begin();
 
-            //Look-ups
-            g_atom_map.set_atom_pin_tnode(pin_id, inode);
+                //Look-ups
+                g_atom_map.set_atom_pin_tnode(pin_id, inode);
 
-            //The IPIN
-			tnode[inode].prepacked_data->model_pin = 0;
-			tnode[inode].prepacked_data->model_port = 0;
-			tnode[inode].prepacked_data->model_port_ptr = model->inputs;
-			tnode[inode].block = OPEN;
-			tnode[inode].type = TN_OUTPAD_IPIN;
-			tnode[inode].num_edges = 1;
-			tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(1 * sizeof(t_tedge), &tedge_ch);
-			tnode[inode].out_edges->Tdel = 0;
-			tnode[inode].out_edges->to_node = inode + 1;
+                //The IPIN
+                tnode[inode].prepacked_data->model_pin = 0;
+                tnode[inode].prepacked_data->model_port = 0;
+                tnode[inode].prepacked_data->model_port_ptr = model->inputs;
+                tnode[inode].block = OPEN;
+                tnode[inode].type = TN_OUTPAD_IPIN;
+                tnode[inode].num_edges = 1;
+                tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc(1 * sizeof(t_tedge), &tedge_ch);
+                tnode[inode].out_edges->Tdel = 0;
+                tnode[inode].out_edges->to_node = inode + 1;
 
-            //The sink
-			tnode[inode + 1].type = TN_OUTPAD_SINK;
-			tnode[inode + 1].block = OPEN;
-			tnode[inode + 1].num_edges = 0;
-			tnode[inode + 1].out_edges = NULL;
+                //The sink
+                tnode[inode + 1].type = TN_OUTPAD_SINK;
+                tnode[inode + 1].block = OPEN;
+                tnode[inode + 1].num_edges = 0;
+                tnode[inode + 1].out_edges = NULL;
 
-			inode += 2;
+                inode += 2;
+            } else {
+                VTR_ASSERT(pins.size() == 0); //Input net was swept
+            }
 		} else {
             //A regular block
 

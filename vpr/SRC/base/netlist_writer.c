@@ -1048,19 +1048,23 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
-            //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
-            PortType wire_dir = (dir == PortType::IN) ? PortType::OUT : PortType::IN;
+            if(atom_net_id) {
+                //Net exists
 
-            //Look up the tnode associated with this pin (used for delay calculation)
-            int tnode_id = find_tnode(atom, cluster_pin_idx);
+                //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
+                PortType wire_dir = (dir == PortType::IN) ? PortType::OUT : PortType::IN;
 
-            auto wire_name = make_inst_wire(atom_net_id, tnode_id, io_name, wire_dir, 0, 0);
+                //Look up the tnode associated with this pin (used for delay calculation)
+                int tnode_id = find_tnode(atom, cluster_pin_idx);
 
-            //Connect the wires to to I/Os with assign statements
-            if(wire_dir == PortType::IN) {
-                assignments_.emplace_back(io_name, wire_name);
-            } else {
-                assignments_.emplace_back(wire_name, io_name);
+                auto wire_name = make_inst_wire(atom_net_id, tnode_id, io_name, wire_dir, 0, 0);
+
+                //Connect the wires to to I/Os with assign statements
+                if(wire_dir == PortType::IN) {
+                    assignments_.emplace_back(io_name, wire_name);
+                } else {
+                    assignments_.emplace_back(wire_name, io_name);
+                }
             }
             
             return io_name;

@@ -42,11 +42,18 @@ enum e_OptionBaseToken {
 	OT_PLACE_FILE,
 	OT_ROUTE_FILE,
 	OT_SDC_FILE,
+
+    //TODO check for nop power options
 	OT_POWER,
 	OT_ACTIVITY_FILE,
 	OT_POWER_OUT_FILE,
 	OT_CMOS_TECH_BEHAVIOR_FILE,
 
+    //Netlist processing related options
+    OT_ABSORB_BUFFER_LUTS,
+    OT_SWEEP_PRIMARY_IOS,
+    OT_SWEEP_NETS,
+    OT_SWEEP_BLOCKS,
 
     //Packing options
 	OT_PACK,
@@ -56,8 +63,6 @@ enum e_OptionBaseToken {
             OT_ALLOW_UNRELATED_CLUSTERING,
             OT_ALPHA_CLUSTERING,
             OT_BETA_CLUSTERING,
-            OT_SWEEP_HANGING_NETS_AND_INPUTS,
-            OT_ABSORB_BUFFER_LUTS,
             OT_CLUSTER_SEED,
             OT_HILL_CLIMBING_FLAG,
             OT_SKIP_CLUSTERING,

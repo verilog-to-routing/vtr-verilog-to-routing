@@ -682,7 +682,7 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     return true;
 }
 
-size_t sweep_iterative(AtomNetlist& netlist, bool sweep_ios) {
+size_t sweep_iterative(AtomNetlist& netlist, bool should_sweep_ios, bool should_sweep_nets, bool should_sweep_blocks) {
     size_t nets_swept = 0;
     size_t blocks_swept = 0;
     size_t inputs_swept = 0;
@@ -702,11 +702,17 @@ size_t sweep_iterative(AtomNetlist& netlist, bool sweep_ios) {
         pass_inputs_swept = 0;
         pass_outputs_swept = 0;
 
-        pass_nets_swept += sweep_nets(netlist);
-        pass_blocks_swept += sweep_blocks(netlist);
-        if(sweep_ios) {
+        if(should_sweep_ios) {
             pass_inputs_swept += sweep_inputs(netlist);
             pass_outputs_swept += sweep_outputs(netlist);
+        }
+
+        if(should_sweep_blocks) {
+            pass_nets_swept += sweep_nets(netlist);
+        }
+
+        if(should_sweep_nets) {
+            pass_blocks_swept += sweep_blocks(netlist);
         }
 
         nets_swept += pass_nets_swept;
@@ -716,10 +722,10 @@ size_t sweep_iterative(AtomNetlist& netlist, bool sweep_ios) {
     } while(pass_nets_swept != 0 || pass_blocks_swept != 0 
             || pass_inputs_swept != 0 || pass_outputs_swept != 0);
 
-    vtr::printf_info("Swept net(s)   : %zu\n", nets_swept);
-    vtr::printf_info("Swept block(s) : %zu\n", blocks_swept);
     vtr::printf_info("Swept input(s) : %zu\n", inputs_swept);
     vtr::printf_info("Swept output(s): %zu\n", outputs_swept);
+    vtr::printf_info("Swept net(s)   : %zu\n", nets_swept);
+    vtr::printf_info("Swept block(s) : %zu\n", blocks_swept);
 
     return nets_swept + blocks_swept + inputs_swept + outputs_swept;
 }

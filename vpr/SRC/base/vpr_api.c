@@ -25,6 +25,7 @@ using namespace std;
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
+#include "atom_netlist.h"
 #include "graphics.h"
 #include "read_netlist.h"
 #include "check_netlist.h"
@@ -103,6 +104,12 @@ void vpr_print_usage(void) {
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
 	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
 	vtr::printf_info("\n");
+	vtr::printf_info("Netlist Options:\n");
+	vtr::printf_info("\t[--absorb_buffer_luts on | off]\n");
+	vtr::printf_info("\t[--sweep_primary_ios on | off]\n");
+	vtr::printf_info("\t[--sweep_nets on | off]\n");
+	vtr::printf_info("\t[--sweep_blocks on | off]\n");
+	vtr::printf_info("\n");
 	vtr::printf_info("Packer Options:\n");
 	/* vtr::printf_info("\t[-global_clocks on | off]\n"); */
 	/* vtr::printf_info("\t[-hill_climbing on | off]\n"); */
@@ -148,6 +155,8 @@ void vpr_print_usage(void) {
 	vtr::printf_info("\n");
 	vtr::printf_info("VPR Developer Options:\n");
 	vtr::printf_info("\t[--gen_netlist_as_blif]\n");
+	vtr::printf_info("\n");
+	vtr::printf_info("\tSee https://docs.verilogtorouting.org for option descriptions.\n");
 	vtr::printf_info("\n");
 }
 
@@ -210,14 +219,25 @@ void vpr_init(const int argc, const char **argv,
 		vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
 		/* Read in arch and circuit */
-		SetupVPR(options, vpr_setup->TimingEnabled, true, &vpr_setup->FileNameOpts,
-				arch, &vpr_setup->user_models,
-				&vpr_setup->library_models, &vpr_setup->PackerOpts,
-				&vpr_setup->PlacerOpts, &vpr_setup->AnnealSched,
-				&vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
-				&vpr_setup->PackerRRGraph, &vpr_setup->Segments,
-				&vpr_setup->Timing, &vpr_setup->ShowGraphics,
-				&vpr_setup->GraphPause, &vpr_setup->PowerOpts);
+		SetupVPR(options, 
+                 vpr_setup->TimingEnabled, 
+                 true, 
+                 &vpr_setup->FileNameOpts,
+				 arch, 
+                 &vpr_setup->user_models,
+				 &vpr_setup->library_models, 
+                 &vpr_setup->NetlistOpts,
+                 &vpr_setup->PackerOpts,
+				 &vpr_setup->PlacerOpts, 
+                 &vpr_setup->AnnealSched,
+				 &vpr_setup->RouterOpts, 
+                 &vpr_setup->RoutingArch,
+				 &vpr_setup->PackerRRGraph, 
+                 &vpr_setup->Segments,
+				 &vpr_setup->Timing, 
+                 &vpr_setup->ShowGraphics,
+				 &vpr_setup->GraphPause, 
+                 &vpr_setup->PowerOpts);
 
 		/* Check inputs are reasonable */
 		CheckArch(*arch);
@@ -232,11 +252,15 @@ void vpr_init(const int argc, const char **argv,
 		fflush(stdout);
 
 		/* Read blif file and sweep unused components */
-		read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
-				vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs,
-				vpr_setup->PackerOpts.absorb_buffer_luts,
-				vpr_setup->user_models, vpr_setup->library_models,
-				vpr_setup->PowerOpts.do_power, vpr_setup->FileNameOpts.ActFile);
+		g_atom_nl = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
+                                          vpr_setup->user_models, 
+                                          vpr_setup->library_models,
+                                          vpr_setup->NetlistOpts.absorb_buffer_luts,
+                                          vpr_setup->NetlistOpts.sweep_primary_ios,
+                                          vpr_setup->NetlistOpts.sweep_nets,
+                                          vpr_setup->NetlistOpts.sweep_blocks,
+                                          vpr_setup->PowerOpts.do_power, 
+                                          vpr_setup->FileNameOpts.ActFile);
 		fflush(stdout);
 
 		ShowSetup(*options, *vpr_setup);
@@ -909,6 +933,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
 		t_arch * Arch,
 		t_model ** user_models, t_model ** library_models,
+		t_netlist_opts* NetlistOpts,
 		struct s_packer_opts *PackerOpts,
 		struct s_placer_opts *PlacerOpts,
 		struct s_annealing_sched *AnnealSched,
@@ -919,7 +944,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
-			user_models, library_models, PackerOpts, PlacerOpts,
+			user_models, library_models, NetlistOpts, PackerOpts, PlacerOpts,
 			AnnealSched, RouterOpts, RoutingArch, PackerRRGraph, Segments, Timing,
 			ShowGraphics, GraphPause, PowerOpts);
 }
@@ -938,15 +963,7 @@ void vpr_check_setup(const struct s_placer_opts PlacerOpts,
 	CheckSetup(PlacerOpts, RouterOpts, RoutingArch,
 			Segments, Timing, Chans);
 }
-/* Read blif file and sweep unused components */
-void vpr_read_and_process_blif(const char *blif_file,
-		const bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
-        const t_model *user_models,
-		const t_model *library_models, bool read_activity_file,
-		char * activity_file) {
-	read_and_process_blif(blif_file, sweep_hanging_nets_and_inputs, absorb_buffer_luts, user_models,
-			library_models, read_activity_file, activity_file);
-}
+
 /* Show current setup */
 void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup) {
 	ShowSetup(options, vpr_setup);

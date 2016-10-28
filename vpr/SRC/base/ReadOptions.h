@@ -26,14 +26,19 @@ struct s_options {
 	bool CreateEchoFile;
 	bool Generate_Post_Synthesis_Netlist;
     char SlackDefinition;
+
+    /* Atom netlist options */
+	bool absorb_buffer_luts;
+	bool sweep_primary_ios;
+	bool sweep_nets;
+	bool sweep_blocks;
+
 	/* Clustering options */
 	bool global_clocks;
 	int cluster_size;
 	int inputs_per_cluster;
 	int lut_size;
 	bool hill_climbing_flag;
-	bool sweep_hanging_nets_and_inputs;
-	bool absorb_buffer_luts;
 	bool timing_driven;
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;

@@ -65,6 +65,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
 		t_arch * Arch,
 		t_model ** user_models, t_model ** library_models,
+		t_netlist_opts* NetlistOpts,
 		struct s_packer_opts *PackerOpts,
 		struct s_placer_opts *PlacerOpts,
 		struct s_annealing_sched *AnnealSched,
@@ -82,12 +83,6 @@ void vpr_check_setup(const struct s_placer_opts PlacerOpts,
 		const struct s_router_opts RouterOpts,
 		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);
-/* Read blif file and sweep unused components */
-void vpr_read_and_process_blif(const char *blif_file,
-		const bool sweep_hanging_nets_and_inputs, bool absorb_buffer_luts,
-        const t_model *user_models,
-		const t_model *library_models, bool read_activity_file,
-		char * activity_file);
 /* Show current setup */
 void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup);
 

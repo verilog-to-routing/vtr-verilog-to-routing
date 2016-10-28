@@ -580,6 +580,14 @@ struct s_file_name_opts {
 	char *out_file_prefix;
 };
 
+/* Options for netlist loading */
+struct t_netlist_opts {
+    bool absorb_buffer_luts = true;
+    bool sweep_primary_ios = true;
+    bool sweep_blocks = true;
+    bool sweep_nets = true;
+};
+
 /* Options for packing
  * TODO: document each packing parameter         */
 
@@ -593,8 +601,6 @@ struct s_packer_opts {
 	const char *output_file;
 	bool global_clocks;
 	bool hill_climbing_flag;
-	bool sweep_hanging_nets_and_inputs;
-	bool absorb_buffer_luts;
 	bool timing_driven;
 	enum e_cluster_seed cluster_seed_type;
 	float alpha;
@@ -958,6 +964,7 @@ typedef struct s_vpr_setup {
 	struct s_file_name_opts FileNameOpts; /* File names */
 	t_model * user_models; /* blif models defined by the user */
 	t_model * library_models; /* blif models in VPR */
+	t_netlist_opts NetlistOpts; /* Options for packer */
 	struct s_packer_opts PackerOpts; /* Options for packer */
 	struct s_placer_opts PlacerOpts; /* Options for placer */
 	struct s_annealing_sched AnnealSched; /* Placement option annealing schedule */

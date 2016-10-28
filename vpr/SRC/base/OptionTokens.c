@@ -59,8 +59,12 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "sdc_file", OT_SDC_FILE }, 
 		{ "global_clocks", OT_GLOBAL_CLOCKS }, 
 		{ "hill_climbing", OT_HILL_CLIMBING_FLAG }, 
-		{ "sweep_hanging_nets_and_inputs", OT_SWEEP_HANGING_NETS_AND_INPUTS }, 
+
 		{ "absorb_buffer_luts", OT_ABSORB_BUFFER_LUTS }, 
+		{ "sweep_primary_ios", OT_SWEEP_PRIMARY_IOS }, 
+		{ "sweep_nets", OT_SWEEP_NETS }, 
+		{ "sweep_blocks", OT_SWEEP_BLOCKS }, 
+
 		{ "no_clustering", OT_SKIP_CLUSTERING }, 
 		{ "allow_unrelated_clustering", OT_ALLOW_UNRELATED_CLUSTERING }, 
 		{ "connection_driven_clustering", OT_CONNECTION_DRIVEN_CLUSTERING }, 
