@@ -1,6 +1,8 @@
 Introduction
 ============
-The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development. The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture. It then perfoms:
+The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development. 
+The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
+It then perfoms:
   * Elaboration & Synthesis (ODIN II)
   * Logic Optimization & Technology Mapping (ABC)
   * Packing, Placement, Routing & Timing Analysis (VPR)
@@ -11,9 +13,8 @@ VTR also includes a set of benchmark designs known to work with the design flow.
 License
 =======
 
-Generally most code is under MIT license, with the exception of ABC which is
-distributed under its own (permissive) terms. Full license details can be
-found [here](LICENSE.md).
+Generally most code is under MIT license, with the exception of ABC which is distributed under its own (permissive) terms.
+Full license details can be found [here](LICENSE.md).
 
 Download
 ========
@@ -63,17 +64,26 @@ Bibtex:
 
 Development
 ===========
-This is the development trunk for the Verilog-to-Routing project. Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux. You should expect that the tools are not always stable and that more work is needed to get the flow to run.
+This is the development trunk for the Verilog-to-Routing project. 
+Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux. 
+You should expect that the tools are not always stable and that more work is needed to get the flow to run.
 
-For new developers, please do the tutorial in `tutorial/NewDeveloperTutorial.txt`. You will be directed back here once you ramp up.
+For new developers, please do the tutorial in `tutorial/NewDeveloperTutorial.txt`. 
+You will be directed back here once you ramp up.
 
-VTR development follows a classic centralized repository (svn-like) workflow. The 'master' branch is supposed to be the most current stable version of the project. Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull`) to keep in sync with the GitHub master. When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation. Unstable code should remain in the developer's local copy.
+VTR development follows a classic centralized repository (svn-like) workflow. 
+The 'master' branch is supposed to be the most current stable version of the project. 
+Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull`) to keep in sync with the GitHub master. 
+When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation.
+Unstable code should remain in the developer's local copy.
 
 We do automated testing of the trunk using BuildBot to verify functionality and Quality of Results (QoR).
 * [Trunk Status](http://builds.verilogtorouting.org:8080/waterfall)
 * [QoR Tracking](http://builds.verilogtorouting.org:8080/)
 
 *IMPORTANT*: A broken build must be fixed at top priority. You break the build if your commit breaks any of the automated regression tests.
+
+For additional information see the [developer README](README.developers.md).
 
 Contributors
 ============
