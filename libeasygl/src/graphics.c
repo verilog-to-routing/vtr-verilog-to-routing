@@ -480,8 +480,8 @@ private:
 struct t_gl_state {
     bool initialized = false;
     t_display_type disp_type = SCREEN;
-    t_color background_color = t_color(0xFF, 0xFF, 0xCC);
-    t_color foreground_color = BLACK;
+    t_color background_color = t_color(0xFF, 0xFF, 0xCC); //White-ish?
+    t_color foreground_color = t_color(0x00, 0x00, 0x00); //Black
     int currentlinestyle = SOLID;
     int currentlinewidth = 0;
     int currentfontsize = 12;
