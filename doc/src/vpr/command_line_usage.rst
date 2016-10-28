@@ -150,6 +150,46 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``off``
 
+
+.. _netlist_options:
+
+Netlist Options
+---------------
+By default VPR will remove buffer LUTs, and iteratively sweep the netlist to remove unused primary inputs/outputs, nets and blocks, until nothing else can be removed. 
+
+.. option:: -absorb_buffer_luts {on | off}
+
+    Controls whether LUTs programmed as wires (i.e. implementing logical identity) should be absorbed into the downstream logic.
+
+    Usually buffer LUTS are introduced in BLIF circuits by upstream tools in order to rename signals (like ``assign`` statements in Verilog). 
+    Absorbing these buffers reduces the number of LUTs required to implement the circuit.
+
+    Ocassionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
+    Disabling buffer absorption can also improve the matching between the input and post-synthesis netlist/SDF.
+
+    **Default**: ``on``
+
+.. option:: -sweep_primary_ios {on | off}
+
+    Controls whether the circuits hanging/dangling primary inputs and outputs (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
+
+    Disabling sweeping of primary inputs/outputs can improve the matching between the input and post-synthesis netlists.
+    This is often useful when performing formal verification.
+
+    **Default**: ``on``
+
+.. option:: -sweep_nets {on | off}
+
+    Controls whether hanging/dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
+
+    **Default**: ``on``
+
+.. option:: -sweep_blocks {on | off}
+
+    Controls whether hanging/dangling blocks (i.e. those who do not drive anything) are swept and removed from the netlist.
+
+    **Default**: ``on``
+
 .. _packing_options:
 
 Packing Options
@@ -206,24 +246,6 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``blend`` if timing_driven_clustering is on; ``max_inputs`` otherwise.
 
-
-.. option:: -sweep_hanging_nets_and_inputs {on | off}
-
-    Controls whether hanging/dangling nets and inputs (i.e. those that do not drive anything)) are swept and removed from the netlist.
-
-    **Default**: ``on``
-
-.. option:: -absorb_buffer_luts {on | off}
-
-    Controls whether LUTs programmed as wires (i.e. implementing logical identity) should be absorbed into the downstream logic.
-
-    Usually buffer LUTS are introduced in BLIF circuits by upstream tools in order to rename signals (like ``assign`` statements in Verilog). 
-    Absorbing these buffers reduces the number of LUTs required to implement the circuit.
-
-    Ocassionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
-    Disabling buffer absorption can also improve the matching between the input and post-synthesis netlist/SDF.
-
-    **Default**: ``on``
 
 .. _placer_options:
 
