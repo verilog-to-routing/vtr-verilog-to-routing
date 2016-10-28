@@ -2531,7 +2531,8 @@ draw_message (void)
 void 
 update_message (const char *msg) 
 {
-	strncpy (gl_state.statusMessage, msg, BUFSIZE);
+	strncpy (gl_state.statusMessage, msg, BUFSIZE-1);
+    gl_state.statusMessage[BUFSIZE-1] = '\0'; //Ensure termination
 	draw_message ();
 #ifdef X11
 // Make this appear immediately.  Win32 does that automaticaly.
@@ -3451,7 +3452,8 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 	}
 
 	if (bnum != -1) {
-		strncpy (buttons[i].text, new_button_text, BUTTON_TEXT_LEN);
+		strncpy (buttons[i].text, new_button_text, BUTTON_TEXT_LEN-1);
+        buttons[i].text[BUTTON_TEXT_LEN-1] = '\0'; //Ensure termination
 #ifdef X11
 		x11_drawbut (i);
 #else // Win32
