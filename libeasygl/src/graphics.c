@@ -3819,8 +3819,7 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
                     //pass
                     break;
 				}
-			} 
-			else {  /* A menu button was pressed. */
+			} else {  /* A menu button was pressed. */
 				bnum = x11_which_button(report.xbutton.window);
 #ifdef VERBOSE 
 				printf("Button number is %d\n",bnum);
@@ -3851,13 +3850,14 @@ x11_event_loop (void (*act_on_mousebutton)(float x, float y, t_event_buttonPress
 			printf("Mask is: %d.\n",report.xbutton.state);
 #endif
 			switch (report.xbutton.button) {
-			case Button2:  /* Scroll wheel released; stop panning */
-				panning_off();
-				break;
-            default:
-                //pass
-                break;
+                case Button2:  /* Scroll wheel released; stop panning */
+                    panning_off();
+                    break;
+                default:
+                    //pass
+                    break;
 			}
+            break;
 		case MotionNotify:
 #ifdef VERBOSE 
 			printf("Got a MotionNotify Event.\n");
