@@ -41,8 +41,6 @@ using namespace std;
 #include "ReadOptions.h"
 #include "hash.h"
 
-#include "read_activity.h"
-
 static AtomNetlist read_blif(const char *blif_file, 
                              const t_model *user_models, 
                              const t_model *library_models);
@@ -622,9 +620,7 @@ AtomNetlist read_and_process_blif(const char *blif_file,
                                   bool should_absorb_buffers, 
                                   bool should_sweep_primary_ios, 
                                   bool should_sweep_nets,
-                                  bool should_sweep_blocks, 
-                                  bool read_activity_file, 
-                                  char * activity_file) {
+                                  bool should_sweep_blocks) {
     AtomNetlist netlist;
     {
         vtr::ScopedPrintTimer t("Load BLIF");
@@ -669,12 +665,6 @@ AtomNetlist read_and_process_blif(const char *blif_file,
     }
 
     show_blif_stats(netlist);
-
-    if(read_activity_file) {
-        vtr::ScopedPrintTimer t("Load Activity File");
-        auto atom_net_power = read_activity(netlist, activity_file);
-        g_atom_net_power = std::move(atom_net_power);
-    }
 
     return netlist;
 }

@@ -21,6 +21,7 @@ using namespace std;
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_version.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -57,6 +58,7 @@ using namespace std;
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
 #include "output_blif.h"
+#include "read_activity.h"
 
 #include "log.h"
 
@@ -258,9 +260,16 @@ void vpr_init(const int argc, const char **argv,
                                           vpr_setup->NetlistOpts.absorb_buffer_luts,
                                           vpr_setup->NetlistOpts.sweep_primary_ios,
                                           vpr_setup->NetlistOpts.sweep_nets,
-                                          vpr_setup->NetlistOpts.sweep_blocks,
-                                          vpr_setup->PowerOpts.do_power, 
-                                          vpr_setup->FileNameOpts.ActFile);
+                                          vpr_setup->NetlistOpts.sweep_blocks);
+
+
+        if(vpr_setup->PowerOpts.do_power) {
+            //Load the net activity file for power estimation
+            vtr::ScopedPrintTimer t("Load Activity File");
+            g_atom_net_power = read_activity(g_atom_nl, vpr_setup->FileNameOpts.ActFile);
+        }
+
+
 		fflush(stdout);
 
 		ShowSetup(*options, *vpr_setup);
