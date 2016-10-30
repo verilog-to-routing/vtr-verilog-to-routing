@@ -2,6 +2,7 @@
 /*
  * Forward declarations for Timing Graph and related types
  */
+#include "tatum_strong_id.hpp"
 
 //The timing graph
 class TimingGraph;
