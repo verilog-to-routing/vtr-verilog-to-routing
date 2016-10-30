@@ -76,51 +76,51 @@ struct domain_header_t {
 class VprArrReqTimes {
     public:
         void set_num_nodes(int nnodes) { num_nodes = nnodes; }
-        void add_arr_time(int clock_id, int node_id, float val) {
+        void add_arr_time(const DomainId clock_id, const NodeId node_id, float val) {
             resize(clock_id);
             TATUM_ASSERT(arr.find(clock_id) != arr.end());
-            float curr_val = arr[clock_id][node_id];
+            float curr_val = arr[clock_id][size_t(node_id)];
             if(!isnan(curr_val) && isnan(val)) {
                 //Don't over-write real values with NAN
                 return;
             }
             if(isnan(curr_val) || curr_val < val) {
                 //Max
-                arr[clock_id][node_id] = val;
+                arr[clock_id][size_t(node_id)] = val;
             }
         }
 
-        void add_req_time(int clock_id, int node_id, float val) {
+        void add_req_time(const DomainId clock_id, const NodeId node_id, float val) {
             resize(clock_id);
             TATUM_ASSERT(req.find(clock_id) != req.end());
-            float curr_val = req[clock_id][node_id];
+            float curr_val = req[clock_id][size_t(node_id)];
             if(!isnan(curr_val) && isnan(val)) {
                 //Don't over-write real values with NAN
                 return;
             }
             if(isnan(curr_val) || val < curr_val) {
                 //Min
-                req[clock_id][node_id] = val;
+                req[clock_id][size_t(node_id)] = val;
             }
         }
 
-        float get_arr_time(int clock_id, int node_id) const {
+        float get_arr_time(const DomainId clock_id, const NodeId node_id) const {
             auto arr_iter = arr.find(clock_id);
             TATUM_ASSERT(arr_iter != arr.end());
-            TATUM_ASSERT(node_id  < (int) arr_iter->second.size());
-            return arr_iter->second[node_id];
+            TATUM_ASSERT(size_t(node_id)  < arr_iter->second.size());
+            return arr_iter->second[size_t(node_id)];
         }
 
-        float get_req_time(int clock_id, int node_id) const {
+        float get_req_time(const DomainId clock_id, const NodeId node_id) const {
             auto req_iter = req.find(clock_id);
             TATUM_ASSERT(req_iter != req.end());
-            TATUM_ASSERT(node_id  < (int) req_iter->second.size());
-            return req_iter->second[node_id];
+            TATUM_ASSERT(size_t(node_id)  < req_iter->second.size());
+            return req_iter->second[size_t(node_id)];
         }
 
         int get_num_clocks() const { return (int) arr.size(); }
-        std::vector<int> clocks() const {
-            std::vector<int> clocks_to_return;
+        std::vector<DomainId> clocks() const {
+            std::vector<DomainId> clocks_to_return;
             for(auto kv : arr) {
                 clocks_to_return.push_back(kv.first);
             }
@@ -129,7 +129,7 @@ class VprArrReqTimes {
 
         int get_num_nodes() const { return (int) num_nodes; }
 
-        void resize(int clock_id) {
+        void resize(const DomainId clock_id) {
             if(arr.find(clock_id) == arr.end()) {
                 arr[clock_id] = std::vector<float>(num_nodes, NAN);
                 req[clock_id] = std::vector<float>(num_nodes, NAN);
@@ -138,7 +138,7 @@ class VprArrReqTimes {
 
         void print() const {
             for(auto arr_iter : arr) {
-                int clock_id = arr_iter.first;
+                DomainId clock_id = arr_iter.first;
                 auto req_iter = req.find(clock_id);
 
                 std::cout << "Clock " << clock_id << std::endl;
@@ -150,8 +150,8 @@ class VprArrReqTimes {
             }
         }
 
-        std::set<int> domains() {
-            std::set<int> domain_values;
+        std::set<DomainId> domains() {
+            std::set<DomainId> domain_values;
             for(const auto& pair : arr) {
                 domain_values.insert(pair.first);
             }
@@ -160,8 +160,8 @@ class VprArrReqTimes {
     private:
 
         int num_nodes;
-        std::map<int,std::vector<float>> arr;
-        std::map<int,std::vector<float>> req;
+        std::map<DomainId,std::vector<float>> arr;
+        std::map<DomainId,std::vector<float>> req;
 
 };
 

@@ -8,7 +8,7 @@
 using std::cout;
 using std::endl;
 
-bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width) {
     bool error = false;
     float arr_abs_err = fabs(arr_time - vpr_arr_time);
     float arr_rel_err = relative_error(arr_time, vpr_arr_time);
@@ -45,7 +45,7 @@ bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int doma
     return error;
 }
 
-bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, int domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width) {
     bool error = false;
     float req_abs_err = fabs(req_time - vpr_req_time);
     float req_rel_err = relative_error(req_time, vpr_req_time);

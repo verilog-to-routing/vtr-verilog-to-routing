@@ -1,10 +1,4 @@
 #pragma once
-
-#include <vector>
-#include <iosfwd>
-
-#include "timing_graph_fwd.hpp"
-
 /**
  * The 'TimingGraph' class represents a timing graph.
  *
@@ -59,66 +53,94 @@
  * support is added), it may be a good idea apply these modifications automatically as needed.
  *
  */
+#include <vector>
+#include <iosfwd>
+
+#include "tatum_range.hpp"
+#include "timing_graph_fwd.hpp"
+
 class TimingGraph {
+    public: //Public types
+        typedef std::vector<EdgeId>::const_iterator edge_iterator;
+        typedef std::vector<NodeId>::const_iterator node_iterator;
+        typedef std::vector<LevelId>::const_iterator level_iterator;
+
+        typedef tatum::Range<node_iterator> node_range;
+        typedef tatum::Range<edge_iterator> edge_range;
+        typedef tatum::Range<level_iterator> level_range;
     public:
         /*
          * Node data accessors
          */
         ///\param id The id of a node
         ///\returns The type of the node
-        TN_Type node_type(NodeId id) const { return node_types_[id]; }
+        TN_Type node_type(NodeId id) const { return node_types_[size_t(id)]; }
 
         ///\param id The id of a node
         ///\returns The clock domain of the node
-        DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
+        DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[size_t(id)]; }
 
         ///\param id The id of a node
         ///\returns Whether the is the source of a clock
-        bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
+        bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[size_t(id)]; }
 
         /*
          * Node edge accessors
          */
+        ///\param id The node id
+        ///\returns A range of all out-going edges the node drives
+        edge_range node_out_edges(const NodeId id) const { return tatum::make_range(node_out_edges_[size_t(id)].begin(), node_out_edges_[size_t(id)].end()); }
+
+        ///\param id The node id
+        ///\returns A range of all in-coming edges the node drives
+        edge_range node_in_edges(const NodeId id) const { return tatum::make_range(node_in_edges_[size_t(id)].begin(), node_in_edges_[size_t(id)].end()); }
+
         ///\param id The id of a node
         ///\returns The number of out-going edges the node drives
-        int num_node_out_edges(const NodeId id) const { return node_out_edges_[id].size(); }
+        int num_node_out_edges(const NodeId id) const { return node_out_edges_[size_t(id)].size(); }
 
         ///\param id The id of a node
         ///\returns The number of in-coming edges the node sinks
-        int num_node_in_edges(const NodeId id) const { return node_in_edges_[id].size(); }
+        int num_node_in_edges(const NodeId id) const { return node_in_edges_[size_t(id)].size(); }
 
         ///\param node_id The id of a node
         ///\param edge_idx The out-going edge number at this node
         ///\returns The edge id of the edge_idx'th edge driven by node_id
-        EdgeId node_out_edge(const NodeId node_id, int edge_idx) const { return node_out_edges_[node_id][edge_idx]; }
+        EdgeId node_out_edge(const NodeId node_id, int edge_idx) const { return node_out_edges_[size_t(node_id)][edge_idx]; }
 
         ///\param node_id The id of a node
         ///\param edge_idx The in-coming edge number at this node
         ///\returns The edge id of the edge_idx'th edge sunk by node_id
-        EdgeId node_in_edge(const NodeId node_id, int edge_idx) const { return node_in_edges_[node_id][edge_idx]; }
+        EdgeId node_in_edge(const NodeId node_id, int edge_idx) const { return node_in_edges_[size_t(node_id)][edge_idx]; }
 
         /*
          * Edge accessors
          */
         ///\param id The id of an edge
         ///\returns The node id of the edge's sink
-        NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[id]; }
+        NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[size_t(id)]; }
 
         ///\param id The id of an edge
         ///\returns The node id of the edge's source (driver)
-        NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[id]; }
+        NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[size_t(id)]; }
 
         /*
          * Graph accessors
          */
+
+        //\returns A range containing all nodes in the graph
+        node_range nodes() const { return tatum::make_range(node_ids_.begin(), node_ids_.end()); }
+        edge_range edges() const { return tatum::make_range(edge_ids_.begin(), edge_ids_.end()); }
+        level_range levels() const { return tatum::make_range(level_ids_.begin(), level_ids_.end()); }
+        
         ///\returns The total number of nodes in the graph
-        NodeId num_nodes() const { return node_types_.size(); }
+        size_t num_nodes() const { return node_types_.size(); }
 
         ///\returns The total number of edges in the graph
-        EdgeId num_edges() const { return edge_src_nodes_.size(); }
+        size_t num_edges() const { return edge_src_nodes_.size(); }
 
         ///\returns The total number of levels in the graph
-        LevelId num_levels() const { return node_levels_.size(); }
+        size_t num_levels() const { return level_nodes_.size(); }
 
         /*
          * Node collection accessors
@@ -127,12 +149,19 @@ class TimingGraph {
         ///\pre The graph must been levelized.
         ///\returns The nodes in the level
         ///\see levelize()
-        const std::vector<NodeId>& level(const LevelId level_id) const { return node_levels_[level_id]; }
+        node_range level_nodes(const LevelId level_id) const { return tatum::make_range(level_nodes_[size_t(level_id)].begin(),
+                                                                                        level_nodes_[size_t(level_id)].end()); }
+
+        ///\param level_id The level index in the graph
+        ///\pre The graph must been levelized.
+        ///\returns The nodes in the level
+        ///\see levelize()
+        const std::vector<NodeId>& level(const LevelId level_id) const { return level_nodes_[size_t(level_id)]; }
 
         ///\pre The graph must be levelized.
         ///\returns The nodes which are primary inputs
         ///\see levelize()
-        const std::vector<NodeId>& primary_inputs() const { return node_levels_[0]; } //After levelizing PIs will be 1st level
+        const std::vector<NodeId>& primary_inputs() const { return level_nodes_[0]; } //After levelizing PIs will be 1st level
 
         ///\pre The primary outputs have been identified.
         ///\returns The nodes which are primary outputs
@@ -185,11 +214,17 @@ class TimingGraph {
         std::vector<NodeId> optimize_node_layout();
 
     private:
+        bool valid_node_id(const NodeId node_id);
+        bool valid_edge_id(const EdgeId edge_id);
+        bool valid_level_id(const LevelId level_id);
+
+    private:
         /*
          * For improved memory locality, we use a Struct of Arrays (SoA)
          * data layout, rather than Array of Structs (AoS)
          */
         //Node data
+        std::vector<NodeId> node_ids_; //The node IDs in the graph
         std::vector<TN_Type> node_types_; //Type of node [0..num_nodes()-1]
         std::vector<DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
         std::vector<std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
@@ -197,11 +232,13 @@ class TimingGraph {
         std::vector<bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data
+        std::vector<EdgeId> edge_ids_; //The edge IDs in the graph
         std::vector<NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
         std::vector<NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
 
         //Auxilary graph-level info, filled in by levelize()
-        std::vector<std::vector<NodeId>> node_levels_; //Nodes in each level [0..num_levels()-1]
+        std::vector<LevelId> level_ids_; //The level IDs in the graph
+        std::vector<std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
         std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
                                               //NOTE: we track this separetely (unlike Primary Inputs) since these are
                                               //      scattered through the graph and do not exist on a single level

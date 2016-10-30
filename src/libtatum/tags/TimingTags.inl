@@ -32,7 +32,7 @@ inline TimingTags::const_iterator TimingTags::end() const {
 inline void TimingTags::add_tag(const TimingTag& tag) {
     //Don't add invalid clock domains
     //Some sources like constant generators may yeild illegal clock domains
-    if(tag.clock_domain() == INVALID_CLOCK_DOMAIN) {
+    if(!tag.clock_domain()) {
         return;
     }
 

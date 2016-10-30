@@ -151,15 +151,15 @@ finish: timing_graph timing_constraints EOL {
                                                  *timing_graph.levelize();
                                                  */
                                                 //Add the edges, now that all nodes have been added
-                                                for(NodeId src_node_id = 0; src_node_id < (int) node_out_edges.size(); src_node_id++) {
+                                                for(int src_node_id = 0; src_node_id < (int) node_out_edges.size(); src_node_id++) {
                                                     for(const auto& edge : *node_out_edges[src_node_id]) {
-                                                        EdgeId edge_id = timing_graph.add_edge(edge.src_node, edge.sink_node);
+                                                        EdgeId edge_id = timing_graph.add_edge(NodeId(edge.src_node), NodeId(edge.sink_node));
 
                                                         //Record the edge delay
-                                                        if(edge_id >= (int) edge_delays.size()) {
-                                                            edge_delays.resize(edge_id+1);
+                                                        if(size_t(edge_id) >= edge_delays.size()) {
+                                                            edge_delays.resize(size_t(edge_id)+1);
                                                         }
-                                                        edge_delays[edge_id] = edge.delay;
+                                                        edge_delays[size_t(edge_id)] = edge.delay;
                                                     }
                                                     //Clean-up
                                                     delete node_out_edges[src_node_id];
@@ -184,18 +184,18 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  */
 
                                                 //Add the node
-                                                NodeId src_node_id = timing_graph.add_node($2.type, $2.domain, $2.is_clk_src);
+                                                NodeId src_node_id = timing_graph.add_node($2.type, DomainId($2.domain), $2.is_clk_src);
 
                                                 //Save the edges to be added later
                                                 node_out_edges.push_back($2.out_edges);
-                                                node_logical_blocks.push_back($2.iblk);
+                                                node_logical_blocks.emplace_back($2.iblk);
 
-                                                TATUM_ASSERT(src_node_id == (int) node_out_edges.size() - 1);
+                                                TATUM_ASSERT(size_t(src_node_id) == node_out_edges.size() - 1);
 
                                                 if(timing_graph.num_nodes() % 1000000 == 0) {
                                                     std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
                                                 }
-                                                TATUM_ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
+                                                TATUM_ASSERT(timing_graph.num_nodes() - 1 == size_t($2.node_id));
 
                                             }
     | timing_graph num_tnode_levels         {
@@ -219,8 +219,8 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
     | timing_graph node_arr_req_time        {
                                                 TATUM_ASSERT(from_clock_domain >= 0);
                                                 TATUM_ASSERT(to_clock_domain >= 0);
-                                                arr_req_times.add_arr_time(from_clock_domain, $2.node_id, $2.T_arr);
-                                                arr_req_times.add_req_time(from_clock_domain, $2.node_id, $2.T_req);
+                                                arr_req_times.add_arr_time(DomainId(from_clock_domain), NodeId($2.node_id), $2.T_arr);
+                                                arr_req_times.add_req_time(DomainId(from_clock_domain), NodeId($2.node_id), $2.T_req);
 
                                                 arr_req_cnt++;
                                                 if(arr_req_cnt % 1000000 == 0) {
@@ -340,11 +340,11 @@ clock_constraint: src_domain sink_domain constraint EOL {
                     if($3 != -1.0) {
                         //-1 is used to signal invalid constraints that should
                         //not be analyzed
-                        timing_constraints.add_setup_clock_constraint($1, $2, $3);
+                        timing_constraints.add_setup_clock_constraint(DomainId($1), DomainId($2), $3);
 
                         //FIXME: Fixing the hold constraint to zero.  This will ignore any
                         //       hold multi-cycles
-                        timing_constraints.add_hold_clock_constraint($1, $2, 0.);
+                        timing_constraints.add_hold_clock_constraint(DomainId($1), DomainId($2), 0.);
                     }
                 }
 
@@ -358,7 +358,7 @@ constraint: number { $$ = $1; }
 input_constraints: INPUT_CONSTRAINTS_HEADER EOL {}
     | input_constraints INPUT_CONSTRAINTS_COLS EOL {}
     | input_constraints input_constraint {}
-input_constraint: node_id constraint EOL { timing_constraints.add_input_constraint($1, $2); }
+input_constraint: node_id constraint EOL { timing_constraints.add_input_constraint(NodeId($1), $2); }
 
 /*
  * Output Constraints
@@ -366,7 +366,7 @@ input_constraint: node_id constraint EOL { timing_constraints.add_input_constrai
 output_constraints: OUTPUT_CONSTRAINTS_HEADER EOL {}
     | output_constraints OUTPUT_CONSTRAINTS_COLS EOL {}
     | output_constraints output_constraint {}
-output_constraint: node_id constraint EOL { timing_constraints.add_output_constraint($1, $2); }
+output_constraint: node_id constraint EOL { timing_constraints.add_output_constraint(NodeId($1), $2); }
 
 /*
  * Basic values

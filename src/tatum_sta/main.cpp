@@ -121,9 +121,9 @@ int main(int argc, char** argv) {
 
         //Adjust the edge delays to reflect the new ordering
         edge_delays = std::vector<float>(orig_edge_delays.size());
-        for(EdgeId i = 0; i < (EdgeId) orig_edge_delays.size(); i++) {
+        for(size_t i = 0; i < orig_edge_delays.size(); i++) {
             EdgeId new_id = vpr_edge_map[i];
-            edge_delays[new_id] = orig_edge_delays[i];
+            edge_delays[size_t(new_id)] = orig_edge_delays[i];
         }
 
         clock_gettime(CLOCK_MONOTONIC, &node_reorder_start);
@@ -145,8 +145,8 @@ int main(int argc, char** argv) {
             //For every clock domain pair
             for(int i = 0; i < orig_expected_arr_req_times.get_num_nodes(); i++) {
                 NodeId new_id = vpr_node_map[i];
-                expected_arr_req_times.add_arr_time(src_domain, new_id, orig_expected_arr_req_times.get_arr_time(src_domain, i));
-                expected_arr_req_times.add_req_time(src_domain, new_id, orig_expected_arr_req_times.get_req_time(src_domain, i));
+                expected_arr_req_times.add_arr_time(src_domain, new_id, orig_expected_arr_req_times.get_arr_time(src_domain, NodeId(i)));
+                expected_arr_req_times.add_req_time(src_domain, new_id, orig_expected_arr_req_times.get_req_time(src_domain, NodeId(i)));
             }
         }
 
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
     //Performance variables
     float serial_verify_time = 0.;
     float serial_reset_time = 0.;
-    int serial_arr_req_verified = 0;
+    size_t serial_arr_req_verified = 0;
     std::map<std::string,float> serial_prof_data;
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
@@ -304,7 +304,7 @@ int main(int argc, char** argv) {
     //float parallel_bcktraverse_time_avg = 0.;
     float parallel_verify_time = 0;
     float parallel_reset_time = 0;
-    int parallel_arr_req_verified = 0;
+    size_t parallel_arr_req_verified = 0;
     std::map<std::string,float> parallel_prof_data;
     {
         cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;

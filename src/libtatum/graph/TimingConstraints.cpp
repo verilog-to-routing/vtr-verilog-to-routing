@@ -68,10 +68,12 @@ void TimingConstraints::remap_nodes(const std::vector<NodeId>& node_map) {
     std::map<NodeId,float> remapped_output_constraints;
 
     for(auto kv : input_constraints_) {
-        remapped_input_constraints[node_map[kv.first]] = kv.second;
+        NodeId new_node_id = node_map[size_t(kv.first)];
+        remapped_input_constraints[new_node_id] = kv.second;
     }
     for(auto kv : output_constraints_) {
-        remapped_output_constraints[node_map[kv.first]] = kv.second;
+        NodeId new_node_id = node_map[size_t(kv.first)];
+        remapped_output_constraints[new_node_id] = kv.second;
     }
 
     std::swap(input_constraints_, remapped_input_constraints);

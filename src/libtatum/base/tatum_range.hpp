@@ -41,10 +41,10 @@ template<typename T>
 class Range {
     public:
         Range(T b, T e): begin_(b), end_(e) {}
-        T begin() { return begin_; }
-        T end() { return end_; }
-        bool empty() { return begin_ == end_; }
-        size_t size() { return std::distance(begin_, end_); }
+        T begin() const { return begin_; }
+        T end() const { return end_; }
+        bool empty() const { return begin_ == end_; }
+        size_t size() const { return std::distance(begin_, end_); }
     private:
         T begin_;
         T end_;

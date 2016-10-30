@@ -133,11 +133,11 @@ class SetupAnalysisVisitor {
 
         void reset();
 
-        TimingTags& get_setup_data_tags(const NodeId node_id) { return setup_data_tags_[node_id]; }
-        const TimingTags& get_setup_data_tags(const NodeId node_id) const { return setup_data_tags_[node_id]; }
+        TimingTags& get_setup_data_tags(const NodeId node_id) { return setup_data_tags_[size_t(node_id)]; }
+        const TimingTags& get_setup_data_tags(const NodeId node_id) const { return setup_data_tags_[size_t(node_id)]; }
 
-        TimingTags& get_setup_clock_tags(const NodeId node_id) { return setup_clock_tags_[node_id]; }
-        const TimingTags& get_setup_clock_tags(const NodeId node_id) const { return setup_clock_tags_[node_id]; }
+        TimingTags& get_setup_clock_tags(const NodeId node_id) { return setup_clock_tags_[size_t(node_id)]; }
+        const TimingTags& get_setup_clock_tags(const NodeId node_id) const { return setup_clock_tags_[size_t(node_id)]; }
 
     private:
 
@@ -363,7 +363,7 @@ void SetupAnalysisVisitor::do_required_traverse_edge(const TimingGraph& tg, cons
     TimingTags& node_data_tags = get_setup_data_tags(node_id);
 
     //Pulling values from downstream sink node
-    int sink_node_id = tg.edge_sink_node(edge_id);
+    NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
     const Time& edge_delay = dc.max_edge_delay(tg, edge_id);
 

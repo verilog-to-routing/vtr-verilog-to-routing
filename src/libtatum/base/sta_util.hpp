@@ -35,7 +35,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
     os << "digraph G {" <<std::endl;
     os << "\tnode[shape=record]" <<std::endl;
 
-    for(int inode = 0; inode < tg.num_nodes(); inode++) {
+    for(const NodeId inode : tg.nodes()) {
         os << "\tnode" << inode;
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
@@ -68,7 +68,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
     }
 
     //Force drawing to be levelized
-    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+    for(const LevelId ilevel : tg.levels()) {
         os << "\t{rank = same;";
 
         for(NodeId node_id : tg.level(ilevel)) {
@@ -78,8 +78,8 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
     }
 
     //Add edges with delays annoated
-    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
-        for(NodeId node_id : tg.level(ilevel)) {
+    for(const LevelId ilevel : tg.levels()) {
+        for(NodeId node_id : tg.level_nodes(ilevel)) {
             for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
                 EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
@@ -102,7 +102,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
     os << "\tnode[shape=record]" <<std::endl;
 
     //Declare nodes and annotate tags
-    for(int inode = 0; inode < tg.num_nodes(); inode++) {
+    for(const NodeId inode : tg.nodes()) {
         os << "\tnode" << inode;
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
@@ -135,18 +135,18 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
     }
 
     //Force drawing to be levelized
-    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
+    for(const LevelId ilevel : tg.levels()) {
         os << "\t{rank = same;";
 
-        for(NodeId node_id : tg.level(ilevel)) {
+        for(NodeId node_id : tg.level_nodes(ilevel)) {
             os << " node" << node_id <<";";
         }
         os << "}" <<std::endl;
     }
 
     //Add edges with delays annoated
-    for(int ilevel = 0; ilevel < tg.num_levels(); ilevel++) {
-        for(NodeId node_id : tg.level(ilevel)) {
+    for(const LevelId ilevel : tg.levels()) {
+        for(NodeId node_id : tg.level_nodes(ilevel)) {
             for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
                 EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
 
@@ -173,7 +173,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Ana
 
     std::cout << "Node Data Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+    for(const NodeId i : tg.nodes()) {
         data_tag_cnts[analyzer->get_setup_data_tags(i).num_tags()]++;
     }
 
@@ -184,7 +184,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Ana
 
     std::cout << "Node Clock Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_tag_cnts;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+    for(const NodeId i : tg.nodes()) {
         clock_tag_cnts[analyzer->get_setup_clock_tags(i).num_tags()]++;
     }
 
@@ -205,7 +205,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Anal
 
     std::cout << "Node Data Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+    for(const NodeId i : tg.nodes()) {
         data_tag_cnts[analyzer->get_hold_data_tags(i).num_tags()]++;
     }
 
@@ -216,7 +216,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const std::shared_ptr<Anal
 
     std::cout << "Node Clock Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_tag_cnts;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
+    for(const NodeId i : tg.nodes()) {
         clock_tag_cnts[analyzer->get_hold_clock_tags(i).num_tags()]++;
     }
 
@@ -231,9 +231,9 @@ void print_setup_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> ana
     std::cout << std::endl;
     std::cout << "Setup Tags:" << std::endl;
     std::cout << std::scientific;
-    for(int level_idx = 0; level_idx < tg.num_levels(); level_idx++) {
-        std::cout << "Level: " << level_idx << std::endl;
-        for(NodeId node_id : tg.level(level_idx)) {
+    for(const LevelId level_id : tg.levels()) {
+        std::cout << "Level: " << level_id << std::endl;
+        for(NodeId node_id : tg.level_nodes(level_id)) {
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
             for(const TimingTag& tag : analyzer->get_setup_data_tags(node_id)) {
                 std::cout << "\tData : ";
@@ -259,9 +259,9 @@ void print_hold_tags(const TimingGraph& tg, const std::shared_ptr<Analyzer> anal
     std::cout << std::endl;
     std::cout << "Hold Tags:" << std::endl;
     std::cout << std::scientific;
-    for(int level_idx = 0; level_idx < tg.num_levels(); level_idx++) {
-        std::cout << "Level: " << level_idx << std::endl;
-        for(NodeId node_id : tg.level(level_idx)) {
+    for(const LevelId level_id : tg.levels()) {
+        std::cout << "Level: " << level_id << std::endl;
+        for(NodeId node_id : tg.level_nodes(level_id)) {
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
             for(const TimingTag& tag : analyzer->get_hold_data_tags(node_id)) {
                 std::cout << "\tData : ";

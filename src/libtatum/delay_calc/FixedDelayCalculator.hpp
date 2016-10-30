@@ -18,8 +18,8 @@ class FixedDelayCalculator {
             }
         }
 
-        Time min_edge_delay(const TimingGraph& /*tg*/, EdgeId edge_id) const { TATUM_ASSERT(edge_id < (int) edge_delays_.size()); return edge_delays_[edge_id]; };
-        Time max_edge_delay(const TimingGraph& /*tg*/, EdgeId edge_id) const { TATUM_ASSERT(edge_id < (int) edge_delays_.size()); return edge_delays_[edge_id]; };
+        Time min_edge_delay(const TimingGraph& /*tg*/, EdgeId edge_id) const { TATUM_ASSERT(size_t(edge_id) < edge_delays_.size()); return edge_delays_[size_t(edge_id)]; };
+        Time max_edge_delay(const TimingGraph& /*tg*/, EdgeId edge_id) const { TATUM_ASSERT(size_t(edge_id) < edge_delays_.size()); return edge_delays_[size_t(edge_id)]; };
     private:
         std::vector<Time> edge_delays_;
 };

@@ -85,8 +85,8 @@ void print_level_histogram(const TimingGraph& tg, int nbuckets) {
     cout << "Levels Width Histogram" << endl;
 
     std::vector<float> level_widths;
-    for(int i = 0; i < tg.num_levels(); i++) {
-        level_widths.push_back(tg.level(i).size());
+    for(const LevelId level_id : tg.levels()) {
+        level_widths.push_back(tg.level_nodes(level_id).size());
     }
     print_histogram(level_widths, nbuckets);
 }
@@ -95,8 +95,8 @@ void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets) {
     cout << "Node Fan-in Histogram" << endl;
 
     std::vector<float> fanin;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        fanin.push_back(tg.num_node_in_edges(i));
+    for(const NodeId node_id : tg.nodes()) {
+        fanin.push_back(tg.num_node_in_edges(node_id));
     }
 
     std::sort(fanin.begin(), fanin.end(), std::greater<float>());
@@ -107,8 +107,8 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
     cout << "Node Fan-out Histogram" << endl;
 
     std::vector<float> fanout;
-    for(NodeId i = 0; i < tg.num_nodes(); i++) {
-        fanout.push_back(tg.num_node_out_edges(i));
+    for(const NodeId node_id : tg.nodes()) {
+        fanout.push_back(tg.num_node_out_edges(node_id));
     }
 
     std::sort(fanout.begin(), fanout.end(), std::greater<float>());
@@ -117,7 +117,7 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
 
 
 void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
-    for(NodeId node_id = 0; node_id < tg->num_nodes(); node_id++) {
+    for(const NodeId node_id : tg->nodes()) {
         cout << "Node: " << node_id;
         cout << " Type: " << tg->node_type(node_id);
         cout << " Out Edges: " << tg->num_node_out_edges(node_id);
@@ -136,9 +136,9 @@ void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
 
 void print_levelization(std::shared_ptr<const TimingGraph> tg) {
     cout << "Num Levels: " << tg->num_levels() << "\n";
-    for(int ilevel = 0; ilevel < tg->num_levels(); ilevel++) {
-        const auto& level = tg->level(ilevel);
-        cout << "Level " << ilevel << ": " << level.size() << " nodes" << "\n";
+    for(const LevelId level_id : tg->levels()) {
+        const auto& level = tg->level_nodes(level_id);
+        cout << "Level " << level_id << ": " << level.size() << " nodes" << "\n";
         cout << "\t";
         for(auto node_id : level) {
             cout << node_id << " ";
@@ -343,8 +343,8 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
     std::map<BlockId,std::vector<NodeId>> logical_block_FF_sources;
     std::map<BlockId,std::vector<NodeId>> logical_block_FF_sinks;
 
-    for(NodeId node_id = 0; node_id < tg.num_nodes(); node_id++) {
-        BlockId blk_id = node_logical_blocks[node_id];
+    for(NodeId node_id : tg.nodes()) {
+        BlockId blk_id = node_logical_blocks[size_t(node_id)];
         if(tg.node_type(node_id) == TN_Type::FF_CLOCK) {
             logical_block_FF_clocks[blk_id].push_back(node_id);
         } else if (tg.node_type(node_id) == TN_Type::FF_SOURCE) {
@@ -389,17 +389,17 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
 void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data) {
     //Per-level speed-up
     //cout << "Level Speed-Ups by width:" << endl;
-    std::map<int,std::vector<int>,std::greater<int>> widths_to_levels;
-    for(int ilevel = 0; ilevel < timing_graph.num_levels(); ilevel++) {
-        int width = timing_graph.level(ilevel).size();
-        widths_to_levels[width].push_back(ilevel);
+    std::map<int,std::vector<LevelId>,std::greater<int>> widths_to_levels;
+    for(const LevelId level_id : timing_graph.levels()) {
+        int width = timing_graph.level_nodes(level_id).size();
+        widths_to_levels[width].push_back(level_id);
     }
 
     std::ofstream of(fname);
     of << "Width,Level,serial_fwd,serial_bck,parallel_fwd,parallel_bck"<< endl;
     for(auto kv : widths_to_levels) {
         int width = kv.first;
-        for(int ilevel : kv.second) {
+        for(const auto ilevel : kv.second) {
             std::stringstream key_fwd;
             std::stringstream key_bck;
             key_fwd << "fwd_level_" << ilevel;
