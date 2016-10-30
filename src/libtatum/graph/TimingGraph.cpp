@@ -5,6 +5,11 @@
 #include "TimingGraph.hpp"
 
 NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src) {
+
+    //Reserve an ID
+    NodeId node_id = NodeId(node_ids_.size());
+    node_ids_.push_back(node_id);
+
     //Type
     node_types_.push_back(type);
 
@@ -17,8 +22,6 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
     //Edges
     node_out_edges_.push_back(std::vector<EdgeId>());
     node_in_edges_.push_back(std::vector<EdgeId>());
-
-    NodeId node_id = NodeId(node_types_.size() - 1);
 
     //Verify sizes
     TATUM_ASSERT(node_types_.size() == node_clock_domains_.size());
@@ -34,15 +37,16 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     TATUM_ASSERT(valid_node_id(src_node));
     TATUM_ASSERT(valid_node_id(sink_node));
 
+    //Reserve an edge ID
+    EdgeId edge_id = EdgeId(edge_ids_.size());
+    edge_ids_.push_back(edge_id);
+
     //Create the edgge
     edge_src_nodes_.push_back(src_node);
     edge_sink_nodes_.push_back(sink_node);
 
     //Verify
     TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
-
-    //The id of the new edge
-    EdgeId edge_id = EdgeId(edge_sink_nodes_.size() - 1);
 
     //Update the nodes the edge references
     node_out_edges_[size_t(src_node)].push_back(edge_id);
@@ -86,12 +90,14 @@ void TimingGraph::levelize() {
     //We inspect the output edges of each node and decrement the fanin count of the
     //target node.  Once the fanin count for a node reaches zero it can be added
     //to the current level.
-    int level_id = 0;
+    int level_idx = 0;
+    level_ids_.emplace_back(level_idx);
+
     bool inserted_node_in_level = true;
     while(inserted_node_in_level) { //If nothing was inserted we are finished
         inserted_node_in_level = false;
 
-        for(const NodeId node_id : level_nodes_[level_id]) {
+        for(const NodeId node_id : level_nodes_[level_idx]) {
             //Inspect the fanout
             for(int edge_idx = 0; edge_idx < num_node_out_edges(node_id); edge_idx++) {
                 EdgeId edge_id = node_out_edge(node_id, edge_idx);
@@ -104,10 +110,10 @@ void TimingGraph::levelize() {
                 //Add to the next level if all fanin has been seen
                 if(node_fanin_remaining[size_t(sink_node)] == 0) {
                     //Ensure there is space by allocating the next level if required
-                    level_nodes_.resize(level_id+2);
+                    level_nodes_.resize(level_idx+2);
 
                     //Add the node
-                    level_nodes_[level_id+1].push_back(sink_node);
+                    level_nodes_[level_idx+1].push_back(sink_node);
 
                     inserted_node_in_level = true;
                 }
@@ -118,7 +124,8 @@ void TimingGraph::levelize() {
                 primary_outputs_.push_back(node_id);
             }
         }
-        level_id++;
+        level_idx++;
+        level_ids_.emplace_back(level_idx);
     }
 }
 
@@ -166,6 +173,12 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
         }
     }
 
+    //Update the edge ids
+    for(size_t i = 0; i < edge_ids_.size(); ++i) {
+        EdgeId new_edge_id = orig_to_new_edge_id[i];
+        edge_ids_[size_t(new_edge_id)] = new_edge_id;
+    }
+
     //Update node to edge refs
     for(const NodeId node_id : nodes()) {
         for(int edge_idx = 0; edge_idx < num_node_out_edges(node_id); edge_idx++) {
@@ -180,6 +193,7 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
         }
     }
 
+
     return orig_to_new_edge_id;
 }
 
@@ -191,16 +205,6 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
      * and node levels later
      */
     std::vector<NodeId> orig_to_new_node_id = std::vector<NodeId>(num_nodes());
-    /*
-     *int cnt = 0;
-     *for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
-     *    for(NodeId node_id : level_nodes_[level_idx]) {
-     *        orig_to_new_node_id[node_id] = cnt;
-     *        cnt++;
-     *    }
-     *}
-     */
-
 
     /*
      * Re-allocate nodes so levels are in contiguous memory
@@ -236,13 +240,12 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
      * Update old references to node_ids with thier new values
      */
     //The node levels
-    //for(int level_idx = 0; level_idx < num_levels(); level_idx++) {
-        //for(size_t node_idx = 0; node_idx < level_nodes_[level_idx].size(); node_idx++) {
     for(const LevelId level_id : levels()) {
-        for(const NodeId old_node_id : level_nodes(level_id)) {
+        for(size_t i = 0; i < level_nodes_[size_t(level_id)].size(); ++i) {
+            NodeId old_node_id = level_nodes_[size_t(level_id)][i];
             NodeId new_node_id = orig_to_new_node_id[size_t(old_node_id)];
 
-            level_nodes_[size_t(level_id)][size_t(old_node_id)] = new_node_id;
+            level_nodes_[size_t(level_id)][i] = new_node_id;
         }
     }
 
@@ -264,6 +267,11 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
 
         edge_sink_nodes_[size_t(edge_id)] = new_sink_node;
         edge_src_nodes_[size_t(edge_id)] = new_src_node;
+    }
+
+    //Update the node ids
+    for(size_t i = 0; i < node_ids_.size(); ++i) {
+        node_ids_[i] = orig_to_new_node_id[i];
     }
 
     return orig_to_new_node_id;
