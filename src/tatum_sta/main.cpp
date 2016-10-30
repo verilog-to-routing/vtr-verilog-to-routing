@@ -8,7 +8,7 @@
 
 #include <valgrind/callgrind.h>
 
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 
 #include "timing_analyzer_interfaces.hpp"
 #include "full_timing_analyzers.hpp"
@@ -30,7 +30,7 @@
 #define OPTIMIZE_NODE_EDGE_ORDER
 
 //Do we perform verification checks?
-#define VERIFY_VPR_TO_TATUM
+#define TATUM_TATUM_ASSERT_VPR_TO_TATUM
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-#ifdef VERIFY_VPR_TO_TATUM
+#ifdef TATUM_TATUM_ASSERT_VPR_TO_TATUM
             serial_arr_req_verified = verify_analyzer(*timing_graph, serial_analyzer,
                                                       expected_arr_req_times, const_gen_fanout_nodes,
                                                       clock_gen_fanout_nodes );
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-#ifdef VERIFY_VPR_TO_TATUM
+#ifdef TATUM_TATUM_ASSERT_VPR_TO_TATUM
             parallel_arr_req_verified = verify_analyzer(*timing_graph, parallel_analyzer,
                                                       expected_arr_req_times, const_gen_fanout_nodes,
                                                       clock_gen_fanout_nodes );

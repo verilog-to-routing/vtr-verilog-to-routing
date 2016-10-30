@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 
 #include "GraphVisitor.hpp"
 #include "TimingGraph.hpp"
@@ -164,7 +164,7 @@ void SetupAnalysisVisitor::reset() {
 
 void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const NodeId node_id) {
     //Logical Input
-    ASSERT_MSG(tg.num_node_in_edges(node_id) == 0, "Logical input has input edges: timing graph not levelized.");
+    TATUM_ASSERT_MSG(tg.num_node_in_edges(node_id) == 0, "Logical input has input edges: timing graph not levelized.");
 
     TN_Type node_type = tg.node_type(node_id);
 
@@ -177,7 +177,7 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
         //system
 
     } else if(node_type == TN_Type::CLOCK_SOURCE) {
-        ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
+        TATUM_ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
 
         //Initialize a clock tag with zero arrival, invalid required time
         TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
@@ -186,7 +186,7 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
         get_setup_clock_tags(node_id).add_tag(clock_tag);
 
     } else {
-        ASSERT(node_type == TN_Type::INPAD_SOURCE);
+        TATUM_ASSERT(node_type == TN_Type::INPAD_SOURCE);
 
         //A standard primary input
 
@@ -198,11 +198,11 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
 
         //Figure out if we are an input which defines a clock
         if(tg.node_is_clock_source(node_id)) {
-            ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Logical input already has clock tags");
+            TATUM_ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Logical input already has clock tags");
 
             get_setup_clock_tags(node_id).add_tag(input_tag);
         } else {
-            ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Logical input already has data tags");
+            TATUM_ASSERT_MSG(get_setup_clock_tags(node_id).num_tags() == 0, "Logical input already has data tags");
 
             get_setup_data_tags(node_id).add_tag(input_tag);
         }

@@ -39,8 +39,8 @@ bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, int doma
         cout << "\tERROR arrival time abs, rel errs: " << std::setw(num_width) << arr_abs_err;
         cout << ", " << std::setw(num_width) << arr_rel_err << endl;
     } else {
-        VERIFY(!isnan(arr_rel_err) && !isnan(arr_abs_err));
-        VERIFY(arr_rel_err < RELATIVE_EPSILON || arr_abs_err < ABSOLUTE_EPSILON);
+        TATUM_ASSERT(!isnan(arr_rel_err) && !isnan(arr_abs_err));
+        TATUM_ASSERT(arr_rel_err < RELATIVE_EPSILON || arr_abs_err < ABSOLUTE_EPSILON);
     }
     return error;
 }
@@ -83,8 +83,8 @@ bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, int doma
         cout << "\tERROR required time abs, rel errs: " << std::setw(num_width) << req_abs_err;
         cout << ", " << std::setw(num_width) << req_rel_err << endl;
     } else {
-        VERIFY(!isnan(req_rel_err) && !isnan(req_abs_err));
-        VERIFY(req_rel_err < RELATIVE_EPSILON || req_abs_err < ABSOLUTE_EPSILON);
+        TATUM_ASSERT(!isnan(req_rel_err) && !isnan(req_abs_err));
+        TATUM_ASSERT(req_rel_err < RELATIVE_EPSILON || req_abs_err < ABSOLUTE_EPSILON);
     }
     return error;
 }

@@ -1,4 +1,4 @@
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 
 /*
  * TimingTags implementation

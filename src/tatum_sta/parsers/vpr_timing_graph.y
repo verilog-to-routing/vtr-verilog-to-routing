@@ -7,7 +7,7 @@
 #include <vector>
 #include <iostream>
 
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 #include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
@@ -190,12 +190,12 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                 node_out_edges.push_back($2.out_edges);
                                                 node_logical_blocks.push_back($2.iblk);
 
-                                                VERIFY(src_node_id == (int) node_out_edges.size() - 1);
+                                                TATUM_ASSERT(src_node_id == (int) node_out_edges.size() - 1);
 
                                                 if(timing_graph.num_nodes() % 1000000 == 0) {
                                                     std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
                                                 }
-                                                ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
+                                                TATUM_ASSERT(timing_graph.num_nodes() - 1 == $2.node_id);
 
                                             }
     | timing_graph num_tnode_levels         {
@@ -217,8 +217,8 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
 
                                             }
     | timing_graph node_arr_req_time        {
-                                                VERIFY(from_clock_domain >= 0);
-                                                VERIFY(to_clock_domain >= 0);
+                                                TATUM_ASSERT(from_clock_domain >= 0);
+                                                TATUM_ASSERT(to_clock_domain >= 0);
                                                 arr_req_times.add_arr_time(from_clock_domain, $2.node_id, $2.T_arr);
                                                 arr_req_times.add_req_time(from_clock_domain, $2.node_id, $2.T_req);
 

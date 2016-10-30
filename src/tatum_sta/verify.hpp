@@ -64,7 +64,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
                             std::cout << "\tERROR Found no arrival-time tag, but VPR arrival time was ";
                             std::cout << std::setw(num_width) << vpr_arr_time << " (expected NAN)" << std::endl;
                         } else {
-                            VERIFY(isnan(vpr_arr_time));
+                            TATUM_ASSERT(isnan(vpr_arr_time));
                         }
                     }
                 } else {
@@ -75,7 +75,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
             }
         }
         //Since we walk our version of the graph make sure we see the same number of nodes as VPR
-        VERIFY(arrival_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
+        TATUM_ASSERT(arrival_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
 
         //Required check by level (in reverse)
         for(int ilevel = tg.num_levels() - 1; ilevel >= 0; ilevel--) {
@@ -110,7 +110,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
                 required_nodes_checked++;
             }
         }
-        VERIFY(required_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
+        TATUM_ASSERT(required_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
     }
 
     /*

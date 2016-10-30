@@ -1,5 +1,5 @@
 #pragma once
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 
 #include <iostream>
 #include <vector>
@@ -78,7 +78,7 @@ class VprArrReqTimes {
         void set_num_nodes(int nnodes) { num_nodes = nnodes; }
         void add_arr_time(int clock_id, int node_id, float val) {
             resize(clock_id);
-            VERIFY(arr.find(clock_id) != arr.end());
+            TATUM_ASSERT(arr.find(clock_id) != arr.end());
             float curr_val = arr[clock_id][node_id];
             if(!isnan(curr_val) && isnan(val)) {
                 //Don't over-write real values with NAN
@@ -92,7 +92,7 @@ class VprArrReqTimes {
 
         void add_req_time(int clock_id, int node_id, float val) {
             resize(clock_id);
-            VERIFY(req.find(clock_id) != req.end());
+            TATUM_ASSERT(req.find(clock_id) != req.end());
             float curr_val = req[clock_id][node_id];
             if(!isnan(curr_val) && isnan(val)) {
                 //Don't over-write real values with NAN
@@ -106,15 +106,15 @@ class VprArrReqTimes {
 
         float get_arr_time(int clock_id, int node_id) const {
             auto arr_iter = arr.find(clock_id);
-            VERIFY(arr_iter != arr.end());
-            VERIFY(node_id  < (int) arr_iter->second.size());
+            TATUM_ASSERT(arr_iter != arr.end());
+            TATUM_ASSERT(node_id  < (int) arr_iter->second.size());
             return arr_iter->second[node_id];
         }
 
         float get_req_time(int clock_id, int node_id) const {
             auto req_iter = req.find(clock_id);
-            VERIFY(req_iter != req.end());
-            VERIFY(node_id  < (int) req_iter->second.size());
+            TATUM_ASSERT(req_iter != req.end());
+            TATUM_ASSERT(node_id  < (int) req_iter->second.size());
             return req_iter->second[node_id];
         }
 

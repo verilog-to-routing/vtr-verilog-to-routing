@@ -1,4 +1,4 @@
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 
 /*
  * TimingTag implementation
@@ -28,7 +28,7 @@ inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, 
 
 inline void TimingTag::update_arr(const Time& new_arr_time, const TimingTag& base_tag) {
     //NOTE: leave next alone, since we want to keep the linked list intact
-    ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
+    TATUM_ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
     set_arr_time(new_arr_time);
     set_launch_node(base_tag.launch_node());
 }
@@ -36,7 +36,7 @@ inline void TimingTag::update_arr(const Time& new_arr_time, const TimingTag& bas
 inline void TimingTag::update_req(const Time& new_req_time, const TimingTag& base_tag) {
     //NOTE: leave next alone, since we want to keep the linked list intact
     //      leave launch_node alone, since it is set by arrival only
-    ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
+    TATUM_ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
     set_req_time(new_req_time);
 }
 

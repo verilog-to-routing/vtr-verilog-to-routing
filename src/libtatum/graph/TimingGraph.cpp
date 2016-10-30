@@ -1,4 +1,4 @@
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -21,8 +21,8 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
     NodeId node_id = node_types_.size() - 1;
 
     //Verify sizes
-    ASSERT(node_types_.size() == node_clock_domains_.size());
-    ASSERT(node_types_.size() == node_is_clock_source_.size());
+    TATUM_ASSERT(node_types_.size() == node_clock_domains_.size());
+    TATUM_ASSERT(node_types_.size() == node_is_clock_source_.size());
 
     //Return the ID of the added node
     return node_id;
@@ -31,15 +31,15 @@ NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, co
 EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     //We require that the source/sink node must already be in the graph,
     //  so we can update them with thier edge references
-    VERIFY(src_node < num_nodes());
-    VERIFY(sink_node < num_nodes());
+    TATUM_ASSERT(src_node < num_nodes());
+    TATUM_ASSERT(sink_node < num_nodes());
 
     //Create the edgge
     edge_src_nodes_.push_back(src_node);
     edge_sink_nodes_.push_back(sink_node);
 
     //Verify
-    ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
+    TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
 
     //The id of the new edge
     EdgeId edge_id = edge_sink_nodes_.size() - 1;
@@ -98,7 +98,7 @@ void TimingGraph::levelize() {
                 NodeId sink_node = edge_sink_node(edge_id);
 
                 //Decrement the fanin count
-                VERIFY(node_fanin_remaining[sink_node] > 0);
+                TATUM_ASSERT(node_fanin_remaining[sink_node] > 0);
                 node_fanin_remaining[sink_node]--;
 
                 //Add to the next level if all fanin has been seen

@@ -6,7 +6,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include "assert.hpp"
+#include "tatum_assert.hpp"
 #include "sta_util.hpp"
 
 using std::cout;
@@ -125,7 +125,7 @@ void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
         cout << "\n";
         for(int out_edge_idx = 0; out_edge_idx < tg->num_node_out_edges(node_id); out_edge_idx++) {
             EdgeId edge_id = tg->node_out_edge(node_id, out_edge_idx);
-            ASSERT(tg->edge_src_node(edge_id) == node_id);
+            TATUM_ASSERT(tg->edge_src_node(edge_id) == node_id);
 
             NodeId sink_node_id = tg->edge_sink_node(edge_id);
 
@@ -357,7 +357,7 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
     //Loop through each FF_CLOCK and add edges to FF_SINKs and FF_SOURCEs
     for(const auto clock_kv : logical_block_FF_clocks) {
         BlockId logical_block_id = clock_kv.first;
-        VERIFY(clock_kv.second.size() == 1);
+        TATUM_ASSERT(clock_kv.second.size() == 1);
         NodeId ff_clock_node_id = clock_kv.second[0];
 
         //Check for FF_SOURCEs associated with this FF_CLOCK pin
