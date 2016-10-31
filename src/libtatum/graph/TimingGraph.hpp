@@ -77,7 +77,7 @@ class TimingGraph {
          */
         ///\param id The id of a node
         ///\returns The type of the node
-        TN_Type node_type(NodeId id) const { return node_types_[id]; }
+        TN_Type node_type(const NodeId id) const { return node_types_[id]; }
 
         ///\param id The id of a node
         ///\returns The clock domain of the node
