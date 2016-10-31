@@ -124,8 +124,11 @@ void TimingGraph::levelize() {
                 primary_outputs_.push_back(node_id);
             }
         }
-        level_idx++;
-        level_ids_.emplace_back(level_idx);
+
+        if(inserted_node_in_level) {
+            level_idx++;
+            level_ids_.emplace_back(level_idx);
+        }
     }
 }
 
