@@ -244,6 +244,8 @@ class TimingAnalyzer {
 /**
  * SetupTimingAnalyzer represents an abstract interface for all timing analyzers
  * performing setup (i.e. long-path) analysis.
+ *
+ * Note the use of virtual inheritance to avoid duplicating the base class
  */
 class SetupTimingAnalyzer : public virtual TimingAnalyzer {
     public:
@@ -259,6 +261,8 @@ class SetupTimingAnalyzer : public virtual TimingAnalyzer {
 /**
  * HoldTimingAnalyzer represents an abstract interface for all timing analyzers
  * performing hold (i.e. short-path) analysis.
+ *
+ * Note the use of virtual inheritance to avoid duplicating the base class
  */
 class HoldTimingAnalyzer : public virtual TimingAnalyzer {
     public:
@@ -282,7 +286,8 @@ class HoldTimingAnalyzer : public virtual TimingAnalyzer {
 class SetupHoldTimingAnalyzer : public SetupTimingAnalyzer, public HoldTimingAnalyzer {
     //Empty (all behaviour inherited)
     //
-    // Note that we use virtual inheritance to avoid duplicating the common base class
+    // Note that SetupTiminganalyzer and HoldTimingAnalyzer used virtual inheritance, so
+    // there is no ambiguity when inheriting from both
 };
 
 
