@@ -64,10 +64,12 @@ class TimingGraph {
         typedef std::vector<EdgeId>::const_iterator edge_iterator;
         typedef std::vector<NodeId>::const_iterator node_iterator;
         typedef std::vector<LevelId>::const_iterator level_iterator;
+        typedef std::vector<LevelId>::const_reverse_iterator reverse_level_iterator;
 
         typedef tatum::Range<node_iterator> node_range;
         typedef tatum::Range<edge_iterator> edge_range;
         typedef tatum::Range<level_iterator> level_range;
+        typedef tatum::Range<reverse_level_iterator> reverse_level_range;
     public:
         /*
          * Node data accessors
@@ -132,6 +134,7 @@ class TimingGraph {
         node_range nodes() const { return tatum::make_range(node_ids_.begin(), node_ids_.end()); }
         edge_range edges() const { return tatum::make_range(edge_ids_.begin(), edge_ids_.end()); }
         level_range levels() const { return tatum::make_range(level_ids_.begin(), level_ids_.end()); }
+        reverse_level_range reversed_levels() const { return tatum::make_range(level_ids_.rbegin(), level_ids_.rend()); }
         
         ///\returns The total number of nodes in the graph
         size_t num_nodes() const { return node_types_.size(); }

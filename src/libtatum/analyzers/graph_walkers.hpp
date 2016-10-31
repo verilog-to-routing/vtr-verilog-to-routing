@@ -100,7 +100,7 @@ class SerialWalker : public TimingGraphWalker<V, DelayCalc> {
         }
 
         void do_required_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, V& visitor) override {
-            for(LevelId level_id : tg.levels()) {
+            for(LevelId level_id : tg.reversed_levels()) {
                 for(NodeId node_id : tg.level_nodes(level_id)) {
                     visitor.do_required_traverse_node(tg, dc, node_id);
                 }
@@ -143,7 +143,7 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<V, DelayCalc> {
         }
 
         void do_required_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, V& visitor) override {
-            for(LevelId level_id : tg.levels()) {
+            for(LevelId level_id : tg.reversed_levels()) {
                 const auto& level = tg.level(level_id);
                 cilk_for(auto iter = level.begin(); iter != level.end(); ++iter) {
                     visitor.do_required_traverse_node(tg, dc, *iter);
