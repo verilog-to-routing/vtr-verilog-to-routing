@@ -195,7 +195,8 @@ int main(int argc, char** argv) {
     auto delay_calculator = std::make_shared<FixedDelayCalculator>(edge_delays);
 
     //Create the timing analyzer
-    std::shared_ptr<SetupHoldTimingAnalyzer> serial_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    SetupHoldFullTimingAnalyzer<FixedDelayCalculator> serial_analyzer_inst(timing_graph, timing_constraints, delay_calculator);
+    SetupHoldTimingAnalyzer& serial_analyzer = serial_analyzer_inst;
 
     //Performance variables
     float serial_verify_time = 0.;
@@ -215,14 +216,14 @@ int main(int argc, char** argv) {
                 auto start = Clock::now();
 
                 CALLGRIND_TOGGLE_COLLECT;
-                serial_analyzer->update_timing();
+                serial_analyzer.update_timing();
                 CALLGRIND_TOGGLE_COLLECT;
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
             }
 
             for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
-                serial_prof_data[key] += serial_analyzer->get_profiling_data(key);
+                serial_prof_data[key] += serial_analyzer.get_profiling_data(key);
             }
 
             cout << ".";
@@ -247,7 +248,7 @@ int main(int argc, char** argv) {
 
             if(i < NUM_SERIAL_RUNS-1) {
                 clock_gettime(CLOCK_MONOTONIC, &reset_start);
-                serial_analyzer->reset_timing();
+                serial_analyzer.reset_timing();
                 clock_gettime(CLOCK_MONOTONIC, &reset_end);
                 serial_reset_time += time_sec(reset_start, reset_end);
             }
@@ -286,17 +287,18 @@ int main(int argc, char** argv) {
     if(timing_graph->nodes().size() < 1000) {
         cout << "Writing Anotated Timing Graph Dot File" << endl;
         std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-        write_dot_file_setup(tg_setup_dot_file, *timing_graph, *serial_analyzer, delay_calculator);
+        write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
 
         std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
-        write_dot_file_hold(tg_hold_dot_file, *timing_graph, *serial_analyzer, delay_calculator);
+        write_dot_file_hold(tg_hold_dot_file, *timing_graph, serial_analyzer, delay_calculator);
     } else {
         cout << "Skipping writting dot file due to large graph size" << endl;
     }
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<SetupTimingAnalyzer> parallel_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<FixedDelayCalculator,ParallelLevelizedCilkWalker>>(timing_graph, timing_constraints, delay_calculator);
+    SetupHoldFullTimingAnalyzer<FixedDelayCalculator,ParallelLevelizedCilkWalker> parallel_analyzer_inst(timing_graph, timing_constraints, delay_calculator);
+    SetupTimingAnalyzer& parallel_analyzer = parallel_analyzer_inst;
 
     //float parallel_analysis_time = 0;
     //float parallel_pretraverse_time = 0.;
@@ -318,13 +320,13 @@ int main(int argc, char** argv) {
             {
                 auto start = Clock::now();
 
-                parallel_analyzer->update_timing();
+                parallel_analyzer.update_timing();
 
                 parallel_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
             }
 
             for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
-                parallel_prof_data[key] += parallel_analyzer->get_profiling_data(key);
+                parallel_prof_data[key] += parallel_analyzer.get_profiling_data(key);
             }
 
             cout << ".";
@@ -346,7 +348,7 @@ int main(int argc, char** argv) {
 
             if(i < NUM_PARALLEL_RUNS-1) {
                 clock_gettime(CLOCK_MONOTONIC, &reset_start);
-                parallel_analyzer->reset_timing();
+                parallel_analyzer.reset_timing();
                 clock_gettime(CLOCK_MONOTONIC, &reset_end);
                 parallel_reset_time += time_sec(reset_start, reset_end);
             }
@@ -396,7 +398,7 @@ int main(int argc, char** argv) {
 
     //Tag stats
     print_setup_tags_histogram(*timing_graph, serial_analyzer);
-    //print_hold_tags_histogram(timing_graph, serial_analyzer);
+    print_hold_tags_histogram(*timing_graph, serial_analyzer);
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 
