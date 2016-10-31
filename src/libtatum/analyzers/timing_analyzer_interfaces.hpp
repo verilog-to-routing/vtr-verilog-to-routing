@@ -191,21 +191,21 @@
  * added back to the final path to counter-act this extra pessimism.
  */
 
- /*
-  * IMPLEMENTATION NOTES
-  * --------------------
-  *
-  * All the timing analyzers defined here are pure abstract classes.
-  * They should all have pure virtual functions and store NO data members.
-  *
-  * We use multiple (virtual) inheritance to define the SetupHoldTimingAnalyzer
-  * class, allowing it to be cleanly substituted for any SetupTimingAnalyzer
-  * or HoldTimingAnalyzer.
-  *
-  * Note also that we are using the NVF (Non-Virtual Interface) pattern, so
-  * any public member functions should delegate their work to an appropriate
-  * protected virtual member function.
-  */
+/*
+ * IMPLEMENTATION NOTES
+ * ====================
+ *
+ * All the timing analyzers defined here are pure abstract classes.
+ * They should all have pure virtual functions and store NO data members.
+ *
+ * We use multiple (virtual) inheritance to define the SetupHoldTimingAnalyzer
+ * class, allowing it to be cleanly substituted for any SetupTimingAnalyzer
+ * or HoldTimingAnalyzer.
+ *
+ * Note also that we are using the NVF (Non-Virtual Interface) pattern, so
+ * any public member functions should delegate their work to an appropriate
+ * protected virtual member function.
+ */
 
 /**
  * TimingAnalyzer represents an abstract interface for all timing analyzers,
@@ -215,7 +215,7 @@
  *
  * This is the most abstract interface provided (it does not allow access
  * to any calculated data).  As a result this interface is suitable for
- * code that needs to update timing analysis, but does not _require_ the
+ * code that needs to update timing analysis, but does not *use* the
  * analysis results itself.
  *
  * If you need the analysis results you should be using one of the dervied
@@ -287,9 +287,7 @@ class SetupHoldTimingAnalyzer : public SetupTimingAnalyzer, public HoldTimingAna
     //Empty (all behaviour inherited)
     //
     // Note that SetupTiminganalyzer and HoldTimingAnalyzer used virtual inheritance, so
-    // there is no ambiguity when inheriting from both
+    // there is no ambiguity when inheriting from both (there will be only one base class
+    // instance).
 };
-
-
-
 

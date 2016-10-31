@@ -8,6 +8,14 @@
 #include "SetupAnalysisVisitor.hpp"
 #include "HoldAnalysisVisitor.hpp"
 #include "SetupHoldAnalysisVisitor.hpp"
+/** \file
+ * This file defines concrete implementations of the TimingAnalyzer interfaces.
+ *
+ * In particular these concrete analyzers are 'full' (i.e. non-incremental) timing analyzers,
+ * ever call to update_timing() fully re-analyze the timing graph.
+ *
+ * Note that at this time only 'full' analyzers are supported.
+ */
 
 template<class DelayCalc,
          template<class V, class D> class GraphWalker=SerialWalker>
