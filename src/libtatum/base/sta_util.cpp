@@ -96,7 +96,7 @@ void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets) {
 
     std::vector<float> fanin;
     for(const NodeId node_id : tg.nodes()) {
-        fanin.push_back(tg.num_node_in_edges(node_id));
+        fanin.push_back(tg.node_in_edges(node_id).size());
     }
 
     std::sort(fanin.begin(), fanin.end(), std::greater<float>());
@@ -108,7 +108,7 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
 
     std::vector<float> fanout;
     for(const NodeId node_id : tg.nodes()) {
-        fanout.push_back(tg.num_node_out_edges(node_id));
+        fanout.push_back(tg.node_out_edges(node_id).size());
     }
 
     std::sort(fanout.begin(), fanout.end(), std::greater<float>());
@@ -120,11 +120,10 @@ void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
     for(const NodeId node_id : tg->nodes()) {
         cout << "Node: " << node_id;
         cout << " Type: " << tg->node_type(node_id);
-        cout << " Out Edges: " << tg->num_node_out_edges(node_id);
+        cout << " Out Edges: " << tg->node_out_edges(node_id).size();
         cout << " is_clk_src: " << tg->node_is_clock_source(node_id);
         cout << "\n";
-        for(int out_edge_idx = 0; out_edge_idx < tg->num_node_out_edges(node_id); out_edge_idx++) {
-            EdgeId edge_id = tg->node_out_edge(node_id, out_edge_idx);
+        for(EdgeId edge_id : tg->node_out_edges(node_id)) {
             TATUM_ASSERT(tg->edge_src_node(edge_id) == node_id);
 
             NodeId sink_node_id = tg->edge_sink_node(edge_id);
@@ -135,7 +134,7 @@ void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
 }
 
 void print_levelization(std::shared_ptr<const TimingGraph> tg) {
-    cout << "Num Levels: " << tg->num_levels() << "\n";
+    cout << "Num Levels: " << tg->levels().size() << "\n";
     for(const LevelId level_id : tg->levels()) {
         const auto& level = tg->level_nodes(level_id);
         cout << "Level " << level_id << ": " << level.size() << " nodes" << "\n";
@@ -164,8 +163,7 @@ void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId nod
     if(const_gen_fanout_nodes.count(node_id) == 0) {
         //Haven't seen this node before
         const_gen_fanout_nodes.insert(node_id);
-        for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
-            EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+        for(EdgeId edge_id : tg.node_out_edges(node_id)) {
             identify_constant_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), const_gen_fanout_nodes);
         }
     }
@@ -185,8 +183,7 @@ void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_i
     if(clock_gen_fanout_nodes.count(node_id) == 0) {
         //Haven't seen this node before
         clock_gen_fanout_nodes.insert(node_id);
-        for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
-            EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+        for(EdgeId edge_id : tg.node_out_edges(node_id)) {
             identify_clock_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), clock_gen_fanout_nodes);
         }
     }

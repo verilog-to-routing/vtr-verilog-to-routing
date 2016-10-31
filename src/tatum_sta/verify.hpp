@@ -38,7 +38,7 @@ int verify_analyzer(const TimingGraph& tg, const std::shared_ptr<Analyzer> analy
         //Arrival check by level
         for(const LevelId ilevel : tg.levels()){
             //std::cout << "LEVEL " << ilevel << std::endl;
-            for(const NodeId node_id : tg.level(ilevel)) {
+            for(const NodeId node_id : tg.level_nodes(ilevel)) {
                 //std::cout << "Verifying node: " << node_id << " Launch: " << src_domain << " Capture: " << sink_domain << std::endl;
                 const auto& node_data_tags = analyzer->get_setup_data_tags(node_id);
                 float vpr_arr_time = expected_arr_req_times.get_arr_time(domain, node_id);

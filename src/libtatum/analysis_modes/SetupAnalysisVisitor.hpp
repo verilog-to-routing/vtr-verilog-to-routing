@@ -164,7 +164,7 @@ void SetupAnalysisVisitor::reset() {
 
 void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const NodeId node_id) {
     //Logical Input
-    TATUM_ASSERT_MSG(tg.num_node_in_edges(node_id) == 0, "Logical input has input edges: timing graph not levelized.");
+    TATUM_ASSERT_MSG(tg.node_in_edges(node_id).size() == 0, "Logical input has input edges: timing graph not levelized.");
 
     TN_Type node_type = tg.node_type(node_id);
 
@@ -213,9 +213,7 @@ void SetupAnalysisVisitor::do_arrival_pre_traverse_node(const TimingGraph& tg, c
 template<class DelayCalc>
 void SetupAnalysisVisitor::do_arrival_traverse_node(const TimingGraph& tg, const DelayCalc& dc, NodeId node_id) {
     //Pull from upstream sources to current node
-    for(int edge_idx = 0; edge_idx < tg.num_node_in_edges(node_id); edge_idx++) {
-        EdgeId edge_id = tg.node_in_edge(node_id, edge_idx);
-
+    for(EdgeId edge_id : tg.node_in_edges(node_id)) {
         do_arrival_traverse_edge(tg, dc, node_id, edge_id);
     }
 }
@@ -349,9 +347,7 @@ void SetupAnalysisVisitor::do_required_traverse_node(const TimingGraph& tg, cons
     }
 
     //Each back-edge from down stream node
-    for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
-        EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
-
+    for(EdgeId edge_id : tg.node_out_edges(node_id)) {
         do_required_traverse_edge(tg, dc, node_id, edge_id);
     }
 }

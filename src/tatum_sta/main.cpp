@@ -104,8 +104,8 @@ int main(int argc, char** argv) {
         timing_graph->levelize();
 
         cout << "Timing Graph Stats:" << endl;
-        cout << "  Nodes : " << timing_graph->num_nodes() << endl;
-        cout << "  Levels: " << timing_graph->num_levels() << endl;
+        cout << "  Nodes : " << timing_graph->nodes().size() << endl;
+        cout << "  Levels: " << timing_graph->levels().size() << endl;
         cout << "Num Clocks: " << orig_expected_arr_req_times.get_num_clocks() << endl;
 
         cout << endl;
@@ -274,16 +274,16 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << serial_prof_data["required_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
 
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
-        if(serial_arr_req_verified != 2*timing_graph->num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
+        if(serial_arr_req_verified != 2 * timing_graph->nodes().size() * expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->nodes().size() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
         }
         cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
     }
 
-    if(timing_graph->num_nodes() < 1000) {
+    if(timing_graph->nodes().size() < 1000) {
         cout << "Writing Anotated Timing Graph Dot File" << endl;
         std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
         write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
@@ -371,10 +371,10 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << parallel_prof_data["required_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
 
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
-        if(parallel_arr_req_verified != 2*timing_graph->num_nodes()*expected_arr_req_times.get_num_clocks()) { //2x for arr and req
+        if(parallel_arr_req_verified != 2 * timing_graph->nodes().size() * expected_arr_req_times.get_num_clocks()) { //2x for arr and req
             cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->num_nodes() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->nodes().size() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
         }
         cout << "Resetting Parallel Analysis took: " << parallel_reset_time << " sec" << endl;
     }

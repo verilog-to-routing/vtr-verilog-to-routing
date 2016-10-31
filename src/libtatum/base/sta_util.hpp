@@ -71,7 +71,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
     for(const LevelId ilevel : tg.levels()) {
         os << "\t{rank = same;";
 
-        for(NodeId node_id : tg.level(ilevel)) {
+        for(NodeId node_id : tg.level_nodes(ilevel)) {
             os << " node" << size_t(node_id) <<";";
         }
         os << "}" <<std::endl;
@@ -80,8 +80,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
     //Add edges with delays annoated
     for(const LevelId ilevel : tg.levels()) {
         for(NodeId node_id : tg.level_nodes(ilevel)) {
-            for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
-                EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+            for(EdgeId edge_id : tg.node_out_edges(node_id)) {
 
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
@@ -147,8 +146,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
     //Add edges with delays annoated
     for(const LevelId ilevel : tg.levels()) {
         for(NodeId node_id : tg.level_nodes(ilevel)) {
-            for(int edge_idx = 0; edge_idx < tg.num_node_out_edges(node_id); edge_idx++) {
-                EdgeId edge_id = tg.node_out_edge(node_id, edge_idx);
+            for(EdgeId edge_id : tg.node_out_edges(node_id)) {
 
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 

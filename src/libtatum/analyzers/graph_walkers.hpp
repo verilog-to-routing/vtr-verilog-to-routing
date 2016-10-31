@@ -135,8 +135,8 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<V, DelayCalc> {
 
         void do_arrival_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, V& visitor) override {
             for(LevelId level_id : tg.levels()) {
-                const auto& level = tg.level(level_id);
-                cilk_for(auto iter = level.begin(); iter != level.end(); ++iter) {
+                auto level_nodes = tg.level_nodes(level_id);
+                cilk_for(auto iter = level_nodes.begin(); iter != level_nodes.end(); ++iter) {
                     visitor.do_arrival_traverse_node(tg, dc, *iter);
                 }
             }
@@ -144,8 +144,8 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<V, DelayCalc> {
 
         void do_required_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, V& visitor) override {
             for(LevelId level_id : tg.reversed_levels()) {
-                const auto& level = tg.level(level_id);
-                cilk_for(auto iter = level.begin(); iter != level.end(); ++iter) {
+                auto level_nodes = tg.level_nodes(level_id);
+                cilk_for(auto iter = level_nodes.begin(); iter != level_nodes.end(); ++iter) {
                     visitor.do_required_traverse_node(tg, dc, *iter);
                 }
             }

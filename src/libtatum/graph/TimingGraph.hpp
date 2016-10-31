@@ -97,24 +97,6 @@ class TimingGraph {
         ///\returns A range of all in-coming edges the node drives
         edge_range node_in_edges(const NodeId id) const { return tatum::make_range(node_in_edges_[size_t(id)].begin(), node_in_edges_[size_t(id)].end()); }
 
-        ///\param id The id of a node
-        ///\returns The number of out-going edges the node drives
-        int num_node_out_edges(const NodeId id) const { return node_out_edges_[size_t(id)].size(); }
-
-        ///\param id The id of a node
-        ///\returns The number of in-coming edges the node sinks
-        int num_node_in_edges(const NodeId id) const { return node_in_edges_[size_t(id)].size(); }
-
-        ///\param node_id The id of a node
-        ///\param edge_idx The out-going edge number at this node
-        ///\returns The edge id of the edge_idx'th edge driven by node_id
-        EdgeId node_out_edge(const NodeId node_id, int edge_idx) const { return node_out_edges_[size_t(node_id)][edge_idx]; }
-
-        ///\param node_id The id of a node
-        ///\param edge_idx The in-coming edge number at this node
-        ///\returns The edge id of the edge_idx'th edge sunk by node_id
-        EdgeId node_in_edge(const NodeId node_id, int edge_idx) const { return node_in_edges_[size_t(node_id)][edge_idx]; }
-
         /*
          * Edge accessors
          */
@@ -132,45 +114,36 @@ class TimingGraph {
 
         //\returns A range containing all nodes in the graph
         node_range nodes() const { return tatum::make_range(node_ids_.begin(), node_ids_.end()); }
+
+        //\returns A range containing all edges in the graph
         edge_range edges() const { return tatum::make_range(edge_ids_.begin(), edge_ids_.end()); }
+
+        //\returns A range containing all levels in the graph
         level_range levels() const { return tatum::make_range(level_ids_.begin(), level_ids_.end()); }
+
+        //\returns A range containing all levels in the graph in reverse order
         reverse_level_range reversed_levels() const { return tatum::make_range(level_ids_.rbegin(), level_ids_.rend()); }
         
-        ///\returns The total number of nodes in the graph
-        size_t num_nodes() const { return node_types_.size(); }
-
-        ///\returns The total number of edges in the graph
-        size_t num_edges() const { return edge_src_nodes_.size(); }
-
-        ///\returns The total number of levels in the graph
-        size_t num_levels() const { return level_nodes_.size(); }
-
         /*
          * Node collection accessors
          */
         ///\param level_id The level index in the graph
-        ///\pre The graph must been levelized.
-        ///\returns The nodes in the level
+        ///\pre The graph must be levelized.
+        ///\returns A range containing the nodes in the level
         ///\see levelize()
         node_range level_nodes(const LevelId level_id) const { return tatum::make_range(level_nodes_[size_t(level_id)].begin(),
                                                                                         level_nodes_[size_t(level_id)].end()); }
 
-        ///\param level_id The level index in the graph
-        ///\pre The graph must been levelized.
-        ///\returns The nodes in the level
+        ///\pre The graph must be levelized.
+        ///\returns A range containing the nodes which are primary inputs
         ///\see levelize()
-        const std::vector<NodeId>& level(const LevelId level_id) const { return level_nodes_[size_t(level_id)]; }
+        node_range primary_inputs() const { return tatum::make_range(level_nodes_[0].begin(), level_nodes_[0].end()); } //After levelizing PIs will be 1st level
 
         ///\pre The graph must be levelized.
-        ///\returns The nodes which are primary inputs
-        ///\see levelize()
-        const std::vector<NodeId>& primary_inputs() const { return level_nodes_[0]; } //After levelizing PIs will be 1st level
-
-        ///\pre The primary outputs have been identified.
-        ///\returns The nodes which are primary outputs
+        ///\returns A range containing the nodes which are primary outputs
         ///\warning The primary outputs may be on different levels of the graph
         ///\see levelize()
-        const std::vector<NodeId>& primary_outputs() const { return primary_outputs_; }
+        node_range primary_outputs() const { return tatum::make_range(primary_outputs_.begin(), primary_outputs_.end()); }
 
         /*
          * Graph modifiers

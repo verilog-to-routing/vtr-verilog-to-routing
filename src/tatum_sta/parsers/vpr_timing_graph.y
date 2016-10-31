@@ -192,10 +192,10 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
 
                                                 TATUM_ASSERT(size_t(src_node_id) == node_out_edges.size() - 1);
 
-                                                if(timing_graph.num_nodes() % 1000000 == 0) {
-                                                    std::cout << "Loaded " << timing_graph.num_nodes() / 1e6 << "M nodes..." << std::endl;
+                                                if(timing_graph.nodes().size() % 1000000 == 0) {
+                                                    std::cout << "Loaded " << timing_graph.nodes().size() / 1e6 << "M nodes..." << std::endl;
                                                 }
-                                                TATUM_ASSERT(timing_graph.num_nodes() - 1 == size_t($2.node_id));
+                                                TATUM_ASSERT(timing_graph.nodes().size() - 1 == size_t($2.node_id));
 
                                             }
     | timing_graph num_tnode_levels         {
