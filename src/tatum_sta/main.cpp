@@ -25,8 +25,10 @@
 #include "sta_util.hpp"
 #include "verify.hpp"
 
-#define NUM_SERIAL_RUNS 20
-#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 1
+#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
+//#define NUM_SERIAL_RUNS 20
+//#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 #define OPTIMIZE_NODE_EDGE_ORDER
 
 //Do we perform verification checks?
@@ -233,9 +235,11 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
 #ifdef TATUM_TATUM_ASSERT_VPR_TO_TATUM
-            serial_arr_req_verified = verify_analyzer(*timing_graph, serial_analyzer,
-                                                      expected_arr_req_times, const_gen_fanout_nodes,
-                                                      clock_gen_fanout_nodes );
+            if(i == 0 || i == NUM_SERIAL_RUNS - 1) {
+                serial_arr_req_verified = verify_analyzer(*timing_graph, serial_analyzer,
+                                                          expected_arr_req_times, const_gen_fanout_nodes,
+                                                          clock_gen_fanout_nodes );
+            }
 #endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
@@ -330,9 +334,11 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
 #ifdef TATUM_TATUM_ASSERT_VPR_TO_TATUM
-            parallel_arr_req_verified = verify_analyzer(*timing_graph, parallel_analyzer,
-                                                      expected_arr_req_times, const_gen_fanout_nodes,
-                                                      clock_gen_fanout_nodes );
+            if(i == 0 || i == NUM_PARALLEL_RUNS - 1) {
+                parallel_arr_req_verified = verify_analyzer(*timing_graph, parallel_analyzer,
+                                                          expected_arr_req_times, const_gen_fanout_nodes,
+                                                          clock_gen_fanout_nodes );
+            }
 #endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
