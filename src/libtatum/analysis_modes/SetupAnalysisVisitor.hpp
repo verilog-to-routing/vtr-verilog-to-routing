@@ -34,12 +34,12 @@
  * path delay from the upstream to downstream FFs, \f$ t_s \f$ is the setup constraint of the downstream
  * FF, and \f$ t_{clock}^{(capture)} \f$ is the clock arrival time at the downstream FF.
  *
- * Typically \f$ t_{clock}^{(launch)} \f$ and \f$ t_{clock}^{(capture)} \f$ have a periodic relationship. To ensure
- * a non-optimistic analysis we need to consider the minimum possible time difference between
+ * Typically \f$ t_{clock}^{(launch)} \f$ and \f$ t_{clock}^{(capture)} \f$ have a periodic relationship. 
+ * To ensure a non-optimistic analysis we need to consider the minimum possible time difference between
  * \f$ t_{clock}^{(capture)} \f$ and \f$ t_{clock}^{(launch)} \f$.  In the case where the launch and capture clocks
- * are the same this *constraint* (\f$ T_{cstr} \f$) value is simply the clock period (\f$ T_{clk} \f$); however, in multi-clock
- * scenarios the closest alignment of clock edges is used, which may be smaller than the clock period
- * of either the launch or capture clock (depending on their period and phase relationship). It is
+ * are the same this *constraint* (\f$ T_{cstr} \f$) value is simply the clock period (\f$ T_{clk} \f$); however, 
+ * in multi-clock scenarios the closest alignment of clock edges is used, which may be smaller than the clock 
+ * period of either the launch or capture clock (depending on their period and phase relationship). It is
  * typically assumed that the launch clock arrives at time zero (even if this is not strictly true
  * in an absolute sense, such as if the clock has a rise time > 0, we can achieve this by adjusting
  * the value of \f$ T_{cstr} \f$).

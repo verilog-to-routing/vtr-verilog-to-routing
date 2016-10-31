@@ -33,7 +33,7 @@
  *
  * Note that unlike in setup analysis this behaviour is indepenant of clock period.
  * Intuitively, hold analysis can be viewed as data from the upstream FF trampling the data launched
- * on the previous cycle before it can be captured by the donwstream FF.
+ * on the previous cycle before it can be captured by the downstream FF.
  */
 
 /**
