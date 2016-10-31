@@ -10,10 +10,10 @@ do
     exit_code=$?
 
     if [ $exit_code -ne 0 ]; then
-        echo "Failed"
+        echo "Failed $benchmark"
         exit 1
     fi
 done
 
-echo "Passed"
+echo "Passed All Benchmarks"
 exit 0
