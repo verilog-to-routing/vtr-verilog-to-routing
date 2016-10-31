@@ -32,7 +32,7 @@
 #define OPTIMIZE_NODE_EDGE_ORDER
 
 //Do we perform verification checks?
-#define TATUM_TATUM_ASSERT_VPR_TO_TATUM
+#define TATUM_ASSERT_VPR_TO_TATUM
 
 //Currently don't check for differences in the other direction (from us to VPR),
 //since we do a single traversal we generate extra ancillary timing tags which
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-#ifdef TATUM_TATUM_ASSERT_VPR_TO_TATUM
+#ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_SERIAL_RUNS - 1) {
                 serial_arr_req_verified = verify_analyzer(*timing_graph, serial_analyzer,
                                                           expected_arr_req_times, const_gen_fanout_nodes,
@@ -333,7 +333,7 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-#ifdef TATUM_TATUM_ASSERT_VPR_TO_TATUM
+#ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_PARALLEL_RUNS - 1) {
                 parallel_arr_req_verified = verify_analyzer(*timing_graph, parallel_analyzer,
                                                           expected_arr_req_times, const_gen_fanout_nodes,
