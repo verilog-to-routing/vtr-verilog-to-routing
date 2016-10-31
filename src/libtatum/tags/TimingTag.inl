@@ -7,8 +7,8 @@
 inline TimingTag::TimingTag()
     : arr_time_(NAN)
     , req_time_(NAN)
-    , clock_domain_(INVALID_CLOCK_DOMAIN)
-    , launch_node_(-1)
+    , clock_domain_(DomainId::INVALID())
+    , launch_node_(NodeId::INVALID())
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node)

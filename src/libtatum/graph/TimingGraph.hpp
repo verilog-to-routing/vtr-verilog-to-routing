@@ -62,16 +62,18 @@
 
 class TimingGraph {
     public: //Public types
-        typedef std::vector<EdgeId>::const_iterator edge_iterator;
-        typedef std::vector<NodeId>::const_iterator node_iterator;
-        typedef std::vector<LevelId>::const_iterator level_iterator;
-        typedef std::vector<LevelId>::const_reverse_iterator reverse_level_iterator;
+        //Iterators
+        typedef tatum::linear_map<EdgeId,EdgeId>::const_iterator edge_iterator;
+        typedef tatum::linear_map<NodeId,NodeId>::const_iterator node_iterator;
+        typedef tatum::linear_map<LevelId,LevelId>::const_iterator level_iterator;
+        typedef tatum::linear_map<LevelId,LevelId>::const_reverse_iterator reverse_level_iterator;
 
+        //Ranges
         typedef tatum::Range<node_iterator> node_range;
         typedef tatum::Range<edge_iterator> edge_range;
         typedef tatum::Range<level_iterator> level_range;
         typedef tatum::Range<reverse_level_iterator> reverse_level_range;
-    public:
+    public: //Public accessors
         /*
          * Node data accessors
          */
@@ -87,9 +89,6 @@ class TimingGraph {
         ///\returns Whether the is the source of a clock
         bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
 
-        /*
-         * Node edge accessors
-         */
         ///\param id The node id
         ///\returns A range of all out-going edges the node drives
         edge_range node_out_edges(const NodeId id) const { return tatum::make_range(node_out_edges_[id].begin(), node_out_edges_[id].end()); }
@@ -110,23 +109,7 @@ class TimingGraph {
         NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[id]; }
 
         /*
-         * Graph accessors
-         */
-
-        //\returns A range containing all nodes in the graph
-        node_range nodes() const { return tatum::make_range(node_ids_.begin(), node_ids_.end()); }
-
-        //\returns A range containing all edges in the graph
-        edge_range edges() const { return tatum::make_range(edge_ids_.begin(), edge_ids_.end()); }
-
-        //\returns A range containing all levels in the graph
-        level_range levels() const { return tatum::make_range(level_ids_.begin(), level_ids_.end()); }
-
-        //\returns A range containing all levels in the graph in reverse order
-        reverse_level_range reversed_levels() const { return tatum::make_range(level_ids_.rbegin(), level_ids_.rend()); }
-        
-        /*
-         * Node collection accessors
+         * Level accessors
          */
         ///\param level_id The level index in the graph
         ///\pre The graph must be levelized.
@@ -146,6 +129,22 @@ class TimingGraph {
         ///\see levelize()
         node_range primary_outputs() const { return tatum::make_range(primary_outputs_.begin(), primary_outputs_.end()); }
 
+        /*
+         * Graph aggregate accessors
+         */
+        //\returns A range containing all nodes in the graph
+        node_range nodes() const { return tatum::make_range(node_ids_.begin(), node_ids_.end()); }
+
+        //\returns A range containing all edges in the graph
+        edge_range edges() const { return tatum::make_range(edge_ids_.begin(), edge_ids_.end()); }
+
+        //\returns A range containing all levels in the graph
+        level_range levels() const { return tatum::make_range(level_ids_.begin(), level_ids_.end()); }
+
+        //\returns A range containing all levels in the graph in *reverse* order
+        reverse_level_range reversed_levels() const { return tatum::make_range(level_ids_.rbegin(), level_ids_.rend()); }
+
+    public: //Mutators
         /*
          * Graph modifiers
          */
@@ -190,12 +189,12 @@ class TimingGraph {
         ///\see levelize()
         tatum::linear_map<NodeId,NodeId> optimize_node_layout();
 
-    private:
+    private: //Internal helper functions
         bool valid_node_id(const NodeId node_id);
         bool valid_edge_id(const EdgeId edge_id);
         bool valid_level_id(const LevelId level_id);
 
-    private:
+    private: //Data
         /*
          * For improved memory locality, we use a Struct of Arrays (SoA)
          * data layout, rather than Array of Structs (AoS)
@@ -221,27 +220,3 @@ class TimingGraph {
                                               //      scattered through the graph and do not exist on a single level
 };
 
-/**
- * Potential types for nodes in the timing graph
- */
-enum class TN_Type {
-	INPAD_SOURCE, //Driver of an input I/O pad
-	INPAD_OPIN, //Output pin of an input I/O pad
-	OUTPAD_IPIN, //Input pin of an output I/O pad
-	OUTPAD_SINK, //Sink of an output I/O pad
-	PRIMITIVE_IPIN, //Input pin to a primitive (e.g. LUT)
-	PRIMITIVE_OPIN, //Output pin from a primitive (e.g. LUT)
-	FF_IPIN, //Input pin to a flip-flop - goes to FF_SINK
-	FF_OPIN, //Output pin from a flip-flop - comes from FF_SOURCE
-	FF_SINK, //Sink (D) pin of flip-flop
-	FF_SOURCE, //Source (Q) pin of flip-flop
-	FF_CLOCK, //Clock pin of flip-flop
-    CLOCK_SOURCE, //A clock generator such as a PLL
-    CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE
-	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0
-    UNKOWN //Unrecognized type, if encountered this is almost certainly an error
-};
-
-//Stream operators for TN_Type
-std::ostream& operator<<(std::ostream& os, const TN_Type type);
-std::istream& operator>>(std::istream& os, TN_Type& type);

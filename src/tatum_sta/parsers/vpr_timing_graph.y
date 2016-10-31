@@ -316,7 +316,7 @@ skew: TAB {$$ = NAN; }
 is_clk_src: TAB {$$ = 0;}
     | int_number TAB {$$ = $1;}
 
-domain: TAB {$$ = INVALID_CLOCK_DOMAIN; }
+domain: TAB {$$ = -1; }
     | int_number TAB { $$ = $1; }
 
 iblk: TAB { $$ = -1; }
