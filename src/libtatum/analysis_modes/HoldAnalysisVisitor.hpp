@@ -23,11 +23,13 @@ class HoldAnalysisVisitor {
 
         void reset();
 
-        TimingTags& get_hold_data_tags(const NodeId node_id) { return hold_data_tags_[size_t(node_id)]; }
         const TimingTags& get_hold_data_tags(const NodeId node_id) const { return hold_data_tags_[size_t(node_id)]; }
 
-        TimingTags& get_hold_clock_tags(const NodeId node_id) { return hold_clock_tags_[size_t(node_id)]; }
         const TimingTags& get_hold_clock_tags(const NodeId node_id) const { return hold_clock_tags_[size_t(node_id)]; }
+
+    private:
+        TimingTags& get_hold_data_tags(const NodeId node_id) { return hold_data_tags_[size_t(node_id)]; }
+        TimingTags& get_hold_clock_tags(const NodeId node_id) { return hold_clock_tags_[size_t(node_id)]; }
 
     private:
         std::vector<TimingTags> hold_data_tags_;
