@@ -53,6 +53,7 @@
  * support is added), it may be a good idea apply these modifications automatically as needed.
  *
  */
+#include "tatum_linear_map.hpp"
 #include <vector>
 #include <iosfwd>
 
@@ -76,37 +77,37 @@ class TimingGraph {
          */
         ///\param id The id of a node
         ///\returns The type of the node
-        TN_Type node_type(NodeId id) const { return node_types_[size_t(id)]; }
+        TN_Type node_type(NodeId id) const { return node_types_[id]; }
 
         ///\param id The id of a node
         ///\returns The clock domain of the node
-        DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[size_t(id)]; }
+        DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
 
         ///\param id The id of a node
         ///\returns Whether the is the source of a clock
-        bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[size_t(id)]; }
+        bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
 
         /*
          * Node edge accessors
          */
         ///\param id The node id
         ///\returns A range of all out-going edges the node drives
-        edge_range node_out_edges(const NodeId id) const { return tatum::make_range(node_out_edges_[size_t(id)].begin(), node_out_edges_[size_t(id)].end()); }
+        edge_range node_out_edges(const NodeId id) const { return tatum::make_range(node_out_edges_[id].begin(), node_out_edges_[id].end()); }
 
         ///\param id The node id
         ///\returns A range of all in-coming edges the node drives
-        edge_range node_in_edges(const NodeId id) const { return tatum::make_range(node_in_edges_[size_t(id)].begin(), node_in_edges_[size_t(id)].end()); }
+        edge_range node_in_edges(const NodeId id) const { return tatum::make_range(node_in_edges_[id].begin(), node_in_edges_[id].end()); }
 
         /*
          * Edge accessors
          */
         ///\param id The id of an edge
         ///\returns The node id of the edge's sink
-        NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[size_t(id)]; }
+        NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[id]; }
 
         ///\param id The id of an edge
         ///\returns The node id of the edge's source (driver)
-        NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[size_t(id)]; }
+        NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[id]; }
 
         /*
          * Graph accessors
@@ -131,13 +132,13 @@ class TimingGraph {
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes in the level
         ///\see levelize()
-        node_range level_nodes(const LevelId level_id) const { return tatum::make_range(level_nodes_[size_t(level_id)].begin(),
-                                                                                        level_nodes_[size_t(level_id)].end()); }
+        node_range level_nodes(const LevelId level_id) const { return tatum::make_range(level_nodes_[level_id].begin(),
+                                                                                        level_nodes_[level_id].end()); }
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary inputs
         ///\see levelize()
-        node_range primary_inputs() const { return tatum::make_range(level_nodes_[0].begin(), level_nodes_[0].end()); } //After levelizing PIs will be 1st level
+        node_range primary_inputs() const { return tatum::make_range(level_nodes_[LevelId(0)].begin(), level_nodes_[LevelId(0)].end()); } //After levelizing PIs will be 1st level
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary outputs
@@ -179,7 +180,7 @@ class TimingGraph {
         ///\warning Old edge ids are invalidated
         ///\returns A mapping from old to new edge ids
         ///\see levelize()
-        std::vector<EdgeId> optimize_edge_layout();
+        tatum::linear_map<EdgeId,EdgeId> optimize_edge_layout();
 
         ///Optimizes the memory layout of nodes in the graph by re-ordering them
         ///for improved spatial/temporal cache locality.
@@ -187,7 +188,7 @@ class TimingGraph {
         ///\warning Old node ids are invalidated
         ///\returns A mapping from old to new node ids
         ///\see levelize()
-        std::vector<NodeId> optimize_node_layout();
+        tatum::linear_map<NodeId,NodeId> optimize_node_layout();
 
     private:
         bool valid_node_id(const NodeId node_id);
@@ -200,21 +201,21 @@ class TimingGraph {
          * data layout, rather than Array of Structs (AoS)
          */
         //Node data
-        std::vector<NodeId> node_ids_; //The node IDs in the graph
-        std::vector<TN_Type> node_types_; //Type of node [0..num_nodes()-1]
-        std::vector<DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
-        std::vector<std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
-        std::vector<std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
-        std::vector<bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
+        tatum::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
+        tatum::linear_map<NodeId,TN_Type> node_types_; //Type of node [0..num_nodes()-1]
+        tatum::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
+        tatum::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
+        tatum::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
+        tatum::linear_map<NodeId,bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data
-        std::vector<EdgeId> edge_ids_; //The edge IDs in the graph
-        std::vector<NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
-        std::vector<NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
+        tatum::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
+        tatum::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
+        tatum::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
 
         //Auxilary graph-level info, filled in by levelize()
         std::vector<LevelId> level_ids_; //The level IDs in the graph
-        std::vector<std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
+        tatum::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
         std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
                                               //NOTE: we track this separetely (unlike Primary Inputs) since these are
                                               //      scattered through the graph and do not exist on a single level

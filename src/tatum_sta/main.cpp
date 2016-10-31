@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
 
         //Re-order edges
         cout << "Re-allocating edges so levels are in contiguous memory";
-        std::vector<EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
+        tatum::linear_map<EdgeId,EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &edge_reorder_end);
         cout << " (took " << time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
         //Adjust the edge delays to reflect the new ordering
         edge_delays = std::vector<float>(orig_edge_delays.size());
         for(size_t i = 0; i < orig_edge_delays.size(); i++) {
-            EdgeId new_id = vpr_edge_map[i];
+            EdgeId new_id = vpr_edge_map[EdgeId(i)];
             edge_delays[size_t(new_id)] = orig_edge_delays[i];
         }
 
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
 
         //Re-order nodes
         cout << "Re-allocating nodes so levels are in contiguous memory";
-        std::vector<NodeId> vpr_node_map = timing_graph->optimize_node_layout();
+        tatum::linear_map<NodeId,NodeId> vpr_node_map = timing_graph->optimize_node_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &node_reorder_end);
         cout << " (took " << time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
         for(auto src_domain : orig_expected_arr_req_times.domains()) {
             //For every clock domain pair
             for(int i = 0; i < orig_expected_arr_req_times.get_num_nodes(); i++) {
-                NodeId new_id = vpr_node_map[i];
+                NodeId new_id = vpr_node_map[NodeId(i)];
                 expected_arr_req_times.add_arr_time(src_domain, new_id, orig_expected_arr_req_times.get_arr_time(src_domain, NodeId(i)));
                 expected_arr_req_times.add_req_time(src_domain, new_id, orig_expected_arr_req_times.get_req_time(src_domain, NodeId(i)));
             }

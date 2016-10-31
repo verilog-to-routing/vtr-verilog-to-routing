@@ -49,8 +49,8 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
 
     //Update the nodes the edge references
-    node_out_edges_[size_t(src_node)].push_back(edge_id);
-    node_in_edges_[size_t(sink_node)].push_back(edge_id);
+    node_out_edges_[src_node].push_back(edge_id);
+    node_in_edges_[sink_node].push_back(edge_id);
 
     //Return the edge id of the added edge
     return edge_id;
@@ -81,7 +81,7 @@ void TimingGraph::levelize() {
 
         if(node_fanin == 0) {
             //Add a primary input
-            level_nodes_[0].push_back(node_id);
+            level_nodes_[LevelId(0)].push_back(node_id);
         }
     }
 
@@ -97,7 +97,7 @@ void TimingGraph::levelize() {
     while(inserted_node_in_level) { //If nothing was inserted we are finished
         inserted_node_in_level = false;
 
-        for(const NodeId node_id : level_nodes_[level_idx]) {
+        for(const NodeId node_id : level_nodes_[LevelId(level_idx)]) {
             //Inspect the fanout
             for(EdgeId edge_id : node_out_edges(node_id)) {
                 NodeId sink_node = edge_sink_node(edge_id);
@@ -112,7 +112,7 @@ void TimingGraph::levelize() {
                     level_nodes_.resize(level_idx+2);
 
                     //Add the node
-                    level_nodes_[level_idx+1].push_back(sink_node);
+                    level_nodes_[LevelId(level_idx+1)].push_back(sink_node);
 
                     inserted_node_in_level = true;
                 }
@@ -131,7 +131,7 @@ void TimingGraph::levelize() {
     }
 }
 
-std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
+tatum::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
     //Make all edges in a level be contiguous in memory
 
     //Determine the edges driven by each level of the graph
@@ -152,11 +152,11 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
      */
 
     //Maps from from original to new edge id, used to update node to edge refs
-    std::vector<EdgeId> orig_to_new_edge_id(edges().size());
+    tatum::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
 
     //Save the old values while we write the new ones
-    std::vector<NodeId> old_edge_sink_nodes_;
-    std::vector<NodeId> old_edge_src_nodes_;
+    tatum::linear_map<EdgeId,NodeId> old_edge_sink_nodes_;
+    tatum::linear_map<EdgeId,NodeId> old_edge_src_nodes_;
 
     //Swap them
     std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
@@ -166,33 +166,33 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
     for(auto& edge_level : edge_levels) {
         for(const EdgeId orig_edge_id : edge_level) {
             //Write edges in the new contiguous order
-            edge_sink_nodes_.push_back(old_edge_sink_nodes_[size_t(orig_edge_id)]);
-            edge_src_nodes_.push_back(old_edge_src_nodes_[size_t(orig_edge_id)]);
+            edge_sink_nodes_.push_back(old_edge_sink_nodes_[orig_edge_id]);
+            edge_src_nodes_.push_back(old_edge_src_nodes_[orig_edge_id]);
 
             //Save the new edge id to update nodes
-            orig_to_new_edge_id[size_t(orig_edge_id)] = EdgeId(edge_sink_nodes_.size() - 1);
+            orig_to_new_edge_id[orig_edge_id] = EdgeId(edge_sink_nodes_.size() - 1);
         }
     }
 
     //Update the edge ids
-    for(size_t i = 0; i < edge_ids_.size(); ++i) {
-        EdgeId new_edge_id = orig_to_new_edge_id[i];
-        edge_ids_[size_t(new_edge_id)] = new_edge_id;
+    for(EdgeId old_edge_id : edges()) {
+        EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
+        edge_ids_[new_edge_id] = new_edge_id;
     }
 
     //Update node to edge refs
     for(const NodeId node_id : nodes()) {
-        int edge_idx = 0;
+        size_t edge_idx = 0;
         for(EdgeId old_edge_id : node_out_edges(node_id)) {
-            EdgeId new_edge_id = orig_to_new_edge_id[size_t(old_edge_id)];
-            node_out_edges_[size_t(node_id)][edge_idx] = new_edge_id;
+            EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
+            node_out_edges_[node_id][edge_idx] = new_edge_id;
             ++edge_idx;
         }
 
         edge_idx = 0;
         for(EdgeId old_edge_id : node_in_edges(node_id)) {
-            EdgeId new_edge_id = orig_to_new_edge_id[size_t(old_edge_id)];
-            node_in_edges_[size_t(node_id)][edge_idx] = new_edge_id;
+            EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
+            node_in_edges_[node_id][edge_idx] = new_edge_id;
             ++edge_idx;
         }
     }
@@ -201,23 +201,23 @@ std::vector<EdgeId> TimingGraph::optimize_edge_layout() {
     return orig_to_new_edge_id;
 }
 
-std::vector<NodeId> TimingGraph::optimize_node_layout() {
+tatum::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
     //Make all nodes in a level be contiguous in memory
 
     /*
      * Keep a map of the old and new node ids to update edges
      * and node levels later
      */
-    std::vector<NodeId> orig_to_new_node_id = std::vector<NodeId>(nodes().size());
+    tatum::linear_map<NodeId,NodeId> orig_to_new_node_id = std::vector<NodeId>(nodes().size());
 
     /*
      * Re-allocate nodes so levels are in contiguous memory
      */
-    std::vector<TN_Type> old_node_types;
-    std::vector<DomainId> old_node_clock_domains;
-    std::vector<std::vector<EdgeId>> old_node_out_edges;
-    std::vector<std::vector<EdgeId>> old_node_in_edges;
-    std::vector<bool> old_node_is_clock_source;
+    tatum::linear_map<NodeId,TN_Type> old_node_types;
+    tatum::linear_map<NodeId,DomainId> old_node_clock_domains;
+    tatum::linear_map<NodeId,std::vector<EdgeId>> old_node_out_edges;
+    tatum::linear_map<NodeId,std::vector<EdgeId>> old_node_in_edges;
+    tatum::linear_map<NodeId,bool> old_node_is_clock_source;
 
     //Swap the values
     std::swap(old_node_types, node_types_);
@@ -229,14 +229,14 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
     //Update the values
     for(const LevelId level_id : levels()) {
         for(const NodeId old_node_id : level_nodes(level_id)) {
-            node_types_.push_back(old_node_types[size_t(old_node_id)]);
-            node_clock_domains_.push_back(old_node_clock_domains[size_t(old_node_id)]);
-            node_out_edges_.push_back(old_node_out_edges[size_t(old_node_id)]);
-            node_in_edges_.push_back(old_node_in_edges[size_t(old_node_id)]);
-            node_is_clock_source_.push_back(old_node_is_clock_source[size_t(old_node_id)]);
+            node_types_.push_back(old_node_types[old_node_id]);
+            node_clock_domains_.push_back(old_node_clock_domains[old_node_id]);
+            node_out_edges_.push_back(old_node_out_edges[old_node_id]);
+            node_in_edges_.push_back(old_node_in_edges[old_node_id]);
+            node_is_clock_source_.push_back(old_node_is_clock_source[old_node_id]);
 
             //Record the new node id
-            orig_to_new_node_id[size_t(old_node_id)] = NodeId(node_types_.size() - 1);
+            orig_to_new_node_id[old_node_id] = NodeId(node_types_.size() - 1);
         }
     }
 
@@ -245,37 +245,37 @@ std::vector<NodeId> TimingGraph::optimize_node_layout() {
      */
     //The node levels
     for(const LevelId level_id : levels()) {
-        for(size_t i = 0; i < level_nodes_[size_t(level_id)].size(); ++i) {
-            NodeId old_node_id = level_nodes_[size_t(level_id)][i];
-            NodeId new_node_id = orig_to_new_node_id[size_t(old_node_id)];
+        for(size_t i = 0; i < level_nodes_[level_id].size(); ++i) {
+            NodeId old_node_id = level_nodes_[level_id][i];
+            NodeId new_node_id = orig_to_new_node_id[old_node_id];
 
-            level_nodes_[size_t(level_id)][i] = new_node_id;
+            level_nodes_[level_id][i] = new_node_id;
         }
     }
 
     //The primary outputs
     for(size_t i = 0; i < primary_outputs_.size(); i++) {
         NodeId old_node_id = primary_outputs_[i];
-        NodeId new_node_id = orig_to_new_node_id[size_t(old_node_id)];
+        NodeId new_node_id = orig_to_new_node_id[old_node_id];
 
         primary_outputs_[i] = new_node_id;
     }
 
     //The Edges
     for(const EdgeId edge_id : edges()) {
-        NodeId old_sink_node = edge_sink_nodes_[size_t(edge_id)];
-        NodeId old_src_node = edge_src_nodes_[size_t(edge_id)];
+        NodeId old_sink_node = edge_sink_nodes_[edge_id];
+        NodeId old_src_node = edge_src_nodes_[edge_id];
 
-        NodeId new_sink_node = orig_to_new_node_id[size_t(old_sink_node)];
-        NodeId new_src_node = orig_to_new_node_id[size_t(old_src_node)];
+        NodeId new_sink_node = orig_to_new_node_id[old_sink_node];
+        NodeId new_src_node = orig_to_new_node_id[old_src_node];
 
-        edge_sink_nodes_[size_t(edge_id)] = new_sink_node;
-        edge_src_nodes_[size_t(edge_id)] = new_src_node;
+        edge_sink_nodes_[edge_id] = new_sink_node;
+        edge_src_nodes_[edge_id] = new_src_node;
     }
 
     //Update the node ids
-    for(size_t i = 0; i < node_ids_.size(); ++i) {
-        node_ids_[i] = orig_to_new_node_id[i];
+    for(NodeId node_id : nodes()) {
+        node_ids_[node_id] = orig_to_new_node_id[node_id];
     }
 
     return orig_to_new_node_id;
