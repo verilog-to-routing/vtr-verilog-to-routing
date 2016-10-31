@@ -84,6 +84,9 @@ class HoldAnalysisVisitor {
         std::vector<TimingTags> hold_clock_tags_;
 };
 
+//Short name
+using HoldAnalysis = HoldAnalysisVisitor;
+
 /*
  * Pre-traversal
  */

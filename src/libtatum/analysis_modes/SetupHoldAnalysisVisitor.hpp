@@ -55,3 +55,6 @@ class SetupHoldAnalysisVisitor {
         SetupAnalysisVisitor setup_visitor_;
         HoldAnalysisVisitor hold_visitor_;
 };
+
+//Short name
+using SetupHoldAnalysis = SetupHoldAnalysisVisitor;

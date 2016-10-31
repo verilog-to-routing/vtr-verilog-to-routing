@@ -150,6 +150,9 @@ class SetupAnalysisVisitor {
         std::vector<TimingTags> setup_clock_tags_;
 };
 
+//Short name
+using SetupAnalysis = SetupAnalysisVisitor;
+
 /*
  * Pre-traversal
  */

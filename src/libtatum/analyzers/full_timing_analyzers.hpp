@@ -21,21 +21,21 @@ template<class DelayCalc,
          template<class V, class D> class GraphWalker=SerialWalker>
 class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
     public:
-        SetupFullTimingAnalyzer(std::shared_ptr<TimingGraph> timing_graph, std::shared_ptr<TimingConstraints> timing_constraints, std::shared_ptr<DelayCalc> delay_calculator)
+        SetupFullTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalc& delay_calculator)
             : SetupTimingAnalyzer()
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , setup_visitor_(timing_graph_->nodes().size())
+            , setup_visitor_(timing_graph_.nodes().size())
             {}
 
     protected:
         virtual void update_timing_impl() override {
-            graph_walker_.do_arrival_pre_traversal(*timing_graph_, *timing_constraints_, setup_visitor_);            
-            graph_walker_.do_arrival_traversal(*timing_graph_, *delay_calculator_, setup_visitor_);            
+            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_visitor_);            
+            graph_walker_.do_arrival_traversal(timing_graph_, delay_calculator_, setup_visitor_);            
 
-            graph_walker_.do_required_pre_traversal(*timing_graph_, *timing_constraints_, setup_visitor_);            
-            graph_walker_.do_required_traversal(*timing_graph_, *delay_calculator_, setup_visitor_);            
+            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_visitor_);            
+            graph_walker_.do_required_traversal(timing_graph_, delay_calculator_, setup_visitor_);            
         }
 
         virtual void reset_timing_impl() override { setup_visitor_.reset(); }
@@ -47,9 +47,9 @@ class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
 
 
     private:
-        std::shared_ptr<TimingGraph> timing_graph_;
-        std::shared_ptr<TimingConstraints> timing_constraints_;
-        std::shared_ptr<DelayCalc> delay_calculator_;
+        const TimingGraph& timing_graph_;
+        const TimingConstraints& timing_constraints_;
+        const DelayCalc& delay_calculator_;
         SetupAnalysisVisitor setup_visitor_;
         GraphWalker<SetupAnalysisVisitor, DelayCalc> graph_walker_;
 
@@ -60,21 +60,21 @@ template<class DelayCalc,
          template<class V, class D> class GraphWalker=SerialWalker>
 class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
     public:
-        HoldFullTimingAnalyzer(std::shared_ptr<TimingGraph> timing_graph, std::shared_ptr<TimingConstraints> timing_constraints, std::shared_ptr<DelayCalc> delay_calculator)
+        HoldFullTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalc& delay_calculator)
             : HoldTimingAnalyzer()
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , hold_visitor_(timing_graph_->nodes().size())
+            , hold_visitor_(timing_graph_.nodes().size())
             {}
 
     protected:
         virtual void update_timing_impl() override {
-            graph_walker_.do_arrival_pre_traversal(*timing_graph_, *timing_constraints_, hold_visitor_);            
-            graph_walker_.do_arrival_traversal(*timing_graph_, *delay_calculator_, hold_visitor_);            
+            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
+            graph_walker_.do_arrival_traversal(timing_graph_, delay_calculator_, hold_visitor_);            
 
-            graph_walker_.do_required_pre_traversal(*timing_graph_, *timing_constraints_, hold_visitor_);            
-            graph_walker_.do_required_traversal(*timing_graph_, *delay_calculator_, hold_visitor_);            
+            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
+            graph_walker_.do_required_traversal(timing_graph_, delay_calculator_, hold_visitor_);            
         }
 
         virtual void reset_timing_impl() override { hold_visitor_.reset(); }
@@ -85,9 +85,9 @@ class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
         const TimingTags& get_hold_clock_tags_impl(NodeId node_id) const override { return hold_visitor_.get_hold_clock_tags(node_id); }
 
     private:
-        std::shared_ptr<TimingGraph> timing_graph_;
-        std::shared_ptr<TimingConstraints> timing_constraints_;
-        std::shared_ptr<DelayCalc> delay_calculator_;
+        const TimingGraph& timing_graph_;
+        const TimingConstraints& timing_constraints_;
+        const DelayCalc& delay_calculator_;
         HoldAnalysisVisitor hold_visitor_;
         GraphWalker<HoldAnalysisVisitor, DelayCalc> graph_walker_;
 };
@@ -96,21 +96,21 @@ template<class DelayCalc,
          template<class V, class D> class GraphWalker=SerialWalker>
 class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
     public:
-        SetupHoldFullTimingAnalyzer(std::shared_ptr<TimingGraph> timing_graph, std::shared_ptr<TimingConstraints> timing_constraints, std::shared_ptr<DelayCalc> delay_calculator)
+        SetupHoldFullTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalc& delay_calculator)
             : SetupHoldTimingAnalyzer()
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , setup_hold_visitor_(timing_graph_->nodes().size())
+            , setup_hold_visitor_(timing_graph_.nodes().size())
             {}
 
     protected:
         virtual void update_timing_impl() override {
-            graph_walker_.do_arrival_pre_traversal(*timing_graph_, *timing_constraints_, setup_hold_visitor_);            
-            graph_walker_.do_arrival_traversal(*timing_graph_, *delay_calculator_, setup_hold_visitor_);            
+            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
+            graph_walker_.do_arrival_traversal(timing_graph_, delay_calculator_, setup_hold_visitor_);            
 
-            graph_walker_.do_required_pre_traversal(*timing_graph_, *timing_constraints_, setup_hold_visitor_);            
-            graph_walker_.do_required_traversal(*timing_graph_, *delay_calculator_, setup_hold_visitor_);            
+            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
+            graph_walker_.do_required_traversal(timing_graph_, delay_calculator_, setup_hold_visitor_);            
         }
 
         virtual void reset_timing_impl() override { setup_hold_visitor_.reset(); }
@@ -123,9 +123,9 @@ class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
         const TimingTags& get_hold_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_hold_clock_tags(node_id); }
 
     private:
-        std::shared_ptr<TimingGraph> timing_graph_;
-        std::shared_ptr<TimingConstraints> timing_constraints_;
-        std::shared_ptr<DelayCalc> delay_calculator_;
+        const TimingGraph& timing_graph_;
+        const TimingConstraints& timing_constraints_;
+        const DelayCalc& delay_calculator_;
         SetupHoldAnalysisVisitor setup_hold_visitor_;
         GraphWalker<SetupHoldAnalysisVisitor, DelayCalc> graph_walker_;
 };

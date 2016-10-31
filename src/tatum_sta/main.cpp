@@ -13,6 +13,7 @@
 #include "timing_analyzer_interfaces.hpp"
 #include "full_timing_analyzers.hpp"
 #include "graph_walkers.hpp"
+#include "analyzer_factory.hpp"
 
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
@@ -195,7 +196,7 @@ int main(int argc, char** argv) {
     auto delay_calculator = std::make_shared<FixedDelayCalculator>(edge_delays);
 
     //Create the timing analyzer
-    std::shared_ptr<TimingAnalyzer> serial_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<TimingAnalyzer> serial_analyzer = AnalyzerFactory<SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
     auto serial_setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(serial_analyzer);
     auto serial_hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(serial_analyzer);
 
@@ -303,7 +304,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<TimingAnalyzer> parallel_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<FixedDelayCalculator,ParallelWalker>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<TimingAnalyzer> parallel_analyzer = AnalyzerFactory<SetupHoldAnalysis,ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
     auto parallel_setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(parallel_analyzer);
     auto parallel_hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(parallel_analyzer);
 
