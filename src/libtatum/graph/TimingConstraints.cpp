@@ -6,31 +6,31 @@
 using std::cout;
 using std::endl;
 
-bool TimingConstraints::should_analyze(DomainId src_domain, DomainId sink_domain) const {
+bool TimingConstraints::should_analyze(const DomainId src_domain, const DomainId sink_domain) const {
     return setup_clock_constraints_.count(std::make_pair(src_domain, sink_domain)) || hold_clock_constraints_.count(std::make_pair(src_domain, sink_domain));
 }
 
-float TimingConstraints::hold_clock_constraint(DomainId src_domain, DomainId sink_domain) const {
+float TimingConstraints::hold_clock_constraint(const DomainId src_domain, const DomainId sink_domain) const {
     auto iter = hold_clock_constraints_.find(std::make_pair(src_domain, sink_domain));
     TATUM_ASSERT_MSG(iter != hold_clock_constraints_.end(), "Could not find clock constraint for hold analysis");
 
     return iter->second;
 }
-float TimingConstraints::setup_clock_constraint(DomainId src_domain, DomainId sink_domain) const {
+float TimingConstraints::setup_clock_constraint(const DomainId src_domain, const DomainId sink_domain) const {
     auto iter = setup_clock_constraints_.find(std::make_pair(src_domain, sink_domain));
     TATUM_ASSERT_MSG(iter != setup_clock_constraints_.end(), "Could not find clock constraint setup analysis");
 
     return iter->second;
 }
 
-float TimingConstraints::input_constraint(NodeId node_id) const {
+float TimingConstraints::input_constraint(const NodeId node_id) const {
     auto iter = input_constraints_.find(node_id);
     TATUM_ASSERT_MSG(iter != input_constraints_.end(), "Could not find node input constraint");
 
     return iter->second;
 }
 
-float TimingConstraints::output_constraint(NodeId node_id) const {
+float TimingConstraints::output_constraint(const NodeId node_id) const {
     auto iter = output_constraints_.find(node_id);
     TATUM_ASSERT_MSG(iter != input_constraints_.end(), "Could not find node output constraint");
 

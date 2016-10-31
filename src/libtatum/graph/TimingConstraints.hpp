@@ -16,19 +16,19 @@ class TimingConstraints {
         ///Indicates whether the paths between src_domain and sink_domain should be analyzed
         ///\param src_domain The ID of the source (launch) clock domain
         ///\param sink_domain The ID of the sink (capture) clock domain
-        bool should_analyze(DomainId src_domain, DomainId sink_domain) const;
+        bool should_analyze(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The setup (max) constraint between src_domain and sink_domain
-        float setup_clock_constraint(DomainId src_domain, DomainId sink_domain) const;
+        float setup_clock_constraint(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The hold (min) constraint between src_domain and sink_domain
-        float hold_clock_constraint(DomainId src_domain, DomainId sink_domain) const;
+        float hold_clock_constraint(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The input delay constraint on node_id
-        float input_constraint(NodeId node_id) const;
+        float input_constraint(const NodeId node_id) const;
 
         ///\returns The output delay constraint on node_id
-        float output_constraint(NodeId node_id) const;
+        float output_constraint(const NodeId node_id) const;
 
         /*
          * Setters
