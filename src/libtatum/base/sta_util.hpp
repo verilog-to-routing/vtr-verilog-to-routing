@@ -30,7 +30,7 @@ void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::m
  */
 
 template<class DelayCalc>
-void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_ptr<SetupTimingAnalyzer>& analyzer, const DelayCalc& delay_calc) {
+void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, const SetupTimingAnalyzer& analyzer, const DelayCalc& delay_calc) {
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
     os << "\tnode[shape=record]" <<std::endl;
@@ -39,7 +39,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
-        auto data_tags = analyzer->get_setup_data_tags(inode);
+        auto data_tags = analyzer.get_setup_data_tags(inode);
         if(data_tags.num_tags() > 0) {
             for(const TimingTag& tag : data_tags) {
                 os << " | {";
@@ -51,7 +51,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
                 os << "}";
             }
         }
-        auto clock_tags = analyzer->get_setup_clock_tags(inode);
+        auto clock_tags = analyzer.get_setup_clock_tags(inode);
         if(clock_tags.num_tags() > 0) {
             for(const TimingTag& tag : clock_tags) {
                 os << " | {";
@@ -95,7 +95,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
 }
 
 template<class DelayCalc>
-void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_ptr<HoldTimingAnalyzer> analyzer, const DelayCalc& delay_calc) {
+void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, const HoldTimingAnalyzer& analyzer, const DelayCalc& delay_calc) {
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
     os << "\tnode[shape=record]" <<std::endl;
@@ -105,7 +105,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
-        auto data_tags = analyzer->get_hold_data_tags(inode);
+        auto data_tags = analyzer.get_hold_data_tags(inode);
         if(data_tags.num_tags() > 0) {
             for(const TimingTag& tag : data_tags) {
                 os << " | {";
@@ -117,7 +117,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
                 os << "}";
             }
         }
-        auto clock_tags = analyzer->get_hold_clock_tags(inode);
+        auto clock_tags = analyzer.get_hold_clock_tags(inode);
         if(clock_tags.num_tags() > 0) {
             for(const TimingTag& tag : clock_tags) {
                 os << " | {";

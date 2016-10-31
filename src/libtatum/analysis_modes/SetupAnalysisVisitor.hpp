@@ -268,7 +268,6 @@ void SetupAnalysisVisitor::do_arrival_traverse_node(const TimingGraph& tg, const
     }
 }
 
-
 template<class DelayCalc>
 void SetupAnalysisVisitor::do_arrival_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
     //We must use the tags by reference so we don't accidentally wipe-out any

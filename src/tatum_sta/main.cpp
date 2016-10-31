@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
     auto delay_calculator = std::make_shared<FixedDelayCalculator>(edge_delays);
 
     //Create the timing analyzer
-    std::shared_ptr<SetupTimingAnalyzer> serial_analyzer = std::make_shared<SetupFullTimingAnalyzer<SerialWalker, FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<SetupHoldTimingAnalyzer> serial_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<SerialWalker, FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     //Performance variables
     float serial_verify_time = 0.;
@@ -286,17 +286,17 @@ int main(int argc, char** argv) {
     if(timing_graph->nodes().size() < 1000) {
         cout << "Writing Anotated Timing Graph Dot File" << endl;
         std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-        write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
+        write_dot_file_setup(tg_setup_dot_file, *timing_graph, *serial_analyzer, delay_calculator);
 
-        //std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
-        //write_dot_file_hold(tg_hold_dot_file, *timing_graph, serial_analyzer, delay_calculator);
+        std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
+        write_dot_file_hold(tg_hold_dot_file, *timing_graph, *serial_analyzer, delay_calculator);
     } else {
         cout << "Skipping writting dot file due to large graph size" << endl;
     }
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<SetupTimingAnalyzer> parallel_analyzer = std::make_shared<SetupFullTimingAnalyzer<ParallelLevelizedCilkWalker, FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<SetupTimingAnalyzer> parallel_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<ParallelLevelizedCilkWalker, FixedDelayCalculator>>(timing_graph, timing_constraints, delay_calculator);
 
     //float parallel_analysis_time = 0;
     //float parallel_pretraverse_time = 0.;
