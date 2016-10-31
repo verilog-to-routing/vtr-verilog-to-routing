@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<TimingAnalyzer> parallel_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<FixedDelayCalculator,ParallelLevelizedCilkWalker>>(timing_graph, timing_constraints, delay_calculator);
+    std::shared_ptr<TimingAnalyzer> parallel_analyzer = std::make_shared<SetupHoldFullTimingAnalyzer<FixedDelayCalculator,ParallelWalker>>(timing_graph, timing_constraints, delay_calculator);
     auto parallel_setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(parallel_analyzer);
     auto parallel_hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(parallel_analyzer);
 
