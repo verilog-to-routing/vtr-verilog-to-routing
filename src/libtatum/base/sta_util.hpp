@@ -36,7 +36,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
     os << "\tnode[shape=record]" <<std::endl;
 
     for(const NodeId inode : tg.nodes()) {
-        os << "\tnode" << inode;
+        os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         auto data_tags = analyzer->get_setup_data_tags(inode);
@@ -72,7 +72,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
         os << "\t{rank = same;";
 
         for(NodeId node_id : tg.level(ilevel)) {
-            os << " node" << node_id <<";";
+            os << " node" << size_t(node_id) <<";";
         }
         os << "}" <<std::endl;
     }
@@ -85,7 +85,7 @@ void write_dot_file_setup(std::ostream& os, const TimingGraph& tg, std::shared_p
 
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-                os << "\tnode" << node_id << " -> node" << sink_node_id;
+                os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
                 os << " [ label=\"" << delay_calc->max_edge_delay(tg, edge_id) << "\" ]";
                 os << ";" <<std::endl;
             }
@@ -103,7 +103,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
 
     //Declare nodes and annotate tags
     for(const NodeId inode : tg.nodes()) {
-        os << "\tnode" << inode;
+        os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{#" << inode << " (" << tg.node_type(inode) << ")";
         auto data_tags = analyzer->get_hold_data_tags(inode);
@@ -139,7 +139,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
         os << "\t{rank = same;";
 
         for(NodeId node_id : tg.level_nodes(ilevel)) {
-            os << " node" << node_id <<";";
+            os << " node" << size_t(node_id) <<";";
         }
         os << "}" <<std::endl;
     }
@@ -152,7 +152,7 @@ void write_dot_file_hold(std::ostream& os, const TimingGraph& tg, std::shared_pt
 
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-                os << "\tnode" << node_id << " -> node" << sink_node_id;
+                os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
                 os << " [ label=\"" << delay_calc->min_edge_delay(tg, edge_id) << "\" ]";
                 os << ";" <<std::endl;
             }
