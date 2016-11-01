@@ -343,10 +343,6 @@ std::ostream& operator<<(std::ostream& os, NodeId node_id) {
     return os << "Node(" << size_t(node_id) << ")";
 }
 
-std::ostream& operator<<(std::ostream& os, BlockId block_id) {
-    return os << "Block(" << size_t(block_id) << ")";
-}
-
 std::ostream& operator<<(std::ostream& os, EdgeId edge_id) {
     return os << "Edge(" << size_t(edge_id) << ")";
 }

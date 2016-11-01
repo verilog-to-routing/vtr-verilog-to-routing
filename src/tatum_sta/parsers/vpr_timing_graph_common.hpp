@@ -1,5 +1,6 @@
 #pragma once
 #include "tatum_assert.hpp"
+#include "tatum_strong_id.hpp"
 
 #include <iostream>
 #include <vector>
@@ -9,6 +10,12 @@
 #include "timing_graph_fwd.hpp"
 #include "timing_constraints_fwd.hpp"
 
+
+struct block_id_tag;
+typedef tatum::util::StrongId<block_id_tag> BlockId;
+inline std::ostream& operator<<(std::ostream& os, BlockId block_id) {
+    return os << "Block(" << size_t(block_id) << ")";
+}
 
 
 
@@ -144,6 +151,6 @@ class VprArrReqTimes {
 
 };
 
-extern int yyparse(tatum::TimingGraph& tg, VprArrReqTimes& arr_req_times, tatum::TimingConstraints& tc, std::vector<tatum::BlockId>& node_logical_blocks, std::vector<float>& edge_delays);
+extern int yyparse(tatum::TimingGraph& tg, VprArrReqTimes& arr_req_times, tatum::TimingConstraints& tc, std::vector<BlockId>& node_logical_blocks, std::vector<float>& edge_delays);
 extern FILE *yyin;
 

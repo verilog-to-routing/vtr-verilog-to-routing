@@ -12,7 +12,7 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-int yyerror(const tatum::TimingGraph& tg, const VprArrReqTimes& arr_req_times, const tatum::TimingConstraints& tc, const std::vector<tatum::BlockId>& node_logical_blocks, const std::vector<float>& edge_delays, const char *msg);
+int yyerror(const tatum::TimingGraph& tg, const VprArrReqTimes& arr_req_times, const tatum::TimingConstraints& tc, const std::vector<BlockId>& node_logical_blocks, const std::vector<float>& edge_delays, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -29,7 +29,6 @@ std::vector<std::vector<edge_t>*> node_out_edges;
 using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::DomainId;
-using tatum::BlockId;
 using tatum::TN_Type;
 using tatum::TimingGraph;
 using tatum::TimingConstraints;
@@ -42,7 +41,7 @@ using tatum::TimingConstraints;
 %parse-param{tatum::TimingGraph& timing_graph}
 %parse-param{VprArrReqTimes& arr_req_times}
 %parse-param{tatum::TimingConstraints& timing_constraints}
-%parse-param{std::vector<tatum::BlockId>& node_logical_blocks}
+%parse-param{std::vector<BlockId>& node_logical_blocks}
 %parse-param{std::vector<float>& edge_delays}
 
 %union {

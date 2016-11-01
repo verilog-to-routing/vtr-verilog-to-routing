@@ -10,7 +10,6 @@
 using tatum::TimingGraph;
 using tatum::NodeId;
 using tatum::EdgeId;
-using tatum::BlockId;
 using tatum::TN_Type;
 
 void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes);

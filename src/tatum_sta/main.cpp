@@ -53,7 +53,6 @@ using tatum::TimingTag;
 using tatum::TimingTags;
 using tatum::TimingGraph;
 using tatum::TimingConstraints;
-using tatum::BlockId;
 using tatum::NodeId;
 using tatum::EdgeId;
 
