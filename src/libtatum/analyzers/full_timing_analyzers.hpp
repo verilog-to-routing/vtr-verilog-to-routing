@@ -5,9 +5,9 @@
 #include "timing_analyzer_interfaces.hpp"
 #include "graph_walkers.hpp"
 
-#include "SetupAnalysisVisitor.hpp"
-#include "HoldAnalysisVisitor.hpp"
-#include "SetupHoldAnalysisVisitor.hpp"
+#include "SetupAnalysis.hpp"
+#include "HoldAnalysis.hpp"
+#include "SetupHoldAnalysis.hpp"
 /** \file
  * This file defines concrete implementations of the TimingAnalyzer interfaces.
  *
@@ -50,8 +50,8 @@ class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
         const TimingGraph& timing_graph_;
         const TimingConstraints& timing_constraints_;
         const DelayCalc& delay_calculator_;
-        SetupAnalysisVisitor setup_visitor_;
-        GraphWalker<SetupAnalysisVisitor, DelayCalc> graph_walker_;
+        SetupAnalysis setup_visitor_;
+        GraphWalker<SetupAnalysis, DelayCalc> graph_walker_;
 
         std::map<std::string,double> profiling_data_;
 };
@@ -88,8 +88,8 @@ class HoldFullTimingAnalyzer : public HoldTimingAnalyzer {
         const TimingGraph& timing_graph_;
         const TimingConstraints& timing_constraints_;
         const DelayCalc& delay_calculator_;
-        HoldAnalysisVisitor hold_visitor_;
-        GraphWalker<HoldAnalysisVisitor, DelayCalc> graph_walker_;
+        HoldAnalysis hold_visitor_;
+        GraphWalker<HoldAnalysis, DelayCalc> graph_walker_;
 };
 
 template<class DelayCalc,
@@ -126,6 +126,6 @@ class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
         const TimingGraph& timing_graph_;
         const TimingConstraints& timing_constraints_;
         const DelayCalc& delay_calculator_;
-        SetupHoldAnalysisVisitor setup_hold_visitor_;
-        GraphWalker<SetupHoldAnalysisVisitor, DelayCalc> graph_walker_;
+        SetupHoldAnalysis setup_hold_visitor_;
+        GraphWalker<SetupHoldAnalysis, DelayCalc> graph_walker_;
 };

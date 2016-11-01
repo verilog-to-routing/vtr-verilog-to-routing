@@ -1,10 +1,10 @@
 #pragma once
-#include "SetupAnalysisVisitor.hpp"
-#include "HoldAnalysisVisitor.hpp"
+#include "SetupAnalysis.hpp"
+#include "HoldAnalysis.hpp"
 
-class SetupHoldAnalysisVisitor {
+class SetupHoldAnalysis {
     public:
-        SetupHoldAnalysisVisitor(size_t num_tags)
+        SetupHoldAnalysis(size_t num_tags)
             : setup_visitor_(num_tags)
             , hold_visitor_(num_tags) {}
 
@@ -52,9 +52,6 @@ class SetupHoldAnalysisVisitor {
         }
 
     private:
-        SetupAnalysisVisitor setup_visitor_;
-        HoldAnalysisVisitor hold_visitor_;
+        SetupAnalysis setup_visitor_;
+        HoldAnalysis hold_visitor_;
 };
-
-//Short name
-using SetupHoldAnalysis = SetupHoldAnalysisVisitor;
