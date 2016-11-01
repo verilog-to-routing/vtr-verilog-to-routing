@@ -53,11 +53,11 @@
  * support is added), it may be a good idea apply these modifications automatically as needed.
  *
  */
-#include "tatum_linear_map.hpp"
 #include <vector>
 #include <iosfwd>
 
 #include "tatum_range.hpp"
+#include "tatum_linear_map.hpp"
 #include "timing_graph_fwd.hpp"
 
 namespace tatum {
