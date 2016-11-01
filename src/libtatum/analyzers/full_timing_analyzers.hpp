@@ -55,8 +55,6 @@ class SetupFullTimingAnalyzer : public SetupTimingAnalyzer {
         const DelayCalc& delay_calculator_;
         SetupAnalysis setup_visitor_;
         GraphWalker<SetupAnalysis, DelayCalc> graph_walker_;
-
-        std::map<std::string,double> profiling_data_;
 };
 
 template<class DelayCalc,
