@@ -89,8 +89,8 @@ class HoldAnalysisOps {
         }
 
     private:
-        tatum::linear_map<NodeId,TimingTags> data_tags_;
-        tatum::linear_map<NodeId,TimingTags> clock_tags_;
+        tatum::util::linear_map<NodeId,TimingTags> data_tags_;
+        tatum::util::linear_map<NodeId,TimingTags> clock_tags_;
 };
 
 /** \class HoldAnalysis

@@ -2,7 +2,7 @@
 #define TATUM_RANGE_H
 #include <iterator>
 
-namespace tatum {
+namespace tatum { namespace util {
 /*
  * The tatum::Range template models a range defined by two iterators of type T.
  *
@@ -62,6 +62,6 @@ class Range {
 template<typename T>
 Range<T> make_range(T b, T e) { return Range<T>(b, e); }
 
-} //namespace
+}} //namespace
 
 #endif

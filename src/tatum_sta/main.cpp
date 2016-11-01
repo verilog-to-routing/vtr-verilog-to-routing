@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 
         //Re-order edges
         cout << "Re-allocating edges so levels are in contiguous memory";
-        tatum::linear_map<EdgeId,EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
+        tatum::util::linear_map<EdgeId,EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &edge_reorder_end);
         cout << " (took " << time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
 
         //Re-order nodes
         cout << "Re-allocating nodes so levels are in contiguous memory";
-        tatum::linear_map<NodeId,NodeId> vpr_node_map = timing_graph->optimize_node_layout();
+        tatum::util::linear_map<NodeId,NodeId> vpr_node_map = timing_graph->optimize_node_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &node_reorder_end);
         cout << " (took " << time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;

@@ -144,7 +144,7 @@
 #include <type_traits> //for std::is_integral
 #include <cstddef> //for std::size_t
 
-namespace tatum {
+namespace tatum { namespace util {
 
 //Forward delcare the class (needed for operator declarations)
 template<typename tag, typename T, T sentinel>
@@ -216,14 +216,14 @@ bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentine
     return lhs.id_ < rhs.id_;
 }
 
-} //namespace tatum
+}} //namespace tatum::util
 
 //Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
 namespace std {
     template<>
     template<typename tag, typename T, T sentinel>
-    struct hash<tatum::StrongId<tag,T,sentinel>> {
-        std::size_t operator()(const tatum::StrongId<tag,T,sentinel> k) const {
+    struct hash<tatum::util::StrongId<tag,T,sentinel>> {
+        std::size_t operator()(const tatum::util::StrongId<tag,T,sentinel> k) const {
             return std::hash<T>()(k.id_); //Hash with the underlying type
         }
     };

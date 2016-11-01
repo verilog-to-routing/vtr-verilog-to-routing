@@ -63,16 +63,16 @@
 class TimingGraph {
     public: //Public types
         //Iterators
-        typedef tatum::linear_map<EdgeId,EdgeId>::const_iterator edge_iterator;
-        typedef tatum::linear_map<NodeId,NodeId>::const_iterator node_iterator;
-        typedef tatum::linear_map<LevelId,LevelId>::const_iterator level_iterator;
-        typedef tatum::linear_map<LevelId,LevelId>::const_reverse_iterator reverse_level_iterator;
+        typedef tatum::util::linear_map<EdgeId,EdgeId>::const_iterator edge_iterator;
+        typedef tatum::util::linear_map<NodeId,NodeId>::const_iterator node_iterator;
+        typedef tatum::util::linear_map<LevelId,LevelId>::const_iterator level_iterator;
+        typedef tatum::util::linear_map<LevelId,LevelId>::const_reverse_iterator reverse_level_iterator;
 
         //Ranges
-        typedef tatum::Range<node_iterator> node_range;
-        typedef tatum::Range<edge_iterator> edge_range;
-        typedef tatum::Range<level_iterator> level_range;
-        typedef tatum::Range<reverse_level_iterator> reverse_level_range;
+        typedef tatum::util::Range<node_iterator> node_range;
+        typedef tatum::util::Range<edge_iterator> edge_range;
+        typedef tatum::util::Range<level_iterator> level_range;
+        typedef tatum::util::Range<reverse_level_iterator> reverse_level_range;
     public: //Public accessors
         /*
          * Node data accessors
@@ -91,11 +91,11 @@ class TimingGraph {
 
         ///\param id The node id
         ///\returns A range of all out-going edges the node drives
-        edge_range node_out_edges(const NodeId id) const { return tatum::make_range(node_out_edges_[id].begin(), node_out_edges_[id].end()); }
+        edge_range node_out_edges(const NodeId id) const { return tatum::util::make_range(node_out_edges_[id].begin(), node_out_edges_[id].end()); }
 
         ///\param id The node id
         ///\returns A range of all in-coming edges the node drives
-        edge_range node_in_edges(const NodeId id) const { return tatum::make_range(node_in_edges_[id].begin(), node_in_edges_[id].end()); }
+        edge_range node_in_edges(const NodeId id) const { return tatum::util::make_range(node_in_edges_[id].begin(), node_in_edges_[id].end()); }
 
         /*
          * Edge accessors
@@ -115,34 +115,34 @@ class TimingGraph {
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes in the level
         ///\see levelize()
-        node_range level_nodes(const LevelId level_id) const { return tatum::make_range(level_nodes_[level_id].begin(),
+        node_range level_nodes(const LevelId level_id) const { return tatum::util::make_range(level_nodes_[level_id].begin(),
                                                                                         level_nodes_[level_id].end()); }
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary inputs
         ///\see levelize()
-        node_range primary_inputs() const { return tatum::make_range(level_nodes_[LevelId(0)].begin(), level_nodes_[LevelId(0)].end()); } //After levelizing PIs will be 1st level
+        node_range primary_inputs() const { return tatum::util::make_range(level_nodes_[LevelId(0)].begin(), level_nodes_[LevelId(0)].end()); } //After levelizing PIs will be 1st level
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary outputs
         ///\warning The primary outputs may be on different levels of the graph
         ///\see levelize()
-        node_range primary_outputs() const { return tatum::make_range(primary_outputs_.begin(), primary_outputs_.end()); }
+        node_range primary_outputs() const { return tatum::util::make_range(primary_outputs_.begin(), primary_outputs_.end()); }
 
         /*
          * Graph aggregate accessors
          */
         //\returns A range containing all nodes in the graph
-        node_range nodes() const { return tatum::make_range(node_ids_.begin(), node_ids_.end()); }
+        node_range nodes() const { return tatum::util::make_range(node_ids_.begin(), node_ids_.end()); }
 
         //\returns A range containing all edges in the graph
-        edge_range edges() const { return tatum::make_range(edge_ids_.begin(), edge_ids_.end()); }
+        edge_range edges() const { return tatum::util::make_range(edge_ids_.begin(), edge_ids_.end()); }
 
         //\returns A range containing all levels in the graph
-        level_range levels() const { return tatum::make_range(level_ids_.begin(), level_ids_.end()); }
+        level_range levels() const { return tatum::util::make_range(level_ids_.begin(), level_ids_.end()); }
 
         //\returns A range containing all levels in the graph in *reverse* order
-        reverse_level_range reversed_levels() const { return tatum::make_range(level_ids_.rbegin(), level_ids_.rend()); }
+        reverse_level_range reversed_levels() const { return tatum::util::make_range(level_ids_.rbegin(), level_ids_.rend()); }
 
     public: //Mutators
         /*
@@ -179,7 +179,7 @@ class TimingGraph {
         ///\warning Old edge ids are invalidated
         ///\returns A mapping from old to new edge ids
         ///\see levelize()
-        tatum::linear_map<EdgeId,EdgeId> optimize_edge_layout();
+        tatum::util::linear_map<EdgeId,EdgeId> optimize_edge_layout();
 
         ///Optimizes the memory layout of nodes in the graph by re-ordering them
         ///for improved spatial/temporal cache locality.
@@ -187,7 +187,7 @@ class TimingGraph {
         ///\warning Old node ids are invalidated
         ///\returns A mapping from old to new node ids
         ///\see levelize()
-        tatum::linear_map<NodeId,NodeId> optimize_node_layout();
+        tatum::util::linear_map<NodeId,NodeId> optimize_node_layout();
 
     private: //Internal helper functions
         bool valid_node_id(const NodeId node_id);
@@ -200,21 +200,21 @@ class TimingGraph {
          * data layout, rather than Array of Structs (AoS)
          */
         //Node data
-        tatum::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
-        tatum::linear_map<NodeId,TN_Type> node_types_; //Type of node [0..num_nodes()-1]
-        tatum::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
-        tatum::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
-        tatum::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
-        tatum::linear_map<NodeId,bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
+        tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
+        tatum::util::linear_map<NodeId,TN_Type> node_types_; //Type of node [0..num_nodes()-1]
+        tatum::util::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
+        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
+        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
+        tatum::util::linear_map<NodeId,bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data
-        tatum::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
-        tatum::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
-        tatum::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
+        tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
+        tatum::util::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
+        tatum::util::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
 
         //Auxilary graph-level info, filled in by levelize()
-        std::vector<LevelId> level_ids_; //The level IDs in the graph
-        tatum::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
+        tatum::util::linear_map<LevelId,LevelId> level_ids_; //The level IDs in the graph
+        tatum::util::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
         std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
                                               //NOTE: we track this separetely (unlike Primary Inputs) since these are
                                               //      scattered through the graph and do not exist on a single level

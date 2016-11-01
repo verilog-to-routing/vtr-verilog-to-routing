@@ -63,7 +63,7 @@ void TimingConstraints::add_output_constraint(const NodeId node_id, const float 
     TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate output delay constraint");
 }
 
-void TimingConstraints::remap_nodes(const tatum::linear_map<NodeId,NodeId>& node_map) {
+void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map) {
     std::map<NodeId,float> remapped_input_constraints;
     std::map<NodeId,float> remapped_output_constraints;
 

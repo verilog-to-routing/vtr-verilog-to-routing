@@ -41,11 +41,11 @@ struct edge_id_tag;
 struct domain_id_tag;
 struct level_id_tag;
 
-typedef tatum::StrongId<node_id_tag> NodeId;
-typedef tatum::StrongId<block_id_tag> BlockId;
-typedef tatum::StrongId<edge_id_tag> EdgeId;
-typedef tatum::StrongId<domain_id_tag> DomainId;
-typedef tatum::StrongId<level_id_tag> LevelId;
+typedef tatum::util::StrongId<node_id_tag> NodeId;
+typedef tatum::util::StrongId<block_id_tag> BlockId;
+typedef tatum::util::StrongId<edge_id_tag> EdgeId;
+typedef tatum::util::StrongId<domain_id_tag> DomainId;
+typedef tatum::util::StrongId<level_id_tag> LevelId;
 
 std::ostream& operator<<(std::ostream& os, NodeId node_id);
 std::ostream& operator<<(std::ostream& os, BlockId block_id);

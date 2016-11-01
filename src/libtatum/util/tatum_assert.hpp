@@ -71,7 +71,7 @@
 // macro can be always be followed by a ';'
 #define TATUM_ASSERT_IMPL(expr, msg) do {\
         if(!(expr)) { \
-            tatum::Assert::handle_assert(#expr, __FILE__, __LINE__, TATUM_ASSERT_FUNCTION, msg); \
+            tatum::util::Assert::handle_assert(#expr, __FILE__, __LINE__, TATUM_ASSERT_FUNCTION, msg); \
         } \
     } while(false)
 
@@ -90,7 +90,7 @@
 # endif
 #endif
 
-namespace tatum {
+namespace tatum { namespace util {
     class Assert {
         
         public:
@@ -107,6 +107,6 @@ namespace tatum {
                 std::abort();
             }
     };
-} //namespace
+}} //namespace
 
 #endif //TATUM_ASSERT_H

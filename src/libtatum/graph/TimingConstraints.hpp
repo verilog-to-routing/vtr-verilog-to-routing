@@ -47,7 +47,7 @@ class TimingConstraints {
 
         ///Update node IDs if they have changed
         ///\param node_map A vector mapping from old to new node ids
-        void remap_nodes(const tatum::linear_map<NodeId,NodeId>& node_map);
+        void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
 
         ///Prints out the timing constraints for debug purposes
         void print();

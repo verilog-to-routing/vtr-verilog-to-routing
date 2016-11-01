@@ -131,7 +131,7 @@ void TimingGraph::levelize() {
     }
 }
 
-tatum::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
+tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
     //Make all edges in a level be contiguous in memory
 
     //Determine the edges driven by each level of the graph
@@ -152,11 +152,11 @@ tatum::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
      */
 
     //Maps from from original to new edge id, used to update node to edge refs
-    tatum::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
+    tatum::util::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
 
     //Save the old values while we write the new ones
-    tatum::linear_map<EdgeId,NodeId> old_edge_sink_nodes_;
-    tatum::linear_map<EdgeId,NodeId> old_edge_src_nodes_;
+    tatum::util::linear_map<EdgeId,NodeId> old_edge_sink_nodes_;
+    tatum::util::linear_map<EdgeId,NodeId> old_edge_src_nodes_;
 
     //Swap them
     std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
@@ -201,23 +201,23 @@ tatum::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
     return orig_to_new_edge_id;
 }
 
-tatum::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
+tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
     //Make all nodes in a level be contiguous in memory
 
     /*
      * Keep a map of the old and new node ids to update edges
      * and node levels later
      */
-    tatum::linear_map<NodeId,NodeId> orig_to_new_node_id = std::vector<NodeId>(nodes().size());
+    tatum::util::linear_map<NodeId,NodeId> orig_to_new_node_id = std::vector<NodeId>(nodes().size());
 
     /*
      * Re-allocate nodes so levels are in contiguous memory
      */
-    tatum::linear_map<NodeId,TN_Type> old_node_types;
-    tatum::linear_map<NodeId,DomainId> old_node_clock_domains;
-    tatum::linear_map<NodeId,std::vector<EdgeId>> old_node_out_edges;
-    tatum::linear_map<NodeId,std::vector<EdgeId>> old_node_in_edges;
-    tatum::linear_map<NodeId,bool> old_node_is_clock_source;
+    tatum::util::linear_map<NodeId,TN_Type> old_node_types;
+    tatum::util::linear_map<NodeId,DomainId> old_node_clock_domains;
+    tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_out_edges;
+    tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_in_edges;
+    tatum::util::linear_map<NodeId,bool> old_node_is_clock_source;
 
     //Swap the values
     std::swap(old_node_types, node_types_);

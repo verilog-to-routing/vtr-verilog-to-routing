@@ -4,7 +4,7 @@
 
 #include "tatum_assert.hpp"
 
-namespace tatum {
+namespace tatum { namespace util {
 
 //A vector-like container which is indexed by K (instead of size_t as in std::vector).
 //Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
@@ -63,8 +63,8 @@ class linear_map {
         //Iterators
         const_iterator begin() const { return vec_.begin(); }
         const_iterator end() const { return vec_.end(); }
-        const_iterator rbegin() const { return vec_.rbegin(); }
-        const_iterator rend() const { return vec_.rend(); }
+        const_reverse_iterator rbegin() const { return vec_.rbegin(); }
+        const_reverse_iterator rend() const { return vec_.rend(); }
 
         //Indexing
         const_reference operator[] (const K n) const { 
@@ -81,5 +81,5 @@ class linear_map {
 };
 
 
-} //namespace
+}} //namespace
 #endif
