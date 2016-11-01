@@ -10,19 +10,21 @@
 #include "TimingConstraints.hpp"
 
 /** \file
- * The 'HoldAnalysis' class defines the operators needed by a timing analyzer class
+ * The 'HoldAnalysis' class defines the operations needed by a timing analyzer class
  * to perform a hold (min/shortest path) analysis.
  *
  * \see SetupAnalysis
+ * \see TimingAnalyzer
  *
  * Hold Analysis Principles
  * ==========================
  *
  * In addition to satisfying setup constraints, data arriving at a Flip-Flop (FF) must stay (i.e.
  * remain stable) for some amount of time *after* the capturing clock edge arrives. This time is
- * referred to as the 'Hold Time' of the Flip-Flop.  If the data changes during the hold window
- * (i.e. less than \f$ t_h \f$ after the capturing clock edge) then the FF may go meta-stable
- * failing to capture the data. This will put the circuit in an invalid state (this is bad).
+ * referred to as the 'Hold Time' of the Flip-Flop, \f$ t_h \f$.  If the data changes during the 
+ * hold window (i.e. less than \f$ t_h \f$ after the capturing clock edge) then the FF may go 
+ * meta-stable failing to capture the data. This will put the circuit in an invalid state (this 
+ * is bad).
  *
  * More formally, for correct operation at every cycle we require the following to be satisfied
  * for every path in the circuit:
@@ -41,13 +43,13 @@
  * on the previous cycle before it can be captured by the downstream FF.
  */
 
-/**
- * Hold Analysis Implementation
- * ===============================
- * The hold analysis implementation is generally similar to the implementation used for Setup, except
- * that the minumum arrival times (and maximum required times) are propagated through the timing graph.
+/** \class HoldAnalysisOps
+ *
+ * The hold analysis operations are similar to those used for setup analysis, except that minum edge delays 
+ * are used, and the minumum arrival times (and maximum required times) are propagated through the timing graph.
+ *
+ * \see SetupAnalysisOps
  */
-
 class HoldAnalysisOps {
     public:
         HoldAnalysisOps(size_t num_tags)
@@ -91,6 +93,15 @@ class HoldAnalysisOps {
         tatum::linear_map<NodeId,TimingTags> clock_tags_;
 };
 
+/** \class HoldAnalysis
+ *
+ * The 'HoldAnalysis' class defines the operations needed by a timing analyzer
+ * to perform a hold (min/shortest path) analysis.
+ *
+ * \see SetupAnalysis
+ * \see TimingAnalyzer
+ * \see CommonAnalysisVisitor
+ */
 class HoldAnalysis : public CommonAnalysisVisitor<HoldAnalysisOps> {
 
     public:

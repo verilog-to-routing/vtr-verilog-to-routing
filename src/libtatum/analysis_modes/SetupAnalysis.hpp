@@ -110,6 +110,13 @@
  * \see HoldAnalysis
  */
 
+/** \class SetupAnalysisOps
+ *
+ * The setup analysis operations define that maximum edge delays are used, and that  the maixmum arrival
+ * time (and minimum required times) are propagated through the timing graph.
+ *
+ * \see HoldAnalysisOps
+ */
 class SetupAnalysisOps {
     public:
         SetupAnalysisOps(size_t num_tags)
@@ -153,6 +160,15 @@ class SetupAnalysisOps {
         tatum::linear_map<NodeId,TimingTags> clock_tags_;
 };
 
+/** \class HoldAnalysis
+ *
+ * The 'HoldAnalysis' class defines the operations needed by a timing analyzer
+ * to perform a hold (min/shortest path) analysis.
+ *
+ * \see SetupAnalysis
+ * \see TimingAnalyzer
+ * \see CommonAnalysisVisitor
+ */
 class SetupAnalysis : public CommonAnalysisVisitor<SetupAnalysisOps> {
 
     public:

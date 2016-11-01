@@ -2,6 +2,18 @@
 #include "SetupAnalysis.hpp"
 #include "HoldAnalysis.hpp"
 
+/** \class SetupHoldAnalysis
+ *
+ * The SetupHoldAnalysis class defines the operations needed by a timing analyzer
+ * to perform a combinded setup (max/long path) and hold (min/shortest path) analysis.
+ *
+ * Performing both analysis simultaneously tends to be more efficient than performing
+ * them sperately due to cache locality.
+ *
+ * \see SetupAnalysis
+ * \see HoldAnalysis
+ * \see TimingAnalyzer
+ */
 class SetupHoldAnalysis {
     public:
         SetupHoldAnalysis(size_t num_tags)

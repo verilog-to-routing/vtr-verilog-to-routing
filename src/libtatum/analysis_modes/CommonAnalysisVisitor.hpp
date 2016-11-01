@@ -4,6 +4,22 @@
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 
+/** \file
+ *
+ * Common analysis functionality for both setup and hold analysis.
+ */
+
+/** \class CommonAnalysisVisitor
+ *
+ * A class satisfying the GraphVisitor concept, which contains common
+ * node and edge processing code used by both setup and hold analysis.
+ *
+ * \see GraphVisitor
+ *
+ * \tparam AnalysisOps a class defining the setup/hold specific operations
+ * \see SetupAnalysisOps
+ * \see HoldAnalysisOps
+ */
 template<class AnalysisOps>
 class CommonAnalysisVisitor {
     public:
