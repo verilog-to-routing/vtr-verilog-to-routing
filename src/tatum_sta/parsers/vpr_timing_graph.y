@@ -29,7 +29,7 @@ std::vector<std::vector<edge_t>*> node_out_edges;
 using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::DomainId;
-using tatum::TN_Type;
+using tatum::NodeType;
 using tatum::TimingGraph;
 using tatum::TimingConstraints;
 
@@ -53,7 +53,7 @@ using tatum::TimingConstraints;
     node_arr_req_t nodeArrReqVal;
     timing_graph_level_t timingGraphLevelVal;
     node_t nodeVal;
-    tatum::TN_Type nodeTypeVal;
+    tatum::NodeType nodeTypeVal;
     domain_header_t domain_header;
 };
 
@@ -265,23 +265,23 @@ num_out_edges: int_number {$$ = $1;}
 tedge: TAB int_number TAB number EOL { $$.sink_node = $2; $$.delay = $4; }
     | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.sink_node = $12; $$.delay = $14; }
 
-tnode_type: TN_INPAD_SOURCE TAB     { $$ = TN_Type::INPAD_SOURCE; }
-    | TN_INPAD_OPIN TAB             { $$ = TN_Type::INPAD_OPIN; }
-    | TN_OUTPAD_IPIN TAB            { $$ = TN_Type::OUTPAD_IPIN; }
-    | TN_OUTPAD_SINK TAB            { $$ = TN_Type::OUTPAD_SINK; }
-    | TN_CB_IPIN TAB                { $$ = TN_Type::UNKOWN; }
-    | TN_CB_OPIN TAB                { $$ = TN_Type::UNKOWN; }
-    | TN_INTERMEDIATE_NODE TAB      { $$ = TN_Type::UNKOWN; }
-    | TN_PRIMITIVE_IPIN TAB         { $$ = TN_Type::PRIMITIVE_IPIN; }
-    | TN_PRIMITIVE_OPIN TAB         { $$ = TN_Type::PRIMITIVE_OPIN; }
-    | TN_FF_IPIN TAB                { $$ = TN_Type::FF_IPIN; }
-    | TN_FF_OPIN TAB                { $$ = TN_Type::FF_OPIN; }
-    | TN_FF_SINK TAB                { $$ = TN_Type::FF_SINK; }
-    | TN_FF_SOURCE TAB              { $$ = TN_Type::FF_SOURCE; }
-    | TN_FF_CLOCK TAB               { $$ = TN_Type::FF_CLOCK; }
-    | TN_CLOCK_SOURCE TAB           { $$ = TN_Type::CLOCK_SOURCE; }
-    | TN_CLOCK_OPIN TAB             { $$ = TN_Type::CLOCK_OPIN; }
-    | TN_CONSTANT_GEN_SOURCE TAB    { $$ = TN_Type::CONSTANT_GEN_SOURCE; }
+tnode_type: TN_INPAD_SOURCE TAB     { $$ = NodeType::INPAD_SOURCE; }
+    | TN_INPAD_OPIN TAB             { $$ = NodeType::INPAD_OPIN; }
+    | TN_OUTPAD_IPIN TAB            { $$ = NodeType::OUTPAD_IPIN; }
+    | TN_OUTPAD_SINK TAB            { $$ = NodeType::OUTPAD_SINK; }
+    | TN_CB_IPIN TAB                { $$ = NodeType::UNKOWN; }
+    | TN_CB_OPIN TAB                { $$ = NodeType::UNKOWN; }
+    | TN_INTERMEDIATE_NODE TAB      { $$ = NodeType::UNKOWN; }
+    | TN_PRIMITIVE_IPIN TAB         { $$ = NodeType::PRIMITIVE_IPIN; }
+    | TN_PRIMITIVE_OPIN TAB         { $$ = NodeType::PRIMITIVE_OPIN; }
+    | TN_FF_IPIN TAB                { $$ = NodeType::FF_IPIN; }
+    | TN_FF_OPIN TAB                { $$ = NodeType::FF_OPIN; }
+    | TN_FF_SINK TAB                { $$ = NodeType::FF_SINK; }
+    | TN_FF_SOURCE TAB              { $$ = NodeType::FF_SOURCE; }
+    | TN_FF_CLOCK TAB               { $$ = NodeType::FF_CLOCK; }
+    | TN_CLOCK_SOURCE TAB           { $$ = NodeType::CLOCK_SOURCE; }
+    | TN_CLOCK_OPIN TAB             { $$ = NodeType::CLOCK_OPIN; }
+    | TN_CONSTANT_GEN_SOURCE TAB    { $$ = NodeType::CONSTANT_GEN_SOURCE; }
 
 num_tnodes: NUM_TNODES int_number {$$ = $2; }
 

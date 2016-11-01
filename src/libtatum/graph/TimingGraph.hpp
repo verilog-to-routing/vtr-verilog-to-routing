@@ -81,7 +81,7 @@ class TimingGraph {
          */
         ///\param id The id of a node
         ///\returns The type of the node
-        TN_Type node_type(const NodeId id) const { return node_types_[id]; }
+        NodeType node_type(const NodeId id) const { return node_types_[id]; }
 
         ///\param id The id of a node
         ///\returns The clock domain of the node
@@ -155,7 +155,7 @@ class TimingGraph {
         ///\param clock_domain The clock domain id of the node to be added
         ///\param is_clk_src Identifies if the node to be added is the source of a clock
         ///\warning Graph will likely need to be re-levelized after modification
-        NodeId add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src);
+        NodeId add_node(const NodeType type, const DomainId clock_domain, const bool is_clk_src);
 
         ///Adds an edge to the timing graph
         ///\param src_node The node id of the edge's driving node
@@ -203,7 +203,7 @@ class TimingGraph {
          */
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
-        tatum::util::linear_map<NodeId,TN_Type> node_types_; //Type of node [0..num_nodes()-1]
+        tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node [0..num_nodes()-1]
         tatum::util::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]

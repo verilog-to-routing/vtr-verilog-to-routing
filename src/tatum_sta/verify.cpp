@@ -13,7 +13,7 @@ using tatum::NodeId;
 using tatum::DomainId;
 using tatum::LevelId;
 using tatum::TimingGraph;
-using tatum::TN_Type;
+using tatum::NodeType;
 
 bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
 
@@ -60,7 +60,7 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
                     //Note that VPR doesn't handle seperate clock tags, but we place
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
-                    if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
+                    if(tg.node_type(node_id) != NodeType::FF_SINK && tg.node_type(node_id) != NodeType::FF_SOURCE) {
                         const auto& node_clock_tags = analyzer.get_setup_clock_tags(node_id);
                         auto clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_clock_tags.end()) {
@@ -98,7 +98,7 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
                     //Note that VPR doesn't handle seperate clock tags, but we place
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
-                    if(tg.node_type(node_id) != TN_Type::FF_SINK && tg.node_type(node_id) != TN_Type::FF_SOURCE) {
+                    if(tg.node_type(node_id) != NodeType::FF_SINK && tg.node_type(node_id) != NodeType::FF_SOURCE) {
                         const auto& node_clock_tags = analyzer.get_setup_clock_tags(node_id);
                         auto clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_clock_tags.end()) {

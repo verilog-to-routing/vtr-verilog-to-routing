@@ -13,7 +13,7 @@ class TimingGraph;
 /**
  * Potential types for nodes in the timing graph
  */
-enum class TN_Type {
+enum class NodeType {
 	INPAD_SOURCE, //Driver of an input I/O pad
 	INPAD_OPIN, //Output pin of an input I/O pad
 	OUTPAD_IPIN, //Input pin of an output I/O pad
@@ -31,9 +31,9 @@ enum class TN_Type {
     UNKOWN //Unrecognized type, if encountered this is almost certainly an error
 };
 
-//Stream operators for TN_Type
-std::ostream& operator<<(std::ostream& os, const TN_Type type);
-std::istream& operator>>(std::istream& os, TN_Type& type);
+//Stream operators for NodeType
+std::ostream& operator<<(std::ostream& os, const NodeType type);
+std::istream& operator>>(std::istream& os, NodeType& type);
 
 //Various IDs used by the timing graph
 

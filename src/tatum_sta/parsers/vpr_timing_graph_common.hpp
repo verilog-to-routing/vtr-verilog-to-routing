@@ -44,7 +44,7 @@ typedef struct timing_graph_level_s {
 
 typedef struct node_s {
     int node_id;
-    tatum::TN_Type type;
+    tatum::NodeType type;
     int ipin;
     int iblk;
     int domain;

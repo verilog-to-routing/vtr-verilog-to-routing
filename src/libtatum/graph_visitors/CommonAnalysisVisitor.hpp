@@ -60,17 +60,17 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
     //Logical Input
     TATUM_ASSERT_MSG(tg.node_in_edges(node_id).size() == 0, "Logical input has input edges: timing graph not levelized.");
 
-    TN_Type node_type = tg.node_type(node_id);
+    NodeType node_type = tg.node_type(node_id);
 
     //Note that we assume that edge counting has set the effective period constraint assuming a
     //launch edge at time zero.  This means we don't need to do anything special for clocks
     //with rising edges after time zero.
-    if(node_type == TN_Type::CONSTANT_GEN_SOURCE) {
+    if(node_type == NodeType::CONSTANT_GEN_SOURCE) {
         //Pass, we don't propagate any tags from constant generators,
         //since they do not effect the dynamic timing behaviour of the
         //system
 
-    } else if(node_type == TN_Type::CLOCK_SOURCE) {
+    } else if(node_type == NodeType::CLOCK_SOURCE) {
         TATUM_ASSERT_MSG(ops_.get_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
 
         //Initialize a clock tag with zero arrival, invalid required time
@@ -80,7 +80,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         ops_.get_clock_tags(node_id).add_tag(clock_tag);
 
     } else {
-        TATUM_ASSERT(node_type == TN_Type::INPAD_SOURCE);
+        TATUM_ASSERT(node_type == NodeType::INPAD_SOURCE);
 
         //A standard primary input
 
@@ -105,7 +105,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 
 template<class AnalysisOps>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
-    TN_Type node_type = tg.node_type(node_id);
+    NodeType node_type = tg.node_type(node_id);
 
     TimingTags& node_data_tags = ops_.get_data_tags(node_id);
     TimingTags& node_clock_tags = ops_.get_clock_tags(node_id);
@@ -113,7 +113,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     /*
      * Calculate required times
      */
-    if(node_type == TN_Type::OUTPAD_SINK) {
+    if(node_type == NodeType::OUTPAD_SINK) {
         //Determine the required time for outputs.
         //
         //We assume any output delay is on the OUTPAT_IPIN to OUTPAD_SINK edge,
@@ -130,7 +130,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
                 ops_.merge_req_tags(node_data_tags, Time(clock_constraint), data_tag);
             }
         }
-    } else if (node_type == TN_Type::FF_SINK) {
+    } else if (node_type == NodeType::FF_SINK) {
         //Determine the required time at this FF
         //
         //We need to generate a required time for each clock domain for which there is a data
@@ -188,7 +188,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
     /*
      * Clock tags
      */
-    if(tg.node_type(src_node_id) != TN_Type::FF_SOURCE) {
+    if(tg.node_type(src_node_id) != NodeType::FF_SOURCE) {
         //We do not propagate clock tags from an FF_SOURCE.
         //The clock arrival will have already been converted to a
         //data tag when the previous level was traversed.
@@ -198,7 +198,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
             //Standard propagation through the clock network
             ops_.merge_arr_tags(node_clock_tags, src_clk_tag.arr_time() + edge_delay, src_clk_tag);
 
-            if(tg.node_type(node_id) == TN_Type::FF_SOURCE) {
+            if(tg.node_type(node_id) == NodeType::FF_SOURCE) {
                 //We are traversing a clock to data launch edge.
                 //
                 //We convert the clock arrival time to a data
@@ -243,7 +243,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingG
     //since anything upstream is part of the clock network
     //
     //TODO: if performing optimization on a clock network this may actually be useful
-    if(tg.node_type(node_id) == TN_Type::FF_CLOCK) {
+    if(tg.node_type(node_id) == NodeType::FF_CLOCK) {
         return;
     }
 

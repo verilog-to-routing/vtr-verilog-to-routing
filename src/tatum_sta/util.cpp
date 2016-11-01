@@ -10,7 +10,7 @@
 using tatum::TimingGraph;
 using tatum::NodeId;
 using tatum::EdgeId;
-using tatum::TN_Type;
+using tatum::NodeType;
 
 void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes);
 void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& clock_gen_fanout_nodes);
@@ -19,7 +19,7 @@ std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg) {
     //Walk the timing graph and identify nodes that are in the fanout of a constant generator
     std::set<NodeId> const_gen_fanout_nodes;
     for(NodeId node_id : tg.primary_inputs()) {
-        if(tg.node_type(node_id) == TN_Type::CONSTANT_GEN_SOURCE) {
+        if(tg.node_type(node_id) == NodeType::CONSTANT_GEN_SOURCE) {
             identify_constant_gen_fanout_helper(tg, node_id, const_gen_fanout_nodes);
         }
     }
@@ -39,7 +39,7 @@ void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId nod
 std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg) {
     std::set<NodeId> clock_gen_fanout_nodes;
     for(NodeId node_id : tg.primary_inputs()) {
-        if(tg.node_type(node_id) == TN_Type::CLOCK_SOURCE) {
+        if(tg.node_type(node_id) == NodeType::CLOCK_SOURCE) {
             identify_clock_gen_fanout_helper(tg, node_id, clock_gen_fanout_nodes);
         }
     }
@@ -76,11 +76,11 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
 
     for(NodeId node_id : tg.nodes()) {
         BlockId blk_id = node_logical_blocks[size_t(node_id)];
-        if(tg.node_type(node_id) == TN_Type::FF_CLOCK) {
+        if(tg.node_type(node_id) == NodeType::FF_CLOCK) {
             logical_block_FF_clocks[blk_id].push_back(node_id);
-        } else if (tg.node_type(node_id) == TN_Type::FF_SOURCE) {
+        } else if (tg.node_type(node_id) == NodeType::FF_SOURCE) {
             logical_block_FF_sources[blk_id].push_back(node_id);
-        } else if (tg.node_type(node_id) == TN_Type::FF_SINK) {
+        } else if (tg.node_type(node_id) == NodeType::FF_SINK) {
             logical_block_FF_sinks[blk_id].push_back(node_id);
         }
     }

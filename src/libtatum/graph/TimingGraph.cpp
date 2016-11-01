@@ -6,7 +6,7 @@
 
 namespace tatum {
 
-NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src) {
+NodeId TimingGraph::add_node(const NodeType type, const DomainId clock_domain, const bool is_clk_src) {
 
     //Reserve an ID
     NodeId node_id = NodeId(node_ids_.size());
@@ -215,7 +215,7 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
     /*
      * Re-allocate nodes so levels are in contiguous memory
      */
-    tatum::util::linear_map<NodeId,TN_Type> old_node_types;
+    tatum::util::linear_map<NodeId,NodeType> old_node_types;
     tatum::util::linear_map<NodeId,DomainId> old_node_clock_domains;
     tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_out_edges;
     tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_in_edges;
@@ -295,47 +295,47 @@ bool TimingGraph::valid_level_id(const LevelId level_id) {
     return size_t(level_id) < level_ids_.size();
 }
 
-//Stream extraction for TN_Type
-std::istream& operator>>(std::istream& is, TN_Type& type) {
+//Stream extraction for NodeType
+std::istream& operator>>(std::istream& is, NodeType& type) {
     std::string tok;
     is >> tok; //Read in a token
-    if(tok == "INPAD_SOURCE")               type = TN_Type::INPAD_SOURCE;
-    else if (tok == "INPAD_OPIN")           type = TN_Type::INPAD_OPIN;
-    else if (tok == "OUTPAD_IPIN")          type = TN_Type::OUTPAD_IPIN;
-    else if (tok == "OUTPAD_SINK")          type = TN_Type::OUTPAD_SINK;
-    else if (tok == "PRIMITIVE_IPIN")       type = TN_Type::PRIMITIVE_IPIN;
-    else if (tok == "PRIMITIVE_OPIN")       type = TN_Type::PRIMITIVE_OPIN;
-    else if (tok == "FF_IPIN")              type = TN_Type::FF_IPIN;
-    else if (tok == "FF_OPIN")              type = TN_Type::FF_OPIN;
-    else if (tok == "FF_SINK")              type = TN_Type::FF_SINK;
-    else if (tok == "FF_SOURCE")            type = TN_Type::FF_SOURCE;
-    else if (tok == "FF_CLOCK")             type = TN_Type::FF_CLOCK;
-    else if (tok == "CLOCK_SOURCE")         type = TN_Type::CLOCK_SOURCE;
-    else if (tok == "CLOCK_OPIN")           type = TN_Type::CLOCK_OPIN;
-    else if (tok == "CONSTANT_GEN_SOURCE")  type = TN_Type::CONSTANT_GEN_SOURCE;
-    else if (tok == "UNKOWN")               type = TN_Type::UNKOWN;
-    else throw std::domain_error(std::string("Unrecognized TN_Type: ") + tok);
+    if(tok == "INPAD_SOURCE")               type = NodeType::INPAD_SOURCE;
+    else if (tok == "INPAD_OPIN")           type = NodeType::INPAD_OPIN;
+    else if (tok == "OUTPAD_IPIN")          type = NodeType::OUTPAD_IPIN;
+    else if (tok == "OUTPAD_SINK")          type = NodeType::OUTPAD_SINK;
+    else if (tok == "PRIMITIVE_IPIN")       type = NodeType::PRIMITIVE_IPIN;
+    else if (tok == "PRIMITIVE_OPIN")       type = NodeType::PRIMITIVE_OPIN;
+    else if (tok == "FF_IPIN")              type = NodeType::FF_IPIN;
+    else if (tok == "FF_OPIN")              type = NodeType::FF_OPIN;
+    else if (tok == "FF_SINK")              type = NodeType::FF_SINK;
+    else if (tok == "FF_SOURCE")            type = NodeType::FF_SOURCE;
+    else if (tok == "FF_CLOCK")             type = NodeType::FF_CLOCK;
+    else if (tok == "CLOCK_SOURCE")         type = NodeType::CLOCK_SOURCE;
+    else if (tok == "CLOCK_OPIN")           type = NodeType::CLOCK_OPIN;
+    else if (tok == "CONSTANT_GEN_SOURCE")  type = NodeType::CONSTANT_GEN_SOURCE;
+    else if (tok == "UNKOWN")               type = NodeType::UNKOWN;
+    else throw std::domain_error(std::string("Unrecognized NodeType: ") + tok);
     return is;
 }
 
-//Stream output for TN_Type
-std::ostream& operator<<(std::ostream& os, const TN_Type type) {
-    if(type == TN_Type::INPAD_SOURCE)              os << "INPAD_SOURCE";
-    else if (type == TN_Type::INPAD_OPIN)          os << "INPAD_OPIN";
-    else if (type == TN_Type::OUTPAD_IPIN)         os << "OUTPAD_IPIN";
-    else if (type == TN_Type::OUTPAD_SINK)         os << "OUTPAD_SINK";
-    else if (type == TN_Type::PRIMITIVE_IPIN)      os << "PRIMITIVE_IPIN";
-    else if (type == TN_Type::PRIMITIVE_OPIN)      os << "PRIMITIVE_OPIN";
-    else if (type == TN_Type::FF_IPIN)             os << "FF_IPIN";
-    else if (type == TN_Type::FF_OPIN)             os << "FF_OPIN";
-    else if (type == TN_Type::FF_SINK)             os << "FF_SINK";
-    else if (type == TN_Type::FF_SOURCE)           os << "FF_SOURCE";
-    else if (type == TN_Type::FF_CLOCK)            os << "FF_CLOCK";
-    else if (type == TN_Type::CLOCK_SOURCE)        os << "CLOCK_SOURCE";
-    else if (type == TN_Type::CLOCK_OPIN)          os << "CLOCK_OPIN";
-    else if (type == TN_Type::CONSTANT_GEN_SOURCE) os << "CONSTANT_GEN_SOURCE";
-    else if (type == TN_Type::UNKOWN)              os << "UNKOWN";
-    else throw std::domain_error("Unrecognized TN_Type");
+//Stream output for NodeType
+std::ostream& operator<<(std::ostream& os, const NodeType type) {
+    if(type == NodeType::INPAD_SOURCE)              os << "INPAD_SOURCE";
+    else if (type == NodeType::INPAD_OPIN)          os << "INPAD_OPIN";
+    else if (type == NodeType::OUTPAD_IPIN)         os << "OUTPAD_IPIN";
+    else if (type == NodeType::OUTPAD_SINK)         os << "OUTPAD_SINK";
+    else if (type == NodeType::PRIMITIVE_IPIN)      os << "PRIMITIVE_IPIN";
+    else if (type == NodeType::PRIMITIVE_OPIN)      os << "PRIMITIVE_OPIN";
+    else if (type == NodeType::FF_IPIN)             os << "FF_IPIN";
+    else if (type == NodeType::FF_OPIN)             os << "FF_OPIN";
+    else if (type == NodeType::FF_SINK)             os << "FF_SINK";
+    else if (type == NodeType::FF_SOURCE)           os << "FF_SOURCE";
+    else if (type == NodeType::FF_CLOCK)            os << "FF_CLOCK";
+    else if (type == NodeType::CLOCK_SOURCE)        os << "CLOCK_SOURCE";
+    else if (type == NodeType::CLOCK_OPIN)          os << "CLOCK_OPIN";
+    else if (type == NodeType::CONSTANT_GEN_SOURCE) os << "CONSTANT_GEN_SOURCE";
+    else if (type == NodeType::UNKOWN)              os << "UNKOWN";
+    else throw std::domain_error("Unrecognized NodeType");
     return os;
 }
 
