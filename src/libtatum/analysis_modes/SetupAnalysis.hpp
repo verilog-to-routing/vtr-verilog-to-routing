@@ -112,6 +112,8 @@ namespace tatum {
  * \see HoldAnalysis
  */
 
+namespace detail {
+
 /** \class SetupAnalysisOps
  *
  * The setup analysis operations define that maximum edge delays are used, and that  the maixmum arrival
@@ -162,6 +164,8 @@ class SetupAnalysisOps {
         tatum::util::linear_map<NodeId,TimingTags> clock_tags_;
 };
 
+} //namespace detail
+
 /** \class HoldAnalysis
  *
  * The 'HoldAnalysis' class defines the operations needed by a timing analyzer
@@ -171,11 +175,11 @@ class SetupAnalysisOps {
  * \see TimingAnalyzer
  * \see CommonAnalysisVisitor
  */
-class SetupAnalysis : public CommonAnalysisVisitor<SetupAnalysisOps> {
+class SetupAnalysis : public detail::CommonAnalysisVisitor<detail::SetupAnalysisOps> {
 
     public:
         SetupAnalysis(size_t num_tags)
-            : CommonAnalysisVisitor<SetupAnalysisOps>(num_tags) {}
+            : detail::CommonAnalysisVisitor<detail::SetupAnalysisOps>(num_tags) {}
 
         const TimingTags& get_setup_data_tags(const NodeId node_id) const { return ops_.get_data_tags(node_id); }
         const TimingTags& get_setup_clock_tags(const NodeId node_id) const { return ops_.get_clock_tags(node_id); }

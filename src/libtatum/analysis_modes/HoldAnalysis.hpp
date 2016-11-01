@@ -45,6 +45,8 @@ namespace tatum {
  * on the previous cycle before it can be captured by the downstream FF.
  */
 
+namespace detail {
+
 /** \class HoldAnalysisOps
  *
  * The hold analysis operations are similar to those used for setup analysis, except that minum edge delays 
@@ -95,6 +97,8 @@ class HoldAnalysisOps {
         tatum::util::linear_map<NodeId,TimingTags> clock_tags_;
 };
 
+} //namespace detail
+
 /** \class HoldAnalysis
  *
  * The 'HoldAnalysis' class defines the operations needed by a timing analyzer
@@ -104,11 +108,11 @@ class HoldAnalysisOps {
  * \see TimingAnalyzer
  * \see CommonAnalysisVisitor
  */
-class HoldAnalysis : public CommonAnalysisVisitor<HoldAnalysisOps> {
+class HoldAnalysis : public detail::CommonAnalysisVisitor<detail::HoldAnalysisOps> {
 
     public:
         HoldAnalysis(size_t num_tags)
-            : CommonAnalysisVisitor<HoldAnalysisOps>(num_tags) {}
+            : detail::CommonAnalysisVisitor<detail::HoldAnalysisOps>(num_tags) {}
 
         const TimingTags& get_hold_data_tags(const NodeId node_id) const { return ops_.get_data_tags(node_id); }
         const TimingTags& get_hold_clock_tags(const NodeId node_id) const { return ops_.get_clock_tags(node_id); }

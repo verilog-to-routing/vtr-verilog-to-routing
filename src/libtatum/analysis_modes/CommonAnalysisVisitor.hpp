@@ -4,7 +4,7 @@
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 
-namespace tatum {
+namespace tatum { namespace detail {
 
 /** \file
  *
@@ -277,6 +277,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
     }
 }
 
-} //namepsace
+}} //namepsace
 
 #endif
