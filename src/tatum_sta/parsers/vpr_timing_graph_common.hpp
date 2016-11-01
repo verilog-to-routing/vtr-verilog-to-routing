@@ -11,6 +11,7 @@
 #include "timing_constraints_fwd.hpp"
 
 
+//Id for blocks (from VPR timing graph)
 struct block_id_tag;
 typedef tatum::util::StrongId<block_id_tag> BlockId;
 inline std::ostream& operator<<(std::ostream& os, BlockId block_id) {
