@@ -4,8 +4,10 @@
 namespace tatum {
 
 /**
- * A concrete implementation of a DelayCalculator which always returns a
- * (run-time specified) constand delay.
+ * An example implementation of a DelayCalculator, which always 
+ * returns a (run-time specified) constant delay.
+ *
+ * \see DelayCalculator
  */
 class ConstantDelayCalculator {
     public:

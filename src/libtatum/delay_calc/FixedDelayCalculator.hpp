@@ -5,8 +5,11 @@
 
 namespace tatum {
 
-/** A DelayCalculator implementation which takes a vector
- *  of fixed pre-calculated edge delays
+/** 
+ * An exmaple DelayCalculator implementation which takes 
+ * a vector of fixed pre-calculated edge delays
+ *
+ * \see DelayCalculator
  */
 class FixedDelayCalculator {
     public:
