@@ -92,7 +92,7 @@ struct AnalyzerFactory<SetupAnalysis,GraphWalker> {
                                                      const TimingConstraints& timing_constraints,
                                                      const DelayCalc& delay_calc) {
         return std::unique_ptr<SetupTimingAnalyzer>(
-                new detail::SetupFullTimingAnalyzer<DelayCalc,GraphWalker>(timing_graph, 
+                new detail::FullSetupTimingAnalyzer<DelayCalc,GraphWalker>(timing_graph, 
                                                                    timing_constraints, 
                                                                    delay_calc)
                 );
@@ -108,7 +108,7 @@ struct AnalyzerFactory<HoldAnalysis,GraphWalker> {
                                                     const TimingConstraints& timing_constraints,
                                                     const DelayCalc& delay_calc) {
         return std::unique_ptr<HoldTimingAnalyzer>(
-                new detail::HoldFullTimingAnalyzer<DelayCalc,GraphWalker>(timing_graph,
+                new detail::FullHoldTimingAnalyzer<DelayCalc,GraphWalker>(timing_graph,
                                                                   timing_constraints, 
                                                                   delay_calc)
                 );
@@ -124,7 +124,7 @@ struct AnalyzerFactory<SetupHoldAnalysis,GraphWalker> {
                                                          const TimingConstraints& timing_constraints,
                                                          const DelayCalc& delay_calc) {
         return std::unique_ptr<SetupHoldTimingAnalyzer>(
-                new detail::SetupHoldFullTimingAnalyzer<DelayCalc,GraphWalker>(timing_graph, 
+                new detail::FullSetupHoldTimingAnalyzer<DelayCalc,GraphWalker>(timing_graph, 
                                                                        timing_constraints, 
                                                                        delay_calc)
                 );

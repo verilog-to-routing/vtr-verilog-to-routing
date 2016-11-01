@@ -1,5 +1,6 @@
 #pragma once
 #include "TimingGraphWalker.hpp"
+#include "TimingGraph.hpp"
 
 namespace tatum {
 

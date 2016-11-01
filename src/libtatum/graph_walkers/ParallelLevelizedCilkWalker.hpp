@@ -1,6 +1,7 @@
 #pragma once
 #include "cilk_safe.hpp"
 #include "TimingGraphWalker.hpp"
+#include "TimingGraph.hpp"
 
 
 namespace tatum {
