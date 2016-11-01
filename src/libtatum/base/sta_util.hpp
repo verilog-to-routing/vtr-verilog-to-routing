@@ -3,7 +3,7 @@
 #include <memory>
 #include <iomanip>
 
-#include "timing_analyzer_interfaces.hpp"
+#include "timing_analyzers.hpp"
 #include "TimingGraph.hpp"
 #include "TimingTags.hpp"
 

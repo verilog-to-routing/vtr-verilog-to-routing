@@ -5,7 +5,7 @@
 
 #include "TimingGraph.hpp"
 #include "TimingTags.hpp"
-#include "timing_analyzer_interfaces.hpp"
+#include "timing_analyzers.hpp"
 
 #include "vpr_timing_graph_common.hpp"
 

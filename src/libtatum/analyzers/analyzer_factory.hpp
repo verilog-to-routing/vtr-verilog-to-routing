@@ -6,7 +6,7 @@
 #include "TimingConstraints.hpp"
 #include "graph_walkers.hpp"
 
-#include "timing_analyzer_interfaces.hpp"
+#include "timing_analyzers.hpp"
 #include "full_timing_analyzers.hpp"
 
 namespace tatum {

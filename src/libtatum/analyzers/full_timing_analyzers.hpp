@@ -2,7 +2,7 @@
 #include <memory>
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
-#include "timing_analyzer_interfaces.hpp"
+#include "timing_analyzers.hpp"
 #include "graph_walkers.hpp"
 
 #include "SetupAnalysis.hpp"

@@ -10,7 +10,7 @@
 
 #include "tatum_assert.hpp"
 
-#include "timing_analyzer_interfaces.hpp"
+#include "timing_analyzers.hpp"
 #include "full_timing_analyzers.hpp"
 #include "graph_walkers.hpp"
 #include "analyzer_factory.hpp"
