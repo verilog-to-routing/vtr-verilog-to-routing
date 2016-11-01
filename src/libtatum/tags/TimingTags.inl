@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "tatum_assert.hpp"
 
 namespace tatum {

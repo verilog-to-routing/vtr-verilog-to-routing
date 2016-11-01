@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TimingTag.hpp"
-#include "memory_pool.hpp"
 
 namespace tatum {
 
