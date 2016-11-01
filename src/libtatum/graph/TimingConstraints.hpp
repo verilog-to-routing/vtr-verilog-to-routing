@@ -5,6 +5,8 @@
 #include "tatum_linear_map.hpp"
 #include "timing_graph_fwd.hpp"
 
+namespace tatum {
+
 /**
  * The TimingConstraints class stores all the timing constraints applied during timing analysis.
  */
@@ -60,3 +62,4 @@ class TimingConstraints {
         std::map<NodeId,float> output_constraints_;
 };
 
+} //namepsace

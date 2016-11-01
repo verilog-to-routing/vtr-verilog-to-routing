@@ -4,6 +4,8 @@
 #include "TimingTags.hpp"
 #include "timing_graph_fwd.hpp"
 
+namespace tatum {
+
 /** \file
  * Timing Analysis: Overview
  * ===========================
@@ -291,3 +293,4 @@ class SetupHoldTimingAnalyzer : public SetupTimingAnalyzer, public HoldTimingAna
     // instance).
 };
 
+} //namepsace

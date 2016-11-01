@@ -22,6 +22,8 @@
 
 #endif //TIME_VEC_WIDTH
 
+namespace tatum {
+
 class Time {
     public:
         typedef float scalar_type;
@@ -56,5 +58,7 @@ class Time {
 #endif
 
 };
+
+} //namepsace
 
 #include "Time.inl"

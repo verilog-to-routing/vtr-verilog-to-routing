@@ -1,5 +1,7 @@
 #include "tatum_assert.hpp"
 
+namespace tatum {
+
 /*
  * TimingTag implementation
  */
@@ -76,3 +78,5 @@ inline void TimingTag::max_req(const Time& new_req_time, const TimingTag& base_t
         update_req(new_req_time, base_tag);
     }
 }
+
+} //namepsace

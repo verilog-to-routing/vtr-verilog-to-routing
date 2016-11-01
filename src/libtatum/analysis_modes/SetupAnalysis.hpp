@@ -9,6 +9,8 @@
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 
+namespace tatum {
+
 /** \file
  * The 'SetupAnalysis' class defines the operations needed by a GraphWalker class
  * to perform a setup (max/longest path) analysis. It satisifes and extends the GraphVisitor 
@@ -179,3 +181,4 @@ class SetupAnalysis : public CommonAnalysisVisitor<SetupAnalysisOps> {
         const TimingTags& get_setup_clock_tags(const NodeId node_id) const { return ops_.get_clock_tags(node_id); }
 };
 
+} //namepsace

@@ -1,6 +1,8 @@
 #pragma once
 #include <boost/iterator/iterator_facade.hpp>
 
+namespace tatum {
+
 //Forward Declaration
 class TimingTags;
 class TimingTag;
@@ -36,3 +38,5 @@ typedef TimingTagIter<TimingTag> TimingTagIterator;
 
 ///A const TimingTag iterator
 typedef TimingTagIter<TimingTag const> TimingTagConstIterator;
+
+} //namepsace

@@ -4,6 +4,8 @@
 
 #include "TimingGraph.hpp"
 
+namespace tatum {
+
 NodeId TimingGraph::add_node(const TN_Type type, const DomainId clock_domain, const bool is_clk_src) {
 
     //Reserve an ID
@@ -357,3 +359,4 @@ std::ostream& operator<<(std::ostream& os, LevelId level_id) {
     return os << "Level(" << size_t(level_id) << ")";
 }
 
+} //namepsace

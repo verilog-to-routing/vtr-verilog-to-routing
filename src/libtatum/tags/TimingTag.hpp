@@ -5,6 +5,8 @@
 #include "timing_graph_fwd.hpp"
 #include "TimingTagIterators.hpp"
 
+namespace tatum {
+
 /**
  * The 'TimingTag' class represents an individual timing tag: the information associated
  * with a node's arrival/required times.
@@ -111,6 +113,8 @@ class TimingTag {
         DomainId clock_domain_; //Clock domain for arr/req times
         NodeId launch_node_; //Node which launched this arrival time
 };
+
+} //namepsace
 
 //Implementation
 #include "TimingTag.inl"

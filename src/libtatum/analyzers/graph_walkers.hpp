@@ -4,6 +4,8 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
+namespace tatum {
+
 /**
  * \file
  * Defines the TimingGraphWalkers used to encapsulate the process of traversing the timing graph.
@@ -208,3 +210,5 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 ///The default parallel graph walker
 template<class Visitor, class DelayCalc>
 using ParallelWalker = ParallelLevelizedCilkWalker<Visitor, DelayCalc>;
+
+} //namepsace

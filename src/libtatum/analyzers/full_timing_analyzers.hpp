@@ -8,6 +8,9 @@
 #include "SetupAnalysis.hpp"
 #include "HoldAnalysis.hpp"
 #include "SetupHoldAnalysis.hpp"
+
+namespace tatum {
+
 /** \file
  * This file defines concrete implementations of the TimingAnalyzer interfaces.
  *
@@ -129,3 +132,5 @@ class SetupHoldFullTimingAnalyzer : public SetupHoldTimingAnalyzer {
         SetupHoldAnalysis setup_hold_visitor_;
         GraphWalker<SetupHoldAnalysis, DelayCalc> graph_walker_;
 };
+
+} //namepsace

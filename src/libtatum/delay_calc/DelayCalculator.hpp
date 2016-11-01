@@ -1,5 +1,7 @@
 #pragma once
 #include "timing_graph_fwd.hpp"
+namespace tatum {
+
 class Time;
 
 /**
@@ -24,3 +26,5 @@ class DelayCalculator {
         ///\param edge_id The ID of the edge
         Time max_edge_delay(const TimingGraph& tg, EdgeId edge_id) const;
 };
+
+} //namepsace

@@ -60,6 +60,8 @@
 #include "tatum_range.hpp"
 #include "timing_graph_fwd.hpp"
 
+namespace tatum {
+
 class TimingGraph {
     public: //Public types
         //Iterators
@@ -220,3 +222,4 @@ class TimingGraph {
                                               //      scattered through the graph and do not exist on a single level
 };
 
+} //namepsace

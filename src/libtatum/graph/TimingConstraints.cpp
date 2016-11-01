@@ -6,6 +6,8 @@
 using std::cout;
 using std::endl;
 
+namespace tatum {
+
 bool TimingConstraints::should_analyze(const DomainId src_domain, const DomainId sink_domain) const {
     return setup_clock_constraints_.count(std::make_pair(src_domain, sink_domain)) || hold_clock_constraints_.count(std::make_pair(src_domain, sink_domain));
 }
@@ -118,3 +120,5 @@ void TimingConstraints::print() {
         cout << endl;
     }
 }
+
+} //namepsace

@@ -1,6 +1,8 @@
 #include "DelayCalculator.hpp"
 #include "Time.hpp"
 
+namespace tatum {
+
 /**
  * A concrete implementation of a DelayCalculator which always returns a
  * (run-time specified) constand delay.
@@ -16,3 +18,5 @@ class ConstantDelayCalculator {
     private:
         Time delay_;
 };
+
+} //namepsace

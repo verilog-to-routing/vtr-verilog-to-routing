@@ -3,6 +3,8 @@
 #include "DelayCalculator.hpp"
 #include "TimingGraph.hpp"
 
+namespace tatum {
+
 /** A DelayCalculator implementation which takes a vector
  *  of fixed pre-calculated edge delays
  */
@@ -23,3 +25,5 @@ class FixedDelayCalculator {
     private:
         std::vector<Time> edge_delays_;
 };
+
+} //namepsace

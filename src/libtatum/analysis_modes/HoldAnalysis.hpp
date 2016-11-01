@@ -9,6 +9,8 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
+namespace tatum {
+
 /** \file
  * The 'HoldAnalysis' class defines the operations needed by a timing analyzer class
  * to perform a hold (min/shortest path) analysis.
@@ -111,3 +113,5 @@ class HoldAnalysis : public CommonAnalysisVisitor<HoldAnalysisOps> {
         const TimingTags& get_hold_data_tags(const NodeId node_id) const { return ops_.get_data_tags(node_id); }
         const TimingTags& get_hold_clock_tags(const NodeId node_id) const { return ops_.get_clock_tags(node_id); }
 };
+
+} //namepsace

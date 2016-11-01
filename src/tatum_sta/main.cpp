@@ -24,7 +24,9 @@
 #include "vpr_timing_graph_common.hpp"
 
 #include "sta_util.hpp"
+
 #include "verify.hpp"
+#include "util.hpp"
 
 #define NUM_SERIAL_RUNS 1
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
@@ -45,6 +47,15 @@ typedef std::chrono::high_resolution_clock Clock;
 
 using std::cout;
 using std::endl;
+
+using tatum::Time;
+using tatum::TimingTag;
+using tatum::TimingTags;
+using tatum::TimingGraph;
+using tatum::TimingConstraints;
+using tatum::BlockId;
+using tatum::NodeId;
+using tatum::EdgeId;
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -119,7 +130,7 @@ int main(int argc, char** argv) {
         tatum::util::linear_map<EdgeId,EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &edge_reorder_end);
-        cout << " (took " << time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
+        cout << " (took " << tatum::time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
 
 
         //Adjust the edge delays to reflect the new ordering
@@ -136,7 +147,7 @@ int main(int argc, char** argv) {
         tatum::util::linear_map<NodeId,NodeId> vpr_node_map = timing_graph->optimize_node_layout();
 
         clock_gettime(CLOCK_MONOTONIC, &node_reorder_end);
-        cout << " (took " << time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;
+        cout << " (took " << tatum::time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;
 
         //Re-build the expected_arr_req_times to reflect the new node orderings
         expected_arr_req_times = VprArrReqTimes();
@@ -166,7 +177,7 @@ int main(int argc, char** argv) {
         const_gen_fanout_nodes = identify_constant_gen_fanout(*timing_graph);
         clock_gen_fanout_nodes = identify_clock_gen_fanout(*timing_graph);
     }
-    cout << "Loading took: " << time_sec(load_start, load_end) << " sec" << endl;
+    cout << "Loading took: " << tatum::time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
 
     /*
@@ -174,9 +185,9 @@ int main(int argc, char** argv) {
      */
 
     int n_histo_bins = 10;
-    print_level_histogram(*timing_graph, n_histo_bins);
-    print_node_fanin_histogram(*timing_graph, n_histo_bins);
-    print_node_fanout_histogram(*timing_graph, n_histo_bins);
+    tatum::print_level_histogram(*timing_graph, n_histo_bins);
+    tatum::print_node_fanin_histogram(*timing_graph, n_histo_bins);
+    tatum::print_node_fanout_histogram(*timing_graph, n_histo_bins);
     cout << endl;
 
     /*
@@ -193,12 +204,12 @@ int main(int argc, char** argv) {
 
 
     //Create the delay calculator
-    auto delay_calculator = std::make_shared<FixedDelayCalculator>(edge_delays);
+    auto delay_calculator = std::make_shared<tatum::FixedDelayCalculator>(edge_delays);
 
     //Create the timing analyzer
-    std::shared_ptr<TimingAnalyzer> serial_analyzer = AnalyzerFactory<SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
-    auto serial_setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(serial_analyzer);
-    auto serial_hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(serial_analyzer);
+    std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    auto serial_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
+    auto serial_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
 
     //Performance variables
     float serial_verify_time = 0.;
@@ -246,13 +257,13 @@ int main(int argc, char** argv) {
 #endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
-            serial_verify_time += time_sec(verify_start, verify_end);
+            serial_verify_time += tatum::time_sec(verify_start, verify_end);
 
             if(i < NUM_SERIAL_RUNS-1) {
                 clock_gettime(CLOCK_MONOTONIC, &reset_start);
                 serial_analyzer->reset_timing();
                 clock_gettime(CLOCK_MONOTONIC, &reset_end);
-                serial_reset_time += time_sec(reset_start, reset_end);
+                serial_reset_time += tatum::time_sec(reset_start, reset_end);
             }
         }
         CALLGRIND_STOP_INSTRUMENTATION;
@@ -304,9 +315,9 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<TimingAnalyzer> parallel_analyzer = AnalyzerFactory<SetupHoldAnalysis,ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
-    auto parallel_setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(parallel_analyzer);
-    auto parallel_hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(parallel_analyzer);
+    std::shared_ptr<tatum::TimingAnalyzer> parallel_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    auto parallel_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(parallel_analyzer);
+    auto parallel_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(parallel_analyzer);
 
     //float parallel_analysis_time = 0;
     //float parallel_pretraverse_time = 0.;
@@ -352,13 +363,13 @@ int main(int argc, char** argv) {
 #endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
-            parallel_verify_time += time_sec(verify_start, verify_end);
+            parallel_verify_time += tatum::time_sec(verify_start, verify_end);
 
             if(i < NUM_PARALLEL_RUNS-1) {
                 clock_gettime(CLOCK_MONOTONIC, &reset_start);
                 parallel_analyzer->reset_timing();
                 clock_gettime(CLOCK_MONOTONIC, &reset_end);
-                parallel_reset_time += time_sec(reset_start, reset_end);
+                parallel_reset_time += tatum::time_sec(reset_start, reset_end);
             }
         }
         for(auto kv : parallel_prof_data) {
@@ -400,7 +411,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
     //Per-level speed-up
-    dump_level_times("level_times.csv", *timing_graph, serial_prof_data, parallel_prof_data);
+    tatum::dump_level_times("level_times.csv", *timing_graph, serial_prof_data, parallel_prof_data);
 #endif //NUM_PARALLEL_RUNS
 
 
@@ -415,7 +426,7 @@ int main(int argc, char** argv) {
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 
-    cout << endl << "Total time: " << time_sec(prog_start, prog_end) << " sec" << endl;
+    cout << endl << "Total time: " << tatum::time_sec(prog_start, prog_end) << " sec" << endl;
 
     return 0;
 }

@@ -7,11 +7,9 @@
 #include <set>
 #include <cmath>
 #include "timing_graph_fwd.hpp"
+#include "timing_constraints_fwd.hpp"
 
 
-//Forward Declarations
-class TimingGraph;
-class TimingConstraints;
 
 
 typedef struct domain_skew_iodelay_s {
@@ -37,11 +35,9 @@ typedef struct timing_graph_level_s {
     std::vector<int>* node_ids;
 } timing_graph_level_t;
 
-enum class TN_Type; //Forward declaration
-
 typedef struct node_s {
     int node_id;
-    TN_Type type;
+    tatum::TN_Type type;
     int ipin;
     int iblk;
     int domain;
@@ -56,27 +52,10 @@ struct domain_header_t {
     int sink_domain;
 };
 
-/*
- *struct union_type {
- *    char* strVal;
- *    double floatVal;
- *    int intVal;
- *    domain_skew_iodelay_t domainSkewIodelayVal;
- *    edge_t edgeVal;
- *    node_arr_req_t nodeArrReqVal;
- *    timing_graph_level_t timingGraphLevelVal;
- *    node_t nodeVal;
- *    TN_Type nodeTypeVal;
- *    domain_header_t domain_header;
- *};
- *
- *#define YYSTYPE union_type
- */
-
 class VprArrReqTimes {
     public:
         void set_num_nodes(int nnodes) { num_nodes = nnodes; }
-        void add_arr_time(const DomainId clock_id, const NodeId node_id, float val) {
+        void add_arr_time(const tatum::DomainId clock_id, const tatum::NodeId node_id, float val) {
             resize(clock_id);
             TATUM_ASSERT(arr.find(clock_id) != arr.end());
             float curr_val = arr[clock_id][size_t(node_id)];
@@ -90,7 +69,7 @@ class VprArrReqTimes {
             }
         }
 
-        void add_req_time(const DomainId clock_id, const NodeId node_id, float val) {
+        void add_req_time(const tatum::DomainId clock_id, const tatum::NodeId node_id, float val) {
             resize(clock_id);
             TATUM_ASSERT(req.find(clock_id) != req.end());
             float curr_val = req[clock_id][size_t(node_id)];
@@ -104,14 +83,14 @@ class VprArrReqTimes {
             }
         }
 
-        float get_arr_time(const DomainId clock_id, const NodeId node_id) const {
+        float get_arr_time(const tatum::DomainId clock_id, const tatum::NodeId node_id) const {
             auto arr_iter = arr.find(clock_id);
             TATUM_ASSERT(arr_iter != arr.end());
             TATUM_ASSERT(size_t(node_id)  < arr_iter->second.size());
             return arr_iter->second[size_t(node_id)];
         }
 
-        float get_req_time(const DomainId clock_id, const NodeId node_id) const {
+        float get_req_time(const tatum::DomainId clock_id, const tatum::NodeId node_id) const {
             auto req_iter = req.find(clock_id);
             TATUM_ASSERT(req_iter != req.end());
             TATUM_ASSERT(size_t(node_id)  < req_iter->second.size());
@@ -119,8 +98,8 @@ class VprArrReqTimes {
         }
 
         int get_num_clocks() const { return (int) arr.size(); }
-        std::vector<DomainId> clocks() const {
-            std::vector<DomainId> clocks_to_return;
+        std::vector<tatum::DomainId> clocks() const {
+            std::vector<tatum::DomainId> clocks_to_return;
             for(auto kv : arr) {
                 clocks_to_return.push_back(kv.first);
             }
@@ -129,7 +108,7 @@ class VprArrReqTimes {
 
         int get_num_nodes() const { return (int) num_nodes; }
 
-        void resize(const DomainId clock_id) {
+        void resize(const tatum::DomainId clock_id) {
             if(arr.find(clock_id) == arr.end()) {
                 arr[clock_id] = std::vector<float>(num_nodes, NAN);
                 req[clock_id] = std::vector<float>(num_nodes, NAN);
@@ -138,7 +117,7 @@ class VprArrReqTimes {
 
         void print() const {
             for(auto arr_iter : arr) {
-                DomainId clock_id = arr_iter.first;
+                tatum::DomainId clock_id = arr_iter.first;
                 auto req_iter = req.find(clock_id);
 
                 std::cout << "Clock " << clock_id << std::endl;
@@ -150,8 +129,8 @@ class VprArrReqTimes {
             }
         }
 
-        std::set<DomainId> domains() {
-            std::set<DomainId> domain_values;
+        std::set<tatum::DomainId> domains() {
+            std::set<tatum::DomainId> domain_values;
             for(const auto& pair : arr) {
                 domain_values.insert(pair.first);
             }
@@ -160,11 +139,11 @@ class VprArrReqTimes {
     private:
 
         int num_nodes;
-        std::map<DomainId,std::vector<float>> arr;
-        std::map<DomainId,std::vector<float>> req;
+        std::map<tatum::DomainId,std::vector<float>> arr;
+        std::map<tatum::DomainId,std::vector<float>> req;
 
 };
 
-extern int yyparse(TimingGraph& tg, VprArrReqTimes& arr_req_times, TimingConstraints& tc, std::vector<BlockId>& node_logical_blocks, std::vector<float>& edge_delays);
+extern int yyparse(tatum::TimingGraph& tg, VprArrReqTimes& arr_req_times, tatum::TimingConstraints& tc, std::vector<tatum::BlockId>& node_logical_blocks, std::vector<float>& edge_delays);
 extern FILE *yyin;
 

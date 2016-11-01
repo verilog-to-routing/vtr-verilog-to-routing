@@ -3,6 +3,8 @@
 #include "TimingTag.hpp"
 #include "memory_pool.hpp"
 
+namespace tatum {
+
 /**
  * The 'TimingTags' class represents a collection of timing tags (see the 'TimingTag' class)
  * that belong to a particular node in the timing graph.
@@ -100,6 +102,8 @@ class TimingTags {
 
         TagStore tags_;
 };
+
+} //namepsace
 
 //Implementation
 #include "TimingTags.inl"

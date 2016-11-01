@@ -5,6 +5,8 @@
 #include <iosfwd>
 #include "tatum_strong_id.hpp"
 
+namespace tatum {
+
 //The timing graph
 class TimingGraph;
 
@@ -52,3 +54,5 @@ std::ostream& operator<<(std::ostream& os, BlockId block_id);
 std::ostream& operator<<(std::ostream& os, EdgeId edge_id);
 std::ostream& operator<<(std::ostream& os, DomainId domain_id);
 std::ostream& operator<<(std::ostream& os, LevelId level_id);
+
+} //namepsace

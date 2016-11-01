@@ -1,6 +1,7 @@
 #include "verify.hpp"
 #include <iostream>
 #include "sta_util.hpp"
+#include "util.hpp"
 
 #define RELATIVE_EPSILON 1.e-5
 #define ABSOLUTE_EPSILON 1.e-13
@@ -8,12 +9,18 @@
 using std::cout;
 using std::endl;
 
+using tatum::NodeId;
+using tatum::DomainId;
+using tatum::LevelId;
+using tatum::TimingGraph;
+using tatum::TN_Type;
+
 bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
 
 bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width);
 
 
-int verify_analyzer(const TimingGraph& tg, const SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
+int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
     //expected_arr_req_times.print();
 
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;

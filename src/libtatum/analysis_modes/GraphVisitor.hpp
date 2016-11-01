@@ -1,7 +1,8 @@
 #pragma once
-#include <memory>
 #include "timing_graph_fwd.hpp"
 #include "timing_constraints_fwd.hpp"
+
+namespace tatum {
 
 class GraphVisitor {
     public:
@@ -16,3 +17,5 @@ class GraphVisitor {
 
         void reset() {}
 };
+
+} //namepsace

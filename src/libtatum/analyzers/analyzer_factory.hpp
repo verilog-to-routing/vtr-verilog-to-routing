@@ -9,6 +9,8 @@
 #include "timing_analyzer_interfaces.hpp"
 #include "full_timing_analyzers.hpp"
 
+namespace tatum {
+
 /** \file
  * This file defines the AnalyzerFactory class used to construct timing analyzers.
  *
@@ -129,5 +131,6 @@ struct AnalyzerFactory<SetupHoldAnalysis,GraphWalker> {
     }
 };
 
-//Specialize for setup
+} //namepsace
+
 #endif

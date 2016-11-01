@@ -2,6 +2,8 @@
 #include "SetupAnalysis.hpp"
 #include "HoldAnalysis.hpp"
 
+namespace tatum {
+
 /** \class SetupHoldAnalysis
  *
  * The SetupHoldAnalysis class defines the operations needed by a timing analyzer
@@ -67,3 +69,5 @@ class SetupHoldAnalysis {
         SetupAnalysis setup_visitor_;
         HoldAnalysis hold_visitor_;
 };
+
+} //namepsace

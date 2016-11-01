@@ -1,5 +1,7 @@
 #include "tatum_assert.hpp"
 
+namespace tatum {
+
 /*
  * TimingTags implementation
  */
@@ -101,3 +103,5 @@ inline TimingTags::const_iterator TimingTags::find_tag_by_clock_domain(DomainId 
     };
     return std::find_if(begin(), end(), pred);
 }
+
+} //namepsace

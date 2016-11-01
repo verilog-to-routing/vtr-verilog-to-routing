@@ -4,6 +4,8 @@
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 
+namespace tatum {
+
 /** \file
  *
  * Common analysis functionality for both setup and hold analysis.
@@ -274,5 +276,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
         }
     }
 }
+
+} //namepsace
 
 #endif

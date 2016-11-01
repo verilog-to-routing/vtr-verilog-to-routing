@@ -3,6 +3,8 @@
 
 #include "Time.hpp"
 
+namespace tatum {
+
 /*
  * Class members
  */
@@ -87,3 +89,4 @@ inline std::ostream& operator<<(std::ostream& os, const Time& time) {
     return os;
 }
 
+} //namepsace
