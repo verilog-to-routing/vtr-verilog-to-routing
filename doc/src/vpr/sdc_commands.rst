@@ -150,7 +150,7 @@ Be aware that this may produce unexpected results.
     #Specify a maximum delay of 17 from input_clk to output_clk
     set_max_delay 17 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 
-.. sdc:command:: set_max_delay <delay>
+.. sdc:command:: set_max_delay
 
     .. sdc:option:: <delay>
 
