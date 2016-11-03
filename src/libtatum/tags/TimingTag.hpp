@@ -3,7 +3,6 @@
 
 #include "Time.hpp"
 #include "timing_graph_fwd.hpp"
-#include "TimingTagIterators.hpp"
 
 namespace tatum {
 
