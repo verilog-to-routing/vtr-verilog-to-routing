@@ -191,7 +191,11 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  */
 
                                                 //Add the node
-                                                NodeId src_node_id = timing_graph.add_node($2.type, timing_constraints.create_clock_domain(std::to_string($2.domain)), $2.is_clk_src);
+                                                DomainId domain_id;
+                                                if($2.domain >= 0) {
+                                                    domain_id = timing_constraints.create_clock_domain(std::to_string($2.domain));
+                                                }
+                                                NodeId src_node_id = timing_graph.add_node($2.type, domain_id, $2.is_clk_src);
 
                                                 //Save the edges to be added later
                                                 node_out_edges.push_back($2.out_edges);
@@ -347,15 +351,15 @@ clock_constraint: src_domain sink_domain constraint EOL {
                     if($3 != -1.0) {
                         //-1 is used to signal invalid constraints that should
                         //not be analyzed
-                        int val1 = $1;
-                        int val2 = $2;
-                        DomainId src_domain = timing_constraints.create_clock_domain(std::to_string(val1));
-                        DomainId sink_domain = timing_constraints.create_clock_domain(std::to_string(val2));
-                        timing_constraints.set_setup_constraint(src_domain, sink_domain, $3);
+                        if($1 >= 0 && $2 >= 0) { //Valid clocks
+                            DomainId src_domain = timing_constraints.create_clock_domain(std::to_string($1));
+                            DomainId sink_domain = timing_constraints.create_clock_domain(std::to_string($2));
+                            timing_constraints.set_setup_constraint(src_domain, sink_domain, $3);
 
-                        //FIXME: Fixing the hold constraint to zero.  This will ignore any
-                        //       hold multi-cycles
-                        timing_constraints.set_hold_constraint(src_domain, sink_domain, 0.);
+                            //FIXME: Fixing the hold constraint to zero.  This will ignore any
+                            //       hold multi-cycles
+                            timing_constraints.set_hold_constraint(src_domain, sink_domain, 0.);
+                        }
                     }
                 }
 
