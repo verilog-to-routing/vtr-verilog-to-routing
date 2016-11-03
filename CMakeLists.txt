@@ -139,12 +139,5 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 
-if(NOT TATUM_USE_SYSTEM_BOOST)
-    #Unless overriden default to the local copy of boost
-    set(BOOST_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/lib/boost_minimal)
-    set(Boost_NO_SYSTEM_PATHS ON)
-endif()
-
 add_subdirectory(src)
-add_subdirectory(lib)
 add_subdirectory(doc)
