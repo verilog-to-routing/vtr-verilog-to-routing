@@ -191,7 +191,7 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  */
 
                                                 //Add the node
-                                                NodeId src_node_id = timing_graph.add_node($2.type, DomainId($2.domain), $2.is_clk_src);
+                                                NodeId src_node_id = timing_graph.add_node($2.type, timing_constraints.create_clock_domain(std::to_string($2.domain)), $2.is_clk_src);
 
                                                 //Save the edges to be added later
                                                 node_out_edges.push_back($2.out_edges);
@@ -226,8 +226,8 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
     | timing_graph node_arr_req_time        {
                                                 TATUM_ASSERT(from_clock_domain >= 0);
                                                 TATUM_ASSERT(to_clock_domain >= 0);
-                                                arr_req_times.add_arr_time(DomainId(from_clock_domain), NodeId($2.node_id), $2.T_arr);
-                                                arr_req_times.add_req_time(DomainId(from_clock_domain), NodeId($2.node_id), $2.T_req);
+                                                arr_req_times.add_arr_time(timing_constraints.create_clock_domain(std::to_string(from_clock_domain)), NodeId($2.node_id), $2.T_arr);
+                                                arr_req_times.add_req_time(timing_constraints.create_clock_domain(std::to_string(from_clock_domain)), NodeId($2.node_id), $2.T_req);
 
                                                 arr_req_cnt++;
                                                 if(arr_req_cnt % 1000000 == 0) {
@@ -347,11 +347,15 @@ clock_constraint: src_domain sink_domain constraint EOL {
                     if($3 != -1.0) {
                         //-1 is used to signal invalid constraints that should
                         //not be analyzed
-                        timing_constraints.add_setup_clock_constraint(DomainId($1), DomainId($2), $3);
+                        int val1 = $1;
+                        int val2 = $2;
+                        DomainId src_domain = timing_constraints.create_clock_domain(std::to_string(val1));
+                        DomainId sink_domain = timing_constraints.create_clock_domain(std::to_string(val2));
+                        timing_constraints.set_setup_constraint(src_domain, sink_domain, $3);
 
                         //FIXME: Fixing the hold constraint to zero.  This will ignore any
                         //       hold multi-cycles
-                        timing_constraints.add_hold_clock_constraint(DomainId($1), DomainId($2), 0.);
+                        timing_constraints.set_hold_constraint(src_domain, sink_domain, 0.);
                     }
                 }
 
@@ -365,7 +369,7 @@ constraint: number { $$ = $1; }
 input_constraints: INPUT_CONSTRAINTS_HEADER EOL {}
     | input_constraints INPUT_CONSTRAINTS_COLS EOL {}
     | input_constraints input_constraint {}
-input_constraint: node_id constraint EOL { timing_constraints.add_input_constraint(NodeId($1), $2); }
+input_constraint: node_id constraint EOL { timing_constraints.set_input_constraint(NodeId($1), $2); }
 
 /*
  * Output Constraints
@@ -373,7 +377,7 @@ input_constraint: node_id constraint EOL { timing_constraints.add_input_constrai
 output_constraints: OUTPUT_CONSTRAINTS_HEADER EOL {}
     | output_constraints OUTPUT_CONSTRAINTS_COLS EOL {}
     | output_constraints output_constraint {}
-output_constraint: node_id constraint EOL { timing_constraints.add_output_constraint(NodeId($1), $2); }
+output_constraint: node_id constraint EOL { timing_constraints.set_output_constraint(NodeId($1), $2); }
 
 /*
  * Basic values

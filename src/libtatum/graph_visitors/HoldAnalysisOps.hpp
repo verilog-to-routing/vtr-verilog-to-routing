@@ -29,7 +29,7 @@ class HoldAnalysisOps {
         void reset() { data_tags_.clear(); clock_tags_.clear(); }
 
         float clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
-            return tc.hold_clock_constraint(src_id, sink_id); 
+            return tc.hold_constraint(src_id, sink_id); 
         }
 
         void merge_req_tags(TimingTags& tags, const Time time, const TimingTag& ref_tag) { 

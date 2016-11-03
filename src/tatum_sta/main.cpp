@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
     /*
-     *timing_constraints.print();
+     *timing_constraints->print();
      */
 
     int n_histo_bins = 10;
