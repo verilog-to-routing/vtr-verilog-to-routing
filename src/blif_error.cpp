@@ -5,6 +5,8 @@
 
 namespace blifparse {
 
+std::string escape_string(const std::string& near_text);
+
 //We wrap the actual blif_error to issolate custom handlers from vaargs
 void blif_error_wrap(Callback& callback, const int line_no, const std::string& near_text, const char* fmt, ...) {
     va_list args;
@@ -39,8 +41,29 @@ void blif_error_wrap(Callback& callback, const int line_no, const std::string& n
     //Build the string from the buffer
     std::string msg(buf.get(), len);
 
+    //TODO: escape near_text
+    std::string escaped_near_text = escape_string(near_text);
+
     //Call the error handler
-    callback.parse_error(line_no, near_text, msg);
+    callback.parse_error(line_no, escaped_near_text, msg);
 }
+
+std::string escape_string(const std::string& near_text) {
+    std::string escaped_text;
+
+    for(char c : near_text) {
+
+        if(c == '\n') {
+            escaped_text += "\\n";
+        } else if(c == '\r') {
+            escaped_text += "\\r";
+        } else {
+            escaped_text += c;
+        }
+    }
+
+    return escaped_text;
+}
+
 
 }
