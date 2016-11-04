@@ -832,9 +832,9 @@ class AtomNetlist {
 
     private: //Fast lookups
 
-        std::unordered_map<AtomStringId,AtomBlockId>                        block_name_to_block_id_;
-        std::unordered_map<AtomStringId,AtomNetId>                          net_name_to_net_id_;
-        std::unordered_map<std::string,AtomStringId>                        string_to_string_id_;
+        vtr::linear_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
+        vtr::linear_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
+        std::unordered_map<std::string,AtomStringId>    string_to_string_id_;
 };
 
 #include "atom_map.h"

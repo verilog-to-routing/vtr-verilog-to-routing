@@ -836,7 +836,7 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
         block_truth_tables_.push_back(truth_table);
 
         //Initialize the look-ups
-        block_name_to_block_id_[name_id] = blk_id;
+        block_name_to_block_id_.insert(name_id, blk_id);
 
         block_pins_.emplace_back();
         block_num_input_pins_.push_back(0);
@@ -968,7 +968,7 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
         net_names_.push_back(name_id);
 
         //Initialize the look-ups
-        net_name_to_net_id_[name_id] = net_id;
+        net_name_to_net_id_.insert(name_id, net_id);
 
         //Initialize with no driver
         net_pins_.emplace_back();
@@ -1028,7 +1028,7 @@ void AtomNetlist::remove_block(const AtomBlockId blk_id) {
 
     //Invalidate look-up
     AtomStringId name_id = block_names_[blk_id];
-    block_name_to_block_id_[name_id] = AtomBlockId::INVALID();
+    block_name_to_block_id_.insert(name_id, AtomBlockId::INVALID());
 
     //Mark as invalid
     block_ids_[blk_id] = AtomBlockId::INVALID();
@@ -1049,7 +1049,7 @@ void AtomNetlist::remove_net(const AtomNetId net_id) {
     }
     //Invalidate look-up
     AtomStringId name_id = net_names_[net_id];
-    net_name_to_net_id_[name_id] = AtomNetId::INVALID();
+    net_name_to_net_id_.insert(name_id, AtomNetId::INVALID());
 
     //Mark as invalid
     net_ids_[net_id] = AtomNetId::INVALID();
@@ -1402,14 +1402,14 @@ void AtomNetlist::rebuild_lookups() {
     block_name_to_block_id_.clear();
     for(auto blk_id : blocks()) {
         const auto& key = block_names_[blk_id];
-        block_name_to_block_id_[key] = blk_id;
+        block_name_to_block_id_.insert(key, blk_id);
     }
 
     //Nets
     net_name_to_net_id_.clear();
     for(auto net_id : nets()) {
         const auto& key = net_names_[net_id];
-        net_name_to_net_id_[key] = net_id;
+        net_name_to_net_id_.insert(key, net_id);
     }
 }
 
@@ -1791,7 +1791,7 @@ AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
     VTR_ASSERT(valid_string_id(name_id));
     auto iter = block_name_to_block_id_.find(name_id);
     if(iter != block_name_to_block_id_.end()) {
-        AtomBlockId blk_id = iter->second;
+        AtomBlockId blk_id = *iter;
 
         //Check post-conditions
         if(blk_id) {
@@ -1809,7 +1809,7 @@ AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
     VTR_ASSERT(valid_string_id(name_id));
     auto iter = net_name_to_net_id_.find(name_id);
     if(iter != net_name_to_net_id_.end()) {
-        AtomNetId net_id = iter->second;
+        AtomNetId net_id = *iter;
 
         if(net_id) {
             //Check post-conditions
@@ -1817,7 +1817,7 @@ AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
             VTR_ASSERT(net_names_[net_id] == name_id);
         }
 
-        return iter->second;
+        return net_id;
     } else {
         return AtomNetId::INVALID();
     }
