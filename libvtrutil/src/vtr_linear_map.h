@@ -65,6 +65,8 @@ class linear_map {
 
         bool empty() const { return vec_.empty(); }
 
+        bool contain(const K key) const { return size_t(key) < vec_.size(); }
+
     public: //Mutators
         
         //Delegate potentially overloaded functions to the underlying vector with perfect
