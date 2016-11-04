@@ -1570,26 +1570,26 @@ bool AtomNetlist::validate_block_port_refs() const {
     //Verify that all block <-> port references are consistent
 
     //Track how many times we've seen each port from the blocks 
-    std::vector<unsigned> seen_port_ids(port_ids_.size());
+    vtr::linear_map<AtomPortId,unsigned> seen_port_ids(port_ids_.size());
 
     for(auto blk_id : blocks()) {
         for(auto in_port_id : block_input_ports(blk_id)) {
             if(blk_id != port_block(in_port_id)) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block-input port cross-reference does not match");
             }
-            ++seen_port_ids[size_t(in_port_id)];
+            ++seen_port_ids[in_port_id];
         }
         for(auto out_port_id : block_output_ports(blk_id)) {
             if(blk_id != port_block(out_port_id)) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block-output port cross-reference does not match") ;
             }
-            ++seen_port_ids[size_t(out_port_id)];
+            ++seen_port_ids[out_port_id];
         }
         for(auto clock_port_id : block_clock_ports(blk_id)) {
             if(blk_id != port_block(clock_port_id)) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Block-clock port cross-reference does not match"); 
             }
-            ++seen_port_ids[size_t(clock_port_id)];
+            ++seen_port_ids[clock_port_id];
         }
     }
 
@@ -1652,7 +1652,7 @@ bool AtomNetlist::validate_port_pin_refs() const {
     //Check that port <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
-    std::vector<unsigned> seen_pin_ids(pin_ids_.size());
+    vtr::linear_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto port_id : port_ids_) {
         bool first_bit = true;
@@ -1664,7 +1664,7 @@ bool AtomNetlist::validate_port_pin_refs() const {
             if(pin_port_bit(pin_id) >= port_width(port_id)) {
                 VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Out-of-range port bit index");
             }
-            ++seen_pin_ids[size_t(pin_id)];
+            ++seen_pin_ids[pin_id];
 
             BitIndex port_bit_index = pin_port_bit(pin_id);
             
@@ -1705,7 +1705,7 @@ bool AtomNetlist::validate_net_pin_refs() const {
     //Check that net <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
-    std::vector<unsigned> seen_pin_ids(pin_ids_.size());
+    vtr::linear_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto net_id : nets()) {
         auto pins = net_pins(net_id);
@@ -1727,7 +1727,7 @@ bool AtomNetlist::validate_net_pin_refs() const {
                 }
 
                 //We only record valid seen pins since we may see multiple undriven nets with invalid IDs
-                ++seen_pin_ids[size_t(pin_id)];
+                ++seen_pin_ids[pin_id];
             }
         }
     }
