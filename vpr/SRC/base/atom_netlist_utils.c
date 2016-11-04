@@ -682,52 +682,103 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     return true;
 }
 
-size_t sweep_iterative(AtomNetlist& netlist, bool should_sweep_ios, bool should_sweep_nets, bool should_sweep_blocks) {
-    size_t nets_swept = 0;
-    size_t blocks_swept = 0;
-    size_t inputs_swept = 0;
-    size_t outputs_swept = 0;
+size_t sweep_constant_primary_outputs(AtomNetlist& netlist) {
+    size_t removed_count = 0;
+    for(AtomBlockId blk_id : netlist.blocks()) {
+        if(!blk_id) continue;
+
+        if(netlist.block_type(blk_id) == AtomBlockType::OUTPAD) {
+
+            VTR_ASSERT(netlist.block_output_pins(blk_id).size() == 0);
+            VTR_ASSERT(netlist.block_clock_pins(blk_id).size() == 0);
+
+            bool all_inputs_are_const = true;
+            for(AtomPinId pin_id : netlist.block_input_pins(blk_id)) {
+                AtomNetId net_id  = netlist.pin_net(pin_id);
+
+                if(net_id && !netlist.net_is_constant(net_id)) {
+                    all_inputs_are_const = false;
+                    break;
+                }
+            }
+
+            if(all_inputs_are_const) {
+                //All inputs are constant, so we should remove this output
+                netlist.remove_block(blk_id);
+                removed_count++;
+            }
+        }
+    }
+    return removed_count;
+}
+
+size_t sweep_iterative(AtomNetlist& netlist, 
+                       bool should_sweep_ios, 
+                       bool should_sweep_nets, 
+                       bool should_sweep_blocks, 
+                       bool should_sweep_constant_primary_outputs) {
+    size_t dangling_nets_swept = 0;
+    size_t dangling_blocks_swept = 0;
+    size_t dangling_inputs_swept = 0;
+    size_t dangling_outputs_swept = 0;
+    size_t constant_outputs_swept = 0;
 
     //We perform multiple passes of sweeping, since sweeping something may
     //enable more things to be swept afterward.
     //
     //We keep sweeping until nothing else is removed
-    size_t pass_nets_swept;
-    size_t pass_blocks_swept;
-    size_t pass_inputs_swept;
-    size_t pass_outputs_swept;
+    size_t pass_dangling_nets_swept;
+    size_t pass_dangling_blocks_swept;
+    size_t pass_dangling_inputs_swept;
+    size_t pass_dangling_outputs_swept;
+    size_t pass_constant_outputs_swept;
     do {
-        pass_nets_swept = 0;
-        pass_blocks_swept = 0;
-        pass_inputs_swept = 0;
-        pass_outputs_swept = 0;
+        pass_dangling_nets_swept = 0;
+        pass_dangling_blocks_swept = 0;
+        pass_dangling_inputs_swept = 0;
+        pass_dangling_outputs_swept = 0;
+        pass_constant_outputs_swept = 0;
 
         if(should_sweep_ios) {
-            pass_inputs_swept += sweep_inputs(netlist);
-            pass_outputs_swept += sweep_outputs(netlist);
+            pass_dangling_inputs_swept += sweep_inputs(netlist);
+            pass_dangling_outputs_swept += sweep_outputs(netlist);
         }
 
         if(should_sweep_blocks) {
-            pass_nets_swept += sweep_nets(netlist);
+            pass_dangling_nets_swept += sweep_nets(netlist);
         }
 
         if(should_sweep_nets) {
-            pass_blocks_swept += sweep_blocks(netlist);
+            pass_dangling_blocks_swept += sweep_blocks(netlist);
         }
 
-        nets_swept += pass_nets_swept;
-        blocks_swept += pass_blocks_swept;
-        inputs_swept += pass_outputs_swept;
-        outputs_swept += pass_outputs_swept;
-    } while(pass_nets_swept != 0 || pass_blocks_swept != 0 
-            || pass_inputs_swept != 0 || pass_outputs_swept != 0);
+        if(should_sweep_constant_primary_outputs) {
+            pass_constant_outputs_swept += sweep_constant_primary_outputs(netlist);
+        }
 
-    vtr::printf_info("Swept input(s) : %zu\n", inputs_swept);
-    vtr::printf_info("Swept output(s): %zu\n", outputs_swept);
-    vtr::printf_info("Swept net(s)   : %zu\n", nets_swept);
-    vtr::printf_info("Swept block(s) : %zu\n", blocks_swept);
+        dangling_nets_swept += pass_dangling_nets_swept;
+        dangling_blocks_swept += pass_dangling_blocks_swept;
+        dangling_inputs_swept += pass_dangling_outputs_swept;
+        dangling_outputs_swept += pass_dangling_outputs_swept;
+        constant_outputs_swept += pass_constant_outputs_swept;
+    } while(pass_dangling_nets_swept != 0 
+            || pass_dangling_blocks_swept != 0 
+            || pass_dangling_inputs_swept != 0 
+            || pass_dangling_outputs_swept != 0
+            || pass_constant_outputs_swept != 0);
 
-    return nets_swept + blocks_swept + inputs_swept + outputs_swept;
+    vtr::printf_info("Swept input(s) : %zu\n", dangling_inputs_swept);
+    vtr::printf_info("Swept output(s): %zu (%zu dangling, %zu constant)\n", dangling_outputs_swept + constant_outputs_swept, 
+                                                                            dangling_outputs_swept, 
+                                                                            constant_outputs_swept);
+    vtr::printf_info("Swept net(s)   : %zu\n", dangling_nets_swept);
+    vtr::printf_info("Swept block(s) : %zu\n", dangling_blocks_swept);
+
+    return dangling_nets_swept 
+           + dangling_blocks_swept 
+           + dangling_inputs_swept 
+           + dangling_outputs_swept 
+           + constant_outputs_swept;
 }
 
 size_t sweep_blocks(AtomNetlist& netlist) {

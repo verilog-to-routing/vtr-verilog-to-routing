@@ -258,9 +258,10 @@ void vpr_init(const int argc, const char **argv,
                                           vpr_setup->user_models, 
                                           vpr_setup->library_models,
                                           vpr_setup->NetlistOpts.absorb_buffer_luts,
-                                          vpr_setup->NetlistOpts.sweep_primary_ios,
-                                          vpr_setup->NetlistOpts.sweep_nets,
-                                          vpr_setup->NetlistOpts.sweep_blocks);
+                                          vpr_setup->NetlistOpts.sweep_dangling_primary_ios,
+                                          vpr_setup->NetlistOpts.sweep_dangling_nets,
+                                          vpr_setup->NetlistOpts.sweep_dangling_blocks,
+                                          vpr_setup->NetlistOpts.sweep_constant_primary_outputs);
 
 
         if(vpr_setup->PowerOpts.do_power) {

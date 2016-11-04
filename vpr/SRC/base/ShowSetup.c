@@ -361,10 +361,11 @@ static void ShowPlacerOpts(const t_options& Options,
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
-    vtr::printf_info("NetlistOpts.abosrb_buffer_luts: %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
-    vtr::printf_info("NetlistOpts.sweep_primary_ios : %s\n", (NetlistOpts.sweep_primary_ios)  ? "true" : "false");
-    vtr::printf_info("NetlistOpts.sweep_nets        : %s\n", (NetlistOpts.sweep_nets)         ? "true" : "false");
-    vtr::printf_info("NetlistOpts.sweep_blocks      : %s\n", (NetlistOpts.sweep_blocks)       ? "true" : "false");
+    vtr::printf_info("NetlistOpts.abosrb_buffer_luts            : %s\n", (NetlistOpts.absorb_buffer_luts)             ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_dangling_primary_ios    : %s\n", (NetlistOpts.sweep_dangling_primary_ios)     ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_dangling_nets           : %s\n", (NetlistOpts.sweep_dangling_nets)            ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks)          ? "true" : "false");
+    vtr::printf_info("NetlistOpts.sweep_constant_primary_outputs: %s\n", (NetlistOpts.sweep_constant_primary_outputs) ? "true" : "false");
 	vtr::printf_info("\n");
 }
 

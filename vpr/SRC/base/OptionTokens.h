@@ -51,9 +51,10 @@ enum e_OptionBaseToken {
 
     //Netlist processing related options
     OT_ABSORB_BUFFER_LUTS,
-    OT_SWEEP_PRIMARY_IOS,
-    OT_SWEEP_NETS,
-    OT_SWEEP_BLOCKS,
+    OT_SWEEP_DANGLING_PRIMARY_IOS,
+    OT_SWEEP_DANGLING_NETS,
+    OT_SWEEP_DANGLING_BLOCKS,
+    OT_SWEEP_CONSTANT_PRIMARY_OUTPUTS,
 
     //Packing options
 	OT_PACK,

@@ -583,9 +583,10 @@ struct s_file_name_opts {
 /* Options for netlist loading */
 struct t_netlist_opts {
     bool absorb_buffer_luts = true;
-    bool sweep_primary_ios = true;
-    bool sweep_blocks = true;
-    bool sweep_nets = true;
+    bool sweep_dangling_primary_ios = true;
+    bool sweep_dangling_blocks = true;
+    bool sweep_dangling_nets = true;
+    bool sweep_constant_primary_outputs = true;
 };
 
 /* Options for packing

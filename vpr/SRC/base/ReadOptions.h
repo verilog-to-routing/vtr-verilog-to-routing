@@ -29,9 +29,10 @@ struct s_options {
 
     /* Atom netlist options */
 	bool absorb_buffer_luts;
-	bool sweep_primary_ios;
-	bool sweep_nets;
-	bool sweep_blocks;
+	bool sweep_dangling_primary_ios;
+	bool sweep_dangling_nets;
+	bool sweep_dangling_blocks;
+	bool sweep_constant_primary_outputs;
 
 	/* Clustering options */
 	bool global_clocks;

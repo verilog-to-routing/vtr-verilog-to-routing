@@ -61,9 +61,10 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "hill_climbing", OT_HILL_CLIMBING_FLAG }, 
 
 		{ "absorb_buffer_luts", OT_ABSORB_BUFFER_LUTS }, 
-		{ "sweep_primary_ios", OT_SWEEP_PRIMARY_IOS }, 
-		{ "sweep_nets", OT_SWEEP_NETS }, 
-		{ "sweep_blocks", OT_SWEEP_BLOCKS }, 
+		{ "sweep_dangling_primary_ios", OT_SWEEP_DANGLING_PRIMARY_IOS }, 
+		{ "sweep_dangling_nets", OT_SWEEP_DANGLING_NETS }, 
+		{ "sweep_dangling_blocks", OT_SWEEP_DANGLING_BLOCKS }, 
+		{ "sweep_constant_primary_outputs", OT_SWEEP_CONSTANT_PRIMARY_OUTPUTS }, 
 
 		{ "no_clustering", OT_SKIP_CLUSTERING }, 
 		{ "allow_unrelated_clustering", OT_ALLOW_UNRELATED_CLUSTERING }, 

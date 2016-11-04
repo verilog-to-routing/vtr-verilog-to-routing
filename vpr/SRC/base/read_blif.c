@@ -618,9 +618,10 @@ AtomNetlist read_and_process_blif(const char *blif_file,
                                   const t_model *user_models, 
                                   const t_model *library_models,
                                   bool should_absorb_buffers, 
-                                  bool should_sweep_primary_ios, 
-                                  bool should_sweep_nets,
-                                  bool should_sweep_blocks) {
+                                  bool should_sweep_dangling_primary_ios, 
+                                  bool should_sweep_dangling_nets,
+                                  bool should_sweep_dangling_blocks,
+                                  bool should_sweep_constant_primary_outputs) {
     AtomNetlist netlist;
     {
         vtr::ScopedPrintTimer t("Load BLIF");
@@ -649,7 +650,11 @@ AtomNetlist read_and_process_blif(const char *blif_file,
         }
 
         //Sweep unused logic/nets/inputs/outputs
-        sweep_iterative(netlist, should_sweep_primary_ios, should_sweep_nets, should_sweep_blocks);
+        sweep_iterative(netlist, 
+                        should_sweep_dangling_primary_ios, 
+                        should_sweep_dangling_nets, 
+                        should_sweep_dangling_blocks,
+                        should_sweep_constant_primary_outputs);
     }
 
     {

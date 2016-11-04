@@ -685,19 +685,24 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
         NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
     }
 
-    NetlistOpts.sweep_primary_ios = true; //Default
-    if(Options.Count[OT_SWEEP_PRIMARY_IOS]) {
-        NetlistOpts.sweep_primary_ios = Options.sweep_primary_ios;
+    NetlistOpts.sweep_dangling_primary_ios = true; //Default
+    if(Options.Count[OT_SWEEP_DANGLING_PRIMARY_IOS]) {
+        NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
     }
 
-    NetlistOpts.sweep_nets = true; //Default
-    if(Options.Count[OT_SWEEP_NETS]) {
-        NetlistOpts.sweep_nets = Options.sweep_nets;
+    NetlistOpts.sweep_dangling_nets = true; //Default
+    if(Options.Count[OT_SWEEP_DANGLING_NETS]) {
+        NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
     }
 
-    NetlistOpts.sweep_blocks = true; //Default
-    if(Options.Count[OT_SWEEP_BLOCKS]) {
-        NetlistOpts.sweep_blocks = Options.sweep_blocks;
+    NetlistOpts.sweep_dangling_blocks = true; //Default
+    if(Options.Count[OT_SWEEP_DANGLING_BLOCKS]) {
+        NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
+    }
+
+    NetlistOpts.sweep_constant_primary_outputs = true; //Default
+    if(Options.Count[OT_SWEEP_CONSTANT_PRIMARY_OUTPUTS]) {
+        NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
     }
 }
 

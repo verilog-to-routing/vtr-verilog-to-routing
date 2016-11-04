@@ -355,12 +355,14 @@ ProcessOption(char **Args, t_options * Options) {
     //Atom netlist options
 	case OT_ABSORB_BUFFER_LUTS:
 		return ReadOnOff(Args, &Options->absorb_buffer_luts);
-	case OT_SWEEP_PRIMARY_IOS:
-		return ReadOnOff(Args, &Options->sweep_primary_ios);
-	case OT_SWEEP_NETS:
-		return ReadOnOff(Args, &Options->sweep_nets);
-	case OT_SWEEP_BLOCKS:
-		return ReadOnOff(Args, &Options->sweep_blocks);
+	case OT_SWEEP_DANGLING_PRIMARY_IOS:
+		return ReadOnOff(Args, &Options->sweep_dangling_primary_ios);
+	case OT_SWEEP_DANGLING_NETS:
+		return ReadOnOff(Args, &Options->sweep_dangling_nets);
+	case OT_SWEEP_DANGLING_BLOCKS:
+		return ReadOnOff(Args, &Options->sweep_dangling_blocks);
+	case OT_SWEEP_CONSTANT_PRIMARY_OUTPUTS:
+		return ReadOnOff(Args, &Options->sweep_constant_primary_outputs);
 
     /* Clustering Options */
 	case OT_GLOBAL_CLOCKS:
