@@ -13,10 +13,16 @@ namespace vtr {
 //This results in a container that is similar to a std::map (i.e. converts from one type to
 //another), but requires contigously ascending (i.e. linear) keys. Unlike std::map only the
 //values are stored (at the specified index/key), reducing memory usage and improving cache
-//locality. Furthermore, find() returns an iterator to the value directly, rather than a std::pair
+//locality. Furthermore, find() returns an iterator to the value directly, rather than a std::pair,
+//and insert() takes both the key and value as seperate arguments and has no return value.
+//
+//Note that it is possible to use linear_map with sparse/non-contiguous keys, but this is typically
+//memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
+//where max_key is the largest key that has been inserted.
 //
 //As with a std::vector, it is the caller's responsibility to ensure there is sufficient space 
-//for a given index/key before it is accessed.
+//for a given index/key before it is accessed. The exception to this are the find() and insert() 
+//methods which handle non-existing keys gracefully.
 template<typename K, typename V>
 class linear_map {
     public: //Public types
@@ -93,6 +99,16 @@ class linear_map {
             } else {
                 return vec_.end();
             }
+        }
+
+        void insert(const K key, const V value) {
+            if(size_t(key) >= vec_.size()) {
+                //Resize so key is in range
+                vec_.resize(size_t(key) + 1);
+            }
+
+            //Insert the value
+            operator[](key) = value; 
         }
 
         //Swap (this enables std::swap via ADL)
