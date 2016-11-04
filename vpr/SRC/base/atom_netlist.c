@@ -108,25 +108,6 @@ vtr::linear_map<Id,Id> clean_and_reorder_ids(const vtr::linear_map<Id,Id>& id_ma
     return result;
 }
 
-//Updates the Ids in 'values' based on the new mapping in 'id_map', if both the original and new Ids mappings are valid
-template<typename Id>
-std::vector<Id> update_valid_refs(const std::vector<Id>& values, const vtr::linear_map<Id,Id>& id_map) {
-    std::vector<Id> updated;
-
-    for(Id old_val : values) {
-        if(old_val) {
-            //The original item was valid
-            Id new_val = id_map[old_val]; 
-            if(new_val) {
-                //The original item exists in the new mapping
-                updated.emplace_back(new_val);
-            }
-        }
-    }
-
-    return updated;
-}
-
 //Count how many of the Id's referenced in 'range' have a valid
 //new mapping in 'id_map'
 template<typename R, typename Id>
@@ -142,10 +123,10 @@ size_t count_valid_refs(R range, const vtr::linear_map<Id,Id>& id_map) {
     return valid_count;
 }
 
-//Updates the Ids in 'values' based on id_map, even if the original/new mappings are not valid
-template<typename KeyId, typename ValId>
-vtr::linear_map<KeyId,ValId> update_all_refs(const vtr::linear_map<KeyId,ValId>& values, const vtr::linear_map<ValId,ValId>& id_map) {
-    vtr::linear_map<KeyId,ValId> updated;
+//Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
+template<typename Container, typename ValId>
+Container update_all_refs(const Container& values, const vtr::linear_map<ValId,ValId>& id_map) {
+    Container updated;
 
     for(ValId orig_val : values) {
         //The original item was valid
@@ -157,10 +138,9 @@ vtr::linear_map<KeyId,ValId> update_all_refs(const vtr::linear_map<KeyId,ValId>&
     return updated;
 }
 
-//Updates the Ids in 'values' based on the new mapping in 'id_map', if both the original and new Ids mappings are valid
-template<typename KeyId, typename ValId>
-vtr::linear_map<KeyId,ValId> update_valid_refs(const vtr::linear_map<KeyId,ValId>& values, const vtr::linear_map<ValId,ValId>& id_map) {
-    vtr::linear_map<KeyId,ValId> updated;
+template<typename Container, typename ValId>
+Container update_valid_refs(const Container& values, const vtr::linear_map<ValId,ValId>& id_map) {
+    Container updated;
 
     for(ValId orig_val : values) {
         if(orig_val) {
@@ -179,7 +159,7 @@ vtr::linear_map<KeyId,ValId> update_valid_refs(const vtr::linear_map<KeyId,ValId
 /*
  *
  *
- * AtomNetlit Class Implementation
+ * AtomNetlist Class Implementation
  *
  *
  */
