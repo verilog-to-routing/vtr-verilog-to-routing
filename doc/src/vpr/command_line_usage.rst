@@ -176,6 +176,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     Disabling sweeping of primary inputs/outputs can improve the matching between the input and post-synthesis netlists.
     This is often useful when performing formal verification.
 
+    .. seealso:: :option:`-sweep_constant_primary_outputs`
+
     **Default**: ``on``
 
 .. option:: -sweep_dangling_nets {on | off}
@@ -193,6 +195,8 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 .. option:: -sweep_constant_primary_outputs {on | off}
 
     Controls whether primary outputs driven by constant values are swept and removed from the netlist.
+
+    .. seealso:: :option:`-sweep_dangling_primary_ios`
 
     **Default**: ``off``
 
