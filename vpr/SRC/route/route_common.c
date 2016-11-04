@@ -37,10 +37,12 @@ using namespace std;
 // Routing failure predictor will take into account this number of past iterations:
 #define PREDICTOR_ITERATIONS 5
 // XXX: Congestion can take a little longer to resolve once the fraction of overused nodes is low.
-//	Once the overuse ratio is lower than the following value, the predictor will take into account
-//	the previous 2*PREDICTOR_ITERATIONS iterations instead.
+//	Once the overuse ratio is lower than the following value (either as a ratio or absolute number 
+//	of rr nodesor absolute), the predictor will take into accountthe previous 2*PREDICTOR_ITERATIONS 
+//	iterations instead.
 //	This is just a placeholder; the exact value should be investigated
 #define OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK 0.0002
+#define OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK 20
 
 /***************** Variables shared only by route modules *******************/
 
@@ -393,7 +395,8 @@ int predict_success_route_iter(int router_iteration, const std::vector<double>& 
 	// compute slope 
 	size_t itry = historical_overuse_ratio.size() - 1;
 	size_t start_iteration = itry - PREDICTOR_ITERATIONS;
-	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK){
+	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK
+        || historical_overuse_ratio.back()*num_rr_nodes < OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK){
 		start_iteration = itry - 2*PREDICTOR_ITERATIONS;
 		if (2*PREDICTOR_ITERATIONS > itry)
 			start_iteration = 0;
