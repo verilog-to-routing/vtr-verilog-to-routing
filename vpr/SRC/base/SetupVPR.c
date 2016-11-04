@@ -700,7 +700,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
         NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
     }
 
-    NetlistOpts.sweep_constant_primary_outputs = true; //Default
+    NetlistOpts.sweep_constant_primary_outputs = false; //Default
     if(Options.Count[OT_SWEEP_CONSTANT_PRIMARY_OUTPUTS]) {
         NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
     }

@@ -169,32 +169,38 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``on``
 
-.. option:: -sweep_primary_ios {on | off}
+.. option:: -sweep_dangling_primary_ios {on | off}
 
-    Controls whether the circuits hanging/dangling primary inputs and outputs (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
+    Controls whether the circuits dangling primary inputs and outputs (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
 
     Disabling sweeping of primary inputs/outputs can improve the matching between the input and post-synthesis netlists.
     This is often useful when performing formal verification.
 
     **Default**: ``on``
 
-.. option:: -sweep_nets {on | off}
+.. option:: -sweep_dangling_nets {on | off}
 
-    Controls whether hanging/dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
+    Controls whether dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
+
+    **Default**: ``on``
+
+.. option:: -sweep_dangling_blocks {on | off}
+
+    Controls whether dangling blocks (i.e. those who do not drive anything) are swept and removed from the netlist.
 
     **Default**: ``on``
 
-.. option:: -sweep_blocks {on | off}
+.. option:: -sweep_constant_primary_outputs {on | off}
 
-    Controls whether hanging/dangling blocks (i.e. those who do not drive anything) are swept and removed from the netlist.
+    Controls whether primary outputs driven by constant values are swept and removed from the netlist.
 
-    **Default**: ``on``
+    **Default**: ``off``
 
 .. _packing_options:
 
 Packing Options
 ---------------
-AAPack is the packing tool built into VPR.
+AAPack is the packing algorithm built into VPR.
 AAPack takes as input a technology-mapped blif netlist consisting of LUTs, flip-flops, memories, mulitpliers, etc and outputs a .net formatted netlist composed of more complex logic blocks.
 The logic blocks available on the FPGA are specified through the FPGA architecture file.
 For people not working on CAD, you can probably leave all the options to their default values.
