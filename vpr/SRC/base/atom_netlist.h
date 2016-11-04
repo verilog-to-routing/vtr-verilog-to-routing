@@ -714,34 +714,37 @@ class AtomNetlist {
         //Builds the new mappings from old to new IDs.
         //The various IdMap's should be initialized with invalid mappings
         //for all current ID's before being called.
-        void build_id_maps(IdMap<AtomBlockId>& block_id_map, 
-                           IdMap<AtomPortId>& port_id_map, 
-                           IdMap<AtomPinId>& pin_id_map, 
-                           IdMap<AtomNetId>& net_id_map);
+        void build_id_maps(vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map, 
+                           vtr::linear_map<AtomPortId,AtomPortId>& port_id_map, 
+                           vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map, 
+                           vtr::linear_map<AtomNetId,AtomNetId>& net_id_map);
 
         //Removes invalid and reorders blocks
-        void clean_blocks(const IdMap<AtomBlockId>& block_id_map);
+        void clean_blocks(const vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map);
 
         //Removes invalid and reorders ports
-        void clean_ports(const IdMap<AtomPortId>& port_id_map);
+        void clean_ports(const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map);
 
         //Removes invalid and reorders pins
-        void clean_pins(const IdMap<AtomPinId>& pin_id_map);
+        void clean_pins(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Removes invalid and reorders nets
-        void clean_nets(const IdMap<AtomNetId>& net_id_map);
+        void clean_nets(const vtr::linear_map<AtomNetId,AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by blocks
-        void rebuild_block_refs(const IdMap<AtomPinId>& pin_id_map, const IdMap<AtomPortId>& port_id_map);
+        void rebuild_block_refs(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map, 
+                                const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map);
 
         //Re-builds cross-references held by ports
-        void rebuild_port_refs(const IdMap<AtomBlockId>& block_id_map, const IdMap<AtomPinId>& pin_id_map);
+        void rebuild_port_refs(const vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map, 
+                               const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Re-builds cross-references held by pins
-        void rebuild_pin_refs(const IdMap<AtomPortId>& port_id_map, const IdMap<AtomNetId>& net_id_map);
+        void rebuild_pin_refs(const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map, 
+                              const vtr::linear_map<AtomNetId,AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by nets
-        void rebuild_net_refs(const IdMap<AtomPinId>& pin_id_map);
+        void rebuild_net_refs(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Re-builds fast look-ups
         void rebuild_lookups();
