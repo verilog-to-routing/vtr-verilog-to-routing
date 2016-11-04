@@ -13,7 +13,7 @@ namespace vtr {
 //This results in a container that is similar to a std::map (i.e. converts from one type to
 //another), but requires contigously ascending (i.e. linear) keys. Unlike std::map only the
 //values are stored (at the specified index/key), reducing memory usage and improving cache
-//locality. 
+//locality. Furthermore, find() returns an iterator to the value directly, rather than a std::pair
 //
 //As with a std::vector, it is the caller's responsibility to ensure there is sufficient space 
 //for a given index/key before it is accessed.
@@ -47,6 +47,14 @@ class linear_map {
             return vec_[size_t(n)]; 
         }
 
+        const_iterator find(const K key) const {
+            if(size_t(key) < vec_.size()) {
+                return vec_.begin() + size_t(key);
+            } else {
+                return vec_.end();
+            }
+        }
+
         std::size_t size() const { return vec_.size(); }
 
         bool empty() const { return vec_.empty(); }
@@ -77,6 +85,14 @@ class linear_map {
         reference operator[] (const K n) { 
             VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
             return vec_[size_t(n)]; 
+        }
+
+        iterator find(const K key) {
+            if(size_t(key) < vec_.size()) {
+                return vec_.begin() + size_t(key);
+            } else {
+                return vec_.end();
+            }
         }
 
         //Swap (this enables std::swap via ADL)
