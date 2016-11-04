@@ -1,2 +1,2 @@
 arch	circuit	vpr_revision	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-hard_fpu_arch_timing.xml	mm3.v	1b57a95-dirty	success	2.985 	1.14512	0.228406	0.315486	0.315486	4719	545	422	289	0	193	32	-1	-1		
+hard_fpu_arch_timing.xml	mm3.v	3019530-dirty	success	2.985 	1.13489	0.223421	0.333952	0.333952	4719	545	422	289	0	193	32	-1	-1		
