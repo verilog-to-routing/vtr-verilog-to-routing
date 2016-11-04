@@ -367,9 +367,9 @@
 #include <vector>
 #include <unordered_map>
 
-#include "vtr_hash.h"
 #include "vtr_range.h"
 #include "vtr_logic.h"
+#include "vtr_linear_map.h"
 
 #include "logic_types.h" //For t_model
 
@@ -381,10 +381,10 @@ class IdMap;
 
 class AtomNetlist {
     public: //Public types
-        typedef std::vector<AtomBlockId>::const_iterator block_iterator;
-        typedef std::vector<AtomPortId>::const_iterator port_iterator;
-        typedef std::vector<AtomPinId>::const_iterator pin_iterator;
-        typedef std::vector<AtomNetId>::const_iterator net_iterator;
+        typedef vtr::linear_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
+        typedef vtr::linear_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
+        typedef vtr::linear_map<AtomPinId,AtomPinId>::const_iterator pin_iterator;
+        typedef vtr::linear_map<AtomNetId,AtomNetId>::const_iterator net_iterator;
 
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
 
@@ -789,7 +789,7 @@ class AtomNetlist {
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
-        std::vector<AtomBlockId>             block_ids_;                //Valid block ids
+        vtr::linear_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
         std::vector<AtomStringId>            block_names_;              //Name of each block
         std::vector<const t_model*>          block_models_;             //Architecture model of each block
         std::vector<TruthTable>              block_truth_tables_;       //Truth tables of each block
@@ -805,21 +805,21 @@ class AtomNetlist {
         std::vector<unsigned>                block_num_clock_ports_;    //Clock ports of each block
 
         //Port data
-        std::vector<AtomPortId>             port_ids_;      //Valid port ids
+        vtr::linear_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
         std::vector<AtomStringId>           port_names_;    //Name of each port
         std::vector<AtomBlockId>            port_blocks_;   //Block associated with each port
         std::vector<const t_model_ports*>   port_models_;   //Architecture port models of each port
         std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
         //Pin data
-        std::vector<AtomPinId>  pin_ids_;           //Valid pin ids
+        vtr::linear_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
         std::vector<AtomPortId> pin_ports_;         //Type of each pin
         std::vector<BitIndex>   pin_port_bits_;     //The ports bit position in the port
         std::vector<AtomNetId>  pin_nets_;          //Net associated with each pin
         std::vector<bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
         //Net data
-        std::vector<AtomNetId>              net_ids_;   //Valid net ids
+        vtr::linear_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
         std::vector<AtomStringId>           net_names_; //Name of each net
         std::vector<std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
 
@@ -827,7 +827,7 @@ class AtomNetlist {
         // We store each unique string once, and reference it by an StringId
         // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
         // only store the Ids)
-        std::vector<AtomStringId>   string_ids_;    //Valid string ids
+        vtr::linear_map<AtomStringId,AtomStringId>   string_ids_;    //Valid string ids
         std::vector<std::string>    strings_;       //Strings
 
     private: //Fast lookups

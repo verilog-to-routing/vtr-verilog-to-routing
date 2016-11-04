@@ -62,20 +62,22 @@ class IdMap {
 
 //Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename T>
-bool are_contiguous(std::vector<T>& values) {
-    for(size_t i = 0; i < values.size(); ++i) {
-        if (size_t(values[i]) != i) {
+bool are_contiguous(vtr::linear_map<T,T>& values) {
+    size_t i = 0;
+    for(T val : values) {
+        if (val != T(i)) {
             return false;
         }
+        ++i;
     }
     return true;
 }
 
 //Returns true if all elements in the vector 'values' evaluate true
 template<typename T>
-bool all_valid(std::vector<T>& values) {
-    for(size_t i = 0; i < values.size(); ++i) {
-        if(!values[i]) {
+bool all_valid(vtr::linear_map<T,T>& values) {
+    for(T val : values) {
+        if(!val) {
             return false;
         }
     }
@@ -84,7 +86,7 @@ bool all_valid(std::vector<T>& values) {
 
 //Builds a mapping from old to new ids by skipping values marked invalid
 template<typename T>
-IdMap<T> compress_ids(const std::vector<T>& ids) {
+IdMap<T> compress_ids(const vtr::linear_map<T,T>& ids) {
     IdMap<T> id_map(ids.size());
     size_t i = 0;
     for(auto id : ids) {
@@ -1011,7 +1013,7 @@ void AtomNetlist::remove_block(const AtomBlockId blk_id) {
     block_name_to_block_id_[name_id] = AtomBlockId::INVALID();
 
     //Mark as invalid
-    block_ids_[size_t(blk_id)] = AtomBlockId::INVALID();
+    block_ids_[blk_id] = AtomBlockId::INVALID();
 
     //Mark netlist dirty
     dirty_ = true;
@@ -1032,7 +1034,7 @@ void AtomNetlist::remove_net(const AtomNetId net_id) {
     net_name_to_net_id_[name_id] = AtomNetId::INVALID();
 
     //Mark as invalid
-    net_ids_[size_t(net_id)] = AtomNetId::INVALID();
+    net_ids_[net_id] = AtomNetId::INVALID();
 
     //Mark netlist dirty
     dirty_ = true;
@@ -1051,7 +1053,7 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
     }
 
     //Mark as invalid
-    port_ids_[size_t(port_id)] = AtomPortId::INVALID();
+    port_ids_[port_id] = AtomPortId::INVALID();
 
     //Mark netlist dirty
     dirty_ = true;
@@ -1067,7 +1069,7 @@ void AtomNetlist::remove_pin(const AtomPinId pin_id) {
     remove_net_pin(net, pin_id);
 
     //Mark as invalid
-    pin_ids_[size_t(pin_id)] = AtomPinId::INVALID();
+    pin_ids_[pin_id] = AtomPinId::INVALID();
 
     //Mark netlist dirty
     dirty_ = true;
@@ -1456,14 +1458,14 @@ void AtomNetlist::shrink_to_fit() {
 bool AtomNetlist::valid_block_id(AtomBlockId id) const {
     if(id == AtomBlockId::INVALID()) return false;
     else if(size_t(id) >= block_ids_.size()) return false;
-    else if(block_ids_[size_t(id)] != id) return false;
+    else if(block_ids_[id] != id) return false;
     return true;
 }
 
 bool AtomNetlist::valid_port_id(AtomPortId id) const {
     if(id == AtomPortId::INVALID()) return false;
     else if(size_t(id) >= port_ids_.size()) return false;
-    else if(port_ids_[size_t(id)] != id) return false;
+    else if(port_ids_[id] != id) return false;
     return true;
 }
 
@@ -1476,21 +1478,21 @@ bool AtomNetlist::valid_port_bit(AtomPortId id, BitIndex port_bit) const {
 bool AtomNetlist::valid_pin_id(AtomPinId id) const {
     if(id == AtomPinId::INVALID()) return false;
     else if(size_t(id) >= pin_ids_.size()) return false;
-    else if(pin_ids_[size_t(id)] != id) return false;
+    else if(pin_ids_[id] != id) return false;
     return true;
 }
 
 bool AtomNetlist::valid_net_id(AtomNetId id) const {
     if(id == AtomNetId::INVALID()) return false;
     else if(size_t(id) >= net_ids_.size()) return false;
-    else if(net_ids_[size_t(id)] != id) return false;
+    else if(net_ids_[id] != id) return false;
     return true;
 }
 
 bool AtomNetlist::valid_string_id(AtomStringId id) const {
     if(id == AtomStringId::INVALID()) return false;
     else if(size_t(id) >= string_ids_.size()) return false;
-    else if(string_ids_[size_t(id)] != id) return false;
+    else if(string_ids_[id] != id) return false;
     return true;
 }
 
