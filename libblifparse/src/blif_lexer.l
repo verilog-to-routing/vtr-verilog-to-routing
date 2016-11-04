@@ -47,7 +47,7 @@ DIGITS [0-9]
 ALPHA_NUM_SYMBOLS ({ALPHA_SYMBOLS}|{DIGITS})
 BACK_SLASH [\\]
 WS [ \t]
-ENDL (\n|\n\r)
+ENDL (\n|\n\r|\r\n)
 
 /* Special Parser States */
 %x LATCH
