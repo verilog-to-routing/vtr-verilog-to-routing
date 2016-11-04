@@ -198,8 +198,6 @@ This is specified in the content within the ``<chan_width_distr>`` tag.
     :opt_param xpeak: Peak location horizontally. Required for ``pulse``, ``gaussian`` and ``delta``.
     :opt_param dc: The DC level of the distribution. Required for ``pulse``, ``gaussian`` and ``delta``.
 
-    .. warning:: Shaped channels for global routing is rarely used so it is unknown if this feature still works.
-
     Sets the distribution of tracks for the x-directed channels -- the channels that run horizontally.
 
     Most values are from 0 to 1.
