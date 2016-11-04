@@ -23,42 +23,16 @@ class linear_map {
         typedef typename std::vector<V>::const_reference const_reference;
         typedef typename std::vector<V>::reference reference;
 
+        typedef typename std::vector<V>::iterator iterator;
         typedef typename std::vector<V>::const_iterator const_iterator;
         typedef typename std::vector<V>::const_reverse_iterator const_reverse_iterator;
 
-    public: //Mutators
-        
+    public: //Constructor
         template<typename... Args>
         linear_map(Args&&... args)
             : vec_(std::forward<Args>(args)...)
         { }
 
-        //Delegate potentially overloaded functions to the underlying vector with perfect
-        //forwarding
-        template<typename... Args>
-        void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
-
-        template<typename... Args>
-        void emplace_back(Args&&... args) { vec_.emplace_back(std::forward<Args>(args)...); }
-
-        template<typename... Args>
-        void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
-
-        void clear() { vec_.clear(); }
-
-        size_t capacity() const { return vec_.capacity(); }
-        void shrink_to_fit() { vec_.shrink_to_fit(); }
-
-        //Indexing
-        reference operator[] (const K n) { 
-            VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
-            return vec_[size_t(n)]; 
-        }
-
-        //Swap (this enables std::swap via ADL)
-        friend void swap(linear_map<K,V>& x, linear_map<K,V>& y) {
-            std::swap(x.vec_, y.vec_);
-        }
     public: //Accessors
 
         //Iterators
@@ -77,6 +51,38 @@ class linear_map {
 
         bool empty() const { return vec_.empty(); }
 
+    public: //Mutators
+        
+        //Delegate potentially overloaded functions to the underlying vector with perfect
+        //forwarding
+        template<typename... Args>
+        void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
+
+        template<typename... Args>
+        void emplace_back(Args&&... args) { vec_.emplace_back(std::forward<Args>(args)...); }
+
+        template<typename... Args>
+        void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
+
+        void clear() { vec_.clear(); }
+
+        size_t capacity() const { return vec_.capacity(); }
+        void shrink_to_fit() { vec_.shrink_to_fit(); }
+
+        //Iterators
+        iterator begin() { return vec_.begin(); }
+        iterator end() { return vec_.end(); }
+
+        //Indexing
+        reference operator[] (const K n) { 
+            VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
+            return vec_[size_t(n)]; 
+        }
+
+        //Swap (this enables std::swap via ADL)
+        friend void swap(linear_map<K,V>& x, linear_map<K,V>& y) {
+            std::swap(x.vec_, y.vec_);
+        }
     private:
         std::vector<V> vec_;
 };

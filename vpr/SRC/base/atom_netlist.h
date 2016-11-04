@@ -790,45 +790,45 @@ class AtomNetlist {
 
         //Block data
         vtr::linear_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
-        std::vector<AtomStringId>            block_names_;              //Name of each block
-        std::vector<const t_model*>          block_models_;             //Architecture model of each block
-        std::vector<TruthTable>              block_truth_tables_;       //Truth tables of each block
+        vtr::linear_map<AtomBlockId,AtomStringId>            block_names_;              //Name of each block
+        vtr::linear_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
+        vtr::linear_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
 
-        std::vector<std::vector<AtomPinId>>  block_pins_;               //Pins of each block
-        std::vector<unsigned>                block_num_input_pins_;     //Number of input pins on each block
-        std::vector<unsigned>                block_num_output_pins_;    //Number of output pins on each block
-        std::vector<unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
+        vtr::linear_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
+        vtr::linear_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
+        vtr::linear_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
+        vtr::linear_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
 
-        std::vector<std::vector<AtomPortId>> block_ports_;              //Ports of each block
-        std::vector<unsigned>                block_num_input_ports_;    //Input ports of each block
-        std::vector<unsigned>                block_num_output_ports_;   //Output ports of each block
-        std::vector<unsigned>                block_num_clock_ports_;    //Clock ports of each block
+        vtr::linear_map<AtomBlockId,std::vector<AtomPortId>> block_ports_;              //Ports of each block
+        vtr::linear_map<AtomBlockId,unsigned>                block_num_input_ports_;    //Input ports of each block
+        vtr::linear_map<AtomBlockId,unsigned>                block_num_output_ports_;   //Output ports of each block
+        vtr::linear_map<AtomBlockId,unsigned>                block_num_clock_ports_;    //Clock ports of each block
 
         //Port data
         vtr::linear_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
-        std::vector<AtomStringId>           port_names_;    //Name of each port
-        std::vector<AtomBlockId>            port_blocks_;   //Block associated with each port
-        std::vector<const t_model_ports*>   port_models_;   //Architecture port models of each port
-        std::vector<std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
+        vtr::linear_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
+        vtr::linear_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
+        vtr::linear_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
+        vtr::linear_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
         //Pin data
         vtr::linear_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
-        std::vector<AtomPortId> pin_ports_;         //Type of each pin
-        std::vector<BitIndex>   pin_port_bits_;     //The ports bit position in the port
-        std::vector<AtomNetId>  pin_nets_;          //Net associated with each pin
-        std::vector<bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
+        vtr::linear_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
+        vtr::linear_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
+        vtr::linear_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
+        vtr::linear_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
         //Net data
         vtr::linear_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
-        std::vector<AtomStringId>           net_names_; //Name of each net
-        std::vector<std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
+        vtr::linear_map<AtomNetId,AtomStringId>           net_names_; //Name of each net
+        vtr::linear_map<AtomNetId,std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
 
         //String data
         // We store each unique string once, and reference it by an StringId
         // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
         // only store the Ids)
         vtr::linear_map<AtomStringId,AtomStringId>   string_ids_;    //Valid string ids
-        std::vector<std::string>    strings_;       //Strings
+        vtr::linear_map<AtomStringId,std::string>    strings_;       //Strings
 
     private: //Fast lookups
 
