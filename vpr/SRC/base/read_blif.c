@@ -315,7 +315,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         void lineno(int line_num) override { lineno_ = line_num; }
 
         void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {
-            vpr_throw(VPR_ERROR_BLIF_F, "", curr_lineno,
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), curr_lineno,
                     "Error in blif file near '%s': %s\n", near_text.c_str(), msg.c_str());
         }
     public:
