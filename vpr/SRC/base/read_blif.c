@@ -45,6 +45,13 @@ static AtomNetlist read_blif(const char *blif_file,
                              const t_model *user_models, 
                              const t_model *library_models);
 
+static void process_blif(AtomNetlist& netlist,
+                         bool should_absorb_buffers, 
+                         bool should_sweep_dangling_primary_ios, 
+                         bool should_sweep_dangling_nets,
+                         bool should_sweep_dangling_blocks,
+                         bool should_sweep_constant_primary_outputs);
+
 static void show_blif_stats(const AtomNetlist& netlist);
 
 vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
@@ -629,6 +636,27 @@ AtomNetlist read_and_process_blif(const char *blif_file,
         netlist = read_blif(blif_file, user_models, library_models);
     }
 
+    process_blif(netlist,
+                 should_absorb_buffers, 
+                 should_sweep_dangling_primary_ios, 
+                 should_sweep_dangling_nets,
+                 should_sweep_dangling_blocks,
+                 should_sweep_constant_primary_outputs);
+
+
+    show_blif_stats(netlist);
+
+    return netlist;
+}
+
+static void process_blif(AtomNetlist& netlist,
+                         bool should_absorb_buffers, 
+                         bool should_sweep_dangling_primary_ios, 
+                         bool should_sweep_dangling_nets,
+                         bool should_sweep_dangling_blocks,
+                         bool should_sweep_constant_primary_outputs) {
+
+
     {
         vtr::ScopedPrintTimer t("Clean BLIF");
         
@@ -668,10 +696,6 @@ AtomNetlist read_and_process_blif(const char *blif_file,
 
         netlist.verify();
     }
-
-    show_blif_stats(netlist);
-
-    return netlist;
 }
 
 static void show_blif_stats(const AtomNetlist& netlist) {
