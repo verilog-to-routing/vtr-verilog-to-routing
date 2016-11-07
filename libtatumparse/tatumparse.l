@@ -98,7 +98,7 @@ arr:                            { return tatumparse::Parser::make_ARR(); }
 req:                            { return tatumparse::Parser::make_REQ(); }
 
 {DIGIT}+                        { return tatumparse::Parser::make_INT(atoi(tatumparse_get_text(yyscanner))); }
-([-+]?({DIGIT}*\.?{DIGIT}+|{DIGIT}+\.)([eE][-+]?{DIGIT}+)?)|(nan) { 
+(nan)|([-+]?(inf|((({DIGIT}*\.?{DIGIT}+)|({DIGIT}+\.))([eE][-+]?{DIGIT}+)?))) { 
                                     return tatumparse::Parser::make_FLOAT(atof(tatumparse_get_text(yyscanner)));
                                 }
 \"{ALPHA_NUM_SYMBOL}+\"         { 
