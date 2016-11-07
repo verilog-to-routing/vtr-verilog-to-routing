@@ -224,7 +224,7 @@ SrcNodeId: SRC_NODE INT { $$ = $2; }
 SinkNodeId: SINK_NODE INT { $$ = $2; }
 
 IntList: /*empty*/ { $$ = std::vector<int>(); }
-       | IntList INT { $$ = $1; $$.push_back($2); }
+       | IntList INT { $$ = std::move($1); $$.push_back($2); }
 
 Number: INT { $$ = $1; }
       | FLOAT { $$ = $1; }
