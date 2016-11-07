@@ -139,6 +139,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 
+add_subdirectory(libtatum)
 add_subdirectory(libtatumparse)
-add_subdirectory(src)
+add_subdirectory(tatum_sta)
 add_subdirectory(doc)
