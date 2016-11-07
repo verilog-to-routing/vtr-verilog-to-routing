@@ -517,9 +517,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					&clb[num_clb], atom_molecules, num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage);
-			vtr::printf_info("Complex block %d: %s, type: %s\n", 
+			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
-			vtr::printf_info("\t");
+            vtr::printf_direct("."); //Progress dot for seed-block
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, 
                     is_clock, //Set of clock nets
@@ -570,8 +570,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 									blk_name.c_str(), 
 									blk_model->name);
 							fflush(stdout);
-#else
-							vtr::printf_direct(".");
 #endif
 						} else {
 #ifdef DEBUG_FAILED_PACKING_CANDIDATES
@@ -580,8 +578,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 									blk_model->name, 
 									block_pack_status);
 							fflush(stdout);
-#else
-							vtr::printf_direct(".");
 #endif
 						}
 					}
@@ -625,11 +621,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						clb_inter_blk_nets,
 						num_clb - 1);
 			}
+
 			vtr::printf_direct("\n");
+
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_intra_lb_route(router_data);
 				if (is_cluster_legal == true) {
+#ifdef DEBUG_FAILED_PACKING_CANDIDATES
 					vtr::printf_info("Passed route at end.\n");
+#endif
 				} else {
 					vtr::printf_info("Failed route at end, repack cluster trying detailed routing at each stage.\n");
 				}
