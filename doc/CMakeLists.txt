@@ -14,5 +14,5 @@ if(DOXYGEN_FOUND)
         VERBATIM)
 
 else()
-    message(WARNING "Doxygen not found. Documentation will not be built")
+    message(INFO "Doxygen not found. Documentation will not be built")
 endif()

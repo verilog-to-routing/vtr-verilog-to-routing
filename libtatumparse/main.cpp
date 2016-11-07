@@ -65,7 +65,7 @@ class PrintCallback : public tp::Callback {
     void finish_constraints() override { fprintf(stdout, "# end timing_constraints\n"); }
 
     void start_delay_model() override { fprintf(stdout, "delay_model:\n"); }
-    void add_edge_delay(int edge_id, float delay) override { fprintf(stdout, " edge_id: %d delay: %g", edge_id, delay); }
+    void add_edge_delay(int edge_id, float min_delay, float max_delay) override { fprintf(stdout, " edge_id: %d min_delay: %g max_delay: %g\n", edge_id, min_delay, max_delay); }
     void finish_delay_model() override { fprintf(stdout, "# end delay_model\n"); }
 
     void start_results() override { fprintf(stdout, "analysis_result:\n"); }

@@ -77,7 +77,7 @@ class Callback {
         virtual void finish_constraints() = 0;
 
         virtual void start_delay_model() = 0;
-        virtual void add_edge_delay(int edge_id, float delay) = 0;
+        virtual void add_edge_delay(int edge_id, float min_delay, float max_delay) = 0;
         virtual void finish_delay_model() = 0;
 
         virtual void start_results() = 0;

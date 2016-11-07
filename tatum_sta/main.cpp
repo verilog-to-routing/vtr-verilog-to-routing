@@ -202,13 +202,13 @@ int main(int argc, char** argv) {
      *cout << endl;
      */
 
+    //Create the delay calculator
+    auto delay_calculator = std::make_shared<tatum::FixedDelayCalculator>(edge_delays);
+
     std::ofstream ofs("timing_graph.echo");
     write_timing_graph(ofs, *timing_graph);
     write_timing_constraints(ofs, *timing_graph, *timing_constraints);
-
-
-    //Create the delay calculator
-    auto delay_calculator = std::make_shared<tatum::FixedDelayCalculator>(edge_delays);
+    write_delay_model(ofs, *timing_graph, *delay_calculator);
 
     //Create the timing analyzer
     std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);

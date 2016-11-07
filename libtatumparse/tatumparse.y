@@ -122,7 +122,8 @@ using namespace tatumparse;
 %token SINK_DOMAIN "sink_domain:"
 
 %token DELAY_MODEL "delay_model:"
-%token DELAY "delay:"
+%token MIN_DELAY "min_delay:"
+%token MAX_DELAY "max_delay:"
 
 %token ANALYSIS_RESULTS "analysis_results:"
 %token SETUP_DATA "SETUP_DATA"
@@ -156,7 +157,8 @@ using namespace tatumparse;
 %type <float> Constraint
 %type <std::string> Name
 %type <float> Number
-%type <float> Delay
+%type <float> MaxDelay
+%type <float> MinDelay
 %type <float> Req
 %type <float> Arr
 %type <TagType> TagType
@@ -186,43 +188,10 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE HOLD_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
 
 DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
-        | DelayModel EdgeId Delay EOL { callback.add_edge_delay($2, $3); }
+        | DelayModel EdgeId MinDelay MaxDelay EOL { callback.add_edge_delay($2, $3, $4); }
 
 Results:  ANALYSIS_RESULTS EOL { callback.start_results(); }
         | Results TagType NodeId DomainId Arr Req EOL { callback.add_tag($2, $3, $4, $5, $6); }
-
-/*
- *SetupDataResults: SETUP_DATA EOL {}
- *        | SetupDataResults NodeResult { 
- *                                        for(auto& tag : $2.tags) { 
- *                                            callback.add_tag(TagType::SETUP_DATA, $2.id, tag.domain_id, tag.arr, tag.req);
- *                                        }
- *                                      }
- *
- *SetupClockResults: SETUP_CLOCK EOL {}
- *        | SetupClockResults NodeResult {
- *                                        for(auto& tag : $2.tags) { 
- *                                            callback.add_tag(TagType::SETUP_CLOCK, $2.id, tag.domain_id, tag.arr, tag.req);
- *                                        }
- *                                       }
- *
- *HoldDataResults: HOLD_DATA EOL {}
- *        | HoldDataResults NodeResult {
- *                                        for(auto& tag : $2.tags) { 
- *                                            callback.add_tag(TagType::HOLD_DATA, $2.id, tag.domain_id, tag.arr, tag.req);
- *                                        }
- *                                     }
- *
- *HoldClockResults: HOLD_CLOCK EOL {}
- *        | HoldClockResults NodeResult {
- *                                        for(auto& tag : $2.tags) { 
- *                                            callback.add_tag(TagType::HOLD_CLOCK, $2.id, tag.domain_id, tag.arr, tag.req);
- *                                        }
- *                                      }
- *
- *NodeResult: NodeId EOL { $$.id = $1; }
- *        | NodeResult DomainId Arr Req EOL { $$ = $1; $$.tags.emplace_back($2, $3, $4); }
- */
 
 Arr: ARR Number { $$ = $2; }
 Req: REQ Number { $$ = $2; }
@@ -232,7 +201,8 @@ TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
        | TYPE HOLD_DATA { $$ = TagType::HOLD_DATA; }
        | TYPE HOLD_CLOCK { $$ = TagType::HOLD_CLOCK; }
 
-Delay: DELAY Number { $$ = $2; }
+MaxDelay: MAX_DELAY Number { $$ = $2; }
+MinDelay: MIN_DELAY Number { $$ = $2; }
 
 DomainId: DOMAIN INT { $$ = $2; }
 SrcDomainId: SRC_DOMAIN INT { $$ = $2; }

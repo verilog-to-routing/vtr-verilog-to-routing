@@ -51,9 +51,7 @@ add_library(libtatumparse STATIC
 target_include_directories(libtatumparse PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(libtatumparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    #Create the test executable only if we are the root project
-    add_executable(tatumparse_test main.cpp)
-    target_link_libraries(tatumparse_test libtatumparse)
-endif()
+#Create the test executable only if we are the root project
+add_executable(tatumparse_test main.cpp)
+target_link_libraries(tatumparse_test libtatumparse)
 

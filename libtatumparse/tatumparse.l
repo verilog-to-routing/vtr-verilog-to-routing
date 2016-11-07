@@ -70,8 +70,8 @@ out_edges:                      { return tatumparse::Parser::make_OUT_EDGES(); }
 edge:                           { return tatumparse::Parser::make_EDGE(); }
 src_node:                       { return tatumparse::Parser::make_SRC_NODE(); }
 sink_node:                      { return tatumparse::Parser::make_SINK_NODE(); }
-timing_constraints:             { return tatumparse::Parser::make_TIMING_CONSTRAINTS(); }
 
+timing_constraints:             { return tatumparse::Parser::make_TIMING_CONSTRAINTS(); }
 CLOCK                           { return tatumparse::Parser::make_CLOCK(); }
 CLOCK_SOURCE                    { return tatumparse::Parser::make_CLOCK_SOURCE(); }
 INPUT_CONSTRAINT                { return tatumparse::Parser::make_INPUT_CONSTRAINT(); }
@@ -83,6 +83,10 @@ name:                           { return tatumparse::Parser::make_NAME(); }
 constraint:                     { return tatumparse::Parser::make_CONSTRAINT(); }
 src_domain:                     { return tatumparse::Parser::make_SRC_DOMAIN(); }
 sink_domain:                    { return tatumparse::Parser::make_SINK_DOMAIN(); }
+
+delay_model:                    { return tatumparse::Parser::make_DELAY_MODEL(); }
+min_delay:                      { return tatumparse::Parser::make_MIN_DELAY(); }
+max_delay:                      { return tatumparse::Parser::make_MAX_DELAY(); }
 
 analysis_result:                { return tatumparse::Parser::make_ANALYSIS_RESULTS(); }
 SETUP_DATA                      { return tatumparse::Parser::make_SETUP_DATA(); }
