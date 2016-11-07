@@ -27,6 +27,7 @@
 
 #include "verify.hpp"
 #include "util.hpp"
+#include "output.hpp"
 
 #define NUM_SERIAL_RUNS 1
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
@@ -200,6 +201,10 @@ int main(int argc, char** argv) {
      *print_levelization(timing_graph);
      *cout << endl;
      */
+
+    std::ofstream ofs("timing_graph.echo");
+    write_timing_graph(ofs, *timing_graph);
+    write_timing_constraints(ofs, *timing_graph, *timing_constraints);
 
 
     //Create the delay calculator
@@ -400,6 +405,7 @@ int main(int argc, char** argv) {
     }
     cout << endl;
 
+    write_analysis_result(ofs, *timing_graph, serial_analyzer);
 
 
     cout << "Parallel Speed-Up: " << std::fixed << serial_prof_data["analysis_sec"] / parallel_prof_data["analysis_sec"] << "x" << endl;
