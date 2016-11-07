@@ -2,14 +2,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("tatumparse")
 
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    #Only set compiler settings if we are not a sub-project
-    set(WARN_FLAGS "-Wall -Wextra -Wpedantic -Wcast-qual -Wcast-align -Wshadow -Wformat=2 -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wundef -Wunused-variable -Wdisabled-optimization -Wnoexcept -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 ${WARN_FLAGS}") 
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined") 
-    set(FLEX_BISON_WARN_SUPPRESS_FLAGS "-Wno-switch-default -Wno-unused-parameter -Wno-missing-declarations")
-endif()
-
 #Flex and Bison are used to generate the parser
 find_package(BISON REQUIRED 3.0)
 find_package(FLEX REQUIRED)
@@ -34,6 +26,11 @@ flex_target(TatumLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_l
         COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/tatumparse_lexer.gen.h)
 bison_target(TatumParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_parser.gen.c)
 add_flex_bison_dependency(TatumLexer TatumParser)
+#Apply suppression flags to the relevant files, must come after flex/bision
+#targets for output vars to be defined
+set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
+                            ${BISON_vpr_timing_graph_parser_OUTPUTS}
+                            PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 
 
 #Treat .c as CXX
@@ -54,8 +51,9 @@ add_library(libtatumparse STATIC
 target_include_directories(libtatumparse PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(libtatumparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Create the test executable
-add_executable(tatumparse_test main.cpp)
-target_link_libraries(tatumparse_test libtatumparse)
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+    #Create the test executable only if we are the root project
+    add_executable(tatumparse_test main.cpp)
+    target_link_libraries(tatumparse_test libtatumparse)
+endif()
 
-install(TARGETS libtatumparse tatumparse_test DESTINATION bin)

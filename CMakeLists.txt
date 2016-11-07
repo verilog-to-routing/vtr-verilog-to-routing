@@ -136,6 +136,23 @@ endforeach()
 #Apply the warning flags to all build types
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 
+#The flex/bison code is not warning clean so we need to suppress some warnings
+set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
+set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
+    "-Wno-redundant-decls"      #Flex/bison generate code with redundant declarations
+    "-Wno-switch-default"       #Flex/bison generate switch statments w/o default cases
+    "-Wno-unused-parameter"     #Flex/bison rentrant parsers have unused params
+    "-Wno-missing-declarations" #Flex/bison may use missing delcarations
+    )
+foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
+    if(COMPILER_SUPPORTS_${flag})
+        #Flag supported, so enable it
+        set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
+    endif()
+endforeach(flag)
+
+
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 

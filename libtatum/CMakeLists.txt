@@ -20,17 +20,6 @@ endforeach()
 #Remove duplicate include directories
 list(REMOVE_DUPLICATES LIB_TATUM_INCLUDE_DIRS)
 
-
-#set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/base/TimingTags.cpp
-                            #PROPERTIES COMPILE_FLAGS "-fno-inline")
-
-#
-# External library dependancies
-#
-find_package(Boost 1.54 REQUIRED)
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS}) #Treat boost as a system header to suppress warnings
-message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-
 #
 #
 # Define the actual build targets
@@ -38,8 +27,8 @@ message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 #
 
 #Define the library
-add_library(tatum STATIC ${LIB_TATUM_SOURCES} ${LIB_TATUM_HEADERS})
+add_library(libtatum STATIC ${LIB_TATUM_SOURCES} ${LIB_TATUM_HEADERS})
+set_target_properties(libtatum PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Export library headers
-target_include_directories(tatum PUBLIC ${LIB_TATUM_INCLUDE_DIRS})
-
+target_include_directories(libtatum PUBLIC ${LIB_TATUM_INCLUDE_DIRS})

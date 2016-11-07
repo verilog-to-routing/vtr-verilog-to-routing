@@ -41,20 +41,6 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gen_files)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
-#The flex/bison code is not warning clean so we need to suppress some warnings
-set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
-set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
-    "-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
-    "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
-    )
-foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
-    if(COMPILER_SUPPORTS_${flag})
-        #Flag supported, so enable it
-        set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
-    endif()
-endforeach(flag)
-
 #
 #
 # Define the actual build targets
@@ -88,7 +74,4 @@ target_include_directories(tatum_sta PRIVATE
                            ${TATUM_STA_INCLUDE_DIRS})
 
 #Executable links to the library
-target_link_libraries(tatum_sta tatum)
-
-#set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-                            #PROPERTIES COMPILE_FLAGS "-fno-inline")
+target_link_libraries(tatum_sta libtatum libtatumparse)
