@@ -62,23 +62,24 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 
     NodeType node_type = tg.node_type(node_id);
 
-    //Note that we assume that edge counting has set the effective period constraint assuming a
-    //launch edge at time zero.  This means we don't need to do anything special for clocks
-    //with rising edges after time zero.
-    if(node_type == NodeType::CONSTANT_GEN_SOURCE) {
-        //Pass, we don't propagate any tags from constant generators,
-        //since they do not effect the dynamic timing behaviour of the
-        //system
+    //We don't propagate any tags from constant generators,
+    //since they do not effect the dynamic timing behaviour of the
+    //system
+    if(node_type == NodeType::CONSTANT_GEN_SOURCE) return;
 
-    } else if(node_type == NodeType::CLOCK_SOURCE) {
+    if(tc.node_is_clock_source(node_id)) {
+        //Generate the appropriate clock tag
+
+        //Note that we assume that edge counting has set the effective period constraint assuming a
+        //launch edge at time zero.  This means we don't need to do anything special for clocks
+        //with rising edges after time zero.
         TATUM_ASSERT_MSG(ops_.get_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
 
-        //Initialize a clock tag with zero arrival, invalid required time
-        TATUM_ASSERT(tc.node_is_clock_source(node_id));
-
+        //Find it's domain
         DomainId domain_id = tc.node_clock_domain(node_id);
         TATUM_ASSERT(domain_id);
 
+        //Initialize a clock tag with zero arrival, invalid required time
         TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
 
         //Add the tag
@@ -87,34 +88,20 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
     } else {
         TATUM_ASSERT(node_type == NodeType::INPAD_SOURCE);
 
-        //A standard primary input
+        //A standard primary input, generate the appropriate data tag
 
         //We assume input delays are on the arc from INPAD_SOURCE to INPAD_OPIN,
         //so we do not need to account for it directly in the arrival time of INPAD_SOURCES
 
+        TATUM_ASSERT_MSG(ops_.get_data_tags(node_id).num_tags() == 0, "Primary input already has data tags");
 
-        //Figure out if we are an input which defines a clock
-        if(tc.node_is_clock_source(node_id)) {
-            TATUM_ASSERT_MSG(ops_.get_clock_tags(node_id).num_tags() == 0, "Logical input already has clock tags");
+        DomainId domain_id = tc.node_clock_domain(node_id);
+        TATUM_ASSERT(domain_id);
 
-            DomainId domain_id = tc.node_clock_domain(node_id);
-            TATUM_ASSERT(domain_id);
+        //Initialize a data tag with zero arrival, invalid required time
+        TimingTag input_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
 
-            //Initialize a data tag with zero arrival, invalid required time
-            TimingTag input_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
-
-            ops_.get_clock_tags(node_id).add_tag(input_tag);
-        } else {
-            TATUM_ASSERT_MSG(ops_.get_data_tags(node_id).num_tags() == 0, "Logical input already has data tags");
-
-            DomainId domain_id = tc.node_clock_domain(node_id);
-            TATUM_ASSERT(domain_id);
-
-            //Initialize a data tag with zero arrival, invalid required time
-            TimingTag input_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
-
-            ops_.get_data_tags(node_id).add_tag(input_tag);
-        }
+        ops_.get_data_tags(node_id).add_tag(input_tag);
     }
 }
 
