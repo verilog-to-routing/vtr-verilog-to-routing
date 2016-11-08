@@ -1,4 +1,5 @@
 #include <fstream>
+#include <cmath>
 
 #include "output.hpp"
 
@@ -82,61 +83,57 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
     os << "\n";
 }
 
-void write_timing_constraints(std::ostream& os, const TimingGraph& tg, const TimingConstraints& tc) {
+void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     os << "timing_constraints:\n";    
 
     for(auto domain_id : tc.clock_domains()) {
         os << " type: CLOCK domain: " << size_t(domain_id) << " name: \"" << tc.clock_domain_name(domain_id) << "\"\n";
     }
 
-    for(auto node_id : tg.nodes()) {
-         
-        if(tg.node_is_clock_source(node_id)) {
-            DomainId domain_id = tg.node_clock_domain(node_id);
-
-            os << " type: CLOCK_SOURCE node: " << size_t(node_id) << " domain: " << size_t(domain_id) << "\n";
+    for(auto domain_id : tc.clock_domains()) {
+        NodeId source_node_id = tc.clock_domain_source(domain_id);
+        if(source_node_id) {
+            os << " type: CLOCK_SOURCE node: " << size_t() << " domain: " << size_t(domain_id) << "\n";
         }
     }
 
-    for(auto node_id : tg.nodes()) {
-         
-        if(tg.node_type(node_id) == tatum::NodeType::INPAD_SOURCE) {
-            DomainId domain_id = tg.node_clock_domain(node_id);
-            os << " type: INPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << tc.input_constraint(node_id, domain_id) << "\n";
+    for(auto kv : tc.input_constraints()) {
+        auto key = kv.first;
+        auto constraint = kv.second;
+        if(!isnan(constraint)) {
+            os << " type: INPUT_CONSTRAINT node: " << size_t(key.node_id) << " domain: " << size_t(key.domain_id) << " constraint: " << constraint << "\n";
         }
     }
 
-    for(auto node_id : tg.nodes()) {
-         
-        if(tg.node_type(node_id) == tatum::NodeType::INPAD_SOURCE) {
-            DomainId domain_id = tg.node_clock_domain(node_id);
-            os << " type: OUTPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << tc.input_constraint(node_id, domain_id) << "\n";
+    for(auto kv : tc.output_constraints()) {
+        auto key = kv.first;
+        auto constraint = kv.second;
+        if(!isnan(constraint)) {
+            os << " type: OUTPUT_CONSTRAINT node: " << size_t(key.node_id) << " domain: " << size_t(key.domain_id) << " constraint: " << constraint << "\n";
         }
     }
-    for(auto src_domain : tc.clock_domains()) {
-        for(auto sink_domain : tc.clock_domains()) {
-            float setup_constraint = tc.setup_constraint(src_domain, sink_domain);
 
-            if(!isnan(setup_constraint)) {
-                os << " type: SETUP_CONSTRAINT";
-                os << " src_domain: " << size_t(src_domain);
-                os << " sink_domain: " << size_t(sink_domain);
-                os << " constraint: " << setup_constraint;
-                os << "\n";
-            }
+    for(auto kv : tc.setup_constraints()) {
+        auto key = kv.first;
+        auto constraint = kv.second;
+        if(!isnan(constraint)) {
+            os << " type: SETUP_CONSTRAINT";
+            os << " src_domain: " << size_t(key.src_domain_id);
+            os << " sink_domain: " << size_t(key.sink_domain_id);
+            os << " constraint: " << constraint;
+            os << "\n";
         }
     }
-    for(auto src_domain : tc.clock_domains()) {
-        for(auto sink_domain : tc.clock_domains()) {
-            float setup_constraint = tc.hold_constraint(src_domain, sink_domain);
 
-            if(!isnan(setup_constraint)) {
-                os << " type: HOLD_CONSTRAINT";
-                os << " src_domain: " << size_t(src_domain);
-                os << " sink_domain: " << size_t(sink_domain);
-                os << " constraint: " << setup_constraint;
-                os << "\n";
-            }
+    for(auto kv : tc.hold_constraints()) {
+        auto key = kv.first;
+        auto constraint = kv.second;
+        if(!isnan(constraint)) {
+            os << " type: HOLD_CONSTRAINT";
+            os << " src_domain: " << size_t(key.src_domain_id);
+            os << " sink_domain: " << size_t(key.sink_domain_id);
+            os << " constraint: " << constraint;
+            os << "\n";
         }
     }
     os << "\n";

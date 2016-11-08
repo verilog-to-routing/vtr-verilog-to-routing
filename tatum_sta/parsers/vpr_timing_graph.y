@@ -186,7 +186,7 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                  *cout << "is_clk_src " << $2.is_clk_src << ", ";
                                                  *cout << "skew " << $2.skew << ", ";
                                                  *cout << "iodelay " << $2.iodelay << ", ";
-                                                 *cout << "edges " << $2.out_edges.size();
+                                                 *cout << "edges " << $2.out_edges->size();
                                                  *cout << endl;
                                                  */
 
@@ -196,6 +196,11 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                     domain_id = timing_constraints.create_clock_domain(std::to_string($2.domain));
                                                 }
                                                 NodeId src_node_id = timing_graph.add_node($2.type, domain_id, $2.is_clk_src);
+
+                                                if($2.is_clk_src) {
+                                                    cout << "Marking clock sorce for " << domain_id <<  " " << src_node_id << endl;
+                                                    timing_constraints.set_clock_domain_source(src_node_id, domain_id);
+                                                }
 
                                                 //Save the edges to be added later
                                                 node_out_edges.push_back($2.out_edges);
