@@ -175,11 +175,17 @@ bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId
             //Pass, clock gen fanout can be NAN in VPR but have a value here,
             //since (unlike VPR) we explictly track clock arrivals as tags
         } else {
+            //We allow tatum results to be non-NAN when VPR is NAN
+            //
+            //This occurs in some cases (such as applying clock tags to primary outputs)
+            //which are cuased by the differeing analysis methods
+#if 0
             error = true;
             cout << "Node: " << node_id << " Clk: " << domain;
             cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
             cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
             cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
+#endif
         }
     } else if (isnan(arr_time) && isnan(vpr_arr_time)) {
         //They agree, pass
