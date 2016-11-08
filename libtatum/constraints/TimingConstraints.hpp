@@ -32,7 +32,13 @@ class TimingConstraints {
         const std::string& clock_domain_name(const DomainId id) const;
 
         //\returns The source NodeId of the specified domain
-        NodeId clock_domain_source(const DomainId id) const;
+        NodeId clock_domain_source_node(const DomainId id) const;
+
+        //\returns The domain of the specified node id if it is a clock source
+        DomainId node_clock_domain(const NodeId id) const;
+
+        //\returns True if the node id is a clock source
+        bool node_is_clock_source(const NodeId id) const;
 
         //\returns A valid DomainId if a clock domain with the specified name exists, DomainId::INVALID() otherwise
         DomainId find_clock_domain(const std::string& name) const;
@@ -82,6 +88,10 @@ class TimingConstraints {
         ///Update node IDs if they have changed
         ///\param node_map A vector mapping from old to new node ids
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
+
+    private:
+        ///\returns A valid domain id if the node is a clock source
+        DomainId find_node_source_clock_domain(const NodeId node_id) const;
 
     private: //Data
         tatum::util::linear_map<DomainId,DomainId> domain_ids_;

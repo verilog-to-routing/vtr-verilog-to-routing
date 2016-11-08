@@ -17,8 +17,53 @@ const std::string& TimingConstraints::clock_domain_name(const DomainId id) const
     return domain_names_[id];
 }
 
-NodeId TimingConstraints::clock_domain_source(const DomainId id) const {
+NodeId TimingConstraints::clock_domain_source_node(const DomainId id) const {
     return domain_sources_[id];
+}
+
+DomainId TimingConstraints::node_clock_domain(const NodeId id) const {
+    //This is currenlty a linear search through all clock sources and
+    //I/O constraints, could be made more efficient but it is only called
+    //rarely (i.e. during pre-traversals)
+
+    //Is it a clock source?
+    DomainId source_domain = find_node_source_clock_domain(id);
+    if(source_domain) return source_domain;
+
+    //Does it have an input constarint?
+    for(auto kv : input_constraints()) {
+        auto key = kv.first;
+
+        //TODO: Assumes a single clock per node
+        if(key.node_id == id) return key.domain_id;
+    }
+
+    //Does it have an output constraint?
+    for(auto kv : output_constraints()) {
+        auto key = kv.first;
+
+        //TODO: Assumes a single clock per node
+        if(key.node_id == id) return key.domain_id;
+    }
+
+    //None found
+    return DomainId::INVALID();
+}
+
+bool TimingConstraints::node_is_clock_source(const NodeId id) const {
+    //Returns a DomainId which converts to true if valid
+    return bool(find_node_source_clock_domain(id));
+}
+
+DomainId TimingConstraints::find_node_source_clock_domain(const NodeId node_id) const {
+    //We don't expect many clocks, so the linear search should be fine
+    for(auto domain_id : clock_domains()) {
+        if(clock_domain_source_node(domain_id) == node_id) {
+            return domain_id;
+        }
+    }
+
+    return DomainId::INVALID();
 }
 
 DomainId TimingConstraints::find_clock_domain(const std::string& name) const {

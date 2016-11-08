@@ -91,7 +91,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     }
 
     for(auto domain_id : tc.clock_domains()) {
-        NodeId source_node_id = tc.clock_domain_source(domain_id);
+        NodeId source_node_id = tc.clock_domain_source_node(domain_id);
         if(source_node_id) {
             os << " type: CLOCK_SOURCE node: " << size_t() << " domain: " << size_t(domain_id) << "\n";
         }

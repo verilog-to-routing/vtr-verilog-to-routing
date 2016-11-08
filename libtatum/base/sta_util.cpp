@@ -108,7 +108,6 @@ void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
         cout << "Node: " << node_id;
         cout << " Type: " << tg->node_type(node_id);
         cout << " Out Edges: " << tg->node_out_edges(node_id).size();
-        cout << " is_clk_src: " << tg->node_is_clock_source(node_id);
         cout << "\n";
         for(EdgeId edge_id : tg->node_out_edges(node_id)) {
             TATUM_ASSERT(tg->edge_src_node(edge_id) == node_id);

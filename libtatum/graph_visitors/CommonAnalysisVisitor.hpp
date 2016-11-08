@@ -56,7 +56,7 @@ class CommonAnalysisVisitor {
  */
 
 template<class AnalysisOps>
-void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Logical Input
     TATUM_ASSERT_MSG(tg.node_in_edges(node_id).size() == 0, "Logical input has input edges: timing graph not levelized.");
 
@@ -74,7 +74,12 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         TATUM_ASSERT_MSG(ops_.get_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
 
         //Initialize a clock tag with zero arrival, invalid required time
-        TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
+        TATUM_ASSERT(tc.node_is_clock_source(node_id));
+
+        DomainId domain_id = tc.node_clock_domain(node_id);
+        TATUM_ASSERT(domain_id);
+
+        TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
 
         //Add the tag
         ops_.get_clock_tags(node_id).add_tag(clock_tag);
@@ -87,16 +92,26 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         //We assume input delays are on the arc from INPAD_SOURCE to INPAD_OPIN,
         //so we do not need to account for it directly in the arrival time of INPAD_SOURCES
 
-        //Initialize a data tag with zero arrival, invalid required time
-        TimingTag input_tag = TimingTag(Time(0.), Time(NAN), tg.node_clock_domain(node_id), node_id);
 
         //Figure out if we are an input which defines a clock
-        if(tg.node_is_clock_source(node_id)) {
+        if(tc.node_is_clock_source(node_id)) {
             TATUM_ASSERT_MSG(ops_.get_clock_tags(node_id).num_tags() == 0, "Logical input already has clock tags");
+
+            DomainId domain_id = tc.node_clock_domain(node_id);
+            TATUM_ASSERT(domain_id);
+
+            //Initialize a data tag with zero arrival, invalid required time
+            TimingTag input_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
 
             ops_.get_clock_tags(node_id).add_tag(input_tag);
         } else {
             TATUM_ASSERT_MSG(ops_.get_data_tags(node_id).num_tags() == 0, "Logical input already has data tags");
+
+            DomainId domain_id = tc.node_clock_domain(node_id);
+            TATUM_ASSERT(domain_id);
+
+            //Initialize a data tag with zero arrival, invalid required time
+            TimingTag input_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
 
             ops_.get_data_tags(node_id).add_tag(input_tag);
         }
@@ -118,7 +133,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
         //
         //We assume any output delay is on the OUTPAT_IPIN to OUTPAD_SINK edge,
         //so we only need set the constraint on the OUTPAD_SINK
-        DomainId node_domain = tg.node_clock_domain(node_id);
+        DomainId node_domain = tc.node_clock_domain(node_id);
         for(const TimingTag& data_tag : node_data_tags) {
             //Should we be analyzing paths between these two domains?
             if(tc.should_analyze(data_tag.clock_domain(), node_domain)) {
