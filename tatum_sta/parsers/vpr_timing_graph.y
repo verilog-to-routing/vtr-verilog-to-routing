@@ -373,7 +373,7 @@ constraint: number { $$ = $1; }
 input_constraints: INPUT_CONSTRAINTS_HEADER EOL {}
     | input_constraints INPUT_CONSTRAINTS_COLS EOL {}
     | input_constraints input_constraint {}
-input_constraint: node_id constraint EOL { timing_constraints.set_input_constraint(NodeId($1), $2); }
+input_constraint: node_id constraint EOL { timing_constraints.set_input_constraint(NodeId($1), timing_graph.node_clock_domain(NodeId($1)), $2); }
 
 /*
  * Output Constraints
@@ -381,7 +381,7 @@ input_constraint: node_id constraint EOL { timing_constraints.set_input_constrai
 output_constraints: OUTPUT_CONSTRAINTS_HEADER EOL {}
     | output_constraints OUTPUT_CONSTRAINTS_COLS EOL {}
     | output_constraints output_constraint {}
-output_constraint: node_id constraint EOL { timing_constraints.set_output_constraint(NodeId($1), $2); }
+output_constraint: node_id constraint EOL { timing_constraints.set_output_constraint(NodeId($1), timing_graph.node_clock_domain(NodeId($1)), $2); }
 
 /*
  * Basic values

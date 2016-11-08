@@ -93,10 +93,10 @@ class TimingConstraints {
         float hold_constraint(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The input delay constraint on node_id
-        float input_constraint(const NodeId node_id) const;
+        float input_constraint(const NodeId node_id, const DomainId domain_id) const;
 
         ///\returns The output delay constraint on node_id
-        float output_constraint(const NodeId node_id) const;
+        float output_constraint(const NodeId node_id, const DomainId domain_id) const;
 
         ///Prints out the timing constraints for debug purposes
         void print() const;
@@ -111,10 +111,10 @@ class TimingConstraints {
         void set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const float constraint);
 
         ///Sets the input delay constraint on node_id with value constraint
-        void set_input_constraint(const NodeId node_id, const float constraint);
+        void set_input_constraint(const NodeId node_id, const DomainId domain_id, const float constraint);
 
         ///Sets the output delay constraint on node_id with value constraint
-        void set_output_constraint(const NodeId node_id, const float constraint);
+        void set_output_constraint(const NodeId node_id, const DomainId domain_id, const float constraint);
 
         ///Update node IDs if they have changed
         ///\param node_map A vector mapping from old to new node ids
@@ -126,8 +126,8 @@ class TimingConstraints {
 
         std::map<std::pair<DomainId,DomainId>,float> setup_constraints_;
         std::map<std::pair<DomainId,DomainId>,float> hold_constraints_;
-        std::map<NodeId,float> input_constraints_;
-        std::map<NodeId,float> output_constraints_;
+        std::map<std::pair<NodeId,DomainId>,float> input_constraints_;
+        std::map<std::pair<NodeId,DomainId>,float> output_constraints_;
 };
 
 #endif

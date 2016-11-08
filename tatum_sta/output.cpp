@@ -101,14 +101,16 @@ void write_timing_constraints(std::ostream& os, const TimingGraph& tg, const Tim
     for(auto node_id : tg.nodes()) {
          
         if(tg.node_type(node_id) == tatum::NodeType::INPAD_SOURCE) {
-            os << " type: INPUT_CONSTRAINT node: " << size_t(node_id) << " constraint: " << tc.input_constraint(node_id) << "\n";
+            DomainId domain_id = tg.node_clock_domain(node_id);
+            os << " type: INPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << tc.input_constraint(node_id, domain_id) << "\n";
         }
     }
 
     for(auto node_id : tg.nodes()) {
          
         if(tg.node_type(node_id) == tatum::NodeType::INPAD_SOURCE) {
-            os << " type: OUTPUT_CONSTRAINT node: " << size_t(node_id) << " constraint: " << tc.input_constraint(node_id) << "\n";
+            DomainId domain_id = tg.node_clock_domain(node_id);
+            os << " type: OUTPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << tc.input_constraint(node_id, domain_id) << "\n";
         }
     }
     for(auto src_domain : tc.clock_domains()) {
