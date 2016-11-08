@@ -21,7 +21,11 @@ void write_tags(std::ostream& os, const std::string& type, const TimingTags& tag
 
 void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
     os << "timing_graph:" << "\n";
-    for(NodeId node_id : tg.nodes()) {
+
+    //We manually iterate to write the nodes in ascending order
+    for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+        NodeId node_id(node_idx);
+
         os << " node: " << size_t(node_id) << "\n";
 
         os << "  type: ";
@@ -67,8 +71,10 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
 
     }
 
-    for(EdgeId edge_id : tg.edges()) {
-        
+    //We manually iterate to write the edges in ascending order
+    for(size_t edge_idx = 0; edge_idx < tg.edges().size(); ++edge_idx) {
+        EdgeId edge_id(edge_idx);
+
         os << " edge: " << size_t(edge_id) << "\n";
         os << "  src_node: " << size_t(tg.edge_src_node(edge_id)) << "\n";
         os << "  sink_node: " << size_t(tg.edge_sink_node(edge_id)) << "\n";
@@ -139,20 +145,24 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
 
     auto setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(analyzer);
     if(setup_analyzer) {
-        for(auto node : tg.nodes()) {
-            write_tags(os, "SETUP_DATA", setup_analyzer->get_setup_data_tags(node), node);
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "SETUP_DATA", setup_analyzer->get_setup_data_tags(node_id), node_id);
         }
-        for(auto node : tg.nodes()) {
-            write_tags(os, "SETUP_CLOCK", setup_analyzer->get_setup_clock_tags(node), node);
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "SETUP_CLOCK", setup_analyzer->get_setup_clock_tags(node_id), node_id);
         }
     }
     auto hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(analyzer);
     if(hold_analyzer) {
-        for(auto node : tg.nodes()) {
-            write_tags(os, "HOLD_DATA", hold_analyzer->get_hold_data_tags(node), node);
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "HOLD_DATA", hold_analyzer->get_hold_data_tags(node_id), node_id);
         }
-        for(auto node : tg.nodes()) {
-            write_tags(os, "HOLD_CLOCK", hold_analyzer->get_hold_clock_tags(node), node);
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "HOLD_CLOCK", hold_analyzer->get_hold_clock_tags(node_id), node_id);
         }
     }
     os << "\n";
