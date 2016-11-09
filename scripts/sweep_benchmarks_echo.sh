@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo | grep -v "gauss\|mes_noc") 
+for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo) # | grep -v "gauss\|mes_noc") 
 do
     benchmark_name=$(basename $(dirname $benchmark))
 
