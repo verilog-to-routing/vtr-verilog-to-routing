@@ -1,5 +1,6 @@
 #ifndef TATUM_COMMON_ANALYSIS_VISITOR_HPP
 #define TATUM_COMMON_ANALYSIS_VISITOR_HPP
+#include "tatum_error.hpp"
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
@@ -107,7 +108,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 
 template<class AnalysisOps>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
-    NodeType node_type = tg.node_type(node_id);
 
     TimingTags& node_data_tags = ops_.get_data_tags(node_id);
     TimingTags& node_clock_tags = ops_.get_clock_tags(node_id);
@@ -115,46 +115,97 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     /*
      * Calculate required times
      */
-    if(node_type == NodeType::OUTPAD_SINK) {
-        //Determine the required time for outputs.
-        //
-        //We assume any output delay is on the OUTPAT_IPIN to OUTPAD_SINK edge,
-        //so we only need set the constraint on the OUTPAD_SINK
-        DomainId node_domain = tc.node_clock_domain(node_id);
-        for(const TimingTag& data_tag : node_data_tags) {
-            //Should we be analyzing paths between these two domains?
-            if(tc.should_analyze(data_tag.clock_domain(), node_domain)) {
-                //These clock domains should be analyzed
+    auto node_type = tg.node_type(node_id);
+    TATUM_ASSERT(node_type == NodeType::OUTPAD_SINK || node_type == NodeType::FF_SINK);
 
-                float clock_constraint = ops_.clock_constraint(tc, data_tag.clock_domain(), node_domain);
+    //Sinks corresponding to FF sinks will have propagated clock tags,
+    //while those corresponding to outpads will not.
+    if(node_clock_tags.empty()) {
+        //Initialize the outpad's clock tags based on the specified constraints.
 
-                //Set the required time on the sink.
-                ops_.merge_req_tags(node_data_tags, Time(clock_constraint), data_tag);
+
+        auto output_constraints = tc.output_constraints(node_id);
+
+        if(output_constraints.empty()) {
+            //throw tatum::Error("Output unconstrained");
+            std::cerr << "Warning: Timing graph " << node_id << " " << node_type << " has no incomming clock tags, and no output constraint. No required time will be calculated\n";
+
+#if 1
+            //Debug trace-back
+
+            //TODO: remove debug code!
+            if(node_type == NodeType::FF_SINK) {
+                std::cerr << "\tClock path:\n";
+                int i = 0;
+                NodeId curr_node = node_id;
+                while(tg.node_type(curr_node) != NodeType::INPAD_SOURCE &&
+                      tg.node_type(curr_node) != NodeType::CLOCK_SOURCE &&
+                      tg.node_type(curr_node) != NodeType::CONSTANT_GEN_SOURCE &&
+                      i < 100) {
+                    
+                    //Look throught the fanin for a clock or other node to follow
+                    //
+                    //Typically the first hop from node_id will be to either the IPIN or CLOCK pin
+                    //the following preferentially prefers the CLOCK pin to show the clock path
+                    EdgeId best_edge;
+                    for(auto edge_id : tg.node_in_edges(curr_node)) {
+                        if(!best_edge) {
+                            best_edge = edge_id;
+                        }
+
+                        NodeId src_node = tg.edge_src_node(edge_id);
+                        auto src_node_type = tg.node_type(src_node);
+                        if(src_node_type == NodeType::FF_CLOCK) {
+                            best_edge = edge_id;
+                        }
+                    }
+
+                    //Step back
+                    curr_node = tg.edge_src_node(best_edge);
+                    auto curr_node_type = tg.node_type(curr_node);
+
+
+                    std::cerr << "\tNode " << curr_node << " Type: " << curr_node_type << "\n";
+                    if(++i >= 100) {
+                        std::cerr << "\tStopping backtrace\n";
+                        
+                    }
+                }
+            }
+#endif
+
+        } else {
+            for(auto constraint : output_constraints) {
+                //TODO: use real constraint value when output delay no-longer on edges
+                TimingTag constraint_tag = TimingTag(Time(0.), Time(NAN), constraint.second.domain, node_id);
+                node_clock_tags.add_tag(constraint_tag);
             }
         }
-    } else if (node_type == NodeType::FF_SINK) {
-        //Determine the required time at this FF
-        //
-        //We need to generate a required time for each clock domain for which there is a data
-        //arrival time at this node, while considering all possible clocks that could drive
-        //this node (i.e. take the most restrictive constraint accross all clock tags at this
-        //node)
+    }
 
-        for(TimingTag& node_data_tag : node_data_tags) {
-            for(const TimingTag& node_clock_tag : node_clock_tags) {
+    //At this stage both FF and outpad sinks now have the relevant clock 
+    //tags and we can process them equivalently
 
-                //Should we be analyzing paths between these two domains?
-                if(tc.should_analyze(node_data_tag.clock_domain(), node_clock_tag.clock_domain())) {
+    //Determine the required time at this sink
+    //
+    //We need to generate a required time for each clock domain for which there is a data
+    //arrival time at this node, while considering all possible clocks that could drive
+    //this node (i.e. take the most restrictive constraint accross all clock tags at this
+    //node)
+    for(TimingTag& node_data_tag : node_data_tags) {
+        for(const TimingTag& node_clock_tag : node_clock_tags) {
 
-                    //We only set a required time if the source domain actually reaches this sink
-                    //domain.  This is indicated by having a valid arrival time.
-                    if(node_data_tag.arr_time().valid()) {
-                        float clock_constraint = ops_.clock_constraint(tc, node_data_tag.clock_domain(),
-                                                                      node_clock_tag.clock_domain());
+            //Should we be analyzing paths between these two domains?
+            if(tc.should_analyze(node_data_tag.clock_domain(), node_clock_tag.clock_domain())) {
 
-                        //Update the required time. This will keep the most restrictive constraint.
-                        ops_.merge_req_tag(node_data_tag, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
-                    }
+                //We only set a required time if the source domain actually reaches this sink
+                //domain.  This is indicated by having a valid arrival time.
+                if(node_data_tag.arr_time().valid()) {
+                    float clock_constraint = ops_.clock_constraint(tc, node_data_tag.clock_domain(),
+                                                                  node_clock_tag.clock_domain());
+
+                    //Update the required time. This will keep the most restrictive constraint.
+                    ops_.merge_req_tag(node_data_tag, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
                 }
             }
         }

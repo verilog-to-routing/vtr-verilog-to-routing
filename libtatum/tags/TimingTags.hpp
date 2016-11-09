@@ -32,6 +32,7 @@ class TimingTags {
          */
         ///\returns The number of timing tags in this set
         size_t num_tags() const;
+        bool empty() const { return num_tags() == 0; }
 
         ///\returns An iterator to the first tag in the current set
         iterator begin();

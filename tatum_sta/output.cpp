@@ -98,18 +98,20 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     }
 
     for(auto kv : tc.input_constraints()) {
-        auto key = kv.first;
-        auto constraint = kv.second;
+        auto node_id = kv.first;
+        auto domain_id = kv.second.domain;
+        auto constraint = kv.second.constraint;
         if(!isnan(constraint)) {
-            os << " type: INPUT_CONSTRAINT node: " << size_t(key.node_id) << " domain: " << size_t(key.domain_id) << " constraint: " << constraint << "\n";
+            os << " type: INPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << constraint << "\n";
         }
     }
 
     for(auto kv : tc.output_constraints()) {
-        auto key = kv.first;
-        auto constraint = kv.second;
+        auto node_id = kv.first;
+        auto domain_id = kv.second.domain;
+        auto constraint = kv.second.constraint;
         if(!isnan(constraint)) {
-            os << " type: OUTPUT_CONSTRAINT node: " << size_t(key.node_id) << " domain: " << size_t(key.domain_id) << " constraint: " << constraint << "\n";
+            os << " type: OUTPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << constraint << "\n";
         }
     }
 

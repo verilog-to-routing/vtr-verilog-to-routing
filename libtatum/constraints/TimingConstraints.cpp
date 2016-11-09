@@ -32,18 +32,20 @@ DomainId TimingConstraints::node_clock_domain(const NodeId id) const {
 
     //Does it have an input constarint?
     for(auto kv : input_constraints()) {
-        auto key = kv.first;
+        auto node_id = kv.first;
+        auto domain_id = kv.second.domain;
 
         //TODO: Assumes a single clock per node
-        if(key.node_id == id) return key.domain_id;
+        if(node_id == id) return domain_id;
     }
 
     //Does it have an output constraint?
     for(auto kv : output_constraints()) {
-        auto key = kv.first;
+        auto node_id = kv.first;
+        auto domain_id = kv.second.domain;
 
         //TODO: Assumes a single clock per node
-        if(key.node_id == id) return key.domain_id;
+        if(node_id == id) return domain_id;
     }
 
     //None found
@@ -102,23 +104,23 @@ float TimingConstraints::setup_constraint(const DomainId src_domain, const Domai
 }
 
 float TimingConstraints::input_constraint(const NodeId node_id, const DomainId domain_id) const {
-    auto key = NodeDomain(node_id, domain_id);
-    auto iter = input_constraints_.find(key);
-    if(iter == input_constraints_.end()) {
-        return std::numeric_limits<float>::quiet_NaN();
+
+    auto iter = find_io_constraint(node_id, domain_id, input_constraints_);
+    if(iter != input_constraints_.end()) {
+        return iter->second.constraint;
     }
 
-    return iter->second;
+    return std::numeric_limits<float>::quiet_NaN();
 }
 
 float TimingConstraints::output_constraint(const NodeId node_id, const DomainId domain_id) const {
-    auto key = NodeDomain(node_id, domain_id);
-    auto iter = output_constraints_.find(key);
-    if(iter == output_constraints_.end()) {
-        return std::numeric_limits<float>::quiet_NaN();
+
+    auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
+    if(iter != output_constraints_.end()) {
+        return iter->second.constraint;
     }
 
-    return iter->second;
+    return std::numeric_limits<float>::quiet_NaN();
 }
 
 TimingConstraints::clock_constraint_range TimingConstraints::setup_constraints() const {
@@ -135,6 +137,16 @@ TimingConstraints::io_constraint_range TimingConstraints::input_constraints() co
 
 TimingConstraints::io_constraint_range TimingConstraints::output_constraints() const {
     return tatum::util::make_range(output_constraints_.begin(), output_constraints_.end());
+}
+
+TimingConstraints::io_constraint_range TimingConstraints::input_constraints(const NodeId id) const {
+    auto range = input_constraints_.equal_range(id);
+    return tatum::util::make_range(range.first, range.second);
+}
+
+TimingConstraints::io_constraint_range TimingConstraints::output_constraints(const NodeId id) const {
+    auto range = output_constraints_.equal_range(id);
+    return tatum::util::make_range(range.first, range.second);
 }
 
 DomainId TimingConstraints::create_clock_domain(const std::string name) { 
@@ -169,15 +181,25 @@ void TimingConstraints::set_hold_constraint(const DomainId src_domain, const Dom
 }
 
 void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainId domain_id, const float constraint) {
-    auto key = NodeDomain(node_id, domain_id);
-    auto iter = input_constraints_.insert(std::make_pair(key, constraint));
-    TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate input delay constraint");
+    auto iter = find_io_constraint(node_id, domain_id, input_constraints_);
+    if(iter != input_constraints_.end()) {
+        //Found, update
+        iter->second.constraint = constraint;
+    } else {
+        //Not found create it
+        input_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+    }
 }
 
 void TimingConstraints::set_output_constraint(const NodeId node_id, const DomainId domain_id, const float constraint) {
-    auto key = NodeDomain(node_id, domain_id);
-    auto iter = output_constraints_.insert(std::make_pair(key, constraint));
-    TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate output delay constraint");
+    auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
+    if(iter != output_constraints_.end()) {
+        //Found, update
+        iter->second.constraint = constraint;
+    } else {
+        //Not found create it
+        output_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+    }
 }
 
 void TimingConstraints::set_clock_domain_source(const NodeId node_id, const DomainId domain_id) {
@@ -185,23 +207,19 @@ void TimingConstraints::set_clock_domain_source(const NodeId node_id, const Doma
 }
 
 void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map) {
-    std::map<NodeDomain,float> remapped_input_constraints;
-    std::map<NodeDomain,float> remapped_output_constraints;
+    std::multimap<NodeId,IoConstraint> remapped_input_constraints;
+    std::multimap<NodeId,IoConstraint> remapped_output_constraints;
     tatum::util::linear_map<DomainId,NodeId> remapped_domain_sources(domain_sources_.size());
 
     for(auto kv : input_constraints_) {
-        auto orig_key = kv.first;
-        NodeId new_node_id = node_map[orig_key.node_id];
+        NodeId new_node_id = node_map[kv.first];
 
-        auto new_key = NodeDomain(new_node_id, orig_key.domain_id);
-        remapped_input_constraints[new_key] = kv.second;
+        remapped_input_constraints.insert(std::make_pair(new_node_id, kv.second));
     }
     for(auto kv : output_constraints_) {
-        auto orig_key = kv.first;
-        NodeId new_node_id = node_map[orig_key.node_id];
+        NodeId new_node_id = node_map[kv.first];
 
-        auto new_key = NodeDomain(new_node_id, orig_key.domain_id);
-        remapped_output_constraints[new_key] = kv.second;
+        remapped_output_constraints.insert(std::make_pair(new_node_id, kv.second));
     }
 
     for(size_t domain_idx = 0; domain_idx < domain_sources_.size(); ++domain_idx) {
@@ -239,22 +257,42 @@ void TimingConstraints::print() const {
     }
     cout << "Input Constraints" << endl;
     for(auto kv : input_constraints_) {
-        auto key = kv.first;
-        float constraint = kv.second;
-        cout << "Node: " << key.node_id;
-        cout << " Domain: " << key.domain_id;
-        cout << " Constraint: " << constraint;
+        auto node_id = kv.first;
+        auto io_constraint = kv.second;
+        cout << "Node: " << node_id;
+        cout << " Domain: " << io_constraint.domain;
+        cout << " Constraint: " << io_constraint.constraint;
         cout << endl;
     }
     cout << "Output Constraints" << endl;
     for(auto kv : output_constraints_) {
-        auto key = kv.first;
-        float constraint = kv.second;
-        cout << "Node: " << key.node_id;
-        cout << " Domain: " << key.domain_id;
-        cout << " Constraint: " << constraint;
+        auto node_id = kv.first;
+        auto io_constraint = kv.second;
+        cout << "Node: " << node_id;
+        cout << " Domain: " << io_constraint.domain;
+        cout << " Constraint: " << io_constraint.constraint;
         cout << endl;
     }
+}
+
+TimingConstraints::io_constraint_iterator TimingConstraints::find_io_constraint(const NodeId node_id, const DomainId domain_id, const std::multimap<NodeId,IoConstraint>& io_constraints) const {
+    auto range = io_constraints.equal_range(node_id);
+    for(auto iter = range.first; iter != range.second; ++iter) {
+        if(iter->second.domain == domain_id) return iter;
+    }
+
+    //Not found
+    return io_constraints.end();
+}
+
+TimingConstraints::mutable_io_constraint_iterator TimingConstraints::find_io_constraint(const NodeId node_id, const DomainId domain_id, std::multimap<NodeId,IoConstraint>& io_constraints) {
+    auto range = io_constraints.equal_range(node_id);
+    for(auto iter = range.first; iter != range.second; ++iter) {
+        if(iter->second.domain == domain_id) return iter;
+    }
+
+    //Not found
+    return io_constraints.end();
 }
 
 } //namepsace

@@ -33,7 +33,7 @@
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 //#define NUM_SERIAL_RUNS 20
 //#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
-#define OPTIMIZE_NODE_EDGE_ORDER
+//#define OPTIMIZE_NODE_EDGE_ORDER
 
 //Do we perform verification checks?
 #define TATUM_ASSERT_VPR_TO_TATUM

@@ -4,7 +4,7 @@ namespace tatum {
 
 //Forward delcaration
 struct DomainPair;
-struct NodeDomain;
+struct IoConstraint;
 class TimingConstraints;
 
 } //namepsace

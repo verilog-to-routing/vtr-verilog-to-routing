@@ -18,7 +18,7 @@ class TimingConstraints {
     public: //Types
         typedef tatum::util::linear_map<DomainId,DomainId>::const_iterator domain_iterator;
         typedef std::map<DomainPair,float>::const_iterator clock_constraint_iterator;
-        typedef std::map<NodeDomain,float>::const_iterator io_constraint_iterator;
+        typedef std::map<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
 
         typedef tatum::util::Range<domain_iterator> domain_range;
         typedef tatum::util::Range<clock_constraint_iterator> clock_constraint_range;
@@ -60,10 +60,23 @@ class TimingConstraints {
         ///\returns The output delay constraint on node_id
         float output_constraint(const NodeId node_id, const DomainId domain_id) const;
 
+        //\returns A range of all setup constraints
         clock_constraint_range setup_constraints() const;
+
+        //\returns A range of all setup constraints
         clock_constraint_range hold_constraints() const;
+
+        //\returns A range of all input constraints
         io_constraint_range input_constraints() const;
+
+        //\returns A range of all output constraints
         io_constraint_range output_constraints() const;
+
+        //\returns A range of output constraints for the node id
+        io_constraint_range input_constraints(const NodeId id) const;
+
+        //\returns A range of input constraints for the node id
+        io_constraint_range output_constraints(const NodeId id) const;
 
         ///Prints out the timing constraints for debug purposes
         void print() const;
@@ -90,8 +103,14 @@ class TimingConstraints {
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
 
     private:
+        typedef std::map<NodeId,IoConstraint>::iterator mutable_io_constraint_iterator;
+    private:
         ///\returns A valid domain id if the node is a clock source
         DomainId find_node_source_clock_domain(const NodeId node_id) const;
+
+        io_constraint_iterator find_io_constraint(const NodeId node_id, const DomainId domain_id, const std::multimap<NodeId,IoConstraint>& io_constraints) const;
+        mutable_io_constraint_iterator find_io_constraint(const NodeId node_id, const DomainId domain_id, std::multimap<NodeId,IoConstraint>& io_constraints);
+
 
     private: //Data
         tatum::util::linear_map<DomainId,DomainId> domain_ids_;
@@ -100,8 +119,8 @@ class TimingConstraints {
 
         std::map<DomainPair,float> setup_constraints_;
         std::map<DomainPair,float> hold_constraints_;
-        std::map<NodeDomain,float> input_constraints_;
-        std::map<NodeDomain,float> output_constraints_;
+        std::multimap<NodeId,IoConstraint> input_constraints_;
+        std::multimap<NodeId,IoConstraint> output_constraints_;
 };
 
 /*
@@ -124,21 +143,11 @@ struct DomainPair {
     DomainId sink_domain_id;
 };
 
-struct NodeDomain {
-    NodeDomain(NodeId node, DomainId domain): node_id(node), domain_id(domain) {}
+struct IoConstraint {
+    IoConstraint(DomainId domain_id, float constraint_val): domain(domain_id), constraint(constraint_val) {}
 
-    friend bool operator<(const NodeDomain& lhs, const NodeDomain& rhs) {
-        if(lhs.node_id < rhs.node_id) {
-            return true;
-        } else if(lhs.node_id == rhs.node_id 
-                  && lhs.domain_id < rhs.domain_id) {
-            return true;
-        }
-        return false;
-    }
-
-    NodeId node_id;
-    DomainId domain_id;
+    DomainId domain;
+    float constraint;
 };
 
 } //namepsace
