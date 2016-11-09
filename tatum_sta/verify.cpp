@@ -15,12 +15,12 @@ using tatum::LevelId;
 using tatum::TimingGraph;
 using tatum::NodeType;
 
-bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width);
+bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, std::streamsize num_width);
 
-bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width);
+bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId domain, std::streamsize num_width);
 
 
-int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<NodeId>& const_gen_fanout_nodes, const std::set<NodeId>& clock_gen_fanout_nodes) {
+int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times) {
     //expected_arr_req_times.print();
 
     //std::cout << "Verifying Calculated Timing Against VPR" << std::endl;
@@ -60,11 +60,11 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
                     //Note that VPR doesn't handle seperate clock tags, but we place
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
-                    if(tg.node_type(node_id) != NodeType::FF_SINK && tg.node_type(node_id) != NodeType::FF_SOURCE) {
+                    if(tg.node_type(node_id) != NodeType::SINK && tg.node_type(node_id) != NodeType::SOURCE) {
                         const auto& node_clock_tags = analyzer.get_setup_clock_tags(node_id);
                         auto clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_clock_tags.end()) {
-                            error |= verify_arr_tag(clock_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
+                            error |= verify_arr_tag(clock_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, num_width);
 
                         } else if(!isnan(vpr_arr_time)) {
                             error = true;
@@ -76,7 +76,7 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
                         }
                     }
                 } else {
-                    error |= verify_arr_tag(data_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, clock_gen_fanout_nodes, num_width);
+                    error |= verify_arr_tag(data_tag_iter->arr_time().value(), vpr_arr_time, node_id, domain, num_width);
                 }
                 arr_reqs_verified ++;
                 arrival_nodes_checked++;
@@ -98,11 +98,11 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
                     //Note that VPR doesn't handle seperate clock tags, but we place
                     //clock arrivals on FF_SINK and FF_SOURCE nodes from the clock network,
                     //so even if such a clock tag exists we don't want to compare it to VPR
-                    if(tg.node_type(node_id) != NodeType::FF_SINK && tg.node_type(node_id) != NodeType::FF_SOURCE) {
+                    if(tg.node_type(node_id) != NodeType::SINK && tg.node_type(node_id) != NodeType::SOURCE) {
                         const auto& node_clock_tags = analyzer.get_setup_clock_tags(node_id);
                         auto clock_tag_iter = node_clock_tags.find_tag_by_clock_domain(domain);
                         if(clock_tag_iter != node_clock_tags.end()) {
-                            error |= verify_req_tag(clock_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
+                            error |= verify_req_tag(clock_tag_iter->req_time().value(), vpr_req_time, node_id, domain, num_width);
                         } else if(!isnan(vpr_req_time)) {
                             error = true;
                             std::cout << "Node: " << node_id << " Clk: " << domain  << std::endl;
@@ -111,7 +111,7 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
                         }
                     }
                 } else {
-                    error |= verify_req_tag(data_tag_iter->req_time().value(), vpr_req_time, node_id, domain, const_gen_fanout_nodes, num_width);
+                    error |= verify_req_tag(data_tag_iter->req_time().value(), vpr_req_time, node_id, domain, num_width);
 
                 }
                 arr_reqs_verified++;
@@ -120,31 +120,6 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
         }
         TATUM_ASSERT(required_nodes_checked == (int) expected_arr_req_times.get_num_nodes());
     }
-
-    /*
-     * Check from Tatum to VPR
-     */
-
-    //Check by level
-//#ifdef CHECK_TATUM_TO_VPR_DIFFERENCES
-#if 0
-    for(int ilevel = 0; ilevel <tg.num_levels(); ilevel++) {
-        //std::cout << "LEVEL " << ilevel << std::endl;
-        for(NodeId node_id : tg.level(ilevel)) {
-            for(const TimingTag& data_tag : analyzer.data_tags(node_id)) {
-                //Arrival
-                float arr_time = data_tag.arr_time().value();
-                float vpr_arr_time = expected_arr_req_times.get_arr_time(data_tag.clock_domain(), node_id);
-                verify_arr_tag(arr_time, vpr_arr_time, node_id, data_tag.clock_domain(), clock_gen_fanout_nodes, num_width);
-
-                //Required
-                float req_time = data_tag.req_time().value();
-                float vpr_req_time = expected_arr_req_times.get_req_time(data_tag.clock_domain(), node_id);
-                verify_req_tag(req_time, vpr_req_time, node_id, data_tag.clock_domain(), const_gen_fanout_nodes, num_width);
-            }
-        }
-    }
-#endif
 
     if(error) {
         std::cout << "Timing verification FAILED!" << std::endl;
@@ -160,7 +135,7 @@ int verify_analyzer(const TimingGraph& tg, const tatum::SetupTimingAnalyzer& ana
 }
 
 
-bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, const std::set<NodeId>& clock_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId domain, std::streamsize num_width) {
     bool error = false;
     float arr_abs_err = fabs(arr_time - vpr_arr_time);
     float arr_rel_err = relative_error(arr_time, vpr_arr_time);
@@ -171,22 +146,10 @@ bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId
         cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
         cout << "\tERROR Calculated arrival time was nan and didn't match VPR." << endl;
     } else if (!isnan(arr_time) && isnan(vpr_arr_time)) {
-        if(clock_gen_fanout_nodes.count(node_id)) {
-            //Pass, clock gen fanout can be NAN in VPR but have a value here,
-            //since (unlike VPR) we explictly track clock arrivals as tags
-        } else {
-            //We allow tatum results to be non-NAN when VPR is NAN
-            //
-            //This occurs in some cases (such as applying clock tags to primary outputs)
-            //which are cuased by the differeing analysis methods
-#if 0
-            error = true;
-            cout << "Node: " << node_id << " Clk: " << domain;
-            cout << " Calc_Arr: " << std::setw(num_width) << arr_time;
-            cout << " VPR_Arr: " << std::setw(num_width) << vpr_arr_time << endl;
-            cout << "\tERROR Calculated arrival time was not nan but VPR expected nan." << endl;
-#endif
-        }
+        //We allow tatum results to be non-NAN when VPR is NAN
+        //
+        //This occurs in some cases (such as applying clock tags to primary outputs)
+        //which are cuased by the differeing analysis methods
     } else if (isnan(arr_time) && isnan(vpr_arr_time)) {
         //They agree, pass
     } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
@@ -203,7 +166,7 @@ bool verify_arr_tag(float arr_time, float vpr_arr_time, NodeId node_id, DomainId
     return error;
 }
 
-bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId domain, const std::set<NodeId>& const_gen_fanout_nodes, std::streamsize num_width) {
+bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId domain, std::streamsize num_width) {
     bool error = false;
     float req_abs_err = fabs(req_time - vpr_req_time);
     float req_rel_err = relative_error(req_time, vpr_req_time);
@@ -214,23 +177,11 @@ bool verify_req_tag(float req_time, float vpr_req_time, NodeId node_id, DomainId
         cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
         cout << "\tERROR Calculated required time was nan and didn't match VPR." << endl;
     } else if (!isnan(req_time) && isnan(vpr_req_time)) {
-        if (const_gen_fanout_nodes.count(node_id)) {
-            //VPR doesn't propagate required times along paths sourced by constant generators
-            //but we do, so ignore such errors
-#if 0
-            cout << "Node: " << node_id << " Clk: " << domain;
-            cout << " Calc_Req: " << std::setw(num_width) << req_time;
-            cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
-            cout << "\tOK since " << node_id << " in fanout of Constant Generator" << endl;
-#endif
-        } else {
-            error = true;
-            cout << "Node: " << node_id << " Clk: " << domain;
-            cout << " Calc_Req: " << std::setw(num_width) << req_time;
-            cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
-            cout << "\tERROR Calculated required time was not nan but VPR expected nan." << endl;
-        }
-
+        error = true;
+        cout << "Node: " << node_id << " Clk: " << domain;
+        cout << " Calc_Req: " << std::setw(num_width) << req_time;
+        cout << " VPR_Req: " << std::setw(num_width) << vpr_req_time << endl;
+        cout << "\tERROR Calculated required time was not nan but VPR expected nan." << endl;
     } else if (isnan(req_time) && isnan(vpr_req_time)) {
         //They agree, pass
     } else if(req_rel_err > RELATIVE_EPSILON && req_abs_err > ABSOLUTE_EPSILON) {

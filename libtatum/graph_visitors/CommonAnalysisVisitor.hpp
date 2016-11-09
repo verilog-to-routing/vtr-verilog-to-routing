@@ -118,65 +118,21 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     /*
      * Calculate required times
      */
-    auto node_type = tg.node_type(node_id);
-    TATUM_ASSERT(node_type == NodeType::SINK);
+    TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
 
-    //Sinks corresponding to FF sinks will have propagated clock tags,
-    //while those corresponding to outpads will not.
+    //Sinks corresponding to FF sinks will have propagated (capturing) clock tags,
+    //while those corresponding to outpads will not. We initialize the outpad 
+    //capturing clock tags based on the constraints
     if(node_clock_tags.empty()) {
-        //Initialize the outpad's clock tags based on the specified constraints.
+        //Initialize the clock tags based on the constraints.
 
 
         auto output_constraints = tc.output_constraints(node_id);
 
         if(output_constraints.empty()) {
             //throw tatum::Error("Output unconstrained");
-            std::cerr << "Warning: Timing graph " << node_id << " " << node_type << " has no incomming clock tags, and no output constraint. No required time will be calculated\n";
-
-#if 1
-            //Debug trace-back
-
-            //TODO: remove debug code!
-            if(node_type == NodeType::FF_SINK) {
-                std::cerr << "\tClock path:\n";
-                int i = 0;
-                NodeId curr_node = node_id;
-                while(tg.node_type(curr_node) != NodeType::INPAD_SOURCE &&
-                      tg.node_type(curr_node) != NodeType::CLOCK_SOURCE &&
-                      tg.node_type(curr_node) != NodeType::CONSTANT_GEN_SOURCE &&
-                      i < 100) {
-                    
-                    //Look throught the fanin for a clock or other node to follow
-                    //
-                    //Typically the first hop from node_id will be to either the IPIN or CLOCK pin
-                    //the following preferentially prefers the CLOCK pin to show the clock path
-                    EdgeId best_edge;
-                    for(auto edge_id : tg.node_in_edges(curr_node)) {
-                        if(!best_edge) {
-                            best_edge = edge_id;
-                        }
-
-                        NodeId src_node = tg.edge_src_node(edge_id);
-                        auto src_node_type = tg.node_type(src_node);
-                        if(src_node_type == NodeType::FF_CLOCK) {
-                            best_edge = edge_id;
-                        }
-                    }
-
-                    //Step back
-                    curr_node = tg.edge_src_node(best_edge);
-                    auto curr_node_type = tg.node_type(curr_node);
-
-
-                    std::cerr << "\tNode " << curr_node << " Type: " << curr_node_type << "\n";
-                    if(++i >= 100) {
-                        std::cerr << "\tStopping backtrace\n";
-                        
-                    }
-                }
-            }
-#endif
-
+            std::cerr << "Warning: Timing graph " << node_id << " " << tg.node_type(node_id);
+            std::cerr << " has no incomming clock tags, and no output constraint. No required time will be calculated\n";
         } else {
             for(auto constraint : output_constraints) {
                 //TODO: use real constraint value when output delay no-longer on edges
@@ -186,8 +142,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
         }
     }
 
-    //At this stage both FF and outpad sinks now have the relevant clock 
-    //tags and we can process them equivalently
+    //At this the sink will have a capturing clock tag defined
 
     //Determine the required time at this sink
     //
@@ -343,7 +298,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clock_arr(const Timing
         return true;
     } else if (tc.node_is_clock_source(src_node_id)) {
         //Base-case: the source is a clock source
-        TATUM_ASSERT_MSG(node_type == NodeType::SOURCE, "Only SOURCEs can be clock sources");
+        TATUM_ASSERT_MSG(src_node_type == NodeType::SOURCE, "Only SOURCEs can be clock sources");
         TATUM_ASSERT_MSG(tg.node_in_edges(src_node_id).empty(), "Clock sources should have no incoming edges");
         return true;
     }

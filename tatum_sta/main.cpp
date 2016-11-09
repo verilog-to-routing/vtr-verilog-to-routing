@@ -91,9 +91,6 @@ int main(int argc, char** argv) {
     VprArrReqTimes expected_arr_req_times;
     std::vector<float> edge_delays;
 
-    std::set<NodeId> const_gen_fanout_nodes;
-    std::set<NodeId> clock_gen_fanout_nodes;
-
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
 
@@ -177,8 +174,6 @@ int main(int argc, char** argv) {
 
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
-        const_gen_fanout_nodes = identify_constant_gen_fanout(*timing_graph);
-        clock_gen_fanout_nodes = identify_clock_gen_fanout(*timing_graph);
     }
     cout << "Loading took: " << tatum::time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
@@ -265,9 +260,7 @@ int main(int argc, char** argv) {
 
 #ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_SERIAL_RUNS - 1) {
-                serial_arr_req_verified = verify_analyzer(*timing_graph, *serial_setup_analyzer,
-                                                          expected_arr_req_times, const_gen_fanout_nodes,
-                                                          clock_gen_fanout_nodes );
+                serial_arr_req_verified = verify_analyzer(*timing_graph, *serial_setup_analyzer, expected_arr_req_times);
             }
 #endif
 
@@ -371,9 +364,7 @@ int main(int argc, char** argv) {
 
 #ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_PARALLEL_RUNS - 1) {
-                parallel_arr_req_verified = verify_analyzer(*timing_graph, *parallel_setup_analyzer,
-                                                          expected_arr_req_times, const_gen_fanout_nodes,
-                                                          clock_gen_fanout_nodes );
+                parallel_arr_req_verified = verify_analyzer(*timing_graph, *parallel_setup_analyzer, expected_arr_req_times);
             }
 #endif
 

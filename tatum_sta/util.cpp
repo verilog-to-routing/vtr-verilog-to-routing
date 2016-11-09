@@ -12,51 +12,6 @@ using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::NodeType;
 
-void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes);
-void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& clock_gen_fanout_nodes);
-
-std::set<NodeId> identify_constant_gen_fanout(const TimingGraph& tg) {
-    //Walk the timing graph and identify nodes that are in the fanout of a constant generator
-    std::set<NodeId> const_gen_fanout_nodes;
-    for(NodeId node_id : tg.primary_inputs()) {
-        if(tg.node_type(node_id) == NodeType::CONSTANT_GEN_SOURCE) {
-            identify_constant_gen_fanout_helper(tg, node_id, const_gen_fanout_nodes);
-        }
-    }
-    return const_gen_fanout_nodes;
-}
-
-void identify_constant_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& const_gen_fanout_nodes) {
-    if(const_gen_fanout_nodes.count(node_id) == 0) {
-        //Haven't seen this node before
-        const_gen_fanout_nodes.insert(node_id);
-        for(EdgeId edge_id : tg.node_out_edges(node_id)) {
-            identify_constant_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), const_gen_fanout_nodes);
-        }
-    }
-}
-
-std::set<NodeId> identify_clock_gen_fanout(const TimingGraph& tg) {
-    std::set<NodeId> clock_gen_fanout_nodes;
-    for(NodeId node_id : tg.primary_inputs()) {
-        if(tg.node_type(node_id) == NodeType::CLOCK_SOURCE) {
-            identify_clock_gen_fanout_helper(tg, node_id, clock_gen_fanout_nodes);
-        }
-    }
-    return clock_gen_fanout_nodes;
-}
-
-void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_id, std::set<NodeId>& clock_gen_fanout_nodes) {
-    if(clock_gen_fanout_nodes.count(node_id) == 0) {
-        //Haven't seen this node before
-        clock_gen_fanout_nodes.insert(node_id);
-        for(EdgeId edge_id : tg.node_out_edges(node_id)) {
-            identify_clock_gen_fanout_helper(tg, tg.edge_sink_node(edge_id), clock_gen_fanout_nodes);
-        }
-    }
-
-}
-
 void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const VprFfInfo& ff_info, std::vector<float>& edge_delays) {
     //We represent the dependancies between the clock and data paths
     //As edges in the graph from FF_CLOCK pins to FF_SOURCES (launch path)

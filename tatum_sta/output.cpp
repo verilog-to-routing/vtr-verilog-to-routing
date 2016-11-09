@@ -29,38 +29,7 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
 
         os << " node: " << size_t(node_id) << "\n";
 
-        os << "  type: ";
-        switch(tg.node_type(node_id)) {
-            case tatum::NodeType::FF_SOURCE:
-            case tatum::NodeType::INPAD_SOURCE:
-            case tatum::NodeType::CLOCK_SOURCE:
-            case tatum::NodeType::CONSTANT_GEN_SOURCE:
-            case tatum::NodeType::SOURCE:
-                os << "SOURCE";
-                break;
-            case tatum::NodeType::OUTPAD_IPIN:
-            case tatum::NodeType::FF_IPIN:
-            case tatum::NodeType::PRIMITIVE_IPIN:
-            case tatum::NodeType::IPIN:
-                os << "IPIN";
-                break;
-            case tatum::NodeType::INPAD_OPIN:
-            case tatum::NodeType::FF_OPIN:
-            case tatum::NodeType::PRIMITIVE_OPIN:
-            case tatum::NodeType::CLOCK_OPIN:
-            case tatum::NodeType::OPIN:
-                os << "OPIN";
-                break;
-            case tatum::NodeType::FF_SINK:
-            case tatum::NodeType::OUTPAD_SINK:
-            case tatum::NodeType::FF_CLOCK:
-            case tatum::NodeType::SINK:
-            case tatum::NodeType::CLOCK_SINK:
-                os << "SINK";
-                break;
-            default:
-                TATUM_ASSERT(false);
-        }
+        os << "  type: " << tg.node_type(node_id);
         os << "\n";
 
         os << "  in_edges: ";

@@ -9,4 +9,4 @@
 
 #include "vpr_timing_graph_common.hpp"
 
-int verify_analyzer(const tatum::TimingGraph& tg, const tatum::SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times, const std::set<tatum::NodeId>& const_gen_fanout_nodes, const std::set<tatum::NodeId>& clock_gen_fanout_nodes);
+int verify_analyzer(const tatum::TimingGraph& tg, const tatum::SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times);
