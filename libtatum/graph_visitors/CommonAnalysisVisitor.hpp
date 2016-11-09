@@ -87,7 +87,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         ops_.get_clock_tags(node_id).add_tag(clock_tag);
 
     } else {
-        TATUM_ASSERT(node_type == NodeType::INPAD_SOURCE);
+        TATUM_ASSERT(node_type == NodeType::SOURCE);
 
         //A standard primary input, generate the appropriate data tag
 
