@@ -14,17 +14,8 @@ using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::NodeType;
 
-struct NodeRemap {
-    NodeId old_node;
-    NodeId new_node;
-    float edge_delay;
-}
-
 void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInfo& ff_info, std::vector<float>& edge_delays, VprArrReqTimes& arr_req_times) {
-    TimingGraph new_tg;
     TimingConstraints new_tc;
-    std::vector<float> new_edge_delays;
-    VprArrReqTimes new_arr_req_times;
 
     //Rebuild the graph to elminate redundant nodes (e.g. IPIN/OPINs in front of SOURCES/SINKS)
 
@@ -37,7 +28,7 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
 
                     if(tg.node_in_edges(node).size() == 0) {
                         //Primary Input source node
-                        std::cout << "Remove OPIN " << sink_node << " Input Constraint on " << node << " " << edge_delays[size_t(out_edge)] << "\n";
+                        std::cout << "Remove PI OPIN " << sink_node << " Input Constraint on " << node << " " << edge_delays[size_t(out_edge)] << "\n";
                     } else {
                         //FF source
                         TATUM_ASSERT_MSG(tg.node_in_edges(node).size() == 1, "Single clock input");
@@ -48,7 +39,7 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
 
                         NodeId clock_sink = tg.edge_src_node(in_edge);
 
-                        std::cout << "Remove OPIN " << sink_node << " Tcq " << tcq << " " << clock_sink << " -> " << node << "\n";
+                        std::cout << "Remove FF OPIN " << sink_node << " Tcq " << tcq << " " << clock_sink << " -> " << node << "\n";
 
                     }
                 }
@@ -63,13 +54,32 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
                     //Primary Output sink node
                     EdgeId in_edge = *tg.node_in_edges(node).begin();
 
-                    NodeId src_node = tg.edge_src_node(in_edge);
-
-                    TATUM_ASSERT(tg.node_type(src_node) == NodeType::IPIN);
+                    NodeId ipin_node = tg.edge_src_node(in_edge);
+                    TATUM_ASSERT(tg.node_type(ipin_node) == NodeType::IPIN);
 
                     float output_constraint = edge_delays[size_t(in_edge)];
 
-                    std::cout << "Remove IPIN " << src_node << " Output Constraint on " << node << " " << output_constraint << "\n";
+                    NodeId ipin_sink_node = node;
+
+                    TATUM_ASSERT(tg.node_in_edges(ipin_node).size() == 1);
+                    EdgeId ipin_in_edge = *tg.node_in_edges(ipin_node).begin();
+                    NodeId ipin_src_node = tg.edge_src_node(ipin_in_edge);
+                    float ipin_in_delay = edge_delays[size_t(ipin_in_edge)];
+
+                    std::cout << "Remove PO IPIN " << ipin_node << " Output Constraint on " << node << " " << output_constraint << "\n";
+
+                    //Remove the pin (also removes it's connected edges)
+                    tg.remove_node(ipin_node);
+
+                    //Add in the replacement edge
+                    EdgeId new_edge_id = tg.add_edge(ipin_src_node, ipin_sink_node);
+
+                    //Specify the delay
+                    edge_delays.resize(size_t(new_edge_id) + 1); //Make space
+                    edge_delays[size_t(new_edge_id)] = ipin_in_delay;
+
+                    //Specify the constraint
+                    tc.set_output_constraint(node, tc.node_clock_domain(node), output_constraint);
 
                 } else {
                     //FF sink
@@ -93,12 +103,46 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
                     TATUM_ASSERT(ff_ipin);
                     TATUM_ASSERT(!isnan(tsu));
                     
-                    std::cout << "Remove IPIN " << ff_ipin << " Tsu " << tsu << " " << ff_clock << " -> " << node << "\n";
+                    std::cout << "Remove FF IPIN " << ff_ipin << " Tsu " << tsu << " " << ff_clock << " -> " << node << "\n";
                 }
             }
             
         }
     }
+
+    auto id_maps = tg.compress();
+
+    tg.levelize();
+
+    //Remap the delays
+    std::vector<float> new_edge_delays(edge_delays.size(), NAN); //Ensure there is space
+    for(size_t i = 0; i < edge_delays.size(); ++i) {
+        EdgeId new_id = id_maps.edge_id_map[EdgeId(i)];
+        if(new_id) {
+            std::cout << "Edge delay " << i << " " << edge_delays[i] << " new id " << new_id << "\n";
+            new_edge_delays[size_t(new_id)] = edge_delays[i];
+        }
+    }
+    edge_delays = new_edge_delays; //Update
+
+    //Remap the arr/req times
+    VprArrReqTimes new_arr_req_times;
+    new_arr_req_times.set_num_nodes(tg.nodes().size());
+
+    for(auto src_domain : arr_req_times.domains()) {
+        //For every clock domain pair
+        for(int i = 0; i < arr_req_times.get_num_nodes(); i++) {
+            NodeId new_id = id_maps.node_id_map[NodeId(i)];
+            if(new_id) {
+                new_arr_req_times.add_arr_time(src_domain, new_id, arr_req_times.get_arr_time(src_domain, NodeId(i)));
+                new_arr_req_times.add_req_time(src_domain, new_id, arr_req_times.get_req_time(src_domain, NodeId(i)));
+            }
+        }
+    }
+    arr_req_times = new_arr_req_times; //Update
+
+    //Remap the constraints
+    tc.remap_nodes(id_maps.node_id_map);
 }
 
 void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const VprFfInfo& ff_info, std::vector<float>& edge_delays) {

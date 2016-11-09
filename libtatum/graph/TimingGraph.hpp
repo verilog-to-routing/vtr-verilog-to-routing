@@ -62,6 +62,14 @@
 
 namespace tatum {
 
+struct GraphIdMaps {
+    GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
+                tatum::util::linear_map<EdgeId,EdgeId> edge_map)
+        : node_id_map(node_map), edge_id_map(edge_map) {}
+    tatum::util::linear_map<NodeId,NodeId> node_id_map;
+    tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
+};
+
 class TimingGraph {
     public: //Public types
         //Iterators
@@ -164,6 +172,14 @@ class TimingGraph {
         ///\warning Graph will likely need to be re-levelized after modification
         EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
 
+        void remove_node(const NodeId node_id);
+
+        void remove_edge(const EdgeId edge_id);
+
+        GraphIdMaps  compress();
+
+        bool validate();
+
         /*
          * Graph-level modification operations
          */
@@ -191,10 +207,14 @@ class TimingGraph {
         ///\see levelize()
         tatum::util::linear_map<NodeId,NodeId> optimize_node_layout();
 
+
     private: //Internal helper functions
         bool valid_node_id(const NodeId node_id);
         bool valid_edge_id(const EdgeId edge_id);
         bool valid_level_id(const LevelId level_id);
+
+        bool validate_sizes();
+        bool validate_values();
 
     private: //Data
         /*
@@ -205,8 +225,8 @@ class TimingGraph {
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node [0..num_nodes()-1]
         tatum::util::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
-        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
+        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
         tatum::util::linear_map<NodeId,bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data

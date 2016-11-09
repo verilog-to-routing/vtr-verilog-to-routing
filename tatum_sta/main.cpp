@@ -218,6 +218,9 @@ int main(int argc, char** argv) {
     auto serial_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
     auto serial_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
 
+    std::ofstream new_dot("tg_setup_annotated.new.dot");
+    write_dot_file_setup(new_dot, *timing_graph, *serial_setup_analyzer, delay_calculator);
+
     //Performance variables
     float serial_verify_time = 0.;
     float serial_reset_time = 0.;
@@ -241,7 +244,7 @@ int main(int argc, char** argv) {
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
 
-#if 0
+#if 1
                 std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
                 write_dot_file_setup(tg_setup_dot_file, *timing_graph, *serial_setup_analyzer, delay_calculator);
 #endif

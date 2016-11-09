@@ -1,10 +1,99 @@
-#include "tatum_assert.hpp"
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
+#include "tatum_assert.hpp"
+#include "tatum_error.hpp"
 #include "TimingGraph.hpp"
 
 namespace tatum {
+
+//Builds a mapping from old to new ids by skipping values marked invalid
+template<typename Id>
+tatum::util::linear_map<Id,Id> compress_ids(const tatum::util::linear_map<Id,Id>& ids) {
+    tatum::util::linear_map<Id,Id> id_map(ids.size());
+    size_t i = 0;
+    for(auto id : ids) {
+        if(id) {
+            //Valid
+            id_map.insert(id, Id(i));
+            ++i;
+        }
+    }
+
+    return id_map;
+}
+
+//Returns a vector based on 'values', which has had entries dropped and 
+//re-ordered according according to 'id_map'.
+//
+// Each entry in id_map corresponds to the assoicated element in 'values'.
+// The value of the id_map entry is the new ID of the entry in values.
+//
+// If it is an invalid ID, the element in values is dropped.
+// Otherwise the element is moved to the new ID location.
+template<typename Id, typename T>
+tatum::util::linear_map<Id,T> clean_and_reorder_values(const tatum::util::linear_map<Id,T>& values, const tatum::util::linear_map<Id,Id>& id_map) {
+    TATUM_ASSERT(values.size() == id_map.size());
+
+    //Allocate space for the values that will not be dropped
+    tatum::util::linear_map<Id,T> result;
+
+    //Move over the valid entries to their new locations
+    for(size_t cur_idx = 0; cur_idx < values.size(); ++cur_idx) {
+        Id old_id = Id(cur_idx);
+
+        Id new_id = id_map[old_id];
+        if (new_id) {
+            //There is a valid mapping
+            result.insert(new_id, std::move(values[old_id]));
+        }
+    }
+
+    return result;
+}
+
+//Returns the set of new valid Ids defined by 'id_map'
+//TOOD: merge with clean_and_reorder_values
+template<typename Id>
+tatum::util::linear_map<Id,Id> clean_and_reorder_ids(const tatum::util::linear_map<Id,Id>& id_map) {
+    //For IDs, the values are the new id's stored in the map
+
+    //Allocate a new vector to store the values that have been not dropped
+    tatum::util::linear_map<Id,Id> result;
+
+    //Move over the valid entries to their new locations
+    for(size_t cur_idx = 0; cur_idx < id_map.size(); ++cur_idx) {
+        Id old_id = Id(cur_idx);
+
+        Id new_id = id_map[old_id];
+        if (new_id) {
+            result.insert(new_id, new_id);
+        }
+    }
+
+    return result;
+}
+
+template<typename Container, typename ValId>
+Container update_valid_refs(const Container& values, const tatum::util::linear_map<ValId,ValId>& id_map) {
+    Container updated;
+
+    for(ValId orig_val : values) {
+        if(orig_val) {
+            //Original item valid
+
+            ValId new_val = id_map[orig_val];
+            if(new_val) {
+                //The original item exists in the new mapping
+                updated.emplace_back(new_val);
+            }
+        }
+    }
+    return updated;
+}
+
+
 
 NodeId TimingGraph::add_node(const NodeType type, const DomainId clock_domain, const bool is_clk_src) {
 
@@ -66,6 +155,7 @@ void TimingGraph::levelize() {
 
     //Clear any previous levelization
     level_nodes_.clear();
+    level_ids_.clear();
     primary_outputs_.clear();
 
     //Allocate space for the first level
@@ -131,6 +221,78 @@ void TimingGraph::levelize() {
             level_ids_.emplace_back(level_idx);
         }
     }
+}
+
+void TimingGraph::remove_node(const NodeId node_id) {
+    //Invalidate all the references
+    for(EdgeId in_edge : node_in_edges(node_id)) {
+        remove_edge(in_edge);
+    }
+
+    for(EdgeId out_edge : node_out_edges(node_id)) {
+        remove_edge(out_edge);
+    }
+
+    //Mark the node as invalid
+    node_ids_[node_id] = NodeId::INVALID();
+}
+
+void TimingGraph::remove_edge(const EdgeId edge_id) {
+
+    //Invalidate the upstream node to edge references
+    NodeId src_node = edge_src_node(edge_id);    
+    auto iter_out = std::find(node_out_edges_[src_node].begin(), node_out_edges_[src_node].end(), edge_id);
+    TATUM_ASSERT(iter_out != node_out_edges_[src_node].end());
+    *iter_out = EdgeId::INVALID();
+
+    //Invalidate the dowwstream node to edge references
+    NodeId sink_node = edge_sink_node(edge_id);    
+    auto iter_in = std::find(node_in_edges_[sink_node].begin(), node_in_edges_[sink_node].end(), edge_id);
+    TATUM_ASSERT(iter_in != node_in_edges_[sink_node].end());
+    *iter_in = EdgeId::INVALID();
+
+    //Mark the edge invalid
+    edge_ids_[edge_id] = EdgeId::INVALID();
+}
+
+GraphIdMaps TimingGraph::compress() {
+    auto node_id_map = compress_ids(node_ids_);
+    auto edge_id_map = compress_ids(edge_ids_);
+
+    //Update values
+    node_ids_ = clean_and_reorder_ids(node_id_map);
+    node_types_ = clean_and_reorder_values(node_types_, node_id_map);
+    node_clock_domains_ = clean_and_reorder_values(node_clock_domains_, node_id_map);
+    node_in_edges_ = clean_and_reorder_values(node_in_edges_, node_id_map);
+    node_out_edges_ = clean_and_reorder_values(node_out_edges_, node_id_map);
+    node_is_clock_source_ = clean_and_reorder_values(node_is_clock_source_, node_id_map);
+
+    edge_ids_ = clean_and_reorder_ids(edge_id_map);
+    edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
+    edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
+
+    //Update cross-references
+    for(auto& edges_ref : node_in_edges_) {
+        edges_ref = update_valid_refs(edges_ref, edge_id_map);
+    }
+    for(auto& edges_ref : node_out_edges_) {
+        edges_ref = update_valid_refs(edges_ref, edge_id_map);
+    }
+
+    edge_src_nodes_ = update_valid_refs(edge_src_nodes_, node_id_map);
+    edge_sink_nodes_ = update_valid_refs(edge_sink_nodes_, node_id_map);
+
+    validate();
+
+    return {node_id_map, edge_id_map};
+}
+
+bool TimingGraph::validate() {
+    bool valid = true;
+    valid &= validate_sizes();
+    valid &= validate_values();
+
+    return valid;
 }
 
 tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
@@ -295,6 +457,41 @@ bool TimingGraph::valid_level_id(const LevelId level_id) {
     return size_t(level_id) < level_ids_.size();
 }
 
+bool TimingGraph::validate_sizes() {
+    if(   node_ids_.size() != node_types_.size()
+       || node_ids_.size() != node_clock_domains_.size()
+       || node_ids_.size() != node_in_edges_.size()
+       || node_ids_.size() != node_out_edges_.size()
+       || node_ids_.size() != node_is_clock_source_.size()) {
+        throw tatum::Error("Inconsistent node attribute sizes");
+    }
+
+    if(   edge_ids_.size() != edge_sink_nodes_.size()
+       || edge_ids_.size() != edge_src_nodes_.size()) {
+        throw tatum::Error("Inconsistent edge attribute sizes");
+    }
+
+    return true;
+}
+
+bool TimingGraph::validate_values() {
+
+    for(NodeId node_id : nodes()) {
+        if(!valid_node_id(node_id)) {
+            throw tatum::Error("Invalid node id");
+        }
+    }
+    for(EdgeId edge_id : edges()) {
+        if(!valid_edge_id(edge_id)) {
+            throw tatum::Error("Invalid edge id");
+        }
+    }
+
+    //TODO: more checking
+
+    return true;
+}
+
 //Stream output for NodeType
 std::ostream& operator<<(std::ostream& os, const NodeType type) {
     if      (type == NodeType::SOURCE)              os << "SOURCE";
@@ -306,19 +503,35 @@ std::ostream& operator<<(std::ostream& os, const NodeType type) {
 }
 
 std::ostream& operator<<(std::ostream& os, NodeId node_id) {
-    return os << "Node(" << size_t(node_id) << ")";
+    if(node_id == NodeId::INVALID()) {
+        return os << "Node(INVALID)";
+    } else {
+        return os << "Node(" << size_t(node_id) << ")";
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, EdgeId edge_id) {
-    return os << "Edge(" << size_t(edge_id) << ")";
+    if(edge_id == EdgeId::INVALID()) {
+        return os << "Edge(INVALID)";
+    } else {
+        return os << "Edge(" << size_t(edge_id) << ")";
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, DomainId domain_id) {
-    return os << "Domain(" << size_t(domain_id) << ")";
+    if(domain_id == DomainId::INVALID()) {
+        return os << "Domain(INVALID)";
+    } else {
+        return os << "Domain(" << size_t(domain_id) << ")";
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, LevelId level_id) {
-    return os << "Level(" << size_t(level_id) << ")";
+    if(level_id == LevelId::INVALID()) {
+        return os << "Level(INVALID)";
+    } else {
+        return os << "Level(" << size_t(level_id) << ")";
+    }
 }
 
 } //namepsace
