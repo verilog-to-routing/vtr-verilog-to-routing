@@ -45,11 +45,12 @@ class CommonAnalysisVisitor {
 
     private:
         template<class DelayCalc>
-        void do_arrival_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
+        void do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
 
         template<class DelayCalc>
         void do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
 
+        bool should_propagate_clock_arr(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const;
         bool is_clock_data_edge(const TimingGraph& tg, const EdgeId edge_id) const;
 
 };
@@ -226,13 +227,13 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGr
 
     //Pull from upstream sources to current node
     for(EdgeId edge_id : tg.node_in_edges(node_id)) {
-        do_arrival_traverse_edge(tg, dc, node_id, edge_id);
+        do_arrival_traverse_edge(tg, tc, dc, node_id, edge_id);
     }
 }
 
 template<class AnalysisOps>
 template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
     //We must use the tags by reference so we don't accidentally wipe-out any
     //existing tags
     TimingTags& node_data_tags = ops_.get_data_tags(node_id);
@@ -250,7 +251,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
      * Clock tags
      */
 
-    if(src_data_tags.empty()) {
+    if(should_propagate_clock_arr(tg, tc, edge_id)) {
         //Propagate the clock tags through the clock network
 
         for(const TimingTag& src_clk_tag : src_clk_tags) {
@@ -325,6 +326,28 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
             ops_.merge_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);
         }
     }
+}
+
+template<class AnalysisOps>
+bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clock_arr(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const {
+    NodeId src_node_id = tg.edge_src_node(edge_id);
+
+    //We want to propagate clock tags through the arbitrary nodes making up the clock network until 
+    //we hit another source node (i.e. a FF's output source).
+    //
+    //To allow tags to propagte from the original source (i.e. the input clock pin) we also allow
+    //propagation from defined clock sources
+    NodeType src_node_type = tg.node_type(src_node_id);
+    if (src_node_type != NodeType::SOURCE) {
+        //Not a source, allow propagation
+        return true;
+    } else if (tc.node_is_clock_source(src_node_id)) {
+        //Base-case: the source is a clock source
+        TATUM_ASSERT_MSG(node_type == NodeType::SOURCE, "Only SOURCEs can be clock sources");
+        TATUM_ASSERT_MSG(tg.node_in_edges(src_node_id).empty(), "Clock sources should have no incoming edges");
+        return true;
+    }
+    return false;
 }
 
 template<class AnalysisOps>
