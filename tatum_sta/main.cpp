@@ -243,6 +243,11 @@ int main(int argc, char** argv) {
                 CALLGRIND_TOGGLE_COLLECT;
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
+
+#if 0
+                std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
+                write_dot_file_setup(tg_setup_dot_file, *timing_graph, *serial_setup_analyzer, delay_calculator);
+#endif
             }
 
             for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
