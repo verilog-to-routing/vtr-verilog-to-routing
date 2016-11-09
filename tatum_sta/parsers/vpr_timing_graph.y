@@ -279,10 +279,8 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                             break;
                                                                         case VprNodeType::OUTPAD_SINK:
                                                                         case VprNodeType::FF_SINK:
-                                                                            $$.type = tatum::NodeType::SINK;
-                                                                            break;
                                                                         case VprNodeType::FF_CLOCK:
-                                                                            $$.type = tatum::NodeType::FF_CLOCK;
+                                                                            $$.type = tatum::NodeType::SINK;
                                                                             break;
                                                                         default:
                                                                             throw tatum::Error("Unrecognzied VPR node type");
