@@ -57,7 +57,7 @@ void identify_clock_gen_fanout_helper(const TimingGraph& tg, const NodeId node_i
 
 }
 
-void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockId> node_logical_blocks, std::vector<float>& edge_delays) {
+void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const VprFfInfo& ff_info, std::vector<float>& edge_delays) {
     //We represent the dependancies between the clock and data paths
     //As edges in the graph from FF_CLOCK pins to FF_SOURCES (launch path)
     //and FF_SINKS (capture path)
@@ -70,58 +70,40 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
     //      per basic logic block.  This will need to be generalized.
 
     //Build a map from logical block id to the tnodes we care about
-    std::map<BlockId,std::vector<NodeId>> logical_block_FF_clocks;
-    std::map<BlockId,std::vector<NodeId>> logical_block_FF_sources;
-    std::map<BlockId,std::vector<NodeId>> logical_block_FF_sinks;
-
-    for(NodeId node_id : tg.nodes()) {
-        BlockId blk_id = node_logical_blocks[size_t(node_id)];
-        if(tg.node_type(node_id) == NodeType::FF_CLOCK) {
-            logical_block_FF_clocks[blk_id].push_back(node_id);
-        } else if (tg.node_type(node_id) == NodeType::FF_SOURCE) {
-            logical_block_FF_sources[blk_id].push_back(node_id);
-        } else if (tg.node_type(node_id) == NodeType::SINK) {
-            logical_block_FF_sinks[blk_id].push_back(node_id);
-        }
-    }
-
-    std::cout << "FF_CLOCK: " << logical_block_FF_clocks.size() << "\n";
-    std::cout << "FF_SOURCE: " << logical_block_FF_clocks.size() << "\n";
-    std::cout << "FF_SINK: " << logical_block_FF_clocks.size() << "\n";
+    std::cout << "FF_CLOCK: " << ff_info.logical_block_FF_clocks.size() << "\n";
+    std::cout << "FF_SOURCE: " << ff_info.logical_block_FF_clocks.size() << "\n";
+    std::cout << "FF_SINK: " << ff_info.logical_block_FF_clocks.size() << "\n";
 
     size_t num_edges_added = 0;
     //Loop through each FF_CLOCK and add edges to FF_SINKs and FF_SOURCEs
-    for(const auto clock_kv : logical_block_FF_clocks) {
+    for(const auto clock_kv : ff_info.logical_block_FF_clocks) {
         BlockId logical_block_id = clock_kv.first;
-        TATUM_ASSERT(clock_kv.second.size() == 1);
-        NodeId ff_clock_node_id = clock_kv.second[0];
+        NodeId ff_clock_node_id = clock_kv.second;
 
         //Check for FF_SOURCEs associated with this FF_CLOCK pin
-        auto src_iter = logical_block_FF_sources.find(logical_block_id);
-        if(src_iter != logical_block_FF_sources.end()) {
-            //Go through each assoicated source and add an edge to it
-            for(NodeId ff_src_node_id : src_iter->second) {
-                tg.add_edge(ff_clock_node_id, ff_src_node_id);
+        auto src_range = ff_info.logical_block_FF_sources.equal_range(logical_block_id);
+        //Go through each assoicated source and add an edge to it
+        for(auto kv : tatum::util::make_range(src_range.first, src_range.second)) {
+            NodeId ff_src_node_id = kv.second;
+            tg.add_edge(ff_clock_node_id, ff_src_node_id);
 
-                //Mark edge as having zero delay
-                edge_delays.push_back(0.);
+            //Mark edge as having zero delay
+            edge_delays.push_back(0.);
 
-                ++num_edges_added;
-            }
+            ++num_edges_added;
         }
 
         //Check for FF_SINKs associated with this FF_CLOCK pin
-        auto sink_iter = logical_block_FF_sinks.find(logical_block_id);
-        if(sink_iter != logical_block_FF_sinks.end()) {
-            //Go through each assoicated sink and add an edge to it
-            for(NodeId ff_sink_node_id : sink_iter->second) {
-                tg.add_edge(ff_clock_node_id, ff_sink_node_id);
+        auto sink_range = ff_info.logical_block_FF_sinks.equal_range(logical_block_id);
+        //Go through each assoicated source and add an edge to it
+        for(auto kv : tatum::util::make_range(sink_range.first, sink_range.second)) {
+            NodeId ff_sink_node_id = kv.second;
+            tg.add_edge(ff_clock_node_id, ff_sink_node_id);
 
-                //Mark edge as having zero delay
-                edge_delays.push_back(0.);
+            //Mark edge as having zero delay
+            edge_delays.push_back(0.);
 
-                ++num_edges_added;
-            }
+            ++num_edges_added;
         }
     }
 

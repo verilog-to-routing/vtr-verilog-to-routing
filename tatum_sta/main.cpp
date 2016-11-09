@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
     auto timing_constraints = std::make_shared<TimingConstraints>();
     VprArrReqTimes orig_expected_arr_req_times;
     std::vector<float> orig_edge_delays;
-    std::vector<BlockId> node_logical_blocks;
+    VprFfInfo ff_info;
 
     //Potentially modified based on parser output
     VprArrReqTimes expected_arr_req_times;
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
 
         yyin = fopen(argv[1], "r");
         if(yyin != NULL) {
-            int error = yyparse(*timing_graph, orig_expected_arr_req_times, *timing_constraints, node_logical_blocks, orig_edge_delays);
+            int error = yyparse(*timing_graph, orig_expected_arr_req_times, *timing_constraints, ff_info, orig_edge_delays);
             if(error) {
                 cout << "Parse Error" << endl;
                 fclose(yyin);
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         //Fix up the timing graph.
         //VPR doesn't have edges from FF_CLOCKs to FF_SOURCEs and FF_SINKs,
         //but we require them. So post-process the timing graph here to add them.
-        add_ff_clock_to_source_sink_edges(*timing_graph, node_logical_blocks, orig_edge_delays);
+        add_ff_clock_to_source_sink_edges(*timing_graph, ff_info, orig_edge_delays);
         //We then need to re-levelize the graph
         timing_graph->levelize();
 

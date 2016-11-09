@@ -64,6 +64,7 @@ enum class VprNodeType {
 typedef struct node_s {
     int node_id;
     tatum::NodeType type;
+    VprNodeType vpr_type;
     int ipin;
     int iblk;
     int domain;
@@ -77,6 +78,12 @@ typedef struct node_s {
 struct domain_header_t {
     int src_domain;
     int sink_domain;
+};
+
+struct VprFfInfo {
+    std::multimap<BlockId,tatum::NodeId> logical_block_FF_clocks;
+    std::multimap<BlockId,tatum::NodeId> logical_block_FF_sources;
+    std::multimap<BlockId,tatum::NodeId> logical_block_FF_sinks;
 };
 
 class VprArrReqTimes {
@@ -171,6 +178,6 @@ class VprArrReqTimes {
 
 };
 
-extern int yyparse(tatum::TimingGraph& tg, VprArrReqTimes& arr_req_times, tatum::TimingConstraints& tc, std::vector<BlockId>& node_logical_blocks, std::vector<float>& edge_delays);
+extern int yyparse(tatum::TimingGraph& tg, VprArrReqTimes& arr_req_times, tatum::TimingConstraints& tc, VprFfInfo& ff_info, std::vector<float>& edge_delays);
 extern FILE *yyin;
 

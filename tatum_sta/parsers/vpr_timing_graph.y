@@ -13,7 +13,7 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-int yyerror(const tatum::TimingGraph& tg, const VprArrReqTimes& arr_req_times, const tatum::TimingConstraints& tc, const std::vector<BlockId>& node_logical_blocks, const std::vector<float>& edge_delays, const char *msg);
+int yyerror(const tatum::TimingGraph& tg, const VprArrReqTimes& arr_req_times, const tatum::TimingConstraints& tc, const VprFfInfo& ff_info, const std::vector<float>& edge_delays, const char *msg);
 extern int yylex(void);
 extern int yylineno;
 extern char* yytext;
@@ -42,7 +42,7 @@ using tatum::TimingConstraints;
 %parse-param{tatum::TimingGraph& timing_graph}
 %parse-param{VprArrReqTimes& arr_req_times}
 %parse-param{tatum::TimingConstraints& timing_constraints}
-%parse-param{std::vector<BlockId>& node_logical_blocks}
+%parse-param{VprFfInfo& ff_info}
 %parse-param{std::vector<float>& edge_delays}
 
 %union {
@@ -209,7 +209,14 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
 
                                                 //Save the edges to be added later
                                                 node_out_edges.push_back($2.out_edges);
-                                                node_logical_blocks.emplace_back($2.iblk);
+
+                                                if($2.vpr_type == VprNodeType::FF_SOURCE) {
+                                                    ff_info.logical_block_FF_sources.insert(std::make_pair(BlockId($2.iblk), src_node_id));
+                                                } else if ($2.vpr_type == VprNodeType::FF_SINK) {
+                                                    ff_info.logical_block_FF_sinks.insert(std::make_pair(BlockId($2.iblk), src_node_id));
+                                                } else if ($2.vpr_type == VprNodeType::FF_CLOCK) {
+                                                    ff_info.logical_block_FF_clocks.insert(std::make_pair(BlockId($2.iblk), src_node_id));
+                                                }
 
                                                 TATUM_ASSERT(size_t(src_node_id) == node_out_edges.size() - 1);
 
@@ -282,6 +289,7 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                         default:
                                                                             throw tatum::Error("Unrecognzied VPR node type");
                                                                       }
+                                                                      $$.vpr_type = $2;
                                                                       $$.ipin = $3;
                                                                       $$.iblk = $4;
                                                                       $$.domain = $5;
@@ -436,7 +444,7 @@ int_number: INT_NUMBER { $$ = $1; }
 %%
 
 
-int yyerror(const TimingGraph& /*tg*/, const VprArrReqTimes& /*arr_req_times*/, const TimingConstraints& /*tc*/, const std::vector<BlockId>& /*node_logical_blocks*/, const std::vector<float>& /*edge_delays*/, const char *msg) {
+int yyerror(const TimingGraph& /*tg*/, const VprArrReqTimes& /*arr_req_times*/, const TimingConstraints& /*tc*/, const VprFfInfo& /*ff_info*/, const std::vector<float>& /*edge_delays*/, const char *msg) {
     printf("Line: %d, Text: '%s', Error: %s\n",yylineno, yytext, msg);
     return 1;
 }
