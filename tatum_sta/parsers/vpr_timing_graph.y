@@ -254,13 +254,11 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                       $$.node_id = $1;
                                                                       switch($2) {
                                                                         case VprNodeType::INPAD_SOURCE:
+                                                                        case VprNodeType::CLOCK_SOURCE:
                                                                             $$.type = tatum::NodeType::SOURCE;
                                                                             break;
                                                                         case VprNodeType::FF_SOURCE:
                                                                             $$.type = tatum::NodeType::FF_SOURCE;
-                                                                            break;
-                                                                        case VprNodeType::CLOCK_SOURCE:
-                                                                            $$.type = tatum::NodeType::CLOCK_SOURCE;
                                                                             break;
                                                                         case VprNodeType::CONSTANT_GEN_SOURCE:
                                                                             $$.type = tatum::NodeType::CONSTANT_GEN_SOURCE;
