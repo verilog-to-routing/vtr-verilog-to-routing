@@ -24,24 +24,46 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
             for(EdgeId out_edge : tg.node_out_edges(node)) {
                 NodeId sink_node = tg.edge_sink_node(out_edge);
 
-                if(tg.node_type(sink_node) == NodeType::OPIN) {
+                TATUM_ASSERT(tg.node_type(sink_node) == NodeType::OPIN);
 
-                    if(tg.node_in_edges(node).size() == 0) {
-                        //Primary Input source node
-                        std::cout << "Remove PI OPIN " << sink_node << " Input Constraint on " << node << " " << edge_delays[size_t(out_edge)] << "\n";
-                    } else {
-                        //FF source
-                        TATUM_ASSERT_MSG(tg.node_in_edges(node).size() == 1, "Single clock input");
+                if(tg.node_in_edges(node).size() == 0) {
+                    //Primary Input source node
+                    NodeId opin_src_node = node;
+                    NodeId opin_node = sink_node;
+                    TATUM_ASSERT(tg.node_out_edges(opin_node).size() == 1);
+                    EdgeId opin_out_edge = *tg.node_out_edges(opin_node).begin();
+                    NodeId opin_sink_node = tg.edge_sink_node(opin_out_edge);
 
-                        float tcq = edge_delays[size_t(out_edge)];
+                    float constraint = edge_delays[size_t(out_edge)];
+                    float opin_out_delay = edge_delays[size_t(opin_out_edge)];
 
-                        EdgeId in_edge = *tg.node_in_edges(node).begin();
+                    //Remove the node (and it's connected edges)
+                    tg.remove_node(opin_node);
 
-                        NodeId clock_sink = tg.edge_src_node(in_edge);
+                    //Add the new edge
+                    EdgeId new_edge = tg.add_edge(opin_src_node, opin_sink_node);
 
-                        std::cout << "Remove FF OPIN " << sink_node << " Tcq " << tcq << " " << clock_sink << " -> " << node << "\n";
+                    //Set the edge delay
+                    edge_delays.resize(size_t(new_edge) + 1); //Make space
+                    edge_delays[size_t(new_edge)] = opin_out_delay;
 
-                    }
+                    tc.set_input_constraint(opin_src_node, tc.node_clock_domain(opin_src_node), constraint);
+
+                    std::cout << "Remove PI OPIN " << sink_node << " Input Constraint on " << node << " " << constraint << "\n";
+
+
+                } else {
+                    //FF source
+                    TATUM_ASSERT_MSG(tg.node_in_edges(node).size() == 1, "Single clock input");
+
+                    float tcq = edge_delays[size_t(out_edge)];
+
+                    EdgeId in_edge = *tg.node_in_edges(node).begin();
+
+                    NodeId clock_sink = tg.edge_src_node(in_edge);
+
+                    std::cout << "Remove FF OPIN " << sink_node << " Tcq " << tcq << " " << clock_sink << " -> " << node << "\n";
+
                 }
             }
         } else if(tg.node_type(node) == NodeType::SINK) {
