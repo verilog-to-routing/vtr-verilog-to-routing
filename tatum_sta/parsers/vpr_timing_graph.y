@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "tatum_assert.hpp"
+#include "tatum_error.hpp"
 #include "vpr_timing_graph_common.hpp"
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
@@ -53,7 +54,7 @@ using tatum::TimingConstraints;
     node_arr_req_t nodeArrReqVal;
     timing_graph_level_t timingGraphLevelVal;
     node_t nodeVal;
-    tatum::NodeType nodeTypeVal;
+    VprNodeType nodeTypeVal;
     domain_header_t domain_header;
 };
 
@@ -251,12 +252,57 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
 
 tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edges {
                                                                       $$.node_id = $1;
-                                                                      $$.type = $2;
+                                                                      switch($2) {
+                                                                        case VprNodeType::INPAD_SOURCE:
+                                                                            $$.type = tatum::NodeType::INPAD_SOURCE;
+                                                                            break;
+                                                                        case VprNodeType::FF_SOURCE:
+                                                                            $$.type = tatum::NodeType::FF_SOURCE;
+                                                                            break;
+                                                                        case VprNodeType::CLOCK_SOURCE:
+                                                                            $$.type = tatum::NodeType::CLOCK_SOURCE;
+                                                                            break;
+                                                                        case VprNodeType::CONSTANT_GEN_SOURCE:
+                                                                            $$.type = tatum::NodeType::CONSTANT_GEN_SOURCE;
+                                                                            break;
+                                                                        case VprNodeType::INPAD_OPIN:
+                                                                            $$.type = tatum::NodeType::INPAD_OPIN;
+                                                                            break;
+                                                                        case VprNodeType::PRIMITIVE_OPIN:
+                                                                            $$.type = tatum::NodeType::PRIMITIVE_OPIN;
+                                                                            break;
+                                                                        case VprNodeType::FF_OPIN:
+                                                                            $$.type = tatum::NodeType::FF_OPIN;
+                                                                            break;
+                                                                        case VprNodeType::CLOCK_OPIN:
+                                                                            $$.type = tatum::NodeType::CLOCK_OPIN;
+                                                                            break;
+                                                                        case VprNodeType::OUTPAD_IPIN:
+                                                                            $$.type = tatum::NodeType::OUTPAD_IPIN;
+                                                                            break;
+                                                                        case VprNodeType::PRIMITIVE_IPIN:
+                                                                            $$.type = tatum::NodeType::PRIMITIVE_IPIN;
+                                                                            break;
+                                                                        case VprNodeType::FF_IPIN:
+                                                                            $$.type = tatum::NodeType::FF_IPIN;
+                                                                            break;
+                                                                        case VprNodeType::OUTPAD_SINK:
+                                                                            $$.type = tatum::NodeType::OUTPAD_SINK;
+                                                                            break;
+                                                                        case VprNodeType::FF_SINK:
+                                                                            $$.type = tatum::NodeType::FF_SINK;
+                                                                            break;
+                                                                        case VprNodeType::FF_CLOCK:
+                                                                            $$.type = tatum::NodeType::FF_CLOCK;
+                                                                            break;
+                                                                        default:
+                                                                            throw tatum::Error("Unrecognzied VPR node type");
+                                                                      }
                                                                       $$.ipin = $3;
                                                                       $$.iblk = $4;
                                                                       $$.domain = $5;
                                                                       $$.is_clk_src = $6;
-                                                                      $$.is_const_gen = ($$.type == NodeType::CONSTANT_GEN_SOURCE);
+                                                                      $$.is_const_gen = ($2 == VprNodeType::CONSTANT_GEN_SOURCE);
                                                                       $$.skew = $7;
                                                                       $$.iodelay = $8;
                                                                       $$.out_edges = new std::vector<edge_t>;
@@ -279,23 +325,23 @@ num_out_edges: int_number {$$ = $1;}
 tedge: TAB int_number TAB number EOL { $$.sink_node = $2; $$.delay = $4; }
     | TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB TAB int_number TAB number EOL { $$.sink_node = $12; $$.delay = $14; }
 
-tnode_type: TN_INPAD_SOURCE TAB     { $$ = NodeType::INPAD_SOURCE; }
-    | TN_INPAD_OPIN TAB             { $$ = NodeType::INPAD_OPIN; }
-    | TN_OUTPAD_IPIN TAB            { $$ = NodeType::OUTPAD_IPIN; }
-    | TN_OUTPAD_SINK TAB            { $$ = NodeType::OUTPAD_SINK; }
-    | TN_CB_IPIN TAB                { $$ = NodeType::UNKOWN; }
-    | TN_CB_OPIN TAB                { $$ = NodeType::UNKOWN; }
-    | TN_INTERMEDIATE_NODE TAB      { $$ = NodeType::UNKOWN; }
-    | TN_PRIMITIVE_IPIN TAB         { $$ = NodeType::PRIMITIVE_IPIN; }
-    | TN_PRIMITIVE_OPIN TAB         { $$ = NodeType::PRIMITIVE_OPIN; }
-    | TN_FF_IPIN TAB                { $$ = NodeType::FF_IPIN; }
-    | TN_FF_OPIN TAB                { $$ = NodeType::FF_OPIN; }
-    | TN_FF_SINK TAB                { $$ = NodeType::FF_SINK; }
-    | TN_FF_SOURCE TAB              { $$ = NodeType::FF_SOURCE; }
-    | TN_FF_CLOCK TAB               { $$ = NodeType::FF_CLOCK; }
-    | TN_CLOCK_SOURCE TAB           { $$ = NodeType::CLOCK_SOURCE; }
-    | TN_CLOCK_OPIN TAB             { $$ = NodeType::CLOCK_OPIN; }
-    | TN_CONSTANT_GEN_SOURCE TAB    { $$ = NodeType::CONSTANT_GEN_SOURCE; }
+tnode_type: TN_INPAD_SOURCE TAB     { $$ = VprNodeType::INPAD_SOURCE; }
+    | TN_INPAD_OPIN TAB             { $$ = VprNodeType::INPAD_OPIN; }
+    | TN_OUTPAD_IPIN TAB            { $$ = VprNodeType::OUTPAD_IPIN; }
+    | TN_OUTPAD_SINK TAB            { $$ = VprNodeType::OUTPAD_SINK; }
+    | TN_CB_IPIN TAB                { $$ = VprNodeType::UNKOWN; }
+    | TN_CB_OPIN TAB                { $$ = VprNodeType::UNKOWN; }
+    | TN_INTERMEDIATE_NODE TAB      { $$ = VprNodeType::UNKOWN; }
+    | TN_PRIMITIVE_IPIN TAB         { $$ = VprNodeType::PRIMITIVE_IPIN; }
+    | TN_PRIMITIVE_OPIN TAB         { $$ = VprNodeType::PRIMITIVE_OPIN; }
+    | TN_FF_IPIN TAB                { $$ = VprNodeType::FF_IPIN; }
+    | TN_FF_OPIN TAB                { $$ = VprNodeType::FF_OPIN; }
+    | TN_FF_SINK TAB                { $$ = VprNodeType::FF_SINK; }
+    | TN_FF_SOURCE TAB              { $$ = VprNodeType::FF_SOURCE; }
+    | TN_FF_CLOCK TAB               { $$ = VprNodeType::FF_CLOCK; }
+    | TN_CLOCK_SOURCE TAB           { $$ = VprNodeType::CLOCK_SOURCE; }
+    | TN_CLOCK_OPIN TAB             { $$ = VprNodeType::CLOCK_OPIN; }
+    | TN_CONSTANT_GEN_SOURCE TAB    { $$ = VprNodeType::CONSTANT_GEN_SOURCE; }
 
 num_tnodes: NUM_TNODES int_number {$$ = $2; }
 

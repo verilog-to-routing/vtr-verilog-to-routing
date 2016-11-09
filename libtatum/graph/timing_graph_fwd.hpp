@@ -28,6 +28,11 @@ enum class NodeType {
     CLOCK_SOURCE, //A clock generator such as a PLL
     CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE
 	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0
+    SOURCE,
+    SINK,
+    CLOCK_SINK,
+    IPIN,
+    OPIN,
     UNKOWN //Unrecognized type, if encountered this is almost certainly an error
 };
 

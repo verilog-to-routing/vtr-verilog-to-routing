@@ -43,6 +43,24 @@ typedef struct timing_graph_level_s {
     std::vector<int>* node_ids;
 } timing_graph_level_t;
 
+enum class VprNodeType {
+	INPAD_SOURCE, //Driver of an input I/O pad
+	INPAD_OPIN, //Output pin of an input I/O pad
+	OUTPAD_IPIN, //Input pin of an output I/O pad
+	OUTPAD_SINK, //Sink of an output I/O pad
+	PRIMITIVE_IPIN, //Input pin to a primitive (e.g. LUT)
+	PRIMITIVE_OPIN, //Output pin from a primitive (e.g. LUT)
+	FF_IPIN, //Input pin to a flip-flop - goes to FF_SINK
+	FF_OPIN, //Output pin from a flip-flop - comes from FF_SOURCE
+	FF_SINK, //Sink (D) pin of flip-flop
+	FF_SOURCE, //Source (Q) pin of flip-flop
+	FF_CLOCK, //Clock pin of flip-flop
+    CLOCK_SOURCE, //A clock generator such as a PLL
+    CLOCK_OPIN, //Output pin from an on-chip clock source - comes from CLOCK_SOURCE
+	CONSTANT_GEN_SOURCE, //Source of a constant logic 1 or 0
+    UNKOWN //Unrecognized type, if encountered this is almost certainly an error
+};
+
 typedef struct node_s {
     int node_id;
     tatum::NodeType type;
