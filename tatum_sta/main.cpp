@@ -43,6 +43,9 @@
 //will not match VPR
 //#define CHECK_TATUM_TO_VPR_DIFFERENCES
 
+//Do we dump an echo file?
+//#define ECHO
+
 typedef std::chrono::duration<double> dsec;
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -205,11 +208,13 @@ int main(int argc, char** argv) {
     //Create the delay calculator
     auto delay_calculator = std::make_shared<tatum::FixedDelayCalculator>(edge_delays);
 
+#ifdef ECHO
     std::ofstream ofs("timing_graph.echo");
     write_timing_graph(ofs, *timing_graph);
     write_timing_constraints(ofs, *timing_constraints);
     write_delay_model(ofs, *timing_graph, *delay_calculator);
     ofs.flush();
+#endif
 
     //Create the timing analyzer
     std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
@@ -406,7 +411,9 @@ int main(int argc, char** argv) {
     }
     cout << endl;
 
+#ifdef ECHO
     write_analysis_result(ofs, *timing_graph, serial_analyzer);
+#endif
 
 
     cout << "Parallel Speed-Up: " << std::fixed << serial_prof_data["analysis_sec"] / parallel_prof_data["analysis_sec"] << "x" << endl;
