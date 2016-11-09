@@ -80,7 +80,7 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
             logical_block_FF_clocks[blk_id].push_back(node_id);
         } else if (tg.node_type(node_id) == NodeType::FF_SOURCE) {
             logical_block_FF_sources[blk_id].push_back(node_id);
-        } else if (tg.node_type(node_id) == NodeType::FF_SINK) {
+        } else if (tg.node_type(node_id) == NodeType::SINK) {
             logical_block_FF_sinks[blk_id].push_back(node_id);
         }
     }
