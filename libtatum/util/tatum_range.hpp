@@ -40,6 +40,8 @@ namespace tatum { namespace util {
 template<typename T>
 class Range {
     public:
+        typedef T iterator;
+    public:
         Range(T b, T e): begin_(b), end_(e) {}
         T begin() const { return begin_; }
         T end() const { return end_; }

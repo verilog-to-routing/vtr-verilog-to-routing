@@ -5,6 +5,7 @@
 
 #include "util.hpp"
 
+#include "tatum_error.hpp"
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
@@ -14,10 +15,30 @@ using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::NodeType;
 
+template<typename Range>
+size_t num_valid(Range range) {
+    size_t count = 0;
+    for(auto val : range) {
+        if(val) ++count;
+    }
+    return count;
+}
+
+template<typename Range>
+typename Range::iterator ith_valid(Range range, size_t i) {
+    size_t j = 0;
+    for(auto iter = range.begin(); iter != range.end(); ++iter) {
+        if(*iter && ++j == i) return iter;
+    }
+    throw tatum::Error("No valid ith value");
+}
+
 void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInfo& ff_info, std::vector<float>& edge_delays, VprArrReqTimes& arr_req_times) {
     TimingConstraints new_tc;
 
     //Rebuild the graph to elminate redundant nodes (e.g. IPIN/OPINs in front of SOURCES/SINKS)
+
+    std::map<NodeId,NodeId> arr_req_remap;
 
     for(NodeId node : tg.nodes()) {
         if(tg.node_type(node) == NodeType::SOURCE) {
@@ -56,11 +77,36 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
                     //FF source
                     TATUM_ASSERT_MSG(tg.node_in_edges(node).size() == 1, "Single clock input");
 
+                    NodeId opin_src_node = node;
+                    NodeId opin_node = sink_node;
+                    auto opin_out_edges = tg.node_out_edges(opin_node);
+                    TATUM_ASSERT(num_valid(opin_out_edges) == 1);
+                    EdgeId opin_out_edge = *ith_valid(opin_out_edges, 1);
+                    NodeId opin_sink_node = tg.edge_sink_node(opin_out_edge);
+
                     float tcq = edge_delays[size_t(out_edge)];
+                    float opin_out_delay = edge_delays[size_t(opin_out_edge)];
 
-                    EdgeId in_edge = *tg.node_in_edges(node).begin();
+                    EdgeId source_in_edge = *tg.node_in_edges(node).begin();
+                    NodeId clock_sink = tg.edge_src_node(source_in_edge);
 
-                    NodeId clock_sink = tg.edge_src_node(in_edge);
+                    //Remove the node (and it's edges)
+                    tg.remove_node(opin_node);
+
+                    //Add the new edge
+                    EdgeId new_edge = tg.add_edge(opin_src_node, opin_sink_node);
+
+                    //Set the edge delay
+                    edge_delays.resize(size_t(new_edge) + 1); //Make space
+                    edge_delays[size_t(new_edge)] = opin_out_delay;
+
+                    //Move the SOURCE->OPIN delay (tcq) to the CLOCK->SOURCE edge
+                    edge_delays[size_t(source_in_edge)] = tcq;
+
+                    //Since we've moved around the tcq delay we need to note which original node it should be compared with
+                    //(i.e. when we verify correctness we need to check the golden result for the OPIN's data arr/req at the
+                    //SOURCE node
+                    arr_req_remap[opin_src_node] = opin_node;
 
                     std::cout << "Remove FF OPIN " << sink_node << " Tcq " << tcq << " " << clock_sink << " -> " << node << "\n";
 
@@ -154,10 +200,19 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
     for(auto src_domain : arr_req_times.domains()) {
         //For every clock domain pair
         for(int i = 0; i < arr_req_times.get_num_nodes(); i++) {
+            NodeId old_id = NodeId(i);
+
+            if(arr_req_remap.count(old_id)) {
+                //Remap the arr/req to compare with
+                old_id = arr_req_remap[old_id]; 
+            }
+
+            //Now remap the the new node ids
             NodeId new_id = id_maps.node_id_map[NodeId(i)];
+
             if(new_id) {
-                new_arr_req_times.add_arr_time(src_domain, new_id, arr_req_times.get_arr_time(src_domain, NodeId(i)));
-                new_arr_req_times.add_req_time(src_domain, new_id, arr_req_times.get_req_time(src_domain, NodeId(i)));
+                new_arr_req_times.add_arr_time(src_domain, new_id, arr_req_times.get_arr_time(src_domain, old_id));
+                new_arr_req_times.add_req_time(src_domain, new_id, arr_req_times.get_req_time(src_domain, old_id));
             }
         }
     }
