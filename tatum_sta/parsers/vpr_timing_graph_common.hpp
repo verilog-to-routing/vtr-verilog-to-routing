@@ -50,6 +50,7 @@ typedef struct node_s {
     int iblk;
     int domain;
     int is_clk_src;
+    bool is_const_gen;
     float skew;
     float iodelay;
     std::vector<edge_t>* out_edges;

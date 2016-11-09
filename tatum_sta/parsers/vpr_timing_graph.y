@@ -198,8 +198,12 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                 NodeId src_node_id = timing_graph.add_node($2.type, domain_id, $2.is_clk_src);
 
                                                 if($2.is_clk_src) {
-                                                    cout << "Marking clock sorce for " << domain_id <<  " " << src_node_id << endl;
+                                                    cout << "Marking clock source for " << domain_id <<  " " << src_node_id << endl;
                                                     timing_constraints.set_clock_domain_source(src_node_id, domain_id);
+                                                }
+                                                if($2.is_const_gen) {
+                                                    cout << "Marking const gen for " << src_node_id << endl;
+                                                    timing_constraints.set_constant_generator(src_node_id);
                                                 }
 
                                                 //Save the edges to be added later
@@ -252,6 +256,7 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                       $$.iblk = $4;
                                                                       $$.domain = $5;
                                                                       $$.is_clk_src = $6;
+                                                                      $$.is_const_gen = ($$.type == NodeType::CONSTANT_GEN_SOURCE);
                                                                       $$.skew = $7;
                                                                       $$.iodelay = $8;
                                                                       $$.out_edges = new std::vector<edge_t>;

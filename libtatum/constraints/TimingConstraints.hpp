@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include <unordered_set>
 
 #include "timing_constraints_fwd.hpp"
 
@@ -19,10 +20,12 @@ class TimingConstraints {
         typedef tatum::util::linear_map<DomainId,DomainId>::const_iterator domain_iterator;
         typedef std::map<DomainPair,float>::const_iterator clock_constraint_iterator;
         typedef std::map<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
+        typedef std::unordered_set<NodeId>::const_iterator constant_generator_iterator;
 
         typedef tatum::util::Range<domain_iterator> domain_range;
         typedef tatum::util::Range<clock_constraint_iterator> clock_constraint_range;
         typedef tatum::util::Range<io_constraint_iterator> io_constraint_range;
+        typedef tatum::util::Range<constant_generator_iterator> constant_generator_range;
 
     public: //Accessors
         //\returns A range containing all defined clock domains
@@ -39,6 +42,9 @@ class TimingConstraints {
 
         //\returns True if the node id is a clock source
         bool node_is_clock_source(const NodeId id) const;
+
+        //\returns True if the node id is a constant generator
+        bool node_is_constant_generator(const NodeId id) const;
 
         //\returns A valid DomainId if a clock domain with the specified name exists, DomainId::INVALID() otherwise
         DomainId find_clock_domain(const std::string& name) const;
@@ -59,6 +65,9 @@ class TimingConstraints {
 
         ///\returns The output delay constraint on node_id
         float output_constraint(const NodeId node_id, const DomainId domain_id) const;
+
+        ///\returns A range of all constant generator nodes
+        constant_generator_range constant_generators() const;
 
         //\returns A range of all setup constraints
         clock_constraint_range setup_constraints() const;
@@ -96,7 +105,11 @@ class TimingConstraints {
         ///Sets the output delay constraint on node_id with value constraint
         void set_output_constraint(const NodeId node_id, const DomainId domain_id, const float constraint);
 
+        ///Sets the source node for the specified clock domain
         void set_clock_domain_source(const NodeId node_id, const DomainId domain_id);
+
+        ///Sets whether the specified node is a constant generator
+        void set_constant_generator(const NodeId node_id, bool is_constant_generator=true);
 
         ///Update node IDs if they have changed
         ///\param node_map A vector mapping from old to new node ids
@@ -116,6 +129,8 @@ class TimingConstraints {
         tatum::util::linear_map<DomainId,DomainId> domain_ids_;
         tatum::util::linear_map<DomainId,std::string> domain_names_;
         tatum::util::linear_map<DomainId,NodeId> domain_sources_;
+
+        std::unordered_set<NodeId> constant_generators_;
 
         std::map<DomainPair,float> setup_constraints_;
         std::map<DomainPair,float> hold_constraints_;

@@ -57,6 +57,10 @@ bool TimingConstraints::node_is_clock_source(const NodeId id) const {
     return bool(find_node_source_clock_domain(id));
 }
 
+bool TimingConstraints::node_is_constant_generator(const NodeId id) const {
+    return constant_generators_.count(id);
+}
+
 DomainId TimingConstraints::find_node_source_clock_domain(const NodeId node_id) const {
     //We don't expect many clocks, so the linear search should be fine
     for(auto domain_id : clock_domains()) {
@@ -121,6 +125,10 @@ float TimingConstraints::output_constraint(const NodeId node_id, const DomainId 
     }
 
     return std::numeric_limits<float>::quiet_NaN();
+}
+
+TimingConstraints::constant_generator_range TimingConstraints::constant_generators() const {
+    return tatum::util::make_range(constant_generators_.begin(), constant_generators_.end());
 }
 
 TimingConstraints::clock_constraint_range TimingConstraints::setup_constraints() const {
@@ -204,6 +212,14 @@ void TimingConstraints::set_output_constraint(const NodeId node_id, const Domain
 
 void TimingConstraints::set_clock_domain_source(const NodeId node_id, const DomainId domain_id) {
     domain_sources_[domain_id] = node_id;
+}
+
+void TimingConstraints::set_constant_generator(const NodeId node_id, bool is_constant_generator) {
+    if(is_constant_generator) {
+        constant_generators_.insert(node_id);
+    } else {
+        constant_generators_.erase(node_id);
+    }
 }
 
 void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map) {
