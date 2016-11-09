@@ -85,6 +85,11 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
         }
     }
 
+    std::cout << "FF_CLOCK: " << logical_block_FF_clocks.size() << "\n";
+    std::cout << "FF_SOURCE: " << logical_block_FF_clocks.size() << "\n";
+    std::cout << "FF_SINK: " << logical_block_FF_clocks.size() << "\n";
+
+    size_t num_edges_added = 0;
     //Loop through each FF_CLOCK and add edges to FF_SINKs and FF_SOURCEs
     for(const auto clock_kv : logical_block_FF_clocks) {
         BlockId logical_block_id = clock_kv.first;
@@ -100,6 +105,8 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
 
                 //Mark edge as having zero delay
                 edge_delays.push_back(0.);
+
+                ++num_edges_added;
             }
         }
 
@@ -112,9 +119,13 @@ void add_ff_clock_to_source_sink_edges(TimingGraph& tg, const std::vector<BlockI
 
                 //Mark edge as having zero delay
                 edge_delays.push_back(0.);
+
+                ++num_edges_added;
             }
         }
     }
+
+    std::cout << "FF related Edges added: " << num_edges_added << "\n";
 }
 
 float relative_error(float A, float B) {
