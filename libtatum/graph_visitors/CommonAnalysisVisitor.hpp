@@ -116,7 +116,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
      * Calculate required times
      */
     auto node_type = tg.node_type(node_id);
-    TATUM_ASSERT(node_type == NodeType::OUTPAD_SINK || node_type == NodeType::FF_SINK);
+    TATUM_ASSERT(node_type == NodeType::SINK || node_type == NodeType::FF_SINK);
 
     //Sinks corresponding to FF sinks will have propagated clock tags,
     //while those corresponding to outpads will not.

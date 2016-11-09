@@ -275,7 +275,7 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                             $$.type = tatum::NodeType::IPIN;
                                                                             break;
                                                                         case VprNodeType::OUTPAD_SINK:
-                                                                            $$.type = tatum::NodeType::OUTPAD_SINK;
+                                                                            $$.type = tatum::NodeType::SINK;
                                                                             break;
                                                                         case VprNodeType::FF_SINK:
                                                                             $$.type = tatum::NodeType::FF_SINK;
