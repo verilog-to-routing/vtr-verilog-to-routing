@@ -115,6 +115,8 @@ int main(int argc, char** argv) {
         //We then need to re-levelize the graph
         timing_graph->levelize();
 
+        rebuild_timing_graph(*timing_graph, *timing_constraints, ff_info, orig_edge_delays, orig_expected_arr_req_times);
+
         cout << "Timing Graph Stats:" << endl;
         cout << "  Nodes : " << timing_graph->nodes().size() << endl;
         cout << "  Levels: " << timing_graph->levels().size() << endl;
