@@ -50,7 +50,7 @@ class CommonAnalysisVisitor {
         template<class DelayCalc>
         void do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
 
-        bool is_clock_to_data_edge(const TimingGraph& tg, const NodeId src_node_id, const NodeId node_id) const;
+        bool is_clock_data_edge(const TimingGraph& tg, const EdgeId edge_id) const;
 
 };
 
@@ -257,7 +257,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
             //Standard propagation through the clock network
             ops_.merge_arr_tags(node_clock_tags, src_clk_tag.arr_time() + edge_delay, src_clk_tag);
 
-            if(is_clock_to_data_edge(tg, src_node_id, node_id)) {
+            if(is_clock_data_edge(tg, edge_id)) {
                 //We convert the clock arrival time to a data
                 //arrival time at this node (since the clock
                 //arrival launches the data).
@@ -327,9 +327,11 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 }
 
 template<class AnalysisOps>
-bool CommonAnalysisVisitor<AnalysisOps>::is_clock_to_data_edge(const TimingGraph& tg, const NodeId src_node_id, const NodeId node_id) const {
-    if(tg.node_type(src_node_id) == NodeType::SINK && tg.node_type(node_id) == NodeType::SOURCE) return true;
-    return false;
+bool CommonAnalysisVisitor<AnalysisOps>::is_clock_data_edge(const TimingGraph& tg, const EdgeId edge_id) const {
+    NodeId edge_src_node = tg.edge_src_node(edge_id);
+    NodeId edge_sink_node = tg.edge_sink_node(edge_id);
+
+    return (tg.node_type(edge_src_node) == NodeType::SINK) && (tg.node_type(edge_sink_node) == NodeType::SOURCE);
 }
 
 }} //namepsace
