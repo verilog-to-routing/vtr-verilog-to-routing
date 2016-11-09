@@ -327,8 +327,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 }
 
 template<class AnalysisOps>
-bool CommonAnalysisVisitor<AnalysisOps>::is_clock_to_data_edge(const TimingGraph& tg, const NodeId /*src_node_id*/, const NodeId node_id) const {
-    if(tg.node_type(node_id) == NodeType::FF_SOURCE) return true;
+bool CommonAnalysisVisitor<AnalysisOps>::is_clock_to_data_edge(const TimingGraph& tg, const NodeId src_node_id, const NodeId node_id) const {
+    if(tg.node_type(src_node_id) == NodeType::FF_CLOCK && tg.node_type(node_id) == NodeType::SOURCE) return true;
     return false;
 }
 
