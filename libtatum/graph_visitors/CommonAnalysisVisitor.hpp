@@ -238,20 +238,21 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
     const Time& edge_delay = ops_.edge_delay(dc, tg, edge_id);
 
+    const TimingTags& src_clk_tags = ops_.get_clock_tags(src_node_id);
+    const TimingTags& src_data_tags = ops_.get_data_tags(src_node_id);
+
     /*
      * Clock tags
      */
-    if(tg.node_type(src_node_id) != NodeType::FF_SOURCE) {
-        //We do not propagate clock tags from an FF_SOURCE.
-        //The clock arrival will have already been converted to a
-        //data tag when the previous level was traversed.
 
-        const TimingTags& src_clk_tags = ops_.get_clock_tags(src_node_id);
+    if(src_data_tags.empty()) {
+        //Propagate the clock tags through the clock network
+
         for(const TimingTag& src_clk_tag : src_clk_tags) {
             //Standard propagation through the clock network
             ops_.merge_arr_tags(node_clock_tags, src_clk_tag.arr_time() + edge_delay, src_clk_tag);
 
-            if(tg.node_type(node_id) == NodeType::FF_SOURCE) {
+            if(tg.node_type(node_id) == NodeType::FF_SOURCE) { //FIXME: Should be any source type
                 //We are traversing a clock to data launch edge.
                 //
                 //We convert the clock arrival time to a data
@@ -274,7 +275,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
     /*
      * Data tags
      */
-    const TimingTags& src_data_tags = ops_.get_data_tags(src_node_id);
 
     for(const TimingTag& src_data_tag : src_data_tags) {
         //Standard data-path propagation
@@ -291,14 +291,6 @@ template<class AnalysisOps>
 template<class DelayCalc>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id) {
     //Pull from downstream sinks to current node
-
-    //We don't propagate required times past FF_CLOCK nodes,
-    //since anything upstream is part of the clock network
-    //
-    //TODO: if performing optimization on a clock network this may actually be useful
-    if(tg.node_type(node_id) == NodeType::FF_CLOCK) {
-        return;
-    }
 
     //Each back-edge from down stream node
     for(EdgeId edge_id : tg.node_out_edges(node_id)) {
