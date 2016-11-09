@@ -27,10 +27,10 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
     protected:
         virtual void update_timing_impl() override {
             graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_visitor_);            
-            graph_walker_.do_arrival_traversal(timing_graph_, delay_calculator_, setup_visitor_);            
+            graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_visitor_);            
 
             graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_visitor_);            
-            graph_walker_.do_required_traversal(timing_graph_, delay_calculator_, setup_visitor_);            
+            graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_visitor_);            
         }
 
         virtual void reset_timing_impl() override { setup_visitor_.reset(); }

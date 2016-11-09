@@ -33,15 +33,15 @@ class SetupHoldAnalysis {
         }
 
         template<class DelayCalc>
-        void do_arrival_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id) { 
-            setup_visitor_.do_arrival_traverse_node(tg, dc, node_id); 
-            hold_visitor_.do_arrival_traverse_node(tg, dc, node_id); 
+        void do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) { 
+            setup_visitor_.do_arrival_traverse_node(tg, tc, dc, node_id); 
+            hold_visitor_.do_arrival_traverse_node(tg, tc, dc, node_id); 
         }
 
         template<class DelayCalc>
-        void do_required_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id) { 
-            setup_visitor_.do_required_traverse_node(tg, dc, node_id); 
-            hold_visitor_.do_required_traverse_node(tg, dc, node_id); 
+        void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) { 
+            setup_visitor_.do_required_traverse_node(tg, tc, dc, node_id); 
+            hold_visitor_.do_required_traverse_node(tg, tc, dc, node_id); 
         }
 
         const TimingTags& get_setup_data_tags(const NodeId node_id) const { 

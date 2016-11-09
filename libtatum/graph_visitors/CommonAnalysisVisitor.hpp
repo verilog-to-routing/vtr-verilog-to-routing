@@ -33,10 +33,10 @@ class CommonAnalysisVisitor {
         void do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
         template<class DelayCalc>
-        void do_arrival_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id);
+        void do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
 
         template<class DelayCalc>
-        void do_required_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id);
+        void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
 
         void reset() { ops_.reset(); }
 
@@ -66,7 +66,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
     //We don't propagate any tags from constant generators,
     //since they do not effect the dynamic timing behaviour of the
     //system
-    if(node_type == NodeType::CONSTANT_GEN_SOURCE) return;
+    if(tc.node_is_constant_generator(node_id)) return;
 
     if(tc.node_is_clock_source(node_id)) {
         //Generate the appropriate clock tag
@@ -218,7 +218,10 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
 
 template<class AnalysisOps>
 template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGraph& tg, const DelayCalc& dc, NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, NodeId node_id) {
+    //Do not propagate arrival tags through constant generators
+    if(tc.node_is_constant_generator(node_id)) return;
+
     //Pull from upstream sources to current node
     for(EdgeId edge_id : tg.node_in_edges(node_id)) {
         do_arrival_traverse_edge(tg, dc, node_id, edge_id);
@@ -289,10 +292,11 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
 template<class AnalysisOps>
 template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id) {
-    //Pull from downstream sinks to current node
+void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) {
+    //Do not propagate required tags through constant generators
+    if(tc.node_is_constant_generator(node_id)) return;
 
-    //Each back-edge from down stream node
+    //Pull from downstream sinks to current node
     for(EdgeId edge_id : tg.node_out_edges(node_id)) {
         do_required_traverse_edge(tg, dc, node_id, edge_id);
     }

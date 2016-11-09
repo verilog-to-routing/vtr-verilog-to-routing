@@ -53,10 +53,10 @@ class TimingGraphWalker {
         ///\param tg The timing graph
         ///\param dc The edge delay calculator
         ///\param visitor The visitor to apply during the traversal
-        void do_arrival_traversal(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) {
+        void do_arrival_traversal(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) {
             auto start_time = Clock::now();
 
-            do_arrival_traversal_impl(tg, dc, visitor);
+            do_arrival_traversal_impl(tg, tc, dc, visitor);
 
             profiling_data_["arrival_traversal_sec"] = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
         }
@@ -65,10 +65,10 @@ class TimingGraphWalker {
         ///\param tg The timing graph
         ///\param dc The edge delay calculator
         ///\param visitor The visitor to apply during the traversal
-        void do_required_traversal(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) {
+        void do_required_traversal(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) {
             auto start_time = Clock::now();
 
-            do_required_traversal_impl(tg, dc, visitor);
+            do_required_traversal_impl(tg, tc, dc, visitor);
 
             profiling_data_["required_traversal_sec"] = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
         }
@@ -102,14 +102,14 @@ class TimingGraphWalker {
         ///\param tg The timing graph
         ///\param dc The edge delay calculator
         ///\param visitor The visitor to apply during the traversal
-        virtual void do_arrival_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) = 0;
+        virtual void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) = 0;
 
         ///Sub-class defined required time traversal
         ///Performs the required time traversal
         ///\param tg The timing graph
         ///\param dc The edge delay calculator
         ///\param visitor The visitor to apply during the traversal
-        virtual void do_required_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) = 0;
+        virtual void do_required_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) = 0;
 
     private:
         std::map<std::string, double> profiling_data_;

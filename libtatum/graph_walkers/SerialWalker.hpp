@@ -26,18 +26,18 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
             }
         }
 
-        void do_arrival_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) override {
+        void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
             for(LevelId level_id : tg.levels()) {
                 for(NodeId node_id : tg.level_nodes(level_id)) {
-                    visitor.do_arrival_traverse_node(tg, dc, node_id);
+                    visitor.do_arrival_traverse_node(tg, tc, dc, node_id);
                 }
             }
         }
 
-        void do_required_traversal_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) override {
+        void do_required_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
             for(LevelId level_id : tg.reversed_levels()) {
                 for(NodeId node_id : tg.level_nodes(level_id)) {
-                    visitor.do_required_traverse_node(tg, dc, node_id);
+                    visitor.do_required_traverse_node(tg, tc, dc, node_id);
                 }
             }
         }
