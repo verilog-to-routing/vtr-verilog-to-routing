@@ -259,8 +259,9 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
             if(is_clock_data_edge(tg, edge_id)) {
                 //We convert the clock arrival time to a data
-                //arrival time at this node (since the clock
+                //arrival time at this node (since the clock's
                 //arrival launches the data).
+                TATUM_ASSERT(tg.node_type(node_id) == NodeType::SOURCE);
 
                 //Make a copy of the tag
                 TimingTag launch_tag = src_clk_tag;
