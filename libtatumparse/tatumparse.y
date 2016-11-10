@@ -111,6 +111,7 @@ using namespace tatumparse;
 %token TIMING_CONSTRAINTS "timing_constraints:"
 %token CLOCK "CLOCK"
 %token CLOCK_SOURCE "CLOCK_SOURCE"
+%token CONSTANT_GENERATOR "CONSTANT_GENERATOR"
 %token INPUT_CONSTRAINT "INPUT_CONSTRAINT"
 %token OUTPUT_CONSTRAINT "OUTPUT_CONSTRAINT"
 %token SETUP_CONSTRAINT "SETUP_CONSTRAINT"
@@ -182,6 +183,7 @@ Graph: TIMING_GRAPH EOL { callback.start_graph(); }
 Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CLOCK DomainId Name EOL { callback.add_clock_domain($4, $5); }
            | Constraints TYPE CLOCK_SOURCE NodeId DomainId EOL { callback.add_clock_source($4, $5); }
+           | Constraints TYPE CONSTANT_GENERATOR NodeId EOL { callback.add_constant_generator($4); }
            | Constraints TYPE INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_input_constraint($4, $5, $6); }
            | Constraints TYPE OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_output_constraint($4, $5, $6); }
            | Constraints TYPE SETUP_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }

@@ -74,6 +74,7 @@ sink_node:                      { return tatumparse::Parser::make_SINK_NODE(); }
 timing_constraints:             { return tatumparse::Parser::make_TIMING_CONSTRAINTS(); }
 CLOCK                           { return tatumparse::Parser::make_CLOCK(); }
 CLOCK_SOURCE                    { return tatumparse::Parser::make_CLOCK_SOURCE(); }
+CONSTANT_GENERATOR              { return tatumparse::Parser::make_CONSTANT_GENERATOR(); }
 INPUT_CONSTRAINT                { return tatumparse::Parser::make_INPUT_CONSTRAINT(); }
 OUTPUT_CONSTRAINT               { return tatumparse::Parser::make_OUTPUT_CONSTRAINT(); }
 SETUP_CONSTRAINT                { return tatumparse::Parser::make_SETUP_CONSTRAINT(); }

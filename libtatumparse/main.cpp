@@ -50,6 +50,9 @@ class PrintCallback : public tp::Callback {
     void add_clock_source(int node_id, int domain_id) override {
         fprintf(stdout, " type: CLOCK_SOURCE node: %d domain: %d\n", node_id, domain_id);
     }
+    void add_constant_generator(int node_id) override {
+        fprintf(stdout, " type: CONSTANT_GENERATOR node: %d\n", node_id);
+    }
     void add_input_constraint(int node_id, int domain_id, float constraint) override {
         fprintf(stdout, " type: INPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
     }
@@ -118,6 +121,7 @@ class NopCallback : public tp::Callback {
         void start_constraints() override {}
         void add_clock_domain(int /*domain_id*/, std::string /*name*/) override {}
         void add_clock_source(int /*node_id*/, int /*domain_id*/) override {}
+        void add_constant_generator(int /*node_id*/) override {}
         void add_input_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
         void add_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
         void add_setup_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}

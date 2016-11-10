@@ -70,6 +70,7 @@ class Callback {
         virtual void start_constraints() = 0;
         virtual void add_clock_domain(int domain_id, std::string name) = 0;
         virtual void add_clock_source(int node_id, int domain_id) = 0;
+        virtual void add_constant_generator(int node_id) = 0;
         virtual void add_input_constraint(int node_id, int domain_id, float constraint) = 0;
         virtual void add_output_constraint(int node_id, int domain_id, float constraint) = 0;
         virtual void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) = 0;
