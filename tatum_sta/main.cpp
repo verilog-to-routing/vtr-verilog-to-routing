@@ -33,7 +33,7 @@
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 //#define NUM_SERIAL_RUNS 20
 //#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
-//#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_NODE_EDGE_ORDER
 
 //Do we perform verification checks?
 #define TATUM_ASSERT_VPR_TO_TATUM
@@ -147,8 +147,8 @@ int main(int argc, char** argv) {
 
 
         //Adjust the edge delays to reflect the new ordering
-        edge_delays = std::vector<float>(orig_edge_delays.size());
-        for(size_t i = 0; i < orig_edge_delays.size(); i++) {
+        edge_delays = std::vector<float>(vpr_edge_map.size(), NAN);
+        for(size_t i = 0; i < vpr_edge_map.size(); i++) {
             EdgeId new_id = vpr_edge_map[EdgeId(i)];
             edge_delays[size_t(new_id)] = orig_edge_delays[i];
         }
