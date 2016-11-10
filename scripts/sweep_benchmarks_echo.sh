@@ -1,9 +1,23 @@
 #!/bin/bash
 
-for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo) # | grep -v "gauss\|mes_noc") 
+if [ "$1" == "" ]; then
+    echo "Executable required for first argument"
+    exit 1
+fi
+myexec=$(realpath $1)
+
+
+echo $myexec
+
+WORK_DIR=sweep_run
+
+mkdir -p $WORK_DIR
+
+for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo)
 do
     benchmark_name=$(basename $(dirname $benchmark))
+    run_dir=${WORK_DIR}/${benchmark_name}
 
-    echo "$1 $benchmark >& ${benchmark_name}.log && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.timing_graph.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
 
 done
