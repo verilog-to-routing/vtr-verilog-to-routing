@@ -6,14 +6,11 @@ if [ "$1" == "" ]; then
 fi
 myexec=$(realpath $1)
 
-
-echo $myexec
-
 WORK_DIR=sweep_run
 
 mkdir -p $WORK_DIR
 
-for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo)
+for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo | head -4)
 do
     benchmark_name=$(basename $(dirname $benchmark))
     run_dir=${WORK_DIR}/${benchmark_name}
@@ -21,3 +18,5 @@ do
     echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.timing_graph.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
 
 done
+
+exit 0
