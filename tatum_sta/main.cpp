@@ -115,6 +115,10 @@ int main(int argc, char** argv) {
         //We then need to re-levelize the graph
         timing_graph->levelize();
 
+#ifdef ECHO
+        std::ofstream ofs("timing_graph.vpr.echo");
+        write_timing_graph(ofs, *timing_graph);
+#endif
 
         std::ofstream vpr_dot("tg_setup_annotated.vpr.dot");
         write_dot_file_setup(vpr_dot, *timing_graph);
