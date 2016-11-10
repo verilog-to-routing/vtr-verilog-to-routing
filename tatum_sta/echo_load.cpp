@@ -18,6 +18,8 @@ void EchoLoader::add_edge(int edge_id, int src_node_id, int sink_node_id) {
 void EchoLoader::finish_graph() { 
     max_delay_edges_.resize(tg_->edges().size()); 
     min_delay_edges_.resize(tg_->edges().size()); 
+    setup_times_.resize(tg_->edges().size()); 
+    hold_times_.resize(tg_->edges().size()); 
 }
 
 void EchoLoader::add_clock_domain(int domain_id, std::string name) {
@@ -78,12 +80,15 @@ tatum::NodeType EchoLoader::to_tatum_node_type(tatumparse::NodeType type) {
         return tatum::NodeType::SINK;
     } else if(type == tatumparse::NodeType::IPIN) {
         return tatum::NodeType::IPIN;
+    } else if(type == tatumparse::NodeType::CPIN) {
+        return tatum::NodeType::CPIN;
     } else {
         TATUM_ASSERT(type == tatumparse::NodeType::OPIN);
         return tatum::NodeType::OPIN;
     }
 }
 
-void EchoLoader::parse_error(const int /*curr_lineno*/, const std::string& /*near_text*/, const std::string& /*msg*/) {
-    TATUM_ASSERT_MSG(false, "Parse error");
+void EchoLoader::parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) {
+    fprintf(stderr, "%s:%d Failed to parse echo file: %s near '%s'\n", filename_.c_str(), curr_lineno, msg.c_str(), near_text.c_str());
+    std::exit(1);
 }

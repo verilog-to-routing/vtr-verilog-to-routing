@@ -16,7 +16,7 @@ public:
     void start_parse() override { }
 
     //Sets current filename
-    void filename(std::string /*fname*/) override { }
+    void filename(std::string fname) override { filename_ = fname; }
 
     //Sets current line number
     void lineno(int /*line_num*/) override { }
@@ -62,6 +62,8 @@ private: //Data
 
     std::unique_ptr<tatum::TimingGraph> tg_;
     std::unique_ptr<tatum::TimingConstraints> tc_;
+
+    std::string filename_;
 
     tatum::util::linear_map<tatum::EdgeId,tatum::Time> max_delay_edges_;
     tatum::util::linear_map<tatum::EdgeId,tatum::Time> min_delay_edges_;

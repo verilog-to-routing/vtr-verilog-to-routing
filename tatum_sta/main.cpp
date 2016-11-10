@@ -25,6 +25,7 @@
 
 #include "sta_util.hpp"
 
+#include "echo_load.hpp"
 #include "verify.hpp"
 #include "util.hpp"
 #include "output.hpp"
@@ -81,8 +82,10 @@ int main(int argc, char** argv) {
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
 
     //Raw outputs of parser
-    auto timing_graph = std::make_shared<TimingGraph>();
-    auto timing_constraints = std::make_shared<TimingConstraints>();
+    std::shared_ptr<TimingGraph> timing_graph;
+    std::shared_ptr<TimingConstraints> timing_constraints;
+    std::shared_ptr<const tatum::FixedDelayCalculator> delay_calculator;
+
     VprArrReqTimes orig_expected_arr_req_times;
     std::vector<float> orig_edge_delays;
     VprFfInfo ff_info;
@@ -93,6 +96,7 @@ int main(int argc, char** argv) {
     tatum::util::linear_map<EdgeId,tatum::Time> setup_times;
 
     {
+#if 0
         clock_gettime(CLOCK_MONOTONIC, &load_start);
 
         yyin = fopen(argv[1], "r");
@@ -188,11 +192,28 @@ int main(int argc, char** argv) {
         expected_arr_req_times = orig_expected_arr_req_times;
         setup_edge_delays = orig_edge_delays;
 #endif
+        //Create the delay calculator
+        delay_calculator = std::make_shared<const tatum::FixedDelayCalculator>(max_edge_delays, setup_times);
+
+#else //EchoLoad
+        EchoLoader loader;
+        if(argv[1] == std::string("-")) {
+            tatum_parse_file(stdin, loader);
+        } else {
+            tatum_parse_filename(argv[1], loader);
+        }
+
+        timing_graph = loader.timing_graph();
+        timing_constraints = loader.timing_constraints();
+        delay_calculator = loader.delay_calculator();
+#endif
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
     }
     cout << "Loading took: " << tatum::time_sec(load_start, load_end) << " sec" << endl;
     cout << endl;
+
+    timing_graph->levelize();
 
     /*
      *timing_constraints->print();
@@ -216,8 +237,6 @@ int main(int argc, char** argv) {
      *cout << endl;
      */
 
-    //Create the delay calculator
-    auto delay_calculator = std::make_shared<const tatum::FixedDelayCalculator>(max_edge_delays, setup_times);
 
 #ifdef ECHO
     std::ofstream ofs("timing_graph.echo");
