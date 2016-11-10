@@ -214,10 +214,8 @@ class TimingGraph {
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node [0..num_nodes()-1]
-        tatum::util::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
-        tatum::util::linear_map<NodeId,bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data
         tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
