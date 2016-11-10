@@ -74,9 +74,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
     if(tc.node_is_clock_source(node_id)) {
         //Generate the appropriate clock tag
 
-        //Note that we assume that edge counting has set the effective period constraint assuming a
-        //launch edge at time zero.  This means we don't need to do anything special for clocks
-        //with rising edges after time zero.
         TATUM_ASSERT_MSG(ops_.get_clock_tags(node_id).num_tags() == 0, "Clock source already has clock tags");
 
         //Find it's domain
@@ -84,6 +81,10 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         TATUM_ASSERT(domain_id);
 
         //Initialize a clock tag with zero arrival, invalid required time
+        //
+        //Note: we assume that edge counting has set the effective period constraint assuming a
+        //launch edge at time zero.  This means we don't need to do anything special for clocks
+        //with rising edges after time zero.
         TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
 
         //Add the tag
@@ -102,8 +103,11 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         DomainId domain_id = tc.node_clock_domain(node_id);
         TATUM_ASSERT(domain_id);
 
-        //Initialize a data tag with zero arrival, invalid required time
-        TimingTag input_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
+        float input_constraint = tc.input_constraint(node_id, domain_id);
+        TATUM_ASSERT(!isnan(input_constraint));
+
+        //Initialize a data tag based on input delay constraint, invalid required time
+        TimingTag input_tag = TimingTag(Time(input_constraint), Time(NAN), domain_id, node_id);
 
         ops_.get_data_tags(node_id).add_tag(input_tag);
     }
@@ -134,9 +138,15 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             std::cerr << "Warning: Timing graph " << node_id << " " << tg.node_type(node_id);
             std::cerr << " has no incomming clock tags, and no output constraint. No required time will be calculated\n";
         } else {
+            DomainId domain_id = tc.node_clock_domain(node_id);
+            TATUM_ASSERT(domain_id);
+
+            float output_constraint = tc.output_constraint(node_id, domain_id);
+            TATUM_ASSERT(!isnan(output_constraint));
+
             for(auto constraint : output_constraints) {
                 //TODO: use real constraint value when output delay no-longer on edges
-                TimingTag constraint_tag = TimingTag(Time(0.), Time(NAN), constraint.second.domain, node_id);
+                TimingTag constraint_tag = TimingTag(Time(output_constraint), Time(NAN), constraint.second.domain, node_id);
                 node_clock_tags.add_tag(constraint_tag);
             }
         }
