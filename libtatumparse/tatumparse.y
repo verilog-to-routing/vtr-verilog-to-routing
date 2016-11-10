@@ -182,8 +182,8 @@ Graph: TIMING_GRAPH EOL { callback.start_graph(); }
 Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CLOCK DomainId Name EOL { callback.add_clock_domain($4, $5); }
            | Constraints TYPE CLOCK_SOURCE NodeId DomainId EOL { callback.add_clock_source($4, $5); }
-           | Constraints TYPE INPUT_CONSTRAINT NodeId Constraint EOL { callback.add_input_constraint($4, $5); }
-           | Constraints TYPE OUTPUT_CONSTRAINT NodeId Constraint EOL { callback.add_output_constraint($4, $5); }
+           | Constraints TYPE INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_input_constraint($4, $5, $6); }
+           | Constraints TYPE OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_output_constraint($4, $5, $6); }
            | Constraints TYPE SETUP_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
            | Constraints TYPE HOLD_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
 
