@@ -1,5 +1,6 @@
 #ifndef TATUMSTA_ECHO_LOAD
 #define TATUMSTA_ECHO_LOAD
+#include <memory>
 
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
@@ -9,6 +10,8 @@
 
 class EchoLoader : public tatumparse::Callback {
 public:
+    EchoLoader();
+
     //Start of parsing
     void start_parse() override { }
 
@@ -31,7 +34,7 @@ public:
     void add_output_constraint(int node_id, int domain_id, float constraint) override;
     void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) override;
     void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) override;
-    void finish_constraints() override { tc_.print(); }
+    void finish_constraints() override { }
 
     void start_delay_model() override { }
     void add_edge_delay(int edge_id, float min_delay, float max_delay) override;
@@ -48,19 +51,17 @@ public:
     //Error during parsing
     void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override;
 public:
-    tatum::TimingGraph timing_graph();
-
-    tatum::TimingConstraints timing_constraints();
-
-    tatum::FixedDelayCalculator delay_calculator();
+    std::unique_ptr<tatum::TimingGraph> timing_graph();
+    std::unique_ptr<tatum::TimingConstraints> timing_constraints();
+    std::unique_ptr<tatum::FixedDelayCalculator> delay_calculator();
 
 private:
     tatum::NodeType to_tatum_node_type(tatumparse::NodeType type);
 
 private: //Data
 
-    tatum::TimingGraph tg_;
-    tatum::TimingConstraints tc_;
+    std::unique_ptr<tatum::TimingGraph> tg_;
+    std::unique_ptr<tatum::TimingConstraints> tc_;
 
     tatum::util::linear_map<tatum::EdgeId,tatum::Time> max_delay_edges_;
     tatum::util::linear_map<tatum::EdgeId,tatum::Time> min_delay_edges_;
