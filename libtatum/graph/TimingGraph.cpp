@@ -111,7 +111,7 @@ Container update_all_refs(const Container& values, const tatum::util::linear_map
 
 
 
-NodeId TimingGraph::add_node(const NodeType type, const bool is_clk_src) {
+NodeId TimingGraph::add_node(const NodeType type) {
 
     //Reserve an ID
     NodeId node_id = NodeId(node_ids_.size());
@@ -120,15 +120,13 @@ NodeId TimingGraph::add_node(const NodeType type, const bool is_clk_src) {
     //Type
     node_types_.push_back(type);
 
-    //Clock source
-    node_is_clock_source_.push_back(is_clk_src);
-
     //Edges
     node_out_edges_.push_back(std::vector<EdgeId>());
     node_in_edges_.push_back(std::vector<EdgeId>());
 
     //Verify sizes
-    TATUM_ASSERT(node_types_.size() == node_is_clock_source_.size());
+    TATUM_ASSERT(node_types_.size() == node_out_edges_.size());
+    TATUM_ASSERT(node_types_.size() == node_in_edges_.size());
 
     //Return the ID of the added node
     return node_id;
@@ -283,7 +281,6 @@ GraphIdMaps TimingGraph::compress() {
     node_types_ = clean_and_reorder_values(node_types_, node_id_map);
     node_in_edges_ = clean_and_reorder_values(node_in_edges_, node_id_map);
     node_out_edges_ = clean_and_reorder_values(node_out_edges_, node_id_map);
-    node_is_clock_source_ = clean_and_reorder_values(node_is_clock_source_, node_id_map);
 
     edge_ids_ = clean_and_reorder_ids(edge_id_map);
     edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
@@ -397,13 +394,11 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
     tatum::util::linear_map<NodeId,NodeType> old_node_types;
     tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_out_edges;
     tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_in_edges;
-    tatum::util::linear_map<NodeId,bool> old_node_is_clock_source;
 
     //Swap the values
     std::swap(old_node_types, node_types_);
     std::swap(old_node_out_edges, node_out_edges_);
     std::swap(old_node_in_edges, node_in_edges_);
-    std::swap(old_node_is_clock_source, node_is_clock_source_);
 
     //Update the values
     for(const LevelId level_id : levels()) {
@@ -411,7 +406,6 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
             node_types_.push_back(old_node_types[old_node_id]);
             node_out_edges_.push_back(old_node_out_edges[old_node_id]);
             node_in_edges_.push_back(old_node_in_edges[old_node_id]);
-            node_is_clock_source_.push_back(old_node_is_clock_source[old_node_id]);
 
             //Record the new node id
             orig_to_new_node_id[old_node_id] = NodeId(node_types_.size() - 1);
@@ -474,8 +468,7 @@ bool TimingGraph::valid_level_id(const LevelId level_id) {
 bool TimingGraph::validate_sizes() {
     if(   node_ids_.size() != node_types_.size()
        || node_ids_.size() != node_in_edges_.size()
-       || node_ids_.size() != node_out_edges_.size()
-       || node_ids_.size() != node_is_clock_source_.size()) {
+       || node_ids_.size() != node_out_edges_.size()) {
         throw tatum::Error("Inconsistent node attribute sizes");
     }
 

@@ -91,10 +91,6 @@ class TimingGraph {
         ///\returns The type of the node
         NodeType node_type(const NodeId id) const { return node_types_[id]; }
 
-        ///\param id The id of a node
-        ///\returns Whether the is the source of a clock
-        bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
-
         ///\param id The node id
         ///\returns A range of all out-going edges the node drives
         edge_range node_out_edges(const NodeId id) const { return tatum::util::make_range(node_out_edges_[id].begin(), node_out_edges_[id].end()); }
@@ -156,9 +152,8 @@ class TimingGraph {
          */
         ///Adds a node to the timing graph
         ///\param type The type of the node to be added
-        ///\param is_clk_src Identifies if the node to be added is the source of a clock
         ///\warning Graph will likely need to be re-levelized after modification
-        NodeId add_node(const NodeType type, const bool is_clk_src);
+        NodeId add_node(const NodeType type);
 
         ///Adds an edge to the timing graph
         ///\param src_node The node id of the edge's driving node

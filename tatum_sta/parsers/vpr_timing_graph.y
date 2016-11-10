@@ -201,7 +201,7 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
 
                                                     node_domain[NodeId($2.node_id)] = domain_id;
                                                 }
-                                                NodeId src_node_id = timing_graph.add_node($2.type, $2.is_clk_src);
+                                                NodeId src_node_id = timing_graph.add_node($2.type);
 
                                                 if($2.is_clk_src) {
                                                     cout << "Marking clock source for " << domain_id <<  " " << src_node_id << endl;
