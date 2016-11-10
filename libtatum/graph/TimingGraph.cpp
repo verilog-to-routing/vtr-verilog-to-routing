@@ -502,10 +502,37 @@ bool TimingGraph::validate_values() {
         if(!valid_node_id(node_id)) {
             throw tatum::Error("Invalid node id");
         }
+
+        for(EdgeId edge_id : node_in_edges_[node_id]) {
+            if(!valid_edge_id(edge_id)) {
+                throw tatum::Error("Invalid node in-edge reference");
+            }
+
+            //Check that the references are consistent
+            if(edge_sink_nodes_[edge_id] != node_id) {
+                throw tatum::Error("Mismatched edge sink/node in-edge reference");
+            }
+        }
+        for(EdgeId edge_id : node_out_edges_[node_id]) {
+            if(!valid_edge_id(edge_id)) {
+                throw tatum::Error("Invalid node out-edge reference");
+            }
+
+            //Check that the references are consistent
+            if(edge_src_nodes_[edge_id] != node_id) {
+                throw tatum::Error("Mismatched edge src/node out-edge reference");
+            }
+        }
     }
     for(EdgeId edge_id : edges()) {
         if(!valid_edge_id(edge_id)) {
             throw tatum::Error("Invalid edge id");
+        }
+        if(!valid_node_id(edge_src_nodes_[edge_id])) {
+            throw tatum::Error("Invalid edge source node");
+        }
+        if(!valid_node_id(edge_sink_nodes_[edge_id])) {
+            throw tatum::Error("Invalid edge sink node");
         }
     }
 
