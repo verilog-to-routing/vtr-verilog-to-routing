@@ -93,6 +93,22 @@ Container update_valid_refs(const Container& values, const tatum::util::linear_m
     return updated;
 }
 
+//Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
+template<typename Container, typename ValId>
+Container update_all_refs(const Container& values, const tatum::util::linear_map<ValId,ValId>& id_map) {
+    Container updated;
+
+    for(ValId orig_val : values) {
+        //The original item was valid
+        ValId new_val = id_map[orig_val]; 
+        //The original item exists in the new mapping
+        updated.emplace_back(new_val);
+    }
+
+    return updated;
+}
+
+
 
 
 NodeId TimingGraph::add_node(const NodeType type, const DomainId clock_domain, const bool is_clk_src) {
@@ -224,39 +240,42 @@ void TimingGraph::levelize() {
 }
 
 void TimingGraph::remove_node(const NodeId node_id) {
-    if(node_id) {
-        //Invalidate all the references
-        for(EdgeId in_edge : node_in_edges(node_id)) {
-            remove_edge(in_edge);
-        }
+    TATUM_ASSERT(valid_node_id(node_id));
 
-        for(EdgeId out_edge : node_out_edges(node_id)) {
-            remove_edge(out_edge);
-        }
+    //Invalidate all the references
+    for(EdgeId in_edge : node_in_edges(node_id)) {
+        if(!in_edge) continue;
 
-        //Mark the node as invalid
-        node_ids_[node_id] = NodeId::INVALID();
+        remove_edge(in_edge);
     }
+
+    for(EdgeId out_edge : node_out_edges(node_id)) {
+        if(!out_edge) continue;
+
+        remove_edge(out_edge);
+    }
+
+    //Mark the node as invalid
+    node_ids_[node_id] = NodeId::INVALID();
 }
 
 void TimingGraph::remove_edge(const EdgeId edge_id) {
+    TATUM_ASSERT(valid_edge_id(edge_id));
 
-    if(edge_id) {
-        //Invalidate the upstream node to edge references
-        NodeId src_node = edge_src_node(edge_id);    
-        auto iter_out = std::find(node_out_edges_[src_node].begin(), node_out_edges_[src_node].end(), edge_id);
-        TATUM_ASSERT(iter_out != node_out_edges_[src_node].end());
-        *iter_out = EdgeId::INVALID();
+    //Invalidate the upstream node to edge references
+    NodeId src_node = edge_src_node(edge_id);    
+    auto iter_out = std::find(node_out_edges_[src_node].begin(), node_out_edges_[src_node].end(), edge_id);
+    TATUM_ASSERT(iter_out != node_out_edges_[src_node].end());
+    *iter_out = EdgeId::INVALID();
 
-        //Invalidate the dowwstream node to edge references
-        NodeId sink_node = edge_sink_node(edge_id);    
-        auto iter_in = std::find(node_in_edges_[sink_node].begin(), node_in_edges_[sink_node].end(), edge_id);
-        TATUM_ASSERT(iter_in != node_in_edges_[sink_node].end());
-        *iter_in = EdgeId::INVALID();
+    //Invalidate the downstream node to edge references
+    NodeId sink_node = edge_sink_node(edge_id);    
+    auto iter_in = std::find(node_in_edges_[sink_node].begin(), node_in_edges_[sink_node].end(), edge_id);
+    TATUM_ASSERT(iter_in != node_in_edges_[sink_node].end());
+    *iter_in = EdgeId::INVALID();
 
-        //Mark the edge invalid
-        edge_ids_[edge_id] = EdgeId::INVALID();
-    }
+    //Mark the edge invalid
+    edge_ids_[edge_id] = EdgeId::INVALID();
 }
 
 GraphIdMaps TimingGraph::compress() {
@@ -282,9 +301,8 @@ GraphIdMaps TimingGraph::compress() {
     for(auto& edges_ref : node_out_edges_) {
         edges_ref = update_valid_refs(edges_ref, edge_id_map);
     }
-
-    edge_src_nodes_ = update_valid_refs(edge_src_nodes_, node_id_map);
-    edge_sink_nodes_ = update_valid_refs(edge_sink_nodes_, node_id_map);
+    edge_src_nodes_ = update_all_refs(edge_src_nodes_, node_id_map);
+    edge_sink_nodes_ = update_all_refs(edge_sink_nodes_, node_id_map);
 
     validate();
 
