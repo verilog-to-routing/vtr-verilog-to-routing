@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
 
     //Potentially modified based on parser output
     VprArrReqTimes expected_arr_req_times;
-    std::vector<float> setup_edge_delays;
-    std::vector<float> hold_edge_delays;
+    tatum::util::linear_map<EdgeId,tatum::Time> max_edge_delays;
+    tatum::util::linear_map<EdgeId,tatum::Time> setup_times;
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
@@ -143,10 +143,18 @@ int main(int argc, char** argv) {
 
 
         //Adjust the edge delays to reflect the new ordering
-        setup_edge_delays = std::vector<float>(vpr_edge_map.size(), NAN);
+        max_edge_delays.resize(vpr_edge_map.size());
+        setup_times.resize(vpr_edge_map.size());
         for(size_t i = 0; i < vpr_edge_map.size(); i++) {
             EdgeId new_id = vpr_edge_map[EdgeId(i)];
-            setup_edge_delays[size_t(new_id)] = orig_edge_delays[i];
+
+            NodeId src_node = timing_graph->edge_src_node(new_id);
+            NodeId sink_node = timing_graph->edge_sink_node(new_id);
+            if(timing_graph->node_type(src_node) == tatum::NodeType::CPIN && timing_graph->node_type(sink_node) == tatum::NodeType::SINK) {
+                setup_times[new_id] = Time(orig_edge_delays[i]);
+            } else {
+                max_edge_delays[new_id] = Time(orig_edge_delays[i]);
+            }
         }
 
         clock_gettime(CLOCK_MONOTONIC, &node_reorder_start);
@@ -180,37 +188,6 @@ int main(int argc, char** argv) {
         expected_arr_req_times = orig_expected_arr_req_times;
         setup_edge_delays = orig_edge_delays;
 #endif
-
-        //We need to take care creating the hold edge delays.
-        //In Tatum's formulation it assumes special edge delays on
-        //SINK -> SINK edges (representing FF the clock to input 
-        //dependance):
-        //  
-        //  During setup the edge delay should be -tsu
-        //  During hold the edge delay should be +thld
-        //
-        //As a result we invert the sign of such edges to derive the
-        //hold delays
-        hold_edge_delays.resize(setup_edge_delays.size());
-        for(EdgeId edge : timing_graph->edges()) {
-            NodeId src_node = timing_graph->edge_src_node(edge);
-            NodeId sink_node = timing_graph->edge_sink_node(edge);
-
-            float setup_delay = setup_edge_delays[size_t(edge)];
-            float delay = NAN;
-            if(timing_graph->node_type(src_node) == tatum::NodeType::SINK && timing_graph->node_type(sink_node) == tatum::NodeType::SINK) {
-                //It the clock to input edge, so invert the delay (since the setup delay is negative,
-                //and the hold delay must be positive).
-                TATUM_ASSERT(setup_delay <= 0);
-                delay = -setup_delay;
-            } else {
-                delay = setup_delay;
-            }
-
-            //Add it
-            hold_edge_delays[size_t(edge)] = delay;
-        }
-
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
     }
@@ -240,7 +217,7 @@ int main(int argc, char** argv) {
      */
 
     //Create the delay calculator
-    auto delay_calculator = std::make_shared<const tatum::FixedDelayCalculator>(setup_edge_delays, hold_edge_delays);
+    auto delay_calculator = std::make_shared<const tatum::FixedDelayCalculator>(max_edge_delays, setup_times);
 
 #ifdef ECHO
     std::ofstream ofs("timing_graph.echo");

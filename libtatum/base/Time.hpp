@@ -49,6 +49,7 @@ class Time {
         Time& operator-=(const Time& rhs);
 
         friend bool operator==(const Time& lhs, const Time& rhs);
+        friend Time operator-(const Time val);
 
     private:
 #if TIME_VEC_WIDTH > 1

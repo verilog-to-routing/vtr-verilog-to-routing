@@ -394,7 +394,7 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
      * Keep a map of the old and new node ids to update edges
      * and node levels later
      */
-    tatum::util::linear_map<NodeId,NodeId> orig_to_new_node_id = std::vector<NodeId>(nodes().size());
+    tatum::util::linear_map<NodeId,NodeId> orig_to_new_node_id(nodes().size());
 
     /*
      * Re-allocate nodes so levels are in contiguous memory

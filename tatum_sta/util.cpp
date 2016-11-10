@@ -229,7 +229,7 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, std::vector<fl
                     //Move the IPIN->SINK delay (tsu) to the CLOCK->SINK edge
                     //Note that since we are 'moving' the tsu to the other side of the
                     //arrival/required time inequality, we must make it negative!
-                    edge_delays[size_t(ff_clock_edge)] = -tsu;
+                    edge_delays[size_t(ff_clock_edge)] = tsu;
 
                     //Since we've moved around the tcq delay we need to note which original node it should be compared with
                     //(i.e. when we verify correctness we need to check the golden result for the OPIN's data arr/req at the

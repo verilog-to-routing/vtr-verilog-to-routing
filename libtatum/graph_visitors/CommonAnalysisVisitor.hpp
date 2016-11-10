@@ -208,6 +208,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
     NodeId src_node_id = tg.edge_src_node(edge_id);
 
     const Time& edge_delay = ops_.edge_delay(dc, tg, edge_id);
+    TATUM_ASSERT(edge_delay.valid());
 
     const TimingTags& src_clk_tags = ops_.get_clock_tags(src_node_id);
     const TimingTags& src_data_tags = ops_.get_data_tags(src_node_id);
@@ -280,6 +281,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
     NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
     const Time& edge_delay = ops_.edge_delay(dc, tg, edge_id);
+    TATUM_ASSERT(edge_delay.valid());
 
     const TimingTags& sink_data_tags = ops_.get_data_tags(sink_node_id);
 

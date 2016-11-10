@@ -49,7 +49,14 @@ class SetupAnalysisOps {
 
         template<class DelayCalc>
         const Time edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
-            return dc.max_edge_delay(tg, edge_id); 
+            NodeId src_node = tg.edge_src_node(edge_id);
+            NodeId sink_node = tg.edge_sink_node(edge_id);
+
+            if(tg.node_type(src_node) == NodeType::CPIN && tg.node_type(sink_node) == NodeType::SINK) {
+                return -dc.setup_time(tg, edge_id);
+            } else {
+                return dc.max_edge_delay(tg, edge_id); 
+            }
         }
 
     private:

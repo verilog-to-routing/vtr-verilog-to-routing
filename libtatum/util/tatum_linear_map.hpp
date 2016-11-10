@@ -35,16 +35,24 @@ class linear_map {
 
     public: //Constructor
 
+        //Standard constructors
         linear_map() = default;
-        linear_map(linear_map&) = default;
+        linear_map(const linear_map&) = default;
         linear_map(linear_map&&) = default;
         linear_map& operator=(linear_map&) = default;
         linear_map& operator=(linear_map&&) = default;
 
-        template<typename... Args>
-        linear_map(Args&&... args)
-            : vec_(std::forward<Args>(args)...)
-        { }
+        //Vector-like constructors
+        explicit linear_map(size_t n) : vec_(n) {}
+        explicit linear_map(size_t n, V init_val) : vec_(n, init_val) {}
+        explicit linear_map(std::vector<V>&& values) : vec_(values) {}
+
+        /*
+         *template<typename... Args>
+         *linear_map(Args&&... args)
+         *    : vec_(std::forward<Args>(args)...)
+         *{ }
+         */
 
     public: //Accessors
 

@@ -76,6 +76,20 @@ namespace tatum {
  * External functions
  */
 
+#if TIME_VEC_WIDTH > 1
+inline Time operator-(Time in) {
+    for(size_t i = 0; i < time_.size(); i++) {
+        in.time_[i] = -in.time_[i];
+    }
+    return in;
+}
+#else //Scalar case (TIME_VEC_WIDTH == 1)
+inline Time operator-(Time in) {
+    in.time_ = -in.time_;
+    return in;
+}
+#endif //TIME_VEC_WIDTH
+
 inline Time operator+(Time lhs, const Time& rhs) {
     return lhs += rhs;
 }
