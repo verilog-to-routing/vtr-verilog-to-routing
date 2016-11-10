@@ -116,14 +116,14 @@ int main(int argc, char** argv) {
         timing_graph->levelize();
 
 #ifdef ECHO
-        std::ofstream ofs("timing_graph.vpr.echo");
-        write_timing_graph(ofs, *timing_graph);
+        std::ofstream vpr_echo("timing_graph.vpr.echo");
+        write_timing_graph(vpr_echo, *timing_graph);
 #endif
 
         std::ofstream vpr_dot("tg_setup_annotated.vpr.dot");
         write_dot_file_setup(vpr_dot, *timing_graph);
 
-        rebuild_timing_graph(*timing_graph, *timing_constraints, ff_info, orig_edge_delays, orig_expected_arr_req_times);
+        rebuild_timing_graph(*timing_graph, *timing_constraints, orig_edge_delays, orig_expected_arr_req_times);
 
         std::ofstream rebuilt_dot("tg_setup_annotated.rebuilt.dot");
         write_dot_file_setup(rebuilt_dot, *timing_graph);
