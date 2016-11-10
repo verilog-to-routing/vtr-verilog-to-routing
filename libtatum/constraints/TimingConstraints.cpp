@@ -223,21 +223,9 @@ void TimingConstraints::set_constant_generator(const NodeId node_id, bool is_con
 }
 
 void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map) {
-    std::multimap<NodeId,IoConstraint> remapped_input_constraints;
-    std::multimap<NodeId,IoConstraint> remapped_output_constraints;
+
+    //Domain Sources
     tatum::util::linear_map<DomainId,NodeId> remapped_domain_sources(domain_sources_.size());
-
-    for(auto kv : input_constraints_) {
-        NodeId new_node_id = node_map[kv.first];
-
-        remapped_input_constraints.insert(std::make_pair(new_node_id, kv.second));
-    }
-    for(auto kv : output_constraints_) {
-        NodeId new_node_id = node_map[kv.first];
-
-        remapped_output_constraints.insert(std::make_pair(new_node_id, kv.second));
-    }
-
     for(size_t domain_idx = 0; domain_idx < domain_sources_.size(); ++domain_idx) {
         DomainId domain_id(domain_idx);
 
@@ -246,10 +234,32 @@ void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>
             remapped_domain_sources[domain_id] = node_map[old_node_id];
         }
     }
+    domain_sources_ = std::move(remapped_domain_sources);
 
-    std::swap(input_constraints_, remapped_input_constraints);
-    std::swap(output_constraints_, remapped_output_constraints);
-    std::swap(domain_sources_, remapped_domain_sources);
+    //Constant generators
+    std::unordered_set<NodeId> remapped_constant_generators;
+    for(NodeId node_id : constant_generators_) {
+        remapped_constant_generators.insert(node_map[node_id]);
+    }
+    constant_generators_ = std::move(remapped_constant_generators);
+
+    //Input Constraints
+    std::multimap<NodeId,IoConstraint> remapped_input_constraints;
+    for(auto kv : input_constraints_) {
+        NodeId new_node_id = node_map[kv.first];
+
+        remapped_input_constraints.insert(std::make_pair(new_node_id, kv.second));
+    }
+    input_constraints_ = std::move(remapped_input_constraints);
+
+    //Output Constraints
+    std::multimap<NodeId,IoConstraint> remapped_output_constraints;
+    for(auto kv : output_constraints_) {
+        NodeId new_node_id = node_map[kv.first];
+
+        remapped_output_constraints.insert(std::make_pair(new_node_id, kv.second));
+    }
+    output_constraints_ = std::move(remapped_output_constraints);
 }
 
 void TimingConstraints::print() const {
