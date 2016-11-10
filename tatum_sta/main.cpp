@@ -66,8 +66,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    struct timespec prog_start, load_start, node_reorder_start, edge_reorder_start, verify_start, reset_start;
-    struct timespec prog_end, load_end, node_reorder_end, edge_reorder_end, verify_end, reset_end;
+    struct timespec prog_start, load_start, verify_start, reset_start;
+    struct timespec prog_end, load_end, verify_end, reset_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
@@ -132,6 +132,8 @@ int main(int argc, char** argv) {
         cout << endl;
 
 #ifdef OPTIMIZE_NODE_EDGE_ORDER
+        struct timespec node_reorder_start, edge_reorder_start; 
+        struct timespec node_reorder_end, edge_reorder_end; 
         clock_gettime(CLOCK_MONOTONIC, &edge_reorder_start);
 
         //Re-order edges
