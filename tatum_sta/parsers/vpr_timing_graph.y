@@ -27,12 +27,15 @@ int to_clock_domain = 0;
 
 std::vector<std::vector<edge_t>*> node_out_edges;
 
+
 using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::DomainId;
 using tatum::NodeType;
 using tatum::TimingGraph;
 using tatum::TimingConstraints;
+
+std::map<NodeId,DomainId> node_domain;
 
 %}
 
@@ -195,8 +198,10 @@ timing_graph: num_tnodes                    { printf("Loading Timing Graph with 
                                                 DomainId domain_id;
                                                 if($2.domain >= 0) {
                                                     domain_id = timing_constraints.create_clock_domain(std::to_string($2.domain));
+
+                                                    node_domain[NodeId($2.node_id)] = domain_id;
                                                 }
-                                                NodeId src_node_id = timing_graph.add_node($2.type, domain_id, $2.is_clk_src);
+                                                NodeId src_node_id = timing_graph.add_node($2.type, $2.is_clk_src);
 
                                                 if($2.is_clk_src) {
                                                     cout << "Marking clock source for " << domain_id <<  " " << src_node_id << endl;
@@ -419,7 +424,7 @@ constraint: number { $$ = $1; }
 input_constraints: INPUT_CONSTRAINTS_HEADER EOL {}
     | input_constraints INPUT_CONSTRAINTS_COLS EOL {}
     | input_constraints input_constraint {}
-input_constraint: node_id constraint EOL { timing_constraints.set_input_constraint(NodeId($1), timing_graph.node_clock_domain(NodeId($1)), $2); }
+input_constraint: node_id constraint EOL { timing_constraints.set_input_constraint(NodeId($1), node_domain[NodeId($1)], $2); }
 
 /*
  * Output Constraints
@@ -427,7 +432,7 @@ input_constraint: node_id constraint EOL { timing_constraints.set_input_constrai
 output_constraints: OUTPUT_CONSTRAINTS_HEADER EOL {}
     | output_constraints OUTPUT_CONSTRAINTS_COLS EOL {}
     | output_constraints output_constraint {}
-output_constraint: node_id constraint EOL { timing_constraints.set_output_constraint(NodeId($1), timing_graph.node_clock_domain(NodeId($1)), $2); }
+output_constraint: node_id constraint EOL { timing_constraints.set_output_constraint(NodeId($1), node_domain[NodeId($1)], $2); }
 
 /*
  * Basic values

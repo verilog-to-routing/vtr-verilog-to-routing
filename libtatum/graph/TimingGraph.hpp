@@ -92,10 +92,6 @@ class TimingGraph {
         NodeType node_type(const NodeId id) const { return node_types_[id]; }
 
         ///\param id The id of a node
-        ///\returns The clock domain of the node
-        DomainId node_clock_domain(const NodeId id) const { return node_clock_domains_[id]; }
-
-        ///\param id The id of a node
         ///\returns Whether the is the source of a clock
         bool node_is_clock_source(const NodeId id) const { return node_is_clock_source_[id]; }
 
@@ -160,10 +156,9 @@ class TimingGraph {
          */
         ///Adds a node to the timing graph
         ///\param type The type of the node to be added
-        ///\param clock_domain The clock domain id of the node to be added
         ///\param is_clk_src Identifies if the node to be added is the source of a clock
         ///\warning Graph will likely need to be re-levelized after modification
-        NodeId add_node(const NodeType type, const DomainId clock_domain, const bool is_clk_src);
+        NodeId add_node(const NodeType type, const bool is_clk_src);
 
         ///Adds an edge to the timing graph
         ///\param src_node The node id of the edge's driving node
