@@ -36,7 +36,8 @@ enum class NodeType {
     SOURCE,
     SINK,
     IPIN,
-    OPIN
+    OPIN,
+    CPIN
 };
 
 enum class TagType {
@@ -79,6 +80,7 @@ class Callback {
 
         virtual void start_delay_model() = 0;
         virtual void add_edge_delay(int edge_id, float min_delay, float max_delay) = 0;
+        virtual void add_edge_setup_hold_time(int edge_id, float min_delay, float max_delay) = 0;
         virtual void finish_delay_model() = 0;
 
         virtual void start_results() = 0;

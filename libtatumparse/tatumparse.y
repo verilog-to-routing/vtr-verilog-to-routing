@@ -102,6 +102,7 @@ using namespace tatumparse;
 %token SINK "SINK"
 %token IPIN "IPIN"
 %token OPIN "OPIN"
+%token CPIN "CPIN"
 %token IN_EDGES "in_edges:"
 %token OUT_EDGES "out_edges:"
 %token EDGE "edge:"
@@ -125,6 +126,8 @@ using namespace tatumparse;
 %token DELAY_MODEL "delay_model:"
 %token MIN_DELAY "min_delay:"
 %token MAX_DELAY "max_delay:"
+%token SETUP_TIME "setup_time:"
+%token HOLD_TIME "hold_time:"
 
 %token ANALYSIS_RESULTS "analysis_results:"
 %token SETUP_DATA "SETUP_DATA"
@@ -160,6 +163,8 @@ using namespace tatumparse;
 %type <float> Number
 %type <float> MaxDelay
 %type <float> MinDelay
+%type <float> SetupTime
+%type <float> HoldTime
 %type <float> Req
 %type <float> Arr
 %type <TagType> TagType
@@ -191,6 +196,7 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
 
 DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId MinDelay MaxDelay EOL { callback.add_edge_delay($2, $3, $4); }
+        | DelayModel EdgeId SetupTime HoldTime EOL { callback.add_edge_setup_hold_time($2, $3, $4); }
 
 Results:  ANALYSIS_RESULTS EOL { callback.start_results(); }
         | Results TagType NodeId DomainId Arr Req EOL { callback.add_tag($2, $3, $4, $5, $6); }
@@ -205,6 +211,8 @@ TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
 
 MaxDelay: MAX_DELAY Number { $$ = $2; }
 MinDelay: MIN_DELAY Number { $$ = $2; }
+SetupTime: SETUP_TIME Number { $$ = $2; }
+HoldTime: HOLD_TIME Number { $$ = $2; }
 
 DomainId: DOMAIN INT { $$ = $2; }
 SrcDomainId: SRC_DOMAIN INT { $$ = $2; }
@@ -216,6 +224,7 @@ NodeType: TYPE SOURCE { $$ = NodeType::SOURCE; }
         | TYPE SINK { $$ = NodeType::SINK; }
         | TYPE IPIN { $$ = NodeType::IPIN; }
         | TYPE OPIN { $$ = NodeType::OPIN; }
+        | TYPE CPIN { $$ = NodeType::CPIN; }
 
 NodeId: NODE INT { $$ = $2;}
 InEdges: IN_EDGES IntList { $$ = $2; }

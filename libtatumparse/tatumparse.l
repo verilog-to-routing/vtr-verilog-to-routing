@@ -65,6 +65,7 @@ SOURCE                          { return tatumparse::Parser::make_SOURCE(); }
 SINK                            { return tatumparse::Parser::make_SINK(); }
 IPIN                            { return tatumparse::Parser::make_IPIN(); }
 OPIN                            { return tatumparse::Parser::make_OPIN(); }
+CPIN                            { return tatumparse::Parser::make_CPIN(); }
 in_edges:                       { return tatumparse::Parser::make_IN_EDGES(); }
 out_edges:                      { return tatumparse::Parser::make_OUT_EDGES(); }
 edge:                           { return tatumparse::Parser::make_EDGE(); }
@@ -88,6 +89,8 @@ sink_domain:                    { return tatumparse::Parser::make_SINK_DOMAIN();
 delay_model:                    { return tatumparse::Parser::make_DELAY_MODEL(); }
 min_delay:                      { return tatumparse::Parser::make_MIN_DELAY(); }
 max_delay:                      { return tatumparse::Parser::make_MAX_DELAY(); }
+setup_time:                     { return tatumparse::Parser::make_SETUP_TIME(); }
+hold_time:                      { return tatumparse::Parser::make_HOLD_TIME(); }
 
 analysis_result:                { return tatumparse::Parser::make_ANALYSIS_RESULTS(); }
 SETUP_DATA                      { return tatumparse::Parser::make_SETUP_DATA(); }
