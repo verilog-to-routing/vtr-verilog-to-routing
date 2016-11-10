@@ -153,14 +153,19 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
                     //FF sink
                     TATUM_ASSERT_MSG(tg.node_in_edges(node).size() == 2, "FF Sinks have at most two edges (data and clock)");
 
+                    NodeId ff_ipin_sink = node;
                     NodeId ff_clock;
+                    EdgeId ff_clock_edge;
                     NodeId ff_ipin;
                     float tsu = NAN;
-                    for(EdgeId in_edge : tg.node_in_edges(node)) {
+                    for(EdgeId in_edge : tg.node_in_edges(ff_ipin_sink)) {
+                        if(!in_edge) continue;
+
                         NodeId src_node = tg.edge_src_node(in_edge);
 
                         if(tg.node_type(src_node) == NodeType::SINK) {
                             ff_clock = src_node;
+                            ff_clock_edge = in_edge;
                         } else {
                             TATUM_ASSERT(tg.node_type(src_node) == NodeType::IPIN);
                             ff_ipin = src_node;
@@ -170,6 +175,32 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
                     TATUM_ASSERT(ff_clock);
                     TATUM_ASSERT(ff_ipin);
                     TATUM_ASSERT(!isnan(tsu));
+
+                    auto ff_ipin_in_edges = tg.node_in_edges(ff_ipin);
+                    TATUM_ASSERT(num_valid(ff_ipin_in_edges) == 1);
+                    EdgeId ff_ipin_in_edge = *ith_valid(ff_ipin_in_edges, 1);
+                    NodeId ff_ipin_src = tg.edge_src_node(ff_ipin_in_edge);
+                    float ff_ipin_in_delay = edge_delays[size_t(ff_ipin_in_edge)];
+
+                    //Remove the pin (and it's edges)
+                    tg.remove_node(ff_ipin);
+
+                    //Add the replacement edge
+                    EdgeId new_edge_id = tg.add_edge(ff_ipin_src, ff_ipin_sink);
+
+                    //Specify the new edge's delay
+                    edge_delays.resize(size_t(new_edge_id) + 1); //Make space
+                    edge_delays[size_t(new_edge_id)] = ff_ipin_in_delay;
+
+                    //Move the IPIN->SINK delay (tsu) to the CLOCK->SINK edge
+                    //Note that since we are 'moving' the tsu to the other side of the
+                    //arrival/required time inequality, we must make it negative!
+                    edge_delays[size_t(ff_clock_edge)] = -tsu;
+
+                    //Since we've moved around the tcq delay we need to note which original node it should be compared with
+                    //(i.e. when we verify correctness we need to check the golden result for the OPIN's data arr/req at the
+                    //SOURCE node
+                    arr_req_remap[ff_ipin_sink] = ff_ipin;
                     
                     std::cout << "Remove FF IPIN " << ff_ipin << " Tsu " << tsu << " " << ff_clock << " -> " << node << "\n";
                 }
