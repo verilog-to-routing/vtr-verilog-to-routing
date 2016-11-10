@@ -36,6 +36,7 @@ void write_dot_file_setup(std::ostream& os,
 
     if(tg.nodes().size() > 1000) {
         std::cout << "Skipping setup dot file due to large timing graph size\n"; 
+        return;
     }
 
     auto setup_analyzer = std::dynamic_pointer_cast<const SetupTimingAnalyzer>(analyzer);
@@ -114,6 +115,7 @@ void write_dot_file_hold(std::ostream& os,
                          std::shared_ptr<const DelayCalc> delay_calc = std::shared_ptr<const DelayCalc>()) {
     if(tg.nodes().size() > 1000) {
         std::cout << "Skipping hold dot file due to large timing graph size\n"; 
+        return;
     }
 
     auto hold_analyzer = std::dynamic_pointer_cast<const HoldTimingAnalyzer>(analyzer);
