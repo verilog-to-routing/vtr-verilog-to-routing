@@ -115,7 +115,14 @@ int main(int argc, char** argv) {
         //We then need to re-levelize the graph
         timing_graph->levelize();
 
+
+        std::ofstream vpr_dot("tg_setup_annotated.vpr.dot");
+        write_dot_file_setup(vpr_dot, *timing_graph);
+
         rebuild_timing_graph(*timing_graph, *timing_constraints, ff_info, orig_edge_delays, orig_expected_arr_req_times);
+
+        std::ofstream rebuilt_dot("tg_setup_annotated.rebuilt.dot");
+        write_dot_file_setup(rebuilt_dot, *timing_graph);
 
         cout << "Timing Graph Stats:" << endl;
         cout << "  Nodes : " << timing_graph->nodes().size() << endl;
@@ -203,7 +210,7 @@ int main(int argc, char** argv) {
      */
 
     //Create the delay calculator
-    auto delay_calculator = std::make_shared<tatum::FixedDelayCalculator>(edge_delays);
+    auto delay_calculator = std::make_shared<const tatum::FixedDelayCalculator>(edge_delays);
 
 #ifdef ECHO
     std::ofstream ofs("timing_graph.echo");
@@ -217,9 +224,6 @@ int main(int argc, char** argv) {
     std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
     auto serial_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
     auto serial_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
-
-    std::ofstream new_dot("tg_setup_annotated.new.dot");
-    write_dot_file_setup(new_dot, *timing_graph, *serial_setup_analyzer, delay_calculator);
 
     //Performance variables
     float serial_verify_time = 0.;
@@ -246,7 +250,7 @@ int main(int argc, char** argv) {
 
 #if 1
                 std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-                write_dot_file_setup(tg_setup_dot_file, *timing_graph, *serial_setup_analyzer, delay_calculator);
+                write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
 #endif
             }
 
@@ -310,21 +314,12 @@ int main(int argc, char** argv) {
         cout << endl;
     }
 
-    if(timing_graph->nodes().size() < 1000) {
-        cout << "Writing Anotated Timing Graph Dot File" << endl;
+    std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
+    write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
 
-        if(serial_setup_analyzer) {
-            std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-            write_dot_file_setup(tg_setup_dot_file, *timing_graph, *serial_setup_analyzer, delay_calculator);
-        }
+    std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
+    write_dot_file_hold(tg_hold_dot_file, *timing_graph, serial_analyzer, delay_calculator);
 
-        if(serial_hold_analyzer) {
-            std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
-            write_dot_file_hold(tg_hold_dot_file, *timing_graph, *serial_hold_analyzer, delay_calculator);
-        }
-    } else {
-        cout << "Skipping writting dot file due to large graph size" << endl;
-    }
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
