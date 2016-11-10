@@ -44,7 +44,7 @@
 //#define CHECK_TATUM_TO_VPR_DIFFERENCES
 
 //Do we dump an echo file?
-//#define ECHO
+#define ECHO
 
 typedef std::chrono::duration<double> dsec;
 typedef std::chrono::high_resolution_clock Clock;
@@ -115,11 +115,6 @@ int main(int argc, char** argv) {
         add_ff_clock_to_source_sink_edges(*timing_graph, ff_info, orig_edge_delays);
         //We then need to re-levelize the graph
         timing_graph->levelize();
-
-#ifdef ECHO
-        std::ofstream vpr_echo("timing_graph.vpr.echo");
-        write_timing_graph(vpr_echo, *timing_graph);
-#endif
 
         write_dot_file_setup("tg_setup_annotated.vpr.dot", *timing_graph);
 
@@ -196,7 +191,7 @@ int main(int argc, char** argv) {
         //
         //As a result we invert the sign of such edges to derive the
         //hold delays
-        hold_edge_delays.reserve(setup_edge_delays.size());
+        hold_edge_delays.resize(setup_edge_delays.size());
         for(EdgeId edge : timing_graph->edges()) {
             NodeId src_node = timing_graph->edge_src_node(edge);
             NodeId sink_node = timing_graph->edge_sink_node(edge);
