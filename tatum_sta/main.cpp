@@ -120,13 +120,11 @@ int main(int argc, char** argv) {
         write_timing_graph(vpr_echo, *timing_graph);
 #endif
 
-        std::ofstream vpr_dot("tg_setup_annotated.vpr.dot");
-        write_dot_file_setup(vpr_dot, *timing_graph);
+        write_dot_file_setup("tg_setup_annotated.vpr.dot", *timing_graph);
 
         rebuild_timing_graph(*timing_graph, *timing_constraints, orig_edge_delays, orig_expected_arr_req_times);
 
-        std::ofstream rebuilt_dot("tg_setup_annotated.rebuilt.dot");
-        write_dot_file_setup(rebuilt_dot, *timing_graph);
+        write_dot_file_setup("tg_setup_annotated.rebuilt.dot", *timing_graph);
 
         cout << "Timing Graph Stats:" << endl;
         cout << "  Nodes : " << timing_graph->nodes().size() << endl;
@@ -254,10 +252,6 @@ int main(int argc, char** argv) {
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
 
-#if 1
-                std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-                write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
-#endif
             }
 
             for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
@@ -275,6 +269,12 @@ int main(int argc, char** argv) {
 
 #ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_SERIAL_RUNS - 1) {
+
+                if(i == 0) {
+                    write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
+                    write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
+                }
+
                 serial_arr_req_verified = verify_analyzer(*timing_graph, *serial_setup_analyzer, expected_arr_req_times);
             }
 #endif
@@ -319,12 +319,6 @@ int main(int argc, char** argv) {
         cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
     }
-
-    std::ofstream tg_setup_dot_file("tg_setup_annotated.dot");
-    write_dot_file_setup(tg_setup_dot_file, *timing_graph, serial_analyzer, delay_calculator);
-
-    std::ofstream tg_hold_dot_file("tg_hold_annotated.dot");
-    write_dot_file_hold(tg_hold_dot_file, *timing_graph, serial_analyzer, delay_calculator);
 
     cout << endl;
 

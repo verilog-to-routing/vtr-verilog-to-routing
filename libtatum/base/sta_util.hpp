@@ -3,6 +3,7 @@
 #include <memory>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 
 #include "timing_analyzers.hpp"
 #include "TimingGraph.hpp"
@@ -29,7 +30,7 @@ void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::m
  */
 
 template<class DelayCalc=FixedDelayCalculator>
-void write_dot_file_setup(std::ostream& os, 
+void write_dot_file_setup(std::string filename, 
                           const TimingGraph& tg, 
                           std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
                           std::shared_ptr<const DelayCalc> delay_calc = std::shared_ptr<const DelayCalc>()) {
@@ -38,6 +39,8 @@ void write_dot_file_setup(std::ostream& os,
         std::cout << "Skipping setup dot file due to large timing graph size\n"; 
         return;
     }
+
+    std::ofstream os(filename);
 
     auto setup_analyzer = std::dynamic_pointer_cast<const SetupTimingAnalyzer>(analyzer);
 
@@ -109,7 +112,7 @@ void write_dot_file_setup(std::ostream& os,
 }
 
 template<class DelayCalc=FixedDelayCalculator>
-void write_dot_file_hold(std::ostream& os, 
+void write_dot_file_hold(std::string filename, 
                          const TimingGraph& tg, 
                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
                          std::shared_ptr<const DelayCalc> delay_calc = std::shared_ptr<const DelayCalc>()) {
@@ -117,6 +120,8 @@ void write_dot_file_hold(std::ostream& os,
         std::cout << "Skipping hold dot file due to large timing graph size\n"; 
         return;
     }
+
+    std::ofstream os(filename);
 
     auto hold_analyzer = std::dynamic_pointer_cast<const HoldTimingAnalyzer>(analyzer);
 
