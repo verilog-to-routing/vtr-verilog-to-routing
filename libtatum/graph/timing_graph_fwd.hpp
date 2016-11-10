@@ -17,7 +17,8 @@ enum class NodeType {
     SOURCE, //The start of a clock/data path
     SINK, //The end of a clock/data path
     IPIN, //An intermediate input pin
-    OPIN //An intermediate output pin
+    OPIN, //An intermediate output pin
+    CPIN, //An intermediate clock (input) pin
 };
 
 //Stream operators for NodeType

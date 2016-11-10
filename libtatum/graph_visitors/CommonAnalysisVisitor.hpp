@@ -320,7 +320,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::is_clock_data_edge(const TimingGraph& t
     NodeId edge_src_node = tg.edge_src_node(edge_id);
     NodeId edge_sink_node = tg.edge_sink_node(edge_id);
 
-    return (tg.node_type(edge_src_node) == NodeType::SINK) && (tg.node_type(edge_sink_node) == NodeType::SOURCE);
+    return (tg.node_type(edge_src_node) == NodeType::CPIN) && (tg.node_type(edge_sink_node) == NodeType::SOURCE);
 }
 
 }} //namepsace

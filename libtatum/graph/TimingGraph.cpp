@@ -547,6 +547,7 @@ std::ostream& operator<<(std::ostream& os, const NodeType type) {
     else if (type == NodeType::SINK)                os << "SINK";
     else if (type == NodeType::IPIN)                os << "IPIN";
     else if (type == NodeType::OPIN)                os << "OPIN";
+    else if (type == NodeType::CPIN)                os << "CPIN";
     else throw std::domain_error("Unrecognized NodeType");
     return os;
 }

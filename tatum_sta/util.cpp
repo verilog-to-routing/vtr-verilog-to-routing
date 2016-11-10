@@ -194,7 +194,7 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, std::vector<fl
 
                         NodeId src_node = tg.edge_src_node(in_edge);
 
-                        if(tg.node_type(src_node) == NodeType::SINK) {
+                        if(tg.node_type(src_node) == NodeType::CPIN) {
                             ff_clock = src_node;
                             ff_clock_edge = in_edge;
                         } else {
@@ -235,7 +235,6 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, std::vector<fl
                     //(i.e. when we verify correctness we need to check the golden result for the OPIN's data arr/req at the
                     //SOURCE node
                     arr_req_remap[ff_ipin_sink] = ff_ipin;
-                    
                 }
             }
             

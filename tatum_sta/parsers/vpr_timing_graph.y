@@ -266,6 +266,9 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                         case VprNodeType::FF_SOURCE:
                                                                             $$.type = tatum::NodeType::SOURCE;
                                                                             break;
+                                                                        case VprNodeType::FF_CLOCK:
+                                                                            $$.type = tatum::NodeType::CPIN;
+                                                                            break;
                                                                         case VprNodeType::INPAD_OPIN:
                                                                         case VprNodeType::PRIMITIVE_OPIN:
                                                                         case VprNodeType::FF_OPIN:
@@ -279,7 +282,6 @@ tnode: node_id tnode_type ipin iblk domain is_clk_src skew io_delay num_out_edge
                                                                             break;
                                                                         case VprNodeType::OUTPAD_SINK:
                                                                         case VprNodeType::FF_SINK:
-                                                                        case VprNodeType::FF_CLOCK:
                                                                             $$.type = tatum::NodeType::SINK;
                                                                             break;
                                                                         default:
