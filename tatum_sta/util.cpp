@@ -89,26 +89,34 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
 
                     NodeId opin_src_node = node;
                     NodeId opin_node = sink_node;
-                    auto opin_out_edges = tg.node_out_edges(opin_node);
-                    TATUM_ASSERT(num_valid(opin_out_edges) == 1);
-                    EdgeId opin_out_edge = *ith_valid(opin_out_edges, 1);
-                    NodeId opin_sink_node = tg.edge_sink_node(opin_out_edge);
-
                     float tcq = edge_delays[size_t(out_edge)];
-                    float opin_out_delay = edge_delays[size_t(opin_out_edge)];
 
                     EdgeId source_in_edge = *tg.node_in_edges(node).begin();
                     NodeId clock_sink = tg.edge_src_node(source_in_edge);
 
+                    std::map<NodeId,float> new_edges;
+                    for(EdgeId opin_out_edge : tg.node_out_edges(opin_node)) {
+                        NodeId opin_sink_node = tg.edge_sink_node(opin_out_edge);
+
+                        float opin_out_delay = edge_delays[size_t(opin_out_edge)];
+
+                        new_edges[opin_sink_node] = opin_out_delay;
+                    }
+
                     //Remove the node (and it's edges)
                     tg.remove_node(opin_node);
 
-                    //Add the new edge
-                    EdgeId new_edge = tg.add_edge(opin_src_node, opin_sink_node);
+                    //Add the new edges
+                    for(auto kv : new_edges) {
+                        NodeId opin_sink_node = kv.first;
+                        float delay = kv.second;
 
-                    //Set the edge delay
-                    edge_delays.resize(size_t(new_edge) + 1); //Make space
-                    edge_delays[size_t(new_edge)] = opin_out_delay;
+                        EdgeId new_edge = tg.add_edge(opin_src_node, opin_sink_node);
+
+                        //Set the edge delay
+                        edge_delays.resize(size_t(new_edge) + 1); //Make space
+                        edge_delays[size_t(new_edge)] = delay;
+                    }
 
                     //Move the SOURCE->OPIN delay (tcq) to the CLOCK->SOURCE edge
                     edge_delays[size_t(source_in_edge)] = tcq;
