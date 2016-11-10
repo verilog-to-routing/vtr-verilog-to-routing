@@ -51,23 +51,33 @@ void rebuild_timing_graph(TimingGraph& tg, TimingConstraints& tc, const VprFfInf
                     //Primary Input source node
                     NodeId opin_src_node = node;
                     NodeId opin_node = sink_node;
-                    TATUM_ASSERT(tg.node_out_edges(opin_node).size() == 1);
-                    EdgeId opin_out_edge = *tg.node_out_edges(opin_node).begin();
-                    NodeId opin_sink_node = tg.edge_sink_node(opin_out_edge);
-
                     float constraint = edge_delays[size_t(out_edge)];
-                    float opin_out_delay = edge_delays[size_t(opin_out_edge)];
+
+                    std::map<NodeId,float> new_edges;
+                    for(EdgeId opin_out_edge : tg.node_out_edges(opin_node)) {
+                        NodeId opin_sink_node = tg.edge_sink_node(opin_out_edge);
+
+                        float opin_out_delay = edge_delays[size_t(opin_out_edge)];
+
+                        new_edges[opin_sink_node] = opin_out_delay;
+                    }
 
                     //Remove the node (and it's connected edges)
                     tg.remove_node(opin_node);
 
-                    //Add the new edge
-                    EdgeId new_edge = tg.add_edge(opin_src_node, opin_sink_node);
+                    //Add the new edges
+                    for(auto kv : new_edges) {
+                        NodeId opin_sink_node = kv.first;
+                        float delay = kv.second;
 
-                    //Set the edge delay
-                    edge_delays.resize(size_t(new_edge) + 1); //Make space
-                    edge_delays[size_t(new_edge)] = opin_out_delay;
+                        EdgeId new_edge = tg.add_edge(opin_src_node, opin_sink_node);
 
+                        //Set the edge delay
+                        edge_delays.resize(size_t(new_edge) + 1); //Make space
+                        edge_delays[size_t(new_edge)] = delay;
+                    }
+
+                    //Set the constraint
                     tc.set_input_constraint(opin_src_node, tc.node_clock_domain(opin_src_node), constraint);
 
                     std::cout << "Remove PI OPIN " << sink_node << " Input Constraint on " << node << " " << constraint << "\n";
