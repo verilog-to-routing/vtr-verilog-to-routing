@@ -1,5 +1,7 @@
 #include <fstream>
 #include <cmath>
+#include <vector>
+#include <algorithm>
 
 #include "output.hpp"
 
@@ -33,13 +35,19 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
         os << "\n";
 
         os << "  in_edges: ";
-        for(EdgeId edge_id : tg.node_in_edges(node_id)) {
+        auto in_edges = tg.node_in_edges(node_id);
+        std::vector<EdgeId> edges(in_edges.begin(), in_edges.end());
+        std::sort(edges.begin(), edges.end());
+        for(EdgeId edge_id : edges) {
             os << size_t(edge_id) << " ";
         }
         os << "\n";
 
         os << "  out_edges: ";  
-        for(EdgeId edge_id : tg.node_out_edges(node_id)) {
+        auto out_edges = tg.node_out_edges(node_id);
+        edges =  std::vector<EdgeId>(out_edges.begin(), out_edges.end());
+        std::sort(edges.begin(), edges.end());
+        for(EdgeId edge_id : edges) {
             os << size_t(edge_id) << " ";
         }
         os << "\n";
