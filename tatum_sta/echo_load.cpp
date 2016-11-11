@@ -62,8 +62,7 @@ void EchoLoader::add_edge_delay(int edge_id, float min_delay, float max_delay) {
     max_delay_edges_[tatum::EdgeId(edge_id)] = tatum::Time(max_delay);
 }
 void EchoLoader::add_tag(tatumparse::TagType type, int node_id, int domain_id, float arr, float req) {
-    gr_->set_arr(type, tatum::NodeId(node_id), tatum::DomainId(domain_id), arr);
-    gr_->set_req(type, tatum::NodeId(node_id), tatum::DomainId(domain_id), req);
+    gr_->set_result(tatum::NodeId(node_id), type, tatum::DomainId(domain_id), arr, req);
 }
 
 std::unique_ptr<tatum::TimingGraph> EchoLoader::timing_graph() {

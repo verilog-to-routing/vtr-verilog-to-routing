@@ -1,36 +1,49 @@
 #ifndef TATUM_STA_GOLDEN_REFERENCE
 #define TATUM_STA_GOLDEN_REFERENCE
+#include <map>
 
 #include "timing_graph_fwd.hpp"
 #include "tatumparse.hpp"
 
+struct TagResult {
+    TagResult(tatum::NodeId node_id, tatum::DomainId domain_id, float arr_val, float req_val): node(node_id), domain(domain_id), arr(arr_val), req(req_val) {}
+    tatum::NodeId node;
+    tatum::DomainId domain;
+    float arr;
+    float req;
+};
+
 class GoldenReference {
     public:
-        float get_arr(tatumparse::TagType type, tatum::NodeId node, tatum::DomainId domain) {
-            return arr_[make_key(type, node, domain)];
+
+        void set_result(tatum::NodeId node, tatumparse::TagType tag_type, tatum::DomainId domain, float arr, float req) {
+            auto key = std::make_pair(node, tag_type);
+            auto res = results[key].insert(std::make_pair(domain, TagResult(node, domain, arr, req)));
+
+            TATUM_ASSERT_MSG(res.second, "Was inserted");
         }
 
-        float get_req(tatumparse::TagType type, tatum::NodeId node, tatum::DomainId domain) {
-            return req_[make_key(type, node, domain)];
+        const std::map<tatum::DomainId,TagResult>& get_result(tatum::NodeId node, tatumparse::TagType tag_type) {
+            auto key = std::make_pair(node, tag_type);
+            return results[key];
         }
 
-        void set_arr(tatumparse::TagType type, tatum::NodeId node, tatum::DomainId domain, float val) {
-            arr_[make_key(type, node, domain)] = val;
-        }
+        size_t num_tags() {
+            size_t cnt = 0;
+            for(auto& kv : results) {
+                cnt += kv.second.size();
+            }
 
-        void set_req(tatumparse::TagType type, tatum::NodeId node, tatum::DomainId domain, float val) {
-            req_[make_key(type, node, domain)] = val;
+            return cnt;
         }
+        
 
     private:
-        typedef std::tuple<tatumparse::TagType,tatum::NodeId,tatum::DomainId> Key;
+        typedef std::pair<tatum::NodeId,tatumparse::TagType> Key;
+        typedef std::map<tatum::DomainId,TagResult> Value;
 
-        Key make_key(tatumparse::TagType type, tatum::NodeId node, tatum::DomainId domain) {
-            return std::make_tuple(type, node, domain);
-        }
-
-        std::map<Key,float> arr_;
-        std::map<Key,float> req_;
+        std::map<Key,Value> results;
 };
+
 
 #endif

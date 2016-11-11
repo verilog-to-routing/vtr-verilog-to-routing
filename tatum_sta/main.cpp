@@ -28,6 +28,7 @@
 #include "golden_reference.hpp"
 #include "echo_load.hpp"
 #include "verify.hpp"
+#include "verify2.hpp"
 #include "util.hpp"
 #include "output.hpp"
 
@@ -209,7 +210,6 @@ int main(int argc, char** argv) {
         timing_constraints = loader.timing_constraints();
         delay_calculator = loader.delay_calculator();
         golden_reference = loader.golden_reference();
-        auto tmp = *golden_reference;
 #endif
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
     //Performance variables
     float serial_verify_time = 0.;
     float serial_reset_time = 0.;
-    size_t serial_arr_req_verified = 0;
+    size_t serial_tags_verified = 0;
     std::map<std::string,float> serial_prof_data;
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
@@ -301,7 +301,7 @@ int main(int argc, char** argv) {
                     write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
                 }
 
-                serial_arr_req_verified = verify_analyzer(*timing_graph, *serial_setup_analyzer, expected_arr_req_times);
+                serial_tags_verified = verify_analyzer2(*timing_graph, serial_analyzer, *golden_reference);
             }
 #endif
 
@@ -337,10 +337,10 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << serial_prof_data["required_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
 
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
-        if(serial_arr_req_verified != 2 * timing_graph->nodes().size() * expected_arr_req_times.get_num_clocks()) { //2x for arr and req
-            cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
+        if(serial_tags_verified != golden_reference->num_tags()) {
+            cout << "WARNING: Expected tags differs from tags checked, verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->nodes().size() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+            cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
         cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
     //float parallel_bcktraverse_time_avg = 0.;
     float parallel_verify_time = 0;
     float parallel_reset_time = 0;
-    size_t parallel_arr_req_verified = 0;
+    size_t parallel_tags_verified = 0;
     std::map<std::string,float> parallel_prof_data;
     {
         cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;
@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
 
 #ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_PARALLEL_RUNS - 1) {
-                parallel_arr_req_verified = verify_analyzer(*timing_graph, *parallel_setup_analyzer, expected_arr_req_times);
+                parallel_tags_verified = verify_analyzer2(*timing_graph, parallel_analyzer, *golden_reference);
             }
 #endif
 
@@ -424,10 +424,10 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << parallel_prof_data["required_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
 
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
-        if(parallel_arr_req_verified != 2 * timing_graph->nodes().size() * expected_arr_req_times.get_num_clocks()) { //2x for arr and req
-            cout << "WARNING: Expected arr/req times differ from number of nodes. Verification may not have occured!" << endl;
+        if(parallel_tags_verified != golden_reference->num_tags()) {
+            cout << "WARNING: Expected " << golden_reference->num_tags() << " tags but checked only " << parallel_tags_verified << ", verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_arr_req_verified << " arr/req times accross " << timing_graph->nodes().size() << " nodes and " << expected_arr_req_times.get_num_clocks() << " clocks" << endl;
+            cout << "\tVerified " << parallel_tags_verified << " tags (expected " << golden_reference->num_tags() << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
         cout << "Resetting Parallel Analysis took: " << parallel_reset_time << " sec" << endl;
     }
