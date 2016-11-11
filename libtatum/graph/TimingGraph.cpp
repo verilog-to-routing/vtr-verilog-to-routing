@@ -276,25 +276,8 @@ GraphIdMaps TimingGraph::compress() {
     auto node_id_map = compress_ids(node_ids_);
     auto edge_id_map = compress_ids(edge_ids_);
 
-    //Update values
-    node_ids_ = clean_and_reorder_ids(node_id_map);
-    node_types_ = clean_and_reorder_values(node_types_, node_id_map);
-    node_in_edges_ = clean_and_reorder_values(node_in_edges_, node_id_map);
-    node_out_edges_ = clean_and_reorder_values(node_out_edges_, node_id_map);
-
-    edge_ids_ = clean_and_reorder_ids(edge_id_map);
-    edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
-    edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
-
-    //Update cross-references
-    for(auto& edges_ref : node_in_edges_) {
-        edges_ref = update_valid_refs(edges_ref, edge_id_map);
-    }
-    for(auto& edges_ref : node_out_edges_) {
-        edges_ref = update_valid_refs(edges_ref, edge_id_map);
-    }
-    edge_src_nodes_ = update_all_refs(edge_src_nodes_, node_id_map);
-    edge_sink_nodes_ = update_all_refs(edge_sink_nodes_, node_id_map);
+    remap_nodes(node_id_map);
+    remap_edges(edge_id_map);
 
     validate();
 
@@ -309,7 +292,17 @@ bool TimingGraph::validate() {
     return valid;
 }
 
-tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
+GraphIdMaps TimingGraph::optimize_layout() {
+    auto node_id_map = optimize_node_layout();
+    auto edge_id_map = optimize_edge_layout();
+
+    remap_nodes(node_id_map);
+    remap_edges(edge_id_map);
+
+    return {node_id_map, edge_id_map};
+}
+
+tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const {
     //Make all edges in a level be contiguous in memory
 
     //Determine the edges driven by each level of the graph
@@ -332,54 +325,22 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() {
     //Maps from from original to new edge id, used to update node to edge refs
     tatum::util::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
 
-    //Save the old values while we write the new ones
-    tatum::util::linear_map<EdgeId,NodeId> old_edge_sink_nodes_;
-    tatum::util::linear_map<EdgeId,NodeId> old_edge_src_nodes_;
-
-    //Swap them
-    std::swap(old_edge_sink_nodes_, edge_sink_nodes_);
-    std::swap(old_edge_src_nodes_, edge_src_nodes_);
-
-    //Update edge to node refs
+    //Determine the new order
+    size_t iedge = 0;
     for(auto& edge_level : edge_levels) {
         for(const EdgeId orig_edge_id : edge_level) {
-            //Write edges in the new contiguous order
-            edge_sink_nodes_.push_back(old_edge_sink_nodes_[orig_edge_id]);
-            edge_src_nodes_.push_back(old_edge_src_nodes_[orig_edge_id]);
 
             //Save the new edge id to update nodes
-            orig_to_new_edge_id[orig_edge_id] = EdgeId(edge_sink_nodes_.size() - 1);
+            orig_to_new_edge_id[orig_edge_id] = EdgeId(iedge);
+
+            ++iedge;
         }
     }
-
-    //Update the edge ids
-    for(EdgeId old_edge_id : edges()) {
-        EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
-        edge_ids_[new_edge_id] = new_edge_id;
-    }
-
-    //Update node to edge refs
-    for(const NodeId node_id : nodes()) {
-        size_t edge_idx = 0;
-        for(EdgeId old_edge_id : node_out_edges(node_id)) {
-            EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
-            node_out_edges_[node_id][edge_idx] = new_edge_id;
-            ++edge_idx;
-        }
-
-        edge_idx = 0;
-        for(EdgeId old_edge_id : node_in_edges(node_id)) {
-            EdgeId new_edge_id = orig_to_new_edge_id[old_edge_id];
-            node_in_edges_[node_id][edge_idx] = new_edge_id;
-            ++edge_idx;
-        }
-    }
-
 
     return orig_to_new_edge_id;
 }
 
-tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
+tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() const {
     //Make all nodes in a level be contiguous in memory
 
     /*
@@ -388,69 +349,47 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() {
      */
     tatum::util::linear_map<NodeId,NodeId> orig_to_new_node_id(nodes().size());
 
-    /*
-     * Re-allocate nodes so levels are in contiguous memory
-     */
-    tatum::util::linear_map<NodeId,NodeType> old_node_types;
-    tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_out_edges;
-    tatum::util::linear_map<NodeId,std::vector<EdgeId>> old_node_in_edges;
-
-    //Swap the values
-    std::swap(old_node_types, node_types_);
-    std::swap(old_node_out_edges, node_out_edges_);
-    std::swap(old_node_in_edges, node_in_edges_);
-
-    //Update the values
+    //Determine the new order
+    size_t inode = 0;
     for(const LevelId level_id : levels()) {
         for(const NodeId old_node_id : level_nodes(level_id)) {
-            node_types_.push_back(old_node_types[old_node_id]);
-            node_out_edges_.push_back(old_node_out_edges[old_node_id]);
-            node_in_edges_.push_back(old_node_in_edges[old_node_id]);
 
             //Record the new node id
-            orig_to_new_node_id[old_node_id] = NodeId(node_types_.size() - 1);
+            orig_to_new_node_id[old_node_id] = NodeId(inode);
+
+            ++inode;
         }
-    }
-
-    /*
-     * Update old references to node_ids with thier new values
-     */
-    //The node levels
-    for(const LevelId level_id : levels()) {
-        for(size_t i = 0; i < level_nodes_[level_id].size(); ++i) {
-            NodeId old_node_id = level_nodes_[level_id][i];
-            NodeId new_node_id = orig_to_new_node_id[old_node_id];
-
-            level_nodes_[level_id][i] = new_node_id;
-        }
-    }
-
-    //The primary outputs
-    for(size_t i = 0; i < primary_outputs_.size(); i++) {
-        NodeId old_node_id = primary_outputs_[i];
-        NodeId new_node_id = orig_to_new_node_id[old_node_id];
-
-        primary_outputs_[i] = new_node_id;
-    }
-
-    //The Edges
-    for(const EdgeId edge_id : edges()) {
-        NodeId old_sink_node = edge_sink_nodes_[edge_id];
-        NodeId old_src_node = edge_src_nodes_[edge_id];
-
-        NodeId new_sink_node = orig_to_new_node_id[old_sink_node];
-        NodeId new_src_node = orig_to_new_node_id[old_src_node];
-
-        edge_sink_nodes_[edge_id] = new_sink_node;
-        edge_src_nodes_[edge_id] = new_src_node;
-    }
-
-    //Update the node ids
-    for(NodeId node_id : nodes()) {
-        node_ids_[node_id] = orig_to_new_node_id[node_id];
     }
 
     return orig_to_new_node_id;
+}
+
+void TimingGraph::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_id_map) {
+    //Update values
+    node_ids_ = clean_and_reorder_ids(node_id_map);
+    node_types_ = clean_and_reorder_values(node_types_, node_id_map);
+    node_in_edges_ = clean_and_reorder_values(node_in_edges_, node_id_map);
+    node_out_edges_ = clean_and_reorder_values(node_out_edges_, node_id_map);
+
+    //Update references
+    edge_src_nodes_ = update_all_refs(edge_src_nodes_, node_id_map);
+    edge_sink_nodes_ = update_all_refs(edge_sink_nodes_, node_id_map);
+}
+
+void TimingGraph::remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge_id_map) {
+
+    //Update values
+    edge_ids_ = clean_and_reorder_ids(edge_id_map);
+    edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
+    edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
+
+    //Update cross-references
+    for(auto& edges_ref : node_in_edges_) {
+        edges_ref = update_valid_refs(edges_ref, edge_id_map);
+    }
+    for(auto& edges_ref : node_out_edges_) {
+        edges_ref = update_valid_refs(edges_ref, edge_id_map);
+    }
 }
 
 bool TimingGraph::valid_node_id(const NodeId node_id) {

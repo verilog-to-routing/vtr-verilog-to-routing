@@ -35,10 +35,10 @@
 //#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
-#define OPTIMIZE_NODE_EDGE_ORDER
+#define OPTIMIZE_GRAPH_LAYOUT
 
 //Should we print out tag related object size info
-#define PRINT_TAG_SIZES
+//#define PRINT_TAG_SIZES
 
 //Do we dump an echo file?
 #define ECHO
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     //Raw outputs of parser
     std::shared_ptr<TimingGraph> timing_graph;
     std::shared_ptr<TimingConstraints> timing_constraints;
-    std::shared_ptr<const tatum::FixedDelayCalculator> delay_calculator;
+    std::shared_ptr<tatum::FixedDelayCalculator> delay_calculator;
     std::shared_ptr<GoldenReference> golden_reference;
 
     {
@@ -108,7 +108,11 @@ int main(int argc, char** argv) {
 
     timing_graph->levelize();
 
-#ifdef OPTIMIZE_NODE_EDGE_ORDER
+#ifdef OPTIMIZE_GRAPH_LAYOUT
+    
+    auto id_maps = timing_graph->optimize_layout();
+
+    remap_delay_calculator(*timing_graph, *delay_calculator, id_maps.edge_id_map);
 
 #endif
 
@@ -186,17 +190,13 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-#ifdef TATUM_ASSERT_VPR_TO_TATUM
-            if(i == 0 || i == NUM_SERIAL_RUNS - 1) {
+            if(i == NUM_SERIAL_RUNS - 1) {
 
-                if(i == 0) {
-                    write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
-                    write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
-                }
+                write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
+                write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
 
                 serial_tags_verified = verify_analyzer(*timing_graph, serial_analyzer, *golden_reference);
             }
-#endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             serial_verify_time += tatum::time_sec(verify_start, verify_end);
@@ -281,11 +281,9 @@ int main(int argc, char** argv) {
             //Verify
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-#ifdef TATUM_ASSERT_VPR_TO_TATUM
-            if(i == 0 || i == NUM_PARALLEL_RUNS - 1) {
+            if(i == NUM_PARALLEL_RUNS - 1) {
                 parallel_tags_verified = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
             }
-#endif
 
             clock_gettime(CLOCK_MONOTONIC, &verify_end);
             parallel_verify_time += tatum::time_sec(verify_start, verify_end);
