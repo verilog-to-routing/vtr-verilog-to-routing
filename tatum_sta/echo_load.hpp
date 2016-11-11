@@ -5,6 +5,7 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 #include "FixedDelayCalculator.hpp"
+#include "golden_reference.hpp"
 
 #include "tatumparse.hpp"
 
@@ -42,7 +43,7 @@ public:
     void finish_delay_model() override { }
 
     void start_results() override { }
-    void add_tag(tatumparse::TagType /*type*/, int /*node_id*/, int /*domain_id*/, float /*arr*/, float /*req*/) override { }
+    void add_tag(tatumparse::TagType /*type*/, int /*node_id*/, int /*domain_id*/, float /*arr*/, float /*req*/) override;
     void finish_results() override { }
 
     //End of parsing
@@ -54,6 +55,7 @@ public:
     std::unique_ptr<tatum::TimingGraph> timing_graph();
     std::unique_ptr<tatum::TimingConstraints> timing_constraints();
     std::unique_ptr<tatum::FixedDelayCalculator> delay_calculator();
+    std::unique_ptr<GoldenReference> golden_reference();
 
 private:
     tatum::NodeType to_tatum_node_type(tatumparse::NodeType type);
@@ -62,6 +64,7 @@ private: //Data
 
     std::unique_ptr<tatum::TimingGraph> tg_;
     std::unique_ptr<tatum::TimingConstraints> tc_;
+    std::unique_ptr<GoldenReference> gr_;
 
     std::string filename_;
 

@@ -3,6 +3,7 @@
 EchoLoader::EchoLoader() {
     tg_ = std::unique_ptr<tatum::TimingGraph>(new tatum::TimingGraph);
     tc_ = std::unique_ptr<tatum::TimingConstraints>(new tatum::TimingConstraints);
+    gr_ = std::unique_ptr<GoldenReference>(new GoldenReference);
 }
 
 void EchoLoader::add_node(int node_id, tatumparse::NodeType type, std::vector<int> /*in_edge_ids*/, std::vector<int> /*out_edge_ids*/) {
@@ -32,7 +33,7 @@ void EchoLoader::add_clock_source(int node_id, int domain_id) {
 }
 
 void EchoLoader::add_constant_generator(int node_id) {
-    tc_->set_constant_generator(tatum::NodeId(node_id));    
+    tc_->set_constant_generator(tatum::NodeId(node_id));
 }
 
 void EchoLoader::add_input_constraint(int node_id, int domain_id, float constraint) {
@@ -60,6 +61,10 @@ void EchoLoader::add_edge_delay(int edge_id, float min_delay, float max_delay) {
     min_delay_edges_[tatum::EdgeId(edge_id)] = tatum::Time(min_delay);
     max_delay_edges_[tatum::EdgeId(edge_id)] = tatum::Time(max_delay);
 }
+void EchoLoader::add_tag(tatumparse::TagType type, int node_id, int domain_id, float arr, float req) {
+    gr_->set_arr(type, tatum::NodeId(node_id), tatum::DomainId(domain_id), arr);
+    gr_->set_req(type, tatum::NodeId(node_id), tatum::DomainId(domain_id), req);
+}
 
 std::unique_ptr<tatum::TimingGraph> EchoLoader::timing_graph() {
     return std::move(tg_);
@@ -71,6 +76,10 @@ std::unique_ptr<tatum::TimingConstraints> EchoLoader::timing_constraints() {
 
 std::unique_ptr<tatum::FixedDelayCalculator> EchoLoader::delay_calculator() {
     return std::unique_ptr<tatum::FixedDelayCalculator>(new tatum::FixedDelayCalculator(max_delay_edges_, setup_times_, min_delay_edges_, hold_times_));
+}
+
+std::unique_ptr<GoldenReference> EchoLoader::golden_reference() {
+    return std::move(gr_);
 }
 
 tatum::NodeType EchoLoader::to_tatum_node_type(tatumparse::NodeType type) {

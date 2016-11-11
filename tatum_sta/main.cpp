@@ -25,6 +25,7 @@
 
 #include "sta_util.hpp"
 
+#include "golden_reference.hpp"
 #include "echo_load.hpp"
 #include "verify.hpp"
 #include "util.hpp"
@@ -85,6 +86,7 @@ int main(int argc, char** argv) {
     std::shared_ptr<TimingGraph> timing_graph;
     std::shared_ptr<TimingConstraints> timing_constraints;
     std::shared_ptr<const tatum::FixedDelayCalculator> delay_calculator;
+    std::shared_ptr<GoldenReference> golden_reference;
 
     VprArrReqTimes orig_expected_arr_req_times;
     std::vector<float> orig_edge_delays;
@@ -206,6 +208,8 @@ int main(int argc, char** argv) {
         timing_graph = loader.timing_graph();
         timing_constraints = loader.timing_constraints();
         delay_calculator = loader.delay_calculator();
+        golden_reference = loader.golden_reference();
+        auto tmp = *golden_reference;
 #endif
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
