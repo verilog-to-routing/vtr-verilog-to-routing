@@ -1,6 +1,5 @@
 #include <iostream>
-#include <iomanip>
-#include "verify2.hpp"
+#include "verify.hpp"
 #include "TimingTags.hpp"
 #include "TimingTag.hpp"
 #include "timing_analyzers.hpp"
@@ -19,7 +18,7 @@ size_t verify_node_tags(const NodeId node, const TimingTags& analyzer_tags, cons
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result);
 bool verify_time(NodeId node, DomainId domain, std::string type_str, float analyzer_time, float reference_time);
 
-size_t verify_analyzer2(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
+size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
     size_t tags_checked = 0;
 
     auto setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(analyzer);

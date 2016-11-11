@@ -25,7 +25,7 @@
 
 #include "golden_reference.hpp"
 #include "echo_load.hpp"
-#include "verify2.hpp"
+#include "verify.hpp"
 #include "util.hpp"
 #include "output.hpp"
 
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
                     write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
                 }
 
-                serial_tags_verified = verify_analyzer2(*timing_graph, serial_analyzer, *golden_reference);
+                serial_tags_verified = verify_analyzer(*timing_graph, serial_analyzer, *golden_reference);
             }
 #endif
 
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
 
 #ifdef TATUM_ASSERT_VPR_TO_TATUM
             if(i == 0 || i == NUM_PARALLEL_RUNS - 1) {
-                parallel_tags_verified = verify_analyzer2(*timing_graph, parallel_analyzer, *golden_reference);
+                parallel_tags_verified = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
             }
 #endif
 
