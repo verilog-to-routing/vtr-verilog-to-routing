@@ -62,14 +62,6 @@
 
 namespace tatum {
 
-struct GraphIdMaps {
-    GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
-                tatum::util::linear_map<EdgeId,EdgeId> edge_map)
-        : node_id_map(node_map), edge_id_map(edge_map) {}
-    tatum::util::linear_map<NodeId,NodeId> node_id_map;
-    tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
-};
-
 class TimingGraph {
     public: //Public types
         //Iterators
@@ -181,24 +173,23 @@ class TimingGraph {
         /*
          * Memory layout optimization operations
          */
-        ///Optimizes the memory layout of edges in the graph by re-ordering them
-        ///for improved spatial/temporal cache locality.
-        ///\pre The graph must be levelized
-        ///\warning Old edge ids are invalidated
-        ///\returns A mapping from old to new edge ids
-        ///\see levelize()
-        tatum::util::linear_map<EdgeId,EdgeId> optimize_edge_layout();
-
-        ///Optimizes the memory layout of nodes in the graph by re-ordering them
-        ///for improved spatial/temporal cache locality.
-        ///\pre The graph must be levelized
-        ///\warning Old node ids are invalidated
-        ///\returns A mapping from old to new node ids
-        ///\see levelize()
-        tatum::util::linear_map<NodeId,NodeId> optimize_node_layout();
-
+        ///Optimizes the graph's internal memory layout for better performance
+        ///\warning Old IDs will be invalidated
+        ///\returns The mapping from old to new IDs
+        GraphIdMaps optimize_layout();
 
     private: //Internal helper functions
+        ///\returns A mapping from old to new edge ids which is optimized for performance
+        //          (i.e. cache locality)
+        tatum::util::linear_map<EdgeId,EdgeId> optimize_edge_layout() const;
+
+        ///\returns A mapping from old to new edge ids which is optimized for performance
+        //          (i.e. cache locality)
+        tatum::util::linear_map<NodeId,NodeId> optimize_node_layout() const;
+
+        void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_id_map);
+        void remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge_id_map);
+
         bool valid_node_id(const NodeId node_id);
         bool valid_edge_id(const EdgeId edge_id);
         bool valid_level_id(const LevelId level_id);
@@ -214,10 +205,8 @@ class TimingGraph {
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node [0..num_nodes()-1]
-        tatum::util::linear_map<NodeId,DomainId> node_clock_domains_; //Clock domain of node [0..num_nodes()-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
-        tatum::util::linear_map<NodeId,bool> node_is_clock_source_; //Indicates if a node is the start of clock [0..num_nodes()-1]
 
         //Edge data
         tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
@@ -231,5 +220,15 @@ class TimingGraph {
                                               //NOTE: we track this separetely (unlike Primary Inputs) since these are
                                               //      scattered through the graph and do not exist on a single level
 };
+
+//Mappings from old to new IDs
+struct GraphIdMaps {
+    GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
+                tatum::util::linear_map<EdgeId,EdgeId> edge_map)
+        : node_id_map(node_map), edge_id_map(edge_map) {}
+    tatum::util::linear_map<NodeId,NodeId> node_id_map;
+    tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
+};
+
 
 } //namepsace

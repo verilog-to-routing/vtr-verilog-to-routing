@@ -10,6 +10,8 @@ namespace tatum {
 //The timing graph
 class TimingGraph;
 
+struct GraphIdMaps;
+
 /**
  * Potential types for nodes in the timing graph
  */

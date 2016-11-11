@@ -1,12 +1,11 @@
-#include <iostream>
-#include <iomanip>
+#ifndef VERIFY_HPP
+#define VERIFY_HPP
 #include <memory>
-#include <set>
 
+#include "TimingAnalyzer.hpp"
 #include "TimingGraph.hpp"
-#include "TimingTags.hpp"
-#include "timing_analyzers.hpp"
+#include "golden_reference.hpp"
 
-#include "vpr_timing_graph_common.hpp"
+size_t verify_analyzer(const tatum::TimingGraph& tg, std::shared_ptr<tatum::TimingAnalyzer> analyzer, GoldenReference& gr);
 
-int verify_analyzer(const tatum::TimingGraph& tg, const tatum::SetupTimingAnalyzer& analyzer, const VprArrReqTimes& expected_arr_req_times);
+#endif

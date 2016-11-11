@@ -31,43 +31,16 @@ list(REMOVE_DUPLICATES TATUM_STA_INCLUDE_DIRS)
 # Configure intermediate files
 #
 
-#Directory to put the generated files (avoid clogging up main build directory)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gen_files)
-
-#The demo executable uses a flex/bision generated
-#parser to read VPR timing graph files
-#
-#We use cmake to find the relevant executables
-find_package(BISON REQUIRED)
-find_package(FLEX REQUIRED)
-
 #
 #
 # Define the actual build targets
 #
 #
 
-#Generate the lexer and parser
-flex_target(vpr_timing_graph_lexer ${LEXER_SRC}
-            ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.lex.cpp)
-bison_target(vpr_timing_graph_parser ${PARSER_SRC}
-            ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.cpp)
-            #VERBOSE ${CMAKE_CURRENT_BINARY_DIR}/gen_files/vpr_timing_graph.parse.log)
-
-#Capture lexer/parser dependance
-add_flex_bison_dependency(vpr_timing_graph_lexer vpr_timing_graph_parser)
-#Apply suppression flags to the relevant files, must come after flex/bision
-#targets for output vars to be defined
-set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
-                            ${BISON_vpr_timing_graph_parser_OUTPUTS}
-                            PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
-
 #Define Executable
 add_executable(tatum_sta
                ${TATUM_STA_SOURCES}
-               ${TATUM_STA_HEADERS}
-               ${FLEX_vpr_timing_graph_lexer_OUTPUTS}
-               ${BISON_vpr_timing_graph_parser_OUTPUTS})
+               ${TATUM_STA_HEADERS})
 
 #Exectuable Includes
 target_include_directories(tatum_sta PRIVATE

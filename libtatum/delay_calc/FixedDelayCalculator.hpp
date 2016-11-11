@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tatum_linear_map.hpp"
+#include "Time.hpp"
 #include "DelayCalculator.hpp"
 #include "TimingGraph.hpp"
 

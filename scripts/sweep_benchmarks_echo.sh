@@ -10,12 +10,16 @@ WORK_DIR=sweep_run
 
 mkdir -p $WORK_DIR
 
-for benchmark in $(ls -hSr /project/work/timing_analysis/skew/*/vpr_timing_graph.echo)
+for benchmark in $(ls -hSr /project/work/timing_analysis/tatum_echo/*.echo)
 do
-    benchmark_name=$(basename $(dirname $benchmark))
+    benchmark_name=$(basename $benchmark | sed 's/.echo//')
     run_dir=${WORK_DIR}/${benchmark_name}
 
-    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+    #No echo moving
+    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+
+    #With echo moving
+    #echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
 
 done
 

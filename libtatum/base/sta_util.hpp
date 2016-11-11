@@ -33,7 +33,7 @@ template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_setup(std::string filename, 
                           const TimingGraph& tg, 
                           std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
-                          std::shared_ptr<const DelayCalc> delay_calc = std::shared_ptr<const DelayCalc>()) {
+                          std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>()) {
 
     if(tg.nodes().size() > 1000) {
         std::cout << "Skipping setup dot file due to large timing graph size\n"; 
@@ -115,11 +115,11 @@ void write_dot_file_setup(std::string filename,
     os << "}" <<std::endl;
 }
 
-template<class DelayCalc=FixedDelayCalculator>
+template<class DelayCalc=const FixedDelayCalculator>
 void write_dot_file_hold(std::string filename, 
                          const TimingGraph& tg, 
                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
-                         std::shared_ptr<const DelayCalc> delay_calc = std::shared_ptr<const DelayCalc>()) {
+                         std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>()) {
     if(tg.nodes().size() > 1000) {
         std::cout << "Skipping hold dot file due to large timing graph size\n"; 
         return;
