@@ -33,15 +33,12 @@
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 //#define NUM_SERIAL_RUNS 20
 //#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
+
+//Should we optimize the timing graph memory layout?
 #define OPTIMIZE_NODE_EDGE_ORDER
 
-//Do we perform verification checks?
-#define TATUM_ASSERT_VPR_TO_TATUM
-
-//Currently don't check for differences in the other direction (from us to VPR),
-//since we do a single traversal we generate extra ancillary timing tags which
-//will not match VPR
-//#define CHECK_TATUM_TO_VPR_DIFFERENCES
+//Should we print out tag related object size info
+#define PRINT_TAG_SIZES
 
 //Do we dump an echo file?
 #define ECHO
@@ -71,6 +68,7 @@ int main(int argc, char** argv) {
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
+#ifdef PRINT_TAG_SIZES
     cout << "Time class sizeof  = " << sizeof(Time) << " bytes. Time Vec Width: " << TIME_VEC_WIDTH << endl;
     cout << "Time class alignof = " << alignof(Time) << endl;
 
@@ -79,6 +77,7 @@ int main(int argc, char** argv) {
 
     cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << endl;
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
+#endif
 
     //Raw outputs of parser
     std::shared_ptr<TimingGraph> timing_graph;
@@ -88,6 +87,8 @@ int main(int argc, char** argv) {
 
     {
         clock_gettime(CLOCK_MONOTONIC, &load_start);
+
+        //Load the echo file
         EchoLoader loader;
         if(argv[1] == std::string("-")) {
             tatum_parse_file(stdin, loader);
@@ -99,13 +100,17 @@ int main(int argc, char** argv) {
         timing_constraints = loader.timing_constraints();
         delay_calculator = loader.delay_calculator();
         golden_reference = loader.golden_reference();
-        clock_gettime(CLOCK_MONOTONIC, &load_end);
 
+        clock_gettime(CLOCK_MONOTONIC, &load_end);
+        cout << "Loading took: " << tatum::time_sec(load_start, load_end) << " sec" << endl;
+        cout << endl;
     }
-    cout << "Loading took: " << tatum::time_sec(load_start, load_end) << " sec" << endl;
-    cout << endl;
 
     timing_graph->levelize();
+
+#ifdef OPTIMIZE_NODE_EDGE_ORDER
+
+#endif
 
     /*
      *timing_constraints->print();
