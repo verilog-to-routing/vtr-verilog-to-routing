@@ -15,7 +15,11 @@ do
     benchmark_name=$(basename $benchmark | sed 's/.echo//')
     run_dir=${WORK_DIR}/${benchmark_name}
 
-    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+    #No echo moving
+    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+
+    #With echo moving
+    #echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
 
 done
 

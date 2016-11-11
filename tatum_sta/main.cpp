@@ -41,7 +41,7 @@
 //#define PRINT_TAG_SIZES
 
 //Do we dump an echo file?
-#define ECHO
+//#define ECHO
 
 typedef std::chrono::duration<double> dsec;
 typedef std::chrono::high_resolution_clock Clock;
