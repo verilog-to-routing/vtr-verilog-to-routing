@@ -21,13 +21,10 @@
 #include "FixedDelayCalculator.hpp"
 #include "ConstantDelayCalculator.hpp"
 
-#include "vpr_timing_graph_common.hpp"
-
 #include "sta_util.hpp"
 
 #include "golden_reference.hpp"
 #include "echo_load.hpp"
-#include "verify.hpp"
 #include "verify2.hpp"
 #include "util.hpp"
 #include "output.hpp"
@@ -89,116 +86,8 @@ int main(int argc, char** argv) {
     std::shared_ptr<const tatum::FixedDelayCalculator> delay_calculator;
     std::shared_ptr<GoldenReference> golden_reference;
 
-    VprArrReqTimes orig_expected_arr_req_times;
-    std::vector<float> orig_edge_delays;
-    VprFfInfo ff_info;
-
-    //Potentially modified based on parser output
-    VprArrReqTimes expected_arr_req_times;
-    tatum::util::linear_map<EdgeId,tatum::Time> max_edge_delays;
-    tatum::util::linear_map<EdgeId,tatum::Time> setup_times;
-
     {
-#if 0
         clock_gettime(CLOCK_MONOTONIC, &load_start);
-
-        yyin = fopen(argv[1], "r");
-        if(yyin != NULL) {
-            int error = yyparse(*timing_graph, orig_expected_arr_req_times, *timing_constraints, ff_info, orig_edge_delays);
-            if(error) {
-                cout << "Parse Error" << endl;
-                fclose(yyin);
-                return 1;
-            }
-            fclose(yyin);
-        } else {
-            cout << "Could not open file " << argv[1] << endl;
-            return 1;
-        }
-
-        //Fix up the timing graph.
-        //VPR doesn't have edges from FF_CLOCKs to FF_SOURCEs and FF_SINKs,
-        //but we require them. So post-process the timing graph here to add them.
-        add_ff_clock_to_source_sink_edges(*timing_graph, ff_info, orig_edge_delays);
-        //We then need to re-levelize the graph
-        timing_graph->levelize();
-
-        write_dot_file_setup("tg_setup_annotated.vpr.dot", *timing_graph);
-
-        rebuild_timing_graph(*timing_graph, *timing_constraints, orig_edge_delays, orig_expected_arr_req_times);
-
-        write_dot_file_setup("tg_setup_annotated.rebuilt.dot", *timing_graph);
-
-        cout << "Timing Graph Stats:" << endl;
-        cout << "  Nodes : " << timing_graph->nodes().size() << endl;
-        cout << "  Levels: " << timing_graph->levels().size() << endl;
-        cout << "Num Clocks: " << orig_expected_arr_req_times.get_num_clocks() << endl;
-
-        cout << endl;
-
-#ifdef OPTIMIZE_NODE_EDGE_ORDER
-        struct timespec node_reorder_start, edge_reorder_start; 
-        struct timespec node_reorder_end, edge_reorder_end; 
-        clock_gettime(CLOCK_MONOTONIC, &edge_reorder_start);
-
-        //Re-order edges
-        cout << "Re-allocating edges so levels are in contiguous memory";
-        tatum::util::linear_map<EdgeId,EdgeId> vpr_edge_map = timing_graph->optimize_edge_layout();
-
-        clock_gettime(CLOCK_MONOTONIC, &edge_reorder_end);
-        cout << " (took " << tatum::time_sec(edge_reorder_start, edge_reorder_end) << " sec)" << endl;
-
-
-        //Adjust the edge delays to reflect the new ordering
-        max_edge_delays.resize(vpr_edge_map.size());
-        setup_times.resize(vpr_edge_map.size());
-        for(size_t i = 0; i < vpr_edge_map.size(); i++) {
-            EdgeId new_id = vpr_edge_map[EdgeId(i)];
-
-            NodeId src_node = timing_graph->edge_src_node(new_id);
-            NodeId sink_node = timing_graph->edge_sink_node(new_id);
-            if(timing_graph->node_type(src_node) == tatum::NodeType::CPIN && timing_graph->node_type(sink_node) == tatum::NodeType::SINK) {
-                setup_times[new_id] = Time(orig_edge_delays[i]);
-            } else {
-                max_edge_delays[new_id] = Time(orig_edge_delays[i]);
-            }
-        }
-
-        clock_gettime(CLOCK_MONOTONIC, &node_reorder_start);
-
-        //Re-order nodes
-        cout << "Re-allocating nodes so levels are in contiguous memory";
-        tatum::util::linear_map<NodeId,NodeId> vpr_node_map = timing_graph->optimize_node_layout();
-
-        clock_gettime(CLOCK_MONOTONIC, &node_reorder_end);
-        cout << " (took " << tatum::time_sec(node_reorder_start, node_reorder_end) << " sec)" << endl;
-
-        //Re-build the expected_arr_req_times to reflect the new node orderings
-        expected_arr_req_times = VprArrReqTimes();
-        expected_arr_req_times.set_num_nodes(orig_expected_arr_req_times.get_num_nodes());
-
-        //Collect the clock domains with actual values (clock domain IDs could be discontinous))))
-
-        for(auto src_domain : orig_expected_arr_req_times.domains()) {
-            //For every clock domain pair
-            for(int i = 0; i < orig_expected_arr_req_times.get_num_nodes(); i++) {
-                NodeId new_id = vpr_node_map[NodeId(i)];
-                expected_arr_req_times.add_arr_time(src_domain, new_id, orig_expected_arr_req_times.get_arr_time(src_domain, NodeId(i)));
-                expected_arr_req_times.add_req_time(src_domain, new_id, orig_expected_arr_req_times.get_req_time(src_domain, NodeId(i)));
-            }
-        }
-
-        //Adjust the timing constraints
-        timing_constraints->remap_nodes(vpr_node_map);
-
-#else
-        expected_arr_req_times = orig_expected_arr_req_times;
-        setup_edge_delays = orig_edge_delays;
-#endif
-        //Create the delay calculator
-        delay_calculator = std::make_shared<const tatum::FixedDelayCalculator>(max_edge_delays, setup_times);
-
-#else //EchoLoad
         EchoLoader loader;
         if(argv[1] == std::string("-")) {
             tatum_parse_file(stdin, loader);
@@ -210,7 +99,6 @@ int main(int argc, char** argv) {
         timing_constraints = loader.timing_constraints();
         delay_calculator = loader.delay_calculator();
         golden_reference = loader.golden_reference();
-#endif
         clock_gettime(CLOCK_MONOTONIC, &load_end);
 
     }
