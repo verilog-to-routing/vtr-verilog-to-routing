@@ -259,16 +259,18 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                 ops_.merge_arr_tags(node_capture_clk_tags, src_capture_clk_tag.arr_time() + clk_capture_edge_delay, src_capture_clk_tag);
             }
         }
+    }
 
-    } else {
-        /*
-         * Data tags
-         */
+    /*
+     * Data tags
+     */
 
+    const TimingTags& src_data_tags = ops_.get_data_tags(src_node_id);
+
+    if(!src_data_tags.empty()) {
         const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
         TATUM_ASSERT(edge_delay.valid());
 
-        const TimingTags& src_data_tags = ops_.get_data_tags(src_node_id);
 
         for(const TimingTag& src_data_tag : src_data_tags) {
             //Standard data-path propagation
@@ -300,24 +302,26 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
     //Don't propagate required times through the clock network
     if(tg.node_type(node_id) == NodeType::CPIN) return;
 
-    //We must use the tags by reference so we don't accidentally wipe-out any
-    //existing tags
-    TimingTags& node_data_tags = ops_.get_data_tags(node_id);
-
     //Pulling values from downstream sink node
     NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-    const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
-    TATUM_ASSERT(edge_delay.valid());
-
     const TimingTags& sink_data_tags = ops_.get_data_tags(sink_node_id);
 
-    for(const TimingTag& sink_tag : sink_data_tags) {
-        //We only propogate the required time if we have a valid arrival time
-        auto matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
-        if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
-            //Valid arrival, update required
-            ops_.merge_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);
+    if(!sink_data_tags.empty()) {
+        const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
+        TATUM_ASSERT(edge_delay.valid());
+
+        //We must use the tags by reference so we don't accidentally wipe-out any
+        //existing tags
+        TimingTags& node_data_tags = ops_.get_data_tags(node_id);
+
+        for(const TimingTag& sink_tag : sink_data_tags) {
+            //We only propogate the required time if we have a valid arrival time
+            auto matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
+            if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
+                //Valid arrival, update required
+                ops_.merge_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);
+            }
         }
     }
 }
