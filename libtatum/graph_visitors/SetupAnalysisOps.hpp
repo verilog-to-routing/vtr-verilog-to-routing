@@ -1,7 +1,5 @@
 #pragma once
-#include "TimingTags.hpp"
-#include "timing_graph_fwd.hpp"
-#include "tatum_linear_map.hpp"
+#include "CommonAnalysisOps.hpp"
 
 namespace tatum { namespace detail {
 
@@ -14,18 +12,10 @@ namespace tatum { namespace detail {
  * \see HoldAnalysisOps
  * \see CommonAnalysisVisitor
  */
-class SetupAnalysisOps {
+class SetupAnalysisOps : public CommonAnalysisOps {
     public:
         SetupAnalysisOps(size_t num_tags)
-            : data_tags_(num_tags)
-            , clock_tags_(num_tags) {}
-
-        TimingTags& get_data_tags(const NodeId node_id) { return data_tags_[node_id]; }
-        TimingTags& get_clock_tags(const NodeId node_id) { return clock_tags_[node_id]; }
-        const TimingTags& get_data_tags(const NodeId node_id) const { return data_tags_[node_id]; }
-        const TimingTags& get_clock_tags(const NodeId node_id) const { return clock_tags_[node_id]; }
-
-        void reset() { data_tags_.clear(); clock_tags_.clear(); }
+            : CommonAnalysisOps(num_tags) {}
 
         float clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
             return tc.setup_constraint(src_id, sink_id); 
@@ -45,23 +35,30 @@ class SetupAnalysisOps {
 
         void merge_arr_tag(TimingTag& tag, const Time time, const TimingTag& ref_tag) { 
             tag.max_arr(time, ref_tag); 
-        };
+        }
 
         template<class DelayCalc>
-        const Time edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time data_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+            return dc.max_edge_delay(tg, edge_id); 
+        }
+
+        template<class DelayCalc>
+        Time launch_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+            return dc.max_edge_delay(tg, edge_id);
+        }
+
+        template<class DelayCalc>
+        Time capture_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             NodeId src_node = tg.edge_src_node(edge_id);
             NodeId sink_node = tg.edge_sink_node(edge_id);
 
             if(tg.node_type(src_node) == NodeType::CPIN && tg.node_type(sink_node) == NodeType::SINK) {
                 return -dc.setup_time(tg, edge_id);
             } else {
-                return dc.max_edge_delay(tg, edge_id); 
+                return dc.min_edge_delay(tg, edge_id); 
             }
         }
 
-    private:
-        tatum::util::linear_map<NodeId,TimingTags> data_tags_;
-        tatum::util::linear_map<NodeId,TimingTags> clock_tags_;
 };
 
 }} //namespace

@@ -15,11 +15,13 @@ namespace tatum {
 class HoldTimingAnalyzer : public virtual TimingAnalyzer {
     public:
         const TimingTags& get_hold_data_tags(NodeId node_id) const { return get_hold_data_tags_impl(node_id); }
-        const TimingTags& get_hold_clock_tags(NodeId node_id) const { return get_hold_clock_tags_impl(node_id); }
+        const TimingTags& get_hold_launch_clock_tags(NodeId node_id) const { return get_hold_launch_clock_tags_impl(node_id); }
+        const TimingTags& get_hold_capture_clock_tags(NodeId node_id) const { return get_hold_capture_clock_tags_impl(node_id); }
 
     protected:
         virtual const TimingTags& get_hold_data_tags_impl(NodeId node_id) const = 0;
-        virtual const TimingTags& get_hold_clock_tags_impl(NodeId node_id) const = 0;
+        virtual const TimingTags& get_hold_launch_clock_tags_impl(NodeId node_id) const = 0;
+        virtual const TimingTags& get_hold_capture_clock_tags_impl(NodeId node_id) const = 0;
 };
 
 } //namepsace

@@ -62,7 +62,24 @@ void EchoLoader::add_edge_delay(int edge_id, float min_delay, float max_delay) {
     max_delay_edges_[tatum::EdgeId(edge_id)] = tatum::Time(max_delay);
 }
 void EchoLoader::add_tag(tatumparse::TagType type, int node_id, int domain_id, float arr, float req) {
-    gr_->set_result(tatum::NodeId(node_id), type, tatum::DomainId(domain_id), arr, req);
+    if(type == tatumparse::TagType::SETUP_CLOCK) {
+        if(tg_->node_type(tatum::NodeId(node_id)) != tatum::NodeType::SINK) {
+            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::SETUP_LAUNCH_CLOCK, tatum::DomainId(domain_id), arr, req);
+        }
+        if(tg_->node_type(tatum::NodeId(node_id)) != tatum::NodeType::SOURCE || tc_->node_is_clock_source(tatum::NodeId(node_id))) {
+            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::SETUP_CAPTURE_CLOCK, tatum::DomainId(domain_id), arr, req);
+        }
+    } else if(type == tatumparse::TagType::HOLD_CLOCK) {
+        if(tg_->node_type(tatum::NodeId(node_id)) != tatum::NodeType::SINK) {
+            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::HOLD_LAUNCH_CLOCK, tatum::DomainId(domain_id), arr, req);
+        }
+        if(tg_->node_type(tatum::NodeId(node_id)) != tatum::NodeType::SOURCE || tc_->node_is_clock_source(tatum::NodeId(node_id))) {
+            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::HOLD_CAPTURE_CLOCK, tatum::DomainId(domain_id), arr, req);
+        }
+    } else {
+        gr_->set_result(tatum::NodeId(node_id), type, tatum::DomainId(domain_id), arr, req);
+    }
+
 }
 
 std::unique_ptr<tatum::TimingGraph> EchoLoader::timing_graph() {

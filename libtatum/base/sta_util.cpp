@@ -153,15 +153,26 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
         std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_data_tags << ")" << std::endl;
     }
 
-    std::cout << "Node Clock Setup Tag Count Histogram:" << std::endl;
-    std::map<int,int> clock_tag_cnts;
+    std::cout << "Node Clock Launch Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> clock_launch_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_tag_cnts[analyzer.get_setup_clock_tags(i).num_tags()]++;
+        clock_launch_tag_cnts[analyzer.get_setup_launch_clock_tags(i).num_tags()]++;
     }
 
-    int total_clock_tags = std::accumulate(clock_tag_cnts.begin(), clock_tag_cnts.end(), 0, totaler);
-    for(const auto& kv : clock_tag_cnts) {
-        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_tags << ")" << std::endl;
+    int total_clock_launch_tags = std::accumulate(clock_launch_tag_cnts.begin(), clock_launch_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : clock_launch_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_launch_tags << ")" << std::endl;
+    }
+
+    std::cout << "Node Clock Capture Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> clock_capture_tag_cnts;
+    for(const NodeId i : tg.nodes()) {
+        clock_capture_tag_cnts[analyzer.get_setup_capture_clock_tags(i).num_tags()]++;
+    }
+
+    int total_clock_capture_tags = std::accumulate(clock_capture_tag_cnts.begin(), clock_capture_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : clock_capture_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_capture_tags << ")" << std::endl;
     }
 }
 
@@ -184,15 +195,26 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
         std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_data_tags << ")" << std::endl;
     }
 
-    std::cout << "Node Clock Hold Tag Count Histogram:" << std::endl;
-    std::map<int,int> clock_tag_cnts;
+    std::cout << "Node Clock Launch Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> clock_launch_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_tag_cnts[analyzer.get_hold_clock_tags(i).num_tags()]++;
+        clock_launch_tag_cnts[analyzer.get_hold_launch_clock_tags(i).num_tags()]++;
     }
 
-    int total_clock_tags = std::accumulate(clock_tag_cnts.begin(), clock_tag_cnts.end(), 0, totaler);
-    for(const auto& kv : clock_tag_cnts) {
-        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_tags << ")" << std::endl;
+    int total_clock_launch_tags = std::accumulate(clock_launch_tag_cnts.begin(), clock_launch_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : clock_launch_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_launch_tags << ")" << std::endl;
+    }
+
+    std::cout << "Node Clock Capture Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> clock_capture_tag_cnts;
+    for(const NodeId i : tg.nodes()) {
+        clock_capture_tag_cnts[analyzer.get_hold_capture_clock_tags(i).num_tags()]++;
+    }
+
+    int total_clock_capture_tags = std::accumulate(clock_capture_tag_cnts.begin(), clock_capture_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : clock_capture_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_capture_tags << ")" << std::endl;
     }
 }
 
@@ -211,8 +233,15 @@ void print_setup_tags(const TimingGraph& tg, const SetupTimingAnalyzer& analyzer
                 std::cout << "  Req: " << tag.req_time().value();
                 std::cout << std::endl;
             }
-            for(const TimingTag& tag : analyzer.get_setup_clock_tags(node_id)) {
-                std::cout << "\tClock: ";
+            for(const TimingTag& tag : analyzer.get_setup_launch_clock_tags(node_id)) {
+                std::cout << "\tClock Launch: ";
+                std::cout << "  clk: " << tag.clock_domain();
+                std::cout << "  Arr: " << tag.arr_time().value();
+                std::cout << "  Req: " << tag.req_time().value();
+                std::cout << std::endl;
+            }
+            for(const TimingTag& tag : analyzer.get_setup_capture_clock_tags(node_id)) {
+                std::cout << "\tClock Capture: ";
                 std::cout << "  clk: " << tag.clock_domain();
                 std::cout << "  Arr: " << tag.arr_time().value();
                 std::cout << "  Req: " << tag.req_time().value();
@@ -238,8 +267,15 @@ void print_hold_tags(const TimingGraph& tg, const HoldTimingAnalyzer& analyzer) 
                 std::cout << "  Req: " << tag.req_time().value();
                 std::cout << std::endl;
             }
-            for(const TimingTag& tag : analyzer.get_hold_clock_tags(node_id)) {
-                std::cout << "\tClock: ";
+            for(const TimingTag& tag : analyzer.get_hold_launch_clock_tags(node_id)) {
+                std::cout << "\tClock Launch: ";
+                std::cout << "  clk: " << tag.clock_domain();
+                std::cout << "  Arr: " << tag.arr_time().value();
+                std::cout << "  Req: " << tag.req_time().value();
+                std::cout << std::endl;
+            }
+            for(const TimingTag& tag : analyzer.get_hold_capture_clock_tags(node_id)) {
+                std::cout << "\tClock Capture: ";
                 std::cout << "  clk: " << tag.clock_domain();
                 std::cout << "  Arr: " << tag.arr_time().value();
                 std::cout << "  Req: " << tag.req_time().value();

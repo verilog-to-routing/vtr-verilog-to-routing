@@ -65,11 +65,23 @@ void write_dot_file_setup(std::string filename,
                     os << "}";
                 }
             }
-            auto clock_tags = setup_analyzer->get_setup_clock_tags(inode);
-            if(clock_tags.num_tags() > 0) {
-                for(const TimingTag& tag : clock_tags) {
+            auto launch_clock_tags = setup_analyzer->get_setup_launch_clock_tags(inode);
+            if(launch_clock_tags.num_tags() > 0) {
+                for(const TimingTag& tag : launch_clock_tags) {
                     os << " | {";
-                    os << "CLOCK - " << tag.clock_domain();
+                    os << "CLOCK LAUNCH - " << tag.clock_domain();
+                    os << " launch: " << tag.launch_node();
+                    os << "\\n";
+                    os << " arr: " << tag.arr_time().value();
+                    os << " req: " << tag.req_time().value();
+                    os << "}";
+                }
+            }
+            auto capture_clock_tags = setup_analyzer->get_setup_capture_clock_tags(inode);
+            if(capture_clock_tags.num_tags() > 0) {
+                for(const TimingTag& tag : capture_clock_tags) {
+                    os << " | {";
+                    os << "CLOCK CAPTURE - " << tag.clock_domain();
                     os << " launch: " << tag.launch_node();
                     os << "\\n";
                     os << " arr: " << tag.arr_time().value();
@@ -150,11 +162,23 @@ void write_dot_file_hold(std::string filename,
                 os << "}";
             }
         }
-        auto clock_tags = hold_analyzer->get_hold_clock_tags(inode);
-        if(clock_tags.num_tags() > 0) {
-            for(const TimingTag& tag : clock_tags) {
+        auto launch_clock_tags = hold_analyzer->get_hold_launch_clock_tags(inode);
+        if(launch_clock_tags.num_tags() > 0) {
+            for(const TimingTag& tag : launch_clock_tags) {
                 os << " | {";
-                os << "CLOCK - " << tag.clock_domain();
+                os << "CLOCK LAUNCH - " << tag.clock_domain();
+                os << " launch: " << tag.launch_node();
+                os << "\\n";
+                os << " arr: " << tag.arr_time().value();
+                os << " req: " << tag.req_time().value();
+                os << "}";
+            }
+        }
+        auto capture_clock_tags = hold_analyzer->get_hold_capture_clock_tags(inode);
+        if(capture_clock_tags.num_tags() > 0) {
+            for(const TimingTag& tag : capture_clock_tags) {
+                os << " | {";
+                os << "CLOCK CAPTURE - " << tag.clock_domain();
                 os << " launch: " << tag.launch_node();
                 os << "\\n";
                 os << " arr: " << tag.arr_time().value();

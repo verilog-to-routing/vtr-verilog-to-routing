@@ -31,11 +31,13 @@ size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> an
 
             if(setup_analyzer) {
                 tags_checked += verify_node_tags(node, setup_analyzer->get_setup_data_tags(node), gr.get_result(node, TagType::SETUP_DATA), "setup_data");
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_clock_tags(node), gr.get_result(node, TagType::SETUP_CLOCK), "setup_clock");
+                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_launch_clock_tags(node), gr.get_result(node, TagType::SETUP_LAUNCH_CLOCK), "setup_launch_clock");
+                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_capture_clock_tags(node), gr.get_result(node, TagType::SETUP_CAPTURE_CLOCK), "setup_capture_clock");
             }
             if(hold_analyzer) {
                 tags_checked += verify_node_tags(node, hold_analyzer->get_hold_data_tags(node), gr.get_result(node, TagType::HOLD_DATA), "hold_data");
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_clock_tags(node), gr.get_result(node, TagType::HOLD_CLOCK), "hold_clock");
+                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_launch_clock_tags(node), gr.get_result(node, TagType::HOLD_LAUNCH_CLOCK), "hold_launch_clock");
+                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_capture_clock_tags(node), gr.get_result(node, TagType::HOLD_CAPTURE_CLOCK), "hold_capture_clock");
             }
         }
     }
@@ -63,7 +65,7 @@ size_t verify_node_tags(const NodeId node, const TimingTags& analyzer_tags, cons
 
     //See if there were any reference results we did not check
     if(tags_verified != ref_results.size()) {
-        cout << "Node: " << node << endl;
+        cout << "Node: " << node << " Type: " << type << endl;
         cout << "\tERROR Tags checked (" << tags_verified << ") does not match number of reference results (" << ref_results.size() << ")" << endl;
 
         cout << "\t\tCalc Tags:" << endl;
@@ -97,9 +99,9 @@ bool verify_time(NodeId node, DomainId domain, std::string type_str, float analy
     float arr_rel_err = relative_error(analyzer_time, reference_time);
     if(isnan(analyzer_time) && isnan(analyzer_time) != isnan(reference_time)) {
         cout << "Node: " << node << " Clk: " << domain;
-        cout << " Calc " + type_str + ": " << analyzer_time;
-        cout << " Ref  " + type_str + ": " << reference_time << endl;
-        cout << "\tERROR Calculated " + type_str + " time was nan and didn't match VPR." << endl;
+        cout << " Calc_" + type_str + ": " << analyzer_time;
+        cout << " Ref_" + type_str + ": " << reference_time << endl;
+        cout << "\tERROR Calculated " + type_str + " time was nan and didn't match golden reference." << endl;
         return false;
     } else if (!isnan(analyzer_time) && isnan(reference_time)) {
         //We allow tatum results to be non-NAN when VPR is NAN

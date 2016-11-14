@@ -129,7 +129,8 @@ class SetupAnalysis : public detail::CommonAnalysisVisitor<detail::SetupAnalysis
             : detail::CommonAnalysisVisitor<detail::SetupAnalysisOps>(num_tags) {}
 
         const TimingTags& get_setup_data_tags(const NodeId node_id) const { return ops_.get_data_tags(node_id); }
-        const TimingTags& get_setup_clock_tags(const NodeId node_id) const { return ops_.get_clock_tags(node_id); }
+        const TimingTags& get_setup_launch_clock_tags(const NodeId node_id) const { return ops_.get_launch_clock_tags(node_id); }
+        const TimingTags& get_setup_capture_clock_tags(const NodeId node_id) const { return ops_.get_capture_clock_tags(node_id); }
 };
 
 } //namepsace

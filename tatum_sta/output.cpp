@@ -138,7 +138,11 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
         }
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "SETUP_CLOCK", setup_analyzer->get_setup_clock_tags(node_id), node_id);
+            write_tags(os, "SETUP_LAUNCH_CLOCK", setup_analyzer->get_setup_launch_clock_tags(node_id), node_id);
+        }
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "SETUP_CAPTURE_CLOCK", setup_analyzer->get_setup_capture_clock_tags(node_id), node_id);
         }
     }
     auto hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(analyzer);
@@ -149,7 +153,11 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
         }
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "HOLD_CLOCK", hold_analyzer->get_hold_clock_tags(node_id), node_id);
+            write_tags(os, "HOLD_LAUNCH_CLOCK", hold_analyzer->get_hold_launch_clock_tags(node_id), node_id);
+        }
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "HOLD_CAPTURE_CLOCK", hold_analyzer->get_hold_capture_clock_tags(node_id), node_id);
         }
     }
     os << "\n";
