@@ -16,10 +16,10 @@ do
     run_dir=${WORK_DIR}/${benchmark_name}
 
     #No echo moving
-    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+    #echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
 
     #With echo moving
-    #echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && mv timing_graph.echo ${benchmark_name}.echo && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
+    echo "mkdir -p $run_dir && cd $run_dir && $myexec $benchmark >& ${benchmark_name}.log && if [ -f timing_graph.echo ]; then mv timing_graph.echo ${benchmark_name}.echo; fi && echo 'PASSED $benchmark_name' || echo 'FAILED $benchmark_name'"
 
 done
 
