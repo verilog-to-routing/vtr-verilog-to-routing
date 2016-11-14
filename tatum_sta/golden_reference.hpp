@@ -39,6 +39,7 @@ class GoldenReference {
         
 
     private:
+        //TODO: this is not very memory efficient....
         typedef std::pair<tatum::NodeId,tatumparse::TagType> Key;
         typedef std::map<tatum::DomainId,TagResult> Value;
 
