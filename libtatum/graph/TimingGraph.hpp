@@ -196,6 +196,7 @@ class TimingGraph {
 
         bool validate_sizes();
         bool validate_values();
+        bool validate_structure();
 
     private: //Data
         /*
