@@ -17,9 +17,9 @@ namespace tatum { namespace detail {
 class CommonAnalysisOps {
     public:
         CommonAnalysisOps(size_t num_tags)
-            : data_tags_(num_tags)
-            , clock_launch_tags_(num_tags)
-            , clock_capture_tags_(num_tags) {}
+            : data_tags_(num_tags, NUM_DATA_TAGS_RESERVE)
+            , clock_launch_tags_(num_tags, NUM_CLK_TAGS_RESERVE)
+            , clock_capture_tags_(num_tags, NUM_CLK_TAGS_RESERVE) {}
 
         TimingTags& get_data_tags(const NodeId node_id) { return data_tags_[node_id]; }
         TimingTags& get_launch_clock_tags(const NodeId node_id) { return clock_launch_tags_[node_id]; }
@@ -35,6 +35,8 @@ class CommonAnalysisOps {
         }
 
     private:
+        constexpr static size_t NUM_DATA_TAGS_RESERVE = 1;
+        constexpr static size_t NUM_CLK_TAGS_RESERVE = 0;
         tatum::util::linear_map<NodeId,TimingTags> data_tags_;
         tatum::util::linear_map<NodeId,TimingTags> clock_launch_tags_;
         tatum::util::linear_map<NodeId,TimingTags> clock_capture_tags_;

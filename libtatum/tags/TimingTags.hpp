@@ -25,7 +25,15 @@ class TimingTags {
         typedef TagStore::iterator iterator;
         typedef TagStore::const_iterator const_iterator;
 
-        TimingTags();
+        //Standard constructors
+        TimingTags() = default;
+        TimingTags(const TimingTags&) = default;
+        TimingTags(TimingTags&&) = default;
+        TimingTags& operator=(const TimingTags&) = default;
+        TimingTags& operator=(TimingTags&&) = default;
+
+        //Reserving constructor
+        TimingTags(size_t num_reserve);
 
         /*
          * Getters
@@ -97,9 +105,6 @@ class TimingTags {
 
 
     private:
-        //How many tags to reserve space for in the constructor
-        const static int num_reserved_tags_ = 1; 
-
         TagStore tags_;
 };
 

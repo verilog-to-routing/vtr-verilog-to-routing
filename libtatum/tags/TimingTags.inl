@@ -7,8 +7,8 @@ namespace tatum {
  * TimingTags implementation
  */
 
-inline TimingTags::TimingTags() {
-    tags_.reserve(num_reserved_tags_);
+inline TimingTags::TimingTags(size_t num_reserve) {
+    tags_.reserve(num_reserve);
 }
 
 inline size_t TimingTags::num_tags() const { 
