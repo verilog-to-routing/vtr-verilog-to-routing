@@ -287,8 +287,11 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 template<class AnalysisOps>
 template<class DelayCalc>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) {
+    //Don't propagate required times through the clock network
+    if(tg.node_type(node_id) == NodeType::CPIN) return;
+
     //Do not propagate required tags through constant generators
-    if(tc.node_is_constant_generator(node_id)) return;
+    //if(tc.node_is_constant_generator(node_id)) return;
 
     //Pull from downstream sinks to current node
     for(EdgeId edge_id : tg.node_out_edges(node_id)) {
@@ -299,8 +302,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingG
 template<class AnalysisOps>
 template<class DelayCalc>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
-    //Don't propagate required times through the clock network
-    if(tg.node_type(node_id) == NodeType::CPIN) return;
 
     //Pulling values from downstream sink node
     NodeId sink_node_id = tg.edge_sink_node(edge_id);
