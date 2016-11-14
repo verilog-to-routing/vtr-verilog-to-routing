@@ -51,7 +51,8 @@ class CommonAnalysisVisitor {
         void do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
 
         bool should_propagate_clock_arr(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const;
-        bool is_clock_data_edge(const TimingGraph& tg, const EdgeId edge_id) const;
+        bool is_clock_data_launch_edge(const TimingGraph& tg, const EdgeId edge_id) const;
+        bool is_clock_data_capture_edge(const TimingGraph& tg, const EdgeId edge_id) const;
 
 };
 
@@ -66,10 +67,14 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 
     NodeType node_type = tg.node_type(node_id);
 
-    //We don't propagate any tags from constant generators,
-    //since they do not effect the dynamic timing behaviour of the
-    //system
-    if(tc.node_is_constant_generator(node_id)) return;
+    if(tc.node_is_constant_generator(node_id)) {
+        //We don't propagate any tags from constant generators,
+        //since they do not effect the dynamic timing behaviour of the
+        //system
+        return;
+    }
+
+    TATUM_ASSERT(node_type == NodeType::SOURCE);
 
     if(tc.node_is_clock_source(node_id)) {
         //Generate the appropriate clock tag
@@ -91,12 +96,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         ops_.get_clock_tags(node_id).add_tag(clock_tag);
 
     } else {
-        TATUM_ASSERT(node_type == NodeType::SOURCE);
 
         //A standard primary input, generate the appropriate data tag
-
-        //We assume input delays are on the arc from INPAD_SOURCE to INPAD_OPIN,
-        //so we do not need to account for it directly in the arrival time of INPAD_SOURCES
 
         TATUM_ASSERT_MSG(ops_.get_data_tags(node_id).num_tags() == 0, "Primary input already has data tags");
 
@@ -122,14 +123,14 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     /*
      * Calculate required times
      */
+
     TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
 
     //Sinks corresponding to FF sinks will have propagated (capturing) clock tags,
-    //while those corresponding to outpads will not. We initialize the outpad 
-    //capturing clock tags based on the constraints
+    //while those corresponding to outpads will not. To treat them uniformly, we 
+    //initialize outpads with capturing clock tags based on the ouput constraints.
     if(node_clock_tags.empty()) {
         //Initialize the clock tags based on the constraints.
-
 
         auto output_constraints = tc.output_constraints(node_id);
 
@@ -145,14 +146,13 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             TATUM_ASSERT(!isnan(output_constraint));
 
             for(auto constraint : output_constraints) {
-                //TODO: use real constraint value when output delay no-longer on edges
                 TimingTag constraint_tag = TimingTag(Time(output_constraint), Time(NAN), constraint.second.domain, node_id);
                 node_clock_tags.add_tag(constraint_tag);
             }
         }
     }
 
-    //At this the sink will have a capturing clock tag defined
+    //At this point the sink will have a capturing clock tag defined
 
     //Determine the required time at this sink
     //
@@ -224,7 +224,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
             //Standard propagation through the clock network
             ops_.merge_arr_tags(node_clock_tags, src_clk_tag.arr_time() + edge_delay, src_clk_tag);
 
-            if(is_clock_data_edge(tg, edge_id)) {
+            if(is_clock_data_launch_edge(tg, edge_id)) {
                 //We convert the clock arrival time to a data
                 //arrival time at this node (since the clock's
                 //arrival launches the data).
@@ -297,13 +297,12 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 
 template<class AnalysisOps>
 bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clock_arr(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const {
-    NodeId src_node_id = tg.edge_src_node(edge_id);
-
     //We want to propagate clock tags through the arbitrary nodes making up the clock network until 
     //we hit another source node (i.e. a FF's output source).
     //
     //To allow tags to propagte from the original source (i.e. the input clock pin) we also allow
     //propagation from defined clock sources
+    NodeId src_node_id = tg.edge_src_node(edge_id);
     NodeType src_node_type = tg.node_type(src_node_id);
     if (src_node_type != NodeType::SOURCE) {
         //Not a source, allow propagation
@@ -318,11 +317,19 @@ bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clock_arr(const Timing
 }
 
 template<class AnalysisOps>
-bool CommonAnalysisVisitor<AnalysisOps>::is_clock_data_edge(const TimingGraph& tg, const EdgeId edge_id) const {
+bool CommonAnalysisVisitor<AnalysisOps>::is_clock_data_launch_edge(const TimingGraph& tg, const EdgeId edge_id) const {
     NodeId edge_src_node = tg.edge_src_node(edge_id);
     NodeId edge_sink_node = tg.edge_sink_node(edge_id);
 
     return (tg.node_type(edge_src_node) == NodeType::CPIN) && (tg.node_type(edge_sink_node) == NodeType::SOURCE);
+}
+
+template<class AnalysisOps>
+bool CommonAnalysisVisitor<AnalysisOps>::is_clock_data_capture_edge(const TimingGraph& tg, const EdgeId edge_id) const {
+    NodeId edge_src_node = tg.edge_src_node(edge_id);
+    NodeId edge_sink_node = tg.edge_sink_node(edge_id);
+
+    return (tg.node_type(edge_src_node) == NodeType::CPIN) && (tg.node_type(edge_sink_node) == NodeType::SINK);
 }
 
 }} //namepsace
