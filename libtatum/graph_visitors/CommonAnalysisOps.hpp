@@ -36,7 +36,7 @@ class CommonAnalysisOps {
 
     private:
         constexpr static size_t NUM_DATA_TAGS_RESERVE = 1;
-        constexpr static size_t NUM_CLOCK_TAGS_RESERVE = 0;
+        constexpr static size_t NUM_CLOCK_TAGS_RESERVE = 1;
         tatum::util::linear_map<NodeId,TimingTags> data_tags_;
         tatum::util::linear_map<NodeId,TimingTags> clock_launch_tags_;
         tatum::util::linear_map<NodeId,TimingTags> clock_capture_tags_;
