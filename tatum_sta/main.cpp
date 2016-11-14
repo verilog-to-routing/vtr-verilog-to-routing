@@ -29,10 +29,10 @@
 #include "util.hpp"
 #include "output.hpp"
 
-#define NUM_SERIAL_RUNS 1
-#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
-//#define NUM_SERIAL_RUNS 20
-//#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
+//#define NUM_SERIAL_RUNS 1
+//#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 20
+#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
 #define OPTIMIZE_GRAPH_LAYOUT
@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
 #endif
 
     //Create the timing analyzer
-    std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
     auto serial_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
     auto serial_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
 
@@ -191,6 +191,7 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(i == NUM_SERIAL_RUNS - 1) {
+                cout << "\n";
 
                 write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
                 write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
@@ -230,10 +231,11 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << serial_prof_data["required_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
 
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
-        if(serial_tags_verified != golden_reference->num_tags()) {
-            cout << "WARNING: Expected tags differs from tags checked, verification may not have occured!" << endl;
+        if(serial_tags_verified != golden_reference->num_tags() && serial_tags_verified != golden_reference->num_tags() / 2) {
+            //Potentially alow / 2 for setup only analysis from setup/hold golden
+            cout << "WARNING: Expected tags (" << golden_reference->num_tags() << ") differs from tags checked (" << serial_tags_verified << ") , verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
+            cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
         cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
@@ -242,7 +244,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #if NUM_PARALLEL_RUNS > 0
-    std::shared_ptr<tatum::TimingAnalyzer> parallel_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    std::shared_ptr<tatum::TimingAnalyzer> parallel_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
     auto parallel_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(parallel_analyzer);
     auto parallel_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(parallel_analyzer);
 
@@ -282,6 +284,7 @@ int main(int argc, char** argv) {
             clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
             if(i == NUM_PARALLEL_RUNS - 1) {
+                cout << "\n";
                 parallel_tags_verified = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
             }
 
@@ -315,8 +318,8 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << parallel_prof_data["required_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
 
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
-        if(parallel_tags_verified != golden_reference->num_tags()) {
-            cout << "WARNING: Expected " << golden_reference->num_tags() << " tags but checked only " << parallel_tags_verified << ", verification may not have occured!" << endl;
+        if(parallel_tags_verified != golden_reference->num_tags() && parallel_tags_verified != golden_reference->num_tags()/2) {
+            cout << "\tVerified " << parallel_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         } else {
             cout << "\tVerified " << parallel_tags_verified << " tags (expected " << golden_reference->num_tags() << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
