@@ -94,11 +94,9 @@ hold_time:                      { return tatumparse::Parser::make_HOLD_TIME(); }
 
 analysis_result:                { return tatumparse::Parser::make_ANALYSIS_RESULTS(); }
 SETUP_DATA                      { return tatumparse::Parser::make_SETUP_DATA(); }
-SETUP_CLOCK                     { return tatumparse::Parser::make_SETUP_CLOCK(); }
 SETUP_LAUNCH_CLOCK               { return tatumparse::Parser::make_SETUP_LAUNCH_CLOCK(); }
 SETUP_CAPTURE_CLOCK             { return tatumparse::Parser::make_SETUP_CAPTURE_CLOCK(); }
 HOLD_DATA                       { return tatumparse::Parser::make_HOLD_DATA(); }
-HOLD_CLOCK                      { return tatumparse::Parser::make_HOLD_CLOCK(); }
 HOLD_LAUNCH_CLOCK                { return tatumparse::Parser::make_HOLD_LAUNCH_CLOCK(); }
 HOLD_CAPTURE_CLOCK              { return tatumparse::Parser::make_HOLD_CAPTURE_CLOCK(); }
 

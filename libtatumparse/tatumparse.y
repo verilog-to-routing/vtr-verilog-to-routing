@@ -131,11 +131,9 @@ using namespace tatumparse;
 
 %token ANALYSIS_RESULTS "analysis_results:"
 %token SETUP_DATA "SETUP_DATA"
-%token SETUP_CLOCK "SETUP_CLOCK"
 %token SETUP_LAUNCH_CLOCK "SETUP_LAUNCH_CLOCK"
 %token SETUP_CAPTURE_CLOCK "SETUP_CAPTURE_CLOCK"
 %token HOLD_DATA "HOLD_DATA"
-%token HOLD_CLOCK "HOLD_CLOCK"
 %token HOLD_LAUNCH_CLOCK "HOLD_LAUNCH_CLOCK"
 %token HOLD_CAPTURE_CLOCK "HOLD_CAPTURE_CLOCK"
 %token ARR "arr:"
@@ -209,11 +207,9 @@ Arr: ARR Number { $$ = $2; }
 Req: REQ Number { $$ = $2; }
 
 TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
-       | TYPE SETUP_CLOCK { $$ = TagType::SETUP_CLOCK; }
        | TYPE SETUP_LAUNCH_CLOCK { $$ = TagType::SETUP_LAUNCH_CLOCK; }
        | TYPE SETUP_CAPTURE_CLOCK { $$ = TagType::SETUP_CAPTURE_CLOCK; }
        | TYPE HOLD_DATA { $$ = TagType::HOLD_DATA; }
-       | TYPE HOLD_CLOCK { $$ = TagType::HOLD_CLOCK; }
        | TYPE HOLD_LAUNCH_CLOCK { $$ = TagType::HOLD_LAUNCH_CLOCK; }
        | TYPE HOLD_CAPTURE_CLOCK { $$ = TagType::HOLD_CAPTURE_CLOCK; }
 

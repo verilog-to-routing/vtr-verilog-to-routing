@@ -81,9 +81,11 @@ class PrintCallback : public tp::Callback {
         fprintf(stdout, " type: ");
         switch(type) {
             case tp::TagType::SETUP_DATA: fprintf(stdout, "SETUP_DATA"); break;
-            case tp::TagType::SETUP_CLOCK: fprintf(stdout, "SETUP_CLOCK"); break;
+            case tp::TagType::SETUP_LAUNCH_CLOCK: fprintf(stdout, "SETUP_LAUNCH_CLOCK"); break;
+            case tp::TagType::SETUP_CAPTURE_CLOCK: fprintf(stdout, "SETUP_CAPTURE_CLOCK"); break;
             case tp::TagType::HOLD_DATA: fprintf(stdout, "HOLD_DATA"); break;
-            case tp::TagType::HOLD_CLOCK: fprintf(stdout, "HOLD_CLOCK"); break;
+            case tp::TagType::HOLD_LAUNCH_CLOCK: fprintf(stdout, "HOLD_LAUNCH_CLOCK"); break;
+            case tp::TagType::HOLD_CAPTURE_CLOCK: fprintf(stdout, "HOLD_CAPTURE_CLOCK"); break;
             default: assert(false);
         }
         fprintf(stdout, " node: %d domain: %d arr: %g req: %g\n", node_id, domain_id, arr, req);

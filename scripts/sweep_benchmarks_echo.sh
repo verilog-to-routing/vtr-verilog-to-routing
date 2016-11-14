@@ -10,7 +10,7 @@ WORK_DIR=sweep_run
 
 mkdir -p $WORK_DIR
 
-for benchmark in $(ls -hSr /project/work/timing_analysis/tatum_echo/*.echo)
+for benchmark in $(ls -hSr /project/work/timing_analysis/tatum_echo_launch_capture_clock/*.echo)
 do
     benchmark_name=$(basename $benchmark | sed 's/.echo//')
     run_dir=${WORK_DIR}/${benchmark_name}
