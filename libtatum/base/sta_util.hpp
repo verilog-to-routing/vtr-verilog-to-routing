@@ -43,6 +43,7 @@ void write_dot_file_setup(std::string filename,
     std::ofstream os(filename);
 
     auto setup_analyzer = std::dynamic_pointer_cast<const SetupTimingAnalyzer>(analyzer);
+    if(!setup_analyzer) return;
 
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
@@ -142,6 +143,7 @@ void write_dot_file_hold(std::string filename,
     std::ofstream os(filename);
 
     auto hold_analyzer = std::dynamic_pointer_cast<const HoldTimingAnalyzer>(analyzer);
+    if(!hold_analyzer) return;
 
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
