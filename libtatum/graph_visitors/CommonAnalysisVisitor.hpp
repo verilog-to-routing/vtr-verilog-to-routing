@@ -91,11 +91,12 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         //Note: we assume that edge counting has set the effective period constraint assuming a
         //launch edge at time zero.  This means we don't need to do anything special for clocks
         //with rising edges after time zero.
-        TimingTag clock_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id);
+        TimingTag launch_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id, TagType::CLOCK_LAUNCH);
+        TimingTag capture_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id, TagType::CLOCK_CAPTURE);
 
         //Add the tag
-        ops_.get_capture_clock_tags(node_id).add_tag(clock_tag);
-        ops_.get_launch_clock_tags(node_id).add_tag(clock_tag);
+        ops_.get_launch_clock_tags(node_id).add_tag(launch_tag);
+        ops_.get_capture_clock_tags(node_id).add_tag(capture_tag);
 
     } else {
 
@@ -110,7 +111,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         TATUM_ASSERT(!isnan(input_constraint));
 
         //Initialize a data tag based on input delay constraint, invalid required time
-        TimingTag input_tag = TimingTag(Time(input_constraint), Time(NAN), domain_id, node_id);
+        TimingTag input_tag = TimingTag(Time(input_constraint), Time(NAN), domain_id, node_id, TagType::DATA);
 
         ops_.get_data_tags(node_id).add_tag(input_tag);
     }
@@ -148,7 +149,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             TATUM_ASSERT(!isnan(output_constraint));
 
             for(auto constraint : output_constraints) {
-                TimingTag constraint_tag = TimingTag(Time(output_constraint), Time(NAN), constraint.second.domain, node_id);
+                TimingTag constraint_tag = TimingTag(Time(output_constraint), Time(NAN), constraint.second.domain, node_id, TagType::CLOCK_CAPTURE);
                 node_clock_tags.add_tag(constraint_tag);
             }
         }

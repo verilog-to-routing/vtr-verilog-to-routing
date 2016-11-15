@@ -13,11 +13,12 @@ inline TimingTag::TimingTag()
     , launch_node_(NodeId::INVALID())
     {}
 
-inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node)
+inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const DomainId domain, const NodeId node, const TagType type)
     : arr_time_(arr_time_val)
     , req_time_(req_time_val)
     , clock_domain_(domain)
     , launch_node_(node)
+    , type_(type)
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag)
@@ -25,6 +26,7 @@ inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, 
     , req_time_(req_time_val)
     , clock_domain_(base_tag.clock_domain())
     , launch_node_(base_tag.launch_node())
+    , type_(base_tag.type())
     {}
 
 

@@ -38,7 +38,7 @@
 #define OPTIMIZE_GRAPH_LAYOUT
 
 //Should we print out tag related object size info
-//#define PRINT_TAG_SIZES
+#define PRINT_TAG_SIZES
 
 //Do we dump an echo file?
 //#define ECHO

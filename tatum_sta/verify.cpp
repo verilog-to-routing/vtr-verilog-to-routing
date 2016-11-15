@@ -6,7 +6,6 @@
 #include "util.hpp"
 
 using namespace tatum;
-using tatumparse::TagType;
 
 using std::cout;
 using std::endl;
@@ -30,14 +29,14 @@ size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> an
 
 
             if(setup_analyzer) {
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_data_tags(node), gr.get_result(node, TagType::SETUP_DATA), "setup_data");
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_launch_clock_tags(node), gr.get_result(node, TagType::SETUP_LAUNCH_CLOCK), "setup_launch_clock");
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_capture_clock_tags(node), gr.get_result(node, TagType::SETUP_CAPTURE_CLOCK), "setup_capture_clock");
+                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_data_tags(node), gr.get_result(node, tatumparse::TagType::SETUP_DATA), "setup_data");
+                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_launch_clock_tags(node), gr.get_result(node, tatumparse::TagType::SETUP_LAUNCH_CLOCK), "setup_launch_clock");
+                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_capture_clock_tags(node), gr.get_result(node, tatumparse::TagType::SETUP_CAPTURE_CLOCK), "setup_capture_clock");
             }
             if(hold_analyzer) {
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_data_tags(node), gr.get_result(node, TagType::HOLD_DATA), "hold_data");
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_launch_clock_tags(node), gr.get_result(node, TagType::HOLD_LAUNCH_CLOCK), "hold_launch_clock");
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_capture_clock_tags(node), gr.get_result(node, TagType::HOLD_CAPTURE_CLOCK), "hold_capture_clock");
+                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_data_tags(node), gr.get_result(node, tatumparse::TagType::HOLD_DATA), "hold_data");
+                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_launch_clock_tags(node), gr.get_result(node, tatumparse::TagType::HOLD_LAUNCH_CLOCK), "hold_launch_clock");
+                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_capture_clock_tags(node), gr.get_result(node, tatumparse::TagType::HOLD_CAPTURE_CLOCK), "hold_capture_clock");
             }
         }
     }

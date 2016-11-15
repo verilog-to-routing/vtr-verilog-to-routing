@@ -6,6 +6,12 @@
 
 namespace tatum {
 
+enum class TagType : unsigned short {
+    DATA,
+    CLOCK_LAUNCH,
+    CLOCK_CAPTURE
+};
+
 /**
  * The 'TimingTag' class represents an individual timing tag: the information associated
  * with a node's arrival/required times.
@@ -32,7 +38,7 @@ class TimingTag {
         ///\param req_time_val The tagged required time
         ///\param domain The clock domain the arrival/required times were launched from
         ///\param node The original launch node's id (i.e. primary input that originally launched this tag)
-        TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node);
+        TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node, TagType type);
 
         ///\param arr_time_val The tagged arrival time
         ///\param req_time_val The tagged required time
@@ -53,6 +59,8 @@ class TimingTag {
 
         ///\returns This tag's launching node's id
         NodeId launch_node() const { return launch_node_; }
+
+        TagType type() const { return type_; }
 
         /*
          * Setters
@@ -111,6 +119,7 @@ class TimingTag {
         Time req_time_; //Required time
         DomainId clock_domain_; //Clock domain for arr/req times
         NodeId launch_node_; //Node which launched this arrival time
+        TagType type_;
 };
 
 } //namepsace
