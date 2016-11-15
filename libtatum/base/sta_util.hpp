@@ -58,7 +58,7 @@ void write_dot_file_setup(std::string filename,
             if(data_tags.num_tags() > 0) {
                 for(const TimingTag& tag : data_tags) {
                     os << " | {";
-                    os << "DATA - " << tag.clock_domain();
+                    os << tag.type() << " - " << tag.clock_domain();
                     os << " launch: " << tag.launch_node();
                     os << "\\n";
                     os << " arr: " << tag.arr_time().value();
@@ -70,7 +70,7 @@ void write_dot_file_setup(std::string filename,
             if(launch_clock_tags.num_tags() > 0) {
                 for(const TimingTag& tag : launch_clock_tags) {
                     os << " | {";
-                    os << "CLOCK LAUNCH - " << tag.clock_domain();
+                    os << tag.type() << " - " << tag.clock_domain();
                     os << " launch: " << tag.launch_node();
                     os << "\\n";
                     os << " arr: " << tag.arr_time().value();
@@ -82,7 +82,7 @@ void write_dot_file_setup(std::string filename,
             if(capture_clock_tags.num_tags() > 0) {
                 for(const TimingTag& tag : capture_clock_tags) {
                     os << " | {";
-                    os << "CLOCK CAPTURE - " << tag.clock_domain();
+                    os << tag.type() << " - " << tag.clock_domain();
                     os << " launch: " << tag.launch_node();
                     os << "\\n";
                     os << " arr: " << tag.arr_time().value();

@@ -33,18 +33,13 @@ inline TimingTags::const_iterator TimingTags::end() const {
 
 //Modifiers
 inline void TimingTags::add_tag(const TimingTag& tag) {
-    //Don't add invalid clock domains
-    //Some sources like constant generators may yeild illegal clock domains
-    if(!tag.clock_domain()) {
-        return;
-    }
+    TATUM_ASSERT(tag.clock_domain());
 
-    //Allocate form a central storage pool
     tags_.push_back(tag);
 }
 
 inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
-    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_matching_tag(base_tag);
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
@@ -55,7 +50,7 @@ inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::min_req(const Time& new_time, const TimingTag& base_tag) {
-    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_matching_tag(base_tag);
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(Time(NAN), new_time, base_tag);
@@ -66,7 +61,7 @@ inline void TimingTags::min_req(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::min_arr(const Time& new_time, const TimingTag& base_tag) {
-    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_matching_tag(base_tag);
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
@@ -77,7 +72,7 @@ inline void TimingTags::min_arr(const Time& new_time, const TimingTag& base_tag)
 }
 
 inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag) {
-    iterator iter = find_tag_by_clock_domain(base_tag.clock_domain());
+    iterator iter = find_matching_tag(base_tag);
     if(iter == end()) {
         //First time we've seen this domain
         TimingTag tag = TimingTag(new_time, Time(NAN), base_tag);
@@ -91,16 +86,18 @@ inline void TimingTags::clear() {
     tags_.clear();
 }
 
-inline TimingTags::iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) {
-    auto pred = [domain_id](const TimingTag& tag) {
-        return tag.clock_domain() == domain_id;
+inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) {
+    auto pred = [&](const TimingTag& check_tag) {
+        return    tag.clock_domain() == check_tag.clock_domain()
+               && tag.type() == check_tag.type();
     };
     return std::find_if(begin(), end(), pred);
 }
 
-inline TimingTags::const_iterator TimingTags::find_tag_by_clock_domain(DomainId domain_id) const {
-    auto pred = [domain_id](const TimingTag& tag) {
-        return tag.clock_domain() == domain_id;
+inline TimingTags::const_iterator TimingTags::find_matching_tag(const TimingTag& tag) const {
+    auto pred = [&](const TimingTag& check_tag) {
+        return    tag.clock_domain() == check_tag.clock_domain()
+               && tag.type() == check_tag.type();
     };
     return std::find_if(begin(), end(), pred);
 }

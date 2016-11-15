@@ -12,6 +12,8 @@ enum class TagType : unsigned short {
     CLOCK_CAPTURE
 };
 
+std::ostream& operator<<(std::ostream& os, TagType type);
+
 /**
  * The 'TimingTag' class represents an individual timing tag: the information associated
  * with a node's arrival/required times.
@@ -66,16 +68,18 @@ class TimingTag {
          * Setters
          */
         ///\param new_arr_time The new value set as the tag's arrival time
-        void set_arr_time(const Time& new_arr_time) { arr_time_ = new_arr_time; };
+        void set_arr_time(const Time& new_arr_time) { arr_time_ = new_arr_time; }
 
         ///\param new_req_time The new value set as the tag's required time
-        void set_req_time(const Time& new_req_time) { req_time_ = new_req_time; };
+        void set_req_time(const Time& new_req_time) { req_time_ = new_req_time; }
 
         ///\param new_req_time The new value set as the tag's clock domain
-        void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; };
+        void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; }
 
         ///\param new_launch_node The new value set as the tag's launching node
-        void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; };
+        void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; }
+
+        void set_type(const TagType type) { type_ = type; }
 
         /*
          * Modification operations

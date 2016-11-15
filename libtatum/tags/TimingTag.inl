@@ -2,6 +2,14 @@
 
 namespace tatum {
 
+inline std::ostream& operator<<(std::ostream& os, TagType type) {
+    if(type == TagType::DATA) os << "DATA";
+    else if(type == TagType::CLOCK_LAUNCH) os << "CLOCK_LAUNCH";
+    else if(type == TagType::CLOCK_CAPTURE) os << "CLOCK_CAPTURE";
+    else TATUM_ASSERT_MSG(false, "Unrecognized TagType");
+    return os;
+}
+
 /*
  * TimingTag implementation
  */

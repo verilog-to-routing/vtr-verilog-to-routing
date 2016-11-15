@@ -241,6 +241,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                     //Update the launch node, since the data is
                     //launching from this node
                     launch_tag.set_launch_node(node_id);
+                    launch_tag.set_type(TagType::DATA);
 
                     //Mark propagated launch time as a DATA tag
                     ops_.merge_arr_tags(node_data_tags, new_arr, launch_tag);
@@ -319,7 +320,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 
         for(const TimingTag& sink_tag : sink_data_tags) {
             //We only propogate the required time if we have a valid arrival time
-            auto matched_tag_iter = node_data_tags.find_tag_by_clock_domain(sink_tag.clock_domain());
+            auto matched_tag_iter = node_data_tags.find_matching_tag(sink_tag);
             if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
                 //Valid arrival, update required
                 ops_.merge_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);

@@ -53,8 +53,8 @@ class TimingTags {
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
         ///\param domain_id The clock domain id to look for
         ///\returns An iterator to the tag if found, or end() if not found
-        iterator find_tag_by_clock_domain(DomainId domain_id);
-        const_iterator find_tag_by_clock_domain(DomainId domain_id) const;
+        iterator find_matching_tag(const TimingTag& tag);
+        const_iterator find_matching_tag(const TimingTag& tag) const;
 
 
         /*
