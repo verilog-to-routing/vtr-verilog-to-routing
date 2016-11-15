@@ -37,9 +37,9 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        const TimingTags& get_setup_data_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_data_tags(node_id); }
-        const TimingTags& get_setup_launch_clock_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_launch_clock_tags(node_id); }
-        const TimingTags& get_setup_capture_clock_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_capture_clock_tags(node_id); }
+        TimingTags::tag_range get_setup_data_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_data_tags(node_id); }
+        TimingTags::tag_range get_setup_launch_clock_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_launch_clock_tags(node_id); }
+        TimingTags::tag_range get_setup_capture_clock_tags_impl(NodeId node_id) const override { return setup_visitor_.get_setup_capture_clock_tags(node_id); }
 
 
     private:

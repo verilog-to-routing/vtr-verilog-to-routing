@@ -29,10 +29,10 @@
 #include "util.hpp"
 #include "output.hpp"
 
-//#define NUM_SERIAL_RUNS 1
-//#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
-#define NUM_SERIAL_RUNS 20
-#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 1
+#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
+//#define NUM_SERIAL_RUNS 20
+//#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
 #define OPTIMIZE_GRAPH_LAYOUT

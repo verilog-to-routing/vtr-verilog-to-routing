@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TimingTag.hpp"
+#include "tatum_range.hpp"
 
 namespace tatum {
 
@@ -20,27 +21,29 @@ namespace tatum {
 class TimingTags {
     private:
         typedef std::vector<TimingTag> TagStore;
+        constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 2;
 
     public:
         typedef TagStore::iterator iterator;
         typedef TagStore::const_iterator const_iterator;
 
-        //Standard constructors
-        TimingTags() = default;
-        TimingTags(const TimingTags&) = default;
-        TimingTags(TimingTags&&) = default;
-        TimingTags& operator=(const TimingTags&) = default;
-        TimingTags& operator=(TimingTags&&) = default;
+        typedef tatum::util::Range<const_iterator> tag_range;
 
-        //Reserving constructor
-        TimingTags(size_t num_reserve);
+    public:
+
+        //Constructors
+        TimingTags(size_t num_reserve=DEFAULT_TAGS_TO_RESERVE);
+        TimingTags(const TimingTags&) = delete;
+        TimingTags(TimingTags&&) = default;
+        TimingTags& operator=(const TimingTags&) = delete;
+        TimingTags& operator=(TimingTags&&) = default;
 
         /*
          * Getters
          */
         ///\returns The number of timing tags in this set
-        size_t num_tags() const;
-        bool empty() const { return num_tags() == 0; }
+        size_t size() const;
+        bool empty() const { return size() == 0; }
 
         ///\returns An iterator to the first tag in the current set
         iterator begin();
@@ -49,6 +52,8 @@ class TimingTags {
         ///\returns An iterator 'one-past-the-end' of the current set
         iterator end();
         const_iterator end() const;
+
+        tag_range tags(const TagType type) const;
 
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
         ///\param domain_id The clock domain id to look for
@@ -80,7 +85,7 @@ class TimingTags {
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is smaller
-        void min_req(const Time& new_time, const TimingTag& base_tag);
+        void min_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
 
         /*
          * Hold operations
@@ -97,7 +102,7 @@ class TimingTags {
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is larger
-        void max_req(const Time& new_time, const TimingTag& base_tag);
+        void max_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
 
         ///Clears the tags in the current set
         ///\warning Note this does not deallocate the tags. Tag deallocation is the responsibility of the associated pool allocator

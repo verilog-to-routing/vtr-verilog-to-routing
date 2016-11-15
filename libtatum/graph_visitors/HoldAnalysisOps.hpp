@@ -22,21 +22,13 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             return tc.hold_constraint(src_id, sink_id); 
         }
 
-        void merge_req_tags(TimingTags& tags, const Time time, const TimingTag& ref_tag) { 
-            tags.max_req(time, ref_tag); 
-        }
-
-        void merge_req_tag(TimingTag& tag, const Time time, const TimingTag& ref_tag) { 
-            tag.max_req(time, ref_tag); 
+        void merge_req_tags(const NodeId node, const Time time, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
+            node_tags_[node].max_req(time, ref_tag, arrival_must_be_valid); 
         }
 
         void merge_arr_tags(TimingTags& tags, const Time time, const TimingTag& ref_tag) { 
             tags.min_arr(time, ref_tag); 
         }
-
-        void merge_arr_tag(TimingTag& tag, const Time time, const TimingTag& ref_tag) { 
-            tag.min_arr(time, ref_tag); 
-        };
 
         template<class DelayCalc>
         Time data_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 

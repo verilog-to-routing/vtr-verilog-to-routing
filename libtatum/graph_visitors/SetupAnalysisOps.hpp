@@ -21,20 +21,12 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             return tc.setup_constraint(src_id, sink_id); 
         }
 
-        void merge_req_tags(TimingTags& tags, const Time time, const TimingTag& ref_tag) { 
-            tags.min_req(time, ref_tag); 
+        void merge_req_tags(const NodeId node, const Time time, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
+            node_tags_[node].min_req(time, ref_tag, arrival_must_be_valid); 
         }
 
-        void merge_req_tag(TimingTag& tag, const Time time, const TimingTag& ref_tag) { 
-            tag.min_req(time, ref_tag); 
-        }
-
-        void merge_arr_tags(TimingTags& tags, const Time time, const TimingTag& ref_tag) { 
-            tags.max_arr(time, ref_tag); 
-        }
-
-        void merge_arr_tag(TimingTag& tag, const Time time, const TimingTag& ref_tag) { 
-            tag.max_arr(time, ref_tag); 
+        void merge_arr_tags(const NodeId node, const Time time, const TimingTag& ref_tag) { 
+            node_tags_[node].max_arr(time, ref_tag); 
         }
 
         template<class DelayCalc>

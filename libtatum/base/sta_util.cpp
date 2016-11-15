@@ -145,7 +145,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
     std::cout << "Node Data Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        data_tag_cnts[analyzer.get_setup_data_tags(i).num_tags()]++;
+        data_tag_cnts[analyzer.get_setup_data_tags(i).size()]++;
     }
 
     int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
@@ -156,7 +156,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
     std::cout << "Node Clock Launch Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_launch_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_launch_tag_cnts[analyzer.get_setup_launch_clock_tags(i).num_tags()]++;
+        clock_launch_tag_cnts[analyzer.get_setup_launch_clock_tags(i).size()]++;
     }
 
     int total_clock_launch_tags = std::accumulate(clock_launch_tag_cnts.begin(), clock_launch_tag_cnts.end(), 0, totaler);
@@ -167,7 +167,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
     std::cout << "Node Clock Capture Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_capture_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_capture_tag_cnts[analyzer.get_setup_capture_clock_tags(i).num_tags()]++;
+        clock_capture_tag_cnts[analyzer.get_setup_capture_clock_tags(i).size()]++;
     }
 
     int total_clock_capture_tags = std::accumulate(clock_capture_tag_cnts.begin(), clock_capture_tag_cnts.end(), 0, totaler);
@@ -187,7 +187,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Data Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        data_tag_cnts[analyzer.get_hold_data_tags(i).num_tags()]++;
+        data_tag_cnts[analyzer.get_hold_data_tags(i).size()]++;
     }
 
     int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
@@ -198,7 +198,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Clock Launch Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_launch_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_launch_tag_cnts[analyzer.get_hold_launch_clock_tags(i).num_tags()]++;
+        clock_launch_tag_cnts[analyzer.get_hold_launch_clock_tags(i).size()]++;
     }
 
     int total_clock_launch_tags = std::accumulate(clock_launch_tag_cnts.begin(), clock_launch_tag_cnts.end(), 0, totaler);
@@ -209,7 +209,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Clock Capture Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_capture_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_capture_tag_cnts[analyzer.get_hold_capture_clock_tags(i).num_tags()]++;
+        clock_capture_tag_cnts[analyzer.get_hold_capture_clock_tags(i).size()]++;
     }
 
     int total_clock_capture_tags = std::accumulate(clock_capture_tag_cnts.begin(), clock_capture_tag_cnts.end(), 0, totaler);

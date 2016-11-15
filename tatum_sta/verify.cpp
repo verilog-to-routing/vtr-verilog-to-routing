@@ -13,7 +13,7 @@ using std::endl;
 constexpr float RELATIVE_EPSILON = 1.e-5;
 constexpr float ABSOLUTE_EPSILON = 1.e-13;
 
-size_t verify_node_tags(const NodeId node, const TimingTags& analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type);
+size_t verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type);
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result);
 bool verify_time(NodeId node, DomainId domain, std::string type_str, float analyzer_time, float reference_time);
 
@@ -44,7 +44,7 @@ size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> an
     return tags_checked;
 }
 
-size_t verify_node_tags(const NodeId node, const TimingTags& analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type) {
+size_t verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type) {
 
     //Check that every tag in the analyzer matches the reference results
     size_t tags_verified = 0;

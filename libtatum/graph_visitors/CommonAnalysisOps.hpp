@@ -16,30 +16,43 @@ namespace tatum { namespace detail {
  */
 class CommonAnalysisOps {
     public:
-        CommonAnalysisOps(size_t num_tags)
-            : data_tags_(num_tags, NUM_DATA_TAGS_RESERVE)
-            , clock_launch_tags_(num_tags, NUM_CLOCK_TAGS_RESERVE)
-            , clock_capture_tags_(num_tags, NUM_CLOCK_TAGS_RESERVE) {}
+        CommonAnalysisOps(size_t num_tags) 
+            : node_tags_(num_tags) {}
 
-        TimingTags& get_data_tags(const NodeId node_id) { return data_tags_[node_id]; }
-        TimingTags& get_launch_clock_tags(const NodeId node_id) { return clock_launch_tags_[node_id]; }
-        TimingTags& get_capture_clock_tags(const NodeId node_id) { return clock_capture_tags_[node_id]; }
-        const TimingTags& get_data_tags(const NodeId node_id) const { return data_tags_[node_id]; }
-        const TimingTags& get_launch_clock_tags(const NodeId node_id) const { return clock_launch_tags_[node_id]; }
-        const TimingTags& get_capture_clock_tags(const NodeId node_id) const { return clock_capture_tags_[node_id]; }
+        CommonAnalysisOps(const CommonAnalysisOps&) = delete;
+        CommonAnalysisOps(CommonAnalysisOps&&) = delete;
+        CommonAnalysisOps& operator=(const CommonAnalysisOps&) = delete;
+        CommonAnalysisOps& operator=(CommonAnalysisOps&&) = delete;
 
-        void reset() { 
-            data_tags_ = tatum::util::linear_map<NodeId,TimingTags>(data_tags_.size(), NUM_DATA_TAGS_RESERVE);
-            clock_launch_tags_ = tatum::util::linear_map<NodeId,TimingTags>(clock_launch_tags_.size(), NUM_CLOCK_TAGS_RESERVE);
-            clock_capture_tags_ = tatum::util::linear_map<NodeId,TimingTags>(clock_capture_tags_.size(), NUM_CLOCK_TAGS_RESERVE);
+        TimingTags::tag_range get_data_tags(const NodeId node_id) { 
+            return node_tags_[node_id].tags(TagType::DATA); 
+        }
+        TimingTags::tag_range get_launch_clock_tags(const NodeId node_id) { 
+            return node_tags_[node_id].tags(TagType::CLOCK_LAUNCH); 
+        }
+        TimingTags::tag_range get_capture_clock_tags(const NodeId node_id) { 
+            return node_tags_[node_id].tags(TagType::CLOCK_CAPTURE); 
+        }
+        TimingTags::tag_range get_data_tags(const NodeId node_id) const {
+            return node_tags_[node_id].tags(TagType::DATA); 
+        }
+        TimingTags::tag_range get_launch_clock_tags(const NodeId node_id) const { 
+            return node_tags_[node_id].tags(TagType::CLOCK_LAUNCH); 
+        }
+        TimingTags::tag_range get_capture_clock_tags(const NodeId node_id) const { 
+            return node_tags_[node_id].tags(TagType::CLOCK_CAPTURE); 
         }
 
-    private:
-        constexpr static size_t NUM_DATA_TAGS_RESERVE = 1;
-        constexpr static size_t NUM_CLOCK_TAGS_RESERVE = 1;
-        tatum::util::linear_map<NodeId,TimingTags> data_tags_;
-        tatum::util::linear_map<NodeId,TimingTags> clock_launch_tags_;
-        tatum::util::linear_map<NodeId,TimingTags> clock_capture_tags_;
+        void add_tag(const NodeId node, const TimingTag& tag) {
+            node_tags_[node].add_tag(tag);
+        }
+
+        void reset() { 
+            node_tags_ = tatum::util::linear_map<NodeId,TimingTags>(node_tags_.size());
+        }
+
+    protected:
+        tatum::util::linear_map<NodeId,TimingTags> node_tags_;
 };
 
 }} //namespace

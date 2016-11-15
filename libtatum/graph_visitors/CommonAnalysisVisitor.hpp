@@ -79,8 +79,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
     if(tc.node_is_clock_source(node_id)) {
         //Generate the appropriate clock tag
 
-        TATUM_ASSERT_MSG(ops_.get_launch_clock_tags(node_id).num_tags() == 0, "Clock source already has launch clock tags");
-        TATUM_ASSERT_MSG(ops_.get_capture_clock_tags(node_id).num_tags() == 0, "Clock source already has capture clock tags");
+        TATUM_ASSERT_MSG(ops_.get_launch_clock_tags(node_id).size() == 0, "Clock source already has launch clock tags");
+        TATUM_ASSERT_MSG(ops_.get_capture_clock_tags(node_id).size() == 0, "Clock source already has capture clock tags");
 
         //Find it's domain
         DomainId domain_id = tc.node_clock_domain(node_id);
@@ -95,14 +95,14 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         TimingTag capture_tag = TimingTag(Time(0.), Time(NAN), domain_id, node_id, TagType::CLOCK_CAPTURE);
 
         //Add the tag
-        ops_.get_launch_clock_tags(node_id).add_tag(launch_tag);
-        ops_.get_capture_clock_tags(node_id).add_tag(capture_tag);
+        ops_.add_tag(node_id, launch_tag);
+        ops_.add_tag(node_id, capture_tag);
 
     } else {
 
         //A standard primary input, generate the appropriate data tag
 
-        TATUM_ASSERT_MSG(ops_.get_data_tags(node_id).num_tags() == 0, "Primary input already has data tags");
+        TATUM_ASSERT_MSG(ops_.get_data_tags(node_id).size() == 0, "Primary input already has data tags");
 
         DomainId domain_id = tc.node_clock_domain(node_id);
         TATUM_ASSERT(domain_id);
@@ -113,15 +113,12 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         //Initialize a data tag based on input delay constraint, invalid required time
         TimingTag input_tag = TimingTag(Time(input_constraint), Time(NAN), domain_id, node_id, TagType::DATA);
 
-        ops_.get_data_tags(node_id).add_tag(input_tag);
+        ops_.add_tag(node_id, input_tag);
     }
 }
 
 template<class AnalysisOps>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
-
-    TimingTags& node_data_tags = ops_.get_data_tags(node_id);
-    TimingTags& node_clock_tags = ops_.get_capture_clock_tags(node_id);
 
     /*
      * Calculate required times
@@ -132,6 +129,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     //Sinks corresponding to FF sinks will have propagated (capturing) clock tags,
     //while those corresponding to outpads will not. To treat them uniformly, we 
     //initialize outpads with capturing clock tags based on the ouput constraints.
+    TimingTags::tag_range node_clock_tags = ops_.get_capture_clock_tags(node_id);
     if(node_clock_tags.empty()) {
         //Initialize the clock tags based on the constraints.
 
@@ -150,7 +148,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
 
             for(auto constraint : output_constraints) {
                 TimingTag constraint_tag = TimingTag(Time(output_constraint), Time(NAN), constraint.second.domain, node_id, TagType::CLOCK_CAPTURE);
-                node_clock_tags.add_tag(constraint_tag);
+                ops_.add_tag(node_id, constraint_tag);
             }
         }
     }
@@ -163,8 +161,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     //arrival time at this node, while considering all possible clocks that could drive
     //this node (i.e. take the most restrictive constraint accross all clock tags at this
     //node)
-    for(TimingTag& node_data_tag : node_data_tags) {
-        for(const TimingTag& node_clock_tag : node_clock_tags) {
+    for(const TimingTag& node_data_tag : ops_.get_data_tags(node_id)) {
+        for(const TimingTag& node_clock_tag : ops_.get_capture_clock_tags(node_id)) {
 
             //Should we be analyzing paths between these two domains?
             if(tc.should_analyze(node_data_tag.clock_domain(), node_clock_tag.clock_domain())) {
@@ -176,7 +174,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
                                                                   node_clock_tag.clock_domain());
 
                     //Update the required time. This will keep the most restrictive constraint.
-                    ops_.merge_req_tag(node_data_tag, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
+                    ops_.merge_req_tags(node_id, node_clock_tag.arr_time() + Time(clock_constraint), node_data_tag);
                 }
             }
         }
@@ -202,10 +200,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGr
 template<class AnalysisOps>
 template<class DelayCalc>
 void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
-    //We must use the tags by reference so we don't accidentally wipe-out any
-    //existing tags
-    TimingTags& node_data_tags = ops_.get_data_tags(node_id);
-
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
 
@@ -218,8 +212,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
         //The launch tags
         if(!is_clock_data_capture_edge(tg, edge_id)) {
-            const TimingTags& src_launch_clk_tags = ops_.get_launch_clock_tags(src_node_id);
-            TimingTags& node_launch_clk_tags = ops_.get_launch_clock_tags(node_id);
+            TimingTags::tag_range src_launch_clk_tags = ops_.get_launch_clock_tags(src_node_id);
 
             const Time& clk_launch_edge_delay = ops_.launch_clock_edge_delay(dc, tg, edge_id);
 
@@ -227,7 +220,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                 //Standard propagation through the clock network
 
                 Time new_arr = src_launch_clk_tag.arr_time() + clk_launch_edge_delay;
-                ops_.merge_arr_tags(node_launch_clk_tags, new_arr, src_launch_clk_tag);
+                ops_.merge_arr_tags(node_id, new_arr, src_launch_clk_tag);
 
                 if(is_clock_data_launch_edge(tg, edge_id)) {
                     //We convert the clock arrival time to a data
@@ -244,21 +237,20 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                     launch_tag.set_type(TagType::DATA);
 
                     //Mark propagated launch time as a DATA tag
-                    ops_.merge_arr_tags(node_data_tags, new_arr, launch_tag);
+                    ops_.merge_arr_tags(node_id, new_arr, launch_tag);
                 }
             }
         }
 
         //The capture tags
         if(!is_clock_data_launch_edge(tg, edge_id)) {
-            const TimingTags& src_capture_clk_tags = ops_.get_capture_clock_tags(src_node_id);
-            TimingTags& node_capture_clk_tags = ops_.get_capture_clock_tags(node_id);
+            TimingTags::tag_range src_capture_clk_tags = ops_.get_capture_clock_tags(src_node_id);
 
             const Time& clk_capture_edge_delay = ops_.capture_clock_edge_delay(dc, tg, edge_id);
 
             for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
                 //Standard propagation through the clock network
-                ops_.merge_arr_tags(node_capture_clk_tags, src_capture_clk_tag.arr_time() + clk_capture_edge_delay, src_capture_clk_tag);
+                ops_.merge_arr_tags(node_id, src_capture_clk_tag.arr_time() + clk_capture_edge_delay, src_capture_clk_tag);
             }
         }
     }
@@ -267,16 +259,16 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
      * Data tags
      */
 
-    const TimingTags& src_data_tags = ops_.get_data_tags(src_node_id);
+    TimingTags::tag_range src_data_tags = ops_.get_data_tags(src_node_id);
 
     if(!src_data_tags.empty()) {
         const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
         TATUM_ASSERT(edge_delay.valid());
 
-
         for(const TimingTag& src_data_tag : src_data_tags) {
             //Standard data-path propagation
-            ops_.merge_arr_tags(node_data_tags, src_data_tag.arr_time() + edge_delay, src_data_tag);
+            Time new_arr = src_data_tag.arr_time() + edge_delay;
+            ops_.merge_arr_tags(node_id, new_arr, src_data_tag);
         }
     }
 }
@@ -308,23 +300,15 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
     //Pulling values from downstream sink node
     NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-    const TimingTags& sink_data_tags = ops_.get_data_tags(sink_node_id);
+    TimingTags::tag_range sink_data_tags = ops_.get_data_tags(sink_node_id);
 
     if(!sink_data_tags.empty()) {
         const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
         TATUM_ASSERT(edge_delay.valid());
 
-        //We must use the tags by reference so we don't accidentally wipe-out any
-        //existing tags
-        TimingTags& node_data_tags = ops_.get_data_tags(node_id);
-
         for(const TimingTag& sink_tag : sink_data_tags) {
             //We only propogate the required time if we have a valid arrival time
-            auto matched_tag_iter = node_data_tags.find_matching_tag(sink_tag);
-            if(matched_tag_iter != node_data_tags.end() && matched_tag_iter->arr_time().valid()) {
-                //Valid arrival, update required
-                ops_.merge_req_tag(*matched_tag_iter, sink_tag.req_time() - edge_delay, sink_tag);
-            }
+            ops_.merge_req_tags(node_id, sink_tag.req_time() - edge_delay, sink_tag, true);
         }
     }
 }

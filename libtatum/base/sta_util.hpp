@@ -55,7 +55,7 @@ void write_dot_file_setup(std::string filename,
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
         if(setup_analyzer) {
             auto data_tags = setup_analyzer->get_setup_data_tags(inode);
-            if(data_tags.num_tags() > 0) {
+            if(data_tags.size() > 0) {
                 for(const TimingTag& tag : data_tags) {
                     os << " | {";
                     os << tag.type() << " - " << tag.clock_domain();
@@ -67,7 +67,7 @@ void write_dot_file_setup(std::string filename,
                 }
             }
             auto launch_clock_tags = setup_analyzer->get_setup_launch_clock_tags(inode);
-            if(launch_clock_tags.num_tags() > 0) {
+            if(launch_clock_tags.size() > 0) {
                 for(const TimingTag& tag : launch_clock_tags) {
                     os << " | {";
                     os << tag.type() << " - " << tag.clock_domain();
@@ -79,7 +79,7 @@ void write_dot_file_setup(std::string filename,
                 }
             }
             auto capture_clock_tags = setup_analyzer->get_setup_capture_clock_tags(inode);
-            if(capture_clock_tags.num_tags() > 0) {
+            if(capture_clock_tags.size() > 0) {
                 for(const TimingTag& tag : capture_clock_tags) {
                     os << " | {";
                     os << tag.type() << " - " << tag.clock_domain();
@@ -155,7 +155,7 @@ void write_dot_file_hold(std::string filename,
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
         auto data_tags = hold_analyzer->get_hold_data_tags(inode);
-        if(data_tags.num_tags() > 0) {
+        if(data_tags.size() > 0) {
             for(const TimingTag& tag : data_tags) {
                 os << " | {";
                 os << "DATA - " << tag.clock_domain();
@@ -167,7 +167,7 @@ void write_dot_file_hold(std::string filename,
             }
         }
         auto launch_clock_tags = hold_analyzer->get_hold_launch_clock_tags(inode);
-        if(launch_clock_tags.num_tags() > 0) {
+        if(launch_clock_tags.size() > 0) {
             for(const TimingTag& tag : launch_clock_tags) {
                 os << " | {";
                 os << "CLOCK LAUNCH - " << tag.clock_domain();
@@ -179,7 +179,7 @@ void write_dot_file_hold(std::string filename,
             }
         }
         auto capture_clock_tags = hold_analyzer->get_hold_capture_clock_tags(inode);
-        if(capture_clock_tags.num_tags() > 0) {
+        if(capture_clock_tags.size() > 0) {
             for(const TimingTag& tag : capture_clock_tags) {
                 os << " | {";
                 os << "CLOCK CAPTURE - " << tag.clock_domain();

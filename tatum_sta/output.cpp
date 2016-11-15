@@ -20,7 +20,7 @@ using tatum::TimingTag;
 using tatum::TimingGraph;
 using tatum::TimingConstraints;
 
-void write_tags(std::ostream& os, const std::string& type, const TimingTags& tags, const NodeId node_id);
+void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id);
 
 void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
     os << "timing_graph:" << "\n";
@@ -163,7 +163,7 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
     os << "\n";
 }
 
-void write_tags(std::ostream& os, const std::string& type, const TimingTags& tags, const NodeId node_id) {
+void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id) {
     for(const auto& tag : tags) {
         float arr = tag.arr_time().value();
         float req = tag.req_time().value();

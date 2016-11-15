@@ -44,13 +44,13 @@ class SetupHoldAnalysis {
             hold_visitor_.do_required_traverse_node(tg, tc, dc, node_id); 
         }
 
-        const TimingTags& get_setup_data_tags(const NodeId node_id) const { return setup_visitor_.get_setup_data_tags(node_id); }
-        const TimingTags& get_setup_launch_clock_tags(const NodeId node_id) const { return setup_visitor_.get_setup_launch_clock_tags(node_id); }
-        const TimingTags& get_setup_capture_clock_tags(const NodeId node_id) const { return setup_visitor_.get_setup_capture_clock_tags(node_id); }
+        TimingTags::tag_range get_setup_data_tags(const NodeId node_id) const { return setup_visitor_.get_setup_data_tags(node_id); }
+        TimingTags::tag_range get_setup_launch_clock_tags(const NodeId node_id) const { return setup_visitor_.get_setup_launch_clock_tags(node_id); }
+        TimingTags::tag_range get_setup_capture_clock_tags(const NodeId node_id) const { return setup_visitor_.get_setup_capture_clock_tags(node_id); }
 
-        const TimingTags& get_hold_data_tags(const NodeId node_id) const { return hold_visitor_.get_hold_data_tags(node_id); }
-        const TimingTags& get_hold_launch_clock_tags(const NodeId node_id) const { return hold_visitor_.get_hold_launch_clock_tags(node_id); }
-        const TimingTags& get_hold_capture_clock_tags(const NodeId node_id) const { return hold_visitor_.get_hold_capture_clock_tags(node_id); }
+        TimingTags::tag_range get_hold_data_tags(const NodeId node_id) const { return hold_visitor_.get_hold_data_tags(node_id); }
+        TimingTags::tag_range get_hold_launch_clock_tags(const NodeId node_id) const { return hold_visitor_.get_hold_launch_clock_tags(node_id); }
+        TimingTags::tag_range get_hold_capture_clock_tags(const NodeId node_id) const { return hold_visitor_.get_hold_capture_clock_tags(node_id); }
 
         void reset() { 
             setup_visitor_.reset(); 
