@@ -3,6 +3,21 @@
 
 namespace tatum {
 
+namespace details {
+    struct TagComp {
+        bool operator()(const TimingTag& lhs, const TimingTag& rhs) {
+            if(lhs.type() < rhs.type()) {
+                //First by type
+                return true;
+            } else if(lhs.type() == rhs.type()) {
+                //Then by clock domain
+                return lhs.clock_domain() < rhs.clock_domain();
+            }
+            return false;
+        }
+    };
+}
+
 /*
  * TimingTags implementation
  */
@@ -35,7 +50,12 @@ inline TimingTags::const_iterator TimingTags::end() const {
 inline void TimingTags::add_tag(const TimingTag& tag) {
     TATUM_ASSERT(tag.clock_domain());
 
-    tags_.push_back(tag);
+    //Upper bound returns an iterator to the first item not less than tag
+    auto iter = std::upper_bound(begin(), end(), tag, details::TagComp());
+
+    //Insert the tag before the upper bound position
+    // This ensures tags_ is always in sorted order
+    tags_.insert(iter, tag);
 }
 
 inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
@@ -87,19 +107,25 @@ inline void TimingTags::clear() {
 }
 
 inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) {
-    auto pred = [&](const TimingTag& check_tag) {
-        return    tag.clock_domain() == check_tag.clock_domain()
-               && tag.type() == check_tag.type();
-    };
-    return std::find_if(begin(), end(), pred);
+    auto iter = std::lower_bound(begin(), end(), tag, details::TagComp());
+    if(iter != end() && iter->clock_domain() == tag.clock_domain() && iter->type() == tag.type()) {
+        //Match
+        return iter;
+    } else {
+        //Not found
+        return end();
+    }
 }
 
 inline TimingTags::const_iterator TimingTags::find_matching_tag(const TimingTag& tag) const {
-    auto pred = [&](const TimingTag& check_tag) {
-        return    tag.clock_domain() == check_tag.clock_domain()
-               && tag.type() == check_tag.type();
-    };
-    return std::find_if(begin(), end(), pred);
+    auto iter = std::lower_bound(begin(), end(), tag, details::TagComp());
+    if(iter != end() && iter->clock_domain() == tag.clock_domain() && iter->type() == tag.type()) {
+        //Match
+        return iter;
+    } else {
+        //Not found
+        return end();
+    }
 }
 
 } //namepsace

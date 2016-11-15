@@ -7,9 +7,9 @@
 namespace tatum {
 
 enum class TagType : unsigned short {
-    DATA,
     CLOCK_LAUNCH,
-    CLOCK_CAPTURE
+    CLOCK_CAPTURE,
+    DATA
 };
 
 std::ostream& operator<<(std::ostream& os, TagType type);
