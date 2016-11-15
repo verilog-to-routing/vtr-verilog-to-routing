@@ -288,7 +288,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
 template<class AnalysisOps>
 template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const DelayCalc& dc, const NodeId node_id) {
     //Don't propagate required times through the clock network
     if(tg.node_type(node_id) == NodeType::CPIN) return;
 
