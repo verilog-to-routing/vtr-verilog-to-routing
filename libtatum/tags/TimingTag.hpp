@@ -6,10 +6,11 @@
 
 namespace tatum {
 
-enum class TagType : unsigned short {
+enum class TagType : unsigned char {
     CLOCK_LAUNCH,
     CLOCK_CAPTURE,
-    DATA
+    DATA,
+    UNKOWN
 };
 
 std::ostream& operator<<(std::ostream& os, TagType type);
@@ -121,8 +122,8 @@ class TimingTag {
          */
         Time arr_time_; //Arrival time
         Time req_time_; //Required time
-        DomainId clock_domain_; //Clock domain for arr/req times
         NodeId launch_node_; //Node which launched this arrival time
+        DomainId clock_domain_; //Clock domain for arr/req times
         TagType type_;
 };
 

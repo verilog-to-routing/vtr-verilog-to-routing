@@ -17,23 +17,24 @@ inline std::ostream& operator<<(std::ostream& os, TagType type) {
 inline TimingTag::TimingTag()
     : arr_time_(NAN)
     , req_time_(NAN)
-    , clock_domain_(DomainId::INVALID())
     , launch_node_(NodeId::INVALID())
+    , clock_domain_(DomainId::INVALID())
+    , type_(TagType::UNKOWN)
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const DomainId domain, const NodeId node, const TagType type)
     : arr_time_(arr_time_val)
     , req_time_(req_time_val)
-    , clock_domain_(domain)
     , launch_node_(node)
+    , clock_domain_(domain)
     , type_(type)
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag)
     : arr_time_(arr_time_val)
     , req_time_(req_time_val)
-    , clock_domain_(base_tag.clock_domain())
     , launch_node_(base_tag.launch_node())
+    , clock_domain_(base_tag.clock_domain())
     , type_(base_tag.type())
     {}
 

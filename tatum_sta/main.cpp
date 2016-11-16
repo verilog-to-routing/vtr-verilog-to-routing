@@ -56,6 +56,7 @@ using tatum::TimingGraph;
 using tatum::TimingConstraints;
 using tatum::NodeId;
 using tatum::EdgeId;
+using tatum::DomainId;
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -77,6 +78,18 @@ int main(int argc, char** argv) {
 
     cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << endl;
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
+
+    cout << "TagType class sizeof  = " << sizeof(tatum::TagType) << " bytes." << endl;
+    cout << "TagType class alignof = " << alignof(tatum::TagType) << " bytes." << endl;
+
+    cout << "NodeId class sizeof  = " << sizeof(tatum::NodeId) << " bytes." << endl;
+    cout << "NodeId class alignof = " << alignof(tatum::NodeId) << " bytes." << endl;
+
+    cout << "EdgeId class sizeof  = " << sizeof(tatum::EdgeId) << " bytes." << endl;
+    cout << "EdgeId class alignof = " << alignof(tatum::EdgeId) << " bytes." << endl;
+
+    cout << "DomainId class sizeof  = " << sizeof(tatum::DomainId) << " bytes." << endl;
+    cout << "DomainId class alignof = " << alignof(tatum::DomainId) << " bytes." << endl;
 #endif
 
     //Raw outputs of parser
