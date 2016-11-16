@@ -3,30 +3,6 @@
 
 namespace tatum {
 
-namespace details {
-    struct TagSortComp {
-        bool operator()(const TimingTag& lhs, const TimingTag& rhs) {
-            if(lhs.type() < rhs.type()) {
-                //First by type
-                return true;
-            } else if(lhs.type() == rhs.type()) {
-                //Then by clock domain
-                return lhs.clock_domain() < rhs.clock_domain();
-            }
-            return false;
-        }
-    };
-
-    struct TagRangeComp {
-        bool operator()(const TimingTag& tag, const TagType type) {
-            return tag.type() < type;
-        }
-        bool operator()(const TagType type, const TimingTag& tag) {
-            return type < tag.type();
-        }
-    };
-}
-
 /*
  * TimingTags implementation
  */
@@ -60,9 +36,30 @@ inline TimingTags::tag_range TimingTags::tags() const {
 }
 
 inline TimingTags::tag_range TimingTags::tags(const TagType type) const {
-    auto b = std::lower_bound(begin(), end(), type, details::TagRangeComp());
-    auto e = std::upper_bound(begin(), end(), type, details::TagRangeComp());
+    auto b = end();
+    auto e = end();
 
+    //Find the first matching tag
+    auto iter = begin();
+    while(iter != end()) {
+        if(iter->type() == type) {
+            //Found first
+            b = iter;
+            ++iter;
+            break;
+        } else {
+            ++iter;
+        }
+    }
+
+    //Find the next non-matching tag
+    while(iter != end()) {
+        if(iter->type() != type) {
+            e = iter;
+            break;
+        }
+        ++iter;
+    }
     return tatum::util::make_range(b, e);
 }
 
@@ -70,12 +67,32 @@ inline TimingTags::tag_range TimingTags::tags(const TagType type) const {
 inline void TimingTags::add_tag(const TimingTag& tag) {
     TATUM_ASSERT(tag.clock_domain());
 
-    //Upper bound returns an iterator to the first item not less than tag
-    auto iter = std::upper_bound(begin(), end(), tag, details::TagSortComp());
+    //Find the position to insert this tag
+    //
+    //We keep tags of the same type together.
+    //We also prefer to insert new tags at the end if possible
+    //(since this is more efficient for the underlying vector storage)
+
+    auto insert_iter = end(); //Default to end
+
+    //Linear search
+    bool in_matching_range = false;
+    for(auto iter = begin(); iter != end(); ++iter) {
+        if(iter->type() == tag.type()) {
+            if(!in_matching_range) {
+                //First matching element, so now within matching type range
+                in_matching_range = true;
+            }
+        } else if (in_matching_range) {
+            //Non-matching type: First element out side matching type range
+            insert_iter = iter; //We want to insert just before here
+            break;
+        }
+    }
 
     //Insert the tag before the upper bound position
     // This ensures tags_ is always in sorted order
-    tags_.insert(iter, tag);
+    tags_.insert(insert_iter, tag);
 }
 
 inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
@@ -135,25 +152,13 @@ inline void TimingTags::clear() {
 }
 
 inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) {
-    auto iter = std::lower_bound(begin(), end(), tag, details::TagSortComp());
-    if(iter != end() && iter->clock_domain() == tag.clock_domain() && iter->type() == tag.type()) {
-        //Match
-        return iter;
-    } else {
-        //Not found
-        return end();
+    //Linear search for matching tag
+    for(auto iter = begin(); iter != end(); ++iter) {
+        if(iter->type() == tag.type() && iter->clock_domain() == tag.clock_domain()) {
+            return iter;
+        }
     }
-}
-
-inline TimingTags::const_iterator TimingTags::find_matching_tag(const TimingTag& tag) const {
-    auto iter = std::lower_bound(begin(), end(), tag, details::TagSortComp());
-    if(iter != end() && iter->clock_domain() == tag.clock_domain() && iter->type() == tag.type()) {
-        //Match
-        return iter;
-    } else {
-        //Not found
-        return end();
-    }
+    return end();
 }
 
 } //namepsace

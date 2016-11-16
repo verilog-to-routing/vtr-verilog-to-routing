@@ -15,12 +15,19 @@ namespace tatum {
  *
  * Implementation
  * ====================
- * Nominally the set of tags is implemented as a singly linked list, since each node in the timing graph
- * typically has only a handful (usually << 10) tags this linear search is not too painful.
+ * Since each node in the timing graph typically has only a few tags (usually 1 or 2), we
+ * perform linear searches to find match tags and tag ranges.
+ *
+ * Note that to allow efficient iteration of tag ranges (by type) we ensure that tags of the
+ * same type are adjacent in the storage vector (i.e. the vector is sorted by type)
  */
 class TimingTags {
     private:
         typedef std::vector<TimingTag> TagStore;
+
+        //In practice the vast majority of nodes have only two or one
+        //tags, so we reserve space for two to avoid costly memory
+        //allocations
         constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 2;
 
     public:
@@ -58,12 +65,6 @@ class TimingTags {
 
         ///\returns A range of all tags matching type
         tag_range tags(const TagType type) const;
-
-        ///Finds a TimingTag in the current set that has clock domain id matching domain_id
-        ///\param domain_id The clock domain id to look for
-        ///\returns An iterator to the tag if found, or end() if not found
-        iterator find_matching_tag(const TimingTag& tag);
-        const_iterator find_matching_tag(const TimingTag& tag) const;
 
 
         /*
@@ -114,6 +115,11 @@ class TimingTags {
 
 
     private:
+        ///Finds a TimingTag in the current set that has clock domain id matching domain_id
+        ///\param domain_id The clock domain id to look for
+        ///\returns An iterator to the tag if found, or end() if not found
+        iterator find_matching_tag(const TimingTag& tag);
+
         TagStore tags_;
 };
 
