@@ -188,9 +188,6 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
 template<class AnalysisOps>
 template<class DelayCalc>
 void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, NodeId node_id) {
-    //Do not propagate arrival tags through constant generators
-    if(tc.node_is_constant_generator(node_id)) return;
-
     //Pull from upstream sources to current node
     for(EdgeId edge_id : tg.node_in_edges(node_id)) {
         do_arrival_traverse_edge(tg, tc, dc, node_id, edge_id);
@@ -283,9 +280,6 @@ template<class DelayCalc>
 void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const DelayCalc& dc, const NodeId node_id) {
     //Don't propagate required times through the clock network
     if(tg.node_type(node_id) == NodeType::CPIN) return;
-
-    //Do not propagate required tags through constant generators
-    //if(tc.node_is_constant_generator(node_id)) return;
 
     //Pull from downstream sinks to current node
     for(EdgeId edge_id : tg.node_out_edges(node_id)) {
