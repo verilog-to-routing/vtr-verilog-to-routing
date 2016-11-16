@@ -52,14 +52,6 @@ class TimingTags {
         size_t size() const;
         bool empty() const { return size() == 0; }
 
-        ///\returns An iterator to the first tag in the current set
-        iterator begin();
-        const_iterator begin() const;
-
-        ///\returns An iterator 'one-past-the-end' of the current set
-        iterator end();
-        const_iterator end() const;
-
         ///\returns A range of all tags
         tag_range tags() const;
 
@@ -115,12 +107,24 @@ class TimingTags {
 
 
     private:
+
+        ///\returns An iterator to the first tag in the current set
+        iterator begin(TagType type);
+        const_iterator begin(TagType type) const;
+
+        ///\returns An iterator 'one-past-the-end' of the current set
+        iterator end(TagType type);
+        const_iterator end(TagType type) const;
+
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
         ///\param domain_id The clock domain id to look for
         ///\returns An iterator to the tag if found, or end() if not found
         iterator find_matching_tag(const TimingTag& tag);
 
+    private:
         TagStore tags_;
+        unsigned int num_clock_launch_tags_ = 0;
+        unsigned int num_clock_capture_tags_ = 0;
 };
 
 } //namepsace
