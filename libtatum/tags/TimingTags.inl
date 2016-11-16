@@ -55,6 +55,10 @@ inline TimingTags::const_iterator TimingTags::end() const {
     return tags_.end(); 
 }
 
+inline TimingTags::tag_range TimingTags::tags() const {
+    return tatum::util::make_range(begin(), end());
+}
+
 inline TimingTags::tag_range TimingTags::tags(const TagType type) const {
     auto b = std::lower_bound(begin(), end(), type, details::TagRangeComp());
     auto e = std::upper_bound(begin(), end(), type, details::TagRangeComp());

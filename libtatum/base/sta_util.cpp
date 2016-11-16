@@ -142,6 +142,17 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
         return total + kv.second;
     };
 
+    std::cout << "Node Total Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> total_tag_cnts;
+    for(const NodeId i : tg.nodes()) {
+        total_tag_cnts[analyzer.get_setup_tags(i).size()]++;
+    }
+
+    int total_tags = std::accumulate(total_tag_cnts.begin(), total_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : total_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_tags << ")" << std::endl;
+    }
+
     std::cout << "Node Data Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
     for(const NodeId i : tg.nodes()) {
@@ -174,6 +185,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
     for(const auto& kv : clock_capture_tag_cnts) {
         std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_clock_capture_tags << ")" << std::endl;
     }
+
 }
 
 void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& analyzer) {
@@ -183,6 +195,17 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     auto totaler = [](int total, const std::map<int,int>::value_type& kv) {
         return total + kv.second;
     };
+
+    std::cout << "Node Total Hold Tag Count Histogram:" << std::endl;
+    std::map<int,int> total_tag_cnts;
+    for(const NodeId i : tg.nodes()) {
+        total_tag_cnts[analyzer.get_hold_tags(i).size()]++;
+    }
+
+    int total_tags = std::accumulate(total_tag_cnts.begin(), total_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : total_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_tags << ")" << std::endl;
+    }
 
     std::cout << "Node Data Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;

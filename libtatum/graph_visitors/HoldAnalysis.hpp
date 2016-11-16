@@ -61,6 +61,7 @@ class HoldAnalysis : public detail::CommonAnalysisVisitor<detail::HoldAnalysisOp
         HoldAnalysis(size_t num_tags)
             : detail::CommonAnalysisVisitor<detail::HoldAnalysisOps>(num_tags) {}
 
+        TimingTags::tag_range get_hold_tags(const NodeId node_id) const { return ops_.get_tags(node_id); }
         TimingTags::tag_range get_hold_data_tags(const NodeId node_id) const { return ops_.get_data_tags(node_id); }
         TimingTags::tag_range get_hold_launch_clock_tags(const NodeId node_id) const { return ops_.get_launch_clock_tags(node_id); }
         TimingTags::tag_range get_hold_capture_clock_tags(const NodeId node_id) const { return ops_.get_capture_clock_tags(node_id); }

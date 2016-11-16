@@ -24,6 +24,9 @@ class CommonAnalysisOps {
         CommonAnalysisOps& operator=(const CommonAnalysisOps&) = delete;
         CommonAnalysisOps& operator=(CommonAnalysisOps&&) = delete;
 
+        TimingTags::tag_range get_tags(const NodeId node_id) { 
+            return node_tags_[node_id].tags(); 
+        }
         TimingTags::tag_range get_data_tags(const NodeId node_id) { 
             return node_tags_[node_id].tags(TagType::DATA); 
         }
@@ -32,6 +35,10 @@ class CommonAnalysisOps {
         }
         TimingTags::tag_range get_capture_clock_tags(const NodeId node_id) { 
             return node_tags_[node_id].tags(TagType::CLOCK_CAPTURE); 
+        }
+
+        TimingTags::tag_range get_tags(const NodeId node_id) const { 
+            return node_tags_[node_id].tags(); 
         }
         TimingTags::tag_range get_data_tags(const NodeId node_id) const {
             return node_tags_[node_id].tags(TagType::DATA); 

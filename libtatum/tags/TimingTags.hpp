@@ -53,6 +53,10 @@ class TimingTags {
         iterator end();
         const_iterator end() const;
 
+        ///\returns A range of all tags
+        tag_range tags() const;
+
+        ///\returns A range of all tags matching type
         tag_range tags(const TagType type) const;
 
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
