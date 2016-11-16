@@ -36,10 +36,15 @@ set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
 #Treat .c as CXX
 set_source_files_properties(${LIB_SOURCES} ${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
 
+#Suppress attribute warnings from bison header
+CHECK_CXX_COMPILER_FLAG("-Wno-attributes" COMPILER_SUPPORTS_-Wno-attributes)
+if(COMPILER_SUPPORTS_-Wno-attributes)
+    set_property(SOURCE ${LIB_SOURCES} ${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE} APPEND_STRING PROPERTY COMPILE_FLAGS "-Wno-attributes")
+endif()
+
 #Suppress warnings in Flex/Bison generated files
 if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
-    set_source_files_properties(${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE}
-                                PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
+    set_property(SOURCE ${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE} APPEND_STRING PROPERTY COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 endif()
 
 #Create the library
