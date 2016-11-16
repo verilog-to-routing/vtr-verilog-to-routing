@@ -79,9 +79,6 @@ int main(int argc, char** argv) {
     cout << "TimingTags class sizeof  = " << sizeof(TimingTags) << " bytes." << endl;
     cout << "TimingTags class alignof = " << alignof(TimingTags) << " bytes." << endl;
 
-    cout << "TagType class sizeof  = " << sizeof(tatum::TagType) << " bytes." << endl;
-    cout << "TagType class alignof = " << alignof(tatum::TagType) << " bytes." << endl;
-
     cout << "NodeId class sizeof  = " << sizeof(tatum::NodeId) << " bytes." << endl;
     cout << "NodeId class alignof = " << alignof(tatum::NodeId) << " bytes." << endl;
 
@@ -90,6 +87,12 @@ int main(int argc, char** argv) {
 
     cout << "DomainId class sizeof  = " << sizeof(tatum::DomainId) << " bytes." << endl;
     cout << "DomainId class alignof = " << alignof(tatum::DomainId) << " bytes." << endl;
+
+    cout << "TagType class sizeof  = " << sizeof(tatum::TagType) << " bytes." << endl;
+    cout << "TagType class alignof = " << alignof(tatum::TagType) << " bytes." << endl;
+
+    cout << "NodeType class sizeof  = " << sizeof(tatum::NodeType) << " bytes." << endl;
+    cout << "NodeType class alignof = " << alignof(tatum::NodeType) << " bytes." << endl;
 #endif
 
     //Raw outputs of parser

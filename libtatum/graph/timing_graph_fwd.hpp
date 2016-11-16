@@ -15,7 +15,7 @@ struct GraphIdMaps;
 /**
  * Potential types for nodes in the timing graph
  */
-enum class NodeType {
+enum class NodeType : unsigned char {
     SOURCE, //The start of a clock/data path
     SINK, //The end of a clock/data path
     IPIN, //An intermediate input pin
