@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <valgrind/callgrind.h>
+#include <ittnotify.h>
 
 #include "tatum_assert.hpp"
 
@@ -186,7 +187,9 @@ int main(int argc, char** argv) {
                 auto start = Clock::now();
 
                 CALLGRIND_TOGGLE_COLLECT;
+                __itt_resume();
                 serial_analyzer->update_timing();
+                __itt_pause();
                 CALLGRIND_TOGGLE_COLLECT;
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
