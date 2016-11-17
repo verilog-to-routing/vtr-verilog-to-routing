@@ -7,25 +7,62 @@ namespace tatum {
  * TimingTags implementation
  */
 
-inline TimingTags::TimingTags(size_t num_reserve) {
-    tags_.reserve(num_reserve);
+inline TimingTags::TimingTags(size_t num_reserve)
+    : size_(0)
+    , capacity_(num_reserve)
+    , num_clock_launch_tags_(0)
+    , num_clock_capture_tags_(0)
+    , tags_(capacity_ ? new TimingTag[capacity_] : nullptr)
+    {}
+
+inline TimingTags::TimingTags(const TimingTags& other) 
+    : size_(other.size())
+    , capacity_(size_)
+    , num_clock_launch_tags_(0)
+    , num_clock_capture_tags_(0)
+    , tags_(capacity_ ? new TimingTag[capacity_] : nullptr) {
+    std::copy(other.tags_, other.tags_ + other.size(), tags_);
+}
+
+inline TimingTags::TimingTags(TimingTags&& other)
+    : TimingTags(0) {
+    swap(*this, other);
+}
+
+inline TimingTags& TimingTags::operator=(TimingTags other) {
+    swap(*this, other);
+    return *this;
+}
+
+inline TimingTags::~TimingTags() {
+    delete[] tags_;
 }
 
 inline size_t TimingTags::size() const { 
-    return tags_.size();
+    return size_;
+}
+
+inline TimingTags::iterator TimingTags::begin() {
+    auto iter = iterator(tags_);
+
+    return iter;
+}
+
+inline TimingTags::const_iterator TimingTags::begin() const {
+    return const_iterator(tags_);
 }
 
 inline TimingTags::iterator TimingTags::begin(TagType type) {
     iterator iter;
     switch(type) {
         case TagType::CLOCK_LAUNCH: 
-            iter = tags_.begin();
+            iter = begin();
             break;
         case TagType::CLOCK_CAPTURE: 
-            iter = tags_.begin() + num_clock_launch_tags_;
+            iter = begin() + num_clock_launch_tags_;
             break;
         case TagType::DATA: 
-            iter = tags_.begin() + num_clock_launch_tags_ + num_clock_capture_tags_;
+            iter = begin() + num_clock_launch_tags_ + num_clock_capture_tags_;
             break;
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
@@ -37,19 +74,32 @@ inline TimingTags::const_iterator TimingTags::begin(TagType type) const {
     const_iterator iter;
     switch(type) {
         case TagType::CLOCK_LAUNCH: 
-            iter = tags_.begin();
+            iter = begin();
             break;
         case TagType::CLOCK_CAPTURE: 
-            iter = tags_.begin() + num_clock_launch_tags_;
+            iter = begin() + num_clock_launch_tags_;
             break;
         case TagType::DATA: 
-            iter = tags_.begin() + num_clock_launch_tags_ + num_clock_capture_tags_;
+            iter = begin() + num_clock_launch_tags_ + num_clock_capture_tags_;
             break;
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
     return iter;
 }
+
+inline TimingTags::iterator TimingTags::end() {
+    auto iter = iterator(tags_ + size_);
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
+    return iter;
+}
+
+inline TimingTags::const_iterator TimingTags::end() const {
+    auto iter = const_iterator(tags_ + size_);
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
+    return iter;
+}
+
 
 inline TimingTags::iterator TimingTags::end(TagType type) { 
     iterator iter;
@@ -61,11 +111,13 @@ inline TimingTags::iterator TimingTags::end(TagType type) {
             iter = begin(TagType::DATA);
             break;
         case TagType::DATA: 
-            iter = tags_.end();
+            iter = end();
             break;
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
+
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
     return iter;
 }
 
@@ -80,36 +132,21 @@ inline TimingTags::const_iterator TimingTags::end(TagType type) const {
             break;
         case TagType::DATA: 
             //Pass the true end
-            iter = tags_.end();
+            iter = end();
             break;
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
     return iter;
 }
 
 inline TimingTags::tag_range TimingTags::tags() const {
-    return tatum::util::make_range(tags_.begin(), tags_.end());
+    return tatum::util::make_range(begin(), end());
 }
 
 inline TimingTags::tag_range TimingTags::tags(const TagType type) const {
-    auto rng = tatum::util::make_range(begin(type), end(type));
-
-    switch(type) {
-        case TagType::CLOCK_LAUNCH:
-            TATUM_ASSERT(rng.size() == num_clock_launch_tags_);
-            break;
-        case TagType::CLOCK_CAPTURE:
-            TATUM_ASSERT(rng.size() == num_clock_capture_tags_);
-            break;
-        case TagType::DATA:
-            TATUM_ASSERT(rng.size() == tags_.size() - num_clock_launch_tags_ - num_clock_capture_tags_);
-            break;
-        default:
-            TATUM_ASSERT_MSG(false, "Invalid tag type");
-    }
-
-    return rng;
+    return tatum::util::make_range(begin(type), end(type));
 }
 
 //Modifiers
@@ -142,24 +179,10 @@ inline void TimingTags::add_tag(const TimingTag& tag) {
 #else
     auto iter = end(tag.type());
 
-    switch(tag.type()) {
-        case TagType::CLOCK_LAUNCH: 
-            ++num_clock_launch_tags_;
-            break;
-        case TagType::CLOCK_CAPTURE: 
-            ++num_clock_capture_tags_;
-            break;
-        case TagType::DATA: 
-            //Pass
-            break;
-        default:
-            TATUM_ASSERT_MSG(false, "Invalid tag type");
-    }
-#endif
-
     //Insert the tag before the upper bound position
     // This ensures tags_ is always in sorted order
-    tags_.insert(iter, tag);
+    insert(iter, tag);
+#endif
 }
 
 inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
@@ -215,7 +238,7 @@ inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag,
 }
 
 inline void TimingTags::clear() {
-    tags_.clear();
+    size_ = 0;
 }
 
 inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) {
@@ -228,6 +251,63 @@ inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) 
         }
     }
     return e;
+}
+
+inline size_t TimingTags::capacity() const { return capacity_; }
+
+inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& tag) {
+    size_t index = std::distance(begin(), iter);
+    TATUM_ASSERT(index <= size());
+
+    //TODO: optimize combined growth + insert
+    if(capacity() == size()) {
+        grow();
+    }
+    TATUM_ASSERT(size() + 1 <= capacity());
+
+
+    //Shift everything from index to the end by one
+    for(int i = (int) size(); i != (int) index; i--) {
+        tags_[i] = tags_[i - 1];
+    }
+
+    //Insert the new value
+    tags_[index] = tag;
+
+    //Update the sizes
+    ++size_;
+    switch(tag.type()) {
+        case TagType::CLOCK_LAUNCH: 
+            ++num_clock_launch_tags_;
+            break;
+        case TagType::CLOCK_CAPTURE: 
+            ++num_clock_capture_tags_;
+            break;
+        case TagType::DATA: 
+            //Pass
+            break;
+        default:
+            TATUM_ASSERT_MSG(false, "Invalid tag type");
+    }
+
+    return begin() + index;
+}
+
+inline void TimingTags::grow() {
+    size_t new_capacity = GROWTH_FACTOR * capacity();
+    TimingTags new_tags(new_capacity);
+    std::copy(tags_, tags_ + size(), new_tags.tags_);
+    new_tags.size_ = size();
+
+    std::swap(*this, new_tags);
+}
+
+inline void swap(TimingTags& lhs, TimingTags& rhs) {
+    std::swap(lhs.tags_, rhs.tags_);
+    std::swap(lhs.num_clock_launch_tags_, rhs.num_clock_launch_tags_);
+    std::swap(lhs.num_clock_capture_tags_, rhs.num_clock_capture_tags_);
+    std::swap(lhs.size_, rhs.size_);
+    std::swap(lhs.capacity_, rhs.capacity_);
 }
 
 } //namepsace

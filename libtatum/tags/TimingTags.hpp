@@ -1,9 +1,11 @@
 #pragma once
+#include <iterator>
 
 #include "TimingTag.hpp"
 #include "tatum_range.hpp"
 
 namespace tatum {
+
 
 /**
  * The 'TimingTags' class represents a collection of timing tags (see the 'TimingTag' class)
@@ -22,17 +24,59 @@ namespace tatum {
  * same type are adjacent in the storage vector (i.e. the vector is sorted by type)
  */
 class TimingTags {
-    private:
-        typedef std::vector<TimingTag> TagStore;
+    public:
+        template<class T>
+        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
+            friend TimingTags;
+            public:
+                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
+                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
+                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
+                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
+                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
+            public:
+                Iterator(): p_(nullptr) {}
+                Iterator(pointer p): p_(p) {}
+                Iterator(const Iterator& other): p_(other.p_) {}
+                Iterator& operator=(const Iterator& other) { p_ = other.p_; return *this; }
 
+                friend bool operator==(Iterator a, Iterator b) { return a.p_ == b.p_; }
+                friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
+
+                reference operator*() { return *p_; }
+                pointer operator->() { return p_; }
+                reference operator[](size_t n) { return *(p_ + n); }
+
+                Iterator& operator++() { ++p_; return *this; }
+                Iterator operator++(int) { Iterator old = *this; ++p_; return old; }
+                Iterator& operator--() { --p_; return *this; }
+                Iterator operator--(int) { Iterator old = *this; --p_; return old; }
+                Iterator& operator+=(size_t n) { p_ += n; return *this; }
+                Iterator& operator-=(size_t n) { p_ -= n; return *this; }
+                friend Iterator operator+(Iterator lhs, size_t rhs) { return lhs += rhs; }
+                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs += rhs; }
+
+                friend difference_type operator-(const Iterator lhs, const Iterator rhs) { return lhs.p_ - rhs.p_; }
+
+                friend bool operator<(Iterator lhs, Iterator rhs) { return lhs.p_ < rhs.p_; }
+                friend bool operator>(Iterator lhs, Iterator rhs) { return lhs.p_ > rhs.p_; }
+                friend bool operator<=(Iterator lhs, Iterator rhs) { return lhs.p_ <= rhs.p_; }
+                friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
+                friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
+            private:
+                T* p_ = nullptr;
+        };
+    private:
         //In practice the vast majority of nodes have only two or one
         //tags, so we reserve space for two to avoid costly memory
         //allocations
         constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 2;
+        constexpr static size_t GROWTH_FACTOR = 2;
 
     public:
-        typedef TagStore::iterator iterator;
-        typedef TagStore::const_iterator const_iterator;
+
+        typedef Iterator<TimingTag> iterator;
+        typedef Iterator<const TimingTag> const_iterator;
 
         typedef tatum::util::Range<const_iterator> tag_range;
 
@@ -40,10 +84,11 @@ class TimingTags {
 
         //Constructors
         TimingTags(size_t num_reserve=DEFAULT_TAGS_TO_RESERVE);
-        TimingTags(const TimingTags&) = delete;
-        TimingTags(TimingTags&&) = default;
-        TimingTags& operator=(const TimingTags&) = delete;
-        TimingTags& operator=(TimingTags&&) = default;
+        TimingTags(const TimingTags&);
+        TimingTags(TimingTags&&);
+        TimingTags& operator=(TimingTags);
+        ~TimingTags();
+        friend void swap(TimingTags& lhs, TimingTags& rhs);
 
         /*
          * Getters
@@ -109,22 +154,38 @@ class TimingTags {
     private:
 
         ///\returns An iterator to the first tag in the current set
+        iterator begin();
+        const_iterator begin() const;
         iterator begin(TagType type);
         const_iterator begin(TagType type) const;
 
         ///\returns An iterator 'one-past-the-end' of the current set
+        iterator end();
+        const_iterator end() const;
         iterator end(TagType type);
         const_iterator end(TagType type) const;
+
+        size_t capacity() const;
 
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
         ///\param domain_id The clock domain id to look for
         ///\returns An iterator to the tag if found, or end() if not found
         iterator find_matching_tag(const TimingTag& tag);
 
+        iterator insert(iterator iter, const TimingTag& tag);
+        void grow();
+
+
     private:
-        TagStore tags_;
-        unsigned int num_clock_launch_tags_ = 0;
-        unsigned int num_clock_capture_tags_ = 0;
+        //We don't expect many tags in a node so unsigned short's
+        //should be more than sufficient. This also allows the class
+        //to be packed down to 16 bytes (8 for counters, 8 for pointer)
+        unsigned short size_ = 0;
+        unsigned short capacity_ = 0;
+        unsigned short num_clock_launch_tags_ = 0;
+        unsigned short num_clock_capture_tags_ = 0;
+        TimingTag* tags_;
+
 };
 
 } //namepsace
