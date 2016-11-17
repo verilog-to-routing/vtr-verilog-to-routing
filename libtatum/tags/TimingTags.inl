@@ -251,18 +251,53 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
 
     //TODO: optimize combined growth + insert
     if(capacity() == 0 || capacity() == size()) {
-        grow();
+        //Grow and insert simultaneously
+        grow_insert(index, tag);
+    } else {
+        //Insert into existing capacity
+        TATUM_ASSERT(size() + 1 <= capacity());
+
+        //Shift everything one position right from end to index
+        for(int i = (int) size(); i != (int) index; i--) {
+            tags_[i] = tags_[i - 1];
+        }
+
+        //Insert the new value in the hole at index created by shifting
+        tags_[index] = tag;
+
+        //Update the sizes
+        ++size_;
+        switch(tag.type()) {
+            case TagType::CLOCK_LAUNCH: 
+                ++num_clock_launch_tags_;
+                break;
+            case TagType::CLOCK_CAPTURE: 
+                ++num_clock_capture_tags_;
+                break;
+            case TagType::DATA: 
+                //Pass
+                break;
+            default:
+                TATUM_ASSERT_MSG(false, "Invalid tag type");
+        }
     }
-    TATUM_ASSERT(size() + 1 <= capacity());
 
+    return begin() + index;
+}
 
-    //Shift everything from index to the end by one
-    for(int i = (int) size(); i != (int) index; i--) {
-        tags_[i] = tags_[i - 1];
-    }
+inline void TimingTags::grow_insert(size_t index, const TimingTag& tag) {
+    size_t new_capacity = (capacity() == 0) ? 1 : GROWTH_FACTOR * capacity();
 
-    //Insert the new value
-    tags_[index] = tag;
+    TimingTag* new_tags = new TimingTag[new_capacity];
+    std::copy_n(tags_, index, new_tags); //Copy before index
+    new_tags[index] = tag; //Insert the new value
+    std::copy_n(tags_ + index, size() - index, new_tags + index + 1); //Copy after index
+
+    //Swap the tags
+    std::swap(tags_, new_tags);
+
+    //Update the capacity
+    capacity_ = new_capacity;
 
     //Update the sizes
     ++size_;
@@ -280,14 +315,7 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
 
-    return begin() + index;
-}
-
-inline void TimingTags::grow() {
-    size_t new_capacity = (capacity() == 0) ? 1 : GROWTH_FACTOR * capacity();
-    TimingTags new_tags(new_capacity, *this);
-
-    std::swap(*this, new_tags);
+    delete new_tags;
 }
 
 inline void swap(TimingTags& lhs, TimingTags& rhs) {

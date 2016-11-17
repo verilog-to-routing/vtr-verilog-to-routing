@@ -174,7 +174,7 @@ class TimingTags {
         iterator find_matching_tag(const TimingTag& tag);
 
         iterator insert(iterator iter, const TimingTag& tag);
-        void grow();
+        void grow_insert(size_t index, const TimingTag& tag);
 
 
     private:
