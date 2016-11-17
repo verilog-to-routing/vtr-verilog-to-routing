@@ -311,7 +311,12 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
     for(LevelId level_id : levels()) {
         edge_levels.push_back(std::vector<EdgeId>());
         for(auto node_id : level_nodes(level_id)) {
-            for(EdgeId edge_id : node_out_edges(node_id)) {
+
+            //We walk the nodes according to the input-edge order.
+            //This is the same order used by the arrival-time traversal (which is responsible
+            //for most of the analyzer run-time), so matching it's order exactly results in
+            //better performance
+            for(EdgeId edge_id : node_in_edges(node_id)) {
 
                 //edge_id is driven by nodes in level level_idx
                 edge_levels[size_t(level_id)].push_back(edge_id);
