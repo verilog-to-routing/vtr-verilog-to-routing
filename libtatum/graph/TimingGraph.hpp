@@ -60,6 +60,12 @@
 #include "tatum_linear_map.hpp"
 #include "timing_graph_fwd.hpp"
 
+//#define LOG_ACCESS_ORDER
+
+#ifdef LOG_ACCESS_ORDER
+#include <iostream>
+#endif
+
 namespace tatum {
 
 class TimingGraph {
@@ -100,7 +106,12 @@ class TimingGraph {
 
         ///\param id The id of an edge
         ///\returns The node id of the edge's source (driver)
-        NodeId edge_src_node(const EdgeId id) const { return edge_src_nodes_[id]; }
+        NodeId edge_src_node(const EdgeId id) const { 
+#ifdef LOG_ACCESS_ORDER
+            std::cout << id << " src_node\n";
+#endif
+            return edge_src_nodes_[id]; 
+        }
 
         /*
          * Level accessors
