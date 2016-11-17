@@ -236,7 +236,6 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
     size_t index = std::distance(begin(), iter);
     TATUM_ASSERT(index <= size());
 
-    //TODO: optimize combined growth + insert
     if(capacity() == 0 || capacity() == size()) {
         //Grow and insert simultaneously
         grow_insert(index, tag);
