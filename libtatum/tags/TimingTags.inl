@@ -24,15 +24,6 @@ inline TimingTags::TimingTags(const TimingTags& other)
     std::copy(other.tags_, other.tags_ + other.size(), tags_);
 }
 
-inline TimingTags::TimingTags(size_t capacity, const TimingTags& other) 
-    : size_(other.size())
-    , capacity_(capacity)
-    , num_clock_launch_tags_(other.num_clock_launch_tags_)
-    , num_clock_capture_tags_(other.num_clock_capture_tags_)
-    , tags_(capacity_ ? new TimingTag[capacity_] : nullptr) {
-    std::copy(other.tags_, other.tags_ + other.size(), tags_);
-}
-
 inline TimingTags::TimingTags(TimingTags&& other)
     : TimingTags(0) {
     swap(*this, other);

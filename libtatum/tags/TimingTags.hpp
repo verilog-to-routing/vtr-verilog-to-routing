@@ -84,7 +84,6 @@ class TimingTags {
 
         //Constructors
         TimingTags(size_t num_reserve=DEFAULT_TAGS_TO_RESERVE);
-        TimingTags(size_t capacity, const TimingTags& other);
         TimingTags(const TimingTags&);
         TimingTags(TimingTags&&);
         TimingTags& operator=(TimingTags);
