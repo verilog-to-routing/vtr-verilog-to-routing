@@ -18,8 +18,17 @@ inline TimingTags::TimingTags(size_t num_reserve)
 inline TimingTags::TimingTags(const TimingTags& other) 
     : size_(other.size())
     , capacity_(size_)
-    , num_clock_launch_tags_(0)
-    , num_clock_capture_tags_(0)
+    , num_clock_launch_tags_(other.num_clock_launch_tags_)
+    , num_clock_capture_tags_(other.num_clock_capture_tags_)
+    , tags_(capacity_ ? new TimingTag[capacity_] : nullptr) {
+    std::copy(other.tags_, other.tags_ + other.size(), tags_);
+}
+
+inline TimingTags::TimingTags(size_t capacity, const TimingTags& other) 
+    : size_(other.size())
+    , capacity_(capacity)
+    , num_clock_launch_tags_(other.num_clock_launch_tags_)
+    , num_clock_capture_tags_(other.num_clock_capture_tags_)
     , tags_(capacity_ ? new TimingTag[capacity_] : nullptr) {
     std::copy(other.tags_, other.tags_ + other.size(), tags_);
 }
@@ -159,30 +168,11 @@ inline void TimingTags::add_tag(const TimingTag& tag) {
     //We also prefer to insert new tags at the end if possible
     //(since this is more efficient for the underlying vector storage)
 
-#if 0
-    auto insert_iter = end(); //Default to end
-
-    //Linear search
-    bool in_matching_range = false;
-    for(auto iter = begin(); iter != end(); ++iter) {
-        if(iter->type() == tag.type()) {
-            if(!in_matching_range) {
-                //First matching element, so now within matching type range
-                in_matching_range = true;
-            }
-        } else if (in_matching_range) {
-            //Non-matching type: First element out side matching type range
-            insert_iter = iter; //We want to insert just before here
-            break;
-        }
-    }
-#else
     auto iter = end(tag.type());
 
     //Insert the tag before the upper bound position
     // This ensures tags_ is always in sorted order
     insert(iter, tag);
-#endif
 }
 
 inline void TimingTags::max_arr(const Time& new_time, const TimingTag& base_tag) {
@@ -260,7 +250,7 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
     TATUM_ASSERT(index <= size());
 
     //TODO: optimize combined growth + insert
-    if(capacity() == size()) {
+    if(capacity() == 0 || capacity() == size()) {
         grow();
     }
     TATUM_ASSERT(size() + 1 <= capacity());
@@ -294,10 +284,8 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
 }
 
 inline void TimingTags::grow() {
-    size_t new_capacity = GROWTH_FACTOR * capacity();
-    TimingTags new_tags(new_capacity);
-    std::copy(tags_, tags_ + size(), new_tags.tags_);
-    new_tags.size_ = size();
+    size_t new_capacity = (capacity() == 0) ? 1 : GROWTH_FACTOR * capacity();
+    TimingTags new_tags(new_capacity, *this);
 
     std::swap(*this, new_tags);
 }
